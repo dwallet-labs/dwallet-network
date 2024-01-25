@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::{anyhow, bail, Result};
 use move_core_types::ident_str;
@@ -613,7 +613,7 @@ async fn construct_unsigned_0x5_txn(
     TransactionData::new_move_call(
         sender,
         SUI_SYSTEM_PACKAGE_ID,
-        ident_str!("sui_system").to_owned(),
+        ident_str!("dwallet_system").to_owned(),
         ident_str!(function).to_owned(),
         vec![],
         gas_obj_ref,

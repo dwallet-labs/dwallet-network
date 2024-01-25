@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Helper module for working with drand outputs.
 /// Currently works with chain 52db9ba70e0cc0f6eaf7803dd07447a1f5477735fd3f661792ba94600c84e971 (quicknet).
@@ -13,7 +13,7 @@ module games::drand_lib {
     use std::hash::sha2_256;
     use std::vector;
 
-    use sui::bls12381;
+    use dwallet::bls12381;
 
     /// Error codes
     const EInvalidRndLength: u64 = 0;

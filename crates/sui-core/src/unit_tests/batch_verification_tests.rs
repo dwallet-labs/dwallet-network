@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::signature_verifier::*;
 use crate::test_utils::{make_cert_with_large_committee, make_dummy_tx};

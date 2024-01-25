@@ -2,7 +2,7 @@
 name = "test-cluster"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 version = "0.1.0"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2021"
 

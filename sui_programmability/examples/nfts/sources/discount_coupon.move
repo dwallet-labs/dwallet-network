@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module nfts::discount_coupon {
-    use sui::coin;
-    use sui::object::{Self, UID};
-    use sui::sui::SUI;
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::coin;
+    use dwallet::object::{Self, UID};
+    use dwallet::dwlt::DWLT;
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     /// Sending to wrong recipient.
     const EWrongRecipient: u64 = 0;
@@ -32,7 +32,7 @@ module nfts::discount_coupon {
 
     /// Mint then transfer a new `DiscountCoupon` NFT, and top up recipient with some SUI.
     public entry fun mint_and_topup(
-        coin: coin::Coin<SUI>,
+        coin: coin::Coin<DWLT>,
         discount: u8,
         expiration: u64,
         recipient: address,

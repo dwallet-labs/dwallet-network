@@ -33,7 +33,7 @@ If your package depends on another package, like the Sui framework, the network 
 The Sui Move compiler creates the `[dependencies]` section for you with a single entry for the GitHub address of the Sui network. If you need to use a local version of the network, you can edit the address to point to the local version. For example,
 
 ```toml
-Sui = { local = "../crates/sui-framework" }
+dWallet = { local = "../crates/sui-framework" }
 ```
 
 You place each additional dependency your package has on a new line directly below the previous one.

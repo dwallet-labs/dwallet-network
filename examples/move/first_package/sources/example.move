@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module first_package::example {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct Sword has key, store {
         id: UID,
@@ -58,7 +58,7 @@ module first_package::example {
     }
 
     // === Tests ===
-    #[test_only] use sui::test_scenario as ts;
+    #[test_only] use dwallet::test_scenario as ts;
 
     #[test_only] const ADMIN: address = @0xAD;
     #[test_only] const ALICE: address = @0xA;

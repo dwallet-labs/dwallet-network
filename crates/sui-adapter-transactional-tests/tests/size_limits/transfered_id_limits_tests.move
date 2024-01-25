@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Test limits on number of transferd IDs
 
@@ -10,9 +10,9 @@
 /// Test transferred id limits enforced
 /// Right now, we should never be able to hit the transfer limit because we will hit the create limit first
 module Test::M1 {
-    use sui::tx_context::{TxContext, Self};
-    use sui::object::{Self, UID};
-    use sui::transfer;
+    use dwallet::tx_context::{TxContext, Self};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
 
     struct Obj has key, store {
         id: UID

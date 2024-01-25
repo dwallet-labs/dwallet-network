@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! A tool to semi automate fire drills. It still requires some manual work today. For example,
 //! 1. update iptables for new tpc/udp ports
@@ -105,7 +105,7 @@ pub async fn get_gas_obj_ref(
 ) -> anyhow::Result<ObjectRef> {
     let coins = sui_client
         .coin_read_api()
-        .get_coins(sui_address, Some("0x2::sui::SUI".into()), None, None)
+        .get_coins(sui_address, Some("0x2::dwlt::DWLT".into()), None, None)
         .await?
         .data;
     let gas_obj = coins.iter().find(|c| c.balance >= minimal_gas_balance);
@@ -316,7 +316,7 @@ async fn update_metadata_on_chain(
     let tx_data = TransactionData::new_move_call(
         sui_address,
         SUI_SYSTEM_PACKAGE_ID,
-        ident_str!("sui_system").to_owned(),
+        ident_str!("dwallet_system").to_owned(),
         ident_str!(function).to_owned(),
         vec![],
         gas_obj_ref,

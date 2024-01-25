@@ -35,7 +35,7 @@ module satoshi_flip::house_data {
 
     use sui::object::{Self, UID};
     use sui::balance::{Self, Balance};
-    use sui::sui::SUI;
+    use sui::dwlt::DWLT;
     use sui::coin::{Self, Coin};
     use sui::package::{Self};
     use sui::tx_context::{Self, TxContext};
@@ -296,7 +296,7 @@ module satoshi_flip::single_player_satoshi {
 
     use sui::coin::{Self, Coin};
     use sui::balance::{Self, Balance};
-    use sui::sui::SUI;
+    use sui::dwlt::DWLT;
     use sui::bls12381::bls12381_min_pk_verify;
     use sui::object::{Self, UID, ID};
     use sui::tx_context::{Self, TxContext};

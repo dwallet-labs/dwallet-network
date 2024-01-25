@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module nfts::discount_coupon_tests {
     use nfts::discount_coupon::{Self, DiscountCoupon};
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
-    use sui::test_scenario::Self;
-    use sui::transfer;
-    use sui::tx_context::TxContext;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::dwlt::DWLT;
+    use dwallet::test_scenario::Self;
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
 
     const ISSUER_ADDRESS: address = @0xA001;
     const USER1_ADDRESS: address = @0xB001;
@@ -22,7 +22,7 @@ module nfts::discount_coupon_tests {
     // be available in Sui genesis state (e.g., mints and distributes
     // coins to users).
     fun init(ctx: &mut TxContext) {
-        let coin = coin::mint_for_testing<SUI>(100, ctx);
+        let coin = coin::mint_for_testing<DWLT>(100, ctx);
         transfer::public_transfer(coin, ISSUER_ADDRESS);
     }
 
@@ -37,7 +37,7 @@ module nfts::discount_coupon_tests {
         // Mint and transfer NFT + top up recipient's address.
         test_scenario::next_tx(scenario, ISSUER_ADDRESS);
         {
-            let coin = test_scenario::take_from_sender<Coin<SUI>>(scenario);
+            let coin = test_scenario::take_from_sender<Coin<DWLT>>(scenario);
             discount_coupon::mint_and_topup(coin, 10, 1648820870, USER1_ADDRESS, test_scenario::ctx(scenario));
         };
 

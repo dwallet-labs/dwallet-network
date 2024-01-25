@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module deepbook::math {
     /// scaling setting for float
@@ -113,7 +113,7 @@ module deepbook::math {
         }
     }
 
-    #[test_only] use sui::test_utils::assert_eq;
+    #[test_only] use dwallet::test_utils::assert_eq;
 
     #[test_only]
     fun pow(base: u128, exponent: u8): u128 {

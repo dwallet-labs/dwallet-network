@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { growthbook } from '_src/shared/experimentation/features';
 import { getSentryConfig } from '_src/shared/sentry-config';

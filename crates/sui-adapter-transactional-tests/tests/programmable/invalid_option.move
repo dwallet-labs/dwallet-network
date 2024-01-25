@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests various invalid vector instantions for types
 
@@ -41,7 +41,7 @@ module test::m1 {
 //> test::m1::option_prim<address>(Input(0));
 
 //# programmable --inputs vector[@0,@0]
-//> test::m1::option_prim<sui::object::ID>(Input(0));
+//> test::m1::option_prim<dwallet::object::ID>(Input(0));
 
 
 // vectors
@@ -71,4 +71,4 @@ module test::m1 {
 //> test::m1::option_prim<vector<address>>(Input(0));
 
 //# programmable --inputs vector[vector[],vector[]]
-//> test::m1::option_prim<vector<sui::object::ID>>(Input(0));
+//> test::m1::option_prim<vector<dwallet::object::ID>>(Input(0));

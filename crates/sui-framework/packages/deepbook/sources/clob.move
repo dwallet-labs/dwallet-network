@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[allow(unused_use)]
 module deepbook::clob {
@@ -7,16 +7,16 @@ module deepbook::clob {
     use std::type_name::{Self, TypeName};
     use std::vector;
 
-    use sui::balance::{Self, Balance};
-    use sui::clock::{Self, Clock};
-    use sui::coin::{Self, Coin, join};
-    use sui::event;
-    use sui::linked_table::{Self, LinkedTable};
-    use sui::object::{Self, UID, ID};
-    use sui::sui::SUI;
-    use sui::table::{Self, Table, contains, add, borrow_mut};
-    use sui::transfer;
-    use sui::tx_context::TxContext;
+    use dwallet::balance::{Self, Balance};
+    use dwallet::clock::{Self, Clock};
+    use dwallet::coin::{Self, Coin, join};
+    use dwallet::event;
+    use dwallet::linked_table::{Self, LinkedTable};
+    use dwallet::object::{Self, UID, ID};
+    use dwallet::dwlt::DWLT;
+    use dwallet::table::{Self, Table, contains, add, borrow_mut};
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
 
     use deepbook::critbit::{Self, CritbitTree, is_empty, borrow_mut_leaf_by_index, min_leaf, remove_leaf_by_index, max_leaf, next_leaf, previous_leaf, borrow_leaf_by_index, borrow_leaf_by_key, find_leaf, insert_leaf};
     use deepbook::custodian::{Self, Custodian, AccountCap};
@@ -182,7 +182,7 @@ module deepbook::clob {
         base_custodian: Custodian<BaseAsset>,
         quote_custodian: Custodian<QuoteAsset>,
         // Stores the fee paid to create this pool. These funds are not accessible.
-        creation_fee: Balance<SUI>,
+        creation_fee: Balance<DWLT>,
         // Deprecated.
         base_asset_trading_fees: Balance<BaseAsset>,
         // Stores the trading fees paid in `QuoteAsset`. These funds are not accessible.
@@ -208,7 +208,7 @@ module deepbook::clob {
         maker_rebate_rate: u64,
         tick_size: u64,
         lot_size: u64,
-        creation_fee: Balance<SUI>,
+        creation_fee: Balance<DWLT>,
         ctx: &mut TxContext,
     ) {
         let base_type_name = type_name::get<BaseAsset>();
@@ -254,7 +254,7 @@ module deepbook::clob {
     public fun create_pool<BaseAsset, QuoteAsset>(
         _tick_size: u64,
         _lot_size: u64,
-        _creation_fee: Coin<SUI>,
+        _creation_fee: Coin<DWLT>,
         _ctx: &mut TxContext,
     ) {
         abort DEPRECATED
@@ -1344,7 +1344,7 @@ module deepbook::clob {
 
     // Note that open orders and quotes can be directly accessed by loading in the entire Pool.
 
-    #[test_only] use sui::test_scenario::{Self, Scenario};
+    #[test_only] use dwallet::test_scenario::{Self, Scenario};
 
     #[test_only] const E_NULL: u64 = 0;
 
@@ -1367,7 +1367,7 @@ module deepbook::clob {
 
         test_scenario::next_tx(scenario, sender);
         {
-            create_pool_<SUI, USD>(
+            create_pool_<DWLT, USD>(
                 taker_fee_rate,
                 maker_rebate_rate,
                 tick_size,

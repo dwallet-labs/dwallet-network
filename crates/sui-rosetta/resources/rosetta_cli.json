@@ -1,6 +1,6 @@
 {
   "network": {
-    "blockchain": "sui",
+    "blockchain": "dwallet",
     "network": "localnet"
   },
   "online_url": "http://rosetta-online:9002",

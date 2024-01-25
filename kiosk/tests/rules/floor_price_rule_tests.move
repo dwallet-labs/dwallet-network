@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module kiosk::floor_price_rule_tests {
-    use sui::tx_context::dummy as ctx;
-    use sui::transfer_policy as policy;
-    use sui::transfer_policy_tests as test;
+    use dwallet::tx_context::dummy as ctx;
+    use dwallet::transfer_policy as policy;
+    use dwallet::transfer_policy_tests as test;
 
     use kiosk::floor_price_rule;
 

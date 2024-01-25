@@ -22,7 +22,7 @@
         balanceChanges {
           owner {
             address
-            balance(type: "0x2::sui::SUI") {
+            balance(type: "0x2::dwlt::DWLT") {
               totalBalance
             }
           }

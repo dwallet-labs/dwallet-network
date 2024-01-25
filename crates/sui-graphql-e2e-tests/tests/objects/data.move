@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses P0=0x0 --accounts A --simulator
 
@@ -8,8 +8,8 @@ module P0::m {
     use std::ascii::{Self, String as ASCII};
     use std::option::{Self, Option};
     use std::string::{Self, String as UTF8};
-    use sui::object::{Self, ID, UID};
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::tx_context::TxContext;
 
     struct Foo has key, store {
         id: UID,

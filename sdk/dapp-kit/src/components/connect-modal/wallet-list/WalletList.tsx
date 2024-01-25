@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { WalletWithRequiredFeatures } from '@mysten/wallet-standard';
 
@@ -31,7 +31,7 @@ export function WalletList({ selectedWalletName, onPlaceholderClick, onSelect }:
 				))
 			) : (
 				<WalletListItem
-					name="Sui Wallet"
+					name="dWallet Wallet"
 					icon={<SuiIcon />}
 					onClick={onPlaceholderClick}
 					isSelected

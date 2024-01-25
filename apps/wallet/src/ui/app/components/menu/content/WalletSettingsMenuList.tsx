@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { API_ENV_TO_INFO } from '_app/ApiProvider';
 import { useNextMenuUrl } from '_components/menu/hooks';
@@ -62,7 +62,7 @@ function MenuList() {
 					weight="semibold"
 				/>
 				<Text variant="bodySmall" weight="medium" color="steel">
-					On Sui Wallet version v{version}
+					On dWallet Wallet version v{version}
 				</Text>
 			</div>
 		</MenuLayout>

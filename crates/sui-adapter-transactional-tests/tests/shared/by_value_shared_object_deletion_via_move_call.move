@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses t1=0x0 t2=0x0 --shared-object-deletion true
 
 //# publish
 
 module t2::o2 {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::TxContext;
-    use sui::sui::SUI;
-    use sui::coin::{Self, Coin};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
+    use dwallet::dwlt::DWLT;
+    use dwallet::coin::{Self, Coin};
 
     struct Obj2 has key, store {
         id: UID,
@@ -56,14 +56,14 @@ module t2::o2 {
 
 // Reshare the shared object after making the move v
 //# programmable --inputs 0 object(7,0) @0x0
-//> 0: t2::o2::id<sui::coin::Coin<sui::sui::SUI>>(Input(1));
+//> 0: t2::o2::id<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Input(1));
 //> 1: SplitCoins(Result(0), [Input(0)]);
 //> 2: TransferObjects([Result(1)], Input(2));
 //> 3: t2::o2::share_coin(Result(0));
 
 // Try to call public_share_object directly -- this should work because the coin has `store`.
 //# programmable --inputs 0 object(7,0) @0x0
-//> 0: t2::o2::id<sui::coin::Coin<sui::sui::SUI>>(Input(1));
+//> 0: t2::o2::id<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Input(1));
 //> 1: SplitCoins(Result(0), [Input(0)]);
 //> 2: TransferObjects([Result(1)], Input(2));
-//> 3: sui::transfer::public_share_object<sui::coin::Coin<sui::sui::SUI>>(Result(0));
+//> 3: dwallet::transfer::public_share_object<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Result(0));

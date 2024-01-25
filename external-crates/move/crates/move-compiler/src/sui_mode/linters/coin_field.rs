@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This analysis flags uses of the sui::coin::Coin struct in fields of other structs. In most cases
 //! it's preferable to use sui::balance::Balance instead to save space.

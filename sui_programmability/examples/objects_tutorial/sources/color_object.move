@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module tutorial::color_object {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct ColorObject has key {
         id: UID,
@@ -74,10 +74,10 @@ module tutorial::color_object {
 
 #[test_only]
 module tutorial::color_object_tests {
-    use sui::test_scenario;
+    use dwallet::test_scenario;
     use tutorial::color_object::{Self, ColorObject};
-    use sui::object;
-    use sui::tx_context;
+    use dwallet::object;
+    use dwallet::tx_context;
 
     // == Tests covered in Chapter 1 ==
 

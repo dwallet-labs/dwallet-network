@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use async_trait::async_trait;
 use jsonrpsee::rpc_params;
@@ -95,11 +95,11 @@ impl NativeTransferTest {
         }
         BalanceChangeChecker::new()
             .owner(Owner::AddressOwner(recipient))
-            .coin_type("0x2::sui::SUI")
+            .coin_type("0x2::dwlt::DWLT")
             .check(&balance_changes.remove(0));
         BalanceChangeChecker::new()
             .owner(Owner::AddressOwner(signer))
-            .coin_type("0x2::sui::SUI")
+            .coin_type("0x2::dwlt::DWLT")
             .check(&balance_changes.remove(0));
         // Verify fullnode observes the txn
         ctx.let_fullnode_sync(vec![response.digest], 5).await;

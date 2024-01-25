@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module sui_system::genesis {
+module dwallet_system::genesis {
     use std::vector;
-    use sui::balance::{Self, Balance};
-    use sui::object::UID;
-    use sui::sui::SUI;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::object::UID;
+    use dwallet::dwlt::DWLT;
+    use dwallet::tx_context::{Self, TxContext};
     use std::option::Option;
 
-    use sui_system::sui_system;
-    use sui_system::validator;
+    use dwallet_system::dwallet_system;
+    use dwallet_system::validator;
 
     struct GenesisValidatorMetadata has drop, copy {
         name: vector<u8>,
@@ -64,8 +64,8 @@ module sui_system::genesis {
     }
 
     fun create(
-        sui_system_state_id: UID,
-        sui_supply: Balance<SUI>,
+        dwallet_system_state_id: UID,
+        sui_supply: Balance<DWLT>,
         genesis_chain_parameters: GenesisChainParameters,
         genesis_validators: vector<GenesisValidatorMetadata>,
         _token_distribution_schedule: TokenDistributionSchedule,
@@ -113,8 +113,8 @@ module sui_system::genesis {
             i = i + 1;
         };
 
-        sui_system::create(
-            sui_system_state_id,
+        dwallet_system::create(
+            dwallet_system_state_id,
             validators,
             sui_supply,     // storage_fund
             genesis_chain_parameters.protocol_version,

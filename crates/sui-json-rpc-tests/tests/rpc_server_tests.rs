@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -360,19 +360,19 @@ async fn test_get_coins() -> Result<(), anyhow::Error> {
     assert!(!result.has_next_page);
 
     let result: CoinPage = http_client
-        .get_coins(address, Some("0x2::sui::TestCoin".into()), None, None)
+        .get_coins(address, Some("0x2::dwallet::TestCoin".into()), None, None)
         .await?;
     assert_eq!(0, result.data.len());
 
     let result: CoinPage = http_client
-        .get_coins(address, Some("0x2::sui::SUI".into()), None, None)
+        .get_coins(address, Some("0x2::dwlt::DWLT".into()), None, None)
         .await?;
     assert_eq!(5, result.data.len());
     assert!(!result.has_next_page);
 
     // Test paging
     let result: CoinPage = http_client
-        .get_coins(address, Some("0x2::sui::SUI".into()), None, Some(3))
+        .get_coins(address, Some("0x2::dwlt::DWLT".into()), None, Some(3))
         .await?;
     assert_eq!(3, result.data.len());
     assert!(result.has_next_page);
@@ -380,7 +380,7 @@ async fn test_get_coins() -> Result<(), anyhow::Error> {
     let result: CoinPage = http_client
         .get_coins(
             address,
-            Some("0x2::sui::SUI".into()),
+            Some("0x2::dwlt::DWLT".into()),
             result.next_cursor,
             Some(3),
         )
@@ -391,7 +391,7 @@ async fn test_get_coins() -> Result<(), anyhow::Error> {
     let result: CoinPage = http_client
         .get_coins(
             address,
-            Some("0x2::sui::SUI".into()),
+            Some("0x2::dwlt::DWLT".into()),
             result.next_cursor,
             None,
         )
@@ -409,7 +409,7 @@ async fn test_get_balance() -> Result<(), anyhow::Error> {
     let address = cluster.get_address_0();
 
     let result: Balance = http_client.get_balance(address, None).await?;
-    assert_eq!("0x2::sui::SUI", result.coin_type);
+    assert_eq!("0x2::dwlt::DWLT", result.coin_type);
     assert_eq!(
         (DEFAULT_NUMBER_OF_OBJECT_PER_ACCOUNT as u64 * DEFAULT_GAS_AMOUNT) as u128,
         result.total_balance

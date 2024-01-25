@@ -1,19 +1,19 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses t1=0x0 t2=0x0 --shared-object-deletion true
 
 //# publish
 
 module t2::o2 {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
     use std::vector;
-    use sui::dynamic_field as df;
-    use sui::dynamic_object_field as dof;
-    use sui::sui::SUI;
-    use sui::coin::{Self, Coin};
+    use dwallet::dynamic_field as df;
+    use dwallet::dynamic_object_field as dof;
+    use dwallet::dwlt::DWLT;
+    use dwallet::coin::{Self, Coin};
 
     struct Obj2 has key, store {
         id: UID,
@@ -176,7 +176,7 @@ module t2::o2 {
 //> 1: t2::o2::pop_coin(Result(0));
 //> 2: SplitCoins(Result(1), [Input(0)]);
 //> 3: TransferObjects([Result(2)], Input(2));
-//> 4: sui::transfer::public_share_object(Input(1));
+//> 4: dwallet::transfer::public_share_object(Input(1));
 
 // Try to reshare the shared object -- this should fail since the input was
 // used for the `MakeMoveVec` call

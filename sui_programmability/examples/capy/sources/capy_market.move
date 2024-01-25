@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// CapyMarket for Capy-related objects.
 /// Allows selling  and accessories.
@@ -8,14 +8,14 @@
 /// and can be linked off-chain with additional tooling. Kept for usability
 /// and development speed purposes.
 module capy::capy_market {
-    use sui::object::{Self, UID, ID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
-    use sui::pay;
-    use sui::sui::SUI;
-    use sui::event::emit;
-    use sui::coin::{Self, Coin};
-    use sui::dynamic_object_field as dof;
+    use dwallet::object::{Self, UID, ID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::pay;
+    use dwallet::dwlt::DWLT;
+    use dwallet::event::emit;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::dynamic_object_field as dof;
 
     use std::vector as vec;
 
@@ -187,7 +187,7 @@ module capy::capy_market {
     ) {
         let sender = tx_context::sender(ctx);
         assert!(dof::exists_(&market.id, sender), ENoProfits);
-        let profit = dof::remove<address, Coin<SUI>>(&mut market.id, sender);
+        let profit = dof::remove<address, Coin<DWLT>>(&mut market.id, sender);
 
         emit(ProfitsCollected<T> {
             owner: sender,
@@ -203,7 +203,7 @@ module capy::capy_market {
     public fun purchase<T: key + store>(
         market: &mut CapyMarket<T>,
         listing_id: ID,
-        paid: Coin<SUI>,
+        paid: Coin<DWLT>,
         ctx: &TxContext
     ): T {
         let Listing { id, price, owner } = dof::remove<ID, Listing>(&mut market.id, listing_id);
@@ -221,7 +221,7 @@ module capy::capy_market {
         // if there's a balance attached to the marketplace - merge it with paid.
         // if not -> leave a Coin hanging as a dynamic field of the marketplace.
         if (dof::exists_(&market.id, owner)) {
-            coin::join(dof::borrow_mut<address, Coin<SUI>>(&mut market.id, owner), paid)
+            coin::join(dof::borrow_mut<address, Coin<DWLT>>(&mut market.id, owner), paid)
         } else {
             dof::add(&mut market.id, owner, paid)
         };
@@ -234,7 +234,7 @@ module capy::capy_market {
     entry fun purchase_and_take<T: key + store>(
         market: &mut CapyMarket<T>,
         listing_id: ID,
-        paid: Coin<SUI>,
+        paid: Coin<DWLT>,
         ctx: &TxContext
     ) {
         transfer::public_transfer(
@@ -247,7 +247,7 @@ module capy::capy_market {
     entry fun purchase_and_take_mut<T: key + store>(
         market: &mut CapyMarket<T>,
         listing_id: ID,
-        paid: &mut Coin<SUI>,
+        paid: &mut Coin<DWLT>,
         ctx: &mut TxContext
     ) {
         let listing = dof::borrow<ID, Listing>(&market.id, *&listing_id);
@@ -259,7 +259,7 @@ module capy::capy_market {
     entry fun purchase_and_take_mul_coins<T: key + store>(
         market: &mut CapyMarket<T>,
         listing_id: ID,
-        coins: vector<Coin<SUI>>,
+        coins: vector<Coin<DWLT>>,
         ctx: &mut TxContext
     ) {
         let listing = dof::borrow<ID, Listing>(&market.id, *&listing_id);

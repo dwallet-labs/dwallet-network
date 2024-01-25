@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! Tests in here are based on binary representation of modules taken from production. Those tests
 //! may fail over time if the representation becomes out of date, then they can be removed.

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Heading } from '_app/shared/heading';
 import { Text } from '_app/shared/text';
@@ -44,7 +44,7 @@ function AppsPlayGround() {
 		<>
 			<div className="flex justify-center mb-4">
 				<Heading variant="heading6" color="gray-90" weight="semibold">
-					Sui Apps
+					dWallet Apps
 				</Heading>
 			</div>
 
@@ -54,7 +54,7 @@ function AppsPlayGround() {
 				<div className="p-4 bg-gray-40 rounded-xl">
 					<Text variant="pBodySmall" color="gray-75" weight="normal">
 						Apps below are actively curated but do not indicate any endorsement or relationship with
-						Sui Wallet. Please DYOR.
+						dWallet Wallet. Please DYOR.
 					</Text>
 				</div>
 			) : null}

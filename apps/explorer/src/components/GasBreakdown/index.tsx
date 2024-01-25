@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import {
 	CoinFormat,
@@ -41,7 +41,7 @@ function GasAmount({ amount }: GasProps) {
 
 			<div className="flex flex-wrap items-center text-body font-medium text-steel">
 				({BigInt(amount)?.toLocaleString()}
-				<div className="ml-0.5 text-subtitleSmall font-medium text-steel">MIST</div>)
+				<div className="ml-0.5 text-subtitleSmall font-medium text-steel">nDWLT</div>)
 			</div>
 		</div>
 	);
@@ -70,7 +70,7 @@ function TotalGasAmount({ amount }: GasProps) {
 					{BigInt(amount)?.toLocaleString()}
 				</Heading>
 				<Text variant="body/medium" color="steel">
-					MIST
+					nDWLT
 				</Text>
 			</div>
 		</div>

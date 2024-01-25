@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { toUtf8OrB64 } from '_src/shared/utils';
 import LoadingIndicator from '_src/ui/app/components/loading/LoadingIndicator';

@@ -1,12 +1,12 @@
 // valid
 module a::m {
-    use sui::object;
+    use dwallet::object;
     struct S has key {
         id: object::UID
     }
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }

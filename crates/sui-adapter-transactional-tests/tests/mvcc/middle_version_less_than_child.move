@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests accessing the versions of a child of a child
 
@@ -8,9 +8,9 @@
 //# publish
 
 module test::m {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::dynamic_field as field;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::dynamic_field as field;
 
     struct Obj has key, store {
         id: UID,

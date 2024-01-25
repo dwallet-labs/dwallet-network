@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{
     fmt::{Debug, Display, Formatter, Write},
@@ -499,7 +499,7 @@ pub enum SuiClientCommands {
     /// Transfer SUI, and pay gas with the same SUI coin object.
     /// If amount is specified, only the amount is transferred; otherwise the entire object
     /// is transferred.
-    #[clap(name = "transfer-sui")]
+    #[clap(name = "transfer-dwlt")]
     TransferSui {
         /// Recipient address (or its alias if it's an address in the keystore)
         #[clap(long)]

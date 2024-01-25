@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use async_graphql::*;
 use sui_json_rpc_types::BalanceChange as StoredBalanceChange;
@@ -29,7 +29,7 @@ impl BalanceChange {
         }
     }
 
-    /// The inner type of the coin whose balance has changed (e.g. `0x2::sui::SUI`).
+    /// The inner type of the coin whose balance has changed (e.g. `0x2::dwlt::DWLT`).
     async fn coin_type(&self) -> Option<MoveType> {
         Some(MoveType::new(self.stored.coin_type.clone()))
     }

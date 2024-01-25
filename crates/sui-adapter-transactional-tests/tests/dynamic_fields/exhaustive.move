@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // similar to dynamic_field_tests but over multiple transactions, as this uses a different code path
 // test remove with the wrong value type
@@ -9,9 +9,9 @@
 //# publish
 module a::m {
 
-use sui::dynamic_field::{add, exists_with_type, borrow, borrow_mut, remove};
-use sui::object;
-use sui::tx_context::{sender, TxContext};
+use dwallet::dynamic_field::{add, exists_with_type, borrow, borrow_mut, remove};
+use dwallet::object;
+use dwallet::tx_context::{sender, TxContext};
 
 struct Obj has key {
     id: object::UID,
@@ -19,7 +19,7 @@ struct Obj has key {
 
 entry fun t0(ctx: &mut TxContext) {
     let id = object::new(ctx);
-    sui::transfer::transfer(Obj { id }, sender(ctx))
+    dwallet::transfer::transfer(Obj { id }, sender(ctx))
 }
 
 entry fun t1(obj: &mut Obj) {

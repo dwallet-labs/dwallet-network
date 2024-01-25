@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type Meta, type StoryObj } from '@storybook/react';
 
@@ -12,7 +12,7 @@ export default {
 export const defaultAmount: StoryObj<StatAmountProps> = {
 	args: {
 		amount: 9740991,
-		symbol: 'SUI',
+		symbol: 'DWLT',
 		dollarAmount: 123.56,
 		date: 1667942429177,
 	},

@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses Test=0x0 A=0x42
 
 //# publish
 module Test::M1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::transfer;
-    use sui::coin::Coin;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::transfer;
+    use dwallet::coin::Coin;
 
     struct Object has key, store {
         id: UID,

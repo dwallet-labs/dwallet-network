@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module locked_stake::locked_stake_tests {
 
-    use sui_system::governance_test_utils::{advance_epoch, set_up_sui_system_state};
-    use sui_system::sui_system::{Self, SuiSystemState};
-    use sui::coin;
-    use sui::tx_context;
-    use sui::test_scenario;
-    use sui::test_utils::{assert_eq, destroy};
-    use sui::vec_map;
-    use sui::balance;
+    use dwallet_system::governance_test_utils::{advance_epoch, set_up_dwallet_system_state};
+    use dwallet_system::dwallet_system::{Self, DWalletSystemState};
+    use dwallet::coin;
+    use dwallet::tx_context;
+    use dwallet::test_scenario;
+    use dwallet::test_utils::{assert_eq, destroy};
+    use dwallet::vec_map;
+    use dwallet::balance;
     use locked_stake::locked_stake as ls;
     use locked_stake::epoch_time_lock;
 
@@ -23,7 +23,7 @@ module locked_stake::locked_stake_tests {
         let scenario_val = test_scenario::begin(@0x0);
         let scenario = &mut scenario_val;
 
-        set_up_sui_system_state(vector[@0x1, @0x2, @0x3]);
+        set_up_dwallet_system_state(vector[@0x1, @0x2, @0x3]);
 
         // Advance epoch twice so we are now at epoch 2.
         advance_epoch(scenario);
@@ -43,7 +43,7 @@ module locked_stake::locked_stake_tests {
         let scenario_val = test_scenario::begin(@0x0);
         let scenario = &mut scenario_val;
 
-        set_up_sui_system_state(vector[@0x1, @0x2, @0x3]);
+        set_up_dwallet_system_state(vector[@0x1, @0x2, @0x3]);
 
         let ls = ls::new(10, test_scenario::ctx(scenario));
 
@@ -53,7 +53,7 @@ module locked_stake::locked_stake_tests {
         assert_eq(ls::sui_balance(&ls), 100 * MIST_PER_SUI);
 
         test_scenario::next_tx(scenario, @0x1);
-        let system_state = test_scenario::take_shared<SuiSystemState>(scenario);
+        let system_state = test_scenario::take_shared<DWalletSystemState>(scenario);
 
         // Stake 10 of the 100 SUI.
         ls::stake(&mut ls, &mut system_state, 10 * MIST_PER_SUI, @0x1, test_scenario::ctx(scenario));
@@ -63,11 +63,11 @@ module locked_stake::locked_stake_tests {
         assert_eq(vec_map::size(ls::staked_sui(&ls)), 1);
 
         test_scenario::next_tx(scenario, @0x1);
-        let system_state = test_scenario::take_shared<SuiSystemState>(scenario);
+        let system_state = test_scenario::take_shared<DWalletSystemState>(scenario);
         let ctx = test_scenario::ctx(scenario);
 
         // Create a StakedSui object and add it to the LockedStake object.
-        let staked_sui = sui_system::request_add_stake_non_entry(
+        let staked_sui = dwallet_system::request_add_stake_non_entry(
             &mut system_state, coin::mint_for_testing(20 * MIST_PER_SUI, ctx), @0x2, ctx);
         test_scenario::return_shared(system_state);
 
@@ -78,7 +78,7 @@ module locked_stake::locked_stake_tests {
 
         test_scenario::next_tx(scenario, @0x1);
         let (staked_sui_id, _) = vec_map::get_entry_by_idx(ls::staked_sui(&ls), 0);
-        let system_state = test_scenario::take_shared<SuiSystemState>(scenario);
+        let system_state = test_scenario::take_shared<DWalletSystemState>(scenario);
 
         // Unstake both stake objects
         ls::unstake(&mut ls, &mut system_state, *staked_sui_id, test_scenario::ctx(scenario));
@@ -88,7 +88,7 @@ module locked_stake::locked_stake_tests {
 
         test_scenario::next_tx(scenario, @0x1);
         let (staked_sui_id, _) = vec_map::get_entry_by_idx(ls::staked_sui(&ls), 0);
-        let system_state = test_scenario::take_shared<SuiSystemState>(scenario);
+        let system_state = test_scenario::take_shared<DWalletSystemState>(scenario);
         ls::unstake(&mut ls, &mut system_state, *staked_sui_id, test_scenario::ctx(scenario));
         test_scenario::return_shared(system_state);
         assert_eq(ls::sui_balance(&ls), 120 * MIST_PER_SUI);
@@ -103,7 +103,7 @@ module locked_stake::locked_stake_tests {
         let scenario_val = test_scenario::begin(@0x0);
         let scenario = &mut scenario_val;
 
-        set_up_sui_system_state(vector[@0x1, @0x2, @0x3]);
+        set_up_dwallet_system_state(vector[@0x1, @0x2, @0x3]);
 
         let ls = ls::new(2, test_scenario::ctx(scenario));
 
@@ -112,7 +112,7 @@ module locked_stake::locked_stake_tests {
         assert_eq(ls::sui_balance(&ls), 100 * MIST_PER_SUI);
 
         test_scenario::next_tx(scenario, @0x1);
-        let system_state = test_scenario::take_shared<SuiSystemState>(scenario);
+        let system_state = test_scenario::take_shared<DWalletSystemState>(scenario);
         ls::stake(&mut ls, &mut system_state, 10 * MIST_PER_SUI, @0x1, test_scenario::ctx(scenario));
         test_scenario::return_shared(system_state);
 
@@ -136,7 +136,7 @@ module locked_stake::locked_stake_tests {
         let scenario_val = test_scenario::begin(@0x0);
         let scenario = &mut scenario_val;
 
-        set_up_sui_system_state(vector[@0x1, @0x2, @0x3]);
+        set_up_dwallet_system_state(vector[@0x1, @0x2, @0x3]);
 
         let ls = ls::new(2, test_scenario::ctx(scenario));
         let (staked_sui, sui_balance) = ls::unlock(ls, test_scenario::ctx(scenario));

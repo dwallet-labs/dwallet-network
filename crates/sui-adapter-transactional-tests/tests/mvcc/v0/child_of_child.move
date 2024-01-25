@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests accessing the versions of a child of a child
 
@@ -9,9 +9,9 @@
 
 module test::m {
     use std::option::{Self, Option};
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::dynamic_object_field as ofield;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::dynamic_object_field as ofield;
 
     struct Obj has key, store {
         id: UID,

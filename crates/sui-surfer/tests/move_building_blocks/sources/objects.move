@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module move_building_blocks::objects {
-    use sui::object::UID;
+    use dwallet::object::UID;
     use std::option::Option;
-    use sui::table::Table;
-    use sui::tx_context::TxContext;
-    use sui::object;
+    use dwallet::table::Table;
+    use dwallet::tx_context::TxContext;
+    use dwallet::object;
     use std::option;
-    use sui::table;
-    use sui::transfer;
-    use sui::tx_context;
+    use dwallet::table;
+    use dwallet::transfer;
+    use dwallet::tx_context;
 
     struct Object has key, store {
         id: UID,

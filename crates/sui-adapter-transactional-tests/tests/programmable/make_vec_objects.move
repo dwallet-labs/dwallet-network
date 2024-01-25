@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests various vector instantions with objects
 
@@ -7,8 +7,8 @@
 
 //# publish
 module test::m1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
     use std::vector;
 
     struct Pub has key, store {

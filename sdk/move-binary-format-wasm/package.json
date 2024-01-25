@@ -11,7 +11,7 @@
 		"test": "vitest run"
 	},
 	"author": "Mysten Labs <build@mystenlabs.com>",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
 		"typescript": "^5.1.6",

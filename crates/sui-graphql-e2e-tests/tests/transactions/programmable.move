@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses P0=0x0 P1=0x0 --accounts A --simulator
 
 //# publish --upgradeable --sender A
 module P0::m {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
 
     struct Foo has key, store {
         id: UID,
@@ -197,8 +197,8 @@ fragment ComprehensivePTB on ProgrammableTransactionBlock {
 
 //# upgrade --package P0 --upgrade-capability 1,1 --sender A
 module P0::m {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
 
     struct Foo has key, store {
         id: UID,

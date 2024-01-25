@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// An implementation of a simple `Denylist` for the Closed Loop system. For
 /// demonstration purposes it is implemented as a `VecSet`, however for a larger
@@ -16,9 +16,9 @@
 module regulated_token::denylist_rule {
     use std::option;
     use std::vector;
-    use sui::bag::{Self, Bag};
-    use sui::tx_context::TxContext;
-    use sui::token::{Self, TokenPolicy, TokenPolicyCap, ActionRequest};
+    use dwallet::bag::{Self, Bag};
+    use dwallet::tx_context::TxContext;
+    use dwallet::token::{Self, TokenPolicy, TokenPolicyCap, ActionRequest};
 
     /// Trying to `verify` but the sender or the recipient is on the denylist.
     const EUserBlocked: u64 = 0;

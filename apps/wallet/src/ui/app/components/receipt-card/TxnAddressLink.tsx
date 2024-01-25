@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import ExplorerLink from '_components/explorer-link';
 import { ExplorerLinkType } from '_components/explorer-link/ExplorerLinkType';
@@ -15,7 +15,7 @@ export function TxnAddressLink({ address }: TxnAddressLinkProps) {
 		<ExplorerLink
 			type={ExplorerLinkType.address}
 			address={address}
-			title="View on Sui Explorer"
+			title="View on dWallet Explorer"
 			showIcon={false}
 		>
 			{isSuiNSName(address) ? address : formatAddress(address)}

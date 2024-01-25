@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
     schema_v2::{tx_calls, tx_changed_objects, tx_input_objects, tx_recipients, tx_senders},

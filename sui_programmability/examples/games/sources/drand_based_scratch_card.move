@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// A basic game that depends on randomness from drand (chained mode). See details on how to work with drand in
 /// drand_based_lottery.move.
@@ -25,15 +25,15 @@
 ///
 module games::drand_based_scratch_card {
     use games::drand_lib;
-    use sui::balance::Balance;
-    use sui::balance::{Self};
-    use sui::coin::{Self, Coin};
-    use sui::hmac::hmac_sha3_256;
-    use sui::object::{Self, ID, UID};
+    use dwallet::balance::Balance;
+    use dwallet::balance::{Self};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::hmac::hmac_sha3_256;
+    use dwallet::object::{Self, ID, UID};
 
-    use sui::sui::SUI;
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::dwlt::DWLT;
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     /// Error codes
     const EInvalidDeposit: u64 = 0;
@@ -57,7 +57,7 @@ module games::drand_based_scratch_card {
     struct Reward has key {
         id: UID,
         game_id: ID,
-        balance: Balance<SUI>,
+        balance: Balance<DWLT>,
     }
 
     /// Ticket represents a participant in a single game.
@@ -79,7 +79,7 @@ module games::drand_based_scratch_card {
     /// The reward must be a positive balance, dividable by reward_factor. reward/reward_factor will be the ticket
     /// price. base_drand_round is the current drand round.
     public entry fun create(
-        reward: Coin<SUI>,
+        reward: Coin<DWLT>,
         reward_factor: u64,
         base_drand_round: u64,
         ctx: &mut TxContext
@@ -107,7 +107,7 @@ module games::drand_based_scratch_card {
     /// Buy a ticket for a specific game, costing reward/reward_factor SUI. Can be called only during the epoch in which
     /// the game was created.
     /// Note that the reward might have been withdrawn already. It's the user's responsibility to verify that.
-    public entry fun buy_ticket(coin: Coin<SUI>, game: &Game, ctx: &mut TxContext) {
+    public entry fun buy_ticket(coin: Coin<DWLT>, game: &Game, ctx: &mut TxContext) {
         assert!(coin::value(&coin) * game.reward_factor == game.reward_amount, EInvalidDeposit);
         assert!(tx_context::epoch(ctx) == game.base_epoch, EInvalidEpoch);
         let ticket = Ticket {

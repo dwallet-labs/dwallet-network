@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses t1=0x0 t2=0x0 t3=0x0 --accounts A
 
 //# publish
 
 module t3::o3 {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct Obj3 has key, store {
         id: UID,
@@ -23,9 +23,9 @@ module t3::o3 {
 //# publish --dependencies t3
 
 module t2::o2 {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
     use t3::o3::Obj3;
 
     struct Obj2 has key, store {
@@ -46,7 +46,7 @@ module t2::o2 {
 
     fun new(child: Obj3, ctx: &mut TxContext): Obj2 {
         let id = object::new(ctx);
-        sui::dynamic_object_field::add(&mut id, 0, child);
+        dwallet::dynamic_object_field::add(&mut id, 0, child);
         Obj2 { id }
     }
 }
@@ -55,9 +55,9 @@ module t2::o2 {
 //# publish --dependencies t2 t3
 
 module t1::o1 {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
     use t2::o2::Obj2;
     use t3::o3::Obj3;
 
@@ -76,7 +76,7 @@ module t1::o1 {
 
     fun new(child: Obj2, ctx: &mut TxContext): Obj1 {
         let id = object::new(ctx);
-        sui::dynamic_object_field::add(&mut id, 0, child);
+        dwallet::dynamic_object_field::add(&mut id, 0, child);
         Obj1 { id }
     }
 }

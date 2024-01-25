@@ -71,7 +71,7 @@ type Address implements ObjectOwner {
 	"""
 	The coin objects for the given address.
 	The type field is a string of the inner type of the coin
-	by which to filter (e.g., 0x2::sui::SUI).
+	by which to filter (e.g., 0x2::dwlt::DWLT).
 	"""
 	coinConnection(first: Int, after: String, last: Int, before: String, type: String): CoinConnection
 	"""
@@ -149,7 +149,7 @@ type AvailableRange {
 
 type Balance {
 	"""
-	Coin type for the balance, such as 0x2::sui::SUI
+	Coin type for the balance, such as 0x2::dwlt::DWLT
 	"""
 	coinType: MoveType
 	"""
@@ -171,7 +171,7 @@ type BalanceChange {
 	"""
 	owner: Owner
 	"""
-	The inner type of the coin whose balance has changed (e.g. `0x2::sui::SUI`).
+	The inner type of the coin whose balance has changed (e.g. `0x2::dwlt::DWLT`).
 	"""
 	coinType: MoveType
 	"""
@@ -750,7 +750,7 @@ input EventFilter {
 	
 	Generic types can be queried by either the generic type name, e.g.
 	`0x2::coin::Coin`, or by the full type name, such as
-	`0x2::coin::Coin<0x2::sui::SUI>`.
+	`0x2::coin::Coin<0x2::dwlt::DWLT>`.
 	"""
 	eventType: String
 }
@@ -1459,7 +1459,7 @@ type Object implements ObjectOwner {
 	The coin objects for the given address.
 	
 	The type field is a string of the inner type of the coin by which to filter
-	(e.g. `0x2::sui::SUI`). If no type is provided, it will default to `0x2::sui::SUI`.
+	(e.g. `0x2::dwlt::DWLT`). If no type is provided, it will default to `0x2::dwlt::DWLT`.
 	"""
 	coinConnection(first: Int, after: String, last: Int, before: String, type: String): CoinConnection
 	"""
@@ -1561,7 +1561,7 @@ input ObjectFilter {
 	type name.
 	
 	Generic types can be queried by either the generic type name, e.g. `0x2::coin::Coin`, or by
-	the full type name, such as `0x2::coin::Coin<0x2::sui::SUI>`.
+	the full type name, such as `0x2::coin::Coin<0x2::dwlt::DWLT>`.
 	"""
 	type: String
 	"""
@@ -1678,7 +1678,7 @@ type Owner implements ObjectOwner {
 	The coin objects for the given address or object.
 	
 	The type field is a string of the inner type of the coin by which to filter
-	(e.g. `0x2::sui::SUI`). If no type is provided, it will default to `0x2::sui::SUI`.
+	(e.g. `0x2::dwlt::DWLT`). If no type is provided, it will default to `0x2::dwlt::DWLT`.
 	"""
 	coinConnection(first: Int, after: String, last: Int, before: String, type: String): CoinConnection
 	"""
@@ -1896,7 +1896,7 @@ type Query {
 	The coin objects that exist in the network.
 	
 	The type field is a string of the inner type of the coin by which to filter
-	(e.g. `0x2::sui::SUI`). If no type is provided, it will default to `0x2::sui::SUI`.
+	(e.g. `0x2::dwlt::DWLT`). If no type is provided, it will default to `0x2::dwlt::DWLT`.
 	"""
 	coinConnection(first: Int, after: String, last: Int, before: String, type: String): CoinConnection
 	checkpoints(first: Int, after: String, last: Int, before: String): CheckpointConnection!

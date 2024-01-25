@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { KioskListing } from '@mysten/kiosk';
@@ -42,7 +42,7 @@ export function DisplayObject({ item, listing = null, children }: DisplayObject)
 
 				{listing && listing.price && (
 					<div className="absolute left-2 top-2 bg-primary text-white px-2 py-1 rounded-lg">
-						{price} SUI
+						{price} DWLT
 					</div>
 				)}
 

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! IndexStore supports creation of various ancillary indexes of state in SuiDataStore.
 //! The main user of this data is the explorer.

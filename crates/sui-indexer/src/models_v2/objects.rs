@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
@@ -427,7 +427,7 @@ mod tests {
         let stored_obj = StoredObject::from(indexed_obj);
 
         let sui_coin = SuiCoin::try_from(stored_obj).unwrap();
-        assert_eq!(sui_coin.coin_type, "0x2::sui::SUI");
+        assert_eq!(sui_coin.coin_type, "0x2::dwlt::DWLT");
     }
 
     #[test]
@@ -442,12 +442,12 @@ mod tests {
             coin_balance: 100,
         };
         let balance = Balance::try_from(test_balance).unwrap();
-        assert_eq!(balance.coin_type, "0x2::sui::SUI");
+        assert_eq!(balance.coin_type, "0x2::dwlt::DWLT");
     }
 
     #[test]
     fn test_vec_of_coin_sui_conversion() {
-        // 0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::sui::SUI>>>
+        // 0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::dwlt::DWLT>>>
         let vec_coins_type = TypeTag::Vector(Box::new(
             Coin::type_(TypeTag::Struct(Box::new(GAS::type_()))).into(),
         ));

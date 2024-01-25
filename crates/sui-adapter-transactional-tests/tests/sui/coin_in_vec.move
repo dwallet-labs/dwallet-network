@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses test=0x0 --accounts A
 
@@ -7,11 +7,11 @@
 
 module test::coin_in_vec {
     use std::vector;
-    use sui::coin::Coin;
-    use sui::object::{Self, UID};
-    use sui::sui::SUI;
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::coin::Coin;
+    use dwallet::object::{Self, UID};
+    use dwallet::dwlt::DWLT;
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct Wrapper has key {
         id: UID,

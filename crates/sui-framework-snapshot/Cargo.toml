@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Mysten Labs <eng@mystenlabs.com>"]
 description = "Tool to create a bytecode snapshot of the current sui-framework"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 
 [dependencies]

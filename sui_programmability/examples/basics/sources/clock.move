@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This example demonstrates reading a clock object.
 /// Current time is emitted as an event in the get_time transaction
 module basics::clock {
-    use sui::clock::{Self, Clock};
-    use sui::event;
-    use sui::tx_context::TxContext;
+    use dwallet::clock::{Self, Clock};
+    use dwallet::event;
+    use dwallet::tx_context::TxContext;
 
     struct TimeEvent has copy, drop {
         timestamp_ms: u64,

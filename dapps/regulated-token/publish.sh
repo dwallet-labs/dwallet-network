@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 PUBLISH=$(sui client publish --gas-budget 100000000 --skip-dependency-verification --with-unpublished-dependencies --json);
 

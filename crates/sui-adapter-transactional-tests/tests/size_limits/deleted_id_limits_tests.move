@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Test limits on number of deleted IDs
 
@@ -10,8 +10,8 @@
 /// Test deleted id limits enforced
 /// Right now, we should never be able to hit the delete limit because we will hit the create limit first
 module Test::M1 {
-    use sui::tx_context::TxContext;
-    use sui::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
     use std::vector;
 
     public entry fun delete_n_ids(n: u64, ctx: &mut TxContext) {

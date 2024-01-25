@@ -14,7 +14,7 @@ The following example creates a shop to sell digital donuts. Everyone needs acce
 ```move
 module examples::donuts {
     use sui::transfer;
-    use sui::sui::SUI;
+    use sui::dwlt::DWLT;
     use sui::coin::{Self, Coin};
     use sui::object::{Self, UID};
     use sui::balance::{Self, Balance};

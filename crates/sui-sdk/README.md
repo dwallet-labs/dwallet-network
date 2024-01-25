@@ -200,4 +200,4 @@ See the programmable transactions [example](https://github.com/MystenLabs/sui/bl
 
 ## License
 
-[SPDX-License-Identifier: Apache-2.0](https://github.com/MystenLabs/sui/blob/main/LICENSE) 
+[SPDX-License-Identifier: BSD-3-Clause-Clear](https://github.com/MystenLabs/sui/blob/main/LICENSE) 

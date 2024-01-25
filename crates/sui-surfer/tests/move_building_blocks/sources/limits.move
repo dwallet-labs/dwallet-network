@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module move_building_blocks::limits {
-    use sui::object::UID;
-    use sui::object;
-    use sui::tx_context::TxContext;
+    use dwallet::object::UID;
+    use dwallet::object;
+    use dwallet::tx_context::TxContext;
     use std::vector;
-    use sui::transfer;
-    use sui::tx_context;
-    use sui::dynamic_field;
+    use dwallet::transfer;
+    use dwallet::tx_context;
+    use dwallet::dynamic_field;
 
     struct ObjectWithVector has key, store {
         id: UID,

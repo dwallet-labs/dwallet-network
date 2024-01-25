@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // This test demonstrates that one can search for events emitted by a package or module.
 // The emitting module is where the entrypoint function is defined -
@@ -9,7 +9,7 @@
 
 //# publish
 module Test::M1 {
-    use sui::event;
+    use dwallet::event;
 
     struct EventA has copy, drop {
         new_value: u64

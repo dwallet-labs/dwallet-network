@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Typed wrappers around Sui object IDs
 /// While not always necessary, this is helpful for indicating the type of an object, particularly
@@ -16,7 +16,7 @@
 /// We then know that `child1` is an ID for an object of type `A` and that `child2` is an `ID`
 /// of an object of type `B`
 module utils::typed_id {
-    use sui::object::{Self, ID};
+    use dwallet::object::{Self, ID};
 
     /// An ID of an of type `T`. See `ID` for more details
     /// By construction, it is guaranteed that the `ID` represents an object of type `T`

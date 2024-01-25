@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // invalid, the adapter should yell that the invoked functions have the wrong visibility
 
@@ -7,7 +7,7 @@
 
 //# publish
 module Test::M {
-    use sui::tx_context::TxContext;
+    use dwallet::tx_context::TxContext;
 
     public(friend) fun t2(_: &mut TxContext) {
         abort 0

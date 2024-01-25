@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module sui_system::validator {
+module dwallet_system::validator {
     use std::ascii;
 
-    use sui::tx_context::TxContext;
+    use dwallet::tx_context::TxContext;
     use std::string::{Self, String};
-    use sui::bag::{Self, Bag};
-    use sui::balance::{Self, Balance};
-    use sui::sui::SUI;
+    use dwallet::bag::{Self, Bag};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::dwlt::DWLT;
 
-    friend sui_system::genesis;
-    friend sui_system::sui_system_state_inner;
-    friend sui_system::validator_wrapper;
+    friend dwallet_system::genesis;
+    friend dwallet_system::dwallet_system_state_inner;
+    friend dwallet_system::validator_wrapper;
 
     struct ValidatorMetadata has store {
         sui_address: address,
@@ -29,7 +29,7 @@ module sui_system::validator {
     struct Validator has store {
         metadata: ValidatorMetadata,
         voting_power: u64,
-        stake: Balance<SUI>,
+        stake: Balance<DWLT>,
         extra_fields: Bag,
     }
 
@@ -37,7 +37,7 @@ module sui_system::validator {
         new_dummy_field: u64,
         metadata: ValidatorMetadata,
         voting_power: u64,
-        stake: Balance<SUI>,
+        stake: Balance<DWLT>,
         extra_fields: Bag,
     }
 
@@ -50,7 +50,7 @@ module sui_system::validator {
         p2p_address: vector<u8>,
         primary_address: vector<u8>,
         worker_address: vector<u8>,
-        init_stake: Balance<SUI>,
+        init_stake: Balance<DWLT>,
         ctx: &mut TxContext
     ): Validator {
         let metadata = ValidatorMetadata {

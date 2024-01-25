@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // init with entry is no longer allowed
 
@@ -7,7 +7,7 @@
 
 //# publish
 module test::m {
-    use sui::tx_context::TxContext;
+    use dwallet::tx_context::TxContext;
     entry fun init(_: &mut TxContext) {
     }
 }

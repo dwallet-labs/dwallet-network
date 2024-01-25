@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useGetValidatorsApy, useGetValidatorsEvents } from '@mysten/core';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
@@ -120,7 +120,7 @@ function ValidatorDetails() {
 								}
 							>
 								<Text variant="bodySmall/medium">
-									Staked SUI is below the minimum SUI stake threshold to remain a validator.
+									Staked DWLT is below the minimum DWLT stake threshold to remain a validator.
 								</Text>
 							</Banner>
 						</div>

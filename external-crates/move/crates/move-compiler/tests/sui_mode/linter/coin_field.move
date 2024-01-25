@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[allow(unused_field)]
 module a::test1 {
-    use sui::coin::Coin;
-    use sui::object::UID;
+    use dwallet::coin::Coin;
+    use dwallet::object::UID;
 
     struct S1 {}
 
@@ -16,8 +16,8 @@ module a::test1 {
 
 #[allow(unused_field)]
 module a::test2 {
-    use sui::coin::Coin as Balance;
-    use sui::object::UID;
+    use dwallet::coin::Coin as Balance;
+    use dwallet::object::UID;
 
     struct S1 {}
 
@@ -30,8 +30,8 @@ module a::test2 {
 
 #[allow(unused_field)]
 module a::test3 {
-    use sui::coin::TreasuryCap;
-    use sui::object::UID;
+    use dwallet::coin::TreasuryCap;
+    use dwallet::object::UID;
 
     struct S1 {}
 
@@ -43,14 +43,14 @@ module a::test3 {
     }
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }
 }
 
-module sui::coin {
-    use sui::object::UID;
+module dwallet::coin {
+    use dwallet::object::UID;
     struct Coin<phantom T> has key, store {
         id: UID
     }

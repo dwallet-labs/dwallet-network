@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_binary_format::{file_format::basic_test_module, file_format_common::VERSION_MAX};
 use move_core_types::{account_address::AccountAddress, vm_status::StatusCode};

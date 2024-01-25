@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromB64, toB58, toB64 } from '@mysten/bcs';
 import { secp256k1 } from '@noble/curves/secp256k1';

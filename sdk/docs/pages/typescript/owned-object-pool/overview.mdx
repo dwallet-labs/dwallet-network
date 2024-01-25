@@ -18,7 +18,7 @@ completely avoid because the transaction's gas coin is an owned object.
 
 Finally, the situation is exacerbated by
 [gas smashing](https://docs.sui.io/concepts/transactions/gas-smashing) and the Sui TypeScript SDK's
-default coin selection logic, which uses all the `0x2::coin::Coin<0x2::sui::SUI>` objects owned by
+default coin selection logic, which uses all the `0x2::coin::Coin<0x2::dwlt::DWLT>` objects owned by
 an address for every transaction's gas payment. These defaults make sending transactions from your
 wallet straightforward (doing so automatically cleans up coin dust), but means that developers
 writing services need to work against the defaults to maintain distinct gas coins to run
@@ -63,7 +63,7 @@ As an example, assume that you need to execute 10 transactions that transfer 100
 fixed recipient.
 
 Before you can run this example, you need to already have at least one coin of type
-`0x2::coin::Coin<0x2::sui::SUI>` in your wallet for each transaction that you need to execute in
+`0x2::coin::Coin<0x2::dwlt::DWLT>` in your wallet for each transaction that you need to execute in
 parallel (in our case 10 coins). Each `Coin<SUI>` should have enough balance to execute each
 transaction. If you need SUI for a test network, you can
 [use a faucet](https://docs.sui.io/guides/developer/getting-started/get-coins) to mint some.

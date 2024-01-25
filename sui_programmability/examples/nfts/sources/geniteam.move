@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module nfts::geniteam {
-    use sui::object::{Self, ID, UID};
-    use sui::object_bag::{Self, ObjectBag};
-    use sui::object_table::{Self, ObjectTable};
-    use sui::dynamic_object_field;
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::object_bag::{Self, ObjectBag};
+    use dwallet::object_table::{Self, ObjectTable};
+    use dwallet::dynamic_object_field;
     use nfts::typed_id::{Self, TypedID};
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::tx_context::{Self, TxContext};
     use std::option::{Self, Option};
-    use sui::transfer;
+    use dwallet::transfer;
     use std::ascii::{Self, String};
     use std::vector;
 
@@ -353,7 +353,7 @@ module nfts::geniteam {
 
 // temp duplicate to unblock
 module nfts::typed_id {
-    use sui::object::{Self, ID};
+    use dwallet::object::{Self, ID};
 
     /// An ID of an of type `T`. See `ID` for more details
     /// By construction, it is guaranteed that the `ID` represents an object of type `T`

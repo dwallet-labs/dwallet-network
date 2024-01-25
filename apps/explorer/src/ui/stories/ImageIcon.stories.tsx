@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { ImageIcon, type ImageIconProps } from '../ImageIcon';
 
@@ -20,8 +20,8 @@ export const extraLargeImage: StoryObj<ImageIconProps> = {
 export const largeIconNoImage: StoryObj<ImageIconProps> = {
 	args: {
 		src: null,
-		fallback: 'Sui',
-		label: 'Sui',
+		fallback: 'dWallet',
+		label: 'dWallet',
 		size: 'lg',
 	},
 };
@@ -29,8 +29,8 @@ export const largeIconNoImage: StoryObj<ImageIconProps> = {
 export const smallIconImage: StoryObj<ImageIconProps> = {
 	args: {
 		src: 'https://ipfs.io/ipfs/QmZPWWy5Si54R3d26toaqRiqvCH7HkGdXkxwUgCm2oKKM2?filename=img-sq-01.png',
-		label: 'Sui',
+		label: 'dWallet',
 		size: 'sm',
-		fallback: 'Sui',
+		fallback: 'dWallet',
 	},
 };

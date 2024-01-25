@@ -2,7 +2,7 @@
 name = "sui"
 version.workspace = true
 authors = ["Mysten Labs <build@mystenlabs.com>"]
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2021"
 
@@ -90,3 +90,7 @@ normal = ["jemalloc-ctl"]
 name = "generate-genesis-checkpoint"
 path = "src/generate_genesis_checkpoint.rs"
 test = false
+
+[[bin]]
+name = "dwallet"
+path = "src/main.rs"

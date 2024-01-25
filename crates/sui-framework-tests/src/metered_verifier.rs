@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_bytecode_verifier::meter::Scope;
 use prometheus::Registry;
@@ -25,7 +25,7 @@ fn build(path: PathBuf) -> SuiResult<CompiledPackage> {
 fn test_metered_move_bytecode_verifier() {
     move_package::package_hooks::register_package_hooks(Box::new(SuiPackageHooks));
     let path =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../sui-framework/packages/sui-framework");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../sui-framework/packages/dwallet-framework");
     let compiled_package = build(path).unwrap();
     let compiled_modules: Vec<_> = compiled_package.get_modules().cloned().collect();
 

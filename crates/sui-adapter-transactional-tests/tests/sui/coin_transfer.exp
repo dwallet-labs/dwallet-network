@@ -11,7 +11,7 @@ gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 
 task 2 'view-object'. lines 12-12:
 Owner: Account Address ( B )
 Version: 2
-Contents: sui::coin::Coin<sui::sui::SUI> {id: sui::object::UID {id: sui::object::ID {bytes: fake(1,0)}}, balance: sui::balance::Balance<sui::sui::SUI> {value: 10u64}}
+Contents: sui::coin::Coin<sui::dwlt::DWLT> {id: sui::object::UID {id: sui::object::ID {bytes: fake(1,0)}}, balance: sui::balance::Balance<sui::dwlt::DWLT> {value: 10u64}}
 
 task 3 'run'. lines 14-14:
 created: object(3,0)
@@ -21,12 +21,12 @@ gas summary: computation_cost: 1000000, storage_cost: 2964000,  storage_rebate: 
 task 4 'view-object'. lines 16-16:
 Owner: Account Address ( B )
 Version: 3
-Contents: sui::coin::Coin<sui::sui::SUI> {id: sui::object::UID {id: sui::object::ID {bytes: fake(1,0)}}, balance: sui::balance::Balance<sui::sui::SUI> {value: 0u64}}
+Contents: sui::coin::Coin<sui::dwlt::DWLT> {id: sui::object::UID {id: sui::object::ID {bytes: fake(1,0)}}, balance: sui::balance::Balance<sui::dwlt::DWLT> {value: 0u64}}
 
 task 5 'view-object'. lines 18-18:
 Owner: Account Address ( A )
 Version: 3
-Contents: sui::coin::Coin<sui::sui::SUI> {id: sui::object::UID {id: sui::object::ID {bytes: fake(3,0)}}, balance: sui::balance::Balance<sui::sui::SUI> {value: 10u64}}
+Contents: sui::coin::Coin<sui::dwlt::DWLT> {id: sui::object::UID {id: sui::object::ID {bytes: fake(3,0)}}, balance: sui::balance::Balance<sui::dwlt::DWLT> {value: 10u64}}
 
 task 6 'run'. lines 20-20:
 Error: Error checking transaction input objects: IncorrectUserSignature { error: "Object 0x16497d6ad2ad4c226bedea1c03921a110bad4769f30ae0e80b3e208d41c90ddd is owned by account address 0xd31b7b5068b139941cedc52b036f55c894fd394a170e2ba34245a324f1d16c8b, but given owner/signer address is 0xfccc9a421bbb13c1a66a1aa98f0ad75029ede94857779c6915b44f94068b921e" }
@@ -34,4 +34,4 @@ Error: Error checking transaction input objects: IncorrectUserSignature { error:
 task 7 'view-object'. lines 22-22:
 Owner: Account Address ( B )
 Version: 3
-Contents: sui::coin::Coin<sui::sui::SUI> {id: sui::object::UID {id: sui::object::ID {bytes: fake(1,0)}}, balance: sui::balance::Balance<sui::sui::SUI> {value: 0u64}}
+Contents: sui::coin::Coin<sui::dwlt::DWLT> {id: sui::object::UID {id: sui::object::ID {bytes: fake(1,0)}}, balance: sui::balance::Balance<sui::dwlt::DWLT> {value: 0u64}}

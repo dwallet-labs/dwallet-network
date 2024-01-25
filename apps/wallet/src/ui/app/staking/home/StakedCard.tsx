@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { NUM_OF_EPOCH_BEFORE_STAKING_REWARDS_REDEEMABLE } from '_src/shared/constants';
 import { CountDownTimer } from '_src/ui/app/shared/countdown-timer';
@@ -173,7 +173,7 @@ export function StakeCard({
 
 					<div className="text-steel text-pBody opacity-0 group-hover:opacity-100">
 						<IconTooltip
-							tip="Object containing the delegated staked SUI tokens, owned by each delegator"
+							tip="Object containing the delegated staked DWLT tokens, owned by each delegator"
 							placement="top"
 						/>
 					</div>

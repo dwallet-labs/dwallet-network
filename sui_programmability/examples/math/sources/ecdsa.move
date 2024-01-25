@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // A basic ECDSA utility contract to do the following:
 // 1) Hash a piece of data using Keccak256, output an object with hashed data.
 // 2) Recover a Secp256k1 signature to its public key, output an object with the public key.
 // 3) Verify a Secp256k1 signature, produce an event for whether it is verified.
 module math::ecdsa_k1 {
-    use sui::ecdsa_k1;
-    use sui::event;
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::transfer;
+    use dwallet::ecdsa_k1;
+    use dwallet::event;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::transfer;
     use std::vector;
     /// Event on whether the signature is verified
     struct VerifiedEvent has copy, drop {
@@ -27,7 +27,7 @@ module math::ecdsa_k1 {
     public entry fun keccak256(data: vector<u8>, recipient: address, ctx: &mut TxContext) {
         let hashed = Output {
             id: object::new(ctx),
-            value: sui::hash::keccak256(&data),
+            value: dwallet::hash::keccak256(&data),
         };
         // Transfer an output data object holding the hashed data to the recipient.
         transfer::public_transfer(hashed, recipient)
@@ -72,7 +72,7 @@ module math::ecdsa_k1 {
         };
 
         // Take the last 20 bytes of the hash of the 64-bytes uncompressed pubkey.
-        let hashed = sui::hash::keccak256(&uncompressed_64);
+        let hashed = dwallet::hash::keccak256(&uncompressed_64);
         let addr = vector::empty<u8>();
         let i = 12;
         while (i < 32) {

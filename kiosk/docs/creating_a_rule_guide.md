@@ -30,7 +30,7 @@ Every rule would follow the same structure and implement required types:
 ```move
 module examples::dummy_rule {
     use sui::coin::Coin;
-    use sui::sui::SUI;
+    use sui::dwlt::DWLT;
     use sui::transfer_policy::{
         Self as policy,
         TransferPolicy,

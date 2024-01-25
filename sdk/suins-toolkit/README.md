@@ -78,4 +78,4 @@ const nameObject = await suinsClient.getNameObject('suins.sui', {
 
 ## License
 
-[Apache-2.0](https://github.com/SuiNSdapp/toolkit/blob/main/LICENSE)
+[BSD-3-Clause-Clear](https://github.com/SuiNSdapp/toolkit/blob/main/LICENSE)

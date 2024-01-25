@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Creates an event Test::M1::EventA, Test::M1::EventB<Object>, Test::M2::EventA, Test::M2::EventB<Object>
 // Verifies all 4 events show up when filtered on sender
@@ -13,10 +13,10 @@
 
 //# publish
 module Test::M1 {
-    use sui::event;
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::transfer;
+    use dwallet::event;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::transfer;
 
     struct EventA has copy, drop {
         new_value: u64
@@ -50,10 +50,10 @@ module Test::M1 {
 }
 
 module Test::M2 {
-    use sui::event;
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::transfer;
+    use dwallet::event;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::transfer;
 
     struct EventA has copy, drop {
         new_value: u64

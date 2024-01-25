@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Test creating objects just below the size limit, and above it
 
@@ -9,10 +9,10 @@
 
 module Test::M1 {
     use std::vector;
-    use sui::bcs;
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
+    use dwallet::bcs;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer;
 
     struct S has key, store {
         id: UID,

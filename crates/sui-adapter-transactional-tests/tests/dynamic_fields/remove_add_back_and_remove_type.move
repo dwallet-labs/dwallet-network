@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // This test attempts to remove a child, add it back, remove it again, and then transfer/delete it.
 // This is an interesting test case because when child objects are removed, added back and removed again,
@@ -10,9 +10,9 @@
 
 //# publish
 module test::m1 {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct Object has key, store {
         id: UID,
@@ -33,21 +33,21 @@ module test::m1 {
 
     public entry fun test_dof(parent: &mut Object, ctx: &mut TxContext) {
         let c1 = C1 { id: object::new(ctx) };
-        sui::dynamic_object_field::add(&mut parent.id, 0, c1);
-        let C1 { id } = sui::dynamic_object_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_object_field::add(&mut parent.id, 0, c1);
+        let C1 { id } = dwallet::dynamic_object_field::remove(&mut parent.id, 0);
         object::delete(id);
 
         let c2 = C2 { id: object::new(ctx) };
-        sui::dynamic_object_field::add(&mut parent.id, 0, c2);
-        let C2 { id } = sui::dynamic_object_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_object_field::add(&mut parent.id, 0, c2);
+        let C2 { id } = dwallet::dynamic_object_field::remove(&mut parent.id, 0);
         object::delete(id);
     }
 
     public entry fun test_df(parent: &mut Object) {
-        sui::dynamic_field::add(&mut parent.id, 0, b"true");
-        let _: vector<u8> = sui::dynamic_field::remove(&mut parent.id, 0);
-        sui::dynamic_field::add(&mut parent.id, 0, true);
-        let _: bool = sui::dynamic_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_field::add(&mut parent.id, 0, b"true");
+        let _: vector<u8> = dwallet::dynamic_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_field::add(&mut parent.id, 0, true);
+        let _: bool = dwallet::dynamic_field::remove(&mut parent.id, 0);
     }
 }
 

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { CheckFill16, XFill16 } from '@mysten/icons';
 import { formatAddress } from '@mysten/sui.js/utils';

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests cannot call init with programmable transactions
 
@@ -13,14 +13,14 @@ module test::m1 {
 
 //# programmable
 //> 0: test::m1::a();
-//> sui::event::emit<test::m1::A>(Result(0));
+//> dwallet::event::emit<test::m1::A>(Result(0));
 
 //# programmable
 //> 0: test::m1::a();
 // wrong type annotation doesn't matter
-//> sui::event::emit<bool>(Result(0));
+//> dwallet::event::emit<bool>(Result(0));
 
 //# programmable
 //> 0: test::m1::a();
 // function doesn't exist
-//> sui::event::does_not_exist<test::m1::A>(Result(0));
+//> dwallet::event::does_not_exist<test::m1::A>(Result(0));

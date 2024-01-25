@@ -471,7 +471,7 @@
 ### Coin Metadata
 
 ><pre>query CoinMetadata {
->  coinMetadata(coinType: "0x2::sui::SUI") {
+>  coinMetadata(coinType: "0x2::dwlt::DWLT") {
 >    decimals
 >    name
 >    symbol
@@ -668,7 +668,7 @@
 
 ><pre>{
 >  eventConnection(
->    filter: {eventType: "0x3164fcf73eb6b41ff3d2129346141bd68469964c2d95a5b1533e8d16e6ea6e13::Market::ChangePriceEvent<0x2::sui::SUI>"}
+>    filter: {eventType: "0x3164fcf73eb6b41ff3d2129346141bd68469964c2d95a5b1533e8d16e6ea6e13::Market::ChangePriceEvent<0x2::dwlt::DWLT>"}
 >  ) {
 >    nodes {
 >      sendingModule {
@@ -764,7 +764,7 @@
 >    address: "0x0b86be5d779fac217b41d484b8040ad5145dc9ba0cba099d083c6cbda50d983e"
 >  ) {
 >    address
->    balance(type: "0x2::sui::SUI") {
+>    balance(type: "0x2::dwlt::DWLT") {
 >      coinType {
 >        repr
 >      }
@@ -1165,7 +1165,7 @@
 >    address: "0xc0a5b916d0e406ddde11a29558cd91b29c49e644eef597b7424a622955280e1e"
 >  ) {
 >    address
->    balance(type: "0x2::sui::SUI") {
+>    balance(type: "0x2::dwlt::DWLT") {
 >      coinType {
 >        repr
 >      }
@@ -1627,7 +1627,7 @@
 >        balanceChanges {
 >          owner {
 >            address
->            balance(type: "0x2::sui::SUI") {
+>            balance(type: "0x2::dwlt::DWLT") {
 >              totalBalance
 >            }
 >          }

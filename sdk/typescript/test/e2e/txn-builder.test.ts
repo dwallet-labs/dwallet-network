@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -70,7 +70,7 @@ describe('Transaction Builders', () => {
 		const tx = new TransactionBlock();
 		tx.moveCall({
 			target: '0x2::pay::split',
-			typeArguments: ['0x2::sui::SUI'],
+			typeArguments: ['0x2::dwlt::DWLT'],
 			arguments: [tx.object(coin_0.coinObjectId), tx.pure.u64(DEFAULT_GAS_BUDGET * 2)],
 		});
 		await validateTransaction(toolbox.client, toolbox.keypair, tx);

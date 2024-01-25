@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This analysis flags freezing instances of structs containing (transitively or not) other structs
 //! with the key ability. In other words flags freezing of structs whose fields (directly or not)

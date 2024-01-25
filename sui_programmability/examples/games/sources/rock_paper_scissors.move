@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // This is an idea of a module which will allow some asset to be
 // won by playing a rock-paper-scissors (then lizard-spoke) game.
@@ -26,9 +26,9 @@
 // - If game owner never took or revealed the results (incentives?)
 
 module games::rock_paper_scissors {
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer;
     use std::vector;
     use std::hash;
 

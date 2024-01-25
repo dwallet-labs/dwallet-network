@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export { EnokiClient, type EnokiClientConfig } from './EnokiClient/index.js';
 export { EnokiFlow, type AuthProvider, type EnokiFlowConfig } from './EnokiFlow.js';

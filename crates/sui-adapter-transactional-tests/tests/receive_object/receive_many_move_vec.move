@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses tto=0x0
 
 //# publish
 module tto::M1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer::{Self, Receiving};
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer::{Self, Receiving};
     use std::vector;
 
     struct A has key, store {
@@ -93,51 +93,51 @@ module tto::M1 {
 
 // Make the Move vec but then never use it -- this should be fine since they're all drop
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 
 // Make the Move vec and pass, but never receive
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_none(Input(0), Result(0));
 
 // Make the Move vec of receiving arguments and then receive all but the last. Only the ince we receive should be mutated
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_all_but_last(Input(0), Result(0));
 
 // Make the Move vec of receiving arguments, pass to a function by immref, then later use the vec to receive all of them
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_none_by_immref(Input(0), Result(0));
 //> 2: tto::M1::receive_all_send_back(Input(0), Result(0));
 
 // Make the Move vec of receiving arguments, pass to a function by mutref, then later use the vec to receive all of them
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_none_by_mutref(Input(0), Result(0));
 //> 2: tto::M1::receive_all_send_back(Input(0), Result(0));
 
 // Make the Move vec of receiving arguments, pass to a function by mutref and receive some
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_all_but_last_by_mut_ref(Input(0), Result(0));
 //> 2: tto::M1::receive_all_by_mut_ref(Input(0), Result(0));
 
 // Make the Move vec of receiving arguments, pass to a function by mutref, receive some, then pass by mutref again to receive the rest
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_all_but_last_by_mut_ref(Input(0), Result(0));
 //> 2: tto::M1::receive_all_by_mut_ref(Input(0), Result(0));
 
 // Make the Move vec of receiving arguments, pass to a function by mutref, receive some, then pass by value to receive the rest
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_all_but_last_by_mut_ref(Input(0), Result(0));
 //> 2: tto::M1::receive_all_send_back(Input(0), Result(0));
 
 // Make the Move vec of receiving arguments and then receive all of them
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_all(Input(0), Result(0));
 
 //# view-object 2,0

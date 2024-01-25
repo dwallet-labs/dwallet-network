@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { decrypt, encrypt } from '_src/shared/cryptography/keystore';
 import { QredoAPI } from '_src/shared/qredo-api';
 import Dexie from 'dexie';

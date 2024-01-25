@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import * as amplitude from '@amplitude/analytics-browser';
 import { LogLevel, TransportType, type UserSession } from '@amplitude/analytics-types';
@@ -15,7 +15,9 @@ export async function initAmplitude() {
 	ampli.load({
 		environment: IS_PROD_ENV ? 'production' : 'development',
 		// Flip this if you'd like to test Amplitude locally
-		disabled: !IS_PROD_ENV,
+		//disabled: !IS_PROD_ENV,
+		// TODO: dwallet - disable for now
+		disabled: true,
 		client: {
 			configuration: {
 				cookieStorage: persistableStorage,

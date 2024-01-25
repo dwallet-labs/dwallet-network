@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/ui/Tabs';
 import { Text } from '@mysten/ui';

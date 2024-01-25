@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This file contains the definition of the SuiBridgeEvent enum, of
 //! which each variant is an emitted Event struct defind in the Move

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Test Identifer length limits
 
@@ -9,8 +9,8 @@
 
 /// Test Identifer length limits enforced for module name
 module Test::M1_1234567891234567890123456789012345678912345678901234567890123456789123456789012345678908901234567891234567890123456789078912345678901234567890 {
-    use sui::tx_context::TxContext;
-    use sui::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
     use std::vector;
 
     public entry fun create_n_idscreate_n_idscreate_n_() {
@@ -21,8 +21,8 @@ module Test::M1_1234567891234567890123456789012345678912345678901234567890123456
 
 /// Test Identifer length limits enforced for function name
 module Test::M1_12345678912345678901234567890 {
-    use sui::tx_context::TxContext;
-    use sui::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
     use std::vector;
 
     public entry fun create_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_idscreate_n_ids() {
@@ -34,8 +34,8 @@ module Test::M1_12345678912345678901234567890 {
 
 /// Test normal Identifer lengths
 module Test::M1_1234567891234567890123456789012345678912345678901234567 {
-    use sui::tx_context::TxContext;
-    use sui::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
     use std::vector;
 
     public entry fun create_n_(n: u64, ctx: &mut TxContext) {

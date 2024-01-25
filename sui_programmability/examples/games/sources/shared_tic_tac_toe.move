@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // This is a rewrite of TicTacToe using a completely different approach.
 // In TicTacToe, since the game object is owned by the admin, the players are not
@@ -17,10 +17,10 @@
 module games::shared_tic_tac_toe {
     use std::vector;
 
-    use sui::object::{Self, ID, UID};
-    use sui::event;
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::event;
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     // Game status
     const IN_PROGRESS: u8 = 0;

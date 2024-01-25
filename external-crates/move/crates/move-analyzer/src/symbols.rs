@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This module is responsible for building symbolication information on top of compiler's parsed
 //! and typed ASTs, in particular identifier definitions to be used for implementing go-to-def,

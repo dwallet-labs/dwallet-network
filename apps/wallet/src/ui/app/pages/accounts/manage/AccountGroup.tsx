@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { type AccountType, type SerializedUIAccount } from '_src/background/accounts/Account';
 import { type ZkLoginProvider } from '_src/background/accounts/zklogin/providers';
 import { isZkLoginAccountSerializedUI } from '_src/background/accounts/zklogin/ZkLoginAccount';
@@ -110,7 +110,7 @@ function AccountFooter({ accountID, showExport }: { accountID: string; showExpor
 					{totalAccounts === 1 ? (
 						<div className="text-center">
 							<DialogDescription>
-								Removing this account will require you to set up your Sui wallet again.
+								Removing this account will require you to set up your dWallet wallet again.
 							</DialogDescription>
 						</div>
 					) : null}

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useActiveAddress } from '_app/hooks/useActiveAddress';
 import BottomMenuLayout, { Content, Menu } from '_app/shared/bottom-menu-layout';
@@ -273,7 +273,7 @@ export function SendTokenForm({
 									</div>
 									{!hasEnoughBalance && isValid ? (
 										<div className="mt-3">
-											<Alert>Insufficient SUI to cover transaction</Alert>
+											<Alert>Insufficient DWLT to cover transaction</Alert>
 										</div>
 									) : null}
 

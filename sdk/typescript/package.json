@@ -4,7 +4,7 @@
 	"description": "Sui TypeScript API(Work in Progress)",
 	"homepage": "https://sdk.mystenlabs.com",
 	"version": "0.49.0",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"sideEffects": false,
 	"files": [
 		"CHANGELOG.md",

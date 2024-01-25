@@ -3,7 +3,7 @@ name = "coin_factory"
 version = "0.0.1"
 
 [dependencies.Sui]
-local = "../../../sui-framework/packages/sui-framework"
+local = "../../../sui-framework/packages/dwallet-framework"
 
 [addresses]
 coiner =  "0x0"

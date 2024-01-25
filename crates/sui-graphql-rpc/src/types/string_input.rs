@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Opt-in to an implementation of `ScalarType` for a `$Type` that implements `FromStr`, solely for
 /// use as an input (not an output). The type masquarades as a `String` in the GraphQL schema, to

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// The `lock` module offers an API for wrapping any object that has
 /// `store` and protecting it with a single-use `Key`.
@@ -7,8 +7,8 @@
 /// This is used to commit to swapping a particular object in a
 /// particular, fixed state during escrow.
 module escrow::lock {
-    use sui::object::{Self, ID, UID};
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::tx_context::TxContext;
 
     /// A wrapper that protects access to `obj` by requiring access to a `Key`.
     ///
@@ -57,13 +57,13 @@ module escrow::lock {
     }
 
     // === Tests ===
-    #[test_only] use sui::coin::{Self, Coin};
-    #[test_only] use sui::sui::SUI;
-    #[test_only] use sui::test_scenario::{Self as ts, Scenario};
+    #[test_only] use dwallet::coin::{Self, Coin};
+    #[test_only] use dwallet::dwlt::DWLT;
+    #[test_only] use dwallet::test_scenario::{Self as ts, Scenario};
 
     #[test_only]
-    fun test_coin(ts: &mut Scenario): Coin<SUI> {
-        coin::mint_for_testing<SUI>(42, ts::ctx(ts))
+    fun test_coin(ts: &mut Scenario): Coin<DWLT> {
+        coin::mint_for_testing<DWLT>(42, ts::ctx(ts))
     }
 
     #[test]

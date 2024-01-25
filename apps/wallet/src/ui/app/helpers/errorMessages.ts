@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { LockedDeviceError, StatusCodes } from '@ledgerhq/errors';
 
@@ -50,7 +50,7 @@ export function getSuiApplicationErrorMessage(error: unknown) {
 		if (error.statusCode === StatusCodes.INS_NOT_SUPPORTED) {
 			return "Something went wrong. We're working on it!";
 		} else {
-			return 'Make sure the Sui app is open on your device.';
+			return 'Make sure the dWallet app is open on your device.';
 		}
 	}
 	return null;

@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Executing a swap of two objects via a third party, using object wrapping to
 /// hand ownership of the objects to swap to the third party without giving them
 /// the ability to modify those objects.
 module trusted_swap::example {
-    use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin};
-    use sui::object::{Self, UID};
-    use sui::sui::SUI;
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::object::{Self, UID};
+    use dwallet::dwlt::DWLT;
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct Object has key, store {
         id: UID,
@@ -22,7 +22,7 @@ module trusted_swap::example {
         id: UID,
         owner: address,
         object: Object,
-        fee: Balance<SUI>,
+        fee: Balance<DWLT>,
     }
 
     // === Errors ===
@@ -47,7 +47,7 @@ module trusted_swap::example {
     /// sends a `SwapRequest` to a `service` responsible for matching swaps.
     public fun request_swap(
         object: Object,
-        fee: Coin<SUI>,
+        fee: Coin<DWLT>,
         service: address,
         ctx: &mut TxContext,
     ) {
@@ -65,7 +65,7 @@ module trusted_swap::example {
 
     /// When the service has two swap requests, it can execute them, sending the
     /// objects to the respective owners and taking its fee.
-    public fun execute_swap(s1: SwapRequest, s2: SwapRequest): Balance<SUI> {
+    public fun execute_swap(s1: SwapRequest, s2: SwapRequest): Balance<DWLT> {
         let SwapRequest {id: id1, owner: owner1, object: o1, fee: fee1} = s1;
         let SwapRequest {id: id2, owner: owner2, object: o2, fee: fee2} = s2;
 
@@ -86,7 +86,7 @@ module trusted_swap::example {
     }
 
     // === Tests ===
-    #[test_only] use sui::test_scenario as ts;
+    #[test_only] use dwallet::test_scenario as ts;
 
     #[test]
     fun successful_swap() {
@@ -98,7 +98,7 @@ module trusted_swap::example {
         let i1 = {
             ts::next_tx(&mut ts, alice);
             let o1 = new(1, 0, ts::ctx(&mut ts));
-            let c1 = coin::mint_for_testing<SUI>(MIN_FEE, ts::ctx(&mut ts));
+            let c1 = coin::mint_for_testing<DWLT>(MIN_FEE, ts::ctx(&mut ts));
             let i = object::id(&o1);
             request_swap(o1, c1, custodian, ts::ctx(&mut ts));
             i
@@ -107,7 +107,7 @@ module trusted_swap::example {
         let i2 = {
             ts::next_tx(&mut ts, bob);
             let o2 = new(1, 1, ts::ctx(&mut ts));
-            let c2 = coin::mint_for_testing<SUI>(MIN_FEE, ts::ctx(&mut ts));
+            let c2 = coin::mint_for_testing<DWLT>(MIN_FEE, ts::ctx(&mut ts));
             let i = object::id(&o2);
             request_swap(o2, c2, custodian, ts::ctx(&mut ts));
             i
@@ -126,7 +126,7 @@ module trusted_swap::example {
 
         {
             ts::next_tx(&mut ts, custodian);
-            let fee: Coin<SUI> = ts::take_from_sender(&ts);
+            let fee: Coin<DWLT> = ts::take_from_sender(&ts);
 
             assert!(ts::ids_for_address<Object>(alice) == vector[i2], 0);
             assert!(ts::ids_for_address<Object>(bob) == vector[i1], 0);
@@ -146,7 +146,7 @@ module trusted_swap::example {
 
         let ts = ts::begin(alice);
         let o1 = new(1, 0, ts::ctx(&mut ts));
-        let c1 = coin::mint_for_testing<SUI>(MIN_FEE - 1, ts::ctx(&mut ts));
+        let c1 = coin::mint_for_testing<DWLT>(MIN_FEE - 1, ts::ctx(&mut ts));
         request_swap(o1, c1, custodian, ts::ctx(&mut ts));
 
         abort 1337
@@ -163,14 +163,14 @@ module trusted_swap::example {
         {
             ts::next_tx(&mut ts, alice);
             let o1 = new(1, 0, ts::ctx(&mut ts));
-            let c1 = coin::mint_for_testing<SUI>(MIN_FEE, ts::ctx(&mut ts));
+            let c1 = coin::mint_for_testing<DWLT>(MIN_FEE, ts::ctx(&mut ts));
             request_swap(o1, c1, custodian, ts::ctx(&mut ts));
         };
 
         {
             ts::next_tx(&mut ts, bob);
             let o2 = new(0, 1, ts::ctx(&mut ts));
-            let c2 = coin::mint_for_testing<SUI>(MIN_FEE, ts::ctx(&mut ts));
+            let c2 = coin::mint_for_testing<DWLT>(MIN_FEE, ts::ctx(&mut ts));
             request_swap(o2, c2, custodian, ts::ctx(&mut ts));
         };
 
@@ -195,14 +195,14 @@ module trusted_swap::example {
         {
             ts::next_tx(&mut ts, alice);
             let o1 = new(1, 0, ts::ctx(&mut ts));
-            let c1 = coin::mint_for_testing<SUI>(MIN_FEE, ts::ctx(&mut ts));
+            let c1 = coin::mint_for_testing<DWLT>(MIN_FEE, ts::ctx(&mut ts));
             request_swap(o1, c1, custodian, ts::ctx(&mut ts));
         };
 
         {
             ts::next_tx(&mut ts, bob);
             let o2 = new(1, 0, ts::ctx(&mut ts));
-            let c2 = coin::mint_for_testing<SUI>(MIN_FEE, ts::ctx(&mut ts));
+            let c2 = coin::mint_for_testing<DWLT>(MIN_FEE, ts::ctx(&mut ts));
             request_swap(o2, c2, custodian, ts::ctx(&mut ts));
         };
 

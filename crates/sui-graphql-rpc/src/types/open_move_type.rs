@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::fmt;
 
@@ -318,7 +318,7 @@ mod tests {
     fn instance_signature() {
         let signature = OpenMoveTypeSignature::from(S::Datatype(
             struct_key("0x2::coin::Coin"),
-            vec![S::Datatype(struct_key("0x2::sui::SUI"), vec![])],
+            vec![S::Datatype(struct_key("0x2::dwlt::DWLT"), vec![])],
         ));
 
         let expect = expect![[r#"
@@ -331,8 +331,8 @@ mod tests {
                     type_parameters: [
                         Datatype {
                             package: "0x0000000000000000000000000000000000000000000000000000000000000002",
-                            module: "sui",
-                            type_: "SUI",
+                            module: "dwallet",
+                            type_: "DWLT",
                             type_parameters: [],
                         },
                     ],
@@ -356,7 +356,7 @@ mod tests {
     fn instance_signature_repr() {
         let signature = OpenMoveTypeSignature::from(S::Datatype(
             struct_key("0x2::coin::Coin"),
-            vec![S::Datatype(struct_key("0x2::sui::SUI"), vec![])],
+            vec![S::Datatype(struct_key("0x2::dwlt::DWLT"), vec![])],
         ));
 
         let expect = expect!["0x0000000000000000000000000000000000000000000000000000000000000002::coin::Coin<0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI>"];

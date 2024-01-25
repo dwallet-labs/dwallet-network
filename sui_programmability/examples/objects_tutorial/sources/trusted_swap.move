@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module tutorial::trusted_swap {
-    use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin};
-    use sui::object::{Self, UID};
-    use sui::sui::SUI;
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::object::{Self, UID};
+    use dwallet::dwlt::DWLT;
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     const MIN_FEE: u64 = 1000;
 
@@ -21,7 +21,7 @@ module tutorial::trusted_swap {
         id: UID,
         original_owner: address,
         to_swap: Object,
-        fee: Balance<SUI>,
+        fee: Balance<DWLT>,
     }
 
     public entry fun create_object(scarcity: u8, style: u8, ctx: &mut TxContext) {
@@ -35,7 +35,7 @@ module tutorial::trusted_swap {
 
     /// Anyone owns an `Object` can request swapping their object. This object
     /// will be wrapped into `ObjectWrapper` and sent to `service_address`.
-    public entry fun request_swap(object: Object, fee: Coin<SUI>, service_address: address, ctx: &mut TxContext) {
+    public entry fun request_swap(object: Object, fee: Coin<DWLT>, service_address: address, ctx: &mut TxContext) {
         assert!(coin::value(&fee) >= MIN_FEE, 0);
         let wrapper = ObjectWrapper {
             id: object::new(ctx),

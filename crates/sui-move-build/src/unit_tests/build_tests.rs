@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::path::Path;
 
@@ -14,7 +14,7 @@ fn generate_struct_layouts() {
         .to_path_buf()
         .join("sui-framework")
         .join("packages")
-        .join("sui-framework");
+        .join("dwallet-framework");
     let pkg = BuildConfig::new_for_testing().build(path).unwrap();
     let registry = pkg.generate_struct_layouts();
     // check for a couple of types that aren't likely to go away

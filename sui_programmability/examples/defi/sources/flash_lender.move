@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// A flash loan that works for any Coin type
 module defi::flash_lender {
-    use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin};
-    use sui::object::{Self, ID, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     /// A shared object offering flash loans to any buyer willing to pay `fee`.
     struct FlashLender<phantom T> has key {

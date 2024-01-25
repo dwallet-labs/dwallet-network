@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Button } from '../../ui/Button.js';
 import { Heading } from '../../ui/Heading.js';
@@ -9,10 +9,10 @@ import * as styles from './GettingStarted.css.js';
 export function GettingStarted() {
 	return (
 		<div className={styles.container}>
-			<Heading as="h2">Get Started with Sui</Heading>
+			<Heading as="h2">Get Started with dWallet</Heading>
 			<div className={styles.content}>
-				<InfoSection title="Install the Sui Wallet Extension">
-					We recommend pinning Sui Wallet to your taskbar for quicker access.
+				<InfoSection title="Install the dWallet Wallet Extension">
+					We recommend pinning dWallet Wallet to your taskbar for quicker access.
 				</InfoSection>
 				<InfoSection title="Create or Import a Wallet">
 					Be sure to back up your wallet using a secure method. Never share your secret phrase with

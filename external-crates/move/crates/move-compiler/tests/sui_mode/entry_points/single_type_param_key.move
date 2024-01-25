@@ -1,6 +1,6 @@
 // type parameters can have key
 module a::m {
-    use sui::tx_context;
+    use dwallet::tx_context;
 
     public entry fun t1<T: key>(_: T, _: &mut tx_context::TxContext) {
         abort 0
@@ -13,6 +13,6 @@ module a::m {
     }
 
 }
-module sui::tx_context {
+module dwallet::tx_context {
     struct TxContext has drop {}
 }

@@ -1,7 +1,7 @@
 // invalid, struct type has abilities beyond drop
 
 module a::m1 {
-    use sui::tx_context;
+    use dwallet::tx_context;
 
     struct M1 has drop, copy { dummy: bool }
 
@@ -11,7 +11,7 @@ module a::m1 {
 }
 
 module a::m2 {
-    use sui::tx_context;
+    use dwallet::tx_context;
 
     struct M2 has drop, store { dummy: bool }
 
@@ -21,7 +21,7 @@ module a::m2 {
 }
 
 module a::m3 {
-    use sui::tx_context;
+    use dwallet::tx_context;
 
     struct M3 has drop, copy, store { dummy: bool }
 
@@ -30,6 +30,6 @@ module a::m3 {
 
 }
 
-module sui::tx_context {
+module dwallet::tx_context {
     struct TxContext has drop {}
 }

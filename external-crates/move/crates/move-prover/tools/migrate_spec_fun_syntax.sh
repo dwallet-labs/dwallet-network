@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright (c) The Diem Core Contributors
 # Copyright (c) The Move Contributors
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # A script to upgrade from `spec fun name` style syntax and related changes to `spec name`. This can create
 # errors, specifically the last replacement for `define ` might be critical, so to be used with care.

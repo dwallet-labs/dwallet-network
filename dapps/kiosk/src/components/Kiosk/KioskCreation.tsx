@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { toast } from 'react-hot-toast';
 
@@ -25,8 +25,8 @@ export function KioskCreation({ onCreate }: { onCreate: () => void }) {
 				</p>
 				<p className="pb-3">
 					The demo app works only on <strong>Sui Testnet.</strong> Make sure that your wallet
-					connects to Testnet and that you have at least 1 SUI to cover gas fees. You can get test
-					SUI tokens using{' '}
+					connects to Testnet and that you have at least 1 DWLT to cover gas fees. You can get test
+					DWLT tokens using{' '}
 					<a
 						href="https://docs.sui.io/build/faucet"
 						target="_blank"

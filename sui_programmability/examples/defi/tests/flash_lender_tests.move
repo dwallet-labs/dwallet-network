@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module defi::flash_lender_tests {
     use defi::flash_lender::{Self, AdminCap, FlashLender};
-    use sui::pay;
-    use sui::coin;
-    use sui::sui::SUI;
-    use sui::test_scenario;
+    use dwallet::pay;
+    use dwallet::coin;
+    use dwallet::dwlt::DWLT;
+    use dwallet::test_scenario;
 
     #[test]
     fun flash_loan_example() {
@@ -19,20 +19,20 @@ module defi::flash_lender_tests {
         let scenario = &mut scenario_val;
         {
             let ctx = test_scenario::ctx(scenario);
-            let coin = coin::mint_for_testing<SUI>(100, ctx);
+            let coin = coin::mint_for_testing<DWLT>(100, ctx);
             flash_lender::create(coin, 1, ctx);
         };
         // borrower requests and repays a loan of 10 coins + the fee
         test_scenario::next_tx(scenario, borrower);
         {
-            let lender_val = test_scenario::take_shared<FlashLender<SUI>>(scenario);
+            let lender_val = test_scenario::take_shared<FlashLender<DWLT>>(scenario);
             let lender = &mut lender_val;
             let ctx = test_scenario::ctx(scenario);
 
             let (loan, receipt) = flash_lender::loan(lender, 10, ctx);
             // in practice, borrower does something (e.g., arbitrage) to make a profit from the loan.
             // simulate this by minting the borrower 5 coins.
-            let profit = coin::mint_for_testing<SUI>(5, ctx);
+            let profit = coin::mint_for_testing<DWLT>(5, ctx);
             coin::join(&mut profit, loan);
             let to_keep = coin::take(coin::balance_mut(&mut profit), 4, ctx);
             pay::keep(to_keep, ctx);
@@ -43,7 +43,7 @@ module defi::flash_lender_tests {
         // admin withdraws the 1 coin profit from lending
         test_scenario::next_tx(scenario, admin);
         {
-            let lender_val = test_scenario::take_shared<FlashLender<SUI>>(scenario);
+            let lender_val = test_scenario::take_shared<FlashLender<DWLT>>(scenario);
             let lender = &mut lender_val;
             let admin_cap = test_scenario::take_from_sender<AdminCap>(scenario);
             let ctx = test_scenario::ctx(scenario);

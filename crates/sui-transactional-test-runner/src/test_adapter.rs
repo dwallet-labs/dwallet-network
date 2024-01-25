@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This module contains the transactional test runner instantiation for the Sui adapter
 
@@ -1715,7 +1715,7 @@ static NAMED_ADDRESSES: Lazy<BTreeMap<String, NumericalAddress>> = Lazy::new(|| 
         ),
     );
     map.insert(
-        "sui_system".to_string(),
+        "dwallet_system".to_string(),
         NumericalAddress::new(
             SUI_SYSTEM_ADDRESS.into_bytes(),
             move_compiler::shared::NumberFormat::Hex,

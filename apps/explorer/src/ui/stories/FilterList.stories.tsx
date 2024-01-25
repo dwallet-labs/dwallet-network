@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type Meta, type StoryObj } from '@storybook/react';
 import { useState } from 'react';
@@ -16,7 +16,7 @@ export const Default: StoryObj<FilterListProps> = {
 		return <FilterList {...props} value={value} onChange={onChange} />;
 	},
 	args: {
-		options: ['MINT', 'SUI'],
+		options: ['MINT', 'DWLT'],
 		disabled: false,
 		size: 'sm',
 		lessSpacing: true,

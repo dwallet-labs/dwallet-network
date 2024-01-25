@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { expect, test } from '@playwright/test';
 
@@ -14,7 +14,7 @@ test('address page', async ({ page }) => {
 test('owned objects (coins) are displayed', async ({ page }) => {
 	const address = await faucet();
 	await page.goto(`/address/${address}`);
-	await expect(await page.getByTestId('ownedcoinlabel')).toContainText('SUI');
+	await expect(await page.getByTestId('ownedcoinlabel')).toContainText('DWLT');
 });
 
 // TODO: rewrite this test after the removal of devnet_nft

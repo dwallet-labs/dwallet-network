@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module sui_system::validator_wrapper {
-    use sui::versioned::Versioned;
+module dwallet_system::validator_wrapper {
+    use dwallet::versioned::Versioned;
 
-    friend sui_system::sui_system_state_inner;
+    friend dwallet_system::dwallet_system_state_inner;
 
     struct ValidatorWrapper has store {
         inner: Versioned

@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module sui_system::msim_extra_1 {
-    use sui::object::UID;
-    use sui::tx_context::TxContext;
+module dwallet_system::msim_extra_1 {
+    use dwallet::object::UID;
+    use dwallet::tx_context::TxContext;
 
     struct Type {
         x: u64,

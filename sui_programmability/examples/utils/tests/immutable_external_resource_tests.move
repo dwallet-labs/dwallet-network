@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module utils::immutable_external_resource_tests {
     use utils::immutable_external_resource;
-    use sui::url;
+    use dwallet::url;
     use std::ascii::Self;
-    use sui::digest;
+    use dwallet::digest;
 
     const EHashLengthMisMatch: u64 = 0;
     const EUrlStringMisMatch: u64 = 1;

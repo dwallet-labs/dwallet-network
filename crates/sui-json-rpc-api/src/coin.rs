@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
@@ -17,7 +17,7 @@ pub trait CoinReadApi {
         &self,
         /// the owner's Sui address
         owner: SuiAddress,
-        /// optional type name for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC), default to 0x2::sui::SUI if not specified.
+        /// optional type name for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC), default to 0x2::dwlt::DWLT if not specified.
         coin_type: Option<String>,
         /// optional paging cursor
         cursor: Option<ObjectID>,
@@ -43,7 +43,7 @@ pub trait CoinReadApi {
         &self,
         /// the owner's Sui address
         owner: SuiAddress,
-        /// optional type names for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC), default to 0x2::sui::SUI if not specified.
+        /// optional type names for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC), default to 0x2::dwlt::DWLT if not specified.
         coin_type: Option<String>,
     ) -> RpcResult<Balance>;
 

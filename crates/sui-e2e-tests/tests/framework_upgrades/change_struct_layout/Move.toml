@@ -3,8 +3,8 @@ name = "SuiExtraChangeStructLayout"
 version = "0.0.1"
 
 [dependencies]
-SuiSystem = { local = "../../../../sui-framework/packages/sui-system" }
-Sui = { local = "../../../../sui-framework/packages/sui-framework" }
+DWalletSystem = { local = "../../../../sui-framework/packages/dwallet-system" }
+dWallet = { local = "../../../../sui-framework/packages/dwallet-framework" }
 MoveStdlib = { local = "../../../../sui-framework/packages/move-stdlib" }
 
 [addresses]

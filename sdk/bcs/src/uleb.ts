@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Helper utility: write number as an ULEB array.
 // Original code is taken from: https://www.npmjs.com/package/uleb128 (no longer exists)

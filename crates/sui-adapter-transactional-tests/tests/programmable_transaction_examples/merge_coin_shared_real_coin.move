@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // test valid usages of shared coin
 
@@ -8,11 +8,11 @@
 //# publish
 
 module test::m1 {
-    use sui::sui::SUI;
-    use sui::coin;
+    use dwallet::dwlt::DWLT;
+    use dwallet::coin;
 
-    use sui::tx_context::TxContext;
-    use sui::transfer;
+    use dwallet::tx_context::TxContext;
+    use dwallet::transfer;
 
     public fun mint_shared(ctx: &mut TxContext) {
         transfer::public_share_object(coin::zero<SUI>(ctx))

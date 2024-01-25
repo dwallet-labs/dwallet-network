@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses test=0x0 --accounts A
 
 //# publish
 module test::m1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::dwlt::DWLT;
 
     struct CoolMarker has key, store { id: UID }
 

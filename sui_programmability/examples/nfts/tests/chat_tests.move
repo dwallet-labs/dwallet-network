@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module nfts::chat_tests {
     use nfts::chat::{Self, Chat};
     use std::ascii::Self;
-    use sui::test_scenario::Self;
+    use dwallet::test_scenario::Self;
 
     const USER1_ADDRESS: address = @0xA001;
     const METADATA: vector<u8> = vector[0u8];

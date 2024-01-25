@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::authority::authority_tests::{send_consensus, send_consensus_no_execution};
 use crate::authority::{AuthorityState, EffectsNotifyRead};

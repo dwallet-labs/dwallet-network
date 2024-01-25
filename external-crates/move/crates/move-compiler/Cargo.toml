@@ -5,7 +5,7 @@ authors = ["Diem Association <opensource@diem.com>"]
 description = "The definition of the Move source language, and its compiler"
 publish = false
 edition = "2021"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 
 [dependencies]
 anyhow.workspace = true

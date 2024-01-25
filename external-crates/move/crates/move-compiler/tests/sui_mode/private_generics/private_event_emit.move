@@ -1,6 +1,6 @@
 // tests modules cannot emit events for types not defined in the current module
 module a::m {
-    use sui::event;
+    use dwallet::event;
 
     struct X has copy, drop {}
 
@@ -25,6 +25,6 @@ module a::other {
     struct Event has copy, drop {}
 }
 
-module sui::event {
+module dwallet::event {
     public fun emit<T: copy + drop>(_: T) { abort 0 }
 }

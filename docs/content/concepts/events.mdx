@@ -9,7 +9,7 @@ Events are the main way to track actions on chain. The following example include
 /// Extended example of a shared object. Now with addition of events!
 module examples::donuts_with_events {
     use sui::transfer;
-    use sui::sui::SUI;
+    use sui::dwlt::DWLT;
     use sui::coin::{Self, Coin};
     use sui::object::{Self, ID, UID};
     use sui::balance::{Self, Balance};

@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses Test=0x0 --accounts A
 
 //# publish
 module Test::M {
     use std::string;
-    use sui::tx_context::TxContext;
+    use dwallet::tx_context::TxContext;
     use std::vector;
 
 

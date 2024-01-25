@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Tests for the `personal_kiosk` module.
 module kiosk::personal_kiosk_tests {
-    use sui::transfer::public_share_object as share;
-    use sui::kiosk_test_utils::{Self as test};
-    use sui::tx_context::sender;
-    use sui::kiosk;
+    use dwallet::transfer::public_share_object as share;
+    use dwallet::kiosk_test_utils::{Self as test};
+    use dwallet::tx_context::sender;
+    use dwallet::kiosk;
 
     use kiosk::personal_kiosk;
 

@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module deepbook::order_query {
     use std::option;
     use std::option::{Option, some, none};
     use std::vector;
     use deepbook::critbit::CritbitTree;
-    use sui::linked_table;
+    use dwallet::linked_table;
     use deepbook::critbit;
     use deepbook::clob_v2;
     use deepbook::clob_v2::{Order, Pool, TickLevel};

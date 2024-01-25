@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use futures::stream::StreamExt;
 use sui_json_rpc_types::TransactionFilter;
@@ -23,7 +23,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .read_api()
         .subscribe_transaction(TransactionFilter::MoveFunction {
             package: "0x2".parse()?,
-            module: Some("sui".to_owned()),
+            module: Some("dwallet".to_owned()),
             function: Some("transfer".to_owned()),
         })
         .await?;

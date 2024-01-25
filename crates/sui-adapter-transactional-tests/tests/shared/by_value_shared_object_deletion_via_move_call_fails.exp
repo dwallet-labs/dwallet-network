@@ -49,7 +49,7 @@ gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 
 task 11 'view-object'. lines 92-94:
 Owner: Shared
 Version: 9
-Contents: sui::coin::Coin<sui::sui::SUI> {id: sui::object::UID {id: sui::object::ID {bytes: fake(10,0)}}, balance: sui::balance::Balance<sui::sui::SUI> {value: 0u64}}
+Contents: sui::coin::Coin<sui::dwlt::DWLT> {id: sui::object::UID {id: sui::object::ID {bytes: fake(10,0)}}, balance: sui::balance::Balance<sui::dwlt::DWLT> {value: 0u64}}
 
 task 12 'programmable'. lines 95-101:
 Error: Transaction Effects Status: Invalid command argument at 0. Invalid usage of value. Mutably borrowed values require unique usage. Immutably borrowed values cannot be taken or borrowed mutably. Taken values cannot be used again.

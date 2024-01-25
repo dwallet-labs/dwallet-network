@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Module representing a common type for regulated coins. Features balance
 /// accessors which can be used to implement a RegulatedCoin interface.
@@ -10,9 +10,9 @@
 ///
 /// Each of the methods of this module requires a Witness struct to be sent.
 module rc::regulated_coin {
-    use sui::balance::{Self, Balance};
-    use sui::tx_context::TxContext;
-    use sui::object::{Self, UID};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
 
     /// The RegulatedCoin struct; holds a common `Balance<T>` which is compatible
     /// with all the other Coins and methods, as well as the `creator` field, which
@@ -60,7 +60,7 @@ module rc::regulated_coin {
     /// Destroy `RegulatedCoin` and return its `Balance`;
     public fun into_balance<T: drop>(_: T, coin: RegulatedCoin<T>): Balance<T> {
         let RegulatedCoin { balance, creator: _, id } = coin;
-        sui::object::delete(id);
+        dwallet::object::delete(id);
         balance
     }
 
@@ -91,11 +91,11 @@ module rc::regulated_coin {
 /// - has restricted transfers which can not be taken by anyone except the recipient
 module abc::abc {
     use rc::regulated_coin::{Self as rcoin, RegulatedCoin as RCoin};
-    use sui::tx_context::{Self, TxContext};
-    use sui::balance::{Self, Supply, Balance};
-    use sui::object::{Self, UID};
-    use sui::coin::{Self, Coin};
-    use sui::transfer;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::balance::{Self, Supply, Balance};
+    use dwallet::object::{Self, UID};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::transfer;
     use std::vector;
 
     /// The ticker of Abc regulated token
@@ -295,7 +295,7 @@ module abc::tests {
     use abc::abc::{Self, Abc, AbcTreasuryCap, Registry};
     use rc::regulated_coin::{Self as rcoin, RegulatedCoin as RCoin};
 
-    use sui::test_scenario::{Self, Scenario, next_tx, ctx};
+    use dwallet::test_scenario::{Self, Scenario, next_tx, ctx};
 
     // === Test handlers; this trick helps reusing scenarios ==
 
@@ -479,7 +479,7 @@ module abc::tests {
         next_tx(test, user1);
         {
             let coin = test_scenario::take_from_sender<RCoin<Abc>>(test);
-            sui::transfer::public_transfer(coin, user2);
+            dwallet::transfer::public_transfer(coin, user2);
         };
 
         next_tx(test, user2);

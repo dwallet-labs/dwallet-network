@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import Alert from '_components/alert';
 import { ErrorBoundary } from '_components/error-boundary';
@@ -24,7 +24,7 @@ export function CompletedTransactions() {
 					</ErrorBoundary>
 				))
 			) : (
-				<NoActivityCard message="When available, your Sui network transactions will show up here." />
+				<NoActivityCard message="When available, your dWallet network transactions will show up here." />
 			)}
 		</Loading>
 	);

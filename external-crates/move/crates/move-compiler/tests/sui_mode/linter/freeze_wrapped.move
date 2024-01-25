@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[allow(unused_field)]
 module a::test {
-    use sui::object::UID;
-    use sui::transfer;
+    use dwallet::object::UID;
+    use dwallet::transfer;
 
     struct Inner has key, store {
         id: UID
@@ -66,13 +66,13 @@ module a::test {
 
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }
 }
 
-module sui::transfer {
+module dwallet::transfer {
     public fun public_freeze_object<T: key>(_: T) {
         abort 0
     }

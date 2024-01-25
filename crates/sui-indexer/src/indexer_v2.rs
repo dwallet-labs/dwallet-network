@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::apis::{
     CoinReadApiV2, ExtendedApiV2, GovernanceReadApiV2, IndexerApiV2, MoveUtilsApiV2, ReadApiV2,

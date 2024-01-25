@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::authority::authority_per_epoch_store::EPOCH_DB_PREFIX;
 use itertools::Itertools;
 use std::fs;

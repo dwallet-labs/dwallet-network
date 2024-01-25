@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module games::rock_paper_scissors_tests {
     use games::rock_paper_scissors::{Self as Game, Game, PlayerTurn, Secret, ThePrize};
-    use sui::test_scenario::{Self};
+    use dwallet::test_scenario::{Self};
     use std::vector;
     use std::hash;
 

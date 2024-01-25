@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module a::test {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct S1 has key, store {
         id: UID
@@ -56,23 +56,23 @@ module a::test {
     }
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }
-    public fun new(_: &mut sui::tx_context::TxContext): UID {
+    public fun new(_: &mut dwallet::tx_context::TxContext): UID {
         abort 0
     }
 }
 
-module sui::tx_context {
+module dwallet::tx_context {
     struct TxContext has drop {}
     public fun sender(_: &TxContext): address {
         @0
     }
 }
 
-module sui::transfer {
+module dwallet::transfer {
     public fun transfer<T: key>(_: T, _: address) {
         abort 0
     }

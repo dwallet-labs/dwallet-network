@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module dynamic_fields::example {
-    use sui::dynamic_object_field as ofield;
-    use sui::object::{Self, UID};
+    use dwallet::dynamic_object_field as ofield;
+    use dwallet::object::{Self, UID};
 
     struct Parent has key {
         id: UID,
@@ -47,7 +47,7 @@ module dynamic_fields::example {
     }
 
     // === Tests ===
-    #[test_only] use sui::test_scenario;
+    #[test_only] use dwallet::test_scenario;
 
     #[test]
     fun test_add_delete() {

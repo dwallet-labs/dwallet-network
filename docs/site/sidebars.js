@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //const why_sui = require("../content/sidebars/why_sui.js");
 const guides = require("../content/sidebars/guides.js");

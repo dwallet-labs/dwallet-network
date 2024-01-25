@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // DEPRECATED child count no longer tracked
 // tests transferring a wrapped object that has never previously been in storage
@@ -9,27 +9,27 @@
 //# publish
 
 module test::m {
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::tx_context::{Self, TxContext};
 
     struct S has key, store {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
     }
 
     struct R has key {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
         s: S,
     }
 
     public entry fun create(ctx: &mut TxContext) {
-        let parent = sui::object::new(ctx);
-        let child = S { id: sui::object::new(ctx) };
-        sui::transfer::transfer(R { id: parent, s: child }, tx_context::sender(ctx))
+        let parent = dwallet::object::new(ctx);
+        let child = S { id: dwallet::object::new(ctx) };
+        dwallet::transfer::transfer(R { id: parent, s: child }, tx_context::sender(ctx))
     }
 
     public entry fun unwrap_and_transfer(r: R, ctx: &mut TxContext) {
         let R { id, s } = r;
-        sui::object::delete(id);
-        sui::transfer::transfer(s, tx_context::sender(ctx));
+        dwallet::object::delete(id);
+        dwallet::transfer::transfer(s, tx_context::sender(ctx));
     }
 }
 

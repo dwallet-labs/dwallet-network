@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! An `in-memory`, or rather `in-process`, backend for building and managing Sui Networks that all
 //! run inside the same process. Nodes are isolated from one another by each being run on their own

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! The Sui Rust SDK
 //!
@@ -105,7 +105,7 @@ pub mod json_rpc_error;
 pub mod sui_client_config;
 pub mod wallet_context;
 
-pub const SUI_COIN_TYPE: &str = "0x2::sui::SUI";
+pub const SUI_COIN_TYPE: &str = "0x2::dwlt::DWLT";
 pub const SUI_LOCAL_NETWORK_URL: &str = "http://127.0.0.1:9000";
 pub const SUI_LOCAL_NETWORK_GAS_URL: &str = "http://127.0.0.1:5003/gas";
 pub const SUI_DEVNET_URL: &str = "https://fullnode.devnet.sui.io:443";

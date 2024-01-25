@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::env;
 use std::net::SocketAddr;
@@ -63,7 +63,7 @@ pub fn sui_rpc_doc(version: &str) -> Project {
         "Mysten Labs",
         "https://mystenlabs.com",
         "build@mystenlabs.com",
-        "Apache-2.0",
+        "BSD-3-Clause-Clear",
         "https://raw.githubusercontent.com/MystenLabs/sui/main/LICENSE",
     )
 }

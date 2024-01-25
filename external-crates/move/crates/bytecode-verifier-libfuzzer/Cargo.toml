@@ -2,7 +2,7 @@
 name = "bytecode-verifier-libfuzzer"
 version = "0.0.0"
 authors = ["Diem Association <opensource@diem.com>"]
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2018"
 

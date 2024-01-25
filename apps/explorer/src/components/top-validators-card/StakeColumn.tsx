@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useFormatCoin, CoinFormat, formatBalance } from '@mysten/core';
 import { SUI_TYPE_ARG } from '@mysten/sui.js/utils';
@@ -21,7 +21,7 @@ export function StakeColumn({ stake, hideCoinSymbol, inMIST = false }: StakeColu
 			</Text>
 			{!hideCoinSymbol && (
 				<Text variant="captionSmall/medium" color="steel-dark">
-					{inMIST ? 'MIST' : symbol}
+					{inMIST ? 'nDWLT' : symbol}
 				</Text>
 			)}
 		</div>

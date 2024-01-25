@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /**
  *  ######################################
@@ -201,7 +201,7 @@ export interface GetBalanceParams {
 	owner: string;
 	/**
 	 * optional type names for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC),
-	 * default to 0x2::sui::SUI if not specified.
+	 * default to 0x2::dwlt::DWLT if not specified.
 	 */
 	coinType?: string | null | undefined;
 }
@@ -216,7 +216,7 @@ export interface GetCoinsParams {
 	owner: string;
 	/**
 	 * optional type name for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC),
-	 * default to 0x2::sui::SUI if not specified.
+	 * default to 0x2::dwlt::DWLT if not specified.
 	 */
 	coinType?: string | null | undefined;
 	/** optional paging cursor */

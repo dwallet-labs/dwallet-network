@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // This is adapted from https://github.com/alepop/ed25519-hd-key replacing create-hmac
 // with @noble/hashes to be browser compatible.

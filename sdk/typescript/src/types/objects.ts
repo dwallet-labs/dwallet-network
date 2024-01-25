@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { Infer } from 'superstruct';
 import {
@@ -72,7 +72,7 @@ export const MovePackageContent = record(string(), unknown());
 export type MovePackageContent = Infer<typeof MovePackageContent>;
 
 export const SuiMoveObject = object({
-	/** Move type (e.g., "0x2::coin::Coin<0x2::sui::SUI>") */
+	/** Move type (e.g., "0x2::coin::Coin<0x2::dwlt::DWLT>") */
 	type: string(),
 	/** Fields and values stored inside the Move object */
 	fields: ObjectContentFields,
@@ -93,7 +93,7 @@ export const SuiParsedData = union([
 export type SuiParsedData = Infer<typeof SuiParsedData>;
 
 export const SuiRawMoveObject = object({
-	/** Move type (e.g., "0x2::coin::Coin<0x2::sui::SUI>") */
+	/** Move type (e.g., "0x2::coin::Coin<0x2::dwlt::DWLT>") */
 	type: string(),
 	hasPublicTransfer: boolean(),
 	version: string(),
@@ -306,7 +306,7 @@ export function isSuiObjectResponse(
 
 /**
  * Deriving the object type from the object response
- * @returns 'package' if the object is a package, move object type(e.g., 0x2::coin::Coin<0x2::sui::SUI>)
+ * @returns 'package' if the object is a package, move object type(e.g., 0x2::coin::Coin<0x2::dwlt::DWLT>)
  * if the object is a move object
  */
 export function getObjectType(

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This is a module that records Tokio-tracing [span](https://docs.rs/tracing/latest/tracing/span/index.html)
 //! latencies into Prometheus histograms directly.

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Sui types for specifying off-chain/external resources.
 ///
@@ -7,7 +7,7 @@
 /// RFC 2119.
 ///
 module utils::immutable_external_resource {
-    use sui::url::{Url, inner_url};
+    use dwallet::url::{Url, inner_url};
 
     /// ImmutableExternalResource: An arbitrary, mutable URL plus an immutable digest of the resource.
     ///
@@ -42,6 +42,6 @@ module utils::immutable_external_resource {
 
     /// Update the URL, but the digest of the resource must never change.
     public fun update(self: &mut ImmutableExternalResource, url: Url) {
-        sui::url::update(&mut self.url, inner_url(&url))
+        dwallet::url::update(&mut self.url, inner_url(&url))
     }
 }

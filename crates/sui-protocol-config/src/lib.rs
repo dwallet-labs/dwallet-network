@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use clap::*;
 use serde::{Deserialize, Serialize};
@@ -1721,6 +1721,13 @@ impl ProtocolConfig {
                     }
 
                     cfg.feature_flags.enable_effects_v2 = true;
+
+                    cfg.feature_flags.zklogin_auth = false;
+                    cfg.feature_flags.accept_zklogin_in_multisig = false;
+                    cfg.feature_flags.verify_legacy_zklogin_address = false;
+                    cfg.feature_flags.enable_jwk_consensus_updates = false;
+                    cfg.feature_flags.zklogin_supported_providers = Default::default();
+                    cfg.feature_flags.random_beacon = false;
                 }
                 // Use this template when making changes:
                 //

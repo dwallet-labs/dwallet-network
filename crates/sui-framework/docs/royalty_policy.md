@@ -14,7 +14,7 @@ A <code>TransferPolicy</code> Rule which implements percentage-based royalty fee
 
 
 <pre><code><b>use</b> <a href="coin.md#0x2_coin">0x2::coin</a>;
-<b>use</b> <a href="sui.md#0x2_sui">0x2::sui</a>;
+<b>use</b> <a href="sui.md#0x2_sui">0x2::dwallet</a>;
 <b>use</b> <a href="transfer_policy.md#0x2_transfer_policy">0x2::transfer_policy</a>;
 <b>use</b> <a href="tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>

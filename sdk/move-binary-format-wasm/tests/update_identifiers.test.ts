@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { describe, it, expect } from "vitest";
 import { deserialize, serialize, update_identifiers } from "../pkg";

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { filter, fromEventPattern, share, take, takeWhile } from 'rxjs';
 import Browser from 'webextension-polyfill';

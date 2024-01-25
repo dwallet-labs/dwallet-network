@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { PACKAGE_VERSION, TARGETED_RPC_VERSION } from '../version.js';
 import { JsonRpcError, SuiHTTPStatusError } from './errors.js';

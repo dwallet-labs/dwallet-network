@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::config::{PeerValidationConfig, RemoteWriteConfig};
 use crate::handlers::publish_metrics;
 use crate::histogram_relay::HistogramRelay;

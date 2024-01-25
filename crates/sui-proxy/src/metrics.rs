@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use axum::{extract::Extension, routing::get, Router};
 use mysten_metrics::RegistryService;
 use prometheus::Registry;

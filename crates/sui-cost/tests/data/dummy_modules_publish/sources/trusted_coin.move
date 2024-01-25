@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Example coin with a trusted owner responsible for minting/burning (e.g., a stablecoin)
 module examples::trusted_coin {
     use std::option;
-    use sui::coin::{Self, TreasuryCap};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::coin::{Self, TreasuryCap};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     /// Name of the coin
     struct TRUSTED_COIN has drop {}

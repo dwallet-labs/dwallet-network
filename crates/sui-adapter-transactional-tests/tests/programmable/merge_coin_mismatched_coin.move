@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests various mismatched coin types for merge coins
 
@@ -8,9 +8,9 @@
 //# publish --sender A
 module test::fake {
     use std::option;
-    use sui::coin;
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::coin;
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct FAKE has drop {}
 
@@ -23,13 +23,13 @@ module test::fake {
 }
 
 //# programmable --sender A --inputs object(1,2) 100 @A
-//> 0: sui::coin::mint<test::fake::FAKE>(Input(0), Input(1));
+//> 0: dwallet::coin::mint<test::fake::FAKE>(Input(0), Input(1));
 //> TransferObjects([Result(0)], Input(2))
 
 //# view-object 2,0
 
 //# programmable --sender A --inputs object(1,2) 100
-//> 0: sui::coin::mint<test::fake::FAKE>(Input(0), Input(1));
+//> 0: dwallet::coin::mint<test::fake::FAKE>(Input(0), Input(1));
 //> MergeCoins(Gas, [Result(0)])
 
 //# programmable --sender A --inputs object(2,0)
@@ -37,11 +37,11 @@ module test::fake {
 
 
 //# programmable --sender A --inputs object(1,2) 100 object(2,0)
-//> 0: sui::coin::mint<test::fake::FAKE>(Input(0), Input(1));
+//> 0: dwallet::coin::mint<test::fake::FAKE>(Input(0), Input(1));
 //> 1: SplitCoins(Gas, [Input(1)]);
 //> MergeCoins(Result(0), [Input(2), Result(1)])
 
 //# programmable --sender A --inputs object(1,2) 100
-//> 0: sui::coin::mint<test::fake::FAKE>(Input(0), Input(1));
+//> 0: dwallet::coin::mint<test::fake::FAKE>(Input(0), Input(1));
 //> 1: SplitCoins(Result(0), [Input(1)]);
 //> MergeCoins(Gas, [Result(1)])

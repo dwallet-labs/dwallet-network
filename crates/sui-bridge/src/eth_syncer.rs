@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! The EthSyncer module is responsible for synchronizing Events emitted on Ethereum blockchain from
 //! concerned contracts. Each contract is associated with a start block number, and the syncer will

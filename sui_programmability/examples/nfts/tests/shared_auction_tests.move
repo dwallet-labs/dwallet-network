@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module nfts::shared_auction_tests {
     use std::vector;
 
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
-    use sui::object::{Self, UID};
-    use sui::test_scenario::Self;
-    use sui::transfer;
-    use sui::tx_context::TxContext;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::dwlt::DWLT;
+    use dwallet::object::{Self, UID};
+    use dwallet::test_scenario::Self;
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
 
     use nfts::shared_auction;
     use nfts::auction_lib::Auction;
@@ -34,7 +34,7 @@ module nfts::shared_auction_tests {
     fun init_bidders(ctx: &mut TxContext, bidders: vector<address>) {
         while (!vector::is_empty(&bidders)) {
             let bidder = vector::pop_back(&mut bidders);
-            let coin = coin::mint_for_testing<SUI>(COIN_VALUE, ctx);
+            let coin = coin::mint_for_testing<DWLT>(COIN_VALUE, ctx);
             transfer::public_transfer(coin, bidder);
         };
     }
@@ -69,7 +69,7 @@ module nfts::shared_auction_tests {
         // a transaction by the first bidder to put a bid
         test_scenario::next_tx(scenario, bidder1);
         {
-            let coin = test_scenario::take_from_sender<Coin<SUI>>(scenario);
+            let coin = test_scenario::take_from_sender<Coin<DWLT>>(scenario);
             let auction_val = test_scenario::take_shared<Auction<SomeItemToSell>>(scenario);
             let auction = &mut auction_val;
 
@@ -83,7 +83,7 @@ module nfts::shared_auction_tests {
         // bidder's)
         test_scenario::next_tx(scenario, bidder2);
         {
-            let coin = test_scenario::take_from_sender<Coin<SUI>>(scenario);
+            let coin = test_scenario::take_from_sender<Coin<DWLT>>(scenario);
             let auction_val = test_scenario::take_shared<Auction<SomeItemToSell>>(scenario);
             let auction = &mut auction_val;
 
@@ -96,7 +96,7 @@ module nfts::shared_auction_tests {
         // have been returned (as a result of the failed bid).
         test_scenario::next_tx(scenario, bidder2);
         {
-            let coin = test_scenario::take_from_sender<Coin<SUI>>(scenario);
+            let coin = test_scenario::take_from_sender<Coin<DWLT>>(scenario);
 
             assert!(coin::value(&coin) == COIN_VALUE, EWRONG_COIN_VALUE);
 

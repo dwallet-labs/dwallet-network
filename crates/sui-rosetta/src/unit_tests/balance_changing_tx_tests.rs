@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::operations::Operations;
 use crate::types::{ConstructionMetadata, OperationStatus, OperationType};
@@ -611,7 +611,7 @@ async fn test_delegation_parsing() -> Result<(), anyhow::Error> {
             "operation_identifier":{"index":0},
             "type":"Stake",
             "account": { "address" : sender.to_string() },
-            "amount" : { "value": "-100000" , "currency": { "symbol": "SUI", "decimals": 9}},
+            "amount" : { "value": "-100000" , "currency": { "symbol": "DWLT", "decimals": 9}},
             "metadata": { "Stake" : {"validator": validator.to_string()} }
         }]
     ))

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This analysis flags situations when instances of a sui::table::Table or sui::table_vec::TableVec
 //! or sui::bag::Bag are being compared for (in)equality at this type of comparison is not very

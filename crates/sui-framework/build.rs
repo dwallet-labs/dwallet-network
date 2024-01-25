@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::Result;
 use move_binary_format::CompiledModule;
@@ -21,8 +21,8 @@ fn main() {
     let packages_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("packages");
 
     let deepbook_path = packages_path.join("deepbook");
-    let sui_system_path = packages_path.join("sui-system");
-    let sui_framework_path = packages_path.join("sui-framework");
+    let sui_system_path = packages_path.join("dwallet-system");
+    let sui_framework_path = packages_path.join("dwallet-framework");
     let deepbook_path_clone = deepbook_path.clone();
     let sui_system_path_clone = sui_system_path.clone();
     let sui_framework_path_clone = sui_framework_path.clone();
@@ -97,8 +97,8 @@ fn build_packages(
         sui_framework_path.clone(),
         out_dir.clone(),
         "deepbook",
-        "sui-system",
-        "sui-framework",
+        "dwallet-system",
+        "dwallet-framework",
         "move-stdlib",
         config,
     );
@@ -116,9 +116,9 @@ fn build_packages(
         sui_framework_path,
         out_dir,
         "deepbook-test",
-        "sui-system-test",
-        "sui-framework-test",
-        "move-stdlib-test",
+        "dwallet-system-test",
+        "dwallet-framework-test",
+        "dwallet-stdlib-test",
         config,
     );
 }

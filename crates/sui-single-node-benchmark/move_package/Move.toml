@@ -3,7 +3,7 @@ name = "MoveBenchmark"
 version = "0.0.1"
 
 [dependencies]
-Sui = { local = "../../sui-framework/packages/sui-framework" }
+dWallet = { local = "../../sui-framework/packages/dwallet-framework" }
 
 [addresses]
 move_benchmark = "0x0"

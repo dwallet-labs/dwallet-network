@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useIsWalletDefiEnabled } from '_app/hooks/useIsWalletDefiEnabled';
 import { LargeButton } from '_app/shared/LargeButton';
@@ -10,7 +10,7 @@ import { CoinIcon } from '_components/coin-icon';
 import Loading from '_components/loading';
 import { filterAndSortTokenBalances } from '_helpers';
 import {
-	useAllowedSwapCoinsList,
+	// useAllowedSwapCoinsList,
 	useAppSelector,
 	useCoinsReFetchingConfig,
 	useSortedCoinsByCategories,
@@ -27,7 +27,7 @@ import PageTitle from '_src/ui/app/shared/PageTitle';
 import { useFeature } from '@growthbook/growthbook-react';
 import {
 	useAppsBackend,
-	useBalanceInUSD,
+	// useBalanceInUSD,
 	useCoinMetadata,
 	useFormatCoin,
 	useResolveSuiNSName,
@@ -41,7 +41,7 @@ import clsx from 'clsx';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import Interstitial, { type InterstitialConfig } from '../interstitial';
-import { useOnrampProviders } from '../onramp/useOnrampProviders';
+//import { useOnrampProviders } from '../onramp/useOnrampProviders';
 import { CoinBalance } from './coin-balance';
 import { PortfolioName } from './PortfolioName';
 import { TokenIconLink } from './TokenIconLink';
@@ -108,11 +108,11 @@ export function TokenRow({
 	const params = new URLSearchParams({
 		type: coinBalance.coinType,
 	});
-	const allowedSwapCoinsList = useAllowedSwapCoinsList();
+	//const allowedSwapCoinsList = useAllowedSwapCoinsList();
 
-	const balanceInUsd = useBalanceInUSD(coinBalance.coinType, coinBalance.totalBalance);
-
-	const isRenderSwapButton = allowedSwapCoinsList.includes(coinType);
+	// const balanceInUsd = useBalanceInUSD(coinBalance.coinType, coinBalance.totalBalance);
+	//
+	// const isRenderSwapButton = allowedSwapCoinsList.includes(coinType);
 
 	return (
 		<Tag
@@ -151,21 +151,21 @@ export function TokenRow({
 							>
 								Send
 							</TokenRowButton>
-							{isRenderSwapButton && (
-								<TokenRowButton
-									coinBalance={coinBalance}
-									to={`/swap?${params.toString()}`}
-									onClick={() => {
-										ampli.clickedSwapCoin({
-											coinType: coinBalance.coinType,
-											totalBalance: Number(formatted),
-											sourceFlow: 'TokenRow',
-										});
-									}}
-								>
-									Swap
-								</TokenRowButton>
-							)}
+							{/*{isRenderSwapButton && (*/}
+							{/*	<TokenRowButton*/}
+							{/*		coinBalance={coinBalance}*/}
+							{/*		to={`/swap?${params.toString()}`}*/}
+							{/*		onClick={() => {*/}
+							{/*			ampli.clickedSwapCoin({*/}
+							{/*				coinType: coinBalance.coinType,*/}
+							{/*				totalBalance: Number(formatted),*/}
+							{/*				sourceFlow: 'TokenRow',*/}
+							{/*			});*/}
+							{/*		}}*/}
+							{/*	>*/}
+							{/*		Swap*/}
+							{/*	</TokenRowButton>*/}
+							{/*)}*/}
 						</div>
 					) : (
 						<div className="flex gap-1 items-center">
@@ -187,14 +187,14 @@ export function TokenRow({
 					</Text>
 				)}
 
-				{balanceInUsd && balanceInUsd > 0 && (
-					<Text variant="subtitle" color="steel-dark" weight="medium">
-						{Number(balanceInUsd).toLocaleString('en', {
-							style: 'currency',
-							currency: 'USD',
-						})}
-					</Text>
-				)}
+				{/*{balanceInUsd && balanceInUsd > 0 && (*/}
+				{/*	<Text variant="subtitle" color="steel-dark" weight="medium">*/}
+				{/*		{Number(balanceInUsd).toLocaleString('en', {*/}
+				{/*			style: 'currency',*/}
+				{/*			currency: 'USD',*/}
+				{/*		})}*/}
+				{/*	</Text>*/}
+				{/*)}*/}
 			</div>
 		</Tag>
 	);
@@ -353,10 +353,10 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 		FEATURES.WALLET_INTERSTITIAL_CONFIG,
 	).value;
 
-	const { providers } = useOnrampProviders();
+	//const { providers } = useOnrampProviders();
 
 	const tokenBalance = BigInt(coinBalance?.totalBalance ?? 0);
-	const [formatted] = useFormatCoin(tokenBalance, activeCoinType);
+	// const [formatted] = useFormatCoin(tokenBalance, activeCoinType);
 
 	const { data: coinMetadata } = useCoinMetadata(activeCoinType);
 	const coinSymbol = coinMetadata ? coinMetadata.symbol : getFallbackSymbol(activeCoinType);
@@ -433,9 +433,10 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 										<div className="flex flex-col gap-5">
 											<div className="flex flex-col flex-nowrap justify-center items-center text-center px-2.5">
 												<Text variant="pBodySmall" color="gray-80" weight="normal">
-													{isMainnet
-														? 'Buy SUI to get started'
-														: 'To send transactions on the Sui network, you need SUI in your wallet.'}
+													{/*{isMainnet*/}
+													{/*	? 'Buy DWLT to get started'*/}
+													{/*	: 'To send transactions on the dWallet network, you need DWLT in your wallet.'}*/}
+													To send transactions on the dWallet network, you need DWLT in your wallet.
 												</Text>
 											</div>
 											<FaucetRequestButton />
@@ -449,22 +450,22 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 										</Alert>
 									) : null}
 									<div className="grid grid-cols-3 gap-3 w-full">
-										{isMainnet ? (
-											<LargeButton
-												spacing="sm"
-												className={
-													!accountHasSui && isMainnet
-														? 'col-span-3 !bg-sui-primaryBlue2023 !text-white'
-														: ''
-												}
-												primary={!accountHasSui}
-												center
-												to="/onramp"
-												disabled={(coinType && coinType !== SUI_TYPE_ARG) || !providers?.length}
-											>
-												Buy
-											</LargeButton>
-										) : null}
+										{/*{isMainnet ? (*/}
+										{/*	<LargeButton*/}
+										{/*		spacing="sm"*/}
+										{/*		className={*/}
+										{/*			!accountHasSui && isMainnet*/}
+										{/*				? 'col-span-3 !bg-sui-primaryBlue2023 !text-white'*/}
+										{/*				: ''*/}
+										{/*		}*/}
+										{/*		primary={!accountHasSui}*/}
+										{/*		center*/}
+										{/*		to="/onramp"*/}
+										{/*		disabled={(coinType && coinType !== SUI_TYPE_ARG) || !providers?.length}*/}
+										{/*	>*/}
+										{/*		Buy*/}
+										{/*	</LargeButton>*/}
+										{/*) : null}*/}
 
 										<LargeButton
 											center
@@ -481,30 +482,30 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 											Send
 										</LargeButton>
 
-										<LargeButton
-											center
-											disabled={!isDefiWalletEnabled || !tokenBalance}
-											to={`/swap${
-												coinBalance?.coinType
-													? `?${new URLSearchParams({
-															type: coinBalance.coinType,
-													  }).toString()}`
-													: ''
-											}`}
-											onClick={() => {
-												if (!coinBalance) {
-													return;
-												}
+										{/*<LargeButton*/}
+										{/*	center*/}
+										{/*	disabled={!isDefiWalletEnabled || !tokenBalance}*/}
+										{/*	to={`/swap${*/}
+										{/*		coinBalance?.coinType*/}
+										{/*			? `?${new URLSearchParams({*/}
+										{/*					type: coinBalance.coinType,*/}
+										{/*			  }).toString()}`*/}
+										{/*			: ''*/}
+										{/*	}`}*/}
+										{/*	onClick={() => {*/}
+										{/*		if (!coinBalance) {*/}
+										{/*			return;*/}
+										{/*		}*/}
 
-												ampli.clickedSwapCoin({
-													coinType: coinBalance.coinType,
-													totalBalance: Number(formatted),
-													sourceFlow: 'LargeButton-TokenDetails',
-												});
-											}}
-										>
-											Swap
-										</LargeButton>
+										{/*		ampli.clickedSwapCoin({*/}
+										{/*			coinType: coinBalance.coinType,*/}
+										{/*			totalBalance: Number(formatted),*/}
+										{/*			sourceFlow: 'LargeButton-TokenDetails',*/}
+										{/*		});*/}
+										{/*	}}*/}
+										{/*>*/}
+										{/*	Swap*/}
+										{/*</LargeButton>*/}
 										{!accountHasSui && (
 											<LargeButton disabled to="/stake" center>
 												Stake

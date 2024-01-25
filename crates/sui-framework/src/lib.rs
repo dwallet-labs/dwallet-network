@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_binary_format::compatibility::Compatibility;
 use move_binary_format::file_format::{Ability, AbilitySet};
@@ -110,12 +110,12 @@ impl BuiltInFramework {
             (MOVE_STDLIB_PACKAGE_ID, "move-stdlib", []),
             (
                 SUI_FRAMEWORK_PACKAGE_ID,
-                "sui-framework",
+                "dwallet-framework",
                 [MOVE_STDLIB_PACKAGE_ID]
             ),
             (
                 SUI_SYSTEM_PACKAGE_ID,
-                "sui-system",
+                "dwallet-system",
                 [MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID]
             ),
             (

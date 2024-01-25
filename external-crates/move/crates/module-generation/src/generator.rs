@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{options::ModuleGeneratorOptions, padding::Pad, utils::random_string};
 use move_binary_format::file_format::CompiledModule;

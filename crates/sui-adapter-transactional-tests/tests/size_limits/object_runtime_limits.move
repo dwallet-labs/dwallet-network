@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 
 //# init --addresses a=0x0 --accounts A --max-gas 100000000000000
@@ -7,9 +7,9 @@
 //# publish
 module a::m {
 
-    use sui::dynamic_field::add;
-    use sui::object;
-    use sui::tx_context::{sender, TxContext};
+    use dwallet::dynamic_field::add;
+    use dwallet::object;
+    use dwallet::tx_context::{sender, TxContext};
 
     struct Obj has key {
         id: object::UID,
@@ -20,7 +20,7 @@ module a::m {
         while (i < n) {
             let id = object::new(ctx);
             add<u64, u64>(&mut id, i, i);
-            sui::transfer::transfer(Obj { id }, sender(ctx));
+            dwallet::transfer::transfer(Obj { id }, sender(ctx));
 
             i = i + 1;
         };

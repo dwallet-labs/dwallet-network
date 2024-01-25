@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import Loading from '_components/loading';
 import Overlay from '_components/overlay';
@@ -48,11 +48,11 @@ function FromAssetsComponent() {
 							<Fragment key={coinBalance.coinType}>
 								<TokenRow
 									coinBalance={coinBalance}
-									onClick={() => {
-										navigate(
-											`/swap?${new URLSearchParams({ type: coinBalance.coinType }).toString()}`,
-										);
-									}}
+									// onClick={() => {
+									// 	navigate(
+									// 		`/swap?${new URLSearchParams({ type: coinBalance.coinType }).toString()}`,
+									// 	);
+									// }}
 								/>
 
 								{index !== recognized.length - 1 && <div className="bg-gray-45 h-px w-full" />}

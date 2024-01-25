@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::str::FromStr;
 
@@ -137,7 +137,7 @@ impl Event {
 
     pub fn is_system_epoch_info_event(&self) -> bool {
         self.type_.address == SUI_SYSTEM_ADDRESS
-            && self.type_.module.as_ident_str() == ident_str!("sui_system_state_inner")
+            && self.type_.module.as_ident_str() == ident_str!("dwallet_system_state_inner")
             && self.type_.name.as_ident_str() == ident_str!("SystemEpochInfoEvent")
     }
 }

@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// The Safe standard is a minimalistic shared wrapper around a coin. It provides a way for users to provide third-party dApps with
 /// the capability to transfer coins away from their wallets, if they are provided with the correct permission.
 module utils::safe {
-    use sui::object::{Self, ID, UID};
-    use sui::tx_context::{TxContext, sender};
-    use sui::transfer;
-    use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin};
-    use sui::vec_set::{Self, VecSet};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::tx_context::{TxContext, sender};
+    use dwallet::transfer;
+    use dwallet::balance::{Self, Balance};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::vec_set::{Self, VecSet};
 
     // Errors
     const EInvalidTransferCapability: u64 = 0;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 """
 Script to be used for deleting old snapshots on a host. Given a root dir,

@@ -1,7 +1,7 @@
 {
-	"name": "sui-wallet",
+	"name": "dwallet-wallet",
 	"private": true,
-	"description": "A wallet for Sui",
+	"description": "A wallet for dWallet",
 	"main": "./dist/ui.js",
 	"scripts": {
 		"build": "pnpm build:prod",
@@ -32,14 +32,14 @@
 		"url": "github.com:MystenLabs/sui.git"
 	},
 	"keywords": [
-		"sui",
+		"dwallet",
 		"wallet",
 		"coins",
 		"tokens",
 		"balance"
 	],
 	"author": "Mysten Labs <build@mystenlabs.com>",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"devDependencies": {
 		"@amplitude/ampli": "^1.31.5",
 		"@amplitude/analytics-types": "^0.20.0",

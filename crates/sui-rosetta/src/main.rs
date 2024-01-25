@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -19,7 +19,7 @@ use tracing::log::warn;
 use sui_config::{sui_config_dir, Config, NodeConfig, SUI_FULLNODE_CONFIG, SUI_KEYSTORE_FILENAME};
 use sui_node::SuiNode;
 use sui_rosetta::types::{CurveType, PrefundedAccount, SuiEnv};
-use sui_rosetta::{RosettaOfflineServer, RosettaOnlineServer, SUI};
+use sui_rosetta::{RosettaOfflineServer, RosettaOnlineServer, DWLT};
 use sui_sdk::{SuiClient, SuiClientBuilder};
 use sui_types::base_types::SuiAddress;
 use sui_types::crypto::{EncodeDecodeBase64, KeypairTraits, SuiKeyPair, ToFromBytes};
@@ -233,7 +233,7 @@ fn read_prefunded_account(path: &Path) -> Result<Vec<PrefundedAccount>, anyhow::
                 privkey,
                 account_identifier: address.into(),
                 curve_type,
-                currency: SUI.clone(),
+                currency: DWLT.clone(),
             }
         })
         .collect())

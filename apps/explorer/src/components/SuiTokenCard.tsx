@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { COIN_GECKO_SUI_URL, useSuiCoinData } from '@mysten/core';
 import { Sui } from '@mysten/icons';
@@ -28,7 +28,7 @@ export function SuiTokenCard() {
 					</div>
 					<div className="flex w-full flex-col gap-0.5">
 						<Text variant="body/semibold" color="steel-darker">
-							1 SUI = {formattedPrice}
+							1 DWLT = {formattedPrice}
 						</Text>
 						<Text variant="subtitleSmallExtra/medium" color="steel">
 							via CoinGecko

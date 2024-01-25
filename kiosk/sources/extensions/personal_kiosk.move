@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Description:
 /// This module provides a wrapper for the KioskOwnerCap that makes the Kiosk
@@ -7,11 +7,11 @@
 ///
 module kiosk::personal_kiosk {
     use std::option::{Self, Option};
-    use sui::transfer;
-    use sui::kiosk::{Self, Kiosk, KioskOwnerCap};
-    use sui::object::{Self, ID, UID};
-    use sui::tx_context::{sender, TxContext};
-    use sui::dynamic_field as df;
+    use dwallet::transfer;
+    use dwallet::kiosk::{Self, Kiosk, KioskOwnerCap};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::tx_context::{sender, TxContext};
+    use dwallet::dynamic_field as df;
 
     /// Trying to return the Cap / Borrow to a wrong PersonalKioskCap object.
     const EIncorrectCapObject: u64 = 0;

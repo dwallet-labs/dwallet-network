@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { DEFAULT_API_ENV } from '_app/ApiProvider';
 import { getUrlWithDeviceId } from '_src/shared/analytics/amplitude';

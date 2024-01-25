@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use async_trait::async_trait;
 use sui_protocol_config::ProtocolConfig;
 use types::Batch;

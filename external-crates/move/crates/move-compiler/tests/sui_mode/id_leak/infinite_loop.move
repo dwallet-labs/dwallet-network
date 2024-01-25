@@ -1,7 +1,7 @@
 // Modules with infinite loops to stress the ID leak verifier
 module a::m {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
 
     struct Obj has key {
         id: UID,
@@ -33,11 +33,11 @@ module a::m {
 }
 
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }
-    public fun new(_: &mut sui::tx_context::TxContext): UID {
+    public fun new(_: &mut dwallet::tx_context::TxContext): UID {
         abort 0
     }
     public fun delete(_: UID) {
@@ -45,14 +45,14 @@ module sui::object {
     }
 }
 
-module sui::tx_context {
+module dwallet::tx_context {
     struct TxContext has drop {}
     public fun sender(_: &TxContext): address {
         @0
     }
 }
 
-module sui::transfer {
+module dwallet::transfer {
     public fun transfer<T: key>(_: T, _: address) {
         abort 0
     }

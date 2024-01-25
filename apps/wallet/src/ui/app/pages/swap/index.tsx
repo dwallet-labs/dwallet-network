@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useActiveAccount } from '_app/hooks/useActiveAccount';
 import { useRecognizedPackages } from '_app/hooks/useRecognizedPackages';
@@ -69,7 +69,7 @@ function getSwapPageAtcText(
 ) {
 	const toSymbol =
 		toAssetType === SUI_TYPE_ARG
-			? Coins.SUI
+			? Coins.DWLT
 			: Object.entries(coinsMap).find(([key, value]) => value === toAssetType)?.[0] || '';
 
 	return `Swap ${fromSymbol} to ${toSymbol}`;

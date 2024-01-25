@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests valid gas coin usage by reference
 
@@ -23,22 +23,22 @@ module test::m1 {
 
 // can pass to Move function by ref
 //# programmable --sender A
-//> test::m1::t1<sui::coin::Coin<sui::sui::SUI>>(Gas)
+//> test::m1::t1<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Gas)
 
 //# programmable --sender A
-//> test::m1::t2<sui::coin::Coin<sui::sui::SUI>>(Gas)
+//> test::m1::t2<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Gas)
 
 //# programmable --sender A
-//> test::m1::t2<sui::coin::Coin<sui::sui::SUI>>(Gas)
+//> test::m1::t2<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Gas)
 
 //# programmable --sender A
-//> test::m1::t4<sui::coin::Coin<sui::sui::SUI>>(Gas)
+//> test::m1::t4<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Gas)
 
 //# programmable --sender A
-//> test::m1::t5<sui::coin::Coin<sui::sui::SUI>>(Gas)
+//> test::m1::t5<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Gas)
 
 //# programmable --sender A
-//> test::m1::t6<sui::coin::Coin<sui::sui::SUI>>(Gas)
+//> test::m1::t6<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Gas)
 
 // can pass to merge and split
 //# programmable --sender A --inputs 10  --gas-budget 10000000000

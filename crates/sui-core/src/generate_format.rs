@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use clap::*;
 use fastcrypto_zkp::bn254::zk_login::OIDCProvider;
 use move_core_types::language_storage::{StructTag, TypeTag};
@@ -137,7 +137,7 @@ fn get_registry() -> Result<Registry> {
     let ccd = CheckpointContentsDigest::random();
     tracer.trace_value(&mut samples, &ccd)?;
 
-    let struct_tag = StructTag::from_str("0x2::coin::Coin<0x2::sui::SUI>").unwrap();
+    let struct_tag = StructTag::from_str("0x2::coin::Coin<0x2::dwlt::DWLT>").unwrap();
     tracer.trace_value(&mut samples, &struct_tag)?;
 
     let ccd = CheckpointDigest::random();

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Example of a game mod or different game that uses objects from the Hero
 /// game.
@@ -11,10 +11,10 @@
 module games::sea_hero {
     use games::hero::{Self, Hero};
 
-    use sui::balance::{Self, Balance, Supply};
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::balance::{Self, Balance, Supply};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     /// Admin capability granting permission to mint RUM tokens and
     /// create monsters

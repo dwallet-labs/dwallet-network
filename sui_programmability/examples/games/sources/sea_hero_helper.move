@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Mod of the economics of the SeaHero game. In the game, a `Hero` can only
 /// slay a `SeaMonster` if they have sufficient strength. This mod allows a
@@ -10,10 +10,10 @@
 module games::sea_hero_helper {
     use games::sea_hero::{Self, SeaMonster, RUM};
     use games::hero::Hero;
-    use sui::coin::{Self, Coin};
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     /// Created by `monster_owner`, a player with a monster that's too strong
     /// for them to slay + transferred to a player who can slay the monster.

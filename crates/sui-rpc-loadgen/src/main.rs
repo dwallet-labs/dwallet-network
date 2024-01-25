@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 mod load_test;
 mod payload;
@@ -148,7 +148,7 @@ fn get_keypair() -> Result<SignerInfo> {
 
 fn get_sui_config_directory() -> PathBuf {
     match dirs::home_dir() {
-        Some(v) => v.join(".sui").join("sui_config"),
+        Some(v) => v.join(".dwallet").join("dwallet_config"),
         None => panic!("Cannot obtain home directory path"),
     }
 }

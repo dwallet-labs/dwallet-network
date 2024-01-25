@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -27,8 +27,8 @@ pub mod operations;
 mod state;
 pub mod types;
 
-pub static SUI: Lazy<Currency> = Lazy::new(|| Currency {
-    symbol: "SUI".to_string(),
+pub static DWLT: Lazy<Currency> = Lazy::new(|| Currency {
+    symbol: "DWLT".to_string(),
     decimals: 9,
 });
 

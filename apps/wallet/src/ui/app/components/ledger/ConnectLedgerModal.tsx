@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { ampli } from '_src/shared/analytics/ampli';
 import { useSuiLedgerClient } from '_src/ui/app/components/ledger/SuiLedgerClientProvider';
@@ -57,7 +57,7 @@ export function ConnectLedgerModal({ onClose, onConfirm, onError }: ConnectLedge
 					</div>
 					<div className="break-words text-center mt-4.5">
 						<Text variant="pBodySmall" color="steel-darker" weight="normal">
-							Connect your ledger to your computer, unlock it, and launch the Sui app. Click
+							Connect your ledger to your computer, unlock it, and launch the dWallet app. Click
 							Continue when done.
 						</Text>
 						<div className="flex items-center justify-center mt-2">

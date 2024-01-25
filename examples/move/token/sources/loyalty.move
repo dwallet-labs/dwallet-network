@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This module illustrates a Closed Loop Loyalty Token. The `Token` is sent to
 /// users as a reward for their loyalty by the application Admin. The `Token`
@@ -9,12 +9,12 @@
 /// - spend - spend the token in the shop
 module examples::loyalty {
     use std::option;
-    use sui::transfer;
-    use sui::object::{Self, UID};
-    use sui::coin::{Self, TreasuryCap};
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::transfer;
+    use dwallet::object::{Self, UID};
+    use dwallet::coin::{Self, TreasuryCap};
+    use dwallet::tx_context::{Self, TxContext};
 
-    use sui::token::{Self, ActionRequest, Token};
+    use dwallet::token::{Self, ActionRequest, Token};
 
     /// Token amount does not match the `GIFT_PRICE`.
     const EIncorrectAmount: u64 = 0;

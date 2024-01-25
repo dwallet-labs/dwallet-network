@@ -1,7 +1,7 @@
 // invalid, wrong one-time witness type name format
 
 module a::mod {
-    use sui::tx_context;
+    use dwallet::tx_context;
 
     struct Mod has drop { dummy: bool }
 
@@ -9,6 +9,6 @@ module a::mod {
     }
 }
 
-module sui::tx_context {
+module dwallet::tx_context {
     struct TxContext has drop {}
 }

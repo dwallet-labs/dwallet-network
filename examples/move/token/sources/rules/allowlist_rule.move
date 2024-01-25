@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// A simple allowlist rule - allows only the addresses on the allowlist to
 /// perform an Action.
 module examples::allowlist_rule {
     use std::option;
     use std::vector;
-    use sui::bag::{Self, Bag};
-    use sui::tx_context::TxContext;
-    use sui::token::{
+    use dwallet::bag::{Self, Bag};
+    use dwallet::tx_context::TxContext;
+    use dwallet::token::{
         Self,
         TokenPolicy,
         TokenPolicyCap,

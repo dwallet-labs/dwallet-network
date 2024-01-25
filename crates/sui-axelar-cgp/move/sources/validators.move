@@ -1,21 +1,21 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module axelar::validators {
     use std::string::{Self, String};
     use std::vector;
 
-    use sui::table::{Self, Table};
-    use sui::address;
-    use sui::bcs;
-    use sui::dynamic_field as df;
-    use sui::ecdsa_k1 as ecdsa;
-    use sui::event;
-    use sui::hash;
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::TxContext;
-    use sui::vec_map:: {Self, VecMap};
+    use dwallet::table::{Self, Table};
+    use dwallet::address;
+    use dwallet::bcs;
+    use dwallet::dynamic_field as df;
+    use dwallet::ecdsa_k1 as ecdsa;
+    use dwallet::event;
+    use dwallet::hash;
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
+    use dwallet::vec_map:: {Self, VecMap};
 
     use axelar::channel::{Self, ApprovedCall};
     use axelar::utils::{normalize_signature, operators_hash};

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses P0=0x0 P1=0x0 --accounts A --simulator
 
@@ -29,7 +29,7 @@ fragment Signature on MoveFunction {
 
             }
 
-            sui: module(name: "sui") {
+            sui: module(name: "dwallet") {
                 # A private function
                 new: function(name: "new") { ...Signature }
             }

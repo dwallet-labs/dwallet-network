@@ -1,7 +1,7 @@
 // correct, bool field specified at source level
 
 module a::m {
-    use sui::tx_context;
+    use dwallet::tx_context;
 
     struct M has drop { some_field: bool }
 
@@ -10,6 +10,6 @@ module a::m {
     }
 }
 
-module sui::tx_context {
+module dwallet::tx_context {
     struct TxContext has drop {}
 }

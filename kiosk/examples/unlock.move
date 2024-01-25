@@ -1,21 +1,21 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 /// This module contains a simple `unlocker` module which enables creators to
 /// `unlock` (as opposed to `lock`) assets without fulfilling the default set
 /// of requirements (rules / policies).
 module kiosk::unlock_example {
-    use sui::kiosk::{Self, Kiosk, KioskOwnerCap};
-    use sui::package::{Self, Publisher};
-    use sui::object::{Self, ID, UID};
-    use sui::tx_context::TxContext;
-    use sui::transfer_policy::{
+    use dwallet::kiosk::{Self, Kiosk, KioskOwnerCap};
+    use dwallet::package::{Self, Publisher};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::transfer_policy::{
         Self as policy,
         TransferPolicy,
         TransferPolicyCap
     };
-    use sui::coin;
+    use dwallet::coin;
 
     /// Trying to destroy the Unlocker object while not being its publisher.
     const ENotPublisher: u64 = 0;
@@ -69,7 +69,7 @@ module kiosk::unlock_example {
     }
 
     #[test_only]
-    use sui::kiosk_test_utils::{
+    use dwallet::kiosk_test_utils::{
         Self as test,
         Asset
     };

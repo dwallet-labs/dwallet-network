@@ -5,13 +5,13 @@ module a::m {
         abort 0
     }
 
-    struct Obj has key { id: sui::object::UID }
+    struct Obj has key { id: dwallet::object::UID }
     public entry fun t2(_: bool, _: &mut Obj) {
         abort 0
     }
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }

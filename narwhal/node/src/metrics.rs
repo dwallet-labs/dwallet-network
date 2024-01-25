@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use axum::{routing::get, Extension, Router};
 use config::{AuthorityIdentifier, WorkerId};
 use mysten_metrics::{metrics, spawn_logged_monitored_task};

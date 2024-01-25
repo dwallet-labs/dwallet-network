@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::authority::{
     authority_tests::{call_move, init_state_with_ids, send_and_confirm_transaction},
@@ -241,7 +241,7 @@ async fn test_generate_lock_file() {
 
         [[move.package]]
         name = "Sui"
-        source = { local = "../../../../../sui-framework/packages/sui-framework" }
+        source = { local = "../../../../../sui-framework/packages/dwallet-framework" }
 
         dependencies = [
           { name = "MoveStdlib" },

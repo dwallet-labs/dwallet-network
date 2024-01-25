@@ -1,18 +1,18 @@
 // invalid, Clock by mutable reference
 
 module a::m {
-    public entry fun no_clock_mut(_: &mut sui::clock::Clock) {
+    public entry fun no_clock_mut(_: &mut dwallet::clock::Clock) {
         abort 0
     }
 }
 
-module sui::clock {
+module dwallet::clock {
     struct Clock has key {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
     }
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use fastcrypto::encoding::Base64;
 use futures::stream;
@@ -941,7 +941,7 @@ impl CoinReadApi {
     ///     let sui = SuiClientBuilder::default().build_localnet().await?;
     ///     let coin_metadata = sui
     ///         .coin_read_api()
-    ///         .get_coin_metadata("0x2::sui::SUI".to_string())
+    ///         .get_coin_metadata("0x2::dwlt::DWLT".to_string())
     ///         .await?;
     ///     Ok(())
     /// }
@@ -965,7 +965,7 @@ impl CoinReadApi {
     ///     let sui = SuiClientBuilder::default().build_localnet().await?;
     ///     let total_supply = sui
     ///         .coin_read_api()
-    ///         .get_total_supply("0x2::sui::SUI".to_string())
+    ///         .get_total_supply("0x2::dwlt::DWLT".to_string())
     ///         .await?;
     ///     Ok(())
     /// }

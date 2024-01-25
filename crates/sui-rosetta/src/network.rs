@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use axum::extract::State;
 use axum::{Extension, Json};
@@ -25,7 +25,7 @@ use crate::{OnlineServerContext, SuiEnv};
 pub async fn list(Extension(env): Extension<SuiEnv>) -> Result<NetworkListResponse, Error> {
     Ok(NetworkListResponse {
         network_identifiers: vec![NetworkIdentifier {
-            blockchain: "sui".to_string(),
+            blockchain: "dwallet".to_string(),
             network: env,
         }],
     })

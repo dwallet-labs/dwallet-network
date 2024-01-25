@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::time::Duration;
 
@@ -35,7 +35,7 @@ async fn test_get_staked_sui() {
     tokio::time::sleep(Duration::from_secs(1)).await;
 
     let network_identifier = NetworkIdentifier {
-        blockchain: "sui".to_string(),
+        blockchain: "dwallet".to_string(),
         network: SuiEnv::LocalNet,
     };
     // Verify initial balance and stake
@@ -146,7 +146,7 @@ async fn test_stake() {
             "operation_identifier":{"index":0},
             "type":"Stake",
             "account": { "address" : sender.to_string() },
-            "amount" : { "value": "-1000000000" , "currency": { "symbol": "SUI", "decimals": 9}},
+            "amount" : { "value": "-1000000000" , "currency": { "symbol": "DWLT", "decimals": 9}},
             "metadata": { "Stake" : {"validator": validator.to_string()} }
         }]
     ))
@@ -271,7 +271,7 @@ async fn test_withdraw_stake() {
             "operation_identifier":{"index":0},
             "type":"Stake",
             "account": { "address" : sender.to_string() },
-            "amount" : { "value": "-1000000000" , "currency": { "symbol": "SUI", "decimals": 9}},
+            "amount" : { "value": "-1000000000" , "currency": { "symbol": "DWLT", "decimals": 9}},
             "metadata": { "Stake" : {"validator": validator.to_string()} }
         }]
     ))
@@ -300,7 +300,7 @@ async fn test_withdraw_stake() {
     );
     // verify balance
     let network_identifier = NetworkIdentifier {
-        blockchain: "sui".to_string(),
+        blockchain: "dwallet".to_string(),
         network: SuiEnv::LocalNet,
     };
     let response = rosetta_client
@@ -386,12 +386,12 @@ async fn test_pay_sui() {
             "operation_identifier":{"index":0},
             "type":"PaySui",
             "account": { "address" : recipient.to_string() },
-            "amount" : { "value": "1000000000" , "currency": { "symbol": "SUI", "decimals": 9}}
+            "amount" : { "value": "1000000000" , "currency": { "symbol": "DWLT", "decimals": 9}}
         },{
             "operation_identifier":{"index":1},
             "type":"PaySui",
             "account": { "address" : sender.to_string() },
-            "amount" : { "value": "-1000000000" , "currency": { "symbol": "SUI", "decimals": 9}}
+            "amount" : { "value": "-1000000000" , "currency": { "symbol": "DWLT", "decimals": 9}}
         }]
     ))
     .unwrap();
@@ -445,12 +445,12 @@ async fn test_pay_sui_multiple_times() {
                 "operation_identifier":{"index":0},
                 "type":"PaySui",
                 "account": { "address" : recipient.to_string() },
-                "amount" : { "value": "1000000000" , "currency": { "symbol": "SUI", "decimals": 9}}
+                "amount" : { "value": "1000000000" , "currency": { "symbol": "DWLT", "decimals": 9}}
             },{
                 "operation_identifier":{"index":1},
                 "type":"PaySui",
                 "account": { "address" : sender.to_string() },
-                "amount" : { "value": "-1000000000" , "currency": { "symbol": "SUI", "decimals": 9}}
+                "amount" : { "value": "-1000000000" , "currency": { "symbol": "DWLT", "decimals": 9}}
             }]
         ))
         .unwrap();

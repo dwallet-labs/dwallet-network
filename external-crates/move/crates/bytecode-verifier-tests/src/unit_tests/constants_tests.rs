@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use move_binary_format::file_format::{empty_module, CompiledModule, Constant, SignatureToken};
 use move_bytecode_verifier::constants;
 use move_core_types::vm_status::StatusCode;

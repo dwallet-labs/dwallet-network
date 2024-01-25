@@ -1,20 +1,20 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module bridge::bridge {
     use std::option;
     use std::option::{none, Option, some};
-    use sui::object::{Self, UID};
-    use sui::address;
-    use sui::balance;
-    use sui::coin::{Self, Coin};
-    use sui::coin::TreasuryCap;
-    use sui::event::emit;
-    use sui::linked_table::{Self, LinkedTable};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
-    use sui::vec_map::{Self, VecMap};
-    use sui::versioned::{Self, Versioned};
+    use dwallet::object::{Self, UID};
+    use dwallet::address;
+    use dwallet::balance;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::coin::TreasuryCap;
+    use dwallet::event::emit;
+    use dwallet::linked_table::{Self, LinkedTable};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::vec_map::{Self, VecMap};
+    use dwallet::versioned::{Self, Versioned};
 
     use bridge::chain_ids::{Self, sui_testnet};
     use bridge::committee::{Self, BridgeCommittee};

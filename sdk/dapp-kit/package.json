@@ -4,7 +4,7 @@
 	"description": "A collection of React hooks and components for interacting with the Sui blockchain and wallets.",
 	"homepage": "https://sdk.mystenlabs.com/typescript",
 	"version": "0.11.0",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"files": [
 		"CHANGELOG.md",
 		"LICENSE",

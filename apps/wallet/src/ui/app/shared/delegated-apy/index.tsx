@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Text } from '_app/shared/text';
 import { IconTooltip } from '_app/shared/tooltip';
@@ -54,7 +54,7 @@ export function DelegatedAPY({ stakedValidators }: DelegatedAPYProps) {
 					</Text>
 					<div className="text-steel items-baseline text-body flex">
 						<IconTooltip
-							tip="The average APY of all validators you are currently staking your SUI on."
+							tip="The average APY of all validators you are currently staking your DWLT on."
 							placement="top"
 						/>
 					</div>

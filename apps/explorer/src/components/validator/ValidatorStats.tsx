@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type SuiValidatorSummary } from '@mysten/sui.js/client';
 import { Heading } from '@mysten/ui';
@@ -38,7 +38,7 @@ export function ValidatorStats({
 				<Card spacing="lg" height="full">
 					<div className="flex basis-full flex-col gap-8 md:basis-1/3">
 						<Heading as="div" variant="heading4/semibold" color="steel-darker">
-							SUI Staked on Validator
+							DWLT Staked on Validator
 						</Heading>
 						<div className="flex flex-col gap-8 lg:flex-row">
 							<Stats
@@ -49,8 +49,8 @@ export function ValidatorStats({
 								{apy}%
 							</Stats>
 							<Stats
-								label="Total SUI Staked"
-								tooltip="The total SUI staked on the network by validators and delegators to validate the network and earn rewards."
+								label="Total DWLT Staked"
+								tooltip="The total DWLT staked on the network by validators and delegators to validate the network and earn rewards."
 								unavailable={totalStake <= 0}
 							>
 								<DelegationAmount amount={totalStake} isStats />

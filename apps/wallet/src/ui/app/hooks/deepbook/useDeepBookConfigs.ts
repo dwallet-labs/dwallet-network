@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Coins } from '_pages/swap/constants';
 import { FEATURES } from '_shared/experimentation/features';
 import { useFeatureValue } from '@growthbook/growthbook-react';
@@ -18,7 +18,7 @@ export const mainnetDeepBook: {
 		USDT_USDC: ['0x5deafda22b6b86127ea4299503362638bea0ca33bb212ea3a67b029356b8b955'],
 	},
 	coinsMap: {
-		[Coins.SUI]: '0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI',
+		[Coins.DWLT]: '0x0000000000000000000000000000000000000000000000000000000000000002::dwlt::DWLT',
 		[Coins.USDC]: '0x5d4b302506645c37ff133b98c4b50a5ae14841659738d6d733d59d0d217a93bf::coin::COIN',
 		[Coins.USDT]: '0xc060006111016b8a020ad5b33834984a437aaa7d3c74c18e09a95d48aceab08c::coin::COIN',
 		[Coins.WETH]: '0xaf8cd5edc19c4512f4259f0bee101a40d41ebed738ade5874359610ef8eeced5::coin::COIN',

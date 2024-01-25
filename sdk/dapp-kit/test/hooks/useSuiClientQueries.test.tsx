@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
 import { renderHook, waitFor } from '@testing-library/react';
 
@@ -8,7 +8,7 @@ import { createWalletProviderContextWrapper } from '../test-utils.js';
 
 const MOCK_GET_All_BALANCE_RESULT_DATA = [
 	{
-		coinType: '0x2::sui::SUI',
+		coinType: '0x2::dwlt::DWLT',
 		coinObjectCount: 1,
 		totalBalance: '100000',
 		lockedBalance: {},

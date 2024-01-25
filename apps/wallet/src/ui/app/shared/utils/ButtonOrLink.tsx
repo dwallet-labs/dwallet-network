@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import clsx from 'clsx';
 import { forwardRef, type ComponentProps, type ReactNode, type Ref } from 'react';

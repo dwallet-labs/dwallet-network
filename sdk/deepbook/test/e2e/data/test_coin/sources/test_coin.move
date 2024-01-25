@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module test_coin::test {
     use std::option;
-    use sui::coin;
-    use sui::transfer;
-    use sui::url;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::coin;
+    use dwallet::transfer;
+    use dwallet::url;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct TEST has drop {}
 

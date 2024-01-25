@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Description:
 /// This module defines a Rule which requires a payment on a purchase.
@@ -28,9 +28,9 @@
 /// The higher of the two will be used.
 ///
 module kiosk::royalty_rule {
-    use sui::sui::SUI;
-    use sui::coin::{Self, Coin};
-    use sui::transfer_policy::{
+    use dwallet::dwlt::DWLT;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::transfer_policy::{
         Self as policy,
         TransferPolicy,
         TransferPolicyCap,
@@ -77,7 +77,7 @@ module kiosk::royalty_rule {
     public fun pay<T>(
         policy: &mut TransferPolicy<T>,
         request: &mut TransferRequest<T>,
-        payment: Coin<SUI>
+        payment: Coin<DWLT>
     ) {
         let paid = policy::paid(request);
         let amount = fee_amount(policy, paid);

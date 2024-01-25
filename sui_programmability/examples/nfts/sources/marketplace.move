@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Basic `Marketplace` implementation. Supports listing of any assets,
 /// and does not have constraints.
 ///
-/// Makes use of `sui::dynamic_object_field` module by attaching `Listing`
+/// Makes use of `dwallet::dynamic_object_field` module by attaching `Listing`
 /// objects as fields to the `Marketplace` object; as well as stores and
 /// merges user profits as dynamic object fields (ofield).
 ///
@@ -22,11 +22,11 @@
 ///                   \--->Coin<COIN>
 /// ```
 module nfts::marketplace {
-    use sui::dynamic_object_field as ofield;
-    use sui::tx_context::{Self, TxContext};
-    use sui::object::{Self, ID, UID};
-    use sui::coin::{Self, Coin};
-    use sui::transfer;
+    use dwallet::dynamic_object_field as ofield;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::transfer;
 
     /// For when amount paid does not match the expected.
     const EAmountIncorrect: u64 = 0;
@@ -168,11 +168,11 @@ module nfts::marketplace {
 
 #[test_only]
 module nfts::marketplaceTests {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::coin;
-    use sui::sui::SUI;
-    use sui::test_scenario::{Self, Scenario};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::coin;
+    use dwallet::dwlt::DWLT;
+    use dwallet::test_scenario::{Self, Scenario};
     use nfts::marketplace;
 
     // Simple Kitty-NFT data structure.
@@ -189,14 +189,14 @@ module nfts::marketplaceTests {
     /// Create a shared [`Marketplace`].
     fun create_marketplace(scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
-        marketplace::create<SUI>(test_scenario::ctx(scenario));
+        marketplace::create<DWLT>(test_scenario::ctx(scenario));
     }
 
     #[allow(unused_function)]
     /// Mint SUI and send it to BUYER.
     fun mint_some_coin(scenario: &mut Scenario) {
         test_scenario::next_tx(scenario, ADMIN);
-        let coin = coin::mint_for_testing<SUI>(1000, test_scenario::ctx(scenario));
+        let coin = coin::mint_for_testing<DWLT>(1000, test_scenario::ctx(scenario));
         transfer::public_transfer(coin, BUYER);
     }
 

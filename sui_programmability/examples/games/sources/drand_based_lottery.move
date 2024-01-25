@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// A basic game that depends on randomness from drand.
 ///
@@ -42,9 +42,9 @@
 module games::drand_based_lottery {
     use games::drand_lib::{derive_randomness, verify_drand_signature, safe_selection};
     use std::option::{Self, Option};
-    use sui::object::{Self, ID, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
 
     /// Error codes
