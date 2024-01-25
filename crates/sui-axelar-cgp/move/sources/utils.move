@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module axelar::utils {
     use std::vector;
 
-    use sui::bcs;
-    use sui::hash;
+    use dwallet::bcs;
+    use dwallet::hash;
 
     const EInvalidSignatureLength: u64 = 0;
 

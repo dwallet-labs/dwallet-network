@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useAppDispatch, useAppSelector } from '_hooks';
-import { SwapPage } from '_pages/swap';
-import { FromAssets } from '_pages/swap/FromAssets';
+// import { SwapPage } from '_pages/swap';
+// import { FromAssets } from '_pages/swap/FromAssets';
 import { setNavVisibility } from '_redux/slices/app';
 import { isLedgerAccountSerializedUI } from '_src/background/accounts/LedgerAccount';
 import { persistableStorage } from '_src/shared/analytics/amplitude';
 import { type LedgerAccountsPublicKeys } from '_src/shared/messaging/messages/payloads/MethodPayload';
 import { toB64 } from '@mysten/sui.js/utils';
 import { useEffect, useMemo } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { throttle } from 'throttle-debounce';
 
 import { useSuiLedgerClient } from './components/ledger/SuiLedgerClientProvider';
@@ -36,7 +36,7 @@ import { ImportPrivateKeyPage } from './pages/accounts/ImportPrivateKeyPage';
 import { ManageAccountsPage } from './pages/accounts/manage/ManageAccountsPage';
 import { ProtectAccountPage } from './pages/accounts/ProtectAccountPage';
 import { WelcomePage } from './pages/accounts/WelcomePage';
-import { ApprovalRequestPage } from './pages/approval-request';
+// import { ApprovalRequestPage } from './pages/approval-request';
 import HomePage, {
 	AppsPage,
 	AssetsPage,
@@ -44,19 +44,19 @@ import HomePage, {
 	KioskDetailsPage,
 	NFTDetailsPage,
 	NftTransferPage,
-	OnrampPage,
+	// OnrampPage,
 	ReceiptPage,
 	TransactionBlocksPage,
 	TransferCoinPage,
 } from './pages/home';
 import TokenDetailsPage from './pages/home/tokens/TokenDetailsPage';
-import { QredoConnectInfoPage } from './pages/qredo-connect/QredoConnectInfoPage';
-import { SelectQredoAccountsPage } from './pages/qredo-connect/SelectQredoAccountsPage';
+// import { QredoConnectInfoPage } from './pages/qredo-connect/QredoConnectInfoPage';
+// import { SelectQredoAccountsPage } from './pages/qredo-connect/SelectQredoAccountsPage';
 import { RestrictedPage } from './pages/restricted';
-import SiteConnectPage from './pages/site-connect';
+// import SiteConnectPage from './pages/site-connect';
 import { StorageMigrationPage } from './pages/StorageMigrationPage';
 import { AppType } from './redux/slices/app/AppType';
-import { PageMainLayout } from './shared/page-main-layout/PageMainLayout';
+// import { PageMainLayout } from './shared/page-main-layout/PageMainLayout';
 import { Staking } from './staking/home';
 
 const HIDDEN_MENU_PATHS = [
@@ -170,13 +170,13 @@ const App = () => {
 				<Route path="nft-details" element={<NFTDetailsPage />} />
 				<Route path="nft-transfer/:nftId" element={<NftTransferPage />} />
 				<Route path="nfts/*" element={<AssetsPage />} />
-				<Route path="onramp" element={<OnrampPage />} />
+				{/*<Route path="onramp" element={<OnrampPage />} />*/}
 				<Route path="receipt" element={<ReceiptPage />} />
 				<Route path="send" element={<TransferCoinPage />} />
 				<Route path="send/select" element={<CoinsSelectorPage />} />
 				<Route path="stake/*" element={<Staking />} />
-				<Route path="swap/*" element={<SwapPage />} />
-				<Route path="swap/from-assets" element={<FromAssets />} />
+				{/*<Route path="swap/*" element={<SwapPage />} />*/}
+				{/*<Route path="swap/from-assets" element={<FromAssets />} />*/}
 				<Route path="tokens/*" element={<TokenDetailsPage />} />
 				<Route path="transactions/:status?" element={<TransactionBlocksPage />} />
 				<Route path="*" element={<Navigate to="/tokens" replace={true} />} />
@@ -190,17 +190,17 @@ const App = () => {
 				<Route path="manage" element={<ManageAccountsPage />} />
 				<Route path="protect-account" element={<ProtectAccountPage />} />
 				<Route path="backup/:accountSourceID" element={<BackupMnemonicPage />} />
-				<Route
-					path="qredo-connect/*"
-					element={
-						<PageMainLayout>
-							<Outlet />
-						</PageMainLayout>
-					}
-				>
-					<Route path=":requestID" element={<QredoConnectInfoPage />} />
-					<Route path=":id/select" element={<SelectQredoAccountsPage />} />
-				</Route>
+				{/*<Route*/}
+				{/*	path="qredo-connect/*"*/}
+				{/*	element={*/}
+				{/*		<PageMainLayout>*/}
+				{/*			<Outlet />*/}
+				{/*		</PageMainLayout>*/}
+				{/*	}*/}
+				{/*>*/}
+				{/*	<Route path=":requestID" element={<QredoConnectInfoPage />} />*/}
+				{/*	<Route path=":id/select" element={<SelectQredoAccountsPage />} />*/}
+				{/*</Route>*/}
 				<Route path="export/:accountID" element={<ExportAccountPage />} />
 				<Route path="export/passphrase/:accountSourceID" element={<ExportPassphrasePage />} />
 				<Route path="forgot-password" element={<ForgotPasswordPage />}>
@@ -211,10 +211,10 @@ const App = () => {
 					<Route path="reset" element={<ResetPasswordPage />} />
 				</Route>
 			</Route>
-			<Route path="/dapp/*" element={<HomePage disableNavigation />}>
-				<Route path="connect/:requestID" element={<SiteConnectPage />} />
-				<Route path="approve/:requestID" element={<ApprovalRequestPage />} />
-			</Route>
+			{/*<Route path="/dapp/*" element={<HomePage disableNavigation />}>*/}
+			{/*	<Route path="connect/:requestID" element={<SiteConnectPage />} />*/}
+			{/*	<Route path="approve/:requestID" element={<ApprovalRequestPage />} />*/}
+			{/*</Route>*/}
 		</Routes>
 	);
 };

@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This is a simple example of a permissionless module for an imaginary game
 /// that sells swords for Gems. Gems are an in-game currency that can be bought
 /// with SUI.
 module examples::sword {
-    use sui::tx_context::TxContext;
-    use sui::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
 
-    use sui::token::{Self, Token, ActionRequest};
+    use dwallet::token::{Self, Token, ActionRequest};
     use examples::gem::GEM;
 
     /// Trying to purchase a sword with an incorrect amount.
@@ -37,14 +37,14 @@ module examples::sword {
 module examples::gem {
     use std::option::none;
     use std::string::{Self, String};
-    use sui::sui::SUI;
-    use sui::transfer;
-    use sui::object::{Self, UID};
-    use sui::balance::{Self, Balance};
-    use sui::tx_context::{sender, TxContext};
-    use sui::coin::{Self, Coin, TreasuryCap};
+    use dwallet::dwlt::DWLT;
+    use dwallet::transfer;
+    use dwallet::object::{Self, UID};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::tx_context::{sender, TxContext};
+    use dwallet::coin::{Self, Coin, TreasuryCap};
 
-    use sui::token::{Self, Token, ActionRequest};
+    use dwallet::token::{Self, Token, ActionRequest};
 
     /// Trying to purchase Gems with an unexpected amount.
     const EUnknownAmount: u64 = 0;
@@ -67,7 +67,7 @@ module examples::gem {
     struct GemStore has key {
         id: UID,
         /// Profits from selling Gems.
-        profits: Balance<SUI>,
+        profits: Balance<DWLT>,
         /// The Treasury Cap for the in-game currency.
         gem_treasury: TreasuryCap<GEM>,
     }
@@ -106,7 +106,7 @@ module examples::gem {
     /// Purchase Gems from the GemStore. Very silly value matching against module
     /// constants...
     public fun buy_gems(
-        self: &mut GemStore, payment: Coin<SUI>, ctx: &mut TxContext
+        self: &mut GemStore, payment: Coin<DWLT>, ctx: &mut TxContext
     ): (Token<GEM>, ActionRequest<GEM>) {
         let amount = coin::value(&payment);
         let purchased = if (amount == SMALL_BUNDLE) {

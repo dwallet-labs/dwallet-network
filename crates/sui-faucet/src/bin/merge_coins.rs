@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use shared_crypto::intent::Intent;
 use std::{str::FromStr, time::Duration};
 use sui_config::{sui_config_dir, SUI_CLIENT_CONFIG};

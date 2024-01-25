@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # This script is meant to be executed on MacOS (hence zsh use - to get associative arrays otherwise
 # unavailable in the bundled bash version).

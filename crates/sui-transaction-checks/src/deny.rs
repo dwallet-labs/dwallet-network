@@ -1,15 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use fastcrypto_zkp::bn254::zk_login::OIDCProvider;
 use sui_config::transaction_deny_config::TransactionDenyConfig;
-use sui_types::{
-    base_types::ObjectRef,
-    error::{SuiError, SuiResult, UserInputError},
-    signature::GenericSignature,
-    storage::BackingPackageStore,
-    transaction::{Command, InputObjectKind, TransactionData, TransactionDataAPI},
-};
+use sui_types::{base_types::ObjectRef, error::{SuiError, SuiResult, UserInputError}, signature::GenericSignature, storage::BackingPackageStore, SUI_SYSTEM_PACKAGE_ID, transaction::{Command, InputObjectKind, TransactionData, TransactionDataAPI}};
 macro_rules! deny_if_true {
     ($cond:expr, $msg:expr) => {
         if ($cond) {
@@ -32,6 +26,8 @@ pub fn check_transaction_for_signing(
     filter_config: &TransactionDenyConfig,
     package_store: &dyn BackingPackageStore,
 ) -> SuiResult {
+    check_disabled_hardcoded_features(tx_data, tx_signatures)?;
+
     check_disabled_features(filter_config, tx_data, tx_signatures)?;
 
     check_signers(filter_config, tx_data)?;
@@ -60,6 +56,29 @@ fn check_receiving_objects(
         );
     }
     Ok(())
+}
+
+// This code is forcing DWLT token / system only actions
+fn check_disabled_hardcoded_features(
+    tx_data: &TransactionData,
+    tx_signatures: &[GenericSignature],
+) -> SuiResult {
+    tx_signatures.iter().try_for_each(|s| {
+        for command in tx_data.kind().iter_commands() {
+            if let Command::MoveCall(pt) = command {
+                deny_if_true!(pt.package != SUI_SYSTEM_PACKAGE_ID, "Only system package is allowed");
+            }
+            deny_if_true!(
+                matches!(command, Command::Publish(..)),
+                "Package publish is disabled"
+            );
+            deny_if_true!(
+                matches!(command, Command::Upgrade(..)),
+                "Package upgrade is disabled"
+            );
+        }
+        Ok(())
+    })
 }
 
 fn check_disabled_features(

@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Example of a game character with basic attributes, inventory, and
 /// associated logic.
 module hero::example {
-    use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin};
-    use sui::event;
-    use sui::object::{Self, ID, UID};
-    use sui::math;
-    use sui::sui::SUI;
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::event;
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::math;
+    use dwallet::dwlt::DWLT;
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
     use std::option::{Self, Option};
 
     /// Our hero!
@@ -63,7 +63,7 @@ module hero::example {
     /// payments for player actions for the admin to collect.
     struct Game has key {
         id: UID,
-        payments: Balance<SUI>,
+        payments: Balance<DWLT>,
     }
 
     /// Capability conveying the authority to create boars and potions, and take
@@ -131,7 +131,7 @@ module hero::example {
     /// you pay for it.
     public fun new_sword(
         game: &mut Game,
-        payment: Coin<SUI>,
+        payment: Coin<DWLT>,
         ctx: &mut TxContext
     ): Sword {
         let value = coin::value(&payment);
@@ -316,13 +316,13 @@ module hero::example {
         admin: &Admin,
         game: &mut Game,
         ctx: &mut TxContext,
-    ): Coin<SUI> {
+    ): Coin<DWLT> {
         assert!(admin.game_id == object::id(game), ENotAdmin);
         coin::from_balance(balance::withdraw_all(&mut game.payments), ctx)
     }
 
     // === Tests ===
-    #[test_only] use sui::test_scenario as ts;
+    #[test_only] use dwallet::test_scenario as ts;
 
     #[test]
     fun slay_boar_test() {

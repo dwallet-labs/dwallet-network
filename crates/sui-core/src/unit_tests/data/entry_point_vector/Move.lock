@@ -15,7 +15,7 @@ source = { local = "../../../../../sui-framework/packages/move-stdlib" }
 
 [[move.package]]
 name = "Sui"
-source = { local = "../../../../../sui-framework/packages/sui-framework" }
+source = { local = "../../../../../sui-framework/packages/dwallet-framework" }
 
 dependencies = [
   { name = "MoveStdlib" },

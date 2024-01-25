@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -736,7 +736,7 @@ mod tests {
         #[tokio::test]
         async fn test_unrecognized_token() {
             let owner = get_test_owner();
-            let coin_type = "0x2::sui:🤵";
+            let coin_type = "0x2::dwallet:🤵";
             let mock_state = MockStateRead::new();
             let coin_read_api = CoinReadApi::new_for_tests(Arc::new(mock_state), None);
             let response = coin_read_api
@@ -749,7 +749,7 @@ mod tests {
             let expected = expect!["-32602"];
             expected.assert_eq(&error_object.code().to_string());
             let expected =
-                expect!["Invalid struct type: 0x2::sui:🤵. Got error: unrecognized token: :🤵"];
+                expect!["Invalid struct type: 0x2::dwallet:🤵. Got error: unrecognized token: :🤵"];
             expected.assert_eq(error_object.message());
         }
 
@@ -1237,7 +1237,7 @@ mod tests {
 
             let coin_read_api = CoinReadApi::new_for_tests(Arc::new(mock_state), None);
             let response = coin_read_api
-                .get_coin_metadata("0x2::sui::SUI".to_string())
+                .get_coin_metadata("0x2::dwlt::DWLT".to_string())
                 .await;
 
             assert!(response.is_ok());
@@ -1289,7 +1289,7 @@ mod tests {
 
         #[tokio::test]
         async fn test_success_response_for_gas_coin() {
-            let coin_type = "0x2::sui::SUI";
+            let coin_type = "0x2::dwlt::DWLT";
             let mock_internal = MockCoinReadInternal::new();
             let coin_read_api = CoinReadApi {
                 internal: Box::new(mock_internal),

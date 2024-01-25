@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { MIST_PER_SUI } from '@mysten/sui.js/utils';
 import { useState } from 'react';
@@ -31,13 +31,13 @@ export function ListPrice({ item, onSuccess, closeModal, listAndPlace, kioskId }
 					<DisplayObjectThumbnail item={item}></DisplayObjectThumbnail>
 				</div>
 				<div>
-					<label className="font-medium mb-1 block text-sm">Listing price (in SUI)</label>
+					<label className="font-medium mb-1 block text-sm">Listing price (in DWLT)</label>
 					<input
 						type="number"
 						min="0"
 						value={price}
 						className="block w-full rounded border border-primary bg-white p-2.5 text-sm outline-primary focus:border-gray-500"
-						placeholder="The amount in SUI"
+						placeholder="The amount in DWLT"
 						onChange={(e) => setPrice(e.target.value)}
 					></input>
 				</div>

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This example demonstrates a basic use of a shared object.
 /// Rules:
@@ -7,9 +7,9 @@
 /// - everyone can increment a counter by 1
 /// - the owner of the counter can reset it to any value
 module basics::counter {
-    use sui::transfer;
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::transfer;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
 
     /// A shared counter.
     struct Counter has key {
@@ -61,7 +61,7 @@ module basics::counter {
 
 #[test_only]
 module basics::counter_test {
-    use sui::test_scenario;
+    use dwallet::test_scenario;
     use basics::counter;
 
     #[test]

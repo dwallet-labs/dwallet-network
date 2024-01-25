@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 /// Test illustrating how an asset can be forever locked in the Kiosk.
 module kiosk::kiosk_lock_rule_tests {
-    use sui::kiosk;
-    use sui::kiosk_test_utils::{Self as test, Asset};
-    use sui::transfer_policy as policy;
-    use sui::transfer;
+    use dwallet::kiosk;
+    use dwallet::kiosk_test_utils::{Self as test, Asset};
+    use dwallet::transfer_policy as policy;
+    use dwallet::transfer;
 
     use kiosk::kiosk_lock_rule as kiosk_lock;
 

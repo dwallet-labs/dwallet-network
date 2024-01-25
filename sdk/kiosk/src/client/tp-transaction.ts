@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { TransactionObjectArgument, type TransactionBlock } from '@mysten/sui.js/transactions';
 
@@ -154,7 +154,7 @@ export class TransferPolicyTransaction {
 	 * 	(but you should define at least one of them for the rule to make sense).
 	 *
 	 * 	@param percentageBps The royalty percentage in basis points. Use `percentageToBasisPoints` helper to convert from percentage [0,100].
-	 * 	@param minAmount The minimum royalty amount per request in MIST.
+	 * 	@param minAmount The minimum royalty amount per request in nDWLT.
 	 */
 	addRoyaltyRule(
 		percentageBps: number | string, // this is in basis points.
@@ -212,7 +212,7 @@ export class TransferPolicyTransaction {
 
 	/**
 	 * A function to add the floor price rule to a transfer policy.
-	 * @param minPrice The minimum price in MIST.
+	 * @param minPrice The minimum price in nDWLT.
 	 */
 	addFloorPriceRule(minPrice: string | bigint) {
 		this.#validateInputs();

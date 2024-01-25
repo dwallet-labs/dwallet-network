@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests cannot call init with programmable transactions
 
@@ -7,7 +7,7 @@
 
 //# publish
 module test::m1 {
-    fun init(_: &mut sui::tx_context::TxContext) {}
+    fun init(_: &mut dwallet::tx_context::TxContext) {}
 }
 
 //# programmable

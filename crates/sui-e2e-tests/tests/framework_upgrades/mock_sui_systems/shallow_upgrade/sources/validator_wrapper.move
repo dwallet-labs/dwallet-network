@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module sui_system::validator_wrapper {
-    use sui::versioned::Versioned;
-    use sui::versioned;
-    use sui::tx_context::TxContext;
-    use sui_system::validator::Validator;
+module dwallet_system::validator_wrapper {
+    use dwallet::versioned::Versioned;
+    use dwallet::versioned;
+    use dwallet::tx_context::TxContext;
+    use dwallet_system::validator::Validator;
 
-    friend sui_system::sui_system;
-    friend sui_system::sui_system_state_inner;
+    friend dwallet_system::dwallet_system;
+    friend dwallet_system::dwallet_system_state_inner;
 
     const EInvalidVersion: u64 = 0;
 

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Exercise test functions that create, transfer, read, update, and delete objects
 
@@ -8,10 +8,10 @@
 //# publish
 
 module test::object_basics {
-    use sui::event;
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
+    use dwallet::event;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer;
 
     struct Object has key, store {
         id: UID,

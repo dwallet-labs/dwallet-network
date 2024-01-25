@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module object_wrapping::object_wrapping {
     use std::option::{Self, Option};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
-    use sui::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
 
     struct Child has key, store {
         id: UID,

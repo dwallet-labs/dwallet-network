@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Test basic coin transfer
 
@@ -11,12 +11,12 @@
 
 //# view-object 1,0
 
-//# run sui::pay::split_and_transfer --type-args sui::sui::SUI --args object(1,0) 10 @A --sender B
+//# run dwallet::pay::split_and_transfer --type-args dwallet::dwlt::DWLT --args object(1,0) 10 @A --sender B
 
 //# view-object 1,0
 
 //# view-object 3,0
 
-//# run sui::pay::split_and_transfer --type-args sui::sui::SUI --args object(1,0) 0 @C --sender A
+//# run dwallet::pay::split_and_transfer --type-args dwallet::dwlt::DWLT --args object(1,0) 0 @C --sender A
 
 //# view-object 1,0

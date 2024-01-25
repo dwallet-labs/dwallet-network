@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// An example of a module that uses Shared Objects and ID linking/access.
 ///
@@ -7,9 +7,9 @@
 /// be accessed by putting a 'key' into the 'lock'. Lock is shared and is visible
 /// and discoverable by the key owner.
 module basics::lock {
-    use sui::object::{Self, ID, UID};
-    use sui::transfer;
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
     use std::option::{Self, Option};
 
     /// Lock is empty, nothing to take.
@@ -86,10 +86,10 @@ module basics::lock {
 
 #[test_only]
 module basics::lockTest {
-    use sui::object::{Self, UID};
-    use sui::test_scenario;
-    use sui::transfer;
-    use sui::tx_context;
+    use dwallet::object::{Self, UID};
+    use dwallet::test_scenario;
+    use dwallet::transfer;
+    use dwallet::tx_context;
     use basics::lock::{Self, Lock, Key};
 
     /// Custom structure which we will store inside a Lock.

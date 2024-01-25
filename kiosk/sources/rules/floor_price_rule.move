@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Description:
 /// This module defines a Rule which sets the floor price for items of type T.
@@ -12,7 +12,7 @@
 /// - Prevent trading of locked items with low amounts (e.g. by using purchase_cap).
 ///
 module kiosk::floor_price_rule {
-    use sui::transfer_policy::{
+    use dwallet::transfer_policy::{
         Self as policy,
         TransferPolicy,
         TransferPolicyCap,

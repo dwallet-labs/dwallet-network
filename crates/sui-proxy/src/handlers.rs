@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::admin::{Labels, ReqwestClient};
 use crate::consumer::{convert_to_remote_write, populate_labels, NodeMetric};
 use crate::histogram_relay::HistogramRelay;

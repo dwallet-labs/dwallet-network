@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module object_no_id::test_only_object_no_id {
     #[test_only]
@@ -7,6 +7,6 @@ module object_no_id::test_only_object_no_id {
 
     #[test]
     fun bad_share() {
-        sui::transfer::share_object(NotObject{f: 42});
+        dwallet::transfer::share_object(NotObject{f: 42});
     }
 }

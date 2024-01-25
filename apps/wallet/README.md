@@ -1,4 +1,4 @@
-# Sui Wallet
+# dWallet Wallet
 
 A Chrome extension wallet for [Sui](https://sui.io).
 

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useActiveAddress } from '_app/hooks/useActiveAddress';
 import { Button } from '_app/shared/ButtonUI';
@@ -109,7 +109,7 @@ function NFTDetailsPage() {
 												mono
 												href={ownerExplorerLink}
 												text={formatAddress(ownerAddress)}
-												title="View on Sui Explorer"
+												title="View on dWallet Explorer"
 											/>
 										}
 									/>
@@ -125,7 +125,7 @@ function NFTDetailsPage() {
 												mono
 												href={objectExplorerLink || ''}
 												text={formatAddress(nftId)}
-												title="View on Sui Explorer"
+												title="View on dWallet Explorer"
 											/>
 										) : null
 									}

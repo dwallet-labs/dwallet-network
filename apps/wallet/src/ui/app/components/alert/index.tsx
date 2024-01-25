@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import LoadingIndicator from '_components/loading/LoadingIndicator';
 import { CheckStroke16, Info16 } from '@mysten/icons';

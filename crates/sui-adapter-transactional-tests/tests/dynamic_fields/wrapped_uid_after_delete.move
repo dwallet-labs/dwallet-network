@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // similar to dynamic_object_field_tests but over multiple transactions,
 // as this uses a different code path
@@ -10,9 +10,9 @@
 //# publish
 module a::m {
 
-use sui::dynamic_field::{add, exists_, borrow, borrow_mut};
-use sui::object::{Self, UID};
-use sui::tx_context::{sender, TxContext};
+use dwallet::dynamic_field::{add, exists_, borrow, borrow_mut};
+use dwallet::object::{Self, UID};
+use dwallet::tx_context::{sender, TxContext};
 
 struct Wrapper has key {
     id: UID,
@@ -49,7 +49,7 @@ fun destroy(counter: Counter): u64 {
 
 entry fun t0(ctx: &mut TxContext) {
     let id = object::new(ctx);
-    sui::transfer::transfer(Obj { id }, sender(ctx))
+    dwallet::transfer::transfer(Obj { id }, sender(ctx))
 }
 
 entry fun t1(obj: &mut Obj, ctx: &mut TxContext) {
@@ -66,7 +66,7 @@ entry fun t3(obj: Obj, ctx: &mut TxContext) {
     let Obj { id } = obj;
     assert!(count(borrow(&id, 0)) == 1, 0);
     let wrapper = Wrapper { id: object::new(ctx), old: id };
-    sui::transfer::transfer(wrapper, sender(ctx))
+    dwallet::transfer::transfer(wrapper, sender(ctx))
 }
 
 entry fun t4(wrapper: &mut Wrapper) {

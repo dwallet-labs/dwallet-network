@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests that shared objects can have dynamic fields added
 // dynamic fields can be added and removed in the same transaction
@@ -8,10 +8,10 @@
 
 //# publish
 module a::m {
-    use sui::transfer;
-    use sui::dynamic_field::{add, remove};
-    use sui::object;
-    use sui::tx_context:: TxContext;
+    use dwallet::transfer;
+    use dwallet::dynamic_field::{add, remove};
+    use dwallet::object;
+    use dwallet::tx_context:: TxContext;
 
     struct Obj has key, store {
         id: object::UID,

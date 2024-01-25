@@ -3,7 +3,7 @@ name = "stage2_basic_compatibility_valid"
 version = "0.0.3"
 
 [dependencies]
-Sui = { local = "../../../../../../sui-framework/packages/sui-framework" }
+dWallet = { local = "../../../../../../sui-framework/packages/dwallet-framework" }
 
 [addresses]
 base_addr = "0x0"

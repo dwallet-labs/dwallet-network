@@ -5,7 +5,7 @@ published-at = "0xdee9"
 
 [dependencies]
 MoveStdlib = { local = "../move-stdlib" }
-Sui = { local = "../sui-framework" }
+dWallet = { local = "../dwallet-framework" }
 
 [addresses]
 deepbook = "0xdee9"

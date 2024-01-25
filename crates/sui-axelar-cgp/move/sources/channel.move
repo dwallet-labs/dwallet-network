@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module axelar::channel {
     use std::string::String;
-    use sui::linked_table::{Self, LinkedTable};
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
+    use dwallet::linked_table::{Self, LinkedTable};
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
 
     friend axelar::validators;
 
@@ -162,7 +162,7 @@ module axelar::channel {
 
     /// Get the bytes of the Channel address
     public fun source_id<T: store>(self: &Channel<T>): vector<u8> {
-        sui::bcs::to_bytes(&self.id)
+        dwallet::bcs::to_bytes(&self.id)
     }
 
     // === Testing ===

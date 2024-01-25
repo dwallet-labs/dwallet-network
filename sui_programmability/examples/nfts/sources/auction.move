@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 ///  This module is an implementation of an English auction
 ///  (https://en.wikipedia.org/wiki/English_auction) using single-owner
@@ -32,12 +32,12 @@
 ///      original owner and the item goes to the bidder that won the auction
 
 module nfts::auction {
-    use sui::coin::{Self, Coin};
-    use sui::balance::Balance;
-    use sui::sui::SUI;
-    use sui::object::{Self, ID, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self,TxContext};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::balance::Balance;
+    use dwallet::dwlt::DWLT;
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self,TxContext};
 
     use nfts::auction_lib::{Self, Auction};
 
@@ -54,7 +54,7 @@ module nfts::auction {
         /// ID of the Auction object this bid is intended for
         auction_id: ID,
         /// Coin used for bidding.
-        bid: Balance<SUI>
+        bid: Balance<DWLT>
     }
 
     // Entry functions.
@@ -76,7 +76,7 @@ module nfts::auction {
     /// Creates a bid a and send it to the auctioneer along with the
     /// ID of the auction. This is executed by a bidder.
     public fun bid(
-        coin: Coin<SUI>, auction_id: ID, auctioneer: address, ctx: &mut TxContext
+        coin: Coin<DWLT>, auction_id: ID, auctioneer: address, ctx: &mut TxContext
     ) {
         let bid = Bid {
             id: object::new(ctx),

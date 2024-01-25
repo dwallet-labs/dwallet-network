@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useCopyToClipboard } from '@mysten/core';
 import { Check12, CheckStroke16, CheckStroke24, Copy12, Copy16, Copy24 } from '@mysten/icons';

@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{account_address::AccountAddress, annotated_value as A, fmt_list, u256};
 use anyhow::{anyhow, Result as AResult};

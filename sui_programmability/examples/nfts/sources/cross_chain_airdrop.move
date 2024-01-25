@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Allow a trusted oracle to mint a copy of NFT from a different chain. There can
 /// only be one copy for each unique pair of contract_address and token_id. We only
@@ -7,9 +7,9 @@
 /// chains by adding a chain_id field.
 module nfts::cross_chain_airdrop {
     use std::vector;
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     use nfts::erc721_metadata::{Self, ERC721Metadata, TokenID};
 
@@ -135,7 +135,7 @@ module nfts::cross_chain_airdrop {
 
 module nfts::erc721_metadata {
     use std::ascii;
-    use sui::url::{Self, Url};
+    use dwallet::url::{Self, Url};
     use std::string;
 
     // TODO: add symbol()?

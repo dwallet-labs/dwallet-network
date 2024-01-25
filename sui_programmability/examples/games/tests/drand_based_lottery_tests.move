@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module games::drand_based_lottery_tests {
-    use sui::test_scenario::{Self};
+    use dwallet::test_scenario::{Self};
     use games::drand_based_lottery::{Self, Game, Ticket, GameWinner};
     use games::drand_lib::verify_time_has_passed;
 

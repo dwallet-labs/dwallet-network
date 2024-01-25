@@ -1,6 +1,6 @@
 # Copyright(C) Facebook, Inc. and its affiliates.
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 from json import dump, load
 from collections import OrderedDict
 from benchmark.utils import multiaddr_to_url_data

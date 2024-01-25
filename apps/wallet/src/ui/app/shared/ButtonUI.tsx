@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // TODO: replace all the existing button usages (the current Button component or button) with this
 // TODO: rename this to Button when the existing Button component is removed

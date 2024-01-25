@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::coin::CoinDowncastError;
 use super::coin_metadata::{CoinMetadata, CoinMetadataDowncastError};

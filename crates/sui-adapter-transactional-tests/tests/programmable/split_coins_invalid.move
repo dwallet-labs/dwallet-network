@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests various invalid operations involving SplitCoins
 
@@ -9,14 +9,14 @@
 //# publish
 module test::m1 {
     use std::vector;
-    use sui::coin;
-    use sui::transfer;
+    use dwallet::coin;
+    use dwallet::transfer;
 
     public fun ret_one_amount(): address {
         @42
     }
 
-    public fun transfer(v: vector<coin::Coin<sui::sui::SUI>>, r: address) {
+    public fun transfer(v: vector<coin::Coin<dwallet::dwlt::DWLT>>, r: address) {
         while (!vector::is_empty(&v)) {
             let c = vector::pop_back(&mut v);
             transfer::public_transfer(c, r);
@@ -30,7 +30,7 @@ module test::m1 {
 //> TransferObjects([Result(0)], Input(1))
 
 // let's get ourselves a coin worth 1000
-//# run sui::pay::split_and_transfer --type-args sui::sui::SUI --args object(2,0) 1000 @A --sender A
+//# run dwallet::pay::split_and_transfer --type-args dwallet::dwlt::DWLT --args object(2,0) 1000 @A --sender A
 
 //# view-object 3,0
 

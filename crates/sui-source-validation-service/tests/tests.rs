@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use expect_test::expect;
 use reqwest::Client;
@@ -369,7 +369,7 @@ fn test_parse_package_config() -> anyhow::Result<()> {
     repository = "https://github.com/mystenlabs/sui"
     branch = "main"
     packages = [
-        { path = "crates/sui-framework/packages/sui-framework", watch = "0x2" },
+        { path = "crates/sui-framework/packages/dwallet-framework", watch = "0x2" },
         { path = "immutable" },
     ]
 
@@ -392,7 +392,7 @@ fn test_parse_package_config() -> anyhow::Result<()> {
                         branch: "main",
                         packages: [
                             Package {
-                                path: "crates/sui-framework/packages/sui-framework",
+                                path: "crates/sui-framework/packages/dwallet-framework",
                                 watch: Some(
                                     0x0000000000000000000000000000000000000000000000000000000000000002,
                                 ),

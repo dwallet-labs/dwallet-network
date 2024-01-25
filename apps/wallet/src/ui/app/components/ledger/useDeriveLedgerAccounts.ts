@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type LedgerAccountSerializedUI } from '_src/background/accounts/LedgerAccount';
 import type SuiLedgerClient from '@mysten/ledgerjs-hw-app-sui';
@@ -25,7 +25,7 @@ export function useDeriveLedgerAccounts(options: UseDeriveLedgerAccountOptions) 
 		queryKey: ['derive-ledger-accounts'],
 		queryFn: () => {
 			if (!suiLedgerClient) {
-				throw new Error("The Sui application isn't open on a connected Ledger device");
+				throw new Error("The dWallet application isn't open on a connected Ledger device");
 			}
 			return deriveAccountsFromLedger(suiLedgerClient, numAccountsToDerive);
 		},

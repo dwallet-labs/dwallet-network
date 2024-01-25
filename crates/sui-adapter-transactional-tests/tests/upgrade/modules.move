@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses V0=0x0 V1=0x0 V2=0x0 V3=0x0 --accounts A
 
 //# publish --upgradeable --sender A
 module V0::base_module {
-    use sui::object::UID;
+    use dwallet::object::UID;
     struct Object has key, store { 
         id: UID,
         field0: u64,
@@ -28,7 +28,7 @@ module V0::other_module {
 // other_module::Y is missing in V1
 //# upgrade --package V0 --upgrade-capability 1,1 --sender A
 module V1::base_module {
-    use sui::object::UID;
+    use dwallet::object::UID;
     struct Object has key, store { 
         id: UID,
         field0: u64,
@@ -50,7 +50,7 @@ module V1::other_module {
 // other_module missing in V1
 //# upgrade --package V0 --upgrade-capability 1,1 --sender A
 module V1::base_module {
-    use sui::object::UID;
+    use dwallet::object::UID;
     struct Object has key, store { 
         id: UID,
         field0: u64,
@@ -69,7 +69,7 @@ module V1::b {
 // `b` missing in V1
 //# upgrade --package V0 --upgrade-capability 1,1 --sender A
 module V1::base_module {
-    use sui::object::UID;
+    use dwallet::object::UID;
     struct Object has key, store { 
         id: UID,
         field0: u64,
@@ -89,7 +89,7 @@ module V1::other_module {
 // `a` missing in V1
 //# upgrade --package V0 --upgrade-capability 1,1 --sender A
 module V0::base_module {
-    use sui::object::UID;
+    use dwallet::object::UID;
     struct Object has key, store { 
         id: UID,
         field0: u64,

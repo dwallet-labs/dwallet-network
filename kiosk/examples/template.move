@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 /// Template bytecode to use when working with (de)serialized bytecode.
 module kiosk::template {
     use std::option::{some, none};
-    use sui::tx_context::TxContext;
+    use dwallet::tx_context::TxContext;
     use kiosk::collectible;
 
     struct TEMPLATE has drop {}

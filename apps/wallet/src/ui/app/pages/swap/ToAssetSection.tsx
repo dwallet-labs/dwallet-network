@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useRecognizedCoins } from '_app/hooks/deepbook';
 import { InputWithActionButton } from '_app/shared/InputWithAction';
 import { Text } from '_app/shared/text';

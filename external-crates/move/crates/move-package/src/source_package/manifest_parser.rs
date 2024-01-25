@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{package_hooks, source_package::parsed_manifest as PM};
 use anyhow::{anyhow, bail, format_err, Context, Result};

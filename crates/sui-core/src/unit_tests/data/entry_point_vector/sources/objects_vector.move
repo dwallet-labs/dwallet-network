@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module entry_point_vector::entry_point_vector {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
     use std::vector;
 
     struct Obj has key, store {
@@ -50,7 +50,7 @@ module entry_point_vector::entry_point_vector {
     }
 
     public entry fun mint_child(v: u64, parent: &mut Obj, ctx: &mut TxContext) {
-        sui::dynamic_object_field::add(
+        dwallet::dynamic_object_field::add(
             &mut parent.id, 0,
             Obj {
                 id: object::new(ctx),
@@ -144,7 +144,7 @@ module entry_point_vector::entry_point_vector {
     }
 
     public entry fun mint_child_any<Any>(v: u64, parent: &mut ObjAny<Any>, ctx: &mut TxContext) {
-        sui::dynamic_object_field::add(
+        dwallet::dynamic_object_field::add(
             &mut parent.id,
             0,
             ObjAny<Any> {

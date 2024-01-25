@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses p=0x0 q=0x0 q_2=0x0 r=0x0 s=0x0 --accounts A
 
 //# publish
 module p::m {
-    use sui::sui::SUI;
-    use sui::coin;
+    use dwallet::dwlt::DWLT;
+    use dwallet::coin;
 
-    use sui::tx_context::TxContext;
-    use sui::transfer;
+    use dwallet::tx_context::TxContext;
+    use dwallet::transfer;
 
     public fun sharer<T: key + store>(x: T) {
         transfer::public_share_object(x);
@@ -22,11 +22,11 @@ module p::m {
 
 //# programmable --sender A --inputs 10
 //> 0: SplitCoins(Gas, [Input(0)]);
-//> 1: sui::transfer::public_share_object<sui::coin::Coin<sui::sui::SUI>>(Result(0));
+//> 1: dwallet::transfer::public_share_object<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Result(0));
 
 //# programmable --sender A --inputs 10
 //> 0: SplitCoins(Gas, [Input(0)]);
-//> 1: p::m::sharer<sui::coin::Coin<sui::sui::SUI>>(Result(0));
+//> 1: p::m::sharer<dwallet::coin::Coin<dwallet::dwlt::DWLT>>(Result(0));
 
 //# run p::m::mint_shared
 

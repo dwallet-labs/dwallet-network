@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses Test=0x0 --accounts A --simulator
 
 //# publish
 module Test::M1 {
-    use sui::event;
+    use dwallet::event;
 
     struct EventA has copy, drop {
         new_value: u64

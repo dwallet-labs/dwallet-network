@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type SuiWallet } from '_src/dapp-interface/WalletStandardInterface';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
@@ -30,7 +30,7 @@ function getAccount(account: ReadonlyWalletAccount, useWrongAccount: boolean) {
 }
 
 function findSuiWallet(wallets: readonly Wallet[]) {
-	return (wallets.find((aWallet) => aWallet.name.includes('Sui Wallet')) ||
+	return (wallets.find((aWallet) => aWallet.name.includes('dWallet Wallet')) ||
 		null) as SuiWallet | null;
 }
 
@@ -66,11 +66,11 @@ function App() {
 		}
 	}, [suiWallet]);
 	if (!suiWallet) {
-		return <h1>Sui Wallet not found</h1>;
+		return <h1>dWallet Wallet not found</h1>;
 	}
 	return (
 		<>
-			<h1>Sui Wallet is installed. ({suiWallet.name})</h1>
+			<h1>dWallet Wallet is installed. ({suiWallet.name})</h1>
 			{accounts.length ? (
 				<ul data-testid="accounts-list">
 					{accounts.map((anAccount) => (

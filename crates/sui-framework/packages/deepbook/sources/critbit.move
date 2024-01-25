@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module deepbook::critbit {
-    use sui::tx_context::TxContext;
-    use sui::table::{Self, Table};
+    use dwallet::tx_context::TxContext;
+    use dwallet::table::{Self, Table};
     use deepbook::math::{count_leading_zeros};
 
     friend deepbook::clob;

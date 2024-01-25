@@ -3,7 +3,7 @@ name = "simple_warrior"
 version = "0.0.1"
 
 [dependencies]
-Sui = { local = "../../../crates/sui-framework/packages/sui-framework" }
+dWallet = { local = "../../../crates/sui-framework/packages/dwallet-framework" }
 
 [addresses]
 simple_warrior = "0x0"

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests adding a shared object as a dynamic field
 
@@ -8,10 +8,10 @@
 //# publish
 
 module test::m {
-    use sui::tx_context::{Self, TxContext};
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::dynamic_object_field as ofield;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::dynamic_object_field as ofield;
 
     struct Outer has key {
         id: UID,

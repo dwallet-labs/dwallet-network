@@ -1,7 +1,7 @@
 [package]
 name = "telemetry-subscribers"
 version = "0.2.0"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 authors = ["Evan Chan <echan@mystenlabs.com>"]
 description = "Library for common telemetry and observability functionality"
 repository = "https://github.com/mystenlabs/mysten-infra"

@@ -1,6 +1,6 @@
 #!/bin/bash -x
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # This script runs as part of the rust.yml CI workflow.
 # It will detect new tests added to the repository since the last commit

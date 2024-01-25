@@ -1,7 +1,7 @@
 
 <a name="0x2_sui"></a>
 
-# Module `0x2::sui`
+# Module `0x2::dwallet`
 
 Coin<SUI> is the token used to pay for gas in Sui.
 It has 9 decimals, and the smallest unit (10^-9) is called "mist".

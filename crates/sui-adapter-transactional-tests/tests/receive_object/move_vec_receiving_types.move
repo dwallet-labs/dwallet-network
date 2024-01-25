@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses tto=0x0
 
 //# publish
 module tto::M1 {
-    use sui::object::{Self, UID, ID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer::{Self, Receiving};
+    use dwallet::object::{Self, UID, ID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer::{Self, Receiving};
     use std::vector;
 
     struct A has key, store {
@@ -79,30 +79,30 @@ module tto::M1 {
 
 // Receiving arguments are untyped at the PTB level
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 
 // As long as you don't load the object the type will not be checked.
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_none(Result(0));
 
 // Try to pass the wrong-type move vec to the function
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_none_a(Result(0));
 
 // If you try to receive an object at the wrong type, it will fail
 // E_RECEIVING_TYPE_MISMATCH
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
-//> 0: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
+//> 0: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4)]);
 //> 1: tto::M1::receive_all(Input(0), Result(0));
 
 // Try to spoof a receiving object
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
 //> 0: tto::M1::make_recv_spoof_b();
-//> 1: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4), Result(0)]);
+//> 1: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4), Result(0)]);
 
 //# programmable --inputs object(2,0) receiving(2,1) receiving(2,2) receiving(2,3) receiving(2,4)
 //> 0: tto::M1::make_recv_spoof_b();
 //> 1: tto::M1::spoof_bytes(Result(0));
-//> 2: MakeMoveVec<sui::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4), Result(1)]);
+//> 2: MakeMoveVec<dwallet::transfer::Receiving<tto::M1::B>>([Input(1), Input(2), Input(3), Input(4), Result(1)]);

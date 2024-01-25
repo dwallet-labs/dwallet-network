@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Button } from '_app/shared/ButtonUI';
 import { CardLayout } from '_app/shared/card-layout';
@@ -134,7 +134,7 @@ export function BackupMnemonicPage() {
 							variant="primary"
 							disabled={!passwordCopied && isOnboardingFlow}
 							to="/"
-							text="Open Sui Wallet"
+							text="Open dWallet Wallet"
 							after={<ArrowLeft16 className="text-pBodySmall font-normal rotate-135" />}
 						/>
 					</div>

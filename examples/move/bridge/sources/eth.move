@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module bridge::eth {
     use std::option;
 
-    use sui::coin;
-    use sui::transfer;
-    use sui::tx_context::TxContext;
+    use dwallet::coin;
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
 
     friend bridge::treasury;
 

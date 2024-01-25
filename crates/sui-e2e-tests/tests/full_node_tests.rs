@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use futures::future;
 use jsonrpsee::core::client::{ClientT, Subscription, SubscriptionClientT};
@@ -361,19 +361,19 @@ async fn test_full_node_indexes() -> Result<(), anyhow::Error> {
     let sender_balance_change = BalanceChange {
         change_type: BalanceChangeType::Pay,
         owner: sender,
-        coin_type: parse_struct_tag("0x2::sui::SUI").unwrap(),
+        coin_type: parse_struct_tag("0x2::dwlt::DWLT").unwrap(),
         amount: -100000000000000,
     };
     let recipient_balance_change = BalanceChange {
         change_type: BalanceChangeType::Receive,
         owner: receiver,
-        coin_type: parse_struct_tag("0x2::sui::SUI").unwrap(),
+        coin_type: parse_struct_tag("0x2::dwlt::DWLT").unwrap(),
         amount: 100000000000000,
     };
     let gas_balance_change = BalanceChange {
         change_type: BalanceChangeType::Gas,
         owner: sender,
-        coin_type: parse_struct_tag("0x2::sui::SUI").unwrap(),
+        coin_type: parse_struct_tag("0x2::dwlt::DWLT").unwrap(),
         amount: (gas_used as i128).neg(),
     };
 

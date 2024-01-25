@@ -139,13 +139,13 @@ $ sui client object 0xfffbb30ccb631f15f6cd36700589fc9c31cb04af28a95f3ed26d62daf3
 │ objectId  	│  0xfffbb30ccb631f15f6cd36700589fc9c31cb04af28a95f3ed26d62daf3acb57f                                             	  │
 │ version   	│  33363559                                                                                                       	  │
 │ digest    	│  3FzvXJVVVcXb9H6dEXdARaY9EmxXyyNFduet3X4eYV4x                                                                   	  │
-│ objType   	│  0x2::coin::Coin<0x2::sui::SUI>                                                                                 	  │
+│ objType   	│  0x2::coin::Coin<0x2::dwlt::DWLT>                                                                                 	  │
 │ ownerType 	│  AddressOwner                                                                                                   	  │
 │ prevTx    	│  ES2RQThjRE5u8rwiUEnhcnMoLA3cHeEGYJ8Pq98tmyAc                                                                   	  │
 │ storageRebate │  988000                                                                                                         	  │
 │ content   	│ ╭───────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────╮ │
 │           	│ │ dataType      	  │  moveObject                                                                            	    │ │
-│           	│ │ type          	  │  0x2::coin::Coin<0x2::sui::SUI>                                                       	    │ │
+│           	│ │ type          	  │  0x2::coin::Coin<0x2::dwlt::DWLT>                                                       	    │ │
 │           	│ │ hasPublicTransfer │  true                                                                                   	│ │
 │           	│ │ fields        	  │ ╭─────────┬───────────────────────────────────────────────────────────────────────────────╮ │ │
 │           	│ │               	  │ │ balance │  530076676                                                                	  │ │ │
@@ -352,7 +352,7 @@ This example also makes use of `sui move` commands. To learn more about those co
             "owner": Object {
                 "AddressOwner": String("0x514692f08249c3e9957799ce29074695840422564bff85e424b56de462913e0d"),
             },
-            "objectType": String("0x2::coin::Coin<0x2::sui::SUI>"),
+            "objectType": String("0x2::coin::Coin<0x2::dwlt::DWLT>"),
             "objectId": String("0x2f3799d094573b0958eef703b95996fe459bb00afc2d09866335c30cf480e522"),
             "version": String("5"),
             "previousVersion": String("4"),
@@ -396,7 +396,7 @@ This example also makes use of `sui move` commands. To learn more about those co
             "owner": Object {
                 "AddressOwner": String("0x514692f08249c3e9957799ce29074695840422564bff85e424b56de462913e0d"),
             },
-            "coinType": String("0x2::sui::SUI"),
+            "coinType": String("0x2::dwlt::DWLT"),
             "amount": String("-10327480"),
         },
     ]

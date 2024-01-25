@@ -3,7 +3,7 @@ name = "tto"
 version = "0.0.1"
 
 [dependencies]
-Sui = { local = "../../../../sui-framework/packages/sui-framework" }
+dWallet = { local = "../../../../sui-framework/packages/dwallet-framework" }
 
 [addresses]
 tto =  "0x0"

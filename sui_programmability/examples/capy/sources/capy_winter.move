@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This module enables Capy Winter Event - the result of a
 /// unique collaboration between Capy Labs and Capy Post.
@@ -10,19 +10,19 @@
 ///
 /// Capy Post takes zero commission for gift parcels.
 module capy::capy_winter {
-    use sui::sui::SUI;
-    use sui::coin::{Self, Coin};
-    use sui::object::{Self, ID, UID};
-    use sui::balance::{Self, Balance};
-    use sui::transfer;
-    use sui::tx_context::{TxContext, sender};
+    use dwallet::dwlt::DWLT;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::transfer;
+    use dwallet::tx_context::{TxContext, sender};
     use std::hash::sha3_256 as hash;
-    use sui::dynamic_field as df;
-    use sui::url::{Self, Url};
-    use sui::event::emit;
+    use dwallet::dynamic_field as df;
+    use dwallet::url::{Self, Url};
+    use dwallet::event::emit;
     use std::vector as vec;
-    use sui::pay;
-    use sui::bcs;
+    use dwallet::pay;
+    use dwallet::bcs;
 
     use capy::capy::{Self, Attribute, CapyRegistry};
 
@@ -68,7 +68,7 @@ module capy::capy_winter {
     }
 
     /// Every parcel must go through here!
-    struct CapyPost has key { id: UID, balance: Balance<SUI> }
+    struct CapyPost has key { id: UID, balance: Balance<DWLT> }
 
     // ========= Events =========
 
@@ -101,7 +101,7 @@ module capy::capy_winter {
     }
 
     /// Buy a single `GiftBox` and keep it at the sender's address.
-    entry fun buy_gift(post: &mut CapyPost, type: u8, payment: vector<Coin<SUI>>, ctx: &mut TxContext) {
+    entry fun buy_gift(post: &mut CapyPost, type: u8, payment: vector<Coin<DWLT>>, ctx: &mut TxContext) {
         assert!(type < GIFT_TYPES, 0);
 
         let (paid, remainder) = merge_and_split(payment, GIFT_PRICE, ctx);
@@ -155,7 +155,7 @@ module capy::capy_winter {
 
     /// Buy a premium box using a ticket!
     entry fun buy_premium(
-        post: &mut CapyPost, ticket: PremiumTicket, payment: vector<Coin<SUI>>, ctx: &mut TxContext
+        post: &mut CapyPost, ticket: PremiumTicket, payment: vector<Coin<DWLT>>, ctx: &mut TxContext
     ) {
         let PremiumTicket { id: ticket_id } = ticket;
         let (paid, remainder) = merge_and_split(payment, GIFT_PRICE, ctx);
@@ -182,8 +182,8 @@ module capy::capy_winter {
     /// Merges a vector of Coin then splits the `amount` from it, returns the
     /// Coin with the amount and the remainder.
     fun merge_and_split(
-        coins: vector<Coin<SUI>>, amount: u64, ctx: &mut TxContext
-    ): (Coin<SUI>, Coin<SUI>) {
+        coins: vector<Coin<DWLT>>, amount: u64, ctx: &mut TxContext
+    ): (Coin<DWLT>, Coin<DWLT>) {
         let base = vec::pop_back(&mut coins);
         pay::join_vec(&mut base, coins);
         assert!(coin::value(&base) > amount, 0);
@@ -222,7 +222,7 @@ module capy::capy_winter {
     /// Get a link to the gift on the capy.art.
     fun get_link_url(id: &UID, type: u8): Url {
         let res = b"http://capy.art/gifts/";
-        vec::append(&mut res, sui::hex::encode(object::uid_to_bytes(id)));
+        vec::append(&mut res, dwallet::hex::encode(object::uid_to_bytes(id)));
         vec::append(&mut res, b"?type=");
         vec::push_back(&mut res, ASCII_OFFSET + type);
 

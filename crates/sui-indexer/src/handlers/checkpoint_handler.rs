@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use fastcrypto::traits::ToFromBytes;
 use itertools::Itertools;
@@ -293,7 +293,7 @@ where
                 .flatten()
                 .find(|ev| {
                     ev.type_.address == SUI_SYSTEM_ADDRESS
-                        && ev.type_.module.as_ident_str() == ident_str!("sui_system_state_inner")
+                        && ev.type_.module.as_ident_str() == ident_str!("dwallet_system_state_inner")
                         && ev.type_.name.as_ident_str() == ident_str!("SystemEpochInfoEvent")
                 });
 

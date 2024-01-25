@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // test invalid usages of coin commands
 
@@ -7,8 +7,8 @@
 
 //# publish
 module test::m1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
 
     // not a native coin, but same type structure and BCS layout
     struct Coin<phantom T> has key, store {
@@ -27,17 +27,17 @@ module test::m1 {
 
 // split non-coin
 //# programmable --sender A --inputs 0
-//> 0: test::m1::mint<sui::sui::SUI>();
+//> 0: test::m1::mint<dwallet::dwlt::DWLT>();
 //> SplitCoins(Result(0), [Input(0)])
 
 // merge into non-coin
 //# programmable --sender A --inputs 0
-//> 0: test::m1::mint<sui::sui::SUI>();
+//> 0: test::m1::mint<dwallet::dwlt::DWLT>();
 //> MergeCoins(Result(0), [Gas])
 
 // merge non-coin into gas
 //# programmable --sender A --inputs 0
-//> 0: test::m1::mint<sui::sui::SUI>();
+//> 0: test::m1::mint<dwallet::dwlt::DWLT>();
 //> MergeCoins(Gas, [Result(0)])
 
 //# programmable --sender A --inputs 10000u64

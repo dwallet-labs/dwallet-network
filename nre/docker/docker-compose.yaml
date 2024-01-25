@@ -4,7 +4,7 @@ version: "3"
 services:
   validator:
     container_name: validator
-    image: mysten/sui-node:${SUI_SHA} # UPDATE HERE
+    image: 471930101563.dkr.ecr.us-east-1.amazonaws.com/sui-fork:dwallet # UPDATE HERE
     environment:
       - RUST_BACKTRACE=1
       - RUST_LOG=info,sui_core=debug,narwhal=debug,narwhal-primary::helper=info,jsonrpsee=error
@@ -20,7 +20,7 @@ services:
     volumes:
       - ./validator.yaml:/opt/sui/config/validator.yaml:ro
       - ./genesis.blob:/opt/sui/config/genesis.blob:ro
-      - ../genesis/key-pairs:/opt/sui/key-pairs/:ro
+      - ./key-pairs:/opt/sui/key-pairs/:ro
       - /opt/sui/db:/opt/sui/db:rw
     command:
       [

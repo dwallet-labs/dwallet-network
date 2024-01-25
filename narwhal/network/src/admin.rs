@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use axum::{extract::Extension, http::StatusCode, routing::get, Json, Router};
 use mysten_metrics::{spawn_logged_monitored_task, spawn_monitored_task};

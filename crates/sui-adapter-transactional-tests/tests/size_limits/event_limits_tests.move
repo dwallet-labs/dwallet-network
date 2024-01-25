@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Test limits on number and sizes of emitted events
 
@@ -9,10 +9,10 @@
 
 /// Test event limits enforced
 module Test::M1 {
-    use sui::event;
-    use sui::tx_context::TxContext;
+    use dwallet::event;
+    use dwallet::tx_context::TxContext;
     use std::vector;
-    use sui::bcs;
+    use dwallet::bcs;
 
     struct NewValueEvent has copy, drop {
         contents: vector<u8>

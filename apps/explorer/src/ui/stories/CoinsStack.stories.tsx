@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { SuiClientProvider } from '@mysten/dapp-kit';
 import { type Meta, type StoryObj } from '@storybook/react';
@@ -23,7 +23,7 @@ export default {
 export const Default: StoryObj<CoinsStackProps> = {
 	args: {
 		coinTypes: [
-			'0x2::sui::SUI',
+			'0x2::dwlt::DWLT',
 			'0xc0d761079b1e7fa4dbd8a881b7464cf8c400c0de72460fdf8ca44e3f1842715e::sui_inu::SUI_INU',
 			'random',
 		],

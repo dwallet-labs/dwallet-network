@@ -9,7 +9,7 @@ A hot potato is a struct that has no capabilities, therefore you can only pack a
 ```move
 module examples::trade_in {
     use sui::transfer;
-    use sui::sui::SUI;
+    use sui::dwlt::DWLT;
     use sui::coin::{Self, Coin};
     use sui::object::{Self, UID};
     use sui::tx_context::{TxContext};

@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Example coin with a trusted manager responsible for minting/burning (e.g., a stablecoin)
 /// By convention, modules defining custom coin types use upper case names, in contrast to
 /// ordinary modules, which use camel case.
 module fungible_tokens::managed {
     use std::option;
-    use sui::coin::{Self, Coin, TreasuryCap};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::coin::{Self, Coin, TreasuryCap};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     /// Name of the coin. By convention, this type has the same name as its parent module
     /// and has no fields. The full type of the coin defined by this module will be `COIN<MANAGED>`.

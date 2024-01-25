@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Simple permissionless application that stores two capys and
 /// breeds them on request.
@@ -8,9 +8,9 @@
 /// up to 2 capys; then it aborts.
 module capy::eden {
     use std::option::{Self, Option};
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::dynamic_field as dfield;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::dynamic_field as dfield;
 
     use capy::capy::{Self, Capy, CapyRegistry};
 
@@ -26,7 +26,7 @@ module capy::eden {
 
     #[allow(unused_function)]
     fun init(ctx: &mut TxContext) {
-        sui::transfer::share_object(Eden {
+        dwallet::transfer::share_object(Eden {
             id: object::new(ctx),
             capy_one: option::none(),
             capy_two: option::none()

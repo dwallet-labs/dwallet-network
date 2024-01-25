@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // test impact to versions for wrapping and unwrapping an object
 
@@ -7,8 +7,8 @@
 
 //# publish
 module a::m {
-    use sui::object;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct S has key, store {
         id: object::UID,
@@ -20,14 +20,14 @@ module a::m {
     }
 
     entry fun mint(ctx: &mut TxContext) {
-        sui::transfer::public_transfer(
+        dwallet::transfer::public_transfer(
             S { id: object::new(ctx) },
             tx_context::sender(ctx),
         );
     }
 
     entry fun wrap(s: S, ctx: &mut TxContext) {
-        sui::transfer::public_transfer(
+        dwallet::transfer::public_transfer(
             T { id: object::new(ctx), s },
             tx_context::sender(ctx),
         );
@@ -36,7 +36,7 @@ module a::m {
     entry fun unwrap(t: T, ctx: &mut TxContext) {
         let T { id, s } = t;
         object::delete(id);
-        sui::transfer::public_transfer(s, tx_context::sender(ctx));
+        dwallet::transfer::public_transfer(s, tx_context::sender(ctx));
     }
 }
 

@@ -1,19 +1,19 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses Test=0x0 --accounts A
 
 //# publish
 module Test::M {
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::tx_context::{Self, TxContext};
     struct Obj has key {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
         value: u64
     }
 
     public entry fun mint(ctx: &mut TxContext) {
-        sui::transfer::transfer(
-            Obj { id: sui::object::new(ctx), value: 0 },
+        dwallet::transfer::transfer(
+            Obj { id: dwallet::object::new(ctx), value: 0 },
             tx_context::sender(ctx),
         )
     }

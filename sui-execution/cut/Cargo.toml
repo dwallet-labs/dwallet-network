@@ -3,7 +3,7 @@ name = "sui-execution-cut"
 version = "0.1.0"
 edition = "2021"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 
 [dependencies]

@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses A0=0x0 A1=0x0 --accounts A
 
 //# publish --upgradeable --sender A
 module A0::m {
-    use sui::package;
-    use sui::tx_context::TxContext;
+    use dwallet::package;
+    use dwallet::tx_context::TxContext;
 
     struct A {}
     struct M has drop {}
@@ -18,8 +18,8 @@ module A0::m {
 
 //# upgrade --package A0 --upgrade-capability 1,2 --sender A
 module A1::m {
-    use sui::package::{Self, Publisher};
-    use sui::tx_context::TxContext;
+    use dwallet::package::{Self, Publisher};
+    use dwallet::tx_context::TxContext;
 
     struct A {}
     struct B {}

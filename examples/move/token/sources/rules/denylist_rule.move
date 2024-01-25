@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// An implementation of a simple `Denylist` for the Closed Loop system. For
 /// demonstration purposes it is implemented as a `VecSet`, however for a larger
@@ -16,9 +16,9 @@
 module examples::denylist_rule {
     use std::option;
     use std::vector;
-    use sui::bag::{Self, Bag};
-    use sui::tx_context::TxContext;
-    use sui::token::{Self, TokenPolicy, TokenPolicyCap, ActionRequest};
+    use dwallet::bag::{Self, Bag};
+    use dwallet::tx_context::TxContext;
+    use dwallet::token::{Self, TokenPolicy, TokenPolicyCap, ActionRequest};
 
     /// Trying to `verify` but the sender or the recipient is on the denylist.
     const EUserBlocked: u64 = 0;
@@ -110,8 +110,8 @@ module examples::denylist_rule {
 module examples::denylist_rule_tests {
     use std::string::utf8;
     use std::option::{none, some};
-    use sui::token;
-    use sui::token_test_utils::{Self as test, TEST};
+    use dwallet::token;
+    use dwallet::token_test_utils::{Self as test, TEST};
 
     use examples::denylist_rule::{Self as denylist, Denylist};
 
@@ -119,7 +119,7 @@ module examples::denylist_rule_tests {
     // Scenario: add a denylist with addresses, sender is not on the list and
     // transaction is confirmed.
     fun denylist_pass_not_on_the_list() {
-        let ctx = &mut sui::tx_context::dummy();
+        let ctx = &mut dwallet::tx_context::dummy();
         let (policy, cap) = test::get_policy(ctx);
 
         // first add the list for action and then add records
@@ -137,7 +137,7 @@ module examples::denylist_rule_tests {
     // Scenario: add a denylist with addresses, sender is on the list and
     // transaction fails with `EUserBlocked`.
     fun denylist_on_the_list_banned_fail() {
-        let ctx = &mut sui::tx_context::dummy();
+        let ctx = &mut dwallet::tx_context::dummy();
         let (policy, cap) = test::get_policy(ctx);
 
         token::add_rule_for_action<TEST, Denylist>(&mut policy, &cap, utf8(b"action"), ctx);
@@ -154,7 +154,7 @@ module examples::denylist_rule_tests {
     // Scenario: add a denylist with addresses, Recipient is on the list and
     // transaction fails with `EUserBlocked`.
     fun denylist_recipient_on_the_list_banned_fail() {
-        let ctx = &mut sui::tx_context::dummy();
+        let ctx = &mut dwallet::tx_context::dummy();
         let (policy, cap) = test::get_policy(ctx);
 
         token::add_rule_for_action<TEST, Denylist>(&mut policy, &cap, utf8(b"action"), ctx);

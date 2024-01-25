@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Create some dynamic fields on an object, and then try to query them.
 // There should be 1 dynamic object field (MoveObject) and 3 dynamic fields.
@@ -12,10 +12,10 @@
 
 //# publish
 module Test::m {
-    use sui::dynamic_field as field;
-    use sui::dynamic_object_field as ofield;
-    use sui::object;
-    use sui::tx_context::{sender, TxContext};
+    use dwallet::dynamic_field as field;
+    use dwallet::dynamic_object_field as ofield;
+    use dwallet::object;
+    use dwallet::tx_context::{sender, TxContext};
 
     struct Wrapper has key {
         id: object::UID,
@@ -32,7 +32,7 @@ module Test::m {
 
     public entry fun create_obj(ctx: &mut TxContext){
         let id = object::new(ctx);
-        sui::transfer::public_transfer(Parent { id }, sender(ctx))
+        dwallet::transfer::public_transfer(Parent { id }, sender(ctx))
     }
 
     public entry fun add_df(obj: &mut Parent) {
@@ -49,7 +49,7 @@ module Test::m {
 
     public entry fun wrap(parent: Parent, ctx: &mut TxContext) {
         let wrapper = Wrapper { id: object::new(ctx), o: parent };
-        sui::transfer::transfer(wrapper, sender(ctx))
+        dwallet::transfer::transfer(wrapper, sender(ctx))
     }
 }
 

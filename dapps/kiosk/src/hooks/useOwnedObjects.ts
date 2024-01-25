@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 /* eslint-disable @tanstack/query/exhaustive-deps */
 
 import { useSuiClient } from '@mysten/dapp-kit';

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests calling public transfer functions
 
@@ -7,8 +7,8 @@
 
 //# publish
 module test::m1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
 
     struct Pub has key, store { id: UID }
     public fun pub(ctx: &mut TxContext): Pub { Pub { id: object::new(ctx) } }
@@ -16,18 +16,18 @@ module test::m1 {
 
 //# programmable --sender A --inputs @A
 //> 0: test::m1::pub();
-//> sui::transfer::public_transfer<test::m1::Pub>(Result(0), Input(0));
+//> dwallet::transfer::public_transfer<test::m1::Pub>(Result(0), Input(0));
 
 //# view-object 2,0
 
 //# programmable
 //> 0: test::m1::pub();
-//> sui::transfer::public_share_object<test::m1::Pub>(Result(0));
+//> dwallet::transfer::public_share_object<test::m1::Pub>(Result(0));
 
 //# view-object 4,0
 
 //# programmable
 //> 0: test::m1::pub();
-//> sui::transfer::public_freeze_object<test::m1::Pub>(Result(0));
+//> dwallet::transfer::public_freeze_object<test::m1::Pub>(Result(0));
 
 //# view-object 6,0

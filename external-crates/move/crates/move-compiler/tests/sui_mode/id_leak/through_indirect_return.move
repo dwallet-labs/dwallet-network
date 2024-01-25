@@ -1,6 +1,6 @@
 // not allowed, a new object is being made with the UID
 module a::m {
-    use sui::object::UID;
+    use dwallet::object::UID;
 
     struct Foo has key {
         id: UID,
@@ -13,7 +13,7 @@ module a::m {
 
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }

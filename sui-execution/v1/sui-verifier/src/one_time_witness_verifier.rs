@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! A module can define a one-time witness type, that is a type that is instantiated only once, and
 //! this property is enforced by the system. We define a one-time witness type as a struct type that
@@ -45,7 +45,7 @@ pub fn verify_module(
     // the module has no initializer). The reason for it is that the SUI coin is only instantiated
     // during genesis. It is easiest to simply special-case this module particularly that this is
     // framework code and thus deemed correct.
-    if ModuleId::new(SUI_FRAMEWORK_ADDRESS, ident_str!("sui").to_owned()) == module.self_id() {
+    if ModuleId::new(SUI_FRAMEWORK_ADDRESS, ident_str!("dwlt").to_owned()) == module.self_id() {
         return Ok(());
     }
 

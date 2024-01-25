@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { getRefGasPrice } from '@mysten/core';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 import { Heading, Text } from '@mysten/ui';
@@ -70,7 +70,7 @@ export function ValidatorStatus() {
 						{nextRefGasPrice.toString()}
 					</Heading>
 					<Text variant="pBody/medium" color="steel-darker">
-						MIST
+						nDWLT
 					</Text>
 				</div>
 			</div>

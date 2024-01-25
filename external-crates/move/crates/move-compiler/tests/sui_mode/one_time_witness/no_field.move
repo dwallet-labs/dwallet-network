@@ -1,7 +1,7 @@
 // structs are always given a field in the source language
 
 module a::m {
-    use sui::tx_context;
+    use dwallet::tx_context;
 
     struct M has drop {}
 
@@ -10,6 +10,6 @@ module a::m {
 
 }
 
-module sui::tx_context {
+module dwallet::tx_context {
     struct TxContext has drop {}
 }

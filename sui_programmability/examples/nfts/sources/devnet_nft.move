@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // TODO: consider renaming this to `example_nft`
 /// A minimalist example to demonstrate how to create an NFT like object
 /// on Sui.
 module nfts::devnet_nft {
-    use sui::url::{Self, Url};
+    use dwallet::url::{Self, Url};
     use std::string;
-    use sui::object::{Self, ID, UID};
-    use sui::event;
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::event;
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     /// An example NFT that can be minted by anybody
     struct DevNetNFT has key, store {
@@ -88,8 +88,8 @@ module nfts::devnet_nft {
 #[test_only]
 module nfts::devnet_nftTests {
     use nfts::devnet_nft::{Self, DevNetNFT};
-    use sui::test_scenario as ts;
-    use sui::transfer;
+    use dwallet::test_scenario as ts;
+    use dwallet::transfer;
     use std::string;
 
     #[test]

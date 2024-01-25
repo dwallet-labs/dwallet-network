@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Encapsulates CapyAdmin functionality allowing for faster
 /// txs and lower gas fees for new capy / item batches.
 module capy::capy_admin {
     use capy::capy::{Self, CapyManagerCap, CapyRegistry, Capy};
     use capy::capy_market::{Self, CapyMarket};
-    use sui::tx_context::TxContext;
+    use dwallet::tx_context::TxContext;
 
     entry fun add_gene(
         cap: &CapyManagerCap,

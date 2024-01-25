@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module bridge::treasury {
     use std::type_name;
 
-    use sui::coin::{Self, Coin};
-    use sui::object_bag::{Self, ObjectBag};
-    use sui::tx_context::TxContext;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::object_bag::{Self, ObjectBag};
+    use dwallet::tx_context::TxContext;
 
     use bridge::btc::BTC;
     use bridge::eth::ETH;
     use bridge::usdc::USDC;
     use bridge::usdt::USDT;
-    use sui::coin::TreasuryCap;
+    use dwallet::coin::TreasuryCap;
 
     friend bridge::bridge;
 

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { CoinFormat, formatBalance } from '@mysten/core';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
@@ -42,7 +42,7 @@ export function OnTheNetwork() {
 					orientation="horizontal"
 					label="Reference Gas Price"
 					tooltip="The reference gas price of the current epoch"
-					postfix={gasPriceFormatted !== null ? 'MIST' : null}
+					postfix={gasPriceFormatted !== null ? 'nDWLT' : null}
 					size="sm"
 				>
 					{gasPriceFormatted}

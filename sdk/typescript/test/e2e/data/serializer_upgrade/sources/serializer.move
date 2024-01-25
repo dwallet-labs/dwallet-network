@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module serializer::serializer_tests {
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
-    use sui::object::{Self, UID};
-    use sui::clock::Clock;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer;
+    use dwallet::object::{Self, UID};
+    use dwallet::clock::Clock;
 
     struct MutableShared has key {
         id: UID,

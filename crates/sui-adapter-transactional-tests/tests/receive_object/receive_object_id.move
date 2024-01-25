@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses tto=0x0
 
 //# publish
 module tto::M1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer::{Self, Receiving};
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer::{Self, Receiving};
 
     struct A has key, store {
         id: UID,
@@ -39,7 +39,7 @@ module tto::M1 {
 //# run tto::M1::receiver --args receiving(2,1)
 
 //# programmable --inputs receiving(2,1) 
-//> sui::transfer::receiving_object_id<tto::M1::B>(Input(0))
+//> dwallet::transfer::receiving_object_id<tto::M1::B>(Input(0))
 
 //# programmable --inputs receiving(2,1) 
 //> tto::M1::receiver(Input(0))

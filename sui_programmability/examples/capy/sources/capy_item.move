@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Store for Capys. Unlike Marketplace, Store sells identical items
 /// in the limit specified quantity or, if quantity is not set, unlimited.
@@ -7,19 +7,19 @@
 /// Gives the Store Owner full access over the Listings and their quantity
 /// as well as allows collecting profits in a single call.
 module capy::capy_item {
-    use sui::url::{Self, Url};
-    use sui::object::{Self, ID, UID};
-    use sui::tx_context::{sender, TxContext};
+    use dwallet::url::{Self, Url};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::tx_context::{sender, TxContext};
     use std::string::{Self, String};
-    use sui::sui::SUI;
-    use sui::balance::{Self, Balance};
+    use dwallet::dwlt::DWLT;
+    use dwallet::balance::{Self, Balance};
     use std::option::{Self, Option};
-    use sui::dynamic_object_field as dof;
-    use sui::coin::{Self, Coin};
-    use sui::transfer;
+    use dwallet::dynamic_object_field as dof;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::transfer;
     use std::vector as vec;
-    use sui::event::emit;
-    use sui::pay;
+    use dwallet::event::emit;
+    use dwallet::pay;
 
     /// Base path for `CapyItem.url` attribute. Is temporary and improves
     /// explorer / wallet display. Always points to the dev/testnet server.
@@ -29,7 +29,7 @@ module capy::capy_item {
     /// to be later acquirable by the Capy Admin.
     struct ItemStore has key {
         id: UID,
-        balance: Balance<SUI>
+        balance: Balance<DWLT>
     }
 
     /// A Capy item, that is being purchased from the `ItemStore`.
@@ -118,7 +118,7 @@ module capy::capy_item {
     /// Buy an Item from the `ItemStore`. Pay `Coin<SUI>` and
     /// receive a `CapyItem`.
     public entry fun buy_and_take(
-        s: &mut ItemStore, name: vector<u8>, payment: Coin<SUI>, ctx: &mut TxContext
+        s: &mut ItemStore, name: vector<u8>, payment: Coin<DWLT>, ctx: &mut TxContext
     ) {
         let listing_mut = dof::borrow_mut<vector<u8>, ListedItem>(&mut s.id, name);
 
@@ -150,7 +150,7 @@ module capy::capy_item {
     /// Buy a CapyItem with a single Coin which may be bigger than the
     /// price of the listing.
     public entry fun buy_mut(
-        s: &mut ItemStore, name: vector<u8>, payment: &mut Coin<SUI>, ctx: &mut TxContext
+        s: &mut ItemStore, name: vector<u8>, payment: &mut Coin<DWLT>, ctx: &mut TxContext
     ) {
         let listing = dof::borrow<vector<u8>, ListedItem>(&s.id, name);
         let paid = coin::split(payment, listing.price, ctx);
@@ -160,7 +160,7 @@ module capy::capy_item {
     /// Buy a CapyItem with multiple Coins by joining them first and then
     /// calling the `buy_mut` function.
     public entry fun buy_mul_coin(
-        s: &mut ItemStore, name: vector<u8>, coins: vector<Coin<SUI>>, ctx: &mut TxContext
+        s: &mut ItemStore, name: vector<u8>, coins: vector<Coin<DWLT>>, ctx: &mut TxContext
     ) {
         let paid = vec::pop_back(&mut coins);
         pay::join_vec(&mut paid, coins);

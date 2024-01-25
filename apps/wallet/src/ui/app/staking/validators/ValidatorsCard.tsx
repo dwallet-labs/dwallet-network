@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import BottomMenuLayout, { Content, Menu } from '_app/shared/bottom-menu-layout';
 import { Button } from '_app/shared/ButtonUI';
@@ -108,8 +108,8 @@ export function ValidatorsCard() {
 						{hasInactiveValidatorDelegation ? (
 							<div className="mb-3">
 								<Alert>
-									Unstake SUI from the inactive validators and stake on an active validator to start
-									earning rewards again.
+									Unstake DWLT from the inactive validators and stake on an active validator to
+									start earning rewards again.
 								</Alert>
 							</div>
 						) : null}
@@ -173,7 +173,7 @@ export function ValidatorsCard() {
 							})
 						}
 						before={<Plus12 />}
-						text="Stake SUI"
+						text="Stake DWLT"
 					/>
 				</Menu>
 			</BottomMenuLayout>

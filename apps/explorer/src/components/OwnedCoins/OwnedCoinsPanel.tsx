@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useElementDimensions, useGetCoins, useOnScreen } from '@mysten/core';
 import { LoadingIndicator } from '@mysten/ui';

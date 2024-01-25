@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module hero::hero {
-    use sui::tx_context::{TxContext};
-    use sui::object::{Self, UID};
-    use sui::package;
+    use dwallet::tx_context::{TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::package;
 
     struct Hero has key, store {
         id: UID,

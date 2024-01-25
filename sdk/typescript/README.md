@@ -195,7 +195,7 @@ console.log({ result });
 
 ### Transfer Sui
 
-To transfer `1000` MIST to another address:
+To transfer `1000` nDWLT to another address:
 
 ```typescript
 import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
@@ -450,7 +450,7 @@ import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
 const client = new SuiClient({
 	url: getFullnodeUrl('testnet'),
 });
-// If coin type is not specified, it defaults to 0x2::sui::SUI
+// If coin type is not specified, it defaults to 0x2::dwlt::DWLT
 const coinBalance = await client.getBalance({
 	owner: '0xcc2bd176a478baea9a0de7a24cd927661cc6e860d5bacecb9a138ef20dbab231',
 	coinType: '0x65b0553a591d7b13376e03a408e112c706dc0909a79080c810b93b06f922c458::usdc::USDC',

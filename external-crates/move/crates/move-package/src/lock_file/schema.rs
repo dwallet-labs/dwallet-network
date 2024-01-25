@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! Serde compatible types to deserialize the schematized parts of the lock file (everything in the
 //! [move] table).  This module does not support serialization because of limitations in the `toml`

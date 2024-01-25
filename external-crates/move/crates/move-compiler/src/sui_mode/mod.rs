@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_symbol_pool::Symbol;
 
@@ -20,7 +20,7 @@ pub const UTF_TYPE_NAME: Symbol = symbol!("String");
 pub const ASCII_MODULE_NAME: Symbol = symbol!("ascii");
 pub const ASCII_TYPE_NAME: Symbol = symbol!("String");
 
-pub const SUI_ADDR_NAME: Symbol = symbol!("sui");
+pub const SUI_ADDR_NAME: Symbol = symbol!("dwallet");
 pub const OBJECT_MODULE_NAME: Symbol = symbol!("object");
 pub const OBJECT_NEW: Symbol = symbol!("new");
 pub const OBJECT_NEW_UID_FROM_HASH: Symbol = symbol!("new_uid_from_hash");
@@ -30,11 +30,11 @@ pub const UID_TYPE_NAME: Symbol = symbol!("UID");
 pub const ID_TYPE_NAME: Symbol = symbol!("ID");
 pub const TX_CONTEXT_MODULE_NAME: Symbol = symbol!("tx_context");
 pub const TX_CONTEXT_TYPE_NAME: Symbol = symbol!("TxContext");
-pub const SUI_MODULE_NAME: Symbol = symbol!("sui");
-pub const SUI_OTW_NAME: Symbol = symbol!("SUI");
+pub const SUI_MODULE_NAME: Symbol = symbol!("dwlt");
+pub const SUI_OTW_NAME: Symbol = symbol!("DWLT");
 
-pub const SUI_SYSTEM_ADDR_NAME: Symbol = symbol!("sui_system");
-pub const SUI_SYSTEM_MODULE_NAME: Symbol = symbol!("sui_system");
+pub const SUI_SYSTEM_ADDR_NAME: Symbol = symbol!("dwallet_system");
+pub const SUI_SYSTEM_MODULE_NAME: Symbol = symbol!("dwallet_system");
 pub const SUI_SYSTEM_CREATE: Symbol = symbol!("create");
 pub const CLOCK_MODULE_NAME: Symbol = symbol!("clock");
 pub const CLOCK_TYPE_NAME: Symbol = symbol!("Clock");
@@ -67,7 +67,7 @@ pub const PRIVATE_TRANSFER_FUNCTIONS: &[Symbol] = &[
 // Diagnostics
 //**************************************************************************************************
 
-pub const SUI_DIAG_PREFIX: &str = "Sui ";
+pub const SUI_DIAG_PREFIX: &str = "dWallet ";
 
 // Categories
 pub const ID_LEAK_CATEGORY: u8 = 1;

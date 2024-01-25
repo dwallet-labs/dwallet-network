@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useSuiClient } from '@mysten/dapp-kit';
 import { CoinMetadata } from '@mysten/sui.js/client';
@@ -60,8 +60,8 @@ export function useCoinMetadata(coinType?: string | null) {
 					decimals: 9,
 					description: '',
 					iconUrl: null,
-					name: 'Sui',
-					symbol: 'SUI',
+					name: 'dWallet',
+					symbol: 'DWLT',
 				};
 
 				return metadata;

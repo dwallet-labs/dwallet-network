@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::coin::Coin;
 use crate::coin::CoinMetadata;
@@ -167,11 +167,11 @@ pub struct MoveObjectType(MoveObjectType_);
 pub enum MoveObjectType_ {
     /// A type that is not `0x2::coin::Coin<T>`
     Other(StructTag),
-    /// A SUI coin (i.e., `0x2::coin::Coin<0x2::sui::SUI>`)
+    /// A SUI coin (i.e., `0x2::coin::Coin<0x2::dwlt::DWLT>`)
     GasCoin,
     /// A record of a staked SUI coin (i.e., `0x3::staking_pool::StakedSui`)
     StakedSui,
-    /// A non-SUI coin type (i.e., `0x2::coin::Coin<T> where T != 0x2::sui::SUI`)
+    /// A non-SUI coin type (i.e., `0x2::coin::Coin<T> where T != 0x2::dwlt::DWLT`)
     Coin(TypeTag),
     // NOTE: if adding a new type here, and there are existing on-chain objects of that
     // type with Other(_), that is ok, but you must hand-roll PartialEq/Eq/Ord/maybe Hash
@@ -260,7 +260,7 @@ impl MoveObjectType {
         }
     }
 
-    /// Return true if `self` is 0x2::coin::Coin<0x2::sui::SUI>
+    /// Return true if `self` is 0x2::coin::Coin<0x2::dwlt::DWLT>
     pub fn is_gas_coin(&self) -> bool {
         match &self.0 {
             MoveObjectType_::GasCoin => true,

@@ -4,7 +4,7 @@ version = "0.0.1"
 published-at = "$STORAGE_ID"
 
 [dependencies]
-Sui = { local = "$REPO_ROOT/crates/sui-framework/packages/sui-framework" }
+dWallet = { local = "$REPO_ROOT/crates/sui-framework/packages/dwallet-framework" }
 
 [addresses]
 z = "$RUNTIME_ID"

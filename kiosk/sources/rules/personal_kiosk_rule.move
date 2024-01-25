@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Description:
 /// This module defines a Rule which checks that the Kiosk is "personal" meaning
@@ -19,8 +19,8 @@
 /// trade + Kiosk is fixed to the owner).
 ///
 module kiosk::personal_kiosk_rule {
-    use sui::kiosk::{Self, Kiosk};
-    use sui::transfer_policy::{
+    use dwallet::kiosk::{Self, Kiosk};
+    use dwallet::transfer_policy::{
         Self as policy,
         TransferPolicy,
         TransferPolicyCap,

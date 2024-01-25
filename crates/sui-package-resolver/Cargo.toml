@@ -3,7 +3,7 @@ name = "sui-package-resolver"
 version = "0.1.0"
 edition = "2021"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

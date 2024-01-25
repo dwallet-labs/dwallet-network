@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import Overlay from '_components/overlay';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -13,7 +13,7 @@ function StakePage() {
 	const unstake = searchParams.get('unstake') === 'true';
 
 	const navigate = useNavigate();
-	const stakingTitle = unstake ? 'Unstake SUI' : 'Stake SUI';
+	const stakingTitle = unstake ? 'Unstake DWLT' : 'Stake DWLT';
 
 	return (
 		<Overlay

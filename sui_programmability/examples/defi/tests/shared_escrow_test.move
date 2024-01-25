@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module defi::shared_escrow_tests {
-    use sui::object::{Self, UID};
-    use sui::test_scenario::{Self, Scenario};
+    use dwallet::object::{Self, UID};
+    use dwallet::test_scenario::{Self, Scenario};
 
     use defi::shared_escrow::{Self, EscrowedObj};
 

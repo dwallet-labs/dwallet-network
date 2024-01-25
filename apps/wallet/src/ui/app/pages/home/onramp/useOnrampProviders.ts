@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { growthbook } from '_src/ui/app/experimentation/feature-gating';
 import { useFeatureIsOn } from '@growthbook/growthbook-react';
@@ -35,10 +35,10 @@ const ONRAMP_PROVIDER: OnrampProvider[] = [
 		},
 		getUrl: async (address) => {
 			const params = new URLSearchParams({
-				coinType: 'SUI',
+				coinType: 'dWallet',
 				fiatType: 'USD',
 				fiatAmount: '100',
-				blockchain: 'SUI',
+				blockchain: 'dWallet',
 				theme: 'dark',
 				walletAddress: address,
 				returnUrl: window.location.href,
@@ -62,7 +62,7 @@ const ONRAMP_PROVIDER: OnrampProvider[] = [
 				// If you want to test ETH values, you can use something like this:
 				// cryptoCurrencyCode: 'ETH',
 				// walletAddress: '0x000000000000000000000000000000000000dead',
-				cryptoCurrencyCode: 'SUI',
+				cryptoCurrencyCode: 'dWallet',
 				walletAddress: address,
 				disableWalletAddressForm: 'true',
 				themeColor: '#6fbcf0',
@@ -97,7 +97,7 @@ const ONRAMP_PROVIDER: OnrampProvider[] = [
 			const params = new URLSearchParams({
 				theme: 'light',
 				colorCode: '#6fbcf0',
-				currencyCode: 'SUI',
+				currencyCode: 'dWallet',
 				walletAddress: address,
 				environment: process.env.NODE_ENV === 'production' ? 'PRODUCTION' : 'STAGING',
 			});

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // similar to dynamic_object_field_tests but over multiple transactions,
 // as this uses a different code path
@@ -10,9 +10,9 @@
 //# publish
 module a::m {
 
-use sui::dynamic_object_field::{add, remove};
-use sui::object;
-use sui::tx_context::{sender, TxContext};
+use dwallet::dynamic_object_field::{add, remove};
+use dwallet::object;
+use dwallet::tx_context::{sender, TxContext};
 
 struct Obj has key, store {
     id: object::UID,
@@ -25,7 +25,7 @@ struct Fake has key, store {
 entry fun t1(ctx: &mut TxContext) {
     let id = object::new(ctx);
     add(&mut id, 0, Obj { id: object::new(ctx) });
-    sui::transfer::public_transfer(Obj { id }, sender(ctx))
+    dwallet::transfer::public_transfer(Obj { id }, sender(ctx))
 }
 
 entry fun t2(obj: &mut Obj) {

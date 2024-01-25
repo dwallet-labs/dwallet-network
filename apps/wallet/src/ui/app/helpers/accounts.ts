@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { type AccountType, type SerializedUIAccount } from '_src/background/accounts/Account';
 import { isMnemonicSerializedUiAccount } from '_src/background/accounts/MnemonicAccount';
 import { isZkLoginAccountSerializedUI } from '_src/background/accounts/zklogin/ZkLoginAccount';

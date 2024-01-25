@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use async_graphql::{connection::Connection, *};
 use fastcrypto::encoding::{Base58, Encoding};
@@ -57,7 +57,7 @@ pub(crate) struct ObjectFilter {
     /// type name.
     ///
     /// Generic types can be queried by either the generic type name, e.g. `0x2::coin::Coin`, or by
-    /// the full type name, such as `0x2::coin::Coin<0x2::sui::SUI>`.
+    /// the full type name, such as `0x2::coin::Coin<0x2::dwlt::DWLT>`.
     pub type_: Option<String>,
 
     /// Filter for live objects by their current owners.
@@ -254,7 +254,7 @@ impl Object {
     /// The coin objects for the given address.
     ///
     /// The type field is a string of the inner type of the coin by which to filter
-    /// (e.g. `0x2::sui::SUI`). If no type is provided, it will default to `0x2::sui::SUI`.
+    /// (e.g. `0x2::dwlt::DWLT`). If no type is provided, it will default to `0x2::dwlt::DWLT`.
     pub async fn coin_connection(
         &self,
         ctx: &Context<'_>,

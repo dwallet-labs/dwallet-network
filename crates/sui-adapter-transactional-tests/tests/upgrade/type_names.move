@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses A0=0x0 A1=0x0 A2=0x0 --accounts A
 
 //# publish --upgradeable --sender A
 module A0::m {
-    use sui::object::UID;
+    use dwallet::object::UID;
 
     struct Canary has key {
         id: UID,
@@ -18,7 +18,7 @@ module A0::m {
 
 //# upgrade --package A0 --upgrade-capability 1,1 --sender A
 module A1::m {
-    use sui::object::UID;
+    use dwallet::object::UID;
 
     struct Canary has key {
         id: UID,
@@ -33,9 +33,9 @@ module A1::m {
 module A2::m {
     use std::ascii;
     use std::type_name;
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct Canary has key {
         id: UID,

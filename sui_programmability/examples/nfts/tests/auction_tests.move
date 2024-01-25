@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module nfts::auction_tests {
     use std::vector;
 
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
-    use sui::object::{Self, UID};
-    use sui::test_scenario::Self;
-    use sui::transfer;
-    use sui::tx_context::TxContext;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::dwlt::DWLT;
+    use dwallet::object::{Self, UID};
+    use dwallet::test_scenario::Self;
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
 
     use nfts::auction::{Self, Bid};
     use nfts::auction_lib::Auction;
@@ -30,7 +30,7 @@ module nfts::auction_tests {
     fun init_bidders(ctx: &mut TxContext, bidders: vector<address>) {
         while (!vector::is_empty(&bidders)) {
             let bidder = vector::pop_back(&mut bidders);
-            let coin = coin::mint_for_testing<SUI>(100, ctx);
+            let coin = coin::mint_for_testing<DWLT>(100, ctx);
             transfer::public_transfer(coin, bidder);
         };
     }
@@ -64,7 +64,7 @@ module nfts::auction_tests {
         // a transaction by the first bidder to create and put a bid
         test_scenario::next_tx(scenario, bidder1);
         {
-            let coin = test_scenario::take_from_sender<Coin<SUI>>(scenario);
+            let coin = test_scenario::take_from_sender<Coin<DWLT>>(scenario);
 
             auction::bid(coin, auction_id, auctioneer, test_scenario::ctx(scenario));
         };
@@ -84,7 +84,7 @@ module nfts::auction_tests {
         // bidder's)
         test_scenario::next_tx(scenario, bidder2);
         {
-            let coin = test_scenario::take_from_sender<Coin<SUI>>(scenario);
+            let coin = test_scenario::take_from_sender<Coin<DWLT>>(scenario);
 
             auction::bid(coin, auction_id, auctioneer, test_scenario::ctx(scenario));
         };

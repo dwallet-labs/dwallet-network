@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { DateCard } from '_app/shared/date-card';
 import { Text } from '_app/shared/text';
@@ -88,7 +88,7 @@ export function TransactionCard({
 									</Text>
 									{showSuiSymbol && (
 										<Text color="gray-90" weight="normal" variant="subtitleSmall">
-											SUI
+											DWLT
 										</Text>
 									)}
 								</div>

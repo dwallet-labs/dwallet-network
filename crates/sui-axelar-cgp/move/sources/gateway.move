@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Implementation a cross-chain messaging system for Axelar.
 ///
@@ -32,7 +32,7 @@ module axelar::gateway {
     use std::string::{Self, String};
     use std::vector;
 
-    use sui::bcs;
+    use dwallet::bcs;
 
     use axelar::utils::to_sui_signed;
     use axelar::channel::{Self, Channel, ApprovedCall};
@@ -162,7 +162,7 @@ module axelar::gateway {
         destination_address: vector<u8>,
         payload: vector<u8>
     ) {
-        sui::event::emit(ContractCall {
+        dwallet::event::emit(ContractCall {
             source: channel::source_id(channel),
             destination,
             destination_address,
@@ -173,7 +173,7 @@ module axelar::gateway {
     #[test_only]
     use axelar::utils::operators_hash;
     #[test_only]
-    use sui::vec_map;
+    use dwallet::vec_map;
 
     #[test_only]
     /// Test call approval for the `test_execute` test.
@@ -187,7 +187,7 @@ module axelar::gateway {
     /// Tests execution with a set of validators.
     /// Samples for this test are generated with the `presets/` application.
     fun test_execute() {
-        use sui::test_scenario::{Self as ts, ctx};
+        use dwallet::test_scenario::{Self as ts, ctx};
 
         // public keys of `operators`
         let epoch = 1;
@@ -217,7 +217,7 @@ module axelar::gateway {
 
     #[test]
     fun test_transfer_operatorship() {
-        use sui::test_scenario::{Self as ts, ctx};
+        use dwallet::test_scenario::{Self as ts, ctx};
         // public keys of `operators`
         let epoch = 1;
         let operators = vector[

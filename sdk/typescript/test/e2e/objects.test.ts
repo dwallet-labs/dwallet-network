@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -33,7 +33,7 @@ describe('Object Reading API', () => {
 			}),
 		);
 		objectInfos.forEach((objectInfo) => {
-			expect(objectInfo.data?.type).to.equal('0x2::coin::Coin<0x2::sui::SUI>');
+			expect(objectInfo.data?.type).to.equal('0x2::coin::Coin<0x2::dwlt::DWLT>');
 		});
 	});
 
@@ -53,7 +53,7 @@ describe('Object Reading API', () => {
 		expect(gasObjects.data.length).to.equal(objectInfos.length);
 
 		objectInfos.forEach((objectInfo) => {
-			expect(objectInfo.data?.type).to.equal('0x2::coin::Coin<0x2::sui::SUI>');
+			expect(objectInfo.data?.type).to.equal('0x2::coin::Coin<0x2::dwlt::DWLT>');
 		});
 	});
 

@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This module verifies the usage of the "fake native" functions. These functions are declared
 //! as 'native`, but do not appear in the compiled module. For developer sanity, they must be marked

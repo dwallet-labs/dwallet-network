@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{str::FromStr, time::Duration};
 
@@ -184,7 +184,7 @@ pub async fn fetch_coin(
     sui: &SuiClient,
     sender: &SuiAddress,
 ) -> Result<Option<Coin>, anyhow::Error> {
-    let coin_type = "0x2::sui::SUI".to_string();
+    let coin_type = "0x2::dwlt::DWLT".to_string();
     let coins_stream = sui
         .coin_read_api()
         .get_coins_stream(*sender, Some(coin_type));

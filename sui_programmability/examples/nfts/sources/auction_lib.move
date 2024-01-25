@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This is a helper module for implementing two versions of an
 /// English auction (https://en.wikipedia.org/wiki/English_auction),
@@ -8,12 +8,12 @@
 module nfts::auction_lib {
     use std::option::{Self, Option};
 
-    use sui::coin;
-    use sui::balance::{Self, Balance};
-    use sui::sui::SUI;
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self,TxContext};
+    use dwallet::coin;
+    use dwallet::balance::{Self, Balance};
+    use dwallet::dwlt::DWLT;
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self,TxContext};
 
     friend nfts::auction;
     friend nfts::shared_auction;
@@ -21,7 +21,7 @@ module nfts::auction_lib {
     /// Stores information about an auction bid.
     struct BidData has store {
         /// Coin representing the current (highest) bid.
-        funds: Balance<SUI>,
+        funds: Balance<DWLT>,
         /// Address of the highest bidder.
         highest_bidder: address,
     }
@@ -66,7 +66,7 @@ module nfts::auction_lib {
     public fun update_auction<T: key + store>(
         auction: &mut Auction<T>,
         bidder: address,
-        funds: Balance<SUI>,
+        funds: Balance<DWLT>,
         ctx: &mut TxContext,
     ) {
         if (option::is_none(&auction.bid_data)) {
@@ -151,7 +151,7 @@ module nfts::auction_lib {
     }
 
     /// Helper for the most common operation - wrapping a balance and sending it
-    fun send_balance(balance: Balance<SUI>, to: address, ctx: &mut TxContext) {
+    fun send_balance(balance: Balance<DWLT>, to: address, ctx: &mut TxContext) {
         transfer::public_transfer(coin::from_balance(balance, ctx), to)
     }
 

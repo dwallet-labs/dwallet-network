@@ -1,6 +1,6 @@
 use std::num::NonZeroUsize;
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use config::AuthorityIdentifier;
 use std::sync::Arc;
 use storage::{CertificateStore, CertificateStoreCache, ConsensusStore};

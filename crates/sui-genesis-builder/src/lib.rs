@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use anyhow::{bail, Context};
+use anyhow::{bail, Context, Error};
 use camino::Utf8Path;
 use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::KeyPair;
@@ -43,9 +43,7 @@ use sui_types::metrics::LimitsMetrics;
 use sui_types::object::{Object, Owner};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::sui_system_state::{get_sui_system_state, SuiSystemState, SuiSystemStateTrait};
-use sui_types::transaction::{
-    CallArg, CheckedInputObjects, Command, InputObjectKind, ObjectReadResult, Transaction,
-};
+use sui_types::transaction::{Argument, CallArg, CheckedInputObjects, Command, InputObjectKind, ObjectReadResult, Transaction};
 use sui_types::{SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use tracing::trace;
 use validator_info::{GenesisValidatorInfo, GenesisValidatorMetadata, ValidatorInfo};
@@ -1024,7 +1022,7 @@ pub fn generate_genesis_system_object(
         let sui_system_state_uid = builder.programmable_move_call(
             SUI_FRAMEWORK_ADDRESS.into(),
             ident_str!("object").to_owned(),
-            ident_str!("sui_system_state").to_owned(),
+            ident_str!("dwallet_system_state").to_owned(),
             vec![],
             vec![],
         );
@@ -1059,19 +1057,22 @@ pub fn generate_genesis_system_object(
             )?;
         }
 
-        // Step 4: Mint the supply of SUI.
-        let sui_supply = builder.programmable_move_call(
+        // Step 4: Mint the supply of DWLT.
+        let Argument::Result(coin) = builder.programmable_move_call(
             SUI_FRAMEWORK_ADDRESS.into(),
-            ident_str!("sui").to_owned(),
+            ident_str!("dwlt").to_owned(),
             ident_str!("new").to_owned(),
             vec![],
             vec![],
-        );
+        ) else { return Err(Error::msg("")) };
+
+        let coin_treasury = Argument::NestedResult(coin, 0);
+        let coin_supply = Argument::NestedResult(coin, 1);
 
         // Step 5: Run genesis.
         // The first argument is the system state uid we got from step 1 and the second one is the SUI supply we
         // got from step 3.
-        let mut arguments = vec![sui_system_state_uid, sui_supply];
+        let mut arguments = vec![sui_system_state_uid, coin_treasury, coin_supply];
         let mut call_arg_arguments = vec![
             CallArg::Pure(bcs::to_bytes(&genesis_chain_parameters).unwrap()),
             CallArg::Pure(bcs::to_bytes(&genesis_validators).unwrap()),

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::fmt::{Display, Formatter};
 use std::net::SocketAddr;
@@ -96,7 +96,7 @@ impl RosettaClient {
         keystore: &Keystore,
     ) -> TransactionIdentifierResponse {
         let network_identifier = NetworkIdentifier {
-            blockchain: "sui".to_string(),
+            blockchain: "dwallet".to_string(),
             network: SuiEnv::LocalNet,
         };
         // Preprocess

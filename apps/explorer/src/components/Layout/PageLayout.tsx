@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useFeatureIsOn } from '@growthbook/growthbook-react';
 import { useAppsBackend, useElementDimensions } from '@mysten/core';
@@ -50,7 +50,7 @@ export function PageLayout({ gradient, content, loading, isError }: PageLayoutPr
 
 	const networkDegradeBannerCopy =
 		network === Network.TESTNET
-			? 'Sui Explorer (Testnet) is currently under-going maintenance. Some data may be incorrect or missing.'
+			? 'dWallet Explorer (Testnet) is currently under-going maintenance. Some data may be incorrect or missing.'
 			: "The explorer is running slower than usual. We're working to fix the issue and appreciate your patience.";
 
 	return (

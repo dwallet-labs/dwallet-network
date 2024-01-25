@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module object_owner::object_owner {
     use std::option::{Self, Option};
-    use sui::dynamic_object_field;
-    use sui::dynamic_field;
-    use sui::object::{Self, ID, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::dynamic_object_field;
+    use dwallet::dynamic_field;
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct Parent has key {
         id: UID,

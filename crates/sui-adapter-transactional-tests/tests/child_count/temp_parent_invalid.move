@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // DEPRECATED child count no longer tracked
 // tests the invalid creation and deletion of a parent object
@@ -9,17 +9,17 @@
 //# publish
 
 module test::m {
-    use sui::tx_context::TxContext;
+    use dwallet::tx_context::TxContext;
 
     struct S has key, store {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
     }
 
     public entry fun t(ctx: &mut TxContext) {
-        let parent = sui::object::new(ctx);
-        let child = S { id: sui::object::new(ctx) };
-        sui::dynamic_object_field::add(&mut parent, 0, child);
-        sui::object::delete(parent);
+        let parent = dwallet::object::new(ctx);
+        let child = S { id: dwallet::object::new(ctx) };
+        dwallet::dynamic_object_field::add(&mut parent, 0, child);
+        dwallet::object::delete(parent);
     }
 }
 

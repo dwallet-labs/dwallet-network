@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import Alert from '_components/alert';
 import Loading from '_components/loading';
@@ -30,7 +30,7 @@ export function Validators() {
 
 	const navigate = useNavigate();
 
-	const pageTitle = stakedValidators?.length ? 'Stake & Earn SUI' : 'Select a Validator';
+	const pageTitle = stakedValidators?.length ? 'Stake & Earn DWLT' : 'Select a Validator';
 
 	return (
 		<Overlay showModal title={isPending ? 'Loading' : pageTitle} closeOverlay={() => navigate('/')}>

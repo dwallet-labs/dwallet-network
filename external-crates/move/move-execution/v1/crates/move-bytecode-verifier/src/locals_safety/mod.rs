@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This module defines the transfer functions for verifying local safety of a procedure body.
 //! It is concerned with the assignment state of a local variable at the time of usage, which is

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // DEPRECATED child count no longer tracked
 // tests invalid deletion of an object that has children
@@ -9,38 +9,38 @@
 //# publish
 
 module test::m {
-    use sui::tx_context::{Self, TxContext};
-    use sui::dynamic_object_field as ofield;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::dynamic_object_field as ofield;
 
     struct S has key, store {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
     }
 
     struct R has key {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
         s: S,
     }
 
     public entry fun mint(ctx: &mut TxContext) {
-        let s = S { id: sui::object::new(ctx) };
-        sui::transfer::transfer(s, tx_context::sender(ctx))
+        let s = S { id: dwallet::object::new(ctx) };
+        dwallet::transfer::transfer(s, tx_context::sender(ctx))
     }
 
     public entry fun add(parent: &mut S, idx: u64, ctx: &mut TxContext) {
-        let child = S { id: sui::object::new(ctx) };
+        let child = S { id: dwallet::object::new(ctx) };
         ofield::add(&mut parent.id, idx, child);
     }
 
     public entry fun wrap(s: S, ctx: &mut TxContext) {
-        let r = R { id: sui::object::new(ctx), s };
-        sui::transfer::transfer(r, tx_context::sender(ctx))
+        let r = R { id: dwallet::object::new(ctx), s };
+        dwallet::transfer::transfer(r, tx_context::sender(ctx))
     }
 
     public entry fun delete(r: R) {
         let R { id, s } = r;
-        sui::object::delete(id);
+        dwallet::object::delete(id);
         let S { id } = s;
-        sui::object::delete(id);
+        dwallet::object::delete(id);
     }
 }
 

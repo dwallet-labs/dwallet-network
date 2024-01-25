@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export const ToS_LINK = 'https://mystenlabs.com/legal#suiwallettermsofservice';
 export const PRIVACY_POLICY_LINK = 'https://mystenlabs.com/legal#privacypolicy';

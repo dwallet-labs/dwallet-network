@@ -1,21 +1,21 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 /// The module which defines the `Collectible` type. It is an all-in-one
 /// package to create a `Display`, a `Publisher` and a `TransferPolicy` to
 /// enable `Kiosk` trading from the start.
 module kiosk::collectible {
-    use sui::transfer;
+    use dwallet::transfer;
     use std::vector as vec;
     use std::string::String;
     use std::option::{Self, Option};
-    use sui::package::{Self, Publisher};
-    use sui::display::{Self, Display};
-    use sui::borrow::{Self, Referent, Borrow};
-    use sui::tx_context::{sender, TxContext};
-    use sui::object::{Self, UID};
-    use sui::transfer_policy::{
+    use dwallet::package::{Self, Publisher};
+    use dwallet::display::{Self, Display};
+    use dwallet::borrow::{Self, Referent, Borrow};
+    use dwallet::tx_context::{sender, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer_policy::{
         Self as policy,
         TransferPolicyCap
     };
@@ -94,7 +94,7 @@ module kiosk::collectible {
     /// - The T parameter is the expected Metadata / custom type to use for
     /// the Collection;
     public fun claim_ticket<OTW: drop, T: store>(otw: OTW, max_supply: Option<u32>, ctx: &mut TxContext) {
-        assert!(sui::types::is_one_time_witness(&otw), ENotOneTimeWitness);
+        assert!(dwallet::types::is_one_time_witness(&otw), ENotOneTimeWitness);
 
         let publisher = package::claim(otw, ctx);
 
@@ -215,7 +215,7 @@ module kiosk::collectible {
                 ctx
             );
 
-            sui::transfer::transfer(obj, sender(ctx));
+            dwallet::transfer::transfer(obj, sender(ctx));
             // ));
 
             len = len - 1;

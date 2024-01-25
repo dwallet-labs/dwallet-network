@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // integration test with standalone postgresql database
 #[cfg(feature = "pg_integration")]
@@ -929,7 +929,7 @@ pub mod pg_integration_test {
         let all_coins = indexer_rpc_client
             .query_objects(
                 SuiObjectResponseQuery::new_with_filter(SuiObjectDataFilter::StructType(
-                    parse_struct_tag("0x2::coin::Coin<0x2::sui::SUI>").unwrap(),
+                    parse_struct_tag("0x2::coin::Coin<0x2::dwlt::DWLT>").unwrap(),
                 )),
                 None,
                 None,
@@ -1025,7 +1025,7 @@ pub mod pg_integration_test {
                 owner_address: Some(SuiAddress::random_for_testing_only().to_string()),
                 initial_shared_version: None,
                 previous_transaction: TransactionDigest::random().to_string(),
-                object_type: "0x2::coin::Coin<0x2::sui::SUI>".to_string(),
+                object_type: "0x2::coin::Coin<0x2::dwlt::DWLT>".to_string(),
                 object_status: ObjectStatus::Created,
                 has_public_transfer: false,
                 storage_rebate: 0,

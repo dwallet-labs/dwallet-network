@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Description:
 /// This module implements a Rule that requires a "Proof" witness to be
@@ -16,7 +16,7 @@
 /// - Implement a custom requirement on the creator side an link the logic.
 ///
 module kiosk::witness_rule {
-    use sui::transfer_policy::{
+    use dwallet::transfer_policy::{
         Self as policy,
         TransferPolicy,
         TransferPolicyCap,

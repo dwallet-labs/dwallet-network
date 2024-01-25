@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Test the change of APY with heavy transactions
 
@@ -11,8 +11,8 @@
 
 //# publish --sender A --gas-budget 9999999999
 module P0::m {
-    use sui::object::{Self, UID};
-    use sui::tx_context::{sender, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{sender, TxContext};
     use std::vector;
 
     struct Big has key, store {
@@ -33,7 +33,7 @@ module P0::m {
     public entry fun new(ctx: &mut TxContext){
         let id = object::new(ctx);
         let w = weight();
-        sui::transfer::public_transfer(
+        dwallet::transfer::public_transfer(
             Big { id, weight: w }, 
             sender(ctx)
         )

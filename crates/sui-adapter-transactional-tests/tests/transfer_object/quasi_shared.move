@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests TransferObject should fail for a quasi-shared object
 
@@ -8,9 +8,9 @@
 //# publish
 
 module test::m {
-    use sui::transfer;
-    use sui::tx_context::TxContext;
-    use sui::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
 
     struct S has key { id: UID }
     struct Child has key, store { id: UID }
@@ -22,7 +22,7 @@ module test::m {
 
     public entry fun mint_child(s: &mut S, ctx: &mut TxContext) {
         let id = object::new(ctx);
-        sui::dynamic_object_field::add(&mut s.id, 0, Child { id });
+        dwallet::dynamic_object_field::add(&mut s.id, 0, Child { id });
     }
 }
 

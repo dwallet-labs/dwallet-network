@@ -1,6 +1,6 @@
 // Incorrect, more than one field means not a OTW
 module a::m {
-    use sui::tx_context;
+    use dwallet::tx_context;
 
     struct M has drop { some_field: bool, some_field2: bool  }
 
@@ -8,6 +8,6 @@ module a::m {
     }
 }
 
-module sui::tx_context {
+module dwallet::tx_context {
     struct TxContext has drop {}
 }

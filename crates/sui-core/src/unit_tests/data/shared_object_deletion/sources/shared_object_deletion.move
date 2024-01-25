@@ -1,12 +1,12 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module shared_object_deletion::o2 {
     use std::vector;
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     struct Obj has key, store {
         id: UID,

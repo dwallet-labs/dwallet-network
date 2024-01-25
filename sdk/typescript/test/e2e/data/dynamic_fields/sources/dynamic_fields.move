@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module dynamic_fields::dynamic_fields_test {
-    use sui::dynamic_field as dfield;
-    use sui::dynamic_object_field as dof;
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
+    use dwallet::dynamic_field as dfield;
+    use dwallet::dynamic_object_field as dof;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer;
 
     struct Test has key {
         id: UID,

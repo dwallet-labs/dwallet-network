@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This analysis flags potential custom implementations of transfer/share/freeze calls on objects
 //! that already have a store ability and where "public" variants of these calls can be used. This

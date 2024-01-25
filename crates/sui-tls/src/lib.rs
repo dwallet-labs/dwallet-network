@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 mod acceptor;
 mod certgen;
 mod verifier;
 
-pub const SUI_VALIDATOR_SERVER_NAME: &str = "sui";
+pub const SUI_VALIDATOR_SERVER_NAME: &str = "dwallet";
 
 pub use acceptor::{TlsAcceptor, TlsConnectionInfo};
 pub use certgen::SelfSignedCertificate;
@@ -115,7 +115,7 @@ mod tests {
         // Add our public key to the allower
         allowlist.inner_mut().write().unwrap().insert(public_key);
 
-        // Allowed public key but the server-name in the cert is not the required "sui"
+        // Allowed public key but the server-name in the cert is not the required "dwallet"
         verifier
             .verify_client_cert(
                 &cert.rustls_certificate(),

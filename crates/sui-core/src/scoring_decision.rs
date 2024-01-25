@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::authority::AuthorityMetrics;
 use crate::consensus_types::committee_api::CommitteeAPI;
 use crate::consensus_types::AuthorityIndex;

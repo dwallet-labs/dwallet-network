@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 export const DEEPBOOK_KEY = 'deepbook';
 export const SUI_CONVERSION_RATE = 6;
 export const USDC_CONVERSION_RATE = 9;
@@ -18,7 +18,7 @@ export const initialValues = {
 export type FormValues = typeof initialValues;
 
 export enum Coins {
-	SUI = 'SUI',
+	DWLT = 'DWLT',
 	USDC = 'USDC',
 	USDT = 'USDT',
 	WETH = 'WETH',

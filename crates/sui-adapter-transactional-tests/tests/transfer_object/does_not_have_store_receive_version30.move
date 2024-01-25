@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Tests `public_receive` should fail for an object _without_ public transfer,
 // and that we cannot directly call `receive` from a PTB.
@@ -8,9 +8,9 @@
 
 //# publish
 module test::m {
-    use sui::transfer::{Self, Receiving};
-    use sui::tx_context::{Self, TxContext};
-    use sui::object::{Self, UID};
+    use dwallet::transfer::{Self, Receiving};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
 
     struct Parent has key { id: UID }
     struct S has key { id: UID }
@@ -108,9 +108,9 @@ module test::m {
 
 //# programmable --sender A --inputs object(10,0) receiving(10,1)
 //> 0: test::m::parent_uid(Input(0));
-//> 1: sui::transfer::receive<test::m::S>(Result(0), Input(1));
+//> 1: dwallet::transfer::receive<test::m::S>(Result(0), Input(1));
 //> 2: test::m::destroy_s(Result(1));
-//> 3: sui::object::delete(Result(0));
+//> 3: dwallet::object::delete(Result(0));
 
 // Now publish one with store. We should still be able to call `receive` to receive it.
 
@@ -122,6 +122,6 @@ module test::m {
 
 //# programmable --sender A --inputs object(14,0) receiving(14,1)
 //> 0: test::m::parent_uid(Input(0));
-//> 1: sui::transfer::receive<test::m::Store>(Result(0), Input(1));
+//> 1: dwallet::transfer::receive<test::m::Store>(Result(0), Input(1));
 //> 2: test::m::destroy_store(Result(1));
-//> 3: sui::object::delete(Result(0));
+//> 3: dwallet::object::delete(Result(0));

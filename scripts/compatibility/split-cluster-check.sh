@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # Runs a cluster with 2 validators built at one commit, and 2 at another, and
 # verifies that the cluster can produce checkpoints and reconfigure

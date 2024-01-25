@@ -2,9 +2,9 @@
 // even if it has store
 
 module a::m {
-    use sui::transfer::{Self, Receiving};
+    use dwallet::transfer::{Self, Receiving};
     use a::other;
-    use sui::object::UID;
+    use dwallet::object::UID;
 
     public fun t1(s: other::S) {
         transfer::transfer(s, @0x100);
@@ -25,18 +25,18 @@ module a::m {
 
 module a::other {
     struct S has key, store {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
     }
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }
 }
 
-module sui::transfer {
-    use sui::object::UID;
+module dwallet::transfer {
+    use dwallet::object::UID;
 
     struct Receiving<phantom T: key> { }
 

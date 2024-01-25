@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Tab } from '@headlessui/react';
 import { useCurrentAccount } from '@mysten/dapp-kit';
@@ -49,7 +49,7 @@ export function KioskData({ kioskId }: { kioskId: string }) {
 						</div>
 						<div className="mt-2">Items Count: {kiosk.itemCount}</div>
 						<div className="mt-2">
-							Profits: {profits} SUI
+							Profits: {profits} DWLT
 							{Number(kiosk.profits) > 0 && (
 								<Button
 									loading={withdrawMutation.isPending}

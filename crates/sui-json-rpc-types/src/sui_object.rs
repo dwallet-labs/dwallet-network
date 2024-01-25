@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
@@ -1182,7 +1182,7 @@ impl SuiObjectDataFilter {
                     ObjectType::Struct(s) => s.clone().into(),
                 };
                 // If people do not provide type_params, we will match all type_params
-                // e.g. `0x2::coin::Coin` can match `0x2::coin::Coin<0x2::sui::SUI>`
+                // e.g. `0x2::coin::Coin` can match `0x2::coin::Coin<0x2::dwlt::DWLT>`
                 if !s.type_params.is_empty() && s.type_params != obj_tag.type_params {
                     false
                 } else {

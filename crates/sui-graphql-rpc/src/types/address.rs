@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use async_graphql::{connection::Connection, *};
 use sui_json_rpc::name_service::NameServiceConfig;
@@ -109,7 +109,7 @@ impl Address {
 
     /// The coin objects for the given address.
     /// The type field is a string of the inner type of the coin
-    /// by which to filter (e.g., 0x2::sui::SUI).
+    /// by which to filter (e.g., 0x2::dwlt::DWLT).
     pub async fn coin_connection(
         &self,
         ctx: &Context<'_>,

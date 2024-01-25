@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses pkg=0x0 --simulator
 
 //# publish
 
 module pkg::m {
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
+    use dwallet::coin::{Self, Coin};
+    use dwallet::dwlt::DWLT;
 
     public fun foo<C: drop>(x: u64, c: &Coin<C>): u64 {
         coin::value(c) + x

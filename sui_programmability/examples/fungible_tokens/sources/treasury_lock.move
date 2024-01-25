@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// WARNING: Like all files in the examples section, this code is unaudited
 /// and should NOT be running in production. Using the code unaudited could potentially
@@ -10,12 +10,12 @@
 /// can mint new Coins up to a pre-defined per epoch limit. This can be used e.g.
 /// to create a faucet.
 module fungible_tokens::treasury_lock {
-    use sui::object::{Self, UID, ID};
-    use sui::coin::{Self, TreasuryCap};
-    use sui::balance::{Balance};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
-    use sui::vec_set::{Self, VecSet};
+    use dwallet::object::{Self, UID, ID};
+    use dwallet::coin::{Self, TreasuryCap};
+    use dwallet::balance::{Balance};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer;
+    use dwallet::vec_set::{Self, VecSet};
 
     /// This mint capability instance is banned.
     const EMintCapBanned: u64 = 0;
@@ -169,12 +169,12 @@ module fungible_tokens::treasury_lock {
 #[test_only]
 module fungible_tokens::treasury_lock_tests {
     use std::option;
-    use sui::test_scenario::{Self, Scenario};
-    use sui::balance::{Self, Balance};
-    use sui::transfer;
-    use sui::coin;
-    use sui::object::{Self};
-    use sui::test_utils;
+    use dwallet::test_scenario::{Self, Scenario};
+    use dwallet::balance::{Self, Balance};
+    use dwallet::transfer;
+    use dwallet::coin;
+    use dwallet::object::{Self};
+    use dwallet::test_utils;
     use fungible_tokens::treasury_lock::{Self, TreasuryLock, LockAdminCap, MintCap, create_and_transfer_mint_cap, new_lock, mint_balance};
 
     const ADMIN: address = @0xABBA;

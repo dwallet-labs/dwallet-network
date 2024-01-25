@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module entry_point_types::entry_point_types {
     use std::ascii;
     use std::string;
-    use sui::tx_context::TxContext;
+    use dwallet::tx_context::TxContext;
     use std::vector;
     use std::option::Option;
 

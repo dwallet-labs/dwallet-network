@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module deepbook::custodian {
-    use sui::balance::{Self, Balance, split};
-    use sui::coin::{Self, Coin};
-    use sui::object::{Self, UID, ID};
-    use sui::table::{Self, Table};
-    use sui::tx_context::TxContext;
+    use dwallet::balance::{Self, Balance, split};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::object::{Self, UID, ID};
+    use dwallet::table::{Self, Table};
+    use dwallet::tx_context::TxContext;
 
     friend deepbook::clob;
 
@@ -163,13 +163,13 @@ module deepbook::custodian {
     #[test_only]
     friend deepbook::clob_test;
     #[test_only]
-    use sui::test_scenario::{Self, Scenario, take_shared, take_from_sender, ctx};
+    use dwallet::test_scenario::{Self, Scenario, take_shared, take_from_sender, ctx};
     #[test_only]
-    use sui::transfer;
+    use dwallet::transfer;
     #[test_only]
-    use sui::coin::{mint_for_testing};
+    use dwallet::coin::{mint_for_testing};
     #[test_only]
-    use sui::test_utils::assert_eq;
+    use dwallet::test_utils::assert_eq;
     #[test_only]
     const ENull: u64 = 0;
 

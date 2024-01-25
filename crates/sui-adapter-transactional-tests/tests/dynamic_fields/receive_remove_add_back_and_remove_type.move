@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // This test attempts to receive two objects, remove a child, add it back, remove it again, and then transfer/delete it.
 // This is an interesting test case because when child objects are removed, added back and removed again,
@@ -10,9 +10,9 @@
 
 //# publish
 module test::m1 {
-    use sui::object::{Self, UID};
-    use sui::transfer::{Self, Receiving};
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer::{Self, Receiving};
+    use dwallet::tx_context::{Self, TxContext};
 
     struct Object has key, store {
         id: UID,
@@ -43,47 +43,47 @@ module test::m1 {
 
     public entry fun test_dof(parent: &mut Object, c1: Receiving<C1>, c2: Receiving<C2>) {
         let c1 = transfer::receive(&mut parent.id, c1);
-        sui::dynamic_object_field::add(&mut parent.id, 0, c1);
-        let c1: C1 = sui::dynamic_object_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_object_field::add(&mut parent.id, 0, c1);
+        let c1: C1 = dwallet::dynamic_object_field::remove(&mut parent.id, 0);
         transfer::public_transfer(c1, @test);
 
         let c2 = transfer::receive(&mut parent.id, c2);
-        sui::dynamic_object_field::add(&mut parent.id, 0, c2);
-        let C2 { id } = sui::dynamic_object_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_object_field::add(&mut parent.id, 0, c2);
+        let C2 { id } = dwallet::dynamic_object_field::remove(&mut parent.id, 0);
         object::delete(id);
     }
 
     public entry fun test_df(parent: &mut Object, c1: Receiving<C1>, c2: Receiving<C2>) {
         let c1 = transfer::receive(&mut parent.id, c1);
-        sui::dynamic_field::add(&mut parent.id, 0, c1);
-        let c1: C1 = sui::dynamic_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_field::add(&mut parent.id, 0, c1);
+        let c1: C1 = dwallet::dynamic_field::remove(&mut parent.id, 0);
         transfer::public_transfer(c1, @test);
 
         let c2 = transfer::receive(&mut parent.id, c2);
-        sui::dynamic_field::add(&mut parent.id, 0, c2);
-        let C2 { id } = sui::dynamic_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_field::add(&mut parent.id, 0, c2);
+        let C2 { id } = dwallet::dynamic_field::remove(&mut parent.id, 0);
         object::delete(id);
     }
 
     // Try to "wash" the receiving object through a dynamic object field and then wrap it in a wrapper object.
     public entry fun test_dof_wrapper(parent: &mut Object, c1: Receiving<C1>, _c2: Receiving<C2>, ctx: &mut TxContext) {
         let c1 = transfer::receive(&mut parent.id, c1);
-        sui::dynamic_object_field::add(&mut parent.id, 0, c1);
-        let c1: C1 = sui::dynamic_object_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_object_field::add(&mut parent.id, 0, c1);
+        let c1: C1 = dwallet::dynamic_object_field::remove(&mut parent.id, 0);
         let w = Wrapper { id: object::new(ctx), value: c1 };
-        sui::dynamic_object_field::add(&mut parent.id, 0, w);
-        let w: Wrapper<C1> = sui::dynamic_object_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_object_field::add(&mut parent.id, 0, w);
+        let w: Wrapper<C1> = dwallet::dynamic_object_field::remove(&mut parent.id, 0);
         transfer::public_transfer(w, @test);
     }
 
     // Try to "wash" the receiving object through a dynamic field and then wrap it in a wrapper object.
     public entry fun test_df_wrapper(parent: &mut Object, c1: Receiving<C1>, _c2: Receiving<C2>, ctx: &mut TxContext) {
         let c1 = transfer::receive(&mut parent.id, c1);
-        sui::dynamic_field::add(&mut parent.id, 0, c1);
-        let c1: C1 = sui::dynamic_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_field::add(&mut parent.id, 0, c1);
+        let c1: C1 = dwallet::dynamic_field::remove(&mut parent.id, 0);
         let w = Wrapper { id: object::new(ctx), value: c1 };
-        sui::dynamic_field::add(&mut parent.id, 0, w);
-        let w: Wrapper<C1> = sui::dynamic_field::remove(&mut parent.id, 0);
+        dwallet::dynamic_field::add(&mut parent.id, 0, w);
+        let w: Wrapper<C1> = dwallet::dynamic_field::remove(&mut parent.id, 0);
         transfer::public_transfer(w, @test);
     }
 }

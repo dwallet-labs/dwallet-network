@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Content, Menu } from '_app/shared/bottom-menu-layout';
 import { Button } from '_app/shared/ButtonUI';
@@ -148,7 +148,7 @@ export function SelectValidatorCard() {
 					</div>
 					<div className="flex items-start w-full">
 						<Text variant="subtitle" weight="medium" color="steel-darker">
-							Select a validator to start staking SUI.
+							Select a validator to start staking DWLT.
 						</Text>
 					</div>
 				</div>

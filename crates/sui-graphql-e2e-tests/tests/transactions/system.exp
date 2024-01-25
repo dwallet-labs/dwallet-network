@@ -964,8 +964,8 @@ Response: {
                         "json": {
                           "id": "0xda1ee806d7edc7cd9f6ee8617ec7ed0b7de1babaed2fd3415bb893d0fe3838a6",
                           "decimals": 9,
-                          "name": "Sui",
-                          "symbol": "SUI",
+                          "name": "dWallet",
+                          "symbol": "DWLT",
                           "description": "",
                           "icon_url": null
                         }

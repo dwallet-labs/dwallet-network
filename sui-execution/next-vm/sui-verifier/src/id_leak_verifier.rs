@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! Objects whose struct type has key ability represent Sui objects.
 //! They have unique IDs that should never be reused. This verifier makes

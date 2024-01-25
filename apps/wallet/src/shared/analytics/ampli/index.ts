@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /* tslint:disable */
 /* eslint-disable */
@@ -519,7 +519,7 @@ export class ClickedSocialSignInButton implements BaseEvent {
 }
 
 export class ClickedStakeSui implements BaseEvent {
-	event_type = 'clicked stake SUI';
+	event_type = 'clicked stake DWLT';
 
 	constructor(public event_properties: ClickedStakeSuiProperties) {
 		this.event_properties = event_properties;
@@ -535,7 +535,7 @@ export class ClickedSwapCoin implements BaseEvent {
 }
 
 export class ClickedUnstakeSui implements BaseEvent {
-	event_type = 'clicked unstake SUI';
+	event_type = 'clicked unstake DWLT';
 
 	constructor(public event_properties: ClickedUnstakeSuiProperties) {
 		this.event_properties = event_properties;
@@ -1015,11 +1015,11 @@ export class Ampli {
   }
 
   /**
-   * clicked stake SUI
+   * clicked stake DWLT
    *
    * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20stake%20SUI)
    *
-   * When users click to stake SUI in the wallet.
+   * When users click to stake DWLT in the wallet.
    *
    * Owner: Jon Shek
    *
@@ -1051,11 +1051,11 @@ export class Ampli {
   }
 
   /**
-   * clicked unstake SUI
+   * clicked unstake DWLT
    *
    * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/clicked%20unstake%20SUI)
    *
-   * When users click to unstake SUI.
+   * When users click to unstake DWLT.
    *
    * Owner: Jon Shek
    *
@@ -1334,7 +1334,7 @@ export class Ampli {
    *
    * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/staked%20SUI)
    *
-   * When users successfully stake SUI with a validator.
+   * When users successfully stake DWLT with a validator.
    *
    * Owner: Jon Shek
    *
@@ -1427,7 +1427,7 @@ export class Ampli {
    *
    * [View in Tracking Plan](https://data.amplitude.com/mystenlabs/Sui%20Wallet/events/main/latest/unstaked%20SUI)
    *
-   * When users successfully un-stake SUI.
+   * When users successfully un-stake DWLT.
    *
    * Owner: Jon Shek
    *

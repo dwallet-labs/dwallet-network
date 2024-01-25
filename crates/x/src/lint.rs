@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::anyhow;
 use clap::Parser;
@@ -15,7 +15,7 @@ use nexlint_lints::{
 static EXTERNAL_CRATE_DIR: &str = "external-crates/";
 static CREATE_DAPP_TEMPLATE_DIR: &str = "sdk/create-dapp/templates";
 static LICENSE_HEADER: &str = "Copyright (c) Mysten Labs, Inc.\n\
-                               SPDX-License-Identifier: Apache-2.0\n\
+                               SPDX-License-Identifier: BSD-3-Clause-Clear\n\
                                ";
 #[derive(Debug, Parser)]
 pub struct Args {

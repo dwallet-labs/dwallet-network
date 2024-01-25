@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useRouter } from 'next/router';
 
 const config = {
-	logo: <span>Sui TypeScript Docs</span>,
+	logo: <span>dWallet TypeScript Docs</span>,
 	project: {
 		link: 'https://github.com/MystenLabs/sui/tree/main/sdk/',
 	},
@@ -25,14 +25,14 @@ const config = {
 		const { asPath } = useRouter();
 
 		return {
-			titleTemplate: asPath !== '/' ? '%s | Sui TypeScript Docs' : 'Sui TypeScript Docs',
+			titleTemplate: asPath !== '/' ? '%s | dWallet TypeScript Docs' : 'dWallet TypeScript Docs',
 			description:
-				'Sui TypeScript Documentation. Discover the power of Sui through examples, guides, and concepts.',
+				'dWallet TypeScript Documentation. Discover the power of dWallet through examples, guides, and concepts.',
 			openGraph: {
-				title: 'Sui TypeScript Docs',
+				title: 'dWallet TypeScript Docs',
 				description:
-					'Sui TypeScript Documentation. Discover the power of Sui through examples, guides, and concepts.',
-				site_name: 'Sui TypeScript Docs',
+					'dWallet TypeScript Documentation. Discover the power of dWallet through examples, guides, and concepts.',
+				site_name: 'dWallet TypeScript Docs',
 			},
 			additionalMetaTags: [{ content: 'Sui TypeScript Docs', name: 'apple-mobile-web-app-title' }],
 			twitter: {

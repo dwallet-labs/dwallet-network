@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses t1=0x0 t2=0x0 --shared-object-deletion true
 
 //# publish
 
 module t2::o2 {
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::TxContext;
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
     use std::vector;
-    use sui::sui::SUI;
-    use sui::coin::{Self, Coin};
+    use dwallet::dwlt::DWLT;
+    use dwallet::coin::{Self, Coin};
 
     struct Obj2 has key, store {
         id: UID,

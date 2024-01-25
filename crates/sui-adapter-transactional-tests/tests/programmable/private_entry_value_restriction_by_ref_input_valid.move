@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests that object values can be used private entry functions if they have been used
 // by other entry functions or primitive commands
@@ -8,10 +8,10 @@
 
 //# publish
 module test::m1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::coin::Coin;
-    use sui::sui::SUI;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::coin::Coin;
+    use dwallet::dwlt::DWLT;
 
     struct R has key, store { id: UID }
     public fun r(ctx: &mut TxContext): R { R { id: object::new(ctx) } }

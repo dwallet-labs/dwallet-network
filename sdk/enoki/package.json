@@ -2,7 +2,7 @@
 	"name": "@mysten/enoki",
 	"version": "0.1.0",
 	"description": "TODO: Description",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"author": "Mysten Labs <build@mystenlabs.com>",
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",

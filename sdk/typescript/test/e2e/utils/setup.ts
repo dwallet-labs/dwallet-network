@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { execSync } from 'child_process';
 import tmp from 'tmp';
@@ -232,7 +232,7 @@ export async function paySui(
 		(
 			await client.getCoins({
 				owner: signer.getPublicKey().toSuiAddress(),
-				coinType: '0x2::sui::SUI',
+				coinType: '0x2::dwlt::DWLT',
 			})
 		).data[0].coinObjectId;
 

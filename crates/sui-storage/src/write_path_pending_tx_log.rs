@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! WritePathPendingTransactionLog is used in the transaction write path (e.g. in
 //! TransactionOrchestrator) for transaction submission processing. It helps to achieve:

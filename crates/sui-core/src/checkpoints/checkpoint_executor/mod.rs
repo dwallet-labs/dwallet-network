@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! CheckpointExecutor is a Node component that executes all checkpoints for the
 //! given epoch. It acts as a Consumer to StateSync

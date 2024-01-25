@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { LargeButton } from '_app/shared/LargeButton';
 import { ampli } from '_src/shared/analytics/ampli';
@@ -55,7 +55,7 @@ export function TokenIconLink({
 		>
 			<div className="flex flex-col">
 				<Text variant="pBody" weight="semibold">
-					{totalActivePendingStake ? 'Currently Staked' : 'Stake and Earn SUI'}
+					{totalActivePendingStake ? 'Currently Staked' : 'Stake and Earn DWLT'}
 				</Text>
 
 				{!!totalActivePendingStake && (

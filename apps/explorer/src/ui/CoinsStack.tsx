@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useCoinMetadata } from '@mysten/core';
 import { Sui, Unstaked } from '@mysten/icons';
@@ -9,7 +9,7 @@ import clsx from 'clsx';
 import { Image } from '~/ui/image/Image';
 
 function CoinIcon({ coinMetadata }: { coinMetadata?: CoinMetadata | null }) {
-	if (coinMetadata?.symbol === 'SUI') {
+	if (coinMetadata?.symbol === 'DWLT') {
 		return <Sui className="h-2.5 w-2.5" />;
 	}
 
@@ -28,9 +28,9 @@ export function Coin({ type }: { type: string }) {
 		<span
 			className={clsx(
 				'relative flex h-5 w-5 items-center justify-center rounded-xl text-white',
-				(!coinMetadata || symbol !== 'SUI') &&
+				(!coinMetadata || symbol !== 'DWLT') &&
 					'bg-gradient-to-r from-gradient-blue-start to-gradient-blue-end',
-				symbol === 'SUI' && 'bg-sui',
+				symbol === 'DWLT' && 'bg-sui',
 				iconUrl && 'bg-gray-40',
 			)}
 		>

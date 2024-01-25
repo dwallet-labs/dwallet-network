@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module my_first_package::my_module {
     // Part 1: imports
-    use sui::object::{Self, UID};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::tx_context::{Self, TxContext};
 
     // Part 2: struct definitions
     struct Sword has key, store {
@@ -59,7 +59,7 @@ module my_first_package::my_module {
     // Part 6: tests
     #[test]
     public fun test_module_init() {
-        use sui::test_scenario;
+        use dwallet::test_scenario;
 
         // create test address representing game admin
         let admin = @0xBABE;
@@ -86,7 +86,7 @@ module my_first_package::my_module {
 
     #[test]
     fun test_sword_transactions() {
-        use sui::test_scenario;
+        use dwallet::test_scenario;
 
         // create test addresses representing users
         let admin = @0xBABE;

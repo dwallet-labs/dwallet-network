@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { API_ENV_TO_INFO } from '_app/ApiProvider';
 import { Button, type ButtonProps } from '_app/shared/ButtonUI';
@@ -51,7 +51,7 @@ function FaucetRequestButton({ variant = 'primary', size = 'narrow' }: FaucetReq
 				});
 			}}
 			loading={mutation.isMutating}
-			text={`Request ${networkName} SUI Tokens`}
+			text={`Request ${networkName} DWLT Tokens`}
 		/>
 	) : null;
 }

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { exec } from 'child_process';
 import { resolve } from 'path';
@@ -42,7 +42,7 @@ const TS_CONFIGS_ROOT = resolve(CONFIGS_ROOT, 'ts');
 const IS_DEV = process.env.NODE_ENV === 'development';
 const IS_PROD = process.env.NODE_ENV === 'production';
 const TS_CONFIG_FILE = resolve(TS_CONFIGS_ROOT, `tsconfig.${IS_DEV ? 'dev' : 'prod'}.json`);
-const APP_NAME = WALLET_BETA ? 'Sui Wallet (BETA)' : IS_DEV ? 'Sui Wallet (DEV)' : 'Sui Wallet';
+const APP_NAME = WALLET_BETA ? 'dWallet Wallet (BETA)' : IS_DEV ? 'dWallet Wallet (DEV)' : 'dWallet Wallet';
 
 function loadTsConfig(tsConfigFilePath: string) {
 	return new Promise<string>((res, rej) => {

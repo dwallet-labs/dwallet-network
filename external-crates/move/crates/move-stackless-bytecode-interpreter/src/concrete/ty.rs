@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! The type system in move-model is a fat type system that is designed to cover all cases that can
 //! possibly appear in the whole bytecode transformation pipeline. Natually, this means that some

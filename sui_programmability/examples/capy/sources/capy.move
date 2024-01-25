@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// The Capy module. Defines the Capy type and its functions.
 module capy::capy {
-    use sui::tx_context::{Self, TxContext};
-    use sui::object::{Self, UID, ID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::object::{Self, UID, ID};
     use std::string::{Self, String};
-    use sui::url::{Self, Url};
-    use sui::transfer;
-    use sui::event::emit;
-    use sui::dynamic_object_field as dof;
+    use dwallet::url::{Self, Url};
+    use dwallet::transfer;
+    use dwallet::event::emit;
+    use dwallet::dynamic_object_field as dof;
 
     use std::vector as vec;
     use std::option::{Self, Option};
@@ -443,7 +443,7 @@ module capy::capy {
     /// Construct an image URL for the capy.
     fun img_url(c: &UID): Url {
         let capy_url = IMAGE_URL;
-        vec::append(&mut capy_url, sui::hex::encode(object::uid_to_bytes(c)));
+        vec::append(&mut capy_url, dwallet::hex::encode(object::uid_to_bytes(c)));
         vec::append(&mut capy_url, b"/svg");
 
         url::new_unsafe_from_bytes(capy_url)
@@ -452,7 +452,7 @@ module capy::capy {
     /// Construct a Url to the capy.art.
     fun link_url(c: &UID): Url {
         let capy_url = MAIN_URL;
-        vec::append(&mut capy_url, sui::hex::encode(object::uid_to_bytes(c)));
+        vec::append(&mut capy_url, dwallet::hex::encode(object::uid_to_bytes(c)));
         url::new_unsafe_from_bytes(capy_url)
     }
 

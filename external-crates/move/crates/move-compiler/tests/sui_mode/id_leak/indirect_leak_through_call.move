@@ -1,6 +1,6 @@
 // not allowed since Foo is not packed with a fresh UID
 module a::m {
-    use sui::object::UID;
+    use dwallet::object::UID;
 
     struct Foo has key {
         id: UID,
@@ -19,7 +19,7 @@ module a::m {
 
 // allowed since no packing occurs
 module k::m {
-    use sui::object::UID;
+    use dwallet::object::UID;
 
     struct Foo has key {
         id: UID,
@@ -37,7 +37,7 @@ module k::m {
 }
 
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }

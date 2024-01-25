@@ -69,7 +69,7 @@ gas summary: computation_cost: 1000000, storage_cost: 1976000,  storage_rebate: 
 task 16 'view-object'. lines 163-166:
 Owner: Shared
 Version: 14
-Contents: sui::coin::Coin<sui::sui::SUI> {id: sui::object::UID {id: sui::object::ID {bytes: fake(15,0)}}, balance: sui::balance::Balance<sui::sui::SUI> {value: 0u64}}
+Contents: sui::coin::Coin<sui::dwlt::DWLT> {id: sui::object::UID {id: sui::object::ID {bytes: fake(15,0)}}, balance: sui::balance::Balance<sui::dwlt::DWLT> {value: 0u64}}
 
 task 17 'programmable'. lines 167-173:
 Error: Transaction Effects Status: Unused result without the drop ability. Command result 1, return value 0

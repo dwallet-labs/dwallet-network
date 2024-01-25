@@ -20,8 +20,8 @@ Response: {
                   {
                     "datatype": {
                       "package": "0x0000000000000000000000000000000000000000000000000000000000000002",
-                      "module": "sui",
-                      "type": "SUI",
+                      "module": "dwallet",
+                      "type": "DWLT",
                       "typeParameters": []
                     }
                   }

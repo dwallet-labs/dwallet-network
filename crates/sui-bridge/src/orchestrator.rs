@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! `BridgeOrchestrator` is the component that:
 //! 1. monitors Sui and Ethereum events with the help of `SuiSyncer` and `EthSyncer`

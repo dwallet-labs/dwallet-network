@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::fmt::Debug;
 use std::str::FromStr;
@@ -27,7 +27,7 @@ use sui_types::SUI_SYSTEM_PACKAGE_ID;
 
 use crate::errors::{Error, ErrorType};
 use crate::operations::Operations;
-use crate::SUI;
+use crate::DWLT;
 
 pub type BlockHeight = u64;
 
@@ -54,7 +54,7 @@ impl SuiEnv {
         &self,
         network_identifier: &NetworkIdentifier,
     ) -> Result<(), Error> {
-        if &network_identifier.blockchain != "sui" {
+        if &network_identifier.blockchain != "dwallet" {
             return Err(Error::UnsupportedBlockchain(
                 network_identifier.blockchain.clone(),
             ));
@@ -155,7 +155,7 @@ impl Amount {
     pub fn new(value: i128) -> Self {
         Self {
             value,
-            currency: SUI.clone(),
+            currency: DWLT.clone(),
             metadata: None,
         }
     }
@@ -164,7 +164,7 @@ impl Amount {
 
         Self {
             value,
-            currency: SUI.clone(),
+            currency: DWLT.clone(),
             metadata: Some(AmountMetadata { sub_balances }),
         }
     }
@@ -225,7 +225,7 @@ impl From<sui_sdk::rpc_types::Coin> for Coin {
             },
             amount: Amount {
                 value: coin.balance as i128,
-                currency: SUI.clone(),
+                currency: DWLT.clone(),
                 metadata: None,
             },
         }

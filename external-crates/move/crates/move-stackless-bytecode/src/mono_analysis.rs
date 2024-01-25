@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! Analysis which computes information needed in backends for monomorphization. This
 //! computes the distinct type instantiations in the model for structs and inlined functions.

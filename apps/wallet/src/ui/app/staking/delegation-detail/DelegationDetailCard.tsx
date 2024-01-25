@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import BottomMenuLayout, { Content } from '_app/shared/bottom-menu-layout';
 import { Button } from '_app/shared/ButtonUI';
@@ -132,8 +132,8 @@ export function DelegationDetailCard({ validatorAddress, stakedId }: DelegationD
 						{hasInactiveValidatorDelegation ? (
 							<div className="mb-3">
 								<Alert>
-									Unstake SUI from this inactive validator and stake on an active validator to start
-									earning rewards again.
+									Unstake DWLT from this inactive validator and stake on an active validator to
+									start earning rewards again.
 								</Alert>
 							</div>
 						) : null}
@@ -205,7 +205,7 @@ export function DelegationDetailCard({ validatorAddress, stakedId }: DelegationD
 									variant="outline"
 									to={stakeByValidatorAddress}
 									before={<StakeAdd16 />}
-									text="Stake SUI"
+									text="Stake DWLT"
 									onClick={() => {
 										ampli.clickedStakeSui({
 											isCurrentlyStaking: true,
@@ -228,7 +228,7 @@ export function DelegationDetailCard({ validatorAddress, stakedId }: DelegationD
 											validatorAddress,
 										});
 									}}
-									text="Unstake SUI"
+									text="Unstake DWLT"
 									before={<StakeRemove16 />}
 								/>
 							)}
@@ -241,7 +241,7 @@ export function DelegationDetailCard({ validatorAddress, stakedId }: DelegationD
 					<div className="flex flex-col gap-4 items-center">
 						<div className="w-8/12 text-center">
 							<Text variant="pSubtitle" weight="medium" color="steel-darker">
-								You need a minimum of {MIN_NUMBER_SUI_TO_STAKE} SUI to continue staking.
+								You need a minimum of {MIN_NUMBER_SUI_TO_STAKE} DWLT to continue staking.
 							</Text>
 						</div>
 						<FaucetRequestButton size="tall" />

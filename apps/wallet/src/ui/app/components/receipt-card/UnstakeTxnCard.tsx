@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { ValidatorLogo } from '_app/staking/validators/ValidatorLogo';
 import { TxnAmount } from '_components/receipt-card/TxnAmount';
@@ -45,7 +45,7 @@ export function UnStakeTxnCard({ event }: UnStakeTxnCardProps) {
 				<div className="flex justify-between w-full py-3.5">
 					<div className="flex gap-1 items-baseline text-steel">
 						<Text variant="body" weight="medium" color="steel-darker">
-							Your SUI Stake
+							Your DWLT Stake
 						</Text>
 					</div>
 

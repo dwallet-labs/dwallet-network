@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Description:
 /// This module defines a Rule which forces buyers to put the purchased
@@ -20,8 +20,8 @@
 /// wish to move the item somewhere else.
 ///
 module kiosk::kiosk_lock_rule {
-    use sui::kiosk::{Self, Kiosk};
-    use sui::transfer_policy::{
+    use dwallet::kiosk::{Self, Kiosk};
+    use dwallet::transfer_policy::{
         Self as policy,
         TransferPolicy,
         TransferPolicyCap,

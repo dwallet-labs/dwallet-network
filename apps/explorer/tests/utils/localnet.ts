@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import 'tsconfig-paths/register';
 
@@ -23,7 +23,7 @@ export async function split_coin(address: string) {
 	const tx = new TransactionBlock();
 	tx.moveCall({
 		target: '0x2::pay::split',
-		typeArguments: ['0x2::sui::SUI'],
+		typeArguments: ['0x2::dwlt::DWLT'],
 		arguments: [tx.object(coin_id), tx.pure.u64(10)],
 	});
 

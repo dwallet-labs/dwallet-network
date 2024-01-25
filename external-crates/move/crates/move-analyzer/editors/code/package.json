@@ -4,7 +4,7 @@
 	"description": "A Move language integrated development environment for Sui.",
 	"publisher": "mysten",
 	"icon": "images/move.png",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"version": "1.0.0",
 	"preview": true,
 	"repository": {

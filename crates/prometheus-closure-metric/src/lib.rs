@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Copyright 2014 The Prometheus Authors
-// Copyright 2019 TiKV Project Authors. Licensed under Apache-2.0.
+// Copyright 2019 TiKV Project Authors. Licensed under BSD-3-Clause-Clear.
 
 //! This library implements a `ClosureMetric` for crate `prometheus` whose value is computed at
 //! the time of collection by a provided closure.

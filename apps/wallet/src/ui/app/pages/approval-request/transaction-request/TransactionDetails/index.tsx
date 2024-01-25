@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useTransactionData } from '_src/ui/app/hooks';
 import { Tab as HeadlessTab, type TabProps } from '@headlessui/react';

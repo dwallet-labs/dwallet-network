@@ -1,20 +1,20 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module move_benchmark::benchmark {
     use std::ascii;
     use std::ascii::String;
     use std::vector;
-    use sui::coin::Coin;
-    use sui::dynamic_field;
-    use sui::object;
-    use sui::object::UID;
-    use sui::sui::SUI;
-    use sui::transfer;
-    use sui::tx_context;
-    use sui::tx_context::TxContext;
+    use dwallet::coin::Coin;
+    use dwallet::dynamic_field;
+    use dwallet::object;
+    use dwallet::object::UID;
+    use dwallet::dwlt::DWLT;
+    use dwallet::transfer;
+    use dwallet::tx_context;
+    use dwallet::tx_context::TxContext;
 
-    public fun transfer_coin(coin: Coin<SUI>, ctx: &TxContext) {
+    public fun transfer_coin(coin: Coin<DWLT>, ctx: &TxContext) {
         transfer::public_transfer(coin, tx_context::sender(ctx));
     }
 

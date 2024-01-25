@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This is an implementation of an English auction
 /// (https://en.wikipedia.org/wiki/English_auction) using shared
@@ -26,9 +26,9 @@
 ///   and the item goes to the bidder that won the auction
 
 module nfts::shared_auction {
-    use sui::coin::{Self, Coin};
-    use sui::sui::SUI;
-    use sui::tx_context::{Self, TxContext};
+    use dwallet::coin::{Self, Coin};
+    use dwallet::dwlt::DWLT;
+    use dwallet::tx_context::{Self, TxContext};
 
     use nfts::auction_lib::{Self, Auction};
 
@@ -51,7 +51,7 @@ module nfts::shared_auction {
     /// of the funds (if the bid was too low). This is executed by a
     /// bidder.
     public entry fun bid<T: key + store>(
-        coin: Coin<SUI>, auction: &mut Auction<T>, ctx: &mut TxContext
+        coin: Coin<DWLT>, auction: &mut Auction<T>, ctx: &mut TxContext
     ) {
         auction_lib::update_auction(
             auction,

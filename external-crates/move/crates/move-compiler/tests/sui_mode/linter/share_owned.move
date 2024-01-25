@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module a::test1 {
-    use sui::transfer;
-    use sui::object::UID;
+    use dwallet::transfer;
+    use dwallet::object::UID;
 
     #[allow(unused_field)]
     struct Obj has key, store {
@@ -17,8 +17,8 @@ module a::test1 {
 }
 
 module a::test2 {
-    use sui::transfer;
-    use sui::object::{Self, UID};
+    use dwallet::transfer;
+    use dwallet::object::{Self, UID};
 
     struct Obj has key, store {
         id: UID
@@ -52,7 +52,7 @@ module a::test2 {
     fun another_private_fun_should_not_be_suppressed() {}
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }
@@ -61,7 +61,7 @@ module sui::object {
     }
 }
 
-module sui::transfer {
+module dwallet::transfer {
     public fun public_share_object<T: key>(_: T) {
         abort 0
     }

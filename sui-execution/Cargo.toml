@@ -3,7 +3,7 @@ name = "sui-execution"
 version = "0.1.0"
 authors = ["Mysten Labs <eng@mystenlabs.com>"]
 description = "Multiplexer to choose between multiple versions of sui and move execution crates."
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2021"
 

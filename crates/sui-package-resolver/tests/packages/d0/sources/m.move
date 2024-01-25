@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[allow(unused_field)]
 module d::m {
-    use sui::object::UID;
+    use dwallet::object::UID;
 
     struct O<T, phantom U> has key, store {
         id: UID,

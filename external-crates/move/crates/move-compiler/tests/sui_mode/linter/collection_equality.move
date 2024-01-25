@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module a::test {
-    use sui::bag::Bag;
-    use sui::object_bag::ObjectBag;
-    use sui::table::Table;
-    use sui::object_table::ObjectTable;
-    use sui::linked_table::LinkedTable;
-    use sui::table_vec::TableVec;
-    use sui::vec_map::VecMap;
-    use sui::vec_set::VecSet;
+    use dwallet::bag::Bag;
+    use dwallet::object_bag::ObjectBag;
+    use dwallet::table::Table;
+    use dwallet::object_table::ObjectTable;
+    use dwallet::linked_table::LinkedTable;
+    use dwallet::table_vec::TableVec;
+    use dwallet::vec_map::VecMap;
+    use dwallet::vec_set::VecSet;
 
 
 
@@ -49,70 +49,70 @@ module a::test {
     }
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }
 }
 
-module sui::bag {
-    use sui::object::UID;
+module dwallet::bag {
+    use dwallet::object::UID;
 
     struct Bag has key, store {
         id: UID
     }
 }
 
-module sui::object_bag {
-    use sui::object::UID;
+module dwallet::object_bag {
+    use dwallet::object::UID;
 
     struct ObjectBag has key, store {
         id: UID
     }
 }
 
-module sui::table {
-    use sui::object::UID;
+module dwallet::table {
+    use dwallet::object::UID;
 
     struct Table<phantom K: copy + drop + store, phantom V: store> has key, store {
         id: UID
     }
 }
 
-module sui::object_table {
-    use sui::object::UID;
+module dwallet::object_table {
+    use dwallet::object::UID;
 
     struct ObjectTable<phantom K: copy + drop + store, phantom V: key + store> has key, store {
         id: UID
     }
 }
 
-module sui::linked_table {
-    use sui::object::UID;
+module dwallet::linked_table {
+    use dwallet::object::UID;
 
     struct LinkedTable<phantom K: copy + drop + store, phantom V: store> has key, store {
         id: UID
     }
 }
 
-module sui::table_vec {
-    use sui::object::UID;
+module dwallet::table_vec {
+    use dwallet::object::UID;
 
     struct TableVec<phantom Element: store> has key, store {
         id: UID
     }
 }
 
-module sui::vec_map {
-    use sui::object::UID;
+module dwallet::vec_map {
+    use dwallet::object::UID;
 
     struct VecMap<phantom K: copy, phantom V> has key, store {
         id: UID
     }
 }
 
-module sui::vec_set {
-    use sui::object::UID;
+module dwallet::vec_set {
+    use dwallet::object::UID;
 
     struct VecSet<phantom K: copy + drop> has key, store {
         id: UID

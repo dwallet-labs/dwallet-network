@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # check if API_USER and API_KEY env vars are set
 if [ -z "$API_USER" ] || [ -z "$API_KEY" ]; then

@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module examples::publish_with_event {
     use std::ascii::{Self, String};
 
-    use sui::event;
-    use sui::tx_context::TxContext;
+    use dwallet::event;
+    use dwallet::tx_context::TxContext;
 
     struct PublishEvent has copy, drop {
         foo: String

@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module locked_stake::locked_stake {
-    use sui::tx_context::TxContext;
-    use sui::coin;
-    use sui::balance::{Self, Balance};
-    use sui::object::{Self, ID, UID};
-    use sui::vec_map::{Self, VecMap};
-    use sui::sui::SUI;
-    use sui_system::staking_pool::StakedSui;
-    use sui_system::sui_system::{Self, SuiSystemState};
+    use dwallet::tx_context::TxContext;
+    use dwallet::coin;
+    use dwallet::balance::{Self, Balance};
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::vec_map::{Self, VecMap};
+    use dwallet::dwlt::DWLT;
+    use dwallet_system::staking_pool::StakedSui;
+    use dwallet_system::dwallet_system::{Self, DWalletSystemState};
     use locked_stake::epoch_time_lock::{Self, EpochTimeLock};
 
     const EInsufficientBalance: u64 = 0;
@@ -20,7 +20,7 @@ module locked_stake::locked_stake {
     struct LockedStake has key {
         id: UID,
         staked_sui: VecMap<ID, StakedSui>,
-        sui: Balance<SUI>,
+        sui: Balance<DWLT>,
         locked_until_epoch: EpochTimeLock,
     }
 
@@ -39,7 +39,7 @@ module locked_stake::locked_stake {
 
     /// Unlocks and returns all the assets stored inside this LockedStake object.
     /// Aborts if the unlock epoch is in the future.
-    public fun unlock(ls: LockedStake, ctx: &TxContext): (VecMap<ID, StakedSui>, Balance<SUI>) {
+    public fun unlock(ls: LockedStake, ctx: &TxContext): (VecMap<ID, StakedSui>, Balance<DWLT>) {
         let LockedStake { id, staked_sui, sui, locked_until_epoch } = ls;
         epoch_time_lock::destroy(locked_until_epoch, ctx);
         object::delete(id);
@@ -54,7 +54,7 @@ module locked_stake::locked_stake {
     }
 
     /// Deposit sui balance to the LockedStake object.
-    public fun deposit_sui(ls: &mut LockedStake, sui: Balance<SUI>) {
+    public fun deposit_sui(ls: &mut LockedStake, sui: Balance<DWLT>) {
         balance::join(&mut ls.sui, sui);
     }
 
@@ -62,14 +62,14 @@ module locked_stake::locked_stake {
     /// back into the staked sui vec map.
     public fun stake(
         ls: &mut LockedStake,
-        sui_system: &mut SuiSystemState,
+        dwallet_system: &mut DWalletSystemState,
         amount: u64,
         validator_address: address,
         ctx: &mut TxContext
     ) {
         assert!(balance::value(&ls.sui) >= amount, EInsufficientBalance);
-        let stake = sui_system::request_add_stake_non_entry(
-            sui_system,
+        let stake = dwallet_system::request_add_stake_non_entry(
+            dwallet_system,
             coin::from_balance(balance::split(&mut ls.sui, amount), ctx),
             validator_address,
             ctx
@@ -83,13 +83,13 @@ module locked_stake::locked_stake {
     /// Aborts if no stake exists with the given id.
     public fun unstake(
         ls: &mut LockedStake,
-        sui_system: &mut SuiSystemState,
+        dwallet_system: &mut DWalletSystemState,
         staked_sui_id: ID,
         ctx: &mut TxContext
     ): u64 {
         assert!(vec_map::contains(&ls.staked_sui, &staked_sui_id), EStakeObjectNonExistent);
         let (_, stake) = vec_map::remove(&mut ls.staked_sui, &staked_sui_id);
-        let sui_balance = sui_system::request_withdraw_stake_non_entry(sui_system, stake, ctx);
+        let sui_balance = dwallet_system::request_withdraw_stake_non_entry(dwallet_system, stake, ctx);
         let amount = balance::value(&sui_balance);
         deposit_sui(ls, sui_balance);
         amount

@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses tto=0x0 --accounts A
 
 //# publish
 module tto::M1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer::{Self, Receiving};
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::transfer::{Self, Receiving};
 
     struct A has key, store {
         id: UID,

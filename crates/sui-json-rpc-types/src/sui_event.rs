@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use fastcrypto::encoding::{Base58, Base64};
 use move_core_types::annotated_value::MoveStructLayout;

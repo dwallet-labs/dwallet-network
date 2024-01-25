@@ -1,6 +1,6 @@
 // cannot assign to UID reference
 module a::m {
-    use sui::object::UID;
+    use dwallet::object::UID;
 
     struct Foo has key {
         id: UID,
@@ -13,7 +13,7 @@ module a::m {
 
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }

@@ -1,0 +1,11 @@
+[package]
+name = "DWalletSystem"
+version = "0.0.1"
+published-at = "0x3"
+
+[dependencies]
+MoveStdlib = { local = "../move-stdlib" }
+dWallet = { local = "../dwallet-framework" }
+
+[addresses]
+dwallet_system = "0x3"

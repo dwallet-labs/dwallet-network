@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // DEPRECATED child count no longer tracked
 // tests valid transfers of an object that has children
@@ -9,34 +9,34 @@
 //# publish
 
 module test::m {
-    use sui::tx_context::{Self, TxContext};
-    use sui::dynamic_object_field as ofield;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::dynamic_object_field as ofield;
 
     struct S has key, store {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
     }
 
     struct R has key, store {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
         s: S,
     }
 
     public entry fun mint(ctx: &mut TxContext) {
-        let id = sui::object::new(ctx);
-        let child = S { id: sui::object::new(ctx) };
+        let id = dwallet::object::new(ctx);
+        let child = S { id: dwallet::object::new(ctx) };
         ofield::add(&mut id, 0, child);
-        sui::transfer::public_transfer(S { id }, tx_context::sender(ctx))
+        dwallet::transfer::public_transfer(S { id }, tx_context::sender(ctx))
     }
 
     public entry fun mint_and_share(ctx: &mut TxContext) {
-        let id = sui::object::new(ctx);
-        let child = S { id: sui::object::new(ctx) };
+        let id = dwallet::object::new(ctx);
+        let child = S { id: dwallet::object::new(ctx) };
         ofield::add(&mut id, 0, child);
-        sui::transfer::public_share_object(S { id })
+        dwallet::transfer::public_share_object(S { id })
     }
 
     public entry fun transfer(s: S, recipient: address) {
-        sui::transfer::public_transfer(s, recipient)
+        dwallet::transfer::public_transfer(s, recipient)
     }
 
 }

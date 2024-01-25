@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Card } from '_app/shared/card';
 import Alert from '_components/alert';
@@ -125,7 +125,7 @@ export function ValidatorFormDetail({ validatorAddress, unstake }: ValidatorForm
 						!unstake && (
 							<>
 								<Text variant="body" weight="medium" color="steel-darker">
-									Your Staked SUI
+									Your Staked DWLT
 								</Text>
 
 								<StakeAmount balance={totalStake} variant="body" />
@@ -173,7 +173,7 @@ export function ValidatorFormDetail({ validatorAddress, unstake }: ValidatorForm
 									</Text>
 									<IconTooltip
 										noFullWidth
-										tip="The total SUI staked on the network by this validator and its delegators, to validate the network and earn rewards."
+										tip="The total DWLT staked on the network by this validator and its delegators, to validate the network and earn rewards."
 									/>
 								</div>
 								<StakeAmount balance={totalValidatorStake} variant="body" />

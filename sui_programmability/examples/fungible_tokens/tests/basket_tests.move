@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[test_only]
 module fungible_tokens::basket_tests {
     use fungible_tokens::basket::{Self, Reserve};
     use fungible_tokens::managed::MANAGED;
-    use sui::pay;
-    use sui::coin;
-    use sui::sui::SUI;
-    use sui::test_scenario;
+    use dwallet::pay;
+    use dwallet::coin;
+    use dwallet::dwlt::DWLT;
+    use dwallet::test_scenario;
 
     #[test]
     public fun test_mint_burn() {
@@ -28,7 +28,7 @@ module fungible_tokens::basket_tests {
             assert!(basket::total_supply(reserve) == 0, 0);
 
             let num_coins = 10;
-            let sui = coin::mint_for_testing<SUI>(num_coins, ctx);
+            let sui = coin::mint_for_testing<DWLT>(num_coins, ctx);
             let managed = coin::mint_for_testing<MANAGED>(num_coins, ctx);
             let basket = basket::mint(reserve, sui, managed, ctx);
             assert!(coin::value(&basket) == num_coins, 1);

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { getCoinSymbol } from '@mysten/core';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
@@ -53,9 +53,9 @@ export function OwnedCoins({ id }: { id: string }) {
 
 		const recognizedBalances = balanceData.recognizedBalances.sort((a, b) => {
 			// Make sure SUI always comes first
-			if (getCoinSymbol(a.coinType) === 'SUI') {
+			if (getCoinSymbol(a.coinType) === 'DWLT') {
 				return -1;
-			} else if (getCoinSymbol(b.coinType) === 'SUI') {
+			} else if (getCoinSymbol(b.coinType) === 'DWLT') {
 				return 1;
 			} else {
 				return getCoinSymbol(a.coinType).localeCompare(getCoinSymbol(b.coinType), undefined, {

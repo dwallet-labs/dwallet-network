@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useDeepBookConfigs } from '_app/hooks/deepbook/useDeepBookConfigs';
 import { useActiveAccount } from '_app/hooks/useActiveAccount';
 import { DEFAULT_WALLET_FEE_ADDRESS, type Coins } from '_pages/swap/constants';

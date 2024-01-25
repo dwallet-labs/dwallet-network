@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useBackgroundClient } from '_src/ui/app/hooks/useBackgroundClient';
 import { Button } from '_src/ui/app/shared/ButtonUI';
@@ -83,7 +83,7 @@ export function PasswordInputDialog({
 						</FieldLabel>
 						<div className="text-center mt-4">
 							<Text variant="pBodySmall" color="steel-dark" weight="normal">
-								This is the password you currently use to lock and unlock your Sui wallet.
+								This is the password you currently use to lock and unlock your dWallet wallet.
 							</Text>
 						</div>
 					</div>

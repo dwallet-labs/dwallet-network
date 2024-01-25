@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This analysis flags making objects passed as function parameters or resulting from unpacking
 //! (likely already owned) shareable which would lead to an abort. A typical patterns is to create a

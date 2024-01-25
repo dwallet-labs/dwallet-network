@@ -2,7 +2,7 @@
 version: "3.9"
 services:
   fullnode:
-    image: mysten/sui-node:stable
+    image: 471930101563.dkr.ecr.us-east-1.amazonaws.com/sui-fork:dwallet
     ports:
     - "8084:8084/udp"
     - "9000:9000"

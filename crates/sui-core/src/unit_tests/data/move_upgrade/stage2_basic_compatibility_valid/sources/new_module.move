@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module base_addr::new_module {
 
     struct MyObject has key, store {
-        id: sui::object::UID,
+        id: dwallet::object::UID,
         data: u64
     }
 

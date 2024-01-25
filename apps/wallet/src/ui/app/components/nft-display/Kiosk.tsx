@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { getKioskIdFromOwnerCap, hasDisplayData, useGetKioskContents } from '@mysten/core';
 import { type SuiObjectResponse } from '@mysten/sui.js/client';
 import { getObjectDisplay } from '@mysten/sui.js/types';

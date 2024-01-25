@@ -1,5 +1,5 @@
 module a::m {
-    use sui::object;
+    use dwallet::object;
     struct Obj<T> has key {
         id: object::UID,
         value: T,
@@ -11,7 +11,7 @@ module a::m {
 
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }

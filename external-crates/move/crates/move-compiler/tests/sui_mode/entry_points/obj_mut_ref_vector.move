@@ -1,7 +1,7 @@
 // invalid, a mutable reference to vector of objects
 
 module a::m {
-    use sui::object;
+    use dwallet::object;
 
     struct S has key { id: object::UID }
 
@@ -10,7 +10,7 @@ module a::m {
     }
 }
 
-module sui::object {
+module dwallet::object {
     struct UID has store {
         id: address,
     }

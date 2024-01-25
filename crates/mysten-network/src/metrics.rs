@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use std::time::Duration;
 use tonic::codegen::http::header::HeaderName;
 use tonic::codegen::http::{HeaderValue, Request, Response};

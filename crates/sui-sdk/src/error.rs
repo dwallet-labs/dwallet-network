@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 pub use crate::json_rpc_error::Error as JsonRpcError;
 use sui_types::base_types::{SuiAddress, TransactionDigest};

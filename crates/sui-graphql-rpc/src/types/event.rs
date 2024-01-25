@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use async_graphql::*;
 use sui_indexer::models_v2::events::StoredEvent;
@@ -42,7 +42,7 @@ pub(crate) struct EventFilter {
     ///
     /// Generic types can be queried by either the generic type name, e.g.
     /// `0x2::coin::Coin`, or by the full type name, such as
-    /// `0x2::coin::Coin<0x2::sui::SUI>`.
+    /// `0x2::coin::Coin<0x2::dwlt::DWLT>`.
     pub event_type: Option<String>,
     // Enhancement (post-MVP)
     // pub start_time

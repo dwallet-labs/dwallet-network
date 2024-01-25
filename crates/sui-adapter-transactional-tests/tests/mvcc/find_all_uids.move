@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // tests finding UIDs for dynamic field access
 
@@ -10,9 +10,9 @@
 module test::m {
     use std::option::{Self, Option};
     use std::vector;
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::dynamic_field as field;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::dynamic_field as field;
 
     struct S has key, store {
         id: UID,

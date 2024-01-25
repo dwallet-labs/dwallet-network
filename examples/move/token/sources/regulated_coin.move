@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// This example demonstrates how to use Closed Loop to create a regulated coin
 /// that follows different regulatory requirements for actions:
@@ -26,12 +26,12 @@
 /// - KYC in this example is represented by an allowlist rule
 module examples::regulated_coin {
     use std::option;
-    use sui::vec_map;
-    use sui::transfer;
-    use sui::coin::{Self, TreasuryCap};
-    use sui::tx_context::{sender, TxContext};
+    use dwallet::vec_map;
+    use dwallet::transfer;
+    use dwallet::coin::{Self, TreasuryCap};
+    use dwallet::tx_context::{sender, TxContext};
 
-    use sui::token::{Self, TokenPolicy, TokenPolicyCap};
+    use dwallet::token::{Self, TokenPolicy, TokenPolicyCap};
 
     // import rules and use them for this app
     use examples::allowlist_rule::Allowlist;
@@ -117,11 +117,11 @@ module examples::regulated_coin {
 /// We don't test the currency itself but rather use the same set of regulations
 /// on a test currency.
 module examples::regulated_coin_tests {
-    use sui::coin;
-    use sui::tx_context::TxContext;
+    use dwallet::coin;
+    use dwallet::tx_context::TxContext;
 
-    use sui::token::{Self, TokenPolicy, TokenPolicyCap};
-    use sui::token_test_utils::{Self as test, TEST};
+    use dwallet::token::{Self, TokenPolicy, TokenPolicyCap};
+    use dwallet::token_test_utils::{Self as test, TEST};
 
     use examples::regulated_coin::set_rules;
 

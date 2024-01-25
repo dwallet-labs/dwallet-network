@@ -4,7 +4,7 @@ version = "0.0.1"
 published-at = "0xd0"
 
 [dependencies]
-Sui = { local = "../sui" }
+dWallet = { local = "../sui" }
 
 [addresses]
 d = "0xd0"

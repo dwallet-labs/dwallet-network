@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Button } from '_app/shared/ButtonUI';
 import { useNextMenuUrl } from '_components/menu/hooks';

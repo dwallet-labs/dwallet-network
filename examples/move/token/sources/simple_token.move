@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Create a simple Token with Denylist for every action; all four default
 /// actions are allowed as long as the user is not on the denylist.
 module examples::simple_token {
     use std::option;
-    use sui::transfer;
-    use sui::coin::{Self, TreasuryCap};
-    use sui::tx_context::{sender, TxContext};
+    use dwallet::transfer;
+    use dwallet::coin::{Self, TreasuryCap};
+    use dwallet::tx_context::{sender, TxContext};
 
-    use sui::token::{Self, TokenPolicy, TokenPolicyCap};
+    use dwallet::token::{Self, TokenPolicy, TokenPolicyCap};
 
     // import rules and use them for this app
     use examples::denylist_rule::Denylist;
@@ -73,11 +73,11 @@ module examples::simple_token {
 /// We don't test the currency itself but rather use the same set of regulations
 /// on a test currency.
 module examples::simple_token_tests {
-    use sui::coin;
-    use sui::tx_context::TxContext;
+    use dwallet::coin;
+    use dwallet::tx_context::TxContext;
 
-    use sui::token::{Self, TokenPolicy, TokenPolicyCap};
-    use sui::token_test_utils::{Self as test, TEST};
+    use dwallet::token::{Self, TokenPolicy, TokenPolicyCap};
+    use dwallet::token_test_utils::{Self as test, TEST};
 
     use examples::simple_token::set_rules;
     use examples::denylist_rule as denylist;

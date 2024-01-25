@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Heading } from '_app/shared/heading';
 import { Text } from '_app/shared/text';
@@ -68,7 +68,7 @@ function ConnectedDapps() {
 			</div>
 			<div className="my-4">
 				<Text variant="pBodySmall" color="gray-80" weight="normal">
-					Apps you have connected to through the Sui Wallet in this browser.
+					Apps you have connected to through the dWallet Wallet in this browser.
 				</Text>
 			</div>
 

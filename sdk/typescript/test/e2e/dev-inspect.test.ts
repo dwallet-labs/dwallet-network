@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -46,7 +46,7 @@ describe('Test dev inspect', () => {
 		const coin_0 = coins.data[0];
 		const obj = tx.moveCall({
 			target: `${packageId}::serializer_tests::return_struct`,
-			typeArguments: ['0x2::coin::Coin<0x2::sui::SUI>'],
+			typeArguments: ['0x2::coin::Coin<0x2::dwlt::DWLT>'],
 			arguments: [tx.pure(coin_0.coinObjectId)],
 		});
 

@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[allow(unused_use)]
 module bridge::committee {
     use std::vector;
 
-    use sui::address;
-    use sui::ecdsa_k1;
-    use sui::hex;
-    use sui::tx_context::{Self, TxContext};
-    use sui::vec_map::{Self, VecMap};
-    use sui::vec_set;
+    use dwallet::address;
+    use dwallet::ecdsa_k1;
+    use dwallet::hex;
+    use dwallet::tx_context::{Self, TxContext};
+    use dwallet::vec_map::{Self, VecMap};
+    use dwallet::vec_set;
 
     use bridge::message::{Self, BridgeMessage};
     use bridge::message_types;

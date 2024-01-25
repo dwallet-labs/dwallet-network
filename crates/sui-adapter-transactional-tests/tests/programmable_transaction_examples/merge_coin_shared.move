@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // test invalid usages of shared coin
 
@@ -8,9 +8,9 @@
 //# publish
 
 module test::m1 {
-    use sui::object::{Self, UID};
-    use sui::tx_context::TxContext;
-    use sui::transfer;
+    use dwallet::object::{Self, UID};
+    use dwallet::tx_context::TxContext;
+    use dwallet::transfer;
 
     // not a native coin, but same type structure and BCS layout
     struct Coin has key, store {

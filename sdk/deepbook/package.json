@@ -3,7 +3,7 @@
 	"author": "Mysten Labs <build@mystenlabs.com>",
 	"description": "Sui Deepbook SDK",
 	"version": "0.6.0",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",
 	"module": "./dist/esm/index.js",

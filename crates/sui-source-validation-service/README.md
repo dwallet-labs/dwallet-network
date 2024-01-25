@@ -35,8 +35,8 @@ network = "mainnet"
 packages = [
     { path = "crates/sui-framework/packages/deepbook", watch = "0xdee9" },
     { path = "crates/sui-framework/packages/move-stdlib", watch = "0x1" },
-    { path = "crates/sui-framework/packages/sui-framework", watch = "0x2" },
-    { path = "crates/sui-framework/packages/sui-system", watch = "0x3" },
+    { path = "crates/sui-framework/packages/dwallet-framework", watch = "0x2" },
+    { path = "crates/sui-framework/packages/dwallet-system", watch = "0x3" },
 ]
 ```
 

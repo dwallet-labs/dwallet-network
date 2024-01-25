@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use inquire::Select;
 use std::collections::BTreeMap;
@@ -16,7 +16,7 @@ use sui_types::{
 
 const STR_ALL: &str = "All";
 const STR_EXIT: &str = "Exit";
-const STR_SUI: &str = "Sui";
+const STR_SUI: &str = "dWallet";
 const STR_STAKED_SUI: &str = "StakedSui";
 const STR_PACKAGE: &str = "Package";
 const STR_COIN_METADATA: &str = "CoinMetadata";
@@ -207,7 +207,7 @@ fn examine_object(
                 for gas_coin in sui_map.values() {
                     display_sui(gas_coin, owner_map);
                 }
-                print_divider("Sui");
+                print_divider("dWallet");
             }
             Ok(name) if name == STR_STAKED_SUI => {
                 for staked_sui_coin in staked_sui_map.values() {

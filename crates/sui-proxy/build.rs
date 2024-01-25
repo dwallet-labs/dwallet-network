@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use std::io::Result;
 fn main() -> Result<()> {
     println!("cargo:rerun-if-changed=build.rs");

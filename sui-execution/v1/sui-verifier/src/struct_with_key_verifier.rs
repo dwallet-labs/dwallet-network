@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This pass verifies necessary properties for Move Objects, i.e. structs with the `key` ability.
 //! The properties checked are

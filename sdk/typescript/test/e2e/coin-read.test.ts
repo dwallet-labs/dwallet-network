@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -55,7 +55,7 @@ describe('CoinRead API', () => {
 		const suiBalance = await toolbox.client.getBalance({
 			owner: toolbox.address(),
 		});
-		expect(suiBalance.coinType).toEqual('0x2::sui::SUI');
+		expect(suiBalance.coinType).toEqual('0x2::dwlt::DWLT');
 		expect(suiBalance.coinObjectCount).toEqual(5);
 		expect(Number(suiBalance.totalBalance)).toBeGreaterThan(0);
 

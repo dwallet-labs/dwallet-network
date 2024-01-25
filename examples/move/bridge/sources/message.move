@@ -1,25 +1,25 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module bridge::message {
     use std::vector;
 
-    use sui::bcs;
+    use dwallet::bcs;
 
     use bridge::message_types;
 
     #[test_only]
     use bridge::chain_ids;
     #[test_only]
-    use sui::address;
+    use dwallet::address;
     #[test_only]
-    use sui::balance;
+    use dwallet::balance;
     #[test_only]
-    use sui::coin;
+    use dwallet::coin;
     #[test_only]
-    use sui::hex;
+    use dwallet::hex;
     #[test_only]
-    use sui::test_scenario;
+    use dwallet::test_scenario;
 
     struct USDC has drop {}
 

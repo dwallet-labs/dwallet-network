@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //# init --addresses V0=0x0 V1=0x0 V2=0x0 V3=0x0 V4=0x0 --accounts A
 
