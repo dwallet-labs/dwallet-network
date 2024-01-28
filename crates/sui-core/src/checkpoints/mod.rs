@@ -970,6 +970,7 @@ impl CheckpointBuilder {
                         | TransactionKind::ConsensusCommitPrologueV2(_)
                         | TransactionKind::AuthenticatorStateUpdate(_)
                         | TransactionKind::RandomnessStateUpdate(_)
+                        | TransactionKind::SignatureMPCOutput(_)
                 ) {
                     transaction_keys.push(SequencedConsensusTransactionKey::External(
                         ConsensusTransactionKey::Certificate(*effects.transaction_digest()),

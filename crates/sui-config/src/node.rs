@@ -30,6 +30,7 @@ use sui_types::crypto::SuiKeyPair;
 use sui_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use sui_types::multiaddr::Multiaddr;
 use tracing::info;
+use sui_types::messages_signature_mpc::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
 
 // Default max number of concurrent requests served
 pub const DEFAULT_GRPC_CONCURRENCY_LIMIT: usize = 20000000000;
@@ -52,6 +53,11 @@ pub struct NodeConfig {
     pub account_key_pair: KeyPairWithPath,
     #[serde(default = "default_key_pair")]
     pub network_key_pair: KeyPairWithPath,
+
+    #[serde(default)]
+    pub signature_mpc_tiresias_public_parameters: Option<DecryptionPublicParameters>,
+    #[serde(default)]
+    pub signature_mpc_tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
 
     pub db_path: PathBuf,
     #[serde(default = "default_grpc_address")]
@@ -279,6 +285,14 @@ impl NodeConfig {
 
     pub fn protocol_public_key(&self) -> AuthorityPublicKeyBytes {
         self.protocol_key_pair().public().into()
+    }
+
+    pub fn signature_mpc_tiresias_public_parameters(&self) -> Option<DecryptionPublicParameters> {
+        self.signature_mpc_tiresias_public_parameters.clone()
+    }
+
+    pub fn signature_mpc_tiresias_key_share_decryption_key_share(&self) -> SecretKeyShareSizedNumber {
+        self.signature_mpc_tiresias_key_share_decryption_key_share
     }
 
     pub fn db_path(&self) -> PathBuf {

@@ -658,6 +658,9 @@ sui-execution = { path = "sui-execution" }
 # move-vm-runtime = { path = "external-crates/move/move-vm/runtime" }
 # move-bytecode-verifier = { path = "external-crates/move/move-bytecode-verifier" }
 
+#twopc_mpc = { git = "https://github.com/dwallet-labs/2pc-mpc.git", branch = "presign" }
+#tiresias = { git = "https://github.com/odsy-network/tiresias.git" }
+#crypto-bigint = "0.5"
 
 # Using the workspace-hack via this patch directive means that it only applies
 # while building within this workspace. If another workspace imports a crate

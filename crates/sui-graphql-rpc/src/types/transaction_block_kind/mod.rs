@@ -5,6 +5,7 @@ use self::{
     consensus_commit_prologue::ConsensusCommitPrologueTransaction,
     end_of_epoch::ChangeEpochTransaction, genesis::GenesisTransaction,
     randomness_state_update::RandomnessStateUpdateTransaction,
+    signature_mpc::SignatureMPCOutputTransaction
 };
 use crate::types::transaction_block_kind::{
     authenticator_state_update::AuthenticatorStateUpdateTransaction,
@@ -19,6 +20,7 @@ pub(crate) mod end_of_epoch;
 pub(crate) mod genesis;
 pub(crate) mod programmable;
 pub(crate) mod randomness_state_update;
+pub(crate) mod signature_mpc;
 
 #[derive(Union, PartialEq, Clone, Eq)]
 pub(crate) enum TransactionBlockKind {
@@ -28,6 +30,7 @@ pub(crate) enum TransactionBlockKind {
     Programmable(ProgrammableTransactionBlock),
     AuthenticatorState(AuthenticatorStateUpdateTransaction),
     Randomness(RandomnessStateUpdateTransaction),
+    SignatureMPCOutput(SignatureMPCOutputTransaction),
     EndOfEpoch(EndOfEpochTransaction),
 }
 
@@ -47,6 +50,7 @@ impl From<NativeTransactionKind> for TransactionBlockKind {
             }
             K::EndOfEpochTransaction(eoe) => T::EndOfEpoch(EndOfEpochTransaction(eoe)),
             K::RandomnessStateUpdate(rsu) => T::Randomness(RandomnessStateUpdateTransaction(rsu)),
+            K::SignatureMPCOutput(dsmo) => T::SignatureMPCOutput(SignatureMPCOutputTransaction(dsmo)),
         }
     }
 }

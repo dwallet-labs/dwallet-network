@@ -189,6 +189,8 @@ impl ValidatorConfigBuilder {
                 .unwrap_or(3600),
             zklogin_oauth_providers: default_zklogin_oauth_providers(),
             overload_threshold_config: self.overload_threshold_config.unwrap_or_default(),
+            signature_mpc_tiresias_public_parameters: validator.signature_mpc_tiresias_public_parameters,
+            signature_mpc_tiresias_key_share_decryption_key_share: validator.signature_mpc_tiresias_key_share_decryption_key_share,
         }
     }
 
@@ -376,6 +378,8 @@ impl FullnodeConfigBuilder {
             network_key_pair: self.network_key_pair.unwrap_or(KeyPairWithPath::new(
                 SuiKeyPair::Ed25519(validator_config.network_key_pair),
             )),
+            signature_mpc_tiresias_public_parameters: None,
+            signature_mpc_tiresias_key_share_decryption_key_share: Default::default(),
             db_path: self
                 .db_path
                 .unwrap_or(config_directory.join(FULL_NODE_DB_PATH).join(key_path)),

@@ -54,6 +54,8 @@ impl SuiTxValidator {
         let mut cert_batch = Vec::new();
         let mut ckpt_messages = Vec::new();
         let mut ckpt_batch = Vec::new();
+        let mut signature_mpc_messages_batch = Vec::new();
+        let mut signed_dkg_signature_mpc_outputs_batch = Vec::new();
         for tx in txs.into_iter() {
             match tx {
                 ConsensusTransactionKind::UserTransaction(certificate) => {
@@ -69,6 +71,12 @@ impl SuiTxValidator {
                     ckpt_messages.push(signature.clone());
                     ckpt_batch.push(signature.summary);
                 }
+                ConsensusTransactionKind::SignatureMPCMessage(data) => {
+                    signature_mpc_messages_batch.push(data.summary);
+                }
+                ConsensusTransactionKind::SignedDKGSignatureMPCOutput(data) => {
+                    signed_dkg_signature_mpc_outputs_batch.push(*data);
+                }
                 ConsensusTransactionKind::EndOfPublish(_)
                 | ConsensusTransactionKind::CapabilityNotification(_)
                 | ConsensusTransactionKind::NewJWKFetched(_, _, _)
@@ -82,7 +90,7 @@ impl SuiTxValidator {
 
         self.epoch_store
             .signature_verifier
-            .verify_certs_and_checkpoints(cert_batch, ckpt_batch)
+            .verify_certs_and_checkpoints_and_signature_mpc_messages(cert_batch, ckpt_batch, signature_mpc_messages_batch, signed_dkg_signature_mpc_outputs_batch)
             .tap_err(|e| warn!("batch verification error: {}", e))
             .wrap_err("Malformed batch (failed to verify)")?;
 

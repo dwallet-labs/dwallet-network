@@ -55,12 +55,16 @@ mod checked {
     };
     use sui_types::transaction::{CheckedInputObjects, RandomnessStateUpdate};
     use sui_types::{
-        base_types::{ObjectRef, SuiAddress, TransactionDigest, TxContext},
+        base_types::{ObjectRef, SuiAddress, TransactionDigest, TxContext, ObjectID},
         object::Object,
         sui_system_state::{ADVANCE_EPOCH_FUNCTION_NAME, SUI_SYSTEM_MODULE_NAME},
         SUI_AUTHENTICATOR_STATE_OBJECT_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID,
         SUI_SYSTEM_PACKAGE_ID,
+        messages_signature_mpc::SignatureMPCOutput,
+        signature_mpc::{CREATE_DKG_OUTPUT_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME},
     };
+    use sui_types::messages_signature_mpc::SignatureMPCOutputValue;
+    use sui_types::signature_mpc::{CREATE_PRESIGN_FUNC_NAME, CREATE_PRESIGN_OUTPUT_FUNC_NAME, CREATE_SIGN_OUTPUT_FUNC_NAME};
 
     #[instrument(name = "tx_execute_to_effects", level = "debug", skip_all)]
     pub fn execute_transaction_to_effects<Mode: ExecutionMode>(
@@ -631,6 +635,18 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
+            TransactionKind::SignatureMPCOutput(output) => {
+                setup_dkg_signature_mpc_output(
+                    output,
+                    temporary_store,
+                    tx_ctx,
+                    move_vm,
+                    gas_charger,
+                    protocol_config,
+                    metrics,
+                )?;
+                Ok(Mode::empty_results())
+            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)
@@ -1064,6 +1080,88 @@ mod checked {
             assert_invariant!(
                 res.is_ok(),
                 "Unable to generate randomness_state_update transaction!"
+            );
+            builder.finish()
+        };
+        programmable_transactions::execution::execute::<execution_mode::System>(
+            protocol_config,
+            metrics,
+            move_vm,
+            temporary_store,
+            tx_ctx,
+            gas_charger,
+            pt,
+        )
+    }
+
+    fn setup_dkg_signature_mpc_output(
+        data: SignatureMPCOutput,
+        temporary_store: &mut TemporaryStore<'_>,
+        tx_ctx: &mut TxContext,
+        move_vm: &Arc<MoveVM>,
+        gas_charger: &mut GasCharger,
+        protocol_config: &ProtocolConfig,
+        metrics: Arc<LimitsMetrics>,
+    ) -> Result<(), ExecutionError> {
+        let pt = {
+            let mut builder = ProgrammableTransactionBuilder::new();
+            let res = match &data.value {
+                SignatureMPCOutputValue::DKG {
+                    commitment_to_centralized_party_secret_key_share,
+                    secret_key_share_encryption_and_proof,
+                } => {
+                    builder.move_call(
+                        SUI_SYSTEM_PACKAGE_ID.into(),
+                        DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                        CREATE_DKG_OUTPUT_FUNC_NAME.to_owned(),
+                        vec![],
+                        vec![
+                            CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
+                            CallArg::Pure(bcs::to_bytes(commitment_to_centralized_party_secret_key_share).unwrap()),
+                            CallArg::Pure(bcs::to_bytes(secret_key_share_encryption_and_proof).unwrap()),
+                        ],
+                    )
+                }
+                SignatureMPCOutputValue::PresignOutput(output) => {
+                    builder.move_call(
+                        SUI_SYSTEM_PACKAGE_ID.into(),
+                        DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                        CREATE_PRESIGN_OUTPUT_FUNC_NAME.to_owned(),
+                        vec![],
+                        vec![
+                            CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
+                            CallArg::Pure(bcs::to_bytes(output).unwrap()),
+                        ],
+                    )
+                }
+                SignatureMPCOutputValue::Presign(presigns) => {
+                    builder.move_call(
+                        SUI_SYSTEM_PACKAGE_ID.into(),
+                        DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                        CREATE_PRESIGN_FUNC_NAME.to_owned(),
+                        vec![],
+                        vec![
+                            CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
+                            CallArg::Pure(bcs::to_bytes(presigns).unwrap()),
+                        ],
+                    )
+                }
+                SignatureMPCOutputValue::Sign(sigs) => {
+                    builder.move_call(
+                        SUI_SYSTEM_PACKAGE_ID.into(),
+                        DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                        CREATE_SIGN_OUTPUT_FUNC_NAME.to_owned(),
+                        vec![],
+                        vec![
+                            CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
+                            CallArg::Pure(bcs::to_bytes(sigs).unwrap()),
+                        ],
+                    )
+                }
+            };
+            assert_invariant!(
+                res.is_ok(),
+                "Unable to generate dkg_signature_mpc_output transaction!"
             );
             builder.finish()
         };
