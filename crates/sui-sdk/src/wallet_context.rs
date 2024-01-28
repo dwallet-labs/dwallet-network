@@ -56,23 +56,36 @@ impl WalletContext {
     }
 
     pub async fn get_client(&self) -> Result<SuiClient, anyhow::Error> {
-        let read = self.client.read().await;
 
-        Ok(if let Some(client) = read.as_ref() {
-            client.clone()
-        } else {
-            drop(read);
-            let client = self
-                .config
-                .get_active_env()?
-                .create_rpc_client(self.request_timeout, self.max_concurrent_requests)
-                .await?;
-            if let Err(e) = client.check_api_version() {
-                warn!("{e}");
-                eprintln!("{}", format!("[warn] {e}").yellow().bold());
-            }
-            self.client.write().await.insert(client).clone()
-        })
+        let client = self
+            .config
+            .get_active_env()?
+            .create_rpc_client(self.request_timeout, self.max_concurrent_requests)
+            .await?;
+        if let Err(e) = client.check_api_version() {
+            warn!("{e}");
+            eprintln!("{}", format!("[warn] {e}").yellow().bold());
+        }
+        Ok(client)
+
+        // TODO: the code below changed because it has a cache issue, need to find a better solution
+        // let read = self.client.read().await;
+        //
+        // Ok(if let Some(client) = read.as_ref() {
+        //     client.clone()
+        // } else {
+        //     drop(read);
+        //     let client = self
+        //         .config
+        //         .get_active_env()?
+        //         .create_rpc_client(self.request_timeout, self.max_concurrent_requests)
+        //         .await?;
+        //     if let Err(e) = client.check_api_version() {
+        //         warn!("{e}");
+        //         eprintln!("{}", format!("[warn] {e}").yellow().bold());
+        //     }
+        //     self.client.write().await.insert(client).clone()
+        // })
     }
 
     // TODO: Ger rid of mut

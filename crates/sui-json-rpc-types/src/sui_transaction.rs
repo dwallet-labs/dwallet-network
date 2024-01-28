@@ -51,6 +51,7 @@ use tabled::{
     builder::Builder as TableBuilder,
     settings::{style::HorizontalLine, Panel as TablePanel, Style as TableStyle},
 };
+use sui_types::messages_signature_mpc::{SignatureMPCOutput, SignatureMPCOutputValue};
 
 // similar to EpochId of sui-types but BigInt
 pub type SuiEpochId = BigInt<u64>;
@@ -381,6 +382,8 @@ pub enum SuiTransactionBlockKind {
     AuthenticatorStateUpdate(SuiAuthenticatorStateUpdate),
     /// A transaction which updates global randomness state
     RandomnessStateUpdate(SuiRandomnessStateUpdate),
+    /// A transaction which store dkg signature mpc output
+    SignatureMPCOutput(SuiDKGSignatureMPCOutput),
     /// The transaction which occurs only at the end of the epoch
     EndOfEpochTransaction(SuiEndOfEpochTransaction),
     ConsensusCommitPrologueV2(SuiConsensusCommitPrologueV2),
@@ -427,6 +430,9 @@ impl Display for SuiTransactionBlockKind {
             }
             Self::RandomnessStateUpdate(_) => {
                 writeln!(writer, "Transaction Kind : Randomness State Update")?;
+            }
+            Self::SignatureMPCOutput(_) => {
+                writeln!(writer, "Transaction Kind : DKG Signature MPC Output")?;
             }
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind : End of Epoch Transaction")?;
@@ -479,6 +485,25 @@ impl SuiTransactionBlockKind {
                     random_bytes: update.random_bytes,
                 })
             }
+            TransactionKind::SignatureMPCOutput(SignatureMPCOutput { epoch, session_id, session_ref, value }) => {
+                Self::SignatureMPCOutput(SuiDKGSignatureMPCOutput {
+                    epoch,
+                    session_id: session_id.0.to_vec(),
+                    session_ref: session_ref.into(),
+                    value: match value {
+                        SignatureMPCOutputValue::DKG {
+                            commitment_to_centralized_party_secret_key_share,
+                            secret_key_share_encryption_and_proof
+                        } => SuiDKGSignatureMPCOutputValue::DKG {
+                            commitment_to_centralized_party_secret_key_share,
+                            secret_key_share_encryption_and_proof
+                        },
+                        SignatureMPCOutputValue::PresignOutput(o) => SuiDKGSignatureMPCOutputValue::PresignOutput(o),
+                        SignatureMPCOutputValue::Presign(o) => SuiDKGSignatureMPCOutputValue::Presign(o),
+                        SignatureMPCOutputValue::Sign(s) => SuiDKGSignatureMPCOutputValue::Sign(s),
+                    },
+                })
+            }
             TransactionKind::EndOfEpochTransaction(end_of_epoch_tx) => {
                 Self::EndOfEpochTransaction(SuiEndOfEpochTransaction {
                     transactions: end_of_epoch_tx
@@ -523,6 +548,7 @@ impl SuiTransactionBlockKind {
             Self::ProgrammableTransaction(_) => "ProgrammableTransaction",
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
+            Self::SignatureMPCOutput(_) => "DKGSignatureMPCOutput",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
         }
     }
@@ -1395,6 +1421,32 @@ pub struct SuiRandomnessStateUpdate {
     #[serde_as(as = "BigInt<u64>")]
     pub randomness_round: u64,
     pub random_bytes: Vec<u8>,
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+pub enum SuiDKGSignatureMPCOutputValue {
+    DKG {
+        commitment_to_centralized_party_secret_key_share: Vec<u8>,
+        secret_key_share_encryption_and_proof: Vec<u8>,
+    },
+    PresignOutput(Vec<u8>),
+    Presign(Vec<u8>),
+    Sign(Vec<Vec<u8>>),
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+pub struct SuiDKGSignatureMPCOutput {
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "BigInt<u64>")]
+    pub epoch: u64,
+
+    pub session_id: Vec<u8>,
+
+    pub session_ref: SuiObjectRef,
+
+    pub value: SuiDKGSignatureMPCOutputValue,
 }
 
 #[serde_as]

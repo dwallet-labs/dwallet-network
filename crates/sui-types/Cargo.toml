@@ -59,6 +59,22 @@ sui-enum-compat-util.workspace = true
 fastcrypto = { workspace = true, features = ["copy_key"] }
 fastcrypto-zkp.workspace = true
 
+#twopc_mpc.workspace = true
+#crypto-bigint.workspace = true
+#tiresias.workspace = true
+
+twopc_mpc = { git = "https://github.com/dwallet-labs/2pc-mpc.git" }
+crypto-bigint = { version = "0.5", features = ["rand_core", "serde"], default-features = false }
+group = { git = "https://github.com/dwallet-labs/group.git" }
+proof = { git = "https://github.com/dwallet-labs/proof.git" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/homomorphic-encryption.git" }
+commitment = { git = "https://github.com/dwallet-labs/commitment.git" }
+maurer = { git = "https://github.com/dwallet-labs/maurer.git" }
+enhanced_maurer = { git = "https://github.com/dwallet-labs/enhanced-maurer.git" }
+tiresias = { git = "https://github.com/dwallet-labs/tiresias.git", branch = "he", features = ["test_exports"] }
+ecdsa = { version = "0.16.9", features = ["verifying"] }
+k256 = { git = 'https://github.com/ycscaly/elliptic-curves.git', branch = "13.3-fixed", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
+
 typed-store-error.workspace = true
 derive_more.workspace = true
 proptest.workspace = true
