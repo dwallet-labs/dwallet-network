@@ -10,8 +10,8 @@ const linkStyles = cva([], {
 	variants: {
 		variant: {
 			text: 'text-body font-semibold text-steel-dark hover:text-steel-darker active:text-steel disabled:text-gray-60',
-			mono: 'font-mono text-body font-medium text-hero-dark hover:text-hero-darkest break-all',
-			textHeroDark: 'text-pBody font-medium text-hero-dark hover:text-hero-darkest',
+			mono: 'font-mono text-body font-medium text-steel-dark hover:text-steel break-all',
+			textHeroDark: 'text-pBody font-medium text-hero-default hover:text-hero-darkest',
 		},
 		uppercase: {
 			true: 'uppercase',

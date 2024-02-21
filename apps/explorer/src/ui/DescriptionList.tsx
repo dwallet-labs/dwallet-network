@@ -18,7 +18,7 @@ const descriptionItemStyles = cva(['flex flex-col gap-2 md:flex-row md:gap-10'],
 });
 
 const descriptionItemLabelStyles = cva(
-	['w-full flex-shrink-0 text-pBody font-medium text-steel-darker'],
+	['w-full flex-shrink-0 text-pBody font-medium text-steel-dark'],
 	{
 		variants: {
 			labelWidth: {

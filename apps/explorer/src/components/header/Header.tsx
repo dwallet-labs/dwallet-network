@@ -24,7 +24,7 @@ function Header() {
 	return (
 		<header
 			className={clsx(
-				'flex h-header justify-center overflow-visible bg-white/40 backdrop-blur-xl transition-shadow',
+				'flex h-header justify-center overflow-visible bg-offwhite backdrop-blur-xl transition-shadow',
 				isScrolled && 'shadow-effect-ui-regular',
 			)}
 		>
@@ -32,7 +32,7 @@ function Header() {
 				<LinkWithQuery
 					data-testid="nav-logo-button"
 					to="/"
-					className="flex flex-nowrap items-center gap-1 text-hero-darkest"
+					className="flex flex-nowrap items-center gap-1 text-white"
 				>
 					<Sui className="h-[26px] w-5" />
 					<SuiLogoTxt className="h-[17px] w-[27px]" />

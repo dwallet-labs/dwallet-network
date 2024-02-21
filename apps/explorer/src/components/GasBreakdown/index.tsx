@@ -57,7 +57,7 @@ function TotalGasAmount({ amount }: GasProps) {
 	return (
 		<div className="flex flex-col gap-2">
 			<div className="flex items-center gap-0.5">
-				<Heading variant="heading3/semibold" color="steel-darker">
+				<Heading variant="heading3/semibold" color="steel-dark">
 					{formattedAmount}
 				</Heading>
 				<Text variant="body/medium" color="steel-dark">
@@ -115,7 +115,7 @@ export function GasBreakdown({ summary }: GasBreakdownProps) {
 			collapsible
 			title={
 				<div className="flex flex-col gap-2">
-					<Heading variant="heading4/semibold" color="steel-darker">
+					<Heading variant="heading4/semibold" color="steel-dark">
 						Gas & Storage Fee
 					</Heading>
 					<TotalGasAmount amount={totalGas} />

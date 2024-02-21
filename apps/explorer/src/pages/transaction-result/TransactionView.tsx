@@ -36,7 +36,7 @@ export function TransactionView({ transaction }: { transaction: SuiTransactionBl
 
 	const leftPane = {
 		panel: (
-			<div className="h-full overflow-y-auto rounded-2xl border border-transparent bg-gray-40 p-6 md:h-full md:max-h-screen md:p-10">
+			<div className="h-full overflow-y-auto rounded-2xl border border-transparent bg-steel-dark p-6 md:h-full md:max-h-screen md:p-10">
 				<Tabs size="lg" defaultValue="summary">
 					<TabsList>
 						<TabsTrigger value="summary">Summary</TabsTrigger>

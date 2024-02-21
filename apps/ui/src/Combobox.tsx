@@ -101,7 +101,7 @@ export function ComboboxList<T extends ComboboxItem = ComboboxItem>({
 	return (
 		<Command.List
 			ref={listRef}
-			className="absolute mt-1 w-full list-none rounded-md bg-white p-3.5 shadow-moduleOption h-fit max-h-verticalListLong z-10 overflow-scroll"
+			className="absolute mt-1 w-full list-none rounded-md bg-steel-darker p-3.5 shadow-moduleOption h-fit max-h-verticalListLong z-10 overflow-scroll overflow-y-hidden overflow-x-hidden"
 		>
 			{showResultsCount && !isLoading && options.length > 0 && (
 				<Command.Item className="text-left ml-1.5 pb-2" disabled>

@@ -56,7 +56,7 @@ function SelectableNetwork({ state, children, onClick, ...props }: SelectableNet
 			onClick={onClick}
 			className={clsx(
 				'flex items-start gap-3 rounded-md px-1.25 py-2 text-body font-semibold hover:bg-gray-40 ui-active:bg-gray-40',
-				state !== NetworkState.UNSELECTED ? 'text-steel-darker' : 'text-steel-dark',
+				state !== NetworkState.UNSELECTED ? 'text-steel' : 'text-steel-dark',
 			)}
 			{...props}
 		>
@@ -70,7 +70,7 @@ function SelectableNetwork({ state, children, onClick, ...props }: SelectableNet
 			<div className="mt-px">
 				<Text
 					variant="body/semibold"
-					color={state === NetworkState.SELECTED ? 'steel-darker' : 'steel-dark'}
+					color={state === NetworkState.SELECTED ? 'steel' : 'steel-dark'}
 				>
 					{children}
 				</Text>
@@ -141,7 +141,7 @@ function NetworkVersion({
 	return (
 		<div className="flex flex-col justify-between gap-1 px-4 py-3">
 			<Text variant="subtitleSmall/medium" color="steel-dark">
-				Sui {label}
+				dWallet {label}
 			</Text>
 			<Text variant="subtitleSmall/medium" color="steel-dark">
 				v{binaryVersion} (Protocol {version})
@@ -225,7 +225,7 @@ export function NetworkSelect({
 				<>
 					<Popover.Button ref={refs.setReference} as={NavItem} afterIcon={<ResponsiveIcon />}>
 						<div className="hidden md:block">
-							<Text variant="body/semibold" color="hero-darkest">
+							<Text variant="body/semibold" color="steel-dark">
 								{selected?.label || 'Custom'}
 							</Text>
 						</div>
@@ -250,7 +250,7 @@ export function NetworkSelect({
 										scale: 0.95,
 									}}
 									transition={{ duration: 0.15 }}
-									className="z-20 flex w-52 flex-col gap-2 rounded-lg bg-white/80 px-3 py-4 shadow-lg backdrop-blur focus:outline-none"
+									className="z-20 flex w-52 flex-col gap-2 rounded-lg bg-steel-darker px-3 py-4 shadow-lg backdrop-blur focus:outline-none"
 									style={{
 										position: strategy,
 										top: y ?? 0,

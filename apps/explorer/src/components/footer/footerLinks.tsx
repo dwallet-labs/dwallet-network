@@ -15,21 +15,15 @@ function FooterIcon({ children }: { children: ReactNode }) {
 }
 
 export const footerLinks = [
-	{ title: 'FAQ', href: 'https://docs.mystenlabs.com/explorer/faq' },
-	{ title: 'Blog', href: 'https://medium.com/mysten-labs' },
-	{
-		title: 'Whitepaper',
-		href: 'https://github.com/MystenLabs/sui/blob/main/doc/paper/sui.pdf',
-	},
+	{ title: 'Blog', href: 'https://dwallet.io/blog' },
 	{
 		title: 'Docs',
-		href: 'https://docs.mystenlabs.com/explorer',
+		href: 'https://docs.dwallet.io/',
 	},
 	{
 		title: 'GitHub',
-		href: 'https://github.com/MystenLabs',
+		href: 'https://github.com/dwallet-labs/dwallet-network',
 	},
-	{ title: 'Press', href: 'https://mystenlabs.com/#community' },
 ];
 
 export const socialLinks = [
@@ -39,7 +33,7 @@ export const socialLinks = [
 				<SocialDiscord24 />
 			</FooterIcon>
 		),
-		href: 'https://discord.gg/BK6WFhud',
+		href: 'https://discord.gg/dwallet',
 	},
 	{
 		children: (
@@ -47,7 +41,7 @@ export const socialLinks = [
 				<SocialTwitter24 />
 			</FooterIcon>
 		),
-		href: 'https://twitter.com/Mysten_Labs',
+		href: 'https://twitter.com/dWalletNetwork',
 	},
 	{
 		children: (
@@ -55,17 +49,13 @@ export const socialLinks = [
 				<SocialLinkedin24 />
 			</FooterIcon>
 		),
-		href: 'https://www.linkedin.com/company/mysten-labs/',
+		href: 'https://www.linkedin.com/company/dwalletnetwork/',
 	},
 ];
 
 export const legalLinks = [
 	{
-		title: 'Terms & Conditions',
-		href: 'https://mystenlabs.com/legal#termsofservice',
-	},
-	{
 		title: 'Privacy Policy',
-		href: 'https://mystenlabs.com/legal#privacypolicy',
+		href: 'https://www.dwallet.io/privacy-policy',
 	},
 ];

@@ -43,7 +43,7 @@ export function TransactionDetailCard({
 			<CollapsibleSection>
 				<div className="flex flex-col gap-6">
 					{timestamp && (
-						<Text variant="pBody/medium" color="steel-dark">
+						<Text variant="pBody/medium" color="steel-darker">
 							{formatDate(Number(timestamp))}
 						</Text>
 					)}

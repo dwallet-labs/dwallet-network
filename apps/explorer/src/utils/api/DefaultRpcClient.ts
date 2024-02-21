@@ -13,9 +13,9 @@ export enum Network {
 
 export const NetworkConfigs: Record<Network, { url: string }> = {
 	[Network.LOCAL]: { url: getFullnodeUrl('localnet') },
-	[Network.DEVNET]: { url: 'https://explorer-rpc.devnet.sui.io:443' },
-	[Network.TESTNET]: { url: 'https://explorer-rpc.testnet.sui.io:443' },
-	[Network.MAINNET]: { url: 'https://explorer-rpc.mainnet.sui.io:443' },
+ 	[Network.DEVNET]: { url: 'localnet' },
+	[Network.TESTNET]: { url: 'REPLACE ME WITH LINK' },
+	[Network.MAINNET]: { url: 'localnet' },
 };
 
 const defaultClientMap: Map<Network | string, SuiClient> = new Map();

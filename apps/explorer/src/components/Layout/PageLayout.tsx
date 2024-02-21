@@ -54,7 +54,7 @@ export function PageLayout({ gradient, content, loading, isError }: PageLayoutPr
 			: "The explorer is running slower than usual. We're working to fix the issue and appreciate your patience.";
 
 	return (
-		<div className="relative min-h-screen w-full">
+		<div className="relative min-h-screen w-full bg-offwhite">
 			<section ref={headerRef} className="fixed top-0 z-20 flex w-full flex-col">
 				{renderNetworkDegradeBanner && (
 					<Banner rounded="none" align="center" variant="warning" fullWidth>

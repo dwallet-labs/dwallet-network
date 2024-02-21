@@ -17,16 +17,16 @@ export function DelegationAmount({ amount, isStats, inMIST = false }: Delegation
 	const delegationSymbol = inMIST ? 'nDWLT' : symbol;
 	return isStats ? (
 		<div className="flex items-end gap-1.5 break-all">
-			<Heading as="div" variant="heading3/semibold" color="steel-darker">
+			<Heading as="div" variant="heading3/semibold" color="steel-dark">
 				{delegationAmount}
 			</Heading>
-			<Heading variant="heading4/medium" color="steel-darker">
+			<Heading variant="heading4/medium" color="steel-dark">
 				{delegationSymbol}
 			</Heading>
 		</div>
 	) : (
 		<div className="flex h-full items-center gap-1">
-			<div className="flex items-baseline gap-0.5 break-all text-steel-darker">
+			<div className="flex items-baseline gap-0.5 break-all text-steel-dark">
 				<Text variant="body/medium">{delegationAmount}</Text>
 				<Text variant="subtitleSmall/medium">{delegationSymbol}</Text>
 			</div>

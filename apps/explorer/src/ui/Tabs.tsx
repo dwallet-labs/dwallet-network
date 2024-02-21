@@ -24,14 +24,14 @@ const TabSizeContext = createContext<TabSize | null | undefined>(null);
 const tabStyles = cva(
 	[
 		'flex items-center gap-1 border-b border-transparent -mb-px',
-		'font-semibold text-steel-dark disabled:text-steel-dark disabled:pointer-events-none hover:text-steel-darker data-[state=active]:border-gray-65',
+		'font-semibold text-steel-dark disabled:text-steel disabled:pointer-events-none hover:text-steel data-[state=active]:border-gray-65',
 	],
 	{
 		variants: {
 			size: {
-				lg: 'text-heading4 data-[state=active]:text-steel-darker pb-2',
-				md: 'text-body data-[state=active]:text-steel-darker pb-2',
-				sm: 'text-captionSmall font-medium pb-0.5 disabled:opacity-40 data-[state=active]:text-steel-darker',
+				lg: 'text-heading4 data-[state=active]:text-steel-dark pb-2',
+				md: 'text-body data-[state=active]:text-steel-dark pb-2',
+				sm: 'text-captionSmall font-medium pb-0.5 disabled:opacity-40 data-[state=active]:text-steel-dark',
 			},
 		},
 		defaultVariants: {
