@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"sui_indexer":[["impl HasSqlType&lt;<a class=\"struct\" href=\"sui_indexer/schema/sql_types/struct.BcsBytes.html\" title=\"struct sui_indexer::schema::sql_types::BcsBytes\">BcsBytes</a>&gt; for Pg"],["impl HasSqlType&lt;<a class=\"struct\" href=\"sui_indexer/schema/sql_types/struct.ObjectStatus.html\" title=\"struct sui_indexer::schema::sql_types::ObjectStatus\">ObjectStatus</a>&gt; for Pg"],["impl HasSqlType&lt;<a class=\"struct\" href=\"sui_indexer/schema/sql_types/struct.OwnerType.html\" title=\"struct sui_indexer::schema::sql_types::OwnerType\">OwnerType</a>&gt; for Pg"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

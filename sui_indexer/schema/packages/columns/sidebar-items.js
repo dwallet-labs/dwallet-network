@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["author","data","package_id","star","version"]};

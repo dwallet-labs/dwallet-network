@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"sui_faucet":[["impl&lt;Inner&gt; Layer&lt;Inner&gt; for <a class=\"struct\" href=\"sui_faucet/metrics_layer/struct.RequestMetricsLayer.html\" title=\"struct sui_faucet::metrics_layer::RequestMetricsLayer\">RequestMetricsLayer</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

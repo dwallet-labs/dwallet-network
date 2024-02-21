@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["get_position_in_list","order_validators_for_submission","position_submit_certificate"],"struct":["ConnectionMonitorStatus","ConnectionMonitorStatusForTests","ConsensusAdapter","ConsensusAdapterMetrics"],"trait":["CheckConnection","SubmitToConsensus"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["DIGEST_LENGTH","INTENT_MESSAGE_LENGTH"],"struct":["Authority","AuthorityIndex","Committee","Parameters"],"type":["DefaultHashFunction","Epoch","NetworkKeyPair","NetworkPrivateKey","NetworkPublicKey","ProtocolKeyPair","ProtocolPrivateKey","ProtocolPublicKey","ProtocolPublicKeyBytes","Stake"]};

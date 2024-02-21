@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"sui_rest_api":[],
+"sui_transactional_test_runner":[["impl NodeStateGetter for <a class=\"struct\" href=\"sui_transactional_test_runner/test_adapter/struct.SuiTestAdapter.html\" title=\"struct sui_transactional_test_runner::test_adapter::SuiTestAdapter\">SuiTestAdapter</a>&lt;'_&gt;"],["impl NodeStateGetter for <a class=\"struct\" href=\"sui_transactional_test_runner/struct.ValidatorWithFullnode.html\" title=\"struct sui_transactional_test_runner::ValidatorWithFullnode\">ValidatorWithFullnode</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

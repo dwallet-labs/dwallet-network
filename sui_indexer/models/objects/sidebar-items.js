@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ObjectStatus"],"fn":["compose_object_bulk_insert_query","compose_object_bulk_insert_update_query","filter_latest_objects","owner_to_owner_info"],"struct":["DeletedObject","NamedBcsBytes","Object"]};

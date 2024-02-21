@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"sui_rest_api":[["impl <a class=\"trait\" href=\"https://docs.rs/headers-core/0.2.0/headers_core/trait.Header.html\" title=\"trait headers_core::Header\">Header</a> for <a class=\"struct\" href=\"sui_rest_api/headers/struct.Accept.html\" title=\"struct sui_rest_api::headers::Accept\">Accept</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

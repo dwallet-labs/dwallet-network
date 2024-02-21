@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["indexer_store_v2","module_resolver"],"struct":["CheckpointObjectData","CheckpointTxData","PgIndexerAnalyticalStore","PgIndexerStore","PgIndexerStoreV2","TemporaryCheckpointStore","TemporaryEpochStore","TransactionObjectChanges"],"trait":["IndexerStore"]};

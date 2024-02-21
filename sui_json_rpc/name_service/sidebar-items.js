@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DomainParseError"],"struct":["Domain","NameRecord","NameServiceConfig","Registry","Table"]};

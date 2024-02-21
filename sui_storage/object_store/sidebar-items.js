@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ObjectStoreType"],"mod":["http","util"],"struct":["ObjectStoreConfig"],"trait":["ObjectStoreDeleteExt","ObjectStoreGetExt","ObjectStoreListExt","ObjectStorePutExt"]};

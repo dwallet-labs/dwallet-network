@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"data_transform":[["impl&lt;__DB: Backend&gt; Selectable&lt;__DB&gt; for <a class=\"struct\" href=\"data_transform/models/struct.Event.html\" title=\"struct data_transform::models::Event\">Event</a>"],["impl&lt;__DB: Backend&gt; Selectable&lt;__DB&gt; for <a class=\"struct\" href=\"data_transform/models/struct.EventsJson.html\" title=\"struct data_transform::models::EventsJson\">EventsJson</a>"]],
+"sui_indexer":[["impl&lt;__DB: Backend&gt; Selectable&lt;__DB&gt; for <a class=\"struct\" href=\"sui_indexer/models_v2/epoch/struct.QueryableEpochInfo.html\" title=\"struct sui_indexer::models_v2::epoch::QueryableEpochInfo\">QueryableEpochInfo</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

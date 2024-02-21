@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["checkpoint_sequence_number","epoch","id","recipient","sender","star","transaction_digest"]};
