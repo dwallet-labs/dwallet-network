@@ -119,7 +119,7 @@
 		"ts-retry-promise": "^0.7.0",
 		"typedoc": "^0.24.8",
 		"typescript": "^5.1.6",
-		"vite": "^4.4.4",
+		"vite": "^4.5.2",
 		"vitest": "^0.33.0",
 		"wait-on": "^7.0.1",
 		"ws": "^8.14.2"
