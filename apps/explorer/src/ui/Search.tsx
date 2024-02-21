@@ -34,7 +34,7 @@ export function Search({
 				</div>
 
 				<ComboboxInput
-					className="w-full rounded border border-transparent bg-hero-darkest/5 pl-10 font-mono text-body font-medium leading-9 text-hero-darkest/80 outline-none placeholder:text-sm placeholder:text-hero-darkest/40 hover:bg-hero-darkest/10 focus:bg-hero-darkest/10"
+					className="w-full rounded border border-transparent bg-steel-dark pl-10 font-mono text-body font-medium leading-9 text-hero-darkest/80 outline-none placeholder:text-sm placeholder:text-hero-darkest/40 hover:bg-gray-55 focus:bg-gray-55"
 					placeholder={placeholder}
 				/>
 			</div>

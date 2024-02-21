@@ -19,8 +19,8 @@ module.exports = {
 	outDir: './src',
 	jsxRuntime: 'automatic',
 	replaceAttrValues: {
-		'#383F47': 'currentColor',
-		'#007195': 'currentColor',
+		'#B8B6B6': 'currentColor',
+		// '#007195': 'currentColor',
 	},
 	indexTemplate(filePaths) {
 		const exportEntries = filePaths.map((filePath) => {

@@ -112,7 +112,7 @@ export function TableCard<DataType extends object>({
 							{row.getVisibleCells().map(({ column, id, getContext }) => (
 								<td
 									key={id}
-									className="h-7.5 text-body text-gray-75 group-hover:bg-gray-40 group-hover:text-gray-90 group-hover:first:rounded-l group-hover:last:rounded-r"
+									className="h-7.5 text-body text-gray-55 group-hover:bg-gray-60 group-hover:text-gray-90 group-hover:first:rounded-l group-hover:last:rounded-r"
 								>
 									{flexRender(column.columnDef.cell, getContext())}
 								</td>

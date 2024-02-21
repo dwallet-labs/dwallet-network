@@ -120,11 +120,11 @@ export default function ValidatorMap({ minHeight }: Props) {
 			>
 				<div className="pointer-events-none relative z-10 flex flex-1 flex-col justify-between gap-8 p-6">
 					<div className="flex flex-col gap-2">
-						<Text variant="caption/medium" color="steel-darker">
+						<Text variant="caption/medium" color="steel-dark">
 							Countries
 							{isPending && <Placeholder width="60px" height="0.8em" />}
 						</Text>
-						<Text variant="body/bold" color="steel-darker">
+						<Text variant="body/bold" color="steel-dark">
 							{(!isError && countryCount && numberFormatter.format(countryCount)) || '--'}
 						</Text>
 					</div>

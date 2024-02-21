@@ -21,7 +21,7 @@ export function SuiAmount({
 
 	return (
 		<div className="leading-1 flex items-end gap-0.5">
-			<Text variant="bodySmall/medium" color="steel-darker">
+			<Text variant="bodySmall/medium" color="steel-dark">
 				{formattedAmount}
 			</Text>
 			<Text variant="captionSmall/normal" color="steel-dark">

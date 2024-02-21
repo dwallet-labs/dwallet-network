@@ -7,11 +7,12 @@ import { type ReactNode } from 'react';
 const cardStyles = cva('overflow-hidden', {
 	variants: {
 		bg: {
-			default: 'bg-gray-40',
+			default: 'bg-gray-90',
 			highlight: 'bg-success-light',
 			lightBlue: 'bg-sui/10',
 			white: 'bg-white',
-			'white/80': 'bg-white/80',
+			'white/80': 'bg-white/5',
+			'hero-default': 'bg-hero',
 		},
 		height: {
 			full: 'h-full',

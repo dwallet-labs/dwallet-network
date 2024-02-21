@@ -26,29 +26,29 @@ export function EpochProgress({ epoch, start, end, inProgress }: EpochProgressPr
 			<div className="flex flex-col space-y-12">
 				<div className={clsx(inProgress ? 'space-y-4' : 'space-y-6')}>
 					<div className="flex flex-col gap-2">
-						<Heading color="steel-darker" variant="heading3/semibold">
+						<Heading color="steel-dark" variant="heading3/semibold">
 							{inProgress ? `Epoch ${epoch} in progress` : `Epoch ${epoch}`}
 						</Heading>
 						{elapsedTime && (
-							<Heading variant="heading6/medium" color="steel-darker">
+							<Heading variant="heading6/medium" color="steel-dark">
 								{elapsedTime}
 							</Heading>
 						)}
 					</div>
 					<div>
-						<Text variant="pSubtitleSmall/normal" uppercase color="steel-darker">
+						<Text variant="pSubtitleSmall/normal" uppercase color="steel-dark">
 							Start
 						</Text>
-						<Text variant="pSubtitle/semibold" color="steel-darker">
+						<Text variant="pSubtitle/semibold" color="steel-dark">
 							{formatDate(start)}
 						</Text>
 					</div>
 					{!inProgress && end ? (
 						<div>
-							<Text variant="pSubtitleSmall/normal" uppercase color="steel-darker">
+							<Text variant="pSubtitleSmall/normal" uppercase color="steel-dark">
 								End
 							</Text>
-							<Text variant="pSubtitle/semibold" color="steel-darker">
+							<Text variant="pSubtitle/semibold" color="steel-dark">
 								{formatDate(end)}
 							</Text>
 						</div>
@@ -56,7 +56,7 @@ export function EpochProgress({ epoch, start, end, inProgress }: EpochProgressPr
 				</div>
 				{inProgress ? (
 					<div className="space-y-2">
-						<Heading variant="heading6/medium" color="steel-darker">
+						<Heading variant="heading6/medium" color="steel-dark">
 							{label}
 						</Heading>
 						<ProgressBar animate progress={progress || 0} />

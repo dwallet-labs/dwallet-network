@@ -22,12 +22,12 @@ export function SuiTokenCard() {
 	return (
 		<ButtonOrLink href={COIN_GECKO_SUI_URL}>
 			<Card growOnHover bg="white/80" spacing="lg" height="full">
-				<div className="flex items-center gap-2">
-					<div className="h-5 w-5 flex-shrink-0 rounded-full bg-sui p-1">
-						<Sui className="h-full w-full text-white" />
+				<div className="flex gap-2">
+					<div className="mr-1 w-9 flex-shrink-0">
+						<Sui className="h-full w-full" />
 					</div>
-					<div className="flex w-full flex-col gap-0.5">
-						<Text variant="body/semibold" color="steel-darker">
+					<div className="mt-1 flex w-full flex-col gap-0.5">
+						<Text variant="body/semibold" color="steel-dark">
 							1 DWLT = {formattedPrice}
 						</Text>
 						<Text variant="subtitleSmallExtra/medium" color="steel">

@@ -20,6 +20,7 @@ const iconStyles = cva([], {
 		color: {
 			gray45: 'text-gray-45',
 			steel: 'text-steel',
+			'steel-dark': 'text-steel-dark',
 		},
 		success: {
 			true: 'text-success',

@@ -89,7 +89,7 @@ export function CollapsibleCard({
 			<Card
 				rounded="2xl"
 				border="gray45"
-				bg="white"
+				bg="hero-default"
 				spacing="none"
 				growOnHover={growOnHover && !open}
 				{...cardProps}

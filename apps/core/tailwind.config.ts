@@ -36,49 +36,49 @@ export default {
 			},
 
 			sui: {
-				DEFAULT: '#6fbcf0',
-				bright: '#2A38EB',
-				light: '#E1F3FF',
-				primaryBlue2023: '#4CA3FF',
+				DEFAULT: '#333533',
+				bright: '#E9EAEB',
+				light: '#ababab',
+				primaryBlue2023: '#EFF230',
 				lightest: '#F1F8FD',
-				dark: '#1F6493',
+				dark: '#202020',
 			},
 
 			steel: {
-				DEFAULT: '#A0B6C3',
-				dark: '#758F9E',
-				darker: '#566873',
+				DEFAULT: '#D6D6D6',
+				dark: '#b8b6b6',
+				darker: '#202020',
 			},
 
 			issue: {
-				DEFAULT: '#FF794B',
-				dark: '#EB5A29',
+				DEFAULT: '#f05836',
+				dark: '#e63912',
 				light: '#FFECE6',
 			},
 			hero: {
-				DEFAULT: '#0284AD',
-				dark: '#007195',
-				darkest: '#15527B',
+				DEFAULT: '#828282',
+				dark: '#333533',
+				darkest: '#202020',
 			},
 			success: {
-				DEFAULT: '#2DD7A7',
-				dark: '#008C65',
-				light: '#D5F7EE',
+				DEFAULT: '#EFF230',
+				dark: '#edcb1c',
+				light: '#f7f2d5',
 			},
 			warning: {
-				DEFAULT: '#F2BD24',
+				DEFAULT: '#f28e24',
 				dark: '#8D6E15',
-				light: '#FFF8E2',
+				light: '#e9b075',
 			},
-			headerNav: '#2A4362',
+			headerNav: '#20201e',
 			search: {
-				fill: '#162A43',
+				fill: '#202020',
 			},
-			offwhite: '#fefefe',
+			offwhite: '#202020',
 			offblack: '#111111',
-			ebony: '#101828',
+			ebony: '#060501',
 			avocado: {
-				200: '#CBE5BE',
+				200: '#b5b8b5',
 			},
 		},
 
@@ -95,10 +95,10 @@ export default {
 				xl: '32px',
 			},
 			colors: {
-				'gradient-blue-start': '#589AEA',
-				'gradient-blue-end': '#4C75A6',
-				'gradients-graph-cards-start': '#D2EBFA',
-				'gradients-failure-start': '#FBF0FF',
+				'gradient-blue-start': '#EFF230',
+				'gradient-blue-end': '#FFD100',
+				'gradients-graph-cards-start': '#202020',
+				'gradients-failure-start': '#333533',
 			},
 			// Line-heights that are found in the design:
 			lineHeight: {
@@ -221,12 +221,12 @@ export default {
 				400: '400ms',
 			},
 			backgroundImage: {
-				placeholderGradient01: 'linear-gradient(165.96deg, #e6f5ff 10%, #ebecff 95%)',
+				placeholderGradient01: 'linear-gradient(165.96deg, #333533 10%, #202020 95%)',
 				placeholderShimmer:
-					'linear-gradient(90deg, #ecf1f4 -24.18%, rgba(237 242 245 / 40%) 73.61%, #f3f7f9 114.81%, #ecf1f4 114.82%)',
-				'gradients-graph-cards': 'linear-gradient(176deg, #D2EBFA 51.68%, #D5F7EE 100%)',
-				'gradients-failure': 'linear-gradient(166deg, #FBF0FF 0%, #FFF0F0 100%)',
-				objectCard: 'linear-gradient(166deg, #F0F9FF 9.97%, #FEF7FF 94.97%)',
+					'linear-gradient(90deg, #333533 -24.18%, rgba(237 242 245 / 40%) 73.61%, #202020 114.81%, #202020 114.82%)',
+				'gradients-graph-cards': 'linear-gradient(180deg, #333533 51.68%, #202020 100%)',
+				'gradients-failure': 'linear-gradient(166deg, #333533 0%, #202020 100%)',
+				objectCard: 'linear-gradient(166deg, #333533 9.97%, #202020 94.97%)',
 			},
 			rotate: {
 				135: '135deg',

@@ -20,7 +20,7 @@ export function OnTheNetwork() {
 	return (
 		<Card bg="white/80" spacing="lg" height="full">
 			<div className="flex flex-col gap-4">
-				<Heading variant="heading4/semibold" color="steel-darker">
+				<Heading variant="heading4/semibold" color="steel-dark">
 					Network Activity
 				</Heading>
 				<div className="flex gap-6">

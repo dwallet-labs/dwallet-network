@@ -105,7 +105,10 @@ function PkgModuleViewWrapper({ id, modules, splitPanelOrientation }: Props) {
 			<div className="w-full md:w-1/5">
 				<Combobox value={query} onValueChange={setQuery}>
 					<div className="mt-2.5 flex w-full justify-between rounded-md border border-gray-50 py-1 pl-3 placeholder-gray-65 shadow-sm">
-						<ComboboxInput placeholder="Search" className="w-full border-none" />
+						<ComboboxInput
+							placeholder="Search"
+							className="w-full border-none bg-offwhite text-steel"
+						/>
 						<button onClick={submitSearch} className="border-none bg-inherit pr-2" type="submit">
 							<Search24 className="h-4.5 w-4.5 cursor-pointer fill-steel align-middle text-gray-60" />
 						</button>

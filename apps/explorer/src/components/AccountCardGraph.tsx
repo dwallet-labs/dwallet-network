@@ -23,13 +23,13 @@ function TooltipContent({ data }: { data: AllEpochsAddressMetrics[number] }) {
 	const totalFormatted = formatAmount(data[graphDataField]);
 	return (
 		<div className="flex flex-col gap-0.5">
-			<Text variant="subtitleSmallExtra/medium" color="steel-darker">
+			<Text variant="subtitleSmallExtra/medium" color="steel-dark">
 				{dateFormatted}, Epoch {data.epoch}
 			</Text>
-			<Heading variant="heading6/semibold" color="steel-darker">
+			<Heading variant="heading6/semibold" color="steel-dark">
 				{totalFormatted}
 			</Heading>
-			<Text variant="subtitleSmallExtra/medium" color="steel-darker" uppercase>
+			<Text variant="subtitleSmallExtra/medium" color="steel-dark" uppercase>
 				{graphDataText}
 			</Text>
 		</div>
@@ -45,7 +45,7 @@ export function AccountsCardGraph() {
 	return (
 		<Card bg="white/80" spacing={!adjEpochAddressMetrics?.length ? 'lg' : 'lgGraph'} height="full">
 			<div className="flex h-full flex-col gap-4 overflow-hidden">
-				<Heading variant="heading4/semibold" color="steel-darker">
+				<Heading variant="heading4/semibold" color="steel-dark">
 					Accounts
 				</Heading>
 				<div className="flex flex-wrap gap-6">
@@ -74,7 +74,7 @@ export function AccountsCardGraph() {
 				<div
 					className={clsx(
 						'flex min-h-[180px] flex-1 flex-col items-center justify-center rounded-xl transition-colors',
-						!adjEpochAddressMetrics?.length && 'bg-gray-40',
+						!adjEpochAddressMetrics?.length && 'bg-hero-darker',
 					)}
 				>
 					{isPending ? (

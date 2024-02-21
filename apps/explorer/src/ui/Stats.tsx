@@ -18,7 +18,7 @@ export type StatsProps = {
 	unavailable?: boolean;
 	postfix?: ReactNode;
 	orientation?: 'horizontal' | 'vertical';
-	color?: 'steel-darker' | 'hero';
+	color?: 'steel-dark' | 'hero';
 };
 
 export function Stats({
@@ -29,7 +29,7 @@ export function Stats({
 	postfix,
 	size = 'md',
 	orientation = 'vertical',
-	color = 'steel-darker',
+	color = 'steel-dark',
 }: StatsProps) {
 	return (
 		<div
@@ -56,7 +56,7 @@ export function Stats({
 			<div className="flex items-baseline gap-0.5">
 				<Heading
 					variant={size === 'md' ? 'heading3/semibold' : 'heading6/semibold'}
-					color={unavailable ? 'steel-darker' : color}
+					color={color}
 				>
 					{unavailable || children == null ? '--' : children}
 				</Heading>

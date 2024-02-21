@@ -37,7 +37,7 @@ export function ValidatorStats({
 			<div className="flex-grow">
 				<Card spacing="lg" height="full">
 					<div className="flex basis-full flex-col gap-8 md:basis-1/3">
-						<Heading as="div" variant="heading4/semibold" color="steel-darker">
+						<Heading as="div" variant="heading4/semibold" color="steel-dark">
 							DWLT Staked on Validator
 						</Heading>
 						<div className="flex flex-col gap-8 lg:flex-row">
@@ -58,7 +58,7 @@ export function ValidatorStats({
 						</div>
 						<div className="flex flex-col gap-8 lg:flex-row">
 							<Stats label="Commission" tooltip="Fee charged by the validator for staking services">
-								<Heading as="h3" variant="heading2/semibold" color="steel-darker">
+								<Heading as="h3" variant="heading2/semibold" color="steel-dark">
 									{commission}%
 								</Heading>
 							</Stats>
@@ -71,7 +71,7 @@ export function ValidatorStats({
 			<div className="flex-grow">
 				<Card spacing="lg" height="full">
 					<div className="flex basis-full flex-col items-stretch gap-8 md:basis-80">
-						<Heading as="div" variant="heading4/semibold" color="steel-darker">
+						<Heading as="div" variant="heading4/semibold" color="steel-dark">
 							Validator Staking Rewards
 						</Heading>
 						<div className="flex flex-col gap-8">
@@ -101,7 +101,7 @@ export function ValidatorStats({
 			<div className="flex-grow">
 				<Card spacing="lg" height="full">
 					<div className="flex max-w-full flex-col gap-8">
-						<Heading as="div" variant="heading4/semibold" color="steel-darker">
+						<Heading as="div" variant="heading4/semibold" color="steel-dark">
 							Network Participation
 						</Heading>
 						<div className="flex flex-col gap-8">
