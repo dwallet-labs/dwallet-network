@@ -113,7 +113,7 @@ jobs:
         echo "$delimiter" >> $GITHUB_OUTPUT
 
     - name: Post commit comment
-      uses: peter-evans/commit-comment@76d2ae14b83cd171cd38507097b9616bb9ca7cb6 # pin@v2.0.1
+      uses: peter-evans/commit-comment@5a6f8285b8f2e8376e41fe1b563db48e6cf78c09 # pin@v3.0.0
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         body: |
