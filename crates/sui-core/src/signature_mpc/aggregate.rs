@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use futures::StreamExt;
 use rand::rngs::OsRng;
 use std::collections::{HashMap, HashSet};
@@ -336,5 +339,12 @@ impl BulletProofAggregateState {
             BulletProofAggregateRound::ProofAggregation { .. }  if self.proof_shares.len() == self.parties.len() => true,
             _ => false
         }
+    }
+
+    pub(crate) fn decommitments(&self) -> HashMap<PartyID, (
+        Vec<EncDHProofAggregationOutput>,
+        Vec<EncDLProofAggregationOutput>,
+    ),> {
+        self.decommitments.clone().into_iter().map(|(p, (enc_dh, enc_dl))| (p, (enc_dh.into_iter().map(|(s, _)| s.statements).collect(), enc_dl.into_iter().map(|(s, _)| s.statements).collect()))).collect()
     }
 }

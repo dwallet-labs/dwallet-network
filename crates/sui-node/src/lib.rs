@@ -1281,13 +1281,13 @@ impl SuiNode {
         // TODO: replace unwrap
         let paillier_public_parameters = epoch_store.protocol_config().signature_mpc_paillier_public_parameters().unwrap();
 
-        let tiresias_public_parameters = config.signature_mpc_tiresias_public_parameters().expect("Tiresias public parameters should be populated");
-        let tiresias_key_share_decryption_key_share = config.signature_mpc_tiresias_key_share_decryption_key_share();
+        let signature_mpc_tiresias = config.signature_mpc_tiresias().expect("signature_mpc_tiresias should be populated");
+        let (tiresias_public_parameters, tiresias_key_share_decryption_key_share) = signature_mpc_tiresias.signature_mpc_tiresias().expect("signature_mpc_tiresias should be populated");
 
 
         SignatureMPCService::spawn(
-            tiresias_public_parameters,
-            tiresias_key_share_decryption_key_share,
+            tiresias_public_parameters.clone(),
+            tiresias_key_share_decryption_key_share.clone(),
             state.clone(),
             epoch_store,
             signature_mpc_output,

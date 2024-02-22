@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use std::collections::HashSet;
 use std::mem;
 use crate::signature_mpc::aggregate::{BulletProofAggregateRound, BulletProofAggregateState, BulletProofAggregateRoundCompletion};

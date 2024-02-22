@@ -1,5 +1,5 @@
 // Copyright (c) dWallet Labs, Ltd.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{base_types::{ObjectID, SuiAddress}, id::{ID, UID}, SUI_SYSTEM_ADDRESS};
 use move_core_types::{

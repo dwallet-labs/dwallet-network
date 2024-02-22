@@ -48,7 +48,7 @@ pub struct ValidatorGenesisConfig {
     #[serde(default)]
     pub signature_mpc_tiresias_public_parameters: Option<DecryptionPublicParameters>,
     #[serde(default)]
-    pub signature_mpc_tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+    pub signature_mpc_tiresias_key_share_decryption_key_share: Option<SecretKeyShareSizedNumber>,
     pub gas_price: u64,
     pub commission_rate: u64,
     pub narwhal_primary_address: Multiaddr,
@@ -210,12 +210,6 @@ impl ValidatorGenesisConfigBuilder {
             .p2p_listen_ip_address
             .map(|ip| SocketAddr::new(ip, p2p_address.port().unwrap()));
 
-        let signature_mpc_tiresias_key_share_decryption_key_share = if let Some(signature_mpc_tiresias_key_share_decryption_key_share) = self.signature_mpc_tiresias_key_share_decryption_key_share {
-            signature_mpc_tiresias_key_share_decryption_key_share
-        } else {
-            SecretKeyShareSizedNumber::default()
-        };
-
         ValidatorGenesisConfig {
             key_pair: protocol_key_pair,
             worker_key_pair,
@@ -227,7 +221,7 @@ impl ValidatorGenesisConfigBuilder {
             metrics_address: metrics_address.to_socket_addr().unwrap(),
             narwhal_metrics_address,
             signature_mpc_tiresias_public_parameters: self.signature_mpc_tiresias_public_parameters,
-            signature_mpc_tiresias_key_share_decryption_key_share,
+            signature_mpc_tiresias_key_share_decryption_key_share: self.signature_mpc_tiresias_key_share_decryption_key_share,
             gas_price,
             commission_rate: DEFAULT_COMMISSION_RATE,
             narwhal_primary_address,

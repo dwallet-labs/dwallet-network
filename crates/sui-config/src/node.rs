@@ -6,7 +6,7 @@ use crate::genesis;
 use crate::p2p::P2pConfig;
 use crate::transaction_deny_config::TransactionDenyConfig;
 use crate::Config;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use narwhal_config::Parameters as ConsensusParameters;
 use once_cell::sync::OnceCell;
 use rand::rngs::OsRng;
@@ -18,7 +18,7 @@ use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
-use std::usize;
+use std::{fs, usize};
 use sui_keys::keypair_file::{read_authority_keypair_from_file, read_keypair_from_file};
 use sui_protocol_config::{Chain, SupportedProtocolVersions};
 use sui_storage::object_store::ObjectStoreConfig;
@@ -29,7 +29,7 @@ use sui_types::crypto::NetworkKeyPair;
 use sui_types::crypto::SuiKeyPair;
 use sui_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use sui_types::multiaddr::Multiaddr;
-use tracing::info;
+use tracing::{info, trace};
 use sui_types::messages_signature_mpc::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
 
 // Default max number of concurrent requests served
@@ -55,9 +55,7 @@ pub struct NodeConfig {
     pub network_key_pair: KeyPairWithPath,
 
     #[serde(default)]
-    pub signature_mpc_tiresias_public_parameters: Option<DecryptionPublicParameters>,
-    #[serde(default)]
-    pub signature_mpc_tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+    pub signature_mpc_tiresias: Option<SignatureMPCTiresias>,
 
     pub db_path: PathBuf,
     #[serde(default = "default_grpc_address")]
@@ -287,12 +285,8 @@ impl NodeConfig {
         self.protocol_key_pair().public().into()
     }
 
-    pub fn signature_mpc_tiresias_public_parameters(&self) -> Option<DecryptionPublicParameters> {
-        self.signature_mpc_tiresias_public_parameters.clone()
-    }
-
-    pub fn signature_mpc_tiresias_key_share_decryption_key_share(&self) -> SecretKeyShareSizedNumber {
-        self.signature_mpc_tiresias_key_share_decryption_key_share
+    pub fn signature_mpc_tiresias(&self) -> Option<SignatureMPCTiresias> {
+        self.signature_mpc_tiresias.clone()
     }
 
     pub fn db_path(&self) -> PathBuf {
@@ -713,6 +707,96 @@ fn default_overload_threshold_config() -> OverloadThresholdConfig {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Eq)]
+pub struct SignatureMPCTiresias {
+    #[serde(flatten)]
+    signature_mpc_tiresias_location: SignatureMPCTiresiasLocation,
+
+    #[serde(skip)]
+    public_parameters: once_cell::sync::OnceCell<DecryptionPublicParameters>,
+
+    #[serde(skip)]
+    key_share_decryption_key_share: once_cell::sync::OnceCell<SecretKeyShareSizedNumber>,
+}
+
+impl SignatureMPCTiresias {
+    pub fn new(public_parameters: DecryptionPublicParameters, key_share_decryption_key_share: SecretKeyShareSizedNumber) -> Self {
+        Self {
+            signature_mpc_tiresias_location: SignatureMPCTiresiasLocation::InPlace { public_parameters, key_share_decryption_key_share },
+            public_parameters: Default::default(),
+            key_share_decryption_key_share: Default::default(),
+        }
+    }
+
+    pub fn new_from_file<P: Into<PathBuf>>(public_parameters_path: P, key_share_decryption_key_share_path: P) -> Self {
+        Self {
+            signature_mpc_tiresias_location: SignatureMPCTiresiasLocation::File {
+                public_parameters_file_location: public_parameters_path.into(),
+                key_share_decryption_key_share_file_location: key_share_decryption_key_share_path.into(),
+            },
+            public_parameters: Default::default(),
+            key_share_decryption_key_share: Default::default(),
+        }
+    }
+
+    pub fn signature_mpc_tiresias(&self) -> Result<(&DecryptionPublicParameters, &SecretKeyShareSizedNumber)> {
+        match &self.signature_mpc_tiresias_location {
+            SignatureMPCTiresiasLocation::InPlace { public_parameters, key_share_decryption_key_share } => Ok((public_parameters, key_share_decryption_key_share)),
+            SignatureMPCTiresiasLocation::File {
+                public_parameters_file_location,
+                key_share_decryption_key_share_file_location,
+            } => {
+                Ok((self
+                    .public_parameters
+                    .get_or_try_init(|| {
+                        let path = public_parameters_file_location;
+                        trace!("Reading signature_mpc_tiresias -> public_parameters_file_location from {}", path.display());
+                        let bytes = fs::read(path)
+                            .with_context(|| format!("Unable to load signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))?;
+                        bcs::from_bytes(&bytes)
+                            .with_context(|| format!("Unable to parse signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))
+                })?, self
+                    .key_share_decryption_key_share
+                    .get_or_try_init(|| {
+                        let path = key_share_decryption_key_share_file_location;
+                        trace!("Reading signature_mpc_tiresias -> public_parameters_file_location from {}", path.display());
+                        let bytes = fs::read(path)
+                            .with_context(|| format!("Unable to load signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))?;
+                        bcs::from_bytes(&bytes)
+                            .with_context(|| format!("Unable to parse signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))
+                })?))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Eq)]
+#[serde(untagged)]
+enum SignatureMPCTiresiasLocation {
+    InPlace {
+        public_parameters: DecryptionPublicParameters,
+        key_share_decryption_key_share: SecretKeyShareSizedNumber,
+    },
+    File {
+        #[serde(rename = "public-parameters-file-location")]
+        public_parameters_file_location: PathBuf,
+        #[serde(rename = "key-share-decryption-key-share-file-location")]
+        key_share_decryption_key_share_file_location: PathBuf,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Eq)]
+#[serde(untagged)]
+enum SignatureMPCTiresiasKeyShareDecryptionKeyShareLocation {
+    InPlace {
+        signature_mpc_tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+    },
+    File {
+        #[serde(rename = "signature-mpc-tiresias-key-share-decryption-key-share-file-location")]
+        signature_mpc_tiresias_key_share_decryption_key_share_file_location: PathBuf,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Eq)]
 pub struct Genesis {
     #[serde(flatten)]
     location: GenesisLocation,
@@ -720,6 +804,7 @@ pub struct Genesis {
     #[serde(skip)]
     genesis: once_cell::sync::OnceCell<genesis::Genesis>,
 }
+
 
 impl Genesis {
     pub fn new(genesis: genesis::Genesis) -> Self {

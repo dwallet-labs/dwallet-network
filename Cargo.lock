@@ -1954,12 +1954,13 @@ dependencies = [
 [[package]]
 name = "bulletproofs"
 version = "4.0.0"
-source = "git+https://github.com/ycscaly/bulletproofs.git#0312fc3b1d51ddd381158944a84b3aeccc06fcd6"
+source = "git+https://github.com/ycscaly/bulletproofs.git#0e8227340ea6bcbe436154ee8f4871300b4ec344"
 dependencies = [
  "byteorder",
  "clear_on_drop",
  "curve25519-dalek-ng",
  "digest 0.9.0",
+ "getrandom 0.2.12",
  "merlin",
  "rand 0.8.5",
  "rand_core 0.6.4",
@@ -1972,9 +1973,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.15.0"
+version = "3.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d32a994c2b3ca201d9b263612a374263f05e7adde37c4707f693dcd375076d1f"
+checksum = "a3b1be7772ee4501dba05acbe66bb1e8760f6a6c474a36035631638e4415f130"
 
 [[package]]
 name = "byte-slice-cast"
@@ -2167,11 +2168,10 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.83"
+version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1174fb0b6ec23863f8b971027804a42614e347eafb0a95bf0b12cdae21fc4d0"
+checksum = "7f9fa1897e4325be0d68d48df6aa1a71ac2ed4d27723887e7754192705350730"
 dependencies = [
- "jobserver",
  "libc",
 ]
 
@@ -2493,7 +2493,7 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/commitment.git#27e138737766215b644df49457e5690f3f00410c"
+source = "git+https://github.com/dwallet-labs/commitment.git#e9f389cf80a2eedba00fffc1fabb569a3bc7abea"
 dependencies = [
  "crypto-bigint 0.5.5",
  "group 0.1.0",
@@ -3738,7 +3738,7 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/enhanced-maurer.git?branch=dcomeval#03c4eb89c7a7fbf7fe464b174068ae8cae021780"
+source = "git+https://github.com/dwallet-labs/enhanced-maurer.git#929fbc71d3b190ffef89573fcda8de895f438636"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -3751,7 +3751,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "tiresias",
+ "tiresias 0.2.0 (git+https://github.com/dwallet-labs/tiresias.git?branch=he)",
 ]
 
 [[package]]
@@ -4798,7 +4798,7 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/group.git#02bb6a5b8f7254439e1db8114f7ec078d395a79b"
+source = "git+https://github.com/dwallet-labs/group.git#bda01d8e8b9e3afe26dc1ae98783df3ea4ef5d5a"
 dependencies = [
  "crypto-bigint 0.5.5",
  "curve25519-dalek-ng",
@@ -5107,7 +5107,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/homomorphic-encryption.git#a6c0e3bff48559c4a92fd5aa6a5f0dd9b51e70a1"
+source = "git+https://github.com/dwallet-labs/homomorphic-encryption.git#a34146a484619f009e6287d6927c463d122f8491"
 dependencies = [
  "crypto-bigint 0.5.5",
  "group 0.1.0",
@@ -5563,15 +5563,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac6c1946e1cea1788cbfde01c993b52a10e2da07f4bac608228d1bed20bfebf2"
 dependencies = [
  "cc",
- "libc",
-]
-
-[[package]]
-name = "jobserver"
-version = "0.1.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab46a6e9526ddef3ae7f787c06f0f2600639ba80ea3eade3d8e670a2230f51d6"
-dependencies = [
  "libc",
 ]
 
@@ -6112,7 +6103,7 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/maurer.git#4171a76a01587f70eae38906331f811d2c6cc88d"
+source = "git+https://github.com/dwallet-labs/maurer.git#ef78bb440b547ce7c547e60f27974fce2f6ff3c9"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -9169,12 +9160,13 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/proof.git?branch=bp-aggregation#6d66901f6fa15fa88caebebb6b9015cb7420d258"
+source = "git+https://github.com/dwallet-labs/proof.git#6bc0dc6e59a28102d50820b2e166a8bc9e7445bf"
 dependencies = [
  "bulletproofs 4.0.0 (git+https://github.com/ycscaly/bulletproofs.git)",
  "commitment",
  "crypto-bigint 0.5.5",
  "curve25519-dalek-ng",
+ "getrandom 0.2.12",
  "group 0.1.0",
  "merlin",
  "serde",
@@ -13615,7 +13607,7 @@ dependencies = [
  "sui-protocol-config",
  "tap",
  "thiserror",
- "tiresias",
+ "tiresias 0.2.0 (git+https://github.com/dwallet-labs/tiresias.git)",
  "tonic 0.10.2",
  "tracing",
  "twopc_mpc",
@@ -13877,9 +13869,9 @@ checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "target-lexicon"
-version = "0.12.13"
+version = "0.12.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69758bda2e78f098e4ccb393021a0963bb3442eac05f135c30f61b7370bbafae"
+checksum = "e1fc403891a21bcfb7c37834ba66a547a8f402146eba7265b5a6d88059c9ff2f"
 
 [[package]]
 name = "target-spec"
@@ -14080,9 +14072,9 @@ dependencies = [
 
 [[package]]
 name = "thread_local"
-version = "1.1.7"
+version = "1.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fdd6f064ccff2d6567adcb3873ca630700f00b5ad3f060c25b5dcfd9a4ce152"
+checksum = "8b9ef9bad013ada3808854ceac7b46812a6465ba368859a37e2100283d2d719c"
 dependencies = [
  "cfg-if",
  "once_cell",
@@ -14207,6 +14199,20 @@ dependencies = [
  "rstest 0.18.2",
  "serde",
  "subtle",
+ "thiserror",
+]
+
+[[package]]
+name = "tiresias"
+version = "0.2.0"
+source = "git+https://github.com/dwallet-labs/tiresias.git#43015e2db6c26b0def361a54a1506528b87a902c"
+dependencies = [
+ "crypto-bigint 0.5.5",
+ "gcd",
+ "merlin",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "serde",
  "thiserror",
 ]
 
@@ -14857,11 +14863,12 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/2pc-mpc.git?rev=303213636962964427a7ab3defd0927dd97ccb3f#303213636962964427a7ab3defd0927dd97ccb3f"
+source = "git+https://github.com/dwallet-labs/2pc-mpc.git#0de989d147bd10585eab56ee75e17c5f336a8b76"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
  "enhanced_maurer",
+ "getrandom 0.2.12",
  "group 0.1.0",
  "homomorphic_encryption",
  "maurer",
@@ -14870,7 +14877,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "tiresias",
+ "tiresias 0.2.0 (git+https://github.com/dwallet-labs/tiresias.git?branch=he)",
 ]
 
 [[package]]
@@ -15001,9 +15008,9 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.22"
+version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921"
+checksum = "a56d1686db2308d901306f92a263857ef59ea39678a5458e7cb17f01415101f5"
 dependencies = [
  "tinyvec",
 ]
@@ -16023,7 +16030,6 @@ dependencies = [
  "itoa",
  "jemalloc-ctl",
  "jemalloc-sys",
- "jobserver",
  "js-sys",
  "json_to_table",
  "jsonpath_lib",
@@ -16476,7 +16482,8 @@ dependencies = [
  "tinytemplate",
  "tinyvec",
  "tinyvec_macros",
- "tiresias",
+ "tiresias 0.2.0 (git+https://github.com/dwallet-labs/tiresias.git?branch=he)",
+ "tiresias 0.2.0 (git+https://github.com/dwallet-labs/tiresias.git)",
  "tokio",
  "tokio-io-timeout",
  "tokio-macros 2.2.0",
