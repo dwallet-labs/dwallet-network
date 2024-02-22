@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://github.com/dwallet-labs/dwallet-network/blob/main/docs/site/static/img/logo.svg" alt="Logo" width="100" height="100">
+<img src="https://github.com/dwallet-labs/dwallet-network/blob/main/docs/static/img/logo.svg" alt="Logo" width="500" height="300">
 </p>
 
 # Welcome to dWallet Network
