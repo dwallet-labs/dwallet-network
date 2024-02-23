@@ -958,7 +958,6 @@ pub fn initiate_decentralized_party_sign(
 pub fn decrypt_signature_decentralized_party_sign(
     public_key: Secp256k1GroupElementValue,
     messages: Vec<Vec<u8>>,
-    lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
     tiresias_decryption_key_share_public_parameters: DecryptionPublicParameters,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     public_nonce_encrypted_partial_signature_and_proofs: Vec<SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof>
@@ -967,11 +966,16 @@ pub fn decrypt_signature_decentralized_party_sign(
 
     let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
 
+    let public_key = secp256k1::GroupElement::new(public_key, &secp256k1_group_public_parameters)?;
+
+    // TODO: choose multiple?
+    let decrypters: Vec<_> = decryption_shares.keys().take(tiresias_decryption_key_share_public_parameters.threshold.into()).copied().collect();
 
     let decryption_shares: Vec<(HashMap<_, _>, HashMap<_, _>)> = (0..public_nonce_encrypted_partial_signature_and_proofs.len())
         .map(|i| {
             decryption_shares
                 .iter()
+                .filter(|(party_id, _)| decrypters.contains(party_id))
                 .map(|(party_id, decryption_share)| {
                     let (partial_signature_decryption_shares, masked_nonce_decryption_shares) = decryption_share[i].clone();
                     (
@@ -982,28 +986,45 @@ pub fn decrypt_signature_decentralized_party_sign(
                 .unzip()
         })
         .collect();
-    let public_key = secp256k1::GroupElement::new(public_key, &secp256k1_group_public_parameters)?;
+
+    let lagrange_coefficients: HashMap<
+        PartyID,
+        AdjustedLagrangeCoefficientSizedNumber,
+    > = decrypters
+        .clone()
+        .into_iter()
+        .map(|j| {
+            (
+                j,
+                DecryptionKeyShare::compute_lagrange_coefficient(
+                    j,
+                    tiresias_decryption_key_share_public_parameters.number_of_parties,
+                    decrypters.clone(),
+                    &tiresias_decryption_key_share_public_parameters,
+                ),
+            )
+        })
+        .collect();
 
     messages.into_iter().zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter()).zip(decryption_shares.into_iter()).map(|((message, public_nonce_encrypted_partial_signature_and_proof), (partial_signature_decryption_shares, masked_nonce_decryption_shares))| {
-
         let m = message_digest(&message);
         let nonce_x_coordinate = secp256k1::GroupElement::new(public_nonce_encrypted_partial_signature_and_proof.public_nonce, &secp256k1_group_public_parameters)?.x();
 
         let (nonce_x_coordinate, signature) = SignSignatureMPCDecentralizedParty::decrypt_signature(
-                m,
-                public_key,
-                nonce_x_coordinate,
-                lagrange_coefficients.clone(),
-                &tiresias_decryption_key_share_public_parameters,
-                secp256k1_scalar_public_parameters.clone(),
-                partial_signature_decryption_shares,
-                masked_nonce_decryption_shares,
-            )?;
+            m,
+            public_key,
+            nonce_x_coordinate,
+            lagrange_coefficients.clone(),
+            &tiresias_decryption_key_share_public_parameters,
+            secp256k1_scalar_public_parameters.clone(),
+            partial_signature_decryption_shares,
+            masked_nonce_decryption_shares,
+        )?;
 
         let signature_s: k256::Scalar = signature.into();
 
         Ok(Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(nonce_x_coordinate), signature_s).unwrap().to_vec())
-        })
+    })
         .collect()
 }
 

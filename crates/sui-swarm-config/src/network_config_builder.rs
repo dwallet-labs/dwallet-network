@@ -237,10 +237,11 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 // external test randomness because it uses a fixed seed). Necessary because some
                 // tests call `make_tx_certs_and_signed_effects`, which locally forges a cert using
                 // this same committee.
-                let (_, keys) = Committee::new_simple_test_committee_of_size(size.into());
+                let (_, mut keys) = Committee::new_simple_test_committee_of_size(size.into());
 
                 let (decryption_key_share_public_parameters, decryption_key_shares) = config_signature_mpc_secret_for_network_for_testing(size.get() as PartyID);
 
+                keys.sort_by_key(|k| AuthorityName::from(k.public()));
                 keys.into_iter()
                     .enumerate()
                     .map(|(i, authority_key)| {

@@ -58,23 +58,8 @@ impl SignRound {
         &mut self,
         state: SignState
     ) -> TwopcMPCResult<Vec<Vec<u8>>> {
-        let lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber> =
-            state.parties
-                .clone()
-                .into_iter()
-                .map(|j| {
-                    (
-                        j,
-                        DecryptionKeyShare::compute_lagrange_coefficient(
-                            j,
-                            state.parties.len() as PartyID,
-                            state.parties.clone().into_iter().collect(),
-                            &state.tiresias_public_parameters,
-                        ),
-                    )
-                })
-                .collect();
-        let signatures_s = decrypt_signature_decentralized_party_sign(state.public_key.unwrap(), state.messages.unwrap(), lagrange_coefficients, state.tiresias_public_parameters.clone(), state.decryption_shares.clone(), state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap())?;
+
+        let signatures_s = decrypt_signature_decentralized_party_sign(state.public_key.unwrap(), state.messages.unwrap(), state.tiresias_public_parameters.clone(), state.decryption_shares.clone(), state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap())?;
 
         Ok(signatures_s)
     }
