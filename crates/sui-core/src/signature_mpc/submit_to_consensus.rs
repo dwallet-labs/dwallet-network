@@ -59,20 +59,6 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> SubmitSignatureMPC
         summary: &SignatureMPCMessageSummary,
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> SuiResult {
-        // let checkpoint_timestamp = summary.timestamp_ms;
-        // self.metrics.checkpoint_creation_latency_ms.observe(
-        //     summary
-        //         .timestamp()
-        //         .elapsed()
-        //         .unwrap_or_default()
-        //         .as_millis() as u64,
-        // );
-        // debug!(
-        //     "Sending checkpoint signature at sequence {checkpoint_seq} to consensus, timestamp {checkpoint_timestamp}.
-        //     {}ms left till end of epoch at timestamp {}",
-        //     self.next_reconfiguration_timestamp_ms.saturating_sub(checkpoint_timestamp), self.next_reconfiguration_timestamp_ms
-        // );
-
         let summary = SignedSignatureMPCMessageSummary::new(
             epoch_store.epoch(),
             summary.clone(),
@@ -85,13 +71,6 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> SubmitSignatureMPC
         self.sender
             .submit_to_consensus(&transaction, epoch_store)
             .await?;
-        // self.metrics
-        //     .last_sent_checkpoint_signature
-        //     .set(checkpoint_seq as i64);
-        // if checkpoint_timestamp >= self.next_reconfiguration_timestamp_ms {
-        //     // close_epoch is ok if called multiple times
-        //     self.sender.close_epoch(epoch_store);
-        // }
         Ok(())
     }
 
@@ -101,19 +80,6 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> SubmitSignatureMPC
         output: &SignatureMPCOutput,
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> SuiResult {
-        // let checkpoint_timestamp = summary.timestamp_ms;
-        // self.metrics.checkpoint_creation_latency_ms.observe(
-        //     summary
-        //         .timestamp()
-        //         .elapsed()
-        //         .unwrap_or_default()
-        //         .as_millis() as u64,
-        // );
-        // debug!(
-        //     "Sending checkpoint signature at sequence {checkpoint_seq} to consensus, timestamp {checkpoint_timestamp}.
-        //     {}ms left till end of epoch at timestamp {}",
-        //     self.next_reconfiguration_timestamp_ms.saturating_sub(checkpoint_timestamp), self.next_reconfiguration_timestamp_ms
-        // );
 
         let message = SignedSignatureMPCOutput::new(
             epoch_store.epoch(),
@@ -126,13 +92,6 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> SubmitSignatureMPC
         self.sender
             .submit_to_consensus(&transaction, epoch_store)
             .await?;
-        // self.metrics
-        //     .last_sent_checkpoint_signature
-        //     .set(checkpoint_seq as i64);
-        // if checkpoint_timestamp >= self.next_reconfiguration_timestamp_ms {
-        //     // close_epoch is ok if called multiple times
-        //     self.sender.close_epoch(epoch_store);
-        // }
         Ok(())
     }
 }

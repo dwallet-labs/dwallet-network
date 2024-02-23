@@ -22,6 +22,7 @@ use sui_types::{
 };
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::{Receiver, Sender};
+use crate::signature_mpc::SignatureMPCServiceNoop;
 
 /// Fixture: a few test gas objects.
 pub fn test_gas_objects() -> Vec<Object> {
@@ -127,6 +128,7 @@ async fn submit_transaction_to_consensus_adapter() {
                 .process_consensus_transactions_for_tests(
                     vec![SequencedConsensusTransaction::new_test(transaction.clone())],
                     &Arc::new(CheckpointServiceNoop {}),
+                    &Arc::new(SignatureMPCServiceNoop {}),
                     self.0.db(),
                     &self.0.metrics.skipped_consensus_txns,
                 )

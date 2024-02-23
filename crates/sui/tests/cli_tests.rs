@@ -1817,6 +1817,7 @@ async fn test_switch_command() -> Result<(), anyhow::Error> {
     let resp = SuiClientCommands::Switch {
         address: Some(KeyIdentity::Address(addr2)),
         env: None,
+        dwallet: None,
     }
     .execute(context)
     .await?;
@@ -1856,6 +1857,7 @@ async fn test_switch_command() -> Result<(), anyhow::Error> {
     let resp = SuiClientCommands::Switch {
         address: Some(KeyIdentity::Address(new_addr)),
         env: None,
+        dwallet: None,
     }
     .execute(context)
     .await?;
@@ -1936,6 +1938,7 @@ async fn test_active_address_command() -> Result<(), anyhow::Error> {
     let resp = SuiClientCommands::Switch {
         address: Some(KeyIdentity::Address(addr2)),
         env: None,
+        dwallet: None,
     }
     .execute(context)
     .await?;
@@ -1959,6 +1962,7 @@ async fn test_active_address_command() -> Result<(), anyhow::Error> {
     let resp = SuiClientCommands::Switch {
         address: Some(KeyIdentity::Alias(alias1)),
         env: None,
+        dwallet: None,
     }
     .execute(context)
     .await?;

@@ -833,3 +833,36 @@ impl SignatureMPCServiceNotify for SignatureMPCServiceNoop {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::signature_mpc::SubmitSignatureMPC;
+    use std::sync::Arc;
+    use either::Either;
+    use tokio::sync::mpsc;
+    use sui_types::error::SuiResult;
+    use sui_types::messages_signature_mpc::{SignatureMPCMessageSummary, SignatureMPCOutput};
+    use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+
+    #[async_trait::async_trait]
+    impl SubmitSignatureMPC for mpsc::Sender<Either<SignatureMPCMessageSummary, SignatureMPCOutput>> {
+
+        async fn sign_and_submit_message(
+            &self,
+            summary: &SignatureMPCMessageSummary,
+            epoch_store: &Arc<AuthorityPerEpochStore>,
+        ) -> SuiResult {
+            self.try_send(Either::Left(summary.clone())).unwrap();
+            Ok(())
+        }
+
+        async fn sign_and_submit_output(
+            &self,
+            output: &SignatureMPCOutput,
+            epoch_store: &Arc<AuthorityPerEpochStore>,
+        ) -> SuiResult {
+            self.try_send(Either::Right(output.clone())).unwrap();
+            Ok(())
+        }
+    }
+}

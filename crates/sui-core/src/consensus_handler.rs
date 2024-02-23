@@ -871,6 +871,7 @@ mod tests {
     use crate::authority::authority_per_epoch_store::{ConsensusStats, ConsensusStatsAPI};
     use crate::authority::test_authority_builder::TestAuthorityBuilder;
     use crate::checkpoints::CheckpointServiceNoop;
+    use crate::signature_mpc::SignatureMPCServiceNoop;
     use crate::consensus_adapter::consensus_tests::{test_certificates, test_gas_objects};
     use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
     use narwhal_config::AuthorityIdentifier;

@@ -1268,7 +1268,7 @@ impl SuiNode {
 
         //let secret = Arc::pin(config.signature_mpc_key_pair().copy());
 
-        let signature_mpc_output = Arc::new(SubmitSignatureMPCToConsensus {
+        let signature_mpc_submit = Arc::new(SubmitSignatureMPCToConsensus {
             sender: consensus_adapter,
             signer: state.secret.clone(),
             authority: config.protocol_public_key(),
@@ -1290,7 +1290,7 @@ impl SuiNode {
             tiresias_key_share_decryption_key_share.clone(),
             state.clone(),
             epoch_store,
-            signature_mpc_output,
+            signature_mpc_submit,
             signature_mpc_metrics,
         )
     }
