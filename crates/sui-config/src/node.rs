@@ -6,7 +6,7 @@ use crate::genesis;
 use crate::p2p::P2pConfig;
 use crate::transaction_deny_config::TransactionDenyConfig;
 use crate::Config;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use narwhal_config::Parameters as ConsensusParameters;
 use once_cell::sync::OnceCell;
 use rand::rngs::OsRng;
@@ -19,6 +19,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use std::{fs, usize};
+use fastcrypto::encoding::{Base64, Encoding};
 use sui_keys::keypair_file::{read_authority_keypair_from_file, read_keypair_from_file};
 use sui_protocol_config::{Chain, SupportedProtocolVersions};
 use sui_storage::object_store::ObjectStoreConfig;
@@ -745,25 +746,27 @@ impl SignatureMPCTiresias {
                 public_parameters_file_location,
                 key_share_decryption_key_share_file_location,
             } => {
-                Ok((self
+                let public_parameters = self
                     .public_parameters
                     .get_or_try_init(|| {
                         let path = public_parameters_file_location;
                         trace!("Reading signature_mpc_tiresias -> public_parameters_file_location from {}", path.display());
-                        let bytes = fs::read(path)
+                        let contents = fs::read_to_string(path)
                             .with_context(|| format!("Unable to load signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))?;
-                        bcs::from_bytes(&bytes)
-                            .with_context(|| format!("Unable to parse signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))
-                })?, self
+                        let bytes = Base64::decode(contents.as_str().trim()).map_err(|e| anyhow!("Unable to decode base64 signature_mpc_tiresias -> public_parameters_file_location from {}: {e}", path.display()))?;
+                        bcs::from_bytes(&bytes).with_context(|| format!("Unable to parse signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))
+                    })?;
+                let key_share_decryption_key_share = self
                     .key_share_decryption_key_share
                     .get_or_try_init(|| {
                         let path = key_share_decryption_key_share_file_location;
                         trace!("Reading signature_mpc_tiresias -> public_parameters_file_location from {}", path.display());
-                        let bytes = fs::read(path)
+                        let contents = fs::read_to_string(path)
                             .with_context(|| format!("Unable to load signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))?;
-                        bcs::from_bytes(&bytes)
-                            .with_context(|| format!("Unable to parse signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))
-                })?))
+                        let bytes = Base64::decode(contents.as_str().trim()).map_err(|e| anyhow!("Unable to decode base64 signature_mpc_tiresias -> public_parameters_file_location from {}: {e}", path.display()))?;
+                        bcs::from_bytes(&bytes).with_context(|| format!("Unable to parse signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))
+                    })?;
+                Ok((public_parameters, key_share_decryption_key_share))
             }
         }
     }
