@@ -10,7 +10,7 @@ Blockchain technology's evolution has given rise to two primary network designs:
 
 In contrast, modular blockchains represent a significant shift by decomposing the blockchain stack into specialized layers, each dedicated to a specific function. This separation allows for enhanced performance, scalability, and adaptability, enabling more efficient processing and optimization for each network's specific role.
 
-The modular approach is exemplified by the development of Ethereum L2 solutions such as optimistic rollups (e.g., Arbitrum and Optimism) and ZK rollups (e.g., Starknet and zkSync), which focus on transaction processing and smart contract execution, thereby improving efficiency and reducing costs, and data availability layers such as Celestia or Avail.
+The modular approach is exemplified by the development of Ethereum L2 solutions such as optimistic rollups (e.g., Arbitrum and Optimism) and ZK rollups (e.g. Starknet and zkSync), which focus on transaction processing and smart contract execution, thereby improving efficiency and reducing costs, and data availability layers such as Celestia or Avail.
 
 ## Blockchain Composable Modularity
 
