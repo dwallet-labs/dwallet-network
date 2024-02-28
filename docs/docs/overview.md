@@ -16,7 +16,7 @@ The [dWallet](core-concepts/dwallets) is an innovative Web3 building block that 
  * [Noncollusive](core-concepts/noncollusive-and-decentralized.md): The user is always required to generate a signature.
  * [Massively decentralized](core-concepts/noncollusive-and-decentralized.md): Beside the user, a 2/3 threshold of a network that can include hundreds or thousands of nodes, is also required to generate a signature.
  * [Multi-Chain](core-concepts/multi-chain-vs-cross-chain.md): Using the default authentication method of blockchains - the signature - dWallets can offer universal and native multi-chain interoperability, without the cross-chain risks of wrapping, bridging or messaging.
- * [cryptographically secure](core-concepts/cryptography/2pc-mpc.md): The security of dWallets is based on cryptography, instead of hardware or trust assumptions.
+ * [Cryptographically secure](core-concepts/cryptography/2pc-mpc.md): The security of dWallets is based on cryptography, instead of hardware or trust assumptions.
 
 dWallets are the only way that exists today for Web3 builders to achieve secure, multi-chain interoperability, without the risks of cross-chain and without compromising on the core Web3 values of user ownership and decentralization.
 As dWallet Network moves closer to its Mainnet launch, it will add support to many L1s and L2s, so builders across Web3 can use it as a composable modular signature network, adding powerful access control capabilities to any smart contract.
