@@ -2,7 +2,7 @@
 sidebar_position: 6
 ---
 
-# State proofs
+# State Proofs
 
 ## History of State Proofs
 

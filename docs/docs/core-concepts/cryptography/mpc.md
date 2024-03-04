@@ -18,6 +18,6 @@ The single point of failure created by private keys has been addressed with MPC,
 
 ## DKG - Distributed Key Generation
 
-TSS protocols generate signatures that are verifiable against a public key, just like a private ket. For a public key to exist for a group of parties, without any of them knowing the full private key, the parties are required to complete a process called DKG, or Distributed Key Generation.
+TSS protocols generate signatures that are verifiable against a public key, just like a private key. For a public key to exist for a group of parties, without any of them knowing the full private key, the parties are required to complete a process called DKG, or Distributed Key Generation.
 
 In DKG, a public key is created in a ceremony with secret shares that can be used to generate a signature based on the rules of the protocol (for example 3 out of 5 shares). In the context of dWallets and 2PC-MPC, a DKG process is the creation of a dWallet, and it includes generating a user share, and a network share, that is encrypted by a network decryption key, that is used as part of the 2PC-MPC protocol.

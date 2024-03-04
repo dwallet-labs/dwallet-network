@@ -4,9 +4,7 @@ sidebar_position: 2
 
 # Alpha Testnet
 
-## Alpha Testnet
-
-A live version of the testnet will be available soon, follow us on [Discord](https://discord.gg/dWallet) or [Twitter](https://twitter.com/dWalletNetwork) to stay up to date. To join the incentivized testnet, apply on [our website](https://dwallet.io)
+A live version of the testnet will be available soon, follow us on [Discord](https://discord.gg/dWallet) or [Twitter](https://twitter.com/dWalletNetwork) to stay up to date. To join the incentivized testnet, apply on [our website](https://dwallet.io).
 
 > _***Disclaimer***: This project is under development, and there are known bugs and issues that are being addressed. Additionally, in the testnet, the network secret shares of dWallets ARE NOT SECURE, and cannot be trusted to use with any real applications or assets. Please read the [full section below](#alpha-testnet-release) before exploring the code._
 

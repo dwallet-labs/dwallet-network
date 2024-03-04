@@ -6,16 +6,16 @@ sidebar_position: 2
 
 ## Overview
 
-The 2PC-MPC protocol, as described in the ["2PC-MPC: Emulating Two Party ECDSA in Large-Scale MPC"](https://eprint.iacr.org/2024/253) paper by the dWallet Labs research team, is a novel MPC protocol designed specifically for dWallets and the dWallet Network.
+The 2PC-MPC protocol, as described in the ["2PC-MPC: Emulating Two Party ECDSA in Large-Scale MPC"](https://eprint.iacr.org/2024/253) paper by the dWallet Labs research team, is a novel [MPC](mpc.md) protocol designed specifically for [dWallets](../dwallets.md) and the dWallet Network.
 
 ## Advantage
 
 These are some of the key features setting 2PC-MPC apart from preceding TSS protocols used in Web3:
 
-- _noncollusive_: both a user and a threshold of the network are required to participate in signing.
-- _Scalable & Massively Decentralized_: can support hundreds or thousands of nodes on the network side.
-- _Locality_: communication and computation complexities of the user remain independent of the size of the network. (This is not fully implemented yet due to a restriction in bulletproofs, and coming soon).
-- _Identifiable Abort_: malicious behavior of one of the nodes aborts the protocol identifiably, which is an important requirement in a permissionless and trustless setting.
+- _**Noncollusive**_: both a user and a threshold of the network are required to participate in signing.
+- _**Scalable & Massively Decentralized**_: can support hundreds or thousands of nodes on the network side.
+- _**Locality**_: communication and computation complexities of the user remain independent of the size of the network. (This is not fully implemented yet due to a restriction in bulletproofs, and coming soon).
+- _**Identifiable Abort**_: malicious behavior of one of the nodes aborts the protocol identifiably, which is an important requirement in a permissionless and trustless setting.
 
 ## Structure and Performance
 

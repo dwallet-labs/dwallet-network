@@ -10,11 +10,11 @@ dWallets are Web3 building blocks designed for multi-chain interoperability, the
 
 ## Attributes
 
-- Noncollusive: Ensures user ownership, prohibiting signature generation without user consent. Achieved through the novel [2PC-MPC protocol](cryptography/2pc-mpc.md).
-- Massively Decentralized: Utilizes the 2PC-MPC protocol to enable participation from hundreds or thousands of permissionless nodes in the signature process.
-- Programmable: Allows builders on other networks to define logic that govern transaction signatures, enforceable by the dWallet Network. This enables enforcing logic across all of Web3 without [cross-chain risks](multi-chain-vs-cross-chain.md).
-- Transferable: Supports ownership transfer, enhancing access control and enabling features like a dWallet marketplace or future user claims.
-- Universal Signing Mechanism: Capable of signing transactions for virtually any blockchain by supporting common algorithms like ECDSA, and in the future also EdDSA and Schnorr.
+- **Noncollusive:** Ensures user ownership, prohibiting signature generation without user consent. Achieved through the novel [2PC-MPC protocol](cryptography/2pc-mpc.md).
+- **Massively Decentralized**: Utilizes the 2PC-MPC protocol to enable participation from hundreds or thousands of permissionless nodes in the signature process.
+- **Programmable**: Allows builders on other networks to define logic that govern transaction signatures, enforceable by the dWallet Network. This enables enforcing logic across all of Web3 without [cross-chain risks](multi-chain-vs-cross-chain.md).
+- **Transferable**: Supports ownership transfer, enhancing access control and enabling features like a dWallet marketplace or future user claims.
+- **Universal Signing Mechanism**: Capable of signing transactions for virtually any blockchain by supporting common algorithms like ECDSA, and in the future also EdDSA and Schnorr.
 
 ## Use Cases
 
