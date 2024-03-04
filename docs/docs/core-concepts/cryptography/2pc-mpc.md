@@ -6,7 +6,7 @@ sidebar_position: 2
 
 ## Overview
 
-The 2PC-MPC protocol, as described in the ["2PC-MPC: Emulating Two Party ECDSA in Large-Scale MPC"](https://eprint.iacr.org/2024/253) paper by the dWallet Labs research team, is a novel MPC protocol designed specifically for dWallets and the dWallet Network.
+The 2PC-MPC protocol, as described in the ["2PC-MPC: Emulating Two Party ECDSA in Large-Scale MPC"](https://eprint.iacr.org/2024/253) paper by the dWallet Labs research team, is a novel [MPC](mpc.md) protocol designed specifically for [dWallets](../dwallets.md) and the dWallet Network.
 
 ## Advantage
 
