@@ -31,7 +31,7 @@ const sidebars = {
 	{
 		type: 'category',
 		label: 'Core Concepts',
-    collapsed: false,
+    	collapsed: false,
 		items: [
 			'core-concepts/multi-chain-vs-cross-chain',
 			'core-concepts/composable-modular-networks',
@@ -40,7 +40,7 @@ const sidebars = {
 			{
 				type: 'category',
 				label: 'Cryptography',
-        collapsed: false,
+        		collapsed: false,
 				items: [
 					'core-concepts/cryptography/mpc',
 					'core-concepts/cryptography/2pc-mpc',
