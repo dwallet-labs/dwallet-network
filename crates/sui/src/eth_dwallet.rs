@@ -7,10 +7,10 @@ use sui_json::SuiJsonValue;
 use sui_json_rpc_types::{SuiData, SuiObjectDataOptions};
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
-use sui_types::dwallet_eth::config::EthClientConfig;
-use sui_types::dwallet_eth::eth_state::EthState;
-use sui_types::dwallet_eth::light_client::EthLightClient;
 use sui_types::eth_current_state::EthStateSuiObject;
+use sui_types::eth_dwallet::config::EthClientConfig;
+use sui_types::eth_dwallet::eth_state::EthState;
+use sui_types::eth_dwallet::light_client::EthLightClient;
 use sui_types::eth_dwallet::EthDWalletCap;
 use sui_types::SUI_SYSTEM_PACKAGE_ID;
 
@@ -103,7 +103,10 @@ pub(crate) async fn eth_approve_message(
     eth_state.set_rpc(eth_consensus_rpc);
     let current_state_checkpoint = hex::encode(eth_state.last_checkpoint);
 
-    let Ok(updates) = eth_state.get_updates(&current_state_checkpoint, &provided_checkpoint).await else {
+    let Ok(updates) = eth_state
+        .get_updates(&current_state_checkpoint, &provided_checkpoint)
+        .await
+    else {
         anyhow!("error fetching updates from Consensus RPC: {e}")
     };
     let Ok(proof) = eth_lc.get_proof().await else {
@@ -158,7 +161,7 @@ pub(crate) async fn eth_approve_message(
         args,
         context,
     )
-        .await?;
+    .await?;
     serialize_or_execute!(
         tx_data,
         serialize_unsigned_transaction,
@@ -204,7 +207,7 @@ pub(crate) async fn create_eth_dwallet(
         args,
         context,
     )
-        .await?;
+    .await?;
     Ok(serialize_or_execute!(
         tx_data,
         serialize_unsigned_transaction,

@@ -17,7 +17,6 @@ pub struct EthClientConfig {
     // DWalletID
     pub dwallet_id: [u8; 20],
     pub max_checkpoint_age: u64,
-
 }
 
 impl EthClientConfig {
@@ -29,7 +28,7 @@ impl EthClientConfig {
         data_slot: u64,
         dwallet_id: Vec<u8>,
         message: Vec<u8>,
-        max_checkpoint_age: u64
+        max_checkpoint_age: u64,
     ) -> Result<Self, Report> {
         let result = Self {
             network,

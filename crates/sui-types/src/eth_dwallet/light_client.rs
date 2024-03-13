@@ -1,18 +1,18 @@
-use std::str::FromStr;
-use ethers::prelude::*;
 use ethers::prelude::H160;
+use ethers::prelude::*;
 use ethers::utils::keccak256;
 use eyre::{eyre, Report};
 use helios::client::{Client, ClientBuilder, FileDB};
 use helios::config::checkpoints;
 use helios::config::networks::Network;
+use std::str::FromStr;
 // use helios::prelude::*;
 use tracing::info;
 
-use crate::dwallet_eth::{utils};
-use crate::dwallet_eth::config::EthClientConfig;
-use crate::dwallet_eth::proof::ProofResponse;
-use crate::dwallet_eth::utils::is_empty_value;
+use crate::eth_dwallet::config::EthClientConfig;
+use crate::eth_dwallet::proof::ProofResponse;
+use crate::eth_dwallet::utils;
+use crate::eth_dwallet::utils::is_empty_value;
 
 pub struct EthLightClient {
     pub client: Client<FileDB>,
@@ -73,14 +73,17 @@ impl EthLightClient {
             .storage_proof
             .iter()
             // TODO(yuval): make sure this does not break the code !!!!!!!!! (convert H256 to U256)
-            .find(|p| p.key == U256::from_big_endian(message_map_index.as_bytes())).ok_or_else(|| eyre!("Storage proof not found"))?;
+            .find(|p| p.key == U256::from_big_endian(message_map_index.as_bytes()))
+            .ok_or_else(|| eyre!("Storage proof not found"))?;
 
         // 1 for True (if the message is approved,
         // the value in the contract's storage map would be True)
         let storage_value = [1].to_vec();
         // todo(zeev): no urgent, but need to check the relation to to proof.
         let mut msg_storage_proof_key_bytes = [0u8; 32];
-        msg_storage_proof.key.to_big_endian(&mut msg_storage_proof_key_bytes);
+        msg_storage_proof
+            .key
+            .to_big_endian(&mut msg_storage_proof_key_bytes);
         let storage_key_hash = keccak256(msg_storage_proof_key_bytes);
 
         // Validate value is not empty because we are looking for inclusion.

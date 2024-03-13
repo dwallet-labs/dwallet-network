@@ -16,9 +16,9 @@ use serde::{Deserialize, Serialize};
 use ssz_rs::prelude::*;
 use tracing::info;
 
-use crate::dwallet_eth::constants::MAX_REQUEST_LIGHT_CLIENT_UPDATES;
-use crate::dwallet_eth::update::UpdatesResponse;
-use crate::dwallet_eth::utils::{
+use crate::eth_dwallet::constants::MAX_REQUEST_LIGHT_CLIENT_UPDATES;
+use crate::eth_dwallet::update::UpdatesResponse;
+use crate::eth_dwallet::utils::{
     calc_sync_period, compute_domain, compute_signing_root, is_proof_valid,
 };
 
@@ -78,7 +78,11 @@ impl EthState {
     ///      and are irreversible.
     ///    - Verifies and applies an optimistic update, which might still be subject to change but
     ///      is accepted optimistically to keep the state as current as possible.
-    pub async fn get_updates(&mut self, current_state_checkpoint: &str, provided_checkpoint: &str) -> Result<UpdatesResponse, Error> {
+    pub async fn get_updates(
+        &mut self,
+        current_state_checkpoint: &str,
+        provided_checkpoint: &str,
+    ) -> Result<UpdatesResponse, Error> {
         let rpc = NimbusRpc::new(&self.rpc);
         self.bootstrap(&rpc, current_state_checkpoint).await?;
 

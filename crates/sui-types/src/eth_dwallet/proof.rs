@@ -1,7 +1,7 @@
 // use sui_json::SuiJsonValue;
 use ethers::prelude::{Bytes, H160, H256};
-use ethers::utils::{hex, keccak256};
 use ethers::utils::rlp::{decode_list, RlpStream};
+use ethers::utils::{hex, keccak256};
 use eyre::{eyre, Report};
 use sha3::{Digest, Keccak256};
 
@@ -176,8 +176,14 @@ fn get_nibble(path: &[u8], offset: usize) -> u8 {
 }
 
 /// Get the Path in Smart Contract Storage.
-pub fn get_storage_key(message: Vec<u8>, dwallet_id: Vec<u8>, data_slot: u64) -> Result<H256, Report> {
-    let dwallet_id: [u8; 20] = dwallet_id.try_into().map_err(|_| eyre!("Invalid dwallet_id"))?;
+pub fn get_storage_key(
+    message: Vec<u8>,
+    dwallet_id: Vec<u8>,
+    data_slot: u64,
+) -> Result<H256, Report> {
+    let dwallet_id: [u8; 20] = dwallet_id
+        .try_into()
+        .map_err(|_| eyre!("Invalid dwallet_id"))?;
     let decoded_msg = hex::decode(&message)?;
     let dwallet_id_hex = H160::from(&dwallet_id);
 

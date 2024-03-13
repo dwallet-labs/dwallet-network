@@ -17,7 +17,7 @@ use move_vm_types::{
 use sha3::Digest;
 use smallvec::smallvec;
 
-use sui_types::dwallet_eth::{eth_state::EthState, proof::*, update::UpdatesResponse};
+use sui_types::eth_dwallet::{eth_state::EthState, proof::*, update::UpdatesResponse};
 
 use crate::object_runtime::ObjectRuntime;
 use crate::NativesCostTable;
