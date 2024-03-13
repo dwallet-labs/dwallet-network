@@ -546,6 +546,10 @@ async fn genesis(
         alias: "localnet".to_string(),
         rpc: format!("http://{}", fullnode_config.json_rpc_address),
         ws: None,
+        eth_execution_rpc: None,
+        eth_consensus_rpc: None,
+        checkpoint: None,
+        state_object_id: None,
     });
     client_config.add_env(SuiEnv::devnet());
 
@@ -570,6 +574,10 @@ async fn prompt_if_no_config(
                 alias: "custom".to_string(),
                 rpc: v.into_string().unwrap(),
                 ws: None,
+                eth_execution_rpc: None,
+                eth_consensus_rpc: None,
+                checkpoint: None,
+                state_object_id: None,
             }),
             None => {
                 if accept_defaults {
@@ -605,6 +613,10 @@ async fn prompt_if_no_config(
                             alias,
                             rpc: url,
                             ws: None,
+                            eth_execution_rpc: None,
+                            eth_consensus_rpc: None,
+                            checkpoint: None,
+                            state_object_id: None,
                         }
                     })
                 } else {

@@ -34,6 +34,9 @@ num-bigint.workspace = true
 regex.workspace = true
 reqwest.workspace = true
 im.workspace = true
+helios.workspace = true
+ethers.workspace = true
+eyre.workspace = true
 
 sui-config.workspace = true
 sui-execution = { path = "../../sui-execution" }
@@ -68,6 +71,10 @@ move-core-types.workspace = true
 move-package.workspace = true
 csv.workspace = true
 workspace-hack.workspace = true
+sha3.workspace = true
+hex.workspace = true
+ssz_rs.workspace = true
+milagro_bls.workspace = true
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 jemalloc-ctl.workspace = true

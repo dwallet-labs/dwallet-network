@@ -55,6 +55,14 @@ mysten-network.workspace = true
 mysten-metrics.workspace = true
 sui-macros.workspace = true
 sui-enum-compat-util.workspace = true
+sha3.workspace = true
+smallvec.workspace = true
+ssz_rs.workspace = true
+milagro_bls.workspace = true
+hex.workspace = true
+chrono.workspace = true
+helios.workspace = true
+ethers.workspace = true
 
 fastcrypto = { workspace = true, features = ["copy_key"] }
 fastcrypto-zkp.workspace = true

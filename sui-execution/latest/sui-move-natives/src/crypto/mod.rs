@@ -11,3 +11,4 @@ pub mod hash;
 pub mod hmac;
 pub mod zklogin;
 pub mod twopc_mpc;
+pub mod eth_state_proof;

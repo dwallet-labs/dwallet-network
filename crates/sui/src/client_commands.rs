@@ -58,6 +58,7 @@ use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, CREATE_SIGN_SESSION_FUNC_NAME, DKG_SESSION_OUTPUT_STRUCT_NAME, DKG_SESSION_STRUCT_NAME, DKGSessionOutput, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, PresignSessionOutput, Presign};
 use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionKind};
 use crate::dwallet_commands::SuiDWalletCommands;
+use crate::eth_dwallet::{create_eth_dwallet, eth_approve_message};
 
 use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::sui_commands::SuiCommand;
@@ -250,6 +251,12 @@ pub enum SuiClientCommands {
         rpc: String,
         #[clap(long, value_hint = ValueHint::Url)]
         ws: Option<String>,
+        #[clap(long, value_hint = ValueHint::Url)]
+        eth_execution_rpc: Option<String>,
+        #[clap(long, value_hint = ValueHint::Url)]
+        eth_consensus_rpc: Option<String>,
+        checkpoint: Option<String>,
+        state_object_id: Option<ObjectID>,
     },
 
     /// Get object info
@@ -646,6 +653,66 @@ pub enum SuiClientCommands {
     DWallet {
         #[clap(subcommand)]
         cmd: Option<SuiDWalletCommands>,
+    },
+
+    /// Connect dWallet to be controlled by Eth contract.
+    #[command(name = "dwallet-connect-eth")]
+    CreateEthDwallet {
+        /// The ObjectID of the dWallet *cap*ability.
+        #[clap(long)]
+        dwallet_cap_id: ObjectID,
+        /// The address of the contract.
+        #[clap(long)]
+        // todo(zeev): possibly this is not a string, need to check it.
+        // the input looks like this: 0xca35b7d915458ef540ade6068dfe2f44e8fa733c
+        // eth byte32 addr
+        smart_contract_address: String,
+        /// The slot of the Data structure that holds approved transactions in eth smart contract.
+        #[clap(long)]
+        // todo(zeev): change the clap name to something shorter.
+        smart_contract_approved_tx_slot: u64,
+        /// The address of the gas object for gas payment.
+        #[clap(long)]
+        gas: Option<ObjectID>,
+        /// Gas budget for this call
+        #[clap(long)]
+        gas_budget: u64,
+        /// Instead of executing the transaction, serialize the bcs bytes of the unsigned transaction data
+        /// (TransactionData) using base64 encoding, and print out the string.
+        #[clap(long, required = false)]
+        serialize_unsigned_transaction: bool,
+        /// Instead of executing the transaction, serialize the bcs bytes of the signed transaction data
+        /// (SenderSignedData) using base64 encoding, and print out the string.
+        #[clap(long, required = false)]
+        serialize_signed_transaction: bool,
+    },
+
+    /// Approve a TX with Eth contract for a given dWallet.
+    #[command(name = "dwallet-eth-verify")]
+    EthApproveMessage {
+        #[clap(long)]
+        /// Object of a [EthDwalletCap]
+        eth_dwallet_cap_id: ObjectID,
+        /// The Message (TX) to verify.
+        #[clap(long)]
+        message: Vec<u8>,
+        /// The DWallet ID
+        // todo(zeev): in the future we can fetch the dwallet ID.
+        #[clap(long)]
+        dwallet_id: ObjectID,
+        #[clap(long)]
+        gas: Option<ObjectID>,
+        /// Gas budget for this call
+        #[clap(long)]
+        gas_budget: u64,
+        /// Instead of executing the transaction, serialize the bcs bytes of the unsigned transaction data
+        /// (TransactionData) using base64 encoding, and print out the string.
+        #[clap(long, required = false)]
+        serialize_unsigned_transaction: bool,
+        /// Instead of executing the transaction, serialize the bcs bytes of the signed transaction data
+        /// (SenderSignedData) using base64 encoding, and print out the string.
+        #[clap(long, required = false)]
+        serialize_signed_transaction: bool,
     },
 }
 
@@ -1320,15 +1387,75 @@ impl SuiClientCommands {
                 let response = context.execute_transaction_may_fail(transaction).await?;
                 SuiClientCommandResult::ExecuteSignedTx(response)
             }
-            SuiClientCommands::NewEnv { alias, rpc, ws } => {
+            SuiClientCommands::CreateEthDwallet {
+                dwallet_cap_id,
+                smart_contract_address,
+                smart_contract_approved_tx_slot,
+                gas,
+                gas_budget,
+                serialize_unsigned_transaction,
+                serialize_signed_transaction,
+            } => {
+                create_eth_dwallet(
+                    context,
+                    dwallet_cap_id,
+                    &smart_contract_address,
+                    smart_contract_approved_tx_slot,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                )
+                    .await?
+            }
+
+            SuiClientCommands::EthApproveMessage {
+                eth_dwallet_cap_id,
+                // todo(yuval): we might need to pass it as string.
+                message,
+                dwallet_id,
+                gas,
+                gas_budget,
+                serialize_unsigned_transaction,
+                serialize_signed_transaction,
+            } => {
+                eth_approve_message(
+                    context,
+                    eth_dwallet_cap_id,
+                    &message,
+                    dwallet_id,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                )
+                    .await
+            }
+            SuiClientCommands::NewEnv {
+                alias,
+                rpc,
+                ws,
+                eth_execution_rpc,
+                eth_consensus_rpc,
+                checkpoint,
+                state_object_id,
+            } => {
                 if context.config.envs.iter().any(|env| env.alias == alias) {
                     return Err(anyhow!(
                         "Environment config with name [{alias}] already exists."
                     ));
                 }
-                let env = SuiEnv { alias, rpc, ws };
+                let env = SuiEnv {
+                    alias,
+                    rpc,
+                    ws,
+                    eth_execution_rpc,
+                    eth_consensus_rpc,
+                    checkpoint,
+                    state_object_id,
+                };
 
-                // Check urls are valid and server is reachable
+                // Check urls are valid and the server is reachable
                 env.create_rpc_client(None, None).await?;
                 context.config.envs.push(env.clone());
                 context.config.save()?;

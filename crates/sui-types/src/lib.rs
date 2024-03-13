@@ -84,6 +84,7 @@ pub mod signature_mpc;
 #[cfg(any(test, feature = "test-utils"))]
 #[path = "./unit_tests/utils.rs"]
 pub mod utils;
+pub mod dwallet_eth;
 
 /// 0x1-- account address where Move stdlib modules are stored
 /// Same as the ObjectID
