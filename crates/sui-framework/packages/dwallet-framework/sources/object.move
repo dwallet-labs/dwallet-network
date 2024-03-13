@@ -29,6 +29,9 @@ module dwallet::object {
     /// The hardcoded ID for the singleton Random Object.
     const SUI_RANDOM_ID: address = @0x8;
 
+    /// The hardcoded ID for the singleton EthState Object
+    const ETH_STATE_OBJECT_ID: address = @0x9;
+
     /// Sender is not @0x0 the system address.
     const ENotSystemAddress: u64 = 0;
 
@@ -87,6 +90,14 @@ module dwallet::object {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         UID {
             id: ID { bytes: SUI_SYSTEM_STATE_OBJECT_ID },
+        }
+    }
+
+    /// Create the `UID` for the singleton `DWalletSystemState` object.
+    /// This should only be called once from `dwallet_system`.
+    public fun eth_state_object(): UID {
+        UID {
+            id: ID { bytes: ETH_STATE_OBJECT_ID },
         }
     }
 

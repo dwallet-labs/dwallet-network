@@ -1,12 +1,14 @@
 module dwallet_system::eth_dwallet {
     use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
-    // use dwallet::tx_context;
+    use dwallet::tx_context;
     use dwallet::tx_context::TxContext;
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::DWallet;
 
     use dwallet_system::dwallet;
     use dwallet_system::dwallet::{DWalletCap, MessageApproval};
+
+    const ENotSystemAddress: u64 = 0;
 
     const EInvalidStateProof: u64 = 1;
 
@@ -67,18 +69,18 @@ module dwallet_system::eth_dwallet {
         dwallet::approve_messages(&eth_dwallet_cap.dwallet_cap, vector[message])
     }
 
-    // #[allow(unused_function)]
-    // // Create and share the singleton EthState -- this function is
-    // // called exactly once, during genesis.
-    // public fun create_eth_state() {
-    //     // assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
-    //     let data = b"{\"last_checkpoint\":\"0xa8ab0b7ab08b63839b668afa6b03beb4b50925bc0f0c65b4ee7b6c35a511b7ca\"}";
-    //
-    //     transfer::share_object(EthState {
-    //         id: object::eth_state_object(),
-    //         data,
-    //     })
-    // }
+    #[allow(unused_function)]
+    // Create and share the singleton EthState -- this function is
+    // called exactly once, during genesis.
+    public fun create_eth_state(ctx: &mut TxContext) {
+        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+        let data = b"{\"last_checkpoint\":\"0xa8ab0b7ab08b63839b668afa6b03beb4b50925bc0f0c65b4ee7b6c35a511b7ca\"}";
+
+        transfer::share_object(EthState {
+            id: object::eth_state_object(),
+            data,
+        })
+    }
 
     public fun update_eth_state(
         self: &mut EthState,
