@@ -1,11 +1,13 @@
-use ethers::prelude::H160;
+use std::str::FromStr;
+
+use anyhow::anyhow;
 use ethers::prelude::*;
+use ethers::prelude::H160;
 use ethers::utils::keccak256;
 use eyre::{eyre, Report};
 use helios::client::{Client, ClientBuilder, FileDB};
 use helios::config::checkpoints;
 use helios::config::networks::Network;
-use std::str::FromStr;
 // use helios::prelude::*;
 use tracing::info;
 
@@ -20,7 +22,7 @@ pub struct EthLightClient {
 }
 
 impl EthLightClient {
-    pub async fn new(conf: EthClientConfig) -> eyre::Result<Self, Report> {
+    pub async fn new(conf: EthClientConfig) -> Result<Self, anyhow::Error> {
         // todo(yuval): make sure it's set based on the net in sui (test = goerli, main = main)
         let network = conf.network;
         let latest_checkpoint = fetch_latest_checkpoint(network).await?;
@@ -33,7 +35,8 @@ impl EthLightClient {
             .load_external_fallback()
             .checkpoint(&latest_checkpoint)
             .data_dir("/tmp/helios".parse()?)
-            .build()?;
+            .build()
+            .map_err(|e| anyhow!("failed to create client: {}", e))?;
 
         info!("EthLightClient created");
 
@@ -43,8 +46,8 @@ impl EthLightClient {
         })
     }
 
-    pub async fn start(&mut self) -> Result<(), Report> {
-        self.client.start().await?;
+    pub async fn start(&mut self) -> Result<(), anyhow::Error> {
+        self.client.start().await.map_err(|e| anyhow!("failed to start client: {}", e))?;
         self.client.wait_synced().await;
         info!("EthLightClient connected");
 
@@ -116,9 +119,11 @@ impl EthLightClient {
 /// Fetch the latest checkpoint
 /// More info here:
 /// https://www.ledger.com/academy/ethereum-proof-of-stake-pos-explained#:~:text=Under%20Proof%20of%20Stake%20(PoS,6.4%20minutes)%20is%20a%20checkpoint.
-async fn fetch_latest_checkpoint(network: Network) -> Result<String, Report> {
-    let checkpoint_fb = checkpoints::CheckpointFallback::new().build().await?;
-    let checkpoint = checkpoint_fb.fetch_latest_checkpoint(&network).await?;
+async fn fetch_latest_checkpoint(network: Network) -> Result<String, anyhow::Error> {
+    let checkpoint_fb = checkpoints::CheckpointFallback::new().build().await
+        .map_err(|e| anyhow!("failed to create checkpoint fallback: {}", e))?;
+    let checkpoint = checkpoint_fb.fetch_latest_checkpoint(&network).await
+        .map_err(|e| anyhow!("failed to fetch latest checkpoint from fallback services: {}", e))?;
     info!("fetched latest Ethereum `{network}` checkpoint: `{checkpoint}`");
     Ok(checkpoint.to_string())
 }

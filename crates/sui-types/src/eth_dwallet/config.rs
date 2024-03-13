@@ -29,7 +29,7 @@ impl EthClientConfig {
         dwallet_id: Vec<u8>,
         message: Vec<u8>,
         max_checkpoint_age: u64,
-    ) -> Result<Self, Report> {
+    ) -> Result<Self, anyhow::Error> {
         let result = Self {
             network,
             execution_rpc,

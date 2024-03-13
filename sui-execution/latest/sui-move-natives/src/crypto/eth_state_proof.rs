@@ -67,7 +67,7 @@ pub fn verify_eth_state(
 
     let eth_state = String::from_utf8(current_eth_state.into())
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-    let mut eth_state = EthState::eth_state_from_json(&eth_state)
+    let mut eth_state = EthState::build_from_json(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
     let proof = String::from_utf8(proof)

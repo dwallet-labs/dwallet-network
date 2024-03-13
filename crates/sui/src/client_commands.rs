@@ -1429,7 +1429,7 @@ impl SuiClientCommands {
                     serialize_unsigned_transaction,
                     serialize_signed_transaction,
                 )
-                    .await
+                    .await?
             }
             SuiClientCommands::NewEnv {
                 alias,

@@ -11,6 +11,7 @@ pub struct EthCurrentState {
     pub current_max_active_participants: u64,
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
 pub struct EthStateSuiObject {
     pub data: Vec<u8>,
 }

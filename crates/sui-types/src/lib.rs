@@ -82,7 +82,9 @@ pub mod zk_login_util;
 pub mod signature_mpc;
 
 pub mod eth_current_state;
+pub mod eth_dwallet_cap;
 pub mod eth_dwallet;
+
 #[cfg(any(test, feature = "test-utils"))]
 #[path = "./unit_tests/utils.rs"]
 pub mod utils;

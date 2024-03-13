@@ -22,7 +22,7 @@ use crate::eth_dwallet::utils::{
     calc_sync_period, compute_domain, compute_signing_root, is_proof_valid,
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EthState {
     pub last_checkpoint: Vec<u8>,
     current_sync_committee: SyncCommittee,
@@ -50,8 +50,9 @@ impl EthState {
         }
     }
 
-    pub fn set_rpc(&mut self, rpc: String) {
+    pub fn set_rpc(&mut self, rpc: String) -> &mut Self {
         self.rpc = rpc;
+        self
     }
 
     /// Synchronizes the local state with the blockchain state based on a given checkpoint.
@@ -525,9 +526,9 @@ impl EthState {
         slot * 12 + self.network.to_base_config().chain.genesis_time
     }
 
-    pub fn eth_state_from_json(state_object_data: &str) -> Result<EthState, Report> {
+    pub fn build_from_json(state_object_data: &str) -> Result<EthState, anyhow::Error> {
         let result = serde_json::from_str(state_object_data)?;
-        Ok(result)
+        anyhow::Ok(result)
     }
 }
 

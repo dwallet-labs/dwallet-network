@@ -1,18 +1,24 @@
 use anyhow::anyhow;
-use clap::Error;
 use helios::config::networks::Network;
 use serde_json::{Number, Value};
-
+use serde_json::Value::Array;
+use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
+use sui_types::transaction::TransactionDataAPI;
+use sui_keys::keystore::AccountKeystore;
+use shared_crypto::intent::Intent;
 use sui_json::SuiJsonValue;
 use sui_json_rpc_types::{SuiData, SuiObjectDataOptions};
+use sui_json_rpc_types::SuiExecutionStatus;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::eth_current_state::EthStateSuiObject;
 use sui_types::eth_dwallet::config::EthClientConfig;
 use sui_types::eth_dwallet::eth_state::EthState;
 use sui_types::eth_dwallet::light_client::EthLightClient;
-use sui_types::eth_dwallet::EthDWalletCap;
+use sui_types::eth_dwallet_cap::EthDWalletCap;
 use sui_types::SUI_SYSTEM_PACKAGE_ID;
+use sui_types::transaction::SenderSignedData;
+use sui_types::transaction::Transaction;
 
 use crate::client_commands::{construct_move_call_transaction, SuiClientCommandResult};
 use crate::serialize_or_execute;
@@ -26,12 +32,12 @@ pub(crate) async fn eth_approve_message(
     gas_budget: u64,
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
-) -> SuiClientCommandResult {
+) -> Result<SuiClientCommandResult, anyhow::Error> {
     let sui_env_config = context.config.get_active_env()?;
-    let eth_execution_rpc = sui_env_config.eth_execution_rpc.clone()?;
-    let eth_consensus_rpc = sui_env_config.eth_consensus_rpc.clone()?;
-    let state_object_id = sui_env_config.state_object_id.clone()?;
-    let provided_checkpoint = sui_env_config.checkpoint.clone()?;
+    let eth_execution_rpc = sui_env_config.eth_execution_rpc.clone().ok_or_else(|| anyhow!("ETH execution RPC configuration not found"))?;
+    let eth_consensus_rpc = sui_env_config.eth_consensus_rpc.clone().ok_or_else(|| anyhow!("ETH consensus RPC configuration not found"))?;
+    let state_object_id = sui_env_config.state_object_id.clone().ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
+    let provided_checkpoint = sui_env_config.checkpoint.clone().ok_or_else(|| anyhow!("Checkpoint configuration not found"))?;
 
     let resp = context
         .get_client()
@@ -45,9 +51,7 @@ pub(crate) async fn eth_approve_message(
 
     let data = match resp.data {
         Some(data) => data,
-        None => {
-            anyhow!("Could not find object with ID: {:?}", eth_dwallet_cap_id)
-        }
+        None => return Err(anyhow!("Could not find object with ID: {:?}", eth_dwallet_cap_id))
     };
 
     let bcs_data = data.bcs.ok_or_else(|| anyhow!("missing object data"))?;
@@ -58,7 +62,7 @@ pub(crate) async fn eth_approve_message(
         .deserialize()?;
 
     let data_slot = eth_dwallet_cap_obj.eth_smart_contract_slot;
-    let contract_addr = hex::encode(eth_dwallet_cap_obj.eth_smart_contract_addr)?;
+    let contract_addr = hex::encode(eth_dwallet_cap_obj.eth_smart_contract_addr);
 
     let eth_client_config = EthClientConfig::new(
         Network::MAINNET,
@@ -87,9 +91,7 @@ pub(crate) async fn eth_approve_message(
 
     let data = match resp.data {
         Some(data) => data,
-        None => {
-            anyhow!("Could not find object with ID: {:?}", state_object_id);
-        }
+        None => return Err(anyhow!("Could not find object with ID: {:?}", state_object_id))
     };
 
     let bcs_data = data.bcs.ok_or_else(|| anyhow!("missing object data"))?;
@@ -99,18 +101,21 @@ pub(crate) async fn eth_approve_message(
         .ok_or_else(|| anyhow!("Object is not a Move Object"))?
         .deserialize()?;
 
-    let mut eth_state = EthState::eth_state_from_json(&eth_current_state_obj.data.into())?;
-    eth_state.set_rpc(eth_consensus_rpc);
-    let current_state_checkpoint = hex::encode(eth_state.last_checkpoint);
+    let eth_state_data_str = std::str::from_utf8(&eth_current_state_obj.data)
+        .map_err(|e| anyhow!("error parsing eth state data: {e}"))?;
+    let mut eth_state = EthState::build_from_json(&eth_state_data_str)?;
+    let mut eth_state = eth_state.set_rpc(eth_consensus_rpc);
 
-    let Ok(updates) = eth_state
-        .get_updates(&current_state_checkpoint, &provided_checkpoint)
-        .await
-    else {
-        anyhow!("error fetching updates from Consensus RPC: {e}")
+    let current_state_checkpoint = hex::encode(eth_state.clone().last_checkpoint);
+
+    let updates = match eth_state.get_updates(&current_state_checkpoint, &provided_checkpoint).await {
+        Ok(updates) => updates,
+        Err(e) => return Err(anyhow!("error fetching updates from Consensus RPC: {e}")),
     };
-    let Ok(proof) = eth_lc.get_proof().await else {
-        anyhow!("Error getting proof from Consensus RPC: {e}")
+
+    let proof = match eth_lc.get_proof().await {
+        Ok(proof) => proof,
+        Err(e) => return Err(anyhow!("error fetching proof from Consensus RPC: {e}")),
     };
 
     let message = bcs::to_bytes(&message)?
@@ -119,26 +124,26 @@ pub(crate) async fn eth_approve_message(
         .collect();
     let message_json_val = SuiJsonValue::new(Value::Array(message))?;
 
-    let updates_json_bytes = serde_json::to_string(&updates)?.into_bytes().to_vec();
-    let updates = bcs::to_bytes(&updates_json_bytes)
+    let updates_json_bytes = serde_json::to_string(&updates)?.into_bytes();
+    let updates = bcs::to_bytes(&updates_json_bytes)?
         .iter()
-        .map(|v| Value::Number(Number::from(*v.clone())))
+        .map(|&v| Value::Number(Number::from(v)))
         .collect();
     let updates_json_val = SuiJsonValue::new(Value::Array(updates))?;
 
-    let proof_json_bytes = serde_json::to_string(&proof)?.into_bytes().to_vec();
-    let proof = bcs::to_bytes(&proof_json_bytes)
+    let proof_json_bytes = serde_json::to_string(&proof)?.into_bytes();
+    let proof = bcs::to_bytes(&proof_json_bytes)?
         .iter()
-        .map(|v| Value::Number(Number::from(*v.clone())))
+        .map(|&v| Value::Number(Number::from(v)))
         .collect();
-    let proof_json_val = SuiJsonValue::new(Value::Array(proof));
+    let proof_json_val = SuiJsonValue::new(Value::Array(proof))?;
 
-    let current_state_json_bytes = serde_json::to_string(&eth_state)?.into_bytes().to_vec();
-    let current_state = bcs::to_bytes(&current_state_json_bytes)
+    let current_state_json_bytes = serde_json::to_string(&eth_state)?.into_bytes();
+    let current_state = bcs::to_bytes(&current_state_json_bytes)?
         .iter()
-        .map(|v| Value::Number(Number::from(*v.clone())))
+        .map(|&v| Value::Number(Number::from(v)))
         .collect();
-    let current_state_json_val = SuiJsonValue::new(Value::Array(current_state));
+    let current_state_json_val = SuiJsonValue::new(Value::Array(current_state))?;
 
     // todo(yuval): this might be a base64?
     let args = Vec::from([
@@ -162,13 +167,13 @@ pub(crate) async fn eth_approve_message(
         context,
     )
     .await?;
-    serialize_or_execute!(
+    Ok(serialize_or_execute!(
         tx_data,
         serialize_unsigned_transaction,
         serialize_signed_transaction,
         context,
         Call
-    )
+    ))
 }
 
 pub(crate) async fn create_eth_dwallet(
@@ -180,7 +185,7 @@ pub(crate) async fn create_eth_dwallet(
     gas_budget: u64,
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
-) -> Result<SuiClientCommandResult, Error> {
+) -> Result<SuiClientCommandResult, anyhow::Error> {
     // Serialize to the Move TX format.
     // todo(zeev): check this, might just use Value::String()
     let smart_contract_address = bcs::to_bytes(&smart_contract_address).unwrap();
