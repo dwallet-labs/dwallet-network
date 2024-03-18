@@ -37,6 +37,7 @@ use sui_types::{
     randomness_state::RANDOMNESS_MODULE_NAME,
     sui_system_state::SUI_SYSTEM_MODULE_NAME,
     SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS,
+    eth_state::ETH_STATE_OBJECT_MODULE_NAME
 };
 
 use crate::{
@@ -79,6 +80,11 @@ const SUI_CLOCK_CREATE: FunctionIdent = (
     CLOCK_MODULE_NAME,
     ident_str!("create"),
 );
+const ETH_STATE_OBJECT_CREATE: FunctionIdent = (
+    &SUI_FRAMEWORK_ADDRESS,
+    ETH_STATE_OBJECT_MODULE_NAME,
+    ident_str!("create_eth_state"),
+);
 const SUI_AUTHENTICATOR_STATE_CREATE: FunctionIdent = (
     &SUI_FRAMEWORK_ADDRESS,
     AUTHENTICATOR_STATE_MODULE_NAME,
@@ -93,6 +99,7 @@ const FRESH_ID_FUNCTIONS: &[FunctionIdent] = &[OBJECT_NEW, OBJECT_NEW_UID_FROM_H
 const FUNCTIONS_TO_SKIP: &[FunctionIdent] = &[
     SUI_SYSTEM_CREATE,
     SUI_CLOCK_CREATE,
+    ETH_STATE_OBJECT_CREATE,
     SUI_AUTHENTICATOR_STATE_CREATE,
     SUI_RANDOMNESS_STATE_CREATE,
 ];

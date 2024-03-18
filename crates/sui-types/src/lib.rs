@@ -81,7 +81,7 @@ pub mod zk_login_util;
 
 pub mod signature_mpc;
 
-pub mod eth_current_state;
+pub mod eth_state;
 pub mod eth_dwallet_cap;
 pub mod eth_dwallet;
 

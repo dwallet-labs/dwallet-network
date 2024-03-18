@@ -1,4 +1,10 @@
 use helios::consensus::types::{Header, SyncCommittee};
+use move_core_types::ident_str;
+use move_core_types::identifier::IdentStr;
+
+pub const ETH_STATE_OBJECT_MODULE_NAME: &IdentStr = ident_str!("eth_state");
+// Move struct name
+pub const ETH_STATE_OBJECT_STRUCT_NAME: &IdentStr = ident_str!("EthState");
 
 #[derive(Debug, Clone)]
 pub struct EthCurrentState {
@@ -12,6 +18,6 @@ pub struct EthCurrentState {
 }
 
 #[derive(serde::Deserialize, serde::Serialize)]
-pub struct EthStateSuiObject {
+pub struct EthStateObject {
     pub data: Vec<u8>,
 }

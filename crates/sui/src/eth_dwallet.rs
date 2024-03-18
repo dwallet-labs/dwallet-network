@@ -1,8 +1,6 @@
 use anyhow::anyhow;
 use helios::config::networks::Network;
 use serde_json::{Number, Value};
-use serde_json::Value::Array;
-use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_types::transaction::TransactionDataAPI;
 use sui_keys::keystore::AccountKeystore;
 use shared_crypto::intent::Intent;
@@ -11,7 +9,7 @@ use sui_json_rpc_types::{SuiData, SuiObjectDataOptions};
 use sui_json_rpc_types::SuiExecutionStatus;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
-use sui_types::eth_current_state::EthStateSuiObject;
+use sui_types::eth_state::EthStateObject;
 use sui_types::eth_dwallet::config::EthClientConfig;
 use sui_types::eth_dwallet::eth_state::EthState;
 use sui_types::eth_dwallet::light_client::EthLightClient;
@@ -96,7 +94,7 @@ pub(crate) async fn eth_approve_message(
 
     let bcs_data = data.bcs.ok_or_else(|| anyhow!("missing object data"))?;
 
-    let eth_current_state_obj: EthStateSuiObject = bcs_data
+    let eth_current_state_obj: EthStateObject = bcs_data
         .try_as_move()
         .ok_or_else(|| anyhow!("Object is not a Move Object"))?
         .deserialize()?;

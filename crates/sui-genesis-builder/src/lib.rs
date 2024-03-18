@@ -1069,7 +1069,7 @@ pub fn generate_genesis_system_object(
         // Step 5: Create the EthState Object UID
         builder.move_call(
             SUI_FRAMEWORK_ADDRESS.into(),
-            ident_str!("eth_dwallet").to_owned(),
+            ident_str!("eth_state").to_owned(),
             ident_str!("create_eth_state").to_owned(),
             vec![],
             vec![],
