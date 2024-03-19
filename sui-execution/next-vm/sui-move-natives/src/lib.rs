@@ -33,7 +33,7 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
-use crate::crypto::{twopc_mpc, zklogin};
+use crate::crypto::{twopc_mpc, zklogin, sui_state_proof};
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
@@ -736,7 +736,21 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dwallet_2pc_mpc_ecdsa_k1",
             "dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share",
             make_native!(twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share),
-        )];
+        ),
+        (
+            "sui_state_proof_committee",
+            "sui_state_proof_verify_committee",
+            make_native!(sui_state_proof::sui_state_proof_verify),
+        ),
+        (
+            "sui_state_proof_transaction",
+            "sui_state_proof_verify_transaction",
+            make_native!(sui_state_proof::sui_state_proof_process_dwallet_sign_request),
+        )
+        
+        
+        
+        ];
     sui_system_natives
         .iter()
         .cloned()
