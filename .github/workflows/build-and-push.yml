@@ -6,15 +6,22 @@ on:
     branches:
       - main
     paths:
+      - 'apps/explorer/**'
+      - 'apps/core/**'
+      - 'apps/icons/**'
+      - 'apps/ui/**'
       - 'docker/explorer/Dockerfile'
       - 'docker/explorer/build.sh'
-      - 'apps/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'apps/**'
+      - 'apps/explorer/**'
+      - 'apps/core/**'
+      - 'apps/icons/**'
+      - 'apps/ui/**'
       - 'docker/explorer/Dockerfile'
+      - - 'docker/explorer/build.sh'
 
 jobs:
   build-and-push:
