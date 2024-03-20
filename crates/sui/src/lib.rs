@@ -14,4 +14,4 @@ pub mod sui_commands;
 pub mod dwallet_commands;
 pub mod validator_commands;
 pub mod zklogin_commands_util;
-pub mod eth_dwallet;
+pub mod eth_dwallet_commands;

@@ -84,8 +84,6 @@ static_symbols!(
     "Receiving",
     "receive",
     "loop",
-    "eth_state",
-    "create_eth_state",
 );
 
 /// The global, unique cache of strings.

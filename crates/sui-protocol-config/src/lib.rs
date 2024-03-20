@@ -862,7 +862,8 @@ pub struct ProtocolConfig {
 
     // eth_dwallet::verify_eth_state_cost_base
     verify_eth_state_cost_base: Option<u64>,
-
+    // eth_dwallet::verify_message_proof_cost_base
+    verify_message_proof_cost_base: Option<u64>,
     /// === Execution Version ===
     execution_version: Option<u64>,
 

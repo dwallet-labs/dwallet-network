@@ -27,7 +27,7 @@ pub struct EthState {
     pub last_checkpoint: Vec<u8>,
     current_sync_committee: SyncCommittee,
     next_sync_committee: Option<SyncCommittee>,
-    finalized_header: Header,
+    pub finalized_header: Header,
     rpc: String,
     optimistic_header: Header,
     previous_max_active_participants: u64,
@@ -46,6 +46,7 @@ impl EthState {
             rpc: "".to_string(),
             previous_max_active_participants: 0,
             current_max_active_participants: 0,
+            // todo(yuval): make sure it matches sui network (mainnet = mainnet, testnet = goerli, etc.)
             network: Network::GOERLI,
         }
     }

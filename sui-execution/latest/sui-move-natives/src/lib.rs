@@ -519,6 +519,9 @@ impl NativesCostTable {
                 verify_eth_state_cost_base: protocol_config
                     .verify_eth_state_cost_base()
                     .into(),
+                verify_message_proof_cost_base: protocol_config
+                    .verify_message_proof_cost_base()
+                    .into(),
             },
         }
     }

@@ -1066,15 +1066,6 @@ pub fn generate_genesis_system_object(
             vec![],
         ) else { return Err(Error::msg("")) };
 
-        // Step 5: Create the EthState Object UID
-        builder.move_call(
-            SUI_FRAMEWORK_ADDRESS.into(),
-            ident_str!("eth_state").to_owned(),
-            ident_str!("create_eth_state").to_owned(),
-            vec![],
-            vec![],
-        )?;
-
         let coin_treasury = Argument::NestedResult(coin, 0);
         let coin_supply = Argument::NestedResult(coin, 1);
 

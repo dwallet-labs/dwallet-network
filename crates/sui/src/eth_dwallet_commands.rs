@@ -159,6 +159,25 @@ pub(crate) async fn eth_approve_message(
     let tx_data = construct_move_call_transaction(
         SUI_SYSTEM_PACKAGE_ID,
         "eth_dwallet",
+        "update_eth_state",
+        vec![],
+        gas,
+        gas_budget,
+        args.clone(),
+        context,
+    )
+    .await?;
+    serialize_or_execute!(
+        tx_data,
+        serialize_unsigned_transaction,
+        serialize_signed_transaction,
+        context,
+        Call
+    );
+
+    let tx_data = construct_move_call_transaction(
+        SUI_SYSTEM_PACKAGE_ID,
+        "eth_dwallet",
         "approve_message",
         vec![],
         gas,

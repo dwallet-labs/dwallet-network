@@ -35,7 +35,6 @@ use sui_types::{
     id::OBJECT_MODULE_NAME,
     sui_system_state::SUI_SYSTEM_MODULE_NAME,
     SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS,
-    eth_state::ETH_STATE_OBJECT_MODULE_NAME
 };
 
 #[cfg(msim)]
@@ -83,11 +82,6 @@ const SUI_CLOCK_CREATE: FunctionIdent = (
     CLOCK_MODULE_NAME,
     ident_str!("create"),
 );
-const ETH_STATE_OBJECT_CREATE: FunctionIdent = (
-    &SUI_FRAMEWORK_ADDRESS,
-    ETH_STATE_OBJECT_MODULE_NAME,
-    ident_str!("create_eth_state"),
-);
 
 // Note: the authenticator/randomness objects should never exist when v0 execution is being used.
 // However, object_deletion_tests.rs forcibly sets the execution version to 0, so we need
@@ -108,13 +102,12 @@ const SUI_RANDOMNESS_STATE_CREATE: FunctionIdent = (
 
 const FRESH_ID_FUNCTIONS: &[FunctionIdent] = &[OBJECT_NEW, OBJECT_NEW_UID_FROM_HASH, TS_NEW_OBJECT];
 #[cfg(not(msim))]
-const FUNCTIONS_TO_SKIP: &[FunctionIdent] = &[SUI_SYSTEM_CREATE, SUI_CLOCK_CREATE, ETH_STATE_OBJECT_CREATE];
+const FUNCTIONS_TO_SKIP: &[FunctionIdent] = &[SUI_SYSTEM_CREATE, SUI_CLOCK_CREATE];
 
 #[cfg(msim)]
 const FUNCTIONS_TO_SKIP: &[FunctionIdent] = &[
     SUI_SYSTEM_CREATE,
     SUI_CLOCK_CREATE,
-    ETH_STATE_OBJECT_CREATE,
     SUI_AUTHENTICATOR_STATE_CREATE,
     SUI_RANDOMNESS_STATE_CREATE,
 ];
