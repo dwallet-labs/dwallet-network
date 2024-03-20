@@ -105,9 +105,18 @@ impl EthState {
     }
 
     pub fn verify_updates(&mut self, updates: &UpdatesResponse) -> Result<bool, Error> {
+        let mut checkpoint_reached = false;
+        let expected_hash = format!("0x{}", hex::encode(&updates.provided_checkpoint));
+
         for update in &updates.updates {
             self.verify_update(&update)?;
             self.apply_update(&update);
+
+            // Check if the last update application made us reach the provided checkpoint
+            let header_hash = format!("0x{}", hex::encode(&self.last_checkpoint));
+            if header_hash == expected_hash {
+                checkpoint_reached = true;
+            }
         }
 
         self.verify_finality_update(&updates.finality_update)?;
@@ -116,7 +125,7 @@ impl EthState {
         self.verify_optimistic_update(&updates.optimistic_update)?;
         self.apply_optimistic_update(&updates.optimistic_update);
 
-        Ok(true)
+        Ok(checkpoint_reached)
     }
 
     pub async fn bootstrap(&mut self, rpc: &NimbusRpc, checkpoint: &str) -> Result<(), Error> {
@@ -313,6 +322,8 @@ impl EthState {
                     self.optimistic_header = self.finalized_header.clone();
                 }
             }
+
+            self.last_checkpoint = self.finalized_header.hash_tree_root()?.as_ref().to_vec();
         }
     }
 
