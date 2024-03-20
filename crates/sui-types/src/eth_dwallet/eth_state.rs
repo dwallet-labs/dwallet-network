@@ -323,7 +323,12 @@ impl EthState {
                 }
             }
 
-            self.last_checkpoint = self.finalized_header.hash_tree_root()?.as_ref().to_vec();
+            let finalized_header_checkpoint = self
+                .finalized_header
+                .hash_tree_root()
+                .map_err(|_| anyhow!("could not hash finalized header"))
+                .unwrap();
+            self.last_checkpoint = finalized_header_checkpoint.as_ref().to_vec();
         }
     }
 
