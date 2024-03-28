@@ -481,12 +481,12 @@ impl SuiDWalletCommands {
 
                 let centralized_party_sign_round_parties = initiate_centralized_party_sign(dkg_output, centralized_party_presigns).unwrap();
 
-                let public_nonce_encrypted_partial_signature_and_proofs = messages_vec.into_iter().zip(centralized_party_sign_round_parties.into_iter()).map(|(message, party)| {
+                let (public_nonce_encrypted_partial_signature_and_proofs, signature_verification_round_parties): (Vec<_>, Vec<_>) = messages_vec.into_iter().zip(centralized_party_sign_round_parties.into_iter()).map(|(message, party)| {
                     let m = message_digest(&message);
                     party
-                        .evaluate_encrypted_partial_signature(m, &mut OsRng)
+                        .evaluate_encrypted_partial_signature_prehash(m, &mut OsRng)
                         .unwrap()
-                }).collect::<Vec<_>>();
+                }).collect::<Vec<_>>().into_iter().unzip();
 
                 let public_nonce_encrypted_partial_signature_and_proofs = bcs::to_bytes(&public_nonce_encrypted_partial_signature_and_proofs).unwrap();
 

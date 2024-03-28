@@ -3729,7 +3729,7 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/enhanced-maurer.git#0fabaeb9decb2d6f1138e1bc64d939317b9d0613"
+source = "git+https://github.com/dwallet-labs/enhanced-maurer.git#d1bfa5cb422e24599f1d81096ecaf578f44f1fd2"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -6104,7 +6104,7 @@ checksum = "b87248edafb776e59e6ee64a79086f65890d3510f2c656c000bf2a7e8a0aea40"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/maurer.git#ef78bb440b547ce7c547e60f27974fce2f6ff3c9"
+source = "git+https://github.com/dwallet-labs/maurer.git#729ef1b1f4916f5ebcc31f2bbc19745098a16dd2"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -9146,7 +9146,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/proof.git#6bc0dc6e59a28102d50820b2e166a8bc9e7445bf"
+source = "git+https://github.com/dwallet-labs/proof.git#7510a5c7403411098e247b3f1c8e84d26e782e8b"
 dependencies = [
  "bulletproofs 4.0.0 (git+https://github.com/ycscaly/bulletproofs.git)",
  "commitment",
@@ -14106,7 +14106,7 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/tiresias.git?branch=he#6828a15a548a5fa794ba1a7a0588736c11c04d78"
+source = "git+https://github.com/dwallet-labs/tiresias.git?branch=he#e6e0a0cc9ff3eb251bc4e4fdd80b8be531e4f1bf"
 dependencies = [
  "crypto-bigint 0.5.5",
  "gcd",
@@ -14705,7 +14705,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/2pc-mpc.git#0de989d147bd10585eab56ee75e17c5f336a8b76"
+source = "git+https://github.com/dwallet-labs/2pc-mpc.git?branch=sign-ia#808ae525957ec073b32ef7696df749a7080f329b"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",

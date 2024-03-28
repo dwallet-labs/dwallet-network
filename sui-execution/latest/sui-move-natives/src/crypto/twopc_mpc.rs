@@ -81,8 +81,8 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
         ));
     };
 
-    let signature_mpc_paillier_public_parameters = object_runtime.protocol_config.signature_mpc_paillier_public_parameters().unwrap();
-    let output = decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(signature_mpc_paillier_public_parameters, commitment_to_centralized_party_secret_key_share, centralized_party_public_key_share_decommitment_and_proof, secret_key_share_encryption_and_proof);
+    let signature_mpc_tiresias_public_parameters = object_runtime.protocol_config.signature_mpc_tiresias_public_parameters().unwrap();
+    let output = decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(signature_mpc_tiresias_public_parameters, commitment_to_centralized_party_secret_key_share, centralized_party_public_key_share_decommitment_and_proof, secret_key_share_encryption_and_proof);
 
     Ok(NativeResult::ok(
         cost,
