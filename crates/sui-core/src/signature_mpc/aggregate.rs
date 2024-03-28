@@ -217,41 +217,37 @@ impl BulletProofAggregateRound {
                     })
                     .collect();
 
-                // let individual_encrypted_masked_nonce_shares: IndividualEncryptedMaskedNonceShares =
-                //     enc_dh
-                //         .iter()
-                //         .map(|p| {
-                //             p.maurer_proof_aggregation_round_party
-                //                 .statements
-                //                 .clone()
-                //                 .into_iter()
-                //                 .map(|(id, s)| {
-                //                     (
-                //                         id,
-                //                         s.clone()
-                //                             .into_iter()
-                //                             .map(|f| f.language_statement().clone())
-                //                             .collect::<Vec<_>>(),
-                //                     )
-                //                 })
-                //                 .collect::<HashMap<_, _>>()
-                //         })
-                //         .reduce(|i1, i2| {
-                //             i1.into_iter()
-                //                 .map(|(id, s)| {
-                //                     (
-                //                         id,
-                //                         i2.get(&id)
-                //                             .unwrap()
-                //                             .clone()
-                //                             .into_iter()
-                //                             .chain(s.into_iter())
-                //                             .collect::<Vec<_>>(),
-                //                     )
-                //                 })
-                //                 .collect::<HashMap<_, _>>()
-                //         })
-                //         .unwrap();
+                let decommitments_vecs: HashMap<_, Vec<_>> = state.decommitments
+                    .iter()
+                    .map(|(party_id, v)| {
+                        (
+                            *party_id,
+                            v.0.iter()
+                                .map(|(decommitment, _)| decommitment.clone())
+                                .collect(),
+                        )
+                    })
+                    .collect();
+
+                let individual_encrypted_masked_nonce_shares = decommitments_vecs
+                    .into_iter()
+                    .map(|(party_id, decommitments)| {
+                        (
+                            party_id,
+                            decommitments
+                                .into_iter()
+                                .flat_map(|maurer_decommitment| {
+                                    maurer_decommitment.statements.into_iter().map(|statement| {
+                                        let (_, language_statement) = statement.into();
+
+                                        language_statement
+                                    })
+                                })
+                                .collect(),
+                        )
+                    })
+                    .collect();
+
 
                 let enc_dh_output = enc_dh
                     .into_iter()
@@ -262,8 +258,6 @@ impl BulletProofAggregateRound {
                             .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
                     })
                     .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
-
-                let individual_encrypted_masked_nonce_shares: IndividualEncryptedMaskedNonceShares = HashMap::new();
 
                 let enc_dl_proof_shares: Vec<HashMap<_, _>> = (0..enc_dl.len())
                     .map(|i| {
@@ -281,6 +275,38 @@ impl BulletProofAggregateRound {
                 //     .map(|p| p.maurer_proof_aggregation_round_party.statements.clone().into_iter().map(|(id, s)| (id, s.clone().into_iter().map(|f| f.language_statement().clone()).collect::<Vec<_>>())).collect::<HashMap<_, _>>())
                 //     .reduce(|i1, i2| i1.into_iter().map(|(id, s)| (id, i2.get(&id).unwrap().clone().into_iter().chain(s.into_iter()).collect::<Vec<_>>())).collect::<HashMap<_, _>>()).unwrap();
 
+                let decommitments_vecs: HashMap<_, Vec<_>> = state.decommitments
+                    .iter()
+                    .map(|(party_id, v)| {
+                        (
+                            *party_id,
+                            v.1.iter()
+                                .map(|(decommitment, _)| decommitment.clone())
+                                .collect(),
+                        )
+                    })
+                    .collect();
+
+                let individual_encrypted_nonce_shares_and_public_shares =
+                    decommitments_vecs
+                        .into_iter()
+                        .map(|(party_id, decommitments)| {
+                            (
+                                party_id,
+                                decommitments
+                                    .into_iter()
+                                    .flat_map(|maurer_decommitment| {
+                                        maurer_decommitment.statements.into_iter().map(|statement| {
+                                            let (_, language_statement) = statement.into();
+
+                                            language_statement
+                                        })
+                                    })
+                                    .collect(),
+                            )
+                        })
+                        .collect();
+
                 let enc_dl_output = enc_dl
                     .into_iter()
                     .zip(enc_dl_proof_shares.into_iter())
@@ -290,9 +316,6 @@ impl BulletProofAggregateRound {
                             .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
                     })
                     .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
-
-                let individual_encrypted_nonce_shares_and_public_shares: IndividualEncryptedNonceSharesAndPublicShares = HashMap::new();
-
 
                 Ok(BulletProofAggregateRoundCompletion::Output((
                     (enc_dh_output, enc_dl_output),

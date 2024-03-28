@@ -4,12 +4,15 @@
 use std::collections::{HashMap, HashSet};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId, ObjectRef};
-use sui_types::messages_signature_mpc::{AdditivelyHomomorphicDecryptionKeyShare, PartyID, SignatureMPCSessionID, TwopcMPCResult, DecryptionPublicParameters, DKGSignatureMPCDecentralizedOutput, PresignSignatureMPCDecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, DKGSignatureMPCCentralizedCommitment, Secp256k1GroupElementValue};
+use sui_types::messages_signature_mpc::{AdditivelyHomomorphicDecryptionKeyShare, PartyID, SignatureMPCSessionID, TwopcMPCResult, DecryptionPublicParameters, DKGSignatureMPCDecentralizedOutput, PresignSignatureMPCDecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, DKGSignatureMPCCentralizedCommitment, Secp256k1GroupElementValue, SignSignatureMPCSignatureThresholdDecryptionRoundParty};
 use std::convert::TryInto;
+use std::mem;
 
 #[derive(Default)]
 pub(crate) enum SignRound {
-    FirstRound,
+    FirstRound {
+        signature_threshold_decryption_round_parties: Vec<SignSignatureMPCSignatureThresholdDecryptionRoundParty>
+    },
     #[default]
     None,
 }
@@ -38,36 +41,43 @@ impl SignRound {
             presigns.clone(),
         )?;
 
-        let decryption_shares = messages.iter().zip(sign_mpc_party_per_message.into_iter()).zip(public_nonce_encrypted_partial_signature_and_proofs.clone().into_iter()).map(|((m, party), public_nonce_encrypted_partial_signature_and_proof)| {
+        let (decryption_shares, signature_threshold_decryption_round_parties): (Vec<_>, Vec<_>) = messages.iter().zip(sign_mpc_party_per_message.into_iter()).zip(public_nonce_encrypted_partial_signature_and_proofs.clone().into_iter()).map(|((m, party), public_nonce_encrypted_partial_signature_and_proof)| {
             let m = message_digest(m);
             party
-                .partially_decrypt_encrypted_signature_parts(
+                .partially_decrypt_encrypted_signature_parts_prehash(
                     m,
                     public_nonce_encrypted_partial_signature_and_proof,
                     &mut OsRng,
                 )
-        }).collect::<TwopcMPCResult<Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>>()?;
+        }).collect::<TwopcMPCResult<Vec<((PaillierModulusSizedNumber, PaillierModulusSizedNumber), SignSignatureMPCSignatureThresholdDecryptionRoundParty)>>>()?.into_iter().unzip();
 
         Ok((
-            SignRound::FirstRound,
-            decryption_shares,
+            SignRound::FirstRound {
+                signature_threshold_decryption_round_parties
+            },
+            decryption_shares
         ))
     }
 
     pub(crate) fn complete_round(
         &mut self,
         state: SignState
-    ) -> TwopcMPCResult<Vec<Vec<u8>>> {
+    ) -> TwopcMPCResult<SignRoundCompletion> {
+        let round = mem::take(self);
+        match round {
+            SignRound::FirstRound { signature_threshold_decryption_round_parties } => {
+                let signatures_s = decrypt_signature_decentralized_party_sign(state.public_key.unwrap(), state.messages.unwrap(), state.tiresias_public_parameters.clone(), state.decryption_shares.clone(), state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap(), signature_threshold_decryption_round_parties)?;
 
-        let signatures_s = decrypt_signature_decentralized_party_sign(state.public_key.unwrap(), state.messages.unwrap(), state.tiresias_public_parameters.clone(), state.decryption_shares.clone(), state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap())?;
+                Ok(SignRoundCompletion::Output(signatures_s))            }
+            _ => Ok(SignRoundCompletion::None)
+        }
 
-        Ok(signatures_s)
+
     }
 }
 
 
-pub(crate) enum SignMessageRoundCompletion {
-    Message(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
+pub(crate) enum SignRoundCompletion {
     Output(Vec<Vec<u8>>),
     None,
 }

@@ -6,7 +6,7 @@ use std::mem;
 use crate::signature_mpc::aggregate::{BulletProofAggregateRound, BulletProofAggregateState, BulletProofAggregateRoundCompletion};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId};
-use sui_types::messages_signature_mpc::{initiate_decentralized_party_dkg, DKGSignatureMPCCentralizedCommitment, DKGSignatureMPCSecretKeyShareEncryptionAndProof, PartyID, SignatureMPCBulletProofAggregatesMessage, SignatureMPCSessionID, TwopcMPCResult, EncryptionPublicParameters, DKGSignatureMPCDecentralizedOutput, PresignSignatureMPCCentralizedSignatureNonceSharesCommitmentsAndBatchedProof};
+use sui_types::messages_signature_mpc::{initiate_decentralized_party_dkg, DKGSignatureMPCCentralizedCommitment, DKGSignatureMPCSecretKeyShareEncryptionAndProof, PartyID, SignatureMPCBulletProofAggregatesMessage, SignatureMPCSessionID, TwopcMPCResult, EncryptionPublicParameters, DKGSignatureMPCDecentralizedOutput, PresignSignatureMPCCentralizedSignatureNonceSharesCommitmentsAndBatchedProof, DecryptionPublicParameters};
 
 #[derive(Default)]
 pub(crate) enum DKGRound {
@@ -19,7 +19,7 @@ pub(crate) enum DKGRound {
 
 impl DKGRound {
     pub(crate) fn new(
-        tiresias_public_parameters: EncryptionPublicParameters,
+        tiresias_public_parameters: DecryptionPublicParameters,
         epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,

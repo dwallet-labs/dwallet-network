@@ -506,6 +506,9 @@ impl NativesCostTable {
                 dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: protocol_config
                     .dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base()
                     .into(),
+                sign_verify_encrypted_signature_parts_prehash_cost_base: protocol_config
+                    .sign_verify_encrypted_signature_parts_prehash_cost_base()
+                    .into(),
             },
         }
     }

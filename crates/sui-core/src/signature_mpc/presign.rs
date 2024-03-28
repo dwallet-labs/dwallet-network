@@ -9,7 +9,7 @@ use rand::rngs::OsRng;
 use std::collections::{HashMap, HashSet};
 use std::mem;
 use sui_types::base_types::{EpochId, ObjectRef};
-use sui_types::messages_signature_mpc::{initiate_decentralized_party_presign, new_decentralized_party_presign_batch, DKGSignatureMPCDecentralizedOutput, EncryptedDecentralizedPartySecretKeyShareValue, EncryptionPublicParameters, EnhancedLanguageStatementAccessors, PartyID, PresignSignatureMPCCentralizedSignatureNonceSharesCommitmentsAndBatchedProof, PresignSignatureMPCDecentralizedEncryptedMaskedNoncesRoundParty, PresignSignatureMPCDecentralizedPartyOutput, PresignSignatureMPCDecentralizedPartyPresign, PresignSignatureMPCEncryptedNonceShareAndPublicShare, PresignSignatureMPCMasksAndEncryptedMaskedKeyShare, SignatureMPCBulletProofAggregatesMessage, SignatureMPCSessionID, TwopcMPCResult, EncDHProofAggregationOutput, EncDLProofAggregationOutput, IndividualEncryptedMaskedNonceShares, IndividualEncryptedNonceSharesAndPublicShares};
+use sui_types::messages_signature_mpc::{initiate_decentralized_party_presign, new_decentralized_party_presign_batch, DKGSignatureMPCDecentralizedOutput, EncryptedDecentralizedPartySecretKeyShareValue, EncryptionPublicParameters, EnhancedLanguageStatementAccessors, PartyID, PresignSignatureMPCCentralizedSignatureNonceSharesCommitmentsAndBatchedProof, PresignSignatureMPCDecentralizedEncryptedMaskedNoncesRoundParty, PresignSignatureMPCDecentralizedPartyOutput, PresignSignatureMPCDecentralizedPartyPresign, PresignSignatureMPCEncryptedNonceShareAndPublicShare, PresignSignatureMPCMasksAndEncryptedMaskedKeyShare, SignatureMPCBulletProofAggregatesMessage, SignatureMPCSessionID, TwopcMPCResult, EncDHProofAggregationOutput, EncDLProofAggregationOutput, IndividualEncryptedMaskedNonceShares, IndividualEncryptedNonceSharesAndPublicShares, DecryptionPublicParameters};
 
 #[derive(Default)]
 pub(crate) enum PresignRound {
@@ -31,7 +31,7 @@ pub(crate) enum PresignRound {
 
 impl PresignRound {
     pub(crate) fn new(
-        tiresias_public_parameters: EncryptionPublicParameters,
+        tiresias_public_parameters: DecryptionPublicParameters,
         epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,

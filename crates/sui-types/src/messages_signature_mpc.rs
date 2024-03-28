@@ -71,7 +71,7 @@ pub(crate) const MASK_LIMBS: usize =
     secp256k1::SCALAR_LIMBS + StatisticalSecuritySizedNumber::LIMBS + U64::LIMBS;
 
 pub const RANGE_CLAIMS_PER_MASK: usize =
-    (Uint::<MASK_LIMBS>::BITS / bulletproofs::RANGE_CLAIM_BITS).next_power_of_two();
+    Uint::<MASK_LIMBS>::BITS / bulletproofs::RANGE_CLAIM_BITS;
 
 pub const NUM_RANGE_CLAIMS: usize = DIMENSION * RANGE_CLAIMS_PER_SCALAR + RANGE_CLAIMS_PER_MASK;
 pub type TwopcMPCResult<T> = twopc_mpc::Result<T>;
@@ -376,12 +376,12 @@ pub type DKGSignatureMPCCentralizedOutput = twopc_mpc::dkg::centralized_party::O
     tiresias::CiphertextSpaceValue,
 >;
 
-pub fn initiate_centralized_party_dkg(//paillier_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
+pub fn initiate_centralized_party_dkg(//tiresias_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
 ) -> DKGSignatureMPCCentralizedCommitmentRoundParty {
     pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
 
     // TODO: replace unwrap
-    let paillier_public_parameters = tiresias::encryption_key::PublicParameters::new(N).unwrap();
+    let tiresias_public_parameters = tiresias::encryption_key::PublicParameters::new(N).unwrap();
 
     let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
 
@@ -400,9 +400,9 @@ pub fn initiate_centralized_party_dkg(//paillier_public_parameters: &str, epoch:
         // },
         scalar_group_public_parameters: secp256k1_scalar_public_parameters.clone(),
         group_public_parameters: secp256k1_group_public_parameters.clone(),
-        encryption_scheme_public_parameters: paillier_public_parameters.clone(),
+        encryption_scheme_public_parameters: tiresias_public_parameters.clone(),
         range_proof_public_parameters: bulletproofs_public_parameters.clone(),
-        unbounded_encdl_witness_public_parameters: paillier_public_parameters
+        unbounded_encdl_witness_public_parameters: tiresias_public_parameters
             .randomness_space_public_parameters()
             .clone(),
     }
@@ -423,7 +423,7 @@ pub type DKGSignatureMPCDecentralizedOutput =
 // -------------------------------------------------------------------------------------------------
 
 pub fn initiate_decentralized_party_dkg(
-    tiresias_public_parameters: EncryptionPublicParameters,
+    tiresias_public_parameters: DecryptionPublicParameters,
     epoch: EpochId,
     party_id: PartyID,
     parties: HashSet<PartyID>,
@@ -438,6 +438,7 @@ pub fn initiate_decentralized_party_dkg(
 
     Ok(DKGSignatureMPCEncryptionOfSecretKeyShareRoundParty {
         party_id,
+        threshold: tiresias_public_parameters.threshold,
         parties,
         protocol_context: PhantomData::<()>,
         // protocol_context: ProtocolContext {
@@ -448,8 +449,8 @@ pub fn initiate_decentralized_party_dkg(
         // },
         scalar_group_public_parameters: secp256k1_scalar_public_parameters.clone(),
         group_public_parameters: secp256k1_group_public_parameters.clone(),
-        encryption_scheme_public_parameters: tiresias_public_parameters.clone(),
-        unbounded_encdl_witness_public_parameters: tiresias_public_parameters
+        encryption_scheme_public_parameters: tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
+        unbounded_encdl_witness_public_parameters: tiresias_public_parameters.encryption_scheme_public_parameters
             .randomness_space_public_parameters()
             .clone(),
         range_proof_public_parameters: bulletproofs_public_parameters.clone(),
@@ -457,14 +458,14 @@ pub fn initiate_decentralized_party_dkg(
 }
 
 pub fn decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
-    paillier_public_parameters: &str,
+    tiresias_public_parameters: &str,
     commitment_to_centralized_party_secret_key_share: DKGSignatureMPCCentralizedCommitment,
     centralized_party_public_key_share_decommitment_and_proof: DKGSignatureMPCCentralizedPublicKeyShareDecommitmentAndProof,
     secret_key_share_encryption_and_proof: DKGSignatureMPCSecretKeyShareEncryptionAndProof,
 ) -> DKGSignatureMPCDecentralizedOutput {
     // TODO: replace unwrap
-    let paillier_public_parameters = tiresias::encryption_key::PublicParameters::new(
-        LargeBiPrimeSizedNumber::from_be_hex(paillier_public_parameters),
+    let tiresias_public_parameters = tiresias::encryption_key::PublicParameters::new(
+        LargeBiPrimeSizedNumber::from_be_hex(tiresias_public_parameters),
     )
     .unwrap();
     let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
@@ -482,7 +483,7 @@ pub fn decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_part
             // },
             scalar_group_public_parameters: secp256k1_scalar_public_parameters.clone(),
             group_public_parameters: secp256k1_group_public_parameters.clone(),
-            encryption_scheme_public_parameters: paillier_public_parameters,
+            encryption_scheme_public_parameters: tiresias_public_parameters,
             commitment_to_centralized_party_secret_key_share,
 
             _unbounded_witness_choice: PhantomData::<tiresias::RandomnessSpaceGroupElement>,
@@ -560,7 +561,7 @@ pub type DKGSignatureMPCSecretKeyShareEncryptionAndProof =
 // -------------------------------------------------------------------------------------------------
 
 pub fn initiate_centralized_party_presign(
-    // paillier_public_parameters: &str,
+    // tiresias_public_parameters: &str,
     // epoch: EpochId,
     // party_id: PartyID,
     // parties: HashSet<PartyID>,
@@ -570,7 +571,7 @@ pub fn initiate_centralized_party_presign(
     pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
 
     // TODO: replace unwrap
-    let paillier_public_parameters = tiresias::encryption_key::PublicParameters::new(N).unwrap();
+    let tiresias_public_parameters = tiresias::encryption_key::PublicParameters::new(N).unwrap();
 
     let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
 
@@ -579,12 +580,12 @@ pub fn initiate_centralized_party_presign(
     let bulletproofs_public_parameters =
         bulletproofs::PublicParameters::<{ RANGE_CLAIMS_PER_SCALAR }>::default();
 
-    let unbounded_encdl_witness_public_parameters = paillier_public_parameters
+    let unbounded_encdl_witness_public_parameters = tiresias_public_parameters
         .randomness_space_public_parameters()
         .clone();
 
     let unbounded_encdh_witness_public_parameters = self_product::PublicParameters::new(
-        paillier_public_parameters
+        tiresias_public_parameters
             .randomness_space_public_parameters()
             .clone(),
     );
@@ -599,7 +600,7 @@ pub fn initiate_centralized_party_presign(
         // },
         secp256k1_scalar_public_parameters.clone(),
         secp256k1_group_public_parameters.clone(),
-        paillier_public_parameters.clone(),
+        tiresias_public_parameters.clone(),
         unbounded_encdl_witness_public_parameters.clone(),
         unbounded_encdh_witness_public_parameters.clone(),
         bulletproofs_public_parameters.clone(),
@@ -731,19 +732,26 @@ pub type PresignSignatureMPCDecentralizedPartyPresign =
 
 pub type IndividualEncryptedNonceSharesAndPublicShares = HashMap<PartyID,
     Vec<
-        encryption_of_discrete_log::StatementSpaceGroupElement<
-            { tiresias::PLAINTEXT_SPACE_SCALAR_LIMBS },
-            { secp256k1::SCALAR_LIMBS },
-            secp256k1::GroupElement,
-            tiresias::EncryptionKey,
-        >,>,
+        group::Value<
+            encryption_of_discrete_log::StatementSpaceGroupElement<
+                { tiresias::PLAINTEXT_SPACE_SCALAR_LIMBS },
+                { secp256k1::SCALAR_LIMBS },
+                secp256k1::GroupElement,
+                tiresias::EncryptionKey,
+            >,
+        >
+    >,
 >;
 pub type IndividualEncryptedMaskedNonceShares = HashMap<PartyID,
-    Vec<encryption_of_tuple::StatementSpaceGroupElement<
-        { tiresias::PLAINTEXT_SPACE_SCALAR_LIMBS },
-        { secp256k1::SCALAR_LIMBS },
-        tiresias::EncryptionKey,
-    >,>,
+    Vec<
+        group::Value<
+            encryption_of_tuple::StatementSpaceGroupElement<
+                { tiresias::PLAINTEXT_SPACE_SCALAR_LIMBS },
+                { secp256k1::SCALAR_LIMBS },
+                tiresias::EncryptionKey,
+            >,
+        >,
+    >,
 >;
 
 
@@ -772,9 +780,9 @@ pub fn new_decentralized_party_presign_batch(
         parties.clone(),
         commitments_and_proof_to_centralized_party_nonce_shares,
         mask_and_encrypted_masked_key_shares,
-        parties.clone().into_iter().map(|p| (p, encrypted_nonce_share_and_public_shares.clone())).collect(),
+        individual_encrypted_nonce_shares_and_public_shares,
         encrypted_nonce_share_and_public_shares,
-        parties.clone().into_iter().map(|p| (p, encrypted_masked_nonce_shares.clone())).collect(),
+        individual_encrypted_masked_nonce_shares,
         encrypted_masked_nonce_shares,
         &secp256k1_group_public_parameters,
     )
@@ -785,7 +793,7 @@ pub type EncryptedDecentralizedPartySecretKeyShareValue =
     <tiresias::CiphertextSpaceGroupElement as group::GroupElement>::Value;
 
 pub fn initiate_decentralized_party_presign(
-    tiresias_public_parameters: EncryptionPublicParameters,
+    tiresias_public_parameters: DecryptionPublicParameters,
     epoch: EpochId,
     party_id: PartyID,
     parties: HashSet<PartyID>,
@@ -799,18 +807,20 @@ pub fn initiate_decentralized_party_presign(
     let bulletproofs_public_parameters =
         bulletproofs::PublicParameters::<{ RANGE_CLAIMS_PER_SCALAR }>::default();
 
-    let unbounded_encdl_witness_public_parameters = tiresias_public_parameters
+    let unbounded_encdl_witness_public_parameters = tiresias_public_parameters.encryption_scheme_public_parameters
         .randomness_space_public_parameters()
         .clone();
 
     let unbounded_encdh_witness_public_parameters = self_product::PublicParameters::new(
         tiresias_public_parameters
+            .encryption_scheme_public_parameters
             .randomness_space_public_parameters()
             .clone(),
     );
 
     PresignSignatureMPCDecentralizedEncryptedMaskedKeyShareRoundParty::new(
         party_id,
+        tiresias_public_parameters.threshold,
         parties,
         PhantomData::<()>,
         // protocol_context: ProtocolContext {
@@ -821,7 +831,7 @@ pub fn initiate_decentralized_party_presign(
         // },
         secp256k1_scalar_public_parameters.clone(),
         secp256k1_group_public_parameters.clone(),
-        tiresias_public_parameters.clone(),
+        tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
         unbounded_encdl_witness_public_parameters,
         unbounded_encdh_witness_public_parameters,
         bulletproofs_public_parameters.clone(),
@@ -833,13 +843,13 @@ pub fn initiate_decentralized_party_presign(
 // Sign Centralized Party
 // -------------------------------------------------------------------------------------------------
 
-pub type SignSignatureMPCCentralizedParty = twopc_mpc::sign::centralized_party::Party<
-    { tiresias::PLAINTEXT_SPACE_SCALAR_LIMBS },
+pub type SignSignatureMPCCentralizedParty = twopc_mpc::sign::centralized_party::signature_homomorphic_evaluation_round::Party<
     { secp256k1::SCALAR_LIMBS },
     { RANGE_CLAIMS_PER_SCALAR },
     { RANGE_CLAIMS_PER_MASK },
     { ristretto::SCALAR_LIMBS },
     { NUM_RANGE_CLAIMS },
+    { tiresias::PLAINTEXT_SPACE_SCALAR_LIMBS },
     secp256k1::GroupElement,
     tiresias::EncryptionKey,
     bulletproofs::RangeProof,
@@ -866,7 +876,7 @@ pub type SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof
     >;
 
 pub fn initiate_centralized_party_sign(
-    //paillier_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
+    //tiresias_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
     dkg_output: DKGSignatureMPCCentralizedOutput,
     presigns: Vec<PresignSignatureMPCCentralizedPartyPresign>,
 ) -> TwopcMPCResult<Vec<SignSignatureMPCCentralizedParty>> {
@@ -880,11 +890,11 @@ pub fn initiate_centralized_party_sign(
     let bulletproofs_public_parameters =
         bulletproofs::PublicParameters::<{ NUM_RANGE_CLAIMS }>::default();
 
-    let paillier_public_parameters = tiresias::encryption_key::PublicParameters::new(N).unwrap();
+    let tiresias_public_parameters = tiresias::encryption_key::PublicParameters::new(N).unwrap();
 
     let unbounded_dcom_eval_witness_public_parameters = group::direct_product::PublicParameters(
         self_product::PublicParameters::new(secp256k1_scalar_public_parameters.clone()),
-        paillier_public_parameters
+        tiresias_public_parameters
             .randomness_space_public_parameters()
             .clone(),
     );
@@ -896,7 +906,7 @@ pub fn initiate_centralized_party_sign(
                 PhantomData::<()>,
                 secp256k1_scalar_public_parameters.clone(),
                 secp256k1_group_public_parameters.clone(),
-                paillier_public_parameters.clone(),
+                tiresias_public_parameters.clone(),
                 unbounded_dcom_eval_witness_public_parameters.clone(),
                 bulletproofs_public_parameters.clone(),
                 dkg_output.clone(),
@@ -906,7 +916,7 @@ pub fn initiate_centralized_party_sign(
         .collect()
 }
 pub fn initiate_decentralized_party_sign(
-    //paillier_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
+    //tiresias_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
     tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
     tiresias_decryption_key_share_public_parameters: DecryptionPublicParameters,
     epoch: EpochId,
@@ -923,11 +933,11 @@ pub fn initiate_decentralized_party_sign(
     let bulletproofs_public_parameters =
         bulletproofs::PublicParameters::<{ NUM_RANGE_CLAIMS }>::default();
 
-    let paillier_public_parameters = tiresias_decryption_key_share_public_parameters.encryption_scheme_public_parameters.clone();
+    let tiresias_public_parameters = tiresias_decryption_key_share_public_parameters.encryption_scheme_public_parameters.clone();
 
     let unbounded_dcom_eval_witness_public_parameters = group::direct_product::PublicParameters(
         self_product::PublicParameters::new(secp256k1_scalar_public_parameters.clone()),
-        paillier_public_parameters
+        tiresias_public_parameters
             .randomness_space_public_parameters()
             .clone(),
     );
@@ -941,16 +951,64 @@ pub fn initiate_decentralized_party_sign(
         .into_iter()
         .map(|p| {
             SignSignatureMPCDecentralizedParty::new(
+                tiresias_decryption_key_share_public_parameters.threshold,
                 decryption_key_share.clone(),
                 tiresias_decryption_key_share_public_parameters.clone(),
                 PhantomData::<()>,
                 secp256k1_scalar_public_parameters.clone(),
                 secp256k1_group_public_parameters.clone(),
-                paillier_public_parameters.clone(),
+                tiresias_public_parameters.clone(),
                 unbounded_dcom_eval_witness_public_parameters.clone(),
                 bulletproofs_public_parameters.clone(),
                 dkg_output.clone(),
                 p,
+            )
+        })
+        .collect()
+}
+pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
+    tiresias_public_parameters: &str,
+    messages: Vec<Vec<u8>>,
+    public_nonce_encrypted_partial_signature_and_proofs: Vec<SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof>,
+    dkg_output: DKGSignatureMPCDecentralizedOutput,
+    presigns: Vec<PresignSignatureMPCDecentralizedPartyPresign>,
+) -> TwopcMPCResult<()> {
+    let tiresias_public_parameters = tiresias::encryption_key::PublicParameters::new(
+        LargeBiPrimeSizedNumber::from_be_hex(tiresias_public_parameters),
+    )
+        .unwrap();
+
+    let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
+
+    let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
+
+    let bulletproofs_public_parameters =
+        bulletproofs::PublicParameters::<{ NUM_RANGE_CLAIMS }>::default();
+
+
+    let unbounded_dcom_eval_witness_public_parameters = group::direct_product::PublicParameters(
+        self_product::PublicParameters::new(secp256k1_scalar_public_parameters.clone()),
+        tiresias_public_parameters
+            .randomness_space_public_parameters()
+            .clone(),
+    );
+    messages.into_iter().zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter()).zip(presigns
+        .into_iter())
+
+        .map(|((message, public_nonce_encrypted_partial_signature_and_proofs), presign)| {
+            let m = message_digest(&message);
+            SignSignatureMPCDecentralizedParty::verify_encrypted_signature_parts_prehash(
+                m,
+                public_nonce_encrypted_partial_signature_and_proofs,
+                &PhantomData::<()>,
+                &secp256k1_scalar_public_parameters,
+                &secp256k1_group_public_parameters,
+                &tiresias_public_parameters,
+                &unbounded_dcom_eval_witness_public_parameters,
+                &bulletproofs_public_parameters,
+                dkg_output.clone(),
+                presign,
+                &mut OsRng
             )
         })
         .collect()
@@ -960,7 +1018,8 @@ pub fn decrypt_signature_decentralized_party_sign(
     messages: Vec<Vec<u8>>,
     tiresias_decryption_key_share_public_parameters: DecryptionPublicParameters,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
-    public_nonce_encrypted_partial_signature_and_proofs: Vec<SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof>
+    public_nonce_encrypted_partial_signature_and_proofs: Vec<SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof>,
+    signature_threshold_decryption_round_parties: Vec<SignSignatureMPCSignatureThresholdDecryptionRoundParty>,
 ) -> TwopcMPCResult<Vec<Vec<u8>>> {
     let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
 
@@ -1006,24 +1065,17 @@ pub fn decrypt_signature_decentralized_party_sign(
         })
         .collect();
 
-    messages.into_iter().zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter()).zip(decryption_shares.into_iter()).map(|((message, public_nonce_encrypted_partial_signature_and_proof), (partial_signature_decryption_shares, masked_nonce_decryption_shares))| {
-        let m = message_digest(&message);
-        let nonce_x_coordinate = secp256k1::GroupElement::new(public_nonce_encrypted_partial_signature_and_proof.public_nonce, &secp256k1_group_public_parameters)?.x();
+    signature_threshold_decryption_round_parties.into_iter().zip(messages.into_iter().zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter()).zip(decryption_shares.into_iter())).map(|(signature_threshold_decryption_round_party, ((message, public_nonce_encrypted_partial_signature_and_proof), (partial_signature_decryption_shares, masked_nonce_decryption_shares)))| {
 
-        let (nonce_x_coordinate, signature) = SignSignatureMPCDecentralizedParty::decrypt_signature(
-            m,
-            public_key,
-            nonce_x_coordinate,
+        let (nonce_x_coordinate, signature_s) = signature_threshold_decryption_round_party.decrypt_signature(
             lagrange_coefficients.clone(),
-            &tiresias_decryption_key_share_public_parameters,
-            secp256k1_scalar_public_parameters.clone(),
             partial_signature_decryption_shares,
             masked_nonce_decryption_shares,
         )?;
 
-        let signature_s: k256::Scalar = signature.into();
+        let signature_s_inner: k256::Scalar = signature_s.into();
 
-        Ok(Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(nonce_x_coordinate), signature_s).unwrap().to_vec())
+        Ok(Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(nonce_x_coordinate), signature_s_inner).unwrap().to_vec())
     })
         .collect()
 }
@@ -1047,7 +1099,7 @@ pub fn message_digest(message: &[u8]) -> secp256k1::Scalar {
 // Sign Decentralized Party Parties
 // -------------------------------------------------------------------------------------------------
 
-pub type SignSignatureMPCDecentralizedParty = twopc_mpc::sign::decentralized_party::Party<
+pub type SignSignatureMPCDecentralizedParty = twopc_mpc::sign::decentralized_party::signature_partial_decryption_round::Party<
     { secp256k1::SCALAR_LIMBS },
     { ristretto::SCALAR_LIMBS },
     { RANGE_CLAIMS_PER_SCALAR },
@@ -1064,6 +1116,13 @@ pub type SignSignatureMPCDecentralizedParty = twopc_mpc::sign::decentralized_par
     >,
     //ProtocolContext,
     PhantomData<()>,
+>;
+pub type SignSignatureMPCSignatureThresholdDecryptionRoundParty = twopc_mpc::sign::decentralized_party::signature_threhsold_decryption_round::Party<
+    { secp256k1::SCALAR_LIMBS },
+    { tiresias::PLAINTEXT_SPACE_SCALAR_LIMBS },
+    secp256k1::GroupElement,
+    tiresias::EncryptionKey,
+    DecryptionKeyShare,
 >;
 
 // -------------------------------------------------------------------------------------------------
