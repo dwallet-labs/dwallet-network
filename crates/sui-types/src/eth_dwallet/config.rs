@@ -13,10 +13,12 @@ pub struct EthClientConfig {
     // Data Slot.
     pub data_slot: u64,
     // Message Hash.
-    pub message: Vec<u8>,
+    pub message: String,
     // DWalletID
-    pub dwallet_id: [u8; 20],
+    pub dwallet_id: Vec<u8>,
     pub max_checkpoint_age: u64,
+    // Beacon Checkpoint
+    pub checkpoint: String,
 }
 
 impl EthClientConfig {
@@ -27,8 +29,9 @@ impl EthClientConfig {
         consensus_rpc: String,
         data_slot: u64,
         dwallet_id: Vec<u8>,
-        message: Vec<u8>,
+        message: String,
         max_checkpoint_age: u64,
+        checkpoint: String,
     ) -> Result<Self, anyhow::Error> {
         let result = Self {
             network,
@@ -36,9 +39,10 @@ impl EthClientConfig {
             contract_addr,
             consensus_rpc,
             data_slot,
-            dwallet_id: <[u8; 20]>::try_from(dwallet_id.as_slice())?,
+            dwallet_id,
             message,
             max_checkpoint_age,
+            checkpoint,
         };
         Ok(result)
     }

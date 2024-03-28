@@ -22,23 +22,44 @@ use crate::eth_dwallet::utils::{
     calc_sync_period, compute_domain, compute_signing_root, is_proof_valid,
 };
 
+use crate::id::UID;
+
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct EthStateObject {
+    pub id: UID,
+    pub data: Vec<u8>,
+    pub time_slot: u64,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EthState {
-    pub last_checkpoint: Vec<u8>,
-    current_sync_committee: SyncCommittee,
+    pub last_checkpoint: String,
+    #[serde(default)]
+    pub current_sync_committee: SyncCommittee,
+    #[serde(default)]
     next_sync_committee: Option<SyncCommittee>,
+    #[serde(default)]
     pub finalized_header: Header,
+    #[serde(default)]
     rpc: String,
+    #[serde(default)]
     optimistic_header: Header,
+    #[serde(default)]
     previous_max_active_participants: u64,
+    #[serde(default)]
     current_max_active_participants: u64,
+    #[serde(default = "default_network")]
     network: Network,
+}
+
+fn default_network() -> Network {
+    Network::SEPOLIA
 }
 
 impl EthState {
     pub fn new() -> Self {
         EthState {
-            last_checkpoint: vec![],
+            last_checkpoint: "".to_string(),
             current_sync_committee: SyncCommittee::default(),
             next_sync_committee: None,
             finalized_header: Header::default(),
@@ -46,8 +67,8 @@ impl EthState {
             rpc: "".to_string(),
             previous_max_active_participants: 0,
             current_max_active_participants: 0,
-            // todo(yuval): make sure it matches sui network (mainnet = mainnet, testnet = goerli, etc.)
-            network: Network::GOERLI,
+            // todo(yuval): make sure it matches sui network (mainnet = mainnet, testnet = sepolia, etc.)
+            network: Network::SEPOLIA,
         }
     }
 
@@ -107,15 +128,14 @@ impl EthState {
 
     pub fn verify_updates(&mut self, updates: &UpdatesResponse) -> Result<bool, Error> {
         let mut checkpoint_reached = false;
-        let expected_hash = format!("0x{}", hex::encode(&updates.provided_checkpoint));
+        let expected_hash = &updates.provided_checkpoint;
 
         for update in &updates.updates {
             self.verify_update(&update)?;
             self.apply_update(&update);
 
             // Check if the last update application made us reach the provided checkpoint
-            let header_hash = format!("0x{}", hex::encode(&self.last_checkpoint));
-            if header_hash == expected_hash {
+            if self.last_checkpoint == *expected_hash {
                 checkpoint_reached = true;
             }
         }
@@ -131,7 +151,7 @@ impl EthState {
 
     pub async fn bootstrap(&mut self, rpc: &NimbusRpc, checkpoint: &str) -> Result<(), Error> {
         let mut bootstrap: Bootstrap = rpc
-            .get_bootstrap(checkpoint.as_ref())
+            .get_bootstrap(hex::decode(&checkpoint[2..])?.as_slice())
             .await
             .map_err(|_| eyre!("could not fetch bootstrap"))?;
 
@@ -149,8 +169,8 @@ impl EthState {
         );
 
         let header_hash = bootstrap.header.hash_tree_root()?.to_string();
-        let expected_hash = format!("0x{}", hex::encode(checkpoint));
-        let header_valid = header_hash == expected_hash;
+        let expected_hash = checkpoint.to_string();
+        let header_valid = header_hash == checkpoint;
 
         if !header_valid {
             return Err(ConsensusError::InvalidHeaderHash(expected_hash, header_hash).into());
@@ -315,7 +335,7 @@ impl EthState {
                 if self.finalized_header.slot.as_u64() % 32 == 0 {
                     let checkpoint_res = self.finalized_header.hash_tree_root();
                     if let std::prelude::rust_2015::Ok(checkpoint) = checkpoint_res {
-                        self.last_checkpoint = checkpoint.as_ref().to_vec();
+                        self.last_checkpoint = format!("0x{:?}", checkpoint.as_ref());
                     }
                 }
 
@@ -329,7 +349,7 @@ impl EthState {
                 .hash_tree_root()
                 .map_err(|_| anyhow!("could not hash finalized header"))
                 .unwrap();
-            self.last_checkpoint = finalized_header_checkpoint.as_ref().to_vec();
+            self.last_checkpoint = format!("0x{:?}", finalized_header_checkpoint.as_ref());
         }
     }
 

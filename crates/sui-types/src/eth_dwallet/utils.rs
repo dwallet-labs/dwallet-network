@@ -1,4 +1,4 @@
-use ethers::prelude::H256;
+use ethers::prelude::{H256, H512};
 use ethers::types::H160;
 use ethers::utils::rlp::RlpStream;
 use eyre::Error;
@@ -92,7 +92,7 @@ pub fn calculate_mapping_slot(key: H256, mapping_slot: u64) -> H256 {
 /// Calculates the key for a given message and dWallet ID.
 /// In the smart contract, the key is calculated by hashing the message and the dWallet id together.
 /// The result is a H256 hash that represents the key.
-pub fn calculate_key(mut message: Vec<u8>, dwallet_id: H160) -> H256 {
+pub fn calculate_key(mut message: Vec<u8>, dwallet_id: H512) -> H256 {
     let mut hasher = Keccak256::new();
     message.extend_from_slice(dwallet_id.as_bytes());
     hasher.update(message);

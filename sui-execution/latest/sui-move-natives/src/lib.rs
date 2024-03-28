@@ -759,7 +759,15 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             make_native!(
                 eth_state_proof::verify_eth_state
             ),
-        ), ];
+        ),
+        (
+            "eth_dwallet",
+            "verify_message_proof",
+            make_native!(
+                eth_state_proof::verify_message_proof
+            ),
+        ),
+    ];
     sui_system_natives
         .iter()
         .cloned()

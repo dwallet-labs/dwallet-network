@@ -25,15 +25,12 @@ impl EthLightClient {
     pub async fn new(conf: EthClientConfig) -> Result<Self, anyhow::Error> {
         // todo(yuval): make sure it's set based on the net in sui (test = goerli, main = main)
         let network = conf.network;
-        let latest_checkpoint = fetch_latest_checkpoint(network).await?;
 
         let client: Client<FileDB> = ClientBuilder::new()
             .network(network)
             .execution_rpc(&conf.execution_rpc)
-            // todo(zeev): what URL do we need here?
             .consensus_rpc(&conf.consensus_rpc)
-            .load_external_fallback()
-            .checkpoint(&latest_checkpoint)
+            .checkpoint(&conf.checkpoint)
             .data_dir("/tmp/helios".parse()?)
             .build()
             .map_err(|e| anyhow!("failed to create client: {}", e))?;
@@ -103,11 +100,11 @@ impl EthLightClient {
     }
 
     fn get_mapping_index(&self) -> Result<H256, Report> {
-        let decoded_msg = hex::decode(&self.config.message)?;
+        let decoded_msg = hex::decode(&self.config.message[2..])?;
 
         // Calculate memory slot.
         // Each mapping slot is calculated by concatenating of the msg and dWalletID.
-        let key = utils::calculate_key(decoded_msg, H160::from(&self.config.dwallet_id));
+        let key = utils::calculate_key(decoded_msg, H512::from_slice(self.config.dwallet_id.as_slice()));
         Ok(utils::calculate_mapping_slot(key, self.config.data_slot))
     }
 

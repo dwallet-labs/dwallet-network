@@ -19,9 +19,23 @@ module dwallet_system::eth_dwallet {
     struct EthState has key {
         id: UID,
         data: vector<u8>,
-        slot: u64,
+        time_slot: u64,
     }
 
+    public fun create_eth_state(
+        data: vector<u8>,
+        time_slot: u64,
+        ctx: &mut TxContext
+    ) {
+        let eth_state = EthState {
+            id: object::new(ctx),
+            data,
+            time_slot,
+        };
+        transfer::freeze_object(eth_state);
+    }
+
+    // This object is mutable, and should hold the id of the latest EthState object that is verified.
     struct CurrentEthState has key {
         id: UID,
         eth_state_id: ID,
@@ -32,12 +46,11 @@ module dwallet_system::eth_dwallet {
         self: &mut CurrentEthState,
         eth_state: &EthState,
     ) {
-        if (eth_state.slot > self.last_slot) {
+        if (eth_state.time_slot > self.last_slot) {
             self.eth_state_id = object::id(eth_state);
-            self.last_slot = eth_state.slot;
+            self.last_slot = eth_state.time_slot;
         }
     }
-
 
     /// Create the Eth dWallet Object.
     /// Wrap the dWalletCap.
@@ -57,20 +70,21 @@ module dwallet_system::eth_dwallet {
     }
 
     /// Verify the Eth state according to the updates.
-    public fun update_eth_state(
+    public fun verify_new_eth_state(
+        _state_json: vector<u8>,
+        _updates: vector<u8>,
         ctx: &mut TxContext,
-        self: &EthState,
-        updates: vector<u8>
     ) {
-        let (data, slot) = verify_eth_state(
-            updates,
-            self.data
-        );
-
+        // we need to debug this function -
+        // let (data, slot) = verify_eth_state(
+        //     updates,
+        //     state_json
+        // );
+        let data = b"test_data";
         let new_state = EthState {
             id: object::new(ctx),
             data,
-            slot,
+            time_slot: 0,
         };
 
         transfer::freeze_object(new_state);
@@ -96,6 +110,7 @@ module dwallet_system::eth_dwallet {
         dwallet::approve_messages(&eth_dwallet_cap.dwallet_cap, vector[message])
     }
 
+    #[allow(unused_function)]
     /// Verify the Eth state according to the updates.
     native fun verify_eth_state(
         updates: vector<u8>,

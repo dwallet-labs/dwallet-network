@@ -695,7 +695,7 @@ pub enum SuiClientCommands {
         eth_dwallet_cap_id: ObjectID,
         /// The Message (TX) to verify.
         #[clap(long)]
-        message: Vec<u8>,
+        message: String,
         /// The DWallet ID
         // todo(zeev): in the future we can fetch the dwallet ID.
         #[clap(long)]
@@ -1422,7 +1422,7 @@ impl SuiClientCommands {
                 eth_approve_message(
                     context,
                     eth_dwallet_cap_id,
-                    &message,
+                    message,
                     dwallet_id,
                     gas,
                     gas_budget,
