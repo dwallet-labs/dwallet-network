@@ -1,33 +1,35 @@
 # How to debug dwallet-network CLI
 
-## Notes
-- On any change you do on the network side, whether it's adding a module or modifying an existing module's function or state, you need to take a snapshot of the new state of the framework.
-  For doing so, use the following command in terminal, when your root is `dwallet-network`:
- ```
+## Preliminary Notes
+
+- **Snapshotting Framework Changes:** Whenever you modify the network—be it through the addition of a module or alteration of an existing module's functionality or state—it's crucial to capture the updated framework state.  
+ This step ensures that any changes made to the network's structure are recorded and preserved.
+Accomplish this by executing the following command in your terminal, ensuring your current directory is dwallet-network:  
+ 
+```bash
  cargo run --bin sui-framework-snapshot
  ```
-- In order to communicate with the CLI, you need to have the `dwallet` binary built. To do so, execute the following command in terminal, when your root is `/dwallet-network`:
- ```
+- **Building the dwallet Binary:** Communication with the CLI necessitates a built dwallet binary. Build it using the below command in the terminal, with dwallet-network as your current directory:
+ ```bash
  cargo build --bin dwallet
  ```
-- In order to use the binary you just built, you need to go to the target folder:
- ```
+- **Accessing the Binary:** After building the binary, navigate to the target/debug directory to use it:
+ ```bash
  cd target/debug
  ```
 
 ## Running a Local network:
-#### Start the network
-Execute the following command to start the network.
-- Make sure you Connect the dwallet client CLI to your local network, using the instructions [Here](https://docs.sui.io/guides/developer/getting-started/local-network#connect-the-sui-client-cli-to-your-local-network).
-```
+#### Starting the network
+To initiate the network, run the following command. Then, ensure the dwallet client CLI is connected to your local network as per the instructions found [Here](https://docs.sui.io/guides/developer/getting-started/local-network#connect-the-sui-client-cli-to-your-local-network).
+```bash
 RUST_BACKTRACE=1 cargo run --bin sui-test-validator  
 ```
 
-#### Getting gas from faucet
+#### Obtaining Gas from the Faucet
 When you run the `sui-test-validator` binary, it will start a faucet server on port 9123.  
-You need do use the following HTTP request for getting gas from faucet:
+You need do send the following HTTP request for getting gas from faucet:
 
-```
+```bash
 curl --location --request POST 'http://127.0.0.1:9123/gas' \
 --header 'Content-Type: application/json' \
 --data-raw '{
@@ -38,11 +40,17 @@ curl --location --request POST 'http://127.0.0.1:9123/gas' \
 ```
 
 #### Create a new dWallet
-**Note:** Every time you run the network, you need to create a new dwallet, as the network's state is not saved between runs.  
-**Note 2:** Sometimes this command get stuck, if it happens, just run it again.  
+**Important Considerations:**
 
-* Make sure you keep the `dwallet_id` and `dwallet_cap_id` of the created dwallet, as you will need them in the next steps.
+- Each network initialization necessitates the creation of a new dWallet, as the network does not retain state across sessions.
+- Occasionally, the creation command may freeze; if this occurs, simply rerun the command.  
 
+Ensure you record the `dwallet_id` and `dwallet_cap_id` generated, as they are needed for subsequent operations:
+```bash
+./dwallet client dwallet create --alias <ALIAS> --gas-budget 200000109
+```
+
+For example:
 ```
 ./dwallet client dwallet create --alias yuval --gas-budget 200000109
 
@@ -56,7 +64,7 @@ curl --location --request POST 'http://127.0.0.1:9123/gas' \
 ```
 
 
-#### Connect Dwallet to ETH Contract
+#### Connecting dWallet to an Ethereum Contract
 Take the `dwallet_cap_id` from the previous command and use it in the following command.  
 You also need to provide: 
 - The smart contract address (on the relevant ETH network) 
@@ -107,7 +115,7 @@ Example response:
 
 
 #### Create first ETH State
-Light client uses the EthState object to communicate with the Ethereum network.
+The light client uses the EthState object to communicate with the Ethereum network.
 On a new network, we need to create a new EthState object, which has a checkpoint included in it.  
 This will be used in order to get the state updates from the Ethereum network, and update the `CurrentEthState` object in the network (should be a singleton).  
 - Make sure you keep the `Object ID` of the created `EthState` object, as you will need it later on. 
