@@ -72,7 +72,8 @@ impl EthLightClient {
         let msg_storage_proof = proof
             .storage_proof
             .iter()
-            // TODO(yuval): make sure this does not break the code !!!!!!!!! (convert H256 to U256)
+            // TODO(yuval): make sure conversion from H256 to U256 does not break proof logic.
+            //  Conversion is made because of breaking changes introduced in ethers library.
             .find(|p| p.key == U256::from_big_endian(message_map_index.as_bytes()))
             .ok_or_else(|| eyre!("Storage proof not found"))?;
 

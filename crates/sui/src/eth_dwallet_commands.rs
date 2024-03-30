@@ -200,7 +200,6 @@ pub(crate) async fn eth_approve_message(
         SuiJsonValue::from_object_id(eth_dwallet_cap_id),
         SuiJsonValue::from_object_id(dwallet_id),
         message_sui_json,
-        // todo(yuval): make sure this is the correct way to send these.
         proof_sui_json,
         updates_sui_json,
         eth_state_sui_json,

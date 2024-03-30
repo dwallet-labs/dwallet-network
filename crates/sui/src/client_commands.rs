@@ -1411,7 +1411,6 @@ impl SuiClientCommands {
 
             SuiClientCommands::EthApproveMessage {
                 eth_dwallet_cap_id,
-                // todo(yuval): we might need to pass it as string.
                 message,
                 dwallet_id,
                 gas,
