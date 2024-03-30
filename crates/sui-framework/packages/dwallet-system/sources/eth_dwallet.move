@@ -35,6 +35,7 @@ module dwallet_system::eth_dwallet {
         transfer::freeze_object(eth_state);
     }
 
+    //todo: this should be initialized with the genesis state?
     // This object is mutable, and should hold the id of the latest EthState object that is verified.
     struct CurrentEthState has key {
         id: UID,
