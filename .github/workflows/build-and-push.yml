@@ -10,8 +10,7 @@ on:
       - 'apps/core/**'
       - 'apps/icons/**'
       - 'apps/ui/**'
-      - 'docker/explorer/Dockerfile'
-      - 'docker/explorer/build.sh'
+      - 'docker/explorer/**'
   pull_request:
     branches:
       - main
@@ -20,9 +19,7 @@ on:
       - 'apps/core/**'
       - 'apps/icons/**'
       - 'apps/ui/**'
-      - 'docker/explorer/Dockerfile'
-      - - 'docker/explorer/build.sh'
-
+      - 'docker/explorer/**'
 jobs:
   build-and-push:
     name: Build
