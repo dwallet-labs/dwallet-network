@@ -11,6 +11,7 @@ on:
       - 'apps/icons/**'
       - 'apps/ui/**'
       - 'docker/explorer/**'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main
@@ -20,6 +21,7 @@ on:
       - 'apps/icons/**'
       - 'apps/ui/**'
       - 'docker/explorer/**'
+      - '.github/workflows/**'
 jobs:
   build-and-push:
     name: Build
