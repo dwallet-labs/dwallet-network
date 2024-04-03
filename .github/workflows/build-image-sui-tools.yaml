@@ -1,0 +1,61 @@
+name: Build and Push sui-tools Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/explorer/**'
+      - 'apps/core/**'
+      - 'apps/icons/**'
+      - 'apps/ui/**'
+      - 'docker/explorer/**'
+      - '.github/workflows/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/explorer/**'
+      - 'apps/core/**'
+      - 'apps/icons/**'
+      - 'apps/ui/**'
+      - 'docker/explorer/**'
+      - '.github/workflows/**'
+
+jobs:
+  build-and-push:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - platform: linux/amd64
+            docker_tag_suffix: v1.16.2
+          - platform: linux/arm64
+            docker_tag_suffix: "v1.16.2-arm"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      #      - name: Log in to Amazon ECR
+      #        uses: aws-actions/amazon-ecr-login@v1
+      #        with:
+      #          registry-ids: "${{ secrets.AWS_ACCOUNT_ID }}"
+
+      - name: Build and Push sui-tools Image
+        run: |
+          docker buildx build \
+            --platform linux/${{ matrix.platform }} \
+            --tag $ECR_REPOSITORY:dwallet-tools-${{ matrix.docker_tag_suffix }}-${{ github.sha }} \
+            --push \
+            ./docker/sui-tools
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          ECR_REPOSITORY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
