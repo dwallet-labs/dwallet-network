@@ -35,9 +35,9 @@ jobs:
         platform: [linux/amd64, linux/arm64]
         include:
           - platform: linux/amd64
-            docker_tag_suffix: ${{ env.DOCKER_TAG_SUFFIX }}
+            docker_tag_suffix: v1.16.2
           - platform: linux/arm64
-            docker_tag_suffix: "${{ env.DOCKER_TAG_SUFFIX }}-arm"
+            docker_tag_suffix: "v1.16.2-arm"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
