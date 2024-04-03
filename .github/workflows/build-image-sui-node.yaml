@@ -48,7 +48,7 @@ jobs:
 #        with:
 #          registry-ids: "${{ secrets.AWS_ACCOUNT_ID }}"
 
-      - name: Build and push Docker image
+      - name: Build and Push Sui Node Image
         run: |
           docker buildx build \
             --platform linux/${{ matrix.platform }} \

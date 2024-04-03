@@ -47,7 +47,7 @@ jobs:
 #        with:
 #          registry-ids: "${{ secrets.AWS_ACCOUNT_ID }}"
 
-      - name: Build and push Docker image
+      - name: Build and Push Explorer Image
         run: |
           docker buildx build \
             --platform linux/${{ matrix.platform }} \
