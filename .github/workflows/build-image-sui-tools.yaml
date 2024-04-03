@@ -6,21 +6,25 @@ on:
     branches:
       - main
     paths:
-      - 'apps/explorer/**'
-      - 'apps/core/**'
+      - 'consensus/**'
+      - 'crates/**'
       - 'apps/icons/**'
-      - 'apps/ui/**'
-      - 'docker/explorer/**'
+      - 'sui-execution/**'
+      - 'narwhal/**'
+      - 'external-crates'
+      - 'docker/sui-tools/**'
       - '.github/workflows/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'apps/explorer/**'
-      - 'apps/core/**'
+      - 'consensus/**'
+      - 'crates/**'
       - 'apps/icons/**'
-      - 'apps/ui/**'
-      - 'docker/explorer/**'
+      - 'sui-execution/**'
+      - 'narwhal/**'
+      - 'external-crates'
+      - 'docker/sui-tools/**'
       - '.github/workflows/**'
 
 jobs:
