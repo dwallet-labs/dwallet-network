@@ -18,8 +18,8 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Build
+      - name: Build sui-node binary
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release
+          args: --release --bin sui-node
