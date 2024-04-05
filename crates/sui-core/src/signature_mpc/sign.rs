@@ -4,14 +4,14 @@
 use std::collections::{HashMap, HashSet};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId, ObjectRef};
-use sui_types::messages_signature_mpc::{AdditivelyHomomorphicDecryptionKeyShare, PartyID, SignatureMPCSessionID, TwopcMPCResult, DecryptionPublicParameters, DKGSignatureMPCDecentralizedOutput, PresignSignatureMPCDecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, DKGSignatureMPCCentralizedCommitment, Secp256k1GroupElementValue, SignSignatureMPCSignatureThresholdDecryptionRoundParty};
+use sui_types::messages_signature_mpc::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, SignatureMPCSessionID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value};
 use std::convert::TryInto;
 use std::mem;
 
 #[derive(Default)]
 pub(crate) enum SignRound {
     FirstRound {
-        signature_threshold_decryption_round_parties: Vec<SignSignatureMPCSignatureThresholdDecryptionRoundParty>
+        signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>
     },
     #[default]
     None,
@@ -26,10 +26,10 @@ impl SignRound {
         parties: HashSet<PartyID>,
         session_id: SignatureMPCSessionID,
         messages: Vec<Vec<u8>>,
-        dkg_output: DKGSignatureMPCDecentralizedOutput,
-        public_nonce_encrypted_partial_signature_and_proofs: Vec<SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof>,
-        presigns: Vec<PresignSignatureMPCDecentralizedPartyPresign>,
-    ) -> TwopcMPCResult<(Self, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>)> {
+        dkg_output: DKGDecentralizedPartyOutput,
+        public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
+        presigns: Vec<DecentralizedPartyPresign>,
+    ) -> Result<(Self, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>)> {
         let sign_mpc_party_per_message = initiate_decentralized_party_sign(
             tiresias_key_share_decryption_key_share,
             tiresias_public_parameters.clone(),
@@ -49,7 +49,7 @@ impl SignRound {
                     public_nonce_encrypted_partial_signature_and_proof,
                     &mut OsRng,
                 )
-        }).collect::<TwopcMPCResult<Vec<((PaillierModulusSizedNumber, PaillierModulusSizedNumber), SignSignatureMPCSignatureThresholdDecryptionRoundParty)>>>()?.into_iter().unzip();
+        }).collect::<Result<Vec<((PaillierModulusSizedNumber, PaillierModulusSizedNumber), SignatureThresholdDecryptionParty)>>>()?.into_iter().unzip();
 
         Ok((
             SignRound::FirstRound {
@@ -62,7 +62,7 @@ impl SignRound {
     pub(crate) fn complete_round(
         &mut self,
         state: SignState
-    ) -> TwopcMPCResult<SignRoundCompletion> {
+    ) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
             SignRound::FirstRound { signature_threshold_decryption_round_parties } => {
@@ -91,8 +91,8 @@ pub(crate) struct SignState {
     tiresias_public_parameters: DecryptionPublicParameters,
 
     messages: Option<Vec<Vec<u8>>>,
-    public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof>>,
-    public_key: Option<Secp256k1GroupElementValue>,
+    public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
+    public_key: Option<Value<GroupElement>>,
 
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
 }
@@ -123,8 +123,8 @@ impl SignState {
     pub(crate) fn set(
         &mut self,
         messages: Vec<Vec<u8>>,
-        public_nonce_encrypted_partial_signature_and_proofs: Vec<SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof>,
-        public_key: Secp256k1GroupElementValue
+        public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
+        public_key: Value<GroupElement>
     ) {
         self.messages = Some(messages);
         self.public_nonce_encrypted_partial_signature_and_proofs = Some(public_nonce_encrypted_partial_signature_and_proofs);
@@ -135,7 +135,7 @@ impl SignState {
         &mut self,
         party_id: PartyID,
         message: Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
-    ) -> TwopcMPCResult<()> {
+    ) -> Result<()> {
         let _ = self
             .decryption_shares
             .insert(party_id, message);

@@ -14705,7 +14705,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/2pc-mpc.git?branch=sign-ia#808ae525957ec073b32ef7696df749a7080f329b"
+source = "git+https://github.com/dwallet-labs/2pc-mpc.git?branch=instantiations#e38df6109ff896d59d1bc36c3d8b11816ae622c5"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
