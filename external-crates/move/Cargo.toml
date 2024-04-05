@@ -104,7 +104,7 @@ uint = "0.9.4"
 url = "2.2.2"
 variant_count = "1.1.0"
 walkdir = "2.3.1"
-whoami = { version = "1.2.1" }
+whoami = { version = "1.5.1" }
 x25519-dalek = { version = "0.1.0", package = "x25519-dalek-fiat", default-features = false, features = ["std", "u64_backend"] }
 z3tracer = "0.8.0"
 
