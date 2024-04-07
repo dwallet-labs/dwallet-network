@@ -27,7 +27,7 @@ use sui_sdk::wallet_context::WalletContext;
 use sui_types::{base_types::{ObjectID,}, SUI_SYSTEM_PACKAGE_ID, transaction::{SenderSignedData, Transaction, TransactionData, TransactionDataAPI}};
 
 use tokio::time::sleep;
-use sui_types::messages_signature_mpc::{initiate_centralized_party_dkg, DKGSignatureMPCSecretKeyShareEncryptionAndProof, initiate_centralized_party_presign, PresignSignatureMPCDecentralizedPartyOutput, initiate_centralized_party_sign, message_digest};
+use sui_types::messages_signature_mpc::{initiate_centralized_party_dkg, ProtocolContext, SecretKeyShareEncryptionAndProof, initiate_centralized_party_presign, PresignDecentralizedPartyOutput, initiate_centralized_party_sign, message_digest};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, CREATE_SIGN_SESSION_FUNC_NAME, DKG_SESSION_OUTPUT_STRUCT_NAME, DKG_SESSION_STRUCT_NAME, DKGSessionOutput, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, PresignSessionOutput, Presign, SignOutput, SIGN_SESSION_STRUCT_NAME};
 use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionKind};
@@ -109,7 +109,9 @@ impl SuiDWalletCommands {
                         "dWallet config with name [{alias}] already exists."
                     ));
                 }
-                let centralized_party_commitment_round_party = initiate_centralized_party_dkg();
+
+                // TODO: handle Errors instead of `unwrap`
+                let centralized_party_commitment_round_party = initiate_centralized_party_dkg().unwrap();
 
                 let (
                     commitment_to_centralized_party_secret_key_share,
@@ -228,7 +230,7 @@ impl SuiDWalletCommands {
                 // }
                 // let output = output.unwrap();
 
-                let secret_key_share_encryption_and_proof = bcs::from_bytes::<DKGSignatureMPCSecretKeyShareEncryptionAndProof>(&output.secret_key_share_encryption_and_proof)?;
+                let secret_key_share_encryption_and_proof = bcs::from_bytes::<SecretKeyShareEncryptionAndProof<ProtocolContext>>(&output.secret_key_share_encryption_and_proof)?;
 
                 let (
                     centralized_party_public_key_share_decommitment_and_proof,
@@ -472,7 +474,7 @@ impl SuiDWalletCommands {
                 }
                 let output = output.unwrap();
 
-                let presign_output = bcs::from_bytes::<PresignSignatureMPCDecentralizedPartyOutput>(&output.output)?;
+                let presign_output = bcs::from_bytes::<PresignDecentralizedPartyOutput<ProtocolContext>>(&output.output)?;
 
 
                 let centralized_party_presigns = centralized_party_proof_verification_round_party

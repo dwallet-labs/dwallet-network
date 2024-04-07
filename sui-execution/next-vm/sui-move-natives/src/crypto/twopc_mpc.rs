@@ -12,7 +12,7 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use sui_types::messages_signature_mpc::{decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash, DKGSignatureMPCCentralizedCommitment, DKGSignatureMPCCentralizedPublicKeyShareDecommitmentAndProof, DKGSignatureMPCDecentralizedOutput, DKGSignatureMPCSecretKeyShareEncryptionAndProof, PresignSignatureMPCDecentralizedPartyPresign, SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof};
+use sui_types::messages_signature_mpc::{Commitment, decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, ProtocolContext, PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof};
 use crate::object_runtime::ObjectRuntime;
 
 pub const INVALID_INPUT: u64 = 0;
@@ -58,7 +58,7 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
 
     let centralized_party_public_key_share_decommitment_and_proof = pop_arg!(args, Vector);
     let centralized_party_public_key_share_decommitment_and_proof_ref = centralized_party_public_key_share_decommitment_and_proof.to_vec_u8()?;
-    let Ok(centralized_party_public_key_share_decommitment_and_proof) = bcs::from_bytes::<DKGSignatureMPCCentralizedPublicKeyShareDecommitmentAndProof>(&centralized_party_public_key_share_decommitment_and_proof_ref) else {
+    let Ok(centralized_party_public_key_share_decommitment_and_proof) = bcs::from_bytes::<PublicKeyShareDecommitmentAndProof<ProtocolContext>>(&centralized_party_public_key_share_decommitment_and_proof_ref) else {
         return Ok(NativeResult::err(
             cost,
             INVALID_INPUT
@@ -67,7 +67,7 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
 
     let secret_key_share_encryption_and_proof = pop_arg!(args, Vector);
     let secret_key_share_encryption_and_proof_ref = secret_key_share_encryption_and_proof.to_vec_u8()?;
-    let Ok(secret_key_share_encryption_and_proof) = bcs::from_bytes::<DKGSignatureMPCSecretKeyShareEncryptionAndProof>(&secret_key_share_encryption_and_proof_ref) else {
+    let Ok(secret_key_share_encryption_and_proof) = bcs::from_bytes::<SecretKeyShareEncryptionAndProof<ProtocolContext>>(&secret_key_share_encryption_and_proof_ref) else {
         return Ok(NativeResult::err(
             cost,
             INVALID_INPUT
@@ -76,7 +76,7 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
 
     let commitment_to_centralized_party_secret_key_share = pop_arg!(args, Vector);
     let commitment_to_centralized_party_secret_key_share_ref = commitment_to_centralized_party_secret_key_share.to_vec_u8()?;
-    let Ok(commitment_to_centralized_party_secret_key_share) = bcs::from_bytes::<DKGSignatureMPCCentralizedCommitment>(&commitment_to_centralized_party_secret_key_share_ref) else {
+    let Ok(commitment_to_centralized_party_secret_key_share) = bcs::from_bytes::<Commitment>(&commitment_to_centralized_party_secret_key_share_ref) else {
         return Ok(NativeResult::err(
             cost,
             INVALID_INPUT
@@ -84,7 +84,8 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
     };
 
     let signature_mpc_tiresias_public_parameters = object_runtime.local_config.signature_mpc_tiresias_public_parameters.as_deref().unwrap();
-    let output = decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(signature_mpc_tiresias_public_parameters, commitment_to_centralized_party_secret_key_share, centralized_party_public_key_share_decommitment_and_proof, secret_key_share_encryption_and_proof);
+    // TODO: handle error instead of `unwrap()`
+    let output = decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(signature_mpc_tiresias_public_parameters, commitment_to_centralized_party_secret_key_share, centralized_party_public_key_share_decommitment_and_proof, secret_key_share_encryption_and_proof).unwrap();
 
     Ok(NativeResult::ok(
         cost,
@@ -130,7 +131,7 @@ pub fn sign_verify_encrypted_signature_parts_prehash(
 
     let presigns = pop_arg!(args, Vector);
     let presigns = presigns.to_vec_u8()?;
-    let Ok(presigns) = bcs::from_bytes::<Vec<PresignSignatureMPCDecentralizedPartyPresign>>(&presigns) else {
+    let Ok(presigns) = bcs::from_bytes::<Vec<DecentralizedPartyPresign>>(&presigns) else {
         return Ok(NativeResult::err(
             cost,
             INVALID_INPUT
@@ -139,7 +140,7 @@ pub fn sign_verify_encrypted_signature_parts_prehash(
 
     let public_nonce_encrypted_partial_signature_and_proofs = pop_arg!(args, Vector);
     let public_nonce_encrypted_partial_signature_and_proofs = public_nonce_encrypted_partial_signature_and_proofs.to_vec_u8()?;
-    let Ok(public_nonce_encrypted_partial_signature_and_proofs) = bcs::from_bytes::<Vec<SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof>>(&public_nonce_encrypted_partial_signature_and_proofs) else {
+    let Ok(public_nonce_encrypted_partial_signature_and_proofs) = bcs::from_bytes::<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>(&public_nonce_encrypted_partial_signature_and_proofs) else {
         return Ok(NativeResult::err(
             cost,
             INVALID_INPUT
@@ -148,7 +149,7 @@ pub fn sign_verify_encrypted_signature_parts_prehash(
 
     let dkg_output = pop_arg!(args, Vector);
     let dkg_output = dkg_output.to_vec_u8()?;
-    let Ok(dkg_output) = bcs::from_bytes::<DKGSignatureMPCDecentralizedOutput>(&dkg_output) else {
+    let Ok(dkg_output) = bcs::from_bytes::<DKGDecentralizedPartyOutput>(&dkg_output) else {
         return Ok(NativeResult::err(
             cost,
             INVALID_INPUT
