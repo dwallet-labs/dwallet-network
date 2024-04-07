@@ -38,11 +38,11 @@ use sui_types::error::{SuiError, SuiResult};
 use sui_types::message_envelope::Message;
 
 use sui_types::messages_signature_mpc::{
-    initiate_decentralized_party_dkg, DKGSignatureMPCCentralizedCommitment,
-    DKGSignatureMPCDecommitmentProofVerificationRoundParty,
-    DKGSignatureMPCSecretKeyShareEncryptionAndProof, DecryptionPublicParameters,
+    initiate_decentralized_party_dkg, Commitment,
+    DecommitmentProofVerificationRoundParty,
+    SecretKeyShareEncryptionAndProof, DecryptionPublicParameters,
     InitiateSignatureMPCProtocol, PartyID, ProtocolContext, SecretKeyShareSizedNumber,
-    SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof,
+    PublicNonceEncryptedPartialSignatureAndProof,
     SignatureMPCBulletProofAggregatesMessage, SignatureMPCMessage, SignatureMPCMessageProtocols,
     SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID,
 };

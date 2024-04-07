@@ -6,31 +6,21 @@ use rand::rngs::OsRng;
 use std::collections::{HashMap, HashSet};
 use std::mem;
 
-use sui_types::messages_signature_mpc::{
-    CommitmentRoundParty, DecommitmentRoundParty, EncDHCommitment, EncDHCommitmentRoundParty,
-    EncDHDecommitment, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput,
-    EncDHProofAggregationRoundParty, EncDHProofShare, EncDHProofShareRoundParty, EncDLCommitment,
-    EncDLCommitmentRoundParty, EncDLDecommitment, EncDLDecommitmentRoundParty,
-    EncDLProofAggregationOutput, EncDLProofAggregationRoundParty, EncDLProofShare,
-    EncDLProofShareRoundParty, EnhancedLanguageStatementAccessors,
-    IndividualEncryptedMaskedNonceShares, IndividualEncryptedNonceSharesAndPublicShares, PartyID,
-    ProofAggregationRoundParty, ProofShareRoundParty, SignatureMPCBulletProofAggregatesMessage,
-    TwopcMPCError, TwopcMPCResult,
-};
+use sui_types::messages_signature_mpc::{CommitmentRoundParty, Result, DecommitmentRoundParty, EncDHDecommitment, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput, EncDHProofAggregationRoundParty, EncDHProofShare, EncDHProofShareRoundParty, EncDLCommitment, EncDLCommitmentRoundParty, EncDLDecommitment, EncDLDecommitmentRoundParty, EncDLProofAggregationOutput, EncDLProofAggregationRoundParty, EncDLProofShare, EncDLProofShareRoundParty, EnhancedLanguageStatementAccessors, EncryptedNonceShareAndPublicShare, EncryptedMaskAndMaskedNonceShare, Error, PartyID, ProofAggregationRoundParty, ProofShareRoundParty, SignatureMPCBulletProofAggregatesMessage, EncDHCommitmentRoundParty, ProtocolContext, Value, EncDHCommitment};
 
 #[derive(Default)]
 pub(crate) enum BulletProofAggregateRound {
     Decommitment {
-        enc_dh: Vec<EncDHDecommitmentRoundParty>,
-        enc_dl: Vec<EncDLDecommitmentRoundParty>,
+        enc_dh: Vec<EncDHDecommitmentRoundParty<ProtocolContext>>,
+        enc_dl: Vec<EncDLDecommitmentRoundParty<ProtocolContext>>,
     },
     ProofShare {
-        enc_dh: Vec<EncDHProofShareRoundParty>,
-        enc_dl: Vec<EncDLProofShareRoundParty>,
+        enc_dh: Vec<EncDHProofShareRoundParty<ProtocolContext>>,
+        enc_dl: Vec<EncDLProofShareRoundParty<ProtocolContext>>,
     },
     ProofAggregation {
-        enc_dh: Vec<EncDHProofAggregationRoundParty>,
-        enc_dl: Vec<EncDLProofAggregationRoundParty>,
+        enc_dh: Vec<EncDHProofAggregationRoundParty<ProtocolContext>>,
+        enc_dl: Vec<EncDLProofAggregationRoundParty<ProtocolContext>>,
     },
     #[default]
     None,
@@ -38,16 +28,16 @@ pub(crate) enum BulletProofAggregateRound {
 
 impl BulletProofAggregateRound {
     pub(crate) fn new(
-        enc_dh_commitment_parties: Vec<EncDHCommitmentRoundParty>,
-        enc_dl_commitment_parties: Vec<EncDLCommitmentRoundParty>,
-    ) -> TwopcMPCResult<(Self, SignatureMPCBulletProofAggregatesMessage)> {
+        enc_dh_commitment_parties: Vec<EncDHCommitmentRoundParty<ProtocolContext>>,
+        enc_dl_commitment_parties: Vec<EncDLCommitmentRoundParty<ProtocolContext>>,
+    ) -> Result<(Self, SignatureMPCBulletProofAggregatesMessage)> {
         let enc_dh_result = enc_dh_commitment_parties
             .into_iter()
             .map(|p| {
                 p.commit_statements_and_statement_mask(&mut OsRng)
-                    .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
+                    .map_err(|e| Error::EnhancedMaurer(e))
             })
-            .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
+            .collect::<Result<Vec<(_, _)>>>()?;
         let (enc_dh_commitments, enc_dh_decommitment_round_parties): (Vec<_>, Vec<_>) =
             enc_dh_result.into_iter().unzip();
 
@@ -55,9 +45,9 @@ impl BulletProofAggregateRound {
             .into_iter()
             .map(|p| {
                 p.commit_statements_and_statement_mask(&mut OsRng)
-                    .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
+                    .map_err(|e| Error::EnhancedMaurer(e))
             })
-            .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
+            .collect::<Result<Vec<(_, _)>>>()?;
         let (enc_dl_commitments, enc_dl_decommitment_round_parties): (Vec<_>, Vec<_>) =
             enc_dl_result.into_iter().unzip();
 
@@ -75,7 +65,7 @@ impl BulletProofAggregateRound {
     pub(crate) fn complete_round(
         &mut self,
         state: BulletProofAggregateState,
-    ) -> TwopcMPCResult<BulletProofAggregateRoundCompletion> {
+    ) -> Result<BulletProofAggregateRoundCompletion> {
         let round = mem::take(self);
         match round {
             BulletProofAggregateRound::Decommitment { enc_dh, enc_dl }
@@ -97,9 +87,9 @@ impl BulletProofAggregateRound {
                     .map(|(party, enc_dh_commitments)| {
                         party
                             .decommit_statements_and_statement_mask(enc_dh_commitments, &mut OsRng)
-                            .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
+                            .map_err(|e| Error::EnhancedMaurer(e))
                     })
-                    .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
+                    .collect::<Result<Vec<(_, _)>>>()?;
                 let (enc_dh_decommitments, enc_dh_proof_share_round_parties): (Vec<_>, Vec<_>) =
                     enc_dh_result.into_iter().unzip();
 
@@ -119,9 +109,9 @@ impl BulletProofAggregateRound {
                     .map(|(party, enc_dl_commitments)| {
                         party
                             .decommit_statements_and_statement_mask(enc_dl_commitments, &mut OsRng)
-                            .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
+                            .map_err(|e| Error::EnhancedMaurer(e))
                     })
-                    .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
+                    .collect::<Result<Vec<(_, _)>>>()?;
                 let (enc_dl_decommitments, enc_dl_proof_share_round_parties): (Vec<_>, Vec<_>) =
                     enc_dl_result.into_iter().unzip();
 
@@ -157,9 +147,9 @@ impl BulletProofAggregateRound {
                     .map(|(party, enc_dh_decommitments)| {
                         party
                             .generate_proof_share(enc_dh_decommitments, &mut OsRng)
-                            .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
+                            .map_err(|e| Error::EnhancedMaurer(e))
                     })
-                    .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
+                    .collect::<Result<Vec<(_, _)>>>()?;
                 let (enc_dh_proof_shares, enc_dh_proof_aggregation_round_parties): (
                     Vec<_>,
                     Vec<_>,
@@ -183,9 +173,9 @@ impl BulletProofAggregateRound {
                     .map(|(party, enc_dl_decommitments)| {
                         party
                             .generate_proof_share(enc_dl_decommitments, &mut OsRng)
-                            .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
+                            .map_err(|e| Error::EnhancedMaurer(e))
                     })
-                    .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
+                    .collect::<Result<Vec<(_, _)>>>()?;
                 let (enc_dl_proof_shares, enc_dl_proof_aggregation_round_parties): (
                     Vec<_>,
                     Vec<_>,
@@ -255,9 +245,9 @@ impl BulletProofAggregateRound {
                     .map(|(party, enc_dh_proof_shares)| {
                         party
                             .aggregate_proof_shares(enc_dh_proof_shares, &mut OsRng)
-                            .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
+                            .map_err(|e| Error::EnhancedMaurer(e))
                     })
-                    .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
+                    .collect::<Result<Vec<(_, _)>>>()?;
 
                 let enc_dl_proof_shares: Vec<HashMap<_, _>> = (0..enc_dl.len())
                     .map(|i| {
@@ -313,9 +303,9 @@ impl BulletProofAggregateRound {
                     .map(|(party, enc_dl_proof_shares)| {
                         party
                             .aggregate_proof_shares(enc_dl_proof_shares, &mut OsRng)
-                            .map_err(|e| TwopcMPCError::EnhancedMaurer(e))
+                            .map_err(|e| Error::EnhancedMaurer(e))
                     })
-                    .collect::<TwopcMPCResult<Vec<(_, _)>>>()?;
+                    .collect::<Result<Vec<(_, _)>>>()?;
 
                 Ok(BulletProofAggregateRoundCompletion::Output((
                     (enc_dh_output, enc_dl_output),
@@ -335,12 +325,12 @@ pub(crate) enum BulletProofAggregateRoundCompletion {
     Output(
         (
             (
-                Vec<EncDHProofAggregationOutput>,
-                Vec<EncDLProofAggregationOutput>,
+                Vec<EncDHProofAggregationOutput<ProtocolContext>>,
+                Vec<EncDLProofAggregationOutput<ProtocolContext>>,
             ),
             (
-                IndividualEncryptedMaskedNonceShares,
-                IndividualEncryptedNonceSharesAndPublicShares,
+                HashMap<PartyID, Vec<Value<EncryptedMaskAndMaskedNonceShare>>>,
+                HashMap<PartyID, Vec<Value<EncryptedNonceShareAndPublicShare>>>,
             ),
         ),
     ),
@@ -352,9 +342,9 @@ pub(crate) struct BulletProofAggregateState {
     party_id: PartyID,
     parties: HashSet<PartyID>,
 
-    commitments: HashMap<PartyID, (Vec<EncDHCommitment>, Vec<EncDLCommitment>)>,
-    decommitments: HashMap<PartyID, (Vec<EncDHDecommitment>, Vec<EncDLDecommitment>)>,
-    proof_shares: HashMap<PartyID, (Vec<EncDHProofShare>, Vec<EncDLProofShare>)>,
+    commitments: HashMap<PartyID, (Vec<EncDHCommitment<ProtocolContext>>, Vec<EncDLCommitment<ProtocolContext>>)>,
+    decommitments: HashMap<PartyID, (Vec<EncDHDecommitment<ProtocolContext>>, Vec<EncDLDecommitment<ProtocolContext>>)>,
+    proof_shares: HashMap<PartyID, (Vec<EncDHProofShare<ProtocolContext>>, Vec<EncDLProofShare<ProtocolContext>>)>,
 }
 
 impl BulletProofAggregateState {
@@ -372,7 +362,7 @@ impl BulletProofAggregateState {
         &mut self,
         party_id: PartyID,
         message: SignatureMPCBulletProofAggregatesMessage,
-    ) -> TwopcMPCResult<()> {
+    ) -> Result<()> {
         // TODO: how to handle double message?
         match message {
             SignatureMPCBulletProofAggregatesMessage::Commitment(message) => {

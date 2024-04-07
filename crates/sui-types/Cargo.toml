@@ -63,7 +63,7 @@ fastcrypto-zkp.workspace = true
 #crypto-bigint.workspace = true
 #tiresias.workspace = true
 
-twopc_mpc = { git = "https://github.com/dwallet-labs/2pc-mpc.git", branch = "sign-ia" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/2pc-mpc.git", features = ["secp256k1", "bulletproofs", "paillier"], branch = "instantiations" }
 crypto-bigint = { version = "0.5", features = ["rand_core", "serde"], default-features = false }
 group = { git = "https://github.com/dwallet-labs/group.git" }
 proof = { git = "https://github.com/dwallet-labs/proof.git" }

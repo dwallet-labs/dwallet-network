@@ -6,7 +6,7 @@ use std::mem;
 use crate::signature_mpc::aggregate::{BulletProofAggregateRound, BulletProofAggregateState, BulletProofAggregateRoundCompletion};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId};
-use sui_types::messages_signature_mpc::{initiate_decentralized_party_dkg, DKGSignatureMPCCentralizedCommitment, DKGSignatureMPCSecretKeyShareEncryptionAndProof, PartyID, SignatureMPCBulletProofAggregatesMessage, SignatureMPCSessionID, TwopcMPCResult, EncryptionPublicParameters, DKGSignatureMPCDecentralizedOutput, PresignSignatureMPCCentralizedSignatureNonceSharesCommitmentsAndBatchedProof, DecryptionPublicParameters};
+use sui_types::messages_signature_mpc::{initiate_decentralized_party_dkg, Commitment, SecretKeyShareEncryptionAndProof, Result, Error, PartyID, ProtocolContext, SignatureMPCBulletProofAggregatesMessage, SignatureMPCSessionID, EncryptionPublicParameters, DecryptionPublicParameters};
 
 #[derive(Default)]
 pub(crate) enum DKGRound {
@@ -24,8 +24,8 @@ impl DKGRound {
         party_id: PartyID,
         parties: HashSet<PartyID>,
         session_id: SignatureMPCSessionID,
-        commitment_to_centralized_party_secret_key_share: DKGSignatureMPCCentralizedCommitment,
-    ) -> TwopcMPCResult<(Self, SignatureMPCBulletProofAggregatesMessage)> {
+        commitment_to_centralized_party_secret_key_share: Commitment,
+    ) -> Result<(Self, SignatureMPCBulletProofAggregatesMessage)> {
         let encryption_of_secret_key_share_round_party = initiate_decentralized_party_dkg(
             tiresias_public_parameters,
             epoch,
@@ -54,7 +54,7 @@ impl DKGRound {
     pub(crate) fn complete_round(
         &mut self,
         state: DKGState,
-    ) -> TwopcMPCResult<DKGRoundCompletion> {
+    ) -> Result<DKGRoundCompletion> {
         let round = mem::take(self);
         match round {
             DKGRound::FirstRound {
@@ -71,7 +71,7 @@ impl DKGRound {
                     BulletProofAggregateRoundCompletion::Output(((_, o), _)) => {
                         let (secret_share_proof, secret_share) = o.first().unwrap().clone();
                         DKGRoundCompletion::Output(
-                            DKGSignatureMPCSecretKeyShareEncryptionAndProof::new(
+                            SecretKeyShareEncryptionAndProof::<ProtocolContext>::new(
                                 secret_share.first().unwrap().clone(),
                                 secret_share_proof,
                             ),
@@ -90,7 +90,7 @@ impl DKGRound {
 
 pub(crate) enum DKGRoundCompletion {
     Message(SignatureMPCBulletProofAggregatesMessage),
-    Output(DKGSignatureMPCSecretKeyShareEncryptionAndProof),
+    Output(SecretKeyShareEncryptionAndProof<ProtocolContext>),
     None,
 }
 
@@ -99,7 +99,7 @@ pub(crate) struct DKGState {
     epoch: EpochId,
     party_id: PartyID,
     parties: HashSet<PartyID>,
-    commitment_to_centralized_party_secret_key_share: Option<DKGSignatureMPCCentralizedCommitment>,
+    commitment_to_centralized_party_secret_key_share: Option<Commitment>,
 
     bullet_proof_aggregate_state: BulletProofAggregateState,
 }
@@ -122,14 +122,14 @@ impl DKGState {
 
     pub(crate) fn set(
         &mut self,
-        commitment_to_centralized_party_secret_key_share: DKGSignatureMPCCentralizedCommitment,
+        commitment_to_centralized_party_secret_key_share: Commitment,
     ) {
         self.commitment_to_centralized_party_secret_key_share = Some(commitment_to_centralized_party_secret_key_share);
     }
 
     pub(crate) fn get_commitment_to_centralized_party_secret_key_share(
         &self,
-    ) -> Option<DKGSignatureMPCCentralizedCommitment> {
+    ) -> Option<Commitment> {
         self.commitment_to_centralized_party_secret_key_share.clone()
     }
 
@@ -137,7 +137,7 @@ impl DKGState {
         &mut self,
         party_id: PartyID,
         message: SignatureMPCBulletProofAggregatesMessage,
-    ) -> TwopcMPCResult<()> {
+    ) -> Result<()> {
         self
             .bullet_proof_aggregate_state
             .insert(party_id, message)
