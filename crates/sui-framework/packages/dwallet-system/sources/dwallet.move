@@ -7,7 +7,6 @@ module dwallet_system::dwallet {
     use dwallet::tx_context::{TxContext};
 
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
-    friend dwallet_system::sui_state_proof;
 
     struct DWalletCap has key, store {
         id: UID,

@@ -1219,7 +1219,7 @@ impl ProtocolConfig {
             max_arguments: Some(512),
             max_type_arguments: Some(16),
             max_type_argument_depth: Some(16),
-            max_pure_argument_size: Some(16 * 1024),
+            max_pure_argument_size: Some(1024 * 1024), // TODO change back to 16
             max_programmable_tx_commands: Some(1024),
             move_binary_format_version: Some(6),
             max_move_object_size: Some(250 * 1024),
