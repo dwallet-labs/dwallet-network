@@ -10,13 +10,6 @@ module dwallet_system::validator_cap {
     friend dwallet_system::validator_set;
 
 
-    // use dwallet::object::{Self, UID};
-    // use dwallet_system::dwallet::{Self, DWalletCap, MessageApproval};
-    // // use dwallet::tx_context::{TxContext};
-    // // use dwallet::transfer;
-    // use dwallet::bcs;
-    // use dwallet::vec_map::{Self, VecMap};
-
     #[test_only]
     friend dwallet_system::dwallet_system_tests;
     #[test_only]
@@ -38,13 +31,6 @@ module dwallet_system::validator_cap {
         authorizer_validator_address: address,
     }
     
-    // struct EpochCommittee has key, store {
-    //     id: UID,
-    //     // config_id: ID,
-    //     epoch: u64,
-    //     committee: vector<u8>,
-    // }
-
     /// Privileged operations require `ValidatorOperationCap` for permission check.
     /// This is only constructed after successful verification.
     struct ValidatorOperationCap has drop {
@@ -89,105 +75,4 @@ module dwallet_system::validator_cap {
             authorizer_validator_address: cap.authorizer_validator_address
         }
     }
-
-    
-
-
-    
-
-
-    // struct SuiModuleConfig has key, store {
-    //     id: UID,
-        
-    // }
-
-    // struct Registry has key, store {
-    //     id: UID,
-    //     mapping: VecMap<u64, address>, // mapping for the object id to 
-    //     highest_epoch: u64,
-    //     package_id: vector<u8>,
-    //     event_type_layout: vector<u8>,
-    //     message_field_name: vector<u8>,
-    // }
-
-    // struct CapWrapper has key, store {
-    //     id: UID,
-    //     cap: DWalletCap,
-    // }
-
-
-    // // TODO add wittness here so it can be initialized only once??
-    // public fun init_module(init_committee: vector<u8>, package_id: vector<u8>, event_type_layout: vector<u8>, message_field_name: vector<u8>, ctx: &mut TxContext) {
-        
-    //     let registry = Registry {
-    //         id: object::new(ctx),
-    //         mapping: vec_map::empty(),
-    //         highest_epoch: 0,
-    //         package_id,
-    //         event_type_layout,
-    //         message_field_name,
-    //     };
-    //     transfer::share_object(registry);
-        
-    //     let first_committee = EpochCommittee {
-    //         id: object::new(ctx),
-    //         epoch: 0,
-    //         committee: init_committee,
-    //     };
-    //     transfer::freeze_object(first_committee);
-    // }
-
-
-    // public fun create(dwallet_cap: DWalletCap, ctx: &mut TxContext){
-    //     let wrapper = CapWrapper {
-    //         id: object::new(ctx),
-    //         cap: dwallet_cap,
-    //     };
-
-    //     transfer::share_object(wrapper);
-    // }
-
-    // native fun sui_state_proof_verify_committee(prev_committee: vector<u8>, checkpoint_summary: vector<u8>): vector<u8>;
-
-
-    // public fun submit_new_state_committee(
-    //     prev_epoch: &EpochCommittee,
-    //     new_checkpoint_summary: vector<u8>,
-    //     ctx: &mut TxContext,
-    // ) {
-    //     //validate that the old committe signed off on the new committee
-    //     let committee_new = sui_state_proof_verify_committee(prev_epoch.committee, new_checkpoint_summary);
-
-    //     let committee_new = EpochCommittee {
-    //                         id: object::new(ctx),
-    //                         // config_id: prev_epoch.config_id,
-    //                         epoch: prev_epoch.epoch + 1,
-    //                         committee: committee_new,
-    //                         };
-        
-    //     transfer::freeze_object(committee_new);
-    // }
-
-
-
-    // // basically checks for events that the dWallet signed on SUI
-    // native fun sui_state_proof_verify_transaction(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>, package_id_sui_event: vector<u8>, event_type_layout: vector<u8>,  message_field_name: vector<u8>): (vector<u8>);
-
-
-    // public fun transaction_state_proof(
-    //     registry: &Registry,
-    //     cap_wrapper: &CapWrapper,
-    //     committee: &EpochCommittee,
-    //     checkpoint_summary: vector<u8>,
-    //     checkpoint_contents: vector<u8>,
-    //     transaction: vector<u8>, // serialised tx data
-    //     ): vector<MessageApproval>{
-    //     // TODO integrity check that committee matches the respective registry address
-
-    //    let messages_serialised = sui_state_proof_verify_transaction(committee.committee, checkpoint_summary, checkpoint_contents, transaction, registry.package_id, registry.event_type_layout, registry.message_field_name);
-        
-    //     let messages = bcs::peel_vec_vec_u8(&mut bcs::new(messages_serialised));
-    //     dwallet::approve_messages(&cap_wrapper.cap, messages)
-    // }
-
 }
