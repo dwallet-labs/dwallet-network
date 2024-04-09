@@ -1,3 +1,8 @@
-full_node_url: "http://ord-mnt-rpcbig-06.mainnet.sui.io:9000"
-checkpoint_summary_dir: "checkpoints_dir"
-genesis_filename: "genesis.blob"
+---
+sui_full_node_url: "https://fullnode.devnet.sui.io:443"
+dwallet_full_node_url: "http://127.0.0.1:9000"
+checkpoint_summary_dir: example_config
+genesis_filename: genesis_devnet.blob
+sui_deployed_state_proof_package: "0xd664a3d39b688fa8f88835d643afe355d11cf0c5ac792f353b1cd5de8a22b003"
+dwltn_registry_object_id: "0xb79069f1e52d2d989654895418cdacf840b6b66d28995de38b4a65618d0673f3"
+dwltn_config_object_id: "0x177794bb931f5b0434a85ae03cc463b619513e9340b469533f9eef0a643f790e"

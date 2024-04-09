@@ -1,4 +1,4 @@
-This crate contains a Command Line Interface light client for Sui.
+This crate contains a Command Line Interface light client for to control dWallets from SUI.
 
 # What is a light client?
 

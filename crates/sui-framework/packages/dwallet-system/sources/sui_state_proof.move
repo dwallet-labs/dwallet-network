@@ -107,7 +107,6 @@ module dwallet_system::sui_state_proof {
         checkpoint_summary: vector<u8>,
         checkpoint_contents: vector<u8>,
         transaction: vector<u8>,
-
         ctx: &mut TxContext
     ){        
         

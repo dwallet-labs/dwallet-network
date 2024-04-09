@@ -11,7 +11,7 @@ use move_vm_types::{
     values::{Value, Vector},
 };
 use smallvec::smallvec;
-use std::collections::VecDeque;
+use std::{collections::VecDeque, ops::Add, str::FromStr};
 // use sui_types::messages_signature_mpc::{decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, DKGSignatureMPCCentralizedCommitment, DKGSignatureMPCCentralizedPublicKeyShareDecommitmentAndProof, DKGSignatureMPCSecretKeyShareEncryptionAndProof};
 
 use sui_types::{
@@ -49,7 +49,7 @@ pub fn sui_state_proof_verify_committee(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 2);
 
-    println!("giga debug 1");
+    // println!("giga debug 1");
 
     // Load the cost parameters from the protocol config
     let sui_state_proof_cost_params = &context
@@ -77,7 +77,7 @@ pub fn sui_state_proof_verify_committee(
         ));
     };
 
-    println!("giga debug 2");
+    // println!("giga debug 2");
 
     
     let Ok(checkpoint_summary) = bcs::from_bytes::<CertifiedCheckpointSummary>(&checkpoint_summary_bytes) else {
@@ -87,14 +87,14 @@ pub fn sui_state_proof_verify_committee(
         ));
     };
 
-    println!("giga debug 3");
+    // println!("giga debug 3");
 
     match checkpoint_summary.clone().verify(&prev_committee) {
         Ok((_)) => (),
         Err(e) => return Ok(NativeResult::err(cost, INVALID_TX)),
     }
 
-    println!("giga debug 4");
+    // println!("giga debug 4");
 
     let next_committee_epoch;
     // Extract the new committee information
@@ -110,7 +110,7 @@ pub fn sui_state_proof_verify_committee(
         return Ok(NativeResult::err(cost, INVALID_TX))
     }
 
-    println!("giga debug 5");
+    // println!("giga debug 5");
 
     Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(bcs::to_bytes(&next_committee_epoch).unwrap())]))
 }
@@ -139,6 +139,7 @@ pub fn sui_state_proof_verify_committee(
         .twopc_mpc_dkg_cost_params // TODO
         .clone();
 
+
     // Load the cost parameters from the protocol config
     // let object_runtime = context
     //     .extensions()
@@ -159,7 +160,6 @@ pub fn sui_state_proof_verify_committee(
     let checkpoint_contents_bytes = pop_arg!(args, Vec<u8>);
     let summary_bytes = pop_arg!(args, Vec<u8>);
     let committee_bytes = pop_arg!(args, Vec<u8>);
-
 
     let Ok(committee) = bcs::from_bytes::<Committee>(&committee_bytes) else {
         return Ok(NativeResult::err(
@@ -197,7 +197,8 @@ pub fn sui_state_proof_verify_committee(
         ));
     };
 
-    let Ok(package_id) = bcs::from_bytes::<ObjectID>(&package_id_bytes) else {
+
+    let Ok(package_id_target) = bcs::from_bytes::<ObjectID>(&package_id_bytes) else {
         return Ok(NativeResult::err(
             cost,
             INVALID_INPUT
@@ -206,9 +207,10 @@ pub fn sui_state_proof_verify_committee(
     
     // Verify the checkpoint summary using the committee
     let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
-    if let Err(_) = res {
+    if let Err(err) = res {
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
+
 
     // Ensure the tx is part of the checkpoint
     let is_valid_checkpoint_tx = checkpoint_contents.iter().any(|&digest| digest == transaction.effects.execution_digests());
@@ -216,21 +218,46 @@ pub fn sui_state_proof_verify_committee(
       return Ok(NativeResult::err(cost, INVALID_TX));
     };
 
+
+    // transaction.clone().events.unwrap().data.iter().for_each(|event| {
+    //     println!("event {:?}", event);
+    // });
+
     let tx_events = &transaction.events.as_ref().unwrap().data;
 
-    let mut messages = Vec::new();
-    for event in tx_events {
 
-        if !event.package_id.eq(&package_id) {
+    tx_events.iter().for_each(|event| {
+        println!("{:?}", event);
+    });
+    let mut messages = Vec::new();
+    let mut cap_id_final = SuiAddress::ZERO;
+
+    for event in tx_events {
+        if !(event.clone().package_id == package_id_target && event.clone().type_.module.into_string() == "sui_state_proof" && event.clone().type_.name.into_string() == "DWalletNetworkRequest") {
             continue;
         }
-        // TODO of unwrap catch error and conitnue?
+
         let json_val = SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents).unwrap().to_json_value();
-        
-        // get signature from the json
-        let approve_message = match json_val {
+
+
+        let approve_message = match json_val.clone() {
             JsonValue::Object(map) => {
-                if let Some(msg_value) = map.get("message").and_then(|s| s.as_str()) { // TODO take String from config
+                // println!("mapppp{:?}", map);
+                if let Some(msg_value) = map.get("message").and_then(|s| s.as_array()) {
+                    msg_value.to_owned() 
+                }
+                else {
+                    return Ok(NativeResult::err(cost, INVALID_TX));
+                }
+            },
+            _ => return Ok(NativeResult::err(cost, INVALID_TX))
+        };
+
+
+        // TOOD no need to read it several times
+        let cap_id = match json_val.clone() {
+            JsonValue::Object(map) => {
+                if let Some(msg_value) = map.get("cap_id").and_then(|s| s.as_str()) {
                     msg_value.to_owned() 
                 }
                 else {
@@ -241,27 +268,20 @@ pub fn sui_state_proof_verify_committee(
             _ => return Ok(NativeResult::err(cost, INVALID_TX))
         };
 
-        let cap_id = SuiAddress::ZERO;
-
-        // let cap_id: SuiAddress = match json_val {
-        //     JsonValue::Object(map) => {
-        //         if let Some(msg_value) = map.get("message").and_then(|s| s.as_array()) { // TODO take String from config
-        //             msg_value.to_owned() 
-        //         }
-        //         else {
-        //             return Ok(NativeResult::err(cost, INVALID_TX));
-        //         }
-    
-        //     },
-        //     _ => return Ok(NativeResult::err(cost, INVALID_TX))
-        // };
-
-
+        let cap_id = match SuiAddress::from_str(&cap_id) {
+            Ok(address) => address,
+            Err(_) => return Ok(NativeResult::err(cost, INVALID_TX)),
+        };
+        cap_id_final = cap_id;
         messages.push(approve_message);
-
-        return Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(bcs::to_bytes(&cap_id).unwrap()), Value::vector_u8(bcs::to_bytes(&messages).unwrap())]));
-
     }
-    
-    return Ok(NativeResult::err(cost, INVALID_TX));
+
+    if (cap_id_final != SuiAddress::ZERO && messages.len() > 0) {
+        return Ok(NativeResult::ok(cost, smallvec![
+            Value::vector_u8(bcs::to_bytes(&cap_id_final).unwrap()), 
+            Value::vector_u8(bcs::to_bytes(&messages).unwrap())]));
+    }
+    else {
+        return Ok(NativeResult::err(cost, INVALID_TX));
+    }
 }
