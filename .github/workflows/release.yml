@@ -57,7 +57,7 @@ jobs:
       - name: Build and Push Sui Node Image
         run: |
           docker buildx build \
-            --platform linux/${{ matrix.platform }} \
+            --platform ${{ matrix.platform }} \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:dwallet-testnet-${{ matrix.docker_tag_suffix }}-${{ github.sha }} \
             --push \
             ./docker/sui-node
