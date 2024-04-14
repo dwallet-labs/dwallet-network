@@ -28,12 +28,7 @@ jobs:
   build-and-push:
     name: Build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [linux/amd64]
-        include:
-          - platform: linux/amd64
-            docker_tag_suffix: v1.16.2
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -59,9 +54,10 @@ jobs:
         run: |
           ./docker/sui-node/build.sh \
             --platform ${{ matrix.platform }} \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG-${{ matrix.docker_tag_suffix }}-${{ github.sha }} \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
             --push
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: sui-fork
-          IMAGE_TAG: dwallet-testnet
+          IMAGE_NAME: dwallet-testnet
+          IMAGE_VERSION: v1.16.2
