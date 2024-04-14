@@ -5,7 +5,7 @@ on:
 
 jobs:
   build-and-push:
-    name: Build
+    name: Build and Push Image
     runs-on: ubuntu-latest
 
     steps:
