@@ -47,9 +47,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: debug-print
-        run: ls -la
-
       - name: Build and Push Sui Node Image
         run: |
           ./docker/sui-node/build.sh \
