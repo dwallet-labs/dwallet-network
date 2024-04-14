@@ -37,14 +37,12 @@ use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
 use sui_types::error::{SuiError, SuiResult};
 use sui_types::message_envelope::Message;
 
-use sui_types::messages_signature_mpc::{
+use signature_mpc::twopc_mpc_protocols::{
     initiate_decentralized_party_dkg, Commitment,
     DecommitmentProofVerificationRoundParty,
     SecretKeyShareEncryptionAndProof, DecryptionPublicParameters,
-    InitiateSignatureMPCProtocol, PartyID, ProtocolContext, SecretKeyShareSizedNumber,
+    PartyID, ProtocolContext, SecretKeyShareSizedNumber,
     PublicNonceEncryptedPartialSignatureAndProof,
-    SignatureMPCBulletProofAggregatesMessage, SignatureMPCMessage, SignatureMPCMessageProtocols,
-    SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID,
 };
 use sui_types::sui_system_state::{SuiSystemState, SuiSystemStateTrait};
 use sui_types::transaction::{TransactionDataAPI, TransactionKind};
@@ -60,6 +58,7 @@ use typed_store::Map;
 
 use dkg::DKGState;
 use tokio_stream::StreamExt;
+use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID};
 
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};

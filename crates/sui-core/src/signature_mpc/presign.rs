@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 use crate::signature_mpc::aggregate::{
     BulletProofAggregateRound, BulletProofAggregateRoundCompletion, BulletProofAggregateState,
 };
@@ -9,7 +10,8 @@ use rand::rngs::OsRng;
 use std::collections::{HashMap, HashSet};
 use std::mem;
 use sui_types::base_types::{EpochId, ObjectRef};
-use sui_types::messages_signature_mpc::{initiate_decentralized_party_presign, new_decentralized_party_presign_batch, Result, DKGDecentralizedPartyOutput, EncryptedDecentralizedPartySecretKeyShareValue, EncryptionPublicParameters, EnhancedLanguageStatementAccessors, PartyID, SignatureNonceSharesCommitmentsAndBatchedProof, EncryptedMaskedNoncesRoundParty, PresignDecentralizedPartyOutput, DecentralizedPartyPresign, EncryptedNonceShareAndPublicShare, EncryptedMaskAndMaskedNonceShare, SignatureMPCBulletProofAggregatesMessage, SignatureMPCSessionID, EncDHProofAggregationOutput, EncDLProofAggregationOutput, DecryptionPublicParameters, ProtocolContext, Value};
+use signature_mpc::twopc_mpc_protocols::{initiate_decentralized_party_presign, new_decentralized_party_presign_batch, Result, DKGDecentralizedPartyOutput, EncryptedDecentralizedPartySecretKeyShareValue, EncryptionPublicParameters, EnhancedLanguageStatementAccessors, PartyID, SignatureNonceSharesCommitmentsAndBatchedProof, EncryptedMaskedNoncesRoundParty, PresignDecentralizedPartyOutput, DecentralizedPartyPresign, EncryptedNonceShareAndPublicShare, EncryptedMaskAndMaskedNonceShare, EncDHProofAggregationOutput, EncDLProofAggregationOutput, DecryptionPublicParameters, ProtocolContext, Value};
+use sui_types::messages_signature_mpc::SignatureMPCBulletProofAggregatesMessage;
 
 #[derive(Default)]
 pub(crate) enum PresignRound {
@@ -42,10 +44,10 @@ impl PresignRound {
         let decentralized_party_encrypted_masked_key_share_and_public_nonce_shares_party =
             initiate_decentralized_party_presign(
                 tiresias_public_parameters,
-                epoch,
+                //epoch,
                 party_id,
                 parties.clone(),
-                session_id,
+                //session_id,
                 dkg_output.clone(),
             )?;
 

@@ -16,7 +16,7 @@ use sui_protocol_config::SupportedProtocolVersions;
 use sui_types::base_types::{AuthorityName, SuiAddress};
 use sui_types::committee::{Committee, ProtocolVersion};
 use sui_types::crypto::{get_key_pair_from_rng, AccountKeyPair, KeypairTraits, PublicKey};
-use sui_types::messages_signature_mpc::{config_signature_mpc_secret_for_network_for_testing, DecryptionPublicParameters, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PartyID, SecretKeyShareSizedNumber, tiresias_deal_trusted_shares};
+use signature_mpc::twopc_mpc_protocols::{config_signature_mpc_secret_for_network_for_testing, DecryptionPublicParameters, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PartyID, SecretKeyShareSizedNumber, tiresias_deal_trusted_shares};
 use sui_types::object::Object;
 
 pub enum CommitteeConfig {
