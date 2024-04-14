@@ -2,27 +2,6 @@ name: Build and Push Sui Node Image
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - build-actions
-#    paths:
-#      - 'consensus/**'
-#      - 'crates/**'
-#      - 'sui-execution/**'
-#      - 'narwhal/explorer/**'
-#      - 'external-crates/**'
-#  #      - '.github/workflows/**'
-#  pull_request:
-#    branches:
-#      - main
-#    paths:
-#      - 'Cargo.toml'
-#      - 'consensus/**'
-#      - 'crates/**'
-#      - 'sui-execution/**'
-#      - 'narwhal/explorer/**'
-#      - 'external-crates/**'
-##      - '.github/workflows/**'
 
 jobs:
   build-and-push:
