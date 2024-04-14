@@ -18,7 +18,7 @@ use sui_types::crypto::{
 };
 use sui_types::multiaddr::Multiaddr;
 use tracing::info;
-use sui_types::messages_signature_mpc::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
+use signature_mpc::twopc_mpc_protocols::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]

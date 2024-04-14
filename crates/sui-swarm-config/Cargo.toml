@@ -25,6 +25,9 @@ sui-config.workspace = true
 sui-protocol-config.workspace = true
 sui-types.workspace = true
 sui-genesis-builder.workspace = true
+
+signature-mpc.workspace = true
+
 workspace-hack.workspace = true
 
 [target.'cfg(msim)'.dependencies]

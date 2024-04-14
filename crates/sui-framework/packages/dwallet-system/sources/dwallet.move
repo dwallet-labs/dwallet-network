@@ -17,6 +17,11 @@ module dwallet_system::dwallet {
         id: UID,
     }
 
+    struct ApprovalsHolder has key {
+        id: UID,
+        message_approvals: vector<MessageApproval>,
+    }
+
     struct MessageApproval has store {
         dwallet_cap_id: ID,
         message: vector<u8>,
@@ -53,6 +58,23 @@ module dwallet_system::dwallet {
         DWalletCap {
             id: object::new(ctx),
         }
+    }
+
+    public fun create_approvals_holder(message_approvals: vector<MessageApproval>, ctx: &mut TxContext) {
+        let holder = ApprovalsHolder {
+            id: object::new(ctx),
+            message_approvals,
+        };
+        transfer::transfer(holder, tx_context::sender(ctx));
+    }
+
+    public fun remove_approvals_holder(holder: ApprovalsHolder): vector<MessageApproval> {
+        let ApprovalsHolder {
+            id,
+            message_approvals,
+        } = holder;
+        object::delete(id);
+        message_approvals
     }
 
     public fun approve_messages(dwallet_cap: &DWalletCap, messages: vector<vector<u8>>): vector<MessageApproval> {

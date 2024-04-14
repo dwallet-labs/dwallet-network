@@ -31,7 +31,7 @@ use sui_types::crypto::SuiKeyPair;
 use sui_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use sui_types::multiaddr::Multiaddr;
 use tracing::{info, trace};
-use sui_types::messages_signature_mpc::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
+use signature_mpc::twopc_mpc_protocols::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
 
 // Default max number of concurrent requests served
 pub const DEFAULT_GRPC_CONCURRENCY_LIMIT: usize = 20000000000;

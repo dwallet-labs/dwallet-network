@@ -1,10 +1,11 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 use std::collections::{HashMap, HashSet};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId, ObjectRef};
-use sui_types::messages_signature_mpc::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, SignatureMPCSessionID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value};
+use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value};
 use std::convert::TryInto;
 use std::mem;
 
@@ -33,10 +34,10 @@ impl SignRound {
         let sign_mpc_party_per_message = initiate_decentralized_party_sign(
             tiresias_key_share_decryption_key_share,
             tiresias_public_parameters.clone(),
-            epoch,
+            //epoch,
             party_id,
             parties.clone(),
-            session_id,
+            //session_id,
             dkg_output,
             presigns.clone(),
         )?;

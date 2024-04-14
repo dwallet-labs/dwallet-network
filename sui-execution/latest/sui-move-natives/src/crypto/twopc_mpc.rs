@@ -12,7 +12,7 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use sui_types::messages_signature_mpc::{Commitment, decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, ProtocolContext, PublicKeyShareDecommitmentAndProof, SecretKeyShareEncryptionAndProof};
+use signature_mpc::twopc_mpc_protocols::{Commitment, decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, ProtocolContext, PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof};
 use crate::object_runtime::ObjectRuntime;
 
 pub const INVALID_INPUT: u64 = 0;

@@ -6,7 +6,8 @@ use rand::rngs::OsRng;
 use std::collections::{HashMap, HashSet};
 use std::mem;
 
-use sui_types::messages_signature_mpc::{CommitmentRoundParty, Result, DecommitmentRoundParty, EncDHDecommitment, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput, EncDHProofAggregationRoundParty, EncDHProofShare, EncDHProofShareRoundParty, EncDLCommitment, EncDLCommitmentRoundParty, EncDLDecommitment, EncDLDecommitmentRoundParty, EncDLProofAggregationOutput, EncDLProofAggregationRoundParty, EncDLProofShare, EncDLProofShareRoundParty, EnhancedLanguageStatementAccessors, EncryptedNonceShareAndPublicShare, EncryptedMaskAndMaskedNonceShare, Error, PartyID, ProofAggregationRoundParty, ProofShareRoundParty, SignatureMPCBulletProofAggregatesMessage, EncDHCommitmentRoundParty, ProtocolContext, Value, EncDHCommitment};
+use signature_mpc::twopc_mpc_protocols::{CommitmentRoundParty, Result, DecommitmentRoundParty, EncDHDecommitment, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput, EncDHProofAggregationRoundParty, EncDHProofShare, EncDHProofShareRoundParty, EncDLCommitment, EncDLCommitmentRoundParty, EncDLDecommitment, EncDLDecommitmentRoundParty, EncDLProofAggregationOutput, EncDLProofAggregationRoundParty, EncDLProofShare, EncDLProofShareRoundParty, EnhancedLanguageStatementAccessors, EncryptedNonceShareAndPublicShare, EncryptedMaskAndMaskedNonceShare, Error, PartyID, ProofAggregationRoundParty, ProofShareRoundParty, EncDHCommitmentRoundParty, ProtocolContext, Value, EncDHCommitment};
+use sui_types::messages_signature_mpc::SignatureMPCBulletProofAggregatesMessage;
 
 #[derive(Default)]
 pub(crate) enum BulletProofAggregateRound {

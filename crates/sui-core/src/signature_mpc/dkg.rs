@@ -1,12 +1,14 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 use std::collections::HashSet;
 use std::mem;
 use crate::signature_mpc::aggregate::{BulletProofAggregateRound, BulletProofAggregateState, BulletProofAggregateRoundCompletion};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId};
-use sui_types::messages_signature_mpc::{initiate_decentralized_party_dkg, Commitment, SecretKeyShareEncryptionAndProof, Result, Error, PartyID, ProtocolContext, SignatureMPCBulletProofAggregatesMessage, SignatureMPCSessionID, EncryptionPublicParameters, DecryptionPublicParameters};
+use signature_mpc::twopc_mpc_protocols::{initiate_decentralized_party_dkg, Commitment, SecretKeyShareEncryptionAndProof, Result, Error, PartyID, ProtocolContext, EncryptionPublicParameters, DecryptionPublicParameters};
+use sui_types::messages_signature_mpc::SignatureMPCBulletProofAggregatesMessage;
 
 #[derive(Default)]
 pub(crate) enum DKGRound {
@@ -28,10 +30,10 @@ impl DKGRound {
     ) -> Result<(Self, SignatureMPCBulletProofAggregatesMessage)> {
         let encryption_of_secret_key_share_round_party = initiate_decentralized_party_dkg(
             tiresias_public_parameters,
-            epoch,
+            //epoch,
             party_id,
             parties.clone(),
-            session_id,
+            //session_id,
         )?;
 
         let (encryption_of_secret_key_share_commitment_round_party, _) =
