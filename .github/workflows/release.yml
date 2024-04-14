@@ -53,7 +53,7 @@ jobs:
       - name: Build and Push Sui Node Image
         run: |
           ./docker/sui-node/build.sh \
-            --platform ${{ matrix.platform }} \
+            --platform linux/amd64 \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
             --push
         env:
