@@ -59,12 +59,11 @@ jobs:
 
       - name: Build and Push Sui Node Image
         run: |
-          docker buildx build \
+          ./docker/sui-node/build.sh \
             --platform ${{ matrix.platform }} \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:dwallet-testnet-${{ matrix.docker_tag_suffix }}-${{ github.sha }} \
-            --push \
-            ./docker/sui-node
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG-${{ matrix.docker_tag_suffix }}-${{ github.sha }} \
+            --push
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: sui-fork
-          IMAGE_TAG: nodejs_demo_image
+          IMAGE_TAG: dwallet-testnet
