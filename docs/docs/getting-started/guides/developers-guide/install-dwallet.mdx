@@ -44,15 +44,14 @@ Select the appropriate tab to view the requirements for your system.
 
 The prerequisites needed for the Linux operating system include:
 
-- cURL
-- Rust and Cargo
-- Git CLI
-- CMake
-- GCC
-- libssl-dev
-- libclang-dev
-- libpq-dev
-- build-essential
+- [cURL](#curl)
+- [Git CLI](#git-cli)
+- [CMake](#cmake)
+- [GCC](#gcc)
+- [libssl-dev](#libssl-dev)
+- [libclang-dev](#libclang-dev)
+- [libpq-dev](#libpq-dev)
+- [build-essential](#build-essential)
 
 :::info
 
@@ -164,12 +163,11 @@ sudo apt-get install build-essential
 
 The prerequisites needed for the macOS operating system include:
 
-- Rust and Cargo
-- Homebrew
-- cURL
-- CMake
-- libpq
-- Git CLI
+- [Homebrew](#brew)
+- [cURL](#curl-1)
+- [CMake](#cmake-1)
+- [libpq](#libpq-1)
+- [Git CLI](#git-cli-1)
 
 macOS includes a version of cURL you can use to install Homebrew. Use Homebrew to install other tools, including a newer version of cURL.
 
@@ -232,12 +230,12 @@ After installing Git, download and install the [Git command line interface](http
 
 The prerequisites needed for the Windows 11 operating system include:
 
-- cURL
-- Rust and Cargo
-- Git CLI
-- CMake
-- C++ build tools
-- LLVM compiler
+- [cURL](#curl-2)
+- [Git CLI](#git-cli-2)
+- [CMake](#cmake-2)
+- [Protocol Buffers](#protocol-buffers)
+- [C++ build tools](#additional-tools-windows)
+- [LLVM compiler](#additional-tools-windows)
 
 #### cURL {#curl-2}
 
@@ -257,27 +255,27 @@ Download [Protocol Buffers](https://github.com/protocolbuffers/protobuf/releases
 
 #### Additional tools for Windows {#additional-tools-windows}
 
-Sui requires the following additional tools on computers running Windows.
+dWallet requires the following additional tools on computers running Windows.
 
 - For Windows on ARM64 only - [Visual Studio 2022 Preview](https://visualstudio.microsoft.com/vs/preview/).
 - [C++ build tools](https://visualstudio.microsoft.com/downloads/) is required to [install Rust](#rust-and-cargo).
 - The [LLVM Compiler Infrastructure](https://releases.llvm.org/). Look for a file with a name similar to LLVM-15.0.7-win64.exe for 64-bit Windows, or LLVM-15.0.7-win32.exe for 32-bit Windows.
 
-**Known issue** - The `sui console` command does not work in PowerShell.
+**Known issue** - The `dwallet console` command does not work in PowerShell.
 
 </TabItem>
 
 </Tabs>
 
-## Install Sui binaries from source {#install-sui-binaries-from-source}
+## Install dWallet binaries from source {#install-dwallet-binaries-from-source}
 
-Run the following command to install Sui binaries from the `testnet` branch:
+Run the following command to install dWallet binaries:
 
 ```shell
-cargo install --locked --git https://github.com/MystenLabs/sui.git --branch testnet sui
+cargo install --locked --git https://github.com/dwallet-labs/dwallet-network.git sui
 ```
 
-The install process can take a while to complete. You can monitor installation progress in the terminal. If you encounter an error, make sure to install the latest version of all prerequisites and then try the command again.
+The installation process can take a while to complete. You can monitor installation progress in the terminal. If you encounter an error, make sure to install the latest version of all prerequisites and then try the command again.
 
 To update to the latest stable version of Rust:
 
@@ -285,12 +283,12 @@ To update to the latest stable version of Rust:
 rustup update stable
 ```
 
-The command installs Sui components in the `~/.cargo/bin` folder.
+The command installs dWallet components in the `~/.cargo/bin` folder.
 
-## Upgrade Sui binaries
+## Upgrade dWallet binaries
 
-If you previously installed the Sui binaries, you can update them to the most recent release with the same command you used to install them:
+If you previously installed the dWallet binaries, you can update them to the most recent release with the same command you used to install them:
 
 ```shell
-cargo install --locked --git https://github.com/dwallet-labs/dwallet-network.git dwallet 
+cargo install --locked --git https://github.com/dwallet-labs/dwallet-network.git sui
 ```

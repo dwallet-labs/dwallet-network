@@ -46,12 +46,12 @@ const sidebars = {
 				{
 					type: 'doc',
 					label: 'Install dWallet',
-					id: 'getting-started/install-dwallet',
+					id: 'getting-started/guides/developers-guide/install-dwallet',
 				},
 				{
 					type: 'doc',
 					label: 'Your First dWallet',
-					id: 'getting-started/your-first-dwallet',
+					id: 'getting-started/guides/developers-guide/your-first-dwallet',
 				},
 				{
 					type: 'category',
