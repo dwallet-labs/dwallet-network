@@ -1,5 +1,5 @@
 {
-	"name": "signature-mpc-wasm",
+	"name": "@dwallet/signature-mpc-wasm",
 	"version": "0.1.0",
 	"description": "Signature MPC in WASM",
 	"type": "module",
