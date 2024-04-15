@@ -1,0 +1,206 @@
+
+# Connect to a Local Network
+If you haven't already, you need to [install dWallet](./install-dwallet.mdx) on your system.
+
+## Start the local network
+
+To start the local network, run the following command from your `dwallet-network` root folder (the one you cloned in [dWallet Enviornment Setup](./dwallet-network-environment.mdx))
+
+```bash
+RUST_MIN_STACK=16777216 RUST_LOG="off,sui_node=info" cargo run --bin sui-test-validator
+```
+
+The command starts the `sui-test-validator`. The `RUST_MIN_STACK`=`16777216` gives enough resources to install and run a node. The `RUST_LOG`=`off,sui_node=info` turns off logging for all components except
+sui-node. If you want to see more detailed logs, you can remove `RUST_LOG` from the command.
+
+**Important:** Each time you start the `sui-test-validator`, the network starts as a new network with no previous data. The local network is not persistent.
+
+To customize your local dWallet network, such as changing the port used, include additional parameters in the command to start `sui-test-validator`:
+
+```
+OPTIONS:
+        --epoch-duration-ms <EPOCH_DURATION_MS>
+            The duration for epochs (defaults to one minute) [default: 60000]
+        --faucet-port <FAUCET_PORT>
+            Port to start the Sui faucet on [default: 9123]
+        --fullnode-rpc-port <FULLNODE_RPC_PORT>
+            Port to start the Fullnode RPC server on [default: 9000]
+```
+
+Use `sui-test-validator --help` to see these options in your console.
+
+### Access your local Full node
+
+Use the following command to retrieve the total transaction count from your local network:
+
+```bash
+curl --location --request POST 'http://127.0.0.1:9000' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "sui_getTotalTransactionBlocks",
+  "params": []
+}'
+```
+
+If successful, the response resembles the following:
+
+```json
+{
+    "jsonrpc": "2.0",
+    "result": 168,
+    "id": 1
+}
+```
+
+## Connect the dWallet Client CLI to your local network
+
+You can use the dWallet Client CLI with the dWallet testnet. To connect to your local network, create a new environment alias named `local` that sets the RPC URL the client uses to your local network.
+
+```shell
+dwallet client new-env --alias local --rpc http://127.0.0.1:9000
+```
+
+Next, use the following command to set the active environment to the new `local` environment you created.
+
+```
+dwallet client switch --env local
+```
+
+The command returns:
+
+`Active environment switched to [local]`
+
+You can check the current active environment with the following command:
+
+```bash
+dwallet client active-env
+```
+
+The command returns:
+
+`local`
+
+## Show the current active address
+
+The dWallet Client CLI uses the active address for command if you don't specify one. Use the following command to show the active address on your local network.
+
+```
+dwallet client active-address
+```
+
+The command returns an address:
+
+`0xbc33e6e4818f9f2ef77d020b35c24be738213e64d9e58839ee7b4222029610de`
+
+Use the active address to get test DWLT to use on your local network. Use the `dwallet client addresses` command to see all of the addresses on your local network.
+
+**Note:** The address returned when you run the command is unique and does not match the one used in this example.
+
+## Use the local faucet {#use-the-local-faucet}
+
+Transactions on your local network require DWLT coins to pay for gas fees just like other networks. To send coins to a dWallet Network account connected to your local network, see [Set up a local dWallet Network account]. You can use the address for the local dWallet Network account with the faucet.
+
+Use the following cURL command to get test coins from the local faucet.
+
+```bash
+curl --location --request POST 'http://127.0.0.1:9123/gas' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "FixedAmountRequest": {
+        "recipient": "<YOUR-ACTIVE-ADDRESS>"
+    }
+}'
+```
+
+If successful, the response resembles the following:
+
+```json
+{
+    "transferredGasObjects": [
+        {
+            "amount": 200000000,
+            "id": "0x192ce62506ed8705b76e8423be1f6e011064a3f887ba924605f27a8c83c8c970",
+            "transferTxDigest": "7sp4fFPH2WaUgvN43kjDzCpEhKfifqjx5RTki74y8T3E"
+        },
+        {
+            "amount": 200000000,
+            "id": "0x31d003ade00675d1ab82b225bfcceaa60bb993f5d90e9d0aa88f81dc24ec14d6",
+            "transferTxDigest": "7sp4fFPH2WaUgvN43kjDzCpEhKfifqjx5RTki74y8T3E"
+        },
+        {
+            "amount": 200000000,
+            "id": "0x98cbdc93ae672110f91bc0c39c0c87bc66f36984c79218bb2c0bac967260970c",
+            "transferTxDigest": "7sp4fFPH2WaUgvN43kjDzCpEhKfifqjx5RTki74y8T3E"
+        },
+        {
+            "amount": 200000000,
+            "id": "0xba66aee6289cc6d0203c451bea442ad30d4cfe699e50b36fed0ff3e99ba51529",
+            "transferTxDigest": "7sp4fFPH2WaUgvN43kjDzCpEhKfifqjx5RTki74y8T3E"
+        },
+        {
+            "amount": 200000000,
+            "id": "0xd9f0b521443d66227eddc2aac2e16f667ca9caeef9f1b7afb4a6c2fc7dcb58d8",
+            "transferTxDigest": "7sp4fFPH2WaUgvN43kjDzCpEhKfifqjx5RTki74y8T3E"
+        }
+    ],
+    "error": null
+}
+```
+
+### Check the gas coin objects for the active address
+
+After you get coins from the faucet, use the following command to view the coin objects for the address:
+
+```shell
+dwallet client gas
+```
+
+The response resembles the following, but with different IDs:
+
+```shell
+╭────────────────────────────────────────────────────────────────────┬────────────╮
+│ gasCoinId                                                          │ gasBalance │
+├────────────────────────────────────────────────────────────────────┼────────────┤
+│ 0x1d790713c1c3441a307782597c088f11230c47e609af2cec97f393123ea4de45 │ 200000000  │
+│ 0x20c1d5ad2e8693953fca09fd2fec0fbc52a787e0a0f77725220d36a09a5b312d │ 200000000  │
+│ 0x236714566110f5624516faa0da215ad29f8daa611e8b651d1e972168207567b2 │ 200000000  │
+│ 0xc81f30256bb04ad84bc4a92017cffd7c1f98286e028fa504d8515ad72ddd1088 │ 200000000  │
+│ 0xf61c8b21b305cc8e062b3a37de8c3a37583e17f437a449a2ab42321d019aeeb4 │ 200000000  │
+╰────────────────────────────────────────────────────────────────────┴────────────╯
+```
+
+## Install dWallet Network Explorer locally
+
+To install and use the apps locally, you must first install [pnpm](https://pnpm.io/installation). Use the instructions appropriate for your operating system.
+
+After you install `pnpm`, use the following command to install the required dependencies in your workspace:
+
+```shell
+pnpm install
+```
+
+After the installation completes, run the following command to install dWallet Network Explorer:
+
+```shell
+pnpm turbo build
+```
+
+If you encounter an error from turbo build, confirm that there is no `package-lock.json`. If the file exists, remove it and then run the command again.
+
+### Set up dWallet Network Explorer on your local network
+
+To connect the live dWallet Network Explorer to your local network, open the URL:[https://dwalletexplorer.com/?network=local](https://dwalletexplorer.com/?network=local). The live version of dWallet Network Explorer may not include recent updates added to the `main` branch of the Sui repo. To use Sui Explorer that includes the most recent updates, install and run dWallet Network Explorer from your local clone of the dWallet Network repo.
+
+Run the following command from the `dwallet-network` root folder:
+
+**Note:** To run the command you have `pnpm` installed. See [Install dWallet Network account and dWallet Network Explorer locally] for details.
+
+```bash
+pnpm explorer dev
+```
+
+After the command completes, open your local dWallet Network Explorer at the following URL: [http://localhost:3000/](http://localhost:3000/).
+
+For more details about dWallet Network Explorer, see the [Explorer README](https://github.com/dwallet-labs/dwallet-network/blob/main/apps/explorer/README.md#set-up).
