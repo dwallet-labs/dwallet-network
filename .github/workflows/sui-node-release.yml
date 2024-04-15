@@ -10,6 +10,14 @@ jobs:
   build-and-push:
     name: Build and Push Image
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ linux/amd64, linux/arm64 ]
+        include:
+          - platform: linux/amd64
+            docker_tag_suffix: v1.16.2
+          - platform: linux/arm64
+            docker_tag_suffix: "v1.16.2-arm"
 
     steps:
       - name: Checkout repository
@@ -32,11 +40,11 @@ jobs:
       - name: Build and Push Sui Node Image
         run: |
           ./docker/sui-node/build.sh \
-            --platform linux/amd64 \
+            --platform ${{ matrix.platform }} \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
             --push
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: sui-fork
           IMAGE_NAME: dwallet-testnet
-          IMAGE_VERSION: v1.16.2
+          IMAGE_VERSION: ${{ matrix.docker_tag_suffix }}
