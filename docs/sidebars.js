@@ -55,6 +55,11 @@ const sidebars = {
 				},
 				{
 					type: 'doc',
+					label: 'Connect to a dWallet Network',
+					id: 'getting-started/guides/developers-guide/connect',
+				},
+				{
+					type: 'doc',
 					label: 'Connect to a Local Network',
 					id: 'getting-started/guides/developers-guide/local-network',
 				},

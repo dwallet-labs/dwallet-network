@@ -1,0 +1,139 @@
+
+# Connect to a dWallet Network
+You can use our test network, to experiment with the version of dWallet running on that network. You can also spin up a [local dWallet network](./local-network.mdx) for local development.
+
+You can request test DWLT tokens through your [local faucet](./local-network.mdx#use-the-local-faucet). The coins on these networks have no financial value. There is no faucet service for Mainnet.
+
+## Tools
+
+Sui provides the following tools to interact with Sui networks:
+
+ * dWallet command line interface (CLI)
+ * [dWallet Network Explorer](https://github.com/dwallet-labs/dwallet-network/blob/main/apps/explorer/README.md#sui-explorer) to view transactions and objects on the network
+
+## Environment setup
+
+First, [Install dWallet](./install-dwallet.mdx#install-dwallet-binaries-from-source).
+After you install dWallet, request DWLT test tokens using cURL to request tokens from your [local faucet](./local-network.mdx#use-the-local-faucet).
+
+To check whether dWallet is already installed, run the following command:
+
+```shell
+which dwallet
+```
+
+If dWallet is installed, the command returns the path to the dWallet binary.
+
+If dWallet is not installed, it returns `dwallet not found`.
+
+## Configure dWallet client
+
+To connect the dWallet client to a network, run the following command:
+
+```shell
+dwallet client
+```
+
+If you receive the `dwallet-client` help output in the console, you already have a client.yaml file. See [Connect to a custom RPC endpoint](#connect-to-a-custom-rpc-endpoint) to add a new environment alias or to switch the currently active network.
+
+The first time you start dWallet client without having a client.yaml file, the console displays the following message:
+
+```
+Config file ["<PATH-TO-FILE>/client.yaml"] doesn't exist, do you want to connect to a dWallet Full node server [y/N]?
+```
+
+Press **y** and then press **Enter**. The process then requests the RPC server URL:
+
+```
+dWallet Full node server URL (Defaults to dWallet Testnet) :
+```
+
+Press **Enter** to connect to dWallet Testnet. To use a custom RPC server, enter the URL to the correct RPC endpoint and then press **Enter**.
+
+If you enter a URL, the process prompts for an alias for the environment:
+
+```
+Environment alias for [<URL-ENTERED>] :
+```
+Type an alias name and press **Enter**.
+
+```
+Select key scheme to generate keypair (0 for ed25519, 1 for secp256k1, 2 for secp256r1):
+```
+
+Press **0**, **1**, or **2** to select a key scheme and the press **Enter**.
+
+dWallet returns a message similar to the following (depending on the key scheme you selected) that includes the address and 12-word recovery phrase for the address:
+
+```
+Generated new keypair for address with scheme "ed25519" [0xb9c83a8b40d3263c9ba40d551514fbac1f8c12e98a4005a0dac072d3549c2442]
+Secret Recovery Phrase : [cap wheat many line human lazy few solid bored proud speed grocery]
+```
+
+### Connect to a custom RPC endpoint
+
+#### Check the available environments
+
+To check currently available environment aliases, run the following command:
+
+```sh
+dwallet client envs
+```
+
+The command outputs the available environment aliases, with `(active)` denoting the currently active network.
+```sh
+╭───────┬───────────────────────┬────────╮
+│ alias │ url                   │ active │
+├───────┼───────────────────────┼────────┤
+│ local │ http://127.0.0.1:9000 │ *      │
+╰───────┴───────────────────────┴────────╯
+```
+
+#### Create a new environment
+
+To add a new alias for a custom RPC endpoint, run the following command. Replace values in `<` `>` with values for your installation:
+
+```shell
+dwallet client new-env --alias <ALIAS> --rpc <RPC-SERVER-URL>
+```
+
+To add the testnet RPC for example, run the following command:
+```shell
+dwallet client new-env --alias testnet --rpc http://fullnode.alpha.testnet.dwallet.cloud:9000
+```
+
+Then when you run ```dwallet client envs``` you will see the new env
+```
+╭─────────┬──────────────────────────────────────────────────┬────────╮
+│ alias   │ url                                              │ active │
+├─────────┼──────────────────────────────────────────────────┼────────┤
+│ local   │ http://127.0.0.1:9000                            │ *      │
+│ testnet │ http://fullnode.alpha.testnet.dwallet.cloud:9000 │        │
+╰─────────┴──────────────────────────────────────────────────┴────────╯
+```
+Yet, the active env remains `local`.
+
+#### Switch environments
+
+To switch the active network, run the following command:
+
+```shell
+dwallet client switch --env <ALIAS>
+```
+
+To switch to the testnet, run the following command:
+```shell
+dwallet client switch --env testnet
+```
+
+Then when you run ```dwallet client envs``` you will see the active env is now testnet
+```
+╭─────────┬──────────────────────────────────────────────────┬────────╮
+│ alias   │ url                                              │ active │
+├─────────┼──────────────────────────────────────────────────┼────────┤
+│ local   │ http://127.0.0.1:9000                            │        │
+│ testnet │ http://fullnode.alpha.testnet.dwallet.cloud:9000 │ *      │
+╰─────────┴──────────────────────────────────────────────────┴────────╯
+```
+
+If you encounter an issue, delete the dWallet configuration directory (`~/.dwallet/dwallet_config`) and reinstall the latest [dWallet binaries](./install-dwallet.mdx#install-dwallet-binaries-from-source).
