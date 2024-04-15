@@ -37,14 +37,12 @@ use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
 use sui_types::error::{SuiError, SuiResult};
 use sui_types::message_envelope::Message;
 
-use sui_types::messages_signature_mpc::{
-    initiate_decentralized_party_dkg, DKGSignatureMPCCentralizedCommitment,
-    DKGSignatureMPCDecommitmentProofVerificationRoundParty,
-    DKGSignatureMPCSecretKeyShareEncryptionAndProof, DecryptionPublicParameters,
-    InitiateSignatureMPCProtocol, PartyID, ProtocolContext, SecretKeyShareSizedNumber,
-    SignSignatureMPCCentralizedPublicNonceEncryptedPartialSignatureAndProof,
-    SignatureMPCBulletProofAggregatesMessage, SignatureMPCMessage, SignatureMPCMessageProtocols,
-    SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID,
+use signature_mpc::twopc_mpc_protocols::{
+    initiate_decentralized_party_dkg, Commitment,
+    DecommitmentProofVerificationRoundParty,
+    SecretKeyShareEncryptionAndProof, DecryptionPublicParameters,
+    PartyID, ProtocolContext, SecretKeyShareSizedNumber,
+    PublicNonceEncryptedPartialSignatureAndProof,
 };
 use sui_types::sui_system_state::{SuiSystemState, SuiSystemStateTrait};
 use sui_types::transaction::{TransactionDataAPI, TransactionKind};
@@ -60,10 +58,11 @@ use typed_store::Map;
 
 use dkg::DKGState;
 use tokio_stream::StreamExt;
+use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID};
 
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
-use crate::signature_mpc::sign::{SignRound, SignState};
+use crate::signature_mpc::sign::{SignRound, SignRoundCompletion, SignState};
 use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
 
 pub trait SignatureMPCServiceNotify {
@@ -354,23 +353,18 @@ impl SignatureMPCAggregator {
                 if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                     if state.ready_for_complete_first_round(&r) {
                         drop(r);
-                        if let Some(mut round) = sign_session_rounds.get_mut(&session_id) {
-                            if let Ok(sigs) = round.complete_round(state.clone()) {
-                                drop(round);
-                                let _ = submit
-                                    .sign_and_submit_output(
-                                        &SignatureMPCOutput::new_sign(
-                                            epoch,
-                                            message.summary.session_id,
-                                            session_ref,
-                                            sigs,
-                                        )
-                                        .unwrap(),
-                                        &epoch_store,
-                                    )
-                                    .await;
-                            }
-                        }
+                        let state = state.clone();
+                        Self::spawn_complete_sign_round(
+                            epoch,
+                            epoch_store.clone(),
+                            party_id,
+                            session_id,
+                            session_ref,
+                            state,
+                            sign_session_rounds.clone(),
+                            sign_session_states.clone(),
+                            submit.clone(),
+                        );
                     }
                 }
             }
@@ -594,6 +588,48 @@ impl SignatureMPCAggregator {
         });
     }
 
+
+    fn spawn_complete_sign_round(
+        epoch: EpochId,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        party_id: PartyID,
+        session_id: SignatureMPCSessionID,
+        session_ref: ObjectRef,
+        state: SignState,
+        sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
+        sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
+        submit: Arc<dyn SubmitSignatureMPC>,
+    ) {
+        spawn_monitored_task!(async move {
+            let m = {
+                if let Some(mut round) = sign_session_rounds.get_mut(&session_id) {
+                    round.complete_round(state.clone()).ok()
+                } else {
+                    None
+                }
+            };
+            if let Some(m) = m {
+                match m {
+                    SignRoundCompletion::Output(sigs) => {
+                        let _ = submit
+                                    .sign_and_submit_output(
+                                        &SignatureMPCOutput::new_sign(
+                                            epoch,
+                                            session_id,
+                                            session_ref,
+                                            sigs,
+                                        )
+                                        .unwrap(),
+                                        &epoch_store,
+                                    )
+                                    .await;
+                    }
+                    SignRoundCompletion::None => {}
+                }
+            }
+        });
+    }
+
     async fn initiate_protocol(
         epoch: EpochId,
         epoch_store: Arc<AuthorityPerEpochStore>,
@@ -619,7 +655,7 @@ impl SignatureMPCAggregator {
             } => {
                 session_refs.insert(session_id, session_ref);
                 if let Ok((round, message)) = DKGRound::new(
-                    tiresias_public_parameters.encryption_scheme_public_parameters,
+                    tiresias_public_parameters,
                     epoch,
                     party_id,
                     parties.clone(),
@@ -652,7 +688,6 @@ impl SignatureMPCAggregator {
                 session_refs.insert(session_id, session_ref);
                 if let Ok((round, message)) = PresignRound::new(
                     tiresias_public_parameters
-                        .encryption_scheme_public_parameters
                         .clone(),
                     epoch,
                     party_id,

@@ -3729,7 +3729,7 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/enhanced-maurer.git#0fabaeb9decb2d6f1138e1bc64d939317b9d0613"
+source = "git+https://github.com/dwallet-labs/enhanced-maurer.git#d1bfa5cb422e24599f1d81096ecaf578f44f1fd2"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -6104,7 +6104,7 @@ checksum = "b87248edafb776e59e6ee64a79086f65890d3510f2c656c000bf2a7e8a0aea40"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/maurer.git#ef78bb440b547ce7c547e60f27974fce2f6ff3c9"
+source = "git+https://github.com/dwallet-labs/maurer.git#729ef1b1f4916f5ebcc31f2bbc19745098a16dd2"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -9146,7 +9146,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/proof.git#6bc0dc6e59a28102d50820b2e166a8bc9e7445bf"
+source = "git+https://github.com/dwallet-labs/proof.git#7510a5c7403411098e247b3f1c8e84d26e782e8b"
 dependencies = [
  "bulletproofs 4.0.0 (git+https://github.com/ycscaly/bulletproofs.git)",
  "commitment",
@@ -10880,6 +10880,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "signature-mpc"
+version = "0.1.0"
+dependencies = [
+ "bcs",
+ "commitment",
+ "crypto-bigint 0.5.5",
+ "ecdsa 0.16.9",
+ "enhanced_maurer",
+ "group 0.1.0",
+ "homomorphic_encryption",
+ "k256 0.13.3",
+ "maurer",
+ "proof",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tiresias",
+ "twopc_mpc",
+ "workspace-hack",
+]
+
+[[package]]
 name = "similar"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11203,6 +11227,7 @@ dependencies = [
  "shared-crypto",
  "shell-words",
  "signature 1.6.4",
+ "signature-mpc",
  "sui-config",
  "sui-execution",
  "sui-genesis-builder",
@@ -11652,6 +11677,7 @@ dependencies = [
  "serde",
  "serde_with",
  "serde_yaml 0.8.26",
+ "signature-mpc",
  "sui-keys",
  "sui-protocol-config",
  "sui-simulator",
@@ -11724,6 +11750,7 @@ dependencies = [
  "serde_yaml 0.8.26",
  "shared-crypto",
  "signature 1.6.4",
+ "signature-mpc",
  "static_assertions",
  "sui-archival",
  "sui-authority-aggregation",
@@ -12537,7 +12564,11 @@ dependencies = [
  "move-stdlib",
  "move-vm-runtime",
  "move-vm-types",
+<<<<<<< HEAD
  "serde_json",
+=======
+ "signature-mpc",
+>>>>>>> upstream/sign-ia-wasm
  "smallvec",
  "sui-json",
  "sui-protocol-config",
@@ -12560,7 +12591,11 @@ dependencies = [
  "move-stdlib-next-vm",
  "move-vm-runtime-next-vm",
  "move-vm-types",
+<<<<<<< HEAD
  "serde_json",
+=======
+ "signature-mpc",
+>>>>>>> upstream/sign-ia-wasm
  "smallvec",
  "sui-json",
  "sui-protocol-config",
@@ -13019,6 +13054,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "shared-crypto",
+ "signature-mpc",
  "sui-config",
  "sui-json",
  "sui-json-rpc-api",
@@ -13306,6 +13342,7 @@ dependencies = [
  "serde_with",
  "serde_yaml 0.8.26",
  "shared-crypto",
+ "signature-mpc",
  "sui-config",
  "sui-execution",
  "sui-genesis-builder",
@@ -13522,25 +13559,17 @@ dependencies = [
  "bcs",
  "bincode",
  "byteorder",
- "commitment",
  "criterion",
- "crypto-bigint 0.5.5",
  "derivative",
  "derive_more",
- "ecdsa 0.16.9",
- "enhanced_maurer",
  "enum_dispatch",
  "expect-test",
  "eyre",
  "fastcrypto",
  "fastcrypto-zkp",
- "group 0.1.0",
- "homomorphic_encryption",
  "im",
  "indexmap 2.1.0",
  "itertools",
- "k256 0.13.3",
- "maurer",
  "move-binary-format",
  "move-bytecode-utils",
  "move-command-line-common",
@@ -13557,7 +13586,6 @@ dependencies = [
  "nonempty",
  "once_cell",
  "prometheus",
- "proof",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
@@ -13570,6 +13598,7 @@ dependencies = [
  "serde_yaml 0.8.26",
  "shared-crypto",
  "signature 1.6.4",
+ "signature-mpc",
  "static_assertions",
  "strum 0.24.1",
  "strum_macros 0.24.3",
@@ -13578,10 +13607,8 @@ dependencies = [
  "sui-protocol-config",
  "tap",
  "thiserror",
- "tiresias",
  "tonic 0.10.0",
  "tracing",
- "twopc_mpc",
  "typed-store-error",
  "workspace-hack",
 ]
@@ -14113,7 +14140,7 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/tiresias.git?branch=he#6828a15a548a5fa794ba1a7a0588736c11c04d78"
+source = "git+https://github.com/dwallet-labs/tiresias.git?branch=he#e6e0a0cc9ff3eb251bc4e4fdd80b8be531e4f1bf"
 dependencies = [
  "crypto-bigint 0.5.5",
  "gcd",
@@ -14712,7 +14739,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/2pc-mpc.git#0de989d147bd10585eab56ee75e17c5f336a8b76"
+source = "git+https://github.com/dwallet-labs/2pc-mpc.git?branch=instantiations#6aa9966314cd7b5434aca307ca794753be91ef05"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -15092,9 +15119,9 @@ checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.87"
+version = "0.2.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7706a72ab36d8cb1f80ffbf0e071533974a60d0a308d01a5d0375bf60499a342"
+checksum = "4be2531df63900aeb2bca0daaaddec08491ee64ceecbee5076636a3b026795a8"
 dependencies = [
  "cfg-if",
  "wasm-bindgen-macro",
@@ -15102,9 +15129,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-backend"
-version = "0.2.87"
+version = "0.2.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ef2b6d3c510e9625e5fe6f509ab07d66a760f0885d858736483c32ed7809abd"
+checksum = "614d787b966d3989fa7bb98a654e369c762374fd3213d212cfc0251257e747da"
 dependencies = [
  "bumpalo",
  "log",
@@ -15129,9 +15156,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.87"
+version = "0.2.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dee495e55982a3bd48105a7b947fd2a9b4a8ae3010041b9e0faab3f9cd028f1d"
+checksum = "a1f8823de937b71b9460c0c34e25f3da88250760bec0ebac694b49997550d726"
 dependencies = [
  "quote 1.0.33",
  "wasm-bindgen-macro-support",
@@ -15139,9 +15166,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.87"
+version = "0.2.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54681b18a46765f095758388f2d0cf16eb8d4169b639ab575a8f5693af210c7b"
+checksum = "e94f17b526d0a461a191c78ea52bbce64071ed5c04c9ffe424dcb38f74171bb7"
 dependencies = [
  "proc-macro2 1.0.66",
  "quote 1.0.33",
@@ -15152,9 +15179,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.87"
+version = "0.2.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca6ad05a4870b2bf5fe995117d3728437bd27d7cd5f06f13c17443ef369775a1"
+checksum = "af190c94f2773fdb3729c55b007a722abb5384da03bc0986df4c289bf5567e96"
 
 [[package]]
 name = "wasm-streams"

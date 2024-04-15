@@ -14,6 +14,7 @@ use fastcrypto::{
     traits::ToFromBytes,
 };
 use fastcrypto::encoding::Encoding;
+use move_core_types::language_storage::TypeTag;
 
 use serde_json::{json, Number, Value};
 
@@ -27,9 +28,10 @@ use sui_sdk::wallet_context::WalletContext;
 use sui_types::{base_types::{ObjectID,}, SUI_SYSTEM_PACKAGE_ID, transaction::{SenderSignedData, Transaction, TransactionData, TransactionDataAPI}};
 
 use tokio::time::sleep;
-use sui_types::messages_signature_mpc::{initiate_centralized_party_dkg, DKGSignatureMPCSecretKeyShareEncryptionAndProof, initiate_centralized_party_presign, PresignSignatureMPCDecentralizedPartyOutput, initiate_centralized_party_sign, message_digest};
+use signature_mpc::twopc_mpc_protocols::{initiate_centralized_party_dkg, ProtocolContext, SecretKeyShareEncryptionAndProof, initiate_centralized_party_presign, PresignDecentralizedPartyOutput, initiate_centralized_party_sign, message_digest};
+use sui_types::base_types::ObjectRef;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, CREATE_SIGN_SESSION_FUNC_NAME, DKG_SESSION_OUTPUT_STRUCT_NAME, DKG_SESSION_STRUCT_NAME, DKGSessionOutput, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, PresignSessionOutput, Presign, SignOutput, SIGN_SESSION_STRUCT_NAME};
+use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, DKG_SESSION_OUTPUT_STRUCT_NAME, DKG_SESSION_STRUCT_NAME, DKGSessionOutput, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, PresignSessionOutput, Presign, SignOutput, SIGN_SESSION_STRUCT_NAME, SIGN_MESSAGES_FUNC_NAME, CREATE_SIGN_MESSAGES_FUNC_NAME, SignData};
 use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionKind};
 use crate::client_commands::{construct_move_call_transaction, NewDWalletOutput, NewSignOutput, SuiClientCommandResult};
 use crate::serialize_or_execute;
@@ -109,7 +111,9 @@ impl SuiDWalletCommands {
                         "dWallet config with name [{alias}] already exists."
                     ));
                 }
-                let centralized_party_commitment_round_party = initiate_centralized_party_dkg();
+
+                // TODO: handle Errors instead of `unwrap`
+                let centralized_party_commitment_round_party = initiate_centralized_party_dkg().unwrap();
 
                 let (
                     commitment_to_centralized_party_secret_key_share,
@@ -228,7 +232,7 @@ impl SuiDWalletCommands {
                 // }
                 // let output = output.unwrap();
 
-                let secret_key_share_encryption_and_proof = bcs::from_bytes::<DKGSignatureMPCSecretKeyShareEncryptionAndProof>(&output.secret_key_share_encryption_and_proof)?;
+                let secret_key_share_encryption_and_proof = bcs::from_bytes::<SecretKeyShareEncryptionAndProof<ProtocolContext>>(&output.secret_key_share_encryption_and_proof)?;
 
                 let (
                     centralized_party_public_key_share_decommitment_and_proof,
@@ -334,6 +338,7 @@ impl SuiDWalletCommands {
                         SuiObjectDataOptions::default().with_bcs().with_owner(),
                     )
                     .await?;
+                
 
                 let Some(data) = resp.data else {
                     return Err(anyhow!(
@@ -364,6 +369,10 @@ impl SuiDWalletCommands {
 
                 let centralized_party_nonce_shares_commitments_and_batched_proof = bcs::to_bytes(&centralized_party_nonce_shares_commitments_and_batched_proof).unwrap();
 
+                let centralized_party_nonce_shares_commitments_and_batched_proof = centralized_party_nonce_shares_commitments_and_batched_proof.iter().map(|v| Value::Number(Number::from(*v))).collect();
+
+                let centralized_party_nonce_shares_commitments_and_batched_proof = SuiJsonValue::new(Value::Array(centralized_party_nonce_shares_commitments_and_batched_proof)).unwrap();
+
                 let messages_vec_input = messages_vec.iter().map(|v| Value::Array(v.iter().map(|v| Value::Number(Number::from(*v))).collect::<Vec<_>>())).collect::<Vec<_>>();
 
 
@@ -378,22 +387,22 @@ impl SuiDWalletCommands {
                 client.transaction_builder().single_move_call(
                     &mut pt_builder,
                     SUI_SYSTEM_PACKAGE_ID,
-                    DWALLET_MODULE_NAME.as_str(),
-                    APPROVE_MESSAGES_FUNC_NAME.as_str(),
+                    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.as_str(),
+                    CREATE_PRESIGN_SESSION_FUNC_NAME.as_str(),
                     Vec::new(),
-                    Vec::from([SuiJsonValue::from_object_id(dwallet_cap_id), messages_vec_input])
+                    Vec::from([SuiJsonValue::from_object_id(dwallet_id), messages_vec_input.clone(), centralized_party_nonce_shares_commitments_and_batched_proof, SuiJsonValue::new(Value::Number(Number::from(1))).unwrap()])
                 ).await?;
 
-                let dwallet_arg = pt_builder.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(dwallet_ref))).unwrap();
-                let centralized_party_nonce_shares_commitments_and_batched_proof_arg = pt_builder.input(CallArg::from(&centralized_party_nonce_shares_commitments_and_batched_proof)).unwrap();
-                let hash = pt_builder.input(CallArg::from(1u8)).unwrap();
-                pt_builder.programmable_move_call(
-                    SUI_SYSTEM_PACKAGE_ID,
-                    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
-                    CREATE_PRESIGN_SESSION_FUNC_NAME.into(),
-                    Vec::new(),
-                    Vec::from([dwallet_arg, Argument::Result(0), centralized_party_nonce_shares_commitments_and_batched_proof_arg, hash]),
-                );
+                // let dwallet_arg = pt_builder.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(dwallet_ref))).unwrap();
+                // let centralized_party_nonce_shares_commitments_and_batched_proof_arg = pt_builder.input(CallArg::from(&centralized_party_nonce_shares_commitments_and_batched_proof)).unwrap();
+                // let hash = pt_builder.input(CallArg::from(1u8)).unwrap();
+                // pt_builder.programmable_move_call(
+                //     SUI_SYSTEM_PACKAGE_ID,
+                //     DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+                //     CREATE_PRESIGN_SESSION_FUNC_NAME.into(),
+                //     Vec::new(),
+                //     Vec::from([dwallet_arg, Argument::Result(0), centralized_party_nonce_shares_commitments_and_batched_proof_arg, hash]),
+                // );
 
                 let tx_data = client
                     .transaction_builder().
@@ -418,7 +427,7 @@ impl SuiDWalletCommands {
                         ));
                 };
 
-                let session_id = session.object_changes.unwrap().iter().find_map(|o| {
+                let (session_id, session_ref) = session.object_changes.unwrap().iter().find_map(|o| {
                     if let ObjectChange::Created {
                         object_id,
                         object_type,
@@ -428,7 +437,7 @@ impl SuiDWalletCommands {
                             object_type.module == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into() &&
                             object_type.name == PRESIGN_SESSION_STRUCT_NAME.into() {
                         }
-                        return Some(object_id)
+                        return Some((*object_id, o.object_ref()))
                     }
                     None
                 }).unwrap().clone();
@@ -436,7 +445,7 @@ impl SuiDWalletCommands {
                 sleep(Duration::from_millis(500)).await;
 
                 let mut cursor = None;
-                let mut output: Option<PresignSessionOutput> = None;
+                let mut output: Option<(PresignSessionOutput, ObjectRef)> = None;
                 loop {
                     let client = context.get_client().await?;
                     let response = client
@@ -456,7 +465,7 @@ impl SuiDWalletCommands {
                         let move_object = o.move_object_bcs().unwrap();
                         let output = PresignSessionOutput::from_bcs_bytes(move_object).unwrap();
                         if output.session_id.bytes == session_id {
-                            Some(output)
+                            Some((output, o.object_ref_if_exists().unwrap()))
                         } else {
                             None
                         }
@@ -470,9 +479,9 @@ impl SuiDWalletCommands {
                         cursor = None;
                     }
                 }
-                let output = output.unwrap();
+                let (presign_output, presign_ref) = output.unwrap();
 
-                let presign_output = bcs::from_bytes::<PresignSignatureMPCDecentralizedPartyOutput>(&output.output)?;
+                let presign_output = bcs::from_bytes::<PresignDecentralizedPartyOutput<ProtocolContext>>(&presign_output.output)?;
 
 
                 let centralized_party_presigns = centralized_party_proof_verification_round_party
@@ -481,22 +490,22 @@ impl SuiDWalletCommands {
 
                 let centralized_party_sign_round_parties = initiate_centralized_party_sign(dkg_output, centralized_party_presigns).unwrap();
 
-                let public_nonce_encrypted_partial_signature_and_proofs = messages_vec.into_iter().zip(centralized_party_sign_round_parties.into_iter()).map(|(message, party)| {
+                let (public_nonce_encrypted_partial_signature_and_proofs, signature_verification_round_parties): (Vec<_>, Vec<_>) = messages_vec.into_iter().zip(centralized_party_sign_round_parties.into_iter()).map(|(message, party)| {
                     let m = message_digest(&message);
                     party
-                        .evaluate_encrypted_partial_signature(m, &mut OsRng)
+                        .evaluate_encrypted_partial_signature_prehash(m, &mut OsRng)
                         .unwrap()
-                }).collect::<Vec<_>>();
+                }).collect::<Vec<_>>().into_iter().unzip();
 
                 let public_nonce_encrypted_partial_signature_and_proofs = bcs::to_bytes(&public_nonce_encrypted_partial_signature_and_proofs).unwrap();
 
-                let public_nonce_encrypted_partial_signature_and_proofs = public_nonce_encrypted_partial_signature_and_proofs.iter().map(|v| Value::Number(Number::from(*v))).collect();
-
-                let public_nonce_encrypted_partial_signature_and_proofs = SuiJsonValue::new(Value::Array(public_nonce_encrypted_partial_signature_and_proofs)).unwrap();
+                // let public_nonce_encrypted_partial_signature_and_proofs = public_nonce_encrypted_partial_signature_and_proofs.iter().map(|v| Value::Number(Number::from(*v))).collect();
+                // 
+                // let public_nonce_encrypted_partial_signature_and_proofs = SuiJsonValue::new(Value::Array(public_nonce_encrypted_partial_signature_and_proofs)).unwrap();
 
                 sleep(Duration::from_millis(500)).await;
                 let mut cursor = None;
-                let mut decentralized_presign: Option<Presign> = None;
+                let mut decentralized_presign: Option<(Presign, ObjectRef)> = None;
                 loop {
                     let client = context.get_client().await?;
                     let response = client
@@ -516,7 +525,8 @@ impl SuiDWalletCommands {
                         let move_object = o.move_object_bcs().unwrap();
                         let decentralized_presign = Presign::from_bcs_bytes(move_object).unwrap();
                         if decentralized_presign.session_id.bytes == session_id {
-                            Some(decentralized_presign)
+                            
+                            Some((decentralized_presign, o.object_ref_if_exists().unwrap()))
                         } else {
                             None
                         }
@@ -530,11 +540,46 @@ impl SuiDWalletCommands {
                         cursor = None;
                     }
                 }
-                let decentralized_presign = decentralized_presign.unwrap();
+                let (decentralized_presign, decentralized_presign_ref) = decentralized_presign.unwrap();
 
-                let tx_data = construct_move_call_transaction(
-                    SUI_SYSTEM_PACKAGE_ID, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.as_str(), &CREATE_SIGN_SESSION_FUNC_NAME.as_str(), Vec::new(), gas, gas_budget, Vec::from([SuiJsonValue::from_object_id(dwallet_id), SuiJsonValue::from_object_id(session_id), SuiJsonValue::from_object_id(*output.id.object_id()), SuiJsonValue::from_object_id(*decentralized_presign.id.object_id()), public_nonce_encrypted_partial_signature_and_proofs]), context,
+                let mut pt_builder = ProgrammableTransactionBuilder::new();
+                client.transaction_builder().single_move_call(
+                    &mut pt_builder,
+                    SUI_SYSTEM_PACKAGE_ID,
+                    DWALLET_MODULE_NAME.as_str(),
+                    APPROVE_MESSAGES_FUNC_NAME.as_str(),
+                    Vec::new(),
+                    Vec::from([SuiJsonValue::from_object_id(dwallet_cap_id), messages_vec_input])
                 ).await?;
+
+                let dwallet_arg = pt_builder.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(dwallet_ref))).unwrap();
+                let session_arg = pt_builder.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(session_ref))).unwrap();
+                let presign_arg = pt_builder.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(presign_ref))).unwrap();
+                let decentralized_presign_arg = pt_builder.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(decentralized_presign_ref))).unwrap();
+                let public_nonce_encrypted_partial_signature_and_proofs = pt_builder.input(CallArg::from(&public_nonce_encrypted_partial_signature_and_proofs)).unwrap();
+                pt_builder.programmable_move_call(
+                    SUI_SYSTEM_PACKAGE_ID,
+                    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+                    CREATE_SIGN_MESSAGES_FUNC_NAME.into(),
+                    Vec::new(),
+                    Vec::from([dwallet_arg, session_arg, presign_arg, decentralized_presign_arg, public_nonce_encrypted_partial_signature_and_proofs]),
+                );
+                pt_builder.programmable_move_call(
+                    SUI_SYSTEM_PACKAGE_ID,
+                    DWALLET_MODULE_NAME.into(),
+                    SIGN_MESSAGES_FUNC_NAME.into(),
+                    Vec::from([TypeTag::Struct(Box::new(SignData::type_()))]),
+                    Vec::from([Argument::Result(1), Argument::Result(0)]),
+                );
+
+                let tx_data = client
+                    .transaction_builder().
+                    finish_programmable_transaction(
+                        sender,
+                        pt_builder,
+                        gas,
+                        gas_budget
+                    ).await?;
 
                 let session_response = serialize_or_execute!(
                     tx_data,

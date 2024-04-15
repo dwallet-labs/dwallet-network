@@ -6,13 +6,14 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
-    use dwallet_system::dwallet::{create_dwallet_cap, MessageApproval, remove};
-    use std::vector;
+    use dwallet_system::dwallet::{create_dwallet_cap, SignMessages};
+    use dwallet_system::dwallet;
 
     const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
     const EPresignOutputAndPresignMismatch: u64 = 2;
-    const ENotSupported: u64 = 2;
+    const ESignInvalidSignatureParts: u64 = 3;
+    const ENotSupported: u64 = 4;
 
     const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
@@ -74,29 +75,25 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_field)]
-    struct SignSession has key {
+    struct SignData has store {
         id: UID,
-        dwallet_id: ID,
-        dwallet_cap_id: ID,
         public_key: vector<u8>,
         hash: u8,
-        messages: vector<vector<u8>>,
         dkg_output: vector<u8>,
         public_nonce_encrypted_partial_signature_and_proofs: vector<u8>,
         presigns: vector<u8>,
-        sender: address,
     }
-
-    #[allow(unused_field)]
-    struct SignOutput has key {
-        id: UID,
-        session_id: ID,
-        dwallet_id: ID,
-        dwallet_cap_id: ID,
-        hash: u8,
-        signatures: vector<vector<u8>>,
-        sender: address,
-    }
+    //
+    // #[allow(unused_field)]
+    // struct SignOutput has key {
+    //     id: UID,
+    //     session_id: ID,
+    //     dwallet_id: ID,
+    //     dwallet_cap_id: ID,
+    //     hash: u8,
+    //     signatures: vector<vector<u8>>,
+    //     sender: address,
+    // }
 
     public fun create_dkg_session(commitment_to_centralized_party_secret_key_share: vector<u8>, ctx: &mut TxContext) {
         let cap = create_dwallet_cap(ctx);
@@ -148,20 +145,10 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);
 
-    public fun create_presign_session(dwallet: &DWallet, message_approvals: vector<MessageApproval>, commitments_and_proof_to_centralized_party_nonce_shares: vector<u8>, hash: u8, ctx: &mut TxContext) {
+    public fun create_presign_session(dwallet: &DWallet, messages: vector<vector<u8>>, commitments_and_proof_to_centralized_party_nonce_shares: vector<u8>, hash: u8, ctx: &mut TxContext) {
         assert!(hash == SHA256, ENotSupported);
         let dwallet_id = object::id(dwallet);
         let dwallet_cap_id = dwallet.dwallet_cap_id;
-        let messages = vector::empty<vector<u8>>();
-
-        while (vector::length(&message_approvals) > 0) {
-            let message_approval = vector::pop_back(&mut message_approvals);
-            let (message_approval_dwallet_cap_id, message) = remove(message_approval);
-            assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
-            vector::push_back(&mut messages, message);
-        };
-
-        vector::destroy_empty(message_approvals);
 
         let session = PresignSession {
             id: object::new(ctx),
@@ -202,9 +189,13 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         transfer::transfer(presign, session.sender);
     }
 
-    public fun create_sign_session(dwallet: &DWallet, session: &PresignSession, output: PresignSessionOutput, presign: Presign, public_nonce_encrypted_partial_signature_and_proofs: vector<u8>, ctx: &mut TxContext) {
+    native fun sign_verify_encrypted_signature_parts_prehash(messages: vector<vector<u8>>, dkg_output: vector<u8>, public_nonce_encrypted_partial_signature_and_proofs: vector<u8>, presigns: vector<u8>): bool;
 
+    public fun create_sign_messages(dwallet: &DWallet, session: &PresignSession, output: PresignSessionOutput, presign: Presign, public_nonce_encrypted_partial_signature_and_proofs: vector<u8>, ctx: &mut TxContext): SignMessages<SignData> {
         assert!(object::id(session) == output.session_id && object::id(dwallet) == output.dwallet_id && output.dwallet_id == presign.dwallet_id && output.dwallet_cap_id == presign.dwallet_cap_id && output.session_id == presign.session_id, EPresignOutputAndPresignMismatch);
+
+        let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(session.messages, dwallet.output, public_nonce_encrypted_partial_signature_and_proofs, presign.presigns);
+        assert!(valid_signature_parts, ESignInvalidSignatureParts);
 
         let PresignSessionOutput {
             id,
@@ -224,33 +215,35 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         } = presign;
         object::delete(id);
 
-        let sign = SignSession {
+        let sign_data = SignData {
             id: object::new(ctx),
-            dwallet_id,
-            dwallet_cap_id,
             public_key: dwallet.public_key,
             hash: session.hash,
-            messages: session.messages,
             dkg_output: dwallet.output,
             public_nonce_encrypted_partial_signature_and_proofs,
             presigns,
-            sender: tx_context::sender(ctx),
         };
-        transfer::freeze_object(sign);
-    }
 
-    #[allow(unused_function)]
-    fun create_sign_output(session: &SignSession, signatures: vector<vector<u8>>, ctx: &mut TxContext) {
-        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
-        let sign_output = SignOutput {
-            id: object::new(ctx),
-            session_id: object::id(session),
-            dwallet_id: session.dwallet_id,
-            hash: session.hash,
-            dwallet_cap_id: session.dwallet_cap_id,
-            signatures,
-            sender: session.sender
-        };
-        transfer::transfer(sign_output, session.sender);
+        dwallet::create_sign_messages(dwallet_id, dwallet_cap_id, session.messages, sign_data, ctx)
     }
+    //
+    // #[allow(unused_function)]
+    // fun create_sign_output(session: &SignSession<SignData>, signatures: vector<vector<u8>>, ctx: &mut TxContext) {
+    //     assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+    //
+    //     let session_data = dwallet::sign_session_data<SignData>(session);
+    //     let dwallet_id = dwallet::sign_session_dwallet_id(session);
+    //     let dwallet_cap_id = dwallet::sign_session_dwallet_cap_id(session);
+    //     let sender = dwallet::sign_session_sender(session);
+    //     let sign_output = SignOutput {
+    //         id: object::new(ctx),
+    //         session_id: object::id(session),
+    //         dwallet_id,
+    //         hash: session_data.hash,
+    //         dwallet_cap_id,
+    //         signatures,
+    //         sender
+    //     };
+    //     transfer::transfer(sign_output, sender);
+    // }
 }
