@@ -75,7 +75,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_field)]
-    struct SignData has key {
+    struct SignData has store {
         id: UID,
         public_key: vector<u8>,
         hash: u8,

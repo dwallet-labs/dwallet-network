@@ -507,6 +507,9 @@ impl NativesCostTable {
                 dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: protocol_config
                     .dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base()
                     .into(),
+                sign_verify_encrypted_signature_parts_prehash_cost_base: protocol_config
+                    .sign_verify_encrypted_signature_parts_prehash_cost_base()
+                    .into(),
             },
         }
     }
@@ -737,7 +740,12 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dwallet_2pc_mpc_ecdsa_k1",
             "dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share",
             make_native!(twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share),
-    )];
+        ),
+        (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "sign_verify_encrypted_signature_parts_prehash",
+            make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
+        )];
     sui_system_natives
         .iter()
         .cloned()
