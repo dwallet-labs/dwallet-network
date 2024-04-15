@@ -1,23 +1,12 @@
-name: Build and Push Sui Node Image
+name: Build and Push dWallet Node Image
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - build-actions
 
 jobs:
-  build-and-push:
-    name: Build and Push Image
+  build-and-push-amd64:
+    name: Build and Push Image (AMD64)
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        platform: [ linux/amd64, linux/arm64 ]
-        include:
-          - platform: linux/amd64
-            docker_tag_suffix: v1.16.2
-          - platform: linux/arm64
-            docker_tag_suffix: "v1.16.2-arm"
 
     steps:
       - name: Checkout repository
@@ -40,11 +29,45 @@ jobs:
       - name: Build and Push Sui Node Image
         run: |
           ./docker/sui-node/build.sh \
-            --platform ${{ matrix.platform }} \
+            --platform linux/amd64 \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
             --push
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: sui-fork
           IMAGE_NAME: dwallet-testnet
-          IMAGE_VERSION: ${{ matrix.docker_tag_suffix }}
+          IMAGE_VERSION: v1.16.2
+
+  build-and-push-arm64:
+    name: Build and Push Image (ARM)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ECR_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_ECR_SECRET_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Sui Node Image
+        run: |
+          ./docker/sui-node/build.sh \
+            --platform linux/arm64 \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
+            --push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sui-fork
+          IMAGE_NAME: dwallet-testnet
+          IMAGE_VERSION: v1.16.2-arm
