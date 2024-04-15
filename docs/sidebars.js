@@ -45,6 +45,11 @@ const sidebars = {
 			items: [
 				{
 					type: 'doc',
+					label: 'dWallet Environment Setup',
+					id: 'getting-started/guides/developers-guide/dwallet-network-environment',
+				},
+				{
+					type: 'doc',
 					label: 'Install dWallet',
 					id: 'getting-started/guides/developers-guide/install-dwallet',
 				},
