@@ -1,0 +1,21 @@
+{
+	"name": "signature-mpc-wasm",
+	"version": "0.1.0",
+	"description": "Signature MPC in WASM",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"build": "wasm-pack build --target nodejs --scope mysten",
+		"build:dev": "wasm-pack build --target nodejs --debug --scope mysten",
+		"build:release": "wasm-pack build --target web --release --scope mysten",
+		"test": "vitest run"
+	},
+	"author": "dWallet Labs, Ltd. <dev@dwalletlabs.com>",
+	"license": "BSD-3-Clause-Clear",
+	"devDependencies": {
+		"@mysten/build-scripts": "workspace:*",
+		"typescript": "^5.1.6",
+		"vitest": "^0.33.0",
+		"wasm-pack": "^0.12.1"
+	}
+}
