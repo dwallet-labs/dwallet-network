@@ -135,7 +135,7 @@ use crate::transaction_manager::TransactionManager;
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
 use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCSessionID};
-use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, DKGSession, DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, PRESIGN_SESSION_STRUCT_NAME, DWALLET_STRUCT_NAME, DWallet, PresignSession, SIGN_MESSAGES_FUNC_NAME, SIGN_SESSION_STRUCT_NAME, SignSession, DWALLET_MODULE_NAME};
+use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, DKGSession, DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, PRESIGN_SESSION_STRUCT_NAME, DWALLET_STRUCT_NAME, DWallet, PresignSession, SIGN_MESSAGES_FUNC_NAME, SIGN_SESSION_STRUCT_NAME, SignSession, DWALLET_MODULE_NAME, SignData};
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1374,12 +1374,13 @@ impl AuthorityState {
 
                             if let Some(move_object) = obj.data.try_as_move() {
                                 if move_object.type_().name() == SIGN_SESSION_STRUCT_NAME {
-                                    let obj: SignSession = bcs::from_bytes(move_object.contents()).ok().unwrap();
+                                    let obj: bcs::Result<SignSession<SignData>> = bcs::from_bytes(move_object.contents());
+                                    let obj: SignSession<SignData> = obj.ok().unwrap();
                                     debug!("fetching SignSession {:?}", obj);
-                                    let public_key = obj.public_key;
-                                    let dkg_output = obj.dkg_output;
-                                    let public_nonce_encrypted_partial_signature_and_proofs = obj.public_nonce_encrypted_partial_signature_and_proofs;
-                                    let presigns = obj.presigns;
+                                    let public_key = obj.sign_data.public_key;
+                                    let dkg_output = obj.sign_data.dkg_output;
+                                    let public_nonce_encrypted_partial_signature_and_proofs = obj.sign_data.public_nonce_encrypted_partial_signature_and_proofs;
+                                    let presigns = obj.sign_data.presigns;
                                     // TODO: validate commitment error
                                     let message = InitiateSignatureMPCProtocol::Sign {
                                         session_id: SignatureMPCSessionID(move_object.id().into_bytes()),

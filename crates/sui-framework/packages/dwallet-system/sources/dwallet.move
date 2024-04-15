@@ -27,7 +27,7 @@ module dwallet_system::dwallet {
         message: vector<u8>,
     }
 
-    struct SignMessages<S> has key, store {
+    struct SignMessages<S: store> has key, store {
         id: UID,
         dwallet_id: ID,
         dwallet_cap_id: ID,
@@ -106,7 +106,7 @@ module dwallet_system::dwallet {
         (dwallet_cap_id, message)
     }
 
-    public(friend) fun create_sign_messages<T>(dwallet_id: ID, dwallet_cap_id: ID, messages: vector<vector<u8>>, sign_data: T, ctx: &mut TxContext): SignMessages<T> {
+    public(friend) fun create_sign_messages<T: store>(dwallet_id: ID, dwallet_cap_id: ID, messages: vector<vector<u8>>, sign_data: T, ctx: &mut TxContext): SignMessages<T> {
         SignMessages {
             id: object::new(ctx),
             dwallet_id,
@@ -116,15 +116,15 @@ module dwallet_system::dwallet {
         }
     }
 
-    public fun sign_messages_dwallet_id<T>(sign_messages: &SignMessages<T>): ID {
+    public fun sign_messages_dwallet_id<T: store>(sign_messages: &SignMessages<T>): ID {
         sign_messages.dwallet_id
     }
 
-    public fun sign_messages_dwallet_cap_id<T>(sign_messages: &SignMessages<T>): ID {
+    public fun sign_messages_dwallet_cap_id<T: store>(sign_messages: &SignMessages<T>): ID {
         sign_messages.dwallet_cap_id
     }
 
-    public fun sign_messages_messages<T>(sign_messages: &SignMessages<T>): vector<vector<u8>> {
+    public fun sign_messages_messages<T: store>(sign_messages: &SignMessages<T>): vector<vector<u8>> {
         sign_messages.messages
     }
 
