@@ -2,6 +2,9 @@ name: Build and Push Sui Node Image
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - build-actions
 
 jobs:
   build-and-push:
