@@ -348,6 +348,8 @@ impl SuiDWalletCommands {
                 serialize_signed_transaction,
                 hash
             } => {
+                let hash: signature_mpc::twopc_mpc_protocols::Hash = hash.into();
+
                 let DWalletSecretShare { alias: _, dkg_output, dwallet_id, dwallet_cap_id } = context.config.get_active_dwallet()?.clone();
                 let resp = context
                     .get_client()
@@ -403,6 +405,7 @@ impl SuiDWalletCommands {
 
                 let client = context.get_client().await?;
 
+                let hash_num: u8 = hash.clone().into();
                 let mut pt_builder = ProgrammableTransactionBuilder::new();
                 client.transaction_builder().single_move_call(
                     &mut pt_builder,
@@ -410,7 +413,7 @@ impl SuiDWalletCommands {
                     DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.as_str(),
                     CREATE_PRESIGN_SESSION_FUNC_NAME.as_str(),
                     Vec::new(),
-                    Vec::from([SuiJsonValue::from_object_id(dwallet_id), messages_vec_input.clone(), centralized_party_nonce_shares_commitments_and_batched_proof, SuiJsonValue::new(Value::Number(Number::from(1))).unwrap()])
+                    Vec::from([SuiJsonValue::from_object_id(dwallet_id), messages_vec_input.clone(), centralized_party_nonce_shares_commitments_and_batched_proof, SuiJsonValue::new(Value::Number(Number::from(hash_num))).unwrap()])
                 ).await?;
 
                 // let dwallet_arg = pt_builder.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(dwallet_ref))).unwrap();
@@ -509,9 +512,7 @@ impl SuiDWalletCommands {
                     .unwrap();
 
                 let centralized_party_sign_round_parties = initiate_centralized_party_sign(dkg_output, centralized_party_presigns).unwrap();
-
-                let hash: signature_mpc::twopc_mpc_protocols::Hash = hash.into();
-
+                
                 let (public_nonce_encrypted_partial_signature_and_proofs, signature_verification_round_parties): (Vec<_>, Vec<_>) = messages_vec.into_iter().zip(centralized_party_sign_round_parties.into_iter()).map(|(message, party)| {
                     let m = message_digest(&message, &hash);
                     party

@@ -9,7 +9,7 @@ import {
 	finalize_presign,
 	initiate_dkg,
 	initiate_presign,
-	initiate_sign
+	initiate_sign,
 } from '@dwallet/signature-mpc-wasm/pkg';
 import {bcs} from "../bcs";
 import {fetchObjectBySessionId} from "./utils";
@@ -75,7 +75,7 @@ export async function createDWallet(keypair: Keypair, client: SuiClient) {
 	return null;
 }
 
-function hashToNumber(hash: "KECCAK256" | "SHA256") {
+function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
 	if(hash === "KECCAK256") {
 		return 0;
 	} else {
