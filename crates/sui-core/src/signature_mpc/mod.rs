@@ -729,6 +729,7 @@ impl SignatureMPCAggregator {
                 dkg_output,
                 public_nonce_encrypted_partial_signature_and_proofs,
                 presigns,
+                hash
             } => {
                 session_refs.insert(session_id, session_ref);
                 if let Ok((round, message)) = SignRound::new(
@@ -742,6 +743,7 @@ impl SignatureMPCAggregator {
                     dkg_output,
                     public_nonce_encrypted_partial_signature_and_proofs.clone(),
                     presigns,
+                    hash.into()
                 ) {
                     let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                         SignState::new(tiresias_public_parameters, epoch, party_id, parties, session_id)

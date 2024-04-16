@@ -108,7 +108,7 @@ pub fn sign_verify_encrypted_signature_parts_prehash(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 4);
+    debug_assert!(args.len() == 5);
 
     // Load the cost parameters from the protocol config
     let twopc_mpc_dkg_cost_params = &context
@@ -128,6 +128,8 @@ pub fn sign_verify_encrypted_signature_parts_prehash(
     );
 
     let cost = context.gas_used();
+
+    let hash = pop_arg!(args, u8);
 
     let presigns = pop_arg!(args, Vector);
     let presigns = presigns.to_vec_u8()?;
@@ -160,7 +162,7 @@ pub fn sign_verify_encrypted_signature_parts_prehash(
     let messages = messages.into_iter().map(|m| m.value_as::<Vec<u8>>()).collect::<PartialVMResult<Vec<_>>>()?;
 
     let signature_mpc_tiresias_public_parameters = object_runtime.local_config.signature_mpc_tiresias_public_parameters.as_deref().unwrap();
-    let valid = decentralized_party_sign_verify_encrypted_signature_parts_prehash(signature_mpc_tiresias_public_parameters, messages, public_nonce_encrypted_partial_signature_and_proofs, dkg_output, presigns).is_ok();
+    let valid = decentralized_party_sign_verify_encrypted_signature_parts_prehash(signature_mpc_tiresias_public_parameters, messages, public_nonce_encrypted_partial_signature_and_proofs, dkg_output, presigns, hash.into()).is_ok();
 
     Ok(NativeResult::ok(
         cost,

@@ -1607,6 +1607,8 @@ importers:
         specifier: ^0.12.1
         version: 0.12.1
 
+  sdk/signature-mpc-wasm/pkg: {}
+
   sdk/suins-toolkit:
     dependencies:
       '@mysten/sui.js':
@@ -1631,6 +1633,9 @@ importers:
 
   sdk/typescript:
     dependencies:
+      '@dwallet/signature-mpc-wasm':
+        specifier: workspace:*
+        version: link:../signature-mpc-wasm
       '@mysten/bcs':
         specifier: workspace:*
         version: link:../bcs

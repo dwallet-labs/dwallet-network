@@ -88,8 +88,6 @@ pub fn initiate_presign(dkg_output: Vec<u8>, batch_size: usize) -> Result<JsValu
     ) = commitment_round_party
         .sample_commit_and_prove_signature_nonce_share(batch_size, &mut OsRng)?;
 
-    let nonce_shares_commitments_and_batched_proof = bcs::to_bytes(&nonce_shares_commitments_and_batched_proof)?;
-
     let value = InitiatePresignValue {
         nonce_shares_commitments_and_batched_proof: bcs::to_bytes(&nonce_shares_commitments_and_batched_proof)?,
         signature_nonce_shares_and_commitment_randomnesses: bcs::to_bytes(&proof_verification_round_party.signature_nonce_shares_and_commitment_randomnesses)?,
@@ -108,18 +106,20 @@ pub fn finalize_presign(dkg_output: Vec<u8>, signature_nonce_shares_and_commitme
     let presigns = commitment_round_party
         .verify_presign_output(presign_output, &mut OsRng)?;
 
+    let presigns = bcs::to_bytes(&presigns)?;
+
     Ok(serde_wasm_bindgen::to_value(&presigns)?)
 }
 
 #[wasm_bindgen]
-pub fn initiate_sign(dkg_output: Vec<u8>, presigns: Vec<u8>, messages: Vec<u8>) -> Result<JsValue, JsErr> {
+pub fn initiate_sign(dkg_output: Vec<u8>, presigns: Vec<u8>, messages: Vec<u8>, hash: u8) -> Result<JsValue, JsErr> {
     let messages: Vec<Vec<u8>> = bcs::from_bytes(&messages)?;
     let presigns: Vec<CentralizedPartyPresign> = bcs::from_bytes(&presigns)?;
     let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
     let commitment_round_parties = initiate_centralized_party_sign(dkg_output.clone(), presigns)?;
 
     let (public_nonce_encrypted_partial_signature_and_proofs, signature_verification_round_parties): (Vec<_>, Vec<_>) = messages.into_iter().zip(commitment_round_parties.into_iter()).map(|(message, party)| {
-        let m = message_digest(&message);
+        let m = message_digest(&message, &hash.into());
         party
             .evaluate_encrypted_partial_signature_prehash(m, &mut OsRng)
     }).collect::<TwoPCMPCResult<Vec<_>>>()?.into_iter().unzip();
@@ -130,14 +130,14 @@ pub fn initiate_sign(dkg_output: Vec<u8>, presigns: Vec<u8>, messages: Vec<u8>) 
 }
 
 #[wasm_bindgen]
-pub fn finalize_sign(dkg_output: Vec<u8>, messages: Vec<u8>, public_nonce_encrypted_partial_signature_and_proofs: Vec<u8>, signatures_s: Vec<u8>) -> Result<JsValue, JsErr> {
+pub fn finalize_sign(dkg_output: Vec<u8>, messages: Vec<u8>, public_nonce_encrypted_partial_signature_and_proofs: Vec<u8>, signatures_s: Vec<u8>, hash: u8) -> Result<(), JsErr> {
     let messages: Vec<Vec<u8>> = bcs::from_bytes(&messages)?;
-    let messages = messages.into_iter().map(|message| message_digest(&message)).collect();
+    let messages = messages.into_iter().map(|message| message_digest(&message, &hash.into())).collect();
     let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
     let public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>> = bcs::from_bytes(&public_nonce_encrypted_partial_signature_and_proofs)?;
     let signatures_s: Vec<Scalar> = bcs::from_bytes(&signatures_s)?;
 
-    Ok(finalize_centralized_party_sign(messages, dkg_output, public_nonce_encrypted_partial_signature_and_proofs, signatures_s).map_err(JsErr::from).and_then(|_| Ok(serde_wasm_bindgen::to_value("")?))?)
+    Ok(finalize_centralized_party_sign(messages, dkg_output, public_nonce_encrypted_partial_signature_and_proofs, signatures_s).map_err(JsErr::from).and_then(|_| Ok(()))?)
 }
 
 #[derive(Serialize, Deserialize)]

@@ -9,7 +9,7 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use k256::elliptic_curve;
+use k256::{elliptic_curve, sha2};
 pub use group::PartyID;
 use k256::sha2::Digest;
 use crypto_bigint::{ U256};
@@ -58,6 +58,21 @@ pub type PublicKeyValue = group::Value<GroupElement>;
 
 struct PublicParameters {
     tiresias_public_parameters: tiresias::encryption_key::PublicParameters
+}
+
+pub enum Hash {
+    KECCAK256 = 0,
+    SHA256 = 1
+}
+
+impl From<u8> for Hash {
+    fn from(value: u8) -> Self {
+        match value  {
+            0 => Self::KECCAK256,
+            1 => Self::SHA256,
+            _ => panic!()
+        }
+    }
 }
 
 pub fn initiate_centralized_party_dkg(//tiresias_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
@@ -286,6 +301,7 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
     public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
     dkg_output: DKGDecentralizedPartyOutput,
     presigns: Vec<DecentralizedPartyPresign>,
+    hash: Hash,
 ) -> twopc_mpc::Result<()> {
     let protocol_public_parameters = ProtocolPublicParameters::new(LargeBiPrimeSizedNumber::from_be_hex(tiresias_public_parameters));
 
@@ -293,7 +309,7 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
         .into_iter())
 
         .map(|((message, public_nonce_encrypted_partial_signature_and_proofs), presign)| {
-            let m = message_digest(&message);
+            let m = message_digest(&message, &hash);
             SignaturePartialDecryptionParty::verify_encrypted_signature_parts_prehash(
                 m,
                 public_nonce_encrypted_partial_signature_and_proofs,
@@ -373,11 +389,17 @@ pub fn decrypt_signature_decentralized_party_sign(
         .collect()
 }
 
-pub fn message_digest(message: &[u8]) -> secp256k1::Scalar {
-    let m = bits2field::<k256::Secp256k1>(
-        &<k256::Secp256k1 as DigestPrimitive>::Digest::new_with_prefix(message).finalize_fixed(),
-    )
-        .unwrap();
+pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {
+    
+    //todo: remove unwrap!
+    let m = match hash {
+        Hash::KECCAK256 =>  bits2field::<k256::Secp256k1>(
+            &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
+        ),
+        Hash::SHA256 => bits2field::<k256::Secp256k1>(
+            &sha2::Sha256::new_with_prefix(message).finalize_fixed(),
+        ),
+    }.unwrap();
 
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&m);
     U256::from(m).into()
