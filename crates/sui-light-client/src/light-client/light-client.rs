@@ -360,8 +360,8 @@ async fn check_and_sync_checkpoints(config: &Config, sui_state_proof_registry_re
     // Load the genesis committee
     let mut genesis_path = config.checkpoint_summary_dir.clone();
     genesis_path.push(&config.genesis_filename);
-    let genesis_committee = Genesis::load(&genesis_path)?.committee()?;
-    
+    let mut genesis_committee = Genesis::load(&genesis_path)?.committee()?;
+    genesis_committee.epoch = 1; // TOOD hack to make it work
 
     // Retrieve highest epoch committee id that was registered on dWallet newtwork
     let latest_registered_epoch_committee_id = retrieve_highest_epoch(config).await.unwrap_or(0);
@@ -469,7 +469,6 @@ async fn check_and_sync_checkpoints(config: &Config, sui_state_proof_registry_re
         
         
             prev_committee_object_ref_dwltn = committee_object_change.object_ref();
-        
 
             }             
 
@@ -810,7 +809,9 @@ pub async fn main() {
             // Load the genesis committee
             let mut genesis_path = config.checkpoint_summary_dir.clone();
             genesis_path.push(&config.genesis_filename);
-            let genesis_committee = Genesis::load(&genesis_path).unwrap().committee().unwrap();
+            let mut genesis_committee = Genesis::load(&genesis_path).unwrap().committee().unwrap();
+            genesis_committee.epoch = 1; // TOOD hack to make it work
+
             let init_committee_arg = ptb.pure(bcs::to_bytes(&genesis_committee).unwrap()).unwrap();
             let package_id_arg = ptb.pure(bcs::to_bytes(&ObjectID::from_hex_literal(&config.sui_deployed_state_proof_package).unwrap()).unwrap()).unwrap();
 
@@ -857,7 +858,7 @@ pub async fn main() {
                 .coin_read_api()
                 .get_coins(sender, None, None, None)
                 .await.unwrap();
-            let coin_gas = coins.data.into_iter().next().unwrap();
+            let coin_gas = coins.data.into_iter().next().expect("no gas coins available");
 
             // create the transaction data that will be sent to the network
             let tx_data = TransactionData::new_programmable(
@@ -921,8 +922,12 @@ pub async fn main() {
             let committee_object_ref = committee_object_change.object_ref();
             let config_object_ref = config_object_change.object_ref();
 
-            let _ = check_and_sync_checkpoints(&config, registry_object_ref, committee_object_ref).await;
+            let res = check_and_sync_checkpoints(&config, registry_object_ref, committee_object_ref).await;
         
+            if res.is_err() {
+                println!("Error: {:?}", res);
+            }
+
             config.dwltn_config_object_id = config_object_ref.0.to_string();
             config.dwltn_registry_object_id = registry_object_ref.0.to_string();
             }
@@ -964,7 +969,7 @@ pub async fn main() {
             }
 
 
-            println!("Submitting proves onchain");
+            println!("Submitting proof onchain");
 
             let sui_client: Arc<sui_sdk::SuiClient> = Arc::new(
                 SuiClientBuilder::default()
@@ -981,9 +986,8 @@ pub async fn main() {
                 .ok_or(anyhow!("Transaction not found")).unwrap();
 
 
-            let client: Client = Client::new(config.sui_rest_url());
-            let full_checkpoint = client.get_full_checkpoint(seq).await.unwrap();
-        
+            let rest_client: Client = Client::new(config.sui_rest_url());
+            let full_checkpoint = rest_client.get_full_checkpoint(seq).await.unwrap();
         
 
             let ckp_epoch_id = full_checkpoint.checkpoint_summary.data().epoch;
@@ -998,12 +1002,12 @@ pub async fn main() {
             let dwallet_cap_object_ref = create_dwallet_cap(&config).await.unwrap();
 
 
-            let full_check_point = get_full_checkpoint(&config, seq).await.expect("could not load checkpoint");
+            // let full_check_point = get_full_checkpoint(&config, seq).await.expect("could not load checkpoint");
 
-            let (matching_tx, _) = full_check_point
+            let (matching_tx, _) = full_checkpoint
                 .transactions
                 .iter()
-                .zip(full_check_point.checkpoint_contents.iter())
+                .zip(full_checkpoint.checkpoint_contents.iter())
                 // Note that we get the digest of the effects to ensure this is
                 // indeed the correct effects that are authenticated in the contents.
                 .find(|(tx, digest)| {
@@ -1017,8 +1021,8 @@ pub async fn main() {
             let config_arg = ptb.obj(ObjectArg::ImmOrOwnedObject(config_object_ref)).unwrap();
             let dwallet_cap_arg = ptb.obj(ObjectArg::ImmOrOwnedObject(dwallet_cap_object_ref)).unwrap();
             let committee_arg = ptb.obj(ObjectArg::ImmOrOwnedObject(epoch_committee_object_ref)).unwrap();
-            let checkpoint_summary_arg = ptb.pure(bcs::to_bytes(&full_check_point.checkpoint_summary).unwrap()).unwrap();
-            let checkpoint_contents_arg = ptb.pure(bcs::to_bytes(&full_check_point.checkpoint_contents).unwrap()).unwrap();
+            let checkpoint_summary_arg = ptb.pure(bcs::to_bytes(&full_checkpoint.checkpoint_summary).unwrap()).unwrap();
+            let checkpoint_contents_arg = ptb.pure(bcs::to_bytes(&full_checkpoint.checkpoint_contents).unwrap()).unwrap();
             let transaction_arg = ptb.pure(bcs::to_bytes(&matching_tx).unwrap()).unwrap();
 
 
@@ -1078,6 +1082,8 @@ pub async fn main() {
         serde_yaml::to_writer(file, &config).unwrap_or_else(|_| panic!("Failed to write config to file: {}", path.display()));
     
     }
+
+
 
 
 // Make a test namespace

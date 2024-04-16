@@ -12448,6 +12448,7 @@ dependencies = [
  "sui-sdk",
  "sui-types",
  "tokio",
+ "wasm-bindgen",
  "workspace-hack",
 ]
 

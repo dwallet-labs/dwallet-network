@@ -1,12 +1,22 @@
 This crate contains a Command Line Interface light client for to control dWallets from SUI.
 
+## Sync
+
+Every day there is a need to download new checkpoints through sync by doing:
+
+```
+$ cargo run -- --config example_config/light_client.yaml sync
+```
+
+cargo run -- --config example_config/light_client.yaml transaction -t 7DefdfmiEvb9de6LSKdD99xY7syZGJ3RzkP7XxHxcgc
+
 # What is a light client?
 
-A light client allows checking the authenticity and validity of on-chain state, such as transactions, their effects including events and object contents, without the cost of running a full node. 
+A light client allows checking the authenticity and validity of on-chain state, such as transactions, their effects including events and object contents, without the cost of running a full node.
 
-Running a *full node* requires downloading the full sequence of all transaction and re-executing them. Then the full state of the blockchain is available locally to serve reads. This is however an expensive process in terms of network bandwidth needed to download the full sequence of transactions, as well as CPU to re-execute it, and storage to store the full state of the blockchain.
+Running a _full node_ requires downloading the full sequence of all transaction and re-executing them. Then the full state of the blockchain is available locally to serve reads. This is however an expensive process in terms of network bandwidth needed to download the full sequence of transactions, as well as CPU to re-execute it, and storage to store the full state of the blockchain.
 
-Alternatively, a *light client* only needs to download minimal information to authenticate blockchain state. Specifically in Sui, the light client needs to *sync* all end-of-epoch checkpoints that contain information about the committee in the next epoch. Sync involves downloading the checkpoints and checking their validity by checking their certificate. 
+Alternatively, a _light client_ only needs to download minimal information to authenticate blockchain state. Specifically in Sui, the light client needs to _sync_ all end-of-epoch checkpoints that contain information about the committee in the next epoch. Sync involves downloading the checkpoints and checking their validity by checking their certificate.
 
 Once all end-of-epoch checkpoints are downloaded and checked, any event or current object can be checked for its validity. To do that the light client downloads the checkpoint in which the transaction was executed, and the effects structure that summarizes its effects on the system, including events emitted and objects created. The chain of validity from the checkpoint to the effects and its contents is checked via the certificate on the checkpoint and the hashes of all structures.
 
@@ -20,7 +30,7 @@ The light client requires a config file and a directory to cache checkpoints, an
 
 ## Setup
 
-The config file for the light client takes a URL for a full node, a directory (that must exist) and within the directory to name of the genesis blob for the Sui network. 
+The config file for the light client takes a URL for a full node, a directory (that must exist) and within the directory to name of the genesis blob for the Sui network.
 
 ```
 full_node_url: "http://ord-mnt-rpcbig-06.mainnet.sui.io:9000"
@@ -30,20 +40,22 @@ genesis_filename: "genesis.blob"
 
 The genesis blob for the Sui mainnet can be found here: https://github.com/MystenLabs/sui-genesis/blob/main/mainnet/genesis.blob
 
-## Sync 
+## Sync
 
 Every day there is a need to download new checkpoints through sync by doing:
+
 ```
 $ sui-light-client --config light_client.yaml sync
 ```
 
-Where `light_client.yaml` is the config file above. 
+Where `light_client.yaml` is the config file above.
 
 This command will download all end-of-epoch checkpoints, and check them for validity. They will be cached within the checkpoint summary directory for use by future invocations.
 
 ## Check Transaction
 
 To check a transaction was executed, as well as the events it emitted do:
+
 ```
 $ sui-light-client --config light_client.yaml transaction -t 8RiKBwuAbtu8zNCtz8SrcfHyEUzto6zi6cMVA9t4WhWk
 ```
@@ -59,4 +71,4 @@ $ sui-light-client --config light_client.yaml object -o 0xc646887891adfc0540ec27
 abfc7078
 ```
 
-The object ID is represented in Hex as displayed in explorers. If the object exists in the latest state it is printed out in JSON, otherwise an error is printed. 
+The object ID is represented in Hex as displayed in explorers. If the object exists in the latest state it is printed out in JSON, otherwise an error is printed.

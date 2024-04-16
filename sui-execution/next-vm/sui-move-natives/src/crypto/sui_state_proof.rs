@@ -25,14 +25,15 @@ use sui_types::{
 };
 use sui_json::SuiJsonValue;
 use serde_json::Value as JsonValue;
-// use sui_json::JsonValue;
 
 use move_core_types::annotated_value::MoveTypeLayout;
 
 use crate::object_runtime::ObjectRuntime;
 
-pub const INVALID_INPUT: u64 = 0;
-pub const INVALID_TX: u64 = 1;
+pub const INVALID_TX: u64 = 0;
+pub const INVALID_CHECKPOINT_SUMMARY: u64 = 1;
+pub const INVALID_COMMITTEE: u64 = 2;
+pub const INVALID_INPUT: u64 = 3;
 
 #[derive(Clone)]
 pub struct TwoPCMPCDKGCostParams {
@@ -44,13 +45,13 @@ pub struct TwoPCMPCDKGCostParams {
  * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
  *   gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base   | base cost for function call and fixed opers
  **************************************************************************************************/
-pub fn sui_state_proof_verify(
+pub fn sui_state_proof_verify_committee(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 3);
+    debug_assert!(args.len() == 2);
 
     // Load the cost parameters from the protocol config
     let sui_state_proof_cost_params = &context
@@ -59,10 +60,6 @@ pub fn sui_state_proof_verify(
         .twopc_mpc_dkg_cost_params // TODO
         .clone();
 
-    // Load the cost parameters from the protocol config
-    // let object_runtime = context
-    //     .extensions()
-    //     .get::<ObjectRuntime>();
     // Charge the base cost for this oper
     native_charge_gas_early_exit!(
         context,
@@ -71,30 +68,29 @@ pub fn sui_state_proof_verify(
 
     let cost = context.gas_used();
 
-    let prev_committee = pop_arg!(args, Vector);
-    let prev_committee_ref = prev_committee.to_vec_u8()?;
-    let Ok(prev_committee) = bcs::from_bytes::<Committee>(&prev_committee_ref) else {
+
+    let checkpoint_summary_bytes = pop_arg!(args, Vec<u8>);
+    let prev_committee_bytes = pop_arg!(args, Vec<u8>);
+
+    let Ok(prev_committee) = bcs::from_bytes::<Committee>(&prev_committee_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            INVALID_INPUT
+            INVALID_COMMITTEE
         ));
     };
 
-    let checkpoint_summary = pop_arg!(args, Vector);
-    let checkpoint_summary_ref = checkpoint_summary.to_vec_u8()?;
-    let Ok(checkpoint_summary) = bcs::from_bytes::<CertifiedCheckpointSummary>(&checkpoint_summary_ref) else {
+    
+    let Ok(checkpoint_summary) = bcs::from_bytes::<CertifiedCheckpointSummary>(&checkpoint_summary_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            INVALID_INPUT
+            INVALID_CHECKPOINT_SUMMARY
         ));
     };
-
 
     match checkpoint_summary.clone().verify(&prev_committee) {
         Ok((_)) => (),
         Err(e) => return Ok(NativeResult::err(cost, INVALID_TX)),
     }
-
 
     let next_committee_epoch;
     // Extract the new committee information
@@ -122,7 +118,7 @@ pub fn sui_state_proof_verify(
  * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
  *   gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base   | base cost for function call and fixed opers
  **************************************************************************************************/
- pub fn sui_state_proof_process_dwallet_sign_request(
+ pub fn sui_state_proof_verify_transaction(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -223,9 +219,9 @@ pub fn sui_state_proof_verify(
     for event in tx_events {
 
         if !event.package_id.eq(&package_id) {
-            return Ok(NativeResult::err(cost, INVALID_TX));
+            continue;
         }
-
+        // TODO of unwrap catch error and conitnue?
         let json_val = SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents).unwrap().to_json_value();
         
         // get signature from the json
@@ -242,7 +238,10 @@ pub fn sui_state_proof_verify(
             _ => return Ok(NativeResult::err(cost, INVALID_TX))
         };
         messages.push(approve_message);
+
+        return Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(bcs::to_bytes(&messages).unwrap())]));
+
     }
     
-    Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(bcs::to_bytes(&messages).unwrap())]))
+    return Ok(NativeResult::err(cost, INVALID_TX));
 }
