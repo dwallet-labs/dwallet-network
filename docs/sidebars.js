@@ -65,6 +65,11 @@ const sidebars = {
 				},
 				{
 					type: 'doc',
+					label: 'Get DWLT Tokens',
+					id: 'getting-started/guides/developers-guide/get-tokens',
+				},
+				{
+					type: 'doc',
 					label: 'Your First dWallet',
 					id: 'getting-started/guides/developers-guide/your-first-dwallet',
 				},
