@@ -36,6 +36,21 @@ use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionKind};
 use crate::client_commands::{construct_move_call_transaction, NewDWalletOutput, NewSignOutput, SuiClientCommandResult};
 use crate::serialize_or_execute;
 
+#[derive(ValueEnum, Clone, Debug)]
+pub enum Hash {
+    KECCAK256,
+    SHA256
+}
+
+impl From<Hash> for signature_mpc::twopc_mpc_protocols::Hash {
+    fn from(value: Hash) -> Self {
+        match value {
+            Hash::KECCAK256 => Self::KECCAK256,
+            Hash::SHA256 => Self::SHA256,
+        }
+    }
+}
+
 #[derive(Parser)]
 #[clap(rename_all = "kebab-case")]
 pub enum SuiDWalletCommands {
@@ -71,6 +86,10 @@ pub enum SuiDWalletCommands {
         /// A list of Base64 encoded messages to sign.
         #[clap(long)]
         messages: Vec<String>,
+
+        /// The hash function, either "KECCAK256" (default) or "SHA256".
+        #[clap(long, value_enum, default_value_t=Hash::KECCAK256)]
+        hash: Hash,
 
         /// ID of the gas object for gas payment, in 20 bytes Hex string
         /// If not provided, a gas object with at least gas_budget value will be selected
@@ -327,6 +346,7 @@ impl SuiDWalletCommands {
                 gas_budget,
                 serialize_unsigned_transaction,
                 serialize_signed_transaction,
+                hash
             } => {
                 let DWalletSecretShare { alias: _, dkg_output, dwallet_id, dwallet_cap_id } = context.config.get_active_dwallet()?.clone();
                 let resp = context
@@ -338,7 +358,7 @@ impl SuiDWalletCommands {
                         SuiObjectDataOptions::default().with_bcs().with_owner(),
                     )
                     .await?;
-                
+
 
                 let Some(data) = resp.data else {
                     return Err(anyhow!(
@@ -490,8 +510,10 @@ impl SuiDWalletCommands {
 
                 let centralized_party_sign_round_parties = initiate_centralized_party_sign(dkg_output, centralized_party_presigns).unwrap();
 
+                let hash: signature_mpc::twopc_mpc_protocols::Hash = hash.into();
+
                 let (public_nonce_encrypted_partial_signature_and_proofs, signature_verification_round_parties): (Vec<_>, Vec<_>) = messages_vec.into_iter().zip(centralized_party_sign_round_parties.into_iter()).map(|(message, party)| {
-                    let m = message_digest(&message);
+                    let m = message_digest(&message, &hash);
                     party
                         .evaluate_encrypted_partial_signature_prehash(m, &mut OsRng)
                         .unwrap()
@@ -500,7 +522,7 @@ impl SuiDWalletCommands {
                 let public_nonce_encrypted_partial_signature_and_proofs = bcs::to_bytes(&public_nonce_encrypted_partial_signature_and_proofs).unwrap();
 
                 // let public_nonce_encrypted_partial_signature_and_proofs = public_nonce_encrypted_partial_signature_and_proofs.iter().map(|v| Value::Number(Number::from(*v))).collect();
-                // 
+                //
                 // let public_nonce_encrypted_partial_signature_and_proofs = SuiJsonValue::new(Value::Array(public_nonce_encrypted_partial_signature_and_proofs)).unwrap();
 
                 sleep(Duration::from_millis(500)).await;
@@ -525,7 +547,7 @@ impl SuiDWalletCommands {
                         let move_object = o.move_object_bcs().unwrap();
                         let decentralized_presign = Presign::from_bcs_bytes(move_object).unwrap();
                         if decentralized_presign.session_id.bytes == session_id {
-                            
+
                             Some((decentralized_presign, o.object_ref_if_exists().unwrap()))
                         } else {
                             None

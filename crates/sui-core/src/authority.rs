@@ -1381,6 +1381,7 @@ impl AuthorityState {
                                     let dkg_output = obj.sign_data.dkg_output;
                                     let public_nonce_encrypted_partial_signature_and_proofs = obj.sign_data.public_nonce_encrypted_partial_signature_and_proofs;
                                     let presigns = obj.sign_data.presigns;
+                                    let hash = obj.sign_data.hash;
                                     // TODO: validate commitment error
                                     let message = InitiateSignatureMPCProtocol::Sign {
                                         session_id: SignatureMPCSessionID(move_object.id().into_bytes()),
@@ -1390,6 +1391,7 @@ impl AuthorityState {
                                         dkg_output: bcs::from_bytes(&*dkg_output).unwrap(),
                                         public_nonce_encrypted_partial_signature_and_proofs: bcs::from_bytes(&*public_nonce_encrypted_partial_signature_and_proofs).unwrap(),
                                         presigns: bcs::from_bytes(&*presigns).unwrap(),
+                                        hash
                                     };
 
                                     messages.push(message);

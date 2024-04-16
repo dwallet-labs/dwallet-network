@@ -373,6 +373,7 @@ pub enum InitiateSignatureMPCProtocol {
         dkg_output: DKGDecentralizedPartyOutput,
         public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
         presigns: Vec<DecentralizedPartyPresign>,
+        hash: u8,
     },
 }
 

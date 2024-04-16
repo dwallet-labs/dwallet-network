@@ -9,20 +9,19 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-
+use k256::{elliptic_curve, sha2};
 pub use group::PartyID;
-
+use k256::sha2::Digest;
 use crypto_bigint::{ U256};
 use ecdsa::{
-    elliptic_curve::{ops::Reduce, Scalar},
+    elliptic_curve::{ops::Reduce},
     hazmat::{bits2field, DigestPrimitive},
-    signature::{digest::Digest},
     Signature,
 };
 pub use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 pub use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 
-use group::{secp256k1, GroupElement as _,};
+use group::{secp256k1, GroupElement as _, AffineXCoordinate};
 pub use group::Value;
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey,
@@ -41,7 +40,7 @@ pub use tiresias::{
 };
 use tiresias::{EncryptionKey};
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
-pub use twopc_mpc::secp256k1::{SCALAR_LIMBS, GroupElement};
+pub use twopc_mpc::secp256k1::{SCALAR_LIMBS, GroupElement, Scalar};
 pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
     CentralizedPartyPresign, DecommitmentProofVerificationRoundParty, DKGCommitmentRoundParty, EncryptionOfSecretKeyShareRoundParty, PresignCommitmentRoundParty, ProtocolPublicParameters, SignatureHomomorphicEvaluationParty, SignatureNonceSharesCommitmentsAndBatchedProof, SignaturePartialDecryptionParty, SignatureThresholdDecryptionParty,  DKGCentralizedPartyOutput,
     PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, EncDHCommitment, EncDHCommitmentRoundParty,EncDHProofAggregationRoundParty, EncDHProofShareRoundParty, EncDLCommitment, EncDHDecommitment, EncDLDecommitment, EncDHProofShare, EncDLProofShare,
@@ -49,6 +48,7 @@ pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
     EncDLProofAggregationOutput, EncDLProofAggregationRoundParty,EncDLProofShareRoundParty, EncryptedMaskAndMaskedNonceShare, EncryptedNonceShareAndPublicShare, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput, DKGDecommitmentRoundParty, DKGDecommitmentRoundState};
 
 pub use twopc_mpc::{Result, Error};
+use twopc_mpc::secp256k1::paillier::bulletproofs::{PresignProofVerificationRoundParty, SignatureVerificationParty};
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;
@@ -58,6 +58,21 @@ pub type PublicKeyValue = group::Value<GroupElement>;
 
 struct PublicParameters {
     tiresias_public_parameters: tiresias::encryption_key::PublicParameters
+}
+
+pub enum Hash {
+    KECCAK256 = 0,
+    SHA256 = 1
+}
+
+impl From<u8> for Hash {
+    fn from(value: u8) -> Self {
+        match value  {
+            0 => Self::KECCAK256,
+            1 => Self::SHA256,
+            _ => panic!()
+        }
+    }
 }
 
 pub fn initiate_centralized_party_dkg(//tiresias_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
@@ -130,6 +145,43 @@ pub fn initiate_centralized_party_presign(
         protocol_public_parameters,
         dkg_output,
     )
+}
+
+pub fn finalize_centralized_party_presign(
+    dkg_output: DKGCentralizedPartyOutput,
+    signature_nonce_shares_and_commitment_randomnesses: Vec<(Scalar, Scalar)>,
+) -> twopc_mpc::Result<PresignProofVerificationRoundParty<ProtocolContext>> {
+    pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
+
+    let protocol_public_parameters = ProtocolPublicParameters::new(N);
+
+    PresignProofVerificationRoundParty::new(
+        signature_nonce_shares_and_commitment_randomnesses,
+        PhantomData::<()>,
+        protocol_public_parameters,
+        dkg_output,
+    )
+}
+
+pub fn finalize_centralized_party_sign(
+    messages: Vec<Scalar>,
+    dkg_output: DKGCentralizedPartyOutput,
+    public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
+    signatures_s: Vec<Scalar>
+) -> twopc_mpc::Result<()> {
+    pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
+
+    let protocol_public_parameters = ProtocolPublicParameters::new(N);
+
+    let parties = messages.into_iter().map(|message|     SignatureVerificationParty::new(
+        message,
+        dkg_output.public_key,
+        &protocol_public_parameters.group_public_parameters,
+    )).collect::<Result<Vec<_>>>()?;
+
+    public_nonce_encrypted_partial_signature_and_proofs.into_iter().zip(signatures_s.into_iter()).zip(parties.into_iter()).map(|((public_nonce_encrypted_partial_signature_and_proof, signature_s,), party)|
+        GroupElement::new(public_nonce_encrypted_partial_signature_and_proof.public_nonce, &protocol_public_parameters.group_public_parameters).map_err(Error::from).and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
+    ).collect()
 }
 
 pub fn new_decentralized_party_presign_batch(
@@ -249,6 +301,7 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
     public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
     dkg_output: DKGDecentralizedPartyOutput,
     presigns: Vec<DecentralizedPartyPresign>,
+    hash: Hash,
 ) -> twopc_mpc::Result<()> {
     let protocol_public_parameters = ProtocolPublicParameters::new(LargeBiPrimeSizedNumber::from_be_hex(tiresias_public_parameters));
 
@@ -256,7 +309,7 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
         .into_iter())
 
         .map(|((message, public_nonce_encrypted_partial_signature_and_proofs), presign)| {
-            let m = message_digest(&message);
+            let m = message_digest(&message, &hash);
             SignaturePartialDecryptionParty::verify_encrypted_signature_parts_prehash(
                 m,
                 public_nonce_encrypted_partial_signature_and_proofs,
@@ -336,13 +389,19 @@ pub fn decrypt_signature_decentralized_party_sign(
         .collect()
 }
 
-pub fn message_digest(message: &[u8]) -> secp256k1::Scalar {
-    let m = bits2field::<k256::Secp256k1>(
-        &<k256::Secp256k1 as DigestPrimitive>::Digest::new_with_prefix(message).finalize_fixed(),
-    )
-        .unwrap();
+pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {
+    
+    //todo: remove unwrap!
+    let m = match hash {
+        Hash::KECCAK256 =>  bits2field::<k256::Secp256k1>(
+            &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
+        ),
+        Hash::SHA256 => bits2field::<k256::Secp256k1>(
+            &sha2::Sha256::new_with_prefix(message).finalize_fixed(),
+        ),
+    }.unwrap();
 
-    let m = <Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&m);
+    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&m);
     U256::from(m).into()
 }
 
