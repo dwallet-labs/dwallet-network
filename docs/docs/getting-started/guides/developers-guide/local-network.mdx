@@ -171,31 +171,13 @@ The response resembles the following, but with different IDs:
 ╰────────────────────────────────────────────────────────────────────┴────────────╯
 ```
 
-## Install dWallet Network Explorer locally
-
-To install and use the apps locally, you must first install [pnpm](https://pnpm.io/installation). Use the instructions appropriate for your operating system.
-
-After you install `pnpm`, use the following command to install the required dependencies in your workspace:
-
-```shell
-pnpm install
-```
-
-After the installation completes, run the following command to install dWallet Network Explorer:
-
-```shell
-pnpm turbo build
-```
-
-If you encounter an error from turbo build, confirm that there is no `package-lock.json`. If the file exists, remove it and then run the command again.
-
 ### Set up dWallet Network Explorer on your local network
 
 To connect the live dWallet Network Explorer to your local network, open the URL:[https://dwalletexplorer.com/?network=local](https://dwalletexplorer.com/?network=local). The live version of dWallet Network Explorer may not include recent updates added to the `main` branch of the Sui repo. To use Sui Explorer that includes the most recent updates, install and run dWallet Network Explorer from your local clone of the dWallet Network repo.
 
 Run the following command from the `dwallet-network` root folder:
 
-**Note:** To run the command you have `pnpm` installed. See [Install dWallet Network account and dWallet Network Explorer locally] for details.
+**Note:** To run the command you have `pnpm` installed.
 
 ```bash
 pnpm explorer dev
