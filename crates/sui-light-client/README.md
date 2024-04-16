@@ -10,6 +10,11 @@ $ cargo run -- --config example_config/light_client.yaml sync
 
 cargo run -- --config example_config/light_client.yaml transaction -t 7DefdfmiEvb9de6LSKdD99xY7syZGJ3RzkP7XxHxcgc
 
+Notes
+
+- restart delete all downloaded checkpoint yamls so they are resubmitted to deallet network
+- delete all numbers from checkpoints.yaml in case devnet reseted
+
 # What is a light client?
 
 A light client allows checking the authenticity and validity of on-chain state, such as transactions, their effects including events and object contents, without the cost of running a full node.

@@ -3,6 +3,7 @@ use axum::{
     routing::{get, post},
     Router,
     Json,
+    extract::Query,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use sui_types::{
@@ -51,12 +52,6 @@ async fn main() -> Result<()> {
         .init();
 
     let app = Router::new().route("/gettxdata", get(get_tx_data));
-        // .layer(
-        //     CorsLayer::new()
-        //         .allow_methods(Any)
-        //         .allow_origin(Any)
-        //         .allow_headers(Any),
-        // );
 
     println!("Starting server on address {}", server_url);
 
@@ -64,7 +59,7 @@ async fn main() -> Result<()> {
         // let listener = tokio::net::TcpListener::bind(&server_url).await.unwrap();
 
         println!("Listening WS and HTTP on address {}", server_url);
-        axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
+        axum::Server::bind(&server_url.parse().unwrap())
             .serve(app.into_make_service())
             .await
             .unwrap();
@@ -89,7 +84,7 @@ pub struct TxDataResponse {
 }
 
 
-pub async fn get_tx_data(payload: Json<TxDataRequest>) -> impl IntoResponse {
+pub async fn get_tx_data(payload: Query<TxDataRequest>) -> impl IntoResponse {
 
     let tid = TransactionDigest::from_str(&payload.tx_id).unwrap();
 

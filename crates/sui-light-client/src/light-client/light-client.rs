@@ -296,7 +296,7 @@ async fn sync_checkpoint_list_to_latest(config: &Config) -> anyhow::Result<()> {
     let latest = client.get_latest_checkpoint().await?;
 
     // Binary search to find missing checkpoints
-    while last_epoch + 1 < 42 {//latest.epoch() { // TOOD change back
+    while last_epoch + 1 < latest.epoch() { // TOOD change back
         let mut start = last_checkpoint_seq;
         let mut end = latest.sequence_number;
 

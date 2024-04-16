@@ -1,8 +1,8 @@
 ---
-sui_full_node_url: 'https://fullnode.devnet.sui.io:443'
-dwallet_full_node_url: 'http://127.0.0.1:9000'
+sui_full_node_url: "https://fullnode.devnet.sui.io:443"
+dwallet_full_node_url: "http://127.0.0.1:9000"
 checkpoint_summary_dir: example_config
 genesis_filename: genesis_devnet.blob
-sui_deployed_state_proof_package: '0xcc2350c61a0ca71b935c1e75eb9523da692449bfd1b678a5c796a0c78caa54a3'
-dwltn_registry_object_id: '0x5f9a51bce8e36bb22354489df05ad46b061f89daad9ea4137c871d63c0cffbaa'
-dwltn_config_object_id: '0x8e8034bc6c21407528d2636d734fa85c6622ad527bc3421ca4535eb0d1b2b0eb'
+sui_deployed_state_proof_package: "0xcc2350c61a0ca71b935c1e75eb9523da692449bfd1b678a5c796a0c78caa54a3"
+dwltn_registry_object_id: "0xca513be0ea731cb3cf4ebb0727c2029d3f99a450876322f0d0de9bb0e21638df"
+dwltn_config_object_id: "0xcdd8c5ebc06a405b4ee5898998141f86b41cabe0fef3841882c70e9f8a9dee9d"
