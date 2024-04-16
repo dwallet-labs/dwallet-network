@@ -1,6 +1,6 @@
 # Your First dWallet
 
-Before you can create your first dApp, you must have [dWallet installed](./install-dwallet.mdx) and that you have [DWLT gas supply](./get-tokens.mdx).
+Before you can create your first dApp, you must have [dWallet installed](./install-dwallet.mdx) and that you have [DWLT gas supply](./get-tokens).
 
 ## Using the dWallet Client CLI
 ### Create a dWallet
