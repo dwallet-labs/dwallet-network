@@ -14,7 +14,6 @@ type TxDataResponse = {
 	transaction_bytes: Uint8Array;
 };
 
-// pass the dwallet cap as an argumen
 export async function submitDwalletCreationProof(
 	dwallet_client: SuiClient,
 	sui_client: SuiClient,
@@ -31,7 +30,6 @@ export async function submitDwalletCreationProof(
 
 	let seq = tx.checkpoint;
 
-	console.log('checkpoint', seq);
 	if (!seq) {
 		throw new Error('Checkpoint is undefined or null');
 	}
@@ -92,7 +90,6 @@ export async function submitTxStateProof(
 
 	let seq = tx.checkpoint;
 
-	console.log('checkpoint', seq);
 	if (!seq) {
 		throw new Error('Checkpoint is undefined or null');
 	}
@@ -147,7 +144,7 @@ export async function submitTxStateProof(
 
 // Function to query the Rust service
 async function queryTxData(txId: string, url: string): Promise<TxDataResponse> {
-	const params = { tx_id: txId }; // Ensure the parameter name matches what the server expects
+	const params = { tx_id: txId };
 
 	try {
 		const response = await axios.get(url, { params });
