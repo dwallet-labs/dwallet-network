@@ -36,7 +36,7 @@ module dwallet_system::sui_state_proof {
 
     struct CapWrapper has key, store {
         id: UID,
-        cap_id_sui: ID, // TODO maybe make vec depending on 
+        cap_id_sui: ID,
         cap: DWalletCap,
     }
 
@@ -83,7 +83,7 @@ module dwallet_system::sui_state_proof {
         ctx: &mut TxContext,
     ) {
         let committee_verified_bytes = sui_state_proof_verify_committee(prev_committee.committee, new_checkpoint_summary);
-        // let committee_verified_bytes = vector::empty();
+
         let committee_new = EpochCommittee {
                                     id: object::new(ctx),
                                     committee: committee_verified_bytes,
@@ -137,7 +137,7 @@ module dwallet_system::sui_state_proof {
         let (cap_id_bytes, messages_serialised_bytes) = sui_state_proof_verify_transaction(committee.committee, checkpoint_summary, checkpoint_contents, transaction, config.event_type_layout, config.package_id );
 
         let messages = bcs::peel_vec_vec_u8(&mut bcs::new(messages_serialised_bytes));
-        let cap_id_address = bcs::peel_address(&mut bcs::new(cap_id_bytes)); // TODO pls fix
+        let cap_id_address = bcs::peel_address(&mut bcs::new(cap_id_bytes));
         
         assert!(object::id_from_address(cap_id_address)  == cap_wrapper.cap_id_sui, 0);
         dwallet::approve_messages(&cap_wrapper.cap, messages)

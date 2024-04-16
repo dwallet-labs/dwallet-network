@@ -1,63 +1,63 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient } from '@mysten/sui.js/client';
-import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
-import { initDwallet } from '@mysten/sui.js/signature-mpc';
+// import { SuiClient } from '@mysten/sui.js/client';
+// import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
+// import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
+// import { initDwallet } from '@mysten/sui.js/signature-mpc';
 
-async function main() {
-	try {
-		console.log('Hello, World!');
+// // async function main() {
+// // 	try {
+// 		console.log('Hello, World!');
 
-		const serviceUrl = 'http://localhost:6920/gettxdata';
+// 		const serviceUrl = 'http://localhost:6920/gettxdata';
 
-		const dWalletNodeUrl = 'http://127.0.0.1:9000';
+// 		const dWalletNodeUrl = 'http://127.0.0.1:9000';
 
-		const suiDevnetURL = 'https://fullnode.devnet.sui.io:443';
+// 		const suiDevnetURL = 'https://fullnode.devnet.sui.io:443';
 
-		const txId = 'DgA1WVxY1qF2e2zAtnicD1RfSdQmmReudniMbm6hP6CP';
+// 		const txId = 'DgA1WVxY1qF2e2zAtnicD1RfSdQmmReudniMbm6hP6CP';
 
-		const configObjectId = '0xd2a75dee88327cf9147db1ea07725700ecee38878b2497f43085256e88891657'; // Replace with actual value
+// 		const configObjectId = '0xd2a75dee88327cf9147db1ea07725700ecee38878b2497f43085256e88891657'; // Replace with actual value
 
-		// const client = new SuiClient({ url: dWalletNodeUrl });
+// 		// const client = new SuiClient({ url: dWalletNodeUrl });
 
-		// const data = await queryTxData(tid, serviceUrl);
-		const sui_client = new SuiClient({ url: suiDevnetURL });
-		const dwallet_client = new SuiClient({ url: dWalletNodeUrl });
+// 		// const data = await queryTxData(tid, serviceUrl);
+// 		const sui_client = new SuiClient({ url: suiDevnetURL });
+// 		const dwallet_client = new SuiClient({ url: dWalletNodeUrl });
 
-		// TOOD dwallet cap id of dwallet network
-		const dWalletCapId = '0xe629a667799299a9a3c5353b946748f070520af89f086daece4ef37b2c64ad63'; // Replace with actual value
+// 		// TOOD dwallet cap id of dwallet network
+// 		const dWalletCapId = '0xe629a667799299a9a3c5353b946748f070520af89f086daece4ef37b2c64ad63'; // Replace with actual value
 
-		const keyPair = new Ed25519Keypair();
+// 		const keyPair = new Ed25519Keypair();
 
-		await requestSuiFromFaucetV0({
-			host: 'http://127.0.0.1:9123/gas',
-			recipient: keyPair.getPublicKey().toSuiAddress(),
-		});
+// 		await requestSuiFromFaucetV0({
+// 			host: 'http://127.0.0.1:9123/gas',
+// 			recipient: keyPair.getPublicKey().toSuiAddress(),
+// 		});
 
-		let x = await dwallet_client.getOwnedObjects({ owner: keyPair.getPublicKey().toSuiAddress() });
+// 		let x = await dwallet_client.getOwnedObjects({ owner: keyPair.getPublicKey().toSuiAddress() });
 
-		console.log('owned objects', x);
+// 		console.log('owned objects', x);
 
-		console.log('address', keyPair.getPublicKey().toSuiAddress());
+// 		console.log('address', keyPair.getPublicKey().toSuiAddress());
 
-		await initDwallet(
-			dwallet_client,
-			sui_client,
-			configObjectId,
-			dWalletCapId,
-			txId,
-			serviceUrl,
-			keyPair,
-		);
-		// Additional processing can be done here if necessary
-	} catch (error) {
-		console.error('Failed to retrieve transaction data:', error);
-	}
-}
+// 		await initDwallet(
+// 			dwallet_client,
+// 			sui_client,
+// 			configObjectId,
+// 			dWalletCapId,
+// 			txId,
+// 			serviceUrl,
+// 			keyPair,
+// 		);
+// 		// Additional processing can be done here if necessary
+// 	} catch (error) {
+// 		console.error('Failed to retrieve transaction data:', error);
+// 	}
+// }
 
-main();
+// main();
 
 // import
 
@@ -261,3 +261,82 @@ main();
 // import { requestSuiFromFaucetV0 } from '../../../sdk/typescript/faucet/';
 // import { Ed25519Keypair } from '../../../sdk/typescript/keypairs/ed25519';
 // import { initDwallet } from '../../../sdk/typescript/signature-mpc/';
+
+import { SuiClient } from '@mysten/sui.js/client';
+import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
+import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
+import {
+	createDWallet,
+	submitDwalletCreationProof,
+	submitTxStateProof,
+} from '@mysten/sui.js/signature-mpc';
+
+async function main() {
+	try {
+		const serviceUrl = 'http://localhost:6920/gettxdata';
+
+		const dWalletNodeUrl = 'http://127.0.0.1:9000';
+
+		const suiDevnetURL = 'https://fullnode.devnet.sui.io:443';
+
+		const txId = 'DgA1WVxY1qF2e2zAtnicD1RfSdQmmReudniMbm6hP6CP';
+
+		const configObjectId = '0xcdd8c5ebc06a405b4ee5898998141f86b41cabe0fef3841882c70e9f8a9dee9d'; // Replace with actual value
+
+		const sui_client = new SuiClient({ url: suiDevnetURL });
+		const dwallet_client = new SuiClient({ url: dWalletNodeUrl });
+
+		const keyPair = new Ed25519Keypair();
+
+		await requestSuiFromFaucetV0({
+			host: 'http://127.0.0.1:9123/gas',
+			recipient: keyPair.getPublicKey().toSuiAddress(),
+		});
+
+		let result = await createDWallet(keyPair, dwallet_client);
+
+		if (result == null) {
+			throw new Error('createDWallet returned null');
+		}
+		let { dwalletCapId } = result;
+
+		console.log('address', keyPair.getPublicKey().toSuiAddress());
+
+		let resultFinal = await submitDwalletCreationProof(
+			dwallet_client,
+			sui_client,
+			configObjectId,
+			dwalletCapId,
+			txId,
+			serviceUrl,
+			keyPair,
+		);
+
+		console.log('resultFinal');
+		if (
+			typeof resultFinal.effects?.created == 'object' &&
+			'reference' in resultFinal.effects?.created?.[0]
+		) {
+			const capWrapperRef = resultFinal.effects?.created?.[0].reference;
+
+			let res = await submitTxStateProof(
+				dwallet_client,
+				sui_client,
+				configObjectId,
+				capWrapperRef,
+				txId,
+				serviceUrl,
+				keyPair,
+			);
+
+			console.log('res', res);
+			console.log('tx done');
+		}
+
+		// Additional processing can be done here if necessary
+	} catch (error) {
+		console.error('Failed to retrieve transaction data:', error);
+	}
+}
+
+main();

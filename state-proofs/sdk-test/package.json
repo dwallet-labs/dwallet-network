@@ -13,7 +13,7 @@
 		}
 	},
 	"scripts": {
-		"start": "node dist/cjs/index.js",
+		"start": "pnpm build && node dist/cjs/index.js",
 		"dev": "pnpm build --watch",
 		"build": "build-package"
 	},

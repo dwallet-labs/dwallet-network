@@ -1,23 +1,11 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-// import { bcs } from '@mysten/sui.js/bcs';
-// import { getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
-// import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
 import axios from 'axios';
 
-// import {ObjectId} from '@mysten/sui.js/builder';
 import { TransactionBlock } from '../builder';
-// import { ObjectCallArg } from '@mysten/sui.js/builder';
-// import { EventId, getFullnodeUrl, SuiClient, SuiEventFilter } from '@mysten/sui.js/client';
-import { EventId, SuiClient, SuiEventFilter } from '../client';
+import { EventId, SuiClient, SuiEventFilter, SuiObjectRef } from '../client';
 import { Keypair } from '../cryptography';
-
-// import
-
-// type TxDataRequest = {
-// 	tx_id: String;
-// };
 
 type TxDataResponse = {
 	ckp_epoch_id: number;
@@ -25,6 +13,137 @@ type TxDataResponse = {
 	checkpoint_contents_bytes: Uint8Array;
 	transaction_bytes: Uint8Array;
 };
+
+// pass the dwallet cap as an argumen
+export async function submitDwalletCreationProof(
+	dwallet_client: SuiClient,
+	sui_client: SuiClient,
+	configObjectId: string,
+	dWalletCapId: string,
+	txId: string,
+	serviceUrl: string,
+	keypair: Keypair,
+) {
+	let tx = await sui_client.getTransactionBlock({
+		digest: txId,
+		options: {},
+	});
+
+	let seq = tx.checkpoint;
+
+	console.log('checkpoint', seq);
+	if (!seq) {
+		throw new Error('Checkpoint is undefined or null');
+	}
+
+	let { ckp_epoch_id, checkpoint_summary_bytes, checkpoint_contents_bytes, transaction_bytes } =
+		await queryTxData(txId, serviceUrl);
+
+	let txb = new TransactionBlock();
+
+	let dWalletCap = await getOwnedObject(dwallet_client, dWalletCapId);
+	let dWalletCapArg = txb.object(dWalletCap);
+
+	let epoch_committee_id = await retrieveEpochCommitteeIdByEpoch(dwallet_client, ckp_epoch_id - 1);
+	let epochCommitteeObject = await getOwnedObject(dwallet_client, epoch_committee_id);
+	let committeArg = txb.object(epochCommitteeObject);
+
+	let configObject = await getOwnedObject(dwallet_client, configObjectId);
+	let configArg = txb.object(configObject);
+
+	let checkpoint_arg = txb.pure(checkpoint_summary_bytes);
+	let checkpoint_contents_arg = txb.pure(checkpoint_contents_bytes);
+	let transaction_arg = txb.pure(transaction_bytes);
+
+	txb.moveCall({
+		target:
+			'0x0000000000000000000000000000000000000000000000000000000000000003::sui_state_proof::create_dwallet_wrapper',
+		arguments: [
+			configArg,
+			dWalletCapArg,
+			committeArg,
+			checkpoint_arg,
+			checkpoint_contents_arg,
+			transaction_arg,
+		],
+	});
+	return dwallet_client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: txb,
+		options: {
+			showEffects: true,
+		},
+	});
+}
+
+export async function submitTxStateProof(
+	dwallet_client: SuiClient,
+	sui_client: SuiClient,
+	configObjectId: string,
+	capWrapperId: SuiObjectRef,
+	txId: string,
+	serviceUrl: string,
+	keypair: Keypair,
+) {
+	let tx = await sui_client.getTransactionBlock({
+		digest: txId,
+		options: {},
+	});
+
+	let seq = tx.checkpoint;
+
+	console.log('checkpoint', seq);
+	if (!seq) {
+		throw new Error('Checkpoint is undefined or null');
+	}
+
+	let { ckp_epoch_id, checkpoint_summary_bytes, checkpoint_contents_bytes, transaction_bytes } =
+		await queryTxData(txId, serviceUrl);
+
+	let txb = new TransactionBlock();
+
+	let configObject = await getOwnedObject(dwallet_client, configObjectId);
+	let configArg = txb.object(configObject);
+
+	let capWrapperArg = txb.object({
+		Object: {
+			Shared: {
+				objectId: capWrapperId.objectId,
+				initialSharedVersion: capWrapperId.version,
+				mutable: true,
+			},
+		},
+	});
+
+	let epoch_committee_id = await retrieveEpochCommitteeIdByEpoch(dwallet_client, ckp_epoch_id - 1);
+	let epochCommitteeObject = await getOwnedObject(dwallet_client, epoch_committee_id);
+
+	let committeArg = txb.object(epochCommitteeObject);
+	let checkpointArg = txb.pure(checkpoint_summary_bytes);
+	let checkpointContentsArg = txb.pure(checkpoint_contents_bytes);
+	let transactionArg = txb.pure(transaction_bytes);
+
+	let [approvals] = txb.moveCall({
+		target:
+			'0x0000000000000000000000000000000000000000000000000000000000000003::sui_state_proof::transaction_state_proof',
+		arguments: [
+			configArg,
+			capWrapperArg,
+			committeArg,
+			checkpointArg,
+			checkpointContentsArg,
+			transactionArg,
+		],
+	});
+
+	txb.moveCall({
+		target:
+			'0x0000000000000000000000000000000000000000000000000000000000000003::dwallet::create_approvals_holder',
+		arguments: [approvals],
+	});
+
+	return dwallet_client.signAndExecuteTransactionBlock({ signer: keypair, transactionBlock: txb });
+}
 
 // Function to query the Rust service
 async function queryTxData(txId: string, url: string): Promise<TxDataResponse> {
@@ -39,18 +158,7 @@ async function queryTxData(txId: string, url: string): Promise<TxDataResponse> {
 	}
 }
 
-export async function getSharedObjectVersion(client: SuiClient, id: string): Promise<string> {
-	const res = await client.getObject({ id, options: { showOwner: true } });
-	if (!res.data?.owner || typeof res.data?.owner !== 'object' || !('Shared' in res.data?.owner)) {
-		throw new Error('No object found');
-	}
-
-	const version = res.data.owner.Shared.initial_shared_version;
-
-	return version;
-}
-
-export async function getOwnedObject(client: SuiClient, id: string) {
+async function getOwnedObject(client: SuiClient, id: string) {
 	const res = await client.getObject({ id });
 
 	if (!res.data) {
@@ -67,12 +175,6 @@ export async function getOwnedObject(client: SuiClient, id: string) {
 		},
 	};
 }
-
-// import { SuiClient, ObjectID, EventFilter, Identifier, EventId } from '@mysten/sui.js';
-
-// interface Config {
-// 	dwalletFullNodeUrl: string;
-// }
 
 async function retrieveEpochCommitteeIdByEpoch(
 	client: SuiClient,
@@ -115,89 +217,4 @@ async function retrieveEpochCommitteeIdByEpoch(
 	}
 
 	throw new Error('Epoch not found');
-}
-
-// pass the dwallet cap as an argumen
-export async function initDwallet(
-	dwallet_client: SuiClient,
-	sui_client: SuiClient,
-	configObjectId: string,
-	dWalletCapId: string,
-	txId: string,
-	serviceUrl: string,
-	keypair: Keypair,
-) {
-	console.log('retrieving checkpoint');
-	let tx = await sui_client.getTransactionBlock({
-		digest: txId,
-		options: {
-			// showBalanceChanges: true,
-			// showEffects: true,
-			// showEvents: true,
-			// showInput: true,
-			// showObjectChanges: true,
-			// showRawInput: true,
-		},
-	});
-
-	dWalletCapId;
-	let seq = tx.checkpoint;
-
-	console.log('checkpoint', seq);
-	if (!seq) {
-		throw new Error('Checkpoint is undefined or null');
-	}
-
-	console.log('1');
-	let { ckp_epoch_id, checkpoint_summary_bytes, checkpoint_contents_bytes, transaction_bytes } =
-		await queryTxData(txId, serviceUrl);
-
-	let txb = new TransactionBlock();
-
-	// let dWalletCap = txb.receivingRef(cap);
-
-	// TODO move this out
-	let dWalletCap = txb.moveCall({
-		target:
-			'0x0000000000000000000000000000000000000000000000000000000000000003::sui_state_proof::create_dwallet_wrapper',
-	});
-
-	console.log('retrieving committee id', ckp_epoch_id);
-	let epoch_committee_id = await retrieveEpochCommitteeIdByEpoch(dwallet_client, ckp_epoch_id);
-
-	console.log('epoch_committee_id', epoch_committee_id);
-	let epochCommitteeObject = await getOwnedObject(dwallet_client, epoch_committee_id);
-
-	console.log('done');
-	let committeArg = txb.object(epochCommitteeObject);
-
-	let configObject = await getOwnedObject(dwallet_client, configObjectId);
-	let configArg = txb.object(configObject);
-
-	// let capArg = txb.object(await getOwnedObject(dwallet_client, dWalletCapId));
-
-	console.log('type', typeof checkpoint_summary_bytes);
-	let checkpoint_arg = txb.pure(checkpoint_summary_bytes);
-	let checkpoint_contents_arg = txb.pure(checkpoint_contents_bytes);
-	let transaction_arg = txb.pure(transaction_bytes);
-
-	// let checkpoint_arg = txb.pure(Uint8Array.prototype);
-	// let checkpoint_contents_arg = txb.pure(Uint8Array.prototype);
-	// let transaction_arg = txb.pure(Uint8Array.prototype);
-
-	txb.moveCall({
-		target:
-			'0x0000000000000000000000000000000000000000000000000000000000000003::sui_state_proof::create_dwallet_wrapper',
-		arguments: [
-			configArg,
-			dWalletCap,
-			committeArg,
-			checkpoint_arg,
-			checkpoint_contents_arg,
-			transaction_arg,
-		],
-		// let comittee = retrieveEpochCommitteeIdByEpoch({ dwalletFullNodeUrl: dWalletNodeUrl }, 1);
-	});
-	console.log('signing and executing');
-	dwallet_client.signAndExecuteTransactionBlock({ signer: keypair, transactionBlock: txb });
 }
