@@ -6,6 +6,7 @@ import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
 import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
 import {
 	createDWallet,
+	createSignMessages,
 	submitDwalletCreationProof,
 	submitTxStateProof,
 } from '@mysten/sui.js/signature-mpc';
@@ -20,7 +21,7 @@ async function main() {
 
 		const txId = 'DgA1WVxY1qF2e2zAtnicD1RfSdQmmReudniMbm6hP6CP';
 
-		const configObjectId = '0xcdd8c5ebc06a405b4ee5898998141f86b41cabe0fef3841882c70e9f8a9dee9d';
+		const configObjectId = '0x458097bd140e2d495e36523ee6153eae85656bc09e91397efc9aaac09ef68686';
 
 		const sui_client = new SuiClient({ url: suiDevnetURL });
 		const dwallet_client = new SuiClient({ url: dWalletNodeUrl });
@@ -32,12 +33,12 @@ async function main() {
 			recipient: keyPair.getPublicKey().toSuiAddress(),
 		});
 
-		let result = await createDWallet(keyPair, dwallet_client);
+		const dkg = await createDWallet(keyPair, dwallet_client);
 
-		if (result == null) {
+		if (dkg == null) {
 			throw new Error('createDWallet returned null');
 		}
-		let { dwalletCapId } = result;
+		let { dwalletCapId } = dkg;
 
 		console.log('address', keyPair.getPublicKey().toSuiAddress());
 
@@ -51,7 +52,23 @@ async function main() {
 			keyPair,
 		);
 
-		console.log('resultFinal');
+		console.log('creation done', resultFinal);
+
+		const bytes: Uint8Array = new Uint8Array([1]);
+
+		const signMessagesIdSHA256 = await createSignMessages(
+			dkg?.dwalletId!,
+			dkg?.dkgOutput,
+			[bytes],
+			'SHA256',
+			keyPair,
+			dwallet_client,
+		);
+
+		if (signMessagesIdSHA256 == null) {
+			throw new Error('createSignMessages returned null');
+		}
+
 		if (
 			typeof resultFinal.effects?.created == 'object' &&
 			'reference' in resultFinal.effects?.created?.[0]
@@ -63,6 +80,7 @@ async function main() {
 				sui_client,
 				configObjectId,
 				capWrapperRef,
+				signMessagesIdSHA256,
 				txId,
 				serviceUrl,
 				keyPair,
@@ -71,8 +89,6 @@ async function main() {
 			console.log('res', res);
 			console.log('tx done');
 		}
-
-		// Additional processing can be done here if necessary
 	} catch (error) {
 		console.error('Failed to retrieve transaction data:', error);
 	}

@@ -6,6 +6,12 @@ import axios from 'axios';
 import { TransactionBlock } from '../builder';
 import { EventId, SuiClient, SuiEventFilter, SuiObjectRef } from '../client';
 import { Keypair } from '../cryptography';
+import { fetchObjectBySessionId } from './utils';
+
+const packageId = '0x3';
+const stateProofModuleName = 'sui_state_proof';
+const dWalletModuleName = 'dwallet';
+const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
 type TxDataResponse = {
 	ckp_epoch_id: number;
@@ -54,8 +60,7 @@ export async function submitDwalletCreationProof(
 	let transaction_arg = txb.pure(transaction_bytes);
 
 	txb.moveCall({
-		target:
-			'0x0000000000000000000000000000000000000000000000000000000000000003::sui_state_proof::create_dwallet_wrapper',
+		target: `${packageId}::${stateProofModuleName}::create_dwallet_wrapper`,
 		arguments: [
 			configArg,
 			dWalletCapArg,
@@ -78,7 +83,8 @@ export async function submitTxStateProof(
 	dwallet_client: SuiClient,
 	sui_client: SuiClient,
 	configObjectId: string,
-	capWrapperId: SuiObjectRef,
+	capWrapperRef: SuiObjectRef,
+	signMessagesId: string,
 	txId: string,
 	serviceUrl: string,
 	keypair: Keypair,
@@ -105,8 +111,8 @@ export async function submitTxStateProof(
 	let capWrapperArg = txb.object({
 		Object: {
 			Shared: {
-				objectId: capWrapperId.objectId,
-				initialSharedVersion: capWrapperId.version,
+				objectId: capWrapperRef.objectId,
+				initialSharedVersion: capWrapperRef.version,
 				mutable: true,
 			},
 		},
@@ -120,9 +126,8 @@ export async function submitTxStateProof(
 	let checkpointContentsArg = txb.pure(checkpoint_contents_bytes);
 	let transactionArg = txb.pure(transaction_bytes);
 
-	let [approvals] = txb.moveCall({
-		target:
-			'0x0000000000000000000000000000000000000000000000000000000000000003::sui_state_proof::transaction_state_proof',
+	let [messageApprovals] = txb.moveCall({
+		target: `${packageId}::${stateProofModuleName}::transaction_state_proof`,
 		arguments: [
 			configArg,
 			capWrapperArg,
@@ -133,13 +138,39 @@ export async function submitTxStateProof(
 		],
 	});
 
+	// sign the message approvals
 	txb.moveCall({
-		target:
-			'0x0000000000000000000000000000000000000000000000000000000000000003::dwallet::create_approvals_holder',
-		arguments: [approvals],
+		target: `${packageId}::${dWalletModuleName}::sign_messages`,
+		typeArguments: [`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`],
+		arguments: [txb.object(signMessagesId), messageApprovals],
+	});
+	const result = await dwallet_client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: txb,
+		options: {
+			showEffects: true,
+		},
 	});
 
-	return dwallet_client.signAndExecuteTransactionBlock({ signer: keypair, transactionBlock: txb });
+	const signSessionRef = result.effects?.created?.filter((o) => o.owner == 'Immutable')[0]
+		.reference!;
+
+	const signOutput = await fetchObjectBySessionId(
+		signSessionRef.objectId,
+		`${packageId}::${dWalletModuleName}::SignOutput`,
+		keypair,
+		dwallet_client,
+	);
+
+	if (signOutput?.dataType === 'moveObject') {
+		return {
+			// @ts-ignore
+			signOutputId: signOutput.fields['id']['id'],
+			// @ts-ignore
+			signatures: signOutput.fields['signatures'],
+		};
+	}
+	return;
 }
 
 // Function to query the Rust service
