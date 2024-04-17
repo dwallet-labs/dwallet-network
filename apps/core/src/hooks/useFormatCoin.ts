@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useSuiClient } from '@mysten/dapp-kit';
-import { CoinMetadata } from '@dwallet/dwallet.js/client';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import { CoinMetadata } from '@dwallet-network/dwallet.js/client';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import BigNumber from 'bignumber.js';
 import { useMemo } from 'react';

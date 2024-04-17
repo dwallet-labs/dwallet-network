@@ -21,13 +21,13 @@ export default defineConfig({
 			// TODO: Figure out a better way to run tests that avoids these aliases:
 			'@mysten/wallet-standard': new URL('../wallet-standard/src', import.meta.url).pathname,
 			'@mysten/bcs': new URL('../bcs/src', import.meta.url).pathname,
-			'@dwallet/dwallet.js/keypairs/ed25519': new URL(
+			'@dwallet-network/dwallet.js/keypairs/ed25519': new URL(
 				'../typescript/src/keypairs/ed25519',
 				import.meta.url,
 			).pathname,
-			'@dwallet/dwallet.js/client': new URL('../typescript/src/client', import.meta.url).pathname,
-			'@dwallet/dwallet.js/utils': new URL('../typescript/src/utils', import.meta.url).pathname,
-			'@dwallet/dwallet.js/transactions': new URL('../typescript/src/builder', import.meta.url).pathname,
+			'@dwallet-network/dwallet.js/client': new URL('../typescript/src/client', import.meta.url).pathname,
+			'@dwallet-network/dwallet.js/utils': new URL('../typescript/src/utils', import.meta.url).pathname,
+			'@dwallet-network/dwallet.js/transactions': new URL('../typescript/src/builder', import.meta.url).pathname,
 		},
 	},
 });

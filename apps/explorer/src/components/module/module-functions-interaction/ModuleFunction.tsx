@@ -3,7 +3,7 @@
 
 import { useZodForm } from '@mysten/core';
 import { ArrowRight12 } from '@mysten/icons';
-import { TransactionBlock, getPureSerializationType } from '@dwallet/dwallet.js/transactions';
+import { TransactionBlock, getPureSerializationType } from '@dwallet-network/dwallet.js/transactions';
 import { Button } from '@mysten/ui';
 import {
 	ConnectButton,
@@ -22,7 +22,7 @@ import { useFunctionTypeArguments } from './useFunctionTypeArguments';
 import { DisclosureBox } from '~/ui/DisclosureBox';
 import { Input } from '~/ui/Input';
 
-import type { SuiMoveNormalizedFunction } from '@dwallet/dwallet.js/client';
+import type { SuiMoveNormalizedFunction } from '@dwallet-network/dwallet.js/client';
 import type { TypeOf } from 'zod';
 
 const argsSchema = z.object({

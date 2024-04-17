@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiMoveObject, SuiObjectData, SuiObjectResponse } from '@dwallet/dwallet.js/client';
-import { normalizeSuiAddress } from '@dwallet/dwallet.js/utils';
+import { SuiMoveObject, SuiObjectData, SuiObjectResponse } from '@dwallet-network/dwallet.js/client';
+import { normalizeSuiAddress } from '@dwallet-network/dwallet.js/utils';
 
 export const camelCase = (string: string) => string.replace(/(_\w)/g, (g) => g[1].toUpperCase());
 

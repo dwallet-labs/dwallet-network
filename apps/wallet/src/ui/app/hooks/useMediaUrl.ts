@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiParsedData } from '@dwallet/dwallet.js/client';
+import type { SuiParsedData } from '@dwallet-network/dwallet.js/client';
 import { useMemo } from 'react';
 
 export const parseIpfsUrl = (ipfsUrl: string) =>

@@ -5,7 +5,7 @@ import { Card } from '_app/shared/card';
 import { Text } from '_app/shared/text';
 import { CountDownTimer } from '_src/ui/app/shared/countdown-timer';
 import { useFormatCoin, useGetTimeBeforeEpochNumber } from '@mysten/core';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 import { Form } from 'formik';
 import { useMemo } from 'react';
 

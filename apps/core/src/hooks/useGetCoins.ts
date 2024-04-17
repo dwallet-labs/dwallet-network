@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useSuiClient } from '@mysten/dapp-kit';
-import { PaginatedCoins } from '@dwallet/dwallet.js/client';
+import { PaginatedCoins } from '@dwallet-network/dwallet.js/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const MAX_COINS_PER_REQUEST = 10;

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { TransactionObjectArgument, type TransactionBlock } from '@dwallet/dwallet.js/transactions';
+import { TransactionObjectArgument, type TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 
 import {
 	attachFloorPriceRuleTx,

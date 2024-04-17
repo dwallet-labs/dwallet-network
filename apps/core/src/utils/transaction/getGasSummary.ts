@@ -6,7 +6,7 @@ import {
 	SuiGasData,
 	SuiTransactionBlockResponse,
 	TransactionEffects,
-} from '@dwallet/dwallet.js/client';
+} from '@dwallet-network/dwallet.js/client';
 
 type Optional<T> = {
 	[K in keyof T]?: T[K];

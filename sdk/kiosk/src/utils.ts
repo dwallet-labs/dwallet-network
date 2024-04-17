@@ -9,8 +9,8 @@ import {
 	SuiObjectDataOptions,
 	SuiObjectResponse,
 	type DynamicFieldInfo,
-} from '@dwallet/dwallet.js/client';
-import { normalizeStructTag, normalizeSuiAddress, parseStructTag } from '@dwallet/dwallet.js/utils';
+} from '@dwallet-network/dwallet.js/client';
+import { normalizeStructTag, normalizeSuiAddress, parseStructTag } from '@dwallet-network/dwallet.js/utils';
 
 import { bcs } from './bcs';
 import {

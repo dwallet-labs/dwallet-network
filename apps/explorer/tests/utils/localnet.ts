@@ -3,10 +3,10 @@
 
 import 'tsconfig-paths/register';
 
-import { SuiClient, getFullnodeUrl } from '@dwallet/dwallet.js/client';
-import { type Keypair } from '@dwallet/dwallet.js/cryptography';
-import { Ed25519Keypair } from '@dwallet/dwallet.js/keypairs/ed25519';
-import { TransactionBlock } from '@dwallet/dwallet.js/transactions';
+import { SuiClient, getFullnodeUrl } from '@dwallet-network/dwallet.js/client';
+import { type Keypair } from '@dwallet-network/dwallet.js/cryptography';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 
 const addressToKeypair = new Map<string, Keypair>();
 

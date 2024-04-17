@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@dwallet/dwallet.js/bcs';
+import { bcs } from '@dwallet-network/dwallet.js/bcs';
 import {
 	TransactionArgument,
 	TransactionBlock,
 	TransactionObjectArgument,
-} from '@dwallet/dwallet.js/transactions';
+} from '@dwallet-network/dwallet.js/transactions';
 
 import { ObjectArgument, TRANSFER_POLICY_MODULE, TRANSFER_POLICY_TYPE } from '../types';
 

@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { parseAmount } from '_src/ui/app/helpers';
-import { type CoinStruct } from '@dwallet/dwallet.js/client';
-import { TransactionBlock } from '@dwallet/dwallet.js/transactions';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import { type CoinStruct } from '@dwallet-network/dwallet.js/client';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 
 interface Options {
 	coinType: string;

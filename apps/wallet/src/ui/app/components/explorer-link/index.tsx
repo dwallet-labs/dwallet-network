@@ -3,7 +3,7 @@
 
 import ExternalLink from '_components/external-link';
 import { ArrowUpRight16 } from '@mysten/icons';
-import { formatAddress } from '@dwallet/dwallet.js/utils';
+import { formatAddress } from '@dwallet-network/dwallet.js/utils';
 import type { ReactNode } from 'react';
 
 import { useExplorerLink, type ExplorerLinkConfig } from '../../hooks/useExplorerLink';

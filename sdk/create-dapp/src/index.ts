@@ -96,7 +96,7 @@ async function collectFiles(template: string, dAppName: string) {
 				if (entry === 'package.json') {
 					const json = JSON.parse(content.toString());
 					json.name = dAppName;
-					json.dependencies['@dwallet/dwallet.js'] = dependencies['@dwallet/dwallet.js'];
+					json.dependencies['@dwallet-network/dwallet.js'] = dependencies['@dwallet-network/dwallet.js'];
 					json.dependencies['@mysten/dapp-kit'] = dependencies['@mysten/dapp-kit'];
 
 					content = Buffer.from(JSON.stringify(json, null, 2));

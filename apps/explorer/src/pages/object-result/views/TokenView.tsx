@@ -3,7 +3,7 @@
 
 import { useGetDynamicFields, useGetObject } from '@mysten/core';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
-import { type SuiObjectResponse } from '@dwallet/dwallet.js/client';
+import { type SuiObjectResponse } from '@dwallet-network/dwallet.js/client';
 import { Heading } from '@mysten/ui';
 import { type ReactNode, useState } from 'react';
 

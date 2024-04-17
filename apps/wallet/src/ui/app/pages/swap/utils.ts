@@ -5,7 +5,7 @@ import { useCoinsReFetchingConfig } from '_hooks';
 import { roundFloat, useFormatCoin } from '@mysten/core';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 import { type DeepBookClient } from '@mysten/deepbook';
-import { type BalanceChange } from '@dwallet/dwallet.js/client';
+import { type BalanceChange } from '@dwallet-network/dwallet.js/client';
 import BigNumber from 'bignumber.js';
 
 export function useSwapData({

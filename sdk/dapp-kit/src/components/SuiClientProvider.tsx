@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, isSuiClient, SuiClient } from '@dwallet/dwallet.js/client';
-import type { SuiClientOptions } from '@dwallet/dwallet.js/client';
+import { getFullnodeUrl, isSuiClient, SuiClient } from '@dwallet-network/dwallet.js/client';
+import type { SuiClientOptions } from '@dwallet-network/dwallet.js/client';
 import { createContext, useMemo, useState } from 'react';
 
 import type { NetworkConfig } from '../hooks/networkConfig.js';

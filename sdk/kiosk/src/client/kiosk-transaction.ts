@@ -5,7 +5,7 @@ import {
 	TransactionObjectArgument,
 	type TransactionArgument,
 	type TransactionBlock,
-} from '@dwallet/dwallet.js/transactions';
+} from '@dwallet-network/dwallet.js/transactions';
 
 import * as kioskTx from '../tx/kiosk';
 import { convertToPersonalTx, transferPersonalCapTx } from '../tx/personal-kiosk';

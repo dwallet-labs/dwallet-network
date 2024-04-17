@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient, SuiObjectResponse } from '@dwallet/dwallet.js/client';
+import { SuiClient, SuiObjectResponse } from '@dwallet-network/dwallet.js/client';
 
 // get NFT's owner from RPC.
 export const getOwner = async (client: SuiClient, nftId: string): Promise<string | null> => {

@@ -4,8 +4,8 @@
 import { getCoinSymbol } from '@mysten/core';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 import { Info16 } from '@mysten/icons';
-import { type CoinBalance } from '@dwallet/dwallet.js/client';
-import { normalizeSuiAddress } from '@dwallet/dwallet.js/utils';
+import { type CoinBalance } from '@dwallet-network/dwallet.js/client';
+import { normalizeSuiAddress } from '@dwallet-network/dwallet.js/utils';
 import { Heading, Text, LoadingIndicator, RadioGroup, RadioGroupItem } from '@mysten/ui';
 import { useMemo, useState } from 'react';
 

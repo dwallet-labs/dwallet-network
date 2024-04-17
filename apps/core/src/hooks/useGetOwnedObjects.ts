@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useSuiClient } from '@mysten/dapp-kit';
-import { PaginatedObjectsResponse, type SuiObjectDataFilter } from '@dwallet/dwallet.js/client';
+import { PaginatedObjectsResponse, type SuiObjectDataFilter } from '@dwallet-network/dwallet.js/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const MAX_OBJECTS_PER_REQ = 6;

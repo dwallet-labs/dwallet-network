@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useSuiClient } from '@mysten/dapp-kit';
-import { SuiEvent, type EventId } from '@dwallet/dwallet.js/client';
+import { SuiEvent, type EventId } from '@dwallet-network/dwallet.js/client';
 import { useQuery } from '@tanstack/react-query';
 
 type GetValidatorsEvent = {

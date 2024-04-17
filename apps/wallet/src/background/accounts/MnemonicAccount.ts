@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromExportedKeypair } from '_src/shared/utils/from-exported-keypair';
-import { type ExportedKeypair, type Keypair } from '@dwallet/dwallet.js/cryptography';
+import { type ExportedKeypair, type Keypair } from '@dwallet-network/dwallet.js/cryptography';
 
 import { MnemonicAccountSource } from '../account-sources/MnemonicAccountSource';
 import {

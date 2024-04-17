@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiObjectChange } from '@dwallet/dwallet.js/client';
+import type { SuiObjectChange } from '@dwallet-network/dwallet.js/client';
 
 export const getOwnerType = (change: SuiObjectChange) => {
 	if (!('owner' in change)) return '';

@@ -8,13 +8,13 @@ import {
 	type QredoAPI,
 	type TransactionInfoResponse,
 } from '_src/shared/qredo-api';
-import { type SuiClient } from '@dwallet/dwallet.js/client';
+import { type SuiClient } from '@dwallet-network/dwallet.js/client';
 import {
 	IntentScope,
 	messageWithIntent,
 	type SerializedSignature,
-} from '@dwallet/dwallet.js/cryptography';
-import { toB64 } from '@dwallet/dwallet.js/utils';
+} from '@dwallet-network/dwallet.js/cryptography';
+import { toB64 } from '@dwallet-network/dwallet.js/utils';
 import mitt from 'mitt';
 
 import { WalletSigner } from './WalletSigner';

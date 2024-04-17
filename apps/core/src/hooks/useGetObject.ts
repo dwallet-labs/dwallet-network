@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useSuiClient } from '@mysten/dapp-kit';
-import { normalizeSuiAddress } from '@dwallet/dwallet.js/utils';
+import { normalizeSuiAddress } from '@dwallet-network/dwallet.js/utils';
 import { useQuery } from '@tanstack/react-query';
 
 const defaultOptions = {

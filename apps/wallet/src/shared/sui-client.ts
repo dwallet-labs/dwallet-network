@@ -4,7 +4,7 @@
 import networkEnv from '_src/background/NetworkEnv';
 import { API_ENV, ENV_TO_API, type NetworkEnvType } from '_src/shared/api-env';
 import { SentryHttpTransport } from '@mysten/core';
-import { SuiClient, SuiHTTPTransport } from '@dwallet/dwallet.js/client';
+import { SuiClient, SuiHTTPTransport } from '@dwallet-network/dwallet.js/client';
 
 const suiClientPerNetwork = new Map<string, SuiClient>();
 const SENTRY_MONITORED_ENVS = [API_ENV.mainnet];

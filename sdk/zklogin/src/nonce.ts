@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { toHEX } from '@mysten/bcs';
-import type { PublicKey } from '@dwallet/dwallet.js/cryptography';
-import { toBigEndianBytes } from '@dwallet/dwallet.js/zklogin';
+import type { PublicKey } from '@dwallet-network/dwallet.js/cryptography';
+import { toBigEndianBytes } from '@dwallet-network/dwallet.js/zklogin';
 import { randomBytes } from '@noble/hashes/utils';
 import { base64url } from 'jose';
 

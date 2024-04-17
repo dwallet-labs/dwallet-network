@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type CoinBalance } from '@dwallet/dwallet.js/client';
+import { type CoinBalance } from '@dwallet-network/dwallet.js/client';
 
 // Sort tokens by symbol and total balance
 // Move this to the API backend

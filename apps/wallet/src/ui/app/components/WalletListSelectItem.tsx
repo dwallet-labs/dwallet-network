@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { CheckFill16, XFill16 } from '@mysten/icons';
-import { formatAddress } from '@dwallet/dwallet.js/utils';
+import { formatAddress } from '@dwallet-network/dwallet.js/utils';
 import { cva, cx, type VariantProps } from 'class-variance-authority';
 import { useEffect, useRef } from 'react';
 

@@ -3,13 +3,13 @@
 
 import { CoinFormat, useFormatCoin, useResolveSuiNSName } from '@mysten/core';
 import { ArrowUpRight16, Info16 } from '@mysten/icons';
-import { type ObjectOwner, type SuiObjectResponse } from '@dwallet/dwallet.js/client';
+import { type ObjectOwner, type SuiObjectResponse } from '@dwallet-network/dwallet.js/client';
 import {
 	formatAddress,
 	normalizeStructTag,
 	parseStructTag,
 	SUI_TYPE_ARG,
-} from '@dwallet/dwallet.js/utils';
+} from '@dwallet-network/dwallet.js/utils';
 import { Heading, Text } from '@mysten/ui';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';

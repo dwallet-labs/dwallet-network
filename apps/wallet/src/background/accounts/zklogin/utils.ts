@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fetchWithSentry } from '_src/shared/utils';
-import { type PublicKey } from '@dwallet/dwallet.js/cryptography';
-import { Ed25519Keypair } from '@dwallet/dwallet.js/keypairs/ed25519';
+import { type PublicKey } from '@dwallet-network/dwallet.js/cryptography';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import {
 	generateNonce,
 	generateRandomness,

@@ -3,7 +3,7 @@
 
 import { type ZkLoginProvider } from '_src/background/accounts/zklogin/providers';
 import { type Wallet } from '_src/shared/qredo-api';
-import { type ExportedKeypair } from '@dwallet/dwallet.js/cryptography';
+import { type ExportedKeypair } from '@dwallet-network/dwallet.js/cryptography';
 import {
 	createContext,
 	useCallback,

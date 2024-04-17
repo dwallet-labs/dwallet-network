@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 
 import { getNormalizedFunctionParameterTypeDetails } from '../utils';
 
-import type { SuiMoveNormalizedType } from '@dwallet/dwallet.js/client';
+import type { SuiMoveNormalizedType } from '@dwallet-network/dwallet.js/client';
 
 export function useFunctionParamsDetails(
 	params: SuiMoveNormalizedType[],

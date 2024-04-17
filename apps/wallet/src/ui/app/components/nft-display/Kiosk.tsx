@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { getKioskIdFromOwnerCap, hasDisplayData, useGetKioskContents } from '@mysten/core';
-import { type SuiObjectResponse } from '@dwallet/dwallet.js/client';
-import { getObjectDisplay } from '@dwallet/dwallet.js/types';
+import { type SuiObjectResponse } from '@dwallet-network/dwallet.js/client';
+import { getObjectDisplay } from '@dwallet-network/dwallet.js/types';
 import cl from 'clsx';
 
 import { useActiveAddress } from '../../hooks';

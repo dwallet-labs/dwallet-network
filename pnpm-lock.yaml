@@ -94,6 +94,9 @@ importers:
       '@amplitude/analytics-types':
         specifier: ^0.20.0
         version: 0.20.0
+      '@dwallet-network/dwallet.js':
+        specifier: workspace:*
+        version: link:../../sdk/typescript
       '@growthbook/growthbook-react':
         specifier: ^0.15.0
         version: 0.15.0(react@18.2.0)
@@ -106,9 +109,6 @@ importers:
       '@mysten/kiosk':
         specifier: workspace:*
         version: link:../../sdk/kiosk
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
       '@sentry/react':
         specifier: ^7.59.2
         version: 7.59.2(react@18.2.0)
@@ -173,6 +173,9 @@ importers:
       '@amplitude/analytics-types':
         specifier: ^0.20.0
         version: 0.20.0
+      '@dwallet-network/dwallet.js':
+        specifier: workspace:*
+        version: link:../../sdk/typescript
       '@floating-ui/react':
         specifier: ^0.23.0
         version: 0.23.0(react-dom@18.2.0)(react@18.2.0)
@@ -200,9 +203,6 @@ importers:
       '@mysten/icons':
         specifier: workspace:*
         version: link:../icons
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
       '@mysten/ui':
         specifier: workspace:*
         version: link:../ui
@@ -526,6 +526,9 @@ importers:
       '@amplitude/analytics-browser':
         specifier: ^1.10.3
         version: 1.10.3
+      '@dwallet-network/dwallet.js':
+        specifier: workspace:*
+        version: link:../../sdk/typescript
       '@floating-ui/react':
         specifier: ^0.23.0
         version: 0.23.0(react-dom@18.2.0)(react@18.2.0)
@@ -577,9 +580,6 @@ importers:
       '@mysten/ledgerjs-hw-app-sui':
         specifier: workspace:*
         version: link:../../sdk/ledgerjs-hw-app-sui
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
       '@mysten/wallet-standard':
         specifier: workspace:*
         version: link:../../sdk/wallet-standard
@@ -900,225 +900,6 @@ importers:
         specifier: ^5.8.0
         version: 5.8.0
 
-  dapps/kiosk:
-    dependencies:
-      '@headlessui/react':
-        specifier: ^1.7.15
-        version: 1.7.15(react-dom@18.2.0)(react@18.2.0)
-      '@mysten/dapp-kit':
-        specifier: workspace:*
-        version: link:../../sdk/dapp-kit
-      '@mysten/kiosk':
-        specifier: workspace:*
-        version: link:../../sdk/kiosk
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.0.0(react-dom@18.2.0)(react@18.2.0)
-      clsx:
-        specifier: ^2.0.0
-        version: 2.0.0
-      react:
-        specifier: ^18.2.0
-        version: 18.2.0
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
-      react-hot-toast:
-        specifier: ^2.4.1
-        version: 2.4.1(react-dom@18.2.0)(react@18.2.0)
-      react-router-dom:
-        specifier: ^6.14.2
-        version: 6.14.2(react-dom@18.2.0)(react@18.2.0)
-    devDependencies:
-      '@headlessui/tailwindcss':
-        specifier: ^0.1.3
-        version: 0.1.3(tailwindcss@3.3.3)
-      '@types/react':
-        specifier: ^18.2.15
-        version: 18.2.15
-      '@types/react-dom':
-        specifier: ^18.2.7
-        version: 18.2.7
-      '@vitejs/plugin-react':
-        specifier: ^4.0.3
-        version: 4.0.3(vite@4.4.4)
-      autoprefixer:
-        specifier: ^10.4.14
-        version: 10.4.14(postcss@8.4.31)
-      postcss:
-        specifier: ^8.4.31
-        version: 8.4.31
-      tailwindcss:
-        specifier: ^3.3.3
-        version: 3.3.3(ts-node@10.9.1)
-      typescript:
-        specifier: ^5.1.6
-        version: 5.1.6
-      vite:
-        specifier: ^4.4.4
-        version: 4.4.4(@types/node@20.4.2)(sass@1.63.6)
-
-  dapps/kiosk-cli:
-    dependencies:
-      '@mysten/kiosk':
-        specifier: workspace:*
-        version: link:../../sdk/kiosk
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
-      commander:
-        specifier: ^11.0.0
-        version: 11.0.0
-
-  dapps/multisig-toolkit:
-    dependencies:
-      '@fontsource-variable/inter':
-        specifier: ^5.0.5
-        version: 5.0.5
-      '@fontsource-variable/red-hat-mono':
-        specifier: ^5.0.6
-        version: 5.0.6
-      '@hookform/resolvers':
-        specifier: ^3.1.1
-        version: 3.1.1(react-hook-form@7.45.2)
-      '@radix-ui/react-dialog':
-        specifier: ^1.0.4
-        version: 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-label':
-        specifier: ^2.0.2
-        version: 2.0.2(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-navigation-menu':
-        specifier: ^1.1.3
-        version: 1.1.3(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-popover':
-        specifier: ^1.0.6
-        version: 1.0.6(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-slot':
-        specifier: ^1.0.2
-        version: 1.0.2(@types/react@18.2.15)(react@18.2.0)
-      '@radix-ui/react-tabs':
-        specifier: ^1.0.4
-        version: 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.0.0(react-dom@18.2.0)(react@18.2.0)
-      class-variance-authority:
-        specifier: ^0.7.0
-        version: 0.7.0
-      clsx:
-        specifier: ^2.0.0
-        version: 2.0.0
-      cmdk:
-        specifier: ^0.2.0
-        version: 0.2.0(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      lucide-react:
-        specifier: ^0.261.0
-        version: 0.261.0(react@18.2.0)
-      react:
-        specifier: ^18.2.0
-        version: 18.2.0
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
-      react-hook-form:
-        specifier: ^7.45.2
-        version: 7.45.2(react@18.2.0)
-      react-router-dom:
-        specifier: ^6.14.2
-        version: 6.14.2(react-dom@18.2.0)(react@18.2.0)
-      tailwind-merge:
-        specifier: ^1.14.0
-        version: 1.14.0
-      zod:
-        specifier: ^3.21.4
-        version: 3.21.4
-    devDependencies:
-      '@mysten/dapp-kit':
-        specifier: workspace:*
-        version: link:../../sdk/dapp-kit
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
-      '@tailwindcss/forms':
-        specifier: ^0.5.4
-        version: 0.5.4(tailwindcss@3.3.3)
-      '@types/react':
-        specifier: ^18.2.15
-        version: 18.2.15
-      '@types/react-dom':
-        specifier: ^18.2.7
-        version: 18.2.7
-      '@vitejs/plugin-react':
-        specifier: ^4.0.3
-        version: 4.0.3(vite@4.4.4)
-      autoprefixer:
-        specifier: ^10.4.14
-        version: 10.4.14(postcss@8.4.31)
-      postcss:
-        specifier: ^8.4.31
-        version: 8.4.31
-      tailwindcss:
-        specifier: ^3.3.3
-        version: 3.3.3(ts-node@10.9.1)
-      tailwindcss-animate:
-        specifier: ^1.0.6
-        version: 1.0.6(tailwindcss@3.3.3)
-      typescript:
-        specifier: ^5.1.6
-        version: 5.1.6
-      vite:
-        specifier: ^4.4.4
-        version: 4.4.4(@types/node@20.4.2)(sass@1.63.6)
-      vite-tsconfig-paths:
-        specifier: ^4.2.0
-        version: 4.2.0(typescript@5.1.6)(vite@4.4.4)
-
-  dapps/sponsored-transactions:
-    dependencies:
-      '@tanstack/react-query':
-        specifier: ^5.0.0
-        version: 5.0.0(react-dom@18.2.0)(react@18.2.0)
-      react:
-        specifier: ^18.2.0
-        version: 18.2.0
-      react-dom:
-        specifier: ^18.2.0
-        version: 18.2.0(react@18.2.0)
-    devDependencies:
-      '@mysten/dapp-kit':
-        specifier: workspace:*
-        version: link:../../sdk/dapp-kit
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
-      '@types/react':
-        specifier: ^18.2.15
-        version: 18.2.15
-      '@types/react-dom':
-        specifier: ^18.2.7
-        version: 18.2.7
-      '@vitejs/plugin-react':
-        specifier: ^4.0.3
-        version: 4.0.3(vite@4.4.4)
-      autoprefixer:
-        specifier: ^10.4.14
-        version: 10.4.14(postcss@8.4.31)
-      postcss:
-        specifier: ^8.4.31
-        version: 8.4.31
-      tailwindcss:
-        specifier: ^3.3.3
-        version: 3.3.3(ts-node@10.9.1)
-      typescript:
-        specifier: ^5.1.6
-        version: 5.1.6
-      vite:
-        specifier: ^4.4.4
-        version: 4.4.4(@types/node@20.4.2)(sass@1.63.6)
-
   sdk/bcs:
     dependencies:
       bs58:
@@ -1171,12 +952,12 @@ importers:
 
   sdk/create-dapp:
     dependencies:
+      '@dwallet-network/dwallet.js':
+        specifier: workspace:*
+        version: link:../typescript
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../dapp-kit
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../typescript
       '@types/node':
         specifier: ^20.4.2
         version: 20.4.2
@@ -1193,12 +974,12 @@ importers:
 
   sdk/create-dapp/templates/react-client-dapp:
     dependencies:
+      '@dwallet-network/dwallet.js':
+        specifier: workspace:*
+        version: link:../../../typescript
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../../dapp-kit
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../../../typescript
       '@radix-ui/colors':
         specifier: ^3.0.0
         version: 3.0.0
@@ -1254,12 +1035,12 @@ importers:
 
   sdk/create-dapp/templates/react-e2e-counter:
     dependencies:
+      '@dwallet-network/dwallet.js':
+        specifier: workspace:*
+        version: link:../../../typescript
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../../dapp-kit
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../../../typescript
       '@radix-ui/colors':
         specifier: ^3.0.0
         version: 3.0.0
@@ -1315,7 +1096,7 @@ importers:
 
   sdk/dapp-kit:
     dependencies:
-      '@dwallet/dwallet.js':
+      '@dwallet-network/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
       '@mysten/wallet-standard':
@@ -1403,7 +1184,7 @@ importers:
 
   sdk/deepbook:
     dependencies:
-      '@dwallet/dwallet.js':
+      '@dwallet-network/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1437,12 +1218,12 @@ importers:
 
   sdk/docs:
     dependencies:
+      '@dwallet-network/dwallet.js':
+        specifier: workspace:*
+        version: link:../typescript
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../dapp-kit
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../typescript
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.0.0(react-dom@18.2.0)(react@18.2.0)
@@ -1471,7 +1252,7 @@ importers:
 
   sdk/enoki:
     dependencies:
-      '@dwallet/dwallet.js':
+      '@dwallet-network/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
       '@mysten/zklogin':
@@ -1517,7 +1298,7 @@ importers:
 
   sdk/kiosk:
     dependencies:
-      '@dwallet/dwallet.js':
+      '@dwallet-network/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1611,7 +1392,7 @@ importers:
 
   sdk/suins-toolkit:
     dependencies:
-      '@dwallet/dwallet.js':
+      '@dwallet-network/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1709,7 +1490,7 @@ importers:
 
   sdk/wallet-standard:
     dependencies:
-      '@dwallet/dwallet.js':
+      '@dwallet-network/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
       '@wallet-standard/core':
@@ -1725,12 +1506,12 @@ importers:
 
   sdk/zklogin:
     dependencies:
+      '@dwallet-network/dwallet.js':
+        specifier: workspace:*
+        version: link:../typescript
       '@mysten/bcs':
         specifier: workspace:*
         version: link:../bcs
-      '@dwallet/dwallet.js':
-        specifier: workspace:*
-        version: link:../typescript
       '@noble/hashes':
         specifier: ^1.3.1
         version: 1.3.1
@@ -6787,40 +6568,6 @@ packages:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       react-remove-scroll: 2.5.5(@types/react@18.2.15)(react@18.2.0)
-    dev: false
-
-  /@radix-ui/react-navigation-menu@1.1.3(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-x4Uv0N47ABx3/frJazYXxvMpZeKJe0qmRIgQ2o3lhTqnTVg+CaZfVVO4nQLn3QJcDkTz8icElKffhFng47XIBA==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0
-      react-dom: ^16.8 || ^17.0 || ^18.0
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-    dependencies:
-      '@babel/runtime': 7.22.3
-      '@radix-ui/primitive': 1.0.1
-      '@radix-ui/react-collection': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-compose-refs': 1.0.1(@types/react@18.2.15)(react@18.2.0)
-      '@radix-ui/react-context': 1.0.1(@types/react@18.2.15)(react@18.2.0)
-      '@radix-ui/react-direction': 1.0.1(@types/react@18.2.15)(react@18.2.0)
-      '@radix-ui/react-dismissable-layer': 1.0.4(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-id': 1.0.1(@types/react@18.2.15)(react@18.2.0)
-      '@radix-ui/react-presence': 1.0.1(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-primitive': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-use-callback-ref': 1.0.1(@types/react@18.2.15)(react@18.2.0)
-      '@radix-ui/react-use-controllable-state': 1.0.1(@types/react@18.2.15)(react@18.2.0)
-      '@radix-ui/react-use-layout-effect': 1.0.1(@types/react@18.2.15)(react@18.2.0)
-      '@radix-ui/react-use-previous': 1.0.1(@types/react@18.2.15)(react@18.2.0)
-      '@radix-ui/react-visually-hidden': 1.0.3(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0)
-      '@types/react': 18.2.15
-      '@types/react-dom': 18.2.7
-      react: 18.2.0
-      react-dom: 18.2.0(react@18.2.0)
     dev: false
 
   /@radix-ui/react-popover@1.0.6(@types/react-dom@18.2.7)(@types/react@18.2.15)(react-dom@18.2.0)(react@18.2.0):
@@ -12748,11 +12495,6 @@ packages:
     resolution: {integrity: sha512-VtDvQpIJBvBatnONUsPzXYFVKQQAhuf3XTNOAsdBxCNO/QCtUUd8LSgjn0GVarBkCad6aJCZfXgrjYbl/KRr7w==}
     dev: false
 
-  /commander@11.0.0:
-    resolution: {integrity: sha512-9HMlXtt/BNoYr8ooyjjNRdIilOTkVJXB+GhxMTtOKwk0R4j4lS4NpjuqmRxroBfnfTSHQIHQB7wryHhXarNjmQ==}
-    engines: {node: '>=16'}
-    dev: false
-
   /commander@2.20.3:
     resolution: {integrity: sha512-GpVkmM8vF2vQUkj2LvZmD35JxeJOLCwJ9cUkugyk2nuhbv3+mJvpLYYt+0+USMxE+oj+ey/lJEnhZw75x/OMcQ==}
 
@@ -18064,14 +17806,6 @@ packages:
     resolution: {integrity: sha512-Pn9cox5CsMYngeDbmChANltQl+5pi6XmTrraMSzhPmMBbmgcxmqWry0U3PGapCU1yB4/LqCcom7qhHZiF/jGfQ==}
     dev: true
 
-  /lucide-react@0.261.0(react@18.2.0):
-    resolution: {integrity: sha512-gzxEvIxf8+hGbm2ZQU/VP5TxTcnTu3ODDmYoS3a53wC4gkW9ukxmexKjTcZUzz3q8ema+DMwmPypx9Z0Bvvxog==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0
-    dependencies:
-      react: 18.2.0
-    dev: false
-
   /lunr@2.3.9:
     resolution: {integrity: sha512-zTU3DaZaF3Rt9rhN3uBMGQD3dD2/vFQqnvZCDv4dl5iOzq2IZQqTxu90r4E5J+nP70J3ilqVCrbho2eWaeW8Ow==}
     dev: true
@@ -23020,10 +22754,6 @@ packages:
 
   /tabbable@6.1.1:
     resolution: {integrity: sha512-4kl5w+nCB44EVRdO0g/UGoOp3vlwgycUVtkk/7DPyeLZUCuNFFKCFG6/t/DgHLrUPHjrZg6s5tNm+56Q2B0xyg==}
-    dev: false
-
-  /tailwind-merge@1.14.0:
-    resolution: {integrity: sha512-3mFKyCo/MBcgyOTlrY8T7odzZFx+w+qKSMAmdFzRvqBfLlSigU6TZnlFHK0lkMwj9Bj8OYU+9yW9lmGuS0QEnQ==}
     dev: false
 
   /tailwindcss-animate@1.0.6(tailwindcss@3.3.3):

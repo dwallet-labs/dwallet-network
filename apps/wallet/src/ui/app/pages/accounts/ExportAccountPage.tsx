@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useBackgroundClient } from '_src/ui/app/hooks/useBackgroundClient';
-import { fromB64 } from '@dwallet/dwallet.js/utils';
+import { fromB64 } from '@dwallet-network/dwallet.js/utils';
 import { bytesToHex } from '@noble/hashes/utils';
 import { useMutation } from '@tanstack/react-query';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useSuiClient } from '@mysten/dapp-kit';
-import { DynamicFieldPage } from '@dwallet/dwallet.js/client';
-import { normalizeSuiAddress } from '@dwallet/dwallet.js/utils';
+import { DynamicFieldPage } from '@dwallet-network/dwallet.js/client';
+import { normalizeSuiAddress } from '@dwallet-network/dwallet.js/utils';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const MAX_PAGE_SIZE = 10;

@@ -40,7 +40,7 @@
 	},
 	"dependencies": {
 		"@mysten/dapp-kit": "workspace:*",
-		"@dwallet/dwallet.js": "workspace:*",
+		"@dwallet-network/dwallet.js": "workspace:*",
 		"@types/node": "^20.4.2",
 		"enquirer": "^2.4.1"
 	},

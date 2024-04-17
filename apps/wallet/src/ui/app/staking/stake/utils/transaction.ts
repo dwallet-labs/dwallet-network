@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { TransactionBlock } from '@dwallet/dwallet.js/transactions';
-import { SUI_SYSTEM_STATE_OBJECT_ID } from '@dwallet/dwallet.js/utils';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
+import { SUI_SYSTEM_STATE_OBJECT_ID } from '@dwallet-network/dwallet.js/utils';
 
 export function createStakeTransaction(amount: bigint, validator: string) {
 	const tx = new TransactionBlock();

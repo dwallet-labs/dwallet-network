@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@dwallet/dwallet.js/bcs';
+import { bcs } from '@dwallet-network/dwallet.js/bcs';
 import {
 	type DryRunTransactionBlockResponse,
 	type ExecuteTransactionRequestType,
 	type SuiClient,
 	type SuiTransactionBlockResponse,
 	type SuiTransactionBlockResponseOptions,
-} from '@dwallet/dwallet.js/client';
-import { IntentScope, messageWithIntent } from '@dwallet/dwallet.js/cryptography';
-import { isTransactionBlock, type TransactionBlock } from '@dwallet/dwallet.js/transactions';
-import { fromB64, toB64 } from '@dwallet/dwallet.js/utils';
+} from '@dwallet-network/dwallet.js/client';
+import { IntentScope, messageWithIntent } from '@dwallet-network/dwallet.js/cryptography';
+import { isTransactionBlock, type TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
+import { fromB64, toB64 } from '@dwallet-network/dwallet.js/utils';
 
 export type SignedTransaction = {
 	transactionBlockBytes: string;

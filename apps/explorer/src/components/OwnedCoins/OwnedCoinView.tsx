@@ -3,7 +3,7 @@
 
 import { useFormatCoin } from '@mysten/core';
 import { ArrowShowAndHideRight12, Warning16 } from '@mysten/icons';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 import { Text } from '@mysten/ui';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import clsx from 'clsx';

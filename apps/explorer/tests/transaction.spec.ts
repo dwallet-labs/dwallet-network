@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { type ProgrammableTransaction } from '@dwallet/dwallet.js/client';
+import { type ProgrammableTransaction } from '@dwallet-network/dwallet.js/client';
 import { expect, test } from '@playwright/test';
 
 import { faucet, split_coin } from './utils/localnet';

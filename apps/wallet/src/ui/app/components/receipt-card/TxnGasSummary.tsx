@@ -4,7 +4,7 @@
 import { GAS_TYPE_ARG } from '_redux/slices/sui-objects/Coin';
 import { Text } from '_src/ui/app/shared/text';
 import { useFormatCoin } from '@mysten/core';
-import type { GasCostSummary } from '@dwallet/dwallet.js/client';
+import type { GasCostSummary } from '@dwallet-network/dwallet.js/client';
 
 type TxnGasSummaryProps = {
 	gasSummary?: GasCostSummary;

@@ -7,20 +7,20 @@ import {
 	PaginatedEvents,
 	PaginationArguments,
 	SuiClient,
-} from '@dwallet/dwallet.js/client';
+} from '@dwallet-network/dwallet.js/client';
 import {
 	TransactionArgument,
 	TransactionBlock,
 	TransactionObjectInput,
 	TransactionResult,
-} from '@dwallet/dwallet.js/transactions';
+} from '@dwallet-network/dwallet.js/transactions';
 import {
 	normalizeStructTag,
 	normalizeSuiAddress,
 	normalizeSuiObjectId,
 	parseStructTag,
 	SUI_CLOCK_OBJECT_ID,
-} from '@dwallet/dwallet.js/utils';
+} from '@dwallet-network/dwallet.js/utils';
 
 import {
 	bcs,

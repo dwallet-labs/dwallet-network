@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient } from '@dwallet/dwallet.js/client';
+import { SuiClient } from '@dwallet-network/dwallet.js/client';
 
 import { DataFields, NameObject, NetworkType, SuiNSContract } from './types/objects';
 import { DEVNET_JSON_FILE, GCS_URL, TESTNET_JSON_FILE } from './utils/constants';

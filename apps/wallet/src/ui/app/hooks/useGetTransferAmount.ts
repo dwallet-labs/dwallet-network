@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { getAmount } from '_helpers';
-import type { SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import type { SuiTransactionBlockResponse } from '@dwallet-network/dwallet.js/client';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 import { useMemo } from 'react';
 
 export function useGetTransferAmount({

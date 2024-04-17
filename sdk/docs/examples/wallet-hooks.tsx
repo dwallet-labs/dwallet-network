@@ -17,8 +17,8 @@ import {
 	useWallets,
 	WalletProvider,
 } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@dwallet/dwallet.js/client';
-import { TransactionBlock } from '@dwallet/dwallet.js/transactions';
+import { getFullnodeUrl } from '@dwallet-network/dwallet.js/client';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ComponentProps, useEffect, useState } from 'react';
 

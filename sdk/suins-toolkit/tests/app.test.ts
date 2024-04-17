@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // import { faker } from '@faker-js/faker';
-import { getFullnodeUrl, SuiClient } from '@dwallet/dwallet.js/client';
+import { getFullnodeUrl, SuiClient } from '@dwallet-network/dwallet.js/client';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SuinsClient } from '../src';

@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiClient } from '@dwallet/dwallet.js/client';
-import { TransactionObjectArgument } from '@dwallet/dwallet.js/transactions';
+import { type SuiClient } from '@dwallet-network/dwallet.js/client';
+import { TransactionObjectArgument } from '@dwallet-network/dwallet.js/transactions';
 
 import { BaseRulePackageIds } from '../constants';
 

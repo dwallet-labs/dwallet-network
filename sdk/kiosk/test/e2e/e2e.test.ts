@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { TransactionBlock } from '@dwallet/dwallet.js/transactions';
-import { normalizeSuiAddress } from '@dwallet/dwallet.js/utils';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
+import { normalizeSuiAddress } from '@dwallet-network/dwallet.js/utils';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {

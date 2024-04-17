@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Text } from '_app/shared/text';
-import { Ed25519Keypair } from '@dwallet/dwallet.js/keypairs/ed25519';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import { hexToBytes } from '@noble/hashes/utils';
 import { useNavigate } from 'react-router-dom';
 

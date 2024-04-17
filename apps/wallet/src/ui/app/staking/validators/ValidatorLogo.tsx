@@ -5,7 +5,7 @@ import { ImageIcon } from '_app/shared/image-icon';
 import { Text } from '_app/shared/text';
 import { Badge } from '_src/ui/app/shared/Badge';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
-import { formatAddress } from '@dwallet/dwallet.js/utils';
+import { formatAddress } from '@dwallet-network/dwallet.js/utils';
 import cl from 'clsx';
 import { useMemo } from 'react';
 

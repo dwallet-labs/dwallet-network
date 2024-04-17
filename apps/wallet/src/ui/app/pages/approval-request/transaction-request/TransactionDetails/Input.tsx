@@ -4,8 +4,8 @@
 import ExplorerLink from '_src/ui/app/components/explorer-link';
 import { ExplorerLinkType } from '_src/ui/app/components/explorer-link/ExplorerLinkType';
 import { Text } from '_src/ui/app/shared/text';
-import { type TransactionBlockInput } from '@dwallet/dwallet.js/transactions';
-import { formatAddress, toB64 } from '@dwallet/dwallet.js/utils';
+import { type TransactionBlockInput } from '@dwallet-network/dwallet.js/transactions';
+import { formatAddress, toB64 } from '@dwallet-network/dwallet.js/utils';
 
 interface InputProps {
 	input: TransactionBlockInput;

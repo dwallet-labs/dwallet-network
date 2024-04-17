@@ -42,6 +42,6 @@
 		"vitest": "^0.33.0"
 	},
 	"dependencies": {
-		"@dwallet/dwallet.js": "workspace:*"
+		"@dwallet-network/dwallet.js": "workspace:*"
 	}
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useGetDynamicFields, useOnScreen } from '@mysten/core';
-import { type DynamicFieldInfo } from '@dwallet/dwallet.js/client';
+import { type DynamicFieldInfo } from '@dwallet-network/dwallet.js/client';
 import { LoadingIndicator } from '@mysten/ui';
 import { useRef, useEffect, useState, useMemo } from 'react';
 

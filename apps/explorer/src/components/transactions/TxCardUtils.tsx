@@ -3,7 +3,7 @@
 
 import { getTotalGasUsed } from '@mysten/core';
 import { X12, Dot12 } from '@mysten/icons';
-import { type SuiClient, type SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
+import { type SuiClient, type SuiTransactionBlockResponse } from '@dwallet-network/dwallet.js/client';
 
 import { SuiAmount } from '../Table/SuiAmount';
 import { TxTimeType } from '../tx-time/TxTimeType';

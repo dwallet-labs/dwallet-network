@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { computeZkLoginAddressFromSeed } from '@dwallet/dwallet.js/zklogin';
+import { computeZkLoginAddressFromSeed } from '@dwallet-network/dwallet.js/zklogin';
 import { decodeJwt } from 'jose';
 
 import { genAddressSeed } from './utils.js';
