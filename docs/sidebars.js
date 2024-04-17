@@ -111,6 +111,23 @@ const sidebars = {
 						},
 					],
 				},
+				{
+					type: 'category',
+					label: 'Control dWallets from other networks',
+					collapsed: false,
+					items: [
+						{
+							type: 'doc',
+							label: 'Control a dWallet on Sui',
+							id: 'developers-guide/lightclients/sui-lightclient',
+						},
+						{
+							type: 'doc',
+							label: 'Control a dWallet on Ethereum',
+							id: 'developers-guide/lightclients/sui-lightclient',
+						},
+					],
+				},
 			],
 		},
 		{
