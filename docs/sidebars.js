@@ -83,6 +83,32 @@ const sidebars = {
 							label: 'Your First dWallet',
 							id: 'developers-guide/getting-started/your-first-dwallet',
 						},
+						{
+							type: 'category',
+							label: 'Examples - Coming soon',
+							collapsed: true,
+							items: [
+								{
+									type: 'category',
+									label: 'Bitcoin Multi-Sig',
+									collapsed: false,
+									items: [
+										'developers-guide/getting-started/examples/bitcoin-multisig-solidity',
+										'developers-guide/getting-started/examples/bitcoin-multisig-sui-move',
+									],
+								},
+								{
+									type: 'doc',
+									label: 'Multi-Chain Lending',
+									id: 'developers-guide/getting-started/examples/multi-chain-lending',
+								},
+								{
+									type: 'doc',
+									label: 'Multi-Chain Atomic Swap',
+									id: 'developers-guide/getting-started/examples/multi-chain-atomic-swap',
+								},
+							],
+						},
 					],
 				},
 			],
