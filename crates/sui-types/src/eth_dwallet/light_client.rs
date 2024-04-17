@@ -4,15 +4,17 @@ use anyhow::anyhow;
 use ethers::prelude::*;
 use ethers::prelude::H160;
 use ethers::utils::keccak256;
+use ethers::utils::rlp::RlpStream;
 use eyre::{eyre, Report};
 use helios::client::{Client, ClientBuilder, FileDB};
 use helios::config::checkpoints;
 use helios::config::networks::Network;
+use helios::consensus::types::Bytes32;
 // use helios::prelude::*;
 use tracing::info;
 
 use crate::eth_dwallet::config::EthClientConfig;
-use crate::eth_dwallet::proof::ProofResponse;
+use crate::eth_dwallet::proof::{Proof, ProofResponse};
 use crate::eth_dwallet::utils;
 use crate::eth_dwallet::utils::is_empty_value;
 
@@ -52,7 +54,7 @@ impl EthLightClient {
     }
 
     /// Get the Merkle Tree Proof (EIP1186Proof) for the client parameters.
-    pub async fn get_proof(&self) -> eyre::Result<ProofResponse, Report> {
+    pub async fn get_proofs(&self, execution_state_root: &Bytes32) -> eyre::Result<ProofResponse, Report> {
         let message_map_index = self.get_mapping_index()?;
 
         // Fetch the latest block number to get the proof.
@@ -67,6 +69,16 @@ impl EthLightClient {
                 block_number.as_u64(),
             )
             .await?;
+
+        let account_path = keccak256(contract_addr.as_bytes()).to_vec();
+        let account_encoded = encode_account(&proof);
+
+        let account_proof = Proof {
+            proof: proof.account_proof,
+            root: execution_state_root.as_slice().to_vec(),
+            path: account_path,
+            value: account_encoded,
+        };
 
         // The storage proof for the specific message and dWalletID in the mapping.
         let msg_storage_proof = proof
@@ -92,11 +104,17 @@ impl EthLightClient {
             return Err(eyre!("Storage value is empty"));
         };
 
-        Ok(ProofResponse {
+        let storage_proof = Proof {
             proof: msg_storage_proof.clone().proof,
             root: proof.storage_hash.as_bytes().to_vec(),
             path: storage_key_hash.to_vec(),
             value: storage_value,
+        };
+
+        Ok(ProofResponse {
+            account_proof,
+            storage_proof,
+            execution_state_root: execution_state_root.clone(),
         })
     }
 
@@ -124,4 +142,14 @@ async fn fetch_latest_checkpoint(network: Network) -> Result<String, anyhow::Err
         .map_err(|e| anyhow!("failed to fetch latest checkpoint from fallback services: {}", e))?;
     info!("fetched latest Ethereum `{network}` checkpoint: `{checkpoint}`");
     Ok(checkpoint.to_string())
+}
+
+pub fn encode_account(proof: &EIP1186ProofResponse) -> Vec<u8> {
+    let mut stream = RlpStream::new_list(4);
+    stream.append(&proof.nonce);
+    stream.append(&proof.balance);
+    stream.append(&proof.storage_hash);
+    stream.append(&proof.code_hash);
+    let encoded = stream.out();
+    encoded.to_vec()
 }

@@ -72,24 +72,21 @@ module dwallet_system::eth_dwallet {
 
     /// Verify the Eth state according to the updates.
     public fun verify_new_eth_state(
-        _state_json: vector<u8>,
-        _updates: vector<u8>,
+        updates_bcs: vector<u8>,
+        state_bcs: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        // we need to debug this function -
-        // let (data, slot) = verify_eth_state(
-        //     updates,
-        //     state_json
-        // );
-        let data = b"test_data";
+        let (data, time_slot) = verify_eth_state(
+            updates_bcs,
+            state_bcs
+        );
         let new_state = EthState {
             id: object::new(ctx),
             data,
-            time_slot: 0,
+            time_slot,
         };
 
         transfer::freeze_object(new_state);
-
     }
 
     /// Approve a message by a dWallet.

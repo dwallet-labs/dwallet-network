@@ -3,10 +3,10 @@ use ethers::prelude::{Bytes, H160, H256};
 use ethers::utils::rlp::{decode_list, RlpStream};
 use ethers::utils::{hex, keccak256};
 use eyre::{eyre, Report};
+use helios::consensus::types::Bytes32;
 use sha3::{Digest, Keccak256};
-
 #[derive(serde::Serialize, serde::Deserialize)]
-pub struct ProofResponse {
+pub struct Proof {
     // Array of rlp-serialized MerkleTree-Nodes, starting with the storageHash-Node,
     // following the path of the SHA3 (key) as a path.
     pub proof: Vec<Bytes>,
@@ -17,6 +17,13 @@ pub struct ProofResponse {
     pub path: Vec<u8>,
     // The storage value.
     pub value: Vec<u8>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct ProofResponse {
+    pub account_proof: Proof,
+    pub storage_proof: Proof,
+    pub execution_state_root: Bytes32,
 }
 
 /// Verifies the proof of a given storage value in a Merkle Patricia Tree.
