@@ -1,7 +1,7 @@
 {
 	"name": "@dwallet-network/dwallet.js",
 	"description": "dWallet Network TypeScript API(Work in Progress)",
-	"homepage": "https://sdk.mystenlabs.com",
+	"homepage": "https://docs.dwallet.io/",
 	"version": "0.49.0",
 	"license": "BSD-3-Clause-Clear",
 	"sideEffects": false,
@@ -106,7 +106,7 @@
 		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix"
 	},
 	"bugs": {
-		"url": "https://github.com/MystenLabs/sui/issues/new"
+		"url": "https://github.com/dwallet-labs/dwallet-network/issues/new"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -130,7 +130,7 @@
 	},
 	"dependencies": {
 		"@mysten/bcs": "workspace:*",
-		"@dwallet/signature-mpc-wasm": "workspace:*",
+		"@dwallet-network/signature-mpc-wasm": "workspace:*",
 		"@noble/curves": "^1.1.0",
 		"@noble/hashes": "^1.3.1",
 		"@scure/bip32": "^1.3.1",
