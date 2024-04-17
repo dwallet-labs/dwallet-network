@@ -7,7 +7,7 @@ Before you can create your first dApp, you must have [dWallet installed](install
 
 To create a dWallet using the dWallet Client CLI, you need to run the following command.
 ```shell
-dwallet client dwallet create --alias <DWALLET-ALIAS> --gas-budget 10000000 --gas <GAS-OBJECT>
+dwallet client dwallet create --alias <DWALLET-ALIAS> --gas-budget 100000000 --gas <GAS-OBJECT>
 ```
 
 In order to get gas for the fee, you can use the `dwallet client gas` command. It will result the following:
@@ -28,7 +28,7 @@ Now you can place one of these ids as the `<GAS-OBJECT>` parameter in the `dwall
 For example:
 
 ```shell
-dwallet client dwallet create --alias dwallet1 --gas-budget 10000000 --gas 0xc81f30256bb04ad84bc4a92017cffd7c1f98286e028fa504d8515ad72ddd1088
+dwallet client dwallet create --alias dwallet1 --gas-budget 100000000 --gas 0xc81f30256bb04ad84bc4a92017cffd7c1f98286e028fa504d8515ad72ddd1088
 ```
 
 This will result the following response:
@@ -48,13 +48,13 @@ This will result the following response:
 To sign any message with your dWallet you need to run the following command, providing a base64 encoded message:
 
 ```shell
-dwallet client dwallet sign --mesage <BASE64-ENCODED-MESSAGE> --gas-budget 10000000 --gas <GAS-OBJECT>
+dwallet client dwallet sign --messages <BASE64-ENCODED-MESSAGE> --gas-budget 100000000 --gas <GAS-OBJECT>
 ```
 
 Let's say we want to sign the message `"dWallets are coming..."`, its base64 encoding is `ZFdhbGxldHMgYXJlIGNvbWluZy4uLg==` and we will run the following command:
 
 ```shell
-dwallet client dwallet sign --mesage ZFdhbGxldHMgYXJlIGNvbWluZy4uLg== --gas-budget 10000000 --gas 0xc81f30256bb04ad84bc4a92017cffd7c1f98286e028fa504d8515ad72ddd1088
+dwallet client dwallet sign --messages ZFdhbGxldHMgYXJlIGNvbWluZy4uLg== --gas-budget 100000000 --gas 0xc81f30256bb04ad84bc4a92017cffd7c1f98286e028fa504d8515ad72ddd1088
 ```
 
 If the transaction succeeded, it assembles the message signature
