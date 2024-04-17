@@ -1414,7 +1414,7 @@ importers:
 
   sdk/typescript:
     dependencies:
-      '@dwallet/signature-mpc-wasm':
+      '@dwallet-network/signature-mpc-wasm':
         specifier: workspace:*
         version: link:../signature-mpc-wasm
       '@mysten/bcs':
