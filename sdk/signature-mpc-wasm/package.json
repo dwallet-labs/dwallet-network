@@ -1,6 +1,6 @@
 {
 	"name": "@dwallet-network/signature-mpc-wasm",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Signature MPC in WASM",
 	"type": "module",
 	"scripts": {
@@ -22,5 +22,17 @@
 	},
 	"publishConfig": {
 		"access": "public"
-	}
+	},
+	"files": [
+		"LICENSE",
+		"README.md",
+		"pkg",
+		"pkg/package.json",
+		"pkg/README.md",
+		"pkg/signature_mpc_wasm.d.ts",
+		"pkg/signature_mpc_wasm.js",
+		"pkg/signature_mpc_wasm_bg.wasm",
+		"pkg/signature_mpc_wasm_bg.wasm.d.ts",
+		"src"
+	]
 }
