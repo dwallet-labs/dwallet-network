@@ -1,12 +1,11 @@
 {
-	"name": "@dwallet-network/signature-mpc-wasm",
-	"version": "0.1.1",
+	"name": "signature-mpc-wasm-builder",
 	"description": "Signature MPC in WASM",
 	"type": "module",
 	"scripts": {
-		"build": "wasm-pack build --target nodejs --scope mysten",
-		"build:dev": "wasm-pack build --target nodejs --debug --scope mysten",
-		"build:release": "wasm-pack build --target web --release --scope mysten",
+		"build": "wasm-pack build --target nodejs --scope dwallet-network",
+		"build:dev": "wasm-pack build --target nodejs --debug --scope dwallet-network",
+		"build:release": "wasm-pack build --target web --release --scope dwallet-network",
 		"test": "vitest run"
 	},
 	"author": "dWallet Labs, Ltd. <dev@dwalletlabs.com>",
