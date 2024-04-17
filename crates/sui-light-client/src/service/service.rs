@@ -1,45 +1,24 @@
-use anyhow::{Context, Result};
+use std::{str::FromStr, sync::Arc};
+
+use anyhow::{Result};
 use axum::{
-    routing::{get, post},
+    routing::{get},
     Router,
     Json,
     extract::Query,
 };
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use sui_types::{
-    base_types::{ObjectID, ObjectRef, SequenceNumber},
-    committee::Committee,
-    crypto::AuthorityQuorumSignInfo,
-    digests::TransactionDigest,
-    effects::{TransactionEffects, TransactionEffectsAPI, TransactionEvents},
-    message_envelope::Envelope,
-    messages_checkpoint::{CertifiedCheckpointSummary, CheckpointSummary, EndOfEpochData},
-    object::{Data, Object},
-};
-
-use move_core_types::{
-    account_address::AccountAddress, identifier::Identifier, language_storage::StructTag,
-};
-
-use std::{error::Error, str::FromStr};
-use std::path::Path;
-use sui_json_rpc_types::{
-    Checkpoint, SuiEvent, SuiObjectDataOptions, SuiRawData, SuiTransactionBlockResponseOptions,
-};
-use sui_json_rpc_types::{CheckpointId, EventFilter, ObjectChange, SuiParsedData};
+use sui_json_rpc_types::{ SuiTransactionBlockResponseOptions};
 use sui_sdk::SuiClientBuilder;
 
 use serde::{Deserialize, Serialize};
-use std::{io::Read, sync::Arc};
-use std::{fs, io::Write, path::PathBuf};
 use anyhow::{anyhow, Ok};
 
-use sui_rest_api::{CheckpointData, Client};
+use sui_rest_api::{Client};
 use axum::{
-    response::{IntoResponse, Response},
+    response::{IntoResponse},
     http::StatusCode,
 };
-
+use sui_types::digests::TransactionDigest;
 
 
 
@@ -56,14 +35,13 @@ async fn main() -> Result<()> {
     println!("Starting server on address {}", server_url);
 
     let handle = tokio::spawn(async move {
-        // let listener = tokio::net::TcpListener::bind(&server_url).await.unwrap();
 
-        println!("Listening WS and HTTP on address {}", server_url);
-        axum::Server::bind(&server_url.parse().unwrap())
-            .serve(app.into_make_service())
-            .await
-            .unwrap();
-    });
+    println!("Listening WS and HTTP on address {}", server_url);
+    axum::Server::bind(&server_url.parse().unwrap())
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
+});
 
     tokio::join!(handle).0?;
     Ok(())
@@ -135,5 +113,3 @@ pub async fn get_tx_data(payload: Query<TxDataRequest>) -> impl IntoResponse {
     (StatusCode::OK, Json(res)).into_response()
 }
 
-
-// import error and result
