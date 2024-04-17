@@ -13,8 +13,8 @@ export enum Network {
 
 export const NetworkConfigs: Record<Network, { url: string }> = {
 	[Network.LOCAL]: { url: getFullnodeUrl('localnet') },
- 	[Network.DEVNET]: { url: 'localnet' },
-	[Network.TESTNET]: { url: 'REPLACE ME WITH LINK' },
+	[Network.DEVNET]: { url: getFullnodeUrl('devnet') },
+	[Network.TESTNET]: { url: getFullnodeUrl('testnet') },
 	[Network.MAINNET]: { url: 'localnet' },
 };
 
