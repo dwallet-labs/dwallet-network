@@ -60,6 +60,7 @@ struct PublicParameters {
     tiresias_public_parameters: tiresias::encryption_key::PublicParameters
 }
 
+#[derive(Clone, Debug)]
 pub enum Hash {
     KECCAK256 = 0,
     SHA256 = 1
@@ -71,6 +72,15 @@ impl From<u8> for Hash {
             0 => Self::KECCAK256,
             1 => Self::SHA256,
             _ => panic!()
+        }
+    }
+}
+
+impl From<Hash> for u8 {
+    fn from(value: Hash) -> Self {
+        match value  {
+            Hash::KECCAK256 => 0,
+            Hash::SHA256 => 1
         }
     }
 }
