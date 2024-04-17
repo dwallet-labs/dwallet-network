@@ -1,6 +1,6 @@
 # Your First dWallet
 
-Before you can create your first dApp, you must have [dWallet installed](install-dwallet.mdx) and that you have [DWLT gas supply](./get-tokens).
+Before you can create your first dWallet, you must have [dWallet installed](install-dwallet.mdx) and that you have [DWLT gas supply](./get-tokens).
 
 ## Using the dWallet Client CLI
 ### Create a dWallet
@@ -10,7 +10,7 @@ To create a dWallet using the dWallet Client CLI, you need to run the following 
 dwallet client dwallet create --alias <DWALLET-ALIAS> --gas-budget 100000000 --gas <GAS-OBJECT>
 ```
 
-In order to get gas for the fee, you can use the `dwallet client gas` command. It will result the following:
+In order to get gas for the fee, you can use the `dwallet client gas` command. It will result in:
 
 ```shell
 ╭────────────────────────────────────────────────────────────────────┬────────────╮
@@ -31,7 +31,7 @@ For example:
 dwallet client dwallet create --alias dwallet1 --gas-budget 100000000 --gas 0xc81f30256bb04ad84bc4a92017cffd7c1f98286e028fa504d8515ad72ddd1088
 ```
 
-This will result the following response:
+This result will be the following response:
 
 ```shell
 ╭─────────────────────────────────────────────────────────────────────────────────────╮
@@ -84,7 +84,7 @@ import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import {createDWallet, createSignMessages, approveAndSign} from "@dwallet-network/dwallet.js/signature-mpc";
 ```
 
-To create a dWallet, you have to provide `keypair` and `client` objects. 
+To create a dWallet, you have to provide `keypair` and `client` objects.
 ```typescript
 // create a new SuiClient object pointing to the network you want to use
 const client = new SuiClient({ url: 'http://fullnode.alpha.testnet.dwallet.cloud:9000' });
@@ -102,7 +102,7 @@ const dkg = await createDWallet(keypair, client);
 The object returned as a result from the `createDWallet()` function, contains:
 * `dwalletId` - the object id of the dWallet object
 * `dwalletCapId` - the object id of the dWallet Capability object
-* `dkgOutput` - the output of the DKG protocol of the `2pc-mpc` crate 
+* `dkgOutput` - the output of the DKG protocol of the `2pc-mpc` crate
 
 ### Sign a message
 
