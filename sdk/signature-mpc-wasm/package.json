@@ -3,7 +3,6 @@
 	"version": "0.1.0",
 	"description": "Signature MPC in WASM",
 	"type": "module",
-	"private": true,
 	"scripts": {
 		"build": "wasm-pack build --target nodejs --scope mysten",
 		"build:dev": "wasm-pack build --target nodejs --debug --scope mysten",
@@ -17,5 +16,11 @@
 		"typescript": "^5.1.6",
 		"vitest": "^0.33.0",
 		"wasm-pack": "^0.12.1"
+	},
+	"bugs": {
+		"url": "https://github.com/dwallet-labs/dwallet-network/issues/new"
+	},
+	"publishConfig": {
+		"access": "public"
 	}
 }
