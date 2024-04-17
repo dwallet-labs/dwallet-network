@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useSuiClient } from '@mysten/dapp-kit';
-import { SuiClient } from '@dwallet/dwallet.js/client';
+import { SuiClient } from '@dwallet-network/dwallet.js/client';
 import { useMemo } from 'react';
 
 import { useNetwork } from '~/context';

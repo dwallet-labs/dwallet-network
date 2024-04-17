@@ -5,8 +5,8 @@ import {
 	PaginatedObjectsResponse,
 	SuiObjectData,
 	SuiObjectDataOptions,
-} from '@dwallet/dwallet.js/client';
-import { TransactionArgument } from '@dwallet/dwallet.js/transactions';
+} from '@dwallet-network/dwallet.js/client';
+import { TransactionArgument } from '@dwallet-network/dwallet.js/transactions';
 
 import { ObjectArgument } from '.';
 

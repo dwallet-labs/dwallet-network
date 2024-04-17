@@ -4,7 +4,7 @@
 import { ImageIcon } from '_app/shared/image-icon';
 import { useCoinMetadata } from '@mysten/core';
 import { Sui, Unstaked } from '@mysten/icons';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const imageStyle = cva(['rounded-full flex'], {

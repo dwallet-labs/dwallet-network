@@ -3,8 +3,8 @@
 
 import 'tsconfig-paths/register';
 
-import { requestSuiFromFaucetV0 } from '@dwallet/dwallet.js/faucet';
-import { Ed25519Keypair } from '@dwallet/dwallet.js/keypairs/ed25519';
+import { requestSuiFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import * as bip39 from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
 

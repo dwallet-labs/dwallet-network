@@ -9,7 +9,7 @@ import {
 	validateEntropy,
 } from '_shared/utils/bip39';
 import { fromExportedKeypair } from '_shared/utils/from-exported-keypair';
-import { mnemonicToSeedHex, type ExportedKeypair, type Keypair } from '@dwallet/dwallet.js/cryptography';
+import { mnemonicToSeedHex, type ExportedKeypair, type Keypair } from '@dwallet-network/dwallet.js/cryptography';
 
 import { getFromLocalStorage } from '../storage-utils';
 

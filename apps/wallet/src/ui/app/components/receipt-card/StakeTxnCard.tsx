@@ -15,8 +15,8 @@ import {
 	useGetTimeBeforeEpochNumber,
 	useGetValidatorsApy,
 } from '@mysten/core';
-import type { SuiEvent } from '@dwallet/dwallet.js/client';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import type { SuiEvent } from '@dwallet-network/dwallet.js/client';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 
 import { Card } from '../../shared/transaction-summary/Card';
 

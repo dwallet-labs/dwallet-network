@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { formatAmount, formatDate } from '@mysten/core';
-import { type AllEpochsAddressMetrics } from '@dwallet/dwallet.js/client';
+import { type AllEpochsAddressMetrics } from '@dwallet-network/dwallet.js/client';
 import { Heading, LoadingIndicator, Text } from '@mysten/ui';
 import { ParentSize } from '@visx/responsive';
 import clsx from 'clsx';

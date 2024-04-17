@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@dwallet/dwallet.js/client';
-import { TransactionBlock } from '@dwallet/dwallet.js/transactions';
+import { getFullnodeUrl, SuiClient } from '@dwallet-network/dwallet.js/client';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { Mock } from 'vitest';
 

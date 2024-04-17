@@ -9,8 +9,8 @@ import {
 	validateEntropy,
 } from '_shared/utils/bip39';
 import { decrypt, encrypt } from '_src/shared/cryptography/keystore';
-import { mnemonicToSeedHex } from '@dwallet/dwallet.js/cryptography';
-import { Ed25519Keypair } from '@dwallet/dwallet.js/keypairs/ed25519';
+import { mnemonicToSeedHex } from '@dwallet-network/dwallet.js/cryptography';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
 import Dexie from 'dexie';

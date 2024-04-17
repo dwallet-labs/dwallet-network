@@ -7,7 +7,7 @@ import {
 	useFormatCoin,
 	useResolveSuiNSName,
 } from '@mysten/core';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 import { Heading, Text } from '@mysten/ui';
 
 import { CopyToClipboard } from '~/ui/CopyToClipboard';

@@ -1,5 +1,5 @@
 import { ConnectButton, useCurrentAccount } from "@mysten/dapp-kit";
-import { isValidSuiObjectId } from "@dwallet/dwallet.js/utils";
+import { isValidSuiObjectId } from "@dwallet-network/dwallet.js/utils";
 import { Box, Container, Flex, Heading } from "@radix-ui/themes";
 import { useState } from "react";
 import { Counter } from "./Counter";

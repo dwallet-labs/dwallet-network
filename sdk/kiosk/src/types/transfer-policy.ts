@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type ObjectOwner } from '@dwallet/dwallet.js/client';
-import { TransactionObjectArgument, type TransactionBlock } from '@dwallet/dwallet.js/transactions';
+import { type ObjectOwner } from '@dwallet-network/dwallet.js/client';
+import { TransactionObjectArgument, type TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 
 import { ObjectArgument } from '.';
 

@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { type MoveCallMetric } from '@dwallet/dwallet.js/client';
+import { type MoveCallMetric } from '@dwallet-network/dwallet.js/client';
 import { Text } from '@mysten/ui';
 import { useMemo } from 'react';
 

@@ -4,8 +4,8 @@ import {
 	type DryRunTransactionBlockResponse,
 	type ObjectOwner,
 	type SuiTransactionBlockResponse,
-} from '@dwallet/dwallet.js/client';
-import { normalizeSuiObjectId, parseStructTag } from '@dwallet/dwallet.js/utils';
+} from '@dwallet-network/dwallet.js/client';
+import { normalizeSuiObjectId, parseStructTag } from '@dwallet-network/dwallet.js/utils';
 
 export type BalanceChange = {
 	coinType: string;

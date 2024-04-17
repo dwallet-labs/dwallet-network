@@ -7,8 +7,8 @@ import {
 	SuiObjectData,
 	SuiObjectDataFilter,
 	SuiObjectResponse,
-} from '@dwallet/dwallet.js/client';
-import { isValidSuiAddress } from '@dwallet/dwallet.js/utils';
+} from '@dwallet-network/dwallet.js/client';
+import { isValidSuiAddress } from '@dwallet-network/dwallet.js/utils';
 
 import {
 	FetchKioskOptions,

@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient } from '@dwallet/dwallet.js/client';
-import { isValidSuiAddress } from '@dwallet/dwallet.js/utils';
+import { SuiClient } from '@dwallet-network/dwallet.js/client';
+import { isValidSuiAddress } from '@dwallet-network/dwallet.js/utils';
 
 import { bcs } from '../bcs';
 import {

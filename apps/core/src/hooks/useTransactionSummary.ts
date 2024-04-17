@@ -3,7 +3,7 @@
 import {
 	DryRunTransactionBlockResponse,
 	type SuiTransactionBlockResponse,
-} from '@dwallet/dwallet.js/client';
+} from '@dwallet-network/dwallet.js/client';
 import { useMemo } from 'react';
 
 import { getBalanceChangeSummary } from '../utils/transaction/getBalanceChangeSummary';

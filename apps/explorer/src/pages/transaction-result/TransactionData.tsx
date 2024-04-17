@@ -5,7 +5,7 @@ import { useTransactionSummary } from '@mysten/core';
 import {
 	type ProgrammableTransaction,
 	type SuiTransactionBlockResponse,
-} from '@dwallet/dwallet.js/client';
+} from '@dwallet-network/dwallet.js/client';
 
 import { TransactionDetailCard } from './transaction-summary/TransactionDetailCard';
 import { GasBreakdown } from '~/components/GasBreakdown';

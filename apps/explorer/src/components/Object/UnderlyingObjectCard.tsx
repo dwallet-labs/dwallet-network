@@ -7,7 +7,7 @@ import { LoadingIndicator } from '@mysten/ui';
 import { FieldItem } from './FieldItem';
 import { Banner } from '~/ui/Banner';
 
-import type { DynamicFieldName } from '@dwallet/dwallet.js/client';
+import type { DynamicFieldName } from '@dwallet-network/dwallet.js/client';
 
 interface UnderlyingObjectCardProps {
 	parentId: string;

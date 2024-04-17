@@ -4,8 +4,8 @@ import {
   useSuiClient,
   useSuiClientQuery,
 } from "@mysten/dapp-kit";
-import { SuiObjectData } from "@dwallet/dwallet.js/client";
-import { TransactionBlock } from "@dwallet/dwallet.js/transactions";
+import { SuiObjectData } from "@dwallet-network/dwallet.js/client";
+import { TransactionBlock } from "@dwallet-network/dwallet.js/transactions";
 import { Button, Flex, Heading, Text } from "@radix-ui/themes";
 import { useNetworkVariable } from "./networkConfig";
 

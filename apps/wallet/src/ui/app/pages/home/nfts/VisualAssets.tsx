@@ -8,7 +8,7 @@ import { Button } from '_src/ui/app/shared/ButtonUI';
 import { getKioskIdFromOwnerCap, isKioskOwnerToken } from '@mysten/core';
 import { useKioskClient } from '@mysten/core/src/hooks/useKioskClient';
 import { EyeClose16 } from '@mysten/icons';
-import { type SuiObjectData } from '@dwallet/dwallet.js/client';
+import { type SuiObjectData } from '@dwallet-network/dwallet.js/client';
 import { Link } from 'react-router-dom';
 
 import { useHiddenAssets } from '../hidden-assets/HiddenAssetsProvider';

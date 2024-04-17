@@ -24,7 +24,7 @@
 	"license": "BSD-3-Clause-Clear",
 	"dependencies": {
 		"@mysten/dapp-kit": "workspace:*",
-		"@dwallet/dwallet.js": "workspace:*",
+		"@dwallet-network/dwallet.js": "workspace:*",
 		"@tanstack/react-query": "^5.0.0",
 		"@types/node": "^20.4.2",
 		"next": "^13.4.15",

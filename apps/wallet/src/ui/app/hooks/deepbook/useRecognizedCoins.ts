@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useDeepBookConfigs } from '_app/hooks/deepbook/useDeepBookConfigs';
 import { useDeepBookContext } from '_shared/deepBook/context';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 
 export function useRecognizedCoins() {
 	const coinsMap = useDeepBookContext().configs.coinsMap;

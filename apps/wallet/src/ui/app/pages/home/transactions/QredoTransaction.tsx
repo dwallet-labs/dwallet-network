@@ -7,8 +7,8 @@ import { TxnIcon } from '_src/ui/app/components/transactions-card/TxnIcon';
 import { useGetQredoTransaction } from '_src/ui/app/hooks/useGetQredoTransaction';
 import { Text } from '_src/ui/app/shared/text';
 import { formatDate, useOnScreen } from '@mysten/core';
-import { IntentScope } from '@dwallet/dwallet.js/cryptography';
-import { fromB64 } from '@dwallet/dwallet.js/utils';
+import { IntentScope } from '@dwallet-network/dwallet.js/cryptography';
+import { fromB64 } from '@dwallet-network/dwallet.js/utils';
 import { useMemo, useRef } from 'react';
 
 export type QredoTransactionProps = {

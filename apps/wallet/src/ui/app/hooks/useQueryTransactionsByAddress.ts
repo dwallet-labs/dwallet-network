@@ -4,7 +4,7 @@
 import { FEATURES } from '_src/shared/experimentation/features';
 import { useFeatureValue } from '@growthbook/growthbook-react';
 import { useSuiClient } from '@mysten/dapp-kit';
-import { type SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
+import { type SuiTransactionBlockResponse } from '@dwallet-network/dwallet.js/client';
 import { useQuery } from '@tanstack/react-query';
 
 export function useQueryTransactionsByAddress(address: string | null) {

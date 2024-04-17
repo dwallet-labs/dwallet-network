@@ -4,7 +4,7 @@
 export { computeZkLoginAddress, jwtToAddress } from './address.js';
 export type { ComputeZkLoginAddressOptions } from './address.js';
 
-export { getZkLoginSignature } from '@dwallet/dwallet.js/zklogin';
+export { getZkLoginSignature } from '@dwallet-network/dwallet.js/zklogin';
 
 export { poseidonHash } from './poseidon.js';
 

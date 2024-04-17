@@ -4,8 +4,8 @@
 import ExplorerLink from '_src/ui/app/components/explorer-link';
 import { ExplorerLinkType } from '_src/ui/app/components/explorer-link/ExplorerLinkType';
 import { Text } from '_src/ui/app/shared/text';
-import { type SuiObjectData } from '@dwallet/dwallet.js/client';
-import { formatAddress, parseStructTag } from '@dwallet/dwallet.js/utils';
+import { type SuiObjectData } from '@dwallet-network/dwallet.js/client';
+import { formatAddress, parseStructTag } from '@dwallet-network/dwallet.js/utils';
 
 export default function NonVisualAssets({ items }: { items: SuiObjectData[] }) {
 	return (

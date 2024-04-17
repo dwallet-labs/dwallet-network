@@ -3,13 +3,13 @@
 
 import { isSuiNSName, useSuiNSEnabled } from '@mysten/core';
 import { useSuiClientQuery, useSuiClient } from '@mysten/dapp-kit';
-import { type SuiClient, type SuiSystemStateSummary } from '@dwallet/dwallet.js/client';
+import { type SuiClient, type SuiSystemStateSummary } from '@dwallet-network/dwallet.js/client';
 import {
 	isValidTransactionDigest,
 	isValidSuiAddress,
 	isValidSuiObjectId,
 	normalizeSuiObjectId,
-} from '@dwallet/dwallet.js/utils';
+} from '@dwallet-network/dwallet.js/utils';
 import { useQuery } from '@tanstack/react-query';
 
 const isGenesisLibAddress = (value: string): boolean => /^(0x|0X)0{0,39}[12]$/.test(value);

@@ -3,7 +3,7 @@
 
 import { decrypt, encrypt } from '_src/shared/cryptography/keystore';
 import { fromExportedKeypair } from '_src/shared/utils/from-exported-keypair';
-import { type ExportedKeypair } from '@dwallet/dwallet.js/cryptography';
+import { type ExportedKeypair } from '@dwallet-network/dwallet.js/cryptography';
 
 import {
 	Account,

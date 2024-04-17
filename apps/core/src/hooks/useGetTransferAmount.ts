@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import { SuiTransactionBlockResponse } from '@dwallet-network/dwallet.js/client';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 import { useMemo } from 'react';
 
 import { getTotalGasUsed } from '../utils/transaction';

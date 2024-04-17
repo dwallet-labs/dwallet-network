@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { PublicKey } from '@dwallet/dwallet.js/cryptography';
-import type { ZkLoginSignatureInputs } from '@dwallet/dwallet.js/zklogin';
+import type { PublicKey } from '@dwallet-network/dwallet.js/cryptography';
+import type { ZkLoginSignatureInputs } from '@dwallet-network/dwallet.js/zklogin';
 
 import type { AuthProvider } from '../EnokiFlow.js';
 

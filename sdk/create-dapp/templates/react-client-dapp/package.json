@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@mysten/dapp-kit": "workspace:*",
-    "@dwallet/dwallet.js": "workspace:*",
+    "@dwallet-network/dwallet.js": "workspace:*",
     "@radix-ui/colors": "^3.0.0",
     "@radix-ui/react-icons": "^1.3.0",
     "@radix-ui/themes": "^2.0.0",

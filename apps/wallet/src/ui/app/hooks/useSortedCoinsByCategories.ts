@@ -3,8 +3,8 @@
 
 import { usePinnedCoinTypes } from '_app/hooks/usePinnedCoinTypes';
 import { useRecognizedPackages } from '_app/hooks/useRecognizedPackages';
-import { type CoinBalance as CoinBalanceType } from '@dwallet/dwallet.js/client';
-import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
+import { type CoinBalance as CoinBalanceType } from '@dwallet-network/dwallet.js/client';
+import { SUI_TYPE_ARG } from '@dwallet-network/dwallet.js/utils';
 import { useMemo } from 'react';
 
 function sortCoins(balances: CoinBalanceType[]) {

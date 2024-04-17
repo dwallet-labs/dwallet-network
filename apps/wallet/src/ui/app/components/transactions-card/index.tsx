@@ -6,7 +6,7 @@ import { Text } from '_app/shared/text';
 import { useGetTxnRecipientAddress } from '_hooks';
 import { useRecognizedPackages } from '_src/ui/app/hooks/useRecognizedPackages';
 import { getLabel, useTransactionSummary } from '@mysten/core';
-import type { SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
+import type { SuiTransactionBlockResponse } from '@dwallet-network/dwallet.js/client';
 import { Link } from 'react-router-dom';
 
 import { TxnTypeLabel } from './TxnActionLabel';

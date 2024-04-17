@@ -5,7 +5,7 @@ import type {
 	ExecuteTransactionRequestType,
 	SuiTransactionBlockResponse,
 	SuiTransactionBlockResponseOptions,
-} from '@dwallet/dwallet.js/client';
+} from '@dwallet-network/dwallet.js/client';
 
 import type { SuiSignTransactionBlockInput } from './suiSignTransactionBlock';
 

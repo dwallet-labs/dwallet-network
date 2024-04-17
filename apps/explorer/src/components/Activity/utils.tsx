@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type EpochMetricsPage } from '@dwallet/dwallet.js/client';
+import { type EpochMetricsPage } from '@dwallet-network/dwallet.js/client';
 import { Text } from '@mysten/ui';
 
 import { SuiAmount } from '../Table/SuiAmount';

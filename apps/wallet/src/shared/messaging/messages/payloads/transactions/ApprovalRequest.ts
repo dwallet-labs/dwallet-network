@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type SignedTransaction } from '_src/ui/app/WalletSigner';
-import type { SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
+import type { SuiTransactionBlockResponse } from '@dwallet-network/dwallet.js/client';
 import {
 	type SuiSignAndExecuteTransactionBlockInput,
 	type SuiSignMessageOutput,

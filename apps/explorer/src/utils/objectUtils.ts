@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type ObjectOwner, type SuiObjectResponse } from '@dwallet/dwallet.js/client';
+import { type ObjectOwner, type SuiObjectResponse } from '@dwallet-network/dwallet.js/client';
 
 import { findIPFSvalue } from './stringUtils';
 

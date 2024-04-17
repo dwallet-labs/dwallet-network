@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useSuiClient } from '@mysten/dapp-kit';
-import { type CheckpointPage } from '@dwallet/dwallet.js/client';
+import { type CheckpointPage } from '@dwallet-network/dwallet.js/client';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 
 export const DEFAULT_CHECKPOINTS_LIMIT = 20;

@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@dwallet/dwallet.js/client';
-import { TransactionBlock } from '@dwallet/dwallet.js/transactions';
+import { getFullnodeUrl, SuiClient } from '@dwallet-network/dwallet.js/client';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 import { useState } from 'react';
 
 import { useAuthCallback, useEnokiFlow, useZkLogin } from '../src/react.tsx';

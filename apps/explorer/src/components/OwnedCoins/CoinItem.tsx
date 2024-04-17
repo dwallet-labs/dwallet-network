@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useFormatCoin } from '@mysten/core';
-import { type CoinStruct } from '@dwallet/dwallet.js/client';
+import { type CoinStruct } from '@dwallet-network/dwallet.js/client';
 import { Text } from '@mysten/ui';
 
 import { ObjectLink } from '~/ui/InternalLink';

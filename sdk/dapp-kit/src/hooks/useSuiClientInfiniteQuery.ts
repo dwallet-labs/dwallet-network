@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@dwallet/dwallet.js/client';
+import type { SuiClient } from '@dwallet-network/dwallet.js/client';
 import type {
 	InfiniteData,
 	UseInfiniteQueryOptions,

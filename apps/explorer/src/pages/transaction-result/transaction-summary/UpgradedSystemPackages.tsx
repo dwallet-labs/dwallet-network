@@ -7,7 +7,7 @@ import { ObjectLink } from '~/ui/InternalLink';
 import { CollapsibleCard } from '~/ui/collapsible/CollapsibleCard';
 import { CollapsibleSection } from '~/ui/collapsible/CollapsibleSection';
 
-import type { OwnedObjectRef } from '@dwallet/dwallet.js/client';
+import type { OwnedObjectRef } from '@dwallet-network/dwallet.js/client';
 
 export function UpgradedSystemPackages({ data }: { data: OwnedObjectRef[] }) {
 	if (!data?.length) return null;

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { PublicKey } from '@dwallet/dwallet.js/cryptography';
+import type { PublicKey } from '@dwallet-network/dwallet.js/cryptography';
 
 import { poseidonHash } from './poseidon.js';
 

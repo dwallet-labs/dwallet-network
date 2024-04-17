@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@dwallet/dwallet.js/client';
-import { Ed25519Keypair } from '@dwallet/dwallet.js/keypairs/ed25519';
+import type { SuiClient } from '@dwallet-network/dwallet.js/client';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import type {
 	StandardConnectFeature,
 	StandardConnectMethod,
