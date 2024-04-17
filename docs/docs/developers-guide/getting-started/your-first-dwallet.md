@@ -76,18 +76,25 @@ You can also use dWallets via the dWallet TypeScript-SDK.
 
 It is based on the [Sui TypeScript SDK](https://sdk.mystenlabs.com/typescript). Therefore, we suggest you go over their documentation first.
 
+### Prerequisites
 First, import the relevant packages
 ```typescript
-import { beforeAll, describe, it } from 'vitest';
-import { setup, TestToolbox } from './utils/setup';
-import {createDWallet, createSignMessages, approveAndSign} from "../../src/signature-mpc";
+import { getFullnodeUrl, SuiClient } from '@dwallet-network/dwallet.js/client';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
+import {createDWallet, createSignMessages, approveAndSign} from "@dwallet-network/dwallet.js/signature-mpc";
 ```
+
+To create a dWallet, you have to provide `keypair` and `client` objects. 
+```typescript
+// create a new SuiClient object pointing to the network you want to use
+const client = new SuiClient({ url: 'http://fullnode.alpha.testnet.dwallet.cloud:9000' });
+const keypair = new Ed25519Keypair();
+```
+To read more, refer to [Sui TypeScript SDK documentation](https://sdk.mystenlabs.com/typescript).
 
 ### Create a dWallet
 
-To create a dWallet, you have to provide `keypair` and `client` objects. To generate these parameters, please refer to [Sui TypeScript SDK documentation](https://sdk.mystenlabs.com/typescript).
-
-Then you call the `createDWallet()` function in the following way:
+Call the `createDWallet()` function in the following way after you generated `keypair` and `client` parameters [above](#prerequisites):
 ```typescript
 const dkg = await createDWallet(keypair, client);
 ```

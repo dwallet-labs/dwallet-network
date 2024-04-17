@@ -113,8 +113,8 @@ const sidebars = {
 				},
 				{
 					type: 'category',
-					label: 'Control dWallets from other networks',
-					collapsed: false,
+					label: 'dWallet Multi-Chain Control',
+					collapsed: true,
 					items: [
 						{
 							type: 'doc',
@@ -124,7 +124,7 @@ const sidebars = {
 						{
 							type: 'doc',
 							label: 'Control a dWallet on Ethereum',
-							id: 'developers-guide/lightclients/sui-lightclient',
+							id: 'developers-guide/lightclients/ether-lightclient',
 						},
 					],
 				},
