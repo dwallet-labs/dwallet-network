@@ -1,28 +1,27 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import {SuiClient} from "../client";
-import {Keypair} from "../cryptography";
-import {TransactionBlock} from "../builder";
 import {
 	finalize_dkg,
 	finalize_presign,
 	initiate_dkg,
 	initiate_presign,
 	initiate_sign,
-} from '@dwallet-network/signature-mpc-wasm/pkg';
-import {bcs} from "../bcs";
-import {fetchObjectBySessionId} from "./utils";
+} from '@dwallet-network/signature-mpc-wasm/signature_mpc_wasm';
+import { bcs } from "../bcs";
+import { fetchObjectBySessionId } from "./utils";
+import { TransactionBlock } from '../builder';
+import { SuiClient } from '../client';
+import { Keypair } from '../cryptography';
 
-const packageId = "0x3";
-const dWallet2PCMPCECDSAK1ModuleName = "dwallet_2pc_mpc_ecdsa_k1";
+const packageId = '0x3';
+const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
 export async function createDWallet(keypair: Keypair, client: SuiClient) {
-
 	const resultDKG = initiate_dkg();
 
-	const commitmentToSecretKeyShare = resultDKG["commitment_to_secret_key_share"];
-	const decommitmentRoundPartyState = resultDKG["decommitment_round_party_state"];
+	const commitmentToSecretKeyShare = resultDKG['commitment_to_secret_key_share'];
+	const decommitmentRoundPartyState = resultDKG['decommitment_round_party_state'];
 
 	const tx = new TransactionBlock();
 	tx.moveCall({
@@ -66,8 +65,8 @@ export async function createDWallet(keypair: Keypair, client: SuiClient) {
 
 		if(dwalletObject.data?.content?.dataType == "moveObject") {
 			// @ts-ignore
-			const dwalletCapId = dwalletObject.data?.content?.fields["dwallet_cap_id"];
-			return { dwalletId: dwalletRef?.objectId, dkgOutput: final["dkg_output"], dwalletCapId };
+			const dwalletCapId = dwalletObject.data?.content?.fields['dwallet_cap_id'];
+			return { dwalletId: dwalletRef?.objectId, dkgOutput: final['dkg_output'], dwalletCapId };
 
 		}
 
@@ -87,8 +86,10 @@ export async function createSignMessages(dwalletId: string, dkgOutput: number[],
 
 	const resultPresign = initiate_presign(Uint8Array.of(...dkgOutput), messages.length);
 
-	const nonceSharesCommitmentsAndBatchedProof = resultPresign["nonce_shares_commitments_and_batched_proof"];
-	const signatureNonceSharesAndCommitmentRandomnesses = resultPresign["signature_nonce_shares_and_commitment_randomnesses"];
+	const nonceSharesCommitmentsAndBatchedProof =
+		resultPresign['nonce_shares_commitments_and_batched_proof'];
+	const signatureNonceSharesAndCommitmentRandomnesses =
+		resultPresign['signature_nonce_shares_and_commitment_randomnesses'];
 
 	const hashNum = hashToNumber(hash);
 
@@ -134,7 +135,7 @@ export async function createSignMessages(dwalletId: string, dkgOutput: number[],
 				transactionBlock: txFinal,
 				options: {
 					showEffects: true,
-					showObjectChanges: true
+					showObjectChanges: true,
 				},
 			});
 

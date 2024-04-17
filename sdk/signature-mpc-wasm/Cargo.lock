@@ -890,7 +890,7 @@ dependencies = [
 
 [[package]]
 name = "signature-mpc-wasm"
-version = "0.1.0"
+version = "0.1.4"
 dependencies = [
  "bcs",
  "getrandom",

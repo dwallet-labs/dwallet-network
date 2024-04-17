@@ -1416,7 +1416,7 @@ importers:
     dependencies:
       '@dwallet-network/signature-mpc-wasm':
         specifier: workspace:*
-        version: link:../signature-mpc-wasm
+        version: link:../signature-mpc-wasm/pkg
       '@mysten/bcs':
         specifier: workspace:*
         version: link:../bcs
