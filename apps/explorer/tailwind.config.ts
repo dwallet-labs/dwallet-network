@@ -11,8 +11,7 @@ const config: Config = {
 		extend: {
 			width: {
 				'112': '28rem',
-				'120': '30rem',
-				'128': '32rem', // Adds w-128 with a value of 32rem
+				'128': '32rem',
 			},
 		},
 	},
