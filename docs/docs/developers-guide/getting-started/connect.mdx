@@ -81,7 +81,7 @@ dwallet client envs
 ```
 
 The command outputs the available environment aliases, with `(active)` denoting the currently active network.
-```sh
+```shell
 ╭───────┬───────────────────────┬────────╮
 │ alias │ url                   │ active │
 ├───────┼───────────────────────┼────────┤
@@ -103,7 +103,7 @@ dwallet client new-env --alias testnet --rpc http://fullnode.alpha.testnet.dwall
 ```
 
 Then when you run ```dwallet client envs``` you will see the new env
-```
+```shell
 ╭─────────┬──────────────────────────────────────────────────┬────────╮
 │ alias   │ url                                              │ active │
 ├─────────┼──────────────────────────────────────────────────┼────────┤
@@ -127,7 +127,7 @@ dwallet client switch --env testnet
 ```
 
 Then when you run ```dwallet client envs``` you will see the active env is now testnet
-```
+```shell
 ╭─────────┬──────────────────────────────────────────────────┬────────╮
 │ alias   │ url                                              │ active │
 ├─────────┼──────────────────────────────────────────────────┼────────┤
