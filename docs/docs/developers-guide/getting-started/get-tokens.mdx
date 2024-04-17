@@ -6,13 +6,15 @@ dWallet faucet is a helpful tool where dWallet developers can get free test DWLT
 
 ## Prerequisites
 
-To request tokens from the faucet, you must own a dWallet Account address that can receive the DWALT tokens.
+To request tokens from the faucet, you must own a DWLT Address that can receive the DWLT tokens.
 
-## Find your dWallet Account address
-When a dWallet Client connects to the network, it has an account address. You can see it running the following command:
+## Find your DWLT Address
+You can see it running the following command:
 ```
 dwallet client active-address
 ```
+
+You can also [create a new DWLT Address](./get-address).
 
 ## Request test tokens through cURL
 
@@ -23,7 +25,7 @@ curl --location --request POST 'http://faucet.alpha.testnet.dwallet.cloud/gas' \
 --header 'Content-Type: application/json' \
 --data-raw '{
     "FixedAmountRequest": {
-        "recipient": "<YOUR DWALLET ACCOUNT ADDRESS>"
+        "recipient": "<YOUR DWLT ACCOUNT ADDRESS>"
     }
 }'
 ```

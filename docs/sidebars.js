@@ -23,7 +23,7 @@ const sidebars = {
 		{
 			type: 'category',
 			label: 'Core Concepts',
-			collapsed: false,
+			collapsed: true,
 			items: [
 				'core-concepts/multi-chain-vs-cross-chain',
 				'core-concepts/composable-modular-networks',
@@ -40,57 +40,57 @@ const sidebars = {
 		},
 		{
 			type: 'category',
-			label: 'Getting Started',
-			collapsed: false,
+			label: 'Developers Guide',
+			collapsed: true,
 			items: [
 				{
-					type: 'doc',
-					label: 'dWallet Environment Setup',
-					id: 'getting-started/guides/developers-guide/dwallet-network-environment',
-				},
-				{
-					type: 'doc',
-					label: 'Install dWallet',
-					id: 'getting-started/guides/developers-guide/install-dwallet',
-				},
-				{
-					type: 'doc',
-					label: 'Connect to a dWallet Network',
-					id: 'getting-started/guides/developers-guide/connect',
-				},
-				{
-					type: 'doc',
-					label: 'Connect to a Local Network',
-					id: 'getting-started/guides/developers-guide/local-network',
-				},
-				{
-					type: 'doc',
-					label: 'Get DWLT Tokens',
-					id: 'getting-started/guides/developers-guide/get-tokens',
-				},
-				{
-					type: 'doc',
-					label: 'Your First dWallet',
-					id: 'getting-started/guides/developers-guide/your-first-dwallet',
-				},
-				{
 					type: 'category',
-					label: 'Guides - Coming Soon',
+					label: 'Getting Started',
 					collapsed: false,
 					items: [
 						{
 							type: 'doc',
-							label: 'Developers Guides',
-							id: 'getting-started/guides/developers-guide',
+							label: 'dWallet Environment Setup',
+							id: 'developers-guide/getting-started/dwallet-network-environment',
 						},
 						{
 							type: 'doc',
-							label: 'Operators Guides',
-							id: 'getting-started/guides/operators-guide',
+							label: 'Install dWallet',
+							id: 'developers-guide/getting-started/install-dwallet',
+						},
+						{
+							type: 'doc',
+							label: 'Get DWLT Address',
+							id: 'developers-guide/getting-started/get-address',
+						},
+						{
+							type: 'doc',
+							label: 'Connect to a dWallet Network',
+							id: 'developers-guide/getting-started/connect',
+						},
+						{
+							type: 'doc',
+							label: 'Connect to a Local Network',
+							id: 'developers-guide/getting-started/local-network',
+						},
+						{
+							type: 'doc',
+							label: 'Get DWLT Tokens',
+							id: 'developers-guide/getting-started/get-tokens',
+						},
+						{
+							type: 'doc',
+							label: 'Your First dWallet',
+							id: 'developers-guide/getting-started/your-first-dwallet',
 						},
 					],
 				},
 			],
+		},
+		{
+			type: 'doc',
+			label: 'Operators Guide - Coming Soon',
+			id: 'operators-guide',
 		},
 		{
 			type: 'doc',

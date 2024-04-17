@@ -1,6 +1,6 @@
 # Your First dWallet
 
-Before you can create your first dApp, you must have [dWallet installed](./install-dwallet.mdx) and that you have [DWLT gas supply](./get-tokens).
+Before you can create your first dApp, you must have [dWallet installed](install-dwallet.mdx) and that you have [DWLT gas supply](./get-tokens).
 
 ## Using the dWallet Client CLI
 ### Create a dWallet
@@ -37,7 +37,7 @@ This will result the following response:
 ╭─────────────────────────────────────────────────────────────────────────────────────╮
 │ Created new dwallet and saved its secret share.                                     │
 ├────────────────┬────────────────────────────────────────────────────────────────────┤
-│ alias          │ dwallet1                                                               │
+│ alias          │ dwallet1                                                           │
 │ dwallet_id     │ 0x1e054b68253a74c29eed46dd7b54b4cf2fb0b336dbb6eb726cec976b1ddd3a05 │
 │ dwallet_cap_id │ 0xff8852ed8208be36cffb001a61025942afce679100e044b28bd0e5e0727b069f │
 ╰────────────────┴────────────────────────────────────────────────────────────────────╯
@@ -99,6 +99,8 @@ The object returned as a result from the `createDWallet()` function, contains:
 
 ### Sign a message
 
+To create a dWallet, you have to provide `keypair` and `client` objects as provided for the `createDWallet()` function.
+
 Let's say we want to sign the message `"dWallets are coming..."`, we encode the message:
 ```typescript
 const bytes: Uint8Array = new TextEncoder().encode("dWallets are coming...");
@@ -106,14 +108,14 @@ const bytes: Uint8Array = new TextEncoder().encode("dWallets are coming...");
 
 Then, sign this encoded message using `sha2` (e.g. for Bitcoin):
 ```typescript
-const signMessagesIdSHA256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgOutput, [bytes], "SHA256", toolbox.keypair, toolbox.client);
-const sigSHA256 = await approveAndSign(dkg?.dwalletCapId!, signMessagesIdSHA256!, [bytes], toolbox.keypair, toolbox.client);
+const signMessagesIdSHA256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgOutput, [bytes], "SHA256", keypair, client);
+const sigSHA256 = await approveAndSign(dkg?.dwalletCapId!, signMessagesIdSHA256!, [bytes], keypair, client);
 ```
 
 You can also sign using `sha3` (e.g. for Ethereum):
 ```typescript
-const signMessagesIdKECCAK256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgOutput, [bytes], "KECCAK256", toolbox.keypair, toolbox.client);
-const sigKECCAK256 = await approveAndSign(dkg?.dwalletCapId!, signMessagesIdKECCAK256!, [bytes], toolbox.keypair, toolbox.client);
+const signMessagesIdKECCAK256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgOutput, [bytes], "KECCAK256", keypair, client);
+const sigKECCAK256 = await approveAndSign(dkg?.dwalletCapId!, signMessagesIdKECCAK256!, [bytes], keypair, client);
 ```
 
 ### TypeScript SDK Examples

@@ -171,6 +171,34 @@ The response resembles the following, but with different IDs:
 ╰────────────────────────────────────────────────────────────────────┴────────────╯
 ```
 
+[//]: # (## Install dWallet Network Explorer locally)
+
+[//]: # ()
+[//]: # (To install and use the apps locally, you must first install [pnpm]&#40;https://pnpm.io/installation&#41;. Use the instructions appropriate for your operating system.)
+
+[//]: # ()
+[//]: # (After you install `pnpm`, use the following command to install the required dependencies in your workspace &#40;[run from the dwallet-network root directory]&#40;./dwallet-network-environment.mdx&#41;&#41;:)
+
+[//]: # ()
+[//]: # (```shell)
+
+[//]: # (pnpm install)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (After the installation completes, run the following command to install dWallet Network Explorer:)
+
+[//]: # ()
+[//]: # (```shell)
+
+[//]: # (pnpm turbo build)
+
+[//]: # (```)
+
+[//]: # ()
+[//]: # (If you encounter an error from turbo build, confirm that there is no `package-lock.json`. If the file exists, remove it and then run the command again.)
+
 ### Set up dWallet Network Explorer on your local network
 
 To connect the live dWallet Network Explorer to your local network, open the URL:[http://explorer.alpha.testnet.dwallet.cloud/](http://explorer.alpha.testnet.dwallet.cloud/). The live version of dWallet Network Explorer may not include recent updates added to the `main` branch of the dWallet Network repo. To use dWallet Network Explorer that includes the most recent updates, install and run dWallet Network Explorer from your local clone of the dWallet Network repo.
@@ -186,3 +214,42 @@ pnpm explorer dev
 After the command completes, open your local dWallet Network Explorer at the following URL: [http://localhost:3000/](http://localhost:3000/).
 
 For more details about dWallet Network Explorer, see the [Explorer README](https://github.com/dwallet-labs/dwallet-network/blob/main/apps/explorer/README.md#set-up).
+
+[//]: # (# TODO: remove???)
+
+[//]: # (## Generate example data ?????)
+
+[//]: # ()
+[//]: # (Use the TypeScript SDK to add example data to your network.)
+
+[//]: # ()
+[//]: # (**Note:** To run the command you must complete the `Pre-requisites for Building Apps locally` section first.)
+
+[//]: # ()
+[//]: # (Run the following command from the `dwallet-network` root folder:)
+
+[//]: # ()
+[//]: # (```bash)
+
+[//]: # (pnpm --filter @mysten/sui.js test:e2e)
+
+[//]: # ()
+[//]: # (For additional information about example data for testing, see [https://github.com/MystenLabs/sui/tree/main/sdk/typescript#testing]&#40;https://github.com/MystenLabs/sui/tree/main/sdk/typescript#testing&#41;.)
+
+[//]: # ()
+[//]: # (## Troubleshooting)
+
+[//]: # ()
+[//]: # (If you do not use [Node.js 18]&#40;https://nodejs.org/de/blog/announcements/v18-release-announce&#41;, you might see the following message:)
+
+[//]: # ()
+[//]: # (`Retrying requesting from faucet: Retry failed: fetch is not defined`)
+
+[//]: # ()
+[//]: # (To resolve this, switch or update to Node.js 18 and then try again.)
+
+[//]: # ()
+[//]: # (## Test with the Sui TypeScript SDK)
+
+[//]: # ()
+[//]: # (The published version of the Sui TypeScript SDK might be an earlier version than the version of Sui you installed for your local network. To make sure you're using the latest version of the SDK, use the `experimental`-tagged version &#40;for example, `0.0.0-experimental-20230317184920`&#41; in the [Current Tags]&#40;https://www.npmjs.com/package/@mysten/sui.js/v/0.0.0-experimental-20230127130009?activeTab=versions&#41; section of the Sui NPM registry.)
