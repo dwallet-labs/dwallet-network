@@ -10,7 +10,7 @@ import {
 	type ExportedKeypair,
 	type PublicKey,
 	type SerializedSignature,
-} from '@mysten/sui.js/cryptography';
+} from '@dwallet/dwallet.js/cryptography';
 import { computeZkLoginAddress, genAddressSeed, getZkLoginSignature } from '@mysten/zklogin';
 import { blake2b } from '@noble/hashes/blake2b';
 import { decodeJwt } from 'jose';

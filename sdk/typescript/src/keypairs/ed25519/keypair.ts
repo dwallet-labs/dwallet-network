@@ -68,7 +68,7 @@ export class Ed25519Keypair extends Keypair {
 	 * flag byte after checking it is indeed the Ed25519 scheme flag 0x00 (See more
 	 * on flag for signature scheme: https://github.com/MystenLabs/sui/blob/818406c5abdf7de1b80915a0519071eec3a5b1c7/crates/sui-types/src/crypto.rs#L1650):
 	 * ```
-	 * import { Ed25519Keypair, fromB64 } from '@mysten/sui.js';
+	 * import { Ed25519Keypair, fromB64 } from '@dwallet/dwallet.js';
 	 * const raw = fromB64(t[1]);
 	 * if (raw[0] !== 0 || raw.length !== PRIVATE_KEY_SIZE + 1) {
 	 *   throw new Error('invalid key');

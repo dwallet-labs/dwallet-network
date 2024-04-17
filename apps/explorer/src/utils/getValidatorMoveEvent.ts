@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiEvent } from '@mysten/sui.js/client';
+import { type SuiEvent } from '@dwallet/dwallet.js/client';
 
 export function getValidatorMoveEvent(validatorsEvent: SuiEvent[], validatorAddress: string) {
 	const event = validatorsEvent.find(

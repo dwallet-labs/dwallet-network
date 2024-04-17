@@ -5,8 +5,8 @@ import {
 	PaginatedObjectsResponse,
 	SuiObjectData,
 	SuiObjectDataOptions,
-} from '@mysten/sui.js/client';
-import { TransactionArgument } from '@mysten/sui.js/transactions';
+} from '@dwallet/dwallet.js/client';
+import { TransactionArgument } from '@dwallet/dwallet.js/transactions';
 
 import { ObjectArgument } from '.';
 

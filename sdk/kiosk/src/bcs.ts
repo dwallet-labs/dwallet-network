@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui.js/bcs';
+import { bcs } from '@dwallet/dwallet.js/bcs';
 
 import {
 	KIOSK_PURCHASE_CAP,

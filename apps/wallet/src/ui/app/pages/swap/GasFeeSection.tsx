@@ -6,7 +6,7 @@ import { SUI_USDC_AVERAGE_CONVERSION_RATE, WALLET_FEES_PERCENTAGE } from '_pages
 import { getBalanceConversion, getUSDCurrency } from '_pages/swap/utils';
 import { GAS_TYPE_ARG } from '_redux/slices/sui-objects/Coin';
 import { useCoinMetadata, useFormatCoin } from '@mysten/core';
-import { SUI_TYPE_ARG } from '@mysten/sui.js/utils';
+import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
 import BigNumber from 'bignumber.js';
 import { useMemo } from 'react';
 

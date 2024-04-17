@@ -16,7 +16,7 @@ import { useUnlockedGuard } from '_src/ui/app/hooks/useUnlockedGuard';
 import PageTitle from '_src/ui/app/shared/PageTitle';
 import { useGetKioskContents } from '@mysten/core';
 import { ArrowRight16, ArrowUpRight12 } from '@mysten/icons';
-import { formatAddress } from '@mysten/sui.js/utils';
+import { formatAddress } from '@dwallet/dwallet.js/utils';
 import cl from 'clsx';
 import { Navigate, useSearchParams } from 'react-router-dom';
 

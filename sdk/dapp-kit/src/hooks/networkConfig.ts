@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClientOptions } from '@mysten/sui.js/client';
+import type { SuiClientOptions } from '@dwallet/dwallet.js/client';
 
 import { useSuiClientContext } from './useSuiClient.js';
 

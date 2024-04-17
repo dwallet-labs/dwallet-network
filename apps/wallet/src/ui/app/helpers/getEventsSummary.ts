@@ -8,7 +8,7 @@ export {};
 //     getTransferObjectEvent,
 //     isEventType,
 //     type TransactionEvents,
-// } from '@mysten/sui.js';
+// } from '@dwallet/dwallet.js';
 
 // export type CoinsMetaProps = {
 //     amount: number;

@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { SuiTransactionBlockResponse } from '@mysten/sui.js/client';
+import { SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
 
 // todo: add more logic for deriving transaction label
 export const getLabel = (transaction: SuiTransactionBlockResponse, currentAddress?: string) => {

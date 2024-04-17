@@ -5,7 +5,7 @@ import {
 	TransactionObjectArgument,
 	type TransactionArgument,
 	type TransactionBlock,
-} from '@mysten/sui.js/transactions';
+} from '@dwallet/dwallet.js/transactions';
 
 import * as kioskTx from '../tx/kiosk';
 import { convertToPersonalTx, transferPersonalCapTx } from '../tx/personal-kiosk';

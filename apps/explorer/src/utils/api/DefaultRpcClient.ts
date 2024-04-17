@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { SentryHttpTransport } from '@mysten/core';
-import { SuiClient, SuiHTTPTransport, getFullnodeUrl } from '@mysten/sui.js/client';
+import { SuiClient, SuiHTTPTransport, getFullnodeUrl } from '@dwallet/dwallet.js/client';
 
 export enum Network {
 	LOCAL = 'LOCAL',

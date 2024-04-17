@@ -30,9 +30,9 @@ import {
 } from '_src/shared/messaging/messages/payloads/QredoConnect';
 import { type SignedMessage, type SignedTransaction } from '_src/ui/app/WalletSigner';
 import type { AppDispatch } from '_store';
-import { type SuiTransactionBlockResponse } from '@mysten/sui.js/client';
-import { type SerializedSignature } from '@mysten/sui.js/cryptography';
-import { toB64 } from '@mysten/sui.js/utils';
+import { type SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
+import { type SerializedSignature } from '@dwallet/dwallet.js/cryptography';
+import { toB64 } from '@dwallet/dwallet.js/utils';
 import { type QueryKey } from '@tanstack/react-query';
 import { lastValueFrom, map, take } from 'rxjs';
 

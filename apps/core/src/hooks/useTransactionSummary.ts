@@ -3,7 +3,7 @@
 import {
 	DryRunTransactionBlockResponse,
 	type SuiTransactionBlockResponse,
-} from '@mysten/sui.js/client';
+} from '@dwallet/dwallet.js/client';
 import { useMemo } from 'react';
 
 import { getBalanceChangeSummary } from '../utils/transaction/getBalanceChangeSummary';

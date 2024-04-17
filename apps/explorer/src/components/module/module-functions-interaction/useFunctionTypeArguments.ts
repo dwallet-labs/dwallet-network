@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 
-import type { SuiMoveAbilitySet } from '@mysten/sui.js/client';
+import type { SuiMoveAbilitySet } from '@dwallet/dwallet.js/client';
 
 export function useFunctionTypeArguments(typeArguments: SuiMoveAbilitySet[]) {
 	return useMemo(

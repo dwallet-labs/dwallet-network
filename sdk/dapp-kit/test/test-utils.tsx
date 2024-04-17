@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
+import { getFullnodeUrl, SuiClient } from '@dwallet/dwallet.js/client';
 import type { IdentifierRecord, ReadonlyWalletAccount } from '@mysten/wallet-standard';
 import { getWallets } from '@mysten/wallet-standard';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

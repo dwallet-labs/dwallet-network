@@ -4,7 +4,7 @@
 import { useSuiClient } from '@mysten/dapp-kit';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 
-import { type PaginatedTransactionResponse, type TransactionFilter } from '@mysten/sui.js/client';
+import { type PaginatedTransactionResponse, type TransactionFilter } from '@dwallet/dwallet.js/client';
 
 export const DEFAULT_TRANSACTIONS_LIMIT = 20;
 

@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@mysten/sui.js/client';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
-import type { TransactionBlock } from '@mysten/sui.js/transactions';
-import { fromB64, toB64 } from '@mysten/sui.js/utils';
-import type { ZkLoginSignatureInputs } from '@mysten/sui.js/zklogin';
+import type { SuiClient } from '@dwallet/dwallet.js/client';
+import { Ed25519Keypair } from '@dwallet/dwallet.js/keypairs/ed25519';
+import type { TransactionBlock } from '@dwallet/dwallet.js/transactions';
+import { fromB64, toB64 } from '@dwallet/dwallet.js/utils';
+import type { ZkLoginSignatureInputs } from '@dwallet/dwallet.js/zklogin';
 import { decodeJwt } from 'jose';
 import type { WritableAtom } from 'nanostores';
 import { atom, onMount, onSet } from 'nanostores';

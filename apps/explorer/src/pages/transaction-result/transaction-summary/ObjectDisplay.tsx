@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type DisplayFieldsResponse } from '@mysten/sui.js/client';
+import { type DisplayFieldsResponse } from '@dwallet/dwallet.js/client';
 import { useState } from 'react';
 
 import { ObjectLink } from '~/ui/InternalLink';

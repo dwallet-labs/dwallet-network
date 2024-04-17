@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFaucetRequestStatus, requestSuiFromFaucetV1 } from '@mysten/sui.js/faucet';
+import { getFaucetRequestStatus, requestSuiFromFaucetV1 } from '@dwallet/dwallet.js/faucet';
 import { useIsMutating, useMutation, type UseMutationOptions } from '@tanstack/react-query';
 
 import { useActiveAccount } from '../../hooks/useActiveAccount';

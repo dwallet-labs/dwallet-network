@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiMoveObject, SuiObjectData } from '@mysten/sui.js/client';
+import type { SuiMoveObject, SuiObjectData } from '@dwallet/dwallet.js/client';
 
 const COIN_TYPE = '0x2::coin::Coin';
 const COIN_TYPE_ARG_REGEX = /^0x2::coin::Coin<(.+)>$/;

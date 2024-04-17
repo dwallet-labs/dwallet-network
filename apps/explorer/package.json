@@ -33,7 +33,7 @@
 		"@mysten/core": "workspace:*",
 		"@mysten/dapp-kit": "workspace:*",
 		"@mysten/icons": "workspace:*",
-		"@mysten/sui.js": "workspace:*",
+		"@dwallet/dwallet.js": "workspace:*",
 		"@mysten/ui": "workspace:*",
 		"@radix-ui/react-collapsible": "^1.0.3",
 		"@radix-ui/react-dropdown-menu": "^2.0.5",

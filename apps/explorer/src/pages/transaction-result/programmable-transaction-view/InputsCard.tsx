@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiCallArg } from '@mysten/sui.js/client';
+import { type SuiCallArg } from '@dwallet/dwallet.js/client';
 import { Text } from '@mysten/ui';
 
 import { ProgrammableTxnBlockCard } from '~/components/transactions/ProgTxnBlockCard';

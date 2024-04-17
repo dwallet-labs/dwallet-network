@@ -106,7 +106,7 @@ importers:
       '@mysten/kiosk':
         specifier: workspace:*
         version: link:../../sdk/kiosk
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@sentry/react':
@@ -200,7 +200,7 @@ importers:
       '@mysten/icons':
         specifier: workspace:*
         version: link:../icons
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@mysten/ui':
@@ -577,7 +577,7 @@ importers:
       '@mysten/ledgerjs-hw-app-sui':
         specifier: workspace:*
         version: link:../../sdk/ledgerjs-hw-app-sui
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@mysten/wallet-standard':
@@ -911,7 +911,7 @@ importers:
       '@mysten/kiosk':
         specifier: workspace:*
         version: link:../../sdk/kiosk
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@tanstack/react-query':
@@ -966,7 +966,7 @@ importers:
       '@mysten/kiosk':
         specifier: workspace:*
         version: link:../../sdk/kiosk
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../../sdk/typescript
       commander:
@@ -1039,7 +1039,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../sdk/dapp-kit
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@tailwindcss/forms':
@@ -1091,7 +1091,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../sdk/dapp-kit
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@types/react':
@@ -1174,7 +1174,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../dapp-kit
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
       '@types/node':
@@ -1196,7 +1196,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../../dapp-kit
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../../../typescript
       '@radix-ui/colors':
@@ -1257,7 +1257,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../../dapp-kit
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../../../typescript
       '@radix-ui/colors':
@@ -1315,7 +1315,7 @@ importers:
 
   sdk/dapp-kit:
     dependencies:
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
       '@mysten/wallet-standard':
@@ -1403,7 +1403,7 @@ importers:
 
   sdk/deepbook:
     dependencies:
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1440,7 +1440,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../dapp-kit
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
       '@tanstack/react-query':
@@ -1471,7 +1471,7 @@ importers:
 
   sdk/enoki:
     dependencies:
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
       '@mysten/zklogin':
@@ -1517,7 +1517,7 @@ importers:
 
   sdk/kiosk:
     dependencies:
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1611,7 +1611,7 @@ importers:
 
   sdk/suins-toolkit:
     dependencies:
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1709,7 +1709,7 @@ importers:
 
   sdk/wallet-standard:
     dependencies:
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
       '@wallet-standard/core':
@@ -1728,7 +1728,7 @@ importers:
       '@mysten/bcs':
         specifier: workspace:*
         version: link:../bcs
-      '@mysten/sui.js':
+      '@dwallet/dwallet.js':
         specifier: workspace:*
         version: link:../typescript
       '@noble/hashes':

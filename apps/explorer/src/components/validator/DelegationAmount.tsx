@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useFormatCoin, formatBalance, CoinFormat } from '@mysten/core';
-import { SUI_TYPE_ARG } from '@mysten/sui.js/utils';
+import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
 import { Heading, Text } from '@mysten/ui';
 
 type DelegationAmountProps = {

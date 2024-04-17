@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Search24 } from '@mysten/icons';
-import { type SuiMoveNormalizedStruct, type SuiObjectResponse } from '@mysten/sui.js/client';
+import { type SuiMoveNormalizedStruct, type SuiObjectResponse } from '@dwallet/dwallet.js/client';
 import { Text, LoadingIndicator, Combobox, ComboboxInput, ComboboxList } from '@mysten/ui';
 import clsx from 'clsx';
 import { useCallback, useEffect, useState } from 'react';

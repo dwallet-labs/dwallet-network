@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useSuiClient } from '@mysten/dapp-kit';
-import { SuiObjectDataOptions, SuiObjectResponse } from '@mysten/sui.js/client';
+import { SuiObjectDataOptions, SuiObjectResponse } from '@dwallet/dwallet.js/client';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 
 import { chunkArray } from '../utils/chunkArray';
