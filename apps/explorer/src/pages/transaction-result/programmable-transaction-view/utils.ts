@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { type SuiArgument } from '@mysten/sui.js/client';
+import { type SuiArgument } from '@dwallet/dwallet.js/client';
 
 export function flattenSuiArguments(data: (SuiArgument | SuiArgument[])[]): string {
 	if (!data) {

@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiTransactionBlockResponse } from '@mysten/sui.js/client';
+import { type SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
 import {
 	parseSerializedSignature,
 	type SignatureScheme,
 	type PublicKey,
-} from '@mysten/sui.js/cryptography';
-import { parsePartialSignatures } from '@mysten/sui.js/multisig';
-import { toB64, normalizeSuiAddress } from '@mysten/sui.js/utils';
-import { publicKeyFromRawBytes } from '@mysten/sui.js/verify';
+} from '@dwallet/dwallet.js/cryptography';
+import { parsePartialSignatures } from '@dwallet/dwallet.js/multisig';
+import { toB64, normalizeSuiAddress } from '@dwallet/dwallet.js/utils';
+import { publicKeyFromRawBytes } from '@dwallet/dwallet.js/verify';
 import { Text } from '@mysten/ui';
 
 import { DescriptionItem, DescriptionList } from '~/ui/DescriptionList';

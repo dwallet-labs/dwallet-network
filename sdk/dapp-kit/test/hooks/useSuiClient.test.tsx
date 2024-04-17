@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
+import { getFullnodeUrl, SuiClient } from '@dwallet/dwallet.js/client';
 import { renderHook } from '@testing-library/react';
 
 import { useSuiClient } from '../../src/index.js';

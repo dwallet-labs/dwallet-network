@@ -9,10 +9,10 @@ import {
 	SuiObjectChangeCreated,
 	SuiObjectChangePublished,
 	SuiTransactionBlockResponse,
-} from '@mysten/sui.js/client';
-import { FaucetRateLimitError, getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+} from '@dwallet/dwallet.js/client';
+import { FaucetRateLimitError, getFaucetHost, requestSuiFromFaucetV0 } from '@dwallet/dwallet.js/faucet';
+import { Ed25519Keypair } from '@dwallet/dwallet.js/keypairs/ed25519';
+import { TransactionBlock } from '@dwallet/dwallet.js/transactions';
 import tmp from 'tmp';
 import { retry } from 'ts-retry-promise';
 import { expect } from 'vitest';
@@ -52,7 +52,7 @@ export function getClient(): SuiClient {
 	});
 }
 
-// TODO: expose these testing utils from @mysten/sui.js
+// TODO: expose these testing utils from @dwallet/dwallet.js
 export async function setupSuiClient() {
 	const keypair = Ed25519Keypair.generate();
 	const address = keypair.getPublicKey().toSuiAddress();
@@ -68,7 +68,7 @@ export async function setupSuiClient() {
 	return new TestToolbox(keypair, client);
 }
 
-// TODO: expose these testing utils from @mysten/sui.js
+// TODO: expose these testing utils from @dwallet/dwallet.js
 export async function publishPackage(packagePath: string, toolbox?: TestToolbox) {
 	// TODO: We create a unique publish address per publish, but we really could share one for all publishes.
 	if (!toolbox) {

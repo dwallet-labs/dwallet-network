@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type SuiWallet } from '_src/dapp-interface/WalletStandardInterface';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { TransactionBlock } from '@dwallet/dwallet.js/transactions';
 import { getWallets, ReadonlyWalletAccount, type Wallet } from '@mysten/wallet-standard';
 import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';

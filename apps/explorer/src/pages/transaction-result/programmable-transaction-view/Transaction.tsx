@@ -5,7 +5,7 @@ import {
 	type MoveCallSuiTransaction,
 	type SuiArgument,
 	type SuiMovePackage,
-} from '@mysten/sui.js/client';
+} from '@dwallet/dwallet.js/client';
 import { Text } from '@mysten/ui';
 import { type ReactNode } from 'react';
 

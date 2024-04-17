@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type TransactionBlock } from '@mysten/sui.js/transactions';
+import { type TransactionBlock } from '@dwallet/dwallet.js/transactions';
 import { useQuery } from '@tanstack/react-query';
 
 import { useAccountByAddress } from './useAccountByAddress';

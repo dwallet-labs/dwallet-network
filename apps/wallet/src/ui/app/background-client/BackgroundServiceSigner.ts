@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type SerializedUIAccount } from '_src/background/accounts/Account';
-import { type SuiClient } from '@mysten/sui.js/client';
-import type { SerializedSignature } from '@mysten/sui.js/cryptography';
+import { type SuiClient } from '@dwallet/dwallet.js/client';
+import type { SerializedSignature } from '@dwallet/dwallet.js/cryptography';
 
 import type { BackgroundClient } from '.';
 import { WalletSigner } from '../WalletSigner';

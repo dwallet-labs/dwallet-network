@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type TransactionFilter } from '@mysten/sui.js/client';
+import { type TransactionFilter } from '@dwallet/dwallet.js/client';
 import { Heading, RadioGroup, RadioGroupItem } from '@mysten/ui';
 import { useReducer, useState } from 'react';
 

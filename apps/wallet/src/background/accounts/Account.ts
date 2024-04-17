@@ -7,7 +7,7 @@ import {
 	type ExportedKeypair,
 	type Keypair,
 	type SerializedSignature,
-} from '@mysten/sui.js/cryptography';
+} from '@dwallet/dwallet.js/cryptography';
 import { blake2b } from '@noble/hashes/blake2b';
 
 import { setupAutoLockAlarm } from '../auto-lock-accounts';

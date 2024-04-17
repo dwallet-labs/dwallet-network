@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiHTTPTransport } from '@mysten/sui.js/client';
+import { SuiHTTPTransport } from '@dwallet/dwallet.js/client';
 import * as Sentry from '@sentry/react';
 
 const IGNORED_METHODS = ['suix_resolveNameServiceNames', 'suix_resolveNameServiceAddresses'];

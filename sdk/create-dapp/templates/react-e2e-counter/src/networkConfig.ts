@@ -1,4 +1,4 @@
-import { getFullnodeUrl } from "@mysten/sui.js/client";
+import { getFullnodeUrl } from "@dwallet/dwallet.js/client";
 import {
   DEVNET_COUNTER_PACKAGE_ID,
   MAINNET_COUNTER_PACKAGE_ID,

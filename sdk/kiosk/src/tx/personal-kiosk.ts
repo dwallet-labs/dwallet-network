@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { TransactionBlock, TransactionObjectArgument } from '@mysten/sui.js/transactions';
+import { TransactionBlock, TransactionObjectArgument } from '@dwallet/dwallet.js/transactions';
 
 import { ObjectArgument } from '../types';
 

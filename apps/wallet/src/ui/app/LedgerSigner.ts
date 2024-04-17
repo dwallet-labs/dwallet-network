@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type SuiLedgerClient from '@mysten/ledgerjs-hw-app-sui';
-import { type SuiClient } from '@mysten/sui.js/client';
+import { type SuiClient } from '@dwallet/dwallet.js/client';
 import {
 	toSerializedSignature,
 	type SerializedSignature,
 	type SignatureScheme,
-} from '@mysten/sui.js/cryptography';
-import { Ed25519PublicKey } from '@mysten/sui.js/keypairs/ed25519';
+} from '@dwallet/dwallet.js/cryptography';
+import { Ed25519PublicKey } from '@dwallet/dwallet.js/keypairs/ed25519';
 
 import { WalletSigner } from './WalletSigner';
 

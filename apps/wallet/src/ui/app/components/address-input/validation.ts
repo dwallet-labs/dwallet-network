@@ -3,8 +3,8 @@
 
 import { isSuiNSName, useSuiNSEnabled } from '@mysten/core';
 import { useSuiClient } from '@mysten/dapp-kit';
-import { type SuiClient } from '@mysten/sui.js/client';
-import { isValidSuiAddress } from '@mysten/sui.js/utils';
+import { type SuiClient } from '@dwallet/dwallet.js/client';
+import { isValidSuiAddress } from '@dwallet/dwallet.js/utils';
 import { useMemo } from 'react';
 import * as Yup from 'yup';
 

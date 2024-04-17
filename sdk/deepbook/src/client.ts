@@ -7,20 +7,20 @@ import {
 	PaginatedEvents,
 	PaginationArguments,
 	SuiClient,
-} from '@mysten/sui.js/client';
+} from '@dwallet/dwallet.js/client';
 import {
 	TransactionArgument,
 	TransactionBlock,
 	TransactionObjectInput,
 	TransactionResult,
-} from '@mysten/sui.js/transactions';
+} from '@dwallet/dwallet.js/transactions';
 import {
 	normalizeStructTag,
 	normalizeSuiAddress,
 	normalizeSuiObjectId,
 	parseStructTag,
 	SUI_CLOCK_OBJECT_ID,
-} from '@mysten/sui.js/utils';
+} from '@dwallet/dwallet.js/utils';
 
 import {
 	bcs,

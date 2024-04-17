@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { EventId } from '@mysten/sui.js/client';
+import { EventId } from '@dwallet/dwallet.js/client';
 
 export * from './bcs';
 

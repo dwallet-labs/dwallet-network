@@ -7,8 +7,8 @@ import { DEEPBOOK_KEY, WALLET_FEES_PERCENTAGE } from '_pages/swap/constants';
 import { useDeepBookContext } from '_shared/deepBook/context';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { type DeepBookClient } from '@mysten/deepbook';
-import { TransactionBlock } from '@mysten/sui.js/builder';
-import { type CoinStruct, type SuiClient } from '@mysten/sui.js/client';
+import { TransactionBlock } from '@dwallet/dwallet.js/builder';
+import { type CoinStruct, type SuiClient } from '@dwallet/dwallet.js/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import BigNumber from 'bignumber.js';
 

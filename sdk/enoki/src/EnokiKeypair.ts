@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SignatureWithBytes } from '@mysten/sui.js/cryptography';
-import { Keypair, PublicKey, SIGNATURE_SCHEME_TO_FLAG } from '@mysten/sui.js/cryptography';
-import type { Ed25519Keypair, Ed25519PublicKey } from '@mysten/sui.js/keypairs/ed25519';
-import type { ZkLoginSignatureInputs } from '@mysten/sui.js/zklogin';
+import type { SignatureWithBytes } from '@dwallet/dwallet.js/cryptography';
+import { Keypair, PublicKey, SIGNATURE_SCHEME_TO_FLAG } from '@dwallet/dwallet.js/cryptography';
+import type { Ed25519Keypair, Ed25519PublicKey } from '@dwallet/dwallet.js/keypairs/ed25519';
+import type { ZkLoginSignatureInputs } from '@dwallet/dwallet.js/zklogin';
 import { getZkLoginSignature } from '@mysten/zklogin';
 
 export class EnokiPublicKey extends PublicKey {

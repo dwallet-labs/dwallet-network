@@ -3,7 +3,7 @@
 
 import { useFormatCoin, useGetDelegatedStake } from '@mysten/core';
 import { useMemo } from 'react';
-import { SUI_TYPE_ARG } from '@mysten/sui.js/utils';
+import { SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
 import { Text, Heading } from '@mysten/ui';
 import { Sui } from '@mysten/icons';
 

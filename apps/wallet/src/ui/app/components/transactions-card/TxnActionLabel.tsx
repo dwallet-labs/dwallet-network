@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Text } from '_app/shared/text';
-import { formatAddress } from '@mysten/sui.js/utils';
+import { formatAddress } from '@dwallet/dwallet.js/utils';
 
 type TxnTypeProps = {
 	address: string;

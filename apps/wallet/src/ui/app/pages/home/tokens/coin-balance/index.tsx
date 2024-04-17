@@ -6,7 +6,7 @@ import { API_ENV } from '_shared/api-env';
 import { Heading } from '_src/ui/app/shared/heading';
 import { Text } from '_src/ui/app/shared/text';
 import { useFormatCoin, useSuiCoinData } from '@mysten/core';
-import { SUI_DECIMALS } from '@mysten/sui.js/utils';
+import { SUI_DECIMALS } from '@dwallet/dwallet.js/utils';
 import BigNumber from 'bignumber.js';
 import { useMemo } from 'react';
 

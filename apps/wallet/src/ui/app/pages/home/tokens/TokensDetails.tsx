@@ -34,8 +34,8 @@ import {
 } from '@mysten/core';
 import { useSuiClientQuery } from '@mysten/dapp-kit';
 import { Info12, Pin16, Unpin16 } from '@mysten/icons';
-import { type CoinBalance as CoinBalanceType } from '@mysten/sui.js/client';
-import { formatAddress, parseStructTag, SUI_TYPE_ARG } from '@mysten/sui.js/utils';
+import { type CoinBalance as CoinBalanceType } from '@dwallet/dwallet.js/client';
+import { formatAddress, parseStructTag, SUI_TYPE_ARG } from '@dwallet/dwallet.js/utils';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useEffect, useState, type ReactNode } from 'react';

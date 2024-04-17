@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { DelegatedStake } from '@mysten/sui.js/client';
+import type { DelegatedStake } from '@dwallet/dwallet.js/client';
 
 // Helper function to get the delegation by stakedSuiId
 export const getDelegationDataByStakeId = (

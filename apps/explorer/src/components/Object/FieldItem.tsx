@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiMoveNormalizedType } from '@mysten/sui.js/client';
+import { type SuiMoveNormalizedType } from '@dwallet/dwallet.js/client';
 import { Text } from '@mysten/ui';
 
 import { getFieldTypeValue } from './utils';

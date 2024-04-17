@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { isSuiNSName } from '@mysten/core';
-import { formatAddress, formatDigest } from '@mysten/sui.js/utils';
+import { formatAddress, formatDigest } from '@dwallet/dwallet.js/utils';
 import { type ReactNode } from 'react';
 
 import { Link, type LinkProps } from '~/ui/Link';

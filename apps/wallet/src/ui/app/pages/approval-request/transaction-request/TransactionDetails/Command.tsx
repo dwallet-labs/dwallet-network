@@ -3,9 +3,9 @@
 
 import { Text } from '_src/ui/app/shared/text';
 import { ChevronDown12, ChevronRight12 } from '@mysten/icons';
-import { TypeTagSerializer, type TypeTag } from '@mysten/sui.js/bcs';
-import { type TransactionArgument, type Transactions } from '@mysten/sui.js/transactions';
-import { formatAddress, normalizeSuiAddress, toB64 } from '@mysten/sui.js/utils';
+import { TypeTagSerializer, type TypeTag } from '@dwallet/dwallet.js/bcs';
+import { type TransactionArgument, type Transactions } from '@dwallet/dwallet.js/transactions';
+import { formatAddress, normalizeSuiAddress, toB64 } from '@dwallet/dwallet.js/utils';
 import { useState } from 'react';
 
 type TransactionType = ReturnType<(typeof Transactions)[keyof typeof Transactions]>;

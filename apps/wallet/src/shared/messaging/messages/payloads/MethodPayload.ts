@@ -5,7 +5,7 @@ import { type AccountSourceSerializedUI } from '_src/background/account-sources/
 import { type SerializedUIAccount } from '_src/background/accounts/Account';
 import { type ZkLoginProvider } from '_src/background/accounts/zklogin/providers';
 import { type Status } from '_src/background/legacy-accounts/storage-migration';
-import { type ExportedKeypair, type SerializedSignature } from '@mysten/sui.js/cryptography';
+import { type ExportedKeypair, type SerializedSignature } from '@dwallet/dwallet.js/cryptography';
 
 import { isBasePayload } from './BasePayload';
 import type { Payload } from './Payload';

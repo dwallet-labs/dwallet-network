@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { getAmount } from '_helpers';
-import { type SuiTransactionBlockResponse } from '@mysten/sui.js/client';
+import { type SuiTransactionBlockResponse } from '@dwallet/dwallet.js/client';
 import { useMemo } from 'react';
 
 type Props = {

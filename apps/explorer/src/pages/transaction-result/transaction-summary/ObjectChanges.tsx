@@ -14,8 +14,8 @@ import {
 	type SuiObjectChangePublished,
 	type SuiObjectChange,
 	type DisplayFieldsResponse,
-} from '@mysten/sui.js/client';
-import { parseStructTag } from '@mysten/sui.js/utils';
+} from '@dwallet/dwallet.js/client';
+import { parseStructTag } from '@dwallet/dwallet.js/utils';
 import { Text } from '@mysten/ui';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import clsx from 'clsx';

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { ArrowUpRight12 } from '@mysten/icons';
-import { type SuiValidatorSummary } from '@mysten/sui.js/client';
+import { type SuiValidatorSummary } from '@dwallet/dwallet.js/client';
 import { Heading, Text } from '@mysten/ui';
 
 import { CopyToClipboard } from '~/ui/CopyToClipboard';

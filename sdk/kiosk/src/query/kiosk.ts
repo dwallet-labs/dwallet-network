@@ -7,8 +7,8 @@ import {
 	SuiObjectData,
 	SuiObjectDataFilter,
 	SuiObjectResponse,
-} from '@mysten/sui.js/client';
-import { isValidSuiAddress } from '@mysten/sui.js/utils';
+} from '@dwallet/dwallet.js/client';
+import { isValidSuiAddress } from '@dwallet/dwallet.js/utils';
 
 import {
 	FetchKioskOptions,

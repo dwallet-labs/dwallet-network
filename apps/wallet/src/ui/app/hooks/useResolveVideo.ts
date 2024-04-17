@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiObjectResponse } from '@mysten/sui.js/client';
+import { type SuiObjectResponse } from '@dwallet/dwallet.js/client';
 
 import { useRecognizedPackages } from './useRecognizedPackages';
 

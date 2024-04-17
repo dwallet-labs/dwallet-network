@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui.js/bcs';
+import { bcs } from '@dwallet/dwallet.js/bcs';
 import {
 	TransactionArgument,
 	TransactionBlock,
 	TransactionObjectArgument,
-} from '@mysten/sui.js/transactions';
+} from '@dwallet/dwallet.js/transactions';
 
 import { KIOSK_MODULE, KIOSK_TYPE, ObjectArgument } from '../types';
 
