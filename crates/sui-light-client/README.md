@@ -2,6 +2,8 @@ This crate contains a Command Line Interface to manage the SUI/ dWallet network 
 
 ## Init
 
+Before init, needed to set the correct package_id of the deployed sui_light_client.move package in example_config/light_client.yaml -> sui_deployed_state_proof_package
+
 ```
 $ cargo run -- --config example_config/light_client.yaml init
 ```
