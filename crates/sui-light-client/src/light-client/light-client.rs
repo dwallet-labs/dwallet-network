@@ -23,7 +23,7 @@ use sui_types::{
     effects::{TransactionEffects, TransactionEffectsAPI, TransactionEvents},
     message_envelope::Envelope,
     messages_checkpoint::{CertifiedCheckpointSummary, CheckpointSummary, EndOfEpochData},
-    object::{Data, Object},
+    object::{Owner, Object},
 };
 
 use sui_config::genesis::Genesis;
@@ -296,7 +296,7 @@ async fn sync_checkpoint_list_to_latest(config: &Config) -> anyhow::Result<()> {
     let latest = client.get_latest_checkpoint().await?;
 
     // Binary search to find missing checkpoints
-    while last_epoch + 1 < latest.epoch() { // TOOD change back
+    while last_epoch + 1 <  200 { //latest.epoch() { // TOOD change back
         let mut start = last_checkpoint_seq;
         let mut end = latest.sequence_number;
 
@@ -348,7 +348,8 @@ async fn sync_checkpoint_list_to_latest(config: &Config) -> anyhow::Result<()> {
 
 
 
-async fn check_and_sync_checkpoints(config: &Config, sui_state_proof_registry_ref: ObjectRef, genesis_committee_object_ref_dwltn: ObjectRef) -> anyhow::Result<()> {
+async fn check_and_sync_checkpoints(config: &Config) -> anyhow::Result<()> {
+        
     println!("Syncing checkpoints to latest");
     sync_checkpoint_list_to_latest(config).await?;
     println!("Synced checkpoints to latest");
@@ -370,7 +371,7 @@ async fn check_and_sync_checkpoints(config: &Config, sui_state_proof_registry_re
     // Check the signatures of all checkpoints
     // And download any missing ones
     let mut prev_committee = genesis_committee;
-    let mut prev_committee_object_ref_dwltn = genesis_committee_object_ref_dwltn;
+    // let mut prev_committee_object_ref_dwltn = genesis_committee_object_ref_dwltn;
     for ckp_id in &checkpoints_list.checkpoints {
         // check if there is a file with this name ckp_id.yaml in the checkpoint_summary_dir
         let mut checkpoint_path = config.checkpoint_summary_dir.clone();
@@ -384,98 +385,112 @@ async fn check_and_sync_checkpoints(config: &Config, sui_state_proof_registry_re
         } else {
             // Download the checkpoint from the server
             println!("Downloading checkpoint: {}", ckp_id);
-            let summary = download_checkpoint_summary(config, *ckp_id).await?;
-            
-            println!("{}", summary.auth_sig().epoch);
-            println!("{}", summary.data().epoch);
-            println!("{}", prev_committee.epoch());
-            summary.clone().verify(&prev_committee)?;
-            println!("verified checkpoint");
-
-            // Check if the checkpoint needs to be submitted to the dwallet network
-            if (latest_registered_epoch_committee_id < *ckp_id) {
-                println!("Submitting epoch committee {} to dwallet network", ckp_id);
-                let mut ptb = ProgrammableTransactionBuilder::new();
-
-                let registry_arg = ptb.obj(ObjectArg::SharedObject { id: sui_state_proof_registry_ref.0, initial_shared_version: sui_state_proof_registry_ref.1, mutable: true }).unwrap();        
-                let prev_committee_arg = ptb.obj(ObjectArg::ImmOrOwnedObject(prev_committee_object_ref_dwltn)).unwrap();
-                let new_checkpoint_summary_arg = ptb.pure(bcs::to_bytes(&summary).unwrap()).unwrap();
-
-                let call = ProgrammableMoveCall{package: ObjectID::from_hex_literal("0x0000000000000000000000000000000000000000000000000000000000000003").unwrap(), 
-                                                module: Identifier::new("sui_state_proof").unwrap(), 
-                                                function: Identifier::new("submit_new_state_committee").unwrap(),
-                                                type_arguments: vec![],
-                                                arguments: vec![registry_arg, prev_committee_arg, new_checkpoint_summary_arg], 
-                                                };
-
-                let dwallet_client = SuiClientBuilder::default()
-                    .build(config.dwallet_full_node_url())
-                    .await
-                    .unwrap();
-        
-                    ptb.command(Command::MoveCall(Box::new(call)));
-
-
-                let builder = ptb.finish();
-            
-                let gas_budget = 100_000_000;
-                let gas_price = dwallet_client.read_api().get_reference_gas_price().await.unwrap();
-            
-                let keystore = FileBasedKeystore::new(&sui_config_dir().unwrap().join(SUI_KEYSTORE_FILENAME)).unwrap();
-                
-                let sender = *keystore.addresses_with_alias().first().unwrap().0;
-            
-            
-                let coins = dwallet_client
-                    .coin_read_api()
-                    .get_coins(sender, None, None, None)
-                    .await.unwrap();
-                let coin_gas = coins.data.into_iter().next().unwrap();
-            
-                let tx_data = TransactionData::new_programmable(
-                    sender,
-                    vec![coin_gas.object_ref()],
-                    builder,
-                    gas_budget,
-                    gas_price,
-                );
-            
-                // 4) sign transaction
-                let signature = keystore.sign_secure(&sender, &tx_data, Intent::sui_transaction()).unwrap();
-            
-                // 5) execute the transaction
-                println!("Executing the transaction...");
-                let transaction_response = dwallet_client
-                    .quorum_driver_api()
-                    .execute_transaction_block(
-                        Transaction::from_data(tx_data, vec![signature]),
-                        SuiTransactionBlockResponseOptions::full_content(),
-                        Some(ExecuteTransactionRequestType::WaitForLocalExecution),
-                    )
-                    .await.unwrap();
-                            
-                
-                let object_changes = transaction_response.object_changes.unwrap();
-                
-                // println!("object changes: {}", object_changes);
-                let committee_object_change = object_changes.iter()
-                .filter(|object| 
-                    match object {
-                        ObjectChange::Created { sender: _, owner: _, object_type: object_type, object_id: _, version: _, digest: _ } => object_type.to_string().contains("EpochCommittee"),
-                        _ => false,
-                })
-                .next()
-                .unwrap();
-        
-        
-            prev_committee_object_ref_dwltn = committee_object_change.object_ref();
-
-            }             
-
-            // Write the checkpoint summary to a file
-            write_checkpoint(config, &summary)?;
-            summary
+            download_checkpoint_summary(config, *ckp_id).await?
         };
+        println!("{}", summary.auth_sig().epoch);
+        println!("{}", summary.data().epoch);
+        // println!("{}", prev_committee.epoch());  
+        summary.clone().verify(&prev_committee)?;
+        println!("verified checkpoint");
+
+        // Check if the checkpoint needs to be submitted to the dwallet network
+        if (latest_registered_epoch_committee_id < summary.epoch()) {
+            let mut ptb = ProgrammableTransactionBuilder::new();
+
+
+            let prev_committee_object_id = retieve_epoch_committee_id_by_epoch(config, summary.epoch().checked_sub(1).unwrap()).await.unwrap();
+            let prev_committee_object_ref_dwltn = get_object_ref_by_id(config, prev_committee_object_id).await.unwrap();
+
+
+            let registry_object_id = ObjectID::from_hex_literal(&config.dwltn_registry_object_id).unwrap();
+            // retrieve highest shared version of the registry
+            let dwallet_client = SuiClientBuilder::default()
+                .build(config.dwallet_full_node_url())
+                .await
+                .unwrap();
+            let res = dwallet_client.read_api().get_object_with_options(registry_object_id, SuiObjectDataOptions::full_content().with_bcs()).await.unwrap();
+            let registry_initial_shared_version = match res.owner().unwrap() {
+                Owner::Shared { initial_shared_version } => initial_shared_version,
+                _ => return Err(anyhow::anyhow!("Expected a Shared owner")),
+            };
+            
+
+            let registry_arg = ptb.obj(ObjectArg::SharedObject { id: registry_object_id, initial_shared_version: registry_initial_shared_version, mutable: true }).unwrap();        
+            let prev_committee_arg = ptb.obj(ObjectArg::ImmOrOwnedObject(prev_committee_object_ref_dwltn)).unwrap();
+            let new_checkpoint_summary_arg = ptb.pure(bcs::to_bytes(&summary).unwrap()).unwrap();
+
+            let call = ProgrammableMoveCall{package: ObjectID::from_hex_literal("0x0000000000000000000000000000000000000000000000000000000000000003").unwrap(), 
+                                            module: Identifier::new("sui_state_proof").unwrap(), 
+                                            function: Identifier::new("submit_new_state_committee").unwrap(),
+                                            type_arguments: vec![],
+                                            arguments: vec![registry_arg, prev_committee_arg, new_checkpoint_summary_arg], 
+                                            };
+
+            let dwallet_client = SuiClientBuilder::default()
+                .build(config.dwallet_full_node_url())
+                .await
+                .unwrap();
+    
+                ptb.command(Command::MoveCall(Box::new(call)));
+
+
+            let builder = ptb.finish();
+        
+            let gas_budget = 100_000_000;
+            let gas_price = dwallet_client.read_api().get_reference_gas_price().await.unwrap();
+        
+            let keystore = FileBasedKeystore::new(&sui_config_dir().unwrap().join(SUI_KEYSTORE_FILENAME)).unwrap();
+            
+            let sender = *keystore.addresses_with_alias().first().unwrap().0;
+        
+        
+            let coins = dwallet_client
+                .coin_read_api()
+                .get_coins(sender, None, None, None)
+                .await.unwrap();
+            let coin_gas = coins.data.into_iter().next().unwrap();
+        
+            let tx_data = TransactionData::new_programmable(
+                sender,
+                vec![coin_gas.object_ref()],
+                builder,
+                gas_budget,
+                gas_price,
+            );
+        
+            // 4) sign transaction
+            let signature = keystore.sign_secure(&sender, &tx_data, Intent::sui_transaction()).unwrap();
+        
+            // 5) execute the transaction
+            println!("Executing the transaction...");
+            let transaction_response = dwallet_client
+                .quorum_driver_api()
+                .execute_transaction_block(
+                    Transaction::from_data(tx_data, vec![signature]),
+                    SuiTransactionBlockResponseOptions::full_content(),
+                    Some(ExecuteTransactionRequestType::WaitForLocalExecution),
+                )
+                .await.unwrap();
+                        
+            
+            let object_changes = transaction_response.object_changes.unwrap();
+            
+            // println!("object changes: {}", object_changes);
+            let committee_object_change = object_changes.iter()
+            .filter(|object| 
+                match object {
+                    ObjectChange::Created { sender: _, owner: _, object_type: object_type, object_id: _, version: _, digest: _ } => object_type.to_string().contains("EpochCommittee"),
+                    _ => false,
+            })
+            .next()
+            .unwrap();
+
+            // prev_committee_object_ref_dwltn = committee_object_change.object_ref();
+        }             
+
+        // Write the checkpoint summary to a file
+        write_checkpoint(config, &summary)?;
+        
 
         // Print the id of the checkpoint and the epoch number
         println!(
@@ -499,6 +514,7 @@ async fn check_and_sync_checkpoints(config: &Config, sui_state_proof_registry_re
             ));
         }
     }
+    
 
     Ok(())
 }
@@ -760,9 +776,9 @@ async fn retieve_epoch_committee_id_by_epoch(config: &Config, target_epoch: u64)
             .build(config.dwallet_full_node_url())
             .await
             .unwrap();
-        let epoch_committee_object_res = dwallet_client.read_api().get_object_with_options(object_id, SuiObjectDataOptions::full_content().with_bcs()).await.unwrap();
-        let epoch_committee_object_ref = epoch_committee_object_res.data.unwrap().object_ref();
-        Ok(epoch_committee_object_ref)
+        let res = dwallet_client.read_api().get_object_with_options(object_id, SuiObjectDataOptions::full_content().with_bcs()).await.unwrap();
+        let object_ref = res.data.unwrap().object_ref();
+        Ok(object_ref)
     }
 
 
@@ -789,7 +805,6 @@ pub async fn main() {
     let remote_package_store = RemotePackageStore::new(sui_client, config.clone());
     let resolver = Resolver::new(remote_package_store);
 
-    println!("setting up dwallet network contracts");
 
     let dwallet_client = SuiClientBuilder::default()
         .build(config.dwallet_full_node_url())
@@ -799,12 +814,10 @@ pub async fn main() {
 
     match args.command {
 
-        // TODO initialising the contracts should happen somewhere else?
-        Some(SCommands::Sync {}) => {
-
+        Some(SCommands::Init {}) => {
             // create a PTB with init module
             let mut ptb = ProgrammableTransactionBuilder::new();
-            
+
 
             // Load the genesis committee
             let mut genesis_path = config.checkpoint_summary_dir.clone();
@@ -921,15 +934,21 @@ pub async fn main() {
             let registry_object_ref = registry_object_change.object_ref();
             let committee_object_ref = committee_object_change.object_ref();
             let config_object_ref = config_object_change.object_ref();
+            
 
-            let res = check_and_sync_checkpoints(&config, registry_object_ref, committee_object_ref).await;
+            config.dwltn_config_object_id = config_object_ref.0.to_string();
+            config.dwltn_registry_object_id = registry_object_ref.0.to_string();
+
+
+        }
+        Some(SCommands::Sync {}) => {
+            let res = check_and_sync_checkpoints(&config).await;
         
             if res.is_err() {
                 println!("Error: {:?}", res);
             }
 
-            config.dwltn_config_object_id = config_object_ref.0.to_string();
-            config.dwltn_registry_object_id = registry_object_ref.0.to_string();
+            
             }
         Some(SCommands::Transaction { tid }) => {
             println!("Proving tx locally");
