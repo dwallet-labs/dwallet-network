@@ -2,7 +2,7 @@
 
 ```rust
 module sui_move_btc_multisig::multisig {
-    use sui_state_proof::sui_state_proof::{Self, DWalletCap};
+    use dwallet_network::dwallet_cap::{Self, DWalletCap};
 
     const ENoPermission: u64 = 0;
     const EAlreadyVoted: u64 = 1;
@@ -31,7 +31,7 @@ module sui_move_btc_multisig::multisig {
     }
 
     public fun create_multisig(treshold: u64, ctx: &mut TxContext) {
-        let cap = sui_state_proof::create_cap(ctx);
+        let cap = dwallet_cap::create_cap(ctx);
 
         let multisig = MultiSig {
             id: object::new(ctx),
@@ -86,7 +86,7 @@ module sui_move_btc_multisig::multisig {
 
         let length = vector::length(&proposal.signers);
         if (length == multisig.treshold) {
-            sui_state_proof::approve_message(&multisig.cap, proposal.message);
+            dwallet_cap::approve_message(&multisig.cap, proposal.message);
             proposal.approved = true;
         }
     }
