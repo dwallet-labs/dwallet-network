@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 import {
 	DevInspectResults,
 	getFullnodeUrl,
-	SuiClient,
+	DWalletClient,
 	SuiObjectChangePublished,
 	SuiTransactionBlockResponse,
 } from '@dwallet-network/dwallet.js/client';
@@ -27,9 +27,9 @@ const SUI_BIN = import.meta.env.VITE_SUI_BIN ?? 'cargo run --bin sui';
 
 export class TestToolbox {
 	keypair: Ed25519Keypair;
-	client: SuiClient;
+	client: DWalletClient;
 
-	constructor(keypair: Ed25519Keypair, client: SuiClient) {
+	constructor(keypair: Ed25519Keypair, client: DWalletClient) {
 		this.keypair = keypair;
 		this.client = client;
 	}
@@ -43,8 +43,8 @@ export class TestToolbox {
 	}
 }
 
-export function getClient(): SuiClient {
-	return new SuiClient({
+export function getClient(): DWalletClient {
+	return new DWalletClient({
 		url: DEFAULT_FULLNODE_URL,
 	});
 }

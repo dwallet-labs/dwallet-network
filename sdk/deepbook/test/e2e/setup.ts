@@ -5,7 +5,7 @@ import { execSync } from 'child_process';
 import {
 	DevInspectResults,
 	getFullnodeUrl,
-	SuiClient,
+	DWalletClient,
 	SuiObjectChangeCreated,
 	SuiObjectChangePublished,
 	SuiTransactionBlockResponse,
@@ -30,9 +30,9 @@ export const DEFAULT_LOT_SIZE = 1n;
 
 export class TestToolbox {
 	keypair: Ed25519Keypair;
-	client: SuiClient;
+	client: DWalletClient;
 
-	constructor(keypair: Ed25519Keypair, client: SuiClient) {
+	constructor(keypair: Ed25519Keypair, client: DWalletClient) {
 		this.keypair = keypair;
 		this.client = client;
 	}
@@ -46,8 +46,8 @@ export class TestToolbox {
 	}
 }
 
-export function getClient(): SuiClient {
-	return new SuiClient({
+export function getClient(): DWalletClient {
+	return new DWalletClient({
 		url: DEFAULT_FULLNODE_URL,
 	});
 }

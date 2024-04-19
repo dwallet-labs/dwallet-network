@@ -3,7 +3,7 @@
 
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { SuiClient, SuiObjectChangeCreated, SuiTransactionBlockResponse } from '../../src/client';
+import { DWalletClient, SuiObjectChangeCreated, SuiTransactionBlockResponse } from '../../src/client';
 import type { Keypair } from '../../src/cryptography';
 import { normalizeSuiObjectId, SUI_SYSTEM_STATE_OBJECT_ID } from '../../src/utils';
 import {
@@ -213,7 +213,7 @@ describe('Transaction Builders', () => {
 	);
 });
 
-async function validateTransaction(client: SuiClient, signer: Keypair, tx: TransactionBlock) {
+async function validateTransaction(client: DWalletClient, signer: Keypair, tx: TransactionBlock) {
 	tx.setSenderIfNotSet(signer.getPublicKey().toSuiAddress());
 	const localDigest = await tx.getDigest({ client });
 	const result = await client.signAndExecuteTransactionBlock({
