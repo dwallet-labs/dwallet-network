@@ -4,7 +4,8 @@
 import axios from 'axios';
 
 import { TransactionBlock } from '../builder';
-import { EventId, SuiClient, SuiEventFilter, SuiObjectRef } from '../client';
+import { EventId, DWalletClient, SuiEventFilter, SuiObjectRef } from '../client';
+import { SuiClient } from '@mysten/sui.js/client';
 import { Keypair } from '../cryptography';
 import { fetchObjectBySessionId } from './utils';
 
@@ -21,7 +22,7 @@ type TxDataResponse = {
 };
 
 export async function submitDwalletCreationProof(
-	dwallet_client: SuiClient,
+	dwallet_client: DWalletClient,
 	sui_client: SuiClient,
 	configObjectId: string,
 	dWalletCapId: string,
@@ -80,7 +81,7 @@ export async function submitDwalletCreationProof(
 }
 
 export async function submitTxStateProof(
-	dwallet_client: SuiClient,
+	dwallet_client: DWalletClient,
 	sui_client: SuiClient,
 	configObjectId: string,
 	capWrapperRef: SuiObjectRef,
@@ -186,7 +187,7 @@ async function queryTxData(txId: string, url: string): Promise<TxDataResponse> {
 	}
 }
 
-async function getOwnedObject(client: SuiClient, id: string) {
+async function getOwnedObject(client: DWalletClient, id: string) {
 	const res = await client.getObject({ id });
 
 	if (!res.data) {
@@ -205,7 +206,7 @@ async function getOwnedObject(client: SuiClient, id: string) {
 }
 
 async function retrieveEpochCommitteeIdByEpoch(
-	client: SuiClient,
+	client: DWalletClient,
 	targetEpoch: number,
 ): Promise<string> {
 	const query: SuiEventFilter = {

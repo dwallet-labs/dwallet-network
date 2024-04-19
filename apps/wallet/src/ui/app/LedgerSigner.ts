@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type SuiLedgerClient from '@mysten/ledgerjs-hw-app-sui';
-import { type SuiClient } from '@dwallet-network/dwallet.js/client';
+import { type DWalletClient } from '@dwallet-network/dwallet.js/client';
 import {
 	toSerializedSignature,
 	type SerializedSignature,
@@ -21,7 +21,7 @@ export class LedgerSigner extends WalletSigner {
 	constructor(
 		connectToLedger: () => Promise<SuiLedgerClient>,
 		derivationPath: string,
-		client: SuiClient,
+		client: DWalletClient,
 	) {
 		super(client);
 		this.#connectToLedger = connectToLedger;
@@ -62,7 +62,7 @@ export class LedgerSigner extends WalletSigner {
 		});
 	}
 
-	connect(client: SuiClient) {
+	connect(client: DWalletClient) {
 		return new LedgerSigner(this.#connectToLedger, this.#derivationPath, client);
 	}
 }

@@ -3,7 +3,7 @@
 
 import 'tsconfig-paths/register';
 
-import { SuiClient, getFullnodeUrl } from '@dwallet-network/dwallet.js/client';
+import { DWalletClient, getFullnodeUrl } from '@dwallet-network/dwallet.js/client';
 import { type Keypair } from '@dwallet-network/dwallet.js/cryptography';
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
@@ -15,7 +15,7 @@ export async function split_coin(address: string) {
 	if (!keypair) {
 		throw new Error('missing keypair');
 	}
-	const client = new SuiClient({ url: getFullnodeUrl('localnet') });
+	const client = new DWalletClient({ url: getFullnodeUrl('localnet') });
 
 	const coins = await client.getCoins({ owner: address });
 	const coin_id = coins.data[0].coinObjectId;

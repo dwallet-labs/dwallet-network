@@ -1,37 +1,39 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-
-import { SuiClient } from '@mysten/sui.js/client';
-import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import {
 	createDWallet,
 	createSignMessages,
 	submitDwalletCreationProof,
 	submitTxStateProof,
-} from '@mysten/sui.js/signature-mpc';
+} from '@dwallet-network/dwallet.js/signature-mpc';
+import { SuiClient } from '@mysten/sui.js/client';
+import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
+import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
 
 async function main() {
 	try {
-		// const serviceUrl = 'http://sui-devnet-light-client.devnet.dwallet.cloud/gettxdata';
-		const serviceUrl = 'http://localhost:6920/gettxdata';
+		const serviceUrl = 'http://sui-devnet-light-client.devnet.dwallet.cloud/gettxdata';
+		//const serviceUrl = 'http://localhost:6920/gettxdata';
 
-		const dWalletNodeUrl = 'http://127.0.0.1:9000';
+		const dWalletNodeUrl = 'http://fullnode.devnet.dwallet.cloud:9000';
+		//const dWalletNodeUrl = 'http://127.0.0.1:9000';
 
 		const suiDevnetURL = 'https://fullnode.devnet.sui.io:443';
 
 		const createTxId = 'BU39cjNgb6mLrT7aGgndPNCRY7FrAJnFgv8zRjTm9cfa'; // of the dwallet cap id on sui devnet
 		const signTxId = '8qfYM1cLTjZwY3SYqnbET4medrdVfKDm4GAgj55Zq7Ex'; // of the dwallet cap id on sui devnet
 
-		const configObjectId = '0xcf2b2bf9a1f71050ae20f9d1f3c4fb2f4878ecbb00f32ee2cf1b34482a73d0f8'; // should take this from the light_client.yaml
+		const configObjectId = '0x0d1a2448aaf36d2fe9016037b84c820d1dc97612f2a89ab5d78f4ec75a131299'; // should take this from the light_client.yaml
 
 		const sui_client = new SuiClient({ url: suiDevnetURL });
-		const dwallet_client = new SuiClient({ url: dWalletNodeUrl });
+		const dwallet_client = new DWalletClient({ url: dWalletNodeUrl });
 
 		const keyPair = new Ed25519Keypair();
 
 		await requestSuiFromFaucetV0({
-			host: 'http://127.0.0.1:9123/gas',
+			//host: 'http://127.0.0.1:9123/gas',
+			host: 'http://faucet.devnet.dwallet.cloud/gas',
 			recipient: keyPair.getPublicKey().toSuiAddress(),
 		});
 

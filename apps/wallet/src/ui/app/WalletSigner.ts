@@ -5,7 +5,7 @@ import { bcs } from '@dwallet-network/dwallet.js/bcs';
 import {
 	type DryRunTransactionBlockResponse,
 	type ExecuteTransactionRequestType,
-	type SuiClient,
+	type DWalletClient,
 	type SuiTransactionBlockResponse,
 	type SuiTransactionBlockResponseOptions,
 } from '@dwallet-network/dwallet.js/client';
@@ -24,9 +24,9 @@ export type SignedMessage = {
 };
 
 export abstract class WalletSigner {
-	client: SuiClient;
+	client: DWalletClient;
 
-	constructor(client: SuiClient) {
+	constructor(client: DWalletClient) {
 		this.client = client;
 	}
 

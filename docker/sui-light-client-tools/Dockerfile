@@ -22,6 +22,9 @@ RUN cargo build --profile ${PROFILE} \
 
 # Production Image
 FROM debian:bullseye-slim AS runtime
+RUN apt-get update && apt-get install -y ca-certificates
+
+
 WORKDIR "$WORKDIR/sui"
 
 COPY --from=builder /sui/target/release/light-client-service /usr/local/bin

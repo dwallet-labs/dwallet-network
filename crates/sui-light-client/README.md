@@ -15,7 +15,7 @@ $ cargo run --bin light-client -- --config example_config/light_client.yaml init
 Every day there is a need to download new checkpoints through sync by doing:
 
 ```
-$ cargo run -- --config example_config/light_client.yaml sync
+$ cargo run --bin light-client -- --config example_config/light_client.yaml sync
 ```
 
 ## Prove Tx

@@ -6,7 +6,7 @@ import {
 	OrderArguments,
 	PaginatedEvents,
 	PaginationArguments,
-	SuiClient,
+	DWalletClient,
 } from '@dwallet-network/dwallet.js/client';
 import {
 	TransactionArgument,
@@ -53,7 +53,7 @@ export class DeepBookClient {
 	 * @param currentAddress (optional) address of the current user (default: DUMMY_ADDRESS)
 	 */
 	constructor(
-		public suiClient: SuiClient = new SuiClient({ url: getFullnodeUrl('testnet') }),
+		public suiClient: DWalletClient = new DWalletClient({ url: getFullnodeUrl('testnet') }),
 		public accountCap: string | undefined = undefined,
 		public currentAddress: string = DUMMY_ADDRESS,
 		private clientOrderId: number = 0,

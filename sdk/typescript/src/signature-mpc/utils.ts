@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { setTimeout } from 'timers/promises';
 
-import type { SuiClient } from '../client';
+import type { DWalletClient } from '../client';
 import type { Keypair } from '../cryptography';
 
 export async function fetchObjectBySessionId(
 	sessionId: string,
 	type: string,
 	keypair: Keypair,
-	client: SuiClient,
+	client: DWalletClient,
 ) {
 	let cursor = null;
 	while (true) {

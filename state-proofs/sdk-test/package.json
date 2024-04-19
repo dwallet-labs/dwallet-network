@@ -21,11 +21,12 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"@mysten/sui.js": "workspace:*",
+		"@dwallet-network/dwallet.js": "workspace:*",
+		"@mysten/sui.js": "^0.51.2",
 		"axios": "^1.6.8"
 	},
 	"devDependencies": {
-		"typescript": "^5.4.4",
-		"@mysten/build-scripts": "workspace:*"
+		"@mysten/build-scripts": "workspace:*",
+		"typescript": "^5.4.4"
 	}
 }
