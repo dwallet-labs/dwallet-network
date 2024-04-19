@@ -299,7 +299,7 @@ async fn sync_checkpoint_list_to_latest(config: &Config) -> anyhow::Result<()> {
     let latest = client.get_latest_checkpoint().await?;
 
     // Binary search to find missing checkpoints
-    while last_epoch + 1 <  700 { //latest.epoch() { // TOOD change back
+    while last_epoch + 1 <  latest.epoch() { // TOOD change back
         let mut start = last_checkpoint_seq;
         let mut end = latest.sequence_number;
 
@@ -822,7 +822,6 @@ pub async fn main() {
             let mut ptb = ProgrammableTransactionBuilder::new();
 
 
-            // 376913
             let mut genesis_committee: Committee;
             let mut genesis_epoch;
 
@@ -835,7 +834,8 @@ pub async fn main() {
                 genesis_epoch = 0;
             }
             else {
-                let summary = read_checkpoint(&config, ckp_id).unwrap();
+                let summary = download_checkpoint_summary(&config, ckp_id).await.unwrap();
+                // read_checkpoint(&config, ckp_id).unwrap();
                 genesis_committee  = Committee::new(summary.epoch()+1, summary.end_of_epoch_data.as_ref().unwrap().next_epoch_committee.iter().cloned().collect());
                 genesis_epoch = summary.epoch();
                 println!("Epoch: {}", summary.epoch()+1);
@@ -848,7 +848,7 @@ pub async fn main() {
 
             let tag =  StructTag {
                     address: AccountAddress::from_hex_literal(&config.sui_deployed_state_proof_package).unwrap(),
-                    module: Identifier::new("sui_state_proof").expect("can't create identifier"),
+                    module: Identifier::new("dwallet_cap").expect("can't create identifier"),
                     name: Identifier::new("DWalletNetworkRequest").expect("can't create identifier"),
                     type_params:vec![],
                 };
