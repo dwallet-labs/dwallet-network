@@ -4,8 +4,10 @@ This crate contains a Command Line Interface to manage the SUI/ dWallet network 
 
 Before init, needed to set the correct package_id of the deployed sui_light_client.move package in example_config/light_client.yaml -> sui_deployed_state_proof_package
 
+Use checkpoint id from where to init the module, 0 syncs from Genesis.
+
 ```
-$ cargo run -- --config example_config/light_client.yaml init
+$ cargo run --bin light-client -- --config example_config/light_client.yaml init --ckp-id 702225
 ```
 
 ## Sync

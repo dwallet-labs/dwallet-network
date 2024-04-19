@@ -42,10 +42,10 @@ module dwallet_system::sui_state_proof {
 
 
     // TODO add wittness here so it can be initialized only once??
-    public fun init_module(init_committee: vector<u8>, package_id: vector<u8>, event_type_layout: vector<u8>, message_field_name: vector<u8>, ctx: &mut TxContext) {
+    public fun init_module(init_committee: vector<u8>, package_id: vector<u8>, event_type_layout: vector<u8>, message_field_name: vector<u8>, epoch_id_committee: u64, ctx: &mut TxContext) {
         let registry = StateProofRegistry {
             id: object::new(ctx),
-            highest_epoch: 0,
+            highest_epoch: epoch_id_committee,
         };
 
         let config = StateProofConfig {
@@ -62,7 +62,7 @@ module dwallet_system::sui_state_proof {
         };
 
         event::emit(EpochCommitteeSubmitted {
-            epoch: 0,
+            epoch: epoch_id_committee,
             epoch_committee_id: object::id(&first_committee),
         });
         

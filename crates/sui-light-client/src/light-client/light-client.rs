@@ -105,7 +105,10 @@ impl PackageStore for RemotePackageStore {
 #[derive(Subcommand, Debug)]
 enum SCommands {
     /// Sync all end-of-epoch checkpoints
-    Init {},
+    Init {
+        #[arg(short, long, value_name = "TID")]
+        ckp_id: u64,
+    },
     
     Sync {},
 
@@ -296,7 +299,7 @@ async fn sync_checkpoint_list_to_latest(config: &Config) -> anyhow::Result<()> {
     let latest = client.get_latest_checkpoint().await?;
 
     // Binary search to find missing checkpoints
-    while last_epoch + 1 <  200 { //latest.epoch() { // TOOD change back
+    while last_epoch + 1 <  700 { //latest.epoch() { // TOOD change back
         let mut start = last_checkpoint_seq;
         let mut end = latest.sequence_number;
 
@@ -814,16 +817,31 @@ pub async fn main() {
 
     match args.command {
 
-        Some(SCommands::Init {}) => {
+        Some(SCommands::Init {ckp_id}) => {
             // create a PTB with init module
             let mut ptb = ProgrammableTransactionBuilder::new();
 
 
-            // Load the genesis committee
-            let mut genesis_path = config.checkpoint_summary_dir.clone();
-            genesis_path.push(&config.genesis_filename);
-            let mut genesis_committee = Genesis::load(&genesis_path).unwrap().committee().unwrap();
-            genesis_committee.epoch = 1; // TOOD hack to make it work
+            // 376913
+            let mut genesis_committee: Committee;
+            let mut genesis_epoch;
+
+            if ckp_id == 0 {
+                // Load the genesis committee
+                let mut genesis_path = config.checkpoint_summary_dir.clone();
+                genesis_path.push(&config.genesis_filename);
+                genesis_committee = Genesis::load(&genesis_path).unwrap().committee().unwrap();
+                genesis_committee.epoch = 1; // TOOD hack to make it work
+                genesis_epoch = 0;
+            }
+            else {
+                let summary = read_checkpoint(&config, ckp_id).unwrap();
+                genesis_committee  = Committee::new(summary.epoch()+1, summary.end_of_epoch_data.as_ref().unwrap().next_epoch_committee.iter().cloned().collect());
+                genesis_epoch = summary.epoch();
+                println!("Epoch: {}", summary.epoch()+1);
+            }
+
+
 
             let init_committee_arg = ptb.pure(bcs::to_bytes(&genesis_committee).unwrap()).unwrap();
             let package_id_arg = ptb.pure(bcs::to_bytes(&ObjectID::from_hex_literal(&config.sui_deployed_state_proof_package).unwrap()).unwrap()).unwrap();
@@ -844,13 +862,14 @@ pub async fn main() {
             // TODO we can remove this as this is hardcoded in the contract
             let message_field_name_arg = ptb.pure(&"message").unwrap();
 
+            let epoch_id_committee_arg = ptb.pure(genesis_epoch).unwrap();
 
             let call = ProgrammableMoveCall {
                 package: ObjectID::from_hex_literal("0x0000000000000000000000000000000000000000000000000000000000000003").unwrap(),
                 module: Identifier::new("sui_state_proof").expect("can't create identifier"),
                 function: Identifier::new("init_module").expect("can't create identifier"),
                 type_arguments: vec![],
-                arguments: vec![init_committee_arg, package_id_arg, event_type_layout_arg, message_field_name_arg],
+                arguments: vec![init_committee_arg, package_id_arg, event_type_layout_arg, message_field_name_arg, epoch_id_committee_arg],
             };
 
             ptb.command(Command::MoveCall(Box::new(call)));
