@@ -242,9 +242,11 @@ pub fn sui_state_proof_verify_committee(
 
         let approve_message = match json_val.clone() {
             JsonValue::Object(map) => {
-                // println!("mapppp{:?}", map);
+                println!("mapppp{:?}", map);
                 if let Some(msg_value) = map.get("message").and_then(|s| s.as_array()) {
+                    println!("msg_value{:?}", msg_value);
                     msg_value.to_owned() 
+                    
                 }
                 else {
                     return Ok(NativeResult::err(cost, INVALID_TX));
@@ -253,6 +255,10 @@ pub fn sui_state_proof_verify_committee(
             _ => return Ok(NativeResult::err(cost, INVALID_TX))
         };
 
+
+        let approve_msg_vec: Vec<u8> = approve_message.iter().map(|msg| {
+            msg.as_u64().unwrap() as u8
+        }).collect();
 
         // TOOD no need to read it several times
         let cap_id = match json_val.clone() {
@@ -273,8 +279,10 @@ pub fn sui_state_proof_verify_committee(
             Err(_) => return Ok(NativeResult::err(cost, INVALID_TX)),
         };
         cap_id_final = cap_id;
-        messages.push(approve_message);
+        messages.push(approve_msg_vec);
     }
+
+    println!("messages {:?}", messages);
 
     if (cap_id_final != SuiAddress::ZERO && messages.len() > 0) {
         return Ok(NativeResult::ok(cost, smallvec![
