@@ -1557,22 +1557,6 @@ importers:
         specifier: ^0.33.0
         version: 0.33.0(@vitest/ui@0.33.0)(happy-dom@10.5.1)
 
-  test/sdk:
-    dependencies:
-      '@mysten/sui.js':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
-      axios:
-        specifier: ^1.6.8
-        version: 1.6.8
-    devDependencies:
-      '@mysten/build-scripts':
-        specifier: workspace:*
-        version: link:../../sdk/build-scripts
-      typescript:
-        specifier: ^5.4.4
-        version: 5.4.5
-
 packages:
 
   /@aashutoshrathi/word-wrap@1.2.6:
@@ -23540,12 +23524,6 @@ packages:
 
   /typescript@5.1.6:
     resolution: {integrity: sha512-zaWCozRZ6DLEWAWFrVDz1H6FVXzUSfTy5FUMWsQlU8Ym5JP9eO4xkTIROFCQvhQf61z6O/G6ugw3SgAnvvm+HA==}
-    engines: {node: '>=14.17'}
-    hasBin: true
-    dev: true
-
-  /typescript@5.4.5:
-    resolution: {integrity: sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==}
     engines: {node: '>=14.17'}
     hasBin: true
     dev: true
