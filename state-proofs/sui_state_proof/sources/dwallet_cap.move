@@ -1,4 +1,4 @@
-module sui_state_proof::sui_state_proof {
+module dwallet_network::dwallet_cap {
     use std::vector;
     use sui::object::{Self, ID, UID};
     use sui::event;

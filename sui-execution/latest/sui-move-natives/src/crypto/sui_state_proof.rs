@@ -233,7 +233,7 @@ pub fn sui_state_proof_verify_committee(
     let mut cap_id_final = SuiAddress::ZERO;
 
     for event in tx_events {
-        if !(event.clone().package_id == package_id_target && event.clone().type_.module.into_string() == "sui_state_proof" && event.clone().type_.name.into_string() == "DWalletNetworkRequest") {
+        if !(event.clone().package_id == package_id_target && event.clone().type_.module.into_string() == "dwallet_cap" && event.clone().type_.name.into_string() == "DWalletNetworkRequest") {
             continue;
         }
 

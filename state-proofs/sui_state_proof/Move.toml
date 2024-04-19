@@ -1,5 +1,5 @@
 [package]
-name = "sui_state_proof"
+name = "dwallet_network"
 version = "0.0.1"
 #edition = "legacy"
 
@@ -10,5 +10,5 @@ subdir = "crates/sui-framework/packages/sui-framework"
 rev = "devnet"
 
 [addresses]
-sui_state_proof = "0x0"
+dwallet_network = "0x0"
 
