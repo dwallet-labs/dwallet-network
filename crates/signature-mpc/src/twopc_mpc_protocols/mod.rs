@@ -13,11 +13,7 @@ use k256::{elliptic_curve, sha2};
 pub use group::PartyID;
 use k256::sha2::Digest;
 use crypto_bigint::{ U256};
-use ecdsa::{
-    elliptic_curve::{ops::Reduce},
-    hazmat::{bits2field, DigestPrimitive},
-    Signature,
-};
+use ecdsa::{elliptic_curve::{ops::Reduce}, hazmat::{bits2field, DigestPrimitive}, RecoveryId, Signature, VerifyingKey};
 pub use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 pub use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 
@@ -55,6 +51,7 @@ pub type SignatureMPCRound = u64;
 pub type SignatureMPCMessageKind = u64;
 pub type SignatureMPCTimestamp = u64;
 pub type PublicKeyValue = group::Value<GroupElement>;
+pub type SignatureK256Secp256k1 = Signature<k256::Secp256k1>;
 
 struct PublicParameters {
     tiresias_public_parameters: tiresias::encryption_key::PublicParameters
@@ -440,4 +437,12 @@ pub fn config_signature_mpc_secret_for_network_for_testing(number_of_parties: Pa
 
 
     tiresias_deal_trusted_shares(t, number_of_parties, N, SECRET_KEY, BASE)
+}
+
+pub fn recovery_id(message: Vec<u8>, public_key: PublicKeyValue, signature: SignatureK256Secp256k1, hash: &Hash) -> ecdsa::Result<RecoveryId> {
+    let verifying_key = VerifyingKey::<k256::Secp256k1>::from_affine(public_key.into()).unwrap();
+    match hash {
+        Hash::KECCAK256 => RecoveryId::trial_recovery_from_digest(&verifying_key, sha3::Keccak256::new_with_prefix(message), &signature),
+        Hash::SHA256 => RecoveryId::trial_recovery_from_digest(&verifying_key, sha2::Sha256::new_with_prefix(message), &signature)
+    }
 }
