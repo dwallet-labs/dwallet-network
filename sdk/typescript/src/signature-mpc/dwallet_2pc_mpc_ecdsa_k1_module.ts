@@ -14,6 +14,11 @@ import { TransactionBlock } from '../builder';
 import { DWalletClient } from '../client';
 import { Keypair } from '../cryptography';
 
+export {
+	recovery_id_keccak256,
+	recovery_id_sha256,
+} from '@dwallet-network/signature-mpc-wasm/signature_mpc_wasm';
+
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
