@@ -85,7 +85,7 @@ const sidebars = {
 						},
 						{
 							type: 'category',
-							label: 'Examples - Coming soon',
+							label: 'Examples',
 							collapsed: true,
 							items: [
 								{
@@ -99,12 +99,12 @@ const sidebars = {
 								},
 								{
 									type: 'doc',
-									label: 'Multi-Chain Lending',
+									label: 'Multi-Chain Lending - Coming soon',
 									id: 'developers-guide/getting-started/examples/multi-chain-lending',
 								},
 								{
 									type: 'doc',
-									label: 'Multi-Chain Atomic Swap',
+									label: 'Multi-Chain Atomic Swap - Coming soon',
 									id: 'developers-guide/getting-started/examples/multi-chain-atomic-swap',
 								},
 							],

@@ -6,13 +6,13 @@ title: Control dWallets from Sui
 dWallet Network leverages the [Sui Light Client](https://github.com/MystenLabs/sui/tree/main/crates/sui-light-client) to integrate with Sui, bringing dWallets trustlessly into the Sui Network.
 This allows developers to enforce their dWallet logic in Sui modules on the Sui Mainnet, bringing trustless and programmable Bitcoin, Ethereum and almost any other asset on Web3 to Sui, and allowing other solutions such as fast decentralized custody to be built.
 
-The dWallet module is published to Sui Devnet at `0x4d8aea37b683f7fba2ae345d7ee3f4a278f1c06b8f716c02c725b0e461dee1f3`.
+The dWallet module is published to Sui Devnet at `0x53c23db5ce2edaa007328a159517f7a0662a431972b2f1b0a65f87862fecb33e`.
 This module should be used by Sui builders to build their own modules, which means that end applications will not interact with this module directly.
 For this reason, we will not fully explain and document how to interact with it, but will only giving the bare minimum cli examples.
 This module is in its early stages and we should anticipate breaking changes and improvements.
 
-## A dWallet Capability on Sui is linked to the Wrapped dWallet Capability on the dWallet Network
-After [following these steps to create a dWallet](../getting-started/your-first-dwallet.md), you should have ownership of the `DWalletCap` object that has absolute control over it.
+## Link a dWallet Capability on Sui to the Wrapped dWallet Capability on the dWallet Network
+After [following these steps to create a dWallet](../getting-started/your-first-dwallet.md#create-a-dwallet), you should have ownership of the `DWalletCap` object that has absolute control over it.
 
 In order to control it from a Sui module, the `DWalletCap` object from the Sui dWallet module is used.
 Ownership of this object will allow complete control over the dWallet linked to it; thus, limiting control over this object (e.g. by wrapping it by your own module's object) effectively allows controlling the dWallet linked to it.
@@ -23,35 +23,31 @@ struct DWalletCap has key, store {
 ```
 To create a `DWalletCap` object, run the following command:
 ```shell
-sui client ptb \ --move-call sui::tx_context::sender \ --assign sender \ --move-call <DWALLET-PACKAGE-ID>::sui_state_proof::create_cap \ --assign cap \ --transfer-objects \[cap\] sender \ --gas-budget 50000000
+sui client ptb \ --move-call sui::tx_context::sender \ --assign sender \ --move-call <DWALLET-PACKAGE-ID>::dwallet_cap::create_cap \ --assign cap \ --transfer-objects \[cap\] sender \ --gas-budget 50000000
 ```
-
-sui client ptb \ --move-call sui::tx_context::sender \ --assign sender \ --move-call 0x4d8aea37b683f7fba2ae345d7ee3f4a278f1c06b8f716c02c725b0e461dee1f3::sui_state_proof::create_cap \ --assign cap \ --transfer-objects \[cap\] sender \ --gas-budget 50000000
-
-
 This command will produce the following output (truncated):
 ```shell
-Transaction Digest: HaBQTZQ7Dqc4gyR9rXmEt3yiviyXVwZQ3azbp924nDJG
+Transaction Digest: C9wy5Q3Uib4tJtj7mF6VUwDyr2sMtmgVFBCzC7tTCVAr
 
-╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ Transaction Block Events                                                                                                 │
-├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌──                                                                                                                     │
-│  │ EventID: HaBQTZQ7Dqc4gyR9rXmEt3yiviyXVwZQ3azbp924nDJG:0                                                               │
-│  │ PackageID: 0x4d8aea37b683f7fba2ae345d7ee3f4a278f1c06b8f716c02c725b0e461dee1f3                                         │
-│  │ Transaction Module: sui_state_proof                                                                                   │
-│  │ Sender: 0x69bbf6545d930e77e1fe56c28f8cad87595fbebc76b46d380abb33b5cfaf57ec                                            │
-│  │ EventType: 0x4d8aea37b683f7fba2ae345d7ee3f4a278f1c06b8f716c02c725b0e461dee1f3::sui_state_proof::DWalletNetworkRequest │
-│  │ ParsedJSON:                                                                                                           │
-│  │   ┌─────────┬────────────────────────────────────────────────────────────────────┐                                    │
-│  │   │ cap_id  │ 0x34127a42bac51d1294361ed82de5b3d41653866f896f106ea37c983eb9f9e807 │                                    │
-│  │   ├─────────┼────────────────────────────────────────────────────────────────────┤                                    │
-│  │   │ message │                                                                    │                                    │
-│  │   └─────────┴────────────────────────────────────────────────────────────────────┘                                    │
-│  └──                                                                                                                     │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Transaction Block Events                                                                                             │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──                                                                                                                 │
+│  │ EventID: C9wy5Q3Uib4tJtj7mF6VUwDyr2sMtmgVFBCzC7tTCVAr:0                                                           │
+│  │ PackageID: 0x53c23db5ce2edaa007328a159517f7a0662a431972b2f1b0a65f87862fecb33e                                     │
+│  │ Transaction Module: dwallet_cap                                                                                   │
+│  │ Sender: 0x69bbf6545d930e77e1fe56c28f8cad87595fbebc76b46d380abb33b5cfaf57ec                                        │
+│  │ EventType: 0x53c23db5ce2edaa007328a159517f7a0662a431972b2f1b0a65f87862fecb33e::dwallet_cap::DWalletNetworkRequest │
+│  │ ParsedJSON:                                                                                                       │
+│  │   ┌─────────┬────────────────────────────────────────────────────────────────────┐                                │
+│  │   │ cap_id  │ 0x4a5b557b05cadceb81cce8fc8d8676ac753c75412f82e3bb398bb4bcd8047118 │                                │
+│  │   ├─────────┼────────────────────────────────────────────────────────────────────┤                                │
+│  │   │ message │                                                                    │                                │
+│  │   └─────────┴────────────────────────────────────────────────────────────────────┘                                │
+│  └──                                                                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-As you can see, this transaction emits a `DWalletNetworkRequest` event that specifies the Object ID (0x34127a42bac51d1294361ed82de5b3d41653866f896f106ea37c983eb9f9e807) of the newly created `DWalletCap` object.
+As you can see, this transaction emits a `DWalletNetworkRequest` event that specifies the object ID of the newly created `DWalletCap` object.
 Currently, we use the same Move object both for the creation of the capability and approval of messages for signing, and it looks like this:
 The owner, whether it be an EOA on Sui or another object on Sui that is controlled by a Sui module, of this `DWalletCap` may call `fun approve_message(cap: &DWalletCap, message: vector<u8>)` to approve any message, which emits a `DWalletNetworkRequest` event.
 ```rust
@@ -61,16 +57,41 @@ struct DWalletNetworkRequest has copy, drop {
 }
 ```
 
-Next, call the `submitDwalletCreationProof()` function, which will take submit a state proof to the dWallet network that this transaction `txid = HaBQTZQ7Dqc4gyR9rXmEt3yiviyXVwZQ3azbp924nDJG` on Sui Devnet created a new `DWalletCap`.
+Now we can interact with the dWallet Network using the Sui state proofs in typescript. First, setup:
 ```typescript
+import { SuiClient } from '@mysten/sui.js/client';
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
+
+import {
+    createDWallet,
+    createSignMessages,
+    submitDwalletCreationProof,
+    submitTxStateProof,
+} from '@dwallet-network/dwallet.js/signature-mpc';
+
+const serviceUrl = 'http://sui-devnet-light-client.devnet.dwallet.cloud/gettxdata';
+const dWalletNodeUrl = 'http://fullnode.alpha.testnet.dwallet.cloud:9000';
+const suiDevnetURL = 'https://fullnode.devnet.sui.io:443';
+const configObjectId = '0x3f5a0304b9997b4cf5aaae33f4a2d35c6e5e54fcc0229e1d3017e4ba7448cc54';
+
+const sui_client = new SuiClient({ url: suiDevnetURL });
+const dwallet_client = new DWalletClient({ url: dWalletNodeUrl });
+```
+
+Next, call the `submitDwalletCreationProof()` function, which will take submit a state proof to the dWallet network that this transaction id on Sui Devnet created a new `DWalletCap`.
+We use the output of the dkg for extracting the `DWalletCap` id on dWallet Network, so we can wrap it to link to the sui capability.
+```typescript
+let { dwalletCapId } = dkg!;
+
+const createTxId = 'C9wy5Q3Uib4tJtj7mF6VUwDyr2sMtmgVFBCzC7tTCVAr';
 await submitDwalletCreationProof(
     dwallet_client,
     sui_client,
     configObjectId,
     dwalletCapId,
-    txId,
+    createTxId,
     serviceUrl,
-    keyPair,
+    keypair,
 );
 ```
 This will create a new `CapWrapper` object in dWallet Network, that wraps the `DWalletCap` and registers the corresponding `cap_id` on Sui, thus forming the link between the two objects:
@@ -88,48 +109,63 @@ Now that our dWallet is linked to a `DWalletCap` on Sui, its owner can use it to
 Let's say we want to sign the message `"dWallets are coming... to Sui"`, its base64 encoding is `ZFdhbGxldHMgYXJlIGNvbWluZy4uLiB0byBTdWk=` and we will run the following command:
 ```shell
 sui client ptb \
---move-call <DWALLET-PACKAGE-ID>::sui_state_proof::approve_message @<DWALLET-CAP-ID> "'dWallets are coming... to Sui'" \
+--move-call <DWALLET-PACKAGE-ID>::dwallet_cap::approve_message @<DWALLET-CAP-ID> "'dWallets are coming... to Sui'" \
 --gas-budget 50000000
 ```
 
 This command will produce the following output (truncated):
 ```shell
-Transaction Digest: ApQpAYDXR2tzq5rf2qRVmUqnfc7CjqB7uY6ZgtsG7KXz
+Transaction Digest: J2YmWvodPWpG7Vy1witUsjYgV4bqzNVgC4Xz9vEcbdHv
 
-╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ Transaction Block Events                                                                                                 │
-├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌──                                                                                                                     │
-│  │ EventID: ApQpAYDXR2tzq5rf2qRVmUqnfc7CjqB7uY6ZgtsG7KXz:0                                                               │
-│  │ PackageID: 0x4d8aea37b683f7fba2ae345d7ee3f4a278f1c06b8f716c02c725b0e461dee1f3                                         │
-│  │ Transaction Module: sui_state_proof                                                                                   │
-│  │ Sender: 0x69bbf6545d930e77e1fe56c28f8cad87595fbebc76b46d380abb33b5cfaf57ec                                            │
-│  │ EventType: 0x4d8aea37b683f7fba2ae345d7ee3f4a278f1c06b8f716c02c725b0e461dee1f3::sui_state_proof::DWalletNetworkRequest │
-│  │ ParsedJSON:                                                                                                           │
-│  │   ┌─────────┬────────────────────────────────────────────────────────────────────┐                                    │
-│  │   │ cap_id  │ 0x34127a42bac51d1294361ed82de5b3d41653866f896f106ea37c983eb9f9e807 │                                    │
-│  │   ├─────────┼────────────────────────────────────────────────────────────────────┤                                    │
-│  │   │ message │ ZFdhbGxldHMgYXJlIGNvbWluZy4uLiB0byBTdWk=                           │                                    │
-│  │   └─────────┴────────────────────────────────────────────────────────────────────┘                                    │
-│  └──                                                                                                                     │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Transaction Block Events                                                                                             │
+├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌──                                                                                                                 │
+│  │ EventID: J2YmWvodPWpG7Vy1witUsjYgV4bqzNVgC4Xz9vEcbdHv:0                                                           │
+│  │ PackageID: 0x53c23db5ce2edaa007328a159517f7a0662a431972b2f1b0a65f87862fecb33e                                     │
+│  │ Transaction Module: dwallet_cap                                                                                   │
+│  │ Sender: 0x69bbf6545d930e77e1fe56c28f8cad87595fbebc76b46d380abb33b5cfaf57ec                                        │
+│  │ EventType: 0x53c23db5ce2edaa007328a159517f7a0662a431972b2f1b0a65f87862fecb33e::dwallet_cap::DWalletNetworkRequest │
+│  │ ParsedJSON:                                                                                                       │
+│  │   ┌─────────┬────────────────────────────────────────────────────────────────────┐                                │
+│  │   │ cap_id  │ 0x4a5b557b05cadceb81cce8fc8d8676ac753c75412f82e3bb398bb4bcd8047118 │                                │
+│  │   ├─────────┼────────────────────────────────────────────────────────────────────┤                                │
+│  │   │ message │ ZFdhbGxldHMgYXJlIGNvbWluZy4uLiB0byBTdWk=                           │                                │
+│  │   └─────────┴────────────────────────────────────────────────────────────────────┘                                │
+│  └──                                                                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 Now the emitted `DWalletNetworkRequest` event also specify the message that was approved by the `DWalletCap` object.
 
-Now from typescript [we follow the steps to sign with a dWallet](../getting-started/your-first-dwallet.md) but we stop after creating the `signMessages` object.
-Next, we call the `submitDwalletCreationProof()` function, which will take submit a state proof to the dWallet network that this transaction `txid = ApQpAYDXR2tzq5rf2qRVmUqnfc7CjqB7uY6ZgtsG7KXz` on Sui Devnet approved this message for signing.
+Now from typescript [we follow the steps to sign with a dWallet](../getting-started/your-first-dwallet.md#sign-a-message-using-your-dwallet) but we stop after creating the `signMessages` object.
+Next, we call the `submitDwalletCreationProof()` function, which will take submit a state proof to the dWallet network that this transaction `txid = J2YmWvodPWpG7Vy1witUsjYgV4bqzNVgC4Xz9vEcbdHv` on Sui Devnet approved this message for signing.
 ```typescript
+const signTxId = 'J2YmWvodPWpG7Vy1witUsjYgV4bqzNVgC4Xz9vEcbdHv';
 let res = await submitTxStateProof(
     dwallet_client,
     sui_client,
     configObjectId,
     capWrapperRef,
     signMessagesIdSHA256,
-    txId,
+    signTxId,
     serviceUrl,
-    keyPair,
+    keypair,
 );
-
 console.log('res', res);
 ```
-This will generate a signature.
+This will generate a signature:
+```typsecript
+res {
+  signOutputId: '0xff13f9bc77384b6eb69f115c2aea45d649acd02b23c51a76439392e574406b8d',
+  signatures: [
+    [
+        0, 199,  21, 124, 214, 218, 120, 195, 134, 152, 209,
+      175, 146, 162, 159, 238, 153,  19,  33,   4,  30,  47,
+       67, 243, 164, 236,  78,  22, 194, 151, 206,  52,  23,
+      192,  98, 136,  93, 135, 127, 140,   0,  43,  13,  52,
+       31, 195, 145,  64, 208, 221,  70,  39, 106,  42,  82,
+       50, 131,  48,  19, 183, 241, 217,   7, 242
+    ]
+  ]
+}
+```
