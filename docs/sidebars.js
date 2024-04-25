@@ -93,8 +93,8 @@ const sidebars = {
 									label: 'Bitcoin Multi-Sig',
 									collapsed: false,
 									items: [
-										'developers-guide/getting-started/examples/bitcoin-multisig-solidity',
 										'developers-guide/getting-started/examples/bitcoin-multisig-sui-move',
+										'developers-guide/getting-started/examples/bitcoin-multisig-solidity',
 									],
 								},
 								{
