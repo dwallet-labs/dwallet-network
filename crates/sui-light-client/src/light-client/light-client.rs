@@ -835,7 +835,6 @@ pub async fn main() {
             }
             else {
                 let summary = download_checkpoint_summary(&config, ckp_id).await.unwrap();
-                // read_checkpoint(&config, ckp_id).unwrap();
                 genesis_committee  = Committee::new(summary.epoch()+1, summary.end_of_epoch_data.as_ref().unwrap().next_epoch_committee.iter().cloned().collect());
                 genesis_epoch = summary.epoch();
                 println!("Epoch: {}", summary.epoch()+1);
@@ -859,8 +858,6 @@ pub async fn main() {
                             .unwrap();
             let event_type_layout_arg = ptb.pure(bcs::to_bytes(&type_layout).unwrap()).unwrap();
             
-            // TODO we can remove this as this is hardcoded in the contract
-            let message_field_name_arg = ptb.pure(&"message").unwrap();
 
             let epoch_id_committee_arg = ptb.pure(genesis_epoch).unwrap();
 
@@ -869,7 +866,7 @@ pub async fn main() {
                 module: Identifier::new("sui_state_proof").expect("can't create identifier"),
                 function: Identifier::new("init_module").expect("can't create identifier"),
                 type_arguments: vec![],
-                arguments: vec![init_committee_arg, package_id_arg, event_type_layout_arg, message_field_name_arg, epoch_id_committee_arg],
+                arguments: vec![init_committee_arg, package_id_arg, event_type_layout_arg, epoch_id_committee_arg],
             };
 
             ptb.command(Command::MoveCall(Box::new(call)));

@@ -9,6 +9,8 @@ module dwallet_system::sui_state_proof {
     use dwallet::event;
 
 
+    const EWrongEpochSubmitted: u64 = 0;
+
 
     struct StateProofRegistry has key, store {
             id: UID,
@@ -20,7 +22,6 @@ module dwallet_system::sui_state_proof {
         registry_id: ID,
         package_id: vector<u8>,
         event_type_layout: vector<u8>,
-        message_field_name: vector<u8>,
     }
 
     struct EpochCommittee has key, store {
@@ -40,9 +41,18 @@ module dwallet_system::sui_state_proof {
         cap: DWalletCap,
     }
 
+    struct Test has copy, drop, store {
+        a: u64,
+        b: u64,
+    }
 
-    // TODO add wittness here so it can be initialized only once??
-    public fun init_module(init_committee: vector<u8>, package_id: vector<u8>, event_type_layout: vector<u8>, message_field_name: vector<u8>, epoch_id_committee: u64, ctx: &mut TxContext) {
+    native fun sui_state_proof_verify_committee(prev_committee: vector<u8>, checkpoint_summary: vector<u8>): (vector<u8>, u64);
+
+    native fun sui_state_proof_verify_transaction(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);
+
+
+
+    public fun init_module(init_committee: vector<u8>, package_id: vector<u8>, event_type_layout: vector<u8>, epoch_id_committee: u64, ctx: &mut TxContext) {
         let registry = StateProofRegistry {
             id: object::new(ctx),
             highest_epoch: epoch_id_committee,
@@ -53,7 +63,6 @@ module dwallet_system::sui_state_proof {
             registry_id: object::id(&registry),
             package_id: package_id,
             event_type_layout: event_type_layout,
-            message_field_name: message_field_name,
         };
 
         let first_committee = EpochCommittee {
@@ -72,8 +81,7 @@ module dwallet_system::sui_state_proof {
     }
 
     
-
-    native fun sui_state_proof_verify_committee(prev_committee: vector<u8>, checkpoint_summary: vector<u8>): vector<u8>;
+    
 
 
     public fun submit_new_state_committee(
@@ -82,14 +90,17 @@ module dwallet_system::sui_state_proof {
         new_checkpoint_summary: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        let committee_verified_bytes = sui_state_proof_verify_committee(prev_committee.committee, new_checkpoint_summary);
+        let (new_committee_verified_bytes, committee_epoch) = sui_state_proof_verify_committee(prev_committee.committee, new_checkpoint_summary);
 
         let committee_new = EpochCommittee {
                                     id: object::new(ctx),
-                                    committee: committee_verified_bytes,
+                                    committee: new_committee_verified_bytes,
                                     };
 
         registry.highest_epoch = registry.highest_epoch + 1;
+
+        assert!(committee_epoch == registry.highest_epoch, EWrongEpochSubmitted);
+
 
         event::emit(EpochCommitteeSubmitted {
             epoch: registry.highest_epoch,
@@ -111,9 +122,11 @@ module dwallet_system::sui_state_proof {
     ){        
         
         let (cap_id_bytes, _) = sui_state_proof_verify_transaction(committee.committee, checkpoint_summary, checkpoint_contents, transaction, config.event_type_layout, config.package_id );
+        
+        let cap_id_address = bcs::peel_address(&mut bcs::new(cap_id_bytes));
         let wrapper = CapWrapper {
             id: object::new(ctx),
-            cap_id_sui: object::id_from_bytes(cap_id_bytes),
+            cap_id_sui: object::id_from_address(cap_id_address),
             cap: dwallet_cap,
         };
 
@@ -122,7 +135,6 @@ module dwallet_system::sui_state_proof {
 
 
 
-    native fun sui_state_proof_verify_transaction(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);
 
 
     public fun transaction_state_proof(
@@ -135,6 +147,7 @@ module dwallet_system::sui_state_proof {
         ): vector<MessageApproval>{
         
         let (cap_id_bytes, messages_serialised_bytes) = sui_state_proof_verify_transaction(committee.committee, checkpoint_summary, checkpoint_contents, transaction, config.event_type_layout, config.package_id );
+
 
         let messages = bcs::peel_vec_vec_u8(&mut bcs::new(messages_serialised_bytes));
         let cap_id_address = bcs::peel_address(&mut bcs::new(cap_id_bytes));

@@ -13,17 +13,17 @@ import {
 
 async function main() {
 	try {
-		// const serviceUrl = 'http://sui-devnet-light-client.devnet.dwallet.cloud/gettxdata';
-		const serviceUrl = 'http://localhost:6920/gettxdata';
+		const serviceUrl = 'http://sui-devnet-light-client.devnet.dwallet.cloud/gettxdata';
+		// const serviceUrl = 'http://localhost:6920/gettxdata';
 
 		const dWalletNodeUrl = 'http://127.0.0.1:9000';
 
 		const suiDevnetURL = 'https://fullnode.devnet.sui.io:443';
 
-		const createTxId = 'BU39cjNgb6mLrT7aGgndPNCRY7FrAJnFgv8zRjTm9cfa'; // of the dwallet cap id on sui devnet
-		const signTxId = '8qfYM1cLTjZwY3SYqnbET4medrdVfKDm4GAgj55Zq7Ex'; // of the dwallet cap id on sui devnet
+		const createTxId = '3jWvhqFifrSCKTvabWVrWG3RmLhUiJWCe2XQKeS6kJqt'; // of the dwallet cap id on sui devnet
+		const signTxId = 'BGR7L5NC1DeGvWatYXkEGfQ2o1T8DgLRBW51UFUwFmdv'; // of the dwallet cap id on sui devnet
 
-		const configObjectId = '0xcf2b2bf9a1f71050ae20f9d1f3c4fb2f4878ecbb00f32ee2cf1b34482a73d0f8'; // should take this from the light_client.yaml
+		const configObjectId = '0x19255b096e19727b63421dbd2fbc26f1c1a5f28017c0726a2ca479b8a9a09d6d'; // should take this from the light_client.yaml
 
 		const sui_client = new SuiClient({ url: suiDevnetURL });
 		const dwallet_client = new SuiClient({ url: dWalletNodeUrl });
