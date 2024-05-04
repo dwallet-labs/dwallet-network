@@ -21,10 +21,14 @@ use axum::{
 use sui_types::digests::TransactionDigest;
 
 
+// const SUI_FULLNODE_URL : &str = "https://fullnode.devnet.sui.io:443";
+const SUI_FULLNODE_URL : &str ="http://usw1a-tnt-rpc-0-3a5838e.testnet.sui.io:9000";
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let server_url = "0.0.0.0:6920";
+
+    
 
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
@@ -70,7 +74,7 @@ pub async fn get_tx_data(payload: Query<TxDataRequest>) -> impl IntoResponse {
     // TOOD don't hardcode
     let sui_client: Arc<sui_sdk::SuiClient> = Arc::new(
         SuiClientBuilder::default()
-            .build(&"https://fullnode.devnet.sui.io:443")
+            .build(SUI_FULLNODE_URL)
             .await
             .unwrap(),
     );
@@ -84,11 +88,8 @@ pub async fn get_tx_data(payload: Query<TxDataRequest>) -> impl IntoResponse {
         .ok_or(anyhow!("Transaction not found")).unwrap();
 
 
-    let rest_client: Client = Client::new("https://fullnode.devnet.sui.io:443/rest");
+    let rest_client: Client = Client::new(format!("{}/rest", SUI_FULLNODE_URL));
     let full_checkpoint = rest_client.get_full_checkpoint(seq).await.unwrap();
-
-
-    // let ckp_epoch_id = full_checkpoint.checkpoint_summary.data().epoch;
 
 
 

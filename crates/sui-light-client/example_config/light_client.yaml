@@ -1,8 +1,8 @@
 ---
-sui_full_node_url: "https://fullnode.devnet.sui.io:443"
+sui_full_node_url: "https://fullnode.testnet.sui.io:443"
 dwallet_full_node_url: "http://127.0.0.1:9000"
 checkpoint_summary_dir: example_config
-genesis_filename: genesis_devnet.blob
-sui_deployed_state_proof_package: "0xc9b17e795bd497722dd748340d16c451e83b8a4c7bc877e25bc6950ed5340e18"
-dwltn_registry_object_id: "0x5b4f2e841cbb236ca10b495e59aca1361d7e1d24c7cb956e057f6eea6e44683f"
-dwltn_config_object_id: "0x19255b096e19727b63421dbd2fbc26f1c1a5f28017c0726a2ca479b8a9a09d6d"
+genesis_filename: genesis_testnet.blob
+sui_deployed_state_proof_package: "0xda072e51bf74040f2f99909595ef1db40fdc75071b92438bb9864f6c744c6736"
+dwltn_registry_object_id: "0x767e48698a7184b99cfaf56ca7e1f855121e8b4311338ed288a330a1322b0c1a"
+dwltn_config_object_id: "0x39ddff2aec69fc36d6748581b7afc132c84075fc78919765624d5c86e553b8b4"

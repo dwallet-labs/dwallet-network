@@ -7,9 +7,12 @@ module dwallet_system::sui_state_proof {
     use dwallet::transfer;
     use dwallet::bcs;
     use dwallet::event;
+    use std::vector;
 
 
     const EWrongEpochSubmitted: u64 = 0;
+    const EWrongDWalletCapId: u64 = 1;
+    const EStateProofNoMessagesToApprove: u64 = 2;
 
 
     struct StateProofRegistry has key, store {
@@ -21,7 +24,8 @@ module dwallet_system::sui_state_proof {
         id: UID,
         registry_id: ID,
         package_id: vector<u8>,
-        event_type_layout: vector<u8>,
+        init_cap_event_type_layout: vector<u8>,
+        approve_event_type_layout: vector<u8>,
     }
 
     struct EpochCommittee has key, store {
@@ -41,18 +45,22 @@ module dwallet_system::sui_state_proof {
         cap: DWalletCap,
     }
 
-    struct Test has copy, drop, store {
-        a: u64,
-        b: u64,
-    }
 
     native fun sui_state_proof_verify_committee(prev_committee: vector<u8>, checkpoint_summary: vector<u8>): (vector<u8>, u64);
+
+    native fun sui_state_proof_verify_link_cap(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);
 
     native fun sui_state_proof_verify_transaction(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);
 
 
 
-    public fun init_module(init_committee: vector<u8>, package_id: vector<u8>, event_type_layout: vector<u8>, epoch_id_committee: u64, ctx: &mut TxContext) {
+    public fun init_module(
+        init_committee: vector<u8>, 
+        package_id: vector<u8>, 
+        init_cap_event_type_layout: vector<u8>, 
+        approve_event_type_layout: vector<u8>, 
+        epoch_id_committee: u64, 
+        ctx: &mut TxContext) {
         let registry = StateProofRegistry {
             id: object::new(ctx),
             highest_epoch: epoch_id_committee,
@@ -62,7 +70,8 @@ module dwallet_system::sui_state_proof {
             id: object::new(ctx),
             registry_id: object::id(&registry),
             package_id: package_id,
-            event_type_layout: event_type_layout,
+            init_cap_event_type_layout: init_cap_event_type_layout,
+            approve_event_type_layout: approve_event_type_layout,
         };
 
         let first_committee = EpochCommittee {
@@ -90,7 +99,10 @@ module dwallet_system::sui_state_proof {
         new_checkpoint_summary: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        let (new_committee_verified_bytes, committee_epoch) = sui_state_proof_verify_committee(prev_committee.committee, new_checkpoint_summary);
+        let (new_committee_verified_bytes, new_committee_epoch) = sui_state_proof_verify_committee(prev_committee.committee, new_checkpoint_summary);
+
+        assert!(new_committee_epoch - 1 == registry.highest_epoch, EWrongEpochSubmitted);
+
 
         let committee_new = EpochCommittee {
                                     id: object::new(ctx),
@@ -98,8 +110,6 @@ module dwallet_system::sui_state_proof {
                                     };
 
         registry.highest_epoch = registry.highest_epoch + 1;
-
-        assert!(committee_epoch == registry.highest_epoch, EWrongEpochSubmitted);
 
 
         event::emit(EpochCommitteeSubmitted {
@@ -121,19 +131,22 @@ module dwallet_system::sui_state_proof {
         ctx: &mut TxContext
     ){        
         
-        let (cap_id_bytes, _) = sui_state_proof_verify_transaction(committee.committee, checkpoint_summary, checkpoint_contents, transaction, config.event_type_layout, config.package_id );
+        let (sui_cap_id_bytes, dwallet_cap_id_bytes) = sui_state_proof_verify_link_cap(committee.committee, checkpoint_summary, checkpoint_contents, transaction, config.init_cap_event_type_layout, config.package_id );
         
-        let cap_id_address = bcs::peel_address(&mut bcs::new(cap_id_bytes));
+
+        // check if the cap id used on SUI is the same as the id of dwallet_cap
+        let sui_cap_id_address = bcs::peel_address(&mut bcs::new(sui_cap_id_bytes));
+        let dwallet_cap_id_address = bcs::peel_address(&mut bcs::new(dwallet_cap_id_bytes));
+        assert!(object::id_from_address(dwallet_cap_id_address) == object::id(&dwallet_cap), EWrongDWalletCapId);
+        
         let wrapper = CapWrapper {
             id: object::new(ctx),
-            cap_id_sui: object::id_from_address(cap_id_address),
+            cap_id_sui: object::id_from_address(sui_cap_id_address),
             cap: dwallet_cap,
         };
 
         transfer::share_object(wrapper);
     }
-
-
 
 
 
@@ -146,13 +159,23 @@ module dwallet_system::sui_state_proof {
         transaction: vector<u8>,
         ): vector<MessageApproval>{
         
-        let (cap_id_bytes, messages_serialised_bytes) = sui_state_proof_verify_transaction(committee.committee, checkpoint_summary, checkpoint_contents, transaction, config.event_type_layout, config.package_id );
+        let (cap_ids_serialised_bytes, messages_serialised_bytes) = sui_state_proof_verify_transaction(committee.committee, checkpoint_summary, checkpoint_contents, transaction, config.approve_event_type_layout, config.package_id );
 
 
         let messages = bcs::peel_vec_vec_u8(&mut bcs::new(messages_serialised_bytes));
-        let cap_id_address = bcs::peel_address(&mut bcs::new(cap_id_bytes));
-        
-        assert!(object::id_from_address(cap_id_address)  == cap_wrapper.cap_id_sui, 0);
-        dwallet::approve_messages(&cap_wrapper.cap, messages)
+        let cap_ids = bcs::peel_vec_address(&mut bcs::new(cap_ids_serialised_bytes));
+
+        // only messages are approved for the cap id that is represented by the cap wrapper
+        let messages_to_approve = vector::empty<vector<u8>>();
+        let i = 0;
+        while (i < vector::length(&cap_ids)) {
+            let cap_id_address = *vector::borrow(&cap_ids, i);
+            if (object::id_from_address(cap_id_address) == cap_wrapper.cap_id_sui) {
+                vector::push_back(&mut messages_to_approve, *vector::borrow(&messages, i));
+            }
+        };
+
+        assert!(vector::length(&messages_to_approve) > 0, EStateProofNoMessagesToApprove);
+        dwallet::approve_messages(&cap_wrapper.cap, messages_to_approve)
     }
 }

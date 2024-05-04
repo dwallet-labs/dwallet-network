@@ -1,10 +1,11 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { SuiClient } from '@mysten/sui.js/client';
 import axios from 'axios';
 
 import { TransactionBlock } from '../builder';
-import { EventId, SuiClient, SuiEventFilter, SuiObjectRef } from '../client';
+import { SuiClient as dWalletClient, EventId, SuiEventFilter, SuiObjectRef } from '../client';
 import { Keypair } from '../cryptography';
 import { fetchObjectBySessionId } from './utils';
 
@@ -20,8 +21,8 @@ type TxDataResponse = {
 	transaction_bytes: Uint8Array;
 };
 
-export async function submitDwalletCreationProof(
-	dwallet_client: SuiClient,
+export async function submitDWalletCreationProof(
+	dwallet_client: dWalletClient,
 	sui_client: SuiClient,
 	configObjectId: string,
 	dWalletCapId: string,
@@ -80,7 +81,7 @@ export async function submitDwalletCreationProof(
 }
 
 export async function submitTxStateProof(
-	dwallet_client: SuiClient,
+	dwallet_client: dWalletClient,
 	sui_client: SuiClient,
 	configObjectId: string,
 	capWrapperRef: SuiObjectRef,
@@ -186,7 +187,7 @@ async function queryTxData(txId: string, url: string): Promise<TxDataResponse> {
 	}
 }
 
-async function getOwnedObject(client: SuiClient, id: string) {
+async function getOwnedObject(client: dWalletClient, id: string) {
 	const res = await client.getObject({ id });
 
 	if (!res.data) {
@@ -205,7 +206,7 @@ async function getOwnedObject(client: SuiClient, id: string) {
 }
 
 async function retrieveEpochCommitteeIdByEpoch(
-	client: SuiClient,
+	client: dWalletClient,
 	targetEpoch: number,
 ): Promise<string> {
 	const query: SuiEventFilter = {
