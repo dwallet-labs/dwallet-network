@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@dwallet-network/dwallet.js/client';
+import type { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import type { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 import { fromB64, toB64 } from '@dwallet-network/dwallet.js/utils';
@@ -318,7 +318,7 @@ export class EnokiFlow {
 	}: {
 		network?: 'mainnet' | 'testnet';
 		transactionBlock: TransactionBlock;
-		client: SuiClient;
+		client: DWalletClient;
 	}) {
 		const session = await this.getSession();
 
@@ -352,7 +352,7 @@ export class EnokiFlow {
 	}: {
 		bytes: string;
 		digest: string;
-		client: SuiClient;
+		client: DWalletClient;
 	}) {
 		const keypair = await this.getKeypair();
 		const userSignature = await keypair.signTransactionBlock(fromB64(bytes));
@@ -375,7 +375,7 @@ export class EnokiFlow {
 	}: {
 		network?: 'mainnet' | 'testnet';
 		transactionBlock: TransactionBlock;
-		client: SuiClient;
+		client: DWalletClient;
 	}) {
 		const { bytes, digest } = await this.sponsorTransactionBlock({
 			network,

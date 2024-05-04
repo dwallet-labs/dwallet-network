@@ -8,7 +8,7 @@ import { useDeepBookContext } from '_shared/deepBook/context';
 import { useSuiClient } from '@mysten/dapp-kit';
 import { type DeepBookClient } from '@mysten/deepbook';
 import { TransactionBlock } from '@dwallet-network/dwallet.js/builder';
-import { type CoinStruct, type SuiClient } from '@dwallet-network/dwallet.js/client';
+import { type CoinStruct, type DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import BigNumber from 'bignumber.js';
 
@@ -23,7 +23,7 @@ async function getCoinsByBalance({
 }: {
 	coinType: string;
 	balance: string;
-	suiClient: SuiClient;
+	suiClient: DWalletClient;
 	address: string;
 }) {
 	let cursor: string | undefined | null = null;

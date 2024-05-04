@@ -3,7 +3,7 @@
 
 import { bcs } from '../bcs';
 import { TransactionBlock } from '../builder';
-import { SuiClient } from '../client';
+import { DWalletClient } from '../client';
 import { Keypair } from '../cryptography';
 import { fetchObjectBySessionId } from './utils';
 
@@ -11,7 +11,7 @@ const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export async function approveAndSign(dwalletCapId: string, signMessagesId: string, messages: Uint8Array[], keypair: Keypair, client: SuiClient) {
+export async function approveAndSign(dwalletCapId: string, signMessagesId: string, messages: Uint8Array[], keypair: Keypair, client: DWalletClient) {
 
 	const tx = new TransactionBlock();
 	const [messageApprovals] = tx.moveCall({

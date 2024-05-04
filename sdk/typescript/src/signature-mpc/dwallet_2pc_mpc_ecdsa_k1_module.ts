@@ -11,13 +11,18 @@ import {
 import { bcs } from "../bcs";
 import { fetchObjectBySessionId } from "./utils";
 import { TransactionBlock } from '../builder';
-import { SuiClient } from '../client';
+import { DWalletClient } from '../client';
 import { Keypair } from '../cryptography';
+
+export {
+	recovery_id_keccak256 as recoveryIdKeccak256,
+	recovery_id_sha256 as recoveryIdSha256,
+} from '@dwallet-network/signature-mpc-wasm/signature_mpc_wasm';
 
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export async function createDWallet(keypair: Keypair, client: SuiClient) {
+export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 	const resultDKG = initiate_dkg();
 
 	const commitmentToSecretKeyShare = resultDKG['commitment_to_secret_key_share'];
@@ -82,7 +87,7 @@ function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
 	}
 }
 
-export async function createSignMessages(dwalletId: string, dkgOutput: number[], messages: Uint8Array[], hash: "KECCAK256" | "SHA256", keypair: Keypair, client: SuiClient) {
+export async function createSignMessages(dwalletId: string, dkgOutput: number[], messages: Uint8Array[], hash: "KECCAK256" | "SHA256", keypair: Keypair, client: DWalletClient) {
 
 	const resultPresign = initiate_presign(Uint8Array.of(...dkgOutput), messages.length);
 

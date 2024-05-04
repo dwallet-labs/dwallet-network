@@ -105,7 +105,7 @@ function CustomRPCInput({
 			onSubmit={handleSubmit((values) => {
 				onChange(values.url);
 			})}
-			className="relative flex items-center rounded-md"
+			className="relative flex w-112 items-center rounded-md"
 		>
 			<input
 				{...register('url')}
@@ -250,7 +250,7 @@ export function NetworkSelect({
 										scale: 0.95,
 									}}
 									transition={{ duration: 0.15 }}
-									className="z-20 flex w-52 flex-col gap-2 rounded-lg bg-steel-darker px-3 py-4 shadow-lg backdrop-blur focus:outline-none"
+									className="z-20 flex w-128 flex-col gap-2 rounded-lg bg-steel-darker px-3 py-4 shadow-lg backdrop-blur focus:outline-none"
 									style={{
 										position: strategy,
 										top: y ?? 0,

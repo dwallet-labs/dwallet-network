@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@dwallet-network/dwallet.js/client';
+import type { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import type {
 	StandardConnectFeature,
@@ -33,7 +33,7 @@ export function useUnsafeBurnerWallet(enabled: boolean) {
 	}, [enabled, suiClient]);
 }
 
-function registerUnsafeBurnerWallet(suiClient: SuiClient) {
+function registerUnsafeBurnerWallet(suiClient: DWalletClient) {
 	const walletsApi = getWallets();
 	const registeredWallets = walletsApi.get();
 

@@ -8,7 +8,7 @@ import {
 	type QredoAPI,
 	type TransactionInfoResponse,
 } from '_src/shared/qredo-api';
-import { type SuiClient } from '@dwallet-network/dwallet.js/client';
+import { type DWalletClient } from '@dwallet-network/dwallet.js/client';
 import {
 	IntentScope,
 	messageWithIntent,
@@ -39,7 +39,7 @@ export class QredoSigner extends WalletSigner {
 	#apiEnv: API_ENV;
 
 	constructor(
-		client: SuiClient,
+		client: DWalletClient,
 		account: QredoSerializedUiAccount,
 		qredoAPI: QredoAPI,
 		apiEnv: API_ENV,
@@ -155,7 +155,7 @@ export class QredoSigner extends WalletSigner {
 		});
 	};
 
-	connect(client: SuiClient): WalletSigner {
+	connect(client: DWalletClient): WalletSigner {
 		return new QredoSigner(client, this.#qredoAccount, this.#qredoAPI, this.#apiEnv);
 	}
 
