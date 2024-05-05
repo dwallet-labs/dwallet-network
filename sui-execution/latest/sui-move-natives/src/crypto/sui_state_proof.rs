@@ -128,8 +128,6 @@ pub fn sui_state_proof_verify_committee(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 6);
 
-    println!("giga debug start");
-
     // Load the cost parameters from the protocol config
     let sui_state_proof_cost_params = &context
         .extensions()
@@ -170,14 +168,14 @@ pub fn sui_state_proof_verify_committee(
     let Ok(checkpoint_contents) = bcs::from_bytes::<CheckpointContents>(&checkpoint_contents_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            11
+            INVALID_INPUT
         ));
     };
 
     let Ok(transaction) = bcs::from_bytes::<CheckpointTransaction>(&transaction_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            21
+            INVALID_INPUT
         ));
     };
 
@@ -185,7 +183,7 @@ pub fn sui_state_proof_verify_committee(
     let Ok(type_layout) = bcs::from_bytes::<MoveTypeLayout>(&type_layout_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            31
+            INVALID_INPUT
         ));
     };
 
@@ -193,56 +191,43 @@ pub fn sui_state_proof_verify_committee(
     let Ok(package_id_target) = bcs::from_bytes::<ObjectID>(&package_id_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            41
+            INVALID_INPUT
         ));
     };
     
     // Verify the checkpoint summary using the committee
     let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
     if let Err(_) = res {
-        return Ok(NativeResult::err(cost, 51));
+        return Ok(NativeResult::err(cost, INVALID_TX));
     }
 
 
     // Ensure the tx is part of the checkpoint
     let is_valid_checkpoint_tx = checkpoint_contents.iter().any(|&digest| digest == transaction.effects.execution_digests());
     if !is_valid_checkpoint_tx {
-      return Ok(NativeResult::err(cost, 52));
+      return Ok(NativeResult::err(cost, INVALID_TX));
     };
-
-    println!("giga debug start");
 
     let tx_events = &transaction.events.as_ref().unwrap().data;
 
     let result = tx_events.into_iter().filter_map(|event| {
         
-        println!("event {:?}", event);
-
         if event.package_id == package_id_target && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkInitCapRequest" {
             let json_val = SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents).unwrap().to_json_value();
             
-            println!("json val {:?}", json_val);
-
             let sui_cap_id_str = match json_val.clone() {
                 JsonValue::Object(map) => map.get("cap_id").and_then(|s| s.as_str()).map(|s| s.to_owned()),
                 _ => None,
             };
 
-            println!("sui_cap_id_str {:?}", sui_cap_id_str);
     
             let sui_cap_id = sui_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
-
-            println!("sui_cap_id {:?}", sui_cap_id);
-
             let dwallet_cap_id_str = match json_val.clone() {
                 JsonValue::Object(map) => map.get("dwallet_network_cap_id").and_then(|s| s.as_str()).map(|s| s.to_owned()),
                 _ => None,
-            };
-            println!("dwallet_cap_id_str {:?}", dwallet_cap_id_str);
-    
+            };    
             let dwallet_cap_id = dwallet_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
     
-            println!("dwallet_cap_id {:?}", dwallet_cap_id);
 
             Some((sui_cap_id, dwallet_cap_id))
         } else {
@@ -258,7 +243,7 @@ pub fn sui_state_proof_verify_committee(
                 Value::vector_u8(bcs::to_bytes(&dwallet_cap_id).unwrap())
             ]));
         },
-        _ => return Ok(NativeResult::err(cost, 64)),
+        _ => return Ok(NativeResult::err(cost, INVALID_TX)),
     }
 }
 
