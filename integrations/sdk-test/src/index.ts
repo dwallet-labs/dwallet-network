@@ -1,36 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
+import { requestSuiFromFaucetV0 as requestDwltFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import {
 	createDWallet,
 	createSignMessages,
 	submitDWalletCreationProof,
 	submitTxStateProof,
-} from '@dwallet-network/dwallet.js//signature-mpc';
-import { SuiClient as dWalletClient } from '@dwallet-network/dwallet.js/client';
-import { requestSuiFromFaucetV0 as requestDwltFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
-import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
+} from '@dwallet-network/dwallet.js/signature-mpc';
 import { SuiClient } from '@mysten/sui.js/client';
 import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
-
-async function getOwnedObject(client: dWalletClient, id: string) {
-	const res = await client.getObject({ id });
-
-	if (!res.data) {
-		throw new Error('No object found');
-	}
-
-	return {
-		Object: {
-			ImmOrOwned: {
-				digest: res.data.digest,
-				objectId: id,
-				version: res.data.version,
-			},
-		},
-	};
-}
+import { TransactionBlock as TransactionBlockSUI } from '@mysten/sui.js/transactions';
 
 async function main() {
 	try {
@@ -40,17 +22,18 @@ async function main() {
 		const dWalletNodeUrl = 'http://127.0.0.1:9000';
 
 		// const suiDevnetURL = 'https://fullnode.devnet.sui.io:443';
-		const suiTestnetURL = 'http://usw1a-tnt-rpc-0-3a5838e.testnet.sui.io:9000';
+		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
 
-		const signTxId = 'BGR7L5NC1DeGvWatYXkEGfQ2o1T8DgLRBW51UFUwFmdv'; // of the dwallet cap id on sui devnet
-
-		const configObjectId = '0x39ddff2aec69fc36d6748581b7afc132c84075fc78919765624d5c86e553b8b4'; // should take this from the light_client.yaml
+		const configObjectId = '0xd3fc444d4d546eb6f1617294a1b4fc814a7f868558b1cb86954a1a7e13d7b92e'; // should take this from the light_client.yaml
 
 		const sui_client = new SuiClient({ url: suiTestnetURL });
-		const dwallet_client = new dWalletClient({ url: dWalletNodeUrl });
+		const dwallet_client = new DWalletClient({ url: dWalletNodeUrl });
 
-		const keyPair = new Ed25519Keypair();
+		const messageSign = 'dWallets are coming... to Sui';
 
+		const keyPair = Ed25519Keypair.deriveKeypairFromSeed(
+			'witch collapse practice feed shame open despair creek road again ice least',
+		);
 		console.log('SUI address', keyPair.toSuiAddress());
 
 		const dWalletCapPackageSUI =
@@ -66,6 +49,9 @@ async function main() {
 			recipient: keyPair.getPublicKey().toSuiAddress(),
 		});
 
+		// sleep for 5 seconds
+		await new Promise((resolve) => setTimeout(resolve, 5000));
+
 		console.log('creating dwallet');
 		const dkg = await createDWallet(keyPair, dwallet_client);
 
@@ -74,15 +60,25 @@ async function main() {
 		}
 		let { dwalletCapId } = dkg;
 
-		console.log('initialising dwallet cap');
-		let txb = new TransactionBlock();
-		let dWalletCap = await getOwnedObject(dwallet_client, dwalletCapId);
-		let dWalletCapArg = txb.object(dWalletCap);
+		console.log('initialising dwallet cap with id: ', dwalletCapId);
+		let txb = new TransactionBlockSUI();
 
-		txb.moveCall({
+		let dWalletCapArg = txb.pure(dwalletCapId);
+
+		let [cap] = txb.moveCall({
 			target: `${dWalletCapPackageSUI}::dwallet_cap::create_cap`,
 			arguments: [dWalletCapArg],
 		});
+
+		let signMsgArg = txb.pure(messageSign);
+		txb.moveCall({
+			target: `${dWalletCapPackageSUI}::dwallet_cap::approve_message`,
+			arguments: [cap, signMsgArg],
+		});
+
+		txb.transferObjects([cap], keyPair.toSuiAddress());
+
+		txb.setGasBudget(10000000);
 
 		let res = await sui_client.signAndExecuteTransactionBlock({
 			signer: keyPair,
@@ -93,11 +89,19 @@ async function main() {
 		});
 
 		const createCapTxId = res.digest;
+		const approveMsgTxId = res.digest;
 
-		console.log('cap created', res);
+		let first = res.effects?.created?.[0];
+		let ref;
+		if (first) {
+			ref = first.reference.objectId;
+			console.log('cap created', ref);
+		} else {
+			console.log('No objects were created');
+		}
 
-		// sleep for 5 seconds
-		await new Promise((resolve) => setTimeout(resolve, 5000));
+		// sleep for 10 seconds
+		await new Promise((resolve) => setTimeout(resolve, 10000));
 
 		console.log('address', keyPair.getPublicKey().toSuiAddress());
 
@@ -113,7 +117,7 @@ async function main() {
 
 		console.log('creation done', resultFinal);
 
-		const bytes: Uint8Array = new TextEncoder().encode('dWallets are coming... to Sui');
+		const bytes: Uint8Array = new TextEncoder().encode(messageSign);
 
 		const signMessagesIdSHA256 = await createSignMessages(
 			dkg?.dwalletId!,
@@ -135,16 +139,13 @@ async function main() {
 			'reference' in resultFinal.effects?.created?.[0]
 		) {
 			const capWrapperRef = resultFinal.effects?.created?.[0].reference;
-
-			console.log('A');
-
 			let res = await submitTxStateProof(
 				dwallet_client,
 				sui_client,
 				configObjectId,
 				capWrapperRef,
 				signMessagesIdSHA256,
-				signTxId,
+				approveMsgTxId,
 				serviceUrl,
 				keyPair,
 			);

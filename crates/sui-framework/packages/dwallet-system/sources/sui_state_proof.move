@@ -172,7 +172,8 @@ module dwallet_system::sui_state_proof {
             let cap_id_address = *vector::borrow(&cap_ids, i);
             if (object::id_from_address(cap_id_address) == cap_wrapper.cap_id_sui) {
                 vector::push_back(&mut messages_to_approve, *vector::borrow(&messages, i));
-            }
+            };
+            i = i + 1;
         };
 
         assert!(vector::length(&messages_to_approve) > 0, EStateProofNoMessagesToApprove);

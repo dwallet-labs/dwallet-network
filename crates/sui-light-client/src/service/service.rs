@@ -22,7 +22,7 @@ use sui_types::digests::TransactionDigest;
 
 
 // const SUI_FULLNODE_URL : &str = "https://fullnode.devnet.sui.io:443";
-const SUI_FULLNODE_URL : &str ="http://usw1a-tnt-rpc-0-3a5838e.testnet.sui.io:9000";
+const SUI_FULLNODE_URL : &str = "http://usw1a-tnt-rpc-0-3a5838e.testnet.sui.io:9000";
 
 #[tokio::main]
 async fn main() -> Result<()> {

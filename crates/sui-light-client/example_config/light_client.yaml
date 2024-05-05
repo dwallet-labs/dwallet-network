@@ -4,5 +4,5 @@ dwallet_full_node_url: "http://127.0.0.1:9000"
 checkpoint_summary_dir: example_config
 genesis_filename: genesis_testnet.blob
 sui_deployed_state_proof_package: "0xda072e51bf74040f2f99909595ef1db40fdc75071b92438bb9864f6c744c6736"
-dwltn_registry_object_id: "0x767e48698a7184b99cfaf56ca7e1f855121e8b4311338ed288a330a1322b0c1a"
-dwltn_config_object_id: "0x39ddff2aec69fc36d6748581b7afc132c84075fc78919765624d5c86e553b8b4"
+dwltn_registry_object_id: "0x7a9eeec300c3564418ab15d341fefaad0c947d88ccc0c25e79d8beda1d248b08"
+dwltn_config_object_id: "0xd3fc444d4d546eb6f1617294a1b4fc814a7f868558b1cb86954a1a7e13d7b92e"

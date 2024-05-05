@@ -40,7 +40,7 @@ pub struct SuiStateProofCostParams {
 /***************************************************************************************************
  * native fun sui_state_proof_verify_committee
  * Implementation of the Move native function `sui_state_proofs::sui_state_proof_verify_committee(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
- *   gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base   | base cost for function call and fixed opers
+ *   gas cost: sui_state_proof_verify_committee_cost_base   | base cost for function call and fixed opers
  **************************************************************************************************/
 pub fn sui_state_proof_verify_committee(
     context: &mut NativeContext,
@@ -115,9 +115,9 @@ pub fn sui_state_proof_verify_committee(
 
 
 /***************************************************************************************************
- * native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
- * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
- *   gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base   | base cost for function call and fixed opers
+ * native fun sui_state_proof_verify_link_cap
+ * Implementation of the Move native function `sui_state_proof::sui_state_proof_verify_link_cap(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);`
+ *   gas cost: sui_state_proof_verify_link_cap_base   | base cost for function call and fixed opers
  **************************************************************************************************/
  
  pub fn sui_state_proof_verify_link_cap(
@@ -127,6 +127,8 @@ pub fn sui_state_proof_verify_committee(
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 6);
+
+    println!("giga debug start");
 
     // Load the cost parameters from the protocol config
     let sui_state_proof_cost_params = &context
@@ -168,14 +170,14 @@ pub fn sui_state_proof_verify_committee(
     let Ok(checkpoint_contents) = bcs::from_bytes::<CheckpointContents>(&checkpoint_contents_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            INVALID_INPUT
+            11
         ));
     };
 
     let Ok(transaction) = bcs::from_bytes::<CheckpointTransaction>(&transaction_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            INVALID_INPUT
+            21
         ));
     };
 
@@ -183,7 +185,7 @@ pub fn sui_state_proof_verify_committee(
     let Ok(type_layout) = bcs::from_bytes::<MoveTypeLayout>(&type_layout_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            INVALID_INPUT
+            31
         ));
     };
 
@@ -191,45 +193,57 @@ pub fn sui_state_proof_verify_committee(
     let Ok(package_id_target) = bcs::from_bytes::<ObjectID>(&package_id_bytes) else {
         return Ok(NativeResult::err(
             cost,
-            INVALID_INPUT
+            41
         ));
     };
     
     // Verify the checkpoint summary using the committee
     let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
     if let Err(_) = res {
-        return Ok(NativeResult::err(cost, INVALID_TX));
+        return Ok(NativeResult::err(cost, 51));
     }
 
 
     // Ensure the tx is part of the checkpoint
     let is_valid_checkpoint_tx = checkpoint_contents.iter().any(|&digest| digest == transaction.effects.execution_digests());
     if !is_valid_checkpoint_tx {
-      return Ok(NativeResult::err(cost, INVALID_TX));
+      return Ok(NativeResult::err(cost, 52));
     };
 
-
+    println!("giga debug start");
 
     let tx_events = &transaction.events.as_ref().unwrap().data;
 
     let result = tx_events.into_iter().filter_map(|event| {
-        if event.package_id == package_id_target && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkApproveRequest" {
+        
+        println!("event {:?}", event);
+
+        if event.package_id == package_id_target && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkInitCapRequest" {
             let json_val = SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents).unwrap().to_json_value();
-    
+            
+            println!("json val {:?}", json_val);
+
             let sui_cap_id_str = match json_val.clone() {
                 JsonValue::Object(map) => map.get("cap_id").and_then(|s| s.as_str()).map(|s| s.to_owned()),
                 _ => None,
             };
+
+            println!("sui_cap_id_str {:?}", sui_cap_id_str);
     
-            let sui_cap_id = sui_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok());
-    
+            let sui_cap_id = sui_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
+
+            println!("sui_cap_id {:?}", sui_cap_id);
+
             let dwallet_cap_id_str = match json_val.clone() {
                 JsonValue::Object(map) => map.get("dwallet_network_cap_id").and_then(|s| s.as_str()).map(|s| s.to_owned()),
                 _ => None,
             };
+            println!("dwallet_cap_id_str {:?}", dwallet_cap_id_str);
     
-            let dwallet_cap_id = dwallet_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok());
+            let dwallet_cap_id = dwallet_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
     
+            println!("dwallet_cap_id {:?}", dwallet_cap_id);
+
             Some((sui_cap_id, dwallet_cap_id))
         } else {
             None
@@ -238,13 +252,13 @@ pub fn sui_state_proof_verify_committee(
 
 
     match result {
-        Some((Some(sui_cap_id), Some(dwallet_cap_id))) => {
+        Some((sui_cap_id, dwallet_cap_id)) => {
             return Ok(NativeResult::ok(cost, smallvec![
                 Value::vector_u8(bcs::to_bytes(&sui_cap_id).unwrap()), 
                 Value::vector_u8(bcs::to_bytes(&dwallet_cap_id).unwrap())
             ]));
         },
-        _ => return Ok(NativeResult::err(cost, INVALID_TX)),
+        _ => return Ok(NativeResult::err(cost, 64)),
     }
 }
 
@@ -252,9 +266,9 @@ pub fn sui_state_proof_verify_committee(
 
 
 /***************************************************************************************************
- * native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
- * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
- *   gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base   | base cost for function call and fixed opers
+ * native fun sui_state_proof_verify_transaction
+ * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::sui_state_proof_verify_transaction(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);`
+ *   gas cost: sui_state_proof_verify_transaction_base   | base cost for function call and fixed opers
  **************************************************************************************************/
  
  pub fn sui_state_proof_verify_transaction(
