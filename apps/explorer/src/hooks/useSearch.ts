@@ -3,20 +3,20 @@
 
 import { isSuiNSName, useSuiNSEnabled } from '@mysten/core';
 import { useSuiClientQuery, useSuiClient } from '@mysten/dapp-kit';
-import { type SuiClient, type SuiSystemStateSummary } from '@mysten/sui.js/client';
+import { type DWalletClient, type SuiSystemStateSummary } from '@dwallet-network/dwallet.js/client';
 import {
 	isValidTransactionDigest,
 	isValidSuiAddress,
 	isValidSuiObjectId,
 	normalizeSuiObjectId,
-} from '@mysten/sui.js/utils';
+} from '@dwallet-network/dwallet.js/utils';
 import { useQuery } from '@tanstack/react-query';
 
 const isGenesisLibAddress = (value: string): boolean => /^(0x|0X)0{0,39}[12]$/.test(value);
 
 type Results = { id: string; label: string; type: string }[];
 
-const getResultsForTransaction = async (client: SuiClient, query: string) => {
+const getResultsForTransaction = async (client: DWalletClient, query: string) => {
 	if (!isValidTransactionDigest(query)) return null;
 	const txdata = await client.getTransactionBlock({ digest: query });
 	return [
@@ -28,7 +28,7 @@ const getResultsForTransaction = async (client: SuiClient, query: string) => {
 	];
 };
 
-const getResultsForObject = async (client: SuiClient, query: string) => {
+const getResultsForObject = async (client: DWalletClient, query: string) => {
 	const normalized = normalizeSuiObjectId(query);
 	if (!isValidSuiObjectId(normalized)) return null;
 
@@ -44,7 +44,7 @@ const getResultsForObject = async (client: SuiClient, query: string) => {
 	];
 };
 
-const getResultsForCheckpoint = async (client: SuiClient, query: string) => {
+const getResultsForCheckpoint = async (client: DWalletClient, query: string) => {
 	// Checkpoint digests have the same format as transaction digests:
 	if (!isValidTransactionDigest(query)) return null;
 
@@ -60,7 +60,7 @@ const getResultsForCheckpoint = async (client: SuiClient, query: string) => {
 	];
 };
 
-const getResultsForAddress = async (client: SuiClient, query: string, suiNSEnabled: boolean) => {
+const getResultsForAddress = async (client: DWalletClient, query: string, suiNSEnabled: boolean) => {
 	if (suiNSEnabled && isSuiNSName(query)) {
 		const resolved = await client.resolveNameServiceAddress({ name: query.toLowerCase() });
 		if (!resolved) return null;

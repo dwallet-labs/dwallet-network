@@ -1,4 +1,4 @@
-# @mysten/sui.js
+# @dwallet-network/dwallet.js
 
 ## 0.49.0
 

@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { getFullnodeUrl, DWalletClient } from '@dwallet-network/dwallet.js/client';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { Mock } from 'vitest';
 
@@ -60,7 +60,7 @@ describe('useSignAndExecuteTransactionBlock', () => {
 			features: suiFeatures,
 		});
 
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		const suiClient = new DWalletClient({ url: getFullnodeUrl('localnet') });
 		const executeTransactionBlock = vi.spyOn(suiClient, 'executeTransactionBlock');
 
 		executeTransactionBlock.mockReturnValueOnce(Promise.resolve({ digest: '123' }));

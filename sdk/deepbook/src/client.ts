@@ -6,21 +6,21 @@ import {
 	OrderArguments,
 	PaginatedEvents,
 	PaginationArguments,
-	SuiClient,
-} from '@mysten/sui.js/client';
+	DWalletClient,
+} from '@dwallet-network/dwallet.js/client';
 import {
 	TransactionArgument,
 	TransactionBlock,
 	TransactionObjectInput,
 	TransactionResult,
-} from '@mysten/sui.js/transactions';
+} from '@dwallet-network/dwallet.js/transactions';
 import {
 	normalizeStructTag,
 	normalizeSuiAddress,
 	normalizeSuiObjectId,
 	parseStructTag,
 	SUI_CLOCK_OBJECT_ID,
-} from '@mysten/sui.js/utils';
+} from '@dwallet-network/dwallet.js/utils';
 
 import {
 	bcs,
@@ -53,7 +53,7 @@ export class DeepBookClient {
 	 * @param currentAddress (optional) address of the current user (default: DUMMY_ADDRESS)
 	 */
 	constructor(
-		public suiClient: SuiClient = new SuiClient({ url: getFullnodeUrl('testnet') }),
+		public suiClient: DWalletClient = new DWalletClient({ url: getFullnodeUrl('testnet') }),
 		public accountCap: string | undefined = undefined,
 		public currentAddress: string = DUMMY_ADDRESS,
 		private clientOrderId: number = 0,

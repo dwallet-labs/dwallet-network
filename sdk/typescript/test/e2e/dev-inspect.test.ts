@@ -4,7 +4,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { TransactionBlock } from '../../src/builder';
-import { SuiClient } from '../../src/client';
+import { DWalletClient } from '../../src/client';
 import { Keypair } from '../../src/cryptography';
 import { publishPackage, setup, TestToolbox } from './utils/setup';
 
@@ -69,7 +69,7 @@ describe('Test dev inspect', () => {
 });
 
 async function validateDevInspectTransaction(
-	client: SuiClient,
+	client: DWalletClient,
 	signer: Keypair,
 	transactionBlock: TransactionBlock,
 	status: 'success' | 'failure',

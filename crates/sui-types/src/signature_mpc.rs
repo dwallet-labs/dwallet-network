@@ -9,10 +9,12 @@ use move_core_types::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
 
 pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet");
 pub const MESSAGE_APPROVAL_STRUCT_NAME: &IdentStr = ident_str!("MessageApproval");
 pub const APPROVE_MESSAGES_FUNC_NAME: &IdentStr = ident_str!("approve_messages");
+pub const SIGN_MESSAGES_FUNC_NAME: &IdentStr = ident_str!("sign_messages");
 
 
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
@@ -22,6 +24,8 @@ pub const DKG_SESSION_OUTPUT_STRUCT_NAME: &IdentStr = ident_str!("DKGSessionOutp
 pub const PRESIGN_SESSION_STRUCT_NAME: &IdentStr = ident_str!("PresignSession");
 pub const PRESIGN_SESSION_OUTPUT_STRUCT_NAME: &IdentStr = ident_str!("PresignSessionOutput");
 pub const PRESIGN_STRUCT_NAME: &IdentStr = ident_str!("Presign");
+pub const SIGN_DATA_STRUCT_NAME: &IdentStr = ident_str!("SignData");
+
 pub const SIGN_SESSION_STRUCT_NAME: &IdentStr = ident_str!("SignSession");
 pub const SIGN_OUTPUT_STRUCT_NAME: &IdentStr = ident_str!("SignOutput");
 pub const CREATE_DKG_SESSION_FUNC_NAME: &IdentStr = ident_str!("create_dkg_session");
@@ -30,8 +34,94 @@ pub const CREATE_DWALLET_FUNC_NAME: &IdentStr = ident_str!("create_dwallet");
 pub const CREATE_PRESIGN_SESSION_FUNC_NAME: &IdentStr = ident_str!("create_presign_session");
 pub const CREATE_PRESIGN_OUTPUT_FUNC_NAME: &IdentStr = ident_str!("create_presign_output");
 pub const CREATE_PRESIGN_FUNC_NAME: &IdentStr = ident_str!("create_presign");
-pub const CREATE_SIGN_SESSION_FUNC_NAME: &IdentStr = ident_str!("create_sign_session");
+pub const CREATE_SIGN_MESSAGES_FUNC_NAME: &IdentStr = ident_str!("create_sign_messages");
 pub const CREATE_SIGN_OUTPUT_FUNC_NAME: &IdentStr = ident_str!("create_sign_output");
+
+
+
+// Rust version of the Move sui_system::dwallet::SignSession type
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct SignSession<S> {
+    pub id: UID,
+    pub dwallet_id: ID,
+    pub dwallet_cap_id: ID,
+    pub messages: Vec<Vec<u8>>,
+    pub sign_data: S,
+    pub sender: SuiAddress,
+}
+
+impl<S: Serialize + DeserializeOwned> SignSession<S> {
+    pub fn type_(type_param: TypeTag) -> StructTag {
+        StructTag {
+            address: SUI_SYSTEM_ADDRESS,
+            name: SIGN_SESSION_STRUCT_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            type_params: vec![type_param],
+        }
+    }
+
+    pub fn is_type(other: &StructTag) -> bool {
+        other.address == SUI_SYSTEM_ADDRESS
+            && other.module.as_ident_str() == SIGN_SESSION_STRUCT_NAME
+            && other.name.as_ident_str() == PRESIGN_SESSION_OUTPUT_STRUCT_NAME
+    }
+
+    /// Create from BCS bytes
+    pub fn from_bcs_bytes(content: &[u8]) -> Result<Self, bcs::Error> {
+        bcs::from_bytes(content)
+    }
+
+    pub fn id(&self) -> &ObjectID {
+        self.id.object_id()
+    }
+
+    pub fn to_bcs_bytes(&self) -> Vec<u8> {
+        bcs::to_bytes(&self).unwrap()
+    }
+}
+
+
+// Rust version of the Move sui_system::dwallet::SignOutput type
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct SignOutput {
+    pub id: UID,
+    pub session_id: ID,
+    pub dwallet_id: ID,
+    pub dwallet_cap_id: ID,
+    pub signatures: Vec<Vec<u8>>,
+    pub sender: SuiAddress,
+}
+
+impl SignOutput {
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: SUI_SYSTEM_ADDRESS,
+            name: SIGN_OUTPUT_STRUCT_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+
+    pub fn is_type(other: &StructTag) -> bool {
+        other.address == SUI_SYSTEM_ADDRESS
+            && other.module.as_ident_str() == SIGN_OUTPUT_STRUCT_NAME
+            && other.name.as_ident_str() == PRESIGN_SESSION_OUTPUT_STRUCT_NAME
+    }
+
+    /// Create from BCS bytes
+    pub fn from_bcs_bytes(content: &[u8]) -> Result<Self, bcs::Error> {
+        bcs::from_bytes(content)
+    }
+
+    pub fn id(&self) -> &ObjectID {
+        self.id.object_id()
+    }
+
+    pub fn to_bcs_bytes(&self) -> Vec<u8> {
+        bcs::to_bytes(&self).unwrap()
+    }
+}
+
 
 // Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::DWallet type
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
@@ -276,26 +366,22 @@ impl Presign {
     }
 }
 
-// Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::SignSession type
+// Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::SignData type
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct SignSession {
+pub struct SignData {
     pub id: UID,
-    pub dwallet_id: ID,
-    pub dwallet_cap_id: ID,
     pub public_key: Vec<u8>,
     pub hash: u8,
-    pub messages: Vec<Vec<u8>>,
     pub dkg_output: Vec<u8>,
     pub public_nonce_encrypted_partial_signature_and_proofs: Vec<u8>,
     pub presigns: Vec<u8>,
-    pub sender: SuiAddress,
 }
 
-impl SignSession {
+impl SignData {
     pub fn type_() -> StructTag {
         StructTag {
             address: SUI_SYSTEM_ADDRESS,
-            name: SIGN_SESSION_STRUCT_NAME.to_owned(),
+            name: SIGN_DATA_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
@@ -303,49 +389,7 @@ impl SignSession {
 
     pub fn is_type(other: &StructTag) -> bool {
         other.address == SUI_SYSTEM_ADDRESS
-            && other.module.as_ident_str() == SIGN_SESSION_STRUCT_NAME
-            && other.name.as_ident_str() == PRESIGN_SESSION_OUTPUT_STRUCT_NAME
-    }
-
-    /// Create from BCS bytes
-    pub fn from_bcs_bytes(content: &[u8]) -> Result<Self, bcs::Error> {
-        bcs::from_bytes(content)
-    }
-
-    pub fn id(&self) -> &ObjectID {
-        self.id.object_id()
-    }
-
-    pub fn to_bcs_bytes(&self) -> Vec<u8> {
-        bcs::to_bytes(&self).unwrap()
-    }
-}
-
-// Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::SignOutput type
-#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct SignOutput {
-    pub id: UID,
-    pub session_id: ID,
-    pub dwallet_id: ID,
-    pub dwallet_cap_id: ID,
-    pub hash: u8,
-    pub signatures: Vec<Vec<u8>>,
-    pub sender: SuiAddress,
-}
-
-impl SignOutput {
-    pub fn type_() -> StructTag {
-        StructTag {
-            address: SUI_SYSTEM_ADDRESS,
-            name: SIGN_OUTPUT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-
-    pub fn is_type(other: &StructTag) -> bool {
-        other.address == SUI_SYSTEM_ADDRESS
-            && other.module.as_ident_str() == SIGN_OUTPUT_STRUCT_NAME
+            && other.module.as_ident_str() == SIGN_DATA_STRUCT_NAME
             && other.name.as_ident_str() == PRESIGN_SESSION_OUTPUT_STRUCT_NAME
     }
 

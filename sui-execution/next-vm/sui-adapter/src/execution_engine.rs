@@ -29,6 +29,7 @@ mod checked {
     use crate::type_layout_resolver::TypeLayoutResolver;
     use crate::{gas_charger::GasCharger, temporary_store::TemporaryStore};
     use move_binary_format::access::ModuleAccess;
+    use move_core_types::language_storage::TypeTag;
     use sui_protocol_config::{check_limit_by_meter, LimitThresholdCrossed, ProtocolConfig};
     use sui_types::authenticator_state::{
         AUTHENTICATOR_STATE_CREATE_FUNCTION_NAME, AUTHENTICATOR_STATE_EXPIRE_JWKS_FUNCTION_NAME,
@@ -64,7 +65,7 @@ mod checked {
         signature_mpc::{CREATE_DKG_OUTPUT_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME},
     };
     use sui_types::messages_signature_mpc::SignatureMPCOutputValue;
-    use sui_types::signature_mpc::{CREATE_PRESIGN_FUNC_NAME, CREATE_PRESIGN_OUTPUT_FUNC_NAME, CREATE_SIGN_OUTPUT_FUNC_NAME};
+    use sui_types::signature_mpc::{CREATE_PRESIGN_FUNC_NAME, CREATE_PRESIGN_OUTPUT_FUNC_NAME, CREATE_SIGN_OUTPUT_FUNC_NAME, DWALLET_MODULE_NAME, SignData};
 
     #[instrument(name = "tx_execute_to_effects", level = "debug", skip_all)]
     pub fn execute_transaction_to_effects<Mode: ExecutionMode>(
@@ -1149,9 +1150,9 @@ mod checked {
                 SignatureMPCOutputValue::Sign(sigs) => {
                     builder.move_call(
                         SUI_SYSTEM_PACKAGE_ID.into(),
-                        DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                        DWALLET_MODULE_NAME.to_owned(),
                         CREATE_SIGN_OUTPUT_FUNC_NAME.to_owned(),
-                        vec![],
+                        vec![TypeTag::Struct(Box::new(SignData::type_()))],
                         vec![
                             CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
                             CallArg::Pure(bcs::to_bytes(sigs).unwrap()),

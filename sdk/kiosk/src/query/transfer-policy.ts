@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient } from '@mysten/sui.js/client';
-import { isValidSuiAddress } from '@mysten/sui.js/utils';
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
+import { isValidSuiAddress } from '@dwallet-network/dwallet.js/utils';
 
 import { bcs } from '../bcs';
 import {
@@ -24,7 +24,7 @@ import { getAllOwnedObjects, parseTransferPolicyCapObject } from '../utils';
  * @param type
  */
 export async function queryTransferPolicy(
-	client: SuiClient,
+	client: DWalletClient,
 	type: string,
 ): Promise<TransferPolicy[]> {
 	// console.log('event type: %s', `${TRANSFER_POLICY_CREATED_EVENT}<${type}>`);
@@ -69,7 +69,7 @@ export async function queryTransferPolicy(
  * @returns TransferPolicyCap Object ID | undefined if not found.
  */
 export async function queryTransferPolicyCapsByType(
-	client: SuiClient,
+	client: DWalletClient,
 	address: string,
 	type: string,
 ): Promise<TransferPolicyCap[]> {
@@ -103,7 +103,7 @@ export async function queryTransferPolicyCapsByType(
  * @returns TransferPolicyCap Object ID | undefined if not found.
  */
 export async function queryOwnedTransferPolicies(
-	client: SuiClient,
+	client: DWalletClient,
 	address: string,
 ): Promise<TransferPolicyCap[] | undefined> {
 	if (!isValidSuiAddress(address)) return;
