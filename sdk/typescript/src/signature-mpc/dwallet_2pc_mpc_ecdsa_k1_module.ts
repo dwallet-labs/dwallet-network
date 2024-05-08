@@ -7,7 +7,7 @@ import {
 	initiate_dkg,
 	initiate_presign,
 	initiate_sign,
-} from '@dwallet-network/signature-mpc-wasm/signature_mpc_wasm';
+} from '@dwallet-network/signature-mpc-wasm';
 import { bcs } from "../bcs";
 import { fetchObjectBySessionId } from "./utils";
 import { TransactionBlock } from '../builder';
@@ -17,7 +17,7 @@ import { Keypair } from '../cryptography';
 export {
 	recovery_id_keccak256 as recoveryIdKeccak256,
 	recovery_id_sha256 as recoveryIdSha256,
-} from '@dwallet-network/signature-mpc-wasm/signature_mpc_wasm';
+} from '@dwallet-network/signature-mpc-wasm';
 
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
