@@ -15,6 +15,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      '@mysten/sui.js':
+        specifier: ^0.52.0
+        version: 0.52.0(typescript@5.1.6)
     devDependencies:
       '@changesets/cli':
         specifier: ^2.26.2
@@ -1438,6 +1442,9 @@ importers:
       '@suchipi/femver':
         specifier: ^1.0.0
         version: 1.0.0
+      axios:
+        specifier: ^1.6.8
+        version: 1.6.8
       superstruct:
         specifier: ^1.0.3
         version: 1.0.3
@@ -1557,25 +1564,6 @@ importers:
         specifier: ^0.33.0
         version: 0.33.0(@vitest/ui@0.33.0)(happy-dom@10.5.1)
 
-  state-proofs/sdk-test:
-    dependencies:
-      '@dwallet-network/dwallet.js':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
-      '@mysten/sui.js':
-        specifier: ^0.51.2
-        version: 0.51.2(typescript@5.4.5)
-      axios:
-        specifier: ^1.6.8
-        version: 1.6.8
-    devDependencies:
-      '@mysten/build-scripts':
-        specifier: workspace:*
-        version: link:../../sdk/build-scripts
-      typescript:
-        specifier: ^5.4.4
-        version: 5.4.5
-
 packages:
 
   /@0no-co/graphql.web@1.0.7(graphql@16.8.1):
@@ -1598,19 +1586,6 @@ packages:
       graphql: 16.8.1
       node-fetch: 2.6.12
       typescript: 5.1.6
-    transitivePeerDependencies:
-      - encoding
-    dev: false
-
-  /@0no-co/graphqlsp@1.10.1(typescript@5.4.5):
-    resolution: {integrity: sha512-IFRxxCHIFW8erFDoXYGUnNvI4okn4c7i4AAW0LEDRyrVQb9IhuxxW1kmBKMhXenuPP9aGroNDYgYJzeuR0wEYg==}
-    peerDependencies:
-      typescript: ^5.0.0
-    dependencies:
-      '@gql.tada/internal': 0.1.3(graphql@16.8.1)(typescript@5.4.5)
-      graphql: 16.8.1
-      node-fetch: 2.6.12
-      typescript: 5.4.5
     transitivePeerDependencies:
       - encoding
     dev: false
@@ -4845,21 +4820,6 @@ packages:
       - encoding
     dev: false
 
-  /@gql.tada/cli-utils@1.1.0(typescript@5.4.5):
-    resolution: {integrity: sha512-oKKcua6ePgb9ebgZBrR2WXvIPejTC3xIH01BPNtF3k+DWyY3i5mo+02uxZex9EyoYdz232oGqlMqCRomSkpIpg==}
-    peerDependencies:
-      typescript: ^5.0.0
-    dependencies:
-      '@0no-co/graphqlsp': 1.10.1(typescript@5.4.5)
-      '@gql.tada/internal': 0.2.1(graphql@16.8.1)(typescript@5.4.5)
-      '@vue/language-core': 2.0.13(typescript@5.4.5)
-      graphql: 16.8.1
-      ts-morph: 22.0.0
-      typescript: 5.4.5
-    transitivePeerDependencies:
-      - encoding
-    dev: false
-
   /@gql.tada/internal@0.1.3(graphql@16.8.1)(typescript@5.1.6):
     resolution: {integrity: sha512-wIvykBId7O0gaizmSl5n5AhbQsgJVLTUsFBm3RsfQ9dVfpmT+Fhy2yHX+yNgiVECg2EimXMhs4ltcE4EuZ2WOA==}
     peerDependencies:
@@ -4871,17 +4831,6 @@ packages:
       typescript: 5.1.6
     dev: false
 
-  /@gql.tada/internal@0.1.3(graphql@16.8.1)(typescript@5.4.5):
-    resolution: {integrity: sha512-wIvykBId7O0gaizmSl5n5AhbQsgJVLTUsFBm3RsfQ9dVfpmT+Fhy2yHX+yNgiVECg2EimXMhs4ltcE4EuZ2WOA==}
-    peerDependencies:
-      graphql: ^16.8.1
-      typescript: ^5.0.0
-    dependencies:
-      '@0no-co/graphql.web': 1.0.7(graphql@16.8.1)
-      graphql: 16.8.1
-      typescript: 5.4.5
-    dev: false
-
   /@gql.tada/internal@0.2.1(graphql@16.8.1)(typescript@5.1.6):
     resolution: {integrity: sha512-Nn+vcvIOUliUFaQwl+URNvqBnWd1MuDjvQo63Hy8+DkV3rbRSa0OCVXIR55EQRpIT7ZmPMzYyMQ2Bmj9Mk37vQ==}
     peerDependencies:
@@ -4891,17 +4840,6 @@ packages:
       '@0no-co/graphql.web': 1.0.7(graphql@16.8.1)
       graphql: 16.8.1
       typescript: 5.1.6
-    dev: false
-
-  /@gql.tada/internal@0.2.1(graphql@16.8.1)(typescript@5.4.5):
-    resolution: {integrity: sha512-Nn+vcvIOUliUFaQwl+URNvqBnWd1MuDjvQo63Hy8+DkV3rbRSa0OCVXIR55EQRpIT7ZmPMzYyMQ2Bmj9Mk37vQ==}
-    peerDependencies:
-      graphql: ^16.8.1
-      typescript: ^5.0.0
-    dependencies:
-      '@0no-co/graphql.web': 1.0.7(graphql@16.8.1)
-      graphql: 16.8.1
-      typescript: 5.4.5
     dev: false
 
   /@graphql-typed-document-node/core@3.2.0(graphql@16.8.1):
@@ -5405,8 +5343,8 @@ packages:
       - typescript
     dev: false
 
-  /@mysten/sui.js@0.51.2(typescript@5.4.5):
-    resolution: {integrity: sha512-RRG/VHhVvkQlWqodFZagRxVDo3SbXh4e3xTBplhPNNyybugbWj/V+wGrNv5/KtxfVxHBw6jTCoB798ijqPBq7g==}
+  /@mysten/sui.js@0.52.0(typescript@5.1.6):
+    resolution: {integrity: sha512-oqfA0O/STWDJgnxvu07HsDRybG8yD3pfqAhADFawZTthbPdl6U01qJQVCzW7yf2OqG9AkYWHT+392rVcVjbcnw==}
     engines: {node: '>=16'}
     dependencies:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.8.1)
@@ -5417,7 +5355,7 @@ packages:
       '@scure/bip39': 1.2.1
       '@suchipi/femver': 1.0.0
       bech32: 2.0.0
-      gql.tada: 1.5.4(graphql@16.8.1)(typescript@5.4.5)
+      gql.tada: 1.5.4(graphql@16.8.1)(typescript@5.1.6)
       graphql: 16.8.1
       superstruct: 1.0.3
       tweetnacl: 1.0.3
@@ -10964,24 +10902,6 @@ packages:
       vue-template-compiler: 2.7.16
     dev: false
 
-  /@vue/language-core@2.0.13(typescript@5.4.5):
-    resolution: {integrity: sha512-oQgM+BM66SU5GKtUMLQSQN0bxHFkFpLSSAiY87wVziPaiNQZuKVDt/3yA7GB9PiQw0y/bTNL0bOc0jM/siYjKg==}
-    peerDependencies:
-      typescript: '*'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-    dependencies:
-      '@volar/language-core': 2.2.0-alpha.8
-      '@vue/compiler-dom': 3.4.23
-      '@vue/shared': 3.4.23
-      computeds: 0.0.1
-      minimatch: 9.0.3
-      path-browserify: 1.0.1
-      typescript: 5.4.5
-      vue-template-compiler: 2.7.16
-    dev: false
-
   /@vue/shared@3.4.23:
     resolution: {integrity: sha512-wBQ0gvf+SMwsCQOyusNw/GoXPV47WGd1xB5A1Pgzy0sQ3Bi5r5xm3n+92y3gCnB3MWqnRDdvfkRGxhKtbBRNgg==}
     dev: false
@@ -11396,6 +11316,9 @@ packages:
 
   /ajv-formats@2.1.1:
     resolution: {integrity: sha512-Wx0Kx52hxE7C18hkMEggYlEifqWZtYaRgouJor+WMdPnQyEK13vgEWyVNup7SoeeoLMsr4kf5h6dOW11I15MUA==}
+    peerDependenciesMeta:
+      ajv:
+        optional: true
     dependencies:
       ajv: 8.12.0
     dev: true
@@ -11734,7 +11657,6 @@ packages:
 
   /asynckit@0.4.0:
     resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
-    dev: true
 
   /at-least-node@1.0.0:
     resolution: {integrity: sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==}
@@ -11796,6 +11718,16 @@ packages:
     transitivePeerDependencies:
       - debug
     dev: true
+
+  /axios@1.6.8:
+    resolution: {integrity: sha512-v/ZHtJDU39mDpyBoFVkETcd/uNdxrWRrg3bKpOKzXFA6Bvqopts6ALSMU3y6ijYxbw2B+wPrIv46egTzJXCLGQ==}
+    dependencies:
+      follow-redirects: 1.15.6
+      form-data: 4.0.0
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
+    dev: false
 
   /axobject-query@2.2.0:
     resolution: {integrity: sha512-Td525n+iPOOyUQIeBfcASuG6uJsDOITl7Mds5gFyerkWiX7qhUTdYUBlSgNMyVqtSJqwpt1kXGLdUt6SykLMRA==}
@@ -12760,7 +12692,6 @@ packages:
     engines: {node: '>= 0.8'}
     dependencies:
       delayed-stream: 1.0.0
-    dev: true
 
   /comma-separated-tokens@2.0.3:
     resolution: {integrity: sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==}
@@ -13825,7 +13756,6 @@ packages:
   /delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
-    dev: true
 
   /delegates@1.0.0:
     resolution: {integrity: sha512-bd2L678uiWATM6m5Z1VzNCErI3jiGzt6HGY8OVICs40JQq/HALfbyNJmp0UDakEY4pMMaN0Ly5om/B1VI/+xfQ==}
@@ -15611,6 +15541,16 @@ packages:
       debug: 4.3.4(supports-color@8.1.1)
     dev: true
 
+  /follow-redirects@1.15.6:
+    resolution: {integrity: sha512-wWN62YITEaOpSK584EZXJafH1AGpO8RVgElfkuXbTOrPX4fIfOyEpW/CsiNd8JdYrAoOvafRTOEnvsO++qCqFA==}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
+    dev: false
+
   /for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
     dependencies:
@@ -15690,7 +15630,6 @@ packages:
       asynckit: 0.4.0
       combined-stream: 1.0.8
       mime-types: 2.1.35
-    dev: true
 
   /formdata-polyfill@4.0.10:
     resolution: {integrity: sha512-buewHzMvYL29jdeQTVILecSaZKnt/RJWjoZCF5OW60Z67/GmSLBkOFM7qh1PI3zFNtJbaZL5eQu1vLfazOwj4g==}
@@ -16253,21 +16192,6 @@ packages:
       '@gql.tada/cli-utils': 1.1.0(typescript@5.1.6)
       '@gql.tada/internal': 0.2.1(graphql@16.8.1)(typescript@5.1.6)
       typescript: 5.1.6
-    transitivePeerDependencies:
-      - encoding
-      - graphql
-    dev: false
-
-  /gql.tada@1.5.4(graphql@16.8.1)(typescript@5.4.5):
-    resolution: {integrity: sha512-oEsXR1PPIkp9o1DGX8b+p7CuGxFqsDWSc3p8uKvCdyGwPod163Oi84lkE9UcVL8AiM7qf14SCeqirQXyztHTfA==}
-    hasBin: true
-    peerDependencies:
-      typescript: ^5.0.0
-    dependencies:
-      '@0no-co/graphql.web': 1.0.7(graphql@16.8.1)
-      '@gql.tada/cli-utils': 1.1.0(typescript@5.4.5)
-      '@gql.tada/internal': 0.2.1(graphql@16.8.1)(typescript@5.4.5)
-      typescript: 5.4.5
     transitivePeerDependencies:
       - encoding
       - graphql
@@ -18906,14 +18830,12 @@ packages:
   /mime-db@1.52.0:
     resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
     engines: {node: '>= 0.6'}
-    dev: true
 
   /mime-types@2.1.35:
     resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
     engines: {node: '>= 0.6'}
     dependencies:
       mime-db: 1.52.0
-    dev: true
 
   /mime@1.6.0:
     resolution: {integrity: sha512-x0Vn8spI+wuJ1O6S7gnbaQg8Pxh4NNHb7KSINmEWKiPE4RKOplvijn+NkmYmmRgP68mc70j2EbeTFRsrswaQeg==}
@@ -21007,7 +20929,6 @@ packages:
 
   /proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
-    dev: true
 
   /ps-tree@1.2.0:
     resolution: {integrity: sha512-0VnamPPYHl4uaU/nSFeZZpR21QAWRz+sRv4iW9+v/GS/J5U5iZB5BNN6J0RMoOvdx2gWM2+ZFMIm58q24e4UYA==}
@@ -23839,11 +23760,6 @@ packages:
 
   /typescript@5.1.6:
     resolution: {integrity: sha512-zaWCozRZ6DLEWAWFrVDz1H6FVXzUSfTy5FUMWsQlU8Ym5JP9eO4xkTIROFCQvhQf61z6O/G6ugw3SgAnvvm+HA==}
-    engines: {node: '>=14.17'}
-    hasBin: true
-
-  /typescript@5.4.5:
-    resolution: {integrity: sha512-vcI4UpRgg81oIRUFwR0WSIHKt11nJ7SAVlYNIu+QpqeyXP+gpQJy/Z4+F0aGxSE4MqwjyXvW/TzgkLAx2AGHwQ==}
     engines: {node: '>=14.17'}
     hasBin: true
 
