@@ -370,6 +370,7 @@ impl Presign {
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct SignData {
     pub id: UID,
+    pub session_id: ID,
     pub public_key: Vec<u8>,
     pub hash: u8,
     pub dkg_output: Vec<u8>,
