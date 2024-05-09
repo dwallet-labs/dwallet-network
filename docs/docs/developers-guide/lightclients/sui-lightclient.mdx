@@ -8,7 +8,11 @@ This allows developers to enforce their dWallet logic in Sui modules on the Sui 
 
 The dWallet module is published to Sui Testnet at `0xda072e51bf74040f2f99909595ef1db40fdc75071b92438bb9864f6c744c6736`.
 This module should be used by Sui builders to build their own modules, which means that end applications will not interact with this module directly.
-This module is in its early stages and we should anticipate breaking changes and improvements.
+In order to import this module from your Sui module, use:
+```rust
+dwallet_network = { git = "https://github.com/dwallet-labs/dwallet-network.git", subdir = "integrations/sui", rev = "main" }
+```
+Note: This module is in its early stages and we should anticipate breaking changes and improvements.
 
 ## Setup
 First, we must setup the environment. Begin by importing necessary functions:
