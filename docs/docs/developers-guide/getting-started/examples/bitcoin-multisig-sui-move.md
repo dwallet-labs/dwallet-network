@@ -1,5 +1,7 @@
 # Bitcoin MultiSig in Sui Move
 
+The following example implements a MultiSig mechanism for Bitcoin txs using Sui Move smart contract.
+
 ```rust
 module sui_move_btc_multisig::multisig {
     use dwallet_network::dwallet_cap::{Self, DWalletCap};
