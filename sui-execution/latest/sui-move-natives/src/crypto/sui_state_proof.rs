@@ -212,7 +212,7 @@ pub fn sui_state_proof_verify_committee(
 
     let result = tx_events.into_iter().filter_map(|event| {
         
-        if event.package_id == package_id_target && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkInitCapRequest" {
+        if event.type_.address.to_hex() == package_id_target.to_hex() && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkInitCapRequest" {
             let json_val = SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents).unwrap().to_json_value();
             
             let sui_cap_id_str = match json_val.clone() {
@@ -349,7 +349,7 @@ pub fn sui_state_proof_verify_committee(
     let tx_events = &transaction.events.as_ref().unwrap().data;
 
     let results: Vec<(SuiAddress, Vec<u8>)> = tx_events.into_iter().filter_map(|event| {
-        if event.package_id == package_id_target && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkApproveRequest" {
+        if event.type_.address.to_hex() == package_id_target.to_hex() && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkApproveRequest" {
             let json_val = SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents).unwrap().to_json_value();
     
             let cap_id_str = json_val.get("cap_id").and_then(JsonValue::as_str);
