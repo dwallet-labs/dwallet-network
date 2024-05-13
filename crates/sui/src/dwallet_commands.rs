@@ -28,7 +28,7 @@ use sui_sdk::wallet_context::WalletContext;
 use sui_types::{base_types::{ObjectID,}, SUI_SYSTEM_PACKAGE_ID, transaction::{SenderSignedData, Transaction, TransactionData, TransactionDataAPI}};
 
 use tokio::time::sleep;
-use signature_mpc::twopc_mpc_protocols::{initiate_centralized_party_dkg, ProtocolContext, SecretKeyShareEncryptionAndProof, initiate_centralized_party_presign, PresignDecentralizedPartyOutput, initiate_centralized_party_sign, message_digest};
+use signature_mpc::twopc_mpc_protocols::{initiate_centralized_party_dkg, ProtocolContext, SecretKeyShareEncryptionAndProof, initiate_centralized_party_presign, PresignDecentralizedPartyOutput, initiate_centralized_party_sign, message_digest, verify_signature};
 use sui_types::base_types::ObjectRef;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, DKG_SESSION_OUTPUT_STRUCT_NAME, DKG_SESSION_STRUCT_NAME, DKGSessionOutput, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, PresignSessionOutput, Presign, SignOutput, SIGN_SESSION_STRUCT_NAME, SIGN_MESSAGES_FUNC_NAME, CREATE_SIGN_MESSAGES_FUNC_NAME, SignData};
@@ -511,10 +511,9 @@ impl SuiDWalletCommands {
                     .verify_presign_output(presign_output, &mut OsRng)
                     .unwrap();
 
-                let centralized_party_sign_round_parties = initiate_centralized_party_sign(dkg_output, centralized_party_presigns).unwrap();
-                
-                let (public_nonce_encrypted_partial_signature_and_proofs, signature_verification_round_parties): (Vec<_>, Vec<_>) = messages_vec.into_iter().zip(centralized_party_sign_round_parties.into_iter()).map(|(message, party)| {
-                    let m = message_digest(&message, &hash);
+                let centralized_party_sign_round_parties = initiate_centralized_party_sign(dkg_output.clone(), centralized_party_presigns).unwrap();
+                let digests = messages_vec.iter().map(|message| message_digest(message, &hash)).collect::<Vec<_>>();
+                let (public_nonce_encrypted_partial_signature_and_proofs, signature_verification_round_parties): (Vec<_>, Vec<_>) = digests.clone().into_iter().zip(centralized_party_sign_round_parties.into_iter()).map(|(m, party)| {
                     party
                         .evaluate_encrypted_partial_signature_prehash(m, &mut OsRng)
                         .unwrap()
@@ -671,7 +670,11 @@ impl SuiDWalletCommands {
                     }
                 }
                 let sign_output = sign_output.unwrap();
+                
+                let is_valid = verify_signature(messages_vec, &hash, dkg_output.public_key.clone(), sign_output.signatures.clone());
 
+                println!("is_valid: {}", is_valid);
+                
                 let signatures = sign_output.signatures.iter().map(|s| Base64::encode(s)).collect::<Vec<_>>();
 
                 SuiClientCommandResult::NewSignOutput(NewSignOutput {

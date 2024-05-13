@@ -3,6 +3,7 @@
 
 #[allow(unused_const)]
 module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
+    use std::vector;
     use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
@@ -10,7 +11,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet_system::dwallet;
 
     const ENotSystemAddress: u64 = 0;
-    const EMesssageApprovalDWalletMismatch: u64 = 1;
+    const EMesssagesLengthMustBeGreaterThanZero: u64 = 1;
     const EPresignOutputAndPresignMismatch: u64 = 2;
     const ESignInvalidSignatureParts: u64 = 3;
     const ENotSupported: u64 = 4;
@@ -77,6 +78,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     #[allow(unused_field)]
     struct SignData has store {
         id: UID,
+        session_id: ID,
         public_key: vector<u8>,
         hash: u8,
         dkg_output: vector<u8>,
@@ -147,6 +149,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     public fun create_presign_session(dwallet: &DWallet, messages: vector<vector<u8>>, commitments_and_proof_to_centralized_party_nonce_shares: vector<u8>, hash: u8, ctx: &mut TxContext) {
         assert!(hash == SHA256 || hash == KECCAK256, ENotSupported);
+        let messages_len = vector::length(&messages);
+        assert!(messages_len > 0, EMesssagesLengthMustBeGreaterThanZero);
         let dwallet_id = object::id(dwallet);
         let dwallet_cap_id = dwallet.dwallet_cap_id;
 
@@ -208,7 +212,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
         let Presign {
             id,
-            session_id: _,
+            session_id,
             dwallet_id,
             dwallet_cap_id,
             presigns,
@@ -217,6 +221,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
         let sign_data = SignData {
             id: object::new(ctx),
+            session_id,
             public_key: dwallet.public_key,
             hash: session.hash,
             dkg_output: dwallet.output,
