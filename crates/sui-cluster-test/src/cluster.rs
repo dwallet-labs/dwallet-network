@@ -366,7 +366,6 @@ pub async fn new_wallet_context_from_cluster(
             ws: None,
             eth_execution_rpc: None,
             eth_consensus_rpc: None,
-            checkpoint: None,
             state_object_id: None,
         }],
         active_address: Some(address),

@@ -864,6 +864,9 @@ pub struct ProtocolConfig {
     verify_eth_state_cost_base: Option<u64>,
     // eth_dwallet::verify_message_proof_cost_base
     verify_message_proof_cost_base: Option<u64>,
+    // eth_dwallet::create_initial_eth_state_data_cost_base
+    create_initial_eth_state_data_cost_base: Option<u64>,
+
     /// === Execution Version ===
     execution_version: Option<u64>,
 
@@ -1483,6 +1486,7 @@ impl ProtocolConfig {
             random_beacon_reduction_allowed_delta: None,
             verify_eth_state_cost_base: None,
             verify_message_proof_cost_base: None,
+            create_initial_eth_state_data_cost_base: None,
             // When adding a new constant, set it to None in the earliest version, like this:
             // new_constant: None,
         };
@@ -1763,6 +1767,7 @@ impl ProtocolConfig {
                     cfg.feature_flags.signature_mpc_paillier_public_parameters = Some(String::from("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095"));
                     cfg.verify_eth_state_cost_base = Some(52);
                     cfg.verify_message_proof_cost_base = Some(52);
+                    cfg.create_initial_eth_state_data_cost_base = Some(52);
                 }
                 // Use this template when making changes:
                 //

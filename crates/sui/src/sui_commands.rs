@@ -16,6 +16,7 @@ use std::io::{stderr, stdout, Write};
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
+use std::time::Duration;
 use sui_config::node::Genesis;
 use sui_config::p2p::SeedPeer;
 use sui_config::{
@@ -284,7 +285,7 @@ impl SuiCommand {
             } => {
                 let config_path = config.unwrap_or(sui_config_dir()?.join(SUI_CLIENT_CONFIG));
                 prompt_if_no_config(&config_path, accept_defaults).await?;
-                let mut context = WalletContext::new(&config_path, None, None).await?;
+                let mut context = WalletContext::new(&config_path, Some(Duration::new(60, 0)), None).await?;
                 if let Some(cmd) = cmd {
                     cmd.execute(&mut context).await?.print(!json);
                 } else {
@@ -548,7 +549,6 @@ async fn genesis(
         ws: None,
         eth_execution_rpc: None,
         eth_consensus_rpc: None,
-        checkpoint: None,
         state_object_id: None,
     });
     client_config.add_env(SuiEnv::devnet());
@@ -576,7 +576,6 @@ async fn prompt_if_no_config(
                 ws: None,
                 eth_execution_rpc: None,
                 eth_consensus_rpc: None,
-                checkpoint: None,
                 state_object_id: None,
             }),
             None => {
@@ -615,7 +614,6 @@ async fn prompt_if_no_config(
                             ws: None,
                             eth_execution_rpc: None,
                             eth_consensus_rpc: None,
-                            checkpoint: None,
                             state_object_id: None,
                         }
                     })

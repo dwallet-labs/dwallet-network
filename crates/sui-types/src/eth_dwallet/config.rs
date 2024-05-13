@@ -8,8 +8,6 @@ pub struct EthClientConfig {
     pub execution_rpc: String,
     // Consensus RPC URL.
     pub consensus_rpc: String,
-    // Smart contract address.
-    pub contract_addr: String,
     // Data Slot.
     pub data_slot: u64,
     // Message Hash.
@@ -25,7 +23,6 @@ impl EthClientConfig {
     pub fn new(
         network: Network,
         execution_rpc: String,
-        contract_addr: String,
         consensus_rpc: String,
         data_slot: u64,
         dwallet_id: Vec<u8>,
@@ -33,17 +30,15 @@ impl EthClientConfig {
         max_checkpoint_age: u64,
         checkpoint: String,
     ) -> Result<Self, anyhow::Error> {
-        let result = Self {
+        Ok(Self {
             network,
             execution_rpc,
-            contract_addr,
             consensus_rpc,
             data_slot,
             dwallet_id,
             message,
             max_checkpoint_age,
             checkpoint,
-        };
-        Ok(result)
+        })
     }
 }

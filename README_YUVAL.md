@@ -120,8 +120,8 @@ On a new network, we need to create a new EthState object, which has a checkpoin
 This will be used in order to get the state updates from the Ethereum network, and update the `CurrentEthState` object in the network (should be a singleton).  
 - Make sure you keep the `Object ID` of the created `EthState` object, as you will need it later on. 
 - Modify `last_checkpoint` field inside the json string argument, to be any checkpoint from the last 2 weeks.
-- You can get an updated checkpoint for SEPOLIA testnet from the following link (Block Root):
-https://beaconstate-sepolia.chainsafe.io/
+- You can get an updated checkpoint for HOLESKY testnet from the following link (Block Root):
+https://beaconstate-holesky.chainsafe.io/
 ```
 ./dwallet client call --package 0x0000000000000000000000000000000000000000000000000000000000000003 --module eth_dwallet --function create_eth_state --gas-budget 20000000 --args '"{\"last_checkpoint\":\"0x362b9c3d7b783f1250510c95c0693403ff23b81136c415f8b127ba64d7312b29\"}"' 0
 ```
@@ -194,7 +194,7 @@ The fields you need to update are:
 First, you need to go to your IDE and `cargo build` the whole project.
 After this, you will have a list of Debugging configurations in your IDE.
 In order to debug the dwallet cli binary, you need to choose the `Run dwallet` configuration, but first we need to add the command we want to debug to the configuration as run arguments.
-Perform the following steps to do so:
+Perform the following steps to take so:
 1. Go to the debug configuration of the `dwallet` binary ![img_3.png](img_3.png)
 2. `Commands` field should contain the following command. Pay attention to the parameters that you need to provide: `ETH_DWALLET_CAP_ID`, `DWALLET_ID`, `MESSAGE`, `GAS_BUDGET`.:
 ```

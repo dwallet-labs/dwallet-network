@@ -1,22 +1,27 @@
-use std::cmp;
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::vec::Vec;
 use bincode::Options;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use chrono::Duration;
+use ethers::prelude::H256;
+use ethers::utils::hex::ToHexExt;
 use eyre::*;
 use helios::consensus::rpc::nimbus_rpc::NimbusRpc;
 use helios::consensus::rpc::ConsensusRpc;
+use helios::consensus::types::primitives::{ByteVector, U64};
 use helios::consensus::types::{
     BLSPubKey, Bootstrap, Bytes32, FinalityUpdate, GenericUpdate, Header, OptimisticUpdate,
     SignatureBytes, SyncCommittee, Update,
 };
-use helios::consensus::types::primitives::ByteVector;
 use helios::prelude::networks::Network;
 use helios::prelude::ConsensusError;
+use hex::encode;
 use milagro_bls::{AggregateSignature, PublicKey};
-use serde::{Deserialize, Serialize};
+use serde::de::{SeqAccess, Visitor};
+use serde::{de, Deserialize, Serialize};
 use ssz_rs::prelude::*;
+use std::result::Result::Ok;
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::vec::Vec;
+use std::{cmp, fmt};
 use tracing::info;
 
 use crate::eth_dwallet::constants::MAX_REQUEST_LIGHT_CLIENT_UPDATES;
@@ -36,6 +41,7 @@ pub struct EthStateObject {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct EthState {
+    #[serde(default)]
     pub last_checkpoint: String,
     #[serde(default)]
     pub latest_header: Header,
@@ -56,11 +62,13 @@ pub struct EthState {
     #[serde(default = "default_network")]
     network: Network,
     #[serde(default)]
-    pub execution_state_root: Bytes32,
+    pub last_update_execution_block_number: u64,
+    #[serde(default)]
+    pub last_update_execution_state_root: Bytes32,
 }
 
 fn default_network() -> Network {
-    Network::SEPOLIA
+    Network::HOLESKY
 }
 
 impl EthState {
@@ -68,22 +76,33 @@ impl EthState {
         EthState {
             last_checkpoint: "".to_string(),
             current_sync_committee: SyncCommittee::default(),
-            next_sync_committee: Some(empty_sync_committee()),
+            next_sync_committee: None,
             finalized_header: Header::default(),
             optimistic_header: Header::default(),
             rpc: "".to_string(),
             previous_max_active_participants: 0,
             current_max_active_participants: 0,
             // todo(yuval): make sure it matches sui network (mainnet = mainnet, testnet = sepolia, etc.)
-            network: Network::SEPOLIA,
+            network: Network::HOLESKY,
             latest_header: Header::default(),
-            execution_state_root: Bytes32::default(),
+            last_update_execution_block_number: u64::default(),
+            last_update_execution_state_root: Bytes32::default(),
         }
     }
 
-    pub fn set_rpc(&mut self, rpc: String) -> &mut Self {
+    pub fn with_checkpoint(&mut self, checkpoint: String) -> Self {
+        self.last_checkpoint = checkpoint;
+        self.clone()
+    }
+
+    pub fn with_network(&mut self, network: Network) -> Self {
+        self.network = network;
+        self.clone()
+    }
+
+    pub fn with_rpc(&mut self, rpc: String) -> Self {
         self.rpc = rpc;
-        self
+        self.clone()
     }
 
     /// Synchronizes the local state with the blockchain state based on a given checkpoint.
@@ -113,7 +132,6 @@ impl EthState {
     pub async fn get_updates(
         &mut self,
         current_state_checkpoint: &str,
-        provided_checkpoint: &str,
     ) -> Result<UpdatesResponse, Error> {
         let rpc = NimbusRpc::new(&self.rpc);
         self.bootstrap(&rpc, current_state_checkpoint).await?;
@@ -127,47 +145,39 @@ impl EthState {
 
         let optimistic_update = rpc.get_optimistic_update().await?;
 
-        let last_update = updates.last().unwrap();
-        self.execution_state_root = self
-            .get_execution_state_hash_by_update(&last_update)
+        let (execution_block_number, execution_state_root) = self
+            .get_execution_block_info_from_update(&finality_update)
             .await?;
+
+        self.last_update_execution_block_number = execution_block_number;
+        self.last_update_execution_state_root = execution_state_root;
 
         Ok(UpdatesResponse {
             updates,
             finality_update,
             optimistic_update,
-            provided_checkpoint: provided_checkpoint.to_string(),
         })
     }
 
-    async fn get_execution_state_hash_by_update(&self, update: &Update) -> Result<Bytes32, Error> {
+    async fn get_execution_block_info_from_update(
+        &self,
+        update: &FinalityUpdate,
+    ) -> Result<(u64, Bytes32), Error> {
         let rpc = NimbusRpc::new(&self.rpc);
 
         let latest_header_slot = update.attested_header.slot.as_u64();
         let block = rpc.get_block(latest_header_slot).await?;
 
-        let execution_state_root = block.body.execution_payload().state_root();
-
-        Ok(execution_state_root.clone())
+        Ok((
+            (*block.body.execution_payload().block_number()).into(),
+            block.body.execution_payload().state_root().clone(),
+        ))
     }
 
-    pub fn verify_updates(&mut self, updates: &UpdatesResponse) -> Result<bool, Error> {
-        let mut checkpoint_reached = false;
-        let expected_hash = &updates.provided_checkpoint;
-
+    pub fn verify_updates(&mut self, updates: &UpdatesResponse) -> Result<(), Error> {
         for update in &updates.updates {
             self.verify_update(&update)?;
             self.apply_update(&update);
-
-            let latest_non_finalized_header_hash =
-                format!("0x{:?}", self.latest_header.hash_tree_root()?.as_ref());
-
-            // Check if the last update application made us reach the provided checkpoint
-            if self.last_checkpoint == *expected_hash
-                || latest_non_finalized_header_hash == *expected_hash
-            {
-                checkpoint_reached = true;
-            }
         }
 
         self.verify_finality_update(&updates.finality_update)?;
@@ -176,7 +186,7 @@ impl EthState {
         self.verify_optimistic_update(&updates.optimistic_update)?;
         self.apply_optimistic_update(&updates.optimistic_update);
 
-        Ok(checkpoint_reached)
+        Ok(())
     }
 
     pub async fn bootstrap(&mut self, rpc: &NimbusRpc, checkpoint: &str) -> Result<(), Error> {
@@ -380,8 +390,10 @@ impl EthState {
                 .finalized_header
                 .hash_tree_root()
                 .map_err(|_| anyhow!("could not hash finalized header"))
-                .unwrap();
-            self.last_checkpoint = format!("0x{:?}", finalized_header_checkpoint.as_ref());
+                .unwrap()
+                .encode_hex_with_prefix();
+
+            self.last_checkpoint = finalized_header_checkpoint;
         }
     }
 
@@ -675,10 +687,13 @@ pub fn is_aggregate_valid(sig_bytes: &SignatureBytes, msg: &[u8], pks: &[&Public
         Err(_) => false,
     }
 }
+
 pub fn empty_sync_committee() -> SyncCommittee {
     // create a fixed vector of 48 ones
-    let empty_bls_pub_key: ByteVector<48> = vec![1; 48].try_into().unwrap_or_default();
-    let mut pubkeys: Vector<ByteVector<48>, 512> = vec![empty_bls_pub_key.clone(); 512].try_into().unwrap_or_default();
+    let empty_bls_pub_key: ByteVector<48> = vec![0b_1000_0000; 48].try_into().unwrap_or_default();
+    let mut pubkeys: Vector<ByteVector<48>, 512> = vec![empty_bls_pub_key.clone(); 512]
+        .try_into()
+        .unwrap_or_default();
     SyncCommittee {
         pubkeys,
         aggregate_pubkey: BLSPubKey::default(),

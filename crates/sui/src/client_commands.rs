@@ -255,7 +255,6 @@ pub enum SuiClientCommands {
         eth_execution_rpc: Option<String>,
         #[clap(long, value_hint = ValueHint::Url)]
         eth_consensus_rpc: Option<String>,
-        checkpoint: Option<String>,
         state_object_id: Option<ObjectID>,
     },
 
@@ -1436,7 +1435,6 @@ impl SuiClientCommands {
                 ws,
                 eth_execution_rpc,
                 eth_consensus_rpc,
-                checkpoint,
                 state_object_id,
             } => {
                 if context.config.envs.iter().any(|env| env.alias == alias) {
@@ -1450,7 +1448,6 @@ impl SuiClientCommands {
                     ws,
                     eth_execution_rpc,
                     eth_consensus_rpc,
-                    checkpoint,
                     state_object_id,
                 };
 

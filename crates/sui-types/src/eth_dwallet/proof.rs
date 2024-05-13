@@ -5,7 +5,8 @@ use ethers::utils::{hex, keccak256};
 use eyre::{eyre, Report};
 use helios::consensus::types::Bytes32;
 use sha3::{Digest, Keccak256};
-#[derive(serde::Serialize, serde::Deserialize)]
+
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Proof {
     // Array of rlp-serialized MerkleTree-Nodes, starting with the storageHash-Node,
     // following the path of the SHA3 (key) as a path.
@@ -19,11 +20,10 @@ pub struct Proof {
     pub value: Vec<u8>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct ProofResponse {
     pub account_proof: Proof,
     pub storage_proof: Proof,
-    pub execution_state_root: Bytes32,
 }
 
 /// Verifies the proof of a given storage value in a Merkle Patricia Tree.
@@ -182,24 +182,6 @@ fn get_nibble(path: &[u8], offset: usize) -> u8 {
     }
 }
 
-/// Get the Path in Smart Contract Storage.
-pub fn get_storage_key(
-    message: Vec<u8>,
-    dwallet_id: Vec<u8>,
-    data_slot: u64,
-) -> Result<H256, Report> {
-    let dwallet_id: [u8; 20] = dwallet_id
-        .try_into()
-        .map_err(|_| eyre!("Invalid dwallet_id"))?;
-    let decoded_msg = hex::decode(&message)?;
-    let dwallet_id_hex = H160::from(&dwallet_id);
-
-    // Calculate memory slot.
-    // Each mapping slot is calculated by concatenating of the msg and dWalletID.
-    let key = calculate_key(decoded_msg, dwallet_id_hex);
-    Ok(calculate_mapping_slot(key, data_slot))
-}
-
 /// This function standardizes the input slot for a given unsigned 64-bit integer.
 /// It first converts the integer into a hexadecimal string representation.
 /// Then, it pads the hexadecimal string to ensure it has a length of 64 characters.
@@ -257,7 +239,7 @@ pub fn calculate_mapping_slot(key: H256, mapping_slot: u64) -> H256 {
 /// Calculates the key for a given message and dWallet ID.
 /// In the smart contract, the key is calculated by hashing the message and the dWallet id together.
 /// The result is a H256 hash that represents the key.
-pub fn calculate_key(mut message: Vec<u8>, dwallet_id: H160) -> H256 {
+pub fn calculate_key(mut message: Vec<u8>, dwallet_id: H256) -> H256 {
     let mut hasher = Keccak256::new();
     message.extend_from_slice(dwallet_id.as_bytes());
     hasher.update(message);

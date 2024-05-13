@@ -1,8 +1,8 @@
 module dwallet_system::eth_dwallet {
+    use std::string::String;
     use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
     use dwallet::tx_context::TxContext;
-    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::DWallet;
     use dwallet_system::dwallet;
     use dwallet_system::dwallet::{DWalletCap, MessageApproval};
 
@@ -12,7 +12,7 @@ module dwallet_system::eth_dwallet {
     struct EthDWalletCap has key {
         id: UID,
         dwallet_cap: DWalletCap,
-        eth_smart_contract_addr: vector<u8>,
+        eth_smart_contract_addr: String,
         eth_smart_contract_slot: u64,
     }
 
@@ -22,15 +22,16 @@ module dwallet_system::eth_dwallet {
         time_slot: u64,
     }
 
-    public fun create_eth_state(
-        data: vector<u8>,
-        time_slot: u64,
+    public fun init_first_eth_state(
+        checkpoint: vector<u8>,
+        network: vector<u8>,
         ctx: &mut TxContext
     ) {
+        let data = create_initial_eth_state_data(checkpoint, network);
         let eth_state = EthState {
             id: object::new(ctx),
             data,
-            time_slot,
+            time_slot: 0u64,
         };
         transfer::freeze_object(eth_state);
     }
@@ -57,7 +58,7 @@ module dwallet_system::eth_dwallet {
     /// Wrap the dWalletCap.
     public entry fun create_eth_dwallet_cap(
         dwallet_cap: DWalletCap,
-        eth_smart_contract_addr: vector<u8>,
+        eth_smart_contract_addr: String,
         eth_smart_contract_slot: u64,
         ctx: &mut TxContext
     ) {
@@ -72,43 +73,35 @@ module dwallet_system::eth_dwallet {
 
     /// Verify the Eth state according to the updates.
     public fun verify_new_eth_state(
-        updates_bcs: vector<u8>,
-        state_bcs: vector<u8>,
+        updates_bytes: vector<u8>,
+        state_bytes: vector<u8>,
         ctx: &mut TxContext,
     ) {
         let (data, time_slot) = verify_eth_state(
-            updates_bcs,
-            state_bcs
+            updates_bytes,
+            state_bytes
         );
-        let new_state = EthState {
-            id: object::new(ctx),
-            data,
-            time_slot,
-        };
 
-        transfer::freeze_object(new_state);
+        if (time_slot != 0) {
+            transfer::freeze_object(EthState {
+                id: object::new(ctx),
+                data,
+                time_slot,
+            });
+        }
     }
 
     /// Approve a message by a dWallet.
     public fun approve_message(
         eth_dwallet_cap: &EthDWalletCap,
-        dwallet: &DWallet,
         message: vector<u8>,
         proof: vector<u8>,
     ): vector<MessageApproval> {
-        let dwallet_id = object::id(dwallet);
-
-        let is_valid = verify_message_proof(
-            proof,
-            dwallet_id,
-            eth_dwallet_cap.eth_smart_contract_slot,
-            message,
-        );
+        let is_valid = verify_message_proof(proof);
         assert!(is_valid, EInvalidStateProof);
         dwallet::approve_messages(&eth_dwallet_cap.dwallet_cap, vector[message])
     }
 
-    #[allow(unused_function)]
     /// Verify the Eth state according to the updates.
     native fun verify_eth_state(
         updates: vector<u8>,
@@ -117,9 +110,11 @@ module dwallet_system::eth_dwallet {
 
     /// Verify the Message inside the Storage Merkel Root.
     native fun verify_message_proof(
-        proof: vector<u8>,
-        dwallet_id: ID,
-        eth_smart_contract_slot: u64,
-        message: vector<u8>,
+        proof: vector<u8>
     ): bool;
+
+    native fun create_initial_eth_state_data(
+        checkpoint: vector<u8>,
+        network: vector<u8>
+    ): vector<u8>;
 }

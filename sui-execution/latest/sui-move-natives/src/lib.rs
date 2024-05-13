@@ -25,9 +25,9 @@ use sui_protocol_config::ProtocolConfig;
 use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
 
-use crate::crypto::{eth_state_proof, eth_state_proof::EthDWalletCostParams, twopc_mpc, zklogin};
 use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
+use crate::crypto::{eth_state_proof, eth_state_proof::EthDWalletCostParams, twopc_mpc, zklogin};
 
 use self::{
     address::{AddressFromBytesCostParams, AddressFromU256CostParams, AddressToU256CostParams},
@@ -522,6 +522,9 @@ impl NativesCostTable {
                 verify_message_proof_cost_base: protocol_config
                     .verify_message_proof_cost_base()
                     .into(),
+                create_initial_eth_state_data_cost_base: protocol_config
+                    .create_initial_eth_state_data_cost_base()
+                    .into(),
             },
         }
     }
@@ -743,29 +746,33 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
                     func,
                 )
             });
-    let sui_system_natives: &[(&str, &str, NativeFunction)] = &[(
-        "validator",
-        "validate_metadata_bcs",
-        make_native!(validator::validate_metadata_bcs),
-    ),
+    let sui_system_natives: &[(&str, &str, NativeFunction)] = &[
+        (
+            "validator",
+            "validate_metadata_bcs",
+            make_native!(validator::validate_metadata_bcs),
+        ),
         (
             "dwallet_2pc_mpc_ecdsa_k1",
             "dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share",
-            make_native!(twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share),
+            make_native!(
+                twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
+            ),
         ),
         (
             "eth_dwallet",
             "verify_eth_state",
-            make_native!(
-                eth_state_proof::verify_eth_state
-            ),
+            make_native!(eth_state_proof::verify_eth_state),
         ),
         (
             "eth_dwallet",
             "verify_message_proof",
-            make_native!(
-                eth_state_proof::verify_message_proof
-            ),
+            make_native!(eth_state_proof::verify_message_proof),
+        ),
+        (
+            "eth_dwallet",
+            "create_initial_eth_state_data",
+            make_native!(eth_state_proof::create_initial_eth_state_data),
         ),
     ];
     sui_system_natives

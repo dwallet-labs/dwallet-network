@@ -92,9 +92,9 @@ pub fn calculate_mapping_slot(key: H256, mapping_slot: u64) -> H256 {
 /// Calculates the key for a given message and dWallet ID.
 /// In the smart contract, the key is calculated by hashing the message and the dWallet id together.
 /// The result is a H256 hash that represents the key.
-pub fn calculate_key(mut message: Vec<u8>, dwallet_id: H512) -> H256 {
+pub fn calculate_key(mut message: Vec<u8>, dwallet_id: Vec<u8>) -> H256 {
     let mut hasher = Keccak256::new();
-    message.extend_from_slice(dwallet_id.as_bytes());
+    message.extend_from_slice(dwallet_id.as_slice());
     hasher.update(message);
     H256::from_slice(&hasher.finalize())
 }
@@ -172,4 +172,18 @@ fn compute_fork_data_root(
         genesis_validator_root,
     };
     Ok(fork_data.hash_tree_root()?)
+}
+
+pub fn get_message_storage_slot(
+    message: String,
+    dwallet_id: Vec<u8>,
+    data_slot: u64,
+) -> Result<H256, Error> {
+    // Calculate memory slot.
+    // Each mapping slot is calculated by concatenating of the msg and dWalletID.
+    let key = calculate_key(
+        message.clone().as_bytes().to_vec(),
+        dwallet_id.as_slice().to_vec(),
+    );
+    Ok(calculate_mapping_slot(key, data_slot))
 }
