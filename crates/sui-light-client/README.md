@@ -8,7 +8,7 @@ Before init, it is required to set the correct `package_id` of the deployed `sui
 Use checkpoint id to bootstrap the init process for the module - `0` syncs from Genesis.
 
 ```bash
-$ cargo run --bin light-client -- --config example_config/light_client.yaml init --ckp-id 702225
+$ cargo run --release --bin light-client -- --config example_config/light_client.yaml init --ckp-id 702225
 ```
 
 ## Sync
