@@ -58,7 +58,7 @@ pub fn sui_state_proof_verify_committee(
         .sui_state_proof_cost_params
         .clone();
 
-    // Charge the base cost for this operation  
+    // Charge the base cost for this operation
     native_charge_gas_early_exit!(
         context,
         sui_state_proof_cost_params.sui_state_proof_verify_committee_cost_base
@@ -77,7 +77,7 @@ pub fn sui_state_proof_verify_committee(
         ));
     };
 
-    
+
     let Ok(checkpoint_summary) = bcs::from_bytes::<CertifiedCheckpointSummary>(&checkpoint_summary_bytes) else {
         return Ok(NativeResult::err(
             cost,
@@ -119,7 +119,7 @@ pub fn sui_state_proof_verify_committee(
  * Implementation of the Move native function `sui_state_proof::sui_state_proof_verify_link_cap(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);`
  *   gas cost: sui_state_proof_verify_link_cap_base   | base cost for function call and fixed opers
  **************************************************************************************************/
- 
+
  pub fn sui_state_proof_verify_link_cap(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -194,7 +194,7 @@ pub fn sui_state_proof_verify_committee(
             INVALID_INPUT
         ));
     };
-    
+
     // Verify the checkpoint summary using the committee
     let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
     if let Err(_) = res {
@@ -211,23 +211,23 @@ pub fn sui_state_proof_verify_committee(
     let tx_events = &transaction.events.as_ref().unwrap().data;
 
     let result = tx_events.into_iter().filter_map(|event| {
-        
-        if event.package_id == package_id_target && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkInitCapRequest" {
+
+        if event.type_.address.to_hex() == package_id_target.to_hex() && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkInitCapRequest" {
             let json_val = SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents).unwrap().to_json_value();
-            
+
             let sui_cap_id_str = match json_val.clone() {
                 JsonValue::Object(map) => map.get("cap_id").and_then(|s| s.as_str()).map(|s| s.to_owned()),
                 _ => None,
             };
 
-    
+
             let sui_cap_id = sui_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
             let dwallet_cap_id_str = match json_val.clone() {
                 JsonValue::Object(map) => map.get("dwallet_network_cap_id").and_then(|s| s.as_str()).map(|s| s.to_owned()),
                 _ => None,
-            };    
+            };
             let dwallet_cap_id = dwallet_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
-    
+
 
             Some((sui_cap_id, dwallet_cap_id))
         } else {
@@ -239,7 +239,7 @@ pub fn sui_state_proof_verify_committee(
     match result {
         Some((sui_cap_id, dwallet_cap_id)) => {
             return Ok(NativeResult::ok(cost, smallvec![
-                Value::vector_u8(bcs::to_bytes(&sui_cap_id).unwrap()), 
+                Value::vector_u8(bcs::to_bytes(&sui_cap_id).unwrap()),
                 Value::vector_u8(bcs::to_bytes(&dwallet_cap_id).unwrap())
             ]));
         },
@@ -255,7 +255,7 @@ pub fn sui_state_proof_verify_committee(
  * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::sui_state_proof_verify_transaction(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);`
  *   gas cost: sui_state_proof_verify_transaction_base   | base cost for function call and fixed opers
  **************************************************************************************************/
- 
+
  pub fn sui_state_proof_verify_transaction(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -332,7 +332,7 @@ pub fn sui_state_proof_verify_committee(
             INVALID_INPUT
         ));
     };
-    
+
     // Verify the checkpoint summary using the committee
     let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
     if let Err(_) = res {
@@ -349,19 +349,19 @@ pub fn sui_state_proof_verify_committee(
     let tx_events = &transaction.events.as_ref().unwrap().data;
 
     let results: Vec<(SuiAddress, Vec<u8>)> = tx_events.into_iter().filter_map(|event| {
-        if event.package_id == package_id_target && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkApproveRequest" {
+        if event.type_.address.to_hex() == package_id_target.to_hex() && event.type_.module.clone().into_string() == "dwallet_cap" && event.type_.name.clone().into_string() == "DWalletNetworkApproveRequest" {
             let json_val = SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents).unwrap().to_json_value();
-    
+
             let cap_id_str = json_val.get("cap_id").and_then(JsonValue::as_str);
             let cap_id = cap_id_str.and_then(|s| SuiAddress::from_str(s).ok());
-    
+
             let approve_message = json_val.get("message").and_then(JsonValue::as_array);
             let approve_msg_vec: Option<Vec<u8>> = approve_message.map(|msg_array| {
                 msg_array.iter().map(|msg| {
                     msg.as_u64().unwrap() as u8
                 }).collect()
             });
-    
+
             if let (Some(cap_id), Some(approve_msg_vec)) = (cap_id, approve_msg_vec) {
                 Some((cap_id, approve_msg_vec))
             } else {
@@ -371,15 +371,15 @@ pub fn sui_state_proof_verify_committee(
             None
         }
     }).collect();
-    
+
     let (cap_ids, messages): (Vec<_>, Vec<_>) = results.into_iter().unzip();
-    
+
     if cap_ids.len() != messages.len() {
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
-    
+
     Ok(NativeResult::ok(cost, smallvec![
-        Value::vector_u8(bcs::to_bytes(&cap_ids).unwrap()), 
+        Value::vector_u8(bcs::to_bytes(&cap_ids).unwrap()),
         Value::vector_u8(bcs::to_bytes(&messages).unwrap())
     ]))
 
