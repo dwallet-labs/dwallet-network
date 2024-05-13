@@ -1,11 +1,11 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '../bcs';
-import { TransactionBlock } from '../builder';
-import { DWalletClient } from '../client';
-import { Keypair } from '../cryptography';
-import { fetchObjectBySessionId } from './utils';
+import { bcs } from '../bcs/index.js';
+import { TransactionBlock } from '../builder/index.js';
+import { DWalletClient } from '../client/index.js';
+import { Keypair } from '../cryptography/index.js';
+import { fetchObjectBySessionId } from './utils.js';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';

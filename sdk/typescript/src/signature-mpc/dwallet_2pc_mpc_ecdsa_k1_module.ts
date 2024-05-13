@@ -8,11 +8,11 @@ import {
 	initiate_presign,
 	initiate_sign,
 } from '@dwallet-network/signature-mpc-wasm';
-import { bcs } from "../bcs";
-import { fetchObjectBySessionId } from "./utils";
-import { TransactionBlock } from '../builder';
-import { DWalletClient } from '../client';
-import { Keypair } from '../cryptography';
+import { bcs } from "../bcs/index.js";
+import { fetchObjectBySessionId } from "./utils.js";
+import { TransactionBlock } from '../builder/index.js';
+import { DWalletClient } from '../client/index.js';
+import { Keypair } from '../cryptography/index.js';
 
 export {
 	recovery_id_keccak256 as recoveryIdKeccak256,
