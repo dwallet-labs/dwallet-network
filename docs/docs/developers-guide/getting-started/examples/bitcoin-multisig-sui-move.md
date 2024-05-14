@@ -5,6 +5,7 @@ The following example implements a MultiSig mechanism for Bitcoin txs using Sui 
 ```rust
 module sui_move_btc_multisig::multisig {
     use dwallet_network::dwallet_cap::{Self, DWalletCap};
+    use sui::object::{id_from_address};
 
     const ENoPermission: u64 = 0;
     const EAlreadyVoted: u64 = 1;
@@ -32,8 +33,9 @@ module sui_move_btc_multisig::multisig {
         approved: bool,
     }
 
-    public fun create_multisig(treshold: u64, ctx: &mut TxContext) {
-        let cap = dwallet_cap::create_cap(ctx);
+    public fun create_multisig(dwallet_network_cap_address: address, treshold: u64, ctx: &mut TxContext) {
+        let dwallet_network_cap_id = id_from_address(dwallet_network_cap_address);
+        let cap = dwallet_cap::create_cap(dwallet_network_cap_id, ctx);
 
         let multisig = MultiSig {
             id: object::new(ctx),
