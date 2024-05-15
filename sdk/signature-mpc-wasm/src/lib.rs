@@ -140,7 +140,7 @@ pub fn initiate_sign(
     let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
     let commitment_round_parties = initiate_centralized_party_sign(dkg_output.clone(), presigns)?;
 
-    let (public_nonce_encrypted_partial_signature_and_proofs, signature_verification_round_parties): (Vec<_>, Vec<_>) = messages.into_iter().zip(commitment_round_parties.into_iter()).map(|(message, party)| {
+    let (public_nonce_encrypted_partial_signature_and_proofs, _signature_verification_round_parties): (Vec<_>, Vec<_>) = messages.into_iter().zip(commitment_round_parties.into_iter()).map(|(message, party)| {
         let m = message_digest(&message, &hash.into());
         party
             .evaluate_encrypted_partial_signature_prehash(m, &mut OsRng)

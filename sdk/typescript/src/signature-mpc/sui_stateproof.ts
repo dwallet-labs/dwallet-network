@@ -4,10 +4,10 @@
 import { SuiClient } from '@mysten/sui.js/client';
 import axios from 'axios';
 
-import { TransactionBlock } from '../builder';
-import { DWalletClient, EventId, SuiEventFilter, SuiObjectRef } from '../client';
-import { Keypair } from '../cryptography';
-import { fetchObjectBySessionId } from './utils';
+import { TransactionBlock } from '../builder/index.js';
+import { DWalletClient, EventId, SuiEventFilter, SuiObjectRef } from '../client/index.js';
+import { Keypair } from '../cryptography/index.js';
+import { fetchObjectBySessionId } from './utils.js';
 
 const packageId = '0x3';
 const stateProofModuleName = 'sui_state_proof';

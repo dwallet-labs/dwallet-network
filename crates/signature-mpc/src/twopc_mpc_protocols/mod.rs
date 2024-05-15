@@ -14,6 +14,7 @@ pub use group::PartyID;
 use k256::sha2::Digest;
 use crypto_bigint::{ U256};
 use ecdsa::{elliptic_curve::{ops::Reduce}, hazmat::{bits2field, DigestPrimitive}, RecoveryId, Signature, VerifyingKey};
+use ecdsa::signature::DigestVerifier;
 pub use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 pub use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 
@@ -189,6 +190,30 @@ pub fn finalize_centralized_party_sign(
     public_nonce_encrypted_partial_signature_and_proofs.into_iter().zip(signatures_s.into_iter()).zip(parties.into_iter()).map(|((public_nonce_encrypted_partial_signature_and_proof, signature_s,), party)|
         GroupElement::new(public_nonce_encrypted_partial_signature_and_proof.public_nonce, &protocol_public_parameters.group_public_parameters).map_err(Error::from).and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
     ).collect()
+}
+
+pub fn verify_signature(
+    messages: Vec<Vec<u8>>,
+    hash: &Hash,
+    public_key: PublicKeyValue,
+    signatures: Vec<Vec<u8>>
+) -> bool {
+    messages.into_iter().zip(signatures).map(|(message, signature)| { 
+        match hash {
+            Hash::KECCAK256 => {
+                let signature: Signature<k256::Secp256k1> =
+                    Signature::from_slice(signature.as_slice()).unwrap();
+                let verifying_key = VerifyingKey::<k256::Secp256k1>::from_affine(public_key.into()).unwrap();
+                verifying_key.verify_digest(sha3::Keccak256::new_with_prefix(message), &signature)
+            },
+            Hash::SHA256 => {
+                let signature: Signature<k256::Secp256k1> =
+                    Signature::from_slice(signature.as_slice()).unwrap();
+                let verifying_key = VerifyingKey::<k256::Secp256k1>::from_affine(public_key.into()).unwrap();
+                verifying_key.verify_digest(sha2::Sha256::new_with_prefix(message), &signature)
+            }
+        }
+    }).collect::<ecdsa::Result<Vec<_>>>().is_ok()
 }
 
 pub fn new_decentralized_party_presign_batch(
