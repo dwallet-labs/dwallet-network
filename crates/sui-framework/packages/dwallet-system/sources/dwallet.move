@@ -12,7 +12,8 @@ module dwallet_system::dwallet {
         id: UID,
     }
 
-    struct MessageApproval has store {
+    // todo(Yuval) - added drop ability for this object, make sure it's ok or solve in another way
+    struct MessageApproval has store, drop {
         dwallet_cap_id: ID,
         message: vector<u8>,
     }
