@@ -1,6 +1,30 @@
+---
+title: Use a dWallet on Ethereum
+---
+
 # Sign an Ethereum Tx with a dWallet
 
 After [creating a dWallet](../your-first-dwallet.md#create-a-dwallet) we can derive the dWallet's Ethereum address, create transactions from that address, sign them with the dWallet, and broadcast the signed transactions to the Ethereum network.
+
+## Setup
+First, we must setup the environment. Begin by importing necessary functions:
+```typescript
+import { SuiClient } from '@mysten/sui.js/client';
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
+import { requestSuiFromFaucetV0 as requestDwltFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
+import {ethers} from "ethers";
+var elliptic = require('elliptic');
+
+import {
+    createDWallet,
+    createSignMessages,
+    approveAndSign,
+    submitDWalletCreationProof,
+    submitTxStateProof,
+    recoveryIdKeccak256,
+} from '@dwallet-network/dwallet.js/signature-mpc';
+```
 
 ## Get the dWallet's Ethereum address
 
