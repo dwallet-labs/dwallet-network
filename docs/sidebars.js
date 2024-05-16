@@ -111,7 +111,7 @@ const sidebars = {
 									type: 'doc',
 									label: 'Multi-Chain Atomic Swap - Coming soon',
 									id: 'developers-guide/getting-started/examples/multi-chain-atomic-swap',
-								}
+								},
 							],
 						},
 					],
