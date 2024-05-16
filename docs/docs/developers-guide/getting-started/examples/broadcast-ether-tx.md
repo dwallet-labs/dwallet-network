@@ -35,7 +35,7 @@ const dwallet = await dwalletClient.getObject({ id: dwalletId, options: {showCon
 if (dwallet?.data?.content?.dataType == 'moveObject') {
     // Get the public key
     // @ts-ignore
-    const pubkeyhex = Buffer.from(dwallet?.data?.content?.fields['public_key'].slice(1)).toString('hex');
+    const pubkeyhex = Buffer.from(dwallet?.data?.content?.fields['public_key']).toString('hex');
 
     // The public key is in its compressed form so we uncompress it, as the address is derived from the uncompressed public key.
     var ec = new elliptic.ec('secp256k1');
