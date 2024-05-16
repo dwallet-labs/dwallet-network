@@ -46,8 +46,8 @@ pub struct SignSession<S> {
     pub dwallet_id: ID,
     pub dwallet_cap_id: ID,
     pub messages: Vec<Vec<u8>>,
-    pub sign_data: S,
     pub sender: SuiAddress,
+    pub sign_data: S,
 }
 
 impl<S: Serialize + DeserializeOwned> SignSession<S> {
@@ -131,7 +131,6 @@ pub struct DWallet {
     pub dwallet_cap_id: ID,
     pub output: Vec<u8>,
     pub public_key: Vec<u8>,
-    pub encrypted_secret_key_share: Vec<u8>,
 }
 
 impl DWallet {
@@ -371,7 +370,6 @@ impl Presign {
 pub struct SignData {
     pub id: UID,
     pub session_id: ID,
-    pub public_key: Vec<u8>,
     pub hash: u8,
     pub dkg_output: Vec<u8>,
     pub public_nonce_encrypted_partial_signature_and_proofs: Vec<u8>,
