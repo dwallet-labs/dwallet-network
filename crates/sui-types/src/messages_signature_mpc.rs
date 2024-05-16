@@ -368,7 +368,6 @@ pub enum InitiateSignatureMPCProtocol {
     Sign {
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
-        public_key: PublicKeyValue,
         messages: Vec<Vec<u8>>,
         dkg_output: DKGDecentralizedPartyOutput,
         public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,

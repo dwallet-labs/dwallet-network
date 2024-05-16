@@ -9,7 +9,7 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use k256::{elliptic_curve, sha2};
+use k256::{AffinePoint, elliptic_curve, sha2};
 pub use group::PartyID;
 use k256::sha2::Digest;
 use crypto_bigint::{ U256};
@@ -17,6 +17,7 @@ use ecdsa::{elliptic_curve::{ops::Reduce}, hazmat::{bits2field, DigestPrimitive}
 use ecdsa::signature::DigestVerifier;
 pub use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 pub use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
+use k256::elliptic_curve::group::GroupEncoding;
 
 use group::{secp256k1, GroupElement as _, AffineXCoordinate};
 pub use group::Value;
@@ -128,17 +129,19 @@ pub fn decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_part
     commitment_to_centralized_party_secret_key_share: Commitment,
     centralized_party_public_key_share_decommitment_and_proof: PublicKeyShareDecommitmentAndProof<ProtocolContext>,
     secret_key_share_encryption_and_proof: SecretKeyShareEncryptionAndProof<ProtocolContext>,
-) -> twopc_mpc::Result<DKGDecentralizedPartyOutput> {
+) -> twopc_mpc::Result<(DKGDecentralizedPartyOutput, Vec<u8>)> {
     let protocol_public_parameters = ProtocolPublicParameters::new(LargeBiPrimeSizedNumber::from_be_hex(tiresias_public_parameters));
 
     let decommitment_proof_verification_round_party =
         DecommitmentProofVerificationRoundParty::new(protocol_public_parameters, commitment_to_centralized_party_secret_key_share, PhantomData);
-
-    decommitment_proof_verification_round_party
+    let output = decommitment_proof_verification_round_party
         .verify_decommitment_and_proof_of_centralized_party_public_key_share(
             centralized_party_public_key_share_decommitment_and_proof,
             secret_key_share_encryption_and_proof,
-        )
+        )?;
+    let public_key: AffinePoint = output.public_key.into();
+
+    Ok((output, public_key.to_bytes().to_vec()))
 }
 
 pub fn initiate_centralized_party_presign(
@@ -359,7 +362,6 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
         .collect()
 }
 pub fn decrypt_signature_decentralized_party_sign(
-    public_key: PublicKeyValue,
     messages: Vec<Vec<u8>>,
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,

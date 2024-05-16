@@ -12,7 +12,7 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use signature_mpc::twopc_mpc_protocols::{Commitment, decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, ProtocolContext, PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, Hash};
+use signature_mpc::twopc_mpc_protocols::{Commitment, decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, ProtocolContext, PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof};
 use crate::object_runtime::ObjectRuntime;
 
 pub const INVALID_INPUT: u64 = 0;
@@ -26,7 +26,7 @@ pub struct TwoPCMPCDKGCostParams {
 }
 /***************************************************************************************************
  * native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
- * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
+ * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>);`
  *   gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base   | base cost for function call and fixed opers
  **************************************************************************************************/
 pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
@@ -85,14 +85,13 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
 
     let signature_mpc_tiresias_public_parameters = object_runtime.protocol_config.signature_mpc_tiresias_public_parameters().unwrap();
     // TODO: handle error instead of `unwrap()`
-    let output = decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(signature_mpc_tiresias_public_parameters, commitment_to_centralized_party_secret_key_share, centralized_party_public_key_share_decommitment_and_proof, secret_key_share_encryption_and_proof).unwrap();
+    let (output, public_key) = decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(signature_mpc_tiresias_public_parameters, commitment_to_centralized_party_secret_key_share, centralized_party_public_key_share_decommitment_and_proof, secret_key_share_encryption_and_proof).unwrap();
 
     Ok(NativeResult::ok(
         cost,
         smallvec![
             Value::vector_u8(bcs::to_bytes(&output).unwrap()),
-            Value::vector_u8(bcs::to_bytes(&output.public_key).unwrap()),
-            Value::vector_u8(bcs::to_bytes(&output.encrypted_secret_key_share).unwrap()),
+            Value::vector_u8(public_key),
         ],
     ))
 }

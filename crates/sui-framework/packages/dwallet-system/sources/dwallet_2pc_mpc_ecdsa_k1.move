@@ -27,7 +27,6 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_cap_id: ID,
         output: vector<u8>,
         public_key: vector<u8>,
-        encrypted_secret_key_share: vector<u8>,
     }
 
     struct DKGSession has key {
@@ -79,7 +78,6 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     struct SignData has store {
         id: UID,
         session_id: ID,
-        public_key: vector<u8>,
         hash: u8,
         dkg_output: vector<u8>,
         public_nonce_encrypted_partial_signature_and_proofs: vector<u8>,
@@ -132,7 +130,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         } = output;
         object::delete(id);
 
-        let (output, public_key, encrypted_secret_key_share) = dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share, secret_key_share_encryption_and_proof, centralized_party_public_key_share_decommitment_and_proof);
+        let (output, public_key) = dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share, secret_key_share_encryption_and_proof, centralized_party_public_key_share_decommitment_and_proof);
 
         let result = DWallet {
             id: object::new(ctx),
@@ -140,12 +138,11 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_cap_id,
             output,
             public_key,
-            encrypted_secret_key_share,
         };
         transfer::freeze_object(result);
     }
 
-    native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);
+    native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>);
 
     public fun create_presign_session(dwallet: &DWallet, messages: vector<vector<u8>>, commitments_and_proof_to_centralized_party_nonce_shares: vector<u8>, hash: u8, ctx: &mut TxContext) {
         assert!(hash == SHA256 || hash == KECCAK256, ENotSupported);
@@ -222,7 +219,6 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let sign_data = SignData {
             id: object::new(ctx),
             session_id,
-            public_key: dwallet.public_key,
             hash: session.hash,
             dkg_output: dwallet.output,
             public_nonce_encrypted_partial_signature_and_proofs,

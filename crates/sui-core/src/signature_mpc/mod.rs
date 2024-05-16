@@ -724,7 +724,6 @@ impl SignatureMPCAggregator {
             InitiateSignatureMPCProtocol::Sign {
                 session_id,
                 session_ref,
-                public_key,
                 messages,
                 dkg_output,
                 public_nonce_encrypted_partial_signature_and_proofs,
@@ -749,7 +748,7 @@ impl SignatureMPCAggregator {
                         SignState::new(tiresias_public_parameters, epoch, party_id, parties, session_id)
                     });
 
-                    state.set(messages, public_nonce_encrypted_partial_signature_and_proofs, public_key);
+                    state.set(messages, public_nonce_encrypted_partial_signature_and_proofs);
 
                     sign_session_rounds.insert(session_id, round);
 

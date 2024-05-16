@@ -338,6 +338,7 @@ impl SuiDWalletCommands {
                     alias,
                     dwallet_id,
                     dwallet_cap_id: dwallet.dwallet_cap_id.bytes,
+                    public_key: Base64::encode(dwallet.public_key)
                 })
             }
             SuiDWalletCommands::Sign {
