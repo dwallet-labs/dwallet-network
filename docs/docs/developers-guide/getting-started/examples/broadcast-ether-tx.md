@@ -1,6 +1,6 @@
 # Sign an Ethereum Tx with a dWallet
 
-After [creating a dWallet](../your-first-dwallet.md#create-a-dwallet) we can create Ethereum transactions, sign them with our dWallet, and broadcast the signed transactions to the Ethereum network.
+After [creating a dWallet](../your-first-dwallet.md#create-a-dwallet) we can derive the dWallet's Ethereum address, create transactions from that address, sign them with the dWallet, and broadcast the signed transactions to the Ethereum network.
 
 ## Get the dWallet's Ethereum address
 
@@ -15,12 +15,11 @@ if (dwallet?.data?.content?.dataType == 'moveObject') {
     // @ts-ignore
     const pubkeyhex = Buffer.from(dwallet?.data?.content?.fields['public_key'].slice(1)).toString('hex');
 
-    // The public key is actually compress so we uncompress it
+    // The public key is in its compressed form so we uncompress it, as the address is derived from the uncompressed public key.
     var ec = new elliptic.ec('secp256k1');
     var publicKeyUncompressed = ec.keyFromPublic(pubkeyhex, 'hex').getPublic(false, 'hex');
     
-    // First two bytes are ... TODO: REMOVE?
-    let pubkey = Buffer.from(publicKeyUncompressed.slice(2), 'hex');
+    let pubkey = Buffer.from(publicKeyUncompressed, 'hex');
 
     // Here we are doing keccak256 hashing of our ECDSA public key
     const ethereumAddress = ethers.getAddress(ethers.keccak256(pubkey).slice(-40));
@@ -30,12 +29,9 @@ if (dwallet?.data?.content?.dataType == 'moveObject') {
 
 ## Access the Ethereum network
 We need a service which offers a web API for accessing the Ethereum Blockchain. These Providers allow connecting to them, which simplifies development.
-In thw following example we use `EtherscanProvider` with the Sepolia network which is Ethereum's proof-of-authority testnet.
+In the following example we use `EtherscanProvider` with the Sepolia network which is Ethereum's proof-of-authority testnet.
 
 ```typescript
-    //...
-    //...
-    //...
     const provider = new ethers.EtherscanProvider(ethers.Network.from("sepolia"), "");
     
     // Get chainId from network
@@ -48,21 +44,13 @@ You can create transactions using the [`ethers` library documentation on Transac
 Once we have the transaction object, we sign the bytes of the hash generated from the transaction.
 
 ```typescript
-    //...
-    //...
-    //...
-    
     const tx = new ethers.Transaction()
-    // Fill the tx parameters
-    //...
-    //...
+    // * fill the tx parameters here *
     
-    const txhash = ethers.keccak256(tx.unsignedSerialized);
-    
-    // Removing the 0x in the beggining TODO: should be removed
+    // `tx.unsignedSerialized` is a hex string starting with `0x`, so we remove it by slicing the first two characters before parsing it as a hex string into a byte array.
     const bytes = Uint8Array.from(Buffer.from(tx.unsignedSerialized.slice(2), 'hex'));
     
-    // Sign the trascation bytes
+    // Sign the transaction bytes
     const signMessagesIdKECCAK256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgOutput, [bytes], "KECCAK256", keypair, dwalletClient);
     const sigKECCAK256 = await approveAndSign(dkg?.dwalletCapId!, signMessagesIdKECCAK256!, [bytes], keypair, dwalletClient);
     const sig = Buffer.from(sigKECCAK256?.signatures[0]).toString('hex');
@@ -79,9 +67,6 @@ Once we have the transaction object, we sign the bytes of the hash generated fro
 After signing the transaction with our dWallet and updating the `tx` object with the right signature format, all there's left to do is broadcast the transaction to the Ethereum Blockchain.
 
 ```typescript
-    //...
-    //...
-    //...
     const response = await provider.broadcastTransaction(tx.serialized);
     console.log(`Transaction successful with hash: ${response.hash}`);
 ```
