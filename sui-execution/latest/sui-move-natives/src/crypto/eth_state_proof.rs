@@ -7,6 +7,7 @@ use std::str::FromStr;
 use ethers::utils::{hex, keccak256};
 use helios::config::networks::Network;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_binary_format::file_format::StructFieldInformation::Native;
 use move_core_types::{gas_algebra::InternalGas, vm_status::StatusCode};
 use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeContext};
 use move_vm_types::{
@@ -62,8 +63,12 @@ pub fn verify_message_proof(
     let cost = context.gas_used();
     let proof = pop_arg!(args, Vector).to_vec_u8()?;
 
-    let proof: ProofResponse = bcs::from_bytes(proof.as_slice())
-        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+    let Ok(proof) = bcs::from_bytes::<ProofResponse>(proof.as_slice()) else {
+        return Ok(NativeResult::err(
+            cost,
+            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
+        ));
+    };
 
     // Verify the account proof against the state root.
     let is_valid_account_proof = verify_proof(
@@ -115,9 +120,25 @@ pub(crate) fn verify_eth_state(
         pop_arg!(args, Vector).to_vec_u8()?,
     );
 
-    let (new_state_bcs, slot) = match process_eth_state_updates(current_eth_state, updates) {
-        Ok((new_state_bcs, slot)) => (new_state_bcs, slot),
-        Err(_) => return Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(vec![])])),
+    let Ok(mut eth_state) = bcs::from_bytes::<EthState>(current_eth_state.as_slice()) else {
+        return Ok(NativeResult::err(
+            cost,
+            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
+        ));
+    };
+
+    let Ok(updates) = UpdatesResponse::deserialize_from_bytes(updates) else {
+        return Ok(NativeResult::err(
+            cost,
+            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
+        ));
+    };
+
+    let Ok((new_state_bcs, slot)) = process_eth_state_updates(&mut eth_state, updates) else {
+        return Ok(NativeResult::err(
+            cost,
+            StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR.into(),
+        ));
     };
 
     Ok(NativeResult::ok(
@@ -158,9 +179,12 @@ pub(crate) fn create_initial_eth_state_data(
 
     let network = String::from_utf8(network)
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-    let network = match Network::from_str(network.as_str()) {
-        Ok(network) => network,
-        Err(_) => return Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(vec![])])),
+
+    let Ok(network) = Network::from_str(network.as_str()) else {
+        return Ok(NativeResult::err(
+            cost,
+            StatusCode::INVALID_CONSTANT_TYPE.into(),
+        ));
     };
 
     let checkpoint = format!("0x{}", hex::encode(checkpoint.as_slice()));
@@ -168,8 +192,10 @@ pub(crate) fn create_initial_eth_state_data(
     let eth_state = EthState::new()
         .with_checkpoint(checkpoint)
         .with_network(network);
-    let eth_state_bytes = bcs::to_bytes(&eth_state)
-        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
+
+    let Ok(eth_state_bytes) = bcs::to_bytes(&eth_state) else {
+        return Ok(NativeResult::err(cost, StatusCode::VALUE_SERIALIZATION_ERROR.into()));
+    };
 
     Ok(NativeResult::ok(
         cost,
@@ -178,40 +204,17 @@ pub(crate) fn create_initial_eth_state_data(
 }
 
 fn process_eth_state_updates(
-    current_eth_state: Vec<u8>,
-    updates: Vec<u8>,
+    eth_state: &mut EthState,
+    updates: UpdatesResponse,
 ) -> Result<(Vec<u8>, u64), PartialVMError> {
-    let mut eth_state = match bcs::from_bytes::<EthState>(current_eth_state.as_slice()) {
-        Ok(eth_state) => eth_state,
-        Err(_) => {
-            return Err(PartialVMError::new(
-                StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT,
-            ))
-        }
-    };
+    eth_state.verify_updates(&updates).map_err(|e| {
+        info!("Failed to verify updates: {:?}", e);
+        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+    })?;
 
-    let updates = match UpdatesResponse::deserialize_from_bytes(updates) {
-        Ok(updates) => updates,
-        Err(_) => {
-            return Err(PartialVMError::new(
-                StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT,
-            ))
-        }
-    };
-
-    let mut new_state_bytes = Vec::new();
-    let mut slot = 0u64;
-
-    match eth_state.verify_updates(&updates) {
-        Ok(()) => {
-            new_state_bytes = bcs::to_bytes(&eth_state)
-                .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
-            slot = u64::from(eth_state.finalized_header.slot);
-        }
-        Err(e) => {
-            info!("Failed to verify updates: {:?}", e);
-        }
-    };
+    let new_state_bytes = bcs::to_bytes(&eth_state)
+        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
+    let slot = u64::from(eth_state.finalized_header.slot);
 
     Ok((new_state_bytes, slot))
 }

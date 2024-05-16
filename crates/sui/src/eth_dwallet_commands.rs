@@ -2,6 +2,7 @@ use anyhow::{anyhow, Error};
 use base64::Engine;
 use ethers::types::Address;
 use helios::config::networks::Network;
+use serde::Serialize;
 use serde_json::{Number, Value};
 use shared_crypto::intent::Intent;
 use sui_json::{call_args, SuiJsonValue};
@@ -93,15 +94,14 @@ pub(crate) async fn eth_approve_message(
     )?;
 
     let mut eth_lc = init_light_client(eth_client_config).await?;
+
     // Fetch updates & proof from the consensus RPC
-    let updates = match fetch_consensus_updates(&mut eth_state).await {
-        Ok(value) => value,
-        Err(value) => return Err(anyhow!("Could not fetch updates. error: {value:?}")),
+    let Ok(updates) = fetch_consensus_updates(&mut eth_state).await else {
+        return Err(anyhow!("Could not fetch updates."));
     };
 
-    let proof = match fetch_proofs(&mut eth_lc, &eth_state, &contract_addr).await {
-        Ok(value) => value,
-        Err(value) => return Err(anyhow!("Could not fetch proof. error: {value:?}")),
+    let Ok(proof) = fetch_proofs(&mut eth_lc, &eth_state, &contract_addr).await else {
+        return Err(anyhow!("Could not fetch proof."));
     };
 
     let gas_owner = context.try_get_object_owner(&gas).await?;
@@ -125,17 +125,13 @@ pub(crate) async fn eth_approve_message(
         Vec::from([updates_arg, eth_state_arg]),
     );
 
-    let proof = bcs::to_bytes(&proof)?
-        .iter()
-        .map(|v| Value::Number(Number::from(*v)))
-        .collect();
-    let proof_sui_json = SuiJsonValue::new(Value::Array(proof))?;
+    let Ok(proof_sui_json) = serialize_object(&proof) else {
+        return Err(anyhow!("Could not serialize proof"));
+    };
 
-    let dwallet_id = bcs::to_bytes(&dwallet_id.as_slice().to_vec())?
-        .iter()
-        .map(|v| Value::Number(Number::from(*v)))
-        .collect();
-    let dwallet_id_json = SuiJsonValue::new(Value::Array(dwallet_id))?;
+    let Ok(dwallet_id_json) = serialize_object(&dwallet_id.as_slice().to_vec()) else {
+        return Err(anyhow!("Could not serialize dwallet_id"));
+    };
 
     let client = context.get_client().await?;
 
@@ -162,6 +158,16 @@ pub(crate) async fn eth_approve_message(
         Call
     );
     Ok(session_response)
+}
+
+fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, Error>
+where T: ?Sized + Serialize {
+    let object_bytes = bcs::to_bytes(&object)?;
+    let object_json = object_bytes
+        .iter()
+        .map(|v| Value::Number(Number::from(*v)))
+        .collect();
+    Ok(SuiJsonValue::new(Value::Array(object_json))?)
 }
 
 fn get_data_from_eth_dwallet_cap(eth_dwallet_cap_obj: EthDWalletCap) -> Result<(u64, Address), Error> {
