@@ -2,8 +2,6 @@
 title: Use a dWallet on Ethereum
 ---
 
-# Sign an Ethereum Tx with a dWallet
-
 After [creating a dWallet](../your-first-dwallet.md#create-a-dwallet) we can derive the dWallet's Ethereum address, create transactions from that address, sign them with the dWallet, and broadcast the signed transactions to the Ethereum network.
 
 ## Setup
@@ -95,4 +93,4 @@ After signing the transaction with our dWallet and updating the `tx` object with
     console.log(`Transaction successful with hash: ${response.hash}`);
 ```
 
-And that is it! You can view the transaction at: https://sepolia.etherscan.io/tx/<response.hash>
+And that is it! You can view the transaction at: `https://sepolia.etherscan.io/tx/<response.hash>`
