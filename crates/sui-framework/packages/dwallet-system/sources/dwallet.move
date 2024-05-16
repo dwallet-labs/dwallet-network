@@ -35,13 +35,18 @@ module dwallet_system::dwallet {
         sign_data: S,
     }
 
+    struct SharedSignMessages<S: store> has key {
+        id: UID,
+        sign_messages: SignMessages<S>,
+    }
+
     struct SignSession<S> has key {
         id: UID,
         dwallet_id: ID,
         dwallet_cap_id: ID,
         messages: vector<vector<u8>>,
-        sign_data: S,
         sender: address,
+        sign_data: S,
     }
 
     #[allow(unused_field)]
@@ -106,7 +111,24 @@ module dwallet_system::dwallet {
         (dwallet_cap_id, message)
     }
 
-    public(friend) fun create_sign_messages<T: store>(dwallet_id: ID, dwallet_cap_id: ID, messages: vector<vector<u8>>, sign_data: T, ctx: &mut TxContext): SignMessages<T> {
+    public fun create_shared_sign_messages<S: store>(sign_messages: SignMessages<S>, ctx: &mut TxContext) {
+        let holder = SharedSignMessages {
+            id: object::new(ctx),
+            sign_messages,
+        };
+        transfer::share_object(holder);
+    }
+
+    public fun remove_shared_sign_messages<S: store>(shared: SharedSignMessages<S>): SignMessages<S> {
+        let SharedSignMessages {
+            id,
+            sign_messages,
+        } = shared;
+        object::delete(id);
+        sign_messages
+    }
+
+    public(friend) fun create_sign_messages<S: store>(dwallet_id: ID, dwallet_cap_id: ID, messages: vector<vector<u8>>, sign_data: S, ctx: &mut TxContext): SignMessages<S> {
         SignMessages {
             id: object::new(ctx),
             dwallet_id,
@@ -116,15 +138,15 @@ module dwallet_system::dwallet {
         }
     }
 
-    public fun sign_messages_dwallet_id<T: store>(sign_messages: &SignMessages<T>): ID {
+    public fun sign_messages_dwallet_id<S: store>(sign_messages: &SignMessages<S>): ID {
         sign_messages.dwallet_id
     }
 
-    public fun sign_messages_dwallet_cap_id<T: store>(sign_messages: &SignMessages<T>): ID {
+    public fun sign_messages_dwallet_cap_id<S: store>(sign_messages: &SignMessages<S>): ID {
         sign_messages.dwallet_cap_id
     }
 
-    public fun sign_messages_messages<T: store>(sign_messages: &SignMessages<T>): vector<vector<u8>> {
+    public fun sign_messages_messages<S: store>(sign_messages: &SignMessages<S>): vector<vector<u8>> {
         sign_messages.messages
     }
 
@@ -166,7 +188,7 @@ module dwallet_system::dwallet {
     }
 
     #[allow(unused_function)]
-    fun create_sign_output<T: store>(session: &SignSession<T>, signatures: vector<vector<u8>>, ctx: &mut TxContext) {
+    fun create_sign_output<S: store>(session: &SignSession<S>, signatures: vector<vector<u8>>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
 
         let sign_output = SignOutput {

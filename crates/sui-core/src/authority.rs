@@ -1378,7 +1378,6 @@ impl AuthorityState {
                                 if move_object.type_().name() == SIGN_SESSION_STRUCT_NAME {
                                     let obj: SignSession<SignData> = bcs::from_bytes(move_object.contents())?;
                                     debug!("fetching SignSession {:?}", obj);
-                                    let public_key = obj.sign_data.public_key;
                                     let dkg_output = obj.sign_data.dkg_output;
                                     let public_nonce_encrypted_partial_signature_and_proofs = obj.sign_data.public_nonce_encrypted_partial_signature_and_proofs;
                                     let presigns = obj.sign_data.presigns;
@@ -1387,7 +1386,6 @@ impl AuthorityState {
                                     let message = InitiateSignatureMPCProtocol::Sign {
                                         session_id: SignatureMPCSessionID(move_object.id().into_bytes()),
                                         session_ref: obj_ref,
-                                        public_key: bcs::from_bytes(&*public_key)?,
                                         messages: obj.messages.clone(),
                                         dkg_output: bcs::from_bytes(&*dkg_output)?,
                                         public_nonce_encrypted_partial_signature_and_proofs: bcs::from_bytes(&*public_nonce_encrypted_partial_signature_and_proofs)?,

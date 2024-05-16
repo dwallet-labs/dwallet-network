@@ -68,7 +68,7 @@ impl SignRound {
         let round = mem::take(self);
         match round {
             SignRound::FirstRound { signature_threshold_decryption_round_parties } => {
-                let signatures_s = decrypt_signature_decentralized_party_sign(state.public_key.unwrap(), state.messages.unwrap(), state.tiresias_public_parameters.clone(), state.decryption_shares.clone(), state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap(), signature_threshold_decryption_round_parties)?;
+                let signatures_s = decrypt_signature_decentralized_party_sign(state.messages.unwrap(), state.tiresias_public_parameters.clone(), state.decryption_shares.clone(), state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap(), signature_threshold_decryption_round_parties)?;
 
                 Ok(SignRoundCompletion::Output(signatures_s))            }
             _ => Ok(SignRoundCompletion::None)
@@ -94,7 +94,6 @@ pub(crate) struct SignState {
 
     messages: Option<Vec<Vec<u8>>>,
     public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
-    public_key: Option<Value<GroupElement>>,
 
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
 }
@@ -117,7 +116,6 @@ impl SignState {
             tiresias_public_parameters,
             messages: None,
             public_nonce_encrypted_partial_signature_and_proofs: None,
-            public_key: None,
             decryption_shares: HashMap::new(),
         }
     }
@@ -126,11 +124,9 @@ impl SignState {
         &mut self,
         messages: Vec<Vec<u8>>,
         public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
-        public_key: Value<GroupElement>
     ) {
         self.messages = Some(messages);
         self.public_nonce_encrypted_partial_signature_and_proofs = Some(public_nonce_encrypted_partial_signature_and_proofs);
-        self.public_key = Some(public_key);
     }
 
     pub(crate) fn insert_first_round(
