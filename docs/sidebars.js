@@ -89,6 +89,11 @@ const sidebars = {
 							collapsed: true,
 							items: [
 								{
+									type: 'doc',
+									label: 'Using dWallets on Ethereum',
+									id: 'developers-guide/getting-started/examples/broadcast-ether-tx',
+								},
+								{
 									type: 'category',
 									label: 'Bitcoin Multi-Sig',
 									collapsed: false,
@@ -106,7 +111,7 @@ const sidebars = {
 									type: 'doc',
 									label: 'Multi-Chain Atomic Swap - Coming soon',
 									id: 'developers-guide/getting-started/examples/multi-chain-atomic-swap',
-								},
+								}
 							],
 						},
 					],
