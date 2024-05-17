@@ -11,7 +11,7 @@
 	},
 	"author": "dWallet Labs, Ltd. <dev@dwalletlabs.com>",
 	"description": "Signature MPC in WASM",
-	"version": "0.1.8",
+	"version": "0.1.9",
 	"license": "BSD-3-Clause-Clear",
 	"main": "dist/node/signature_mpc_wasm.js",
 	"browser": "dist/web/signature_mpc_wasm.js",

@@ -9,7 +9,7 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use k256::{AffinePoint, elliptic_curve, sha2};
+use k256::{AffinePoint, CompressedPoint, elliptic_curve, sha2};
 pub use group::PartyID;
 use k256::sha2::Digest;
 use crypto_bigint::{ U256};
@@ -464,6 +464,17 @@ pub fn config_signature_mpc_secret_for_network_for_testing(number_of_parties: Pa
 
 
     tiresias_deal_trusted_shares(t, number_of_parties, N, SECRET_KEY, BASE)
+}
+
+
+// a workaround to decrialize to PublicKeyValue - TODO: add from_bytes to PublicKeyValue
+pub fn affine_point_to_public_key(public_key: &Vec<u8>) -> Option<PublicKeyValue> {
+
+    let public_key: Option<AffinePoint> = AffinePoint::from_bytes(CompressedPoint::from_slice(public_key)).into();
+    let public_key = public_key.map(|pk| bcs::to_bytes(&pk).ok()).flatten();
+    let public_key = public_key.map(|pk| bcs::from_bytes::<PublicKeyValue>(&pk).ok()).flatten();
+
+    public_key
 }
 
 pub fn recovery_id(message: Vec<u8>, public_key: PublicKeyValue, signature: SignatureK256Secp256k1, hash: &Hash) -> ecdsa::Result<RecoveryId> {
