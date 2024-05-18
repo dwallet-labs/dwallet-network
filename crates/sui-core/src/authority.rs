@@ -136,7 +136,7 @@ use crate::transaction_manager::TransactionManager;
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
 use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCSessionID};
-use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, DKGSession, DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, PRESIGN_SESSION_STRUCT_NAME, DWALLET_STRUCT_NAME, DWallet, PresignSession, SIGN_MESSAGES_FUNC_NAME, SIGN_SESSION_STRUCT_NAME, SignSession, DWALLET_MODULE_NAME, SignData};
+use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, NewDKGSessionEvent, DKGSession, DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, PRESIGN_SESSION_STRUCT_NAME, DWALLET_STRUCT_NAME, DWallet, PresignSession, SIGN_MESSAGES_FUNC_NAME, SIGN_SESSION_STRUCT_NAME, SignSession, DWALLET_MODULE_NAME, SignData, NewPresignSessionEvent, NewSignSessionEvent, NewSignDataEvent};
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1257,7 +1257,7 @@ impl AuthorityState {
         )?;
 
         // if the tx is initiate for signature mpc protocol (e.g. dkg, presign, sign...)
-        //
+        // intiate the protocol
         let _ = self.initiate_signature_mpc_protocol(certificate, &inner_temporary_store, effects, epoch_store);
 
         // Allow testing what happens if we crash here.
@@ -1297,112 +1297,73 @@ impl AuthorityState {
                 return Ok(());
             }
             let mut messages = Vec::new();
-            for c in certificate.data().transaction_data().kind().iter_commands() {
-                if let Command::MoveCall(c) = c {
-                    if c.package == SUI_SYSTEM_PACKAGE_ID.into() && c.module.as_ident_str() == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME && c.function.as_ident_str() == CREATE_DKG_SESSION_FUNC_NAME {
-                        for (obj_ref, owner, kind) in effects.all_changed_objects() {
-                            let obj = inner_temporary_store.written.get(&obj_ref.0).ok_or(anyhow::anyhow!(""))?;
-                            if let Some(move_object) = obj.data.try_as_move() {
-                                if move_object.type_().name() == DKG_SESSION_STRUCT_NAME {
-                                    let obj: DKGSession = bcs::from_bytes(move_object.contents())?;
-                                    debug!("fetching DKGSession {:?}", obj);
-                                    let commitment_to_centralized_party_secret_key_share = obj.commitment_to_centralized_party_secret_key_share;
-                                    // TODO: validate commitment error
-                                    let message = InitiateSignatureMPCProtocol::DKG {
-                                        session_id: SignatureMPCSessionID(move_object.id().into_bytes()),
-                                        session_ref: obj_ref,
-                                        commitment_to_centralized_party_secret_key_share: bcs::from_bytes(&*commitment_to_centralized_party_secret_key_share)?,
-                                    };
+            let events = &inner_temporary_store.events.data;
+            for event in events {
+                if NewDKGSessionEvent::type_() == event.type_  {
+                    let event = NewDKGSessionEvent::from_bcs_bytes(&event.contents)?;
+                    debug!("event: NewDKGSessionEvent {:?}", event);
+                    let commitment_to_centralized_party_secret_key_share = event.commitment_to_centralized_party_secret_key_share;
 
-                                    messages.push(message);
-                                }
-                            }
-                        }
-                    }
-                    if c.package == SUI_SYSTEM_PACKAGE_ID.into() && c.module.as_ident_str() == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME && c.function.as_ident_str() == CREATE_PRESIGN_SESSION_FUNC_NAME {
-                        for (obj_ref, owner, kind) in effects.all_changed_objects() {
-                            let obj = inner_temporary_store.written.get(&obj_ref.0).ok_or(anyhow::anyhow!(""))?;
-                            // // TODO: remove unwrap
-                            // let encrypted_decentralized_party_secret_key_share_value = inner_temporary_store.input_objects.values().find_map(|o| {
-                            //     if let Some(move_object) = obj.data.try_as_move() {
-                            //         if move_object.type_().name() == DWALLET_STRUCT_NAME {
-                            //             let obj: DWallet = bcs::from_bytes(move_object.contents()).ok().unwrap();
-                            //             return Some(obj.encrypted_secret_key_share)
-                            //         }
-                            //     }
-                            //     None
-                            // });
-                            //
-                            // let Some(encrypted_decentralized_party_secret_key_share_value) = encrypted_decentralized_party_secret_key_share_value else {
-                            //     continue
-                            // };
+                    let obj_ref = Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                    let message = InitiateSignatureMPCProtocol::DKG {
+                        session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
+                        session_ref: obj_ref,
+                        commitment_to_centralized_party_secret_key_share: bcs::from_bytes(&*commitment_to_centralized_party_secret_key_share)?,
+                    };
 
-                            if let Some(move_object) = obj.data.try_as_move() {
-                                if move_object.type_().name() == PRESIGN_SESSION_STRUCT_NAME {
-                                    let obj: PresignSession = bcs::from_bytes(move_object.contents())?;
-                                    debug!("fetching PresignSession {:?}", obj);
-                                    let dkg_output = obj.dkg_output;
-                                    let commitments_and_proof_to_centralized_party_nonce_shares = obj.commitments_and_proof_to_centralized_party_nonce_shares;
-                                    // TODO: validate commitment error
-                                    let message = InitiateSignatureMPCProtocol::Presign {
-                                        session_id: SignatureMPCSessionID(move_object.id().into_bytes()),
-                                        session_ref: obj_ref,
-                                        dkg_output: bcs::from_bytes(&*dkg_output)?,
-                                        commitments_and_proof_to_centralized_party_nonce_shares: bcs::from_bytes(&*commitments_and_proof_to_centralized_party_nonce_shares)?,
-                                    };
+                    messages.push(message);
+                } else if NewPresignSessionEvent::type_() == event.type_ {
+                    let event = NewPresignSessionEvent::from_bcs_bytes(&event.contents)?;
+                    debug!("event: NewPresignSessionEvent {:?}", event);
 
-                                    messages.push(message);
-                                }
-                            }
-                        }
-                    }
-                    if c.package == SUI_SYSTEM_PACKAGE_ID.into() && c.module.as_ident_str() == DWALLET_MODULE_NAME && c.function.as_ident_str() == SIGN_MESSAGES_FUNC_NAME {
-                        for (obj_ref, owner, kind) in effects.all_changed_objects() {
-                            let obj = inner_temporary_store.written.get(&obj_ref.0).ok_or(anyhow::anyhow!(""))?;
-                            // // TODO: remove unwrap
-                            // let encrypted_decentralized_party_secret_key_share_value = inner_temporary_store.input_objects.values().find_map(|o| {
-                            //     if let Some(move_object) = obj.data.try_as_move() {
-                            //         if move_object.type_().name() == DWALLET_STRUCT_NAME {
-                            //             let obj: DWallet = bcs::from_bytes(move_object.contents()).ok().unwrap();
-                            //             return Some(obj.encrypted_secret_key_share)
-                            //         }
-                            //     }
-                            //     None
-                            // });
-                            //
-                            // let Some(encrypted_decentralized_party_secret_key_share_value) = encrypted_decentralized_party_secret_key_share_value else {
-                            //     continue
-                            // };
+                    let dkg_output = event.dkg_output;
+                    let commitments_and_proof_to_centralized_party_nonce_shares = event.commitments_and_proof_to_centralized_party_nonce_shares;
+                    // TODO: validate commitment error
+                    let obj_ref = Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                    let message = InitiateSignatureMPCProtocol::Presign {
+                        session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
+                        session_ref: obj_ref,
+                        dkg_output: bcs::from_bytes(&*dkg_output)?,
+                        commitments_and_proof_to_centralized_party_nonce_shares: bcs::from_bytes(&*commitments_and_proof_to_centralized_party_nonce_shares)?,
+                    };
 
-                            if let Some(move_object) = obj.data.try_as_move() {
-                                if move_object.type_().name() == SIGN_SESSION_STRUCT_NAME {
-                                    let obj: SignSession<SignData> = bcs::from_bytes(move_object.contents())?;
-                                    debug!("fetching SignSession {:?}", obj);
-                                    let dkg_output = obj.sign_data.dkg_output;
-                                    let public_nonce_encrypted_partial_signature_and_proofs = obj.sign_data.public_nonce_encrypted_partial_signature_and_proofs;
-                                    let presigns = obj.sign_data.presigns;
-                                    let hash = obj.sign_data.hash;
-                                    // TODO: validate commitment error
-                                    let message = InitiateSignatureMPCProtocol::Sign {
-                                        session_id: SignatureMPCSessionID(move_object.id().into_bytes()),
-                                        session_ref: obj_ref,
-                                        messages: obj.messages.clone(),
-                                        dkg_output: bcs::from_bytes(&*dkg_output)?,
-                                        public_nonce_encrypted_partial_signature_and_proofs: bcs::from_bytes(&*public_nonce_encrypted_partial_signature_and_proofs)?,
-                                        presigns: bcs::from_bytes(&*presigns)?,
-                                        hash
-                                    };
+                    messages.push(message);
+                } else if NewSignSessionEvent::<NewSignDataEvent>::type_(NewSignDataEvent::type_().into()) == event.type_ {
+                    let event: NewSignSessionEvent<NewSignDataEvent> = NewSignSessionEvent::from_bcs_bytes(&event.contents)?;
+                    debug!("event: NewSignSessionEvent {:?}", event);
 
-                                    messages.push(message);
-                                }
-                            }
-                        }
-                    }
+                    let dkg_output = event.sign_data_event.dkg_output;
+                    let public_nonce_encrypted_partial_signature_and_proofs = event.sign_data_event.public_nonce_encrypted_partial_signature_and_proofs;
+                    let presigns = event.sign_data_event.presigns;
+                    let hash = event.sign_data_event.hash;
+                    // TODO: validate commitment error
+                    let obj_ref = Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                    let message = InitiateSignatureMPCProtocol::Sign {
+                        session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
+                        session_ref: obj_ref,
+                        messages: event.messages.clone(),
+                        dkg_output: bcs::from_bytes(&*dkg_output)?,
+                        public_nonce_encrypted_partial_signature_and_proofs: bcs::from_bytes(&*public_nonce_encrypted_partial_signature_and_proofs)?,
+                        presigns: bcs::from_bytes(&*presigns)?,
+                        hash
+                    };
+
+                    messages.push(message);
                 }
             }
             epoch_store.insert_initiate_signature_mpc_protocols(&messages)?;
         }
         Ok(())
+    }
+
+    fn get_object_ref_by_object_id(effects: &TransactionEffects, object_id: &ObjectID) -> anyhow::Result<ObjectRef> {
+        effects.all_changed_objects().iter().find_map(|(obj_ref @ (oid, _, _), _, _)| {
+            if oid == object_id {
+                Some(obj_ref.clone())
+            } else {
+                None
+            }
+        }).ok_or(anyhow::anyhow!(""))
     }
 
     fn update_metrics(
