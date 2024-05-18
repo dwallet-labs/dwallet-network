@@ -8,7 +8,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::transfer;
     use dwallet::event;
     use dwallet::tx_context::{Self, TxContext};
-    use dwallet_system::dwallet::{create_dwallet_cap, SignMessages};
+    use dwallet_system::dwallet::{create_dwallet_cap, SignMessages, DWalletCap};
     use dwallet_system::dwallet;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
@@ -120,7 +120,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         presigns: vector<u8>,
     }
 
-    public fun create_dkg_session(commitment_to_centralized_party_secret_key_share: vector<u8>, ctx: &mut TxContext) {
+    public fun create_dkg_session(commitment_to_centralized_party_secret_key_share: vector<u8>, ctx: &mut TxContext): DWalletCap {
         let cap = create_dwallet_cap(ctx);
         let sender = tx_context::sender(ctx);
         let session = DKGSession {
@@ -136,7 +136,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             sender,
         });
         transfer::freeze_object(session);
-        transfer::public_transfer(cap, sender);
+        cap
     }
 
     #[allow(unused_function)]

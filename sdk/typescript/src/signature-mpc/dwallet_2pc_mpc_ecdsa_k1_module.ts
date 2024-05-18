@@ -30,10 +30,11 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 	const decommitmentRoundPartyState = resultDKG['decommitment_round_party_state'];
 
 	const tx = new TransactionBlock();
-	tx.moveCall({
+	const [cap] = tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_dkg_session`,
 		arguments: [tx.pure(commitmentToSecretKeyShare)],
 	});
+	tx.transferObjects([cap], keypair.toSuiAddress());
 	const result = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx,
