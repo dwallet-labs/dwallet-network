@@ -11,7 +11,7 @@ export async function fetchObjectBySessionId(
 	client: DWalletClient,
 ) {
 	let cursor = null;
-	while (true) {
+	for (;;) {
 		const objects = await client.getOwnedObjects({ owner: keypair.toSuiAddress(), cursor: cursor });
 		const objectsContent = await client.multiGetObjects({
 			ids: objects.data.map((o) => o.data?.objectId!),

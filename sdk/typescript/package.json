@@ -2,7 +2,7 @@
 	"name": "@dwallet-network/dwallet.js",
 	"description": "dWallet Network TypeScript API(Work in Progress)",
 	"homepage": "https://docs.dwallet.io/",
-	"version": "0.49.19",
+	"version": "0.49.20",
 	"license": "BSD-3-Clause-Clear",
 	"sideEffects": false,
 	"files": [

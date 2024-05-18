@@ -3,16 +3,21 @@
 
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
-import { DWalletClient } from '../client/index.js';
-import { Keypair } from '../cryptography/index.js';
+import type { DWalletClient } from '../client/index.js';
+import type { Keypair } from '../cryptography/index.js';
 import { fetchObjectBySessionId } from './utils.js';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export async function approveAndSign(dwalletCapId: string, signMessagesId: string, messages: Uint8Array[], keypair: Keypair, client: DWalletClient) {
-
+export async function approveAndSign(
+	dwalletCapId: string,
+	signMessagesId: string,
+	messages: Uint8Array[],
+	keypair: Keypair,
+	client: DWalletClient,
+) {
 	const tx = new TransactionBlock();
 	const [messageApprovals] = tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::approve_messages`,
@@ -23,7 +28,10 @@ export async function approveAndSign(dwalletCapId: string, signMessagesId: strin
 	});
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::sign_messages`,
-		typeArguments: [`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`],
+		typeArguments: [
+			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`,
+			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::NewSignDataEvent`,
+		],
 		arguments: [tx.object(signMessagesId), messageApprovals],
 	});
 	const result = await client.signAndExecuteTransactionBlock({
@@ -34,7 +42,8 @@ export async function approveAndSign(dwalletCapId: string, signMessagesId: strin
 		},
 	});
 
-	const signSessionRef = result.effects?.created?.filter((o) => o.owner == 'Immutable')[0].reference!;
+	const signSessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
+		.reference!;
 
 	const signOutput = await fetchObjectBySessionId(
 		signSessionRef.objectId,
@@ -43,10 +52,18 @@ export async function approveAndSign(dwalletCapId: string, signMessagesId: strin
 		client,
 	);
 
-	if (signOutput?.dataType === 'moveObject') {
-		// @ts-ignore
-		return { signOutputId: signOutput.fields["id"]["id"], signatures: signOutput.fields["signatures"] };
-	}
+	const fields =
+		signOutput?.dataType === 'moveObject'
+			? (signOutput.fields as {
+					id: { id: string };
+					signatures: number[][];
+			  })
+			: null;
 
-	return;
+	return fields
+		? {
+				signOutputId: fields.id.id,
+				signatures: fields.signatures,
+		  }
+		: null;
 }
