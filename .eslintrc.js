@@ -58,7 +58,13 @@ module.exports = {
 		'header/header': [
 			2,
 			'line',
-			[' Copyright (c) Mysten Labs, Inc.', ' SPDX-License-Identifier: BSD-3-Clause-Clear'],
+			[
+				{
+					pattern:
+						'^ (Copyright \\(c\\) Mysten Labs\\, Inc\\.|Copyright \\(c\\) dWallet Labs\\, Ltd\\.)$',
+				},
+				' SPDX-License-Identifier: BSD-3-Clause-Clear',
+			],
 		],
 		'@typescript-eslint/no-unused-vars': [
 			'error',
@@ -271,16 +277,6 @@ module.exports = {
 			files: ['sdk/create-dapp/templates/**/*'],
 			rules: {
 				'header/header': 'off',
-			},
-		},
-		{
-			files: ['sdk/signature-mpc-wasm/**/*'],
-			rules: {
-				'header/header': [
-					2,
-					'line',
-					[' Copyright (c) dWallet Labs, Ltd.', ' SPDX-License-Identifier: BSD-3-Clause-Clear'],
-				],
 			},
 		},
 	],

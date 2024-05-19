@@ -141,15 +141,33 @@ impl SuiDWalletCommands {
                     .sample_commit_and_prove_secret_key_share(&mut OsRng)
                     .unwrap();
 
-                let commitment = bcs::to_bytes(&commitment_to_centralized_party_secret_key_share).unwrap();
+                let commitment_to_centralized_party_secret_key_share = bcs::to_bytes(&commitment_to_centralized_party_secret_key_share).unwrap();
 
-                let commitment = commitment.iter().map(|v| Value::Number(Number::from(*v))).collect();
+                let gas_owner = context.try_get_object_owner(&gas).await?;
+                let sender = gas_owner.unwrap_or(context.active_address()?);
 
-                let commitment = SuiJsonValue::new(Value::Array(commitment)).unwrap();
+                let client = context.get_client().await?;
 
-                let tx_data = construct_move_call_transaction(
-                    SUI_SYSTEM_PACKAGE_ID, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.as_str(), &CREATE_DKG_SESSION_FUNC_NAME.as_str(), Vec::new(), gas, gas_budget, Vec::from([commitment]), context,
-                ).await?;
+                let mut pt_builder = ProgrammableTransactionBuilder::new();
+
+                let commitment_to_centralized_party_secret_key_share = pt_builder.input(CallArg::from(&commitment_to_centralized_party_secret_key_share)).unwrap();
+                let cap = pt_builder.programmable_move_call(
+                    SUI_SYSTEM_PACKAGE_ID,
+                    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into(),
+                    CREATE_DKG_SESSION_FUNC_NAME.into(),
+                    Vec::new(),
+                    Vec::from([commitment_to_centralized_party_secret_key_share]),
+                );
+                pt_builder.transfer_arg(sender, cap);
+
+                let tx_data = client
+                    .transaction_builder().
+                    finish_programmable_transaction(
+                        sender,
+                        pt_builder,
+                        gas,
+                        gas_budget
+                    ).await?;
 
                 let session_response = serialize_or_execute!(
                     tx_data,

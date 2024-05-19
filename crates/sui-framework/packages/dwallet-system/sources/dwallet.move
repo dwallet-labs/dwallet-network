@@ -5,13 +5,35 @@ module dwallet_system::dwallet {
     use std::vector;
     use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
+    use dwallet::event;
     use dwallet::tx_context;
     use dwallet::tx_context::{TxContext};
 
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 
+    // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
+
+    // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
+
+
+    // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
+
+    // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
+
+
+    // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
+    struct NewSignSessionEvent<E: store + copy + drop> has copy, drop {
+        session_id: ID,
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        messages: vector<vector<u8>>,
+        sender: address,
+        sign_data_event: E,
+    }
+
+    // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
 
     struct DWalletCap has key, store {
         id: UID,
@@ -27,20 +49,21 @@ module dwallet_system::dwallet {
         message: vector<u8>,
     }
 
-    struct SignMessages<S: store> has key, store {
+    struct SignMessages<S: store, E: store + copy + drop> has key, store {
         id: UID,
         dwallet_id: ID,
         dwallet_cap_id: ID,
         messages: vector<vector<u8>>,
         sign_data: S,
+        sign_data_event: E,
     }
 
-    struct SharedSignMessages<S: store> has key {
+    struct SharedSignMessages<S: store, E: store + copy + drop> has key {
         id: UID,
-        sign_messages: SignMessages<S>,
+        sign_messages: SignMessages<S, E>,
     }
 
-    struct SignSession<S> has key {
+    struct SignSession<S: store> has key {
         id: UID,
         dwallet_id: ID,
         dwallet_cap_id: ID,
@@ -111,7 +134,7 @@ module dwallet_system::dwallet {
         (dwallet_cap_id, message)
     }
 
-    public fun create_shared_sign_messages<S: store>(sign_messages: SignMessages<S>, ctx: &mut TxContext) {
+    public fun create_shared_sign_messages<S: store, E: store + copy + drop>(sign_messages: SignMessages<S, E>, ctx: &mut TxContext) {
         let holder = SharedSignMessages {
             id: object::new(ctx),
             sign_messages,
@@ -119,7 +142,7 @@ module dwallet_system::dwallet {
         transfer::share_object(holder);
     }
 
-    public fun remove_shared_sign_messages<S: store>(shared: SharedSignMessages<S>): SignMessages<S> {
+    public fun remove_shared_sign_messages<S: store, E: store + copy + drop>(shared: SharedSignMessages<S, E>): SignMessages<S, E> {
         let SharedSignMessages {
             id,
             sign_messages,
@@ -128,35 +151,37 @@ module dwallet_system::dwallet {
         sign_messages
     }
 
-    public(friend) fun create_sign_messages<S: store>(dwallet_id: ID, dwallet_cap_id: ID, messages: vector<vector<u8>>, sign_data: S, ctx: &mut TxContext): SignMessages<S> {
+    public(friend) fun create_sign_messages<S: store, E: store + copy + drop>(dwallet_id: ID, dwallet_cap_id: ID, messages: vector<vector<u8>>, sign_data: S, sign_data_event: E, ctx: &mut TxContext): SignMessages<S, E> {
         SignMessages {
             id: object::new(ctx),
             dwallet_id,
             dwallet_cap_id,
             messages,
             sign_data,
+            sign_data_event,
         }
     }
 
-    public fun sign_messages_dwallet_id<S: store>(sign_messages: &SignMessages<S>): ID {
+    public fun sign_messages_dwallet_id<S: store, E: store + copy + drop>(sign_messages: &SignMessages<S, E>): ID {
         sign_messages.dwallet_id
     }
 
-    public fun sign_messages_dwallet_cap_id<S: store>(sign_messages: &SignMessages<S>): ID {
+    public fun sign_messages_dwallet_cap_id<S: store, E: store + copy + drop>(sign_messages: &SignMessages<S, E>): ID {
         sign_messages.dwallet_cap_id
     }
 
-    public fun sign_messages_messages<S: store>(sign_messages: &SignMessages<S>): vector<vector<u8>> {
+    public fun sign_messages_messages<S: store, E: store + copy + drop>(sign_messages: &SignMessages<S, E>): vector<vector<u8>> {
         sign_messages.messages
     }
 
-    public fun sign_messages<S: store>(sign_messages: SignMessages<S>, message_approvals: vector<MessageApproval>, ctx: &mut TxContext) {
+    public fun sign_messages<S: store, E: store + copy + drop>(sign_messages: SignMessages<S, E>, message_approvals: vector<MessageApproval>, ctx: &mut TxContext) {
         let SignMessages {
             id,
             dwallet_id,
             dwallet_cap_id,
             messages,
             sign_data,
+            sign_data_event,
         } = sign_messages;
 
         object::delete(id);
@@ -175,15 +200,24 @@ module dwallet_system::dwallet {
         };
 
         vector::destroy_empty(message_approvals);
+        let sender = tx_context::sender(ctx);
 
         let sign_session = SignSession {
             id: object::new(ctx),
             dwallet_id,
             dwallet_cap_id,
             messages,
+            sender,
             sign_data,
-            sender: tx_context::sender(ctx),
         };
+        event::emit(NewSignSessionEvent {
+            session_id: object::id(&sign_session),
+            dwallet_id,
+            dwallet_cap_id,
+            messages,
+            sender,
+            sign_data_event,
+        });
         transfer::freeze_object(sign_session);
     }
 
