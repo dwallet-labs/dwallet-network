@@ -184,7 +184,7 @@ You can use the [Ethereum Beacon Chain checkpoint sync endpoints](https://eth-cl
 - `state_object_id` is the current `EthState` object ID that is used to fetch the current state, which is used for getting the relevant updates from the Ethereum network.
 
 **Note:** When using local ethereum network, you should also provide `eth_genesis_time`, `eth_genesis_validators_root`, and `eth_chain_id` fields in the config file.
-See how to get these values in the end of this document. []
+See how to get these values in [here](#get-ethereum-network-configuration).
 
 #### Updating the config file
 After you created the `EthState` object, you need to update the `client.yaml` file with the Object ID you got from the previous steps. 
