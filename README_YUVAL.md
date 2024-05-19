@@ -1,4 +1,4 @@
-# How to debug dwallet-network CLI
+# How to debug Ethereum Light Client functionality with dWallet
 
 ## Preliminary Notes
 
@@ -171,35 +171,166 @@ On the first run of the `dwallet` binary, it will create a configuration file:
 ```
 #### Config file example
 The config should look something like this:
-![img_2.png](img_2.png)
-- In `rpc` field, you need to add the RPC URL of the local sui-test-validator network you are running.  
-It should be `http://localhsot:9000/`, unless you changed the port in the network's configuration.
 
-- In `eth_execution_rpc` field, you need to add the RPC URL of the Ethereum network you use. You can use Alchemy or Infura for that.
-- In `eth_consensus_rpc` field, you need to add the Consensus RPC URL of the Ethereum network you use.  
+![img_2.png](img_2.png)
+- In `rpc` field, you need to add the RPC URL of the Sui network you are running.  
+If you use a local sui node the RPC should be `http://localhsot:9000/`,
+  unless you changed the port in the network's configuration.
+
+- In `eth_execution_rpc` field, you need to add the RPC URL of the Ethereum network you use.   
+If you debug against a local ethereum network, the default URL would be `http://localhost:8545/`. If you use Ethereum testnet, you can use Alchemy or Infura for that.
+- In `eth_consensus_rpc` field, you need to add the Consensus RPC URL of the Ethereum network you use. For local Ethereum this would be `http://localhost:3500/`.  
 You can use the [Ethereum Beacon Chain checkpoint sync endpoints](https://eth-clients.github.io/checkpoint-sync-endpoints/) for any other network's Consensus RPCs providers.
-- `checkpoint` field is the checkpoint that is provided by the user. Typically, it should be the latest checkpoint from the Ethereum network.
 - `state_object_id` is the current `EthState` object ID that is used to fetch the current state, which is used for getting the relevant updates from the Ethereum network.
-- `dwallets` section is created when you first create a dwallet. It also contains the dwallet_id and the dwallet_cap_id of the dwallet.
   
 #### Updating the config file
-After you created the `EthState` object, you need to update the `client.yaml` file with the relevant information you got from the previous steps.
-
-The fields you need to update are:
-- `checkpoint` - a checkpoint from the Ethereum network(should be the latest one).
-- `state_object_id` - the `Object ID` of the `EthState` object you created in the previous step.
-   
+After you created the `EthState` object, you need to update the `client.yaml` file with the Object ID you got from the previous steps. 
 
 ### Debug the CLI
 First, you need to go to your IDE and `cargo build` the whole project.
 After this, you will have a list of Debugging configurations in your IDE.
-In order to debug the dwallet cli binary, you need to choose the `Run dwallet` configuration, but first we need to add the command we want to debug to the configuration as run arguments.
+To debug the dwallet cli binary, you need to choose the `Run dwallet` configuration, but first we need to add the command we want to debug to the configuration as run arguments.
 Perform the following steps to take so:
-1. Go to the debug configuration of the `dwallet` binary ![img_3.png](img_3.png)
-2. `Commands` field should contain the following command. Pay attention to the parameters that you need to provide: `ETH_DWALLET_CAP_ID`, `DWALLET_ID`, `MESSAGE`, `GAS_BUDGET`.:
+1. Go to the debug configuration of the `dwallet` binary
+2. `Commands` field should contain the following command. Pay attention to the parameters that you need to provide: `ETH_DWALLET_CAP_ID`, `DWALLET_ID`, `MESSAGE`, `GAS_BUDGET`. Sometimes you will need to provide a gas object ID as well. :
 ```
 run --package sui --bin dwallet -- client dwallet-eth-verify --eth-dwallet-cap-id "<ETH_DWALLET_CAP_ID>" --dwallet-id "<DWALLET_ID>" --message "<MESSAGE>" --gas-budget 200000000
 ```
 ![img_4.png](img_4.png)
-3. Click `Apply`
-4. Set relevant breakpoints in the code and click `Debug` to start the debugging session.
+3. Enjoy debugging
+
+
+## Using Local Ethereum Network
+To run a local Ethereum network,
+follow the instructions in the [Ethereum Light Client documentation](https://github.com/dwallet-labs/light-client-test/blob/main/private-ethereum-network-guid.md) made by our beloved Shay Malichi.
+After you have a local Ethereum network running, you want to deploy the contract and execute some functions in it,
+to approve the message you want to verify in the dwallet.
+
+### Hardhat
+To deploy and interact with our contract, we would use the Hardhat framework.
+Read the [Hardhat documentation](https://hardhat.org/hardhat-runner/docs/getting-started#installation) to install it.
+
+#### Configuration
+Hardhat configuration is taken from the `hardhat.config.js` file in the root of the project.
+You should update the configuration to match the settings of your local Ethereum network.
+Example `hardhat.config.js` file:
+```javascript
+require('dotenv').config()
+require('@nomicfoundation/hardhat-toolbox')
+// Plugin for storage and slots.
+require('hardhat-storage-layout')
+
+/** @type import('hardhat/config').HardhatUserConfig */
+module.exports = {
+    solidity: {
+        version: '0.8.24',
+        settings: {
+            evmVersion: 'cancun',
+            optimizer: {
+                enabled: true,
+                runs: 200
+            }
+        }
+    },
+    defaultNetwork: 'hardhat',
+    networks: {
+        hardhat: {
+            accounts: {
+                accountsBalance: "1000000000000000000000000"
+            }
+        },
+        holesky: {
+            url: "https://ethereum-holesky.blockpi.network/v1/rpc/public",
+            accounts: ["0xd44ae2f6b64f6edb6095aebb7e9c7b1f279dc21ce7d966a787df2ee9c6362425"]
+        },
+        local: {
+            url: "http://localhost:8545",
+            accounts: ["0x2e0834786285daccd064ca17f1654f67b4aef298acbb82cef9ec422fb4975622"]
+        }
+    },
+}
+```
+
+#### Deploy and Interact with the Contract
+Once you've installed and configured Hardhat correctly,
+you can now run scripts to deploy the contract and interact with it.
+In order to execute the scripts, you need to run the following command:
+```bash
+npx hardhat run <script_file_name>.js --network <network_name>
+```
+
+Example `deploy.js` script:
+```javascript
+const hre = require("hardhat");
+
+async function main() {
+    const dWalletAuthenticatorFactory = await hre.ethers.getContractFactory("dWalletAuthenticator");
+    const dWalletAuthenticator = await dWalletAuthenticatorFactory.deploy();
+
+    await dWalletAuthenticator.waitForDeployment();
+
+    console.log("dWalletAuthenticator deployed to: ", dWalletAuthenticator.target);
+}
+
+main()
+    .then(() => process.exit(0))
+    .catch((error) => {
+        console.error(error);
+        process.exit(1);
+    });
+```
+
+**Note:** In order to interact with the contract, you need to have the contract's address and the ABI.
+The ABI would be achieved by compiling the contract.
+You can use Hardhat for that too.  
+The contract's address would be the address the contract was deployed to.  
+Read more about compiling a smart contract in the [Hardhat docs](https://hardhat.org/hardhat-runner/docs/guides/compile-contracts).
+
+Example `interact.js` script:
+```javascript
+// Import ethers from Hardhat package
+const {ethers} = require("hardhat");
+
+async function main() {
+    // Your contract's ABI
+    const abi= ""; // <ABI GOES HERE>;
+
+    // The address your contract is deployed at
+    const contractAddress = "0x3e2aabb763f255cbb6a322dbe532192e120b5c6b";
+
+    // Setup provider and contract instance
+    const provider = new ethers.JsonRpcProvider("http://localhost:8545");
+    const contract = new ethers.Contract(contractAddress, abi, provider);
+
+    // Create a signer. If you use a local network - get the key from network configuration
+    const signer = new ethers.Wallet('2e0834786285daccd064ca17f1654f67b4aef298acbb82cef9ec422fb4975622', provider);
+
+    // Connect your contract to signer
+    const contractWithSigner = contract.connect(signer);
+
+    // Authorize the account
+    const account = "0x123463a4b065722e99115d6c222f267d9cabb524";
+    const tx = await contractWithSigner.accountAuthorize(account);
+    console.log("Transaction Hash:", tx.hash);
+
+    // Add dwallet owner
+    const dWalletID = "0x71844b5dc4eb0a394b210150ab08b49239034fa2cf57328a611674206fb14c9c";
+    let ownerID = "0x123463a4b065722e99115d6c222f267d9cabb524";
+    const tx1 = await contractWithSigner.addDWalletOwner(dWalletID, ownerID);
+    console.log("Transaction Hash:", tx1.hash);
+
+    // Approve message on the contract
+    const message = "dGhpcyBpcyB0aGUgZmlyc3QgbWVzc2FnZSB0aGF0IGkgYW0gZ29pbmcgdG8gdmVyaWZ5IG9uIGEgbG9jYWwgZXRoZXJldW0gbmV0d29yaywgdXNpbmcgbGlnaHQgY2xpZW50ICYgZHdhbGxldCBuZXR3b3Jr";
+    const tx2 = await contractWithSigner.approveMessage(message, dWalletID, {gasPrice: ethers.parseUnits("10", "gwei")});
+    console.log("Transaction Hash:", tx2.hash);
+}
+
+main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+});
+
+```
+
+
+# Add information about helios configuration for local networks

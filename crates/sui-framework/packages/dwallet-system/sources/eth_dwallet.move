@@ -82,6 +82,7 @@ module dwallet_system::eth_dwallet {
             state_bytes
         );
 
+        //todo: update time_slot check
         if (time_slot != 0) {
             transfer::freeze_object(EthState {
                 id: object::new(ctx),

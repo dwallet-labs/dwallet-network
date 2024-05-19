@@ -11,15 +11,21 @@ use sui_json_rpc_types::{SuiData, SuiObjectDataOptions};
 use sui_json_rpc_types::{SuiExecutionStatus, SuiObjectData, SuiRawData};
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
-use sui_types::base_types::{ObjectID};
+use sui_types::base_types::ObjectID;
 use sui_types::eth_dwallet::config::EthClientConfig;
 use sui_types::eth_dwallet::eth_state::{EthState, EthStateObject};
 use sui_types::eth_dwallet::light_client::EthLightClient;
 use sui_types::eth_dwallet::proof::ProofResponse;
-use sui_types::eth_dwallet::update::{UpdatesResponse};
-use sui_types::eth_dwallet_cap::{EthDWalletCap, APPROVE_MESSAGE_FUNC_NAME, ETH_DWALLET_MODULE_NAME, VERIFY_ETH_STATE_FUNC_NAME, CREATE_ETH_DWALLET_CAP_FUNC_NAME};
+use sui_types::eth_dwallet::update::UpdatesResponse;
+use sui_types::eth_dwallet_cap::{
+    EthDWalletCap, APPROVE_MESSAGE_FUNC_NAME, CREATE_ETH_DWALLET_CAP_FUNC_NAME,
+    ETH_DWALLET_MODULE_NAME, VERIFY_ETH_STATE_FUNC_NAME,
+};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME};
+use sui_types::signature_mpc::{
+    APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
+    DWALLET_MODULE_NAME,
+};
 use sui_types::transaction::Transaction;
 use sui_types::transaction::TransactionDataAPI;
 use sui_types::transaction::{CallArg, ObjectArg, SenderSignedData};
@@ -64,10 +70,9 @@ pub(crate) async fn eth_approve_message(
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
 ) -> Result<SuiClientCommandResult, anyhow::Error> {
-    let (eth_execution_rpc, eth_consensus_rpc, state_object_id) =
-        get_sui_env_config(context)?;
+    let (eth_execution_rpc, eth_consensus_rpc, state_object_id) = get_sui_env_config(context)?;
 
-    let eth_dwallet_cap_data_bcs= fetch_object(context, eth_dwallet_cap_id).await?;
+    let eth_dwallet_cap_data_bcs = fetch_object(context, eth_dwallet_cap_id).await?;
     let eth_dwallet_cap_obj: EthDWalletCap = eth_dwallet_cap_data_bcs.try_into()?;
 
     // todo(yuval): we need to decide how we implement this, maybe we should use constant address for the state object
@@ -82,7 +87,8 @@ pub(crate) async fn eth_approve_message(
 
     let (data_slot, contract_addr) = get_data_from_eth_dwallet_cap(eth_dwallet_cap_obj)?;
 
-    let eth_client_config = EthClientConfig::new(
+    // todo(yuval): bring configuration from yaml
+    let eth_lc_config = EthClientConfig::new(
         Network::HOLESKY,
         eth_execution_rpc.clone(),
         eth_consensus_rpc.clone(),
@@ -93,7 +99,7 @@ pub(crate) async fn eth_approve_message(
         eth_state.last_checkpoint.clone(),
     )?;
 
-    let mut eth_lc = init_light_client(eth_client_config).await?;
+    let mut eth_lc = init_light_client(eth_lc_config).await?;
 
     // Fetch updates & proof from the consensus RPC
     let Ok(updates) = fetch_consensus_updates(&mut eth_state).await else {
@@ -109,13 +115,9 @@ pub(crate) async fn eth_approve_message(
 
     // Serialize Move parameters
     let mut pt_builder = ProgrammableTransactionBuilder::new();
-    let eth_state_arg = pt_builder
-        .pure(bcs::to_bytes(&eth_state)?)
-        .unwrap();
+    let eth_state_arg = pt_builder.pure(bcs::to_bytes(&eth_state)?).unwrap();
 
-    let updates_arg = pt_builder
-        .pure(bcs::to_bytes(&updates)?)
-        .unwrap();
+    let updates_arg = pt_builder.pure(bcs::to_bytes(&updates)?).unwrap();
 
     pt_builder.programmable_move_call(
         SUI_SYSTEM_PACKAGE_ID,
@@ -135,14 +137,21 @@ pub(crate) async fn eth_approve_message(
 
     let client = context.get_client().await?;
 
-    client.transaction_builder().single_move_call(
-        &mut pt_builder,
-        SUI_SYSTEM_PACKAGE_ID,
-        ETH_DWALLET_MODULE_NAME.as_str(),
-        APPROVE_MESSAGE_FUNC_NAME.as_str(),
-        Vec::new(),
-        Vec::from([SuiJsonValue::from_object_id(eth_dwallet_cap_id), dwallet_id_json, proof_sui_json]),
-    ).await?;
+    client
+        .transaction_builder()
+        .single_move_call(
+            &mut pt_builder,
+            SUI_SYSTEM_PACKAGE_ID,
+            ETH_DWALLET_MODULE_NAME.as_str(),
+            APPROVE_MESSAGE_FUNC_NAME.as_str(),
+            Vec::new(),
+            Vec::from([
+                SuiJsonValue::from_object_id(eth_dwallet_cap_id),
+                dwallet_id_json,
+                proof_sui_json,
+            ]),
+        )
+        .await?;
 
     let client = context.get_client().await?;
     let tx_data = client
@@ -161,7 +170,9 @@ pub(crate) async fn eth_approve_message(
 }
 
 fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, Error>
-where T: ?Sized + Serialize {
+where
+    T: ?Sized + Serialize,
+{
     let object_bytes = bcs::to_bytes(&object)?;
     let object_json = object_bytes
         .iter()
@@ -170,7 +181,9 @@ where T: ?Sized + Serialize {
     Ok(SuiJsonValue::new(Value::Array(object_json))?)
 }
 
-fn get_data_from_eth_dwallet_cap(eth_dwallet_cap_obj: EthDWalletCap) -> Result<(u64, Address), Error> {
+fn get_data_from_eth_dwallet_cap(
+    eth_dwallet_cap_obj: EthDWalletCap,
+) -> Result<(u64, Address), Error> {
     let data_slot = eth_dwallet_cap_obj.eth_smart_contract_slot;
     // todo(yuval): check why the string has prefix and remove it the right way
     let mut contract_addr: String = eth_dwallet_cap_obj.eth_smart_contract_addr;
@@ -191,7 +204,11 @@ async fn fetch_proofs(
     contract_addr: &Address,
 ) -> Result<ProofResponse, Result<SuiClientCommandResult, Error>> {
     let proof = match eth_lc
-        .get_proofs(contract_addr, eth_state.last_update_execution_block_number, &eth_state.last_update_execution_state_root)
+        .get_proofs(
+            contract_addr,
+            eth_state.last_update_execution_block_number,
+            &eth_state.last_update_execution_state_root,
+        )
         .await
     {
         Ok(proof) => proof,
@@ -203,18 +220,13 @@ async fn fetch_proofs(
 async fn fetch_consensus_updates(
     eth_state: &mut EthState,
 ) -> Result<UpdatesResponse, Result<SuiClientCommandResult, Error>> {
-    let updates = match eth_state
-        .get_updates(
-            &eth_state.clone().last_checkpoint,
-        )
+    let Ok(updates) = eth_state
+        .get_updates(&eth_state.clone().last_checkpoint)
         .await
-    {
-        Ok(updates) => updates,
-        Err(e) => {
-            return Err(Err(anyhow!(
-                "error fetching updates from Consensus RPC: {e}"
-            )))
-        }
+    else {
+        return Err(Err(anyhow!(
+            "error fetching updates from Consensus RPC"
+        )));
     };
     Ok(updates)
 }
@@ -285,9 +297,7 @@ async fn fetch_object(
     }
 }
 
-fn get_sui_env_config(
-    context: &mut WalletContext,
-) -> Result<(String, String, ObjectID), Error> {
+fn get_sui_env_config(context: &mut WalletContext) -> Result<(String, String, ObjectID), Error> {
     let sui_env_config = context.config.get_active_env()?;
     let eth_execution_rpc = sui_env_config
         .eth_execution_rpc
@@ -301,9 +311,5 @@ fn get_sui_env_config(
         .state_object_id
         .clone()
         .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
-    Ok((
-        eth_execution_rpc,
-        eth_consensus_rpc,
-        state_object_id,
-    ))
+    Ok((eth_execution_rpc, eth_consensus_rpc, state_object_id))
 }
