@@ -12,7 +12,7 @@ use sui_json_rpc_types::{SuiExecutionStatus, SuiObjectData, SuiRawData};
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
-use sui_types::eth_dwallet::config::EthClientConfig;
+use sui_types::eth_dwallet::config::EthLightClientConfig;
 use sui_types::eth_dwallet::eth_state::{EthState, EthStateObject};
 use sui_types::eth_dwallet::light_client::EthLightClient;
 use sui_types::eth_dwallet::proof::ProofResponse;
@@ -70,7 +70,7 @@ pub(crate) async fn eth_approve_message(
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
 ) -> Result<SuiClientCommandResult, anyhow::Error> {
-    let (eth_execution_rpc, eth_consensus_rpc, state_object_id) = get_sui_env_config(context)?;
+    let state_object_id = context.config.get_active_env()?.state_object_id.clone().ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
 
     let eth_dwallet_cap_data_bcs = fetch_object(context, eth_dwallet_cap_id).await?;
     let eth_dwallet_cap_obj: EthDWalletCap = eth_dwallet_cap_data_bcs.try_into()?;
@@ -82,24 +82,19 @@ pub(crate) async fn eth_approve_message(
     // Desrialize Eth State object
     let mut eth_state = bcs::from_bytes::<EthState>(&eth_state_obj.data)
         .map_err(|e| anyhow!("error parsing eth state data: {e}"))?;
-    let mut eth_state = eth_state
-        .with_rpc(eth_consensus_rpc.clone());
 
     let (data_slot, contract_addr) = get_data_from_eth_dwallet_cap(eth_dwallet_cap_obj)?;
 
-    // todo(yuval): bring configuration from yaml
-    let eth_lc_config = EthClientConfig::new(
-        Network::HOLESKY,
-        eth_execution_rpc.clone(),
-        eth_consensus_rpc.clone(),
-        data_slot,
-        dwallet_id.as_slice().to_vec(),
-        message.clone(),
-        0,
-        eth_state.last_checkpoint.clone(),
-    )?;
+    let mut eth_lc_config = get_eth_config(context)?;
+    // todo(yuval): make a separate object for func args
+    eth_lc_config.data_slot = data_slot;
+    eth_lc_config.message = message.clone();
+    eth_lc_config.dwallet_id = dwallet_id.as_slice().to_vec();
+    eth_lc_config.checkpoint = eth_state.last_checkpoint.clone();
 
-    let mut eth_lc = init_light_client(eth_lc_config).await?;
+    let mut eth_lc = init_light_client(eth_lc_config.clone()).await?;
+    let mut eth_state = eth_state
+        .set_rpc(eth_lc_config.execution_rpc.clone());
 
     // Fetch updates & proof from the consensus RPC
     let Ok(updates) = fetch_consensus_updates(&mut eth_state).await else {
@@ -187,13 +182,15 @@ fn get_data_from_eth_dwallet_cap(
     let data_slot = eth_dwallet_cap_obj.eth_smart_contract_slot;
     // todo(yuval): check why the string has prefix and remove it the right way
     let mut contract_addr: String = eth_dwallet_cap_obj.eth_smart_contract_addr;
-    contract_addr.remove(0);
+    if !contract_addr.starts_with("0x") {
+        contract_addr.remove(0);
+    }
     let contract_addr = contract_addr.clone().parse::<Address>()?;
     Ok((data_slot, contract_addr))
 }
 
-async fn init_light_client(eth_client_config: EthClientConfig) -> Result<EthLightClient, Error> {
-    let mut eth_lc = EthLightClient::new(eth_client_config).await?;
+async fn init_light_client(eth_client_config: EthLightClientConfig) -> Result<EthLightClient, Error> {
+    let mut eth_lc = EthLightClient::new(eth_client_config.clone()).await?;
     eth_lc.start().await?;
     Ok(eth_lc)
 }
@@ -297,7 +294,9 @@ async fn fetch_object(
     }
 }
 
-fn get_sui_env_config(context: &mut WalletContext) -> Result<(String, String, ObjectID), Error> {
+fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, Error> {
+    let mut eth_lc_config = EthLightClientConfig::default();
+
     let sui_env_config = context.config.get_active_env()?;
     let eth_execution_rpc = sui_env_config
         .eth_execution_rpc
@@ -307,9 +306,32 @@ fn get_sui_env_config(context: &mut WalletContext) -> Result<(String, String, Ob
         .eth_consensus_rpc
         .clone()
         .ok_or_else(|| anyhow!("ETH consensus RPC configuration not found"))?;
-    let state_object_id = sui_env_config
-        .state_object_id
+    let eth_chain_id = sui_env_config
+        .eth_chain_id
         .clone()
-        .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
-    Ok((eth_execution_rpc, eth_consensus_rpc, state_object_id))
+        .ok_or_else(|| anyhow!("ETH Chain ID configuration not found"))?;
+    let eth_genesis_time = sui_env_config
+        .eth_genesis_time
+        .clone()
+        .ok_or_else(|| anyhow!("ETH Genesis Time configuration not found"))?;
+    let eth_genesis_validators_root = sui_env_config
+        .eth_genesis_validators_root
+        .clone()
+        .ok_or_else(|| anyhow!("ETH Genesis Validators Root configuration not found"))?;
+
+    let chain_config = helios::config::types::ChainConfig {
+        chain_id: eth_chain_id,
+        genesis_time: eth_genesis_time,
+        genesis_root: hex_str_to_bytes(&eth_genesis_validators_root).unwrap(),
+    };
+
+    eth_lc_config.network = Network::DEVNET(chain_config);
+    eth_lc_config.execution_rpc = eth_execution_rpc;
+    eth_lc_config.consensus_rpc = eth_consensus_rpc;
+    Ok(eth_lc_config)
+}
+
+pub fn hex_str_to_bytes(s: &str) -> eyre::Result<Vec<u8>> {
+    let stripped = s.strip_prefix("0x").unwrap_or(s);
+    Ok(hex::decode(stripped)?)
 }

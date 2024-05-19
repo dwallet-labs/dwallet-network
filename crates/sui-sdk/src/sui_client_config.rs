@@ -101,6 +101,9 @@ pub struct SuiEnv {
     pub ws: Option<String>,
     pub eth_execution_rpc: Option<String>,
     pub eth_consensus_rpc: Option<String>,
+    pub eth_chain_id: Option<u64>,
+    pub eth_genesis_time:Option<u64>,
+    pub eth_genesis_validators_root:Option<String>,
     pub state_object_id: Option<ObjectID>,
 }
 
@@ -131,6 +134,9 @@ impl SuiEnv {
             ws: None,
             eth_execution_rpc: None,
             eth_consensus_rpc: None,
+            eth_genesis_time: None,
+            eth_chain_id: None,
+            eth_genesis_validators_root: None,
             state_object_id: None,
         }
     }
@@ -141,6 +147,9 @@ impl SuiEnv {
             ws: None,
             eth_execution_rpc: None,
             eth_consensus_rpc: None,
+            eth_genesis_time: None,
+            eth_chain_id: None,
+            eth_genesis_validators_root: None,
             state_object_id: None,
         }
     }
@@ -152,6 +161,9 @@ impl SuiEnv {
             ws: None,
             eth_execution_rpc: None,
             eth_consensus_rpc: None,
+            eth_genesis_time: None,
+            eth_chain_id: None,
+            eth_genesis_validators_root: None,
             state_object_id: None,
         }
     }

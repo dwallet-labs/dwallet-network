@@ -549,6 +549,9 @@ async fn genesis(
         ws: None,
         eth_execution_rpc: None,
         eth_consensus_rpc: None,
+        eth_genesis_time: None,
+        eth_chain_id: None,
+        eth_genesis_validators_root: None,
         state_object_id: None,
     });
     client_config.add_env(SuiEnv::devnet());
@@ -576,6 +579,9 @@ async fn prompt_if_no_config(
                 ws: None,
                 eth_execution_rpc: None,
                 eth_consensus_rpc: None,
+                eth_genesis_time: None,
+                eth_chain_id: None,
+                eth_genesis_validators_root: None,
                 state_object_id: None,
             }),
             None => {
@@ -614,6 +620,9 @@ async fn prompt_if_no_config(
                             ws: None,
                             eth_execution_rpc: None,
                             eth_consensus_rpc: None,
+                            eth_genesis_time: None,
+                            eth_chain_id: None,
+                            eth_genesis_validators_root: None,
                             state_object_id: None,
                         }
                     })

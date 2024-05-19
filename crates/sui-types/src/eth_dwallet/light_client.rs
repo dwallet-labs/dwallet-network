@@ -14,7 +14,7 @@ use helios::consensus::types::Bytes32;
 // use helios::prelude::*;
 use tracing::info;
 
-use crate::eth_dwallet::config::EthClientConfig;
+use crate::eth_dwallet::config::EthLightClientConfig;
 use crate::eth_dwallet::proof::{verify_proof, Proof, ProofResponse};
 use crate::eth_dwallet::utils;
 use crate::eth_dwallet::utils::is_empty_value;
@@ -24,16 +24,16 @@ use helios::types::BlockTag;
 
 pub struct EthLightClient {
     pub client: Client<FileDB>,
-    config: EthClientConfig,
+    config: EthLightClientConfig,
 }
 
 impl EthLightClient {
-    pub async fn new(conf: EthClientConfig) -> Result<Self, anyhow::Error> {
+    pub async fn new(conf: EthLightClientConfig) -> Result<Self, anyhow::Error> {
         // todo(yuval): make sure it's set based on the net in sui (test = goerli, main = main)
-        let network = conf.network;
+        let network = &conf.network;
 
         let client: Client<FileDB> = ClientBuilder::new()
-            .network(network)
+            .network(network.clone())
             .execution_rpc(&conf.execution_rpc)
             .consensus_rpc(&conf.consensus_rpc)
             .checkpoint(&conf.checkpoint)

@@ -100,7 +100,7 @@ impl EthState {
         self.clone()
     }
 
-    pub fn with_rpc(&mut self, rpc: String) -> Self {
+    pub fn set_rpc(&mut self, rpc: String) -> Self {
         self.rpc = rpc;
         self.clone()
     }

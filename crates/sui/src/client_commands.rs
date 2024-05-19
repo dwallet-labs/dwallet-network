@@ -255,6 +255,9 @@ pub enum SuiClientCommands {
         eth_execution_rpc: Option<String>,
         #[clap(long, value_hint = ValueHint::Url)]
         eth_consensus_rpc: Option<String>,
+        eth_chain_id: Option<u64>,
+        eth_genesis_time: Option<u64>,
+        eth_genesis_validators_root: Option<String>,
         state_object_id: Option<ObjectID>,
     },
 
@@ -1435,6 +1438,9 @@ impl SuiClientCommands {
                 ws,
                 eth_execution_rpc,
                 eth_consensus_rpc,
+                eth_genesis_time,
+                eth_chain_id,
+                eth_genesis_validators_root,
                 state_object_id,
             } => {
                 if context.config.envs.iter().any(|env| env.alias == alias) {
@@ -1448,6 +1454,9 @@ impl SuiClientCommands {
                     ws,
                     eth_execution_rpc,
                     eth_consensus_rpc,
+                    eth_genesis_time,
+                    eth_chain_id,
+                    eth_genesis_validators_root,
                     state_object_id,
                 };
 

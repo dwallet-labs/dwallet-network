@@ -1,7 +1,7 @@
 use eyre::Report;
 use helios::prelude::networks::Network;
-
-pub struct EthClientConfig {
+#[derive(Default, Clone)]
+pub struct EthLightClientConfig {
     // Eth Network (Mainnet, Goerli, etc).
     pub network: Network,
     // Eth RPC URL.
@@ -19,7 +19,7 @@ pub struct EthClientConfig {
     pub checkpoint: String,
 }
 
-impl EthClientConfig {
+impl EthLightClientConfig {
     pub fn new(
         network: Network,
         execution_rpc: String,
