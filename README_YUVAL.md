@@ -18,7 +18,7 @@ Accomplish this by executing the following command in your terminal, ensuring yo
  cd target/debug
  ```
 
-## Running a Local network:
+## Running a Local dwallet network:
 #### Starting the network
 To initiate the network, run the following command. Then, ensure the dwallet client CLI is connected to your local network as per the instructions found [Here](https://docs.sui.io/guides/developer/getting-started/local-network#connect-the-sui-client-cli-to-your-local-network).
 ```bash
@@ -182,7 +182,10 @@ If you debug against a local ethereum network, the default URL would be `http://
 - In `eth_consensus_rpc` field, you need to add the Consensus RPC URL of the Ethereum network you use. For local Ethereum this would be `http://localhost:3500/`.  
 You can use the [Ethereum Beacon Chain checkpoint sync endpoints](https://eth-clients.github.io/checkpoint-sync-endpoints/) for any other network's Consensus RPCs providers.
 - `state_object_id` is the current `EthState` object ID that is used to fetch the current state, which is used for getting the relevant updates from the Ethereum network.
-  
+
+**Note:** When using local ethereum network, you should also provide `eth_genesis_time`, `eth_genesis_validators_root`, and `eth_chain_id` fields in the config file.
+See how to get these values in the end of this document. []
+
 #### Updating the config file
 After you created the `EthState` object, you need to update the `client.yaml` file with the Object ID you got from the previous steps. 
 
@@ -210,7 +213,7 @@ to approve the message you want to verify in the dwallet.
 To deploy and interact with our contract, we would use the Hardhat framework.
 Read the [Hardhat documentation](https://hardhat.org/hardhat-runner/docs/getting-started#installation) to install it.
 
-#### Configuration
+#### HardHat Configuration
 Hardhat configuration is taken from the `hardhat.config.js` file in the root of the project.
 You should update the configuration to match the settings of your local Ethereum network.
 Example `hardhat.config.js` file:
@@ -329,8 +332,51 @@ main().catch((error) => {
     console.error(error);
     process.exit(1);
 });
-
 ```
 
+### Get Ethereum Network Configuration
+For the light to work properly with the local ethereum network, you need to provide the chain ID, genesis time, genesis validators root, and a beacon checkpoint.
+You can get the chain ID from the network genesis configuration file.
+To get the genesis time and genesis validators root you need to run the following command:
+```bash
+curl http://localhost:3500/eth/v1/beacon/genesis
+```
 
-# Add information about helios configuration for local networks
+Example response: 
+```json
+{
+  "data": {
+    "genesis_time": "1590832934",
+    "genesis_validators_root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
+    "genesis_fork_version": "0x00000000"
+  }
+}
+```
+
+To get the beacon checkpoint, you need to run the following command.
+You should take the finalized checkpoint root from the response.
+```bash
+curl http://localhost:3500/eth/v1/beacon/states/finalized/finality_checkpoints
+```
+
+Example response:
+```json
+{
+  "execution_optimistic": false,
+  "finalized": false,
+  "data": {
+    "previous_justified": {
+      "epoch": "1",
+      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+    },
+    "current_justified": {
+      "epoch": "1",
+      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+    },
+    "finalized": {
+      "epoch": "1",
+      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+    }
+  }
+}
+```
