@@ -651,7 +651,7 @@ mod checked {
                 Ok(Mode::empty_results())
             }
             TransactionKind::SignatureMPCOutput(output) => {
-                setup_dkg_signature_mpc_output(
+                setup_signature_mpc_output(
                     output,
                     temporary_store,
                     tx_ctx,
@@ -1109,7 +1109,7 @@ mod checked {
         )
     }
 
-    fn setup_dkg_signature_mpc_output(
+    fn setup_signature_mpc_output(
         data: SignatureMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
         tx_ctx: &mut TxContext,

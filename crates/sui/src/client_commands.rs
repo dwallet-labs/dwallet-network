@@ -1623,6 +1623,7 @@ impl Display for SuiClientCommandResult {
                 builder.push_record(vec!["alias", new_dwallet.alias.as_str()]);
                 builder.push_record(vec!["dwallet_id", new_dwallet.dwallet_id.to_string().as_str()]);
                 builder.push_record(vec!["dwallet_cap_id", new_dwallet.dwallet_cap_id.to_string().as_str()]);
+                builder.push_record(vec!["public_key (base64)", new_dwallet.public_key.as_str()]);
 
                 let mut table = builder.build();
                 table.with(TableStyle::rounded());
@@ -1982,6 +1983,7 @@ pub struct NewDWalletOutput {
     pub alias: String,
     pub dwallet_id: ObjectID,
     pub dwallet_cap_id: ObjectID,
+    pub public_key: String,
 }
 
 #[derive(Serialize)]

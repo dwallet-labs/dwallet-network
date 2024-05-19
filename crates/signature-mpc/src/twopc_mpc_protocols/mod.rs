@@ -9,13 +9,15 @@ use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use k256::{elliptic_curve, sha2};
+use k256::{AffinePoint, CompressedPoint, elliptic_curve, sha2};
 pub use group::PartyID;
 use k256::sha2::Digest;
 use crypto_bigint::{ U256};
 use ecdsa::{elliptic_curve::{ops::Reduce}, hazmat::{bits2field, DigestPrimitive}, RecoveryId, Signature, VerifyingKey};
+use ecdsa::signature::DigestVerifier;
 pub use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 pub use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
+use k256::elliptic_curve::group::GroupEncoding;
 
 use group::{secp256k1, GroupElement as _, AffineXCoordinate};
 pub use group::Value;
@@ -127,17 +129,19 @@ pub fn decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_part
     commitment_to_centralized_party_secret_key_share: Commitment,
     centralized_party_public_key_share_decommitment_and_proof: PublicKeyShareDecommitmentAndProof<ProtocolContext>,
     secret_key_share_encryption_and_proof: SecretKeyShareEncryptionAndProof<ProtocolContext>,
-) -> twopc_mpc::Result<DKGDecentralizedPartyOutput> {
+) -> twopc_mpc::Result<(DKGDecentralizedPartyOutput, Vec<u8>)> {
     let protocol_public_parameters = ProtocolPublicParameters::new(LargeBiPrimeSizedNumber::from_be_hex(tiresias_public_parameters));
 
     let decommitment_proof_verification_round_party =
         DecommitmentProofVerificationRoundParty::new(protocol_public_parameters, commitment_to_centralized_party_secret_key_share, PhantomData);
-
-    decommitment_proof_verification_round_party
+    let output = decommitment_proof_verification_round_party
         .verify_decommitment_and_proof_of_centralized_party_public_key_share(
             centralized_party_public_key_share_decommitment_and_proof,
             secret_key_share_encryption_and_proof,
-        )
+        )?;
+    let public_key: AffinePoint = output.public_key.into();
+
+    Ok((output, public_key.to_bytes().to_vec()))
 }
 
 pub fn initiate_centralized_party_presign(
@@ -189,6 +193,30 @@ pub fn finalize_centralized_party_sign(
     public_nonce_encrypted_partial_signature_and_proofs.into_iter().zip(signatures_s.into_iter()).zip(parties.into_iter()).map(|((public_nonce_encrypted_partial_signature_and_proof, signature_s,), party)|
         GroupElement::new(public_nonce_encrypted_partial_signature_and_proof.public_nonce, &protocol_public_parameters.group_public_parameters).map_err(Error::from).and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
     ).collect()
+}
+
+pub fn verify_signature(
+    messages: Vec<Vec<u8>>,
+    hash: &Hash,
+    public_key: PublicKeyValue,
+    signatures: Vec<Vec<u8>>
+) -> bool {
+    messages.into_iter().zip(signatures).map(|(message, signature)| { 
+        match hash {
+            Hash::KECCAK256 => {
+                let signature: Signature<k256::Secp256k1> =
+                    Signature::from_slice(signature.as_slice()).unwrap();
+                let verifying_key = VerifyingKey::<k256::Secp256k1>::from_affine(public_key.into()).unwrap();
+                verifying_key.verify_digest(sha3::Keccak256::new_with_prefix(message), &signature)
+            },
+            Hash::SHA256 => {
+                let signature: Signature<k256::Secp256k1> =
+                    Signature::from_slice(signature.as_slice()).unwrap();
+                let verifying_key = VerifyingKey::<k256::Secp256k1>::from_affine(public_key.into()).unwrap();
+                verifying_key.verify_digest(sha2::Sha256::new_with_prefix(message), &signature)
+            }
+        }
+    }).collect::<ecdsa::Result<Vec<_>>>().is_ok()
 }
 
 pub fn new_decentralized_party_presign_batch(
@@ -334,7 +362,6 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
         .collect()
 }
 pub fn decrypt_signature_decentralized_party_sign(
-    public_key: PublicKeyValue,
     messages: Vec<Vec<u8>>,
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
@@ -437,6 +464,17 @@ pub fn config_signature_mpc_secret_for_network_for_testing(number_of_parties: Pa
 
 
     tiresias_deal_trusted_shares(t, number_of_parties, N, SECRET_KEY, BASE)
+}
+
+
+// a workaround to decrialize to PublicKeyValue - TODO: add from_bytes to PublicKeyValue
+pub fn affine_point_to_public_key(public_key: &Vec<u8>) -> Option<PublicKeyValue> {
+
+    let public_key: Option<AffinePoint> = AffinePoint::from_bytes(CompressedPoint::from_slice(public_key)).into();
+    let public_key = public_key.map(|pk| bcs::to_bytes(&pk).ok()).flatten();
+    let public_key = public_key.map(|pk| bcs::from_bytes::<PublicKeyValue>(&pk).ok()).flatten();
+
+    public_key
 }
 
 pub fn recovery_id(message: Vec<u8>, public_key: PublicKeyValue, signature: SignatureK256Secp256k1, hash: &Hash) -> ecdsa::Result<RecoveryId> {

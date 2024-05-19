@@ -17,7 +17,7 @@ use signature_mpc::twopc_mpc_protocols::Scalar;
 use signature_mpc::twopc_mpc_protocols::{
     decommitment_round_centralized_party_dkg, initiate_centralized_party_dkg,
     DKGDecommitmentRoundState, ProtocolContext, SecretKeyShareEncryptionAndProof,
-    recovery_id, PublicKeyValue, SignatureK256Secp256k1, Hash
+    recovery_id, PublicKeyValue, SignatureK256Secp256k1, Hash, affine_point_to_public_key
 };
 use wasm_bindgen::prelude::*;
 
@@ -140,7 +140,7 @@ pub fn initiate_sign(
     let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
     let commitment_round_parties = initiate_centralized_party_sign(dkg_output.clone(), presigns)?;
 
-    let (public_nonce_encrypted_partial_signature_and_proofs, signature_verification_round_parties): (Vec<_>, Vec<_>) = messages.into_iter().zip(commitment_round_parties.into_iter()).map(|(message, party)| {
+    let (public_nonce_encrypted_partial_signature_and_proofs, _signature_verification_round_parties): (Vec<_>, Vec<_>) = messages.into_iter().zip(commitment_round_parties.into_iter()).map(|(message, party)| {
         let m = message_digest(&message, &hash.into());
         party
             .evaluate_encrypted_partial_signature_prehash(m, &mut OsRng)
@@ -189,7 +189,10 @@ pub fn recovery_id_keccak256(
     message: Vec<u8>,
     signature: Vec<u8>,
 ) -> Result<u8, JsErr> {
-    let public_key: PublicKeyValue = bcs::from_bytes(&public_key)?;
+    let public_key: PublicKeyValue = affine_point_to_public_key(&public_key).ok_or(JsErr {
+        display: "cannot serialize public key".to_string(),
+        message: "cannot serialize public key".to_string(),
+    })?;
     let signature: SignatureK256Secp256k1 = bcs::from_bytes(&signature)?;
 
     Ok(recovery_id(message, public_key, signature, &Hash::KECCAK256).map_err(|_| JsErr {
@@ -204,7 +207,10 @@ pub fn recovery_id_sha256(
     message: Vec<u8>,
     signature: Vec<u8>,
 ) -> Result<u8, JsErr> {
-    let public_key: PublicKeyValue = bcs::from_bytes(&public_key)?;
+    let public_key: PublicKeyValue = affine_point_to_public_key(&public_key).ok_or(JsErr {
+        display: "cannot serialize public key".to_string(),
+        message: "cannot serialize public key".to_string(),
+    })?;
     let signature: SignatureK256Secp256k1 = bcs::from_bytes(&signature)?;
 
     Ok(recovery_id(message, public_key, signature, &Hash::SHA256).map_err(|_| JsErr {

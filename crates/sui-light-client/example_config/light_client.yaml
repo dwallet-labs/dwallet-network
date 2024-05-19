@@ -1,6 +1,6 @@
 ---
 sui_full_node_url: "https://fullnode.testnet.sui.io:443"
-dwallet_full_node_url: "http://127.0.0.1:9000"
+dwallet_full_node_url: "http://fullnode.alpha.testnet.dwallet.cloud:9000"
 checkpoint_summary_dir: example_config
 genesis_filename: genesis_testnet.blob
 sui_deployed_state_proof_package: "0xda072e51bf74040f2f99909595ef1db40fdc75071b92438bb9864f6c744c6736"

@@ -1,9 +1,8 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { setTimeout } from 'timers/promises';
 
-import type { DWalletClient } from '../client';
-import type { Keypair } from '../cryptography';
+import type { DWalletClient } from '../client/index.js';
+import type { Keypair } from '../cryptography/index.js';
 
 export async function fetchObjectBySessionId(
 	sessionId: string,
@@ -12,7 +11,7 @@ export async function fetchObjectBySessionId(
 	client: DWalletClient,
 ) {
 	let cursor = null;
-	while (true) {
+	for (;;) {
 		const objects = await client.getOwnedObjects({ owner: keypair.toSuiAddress(), cursor: cursor });
 		const objectsContent = await client.multiGetObjects({
 			ids: objects.data.map((o) => o.data?.objectId!),
@@ -34,6 +33,6 @@ export async function fetchObjectBySessionId(
 		} else {
 			cursor = null;
 		}
-		await setTimeout(500);
+		await new Promise((r) => setTimeout(r, 500));
 	}
 }
