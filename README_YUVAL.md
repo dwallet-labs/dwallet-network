@@ -115,7 +115,9 @@ Make sure you keep the `Object ID` of the created `EthDwalletCap` object, as you
 todo: explain how to get the slot number
 todo: explain what is eth dwallet cap
 todo: update dwallet verify message result to not include the move function parameters
-
+todo: take care of eth state object issue (how to provide)
+todo: add mermaid flow chat to the readme
+todo: change the order of readme - first spin up local ethereum + deploy, then spin up dwallet network and create dwallet, then approve message on ethereum side, then verify message on dwallet side
 ```bash
 ./dwallet client dwallet-connect-eth --dwallet-cap-id "0x86aed9374e0872250fb8679ced9796eb966af44cecff8e029381174ee26491f9" --smart-contract-address "0x3e2AabB763F255CbB6a322DBe532192e120B5C6B" --smart-contract-approved-tx-slot "1" --gas-budget 20000000
 ```
