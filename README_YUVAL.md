@@ -102,13 +102,14 @@ For example:
 
 #### Connecting dWallet to an Ethereum Contract
 
-> NOTE: Before you continue, go to [Using Local Ethereum Network](#Using-Local-Ethereum-Network)
+> **Note:** Before you continue, go to [Using Local Ethereum Network](#Using-Local-Ethereum-Network)
 
 Take the `dwallet_cap_id` from the previous command and use it in the following command.  
 You also need to provide:
 
 - The smart contract address (on the relevant ETH network)
-- The approved transaction's slot number from the compilation info of the contract, under `Storage Layout` section.
+- The approved transaction's slot number from the compilation info of the contract, under `Storage Layout` section.  
+
 
 Make sure you keep the `Object ID` of the created `EthDwalletCap` object, as you will need it on the next steps.
 
@@ -249,7 +250,7 @@ The config should look something like this:
 - `state_object_id` is the current `EthState` object ID that is used to fetch the current state, which is used for
   getting the relevant updates from the Ethereum network.
 
-**Note:** When using local ethereum network, you should also provide `eth_genesis_time`, `eth_genesis_validators_root`,
+> **Note:** When using local ethereum network, you should also provide `eth_genesis_time`, `eth_genesis_validators_root`,
 and `eth_chain_id` fields in the config file.
 See how to get these values in [here](#get-ethereum-network-configuration).
 
@@ -370,10 +371,10 @@ main()
     });
 ```
 
-**Note:** In order to interact with the contract, you need to have the contract's address and the ABI.
+> **Note:** In order to interact with the contract, you need to have the contract's address and the ABI.
 The ABI would be achieved by compiling the contract.
 You can use Hardhat for that too.  
-The contract's address would be the address the contract was deployed to.  
+The contract's address would be the address to which the contract was deployed to.  
 Read more about compiling a smart contract in
 the [Hardhat docs](https://hardhat.org/hardhat-runner/docs/guides/compile-contracts).
 
