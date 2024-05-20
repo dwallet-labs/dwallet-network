@@ -190,8 +190,8 @@ pub(crate) fn create_initial_eth_state_data(
     let checkpoint = format!("0x{}", hex::encode(checkpoint.as_slice()));
 
     let eth_state = EthState::new()
-        .with_checkpoint(checkpoint)
-        .with_network(network);
+        .set_checkpoint(checkpoint)
+        .set_network(network);
 
     let Ok(eth_state_bytes) = bcs::to_bytes(&eth_state) else {
         return Ok(NativeResult::err(cost, StatusCode::VALUE_SERIALIZATION_ERROR.into()));

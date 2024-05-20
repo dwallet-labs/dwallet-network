@@ -94,7 +94,8 @@ pub(crate) async fn eth_approve_message(
 
     let mut eth_lc = init_light_client(eth_lc_config.clone()).await?;
     let mut eth_state = eth_state
-        .set_rpc(eth_lc_config.execution_rpc.clone());
+        .set_rpc(eth_lc_config.consensus_rpc.clone())
+        .set_network(eth_lc_config.network.clone());
 
     // Fetch updates & proof from the consensus RPC
     let Ok(updates) = fetch_consensus_updates(&mut eth_state).await else {

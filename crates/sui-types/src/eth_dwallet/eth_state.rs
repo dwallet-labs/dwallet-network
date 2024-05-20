@@ -59,16 +59,12 @@ pub struct EthState {
     previous_max_active_participants: u64,
     #[serde(default)]
     current_max_active_participants: u64,
-    #[serde(default = "default_network")]
+    #[serde(default)]
     network: Network,
     #[serde(default)]
     pub last_update_execution_block_number: u64,
     #[serde(default)]
     pub last_update_execution_state_root: Bytes32,
-}
-
-fn default_network() -> Network {
-    Network::HOLESKY
 }
 
 impl EthState {
@@ -90,12 +86,12 @@ impl EthState {
         }
     }
 
-    pub fn with_checkpoint(&mut self, checkpoint: String) -> Self {
+    pub fn set_checkpoint(&mut self, checkpoint: String) -> Self {
         self.last_checkpoint = checkpoint;
         self.clone()
     }
 
-    pub fn with_network(&mut self, network: Network) -> Self {
+    pub fn set_network(&mut self, network: Network) -> Self {
         self.network = network;
         self.clone()
     }
