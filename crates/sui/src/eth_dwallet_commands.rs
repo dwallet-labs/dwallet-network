@@ -181,11 +181,7 @@ fn get_data_from_eth_dwallet_cap(
     eth_dwallet_cap_obj: EthDWalletCap,
 ) -> Result<(u64, Address), Error> {
     let data_slot = eth_dwallet_cap_obj.eth_smart_contract_slot;
-    // todo(yuval): check why the string has prefix and remove it the right way
     let mut contract_addr: String = eth_dwallet_cap_obj.eth_smart_contract_addr;
-    if !contract_addr.starts_with("0x") {
-        contract_addr.remove(0);
-    }
     let contract_addr = contract_addr.clone().parse::<Address>()?;
     Ok((data_slot, contract_addr))
 }
@@ -232,7 +228,7 @@ async fn fetch_consensus_updates(
 pub(crate) async fn create_eth_dwallet(
     context: &mut WalletContext,
     dwallet_cap_id: ObjectID,
-    smart_contract_address: &String,
+    smart_contract_address: String,
     smart_contract_approved_tx_slot: u64,
     gas: Option<ObjectID>,
     gas_budget: u64,
@@ -241,10 +237,11 @@ pub(crate) async fn create_eth_dwallet(
 ) -> Result<SuiClientCommandResult, anyhow::Error> {
     // Serialize to the Move TX format.
     let smart_contract_address = bcs::to_bytes(&smart_contract_address).unwrap();
-    let smart_contract_address = smart_contract_address
+    let mut smart_contract_address: Vec<Value> = smart_contract_address
         .iter()
         .map(|v| Value::Number(Number::from(*v)))
         .collect();
+    smart_contract_address.remove(0);
     let smart_contract_address = SuiJsonValue::new(Value::Array(smart_contract_address)).unwrap();
 
     let args = vec![

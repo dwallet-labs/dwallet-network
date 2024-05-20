@@ -602,15 +602,6 @@ impl EthState {
     fn slot_timestamp(&self, slot: u64) -> u64 {
         slot * 12 + self.network.to_base_config().chain.genesis_time
     }
-
-    pub fn build_from_json(state_object_data: &str) -> Result<EthState, anyhow::Error> {
-        // todo(yuval): fix this function and structure of object
-        let mut result = EthState::new();
-
-        let state: EthState = serde_json::from_str(state_object_data)?;
-        result.last_checkpoint = state.last_checkpoint;
-        anyhow::Ok(result)
-    }
 }
 
 fn get_bits(bitfield: &Bitvector<512>) -> u64 {

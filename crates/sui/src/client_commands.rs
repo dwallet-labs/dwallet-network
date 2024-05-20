@@ -1401,7 +1401,7 @@ impl SuiClientCommands {
                 create_eth_dwallet(
                     context,
                     dwallet_cap_id,
-                    &smart_contract_address,
+                    smart_contract_address,
                     smart_contract_approved_tx_slot,
                     gas,
                     gas_budget,
