@@ -1,11 +1,24 @@
 # How to debug Ethereum Light Client functionality with dWallet
 
+## High-Level Review
+```mermaid
+graph TD
+A[Spin up Local Ethereum Network] --> B[Deploy Contract to Ethereum]
+B --> C[Init dWallet account]
+C --> D[Spin up dWallet Network]
+D --> E[Get gas from dWallet faucet]
+E --> F[Create dWallet]
+F --> G[Connect dWallet to Ethereum Contract]
+G --> H[Create first ETH State]
+H --> I[Approve message on Ethereum Contract]
+I --> J[Verify message on dWallet]
+```
 ## Preliminary Notes
 
-- **Snapshotting Framework Changes:** Whenever you modify the network—be it through the addition of a module or
+- **Snapshotting Framework Changes:** Whenever you modify the network (.move files) —be it through the addition of a module or
   alteration of an existing module's functionality or state—it's crucial to capture the updated framework state.  
   This step ensures that any changes made to the network's structure are recorded and preserved.
-  Accomplish this by executing the following command in your terminal, ensuring your current directory is
+  Do this by executing the following command in your terminal, ensuring your current directory is
   dwallet-network:
 
 ```bash
@@ -13,7 +26,7 @@
  ```
 
 - **Building the dwallet Binary:** Communication with the CLI necessitates a built dwallet binary. Build it using the
-  below command in the terminal, with dwallet-network as your current directory:
+  below command in the terminal, with dwallet-network as your root directory:
 
  ```bash
  cargo build --bin dwallet
@@ -25,24 +38,90 @@
  cd target/debug
  ```
 
-## Running a Local dwallet network:
+## Running a Local Ethereum Network
+
+To run a local Ethereum network,
+follow the instructions in
+the [Ethereum Light Client documentation](https://github.com/dwallet-labs/light-client-test/blob/main/private-ethereum-network-guid.md)
+made by our beloved Shay Malichi.  
+Before you start the local dWallet network, you should deploy the smart contract to the Ethereum network.
+  
+More information about this process can be found in [this section of the document](#Deploy-and-Interact-with-the-Contract).
+
+### Get Ethereum Network Configuration
+
+For the light to work properly with the local ethereum network, you need to provide the chain ID, genesis time, genesis
+validators root, and a beacon checkpoint.
+You can get the chain ID from the network's execution layer genesis configuration file.
+To get the genesis time and genesis validators root, you need to run the following command:
+
+```bash
+curl http://localhost:3500/eth/v1/beacon/genesis
+```
+
+Example response:
+
+```json
+{
+  "data": {
+    "genesis_time": "1590832934",
+    "genesis_validators_root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
+    "genesis_fork_version": "0x00000000"
+  }
+}
+```
+
+To get the beacon checkpoint, you need to run the following command.
+You should take the finalized checkpoint root from the response.
+
+```bash
+curl http://localhost:3500/eth/v1/beacon/states/finalized/finality_checkpoints
+```
+
+Example response:
+
+```json
+{
+  "execution_optimistic": false,
+  "finalized": false,
+  "data": {
+    "previous_justified": {
+      "epoch": "1",
+      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+    },
+    "current_justified": {
+      "epoch": "1",
+      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+    },
+    "finalized": {
+      "epoch": "1",
+      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+    }
+  }
+}
+```
+  
+
+## Running a Local dWallet network:
 
 #### Init a new dWallet network account.
 
+To initiate the network, run the following command:
 ```bash
 ./dwallet genesis init
 ```
 
 This will create a local client configuration file in `~/.dwallet/dwallet_config/client.yaml` that you can modify to
 connect to your local network.
-Also, it will create a configuration for 4 validators and 1 full node.
+Also, it will create a configuration for four validators and one full node.
 
 #### Starting the network
 
-To initiate the network, run the following command. Then, ensure the dwallet client CLI is connected to your local
+Before you start the network, configure the dwallet client CLI to connect to your local
 network as per the instructions
-found [Here](https://docs.sui.io/guides/developer/getting-started/local-network#connect-the-sui-client-cli-to-your-local-network).
+found [in Sui documentation](https://docs.sui.io/guides/developer/getting-started/local-network#connect-the-sui-client-cli-to-your-local-network).
 
+Then execute the following command in the terminal after the configuration is updated:
 ```bash
 RUST_BACKTRACE=1 cargo run --bin sui-test-validator  
 ```
@@ -50,7 +129,7 @@ RUST_BACKTRACE=1 cargo run --bin sui-test-validator
 #### Obtaining Gas from the Faucet
 
 When you run the `sui-test-validator` binary, it will start a faucet server on port 9123.
-In order to get gas from the faucet, you need to send an HTTP request to the faucet server.
+To get gas from the faucet, you need to send an HTTP request to the faucet server.
 To get your active address for the network, run the following command:
 
 ```bash
@@ -58,7 +137,7 @@ To get your active address for the network, run the following command:
 # Example output: 0xfa9b290991fe44ebba08a596c9cac52dcd473239d55d825f547890aa63719515
 ```
 
-You need do send the following HTTP request for getting gas from the faucet:
+You need to send the following HTTP request for getting gas from the faucet:
 
 ```bash
 # In the recipient field, you need to provide the active address you got from the previous command.
@@ -76,89 +155,91 @@ curl --location --request POST 'http://127.0.0.1:9123/gas' \
 
 **Important Considerations:**
 
-- Each network initialization necessitates the creation of a new dWallet, as the network does not retain state across
+- For every dWallet network you start, the creation of a new dWallet is necessary, as the network does not retain state across
   sessions.
-- Occasionally, the creation command may freeze; if this occurs, simply rerun the command.
+- Occasionally, the dWallet creation command may freeze; if this occurs, rerun the command.
 
 Ensure you record the `dwallet_id` and `dwallet_cap_id` generated, as they are needed for subsequent operations:
 
 ```bash
-./dwallet client dwallet create --alias <ALIAS> --gas-budget 200000109
+./dwallet client dwallet create --alias <ALIAS> --gas-budget 2000000000
 ```
 
 For example:
 
-```
-./dwallet client dwallet create --alias yuval --gas-budget 200000109
+```bash
+./dwallet client dwallet create --alias yuval --gas-budget 2000000000
 
-╭─────────────────────────────────────────────────────────────────────────────────────╮
-│ Created new dwallet and saved its secret share.                                     │
-├────────────────┬────────────────────────────────────────────────────────────────────┤
-│ alias          │ foo                                                                │
-│ dwallet_id     │ 0xbe344ddffaa7a8c9c5ae7f2d09a77f20ed54f93bf5e567659feca5c3422ae7a6 │
-│ dwallet_cap_id │ 0x86aed9374e0872250fb8679ced9796eb966af44cecff8e029381174ee26491f9 │
-╰────────────────┴────────────────────────────────────────────────────────────────────╯
+#╭─────────────────────────────────────────────────────────────────────────────────────╮
+#│ Created new dwallet and saved its secret share.                                     │
+#├────────────────┬────────────────────────────────────────────────────────────────────┤
+#│ alias          │ foo                                                                │
+#│ dwallet_id     │ 0xbe344ddffaa7a8c9c5ae7f2d09a77f20ed54f93bf5e567659feca5c3422ae7a6 │
+#│ dwallet_cap_id │ 0x86aed9374e0872250fb8679ced9796eb966af44cecff8e029381174ee26491f9 │
+#╰────────────────┴────────────────────────────────────────────────────────────────────╯
 ```
 
 #### Connecting dWallet to an Ethereum Contract
 
-> **Note:** Before you continue, go to [Using Local Ethereum Network](#Using-Local-Ethereum-Network)
+In this step, you will connect the dWallet to the Ethereum contract.
+This is done by creating an `EthDWalletCap` object that links the dWallet to the Ethereum contract that controls it.
 
 Take the `dwallet_cap_id` from the previous command and use it in the following command.  
 You also need to provide:
 
-- The smart contract address (on the relevant ETH network)
-- The approved transaction's slot number from the compilation info of the contract, under `Storage Layout` section.  
+- The smart contract address (you get it when you deploy the contract)
+- The approved transactions map's slot number in the contract's state.  
+ To get the slot number, execute the following command in the terminal (storage_slot is the slot number):
 
+```bash
+npx hardhat check
+# ┌──────────────────────┬───────────────────────────┬──────────────┬────────┬────────────────────────────────┬─────┬───────────────────────────────────────────────────┬───────────────┐
+# │       contract       │      state_variable       │ storage_slot │ offset │              type              │ idx │                     artifact                      │ numberOfBytes │
+# ├──────────────────────┼───────────────────────────┼──────────────┼────────┼────────────────────────────────┼─────┼───────────────────────────────────────────────────┼───────────────┤
+# │ dWalletAuthenticator │    authorizedAccounts     │      0       │   0    │  t_mapping(t_address,t_bool)   │  0  │ /build-info/3ca52561f021536875a8e860d57d12bb.json │      32       │
+# │ dWalletAuthenticator │ authenticatedTransactions │      1       │   0    │ t_mapping(t_bytes32,t_bytes20) │  0  │ /build-info/3ca52561f021536875a8e860d57d12bb.json │      32       │
+# │ dWalletAuthenticator │      dWalletsOwners       │      2       │   0    │ t_mapping(t_bytes20,t_bytes20) │  0  │ /build-info/3ca52561f021536875a8e860d57d12bb.json │      32       │
+# └──────────────────────┴───────────────────────────┴──────────────┴────────┴────────────────────────────────┴─────┴───────────────────────────────────────────────────┴───────────────┘
+``` 
 
 Make sure you keep the `Object ID` of the created `EthDwalletCap` object, as you will need it on the next steps.
 
-todo: explain how to get the slot number
-todo: explain what is eth dwallet cap
-todo: update dwallet verify message result to not include the move function parameters
-todo: take care of eth state object issue (how to provide)
-todo: add mermaid flow chat to the readme
-todo: change the order of readme - first spin up local ethereum + deploy, then spin up dwallet network and create dwallet, then approve message on ethereum side, then verify message on dwallet side
 ```bash
 ./dwallet client dwallet-connect-eth --dwallet-cap-id "0x86aed9374e0872250fb8679ced9796eb966af44cecff8e029381174ee26491f9" --smart-contract-address "0x3e2AabB763F255CbB6a322DBe532192e120B5C6B" --smart-contract-approved-tx-slot "1" --gas-budget 20000000
-```
 
-Example response:
-
-```
-╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ Object Changes                                                                                   │
-├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                                  │
-│ Created Objects:                                                                                 │
-│  ┌──                                                                                             │
-│  │ ObjectID: 0x9ac65d90a2a247316b493c2939f6a1ecf83bbf3d202fb8ea2303399114e007d2                  │
-│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
-│  │ Owner: Shared                                                                                 │
-│  │ ObjectType: 0x3::eth_dwallet::EthDWalletCap                                                   │
-│  │ Version: 10                                                                                   │
-│  │ Digest: 8Mpvbgp6dircpXVXSzpaPRRVx2K8vgizi9bzUiv7W6ej                                          │
-│  └──                                                                                             │
-│                                                                                                  │
-│ Mutated Objects:                                                                                 │
-│  ┌──                                                                                             │
-│  │ ObjectID: 0x1daeeb42c9801ed91712b8040ee9282ba5f6486574b6a97e67e67e923ffef209                  │
-│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
-│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 ) │
-│  │ ObjectType: 0x2::coin::Coin<0x2::dwlt::DWLT>                                                  │
-│  │ Version: 10                                                                                   │
-│  │ Digest: 4o3wHKPyPEfFrsCbAxTXbMf5iGMHtsaVPBe32hv8ffWG                                          │
-│  └──                                                                                             │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭───────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ Balance Changes                                                                                   │
-├───────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌──                                                                                              │
-│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 )  │
-│  │ CoinType: 0x2::dwlt::DWLT                                                                      │
-│  │ Amount: -1714704                                                                               │
-│  └──                                                                                              │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
+#╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+#│ Object Changes                                                                                   │
+#├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+#│                                                                                                  │
+#│ Created Objects:                                                                                 │
+#│  ┌──                                                                                             │
+#│  │ ObjectID: 0x9ac65d90a2a247316b493c2939f6a1ecf83bbf3d202fb8ea2303399114e007d2                  │
+#│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
+#│  │ Owner: Shared                                                                                 │
+#│  │ ObjectType: 0x3::eth_dwallet::EthDWalletCap                                                   │
+#│  │ Version: 10                                                                                   │
+#│  │ Digest: 8Mpvbgp6dircpXVXSzpaPRRVx2K8vgizi9bzUiv7W6ej                                          │
+#│  └──                                                                                             │
+#│                                                                                                  │
+#│ Mutated Objects:                                                                                 │
+#│  ┌──                                                                                             │
+#│  │ ObjectID: 0x1daeeb42c9801ed91712b8040ee9282ba5f6486574b6a97e67e67e923ffef209                  │
+#│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
+#│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 ) │
+#│  │ ObjectType: 0x2::coin::Coin<0x2::dwlt::DWLT>                                                  │
+#│  │ Version: 10                                                                                   │
+#│  │ Digest: 4o3wHKPyPEfFrsCbAxTXbMf5iGMHtsaVPBe32hv8ffWG                                          │
+#│  └──                                                                                             │
+#╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+#╭───────────────────────────────────────────────────────────────────────────────────────────────────╮
+#│ Balance Changes                                                                                   │
+#├───────────────────────────────────────────────────────────────────────────────────────────────────┤
+#│  ┌──                                                                                              │
+#│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 )  │
+#│  │ CoinType: 0x2::dwlt::DWLT                                                                      │
+#│  │ Amount: -1714704                                                                               │
+#│  └──                                                                                              │
+#╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 #### Create first ETH State
@@ -180,45 +261,40 @@ curl http://localhost:3500/eth/v1/beacon/states/finalized/finality_checkpoints
 
 ```bash
 ./dwallet client call --package 0x0000000000000000000000000000000000000000000000000000000000000003 --module eth_dwallet --function init_first_eth_state --gas-budget 2000000000 --args  "0x57a9ab8e99c0ac2f2a190228b54c4bcc6cb3cae50146bb1590f0b10677d310df" "devnet"
-```
 
-Example response:
-
-```
-╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ Object Changes                                                                                   │
-├──────────────────────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                                  │
-│ Created Objects:                                                                                 │
-│  ┌──                                                                                             │
-│  │ ObjectID: 0x0e03bef0077c5090331634cb455334508ae2d2325163e07d379e17ba81c9b7b2                  │
-│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
-│  │ Owner: Immutable                                                                              │
-│  │ ObjectType: 0x3::eth_dwallet::EthState                                                        │
-│  │ Version: 11                                                                                   │
-│  │ Digest: CjKnYw2iQ9psC5RixYB55JSpHGaeWwoorABbRrjASGfC                                          │
-│  └──                                                                                             │
-│                                                                                                  │
-│ Mutated Objects:                                                                                 │
-│  ┌──                                                                                             │
-│  │ ObjectID: 0x1daeeb42c9801ed91712b8040ee9282ba5f6486574b6a97e67e67e923ffef209                  │
-│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
-│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 ) │
-│  │ ObjectType: 0x2::coin::Coin<0x2::dwlt::DWLT>                                                  │
-│  │ Version: 11                                                                                   │
-│  │ Digest: GnoQdwiNPyakFHaoK1jd1HL74gmGaDbfbpPc29LMy6sv                                          │
-│  └──                                                                                             │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭───────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ Balance Changes                                                                                   │
-├───────────────────────────────────────────────────────────────────────────────────────────────────┤
-│  ┌──                                                                                              │
-│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 )  │
-│  │ CoinType: 0x2::dwlt::DWLT                                                                      │
-│  │ Amount: -3084680                                                                               │
-│  └──                                                                                              │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
-
+#╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+#│ Object Changes                                                                                   │
+#├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+#│                                                                                                  │
+#│ Created Objects:                                                                                 │
+#│  ┌──                                                                                             │
+#│  │ ObjectID: 0x0e03bef0077c5090331634cb455334508ae2d2325163e07d379e17ba81c9b7b2                  │
+#│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
+#│  │ Owner: Immutable                                                                              │
+#│  │ ObjectType: 0x3::eth_dwallet::EthState                                                        │
+#│  │ Version: 11                                                                                   │
+#│  │ Digest: CjKnYw2iQ9psC5RixYB55JSpHGaeWwoorABbRrjASGfC                                          │
+#│  └──                                                                                             │
+#│                                                                                                  │
+#│ Mutated Objects:                                                                                 │
+#│  ┌──                                                                                             │
+#│  │ ObjectID: 0x1daeeb42c9801ed91712b8040ee9282ba5f6486574b6a97e67e67e923ffef209                  │
+#│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
+#│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 ) │
+#│  │ ObjectType: 0x2::coin::Coin<0x2::dwlt::DWLT>                                                  │
+#│  │ Version: 11                                                                                   │
+#│  │ Digest: GnoQdwiNPyakFHaoK1jd1HL74gmGaDbfbpPc29LMy6sv                                          │
+#│  └──                                                                                             │
+#╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+#╭───────────────────────────────────────────────────────────────────────────────────────────────────╮
+#│ Balance Changes                                                                                   │
+#├───────────────────────────────────────────────────────────────────────────────────────────────────┤
+#│  ┌──                                                                                              │
+#│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 )  │
+#│  │ CoinType: 0x2::dwlt::DWLT                                                                      │
+#│  │ Amount: -3084680                                                                               │
+#│  └──                                                                                              │
+#╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### Update the dWallet binary client's configuration
@@ -232,9 +308,7 @@ On the first run of the `dwallet` binary, it will create a configuration file:
 #### Config file example
 
 The config should look something like this:
-
-![img_2.png](img_2.png)
-
+![img_5.png](img_5.png)
 - In `rpc` field, you need to add the RPC URL of the Sui network you are running.  
   If you use a local sui node the RPC should be `http://localhsot:9000/`,
   unless you changed the port in the network's configuration.
@@ -247,17 +321,11 @@ The config should look something like this:
   You can use
   the [Ethereum Beacon Chain checkpoint sync endpoints](https://eth-clients.github.io/checkpoint-sync-endpoints/) for
   any other network's Consensus RPCs providers.
-- `state_object_id` is the current `EthState` object ID that is used to fetch the current state, which is used for
-  getting the relevant updates from the Ethereum network.
+- `state_object_id` is the object ID of the `EthState` object that we created in [the previous step](#Create-first-ETH-State).
 
 > **Note:** When using local ethereum network, you should also provide `eth_genesis_time`, `eth_genesis_validators_root`,
 and `eth_chain_id` fields in the config file.
-See how to get these values in [here](#get-ethereum-network-configuration).
-
-#### Updating the config file
-
-After you created the `EthState` object, you need to update the `client.yaml` file with the Object ID you got from the
-previous steps.
+See how to get these values in [Ethereum Network Configuration section](#get-ethereum-network-configuration) of this document.
 
 ### Debug the CLI
 
@@ -265,12 +333,13 @@ First, you need to go to your IDE and `cargo build` the whole project.
 After this, you will have a list of Debugging configurations in your IDE.
 To debug the dwallet cli binary, you need to choose the `Run dwallet` configuration, but first we need to add the
 command we want to debug to the configuration as run arguments.
-Perform the following steps to take so:
+> Note: If you do not have the `Run dwallet` configuration, you can create it in the `Debug Configurations` window (should be a Cargo configuration).
+
+Perform the following steps to update the configuration arguments:
 
 1. Go to the debug configuration of the `dwallet` binary
 2. `Commands` field should contain the following command. Pay attention to the parameters that you need to
-   provide: `ETH_DWALLET_CAP_ID`, `DWALLET_ID`, `MESSAGE`, `GAS_BUDGET`. Sometimes you will need to provide a gas object
-   ID as well. :
+   provide: `ETH_DWALLET_CAP_ID`, `DWALLET_ID`, `MESSAGE`, `GAS_BUDGET`, `GAS`:
 
 ```
 run --package sui --bin dwallet -- client dwallet-eth-verify --eth-dwallet-cap-id "<ETH_DWALLET_CAP_ID>" --dwallet-id "<DWALLET_ID>" --message "<MESSAGE>" --gas-budget 200000000
@@ -280,27 +349,16 @@ run --package sui --bin dwallet -- client dwallet-eth-verify --eth-dwallet-cap-i
 
 3. Enjoy debugging
 
-## Using Local Ethereum Network
-
-To run a local Ethereum network,
-follow the instructions in
-the [Ethereum Light Client documentation](https://github.com/dwallet-labs/light-client-test/blob/main/private-ethereum-network-guid.md)
-made by our beloved Shay Malichi.
-After you have a local Ethereum network running, you want to deploy the contract and execute some functions in it,
-to approve the message you want to verify in the dwallet.
-
 ### Hardhat
 
 To deploy and interact with our contract, we would use the Hardhat framework.
 Read the [Hardhat documentation](https://hardhat.org/hardhat-runner/docs/getting-started#installation) to install it.
 
 #### HardHat Configuration
-
-todo: explain how to configure hardhat ethereum account
-
 Hardhat configuration is taken from the `hardhat.config.js` file in the root of the project.
 You should update the configuration to match the settings of your local Ethereum network.
 Example `hardhat.config.js` file:
+> **Note:** the `accounts` field in the network configuration should contain the private keys of the accounts you want to use. In our case, you can get the private key from `eth-pos-devnet/execution/sk.json` file, in `eth-pos-devnet` repo. 
 
 ```javascript
 require('dotenv').config()
@@ -405,14 +463,16 @@ async function main() {
     const account = "0x123463a4b065722e99115d6c222f267d9cabb524";
     const tx = await contractWithSigner.accountAuthorize(account);
     console.log("Transaction Hash:", tx.hash);
-
+    await new Promise(r => setTimeout(r, 10000));
+  
     // Add dwallet owner
-    const dWalletID = "0x71844b5dc4eb0a394b210150ab08b49239034fa2cf57328a611674206fb14c9c";
+    const dWalletID = "0xbe344ddffaa7a8c9c5ae7f2d09a77f20ed54f93bf5e567659feca5c3422ae7a6";
     let ownerID = "0x123463a4b065722e99115d6c222f267d9cabb524";
     const tx1 = await contractWithSigner.addDWalletOwner(dWalletID, ownerID);
     console.log("Transaction Hash:", tx1.hash);
-
-    // Approve message on the contract
+    await new Promise(r => setTimeout(r, 10000));
+  
+    // Example function call
     const message = "dGhpcyBpcyB0aGUgZmlyc3QgbWVzc2FnZSB0aGF0IGkgYW0gZ29pbmcgdG8gdmVyaWZ5IG9uIGEgbG9jYWwgZXRoZXJldW0gbmV0d29yaywgdXNpbmcgbGlnaHQgY2xpZW50ICYgZHdhbGxldCBuZXR3b3Jr";
     const tx2 = await contractWithSigner.approveMessage(message, dWalletID, {gasPrice: ethers.parseUnits("10", "gwei")});
     console.log("Transaction Hash:", tx2.hash);
@@ -424,55 +484,3 @@ main().catch((error) => {
 });
 ```
 
-### Get Ethereum Network Configuration
-
-For the light to work properly with the local ethereum network, you need to provide the chain ID, genesis time, genesis
-validators root, and a beacon checkpoint.
-You can get the chain ID from the network genesis configuration file.
-To get the genesis time and genesis validators root you need to run the following command:
-
-```bash
-curl http://localhost:3500/eth/v1/beacon/genesis
-```
-
-Example response:
-
-```json
-{
-  "data": {
-    "genesis_time": "1590832934",
-    "genesis_validators_root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
-    "genesis_fork_version": "0x00000000"
-  }
-}
-```
-
-To get the beacon checkpoint, you need to run the following command.
-You should take the finalized checkpoint root from the response.
-
-```bash
-curl http://localhost:3500/eth/v1/beacon/states/finalized/finality_checkpoints
-```
-
-Example response:
-
-```json
-{
-  "execution_optimistic": false,
-  "finalized": false,
-  "data": {
-    "previous_justified": {
-      "epoch": "1",
-      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
-    },
-    "current_justified": {
-      "epoch": "1",
-      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
-    },
-    "finalized": {
-      "epoch": "1",
-      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
-    }
-  }
-}
-```
