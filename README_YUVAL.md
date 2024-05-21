@@ -11,7 +11,8 @@ sequenceDiagram
 
   User->>User: Snapshotting and Building
   User->>LocalEthNetwork: Spin up Local Ethereum Network
-  User->>LocalEthNetwork: Deploy Contract to Ethereum
+  User->>Hardhat: Deploy Contract to Ethereum
+  Hardhat-->>LocalEthNetwork: Deploy Contract
   User->>dWallet: Init dWallet Account
   User->>User: Update Configuration
   User->>dWalletNetwork: Spin up dWallet Network
@@ -21,9 +22,9 @@ sequenceDiagram
   User->>dWallet: Connect dWallet to Ethereum Contract
   User->>LocalEthNetwork: Create First ETH State
   LocalEthNetwork-->>User: Provide ETH State
-  User->>LocalEthNetwork: Approve Message on Ethereum Contract
+  User->>Hardhat: Approve Message on Ethereum Contract
+  Hardhat-->>LocalEthNetwork: Approve Message
   User->>dWallet: Verify Message on dWallet
-  User->>Hardhat: Deploy and Interact with Contract
   User->>User: Debug the CLI
 ```
 
