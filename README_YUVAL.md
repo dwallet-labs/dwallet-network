@@ -2,17 +2,31 @@
 
 ## High-Level Review
 ```mermaid
-graph TD
-A[Spin up Local Ethereum Network] --> B[Deploy Contract to Ethereum]
-B --> C[Init dWallet account]
-C --> D[Spin up dWallet Network]
-D --> E[Get gas from dWallet faucet]
-E --> F[Create dWallet]
-F --> G[Connect dWallet to Ethereum Contract]
-G --> H[Create first ETH State]
-H --> I[Approve message on Ethereum Contract]
-I --> J[Verify message on dWallet]
+sequenceDiagram
+  participant User
+  participant LocalEthNetwork
+  participant dWallet
+  participant dWalletNetwork
+  participant Faucet
+
+  User->>User: Snapshotting and Building
+  User->>LocalEthNetwork: Spin up Local Ethereum Network
+  User->>LocalEthNetwork: Deploy Contract to Ethereum
+  User->>dWallet: Init dWallet Account
+  User->>User: Update Configuration
+  User->>dWalletNetwork: Spin up dWallet Network
+  User->>Faucet: Get Gas from dWallet Faucet
+  Faucet-->>User: Provide Gas
+  User->>dWallet: Create dWallet
+  User->>dWallet: Connect dWallet to Ethereum Contract
+  User->>LocalEthNetwork: Create First ETH State
+  LocalEthNetwork-->>User: Provide ETH State
+  User->>LocalEthNetwork: Approve Message on Ethereum Contract
+  User->>dWallet: Verify Message on dWallet
+  User->>Hardhat: Deploy and Interact with Contract
+  User->>User: Debug the CLI
 ```
+
 ## Preliminary Notes
 
 - **Snapshotting Framework Changes:** Whenever you modify the network (.move files) —be it through the addition of a module or
@@ -25,7 +39,7 @@ I --> J[Verify message on dWallet]
  cargo run --bin sui-framework-snapshot
  ```
 
-- **Building the dwallet Binary:** Communication with the CLI necessitates a built dwallet binary. Build it using the
+- **Building the dwallet Binary:** Communication with the CLI requires a built dwallet binary. Build it using the
   below command in the terminal, with dwallet-network as your root directory:
 
  ```bash
@@ -43,14 +57,30 @@ I --> J[Verify message on dWallet]
 To run a local Ethereum network,
 follow the instructions in
 the [Ethereum Light Client documentation](https://github.com/dwallet-labs/light-client-test/blob/main/private-ethereum-network-guid.md)
-made by our beloved Shay Malichi.  
-Before you start the local dWallet network, you should deploy the smart contract to the Ethereum network.
+made by our beloved Shay Malichi.   
+
+> **Note 1:** Make sure that the smart contract is deployed to the Ethereum network, before starting the local dWallet network.
+> More information about this process can be found in [this section of the document](#Deploy-and-Interact-with-the-Contract).
+
+
+> **Note 2:** Before starting the local eth, you need to modify the `eth-pos-devnet/docker-compose.yml` file to use stable versions for `beacon-chain` and `validator`, and add the light-client flag.  
+> Earlier versions of the image do not have support in light client protocol.
+> ```dockerfile
+> #From:
+>   beacon-chain: # or validator
+>      image: "gcr.io/prysmaticlabs/prysm/beacon-chain:v4.1.1"
+> #To:
+>   beacon-chain: # or validator
+>      image: "gcr.io/prysmaticlabs/prysm/beacon-chain:stable"
+>      command:
+>       - --enable-lightclient
+> ```
+
   
-More information about this process can be found in [this section of the document](#Deploy-and-Interact-with-the-Contract).
 
 ### Get Ethereum Network Configuration
 
-For the light to work properly with the local ethereum network, you need to provide the chain ID, genesis time, genesis
+For the light client to work properly with the local ethereum network, you need to provide the chain ID, genesis time, genesis
 validators root, and a beacon checkpoint.
 You can get the chain ID from the network's execution layer genesis configuration file.
 To get the genesis time and genesis validators root, you need to run the following command:
@@ -241,7 +271,7 @@ Make sure you keep the `Object ID` of the created `EthDwalletCap` object, as you
 #│  └──                                                                                              │
 #╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-
+todo: modify the eth-pos-devnet docker-compose.yml to use stable versions for `beacon-chain` and `validator`, and add lightclient flag
 #### Create first ETH State
 
 The light client uses the EthState object to communicate with the Ethereum network.
