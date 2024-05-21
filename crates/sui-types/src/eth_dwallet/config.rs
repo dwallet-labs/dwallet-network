@@ -8,25 +8,22 @@ pub struct EthLightClientConfig {
     pub execution_rpc: String,
     // Consensus RPC URL.
     pub consensus_rpc: String,
-    // Data Slot.
-    pub data_slot: u64,
-    // Message Hash.
-    pub message: String,
-    // DWalletID
-    pub dwallet_id: Vec<u8>,
     pub max_checkpoint_age: u64,
     // Beacon Checkpoint
     pub checkpoint: String,
 }
 
+#[derive(Default, Clone)]
+pub struct ProofParameters {
+    pub message: String,
+    pub dwallet_id: Vec<u8>,
+    pub data_slot: u64,
+}
 impl EthLightClientConfig {
     pub fn new(
         network: Network,
         execution_rpc: String,
         consensus_rpc: String,
-        data_slot: u64,
-        dwallet_id: Vec<u8>,
-        message: String,
         max_checkpoint_age: u64,
         checkpoint: String,
     ) -> Result<Self, anyhow::Error> {
@@ -34,9 +31,6 @@ impl EthLightClientConfig {
             network,
             execution_rpc,
             consensus_rpc,
-            data_slot,
-            dwallet_id,
-            message,
             max_checkpoint_age,
             checkpoint,
         })

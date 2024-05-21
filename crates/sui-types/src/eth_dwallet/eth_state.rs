@@ -78,8 +78,7 @@ impl EthState {
             rpc: "".to_string(),
             previous_max_active_participants: 0,
             current_max_active_participants: 0,
-            // todo(yuval): make sure it matches sui network (mainnet = mainnet, testnet = sepolia, etc.)
-            network: Network::HOLESKY,
+            network: Network::default(),
             latest_header: Header::default(),
             last_update_execution_block_number: u64::default(),
             last_update_execution_state_root: Bytes32::default(),

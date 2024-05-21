@@ -10,9 +10,10 @@ use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
 use sui_json_rpc_types::{SuiData, SuiObjectDataOptions};
 use sui_json_rpc_types::{SuiExecutionStatus, SuiObjectData, SuiRawData};
 use sui_keys::keystore::AccountKeystore;
+use sui_sdk::sui_client_config::SuiEnv;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
-use sui_types::eth_dwallet::config::EthLightClientConfig;
+use sui_types::eth_dwallet::config::{EthLightClientConfig, ProofParameters};
 use sui_types::eth_dwallet::eth_state::{EthState, EthStateObject};
 use sui_types::eth_dwallet::light_client::EthLightClient;
 use sui_types::eth_dwallet::proof::ProofResponse;
@@ -70,7 +71,12 @@ pub(crate) async fn eth_approve_message(
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
 ) -> Result<SuiClientCommandResult, anyhow::Error> {
-    let state_object_id = context.config.get_active_env()?.state_object_id.clone().ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
+    let state_object_id = context
+        .config
+        .get_active_env()?
+        .state_object_id
+        .clone()
+        .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
 
     let eth_dwallet_cap_data_bcs = fetch_object(context, eth_dwallet_cap_id).await?;
     let eth_dwallet_cap_obj: EthDWalletCap = eth_dwallet_cap_data_bcs.try_into()?;
@@ -86,11 +92,13 @@ pub(crate) async fn eth_approve_message(
     let (data_slot, contract_addr) = get_data_from_eth_dwallet_cap(eth_dwallet_cap_obj)?;
 
     let mut eth_lc_config = get_eth_config(context)?;
-    // todo(yuval): make a separate object for func args
-    eth_lc_config.data_slot = data_slot;
-    eth_lc_config.message = message.clone();
-    eth_lc_config.dwallet_id = dwallet_id.as_slice().to_vec();
     eth_lc_config.checkpoint = eth_state.last_checkpoint.clone();
+
+    let proof_params = ProofParameters {
+        message: message.clone(),
+        dwallet_id: dwallet_id.as_slice().to_vec(),
+        data_slot,
+    };
 
     let mut eth_lc = init_light_client(eth_lc_config.clone()).await?;
     let mut eth_state = eth_state
@@ -98,22 +106,26 @@ pub(crate) async fn eth_approve_message(
         .set_network(eth_lc_config.network.clone());
 
     // Fetch updates & proof from the consensus RPC
-    let Ok(updates) = fetch_consensus_updates(&mut eth_state).await else {
-        return Err(anyhow!("Could not fetch updates."));
-    };
+    let updates = fetch_consensus_updates(&mut eth_state)
+        .await
+        .map_err(|e| anyhow!("Could not fetch updates."))?;
 
-    let Ok(proof) = fetch_proofs(&mut eth_lc, &eth_state, &contract_addr).await else {
-        return Err(anyhow!("Could not fetch proof."));
-    };
+    let proof = fetch_proofs(&mut eth_lc, &eth_state, &contract_addr, proof_params)
+        .await
+        .map_err(|e| anyhow!("Could not fetch proof: {e}"))?;
 
     let gas_owner = context.try_get_object_owner(&gas).await?;
     let sender = gas_owner.unwrap_or(context.active_address()?);
 
     // Serialize Move parameters
     let mut pt_builder = ProgrammableTransactionBuilder::new();
-    let eth_state_arg = pt_builder.pure(bcs::to_bytes(&eth_state)?).unwrap();
+    let eth_state_arg = pt_builder
+        .pure(bcs::to_bytes(&eth_state)?)
+        .map_err(|e| anyhow!("Could not serialize eth_state. {e}"))?;
 
-    let updates_arg = pt_builder.pure(bcs::to_bytes(&updates)?).unwrap();
+    let updates_arg = pt_builder
+        .pure(bcs::to_bytes(&updates)?)
+        .map_err(|e| anyhow!("Could not serialize updates. {e}"))?;
 
     pt_builder.programmable_move_call(
         SUI_SYSTEM_PACKAGE_ID,
@@ -123,13 +135,10 @@ pub(crate) async fn eth_approve_message(
         Vec::from([updates_arg, eth_state_arg]),
     );
 
-    let Ok(proof_sui_json) = serialize_object(&proof) else {
-        return Err(anyhow!("Could not serialize proof"));
-    };
-
-    let Ok(dwallet_id_json) = serialize_object(&dwallet_id.as_slice().to_vec()) else {
-        return Err(anyhow!("Could not serialize dwallet_id"));
-    };
+    let proof_sui_json =
+        serialize_object(&proof).map_err(|e| anyhow!("Could not serialize proof. {e}"))?;
+    let dwallet_id_json = serialize_object(&dwallet_id.as_slice().to_vec())
+        .map_err(|e| anyhow!("Could not serialize dwallet_id. {e}"))?;
 
     let client = context.get_client().await?;
 
@@ -186,7 +195,9 @@ fn get_data_from_eth_dwallet_cap(
     Ok((data_slot, contract_addr))
 }
 
-async fn init_light_client(eth_client_config: EthLightClientConfig) -> Result<EthLightClient, Error> {
+async fn init_light_client(
+    eth_client_config: EthLightClientConfig,
+) -> Result<EthLightClient, Error> {
     let mut eth_lc = EthLightClient::new(eth_client_config.clone()).await?;
     eth_lc.start().await?;
     Ok(eth_lc)
@@ -196,32 +207,25 @@ async fn fetch_proofs(
     eth_lc: &mut EthLightClient,
     eth_state: &EthState,
     contract_addr: &Address,
-) -> Result<ProofResponse, Result<SuiClientCommandResult, Error>> {
-    let proof = match eth_lc
+    proof_parameters: ProofParameters,
+) -> Result<ProofResponse, Error> {
+    let proof = eth_lc
         .get_proofs(
+            proof_parameters,
             contract_addr,
             eth_state.last_update_execution_block_number,
             &eth_state.last_update_execution_state_root,
         )
         .await
-    {
-        Ok(proof) => proof,
-        Err(e) => return Err(Err(anyhow!("error fetching proof from Consensus RPC: {e}"))),
-    };
+        .map_err(|e| anyhow!("error fetching proof from Consensus RPC: {e}"))?;
     Ok(proof)
 }
 
-async fn fetch_consensus_updates(
-    eth_state: &mut EthState,
-) -> Result<UpdatesResponse, Result<SuiClientCommandResult, Error>> {
-    let Ok(updates) = eth_state
+async fn fetch_consensus_updates(eth_state: &mut EthState) -> Result<UpdatesResponse, Error> {
+    let updates = eth_state
         .get_updates(&eth_state.clone().last_checkpoint)
         .await
-    else {
-        return Err(Err(anyhow!(
-            "error fetching updates from Consensus RPC"
-        )));
-    };
+        .map_err(|e| anyhow!("error fetching updates from Consensus RPC: {e}"))?;
     Ok(updates)
 }
 
@@ -234,7 +238,7 @@ pub(crate) async fn create_eth_dwallet(
     gas_budget: u64,
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
-) -> Result<SuiClientCommandResult, anyhow::Error> {
+) -> Result<SuiClientCommandResult, Error> {
     // Serialize to the Move TX format.
     let smart_contract_address = bcs::to_bytes(&smart_contract_address).unwrap();
     let mut smart_contract_address: Vec<Value> = smart_contract_address
@@ -304,6 +308,26 @@ fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, E
         .eth_consensus_rpc
         .clone()
         .ok_or_else(|| anyhow!("ETH consensus RPC configuration not found"))?;
+
+    eth_lc_config.network = get_network_by_sui_env(sui_env_config)?;
+
+    eth_lc_config.execution_rpc = eth_execution_rpc;
+    eth_lc_config.consensus_rpc = eth_consensus_rpc;
+
+    Ok(eth_lc_config)
+}
+
+fn get_network_by_sui_env(sui_env_config: &SuiEnv) -> Result<Network, Error> {
+    let network = match sui_env_config.alias.as_str() {
+        "mainnet" => Network::MAINNET,
+        "testnet" => Network::HOLESKY,
+        "localnet" => get_eth_devnet_network(sui_env_config)?,
+        _ => Network::MAINNET,
+    };
+    Ok(network)
+}
+
+fn get_eth_devnet_network(sui_env_config: &SuiEnv) -> Result<Network, Error> {
     let eth_chain_id = sui_env_config
         .eth_chain_id
         .clone()
@@ -322,11 +346,7 @@ fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, E
         genesis_time: eth_genesis_time,
         genesis_root: hex_str_to_bytes(&eth_genesis_validators_root).unwrap(),
     };
-
-    eth_lc_config.network = Network::DEVNET(chain_config);
-    eth_lc_config.execution_rpc = eth_execution_rpc;
-    eth_lc_config.consensus_rpc = eth_consensus_rpc;
-    Ok(eth_lc_config)
+    Ok(Network::DEVNET(chain_config))
 }
 
 pub fn hex_str_to_bytes(s: &str) -> eyre::Result<Vec<u8>> {

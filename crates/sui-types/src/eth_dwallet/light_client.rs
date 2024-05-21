@@ -14,7 +14,7 @@ use helios::consensus::types::Bytes32;
 // use helios::prelude::*;
 use tracing::info;
 
-use crate::eth_dwallet::config::EthLightClientConfig;
+use crate::eth_dwallet::config::{EthLightClientConfig, ProofParameters};
 use crate::eth_dwallet::proof::{verify_proof, Proof, ProofResponse};
 use crate::eth_dwallet::utils;
 use crate::eth_dwallet::utils::is_empty_value;
@@ -29,7 +29,6 @@ pub struct EthLightClient {
 
 impl EthLightClient {
     pub async fn new(conf: EthLightClientConfig) -> Result<Self, anyhow::Error> {
-        // todo(yuval): make sure it's set based on the net in sui (test = goerli, main = main)
         let network = &conf.network;
 
         let client: Client<FileDB> = ClientBuilder::new()
@@ -63,14 +62,15 @@ impl EthLightClient {
     /// Get the Merkle Tree Proof (EIP1186Proof) for the client parameters.
     pub async fn get_proofs(
         &self,
+        proof_parameters: ProofParameters,
         contract_addr: &Address,
         block_number: u64,
         state_root: &Bytes32,
     ) -> eyre::Result<ProofResponse, Report> {
         let message_map_index = utils::get_message_storage_slot(
-            self.config.message.clone(),
-            self.config.dwallet_id.clone(),
-            self.config.data_slot,
+            proof_parameters.message.clone(),
+            proof_parameters.dwallet_id.clone(),
+            proof_parameters.data_slot,
         )?;
 
         let proof = self
