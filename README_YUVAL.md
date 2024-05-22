@@ -1,5 +1,4 @@
 # How to debug Ethereum Light Client functionality with dWallet
-
 ## High-Level Review
 ```mermaid
 sequenceDiagram
@@ -14,7 +13,6 @@ sequenceDiagram
   User->>Hardhat: Deploy Contract to Ethereum
   Hardhat-->>LocalEthNetwork: Deploy Contract
   User->>dWallet: Init dWallet Account
-  User->>User: Update Configuration
   User->>dWalletNetwork: Spin up dWallet Network
   User->>Faucet: Get Gas from dWallet Faucet
   Faucet-->>User: Provide Gas
@@ -24,6 +22,7 @@ sequenceDiagram
   LocalEthNetwork-->>User: Provide ETH State
   User->>Hardhat: Approve Message on Ethereum Contract
   Hardhat-->>LocalEthNetwork: Approve Message
+  User->>User: Update dWallet CLI Configuration
   User->>dWallet: Verify Message on dWallet
   User->>User: Debug the CLI
 ```
@@ -79,59 +78,6 @@ made by our beloved Shay Malichi.
 
   
 
-### Get Ethereum Network Configuration
-
-For the light client to work properly with the local ethereum network, you need to provide the chain ID, genesis time, genesis
-validators root, and a beacon checkpoint.
-You can get the chain ID from the network's execution layer genesis configuration file.
-To get the genesis time and genesis validators root, you need to run the following command:
-
-```bash
-curl http://localhost:3500/eth/v1/beacon/genesis
-```
-
-Example response:
-
-```json
-{
-  "data": {
-    "genesis_time": "1590832934",
-    "genesis_validators_root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
-    "genesis_fork_version": "0x00000000"
-  }
-}
-```
-
-To get the beacon checkpoint, you need to run the following command.
-You should take the finalized checkpoint root from the response.
-
-```bash
-curl http://localhost:3500/eth/v1/beacon/states/finalized/finality_checkpoints
-```
-
-Example response:
-
-```json
-{
-  "execution_optimistic": false,
-  "finalized": false,
-  "data": {
-    "previous_justified": {
-      "epoch": "1",
-      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
-    },
-    "current_justified": {
-      "epoch": "1",
-      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
-    },
-    "finalized": {
-      "epoch": "1",
-      "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
-    }
-  }
-}
-```
-  
 
 ## Running a Local dWallet network:
 
@@ -139,7 +85,7 @@ Example response:
 
 To initiate the network, run the following command:
 ```bash
-./dwallet genesis init
+./dwallet genesis
 ```
 
 This will create a local client configuration file in `~/.dwallet/dwallet_config/client.yaml` that you can modify to
@@ -272,24 +218,16 @@ Make sure you keep the `Object ID` of the created `EthDwalletCap` object, as you
 #│  └──                                                                                              │
 #╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
-todo: modify the eth-pos-devnet docker-compose.yml to use stable versions for `beacon-chain` and `validator`, and add lightclient flag
-#### Create first ETH State
 
-The light client uses the EthState object to communicate with the Ethereum network.
-On a new network, we need to create a new EthState object, which has a checkpoint included in it.  
-This will be used in order to get the state updates from the Ethereum network, and update the `CurrentEthState` object
-in the network (should be a singleton).
+#### Create first ETH State
+The `EthState` object is where we store the latest **verified** Ethereum state.
+The light client uses the `EthState` object to communicate with the Ethereum network.
+We need to create a new `EthState` object, which has a checkpoint included in it.  
 
 - Make sure you keep the `Object ID` of the created `EthState` object, as you will need it later on.
-- Modify `last_checkpoint` field inside the json string argument, to be any checkpoint from the last 2 weeks.
-- You can get an updated checkpoint for HOLESKY testnet from the following link (Block Root):
-  https://beaconstate-holesky.chainsafe.io/
-- If you use local ethereum network, you can use the following command to get the checkpoint (you need the finalized block root):
-
-```bash
-curl http://localhost:3500/eth/v1/beacon/states/finalized/finality_checkpoints
-```
-
+- In order to create a new `EthState` object, you need to provide the finalized block root of the Ethereum network.  
+You can achieve this as explained in the [Beacon Checkpoint](#beacon-checkpoint) section.
+- You also need to provide a `network` name - in our case, it is `devnet` (can be `mainnet`, `holesky`, etc.).
 ```bash
 ./dwallet client call --package 0x0000000000000000000000000000000000000000000000000000000000000003 --module eth_dwallet --function init_first_eth_state --gas-budget 2000000000 --args  "0x57a9ab8e99c0ac2f2a190228b54c4bcc6cb3cae50146bb1590f0b10677d310df" "devnet"
 
@@ -331,48 +269,111 @@ curl http://localhost:3500/eth/v1/beacon/states/finalized/finality_checkpoints
 ### Update the dWallet binary client's configuration
 
 On the first run of the `dwallet` binary, it will create a configuration file:
-
 ```
 ~/.dwallet/dwallet_config/client.yaml
 ```
 
-#### Config file example
+We need to update this file to include the Ethereum network configuration.  
+To do this, you need to first get those configurations from the Ethereum network.
+#### Get Ethereum Network Configuration
 
-The config should look something like this:
-![img_5.png](img_5.png)
-- In `rpc` field, you need to add the RPC URL of the Sui network you are running.  
-  If you use a local sui node the RPC should be `http://localhsot:9000/`,
-  unless you changed the port in the network's configuration.
+For the light client to work properly with the local ethereum network, you need to provide the **chain ID**, **genesis time**, **genesis
+validators root**, and a beacon checkpoint.
+You can get the **Chain ID** from the network's execution layer genesis configuration file (should be found in `eth-pos-devnet/execution/genesis.json`).
 
-- In `eth_execution_rpc` field, you need to add the RPC URL of the Ethereum network you use.   
-  If you debug against a local ethereum network, the default URL would be `http://localhost:8545/`. If you use Ethereum
-  testnet, you can use Alchemy or Infura for that.
-- In `eth_consensus_rpc` field, you need to add the Consensus RPC URL of the Ethereum network you use. For local
-  Ethereum this would be `http://localhost:3500/`.  
-  You can use
-  the [Ethereum Beacon Chain checkpoint sync endpoints](https://eth-clients.github.io/checkpoint-sync-endpoints/) for
-  any other network's Consensus RPCs providers.
-- `state_object_id` is the object ID of the `EthState` object that we created in [the previous step](#Create-first-ETH-State).
+##### Genesis Time and Genesis Validators Root
+To get the **genesis time** and **genesis validators root**, you need to run the following command:
 
-> **Note:** When using local ethereum network, you should also provide `eth_genesis_time`, `eth_genesis_validators_root`,
-and `eth_chain_id` fields in the config file.
-See how to get these values in [Ethereum Network Configuration section](#get-ethereum-network-configuration) of this document.
+```bash
+# Get genesis time and genesis validators root
+curl http://localhost:3500/eth/v1/beacon/genesis
 
-### Debug the CLI
-
-First, you need to go to your IDE and `cargo build` the whole project.
-After this, you will have a list of Debugging configurations in your IDE.
-To debug the dwallet cli binary, you need to choose the `Run dwallet` configuration, but first we need to add the
-command we want to debug to the configuration as run arguments.
-> Note: If you do not have the `Run dwallet` configuration, you can create it in the `Debug Configurations` window (should be a Cargo configuration).
-
-Perform the following steps to update the configuration arguments:
-
-1. Go to the debug configuration of the `dwallet` binary
-2. `Commands` field should contain the following command. Pay attention to the parameters that you need to
-   provide: `ETH_DWALLET_CAP_ID`, `DWALLET_ID`, `MESSAGE`, `GAS_BUDGET`, `GAS`:
-
+# Example response:
+#
+# {
+#  "data": {
+#    "genesis_time": "1590832934",
+#    "genesis_validators_root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
+#    "genesis_fork_version": "0x00000000"
+#   }
+# }
 ```
+##### Beacon Checkpoint
+To get the **beacon checkpoint**, you need to run the following command.
+You should take the finalized checkpoint root from the response.
+
+```bash
+# Get beacon chain finalized checkpoint
+curl http://localhost:3500/eth/v1/beacon/states/finalized/finality_checkpoints
+# Example response:
+#
+#  {
+#    "execution_optimistic": false,
+#    "finalized": false,
+#    "data": {
+#      "previous_justified": {
+#        "epoch": "1",
+#        "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+#      },
+#      "current_justified": {
+#        "epoch": "1",
+#        "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+#      },
+#      "finalized": {
+#        "epoch": "1",
+#        "root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2" // This is what you need
+#      }
+#    }
+#  }
+```
+
+
+#### dWallet client Config file
+We will only need to update the `envs` field in the configuration file.
+You need to provide the `eth_execution_rpc`, `eth_consensus_rpc`, `eth_chain_id`, `eth_genesis_time`, `eth_genesis_validators_root` and `state_object_id` fields.
+##### Example configuration file:
+```yaml
+keystore:
+  File: /Users/yuvalelmo/.dwallet/dwallet_config/dwallet.keystore
+envs:
+  - alias: localnet # Is the name of the environment.
+    rpc: "http://localhost:9000" # Is the rpc url of the local dwallet node, this address is set when initializing dWallet genesis.
+    ws: ~
+    eth_execution_rpc: "http://localhost:8545" # Is the rpc url of the local ethereum node.
+    eth_consensus_rpc: "http://localhost:3500" # Is the consensus rpc url of the local ethereum node.
+    eth_chain_id: 32382 # Is the chain id of the local ethereum network.
+    eth_genesis_time: 1716207494 # Is the genesis time of the local ethereum network.
+    eth_genesis_validators_root: "0x83431ec7fcf92cfc44947fc0418e831c25e1d0806590231c439830db7ad54fda" # Is the genesis validators root of the local ethereum network.
+    state_object_id: "0x771541ddb704918927675e4d6f839728d3ace241bd34a67b9b17d6251c75fc2f" # Is the object id of the EthState object that we created in the previous step.
+dwallets:
+  - alias: foo
+    dkg_output:
+      secret_key_share: 851A8FE7E6180BAE902DB1B4C7E197D258B7C06999245756697D65F6DC985788
+      public_key_share: 02AFE206C8AE6677DD68766D4B424F6E80E404E4B76D77B62D5991511F15618A27
+      public_key: 0220A5129BB3FCCEBB9E16F1EF90EFC4C068E25CDFA1A5B5D37EF2EBCFC0DEF78E
+      encrypted_decentralized_party_secret_key_share: 9a4194b85ba1ba27c3bfcaea21843b24ed189e62f765233d89e6237e3f7a9bcb2388546cc41ed40f49bc77781c096de58aeeee267a7986609414292cbf66ae7103a8aacdf7a7ae2a67b97e1668cfbbfdc24f52823b134ddfd0198f75ee6f2f83ed26abb8ec3443dd802c4866f6d3183c8cc7741c7953bec22ddb8af0a34ba71f34405dc1c27b9fb42c608211610abdbd3129654a22aef9bcf4db5af1a9d2966cc17b54caa322b11ec9409660d5b8a288f9b5732da23aa5ba370d5247d5457002c023117bb9f4caea4b0d4389941e4e1ade662a58b1e325b53a9c109dd48171a61ec2d507269bdedf2b190caa3ce25b58179a311306c6d5af10feab22092be92df86f0f4edad4ce317e609ad155c688c571c9f2bd30bd12a6515a6291658bdcb4c10662530757bbe85de33013972a3a16c977e04af5a4df580a17e3ab63b01789914e69521459437f93e24e956345701881e7be9c152f765b9d146749a4b1be1b7a6ed2325ac79e809f016ffc7cd6ac0d4775a945343a7272aa4f77356db9ee0ce280035e1f5238a5ab43320f29923bba53b1b7eab562b8daed73bcbbdf7361bdd3bb9c58903394574f926a28b25470674d980b8a70abe1ca71445e4ea0aa09d0cf9494250bea5fe1a14d2c391ee453135aaceebcb31d81da728cc79c696130f105758e73c4af2d09b26367eac5bbe90972e75ef1e3044878ee228064e65dac29
+      decentralized_party_public_key_share: 0299D7B0C00F6D243DF6F3A7B2259CAEC741287F2A22B06C150FAD253E61DB9CF8
+    dwallet_id: "0xbe344ddffaa7a8c9c5ae7f2d09a77f20ed54f93bf5e567659feca5c3422ae7a6"
+    dwallet_cap_id: "0x86aed9374e0872250fb8679ced9796eb966af44cecff8e029381174ee26491f9"
+active_env: localnet
+active_address: "0xfa9b290991fe44ebba08a596c9cac52dcd473239d55d825f547890aa63719515"
+active_dwallet: foo 
+```
+
+### Debug the CLI binary
+
+> **Note:** If you only want to execute the dwallet-eth-verify command (**without debugging**), you can use the following command:
+> ```bash
+> ./dwallet client dwallet-eth-verify --eth-dwallet-cap-id "<ETH_DWALLET_CAP_ID>" --dwallet-id "<DWALLET_ID>" --message "<MESSAGE>" --gas-budget 200000000 --gas "<GAS_OBJECT>"
+> ```
+
+To debug the dwallet cli binary, you need to follow the steps below:
+1. Create a new configuration in your IDE to run the dwallet binary (this should be a Cargo configuration).
+2. Add the command you want to debug to the configuration as run arguments.  
+for example, to debug the `dwallet-eth-verify` command of the CLI,
+the `Commands` field should contain the following command. Pay attention to the parameters that you need to
+   provide: `ETH_DWALLET_CAP_ID`, `DWALLET_ID`, `MESSAGE`, `GAS_BUDGET`, `GAS`:
+```bash
 run --package sui --bin dwallet -- client dwallet-eth-verify --eth-dwallet-cap-id "<ETH_DWALLET_CAP_ID>" --dwallet-id "<DWALLET_ID>" --message "<MESSAGE>" --gas-budget 200000000
 ```
 
@@ -383,19 +384,44 @@ run --package sui --bin dwallet -- client dwallet-eth-verify --eth-dwallet-cap-i
 ### Hardhat
 
 To deploy and interact with our contract, we would use the Hardhat framework.
-Read the [Hardhat documentation](https://hardhat.org/hardhat-runner/docs/getting-started#installation) to install it.
+Read the [Hardhat documentation](https://hardhat.org/hardhat-runner/docs/getting-started#installation) to install it.  
+Also, you would need to install `@nomicfoundation/hardhat-toolbox` using the command below:
+```bash
+npm install --save-dev @nomicfoundation/hardhat-toolbox
+```
 
 #### HardHat Configuration
-Hardhat configuration is taken from the `hardhat.config.js` file in the root of the project.
+First, we would need to init the hardhat project. Run the command below, and navigate through the options using arrow keys to create an empty config.
+```bash
+npx hardhat init
+
+#  888    888                      888 888               888
+#  888    888                      888 888               888
+#  888    888                      888 888               888
+#  8888888888  8888b.  888d888 .d88888 88888b.   8888b.  888888
+#  888    888     "88b 888P"  d88" 888 888 "88b     "88b 888
+#  888    888 .d888888 888    888  888 888  888 .d888888 888
+#  888    888 888  888 888    Y88b 888 888  888 888  888 Y88b.
+#  888    888 "Y888888 888     "Y88888 888  888 "Y888888  "Y888
+#  
+#  👷 Welcome to Hardhat v2.19.4 👷‍
+#  
+#  ? What do you want to do? …
+#  ❯ Create a JavaScript project
+#    Create a TypeScript project
+#    Create a TypeScript project (with Viem)
+#    Create an empty hardhat.config.js
+#    Quit
+```
+
+After initializing, `hardhat.config.js` file is created in the root of the project.
 You should update the configuration to match the settings of your local Ethereum network.
 Example `hardhat.config.js` file:
-> **Note:** the `accounts` field in the network configuration should contain the private keys of the accounts you want to use. In our case, you can get the private key from `eth-pos-devnet/execution/sk.json` file, in `eth-pos-devnet` repo. 
+> **Note:** the `accounts` field in the network configuration should contain the private keys of the accounts you want to use when deploying contracts or interacting with the network.  
+> In our case, you can get the private key from `eth-pos-devnet/execution/sk.json` file, in `eth-pos-devnet` repo. 
 
 ```javascript
-require('dotenv').config()
 require('@nomicfoundation/hardhat-toolbox')
-// Plugin for storage and slots.
-require('hardhat-storage-layout')
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -431,7 +457,20 @@ module.exports = {
 #### Deploy and Interact with the Contract
 
 Once you've installed and configured Hardhat correctly,
-you can now run scripts to deploy the contract and interact with it.
+you can now compile the contract, run scripts to deploy the contract and interact with it.  
+Before we execute any scripts, we need to compile the contract.
+This would also generate the ABI for the contract, which we will need for interacting with it.  
+
+The contract should be located in the `contracts` directory of the Hardhat project (where the `hardhat.config.js` is located).  
+Read more about compiling a smart contract in
+the [Hardhat docs](https://hardhat.org/hardhat-runner/docs/guides/compile-contracts).  
+
+To compile the contract, run the following command:
+
+```bash
+npx hardhat compile
+```
+
 In order to execute the scripts, you need to run the following command:
 
 ```bash
@@ -459,13 +498,6 @@ main()
         process.exit(1);
     });
 ```
-
-> **Note:** In order to interact with the contract, you need to have the contract's address and the ABI.
-The ABI would be achieved by compiling the contract.
-You can use Hardhat for that too.  
-The contract's address would be the address to which the contract was deployed to.  
-Read more about compiling a smart contract in
-the [Hardhat docs](https://hardhat.org/hardhat-runner/docs/guides/compile-contracts).
 
 Example `interact.js` script:
 
