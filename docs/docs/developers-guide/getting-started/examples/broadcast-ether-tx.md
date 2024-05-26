@@ -7,7 +7,6 @@ After [creating a dWallet](../your-first-dwallet.md#create-a-dwallet) we can der
 ## Setup
 First, we must setup the environment. Begin by importing necessary functions:
 ```typescript
-import { SuiClient } from '@mysten/sui.js/client';
 import { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import { requestSuiFromFaucetV0 as requestDwltFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';

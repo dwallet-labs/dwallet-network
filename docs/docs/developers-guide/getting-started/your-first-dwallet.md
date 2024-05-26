@@ -1,6 +1,6 @@
 # Your First dWallet
 
-Before you can create your first dWallet, you must have [dWallet installed](install-dwallet.mdx) and that you have [DWLT gas supply](./get-tokens).
+Before you can create your first dWallet, you must have [dWallet installed](install-dwallet.mdx) and that you have [DWLT gas supply](./get-tokens.mdx).
 
 ## Using the dWallet Client CLI
 ### Create a dWallet
@@ -90,7 +90,7 @@ It is based on the [Sui TypeScript SDK](https://sdk.mystenlabs.com/typescript). 
 ### Prerequisites
 First, import the relevant packages
 ```typescript
-import { getFullnodeUrl, SuiClient } from '@dwallet-network/dwallet.js/client';
+import { getFullnodeUrl, DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import {createDWallet, createSignMessages, approveAndSign} from "@dwallet-network/dwallet.js/signature-mpc";
 ```
@@ -98,7 +98,7 @@ import {createDWallet, createSignMessages, approveAndSign} from "@dwallet-networ
 To create a dWallet, you have to provide `keypair` and `client` objects.
 ```typescript
 // create a new SuiClient object pointing to the network you want to use
-const client = new SuiClient({ url: 'http://fullnode.alpha.testnet.dwallet.cloud:9000' });
+const client = new DWalletClient({ url: 'http://fullnode.alpha.testnet.dwallet.cloud:9000' });
 const keypair = new Ed25519Keypair();
 ```
 To read more, refer to [Sui TypeScript SDK documentation](https://sdk.mystenlabs.com/typescript).
