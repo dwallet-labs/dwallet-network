@@ -1,6 +1,7 @@
 module dwallet_system::ethereum_state {
-    use dwallet::object;
+    use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
+    use dwallet::tx_context::TxContext;
 
     struct EthState has key {
         id: UID,
@@ -14,21 +15,23 @@ module dwallet_system::ethereum_state {
         last_slot: u64,
     }
 
-    public fun init_first_eth_state(
-        checkpoint: vector<u8>,
-        network: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        let data = create_initial_eth_state_data(checkpoint, network);
-        let eth_state = EthState {
+    public fun init_state(checkpoint: vector<u8>, ctx: &mut TxContext){
+        let state_data = create_initial_eth_state_data(checkpoint);
+        let state = EthState {
             id: object::new(ctx),
-            data,
+            data: state_data,
             time_slot: 0u64,
         };
-        transfer::freeze_object(eth_state);
+
+        transfer::share_object(LatestEthereumState {
+            id: object::new(ctx),
+            eth_state_id: object::id(&state),
+            last_slot: state.time_slot,
+        });
+        transfer::freeze_object(state);
     }
 
-    public fun update_current_eth_state(
+    public fun update_latest_eth_state(
         self: &mut LatestEthereumState,
         eth_state: &EthState,
     ) {
@@ -49,14 +52,11 @@ module dwallet_system::ethereum_state {
             state_bytes
         );
 
-        //todo(yuval): update time_slot check
-        if (time_slot != 0) {
-            transfer::freeze_object(EthState {
-                id: object::new(ctx),
-                data,
-                time_slot,
-            });
-        }
+        transfer::freeze_object(EthState {
+            id: object::new(ctx),
+            data,
+            time_slot,
+        });
     }
 
     /// Verify the Eth state according to the updates.
@@ -67,6 +67,5 @@ module dwallet_system::ethereum_state {
 
     native fun create_initial_eth_state_data(
         checkpoint: vector<u8>,
-        network: vector<u8>
     ): vector<u8>;
 }

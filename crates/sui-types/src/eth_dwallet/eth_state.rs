@@ -23,6 +23,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::vec::Vec;
 use std::{cmp, fmt};
 use tracing::info;
+use crate::base_types::ObjectID;
 
 use crate::eth_dwallet::constants::MAX_REQUEST_LIGHT_CLIENT_UPDATES;
 use crate::eth_dwallet::update::UpdatesResponse;
@@ -30,7 +31,14 @@ use crate::eth_dwallet::utils::{
     calc_sync_period, compute_domain, compute_signing_root, is_proof_valid,
 };
 
-use crate::id::UID;
+use crate::id::{ID, UID};
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LatestEthStateObject {
+    pub id: UID,
+    pub eth_state_id: ObjectID,
+    pub time_slot: u64,
+}
 
 #[derive(Deserialize, Serialize)]
 pub struct EthStateObject {
@@ -39,7 +47,7 @@ pub struct EthStateObject {
     pub time_slot: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct EthState {
     #[serde(default)]
     pub last_checkpoint: String,
@@ -129,7 +137,9 @@ impl EthState {
         current_state_checkpoint: &str,
     ) -> Result<UpdatesResponse, Error> {
         let rpc = NimbusRpc::new(&self.rpc);
-        self.bootstrap(&rpc, current_state_checkpoint).await?;
+        if self.finalized_header.slot == U64::from(0) || self.current_sync_committee.aggregate_pubkey == BLSPubKey::default() {
+            self.bootstrap(&rpc, current_state_checkpoint).await?;
+        }
 
         let current_period = calc_sync_period(self.finalized_header.slot.into());
         let updates = rpc

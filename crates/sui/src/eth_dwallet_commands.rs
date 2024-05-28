@@ -14,13 +14,14 @@ use sui_sdk::sui_client_config::SuiEnv;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::eth_dwallet::config::{EthLightClientConfig, ProofParameters};
-use sui_types::eth_dwallet::eth_state::{EthState, EthStateObject};
+use sui_types::eth_dwallet::eth_state::{EthState, EthStateObject, LatestEthStateObject};
 use sui_types::eth_dwallet::light_client::EthLightClient;
 use sui_types::eth_dwallet::proof::ProofResponse;
 use sui_types::eth_dwallet::update::UpdatesResponse;
 use sui_types::eth_dwallet_cap::{
     EthDWalletCap, APPROVE_MESSAGE_FUNC_NAME, CREATE_ETH_DWALLET_CAP_FUNC_NAME,
-    ETH_DWALLET_MODULE_NAME, VERIFY_ETH_STATE_FUNC_NAME,
+    ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME, INIT_STATE_FUNC_NAME,
+    VERIFY_ETH_STATE_FUNC_NAME,
 };
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::signature_mpc::{
@@ -61,6 +62,48 @@ impl TryFrom<SuiRawDataWrapper> for EthStateObject {
     }
 }
 
+impl TryFrom<SuiRawDataWrapper> for LatestEthStateObject {
+    type Error = anyhow::Error;
+    fn try_from(wrapper: SuiRawDataWrapper) -> Result<Self, Error> {
+        wrapper
+            .0
+            .try_as_move()
+            .ok_or_else(|| anyhow!("Object is not a Move Object"))?
+            .deserialize()
+            .map_err(|e| anyhow!("Error deserializing object: {e}"))
+    }
+}
+
+//todo(yuval): in future, we should load also the sync committee from binary data file.
+pub(crate) async fn init_ethereum_state(
+    checkpoint: String,
+    context: &mut WalletContext,
+    gas: Option<ObjectID>,
+    gas_budget: u64,
+    serialize_unsigned_transaction: bool,
+    serialize_signed_transaction: bool,
+) -> Result<SuiClientCommandResult, Error> {
+    let args = vec![SuiJsonValue::new(Value::String(checkpoint))?];
+
+    let tx_data = construct_move_call_transaction(
+        SUI_SYSTEM_PACKAGE_ID,
+        ETHEREUM_STATE_MODULE_NAME.as_str(),
+        INIT_STATE_FUNC_NAME.as_str(),
+        vec![],
+        gas,
+        gas_budget,
+        args,
+        context,
+    )
+    .await?;
+    Ok(serialize_or_execute!(
+        tx_data,
+        serialize_unsigned_transaction,
+        serialize_signed_transaction,
+        context,
+        Call
+    ))
+}
 pub(crate) async fn eth_approve_message(
     context: &mut WalletContext,
     eth_dwallet_cap_id: ObjectID,
@@ -71,7 +114,7 @@ pub(crate) async fn eth_approve_message(
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
 ) -> Result<SuiClientCommandResult, anyhow::Error> {
-    let state_object_id = context
+    let latest_state_object_id = context
         .config
         .get_active_env()?
         .state_object_id
@@ -81,8 +124,11 @@ pub(crate) async fn eth_approve_message(
     let eth_dwallet_cap_data_bcs = fetch_object(context, eth_dwallet_cap_id).await?;
     let eth_dwallet_cap_obj: EthDWalletCap = eth_dwallet_cap_data_bcs.try_into()?;
 
-    // todo(yuval): we need to decide how we implement this, maybe we should use constant address for the state object
-    let eth_state_data_bcs = fetch_object(context, state_object_id).await?;
+    let latest_eth_state_data_bcs = fetch_object(context, latest_state_object_id).await?;
+    let latest_eth_state_obj: LatestEthStateObject = latest_eth_state_data_bcs.try_into()?;
+
+    let eth_state_object_id = latest_eth_state_obj.eth_state_id;
+    let eth_state_data_bcs = fetch_object(context, eth_state_object_id).await?;
     let eth_state_obj: EthStateObject = eth_state_data_bcs.try_into()?;
 
     // Desrialize Eth State object
@@ -129,7 +175,7 @@ pub(crate) async fn eth_approve_message(
 
     pt_builder.programmable_move_call(
         SUI_SYSTEM_PACKAGE_ID,
-        ETH_DWALLET_MODULE_NAME.into(),
+        ETHEREUM_STATE_MODULE_NAME.into(),
         VERIFY_ETH_STATE_FUNC_NAME.into(),
         vec![],
         Vec::from([updates_arg, eth_state_arg]),

@@ -172,26 +172,11 @@ pub(crate) fn create_initial_eth_state_data(
 
     let cost = context.gas_used();
 
-    let (network, checkpoint) = (
-        pop_arg!(args, Vector).to_vec_u8()?,
-        pop_arg!(args, Vector).to_vec_u8()?,
-    );
-
-    let network = String::from_utf8(network)
-        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-
-    let Ok(network) = Network::from_str(network.as_str()) else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::INVALID_CONSTANT_TYPE.into(),
-        ));
-    };
-
+    let checkpoint = pop_arg!(args, Vector).to_vec_u8()?;
     let checkpoint = format!("0x{}", hex::encode(checkpoint.as_slice()));
 
     let eth_state = EthState::new()
-        .set_checkpoint(checkpoint)
-        .set_network(network);
+        .set_checkpoint(checkpoint);
 
     let Ok(eth_state_bytes) = bcs::to_bytes(&eth_state) else {
         return Ok(NativeResult::err(cost, StatusCode::VALUE_SERIALIZATION_ERROR.into()));

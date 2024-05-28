@@ -760,7 +760,7 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             ),
         ),
         (
-            "eth_dwallet",
+            "ethereum_state",
             "verify_eth_state",
             make_native!(eth_state_proof::verify_eth_state),
         ),
@@ -770,7 +770,7 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             make_native!(eth_state_proof::verify_message_proof),
         ),
         (
-            "eth_dwallet",
+            "ethereum_state",
             "create_initial_eth_state_data",
             make_native!(eth_state_proof::create_initial_eth_state_data),
         ),
