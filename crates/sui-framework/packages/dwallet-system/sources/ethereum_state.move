@@ -58,7 +58,7 @@ module dwallet_system::ethereum_state {
             data,
             time_slot,
         };
-        // todo(yuval): update config upon creating state
+
         if (new_state.time_slot > latest_ethereum_state.last_slot) {
             latest_ethereum_state.eth_state_id = object::id(&new_state);
             latest_ethereum_state.last_slot = new_state.time_slot;
