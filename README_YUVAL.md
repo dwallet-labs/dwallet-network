@@ -219,51 +219,51 @@ Make sure you keep the `Object ID` of the created `EthDwalletCap` object, as you
 #╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
-#### Create first ETH State
-The `EthState` object is where we store the latest **verified** Ethereum state.
-The light client uses the `EthState` object to communicate with the Ethereum network.
-We need to create a new `EthState` object, which has a checkpoint included in it.  
+#### Init first ETH State
+The `LatestEthereumState` object is where we store the latest **verified** Ethereum state.
+The light client uses the `LatestEthereumState` object to communicate with the Ethereum network.
+After this object is created, you would not need to create it again (unless you shut down the network),
+as it will be updated automatically when a newer state is verified.  
+After the `LatestEthereumState` object is created, the sui configuration of the current active environment is updated to point to this object.
 
-- Make sure you keep the `Object ID` of the created `EthState` object, as you will need it later on.
-- In order to create a new `EthState` object, you need to provide the finalized block root of the Ethereum network.  
-You can achieve this as explained in the [Beacon Checkpoint](#beacon-checkpoint) section.
-- You also need to provide a `network` name - in our case, it is `devnet` (can be `mainnet`, `holesky`, etc.).
 ```bash
-./dwallet client call --package 0x0000000000000000000000000000000000000000000000000000000000000003 --module eth_dwallet --function init_first_eth_state --gas-budget 2000000000 --args  "0x57a9ab8e99c0ac2f2a190228b54c4bcc6cb3cae50146bb1590f0b10677d310df" "devnet"
 
+- In order to create a new `LatestEthereumState` object, you need to provide the finalized block root of the Ethereum network.  
+You can achieve this as explained in the [Beacon Checkpoint](#beacon-checkpoint) section.
+```bash
+./dwallet client init-eth-state --checkpoint "0xc0209e40b6051b3491e8bdac62760f038afa0312b288256ad6e8bdb1580e5e15" --gas-budget 2000000000
 #╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
 #│ Object Changes                                                                                   │
 #├──────────────────────────────────────────────────────────────────────────────────────────────────┤
 #│                                                                                                  │
 #│ Created Objects:                                                                                 │
 #│  ┌──                                                                                             │
-#│  │ ObjectID: 0x0e03bef0077c5090331634cb455334508ae2d2325163e07d379e17ba81c9b7b2                  │
-#│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
+#│  │ ObjectID: 0x117b5547fe3fe3df8f68a84e0cbbbdc8a2329ce3b1d90b942691b8ba0688d84c                  │
+#│  │ Sender: 0xfa9b290991fe44ebba08a596c9cac52dcd473239d55d825f547890aa63719515                    │
 #│  │ Owner: Immutable                                                                              │
-#│  │ ObjectType: 0x3::eth_dwallet::EthState                                                        │
-#│  │ Version: 11                                                                                   │
-#│  │ Digest: CjKnYw2iQ9psC5RixYB55JSpHGaeWwoorABbRrjASGfC                                          │
+#│  │ ObjectType: 0x3::ethereum_state::EthState                                                     │
+#│  │ Version: 13                                                                                   │
+#│  │ Digest: J6Rh8WSJ7WvsrTYRGK6EaeVwUNiA3rnPaQ2w9AK3zdob                                          │
+#│  └──                                                                                             │
+#│  ┌──                                                                                             │
+#│  │ ObjectID: 0xbc35f943a24fbf984fe8ea84251c800aaad5cd272927d519eed31b92ded86093                  │
+#│  │ Sender: 0xfa9b290991fe44ebba08a596c9cac52dcd473239d55d825f547890aa63719515                    │
+#│  │ Owner: Shared                                                                                 │
+#│  │ ObjectType: 0x3::ethereum_state::LatestEthereumState                                          │
+#│  │ Version: 13                                                                                   │
+#│  │ Digest: E129VnVuyUrzfVgpS5a8e2fL3jKroHHheJaxmQ4umnhq                                          │
 #│  └──                                                                                             │
 #│                                                                                                  │
 #│ Mutated Objects:                                                                                 │
 #│  ┌──                                                                                             │
-#│  │ ObjectID: 0x1daeeb42c9801ed91712b8040ee9282ba5f6486574b6a97e67e67e923ffef209                  │
-#│  │ Sender: 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8                    │
-#│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 ) │
+#│  │ ObjectID: 0x64563f21301154cfa4f7fc870aa935162ec1c5dd9162d714d95a1aab01e6116d                  │
+#│  │ Sender: 0xfa9b290991fe44ebba08a596c9cac52dcd473239d55d825f547890aa63719515                    │
+#│  │ Owner: Account Address ( 0xfa9b290991fe44ebba08a596c9cac52dcd473239d55d825f547890aa63719515 ) │
 #│  │ ObjectType: 0x2::coin::Coin<0x2::dwlt::DWLT>                                                  │
-#│  │ Version: 11                                                                                   │
-#│  │ Digest: GnoQdwiNPyakFHaoK1jd1HL74gmGaDbfbpPc29LMy6sv                                          │
+#│  │ Version: 13                                                                                   │
+#│  │ Digest: CEcMixXCGaE87P9txWMJERDC4mpK7YZKmMkFNTji7nCH                                          │
 #│  └──                                                                                             │
 #╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-#╭───────────────────────────────────────────────────────────────────────────────────────────────────╮
-#│ Balance Changes                                                                                   │
-#├───────────────────────────────────────────────────────────────────────────────────────────────────┤
-#│  ┌──                                                                                              │
-#│  │ Owner: Account Address ( 0x005632cd713ac2fb4a3c4ca28f8d985a1b4ff6ad851844bb76a05d2dee6942e8 )  │
-#│  │ CoinType: 0x2::dwlt::DWLT                                                                      │
-#│  │ Amount: -3084680                                                                               │
-#│  └──                                                                                              │
-#╰───────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### Update the dWallet binary client's configuration
