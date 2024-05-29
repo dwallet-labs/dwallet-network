@@ -44,6 +44,25 @@ impl SuiClientConfig {
         }
     }
 
+    pub fn get_env_mut(&mut self, alias: &Option<String>) -> Option<&mut SuiEnv> {
+        if let Some(alias) = alias {
+            self.envs.iter_mut().find(|env| &env.alias == alias)
+        } else {
+            self.envs.first_mut()
+        }
+    }
+
+    pub fn get_active_env_mut(&mut self) -> Result<&mut SuiEnv, anyhow::Error> {
+        let active_env = self.active_env.clone(); // Clone active_env to avoid immutable borrow
+        match self.get_env_mut(&active_env) {
+            None => Err(anyhow!(
+            "Environment configuration not found for env [{}]",
+            active_env.as_deref().unwrap_or("None")
+        )),
+            Some(env) => Ok(env),
+        }
+    }
+
     pub fn get_active_env(&self) -> Result<&SuiEnv, anyhow::Error> {
         self.get_env(&self.active_env).ok_or_else(|| {
             anyhow!(
@@ -90,6 +109,12 @@ impl SuiClientConfig {
                 self.active_dwallet = Some(dwallet.alias.clone());
             }
             self.dwallets.push(dwallet)
+        }
+    }
+
+    pub fn update_ethereum_state_object_id(&mut self, object_id: ObjectID) {
+        if let Some(env) = self.get_active_env_mut().ok() {
+            env.state_object_id = Some(object_id);
         }
     }
 }

@@ -6,7 +6,7 @@ use serde::Serialize;
 use serde_json::{Number, Value};
 use shared_crypto::intent::Intent;
 use sui_json::{call_args, SuiJsonValue};
-use sui_json_rpc_types::SuiTransactionBlockEffectsAPI;
+use sui_json_rpc_types::{ObjectChange, SuiTransactionBlockEffectsAPI};
 use sui_json_rpc_types::{SuiData, SuiObjectDataOptions};
 use sui_json_rpc_types::{SuiExecutionStatus, SuiObjectData, SuiRawData};
 use sui_keys::keystore::AccountKeystore;
@@ -18,11 +18,7 @@ use sui_types::eth_dwallet::eth_state::{EthState, EthStateObject, LatestEthState
 use sui_types::eth_dwallet::light_client::EthLightClient;
 use sui_types::eth_dwallet::proof::ProofResponse;
 use sui_types::eth_dwallet::update::UpdatesResponse;
-use sui_types::eth_dwallet_cap::{
-    EthDWalletCap, APPROVE_MESSAGE_FUNC_NAME, CREATE_ETH_DWALLET_CAP_FUNC_NAME,
-    ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME, INIT_STATE_FUNC_NAME,
-    VERIFY_ETH_STATE_FUNC_NAME,
-};
+use sui_types::eth_dwallet_cap::{EthDWalletCap, APPROVE_MESSAGE_FUNC_NAME, CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME, INIT_STATE_FUNC_NAME, VERIFY_ETH_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME};
 use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::signature_mpc::{
@@ -97,13 +93,38 @@ pub(crate) async fn init_ethereum_state(
         context,
     )
     .await?;
-    Ok(serialize_or_execute!(
+
+    let latest_state = serialize_or_execute!(
         tx_data,
         serialize_unsigned_transaction,
         serialize_signed_transaction,
         context,
         Call
-    ))
+    );
+
+    let SuiClientCommandResult::Call(state) = latest_state else {
+        return Err(anyhow!(
+            "Can't get response."
+        ));
+    };
+
+    let latest_state_object_id = state.object_changes.clone().unwrap().iter().find_map(|oc| {
+        if let ObjectChange::Created {
+            object_id,
+            object_type,
+            ..
+        } = oc {
+            if object_type.module == ETHEREUM_STATE_MODULE_NAME.into() && object_type.name == LATEST_ETH_STATE_STRUCT_NAME.into() {
+                return Some(object_id)
+            }
+        }
+        None
+    }).unwrap().clone();
+
+    context.config.update_ethereum_state_object_id(latest_state_object_id);
+    context.config.save()?;
+
+    Ok(SuiClientCommandResult::Call(state))
 }
 pub(crate) async fn eth_approve_message(
     context: &mut WalletContext,
