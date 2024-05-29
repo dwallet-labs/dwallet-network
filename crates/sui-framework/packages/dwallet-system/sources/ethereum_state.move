@@ -45,6 +45,7 @@ module dwallet_system::ethereum_state {
     public fun verify_new_eth_state(
         updates_bytes: vector<u8>,
         state_bytes: vector<u8>,
+        latest_ethereum_state: &mut LatestEthereumState,
         ctx: &mut TxContext,
     ) {
         let (data, time_slot) = verify_eth_state(
@@ -52,11 +53,17 @@ module dwallet_system::ethereum_state {
             state_bytes
         );
 
-        transfer::freeze_object(EthState {
+        let new_state = EthState {
             id: object::new(ctx),
             data,
             time_slot,
-        });
+        };
+        // todo(yuval): update config upon creating state
+        if (new_state.time_slot > latest_ethereum_state.last_slot) {
+            latest_ethereum_state.eth_state_id = object::id(&new_state);
+            latest_ethereum_state.last_slot = new_state.time_slot;
+        };
+        transfer::freeze_object(new_state);
     }
 
     /// Verify the Eth state according to the updates.

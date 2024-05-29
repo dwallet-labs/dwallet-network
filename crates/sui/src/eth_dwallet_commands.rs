@@ -23,14 +23,15 @@ use sui_types::eth_dwallet_cap::{
     ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME, INIT_STATE_FUNC_NAME,
     VERIFY_ETH_STATE_FUNC_NAME,
 };
+use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::signature_mpc::{
     APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
     DWALLET_MODULE_NAME,
 };
-use sui_types::transaction::Transaction;
 use sui_types::transaction::TransactionDataAPI;
 use sui_types::transaction::{CallArg, ObjectArg, SenderSignedData};
+use sui_types::transaction::{SharedInputObject, Transaction};
 use sui_types::SUI_SYSTEM_PACKAGE_ID;
 
 use crate::client_commands::{construct_move_call_transaction, SuiClientCommandResult};
@@ -121,14 +122,17 @@ pub(crate) async fn eth_approve_message(
         .clone()
         .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
 
-    let eth_dwallet_cap_data_bcs = fetch_object(context, eth_dwallet_cap_id).await?;
+    let eth_dwallet_cap_data_bcs = get_object_bcs_by_id(context, eth_dwallet_cap_id).await?;
     let eth_dwallet_cap_obj: EthDWalletCap = eth_dwallet_cap_data_bcs.try_into()?;
 
-    let latest_eth_state_data_bcs = fetch_object(context, latest_state_object_id).await?;
+
+    let latest_eth_state_data_bcs = get_object_bcs_by_id(context, latest_state_object_id).await?;
     let latest_eth_state_obj: LatestEthStateObject = latest_eth_state_data_bcs.try_into()?;
+    let latest_eth_state_shared_object =
+        get_shared_object_input_by_id(context, latest_state_object_id).await?;
 
     let eth_state_object_id = latest_eth_state_obj.eth_state_id;
-    let eth_state_data_bcs = fetch_object(context, eth_state_object_id).await?;
+    let eth_state_data_bcs = get_object_bcs_by_id(context, eth_state_object_id).await?;
     let eth_state_obj: EthStateObject = eth_state_data_bcs.try_into()?;
 
     // Desrialize Eth State object
@@ -173,12 +177,22 @@ pub(crate) async fn eth_approve_message(
         .pure(bcs::to_bytes(&updates)?)
         .map_err(|e| anyhow!("Could not serialize updates. {e}"))?;
 
+    let latest_eth_state_shared_object_arg = ObjectArg::SharedObject {
+        id: latest_eth_state_shared_object.id,
+        initial_shared_version: latest_eth_state_shared_object.initial_shared_version,
+        mutable: true,
+    };
+
+    let latest_eth_state_arg = pt_builder
+        .obj(latest_eth_state_shared_object_arg)
+        .map_err(|e| anyhow!("Could not serialize latest_eth_state_id. {e}"))?;
+
     pt_builder.programmable_move_call(
         SUI_SYSTEM_PACKAGE_ID,
         ETHEREUM_STATE_MODULE_NAME.into(),
         VERIFY_ETH_STATE_FUNC_NAME.into(),
         vec![],
-        Vec::from([updates_arg, eth_state_arg]),
+        Vec::from([updates_arg, eth_state_arg, latest_eth_state_arg]),
     );
 
     let proof_sui_json =
@@ -204,7 +218,6 @@ pub(crate) async fn eth_approve_message(
         )
         .await?;
 
-    let client = context.get_client().await?;
     let tx_data = client
         .transaction_builder()
         .finish_programmable_transaction(sender, pt_builder, gas, gas_budget)
@@ -236,7 +249,7 @@ fn get_data_from_eth_dwallet_cap(
     eth_dwallet_cap_obj: EthDWalletCap,
 ) -> Result<(u64, Address), Error> {
     let data_slot = eth_dwallet_cap_obj.eth_smart_contract_slot;
-    let mut contract_addr: String = eth_dwallet_cap_obj.eth_smart_contract_addr;
+    let contract_addr: String = eth_dwallet_cap_obj.eth_smart_contract_addr;
     let contract_addr = contract_addr.clone().parse::<Address>()?;
     Ok((data_slot, contract_addr))
 }
@@ -320,7 +333,7 @@ pub(crate) async fn create_eth_dwallet(
     ))
 }
 
-async fn fetch_object(
+async fn get_object_bcs_by_id(
     context: &mut WalletContext,
     object_id: ObjectID,
 ) -> Result<SuiRawDataWrapper, Error> {
@@ -338,6 +351,38 @@ async fn fetch_object(
         Some(data) => Ok(SuiRawDataWrapper(
             data.bcs.ok_or_else(|| anyhow!("missing object data"))?,
         )),
+        None => Err(anyhow!("Could not find object with ID: {:?}", object_id)),
+    }
+}
+
+async fn get_shared_object_input_by_id(
+    context: &mut WalletContext,
+    object_id: ObjectID,
+) -> Result<SharedInputObject, Error> {
+    let object_resp = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(object_id, SuiObjectDataOptions::default().with_owner())
+        .await?;
+
+    match object_resp.data {
+        Some(_) => {
+            let owner = object_resp
+                .owner()
+                .ok_or_else(|| anyhow!("missing object owner"))?;
+            let initial_shared_version = match owner {
+                Owner::Shared {
+                    initial_shared_version,
+                } => initial_shared_version,
+                _ => return Err(anyhow!("Object is not shared")),
+            };
+            Ok(SharedInputObject {
+                id: object_id,
+                initial_shared_version,
+                mutable: true,
+            })
+        }
         None => Err(anyhow!("Could not find object with ID: {:?}", object_id)),
     }
 }
