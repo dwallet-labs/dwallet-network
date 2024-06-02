@@ -98,7 +98,7 @@ import {createDWallet, createSignMessages, approveAndSign} from "@dwallet-networ
 To create a dWallet, you have to provide `keypair` and `client` objects.
 ```typescript
 // create a new SuiClient object pointing to the network you want to use
-const client = new DWalletClient({ url: 'http://fullnode.alpha.testnet.dwallet.cloud:9000' });
+const client = new DWalletClient({ url: 'https://fullnode.alpha.testnet.dwallet.cloud' });
 const keypair = new Ed25519Keypair();
 ```
 To read more, refer to [Sui TypeScript SDK documentation](https://sdk.mystenlabs.com/typescript).

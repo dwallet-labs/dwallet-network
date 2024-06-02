@@ -99,7 +99,7 @@ dwallet client new-env --alias <ALIAS> --rpc <RPC-SERVER-URL>
 
 To add the testnet RPC for example, run the following command:
 ```shell
-dwallet client new-env --alias testnet --rpc http://fullnode.alpha.testnet.dwallet.cloud:9000
+dwallet client new-env --alias testnet --rpc https://fullnode.alpha.testnet.dwallet.cloud
 ```
 
 Then when you run ```dwallet client envs``` you will see the new env
@@ -108,7 +108,7 @@ Then when you run ```dwallet client envs``` you will see the new env
 │ alias   │ url                                              │ active │
 ├─────────┼──────────────────────────────────────────────────┼────────┤
 │ local   │ http://127.0.0.1:9000                            │ *      │
-│ testnet │ http://fullnode.alpha.testnet.dwallet.cloud:9000 │        │
+│ testnet │ https://fullnode.alpha.testnet.dwallet.cloud     │        │
 ╰─────────┴──────────────────────────────────────────────────┴────────╯
 ```
 Yet, the active env remains `local`.
@@ -132,7 +132,7 @@ Then when you run ```dwallet client envs``` you will see the active env is now t
 │ alias   │ url                                              │ active │
 ├─────────┼──────────────────────────────────────────────────┼────────┤
 │ local   │ http://127.0.0.1:9000                            │        │
-│ testnet │ http://fullnode.alpha.testnet.dwallet.cloud:9000 │ *      │
+│ testnet │ https://fullnode.alpha.testnet.dwallet.cloud     │ *      │
 ╰─────────┴──────────────────────────────────────────────────┴────────╯
 ```
 
