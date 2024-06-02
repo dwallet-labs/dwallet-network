@@ -226,8 +226,6 @@ After this object is created, you would not need to create it again (unless you 
 as it will be updated automatically when a newer state is verified.  
 After the `LatestEthereumState` object is created, the sui configuration of the current active environment is updated to point to this object.
 
-```bash
-
 - In order to create a new `LatestEthereumState` object, you need to provide the finalized block root of the Ethereum network.  
 You can achieve this as explained in the [Beacon Checkpoint](#beacon-checkpoint) section.
 ```bash
