@@ -52,6 +52,52 @@ sequenceDiagram
  cd target/debug
  ```
 
+- **Fill In the Blanks:** During the setup of Ethereum Light Client functionality with dWallet, you will need to
+  preserve and reuse a few data fields. Some of these fields will be displayed through the terminal, while others will
+  come from configuration files. This process can be a bit confusing, so it is recommended to copy and fill in the
+  blanks using the following pattern:
+
+```text
+- Ethereum Contract Address : ## Terminal output
+- Dwallet Id : ## Terminal output
+- Dwallet Cap ID : ## Terminal output
+- Approved Tx Slot : ## Terminal output
+- Eth-Dwallet Cap Id : ## Terminal output
+- Eth Chain Id : ## eth-pos-devnet/genesis.json
+- Eth Genesis Time : ## Terminal output
+- Eth Genesis Validators Root : ## Terminal output
+- Beacon Checkpoint : ## Terminal output
+```
+
+## Initialize Work Environment
+
+Before we begin working lets initialize our workspace:
+
+### Installations
+
+**Solidity**
+
+```bash
+brew tap ethereum/ethereum
+brew install solidity
+```
+
+**GitHub Credential**
+
+```bash
+brew install gh
+brew install --cask git-credential-manager
+gh auth login #choose Https 
+```
+
+**Docker**  
+Install Docker Desktop from [here](https://docs.docker.com/desktop/install/mac-install/).  
+Also, make sure you have `docker-compose` installed
+
+```bash
+brew install docker-compose
+```
+
 ## Running a Local Ethereum Network
 
 To run a local Ethereum network,
@@ -71,9 +117,9 @@ made by our beloved Shay Malichi.
 >      image: "gcr.io/prysmaticlabs/prysm/beacon-chain:v4.1.1"
 > #To:
 >   beacon-chain: # or validator
->      image: "gcr.io/prysmaticlabs/prysm/beacon-chain:stable"
+>      image: "gcr.io/prysmaticlabs/prysm/beacon-chain:stable" # change image version only 
 >      command:
->       - --enable-lightclient
+>       - --enable-lightclient  # add this flag only to beacon-chain
 > ```
 
   
