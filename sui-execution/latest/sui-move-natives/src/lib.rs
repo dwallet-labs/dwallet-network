@@ -58,7 +58,8 @@ use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
 use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
 use crate::crypto::sui_state_proof::SuiStateProofCostParams;
-
+use crate::crypto::eth_state_proof::EthDWalletCostParams;
+use crate::crypto::eth_state_proof;
 
 mod address;
 mod crypto;
