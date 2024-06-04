@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@mysten/sui.js/client';
+import type { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { useContext } from 'react';
 
 import { SuiClientContext } from '../components/SuiClientProvider.js';
@@ -18,6 +18,6 @@ export function useSuiClientContext() {
 	return suiClient;
 }
 
-export function useSuiClient(): SuiClient {
+export function useSuiClient(): DWalletClient {
 	return useSuiClientContext().client;
 }

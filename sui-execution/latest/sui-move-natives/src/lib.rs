@@ -1,34 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::sync::Arc;
-
-use better_any::{Tid, TidAble};
-use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::{
-    annotated_value as A,
-    gas_algebra::InternalGas,
-    identifier::Identifier,
-    language_storage::{StructTag, TypeTag},
-    runtime_value as R,
-    vm_status::StatusCode,
-};
-use move_stdlib::natives::{GasParameters, NurseryGasParameters};
-use move_vm_runtime::native_functions::{NativeContext, NativeFunction, NativeFunctionTable};
-use move_vm_types::{
-    loaded_data::runtime_types::Type,
-    natives::function::NativeResult,
-    values::{Struct, Value},
-};
-
-use sui_protocol_config::ProtocolConfig;
-use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
-use transfer::TransferReceiveObjectInternalCostParams;
-
-use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
-use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
-use crate::crypto::{eth_state_proof, eth_state_proof::EthDWalletCostParams, twopc_mpc, zklogin};
-
 use self::{
     address::{AddressFromBytesCostParams, AddressFromU256CostParams, AddressToU256CostParams},
     crypto::{bls12381, ecdsa_k1, ecdsa_r1, ecvrf, ed25519, groth16, hash, hmac},
@@ -61,6 +33,32 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
+use crate::crypto::{twopc_mpc, zklogin, sui_state_proof};
+use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
+use better_any::{Tid, TidAble};
+use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::{
+    annotated_value as A,
+    gas_algebra::InternalGas,
+    identifier::Identifier,
+    language_storage::{StructTag, TypeTag},
+    runtime_value as R,
+    vm_status::StatusCode,
+};
+use move_stdlib::natives::{GasParameters, NurseryGasParameters};
+use move_vm_runtime::native_functions::{NativeContext, NativeFunction, NativeFunctionTable};
+use move_vm_types::{
+    loaded_data::runtime_types::Type,
+    natives::function::NativeResult,
+    values::{Struct, Value},
+};
+use std::sync::Arc;
+use sui_protocol_config::ProtocolConfig;
+use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
+use transfer::TransferReceiveObjectInternalCostParams;
+use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
+use crate::crypto::sui_state_proof::SuiStateProofCostParams;
+
 
 mod address;
 mod crypto;
@@ -89,7 +87,7 @@ pub struct NativesCostTable {
     pub dynamic_field_remove_child_object_cost_params: DynamicFieldRemoveChildObjectCostParams,
     pub dynamic_field_has_child_object_cost_params: DynamicFieldHasChildObjectCostParams,
     pub dynamic_field_has_child_object_with_ty_cost_params:
-    DynamicFieldHasChildObjectWithTyCostParams,
+        DynamicFieldHasChildObjectWithTyCostParams,
 
     // Event natives
     pub event_emit_cost_params: EventEmitCostParams,
@@ -137,7 +135,7 @@ pub struct NativesCostTable {
     // groth16
     pub groth16_prepare_verifying_key_cost_params: Groth16PrepareVerifyingKeyCostParams,
     pub groth16_verify_groth16_proof_internal_cost_params:
-    Groth16VerifyGroth16ProofInternalCostParams,
+        Groth16VerifyGroth16ProofInternalCostParams,
 
     // hash
     pub hash_blake2b256_cost_params: HashBlake2b256CostParams,
@@ -158,6 +156,9 @@ pub struct NativesCostTable {
 
     // eth state proof
     pub eth_state_proof: EthDWalletCostParams,
+
+    // sui state proof
+    pub sui_state_proof_cost_params: SuiStateProofCostParams,
 }
 
 impl NativesCostTable {
@@ -202,46 +203,46 @@ impl NativesCostTable {
                     .into(),
             },
             dynamic_field_borrow_child_object_cost_params:
-            DynamicFieldBorrowChildObjectCostParams {
-                dynamic_field_borrow_child_object_cost_base: protocol_config
-                    .dynamic_field_borrow_child_object_cost_base()
-                    .into(),
-                dynamic_field_borrow_child_object_child_ref_cost_per_byte: protocol_config
-                    .dynamic_field_borrow_child_object_child_ref_cost_per_byte()
-                    .into(),
-                dynamic_field_borrow_child_object_type_cost_per_byte: protocol_config
-                    .dynamic_field_borrow_child_object_type_cost_per_byte()
-                    .into(),
-            },
+                DynamicFieldBorrowChildObjectCostParams {
+                    dynamic_field_borrow_child_object_cost_base: protocol_config
+                        .dynamic_field_borrow_child_object_cost_base()
+                        .into(),
+                    dynamic_field_borrow_child_object_child_ref_cost_per_byte: protocol_config
+                        .dynamic_field_borrow_child_object_child_ref_cost_per_byte()
+                        .into(),
+                    dynamic_field_borrow_child_object_type_cost_per_byte: protocol_config
+                        .dynamic_field_borrow_child_object_type_cost_per_byte()
+                        .into(),
+                },
             dynamic_field_remove_child_object_cost_params:
-            DynamicFieldRemoveChildObjectCostParams {
-                dynamic_field_remove_child_object_cost_base: protocol_config
-                    .dynamic_field_remove_child_object_cost_base()
-                    .into(),
-                dynamic_field_remove_child_object_child_cost_per_byte: protocol_config
-                    .dynamic_field_remove_child_object_child_cost_per_byte()
-                    .into(),
-                dynamic_field_remove_child_object_type_cost_per_byte: protocol_config
-                    .dynamic_field_remove_child_object_type_cost_per_byte()
-                    .into(),
-            },
+                DynamicFieldRemoveChildObjectCostParams {
+                    dynamic_field_remove_child_object_cost_base: protocol_config
+                        .dynamic_field_remove_child_object_cost_base()
+                        .into(),
+                    dynamic_field_remove_child_object_child_cost_per_byte: protocol_config
+                        .dynamic_field_remove_child_object_child_cost_per_byte()
+                        .into(),
+                    dynamic_field_remove_child_object_type_cost_per_byte: protocol_config
+                        .dynamic_field_remove_child_object_type_cost_per_byte()
+                        .into(),
+                },
             dynamic_field_has_child_object_cost_params: DynamicFieldHasChildObjectCostParams {
                 dynamic_field_has_child_object_cost_base: protocol_config
                     .dynamic_field_has_child_object_cost_base()
                     .into(),
             },
             dynamic_field_has_child_object_with_ty_cost_params:
-            DynamicFieldHasChildObjectWithTyCostParams {
-                dynamic_field_has_child_object_with_ty_cost_base: protocol_config
-                    .dynamic_field_has_child_object_with_ty_cost_base()
-                    .into(),
-                dynamic_field_has_child_object_with_ty_type_cost_per_byte: protocol_config
-                    .dynamic_field_has_child_object_with_ty_type_cost_per_byte()
-                    .into(),
-                dynamic_field_has_child_object_with_ty_type_tag_cost_per_byte: protocol_config
-                    .dynamic_field_has_child_object_with_ty_type_tag_cost_per_byte()
-                    .into(),
-            },
+                DynamicFieldHasChildObjectWithTyCostParams {
+                    dynamic_field_has_child_object_with_ty_cost_base: protocol_config
+                        .dynamic_field_has_child_object_with_ty_cost_base()
+                        .into(),
+                    dynamic_field_has_child_object_with_ty_type_cost_per_byte: protocol_config
+                        .dynamic_field_has_child_object_with_ty_type_cost_per_byte()
+                        .into(),
+                    dynamic_field_has_child_object_with_ty_type_tag_cost_per_byte: protocol_config
+                        .dynamic_field_has_child_object_with_ty_type_tag_cost_per_byte()
+                        .into(),
+                },
 
             event_emit_cost_params: EventEmitCostParams {
                 event_emit_value_size_derivation_cost_per_byte: protocol_config
@@ -514,6 +515,14 @@ impl NativesCostTable {
                 dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: protocol_config
                     .dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base()
                     .into(),
+                sign_verify_encrypted_signature_parts_prehash_cost_base: protocol_config
+                    .sign_verify_encrypted_signature_parts_prehash_cost_base()
+                    .into(),
+            },
+            sui_state_proof_cost_params: SuiStateProofCostParams {
+                sui_state_proof_verify_committee_cost_base: protocol_config.sui_state_proof_verify_committee_cost_base().into(),
+                sui_state_proof_verify_link_cap_base: protocol_config.sui_state_proof_verify_link_cap_base().into(),
+                sui_state_proof_verify_transaction_base: protocol_config.sui_state_proof_verify_transaction_base().into(),
             },
             eth_state_proof: EthDWalletCostParams {
                 verify_eth_state_cost_base: protocol_config
@@ -746,8 +755,7 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
                     func,
                 )
             });
-    let sui_system_natives: &[(&str, &str, NativeFunction)] = &[
-        (
+    let sui_system_natives: &[(&str, &str, NativeFunction)] = &[(
             "validator",
             "validate_metadata_bcs",
             make_native!(validator::validate_metadata_bcs),
@@ -774,7 +782,22 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "create_initial_eth_state_data",
             make_native!(eth_state_proof::create_initial_eth_state_data),
         ),
-    ];
+        (
+            "sui_state_proof",
+            "sui_state_proof_verify_committee",
+            make_native!(sui_state_proof::sui_state_proof_verify_committee),
+        ),
+        (
+            "sui_state_proof",
+            "sui_state_proof_verify_link_cap",
+            make_native!(sui_state_proof::sui_state_proof_verify_link_cap),
+        ),
+        (
+            "sui_state_proof",
+            "sui_state_proof_verify_transaction",
+            make_native!(sui_state_proof::sui_state_proof_verify_transaction),
+        ),
+        ];
     sui_system_natives
         .iter()
         .cloned()
@@ -838,7 +861,7 @@ pub(crate) fn get_tag_and_layouts(
             return Err(
                 PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
                     .with_message("Sui verifier guarantees this is a struct".to_string()),
-            );
+            )
         }
     };
     let Some(layout) = context.type_to_type_layout(ty)? else {

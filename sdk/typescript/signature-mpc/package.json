@@ -1,0 +1,6 @@
+{
+	"private": true,
+	"import": "../dist/esm/signature-mpc/index.js",
+	"main": "../dist/cjs/signature-mpc/index.js",
+	"sideEffects": false
+}

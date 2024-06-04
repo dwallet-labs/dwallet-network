@@ -1,10 +1,10 @@
 # Docs site
 
-For more complete docs, visit the [Sui TypeScript SDK docs](https://sdk.mystenlabs.com/)
+For more complete docs, visit the [dWallet Network TypeScript SDK docs](https://sdk.mystenlabs.com/)
 
-# Sui TypeScript SDK
+# dWallet Network TypeScript SDK
 
-This is the Sui TypeScript SDK built on the Sui
+This is the dWallet Network TypeScript SDK built on the dWallet Network
 [JSON RPC API](https://github.com/MystenLabs/sui/blob/main/doc/src/build/json-rpc.md). It provides
 utility classes and functions for applications to sign transactions and interact with the Sui
 network.

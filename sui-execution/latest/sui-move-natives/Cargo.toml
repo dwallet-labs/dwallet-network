@@ -31,3 +31,5 @@ sha3.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 helios.workspace = true
+sui-json.workspace = true
+signature-mpc.workspace = true
