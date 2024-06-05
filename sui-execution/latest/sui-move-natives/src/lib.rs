@@ -769,6 +769,11 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             ),
         ),
         (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "sign_verify_encrypted_signature_parts_prehash",
+            make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
+        ),
+        (
             "ethereum_state",
             "verify_eth_state",
             make_native!(eth_state_proof::verify_eth_state),
