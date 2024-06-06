@@ -21,10 +21,21 @@ use crate::eth_dwallet::utils::is_empty_value;
 use helios::consensus::types::primitives::U64;
 use helios::errors::BlockNotFoundError;
 use helios::types::BlockTag;
+use crate::base_types::ObjectID;
 
 pub struct EthLightClient {
     pub client: Client<FileDB>,
     config: EthLightClientConfig,
+}
+
+#[derive(Debug, Clone)]
+pub struct EthLightClientSetting {
+    pub eth_execution_rpc: Option<String>,
+    pub eth_consensus_rpc: Option<String>,
+    pub eth_chain_id: Option<u64>,
+    pub eth_genesis_time: Option<u64>,
+    pub eth_genesis_validators_root: Option<String>,
+    pub state_object_id: Option<ObjectID>,
 }
 
 impl EthLightClient {
