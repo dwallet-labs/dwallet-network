@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Error};
 use base64::Engine;
+use clap::Subcommand;
 use ethers::types::Address;
 use helios::config::networks::Network;
 use serde::Serialize;
@@ -33,6 +34,7 @@ use sui_types::SUI_SYSTEM_PACKAGE_ID;
 use crate::client_commands::{construct_move_call_transaction, SuiClientCommandResult};
 use crate::serialize_or_execute;
 
+#[derive(Subcommand)]
 pub enum LightClientCommands {
     /// Approve a TX with Eth contract for a given dWallet.
     #[command(name = "dwallet-eth-verify")]

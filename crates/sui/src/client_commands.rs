@@ -659,7 +659,10 @@ pub enum SuiClientCommands {
 
     /// eth light-client subcommands.
     #[command(name = "eth-lc")]
-    EthLightClient(LightClientCommands),
+    EthLightClient {
+        #[command(subcommand)]
+        command: LightClientCommands
+    },
 
     /// Connect dWallet to be controlled by Eth contract.
     #[command(name = "dwallet-connect-eth")]
@@ -1550,8 +1553,10 @@ impl SuiClientCommands {
                     );
                 }
             }
-            SuiClientCommands::EthLightClient(light_client_commands) => {
-                match light_client_commands {
+            SuiClientCommands::EthLightClient {
+                command
+            } => {
+                match command {
                     LightClientCommands::EthApproveMessage {
                         eth_dwallet_cap_id,
                         message,
