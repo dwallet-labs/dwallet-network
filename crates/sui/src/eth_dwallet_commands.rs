@@ -138,7 +138,8 @@ pub(crate) async fn eth_approve_message(
 ) -> Result<SuiClientCommandResult, anyhow::Error> {
     let latest_state_object_id = context
         .config
-        .get_active_env()?.light_client_settings
+        .get_active_env()?
+        .light_client_settings
          .state_object_id
         .clone()
         .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
