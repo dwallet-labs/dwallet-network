@@ -58,7 +58,7 @@ use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, DKG_SESSION_OUTPUT_STRUCT_NAME, DKG_SESSION_STRUCT_NAME, DKGSessionOutput, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, PresignSessionOutput, Presign};
 use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionKind};
 use crate::dwallet_commands::SuiDWalletCommands;
-use crate::eth_dwallet_commands::{create_eth_dwallet, eth_approve_message, init_ethereum_state};
+use crate::eth_dwallet_commands::{create_eth_dwallet, eth_approve_message, init_ethereum_state, LightClientCommands};
 
 use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::sui_commands::SuiCommand;
@@ -657,6 +657,10 @@ pub enum SuiClientCommands {
         cmd: Option<SuiDWalletCommands>,
     },
 
+    /// eth light-client subcommands.
+    #[command(name = "eth-lc")]
+    EthLightClient(LightClientCommands),
+
     /// Connect dWallet to be controlled by Eth contract.
     #[command(name = "dwallet-connect-eth")]
     CreateEthDwallet {
@@ -731,7 +735,8 @@ pub enum SuiClientCommands {
         /// Instead of executing the transaction, serialize the bcs bytes of the signed transaction data
         /// (SenderSignedData) using base64 encoding, and print out the string.
         #[clap(long, required = false)]
-        serialize_signed_transaction: bool,    }
+        serialize_signed_transaction: bool,
+    }
 }
 
 impl SuiClientCommands {
@@ -1543,6 +1548,61 @@ impl SuiClientCommands {
                     bail!(
                         "Wrong dwallet command."
                     );
+                }
+            }
+            SuiClientCommands::EthLightClient(light_client_commands) => {
+                match light_client_commands {
+                    LightClientCommands::EthApproveMessage {
+                        eth_dwallet_cap_id,
+                        message,
+                        dwallet_id,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    } => {
+                        eth_approve_message(
+                            context,
+                            eth_dwallet_cap_id,
+                            message,
+                            dwallet_id,
+                            gas,
+                            gas_budget,
+                            serialize_unsigned_transaction,
+                            serialize_signed_transaction,
+                        )
+                            .await?
+                    }
+                    LightClientCommands::CreateEthDwallet {
+                        dwallet_cap_id,
+                        smart_contract_address,
+                        smart_contract_approved_tx_slot,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    } => {
+                        create_eth_dwallet(
+                            context,
+                            dwallet_cap_id,
+                            smart_contract_address,
+                            smart_contract_approved_tx_slot,
+                            gas,
+                            gas_budget,
+                            serialize_unsigned_transaction,
+                            serialize_signed_transaction,
+                        )
+                            .await?
+                    }
+                    LightClientCommands::InitEthState {
+                        checkpoint,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    } => {
+                        init_ethereum_state(checkpoint, context, gas, gas_budget, serialize_unsigned_transaction, serialize_signed_transaction).await?
+                    }
                 }
             }
         });
