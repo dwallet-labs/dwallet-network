@@ -56,6 +56,7 @@ use sui_types::transaction::{
 use tokio::time::{timeout, Instant};
 use tokio::{task::JoinHandle, time::sleep};
 use tracing::info;
+use sui_types::eth_dwallet::light_client::EthLightClientSetting;
 
 const NUM_VALIDATOR: usize = 4;
 
@@ -873,12 +874,14 @@ impl TestClusterBuilder {
             alias: "localnet".to_string(),
             rpc: fullnode_handle.rpc_url.clone(),
             ws: Some(fullnode_handle.ws_url.clone()),
-            eth_execution_rpc: None,
-            eth_consensus_rpc: None,
-            eth_genesis_validators_root: None,
-            eth_chain_id: None,
-            eth_genesis_time: None,
-            state_object_id: None,
+            light_client_settings: EthLightClientSetting {
+                eth_execution_rpc: None,
+                eth_consensus_rpc: None,
+                eth_genesis_time: None,
+                eth_chain_id: None,
+                eth_genesis_validators_root: None,
+                state_object_id: None,
+            }
         });
         wallet_conf.active_env = Some("localnet".to_string());
 

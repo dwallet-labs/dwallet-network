@@ -23,6 +23,7 @@ use sui_types::crypto::SuiKeyPair;
 use sui_types::crypto::{get_key_pair, AccountKeyPair};
 use test_cluster::{TestCluster, TestClusterBuilder};
 use tracing::info;
+use sui_types::eth_dwallet::light_client::EthLightClientSetting;
 
 const DEVNET_FAUCET_ADDR: &str = "https://faucet.devnet.sui.io:443";
 const STAGING_FAUCET_ADDR: &str = "https://faucet.staging.sui.io:443";
@@ -364,12 +365,14 @@ pub async fn new_wallet_context_from_cluster(
             alias: "localnet".to_string(),
             rpc: fullnode_url.into(),
             ws: None,
-            eth_execution_rpc: None,
-            eth_consensus_rpc: None,
-            eth_genesis_time: None,
-            eth_chain_id: None,
-            eth_genesis_validators_root: None,
-            state_object_id: None,
+            light_client_settings: EthLightClientSetting {
+                eth_execution_rpc: None,
+                eth_consensus_rpc: None,
+                eth_genesis_time: None,
+                eth_chain_id: None,
+                eth_genesis_validators_root: None,
+                state_object_id: None,
+            }
         }],
         active_address: Some(address),
         active_env: Some("localnet".to_string()),

@@ -138,8 +138,8 @@ pub(crate) async fn eth_approve_message(
 ) -> Result<SuiClientCommandResult, anyhow::Error> {
     let latest_state_object_id = context
         .config
-        .get_active_env()?
-        .state_object_id
+        .get_active_env()?.light_client_settings
+         .state_object_id
         .clone()
         .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
 
@@ -413,10 +413,12 @@ fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, E
 
     let sui_env_config = context.config.get_active_env()?;
     let eth_execution_rpc = sui_env_config
+        .light_client_settings
         .eth_execution_rpc
         .clone()
         .ok_or_else(|| anyhow!("ETH execution RPC configuration not found"))?;
     let eth_consensus_rpc = sui_env_config
+        .light_client_settings
         .eth_consensus_rpc
         .clone()
         .ok_or_else(|| anyhow!("ETH consensus RPC configuration not found"))?;
@@ -441,14 +443,17 @@ fn get_network_by_sui_env(sui_env_config: &SuiEnv) -> Result<Network, Error> {
 
 fn get_eth_devnet_network(sui_env_config: &SuiEnv) -> Result<Network, Error> {
     let eth_chain_id = sui_env_config
+        .light_client_settings
         .eth_chain_id
         .clone()
         .ok_or_else(|| anyhow!("ETH Chain ID configuration not found"))?;
     let eth_genesis_time = sui_env_config
+        .light_client_settings
         .eth_genesis_time
         .clone()
         .ok_or_else(|| anyhow!("ETH Genesis Time configuration not found"))?;
     let eth_genesis_validators_root = sui_env_config
+        .light_client_settings
         .eth_genesis_validators_root
         .clone()
         .ok_or_else(|| anyhow!("ETH Genesis Validators Root configuration not found"))?;

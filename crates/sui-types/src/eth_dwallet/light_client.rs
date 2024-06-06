@@ -21,6 +21,7 @@ use crate::eth_dwallet::utils::is_empty_value;
 use helios::consensus::types::primitives::U64;
 use helios::errors::BlockNotFoundError;
 use helios::types::BlockTag;
+use serde::{Deserialize,Serialize};
 use crate::base_types::ObjectID;
 
 pub struct EthLightClient {
@@ -28,7 +29,7 @@ pub struct EthLightClient {
     config: EthLightClientConfig,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EthLightClientSetting {
     pub eth_execution_rpc: Option<String>,
     pub eth_consensus_rpc: Option<String>,

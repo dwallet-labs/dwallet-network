@@ -54,6 +54,7 @@ use tabled::{
 use tokio::time::sleep;
 use tracing::info;
 use signature_mpc::twopc_mpc_protocols::{initiate_centralized_party_dkg, SecretKeyShareEncryptionAndProof, EncryptedDecentralizedPartySecretKeyShareValue, initiate_centralized_party_presign, DKGCentralizedPartyOutput, PresignDecentralizedPartyOutput, initiate_centralized_party_sign, message_digest};
+use sui_types::eth_dwallet::light_client::EthLightClientSetting;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, DKG_SESSION_OUTPUT_STRUCT_NAME, DKG_SESSION_STRUCT_NAME, DKGSessionOutput, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, PresignSessionOutput, Presign};
 use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionKind};
@@ -1471,12 +1472,14 @@ impl SuiClientCommands {
                     alias,
                     rpc,
                     ws,
-                    eth_execution_rpc,
-                    eth_consensus_rpc,
-                    eth_genesis_time,
-                    eth_chain_id,
-                    eth_genesis_validators_root,
-                    state_object_id,
+                    light_client_settings: EthLightClientSetting {
+                        eth_execution_rpc,
+                        eth_consensus_rpc,
+                        eth_genesis_time,
+                        eth_chain_id,
+                        eth_genesis_validators_root,
+                        state_object_id,
+                    }
                 };
 
                 // Check urls are valid and the server is reachable
