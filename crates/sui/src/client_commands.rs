@@ -69,6 +69,7 @@ use tabled::{
 use tracing::info;
 
 use crate::key_identity::{get_identity_address, KeyIdentity};
+use crate::light_client_commands::LightClientCommands;
 
 macro_rules! serialize_or_execute {
     ($tx_data:expr, $serialize_unsigned:expr, $serialize_signed:expr, $context:expr, $result_variant:ident) => {{
@@ -644,6 +645,13 @@ pub enum SuiClientCommands {
         #[arg(long, short)]
         terminate_early: bool,
     },
+
+    /// eth light-client subcommands.
+    #[command(name = "eth-lc")]
+    EthLightClient {
+        #[command(subcommand)]
+        command: LightClientCommands
+    }
 }
 
 impl SuiClientCommands {
@@ -1371,7 +1379,8 @@ impl SuiClientCommands {
                     .await?;
 
                 SuiClientCommandResult::VerifySource
-            }
+            },
+            SuiClientCommands::EthLightClient { command } => { todo!() }
         });
         ret
     }
