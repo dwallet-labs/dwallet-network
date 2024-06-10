@@ -53,28 +53,32 @@ impl SignRound {
                 )
         }).collect::<Result<Vec<((PaillierModulusSizedNumber, PaillierModulusSizedNumber), SignatureThresholdDecryptionParty)>>>()?.into_iter().unzip();
 
+            let mut v = decryption_shares.clone();
+        if (party_id == 1) {
+            v.push((PaillierModulusSizedNumber::from_u16(200), PaillierModulusSizedNumber::from_u16(200)));
+        }
+        println!("logilog: {:?}", party_id);
         Ok((
             SignRound::FirstRound {
                 signature_threshold_decryption_round_parties
             },
-            decryption_shares
+            v
         ))
     }
 
     pub(crate) fn complete_round(
         &mut self,
-        state: SignState
+        state: SignState,
     ) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
             SignRound::FirstRound { signature_threshold_decryption_round_parties } => {
                 let signatures_s = decrypt_signature_decentralized_party_sign(state.messages.unwrap(), state.tiresias_public_parameters.clone(), state.decryption_shares.clone(), state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap(), signature_threshold_decryption_round_parties)?;
 
-                Ok(SignRoundCompletion::Output(signatures_s))            }
+                Ok(SignRoundCompletion::Output(signatures_s))
+            }
             _ => Ok(SignRoundCompletion::None)
         }
-
-
     }
 }
 

@@ -409,16 +409,28 @@ pub fn decrypt_signature_decentralized_party_sign(
         .collect();
 
     signature_threshold_decryption_round_parties.into_iter().zip(messages.into_iter().zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter()).zip(decryption_shares.into_iter())).map(|(signature_threshold_decryption_round_party, ((message, public_nonce_encrypted_partial_signature_and_proof), (partial_signature_decryption_shares, masked_nonce_decryption_shares)))| {
-
-        let (nonce_x_coordinate, signature_s) = signature_threshold_decryption_round_party.decrypt_signature(
+        let result = signature_threshold_decryption_round_party.decrypt_signature(
             lagrange_coefficients.clone(),
             partial_signature_decryption_shares,
             masked_nonce_decryption_shares,
-        )?;
+        );
 
-        let signature_s_inner: k256::Scalar = signature_s.into();
+        match result {
+            Ok((nonce_x_coordinate, signature_s)) => {
+                // Handle the success case
+                // You can use nonce_x_coordinate and signature_s here
+                let signature_s_inner: k256::Scalar = signature_s.into();
 
-        Ok(Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(nonce_x_coordinate), signature_s_inner).unwrap().to_vec())
+                Ok(Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(nonce_x_coordinate), signature_s_inner).unwrap().to_vec())
+            }
+            Err(e) => {
+                // Handle the error case
+                // e is the error value
+                println!("need to abort sign: {:?}", e);
+                // You can also perform other error handling logic here
+                panic!("yay")
+            }
+        }
     })
         .collect()
 }
