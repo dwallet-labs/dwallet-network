@@ -1380,7 +1380,13 @@ impl SuiClientCommands {
 
                 SuiClientCommandResult::VerifySource
             },
-            SuiClientCommands::EthLightClient { command } => { todo!() }
+            SuiClientCommands::EthLightClient { command } => {
+                match command {
+                    LightClientCommands::EthApproveMessage { .. } => { todo!() }
+                    LightClientCommands::CreateEthDwallet { .. } => { todo!() }
+                    LightClientCommands::InitEthState { .. } => { todo!() }
+                }
+            }
         });
         ret
     }
