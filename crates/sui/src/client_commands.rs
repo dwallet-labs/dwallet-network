@@ -69,7 +69,7 @@ use tabled::{
 use tracing::info;
 
 use crate::key_identity::{get_identity_address, KeyIdentity};
-use crate::eth_light_client_commands::LightClientCommands;
+use crate::ethereum_client::EthClientCommands;
 
 macro_rules! serialize_or_execute {
     ($tx_data:expr, $serialize_unsigned:expr, $serialize_signed:expr, $context:expr, $result_variant:ident) => {{
@@ -648,9 +648,9 @@ pub enum SuiClientCommands {
 
     /// eth light-client subcommands.
     #[command(name = "eth-lc")]
-    EthLightClient {
+    EthClient {
         #[command(subcommand)]
-        command: LightClientCommands
+        command: EthClientCommands
     }
 }
 
@@ -1382,9 +1382,9 @@ impl SuiClientCommands {
             },
             SuiClientCommands::EthLightClient { command } => {
                 match command {
-                    LightClientCommands::EthApproveMessage { .. } => { todo!() }
-                    LightClientCommands::CreateEthDwallet { .. } => { todo!() }
-                    LightClientCommands::InitEthState { .. } => { todo!() }
+                    EthClientCommands::EthApproveMessage { .. } => { todo!() }
+                    EthClientCommands::CreateEthDwallet { .. } => { todo!() }
+                    EthClientCommands::InitEthState { .. } => { todo!() }
                 }
             }
         });

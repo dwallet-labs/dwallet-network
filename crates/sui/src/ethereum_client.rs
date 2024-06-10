@@ -1,8 +1,9 @@
 use clap::Subcommand;
+use serde::{Deserialize, Serialize};
 use sui_types::base_types::ObjectID;
 
 #[derive(Subcommand)]
-pub enum LightClientCommands {
+pub enum EthClientCommands {
     /// Approve a TX with Eth contract for a given dWallet.
     #[command(name = "dwallet-eth-verify")]
     EthApproveMessage {
@@ -79,4 +80,14 @@ pub enum LightClientCommands {
         #[clap(long, required = false)]
         serialize_signed_transaction: bool,
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EthClientSettings {
+    pub eth_execution_rpc: Option<String>,
+    pub eth_consensus_rpc: Option<String>,
+    pub eth_chain_id: Option<u64>,
+    pub eth_genesis_time: Option<u64>,
+    pub eth_genesis_validators_root: Option<String>,
+    pub state_object_id: Option<ObjectID>,
 }
