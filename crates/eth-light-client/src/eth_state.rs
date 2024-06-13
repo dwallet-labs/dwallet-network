@@ -2,7 +2,7 @@ use std::{cmp, fmt};
 use std::result::Result::Ok;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::vec::Vec;
-
+use anyhow::anyhow;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use chrono::Duration;
 use ethers::prelude::H256;
@@ -23,8 +23,10 @@ use serde::{de, Deserialize, Serialize};
 use serde::de::{SeqAccess, Visitor};
 use ssz_rs::prelude::*;
 use tracing::info;
+use sui_json_rpc_types::{SuiData, SuiRawData};
 
 use sui_types::base_types::ObjectID;
+use sui_types::eth_dwallet_cap::EthDWalletCap;
 use sui_types::id::{ID, UID};
 
 use crate::constants::MAX_REQUEST_LIGHT_CLIENT_UPDATES;
@@ -72,6 +74,46 @@ pub struct EthState {
     #[serde(default)]
     pub last_update_execution_state_root: Bytes32,
 }
+
+pub struct SuiRawDataWrapper(SuiRawData);
+
+impl TryFrom<SuiRawDataWrapper> for EthDWalletCap {
+    type Error = anyhow::Error;
+    fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {
+        wrapper
+            .0
+            .try_as_move()
+            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
+            .deserialize()
+            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
+    }
+}
+
+impl TryFrom<SuiRawDataWrapper> for EthStateObject {
+    type Error = anyhow::Error;
+    fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {
+        wrapper
+            .0
+            .try_as_move()
+            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
+            .deserialize()
+            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
+    }
+}
+
+impl TryFrom<SuiRawDataWrapper> for LatestEthStateObject {
+    type Error = anyhow::Error;
+    fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {
+        wrapper
+            .0
+            .try_as_move()
+            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
+            .deserialize()
+            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
+    }
+}
+
+
 
 impl EthState {
     pub fn new() -> Self {

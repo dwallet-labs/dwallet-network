@@ -1,9 +1,18 @@
+use anyhow::anyhow;
 use ethers::prelude::H256;
 use ethers::utils::rlp::RlpStream;
 use eyre::Error;
 use helios::consensus::types::{Bytes32, Header};
+use serde_json::{Number, Value};
 use sha3::{Digest, Keccak256};
 use ssz_rs::prelude::*;
+use sui_json_rpc_types::SuiObjectDataOptions;
+use sui_sdk::json::SuiJsonValue;
+use sui_sdk::wallet_context::WalletContext;
+use sui_types::base_types::ObjectID;
+use sui_types::object::Owner;
+use sui_types::transaction::SharedInputObject;
+use crate::eth_state::SuiRawDataWrapper;
 
 #[derive(SimpleSerialize, Default, Debug)]
 struct SigningData {
@@ -125,6 +134,74 @@ pub fn is_proof_valid<L: Merkleized>(
         false
     }
 }
+
+fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, anyhow::Error>
+    where
+        T: ?std::marker::Sized + serde::Serialize,
+{
+    let object_bytes = bcs::to_bytes(&object)?;
+    let object_json = object_bytes
+        .iter()
+        .map(|v| Value::Number(Number::from(*v)))
+        .collect();
+    Ok(SuiJsonValue::new(Value::Array(object_json))?)
+}
+
+async fn get_object_bcs_by_id(
+    context: &mut WalletContext,
+    object_id: ObjectID,
+) -> Result<SuiRawDataWrapper, anyhow::Error> {
+    let object_resp = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(
+            object_id,
+            SuiObjectDataOptions::default().with_bcs().with_owner(),
+        )
+        .await?;
+
+    match object_resp.data {
+        Some(data) => Ok(SuiRawDataWrapper(
+            data.bcs.ok_or_else(|| anyhow!("missing object data"))?,
+        )),
+        None => Err(anyhow!("Could not find object with ID: {:?}", object_id)),
+    }
+}
+
+async fn get_shared_object_input_by_id(
+    context: &mut WalletContext,
+    object_id: ObjectID,
+) -> Result<SharedInputObject, anyhow::Error> {
+    let object_resp = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(object_id, SuiObjectDataOptions::default().with_owner())
+        .await?;
+
+    match object_resp.data {
+        Some(_) => {
+            let owner = object_resp
+                .owner()
+                .ok_or_else(|| anyhow!("missing object owner"))?;
+            let initial_shared_version = match owner {
+                Owner::Shared {
+                    initial_shared_version,
+                } => initial_shared_version,
+                _ => return Err(anyhow!("Object is not shared")),
+            };
+            Ok(SharedInputObject {
+                id: object_id,
+                initial_shared_version,
+                mutable: true,
+            })
+        }
+        None => Err(anyhow!("Could not find object with ID: {:?}", object_id)),
+    }
+}
+
+
 
 pub fn compute_signing_root(object_root: Bytes32, domain: Bytes32) -> Result<Node, Error> {
     let mut data = SigningData {

@@ -21,3 +21,5 @@ hex.workspace = true
 chrono.workspace = true
 byteorder.workspace = true
 bcs.workspace = true
+sui-sdk = {path = "../sui-sdk"}
+serde_json = "1.0.109"

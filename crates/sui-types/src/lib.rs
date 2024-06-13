@@ -77,6 +77,8 @@ pub mod versioned;
 pub mod zk_login_authenticator;
 pub mod zk_login_util;
 
+pub mod eth_dwallet_cap;
+
 #[cfg(any(test, feature = "test-utils"))]
 #[path = "./unit_tests/utils.rs"]
 pub mod utils;
