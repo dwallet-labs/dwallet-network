@@ -229,27 +229,6 @@ fn create_account_proof(
     account_proof
 }
 
-/// Fetch the latest checkpoint
-/// More info here:
-/// https://www.ledger.com/academy/ethereum-proof-of-stake-pos-explained#:~:text=Under%20Proof%20of%20Stake%20(PoS,6.4%20minutes)%20is%20a%20checkpoint.
-async fn fetch_latest_checkpoint(network: Network) -> Result<String, anyhow::Error> {
-    let checkpoint_fb = checkpoints::CheckpointFallback::new()
-        .build()
-        .await
-        .map_err(|e| anyhow!("failed to create checkpoint fallback: {}", e))?;
-    let checkpoint = checkpoint_fb
-        .fetch_latest_checkpoint(&network)
-        .await
-        .map_err(|e| {
-            anyhow!(
-                "failed to fetch latest checkpoint from fallback services: {}",
-                e
-            )
-        })?;
-    info!("fetched latest Ethereum `{network}` checkpoint: `{checkpoint}`");
-    Ok(checkpoint.to_string())
-}
-
 fn create_storage_proof(
     message_map_index: H256,
     proof: EIP1186ProofResponse,
