@@ -1,4 +1,3 @@
-mod constants;
 pub mod config;
 pub mod eth_state;
 pub mod light_client;

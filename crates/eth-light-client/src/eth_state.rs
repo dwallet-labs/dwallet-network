@@ -27,9 +27,11 @@ use tracing::info;
 use sui_types::base_types::ObjectID;
 use sui_types::id::{ID, UID};
 
-use crate::constants::MAX_REQUEST_LIGHT_CLIENT_UPDATES;
 use crate::update::UpdatesResponse;
 use crate::utils::{calc_sync_period, compute_domain, compute_signing_root, is_proof_valid};
+
+pub const MAX_REQUEST_LIGHT_CLIENT_UPDATES: u8 = 128;
+
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LatestEthStateObject {
@@ -681,17 +683,5 @@ pub fn is_aggregate_valid(sig_bytes: &SignatureBytes, msg: &[u8], pks: &[&Public
     match sig_res {
         std::prelude::rust_2015::Ok(sig) => sig.fast_aggregate_verify(msg, pks),
         Err(_) => false,
-    }
-}
-
-pub fn empty_sync_committee() -> SyncCommittee {
-    // create a fixed vector of 48 ones
-    let empty_bls_pub_key: ByteVector<48> = vec![0b_1000_0000; 48].try_into().unwrap_or_default();
-    let mut pubkeys: Vector<ByteVector<48>, 512> = vec![empty_bls_pub_key.clone(); 512]
-        .try_into()
-        .unwrap_or_default();
-    SyncCommittee {
-        pubkeys,
-        aggregate_pubkey: BLSPubKey::default(),
     }
 }
