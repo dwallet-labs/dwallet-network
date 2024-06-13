@@ -77,44 +77,6 @@ pub struct EthState {
     pub last_update_execution_state_root: Bytes32,
 }
 
-pub struct SuiRawDataWrapper(pub SuiRawData);
-
-impl TryFrom<SuiRawDataWrapper> for EthDWalletCap {
-    type Error = anyhow::Error;
-    fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {
-        wrapper
-            .0
-            .try_as_move()
-            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
-            .deserialize()
-            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
-    }
-}
-
-impl TryFrom<SuiRawDataWrapper> for EthStateObject {
-    type Error = anyhow::Error;
-    fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {
-        wrapper
-            .0
-            .try_as_move()
-            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
-            .deserialize()
-            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
-    }
-}
-
-impl TryFrom<SuiRawDataWrapper> for LatestEthStateObject {
-    type Error = anyhow::Error;
-    fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {
-        wrapper
-            .0
-            .try_as_move()
-            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
-            .deserialize()
-            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
-    }
-}
-
 impl EthState {
     pub fn new() -> Self {
         EthState {

@@ -6,18 +6,57 @@ use helios::consensus::types::{Bytes32, Header};
 use serde_json::{Number, Value};
 use sha3::{Digest, Keccak256};
 use ssz_rs::prelude::*;
-use sui_json_rpc_types::SuiObjectDataOptions;
+use sui_json_rpc_types::{SuiData, SuiObjectDataOptions, SuiRawData};
 use sui_sdk::json::SuiJsonValue;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
+use sui_types::eth_dwallet_cap::EthDWalletCap;
 use sui_types::object::Owner;
 use sui_types::transaction::SharedInputObject;
-use crate::eth_state::SuiRawDataWrapper;
+use crate::eth_state::{EthStateObject, LatestEthStateObject};
 
 #[derive(SimpleSerialize, Default, Debug)]
 struct SigningData {
     object_root: Bytes32,
     domain: Bytes32,
+}
+
+pub struct SuiRawDataWrapper(pub SuiRawData);
+
+impl TryFrom<SuiRawDataWrapper> for EthDWalletCap {
+    type Error = anyhow::Error;
+    fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {
+        wrapper
+            .0
+            .try_as_move()
+            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
+            .deserialize()
+            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
+    }
+}
+
+impl TryFrom<SuiRawDataWrapper> for EthStateObject {
+    type Error = anyhow::Error;
+    fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {
+        wrapper
+            .0
+            .try_as_move()
+            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
+            .deserialize()
+            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
+    }
+}
+
+impl TryFrom<SuiRawDataWrapper> for LatestEthStateObject {
+    type Error = anyhow::Error;
+    fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {
+        wrapper
+            .0
+            .try_as_move()
+            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
+            .deserialize()
+            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
+    }
 }
 
 #[derive(SimpleSerialize, Default, Debug)]
