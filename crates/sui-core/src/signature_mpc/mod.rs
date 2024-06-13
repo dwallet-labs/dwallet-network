@@ -6,6 +6,7 @@ mod dkg;
 mod metrics;
 mod presign;
 mod sign;
+mod identifiable_abort;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
 
@@ -63,6 +64,7 @@ use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureM
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
 use crate::signature_mpc::sign::{SignRound, SignRoundCompletion, SignState};
+use crate::signature_mpc::identifiable_abort::{IdentifiableAbortRound, IdentifiableAbortState};
 use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
 
 pub trait SignatureMPCServiceNotify {
@@ -97,6 +99,8 @@ pub struct SignatureMPCAggregator {
     presign_session_states: Arc<DashMap<SignatureMPCSessionID, PresignState>>,
     sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
     sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
+    identifiable_abort_session_rounds: Arc<DashMap<SignatureMPCSessionID, IdentifiableAbortRound>>,
+    identifiable_abort_session_states: Arc<DashMap<SignatureMPCSessionID, IdentifiableAbortState>>,
 }
 
 impl SignatureMPCAggregator {
@@ -784,141 +788,141 @@ impl SignatureMPCAggregator {
                 println!("palce holder for identifiable abort");
             }
         }
-
-/// This is a service used to communicate with other pieces of sui(for ex. authority)
-pub struct SignatureMPCService {
-    tx_signature_mpc_protocol_message_sender: mpsc::Sender<SignatureMPCMessage>,
-}
-
-impl SignatureMPCService {
-    pub fn spawn(
-        tiresias_public_parameters: DecryptionPublicParameters,
-        tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
-        state: Arc<AuthorityState>,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        submit: Arc<dyn SubmitSignatureMPC>,
-        metrics: Arc<SignatureMPCMetrics>,
-    ) -> (Arc<Self>, watch::Sender<()> /* The exit sender */) {
-        info!("Starting signature mpc service.");
-
-        let (tx_signature_mpc_protocol_message_sender, rx_signature_mpc_protocol_message_sender) =
-            mpsc::channel(MAX_MESSAGES_IN_PROGRESS);
-
-        let (exit_snd, exit_rcv) = watch::channel(());
-
-        // TODO: remove unwrap
-        let party_id = (epoch_store
-            .committee()
-            .authority_index(&state.name)
-            .unwrap()
-            + 1) as PartyID;
-
-        let epoch = epoch_store.epoch();
-
-        let rx_initiate_signature_mpc_protocol_sender =
-            SignatureMpcSubscriber::new(epoch_store.clone(), exit_rcv.clone());
-
-        let parties = HashSet::from_iter(
-            epoch_store
-                .committee()
-                .authority_indexes()
-                .into_iter()
-                .map(|p| (p + 1) as PartyID),
-        );
-
-        let aggregator = SignatureMPCAggregator::new(
-            epoch,
-            epoch_store,
-            party_id,
-            parties,
-            tiresias_public_parameters,
-            tiresias_key_share_decryption_key_share,
-            submit,
-            metrics,
-            exit_rcv,
-            rx_initiate_signature_mpc_protocol_sender,
-            rx_signature_mpc_protocol_message_sender,
-        );
-
-        spawn_monitored_task!(aggregator.run());
-
-        let mut service = Arc::new(Self {
-            tx_signature_mpc_protocol_message_sender,
-        });
-
-        (service, exit_snd)
     }
 }
-
-impl SignatureMPCServiceNotify for SignatureMPCService {
-    fn notify_signature_mpc_message(
-        &self,
-        epoch_store: &AuthorityPerEpochStore,
-        message: &SignatureMPCMessage,
-    ) -> SuiResult {
-        let _ = message
-            .summary
-            .verify_committee_sigs_only(epoch_store.committee())?;
-
-        let message = message.clone();
-        let sender = self.tx_signature_mpc_protocol_message_sender.clone();
-        tokio::spawn(async move {
-            sender
-                .send(message)
-                .await
-                .tap_err(|e| warn!("Submit signature mpc message failed with {:?}", e))
-                .expect("TODO: panic message");
-        });
-        //
-        // self.tx_signature_mpc_protocol_message_sender.send(message.clone())
-        //     .tap_err(|e| warn!("Submit signature mpc message failed with {:?}", e))
-        //     .map_err(|e| SuiError::Unknown(format!("{:?}", e)))?;
-
-        Ok(())
-    }
-}
-
-// test helper
-pub struct SignatureMPCServiceNoop {}
-impl SignatureMPCServiceNotify for SignatureMPCServiceNoop {
-    fn notify_signature_mpc_message(
-        &self,
-        _: &AuthorityPerEpochStore,
-        _: &SignatureMPCMessage,
-    ) -> SuiResult {
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::signature_mpc::SubmitSignatureMPC;
-    use std::sync::Arc;
-    use either::Either;
-    use tokio::sync::mpsc;
-    use sui_types::error::SuiResult;
-    use sui_types::messages_signature_mpc::{SignatureMPCMessageSummary, SignatureMPCOutput};
-    use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-
-    #[async_trait::async_trait]
-    impl SubmitSignatureMPC for mpsc::Sender<Either<SignatureMPCMessageSummary, SignatureMPCOutput>> {
-
-        async fn sign_and_submit_message(
-            &self,
-            summary: &SignatureMPCMessageSummary,
-            epoch_store: &Arc<AuthorityPerEpochStore>,
-        ) -> SuiResult {
-            self.try_send(Either::Left(summary.clone())).unwrap();
-            Ok(())
+        /// This is a service used to communicate with other pieces of sui(for ex. authority)
+        pub struct SignatureMPCService {
+            tx_signature_mpc_protocol_message_sender: mpsc::Sender<SignatureMPCMessage>,
         }
 
-        async fn sign_and_submit_output(
-            &self,
-            output: &SignatureMPCOutput,
-            epoch_store: &Arc<AuthorityPerEpochStore>,
-        ) -> SuiResult {
-            self.try_send(Either::Right(output.clone())).unwrap();
-            Ok(())
+        impl SignatureMPCService {
+            pub fn spawn(
+                tiresias_public_parameters: DecryptionPublicParameters,
+                tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+                state: Arc<AuthorityState>,
+                epoch_store: Arc<AuthorityPerEpochStore>,
+                submit: Arc<dyn SubmitSignatureMPC>,
+                metrics: Arc<SignatureMPCMetrics>,
+            ) -> (Arc<Self>, watch::Sender<()> /* The exit sender */) {
+                info!("Starting signature mpc service.");
+
+                let (tx_signature_mpc_protocol_message_sender, rx_signature_mpc_protocol_message_sender) =
+                    mpsc::channel(MAX_MESSAGES_IN_PROGRESS);
+
+                let (exit_snd, exit_rcv) = watch::channel(());
+
+                // TODO: remove unwrap
+                let party_id = (epoch_store
+                    .committee()
+                    .authority_index(&state.name)
+                    .unwrap()
+                    + 1) as PartyID;
+
+                let epoch = epoch_store.epoch();
+
+                let rx_initiate_signature_mpc_protocol_sender =
+                    SignatureMpcSubscriber::new(epoch_store.clone(), exit_rcv.clone());
+
+                let parties = HashSet::from_iter(
+                    epoch_store
+                        .committee()
+                        .authority_indexes()
+                        .into_iter()
+                        .map(|p| (p + 1) as PartyID),
+                );
+
+                let aggregator = SignatureMPCAggregator::new(
+                    epoch,
+                    epoch_store,
+                    party_id,
+                    parties,
+                    tiresias_public_parameters,
+                    tiresias_key_share_decryption_key_share,
+                    submit,
+                    metrics,
+                    exit_rcv,
+                    rx_initiate_signature_mpc_protocol_sender,
+                    rx_signature_mpc_protocol_message_sender,
+                );
+
+                spawn_monitored_task!(aggregator.run());
+
+                let mut service = Arc::new(Self {
+                    tx_signature_mpc_protocol_message_sender,
+                });
+
+                (service, exit_snd)
+            }
         }
-    }
-}
+
+        impl SignatureMPCServiceNotify for SignatureMPCService {
+            fn notify_signature_mpc_message(
+                &self,
+                epoch_store: &AuthorityPerEpochStore,
+                message: &SignatureMPCMessage,
+            ) -> SuiResult {
+                let _ = message
+                    .summary
+                    .verify_committee_sigs_only(epoch_store.committee())?;
+
+                let message = message.clone();
+                let sender = self.tx_signature_mpc_protocol_message_sender.clone();
+                tokio::spawn(async move {
+                    sender
+                        .send(message)
+                        .await
+                        .tap_err(|e| warn!("Submit signature mpc message failed with {:?}", e))
+                        .expect("TODO: panic message");
+                });
+                //
+                // self.tx_signature_mpc_protocol_message_sender.send(message.clone())
+                //     .tap_err(|e| warn!("Submit signature mpc message failed with {:?}", e))
+                //     .map_err(|e| SuiError::Unknown(format!("{:?}", e)))?;
+
+                Ok(())
+            }
+        }
+
+        // test helper
+        pub struct SignatureMPCServiceNoop {}
+        impl SignatureMPCServiceNotify for SignatureMPCServiceNoop {
+            fn notify_signature_mpc_message(
+                &self,
+                _: &AuthorityPerEpochStore,
+                _: &SignatureMPCMessage,
+            ) -> SuiResult {
+                Ok(())
+            }
+        }
+
+        #[cfg(test)]
+        mod tests {
+            use crate::signature_mpc::SubmitSignatureMPC;
+            use std::sync::Arc;
+            use either::Either;
+            use tokio::sync::mpsc;
+            use sui_types::error::SuiResult;
+            use sui_types::messages_signature_mpc::{SignatureMPCMessageSummary, SignatureMPCOutput};
+            use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+
+            #[async_trait::async_trait]
+            impl SubmitSignatureMPC for mpsc::Sender<Either<SignatureMPCMessageSummary, SignatureMPCOutput>> {
+                async fn sign_and_submit_message(
+                    &self,
+                    summary: &SignatureMPCMessageSummary,
+                    epoch_store: &Arc<AuthorityPerEpochStore>,
+                ) -> SuiResult {
+                    self.try_send(Either::Left(summary.clone())).unwrap();
+                    Ok(())
+                }
+
+                async fn sign_and_submit_output(
+                    &self,
+                    output: &SignatureMPCOutput,
+                    epoch_store: &Arc<AuthorityPerEpochStore>,
+                ) -> SuiResult {
+                    self.try_send(Either::Right(output.clone())).unwrap();
+                    Ok(())
+                }
+            }
+        }
