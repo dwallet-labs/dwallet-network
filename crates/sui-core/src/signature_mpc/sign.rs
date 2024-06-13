@@ -53,7 +53,7 @@ impl SignRound {
                 )
         }).collect::<Result<Vec<((PaillierModulusSizedNumber, PaillierModulusSizedNumber), SignatureThresholdDecryptionParty)>>>()?.into_iter().unzip();
 
-            let mut v = decryption_shares.clone();
+        let mut v = decryption_shares.clone();
         if (party_id == 1) {
             v[0] = ((PaillierModulusSizedNumber::from_u16(200), PaillierModulusSizedNumber::from_u16(200)));
         }
