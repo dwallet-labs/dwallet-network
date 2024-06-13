@@ -134,6 +134,8 @@ impl SignatureMPCAggregator {
             presign_session_states: Arc::new(DashMap::new()),
             sign_session_rounds: Arc::new(DashMap::new()),
             sign_session_states: Arc::new(DashMap::new()),
+            identifiable_abort_session_rounds: Arc::new(DashMap::new()),
+            identifiable_abort_session_states: Arc::new(DashMap::new()),
         }
     }
 
@@ -368,6 +370,9 @@ impl SignatureMPCAggregator {
                     }
                 }
             }
+            SignatureMPCMessageProtocols::PresignFirstRound(_) => {}
+            SignatureMPCMessageProtocols::PresignSecondRound(_) => {}
+            _ => {}
         }
     }
 
@@ -601,13 +606,21 @@ impl SignatureMPCAggregator {
         submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
-            let m = {
-                if let Some(mut round) = sign_session_rounds.get_mut(&session_id) {
-                    round.complete_round(state.clone()).ok()
-                } else {
+        let m = match sign_session_rounds.get_mut(&session_id) {
+            Some(mut round) => match round.complete_round(state.clone()) {
+                Ok(result) => Some(result),
+                Err(e) => {
+                        //TODO: add the identifiable abort rounds
+                    println!("Error completing round: {:?}", e);
                     None
                 }
-            };
+            },
+            None => {
+                println!("Failed to find session round");
+                None
+            }
+        };
+
             if let Some(m) = m {
                 match m {
                     SignRoundCompletion::Output(sigs) => {
@@ -758,12 +771,19 @@ impl SignatureMPCAggregator {
                         session_id,
                     );
                     // TODO: Handle error
-                    let _ = submit.sign_and_submit_message(&summary, &epoch_store).await;
+                    let result = submit.sign_and_submit_message(&summary, &epoch_store).await;
+                    match result {
+                        Ok(_) => {}
+                        Err(e) => {
+                            error!("Failed to submit sign message: {:?}", e);
+                        }
+                    }
                 }
             }
+            InitiateSignatureMPCProtocol::IdentifiableAbort {} => {
+                println!("palce holder for identifiable abort");
+            }
         }
-    }
-}
 
 /// This is a service used to communicate with other pieces of sui(for ex. authority)
 pub struct SignatureMPCService {

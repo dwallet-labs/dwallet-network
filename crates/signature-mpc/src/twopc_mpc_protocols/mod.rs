@@ -428,7 +428,7 @@ pub fn decrypt_signature_decentralized_party_sign(
                 // e is the error value
                 println!("need to abort sign: {:?}", e);
                 // You can also perform other error handling logic here
-                panic!("yay")
+                Err(e)
             }
         }
     })

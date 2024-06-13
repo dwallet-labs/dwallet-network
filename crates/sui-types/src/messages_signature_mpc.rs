@@ -71,6 +71,8 @@ pub enum SignatureMPCMessageProtocols {
     PresignFirstRound(SignatureMPCBulletProofAggregatesMessage),
     PresignSecondRound(SignatureMPCBulletProofAggregatesMessage),
     Sign(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
+    IdentifiableAbortFirstRound(SignatureMPCBulletProofAggregatesMessage),
+    IdentifiableAbortSecondRound(SignatureMPCBulletProofAggregatesMessage),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -338,6 +340,8 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(_) => 2,
             SignatureMPCMessageProtocols::PresignSecondRound(_) => 3,
             SignatureMPCMessageProtocols::Sign(_) => 3,
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_) => 4,
+            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => 5,
         }
     }
 
@@ -347,6 +351,8 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(m) => m.round(),
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
             SignatureMPCMessageProtocols::Sign(_) => 1,
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(m) => m.round(),
+            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(m) => m.round(),
         }
     }
 }
@@ -374,6 +380,7 @@ pub enum InitiateSignatureMPCProtocol {
         presigns: Vec<DecentralizedPartyPresign>,
         hash: u8,
     },
+    IdentifiableAbort{},
 }
 
 pub fn config_signature_mpc_secret_for_network_for_testing(number_of_parties: PartyID) -> (DecryptionPublicParameters, HashMap<PartyID, SecretKeyShareSizedNumber>) {
