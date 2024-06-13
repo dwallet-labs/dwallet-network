@@ -41,7 +41,7 @@ use sui_move_build::{
     gather_published_ids, BuildConfig, CompiledPackage, PackageDependencies, PublishedAtError,
 };
 use sui_replay::ReplayToolCommand;
-use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
+use sui_sdk::sui_client_config::{EthClientSettings, SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
 use sui_sdk::SuiClient;
 use sui_types::{
@@ -1319,7 +1319,7 @@ impl SuiClientCommands {
                         "Environment config with name [{alias}] already exists."
                     ));
                 }
-                let env = SuiEnv { alias, rpc, ws };
+                let env = SuiEnv { alias, rpc, ws, eth_light_client: None };
 
                 // Check urls are valid and server is reachable
                 env.create_rpc_client(None, None).await?;

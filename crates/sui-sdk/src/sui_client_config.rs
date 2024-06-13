@@ -59,7 +59,7 @@ impl SuiClientConfig {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct EthClientSettings {
     pub eth_execution_rpc: Option<String>,
     pub eth_consensus_rpc: Option<String>,
@@ -103,6 +103,7 @@ impl SuiEnv {
             alias: "devnet".to_string(),
             rpc: SUI_DEVNET_URL.into(),
             ws: None,
+            eth_light_client: None,
         }
     }
     pub fn testnet() -> Self {
@@ -110,6 +111,7 @@ impl SuiEnv {
             alias: "testnet".to_string(),
             rpc: SUI_TESTNET_URL.into(),
             ws: None,
+            eth_light_client: None,
         }
     }
 
@@ -118,6 +120,7 @@ impl SuiEnv {
             alias: "local".to_string(),
             rpc: SUI_LOCAL_NETWORK_URL.into(),
             ws: None,
+            eth_light_client: None,
         }
     }
 }

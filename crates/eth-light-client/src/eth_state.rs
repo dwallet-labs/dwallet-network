@@ -77,7 +77,7 @@ pub struct EthState {
     pub last_update_execution_state_root: Bytes32,
 }
 
-pub struct SuiRawDataWrapper(SuiRawData);
+pub struct SuiRawDataWrapper(pub SuiRawData);
 
 impl TryFrom<SuiRawDataWrapper> for EthDWalletCap {
     type Error = anyhow::Error;
@@ -115,8 +115,6 @@ impl TryFrom<SuiRawDataWrapper> for LatestEthStateObject {
     }
 }
 
-
-
 impl EthState {
     pub fn new() -> Self {
         EthState {
@@ -135,16 +133,28 @@ impl EthState {
         }
     }
 
+    /// Sets the checkpoint for the Ethereum state.
+    ///
+    /// This method is used to set the last known checkpoint for the Ethereum state. The checkpoint is a string
+    /// that represents a specific point in the blockchain history, typically a beacon block hash.
     pub fn set_checkpoint(&mut self, checkpoint: String) -> Self {
         self.last_checkpoint = checkpoint;
         self.clone()
     }
 
+    /// Sets the network for the Ethereum state.
+    ///
+    /// This method is used to set the network for the Ethereum state. The network is an enum that represents
+    /// the specific Ethereum network (e.g., Mainnet, Holesky, devnet, etc.).
     pub fn set_network(&mut self, network: Network) -> Self {
         self.network = network;
         self.clone()
     }
 
+    /// Sets the RPC endpoint for the Ethereum state.
+    ///
+    /// This method is used to set the RPC endpoint for the Ethereum state.
+    /// The RPC endpoint is a string that represents the URL of the Ethereum node that the client will connect to.
     pub fn set_rpc(&mut self, rpc: String) -> Self {
         self.rpc = rpc;
         self.clone()
@@ -223,6 +233,18 @@ impl EthState {
         ))
     }
 
+    /// Verifies and applies updates to the Ethereum state.
+    /// This function takes a reference to an `UpdatesResponse` which contains updates fetched from the blockchain.
+    /// It iterates over each update, verifies it for correctness and then applies it to the local state.
+    /// The function performs these operations for three types of updates: regular updates, finality updates, and optimistic updates.
+    /// # Arguments
+    /// * `updates`: A reference to an `UpdatesResponse` object that contains the updates to be verified and applied.
+    /// # Returns
+    /// * `Result<(), Error>`: This function returns a `Result` type. On successful verification and application of all updates, it returns `Ok(())`. If there is an error at any point during the verification or application process, it returns `Err(Error)`.
+    /// # Errors
+    /// This function will return an error if:
+    /// * Any of the updates fails the verification process.
+    /// * There is an error while applying any of the updates.
     pub fn verify_updates(&mut self, updates: &UpdatesResponse) -> Result<(), Error> {
         for update in &updates.updates {
             self.verify_update(&update)?;
@@ -238,6 +260,24 @@ impl EthState {
         Ok(())
     }
 
+    /// Initializes the synchronization process using the provided checkpoint.
+    /// This function takes a reference to a `NimbusRpc` and a checkpoint string. It fetches the bootstrap
+    /// data from the blockchain using the provided checkpoint and verifies it for correctness. If the bootstrap
+    /// data is valid, it updates the local state to match the state at the checkpoint.
+    /// # Arguments
+    /// * `rpc`: A reference to a `NimbusRpc` object that is used to interact with the consensus layer of the blockchain.
+    /// * `checkpoint`: A `&str` slice that represents the checkpoint from which to start the
+    ///   synchronization process. Typically, this would be a beacon block hash.
+    /// # Returns
+    /// * `Result<(), Error>`: This function returns a `Result` type. If the bootstrap data is successfully
+    ///   fetched and verified, and the local state is successfully updated, it returns `Ok(())`. If there is
+    ///   an error at any point during the process, it returns `Err(Error)`.
+    /// # Errors
+    /// This function will return an error if:
+    /// * The bootstrap data could not be fetched from the blockchain.
+    /// * The checkpoint is too old.
+    /// * The header hash of the bootstrap data does not match the checkpoint.
+    /// * The current sync committee proof is invalid.
     pub async fn bootstrap(&mut self, rpc: &NimbusRpc, checkpoint: &str) -> Result<(), Error> {
         let mut bootstrap: Bootstrap = rpc
             .get_bootstrap(hex::decode(&checkpoint[2..])?.as_slice())
@@ -338,28 +378,20 @@ impl EthState {
     /// internal state based on the contents of the update. It handles the update by performing
     /// several checks and applying changes to the consensus client's tracked headers and
     /// sync committees based on these updates.
-    ///
     /// # Behavior
-    ///
     /// The function operates as follows:
-    ///
     /// 1. **Active Participants Update:** Updates the count of current maximum active participants
     ///    based on the sync committee bits provided in the update.
-    ///
     /// 2. **Optimistic Header Update:** If the update passes the safety threshold and the attested
     ///    header slot is greater than the currently optimistic header slot, the optimistic header
     ///    is updated to the new attested header.
-    ///
     /// 3. **Sync Committee and Finality Checks:** Determines whether the update should be applied
     ///    based on several criteria, including whether it has a majority of committee bits, whether
     ///    it references a newer finalized slot than the current state, and whether it aligns with
     ///    the current sync committee period.
-    ///
     /// 4. **State Update:** If the update should be applied, the function updates the current and
     ///    next sync committees, the finalized header, and potentially the optimistic header.
-    ///
     /// # Important Considerations
-    ///
     /// - This function assumes that the update has already been verified for correctness and authenticity.
     /// - It makes decisions based on comparing the update's slots and periods against the client's
     ///   current state, ensuring that only relevant and newer updates are applied.
@@ -720,7 +752,7 @@ fn get_participating_keys(
     Ok(pks)
 }
 
-pub fn is_aggregate_valid(sig_bytes: &SignatureBytes, msg: &[u8], pks: &[&PublicKey]) -> bool {
+fn is_aggregate_valid(sig_bytes: &SignatureBytes, msg: &[u8], pks: &[&PublicKey]) -> bool {
     let sig_res = AggregateSignature::from_bytes(sig_bytes);
     match sig_res {
         std::prelude::rust_2015::Ok(sig) => sig.fast_aggregate_verify(msg, pks),
