@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::mem;
-use signature_mpc::twopc_mpc_protocols::{SignaturePartialDecryptionProofVerificationParty, PartyID};
+use signature_mpc::twopc_mpc_protocols::{SignaturePartialDecryptionProofVerificationParty, PartyID, Result};
+use sui_types::messages_signature_mpc::SignatureMPCBulletProofAggregatesMessage;
 
 
 // Q: what is the output message of the identifiable abort protocol?
@@ -24,14 +25,14 @@ impl IdentifiableAbortRound {
     pub(crate) fn complete_round(
         &mut self,
         state: IdentifiableAbortState,
-    ) -> signature_mpc::twopc_mpc_protocols::Result<IdentifiableAbortRoundCompletion> {
+    ) -> Result<IdentifiableAbortRoundCompletion> {
         let round = mem::take(self);
         match round {
             IdentifiableAbortRound::FirstRound {
                 signature_partial_decryption_proof_verification_round_parties,
             } => {
                 // call prove_correct_signature_partial_decryption
-                Ok(IdentifiableAbortRoundCompletion::None)
+                Ok(IdentifiableAbortRoundCompletion::FirstRoundOutput())
             }
             IdentifiableAbortRound::SecondRound => {
                 //call identify_malicious_decrypters

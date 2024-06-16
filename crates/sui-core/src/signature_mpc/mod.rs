@@ -64,7 +64,7 @@ use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureM
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
 use crate::signature_mpc::sign::{SignRound, SignRoundCompletion, SignState};
-use crate::signature_mpc::identifiable_abort::{IdentifiableAbortRound, IdentifiableAbortState};
+use crate::signature_mpc::identifiable_abort::{IdentifiableAbortRound, IdentifiableAbortRoundCompletion, IdentifiableAbortState};
 use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
 
 pub trait SignatureMPCServiceNotify {
@@ -591,11 +591,14 @@ impl SignatureMPCAggregator {
         submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
-        let m = match sign_session_rounds.get_mut(&session_id) {
-            Some(mut round) => match round.complete_round(state.clone()) {
+        let m =
+            match sign_session_rounds.get_mut(&session_id) {
+            Some(mut round) =>
+                match round.complete_round(state.clone()) {
                 Ok(result) => Some(result),
                 Err(e) => {
                         //TODO: add the identifiable abort rounds
+                        // 1. send the abort request to the other parties
                     println!("Error completing round: {:?}", e);
                     None
                 }
@@ -628,9 +631,38 @@ impl SignatureMPCAggregator {
         });
     }
 
-    fn spawn_complete_identifiable_abort_first_round() {
+    fn spawn_complete_identifiable_abort_first_round(
+        epoch: EpochId,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        session_id: SignatureMPCSessionID,
+        session_ref: ObjectRef,
+        state: IdentifiableAbortState,
+        identifiable_abort_rounds: Arc<DashMap<SignatureMPCSessionID, IdentifiableAbortRound>>,
+        identifiable_abort_states: Arc<DashMap<SignatureMPCSessionID, IdentifiableAbortState>>,
+        submit: Arc<dyn SubmitSignatureMPC>,
+    ) {
+        spawn_monitored_task!(async move {
         // call complete_round, create the output and submit it to the consensus
-    }
+        let m = IdentifiableAbortRoundCompletion::FirstRoundOutput()
+
+        if let Some(m) = m {
+            match m {
+                IdentifiableAbortRoundCompletion::FirstRoundOutput => {
+                    let _ = submit
+                        .sign_and_submit_output(
+                            &SignatureMPCOutput::new_identifiable_abort(
+                                epoch,
+                                session_id,
+                                session_ref,
+                            ).unwrap(),
+                            &epoch_store,
+                        ).await;
+                }
+                IdentifiableAbortRoundCompletion::None => {}
+            }
+        }
+    });
+}
 
     fn spawn_complete_identifiable_abort_second_round() {
         // call complete_round, create the output and submit it to the consensus

@@ -150,6 +150,7 @@ pub enum SignatureMPCOutputValue {
     PresignOutput(Vec<u8>),
     Presign(Vec<u8>),
     Sign(Vec<Vec<u8>>),
+    IdentifiableAbort(u8),
     // Q: What is the identifiable abort output?
 }
 
@@ -186,6 +187,13 @@ impl Display for SignatureMPCOutputValue {
                     f,
                     "DKGSignatureMPCOutputValue::Sign {{ sigs: {:?}}}",
                     sigs,
+                )
+            }
+            SignatureMPCOutputValue::IdentifiableAbort(v) => {
+                write!(
+                    f,
+                    "DKGSignatureMPCOutputValue::IdentifiableAbort {{v : {:?}}}",
+                    v,
                 )
             }
         }
@@ -303,12 +311,26 @@ impl SignatureMPCOutput {
         })
     }
 
+    pub fn new_identifiable_abort(
+        epoch: EpochId,
+        session_id: SignatureMPCSessionID,
+        session_ref: ObjectRef,
+    ) -> SuiResult<SignatureMPCOutput> {
+        Ok(Self {
+            epoch,
+            session_id,
+            session_ref,
+            value: SignatureMPCOutputValue::IdentifiableAbort(7),
+        })
+    }
+
     pub fn message_kind(&self) -> SignatureMPCMessageKind {
         match &self.value {
             SignatureMPCOutputValue::DKG { .. } => 1,
             SignatureMPCOutputValue::PresignOutput(_) => 2,
             SignatureMPCOutputValue::Presign(_) => 3,
             SignatureMPCOutputValue::Sign(_) => 4,
+            SignatureMPCOutputValue::IdentifiableAbort(_) => 5,
         }
     }
 }
@@ -381,7 +403,10 @@ pub enum InitiateSignatureMPCProtocol {
         presigns: Vec<DecentralizedPartyPresign>,
         hash: u8,
     },
-    IdentifiableAbort{},
+    IdentifiableAbort{
+        session_id: SignatureMPCSessionID,
+        session_ref: ObjectRef,
+    },
 }
 
 pub fn config_signature_mpc_secret_for_network_for_testing(number_of_parties: PartyID) -> (DecryptionPublicParameters, HashMap<PartyID, SecretKeyShareSizedNumber>) {

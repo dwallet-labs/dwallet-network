@@ -1159,6 +1159,10 @@ mod checked {
                         ],
                     )
                 }
+                SignatureMPCOutputValue::IdentifiableAbort(_) => {
+                    // place holder
+                    Ok(())
+                }
             };
             assert_invariant!(
                 res.is_ok(),

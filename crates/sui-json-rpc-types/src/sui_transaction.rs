@@ -501,6 +501,7 @@ impl SuiTransactionBlockKind {
                         SignatureMPCOutputValue::PresignOutput(o) => SuiDKGSignatureMPCOutputValue::PresignOutput(o),
                         SignatureMPCOutputValue::Presign(o) => SuiDKGSignatureMPCOutputValue::Presign(o),
                         SignatureMPCOutputValue::Sign(s) => SuiDKGSignatureMPCOutputValue::Sign(s),
+                        SignatureMPCOutputValue::IdentifiableAbort(v) => SuiDKGSignatureMPCOutputValue::IdentifiableAbort(v),
                     },
                 })
             }
@@ -1433,6 +1434,7 @@ pub enum SuiDKGSignatureMPCOutputValue {
     PresignOutput(Vec<u8>),
     Presign(Vec<u8>),
     Sign(Vec<Vec<u8>>),
+    IdentifiableAbort(u8),
 }
 
 #[serde_as]
