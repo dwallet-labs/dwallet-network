@@ -1,7 +1,7 @@
- use ethers::prelude::{Bytes, H256};
+use ethers::prelude::Bytes;
 use ethers::utils::{hex, keccak256};
 use ethers::utils::rlp::{decode_list, RlpStream};
-use sha3::{Digest, Keccak256};
+use sha3::Digest;
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Proof {
@@ -177,68 +177,4 @@ fn get_nibble(path: &[u8], offset: usize) -> u8 {
     } else {
         byte & 0xF
     }
-}
-
-/// This function standardizes the input slot for a given unsigned 64-bit integer.
-/// It first converts the integer into a hexadecimal string representation.
-/// Then, it pads the hexadecimal string to ensure it has a length of 64 characters.
-/// We pad the string because in solidity, the slot is a 256-bit hash (H256).
-/// Finally,
-/// it decodes the padded hexadecimal string back into bytes and converts it into a 256-bit hash
-/// (H256).
-/// # Arguments
-/// * `input` - An unsigned 64-bit integer that represents the input slot.
-/// # Returns
-/// * A 256-bit hash (H256) that represents the standardized input slot.
-pub(crate) fn standardize_slot_input(input: u64) -> H256 {
-    let hex_str = format!("{:x}", input);
-    let padded_hex_str = format!("{:0>64}", hex_str);
-    H256::from_slice(&ethers::utils::hex::hex::decode(padded_hex_str).unwrap_or_default())
-}
-
-/// This function standardizes the input key for a given 256-bit hash (H256).
-/// It first converts the hash into a hexadecimal string representation.
-/// Then, it pads the hexadecimal string to ensure it has a length of 64 characters.
-/// We pad the string because in solidity, the slot is a 256-bit hash (H256).
-/// Finally,
-/// it decodes the padded hexadecimal string back into bytes and converts it into a 256-bit hash
-/// (H256).
-/// # Arguments
-/// * `input` - A 256-bit hash (H256) that represents the input key.
-/// # Returns
-/// * A 256-bit hash (H256) that represents the standardized input key.
-pub(crate) fn standardize_key_input(input: H256) -> H256 {
-    let hex_str = format!("{:x}", input);
-    let padded_hex_str = format!("{:0>64}", hex_str);
-    H256::from_slice(&ethers::utils::hex::hex::decode(padded_hex_str).unwrap_or_default())
-}
-
-/// Calculates the mapping slot for a given key and storage slot (in the contract's storage layout).
-/// First initializes a new `Keccak256` hasher, then standardizes the input slot and key.
-/// The standardized key and slot are then hashed together to produce a new `H256` hash.
-/// The result hash will be used to get the location of the
-/// (key, value) pair in the contract's storage.
-/// # Arguments
-/// * `key` - A H256 hash that represents the key for which the mapping slot is to be calculated.
-/// The Key is `Keccak256(message + dwallet_id)`.
-/// * `Mapping_slot` - A `u64` value that represents the mapping slot in the contract storage layout.
-/// For more info:
-/// https://docs.soliditylang.org/en/v0.8.24/internals/layout_in_storage.html#mappings-and-dynamic-arrays
-pub fn calculate_mapping_slot(key: H256, mapping_slot: u64) -> H256 {
-    let mut hasher = Keccak256::new();
-    let slot_padded = standardize_slot_input(mapping_slot);
-    let key_padded = standardize_key_input(key);
-    hasher.update(key_padded.as_bytes());
-    hasher.update(slot_padded.as_bytes());
-    H256::from_slice(&hasher.finalize())
-}
-
-/// Calculates the key for a given message and dWallet ID.
-/// In the smart contract, the key is calculated by hashing the message and the dWallet id together.
-/// The result is a H256 hash that represents the key.
-pub fn calculate_key(mut message: Vec<u8>, dwallet_id: H256) -> H256 {
-    let mut hasher = Keccak256::new();
-    message.extend_from_slice(dwallet_id.as_bytes());
-    hasher.update(message);
-    H256::from_slice(&hasher.finalize())
 }

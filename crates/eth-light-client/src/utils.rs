@@ -1,11 +1,11 @@
 use anyhow::anyhow;
 use ethers::prelude::H256;
-use ethers::utils::rlp::RlpStream;
 use eyre::Error;
 use helios::consensus::types::{Bytes32, Header};
 use serde_json::{Number, Value};
 use sha3::{Digest, Keccak256};
 use ssz_rs::prelude::*;
+
 use sui_json_rpc_types::{SuiData, SuiObjectDataOptions, SuiRawData};
 use sui_sdk::json::SuiJsonValue;
 use sui_sdk::wallet_context::WalletContext;
@@ -13,6 +13,7 @@ use sui_types::base_types::ObjectID;
 use sui_types::eth_dwallet_cap::EthDWalletCap;
 use sui_types::object::Owner;
 use sui_types::transaction::SharedInputObject;
+
 use crate::eth_state::{EthStateObject, LatestEthStateObject};
 
 #[derive(SimpleSerialize, Default, Debug)]
@@ -63,23 +64,6 @@ impl TryFrom<SuiRawDataWrapper> for LatestEthStateObject {
 struct ForkData {
     current_version: Vector<u8, 4>,
     genesis_validator_root: Bytes32,
-}
-
-/// Check if a given value is an empty string.
-pub fn is_empty_value(value: &Vec<u8>) -> bool {
-    let mut stream = RlpStream::new();
-    stream.begin_list(4);
-    stream.append_empty_data();
-    stream.append_empty_data();
-    let empty_storage_hash = "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421";
-    stream.append(&hex::decode(empty_storage_hash).unwrap());
-    let empty_code_hash = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
-    stream.append(&hex::decode(empty_code_hash).unwrap());
-    let empty_account = stream.out();
-
-    let is_empty_slot = value.len() == 1 && value[0] == 0x80;
-    let is_empty_account = value == &empty_account;
-    is_empty_slot || is_empty_account
 }
 
 /// This function standardizes the input slot for a given unsigned 64-bit integer.
@@ -175,8 +159,8 @@ pub fn is_proof_valid<L: Merkleized>(
 }
 
 fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, anyhow::Error>
-    where
-        T: ?std::marker::Sized + serde::Serialize,
+where
+    T: ?std::marker::Sized + serde::Serialize,
 {
     let object_bytes = bcs::to_bytes(&object)?;
     let object_json = object_bytes
@@ -239,8 +223,6 @@ async fn get_shared_object_input_by_id(
         None => Err(anyhow!("Could not find object with ID: {:?}", object_id)),
     }
 }
-
-
 
 pub fn compute_signing_root(object_root: Bytes32, domain: Bytes32) -> Result<Node, Error> {
     let mut data = SigningData {

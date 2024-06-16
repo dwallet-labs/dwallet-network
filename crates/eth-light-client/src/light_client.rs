@@ -30,7 +30,6 @@ use crate::eth_state::{EthState, EthStateObject, LatestEthStateObject};
 use crate::proof::{Proof, ProofResponse, verify_proof};
 use crate::update::UpdatesResponse;
 use crate::utils;
-use crate::utils::is_empty_value;
 
 pub struct EthLightClient {
     pub client: Client<FileDB>,
