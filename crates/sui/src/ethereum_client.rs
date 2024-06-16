@@ -68,7 +68,7 @@ pub enum EthClientCommands {
         checkpoint: String,
         #[clap(long)]
         gas: Option<ObjectID>,
-        /// Gas budget for this call
+        /// Gas budget for this call.
         #[clap(long)]
         gas_budget: u64,
         /// Instead of executing the transaction, serialize the bcs bytes of the unsigned transaction data
