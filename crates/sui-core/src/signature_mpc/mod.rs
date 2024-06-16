@@ -155,7 +155,7 @@ impl SignatureMPCAggregator {
                     info!("Shutting down SignatureMPCService");
                     return;
                 }
-
+                // itay is pushing
                 Some(
                     signature_mpc_protocol_message
                 ) = self.rx_signature_mpc_protocol_message_sender.recv() => {
