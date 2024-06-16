@@ -12,6 +12,7 @@ use sui_config::Config;
 use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
 
+/// Configuration settings for an Ethereum light client.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EthClientSettings {
     pub eth_execution_rpc: Option<String>,
