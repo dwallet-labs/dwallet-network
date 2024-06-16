@@ -404,8 +404,8 @@ pub enum InitiateSignatureMPCProtocol {
         hash: u8,
     },
     IdentifiableAbort{
-        session_id: SignatureMPCSessionID,
-        session_ref: ObjectRef,
+        // session_id: SignatureMPCSessionID,
+        // session_ref: ObjectRef,
     },
 }
 

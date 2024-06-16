@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::mem;
-use signature_mpc::twopc_mpc_protocols::{SignaturePartialDecryptionProofVerificationParty, PartyID, Result};
+use signature_mpc::twopc_mpc_protocols::{PartyID, Result};
 use sui_types::messages_signature_mpc::SignatureMPCBulletProofAggregatesMessage;
 
 
@@ -12,7 +12,7 @@ use sui_types::messages_signature_mpc::SignatureMPCBulletProofAggregatesMessage;
 pub(crate) enum IdentifiableAbortRound {
     FirstRound {
         //place holder
-        signature_partial_decryption_proof_verification_round_parties: Vec<None>
+        // signature_partial_decryption_proof_verification_round_parties: Vec<None>
     },
     SecondRound,
     #[default]
@@ -29,7 +29,7 @@ impl IdentifiableAbortRound {
         let round = mem::take(self);
         match round {
             IdentifiableAbortRound::FirstRound {
-                signature_partial_decryption_proof_verification_round_parties,
+                // signature_partial_decryption_proof_verification_round_parties,
             } => {
                 // call prove_correct_signature_partial_decryption
                 Ok(IdentifiableAbortRoundCompletion::FirstRoundOutput())
@@ -42,7 +42,6 @@ impl IdentifiableAbortRound {
                 Ok(IdentifiableAbortRoundCompletion::None)
             }
         }
-
     }
 }
 

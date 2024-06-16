@@ -643,11 +643,11 @@ impl SignatureMPCAggregator {
     ) {
         spawn_monitored_task!(async move {
         // call complete_round, create the output and submit it to the consensus
-        let m = IdentifiableAbortRoundCompletion::FirstRoundOutput()
+        let m = Some(IdentifiableAbortRoundCompletion::FirstRoundOutput());
 
         if let Some(m) = m {
             match m {
-                IdentifiableAbortRoundCompletion::FirstRoundOutput => {
+                IdentifiableAbortRoundCompletion::FirstRoundOutput() => {
                     let _ = submit
                         .sign_and_submit_output(
                             &SignatureMPCOutput::new_identifiable_abort(
@@ -659,7 +659,7 @@ impl SignatureMPCAggregator {
                         ).await;
                 }
                 IdentifiableAbortRoundCompletion::None => {}
-            }
+            _ => {}}
         }
     });
 }
@@ -808,7 +808,7 @@ impl SignatureMPCAggregator {
             InitiateSignatureMPCProtocol::IdentifiableAbort {} => {
                 // create new round for the state data
                 // create message summary and submit it - Q: what does and where to
-                println!("palce holder for identifiable abort");
+                println!("whiihaaa");
             }
         }
     }
