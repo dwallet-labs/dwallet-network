@@ -395,4 +395,19 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), data.hash_tree_root().unwrap());
     }
+
+    #[test]
+    fn get_message_storage_slot_valid() {
+        let message = "test_message".to_string();
+        let dwallet_id = "be344ddffaa7a8c9c5ae7f2d09a77f20ed54f93bf5e567659feca5c3422ae7a6";
+        let byte_vec_dwallet_id = hex::decode(dwallet_id).expect("Invalid hex string");
+        let data_slot = 12345u64;
+
+        let key = calculate_key(message.clone().as_bytes().to_vec(), byte_vec_dwallet_id.clone());
+        let expected_slot = calculate_mapping_slot(key, data_slot);
+
+        let result = get_message_storage_slot(message, byte_vec_dwallet_id, data_slot).unwrap();
+
+        assert_eq!(result, expected_slot);
+    }
 }
