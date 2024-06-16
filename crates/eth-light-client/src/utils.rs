@@ -159,8 +159,8 @@ pub fn is_proof_valid<L: Merkleized>(
 }
 
 fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, anyhow::Error>
-where
-    T: ?std::marker::Sized + serde::Serialize,
+    where
+        T: ?std::marker::Sized + serde::Serialize,
 {
     let object_bytes = bcs::to_bytes(&object)?;
     let object_json = object_bytes
@@ -287,6 +287,7 @@ pub fn get_message_storage_slot(
 
 mod tests {
     use super::*;
+
     #[test]
     fn standardize_slot_input_valid() {
         let input_zero = 0u64;
@@ -320,7 +321,6 @@ mod tests {
             17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
         ]);
         assert_eq!(standardize_key_input(input), expected);
-
     }
 
     #[test]
@@ -341,7 +341,7 @@ mod tests {
         let slot = u64::MAX;
 
         let expected_hash = {
-            let mut  hasher = Keccak256::new();
+            let mut hasher = Keccak256::new();
             hasher.update(&[1u8; 32]);
             hasher.update([
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255
@@ -352,4 +352,30 @@ mod tests {
         assert_eq!(calculate_mapping_slot(key, slot), expected_hash);
     }
 
+    #[test]
+    fn calculate_key_valid() {
+        let message: Vec<u8> = vec![];
+        let dwallet_id: Vec<u8> = vec![];
+        let expected_hash = {
+            let mut hasher = Keccak256::new();
+            hasher.update(&[]);
+            H256::from_slice(&hasher.finalize())
+        };
+
+        assert_eq!(calculate_key(message, dwallet_id), expected_hash);
+
+        let dwallet_id = "be344ddffaa7a8c9c5ae7f2d09a77f20ed54f93bf5e567659feca5c3422ae7a6";
+        let byte_vec_dwallet_id = hex::decode(dwallet_id).expect("Invalid hex string");
+        let mut message = [1u8; 32].to_vec();
+
+        let expected_hash = {
+            let mut hasher = Keccak256::new();
+            let mut combined = message.clone();
+            combined.extend_from_slice(&byte_vec_dwallet_id);
+            hasher.update(combined);
+            H256::from_slice(&hasher.finalize())
+        };
+
+        assert_eq!(calculate_key(message, byte_vec_dwallet_id), expected_hash)
+    }
 }
