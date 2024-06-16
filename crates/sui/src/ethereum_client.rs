@@ -8,7 +8,7 @@ pub enum EthClientCommands {
     #[command(name = "dwallet-eth-verify")]
     EthApproveMessage {
         #[clap(long)]
-        /// Object of a [EthDwalletCap]
+        /// Object of a [EthDwalletCap].
         eth_dwallet_cap_id: ObjectID,
         /// The Message (TX) to verify.
         #[clap(long)]
