@@ -13,7 +13,7 @@ pub enum EthClientCommands {
         /// The Message (TX) to verify.
         #[clap(long)]
         message: String,
-        /// The DWallet ID
+        /// The DWallet ID.
         // todo(zeev): in the future we can fetch the dwallet ID.
         #[clap(long)]
         dwallet_id: ObjectID,
