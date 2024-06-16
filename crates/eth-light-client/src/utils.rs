@@ -286,6 +286,7 @@ pub fn get_message_storage_slot(
 }
 
 mod tests {
+    use helios::consensus::types::primitives::ByteVector;
     use super::*;
 
     #[test]
@@ -377,5 +378,21 @@ mod tests {
         };
 
         assert_eq!(calculate_key(message, byte_vec_dwallet_id), expected_hash)
+    }
+
+    #[test]
+    fn compute_signing_root_valid() {
+        let object_root = ByteVector::<32>::default();
+        let domain = ByteVector::<32>::default();
+
+        let mut data = SigningData {
+            object_root: object_root.clone(),
+            domain: domain.clone(),
+        };
+
+        let result = compute_signing_root(object_root, domain);
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), data.hash_tree_root().unwrap());
     }
 }
