@@ -28,3 +28,8 @@ workspace-hack.workspace = true
 tracing.workspace = true
 
 signature-mpc.workspace = true
+ethers.workspace = true
+helios.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha3.workspace = true
