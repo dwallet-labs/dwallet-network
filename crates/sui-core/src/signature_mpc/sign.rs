@@ -14,6 +14,8 @@ pub(crate) enum SignRound {
     FirstRound {
         signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>
     },
+    IdentifiableAbortFirstRound,
+    IdentifiableAbortSecondRound,
     #[default]
     None,
 }

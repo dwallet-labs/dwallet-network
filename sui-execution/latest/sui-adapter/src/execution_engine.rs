@@ -1173,10 +1173,6 @@ mod checked {
                         ],
                     )
                 }
-                SignatureMPCOutputValue::IdentifiableAbort(_) => {
-                    // place holder for identifiable abort
-                    Ok(())
-                }
             };
             assert_invariant!(
                 res.is_ok(),

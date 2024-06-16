@@ -6,7 +6,6 @@ mod dkg;
 mod metrics;
 mod presign;
 mod sign;
-mod identifiable_abort;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
 
@@ -64,7 +63,6 @@ use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureM
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
 use crate::signature_mpc::sign::{SignRound, SignRoundCompletion, SignState};
-use crate::signature_mpc::identifiable_abort::{IdentifiableAbortRound, IdentifiableAbortRoundCompletion, IdentifiableAbortState};
 use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
 
 pub trait SignatureMPCServiceNotify {
@@ -99,8 +97,6 @@ pub struct SignatureMPCAggregator {
     presign_session_states: Arc<DashMap<SignatureMPCSessionID, PresignState>>,
     sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
     sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
-    identifiable_abort_session_rounds: Arc<DashMap<SignatureMPCSessionID, IdentifiableAbortRound>>,
-    identifiable_abort_session_states: Arc<DashMap<SignatureMPCSessionID, IdentifiableAbortState>>,
 }
 
 impl SignatureMPCAggregator {
@@ -138,8 +134,6 @@ impl SignatureMPCAggregator {
             presign_session_states: Arc::new(DashMap::new()),
             sign_session_rounds: Arc::new(DashMap::new()),
             sign_session_states: Arc::new(DashMap::new()),
-            identifiable_abort_session_rounds: Arc::new(DashMap::new()),
-            identifiable_abort_session_states: Arc::new(DashMap::new()),
         }
     }
 
@@ -632,37 +626,7 @@ impl SignatureMPCAggregator {
     }
 
     fn spawn_complete_identifiable_abort_first_round(
-        epoch: EpochId,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        session_id: SignatureMPCSessionID,
-        session_ref: ObjectRef,
-        state: IdentifiableAbortState,
-        identifiable_abort_rounds: Arc<DashMap<SignatureMPCSessionID, IdentifiableAbortRound>>,
-        identifiable_abort_states: Arc<DashMap<SignatureMPCSessionID, IdentifiableAbortState>>,
-        submit: Arc<dyn SubmitSignatureMPC>,
-    ) {
-        spawn_monitored_task!(async move {
-        // call complete_round, create the output and submit it to the consensus
-        let m = Some(IdentifiableAbortRoundCompletion::FirstRoundOutput());
-
-        if let Some(m) = m {
-            match m {
-                IdentifiableAbortRoundCompletion::FirstRoundOutput() => {
-                    let _ = submit
-                        .sign_and_submit_output(
-                            &SignatureMPCOutput::new_identifiable_abort(
-                                epoch,
-                                session_id,
-                                session_ref,
-                            ).unwrap(),
-                            &epoch_store,
-                        ).await;
-                }
-                IdentifiableAbortRoundCompletion::None => {}
-            _ => {}}
-        }
-    });
-}
+    ) {}
 
     fn spawn_complete_identifiable_abort_second_round() {
         // call complete_round, create the output and submit it to the consensus
@@ -804,11 +768,6 @@ impl SignatureMPCAggregator {
                         }
                     }
                 }
-            }
-            InitiateSignatureMPCProtocol::IdentifiableAbort {} => {
-                // create new round for the state data
-                // create message summary and submit it - Q: what does and where to
-                println!("whiihaaa");
             }
         }
     }
