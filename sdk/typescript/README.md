@@ -42,7 +42,9 @@ for instructions about how to start a local network and local RPC server.
 
 ## Building Locally
 
-To get started you need to install [pnpm](https://pnpm.io/), then run the following command:
+First, install wasm-pack from [here](https://rustwasm.github.io/wasm-pack/installer).
+
+Then install [pnpm](https://pnpm.io/) and run the following command:
 
 ```bash
 # Install all dependencies
