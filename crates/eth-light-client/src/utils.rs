@@ -284,3 +284,72 @@ pub fn get_message_storage_slot(
     );
     Ok(calculate_mapping_slot(key, data_slot))
 }
+
+mod tests {
+    use super::*;
+    #[test]
+    fn standardize_slot_input_valid() {
+        let input_zero = 0u64;
+        let expected = [0u8; 32];
+        assert_eq!(standardize_slot_input(input_zero), H256::from_slice(&expected));
+
+        let input_one = 1u64;
+        let expected: [u8; 32] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+
+        assert_eq!(standardize_slot_input(input_one), H256::from_slice(&expected));
+
+        let input = u64::MAX;
+        let expected: [u8; 32] = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255
+        ];
+        assert_eq!(standardize_slot_input(input), H256::from_slice(&expected));
+    }
+
+    #[test]
+    fn standardize_key_input_valid() {
+        let input_zero = H256::from_slice(&[0u8; 32]);
+        let expected_zero = H256::from_slice(&[0u8; 32]);
+        assert_eq!(standardize_key_input(input_zero), expected_zero);
+
+        let input = H256::from_slice(&[
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+            17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+        ]);
+        let expected = H256::from_slice(&[
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+            17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+        ]);
+        assert_eq!(standardize_key_input(input), expected);
+
+    }
+
+    #[test]
+    fn calculate_mapping_slot_valid() {
+        let key = H256::from_slice(&[0u8; 32]);
+        let slot = 0;
+
+        let expected_hash = {
+            let mut hasher = Keccak256::new();
+            hasher.update(&[0u8; 32]);
+            hasher.update(&[0u8; 32]);
+            H256::from_slice(&hasher.finalize())
+        };
+
+        assert_eq!(calculate_mapping_slot(key, slot), expected_hash);
+
+        let key = H256::from_slice(&[1u8; 32]);
+        let slot = u64::MAX;
+
+        let expected_hash = {
+            let mut  hasher = Keccak256::new();
+            hasher.update(&[1u8; 32]);
+            hasher.update([
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255
+            ]);
+            H256::from_slice(&hasher.finalize())
+        };
+
+        assert_eq!(calculate_mapping_slot(key, slot), expected_hash);
+    }
+
+}
