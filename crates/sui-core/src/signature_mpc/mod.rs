@@ -255,7 +255,7 @@ impl SignatureMPCAggregator {
             return;
         };
         let session_ref = session_ref.clone();
-        match &message.summary.message {
+        match &message.summary.message {  // Q: Where is the message.summary.message field defined?
             SignatureMPCMessageProtocols::DKG(m) => {
                 let mut state = dkg_session_states
                     .entry(message.summary.session_id)
@@ -374,8 +374,12 @@ impl SignatureMPCAggregator {
                     }
                 }
             }
-            SignatureMPCMessageProtocols::PresignFirstRound(_) => {}
-            SignatureMPCMessageProtocols::PresignSecondRound(_) => {}
+            SignatureMPCMessageProtocols::PresignFirstRound(_) => {
+                // create new state and call spawn_complete_presign_first_round
+            }
+            SignatureMPCMessageProtocols::PresignSecondRound(_) => {
+                // create new state and call spawn_complete_presign_second_round
+            }
             _ => {}
         }
     }
@@ -484,25 +488,6 @@ impl SignatureMPCAggregator {
                             }
 
                         }
-                        // if let Some(mut s) = presign_session_states.get_mut(&session_id) {
-                        //     let _ = s.insert_second_round(party_id, message_to_submit.clone());
-                        //     drop(s);
-                            // if let Some(r) = presign_session_rounds.get_mut(&session_id) {
-                            //     if state.ready_for_complete_second_round(&r) {
-                            //         Self::spawn_complete_presign_second_round(
-                            //             epoch,
-                            //             epoch_store.clone(),
-                            //             party_id,
-                            //             session_id,
-                            //             session_ref,
-                            //             state.clone(),
-                            //             presign_session_rounds.clone(),
-                            //             presign_session_states.clone(),
-                            //             submit.clone(),
-                            //         );
-                            //     }
-                            // }
-                        //}
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
@@ -559,10 +544,6 @@ impl SignatureMPCAggregator {
             if let Some(m) = m {
                 match m {
                     PresignRoundCompletion::Message(m) => {
-                        // if let Some(mut s) = presign_session_states.get_mut(&session_id) {
-                        //     let _ = s.insert_second_round(party_id, m.clone());
-                        //     drop(s);
-                        // }
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
@@ -645,6 +626,14 @@ impl SignatureMPCAggregator {
                 }
             }
         });
+    }
+
+    fn spawn_complete_identifiable_abort_first_round() {
+        // call complete_round, create the output and submit it to the consensus
+    }
+
+    fn spawn_complete_identifiable_abort_second_round() {
+        // call complete_round, create the output and submit it to the consensus
     }
 
     async fn initiate_protocol(
@@ -785,6 +774,8 @@ impl SignatureMPCAggregator {
                 }
             }
             InitiateSignatureMPCProtocol::IdentifiableAbort {} => {
+                // create new round for the state data
+                // create message summary and submit it - Q: what does and where to
                 println!("palce holder for identifiable abort");
             }
         }

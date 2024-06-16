@@ -150,6 +150,7 @@ pub enum SignatureMPCOutputValue {
     PresignOutput(Vec<u8>),
     Presign(Vec<u8>),
     Sign(Vec<Vec<u8>>),
+    // Q: What is the identifiable abort output?
 }
 
 impl Display for SignatureMPCOutputValue {

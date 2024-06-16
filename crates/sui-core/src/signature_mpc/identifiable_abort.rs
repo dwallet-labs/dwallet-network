@@ -1,9 +1,18 @@
 use std::collections::HashSet;
-use signature_mpc::twopc_mpc_protocols::PartyID;
+use std::mem;
+use signature_mpc::twopc_mpc_protocols::{SignaturePartialDecryptionProofVerificationParty, PartyID};
+
+
+// Q: what is the output message of the identifiable abort protocol?
+// Q: where and when the abort request is received among the other parties?
+
 
 #[derive(Default)]
 pub(crate) enum IdentifiableAbortRound {
-    FirstRound,
+    FirstRound {
+        //place holder
+        signature_partial_decryption_proof_verification_round_parties: Vec<None>
+    },
     SecondRound,
     #[default]
     None,
@@ -12,7 +21,28 @@ pub(crate) enum IdentifiableAbortRound {
 impl IdentifiableAbortRound {
     pub(crate) fn new() {}
 
-    pub(crate) fn complete_round() {}
+    pub(crate) fn complete_round(
+        &mut self,
+        state: IdentifiableAbortState,
+    ) -> signature_mpc::twopc_mpc_protocols::Result<IdentifiableAbortRoundCompletion> {
+        let round = mem::take(self);
+        match round {
+            IdentifiableAbortRound::FirstRound {
+                signature_partial_decryption_proof_verification_round_parties,
+            } => {
+                // call prove_correct_signature_partial_decryption
+                Ok(IdentifiableAbortRoundCompletion::None)
+            }
+            IdentifiableAbortRound::SecondRound => {
+                //call identify_malicious_decrypters
+                Ok(IdentifiableAbortRoundCompletion::None)
+            }
+            IdentifiableAbortRound::None => {
+                Ok(IdentifiableAbortRoundCompletion::None)
+            }
+        }
+
+    }
 }
 
 pub(crate) enum IdentifiableAbortRoundCompletion {
