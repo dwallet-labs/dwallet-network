@@ -646,7 +646,7 @@ pub enum SuiClientCommands {
         terminate_early: bool,
     },
 
-    /// eth light-client subcommands.
+    /// Ethereum light-client subcommands.
     #[command(name = "eth-lc")]
     EthClient {
         #[command(subcommand)]
