@@ -370,6 +370,33 @@ impl SignatureMPCAggregator {
                 }
             }
             SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_) => {
+                let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
+                    SignState::new(
+                        tiresias_public_parameters.clone(),
+                        epoch,
+                        party_id,
+                        parties,
+                        session_id,
+                    )
+                });
+
+                if let Some(r) = sign_session_rounds.get_mut(&session_id) {
+                    if state.ready_for_complete_first_round(&r) {
+                        drop(r);
+                        let state = state.clone();
+                        Self::spawn_complete_identifiable_abort_first_round(
+                            epoch,
+                            epoch_store.clone(),
+                            party_id,
+                            session_id,
+                            session_ref,
+                            state,
+                            sign_session_rounds.clone(),
+                            sign_session_states.clone(),
+                            submit.clone(),
+                        );
+                    }
+                }
                 // create new state and call spawn_complete_presign_first_round
             }
             SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => {
@@ -496,7 +523,7 @@ impl SignatureMPCAggregator {
                                 &epoch_store,
                             )
                             .await;
-                     let _ = submit
+                        let _ = submit
                             .sign_and_submit_output(
                                 &SignatureMPCOutput::new_presign_output(
                                     epoch,
@@ -650,7 +677,33 @@ impl SignatureMPCAggregator {
         });
     }
 
-    fn spawn_complete_identifiable_abort_first_round() {}
+    fn spawn_complete_identifiable_abort_first_round(epoch: EpochId,
+            epoch_store: Arc<AuthorityPerEpochStore>,
+            party_id: PartyID,
+            session_id: SignatureMPCSessionID,
+            session_ref: ObjectRef,
+            state: SignState,
+            sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
+            sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
+            submit: Arc<dyn SubmitSignatureMPC>,
+    ) {
+        spawn_monitored_task!(async move {
+        let m =
+            match sign_session_rounds.get_mut(&session_id) {
+            Some(mut round) =>
+                match round.complete_round(state.clone()) {
+                Ok(result) => Some(result),
+                Err(e) => None,
+            },
+            None => {
+                None
+            }
+        };
+
+    });
+
+
+}
 
     fn spawn_complete_identifiable_abort_second_round() {
         // call complete_round, create the output and submit it to the consensus

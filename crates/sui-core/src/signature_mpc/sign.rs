@@ -101,7 +101,9 @@ impl SignRound {
                 println!("recv wohwoh: IdentifiableAbortFirstRound message");
                 Ok(SignRoundCompletion::None)
             }
-            _ => Ok(SignRoundCompletion::None)
+            _ => {
+                Ok(SignRoundCompletion::None)
+            }
         }
     }
 }
@@ -172,6 +174,7 @@ impl SignState {
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {
         match round {
             SignRound::FirstRound { .. } if self.decryption_shares.len() == self.parties.len() && self.party_id == self.aggregator_party_id => true,
+            SignRound::IdentifiableAbortFirstRound => true, // TODO: this is probably not correct
             _ => false
         }
     }
