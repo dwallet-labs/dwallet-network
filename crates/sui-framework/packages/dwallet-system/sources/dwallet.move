@@ -44,7 +44,7 @@ module dwallet_system::dwallet {
         message_approvals: vector<MessageApproval>,
     }
 
-    struct MessageApproval has store {
+    struct MessageApproval has store, drop {
         dwallet_cap_id: ID,
         message: vector<u8>,
     }
