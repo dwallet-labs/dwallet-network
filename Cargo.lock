@@ -4180,7 +4180,15 @@ dependencies = [
 name = "eth-light-client"
 version = "1.16.2"
 dependencies = [
+ "anyhow",
+ "bcs",
+ "ethers",
+ "eyre",
  "helios",
+ "hex",
+ "serde",
+ "sha3 0.10.8",
+ "sui-sdk",
 ]
 
 [[package]]

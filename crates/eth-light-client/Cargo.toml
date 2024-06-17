@@ -5,3 +5,11 @@ version.workspace = true
 
 [dependencies]
 helios.workspace = true
+serde.workspace = true
+anyhow.workspace = true
+hex.workspace = true
+ethers.workspace = true
+sha3.workspace = true
+sui-sdk.workspace = true
+bcs.workspace = true
+eyre.workspace = true
