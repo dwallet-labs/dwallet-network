@@ -1,0 +1,24 @@
+[package]
+name = "eth-light-client"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+sui-json-rpc-types.workspace = true
+ethers.workspace = true
+anyhow.workspace = true
+eyre.workspace = true
+helios.workspace = true
+sui-sdk.workspace = true
+sui-types.workspace = true
+tracing.workspace = true
+sha3.workspace = true
+ssz_rs.workspace = true
+serde.workspace = true
+smallvec.workspace = true
+milagro_bls.workspace = true
+hex.workspace = true
+chrono.workspace = true
+byteorder.workspace = true
+bcs.workspace = true
+serde_json.workspace = true
