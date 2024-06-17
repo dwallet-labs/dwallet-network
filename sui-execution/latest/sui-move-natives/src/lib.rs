@@ -57,6 +57,7 @@ use sui_protocol_config::ProtocolConfig;
 use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
 use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
+use crate::eth_state_proof::EthDWalletCostParams;
 
 mod address;
 mod crypto;
@@ -70,6 +71,7 @@ mod transfer;
 mod tx_context;
 mod types;
 mod validator;
+mod eth_state_proof;
 
 #[derive(Tid)]
 pub struct NativesCostTable {
@@ -151,6 +153,9 @@ pub struct NativesCostTable {
 
     // twopc mpc
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
+
+    // eth state proof
+    pub eth_state_proof: EthDWalletCostParams,
 }
 
 impl NativesCostTable {
@@ -511,6 +516,17 @@ impl NativesCostTable {
                     .sign_verify_encrypted_signature_parts_prehash_cost_base()
                     .into(),
             },
+            eth_state_proof: EthDWalletCostParams {
+                verify_eth_state_cost_base: protocol_config
+                    .verify_eth_state_cost_base()
+                    .into(),
+                verify_message_proof_cost_base: protocol_config
+                    .verify_message_proof_cost_base()
+                    .into(),
+                create_initial_eth_state_data_cost_base: protocol_config
+                    .create_initial_eth_state_data_cost_base()
+                    .into(),
+            },
         }
     }
 }
@@ -745,7 +761,23 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dwallet_2pc_mpc_ecdsa_k1",
             "sign_verify_encrypted_signature_parts_prehash",
             make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
-        )];
+        ),
+        (
+            "ethereum_state",
+            "verify_eth_state",
+            make_native!(eth_state_proof::verify_eth_state),
+        ),
+        (
+            "eth_dwallet",
+            "verify_message_proof",
+            make_native!(eth_state_proof::verify_message_proof),
+        ),
+        (
+            "ethereum_state",
+            "create_initial_eth_state_data",
+            make_native!(eth_state_proof::create_initial_eth_state_data),
+        )
+    ];
     sui_system_natives
         .iter()
         .cloned()

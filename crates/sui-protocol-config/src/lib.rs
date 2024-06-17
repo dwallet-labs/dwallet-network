@@ -855,6 +855,13 @@ pub struct ProtocolConfig {
     // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
     sign_verify_encrypted_signature_parts_prehash_cost_base: Option<u64>,
 
+    // eth_dwallet::verify_eth_state_cost_base
+    verify_eth_state_cost_base: Option<u64>,
+    // eth_dwallet::verify_message_proof_cost_base
+    verify_message_proof_cost_base: Option<u64>,
+    // eth_dwallet::create_initial_eth_state_data_cost_base
+    create_initial_eth_state_data_cost_base: Option<u64>,
+
     /// === Execution Version ===
     execution_version: Option<u64>,
 
@@ -1196,7 +1203,7 @@ impl ProtocolConfig {
             // All flags are disabled in V1
             feature_flags: Default::default(),
 
-            max_tx_size_bytes: Some(128 * 1024),
+            max_tx_size_bytes: Some(1024 * 1024),
             // We need this number to be at least 100x less than `max_serialized_tx_effects_size_bytes`otherwise effects can be huge
             max_input_objects: Some(2048),
             max_serialized_tx_effects_size_bytes: Some(512 * 1024),
@@ -1206,7 +1213,7 @@ impl ProtocolConfig {
             max_arguments: Some(512),
             max_type_arguments: Some(16),
             max_type_argument_depth: Some(16),
-            max_pure_argument_size: Some(16 * 1024),
+            max_pure_argument_size: Some(1024 * 1024),
             max_programmable_tx_commands: Some(1024),
             move_binary_format_version: Some(6),
             max_move_object_size: Some(250 * 1024),
@@ -1464,6 +1471,10 @@ impl ProtocolConfig {
             max_age_of_jwk_in_epochs: None,
 
             random_beacon_reduction_allowed_delta: None,
+
+            verify_eth_state_cost_base: None,
+            verify_message_proof_cost_base: None,
+            create_initial_eth_state_data_cost_base: None,
 
             // When adding a new constant, set it to None in the earliest version, like this:
             // new_constant: None,
@@ -1739,6 +1750,10 @@ impl ProtocolConfig {
                     cfg.feature_flags.enable_jwk_consensus_updates = false;
                     cfg.feature_flags.zklogin_supported_providers = Default::default();
                     cfg.feature_flags.random_beacon = false;
+
+                    cfg.verify_eth_state_cost_base = Some(52);
+                    cfg.verify_message_proof_cost_base = Some(52);
+                    cfg.create_initial_eth_state_data_cost_base = Some(52);
                 }
                 // Use this template when making changes:
                 //
