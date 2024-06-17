@@ -8,6 +8,7 @@ use sui_types::base_types::{EpochId, ObjectRef};
 use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash};
 use std::convert::TryInto;
 use std::mem;
+use tracing::error;
 
 #[derive(Default)]
 pub(crate) enum SignRound {
@@ -88,11 +89,17 @@ impl SignRound {
                         Ok(SignRoundCompletion::Output(signatures_s))
                     },
                     Err(e) => {
-                        Err(e)
+                        println!("flannn: Start identifiable abort {}",e);
+                        // 1. *self = idAbortFirstRound
+                        *self = SignRound::IdentifiableAbortFirstRound;
+                        // 2. return SignRoundMessage to all parties
+                        Ok(SignRoundCompletion::SignFailureOutput(vec![vec![7, 8, 9]]))
                     }
                 }
-
-
+            }
+            SignRound::IdentifiableAbortFirstRound => {
+                println!("recv wohwoh: IdentifiableAbortFirstRound message");
+                Ok(SignRoundCompletion::None)
             }
             _ => Ok(SignRoundCompletion::None)
         }
@@ -102,6 +109,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     Output(Vec<Vec<u8>>),
+    SignFailureOutput(Vec<Vec<u8>>),
     None,
 }
 

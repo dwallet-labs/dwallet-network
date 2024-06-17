@@ -494,7 +494,7 @@ impl SignatureMPCAggregator {
                                 &epoch_store,
                             )
                             .await;
-                        let _ = submit
+                     let _ = submit
                             .sign_and_submit_output(
                                 &SignatureMPCOutput::new_presign_output(
                                     epoch,
@@ -605,6 +605,21 @@ impl SignatureMPCAggregator {
 
             if let Some(m) = m {
                 match m {
+                    SignRoundCompletion::SignFailureOutput(sigs) => {
+                        println!("whowho");
+                        let _ = submit
+                                    .sign_and_submit_output(
+                                        &SignatureMPCOutput::new_sign(
+                                            epoch,
+                                            session_id,
+                                            session_ref,
+                                            sigs,
+                                        )
+                                        .unwrap(),
+                                        &epoch_store,
+                                    )
+                                    .await;
+                    }
                     SignRoundCompletion::Output(sigs) => {
                         let _ = submit
                                     .sign_and_submit_output(
@@ -620,7 +635,7 @@ impl SignatureMPCAggregator {
                                     .await;
                     }
                     SignRoundCompletion::None => {}
-                }
+                _ => {}}
             }
         });
     }
