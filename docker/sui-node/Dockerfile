@@ -16,7 +16,7 @@ COPY sui-execution sui-execution
 COPY narwhal narwhal
 COPY external-crates external-crates
 
-RUN cargo build --profile ${PROFILE} --bin sui-node
+RUN --mount=type=cache,target=/usr/local/cargo/registry cargo build --profile ${PROFILE} --bin sui-node
 
 # Production Image
 FROM debian:bullseye-slim AS runtime
