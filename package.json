@@ -61,5 +61,8 @@
 		"tsx": "^3.12.7",
 		"turbo": "^1.10.8",
 		"typescript": "^5.1.6"
+	},
+	"dependencies": {
+		"@mysten/sui.js": "^0.52.0"
 	}
 }

@@ -1,0 +1,12 @@
+{
+	"extends": "../../sdk/build-scripts/tsconfig.shared.json",
+	"include": ["src"],
+	"compilerOptions": {
+		"module": "CommonJS",
+		"outDir": "dist/cjs",
+		"isolatedModules": true,
+		"rootDir": "src",
+		"lib": ["ESNext", "dom"]
+	},
+	"references": [{ "path": "../../sdk/typescript" }]
+}

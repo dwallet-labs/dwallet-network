@@ -863,6 +863,17 @@ pub struct ProtocolConfig {
     // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
     sign_verify_encrypted_signature_parts_prehash_cost_base: Option<u64>,
 
+    //sui_state_proof::sui_state_proof_verify_committee_cost_base
+    sui_state_proof_verify_committee_cost_base: Option<u64>,
+
+    //sui_state_proof::sui_state_proof_verify_link_cap_base
+    sui_state_proof_verify_link_cap_base: Option<u64>,
+
+    //sui_state_proof::sui_state_proof_verify_transaction_base
+    sui_state_proof_verify_transaction_base: Option<u64>,
+
+
+
     /// === Execution Version ===
     execution_version: Option<u64>,
 
@@ -1222,7 +1233,7 @@ impl ProtocolConfig {
             max_arguments: Some(512),
             max_type_arguments: Some(16),
             max_type_argument_depth: Some(16),
-            max_pure_argument_size: Some(16 * 1024),
+            max_pure_argument_size: Some(1024 * 1024), // TODO change back to 16
             max_programmable_tx_commands: Some(1024),
             move_binary_format_version: Some(6),
             max_move_object_size: Some(250 * 1024),
@@ -1455,6 +1466,14 @@ impl ProtocolConfig {
             dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: Some(52),
             // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
             sign_verify_encrypted_signature_parts_prehash_cost_base: Some(52),
+
+            //sui_state_proof::sui_state_proof_verify_committee_cost_base
+            sui_state_proof_verify_committee_cost_base: Some(52),
+            //sui_state_proof::sui_state_proof_verify_link_cap_base
+            sui_state_proof_verify_link_cap_base: Some(52),
+            //sui_state_proof::sui_state_proof_verify_transaction_base
+            sui_state_proof_verify_transaction_base: Some(52),
+        
 
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,

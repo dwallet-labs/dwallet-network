@@ -19,6 +19,8 @@ sui-adapter-v0 = { path = "v0/sui-adapter" }
 sui-adapter-v1 = { path = "v1/sui-adapter" }
 sui-adapter-next-vm = { path = "next-vm/sui-adapter" }
 # sui-adapter-$CUT = { path = "$CUT/sui-adapter" }
+sui-json = { path = "../crates/sui-json" }
+
 sui-move-natives-latest = { path = "latest/sui-move-natives" }
 sui-move-natives-v0 = { path = "v0/sui-move-natives" }
 sui-move-natives-v1 = { path = "v1/sui-move-natives" }
