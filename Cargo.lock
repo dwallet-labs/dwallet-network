@@ -2478,7 +2478,7 @@ dependencies = [
 [[package]]
 name = "client"
 version = "0.5.4"
-source = "git+https://github.com/dwallet-labs/helios.git#5ba2dba34b686a2cb4e366d4129ecd64c3e3234b"
+source = "git+https://github.com/dwallet-labs/helios.git#74cad4dd8a5c3b45f706df8d1784a6eab26dd2e5"
 dependencies = [
  "common",
  "config",
@@ -2669,7 +2669,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.5.4"
-source = "git+https://github.com/dwallet-labs/helios.git#5ba2dba34b686a2cb4e366d4129ecd64c3e3234b"
+source = "git+https://github.com/dwallet-labs/helios.git#74cad4dd8a5c3b45f706df8d1784a6eab26dd2e5"
 dependencies = [
  "ethers",
  "eyre",
@@ -2682,7 +2682,7 @@ dependencies = [
 [[package]]
 name = "config"
 version = "0.5.4"
-source = "git+https://github.com/dwallet-labs/helios.git#5ba2dba34b686a2cb4e366d4129ecd64c3e3234b"
+source = "git+https://github.com/dwallet-labs/helios.git#74cad4dd8a5c3b45f706df8d1784a6eab26dd2e5"
 dependencies = [
  "common",
  "dirs 4.0.0",
@@ -2704,7 +2704,7 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.5.4"
-source = "git+https://github.com/dwallet-labs/helios.git#5ba2dba34b686a2cb4e366d4129ecd64c3e3234b"
+source = "git+https://github.com/dwallet-labs/helios.git#74cad4dd8a5c3b45f706df8d1784a6eab26dd2e5"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4182,14 +4182,20 @@ version = "1.16.2"
 dependencies = [
  "anyhow",
  "bcs",
+ "byteorder",
+ "chrono",
  "ethers",
  "eyre",
  "helios",
  "hex",
  "serde",
  "sha3 0.10.8",
+ "snowbridge-milagro-bls",
+ "ssz_rs",
+ "sui-json-rpc-types",
  "sui-sdk",
  "sui-types",
+ "tracing",
 ]
 
 [[package]]
@@ -4532,7 +4538,7 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 [[package]]
 name = "execution"
 version = "0.5.4"
-source = "git+https://github.com/dwallet-labs/helios.git#5ba2dba34b686a2cb4e366d4129ecd64c3e3234b"
+source = "git+https://github.com/dwallet-labs/helios.git#74cad4dd8a5c3b45f706df8d1784a6eab26dd2e5"
 dependencies = [
  "async-trait",
  "bytes",
@@ -5541,7 +5547,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 [[package]]
 name = "helios"
 version = "0.5.4"
-source = "git+https://github.com/dwallet-labs/helios.git#5ba2dba34b686a2cb4e366d4129ecd64c3e3234b"
+source = "git+https://github.com/dwallet-labs/helios.git#74cad4dd8a5c3b45f706df8d1784a6eab26dd2e5"
 dependencies = [
  "client",
  "common",
@@ -5650,9 +5656,9 @@ checksum = "add0ab9360ddbd88cfeb3bd9574a1d85cfdfa14db10b3e21d3700dbc4328758f"
 
 [[package]]
 name = "httparse"
-version = "1.9.3"
+version = "1.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0e7a4dd27b9476dc40cb050d3632d3bba3a70ddbff012285f7f8559a1e7e545"
+checksum = "0fcc0b4a115bf80b728eb8ea024ad5bd707b615bfed49e0665b6e0f86fd082d9"
 
 [[package]]
 name = "httpdate"

@@ -363,6 +363,7 @@ lru = "0.10"
 markdown-gen = "1.2.1"
 match_opt = "0.1.2"
 mime = "0.3"
+milagro_bls = { package = "snowbridge-milagro-bls", git = "https://github.com/Snowfork/milagro_bls", rev = "6a95c9e33c6a41d9137761e593d53742ebb964de" }
 mockall = "0.11.4"
 more-asserts = "0.3.1"
 msim = { git = "https://github.com/MystenLabs/mysten-sim.git", rev = "1a52783d6600ecc22e15253a982f77881bd47c77", package = "msim" }
@@ -458,6 +459,7 @@ similar = "2.2.0"
 slip10_ed25519 = "0.1.3"
 smallvec = "1.10.0"
 snap = "1.1.0"
+ssz_rs = "0.9.0"
 static_assertions = "1.1.0"
 strum = { version = "0.24", features = ["derive"] }
 strum_macros = "0.24.3"
