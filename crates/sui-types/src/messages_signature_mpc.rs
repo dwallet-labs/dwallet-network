@@ -71,8 +71,35 @@ pub enum SignatureMPCMessageProtocols {
     PresignFirstRound(SignatureMPCBulletProofAggregatesMessage),
     PresignSecondRound(SignatureMPCBulletProofAggregatesMessage),
     Sign(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
-    IdentifiableAbortFirstRound(SignatureMPCBulletProofAggregatesMessage),
+    IdentifiableAbortFirstRound(u8),
     IdentifiableAbortSecondRound(SignatureMPCBulletProofAggregatesMessage),
+}
+impl Display for SignatureMPCMessageProtocols {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            SignatureMPCMessageProtocols::DKG(_) => {
+                f.write_str("DKG")
+            }
+            SignatureMPCMessageProtocols::PresignFirstRound(_) => {
+                f.write_str("PresignFirstRound")
+            }
+            SignatureMPCMessageProtocols::PresignSecondRound(_) => {
+                f.write_str("PresignSecondRound")
+            }
+            SignatureMPCMessageProtocols::Sign(_) => {
+                f.write_str("Sign")
+            }
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_) => {
+                f.write_str("IdentifiableAbortFirstRound")
+            }
+            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => {
+                f.write_str("IdentifiableAbortSecondRound")
+            }
+            _ => {
+                f.write_str("Unknown")
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -352,7 +379,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(m) => m.round(),
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
             SignatureMPCMessageProtocols::Sign(_) => 1,
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(m) => m.round(),
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(m) => 7,
             SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(m) => m.round(),
         }
     }
