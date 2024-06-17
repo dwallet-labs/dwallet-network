@@ -3,12 +3,28 @@ use ethers::prelude::H256;
 use ethers::utils::__serde_json::{Number, Value};
 use sha3::{Keccak256, Digest};
 use sui_sdk::json::SuiJsonValue;
-use sui_sdk::rpc_types::SuiObjectDataOptions;
+use sui_sdk::rpc_types::{SuiData, SuiObjectDataOptions, SuiRawData};
 use sui_sdk::types::base_types::ObjectID;
 use sui_sdk::types::object::Owner;
 use sui_sdk::types::transaction::SharedInputObject;
 use sui_sdk::wallet_context::WalletContext;
+use sui_types::eth_dwallet_cap::EthDWalletCap;
 use eyre::Error;
+
+// todo(shay): maybe put this struct in sui-types
+struct SuiRawDataWrapper(pub SuiRawData);
+
+impl TryFrom<SuiRawDataWrapper> for EthDWalletCap {
+    type Error = anyhow::Error;
+    fn try_from(wrapper: SuiRawDataWrapper) -> Result<Self, anyhow::Error> {
+        wrapper
+            .0
+            .try_as_move()
+            .ok_or_else(|| anyhow::anyhow!("Object is not a Move Object"))?
+            .deserialize()
+            .map_err(|e| anyhow::anyhow!("Error deserializing object: {e}"))
+    }
+}
 
 /// This function standardizes the input slot for a given unsigned 64-bit integer.
 /// It first converts the integer into a hexadecimal string representation.

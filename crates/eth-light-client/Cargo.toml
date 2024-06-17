@@ -13,3 +13,4 @@ sha3.workspace = true
 sui-sdk.workspace = true
 bcs.workspace = true
 eyre.workspace = true
+sui-types.workspace = true

@@ -4189,6 +4189,7 @@ dependencies = [
  "serde",
  "sha3 0.10.8",
  "sui-sdk",
+ "sui-types",
 ]
 
 [[package]]
