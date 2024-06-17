@@ -1319,7 +1319,7 @@ impl SuiClientCommands {
                         "Environment config with name [{alias}] already exists."
                     ));
                 }
-                let env = SuiEnv { alias, rpc, ws };
+                let env = SuiEnv { alias, rpc, ws, eth_light_client: None };
 
                 // Check urls are valid and server is reachable
                 env.create_rpc_client(None, None).await?;

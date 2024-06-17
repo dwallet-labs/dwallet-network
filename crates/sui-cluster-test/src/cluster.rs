@@ -12,7 +12,7 @@ use sui_graphql_rpc::test_infra::cluster::start_graphql_server;
 use sui_indexer::test_utils::{start_test_indexer, start_test_indexer_v2};
 use sui_indexer::IndexerConfig;
 use sui_keys::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
-use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
+use sui_sdk::sui_client_config::{EthClientSettings, SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
 use sui_swarm::memory::Swarm;
 use sui_swarm_config::genesis_config::GenesisConfig;
@@ -364,6 +364,7 @@ pub async fn new_wallet_context_from_cluster(
             alias: "localnet".to_string(),
             rpc: fullnode_url.into(),
             ws: None,
+            eth_light_client: None,
         }],
         active_address: Some(address),
         active_env: Some("localnet".to_string()),
