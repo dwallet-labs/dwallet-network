@@ -12,7 +12,6 @@ use sui_sdk::types::transaction::SharedInputObject;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::eth_dwallet_cap::EthDWalletCap;
 
-// todo(shay): maybe put this struct in sui-types
 struct SuiRawDataWrapper(pub SuiRawData);
 
 impl TryFrom<SuiRawDataWrapper> for EthDWalletCap {
