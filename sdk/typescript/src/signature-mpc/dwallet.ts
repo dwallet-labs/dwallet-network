@@ -27,7 +27,7 @@ export async function approveAndSign(
 		],
 	});
 	tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::sign_messages`,
+		target: `${packageId}::${dWalletModuleName}::sign`,
 		typeArguments: [
 			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`,
 			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::NewSignDataEvent`,

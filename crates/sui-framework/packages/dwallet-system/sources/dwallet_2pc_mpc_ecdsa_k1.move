@@ -8,7 +8,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::transfer;
     use dwallet::event;
     use dwallet::tx_context::{Self, TxContext};
-    use dwallet_system::dwallet::{create_dwallet_cap, SignMessages, DWalletCap};
+    use dwallet_system::dwallet::{create_dwallet_cap, PartialUserSignedMessages, DWalletCap};
     use dwallet_system::dwallet;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
@@ -234,7 +234,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     native fun sign_verify_encrypted_signature_parts_prehash(messages: vector<vector<u8>>, dkg_output: vector<u8>, public_nonce_encrypted_partial_signature_and_proofs: vector<u8>, presigns: vector<u8>, hash: u8): bool;
 
-    public fun create_sign_messages(dwallet: &DWallet, session: &PresignSession, output: PresignSessionOutput, presign: Presign, public_nonce_encrypted_partial_signature_and_proofs: vector<u8>, ctx: &mut TxContext): SignMessages<SignData, NewSignDataEvent> {
+    public fun create_partial_user_signed_messages(dwallet: &DWallet, session: &PresignSession, output: PresignSessionOutput, presign: Presign, public_nonce_encrypted_partial_signature_and_proofs: vector<u8>, ctx: &mut TxContext): PartialUserSignedMessages<SignData, NewSignDataEvent> {
         assert!(object::id(session) == output.session_id && object::id(dwallet) == output.dwallet_id && output.dwallet_id == presign.dwallet_id && output.dwallet_cap_id == presign.dwallet_cap_id && output.session_id == presign.session_id, EPresignOutputAndPresignMismatch);
 
         let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(session.messages, dwallet.output, public_nonce_encrypted_partial_signature_and_proofs, presign.presigns, session.hash);
@@ -273,6 +273,6 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             presigns,
         };
 
-        dwallet::create_sign_messages(dwallet_id, dwallet_cap_id, session.messages, sign_data, sign_data_event, ctx)
+        dwallet::create_partial_user_signed_messages(dwallet_id, dwallet_cap_id, session.messages, sign_data, sign_data_event, ctx)
     }
 }

@@ -136,7 +136,7 @@ use crate::transaction_manager::TransactionManager;
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
 use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCSessionID};
-use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, NewDKGSessionEvent, DKGSession, DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, PRESIGN_SESSION_STRUCT_NAME, DWALLET_STRUCT_NAME, DWallet, PresignSession, SIGN_MESSAGES_FUNC_NAME, SIGN_SESSION_STRUCT_NAME, SignSession, DWALLET_MODULE_NAME, SignData, NewPresignSessionEvent, NewSignSessionEvent, NewSignDataEvent};
+use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, NewDKGSessionEvent, DKGSession, DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, PRESIGN_SESSION_STRUCT_NAME, DWALLET_STRUCT_NAME, DWallet, PresignSession, SIGN_FUNC_NAME, SIGN_SESSION_STRUCT_NAME, SignSession, DWALLET_MODULE_NAME, SignData, NewPresignSessionEvent, NewSignSessionEvent, NewSignDataEvent};
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]

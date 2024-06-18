@@ -16,7 +16,7 @@ pub const NEW_SIGN_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("NewSignSes
 
 pub const MESSAGE_APPROVAL_STRUCT_NAME: &IdentStr = ident_str!("MessageApproval");
 pub const APPROVE_MESSAGES_FUNC_NAME: &IdentStr = ident_str!("approve_messages");
-pub const SIGN_MESSAGES_FUNC_NAME: &IdentStr = ident_str!("sign_messages");
+pub const SIGN_FUNC_NAME: &IdentStr = ident_str!("sign");
 
 
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
@@ -41,7 +41,7 @@ pub const CREATE_DWALLET_FUNC_NAME: &IdentStr = ident_str!("create_dwallet");
 pub const CREATE_PRESIGN_SESSION_FUNC_NAME: &IdentStr = ident_str!("create_presign_session");
 pub const CREATE_PRESIGN_OUTPUT_FUNC_NAME: &IdentStr = ident_str!("create_presign_output");
 pub const CREATE_PRESIGN_FUNC_NAME: &IdentStr = ident_str!("create_presign");
-pub const CREATE_SIGN_MESSAGES_FUNC_NAME: &IdentStr = ident_str!("create_sign_messages");
+pub const CREATE_PARTIAL_USER_SIGNED_MESSAGES_FUNC_NAME: &IdentStr = ident_str!("create_partial_user_signed_messages");
 pub const CREATE_SIGN_OUTPUT_FUNC_NAME: &IdentStr = ident_str!("create_sign_output");
 
 
