@@ -27,14 +27,13 @@ use sui_types::transaction::SharedInputObject;
 use tracing::info;
 
 use crate::config::{EthLightClientConfig, ProofRequestParameters};
-use crate::eth_state::{EthState, EthStateObject, LatestEthStateObject};
+use crate::eth_state::{EthState};
 use crate::proof::{Proof, ProofResponse};
 use crate::update::UpdatesResponse;
 use crate::utils;
 
 pub struct EthLightClient {
     pub client: Client<FileDB>,
-    config: EthLightClientConfig,
 }
 
 impl EthLightClient {
@@ -54,7 +53,6 @@ impl EthLightClient {
 
         Ok(Self {
             client,
-            config: conf,
         })
     }
 
@@ -97,13 +95,9 @@ impl EthLightClient {
             storage_proof,
         })
     }
-
-    pub async fn get_block_number(&self) -> Result<u64, Report> {
-        Ok(self.client.get_block_number().await?.as_u64())
-    }
 }
 
-fn get_data_from_eth_dwallet_cap(
+pub fn get_data_from_eth_dwallet_cap(
     eth_dwallet_cap_obj: EthDWalletCap,
 ) -> Result<(u64, Address), anyhow::Error> {
     let data_slot = eth_dwallet_cap_obj.eth_smart_contract_slot;
@@ -112,7 +106,7 @@ fn get_data_from_eth_dwallet_cap(
     Ok((data_slot, contract_addr))
 }
 
-async fn init_light_client(
+pub async fn init_light_client(
     eth_client_config: EthLightClientConfig,
 ) -> Result<EthLightClient, anyhow::Error> {
     let mut eth_lc = EthLightClient::new(eth_client_config.clone()).await?;
@@ -120,7 +114,7 @@ async fn init_light_client(
     Ok(eth_lc)
 }
 
-async fn fetch_proofs(
+pub async fn fetch_proofs(
     eth_lc: &mut EthLightClient,
     eth_state: &EthState,
     contract_addr: &Address,
@@ -138,7 +132,7 @@ async fn fetch_proofs(
     Ok(proof)
 }
 
-async fn fetch_consensus_updates(eth_state: &mut EthState) -> Result<UpdatesResponse, anyhow::Error> {
+pub async fn fetch_consensus_updates(eth_state: &mut EthState) -> Result<UpdatesResponse, anyhow::Error> {
     let updates = eth_state
         .get_updates(&eth_state.clone().last_checkpoint)
         .await
@@ -146,7 +140,7 @@ async fn fetch_consensus_updates(eth_state: &mut EthState) -> Result<UpdatesResp
     Ok(updates)
 }
 
-fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, anyhow::Error> {
+pub fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, anyhow::Error> {
     let sui_env_config = context.config.get_active_env()?;
     if sui_env_config.eth_light_client.is_none() {
         return Err(anyhow!("ETH Light Client configuration not found"));

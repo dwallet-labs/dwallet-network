@@ -12,7 +12,7 @@ use sui_types::eth_dwallet_cap::EthDWalletCap;
 use eyre::Error;
 
 // todo(shay): maybe put this struct in sui-types
-struct SuiRawDataWrapper(pub SuiRawData);
+pub struct SuiRawDataWrapper(pub SuiRawData);
 
 impl TryFrom<SuiRawDataWrapper> for EthDWalletCap {
     type Error = anyhow::Error;
@@ -90,7 +90,7 @@ pub fn calculate_key(mut message: Vec<u8>, dwallet_id: Vec<u8>) -> H256 {
     H256::from_slice(&hasher.finalize())
 }
 
-fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, anyhow::Error>
+pub fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, anyhow::Error>
     where
         T: ?std::marker::Sized + serde::Serialize,
 {
@@ -102,7 +102,7 @@ fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, anyhow::Error>
     Ok(SuiJsonValue::new(Value::Array(object_json))?)
 }
 
-async fn get_object_bcs_by_id(
+pub async fn get_object_bcs_by_id(
     context: &mut WalletContext,
     object_id: ObjectID,
 ) -> Result<SuiRawDataWrapper, anyhow::Error> {
@@ -124,7 +124,7 @@ async fn get_object_bcs_by_id(
     }
 }
 
-async fn get_shared_object_input_by_id(
+pub async fn get_shared_object_input_by_id(
     context: &mut WalletContext,
     object_id: ObjectID,
 ) -> Result<SharedInputObject, anyhow::Error> {

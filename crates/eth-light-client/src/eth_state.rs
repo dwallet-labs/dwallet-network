@@ -31,6 +31,7 @@ use sui_types::id::{ID, UID};
 use tracing::info;
 
 use crate::update::UpdatesResponse;
+use crate::utils::SuiRawDataWrapper;
 
 pub const MAX_REQUEST_LIGHT_CLIENT_UPDATES: u8 = 128;
 
@@ -76,7 +77,6 @@ pub struct EthState {
     pub last_update_execution_state_root: Bytes32,
 }
 
-struct SuiRawDataWrapper(pub SuiRawData);
 impl TryFrom<SuiRawDataWrapper> for EthStateObject {
     type Error = anyhow::Error;
     fn try_from(wrapper: SuiRawDataWrapper) -> std::result::Result<Self, anyhow::Error> {

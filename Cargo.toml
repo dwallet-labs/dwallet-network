@@ -452,6 +452,7 @@ serde_test = "1.0.147"
 serde_with = { version = "2.1.0", features = ["hex"] }
 # serde_yaml = "0.9.21"
 serde_yaml = "0.8.26"
+sha3 = "0.10.8"
 shell-words = "1.1.0"
 shellexpand = "3.1.0"
 signature = "1.6.0"
@@ -557,13 +558,13 @@ anemo-tower = { git = "https://github.com/mystenlabs/anemo.git", rev = "1169850e
 
 ### Workspace Members ###
 anemo-benchmark = { path = "crates/anemo-benchmark" }
+eth-light-client = {path = "crates/eth-light-client" }
 mysten-common = { path = "crates/mysten-common" }
 mysten-metrics = { path = "crates/mysten-metrics" }
 mysten-network = { path = "crates/mysten-network" }
 mysten-util-mem = { path = "crates/mysten-util-mem" }
 mysten-util-mem-derive = { path = "crates/mysten-util-mem-derive" }
 prometheus-closure-metric = { path = "crates/prometheus-closure-metric" }
-sha3 = "0.10.8"
 shared-crypto = { path = "crates/shared-crypto" }
 simulacrum = { path = "crates/simulacrum" }
 sui = { path = "crates/sui" }
