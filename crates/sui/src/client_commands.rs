@@ -69,7 +69,9 @@ use tabled::{
 use tracing::info;
 
 use crate::key_identity::{get_identity_address, KeyIdentity};
+use crate::ethereum_client::EthClientCommands;
 
+#[macro_export]
 macro_rules! serialize_or_execute {
     ($tx_data:expr, $serialize_unsigned:expr, $serialize_signed:expr, $context:expr, $result_variant:ident) => {{
         assert!(
@@ -644,6 +646,13 @@ pub enum SuiClientCommands {
         #[arg(long, short)]
         terminate_early: bool,
     },
+
+    /// Ethereum light-client subcommands.
+    #[command(name = "eth-lc")]
+    EthClient {
+        #[command(subcommand)]
+        command: EthClientCommands
+    }
 }
 
 impl SuiClientCommands {
@@ -1371,6 +1380,32 @@ impl SuiClientCommands {
                     .await?;
 
                 SuiClientCommandResult::VerifySource
+            },
+            SuiClientCommands::EthLightClient { command } => {
+                match command {
+                    EthClientCommands::CreateEthDwallet { dwallet_cap_id,
+                        smart_contract_address,
+                        smart_contract_approved_tx_slot,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    } => {
+                        create_eth_dwallet(
+                            context,
+                            dwallet_cap_id,
+                            smart_contract_address,
+                            smart_contract_approved_tx_slot,
+                            gas,
+                            gas_budget,
+                            serialize_unsigned_transaction,
+                            serialize_signed_transaction,
+                        )
+                        .await?
+                    }
+                    EthClientCommands::EthApproveMessage { .. } => { todo!() }
+                    EthClientCommands::InitEthState { .. } => { todo!() }
+                }
             }
         });
         ret
@@ -1762,7 +1797,7 @@ impl Display for SuiClientCommandResult {
     }
 }
 
-async fn construct_move_call_transaction(
+pub(crate) async fn construct_move_call_transaction(
     package: ObjectID,
     module: &str,
     function: &str,
