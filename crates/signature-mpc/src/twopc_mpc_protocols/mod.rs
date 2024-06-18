@@ -438,8 +438,7 @@ pub fn decrypt_signature_decentralized_party_sign(
 
 pub fn generate_proof(
     decryption_key_share_public_parameters: DecryptionPublicParameters,
-    party_id: PartyID,
-    tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+    decryption_key_share: DecryptionKeyShare,
     designated_decrypting_party_id: PartyID,
     presign: DecentralizedPartyPresign,
     encryption_scheme_public_parameters: EncryptionKey::PublicParameters,
@@ -452,12 +451,6 @@ pub fn generate_proof(
         DecryptionKeyShare,
     >,
 )> {
-
-    let decryption_key_share = DecryptionKeyShare::new(
-        party_id,
-        tiresias_key_share_decryption_key_share,
-        &decryption_key_share_public_parameters,
-    )?;
 
     let proof_party = SignaturePartialDecryptionProofParty::new(
         decryption_key_share_public_parameters.threshold,

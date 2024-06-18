@@ -5,7 +5,7 @@ use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 use std::collections::{HashMap, HashSet};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId, ObjectRef};
-use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash};
+use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash, generate_proof};
 use std::convert::TryInto;
 use std::mem;
 use tracing::error;
@@ -86,14 +86,28 @@ impl SignRound {
 
                 match res {
                     Ok(signatures_s) => {
-                        Ok(SignRoundCompletion::Output(signatures_s))
+                        Ok(SignRoundCompletion::SignatureOutput(signatures_s))
                     },
                     Err(e) => {
-                        println!("flannn: Start identifiable abort {}",e);
-                        // 1. *self = idAbortFirstRound
-                        *self = SignRound::IdentifiableAbortFirstRound;
-                        // 2. return SignRoundMessage to all parties
-                        Ok(SignRoundCompletion::SignFailureOutput(vec![vec![7, 8, 9]]))
+                        // TODO: Generate and send proof
+                        // create the decryption key share
+                        let decryption_key_share = DecryptionKeyShare::new(
+                            state.party_id,
+                            state.tiresias_key_share_decryption_key_share,
+                            &state.tiresias_public_parameters,
+                        )?;
+                        // generate the proof
+
+                        let (proof, party) = generate_proof(
+                            state.tiresias_public_parameters.clone(),
+                            decryption_key_share,
+                            state.party_id,
+                            _,
+                            state.tiresias_public_parameters.encryption_scheme_public_parameters,
+                            _
+                        )
+
+                        // Ok(SignRoundCompletion::ProofOutput(vec![vec![7, 8, 9]]))
                     }
                 }
             }
@@ -110,8 +124,8 @@ impl SignRound {
 
 
 pub(crate) enum SignRoundCompletion {
-    Output(Vec<Vec<u8>>),
-    SignFailureOutput(Vec<Vec<u8>>),
+    SignatureOutput(Vec<Vec<u8>>),
+    ProofOutput(PartyID, DecryptionKeyShare::PartialDecryptionProof),
     None,
 }
 
@@ -122,20 +136,22 @@ pub(crate) struct SignState {
     parties: HashSet<PartyID>,
     aggregator_party_id: PartyID,
     tiresias_public_parameters: DecryptionPublicParameters,
-
+    tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
     messages: Option<Vec<Vec<u8>>>,
     public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
-
+    presign: DecentralizedPartyPresign,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
 }
 
 impl SignState {
     pub(crate) fn new(
+        tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
         tiresias_public_parameters: DecryptionPublicParameters,
         epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,
         session_id: SignatureMPCSessionID,
+        presign: DecentralizedPartyPresign
     ) -> Self {
         let aggregator_party_id = ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap()) % parties.len() as u64) + 1) as PartyID;
 
@@ -148,6 +164,8 @@ impl SignState {
             messages: None,
             public_nonce_encrypted_partial_signature_and_proofs: None,
             decryption_shares: HashMap::new(),
+            tiresias_key_share_decryption_key_share,
+            presign,
         }
     }
 

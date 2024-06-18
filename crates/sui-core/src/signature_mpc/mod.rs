@@ -341,11 +341,13 @@ impl SignatureMPCAggregator {
             SignatureMPCMessageProtocols::Sign(m) => {
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
+                        tiresias_key_share_decryption_key_share,
                         tiresias_public_parameters.clone(),
                         epoch,
                         party_id,
                         parties,
                         session_id,
+
                     )
                 });
 
@@ -372,6 +374,7 @@ impl SignatureMPCAggregator {
             SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_) => {
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
+                        tiresias_key_share_decryption_key_share,
                         tiresias_public_parameters.clone(),
                         epoch,
                         party_id,
@@ -629,7 +632,7 @@ impl SignatureMPCAggregator {
 
             if let Some(m) = m {
                 match m {
-                    SignRoundCompletion::SignFailureOutput(sigs) => {
+                    SignRoundCompletion::ProofOutput(sigs) => {
                         println!("start sending output");
                         let _ = submit
                                     .sign_and_submit_output(
@@ -657,7 +660,7 @@ impl SignatureMPCAggregator {
                         println!("sent message successfully");
 
                     }
-                    SignRoundCompletion::Output(sigs) => {
+                    SignRoundCompletion::SignatureOutput(sigs) => {
                         let _ = submit
                                     .sign_and_submit_output(
                                         &SignatureMPCOutput::new_sign(
@@ -678,14 +681,14 @@ impl SignatureMPCAggregator {
     }
 
     fn spawn_complete_identifiable_abort_first_round(epoch: EpochId,
-            epoch_store: Arc<AuthorityPerEpochStore>,
-            party_id: PartyID,
-            session_id: SignatureMPCSessionID,
-            session_ref: ObjectRef,
-            state: SignState,
-            sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
-            sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
-            submit: Arc<dyn SubmitSignatureMPC>,
+                                                     epoch_store: Arc<AuthorityPerEpochStore>,
+                                                     party_id: PartyID,
+                                                     session_id: SignatureMPCSessionID,
+                                                     session_ref: ObjectRef,
+                                                     state: SignState,
+                                                     sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
+                                                     sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
+                                                     submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
         let m =
@@ -701,9 +704,7 @@ impl SignatureMPCAggregator {
         };
 
     });
-
-
-}
+    }
 
     fn spawn_complete_identifiable_abort_second_round() {
         // call complete_round, create the output and submit it to the consensus
@@ -824,7 +825,7 @@ impl SignatureMPCAggregator {
                     hash.into(),
                 ) {
                     let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
-                        SignState::new(tiresias_public_parameters, epoch, party_id, parties, session_id)
+                        SignState::new(tiresias_key_share_decryption_key_share, tiresias_public_parameters, epoch, party_id, parties, session_id)
                     });
 
                     state.set(messages, public_nonce_encrypted_partial_signature_and_proofs);
