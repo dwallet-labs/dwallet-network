@@ -46,7 +46,8 @@ pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
     EncDLProofAggregationOutput, EncDLProofAggregationRoundParty,EncDLProofShareRoundParty, EncryptedMaskAndMaskedNonceShare, EncryptedNonceShareAndPublicShare, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput, DKGDecommitmentRoundParty, DKGDecommitmentRoundState};
 
 pub use twopc_mpc::{Result, Error};
-use twopc_mpc::secp256k1::paillier::bulletproofs::{PresignProofVerificationRoundParty, SignatureVerificationParty};
+use twopc_mpc::secp256k1::paillier::bulletproofs::{PresignProofVerificationRoundParty, SignaturePartialDecryptionProofParty, SignatureVerificationParty};
+use twopc_mpc::sign::decentralized_party::identifiable_abort::signature_partial_decryption_verification_round;
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;
@@ -433,6 +434,43 @@ pub fn decrypt_signature_decentralized_party_sign(
         }
     })
         .collect()
+}
+
+pub fn generate_proof(
+    decryption_key_share_public_parameters: DecryptionPublicParameters,
+    party_id: PartyID,
+    tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+    designated_decrypting_party_id: PartyID,
+    presign: DecentralizedPartyPresign,
+    encryption_scheme_public_parameters: EncryptionKey::PublicParameters,
+    public_nonce_encrypted_partial_signature_and_proof: PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
+) -> Result<(
+    DecryptionKeyShare::PartialDecryptionProof,
+    signature_partial_decryption_verification_round::Party<
+        PLAINTEXT_SPACE_SCALAR_LIMBS,
+        EncryptionKey,
+        DecryptionKeyShare,
+    >,
+)> {
+
+    let decryption_key_share = DecryptionKeyShare::new(
+        party_id,
+        tiresias_key_share_decryption_key_share,
+        &decryption_key_share_public_parameters,
+    )?;
+
+    let proof_party = SignaturePartialDecryptionProofParty::new(
+        decryption_key_share_public_parameters.threshold,
+        designated_decrypting_party_id,
+        decryption_key_share,
+        decryption_key_share_public_parameters,
+        presign,
+        encryption_scheme_public_parameters,
+        public_nonce_encrypted_partial_signature_and_proof
+    ).unwrap();
+
+    // Q: does it ever return an error?
+    proof_party.prove_correct_signature_partial_decryption(&mut OsRng)
 }
 
 pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {
