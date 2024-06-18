@@ -69,7 +69,7 @@ use tabled::{
 use tracing::info;
 
 use crate::key_identity::{get_identity_address, KeyIdentity};
-use crate::ethereum_client::{create_eth_dwallet, EthClientCommands};
+use crate::ethereum_client::{create_eth_dwallet, EthClientCommands, init_ethereum_state};
 
 #[macro_export]
 macro_rules! serialize_or_execute {
@@ -1404,7 +1404,9 @@ impl SuiClientCommands {
                         .await?
                     }
                     EthClientCommands::EthApproveMessage { .. } => { todo!() }
-                    EthClientCommands::InitEthState { .. } => { todo!() }
+                    EthClientCommands::InitEthState {
+                        checkpoint, gas, gas_budget, serialize_unsigned_transaction, serialize_signed_transaction
+                    } => { init_ethereum_state(checkpoint, context, gas, gas_budget, serialize_unsigned_transaction, serialize_signed_transaction).await? }
                 }
             }
         });

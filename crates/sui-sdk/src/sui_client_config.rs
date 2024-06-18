@@ -13,7 +13,7 @@ use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
 
 /// Configuration settings for an Ethereum light client.
-#[derive(Default ,Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EthClientSettings {
     pub eth_execution_rpc: Option<String>,
     pub eth_consensus_rpc: Option<String>,
@@ -69,6 +69,31 @@ impl SuiClientConfig {
             self.envs.push(env)
         }
     }
+
+    pub fn get_env_mut(&mut self, alias: &Option<String>) -> Option<&mut SuiEnv> {
+        if let Some(alias) = alias {
+            self.envs.iter_mut().find(|env| &env.alias == alias)
+        } else {
+            self.envs.first_mut()
+        }
+    }
+
+    pub fn get_active_env_mut(&mut self) -> Result<&mut SuiEnv, anyhow::Error> {
+        let active_env = self.active_env.clone(); // Clone active_env to avoid immutable borrow
+        match self.get_env_mut(&active_env) {
+            None => Err(anyhow!(
+            "Environment configuration not found for env [{}]",
+            active_env.as_deref().unwrap_or("None")
+        )),
+            Some(env) => Ok(env),
+        }
+    }
+
+    pub fn update_ethereum_state_object_id(&mut self, object_id: ObjectID) {
+        if let Some(env) = self.get_active_env_mut().ok() {
+            env.eth_light_client.as_mut().unwrap().state_object_id = Some(object_id);
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,7 +129,7 @@ impl SuiEnv {
             alias: "devnet".to_string(),
             rpc: SUI_DEVNET_URL.into(),
             ws: None,
-            eth_light_client: EthClientSettings::default()?,
+            eth_light_client: None,
         }
     }
     pub fn testnet() -> Self {
@@ -112,7 +137,7 @@ impl SuiEnv {
             alias: "testnet".to_string(),
             rpc: SUI_TESTNET_URL.into(),
             ws: None,
-            eth_light_client: EthClientSettings::default()?,
+            eth_light_client: None,
         }
     }
 
@@ -121,7 +146,7 @@ impl SuiEnv {
             alias: "local".to_string(),
             rpc: SUI_LOCAL_NETWORK_URL.into(),
             ws: None,
-            eth_light_client: EthClientSettings::default()?,
+            eth_light_client: None,
         }
     }
 }
