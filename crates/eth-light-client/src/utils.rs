@@ -1,7 +1,9 @@
 use anyhow::anyhow;
 use ethers::prelude::H256;
 use ethers::utils::__serde_json::{Number, Value};
-use sha3::{Keccak256, Digest};
+use eyre::Error;
+use sha3::{Digest, Keccak256};
+
 use sui_sdk::json::SuiJsonValue;
 use sui_sdk::rpc_types::{SuiData, SuiObjectDataOptions, SuiRawData};
 use sui_sdk::types::base_types::ObjectID;
@@ -9,7 +11,6 @@ use sui_sdk::types::object::Owner;
 use sui_sdk::types::transaction::SharedInputObject;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::eth_dwallet_cap::EthDWalletCap;
-use eyre::Error;
 
 // todo(shay): maybe put this struct in sui-types
 struct SuiRawDataWrapper(pub SuiRawData);
@@ -168,4 +169,114 @@ pub fn get_message_storage_slot(
         dwallet_id.as_slice().to_vec(),
     );
     Ok(calculate_mapping_slot(key, data_slot))
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn standardize_slot_input_valid() {
+        let input_zero = 0u64;
+        let expected = [0u8; 32];
+        assert_eq!(standardize_slot_input(input_zero), H256::from_slice(&expected));
+
+        let input_one = 1u64;
+        let expected: [u8; 32] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+
+        assert_eq!(standardize_slot_input(input_one), H256::from_slice(&expected));
+
+        let input = u64::MAX;
+        let expected: [u8; 32] = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255
+        ];
+        assert_eq!(standardize_slot_input(input), H256::from_slice(&expected));
+    }
+
+    #[test]
+    fn standardize_key_input_valid() {
+        let input_zero = H256::from_slice(&[0u8; 32]);
+        let expected_zero = H256::from_slice(&[0u8; 32]);
+        assert_eq!(standardize_key_input(input_zero), expected_zero);
+
+        let input = H256::from_slice(&[
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+            17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+        ]);
+        let expected = H256::from_slice(&[
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+            17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
+        ]);
+        assert_eq!(standardize_key_input(input), expected);
+    }
+
+    #[test]
+    fn calculate_mapping_slot_valid() {
+        let key = H256::from_slice(&[0u8; 32]);
+        let slot = 0;
+
+        let expected_hash = {
+            let mut hasher = Keccak256::new();
+            hasher.update(&[0u8; 32]);
+            hasher.update(&[0u8; 32]);
+            H256::from_slice(&hasher.finalize())
+        };
+
+        assert_eq!(calculate_mapping_slot(key, slot), expected_hash);
+
+        let key = H256::from_slice(&[1u8; 32]);
+        let slot = u64::MAX;
+
+        let expected_hash = {
+            let mut hasher = Keccak256::new();
+            hasher.update(&[1u8; 32]);
+            hasher.update([
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255
+            ]);
+            H256::from_slice(&hasher.finalize())
+        };
+
+        assert_eq!(calculate_mapping_slot(key, slot), expected_hash);
+    }
+
+    #[test]
+    fn calculate_key_valid() {
+        let message: Vec<u8> = vec![];
+        let dwallet_id: Vec<u8> = vec![];
+        let expected_hash = {
+            let mut hasher = Keccak256::new();
+            hasher.update(&[]);
+            H256::from_slice(&hasher.finalize())
+        };
+
+        assert_eq!(calculate_key(message, dwallet_id), expected_hash);
+
+        let dwallet_id = "be344ddffaa7a8c9c5ae7f2d09a77f20ed54f93bf5e567659feca5c3422ae7a6";
+        let byte_vec_dwallet_id = hex::decode(dwallet_id).expect("Invalid hex string");
+        let mut message = [1u8; 32].to_vec();
+
+        let expected_hash = {
+            let mut hasher = Keccak256::new();
+            let mut combined = message.clone();
+            combined.extend_from_slice(&byte_vec_dwallet_id);
+            hasher.update(combined);
+            H256::from_slice(&hasher.finalize())
+        };
+
+        assert_eq!(calculate_key(message, byte_vec_dwallet_id), expected_hash)
+    }
+
+    #[test]
+    fn get_message_storage_slot_valid() {
+        let message = "test_message".to_string();
+        let dwallet_id = "be344ddffaa7a8c9c5ae7f2d09a77f20ed54f93bf5e567659feca5c3422ae7a6";
+        let byte_vec_dwallet_id = hex::decode(dwallet_id).expect("Invalid hex string");
+        let data_slot = 12345u64;
+
+        let key = calculate_key(message.clone().as_bytes().to_vec(), byte_vec_dwallet_id.clone());
+        let expected_slot = calculate_mapping_slot(key, data_slot);
+
+        let result = get_message_storage_slot(message, byte_vec_dwallet_id, data_slot).unwrap();
+
+        assert_eq!(result, expected_slot);
+    }
 }
