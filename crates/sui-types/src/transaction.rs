@@ -47,6 +47,7 @@ use strum::IntoStaticStr;
 use sui_protocol_config::{ProtocolConfig, SupportedProtocolVersions};
 use tap::Pipe;
 use tracing::trace;
+use crate::messages_signature_mpc::SignatureMPCOutput;
 
 pub const TEST_ONLY_GAS_UNIT_FOR_TRANSFER: u64 = 10_000;
 pub const TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS: u64 = 50_000;
@@ -283,6 +284,8 @@ pub enum TransactionKind {
     RandomnessStateUpdate(RandomnessStateUpdate),
     // V2 ConsensusCommitPrologue also includes the digest of the current consensus output.
     ConsensusCommitPrologueV2(ConsensusCommitPrologueV2),
+    // Output of signature mpc dkg
+    SignatureMPCOutput(SignatureMPCOutput),
     // .. more transaction types go here
 }
 
@@ -428,6 +431,15 @@ impl VersionedProtocolMessage for TransactionKind {
                 } else {
                     Err(SuiError::UnsupportedFeatureError {
                         error: "randomness state updates not enabled".to_string(),
+                    })
+                }
+            }
+            TransactionKind::SignatureMPCOutput(_) => {
+                if protocol_config.signature_mpc() {
+                    Ok(())
+                } else {
+                    Err(SuiError::UnsupportedFeatureError {
+                        error: "signature mpc state updates not enabled".to_string(),
                     })
                 }
             }
@@ -1103,6 +1115,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV2(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
+            | TransactionKind::SignatureMPCOutput(_)
             | TransactionKind::EndOfEpochTransaction(_) => true,
             TransactionKind::ProgrammableTransaction(_) => false,
         }
@@ -1194,6 +1207,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV2(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
+            | TransactionKind::SignatureMPCOutput(_)
             | TransactionKind::EndOfEpochTransaction(_) => vec![],
             TransactionKind::ProgrammableTransaction(pt) => pt.receiving_objects(),
         }
@@ -1235,6 +1249,10 @@ impl TransactionKind {
                     initial_shared_version: update.randomness_obj_initial_shared_version(),
                     mutable: true,
                 }]
+            }
+            // TODO: can we add here the session object?
+            Self::SignatureMPCOutput(data) => {
+                vec![InputObjectKind::ImmOrOwnedMoveObject(data.session_ref)]
             }
             Self::EndOfEpochTransaction(txns) => {
                 txns.iter().flat_map(|txn| txn.input_objects()).collect()
@@ -1281,6 +1299,10 @@ impl TransactionKind {
                 // The transaction should have been rejected earlier if the feature is not enabled.
                 assert!(config.random_beacon());
             }
+            TransactionKind::SignatureMPCOutput(_) => {
+                // The transaction should have been rejected earlier if the feature is not enabled.
+                assert!(config.signature_mpc());
+            }
         };
         Ok(())
     }
@@ -1317,6 +1339,7 @@ impl TransactionKind {
             Self::ProgrammableTransaction(_) => "ProgrammableTransaction",
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
+            Self::SignatureMPCOutput(_) => "DKGSignatureMPCOutput",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
         }
     }
@@ -1355,6 +1378,9 @@ impl Display for TransactionKind {
             }
             Self::RandomnessStateUpdate(_) => {
                 writeln!(writer, "Transaction Kind : Randomness State Update")?;
+            }
+            Self::SignatureMPCOutput(_) => {
+                writeln!(writer, "Transaction Kind : DKG Signature MPC Output")?;
             }
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind : End of Epoch Transaction")?;
@@ -2489,6 +2515,12 @@ impl VerifiedTransaction {
         }
         .pipe(TransactionKind::RandomnessStateUpdate)
         .pipe(Self::new_system_transaction)
+    }
+
+    pub fn new_signature_mpc_output(
+        data: SignatureMPCOutput,
+    ) -> Self {
+        TransactionKind::SignatureMPCOutput(data).pipe(Self::new_system_transaction)
     }
 
     pub fn new_end_of_epoch_transaction(txns: Vec<EndOfEpochTransactionKind>) -> Self {

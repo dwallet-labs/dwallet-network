@@ -9,6 +9,7 @@ pub mod authority_aggregator;
 pub mod authority_client;
 pub mod authority_server;
 pub mod checkpoints;
+pub mod signature_mpc;
 pub mod consensus_adapter;
 pub mod consensus_handler;
 pub mod consensus_manager;

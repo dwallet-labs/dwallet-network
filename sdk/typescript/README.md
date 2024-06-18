@@ -1,10 +1,10 @@
 # Docs site
 
-For more complete docs, visit the [Sui TypeScript SDK docs](https://sdk.mystenlabs.com/)
+For more complete docs, visit the [dWallet Network TypeScript SDK docs](https://sdk.mystenlabs.com/)
 
-# Sui TypeScript SDK
+# dWallet Network TypeScript SDK
 
-This is the Sui TypeScript SDK built on the Sui
+This is the dWallet Network TypeScript SDK built on the dWallet Network
 [JSON RPC API](https://github.com/MystenLabs/sui/blob/main/doc/src/build/json-rpc.md). It provides
 utility classes and functions for applications to sign transactions and interact with the Sui
 network.
@@ -42,7 +42,9 @@ for instructions about how to start a local network and local RPC server.
 
 ## Building Locally
 
-To get started you need to install [pnpm](https://pnpm.io/), then run the following command:
+First, install wasm-pack from [here](https://rustwasm.github.io/wasm-pack/installer).
+
+Then install [pnpm](https://pnpm.io/) and run the following command:
 
 ```bash
 # Install all dependencies

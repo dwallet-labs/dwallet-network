@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // import { faker } from '@faker-js/faker';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
+import { getFullnodeUrl, DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SuinsClient } from '../src';
@@ -11,7 +11,7 @@ const domainName = 'test.sui';
 const walletAddress = '0xfce343a643991c592c4f1a9ee415a7889293f694ab8828f78e3c81d11c9530c6';
 
 describe('SuiNS Client', () => {
-	const client = new SuinsClient(new SuiClient({ url: getFullnodeUrl('testnet') }), {
+	const client = new SuinsClient(new DWalletClient({ url: getFullnodeUrl('testnet') }), {
 		networkType: 'testnet',
 		contractObjects: {
 			packageId: '0xfdba31b34a43e058f17c5cf4b12d9b9e0a08c0623d8569092c022e0c77df46d3',

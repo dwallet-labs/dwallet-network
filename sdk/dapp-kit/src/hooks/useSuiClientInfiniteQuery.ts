@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@mysten/sui.js/client';
+import type { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import type {
 	InfiniteData,
 	UseInfiniteQueryOptions,
@@ -19,11 +19,11 @@ interface PaginatedResult {
 }
 
 export type SuiRpcPaginatedMethodName = {
-	[K in keyof SuiClient]: SuiClient[K] extends (input: any) => Promise<PaginatedResult> ? K : never;
-}[keyof SuiClient];
+	[K in keyof DWalletClient]: DWalletClient[K] extends (input: any) => Promise<PaginatedResult> ? K : never;
+}[keyof DWalletClient];
 
 export type SuiRpcPaginatedMethods = {
-	[K in SuiRpcPaginatedMethodName]: SuiClient[K] extends (
+	[K in SuiRpcPaginatedMethodName]: DWalletClient[K] extends (
 		input: infer Params,
 	) => Promise<infer Result extends { nextCursor?: infer Cursor | null }>
 		? {

@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@mysten/sui.js/client';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
-import type { TransactionBlock } from '@mysten/sui.js/transactions';
-import { fromB64, toB64 } from '@mysten/sui.js/utils';
-import type { ZkLoginSignatureInputs } from '@mysten/sui.js/zklogin';
+import type { DWalletClient } from '@dwallet-network/dwallet.js/client';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
+import type { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
+import { fromB64, toB64 } from '@dwallet-network/dwallet.js/utils';
+import type { ZkLoginSignatureInputs } from '@dwallet-network/dwallet.js/zklogin';
 import { decodeJwt } from 'jose';
 import type { WritableAtom } from 'nanostores';
 import { atom, onMount, onSet } from 'nanostores';
@@ -318,7 +318,7 @@ export class EnokiFlow {
 	}: {
 		network?: 'mainnet' | 'testnet';
 		transactionBlock: TransactionBlock;
-		client: SuiClient;
+		client: DWalletClient;
 	}) {
 		const session = await this.getSession();
 
@@ -352,7 +352,7 @@ export class EnokiFlow {
 	}: {
 		bytes: string;
 		digest: string;
-		client: SuiClient;
+		client: DWalletClient;
 	}) {
 		const keypair = await this.getKeypair();
 		const userSignature = await keypair.signTransactionBlock(fromB64(bytes));
@@ -375,7 +375,7 @@ export class EnokiFlow {
 	}: {
 		network?: 'mainnet' | 'testnet';
 		transactionBlock: TransactionBlock;
-		client: SuiClient;
+		client: DWalletClient;
 	}) {
 		const { bytes, digest } = await this.sponsorTransactionBlock({
 			network,

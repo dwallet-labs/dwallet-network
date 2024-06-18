@@ -4,7 +4,7 @@
 import { type AccountType, type SerializedUIAccount } from '_src/background/accounts/Account';
 import { API_ENV } from '_src/shared/api-env';
 import { getSuiClient } from '_src/shared/sui-client';
-import { type SuiClient } from '@mysten/sui.js/client';
+import { type DWalletClient } from '@dwallet-network/dwallet.js/client';
 
 import type { BackgroundClient } from './background-client';
 import { BackgroundServiceSigner } from './background-client/BackgroundServiceSigner';
@@ -43,7 +43,7 @@ export const generateActiveNetworkList = (): NetworkTypes[] => {
 const accountTypesWithBackgroundSigner: AccountType[] = ['mnemonic-derived', 'imported', 'zkLogin'];
 
 export default class ApiProvider {
-	private _apiFullNodeProvider?: SuiClient;
+	private _apiFullNodeProvider?: DWalletClient;
 	private _signerByAddress: Map<string, WalletSigner> = new Map();
 	apiEnv: API_ENV = DEFAULT_API_ENV;
 

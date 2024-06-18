@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useSuiClient } from '@mysten/dapp-kit';
-import { type SuiClient } from '@mysten/sui.js/client';
+import { type DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { useQuery } from '@tanstack/react-query';
 
 export function useGetAllEpochAddressMetrics(
-	...input: Parameters<SuiClient['getAllEpochAddressMetrics']>
+	...input: Parameters<DWalletClient['getAllEpochAddressMetrics']>
 ) {
 	const client = useSuiClient();
 	return useQuery({

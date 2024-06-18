@@ -16,6 +16,7 @@ use sui_types::messages_consensus::ConsensusTransaction;
 use sui_types::move_package::UpgradePolicy;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::utils::to_sender_signed_transaction;
+use crate::signature_mpc::{SignatureMPCService, SignatureMPCServiceNoop};
 
 use super::test_authority_builder::TestAuthorityBuilder;
 use super::*;
@@ -375,6 +376,7 @@ pub async fn send_consensus(authority: &AuthorityState, cert: &VerifiedCertifica
         .process_consensus_transactions_for_tests(
             vec![transaction],
             &Arc::new(CheckpointServiceNoop {}),
+            &Arc::new(SignatureMPCServiceNoop {}),
             authority.db(),
             &authority.metrics.skipped_consensus_txns,
         )
@@ -399,6 +401,7 @@ pub async fn send_consensus_no_execution(authority: &AuthorityState, cert: &Veri
         .process_consensus_transactions_for_tests(
             vec![transaction],
             &Arc::new(CheckpointServiceNoop {}),
+            &Arc::new(SignatureMPCServiceNoop {}),
             &authority.db(),
             &authority.metrics.skipped_consensus_txns,
         )

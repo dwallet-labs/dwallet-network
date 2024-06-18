@@ -3,7 +3,7 @@
 
 import { getTotalGasUsed } from '@mysten/core';
 import { X12, Dot12 } from '@mysten/icons';
-import { type SuiClient, type SuiTransactionBlockResponse } from '@mysten/sui.js/client';
+import { type DWalletClient, type SuiTransactionBlockResponse } from '@dwallet-network/dwallet.js/client';
 
 import { SuiAmount } from '../Table/SuiAmount';
 import { TxTimeType } from '../tx-time/TxTimeType';
@@ -75,7 +75,7 @@ export const genTableDataFromTxData = (results: SuiTransactionBlockResponse[]) =
 
 const dedupe = (arr: string[]) => Array.from(new Set(arr));
 
-export const getDataOnTxDigests = (client: SuiClient, transactions: string[]) =>
+export const getDataOnTxDigests = (client: DWalletClient, transactions: string[]) =>
 	client
 		.multiGetTransactionBlocks({
 			digests: dedupe(transactions),

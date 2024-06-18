@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui.js/bcs';
+import { bcs } from '@dwallet-network/dwallet.js/bcs';
 import {
 	type DryRunTransactionBlockResponse,
 	type ExecuteTransactionRequestType,
-	type SuiClient,
+	type DWalletClient,
 	type SuiTransactionBlockResponse,
 	type SuiTransactionBlockResponseOptions,
-} from '@mysten/sui.js/client';
-import { IntentScope, messageWithIntent } from '@mysten/sui.js/cryptography';
-import { isTransactionBlock, type TransactionBlock } from '@mysten/sui.js/transactions';
-import { fromB64, toB64 } from '@mysten/sui.js/utils';
+} from '@dwallet-network/dwallet.js/client';
+import { IntentScope, messageWithIntent } from '@dwallet-network/dwallet.js/cryptography';
+import { isTransactionBlock, type TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
+import { fromB64, toB64 } from '@dwallet-network/dwallet.js/utils';
 
 export type SignedTransaction = {
 	transactionBlockBytes: string;
@@ -24,9 +24,9 @@ export type SignedMessage = {
 };
 
 export abstract class WalletSigner {
-	client: SuiClient;
+	client: DWalletClient;
 
-	constructor(client: SuiClient) {
+	constructor(client: DWalletClient) {
 		this.client = client;
 	}
 

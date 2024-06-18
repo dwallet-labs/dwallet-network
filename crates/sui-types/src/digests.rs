@@ -347,6 +347,211 @@ impl std::str::FromStr for CheckpointDigest {
     }
 }
 
+/// Representation of a SignatureMPCMessage's digest
+#[derive(
+    Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
+)]
+pub struct SignatureMPCMessageDigest(Digest);
+
+impl SignatureMPCMessageDigest {
+    pub const fn new(digest: [u8; 32]) -> Self {
+        Self(Digest::new(digest))
+    }
+
+    pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
+        Self(Digest::generate(rng))
+    }
+
+    pub fn random() -> Self {
+        Self(Digest::random())
+    }
+
+    pub const fn inner(&self) -> &[u8; 32] {
+        self.0.inner()
+    }
+
+    pub const fn into_inner(self) -> [u8; 32] {
+        self.0.into_inner()
+    }
+
+    pub fn base58_encode(&self) -> String {
+        Base58::encode(self.0)
+    }
+
+    pub fn next_lexicographical(&self) -> Option<Self> {
+        self.0.next_lexicographical().map(Self)
+    }
+}
+
+impl AsRef<[u8]> for SignatureMPCMessageDigest {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl AsRef<[u8; 32]> for SignatureMPCMessageDigest {
+    fn as_ref(&self) -> &[u8; 32] {
+        self.0.as_ref()
+    }
+}
+
+impl From<SignatureMPCMessageDigest> for [u8; 32] {
+    fn from(digest: SignatureMPCMessageDigest) -> Self {
+        digest.into_inner()
+    }
+}
+
+impl From<[u8; 32]> for SignatureMPCMessageDigest {
+    fn from(digest: [u8; 32]) -> Self {
+        Self::new(digest)
+    }
+}
+
+impl TryFrom<Vec<u8>> for SignatureMPCMessageDigest {
+    type Error = SuiError;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, SuiError> {
+        Digest::try_from(bytes).map(SignatureMPCMessageDigest)
+    }
+}
+
+impl fmt::Display for SignatureMPCMessageDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl fmt::Debug for SignatureMPCMessageDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("SignatureMPCDigest").field(&self.0).finish()
+    }
+}
+
+impl fmt::LowerHex for SignatureMPCMessageDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::LowerHex::fmt(&self.0, f)
+    }
+}
+
+impl fmt::UpperHex for SignatureMPCMessageDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::UpperHex::fmt(&self.0, f)
+    }
+}
+
+impl std::str::FromStr for SignatureMPCMessageDigest {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut result = [0; 32];
+        result.copy_from_slice(&Base58::decode(s).map_err(|e| anyhow::anyhow!(e))?);
+        Ok(SignatureMPCMessageDigest::new(result))
+    }
+}
+
+
+/// Representation of a SignatureMPCOutput's digest
+#[derive(
+    Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
+)]
+pub struct SignatureMPCOutputDigest(Digest);
+
+impl SignatureMPCOutputDigest {
+    pub const fn new(digest: [u8; 32]) -> Self {
+        Self(Digest::new(digest))
+    }
+
+    pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
+        Self(Digest::generate(rng))
+    }
+
+    pub fn random() -> Self {
+        Self(Digest::random())
+    }
+
+    pub const fn inner(&self) -> &[u8; 32] {
+        self.0.inner()
+    }
+
+    pub const fn into_inner(self) -> [u8; 32] {
+        self.0.into_inner()
+    }
+
+    pub fn base58_encode(&self) -> String {
+        Base58::encode(self.0)
+    }
+
+    pub fn next_lexicographical(&self) -> Option<Self> {
+        self.0.next_lexicographical().map(Self)
+    }
+}
+
+impl AsRef<[u8]> for SignatureMPCOutputDigest {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
+impl AsRef<[u8; 32]> for SignatureMPCOutputDigest {
+    fn as_ref(&self) -> &[u8; 32] {
+        self.0.as_ref()
+    }
+}
+
+impl From<SignatureMPCOutputDigest> for [u8; 32] {
+    fn from(digest: SignatureMPCOutputDigest) -> Self {
+        digest.into_inner()
+    }
+}
+
+impl From<[u8; 32]> for SignatureMPCOutputDigest {
+    fn from(digest: [u8; 32]) -> Self {
+        Self::new(digest)
+    }
+}
+
+impl TryFrom<Vec<u8>> for SignatureMPCOutputDigest {
+    type Error = SuiError;
+
+    fn try_from(bytes: Vec<u8>) -> Result<Self, SuiError> {
+        Digest::try_from(bytes).map(SignatureMPCOutputDigest)
+    }
+}
+
+impl fmt::Display for SignatureMPCOutputDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl fmt::Debug for SignatureMPCOutputDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("SignatureMPCDigest").field(&self.0).finish()
+    }
+}
+
+impl fmt::LowerHex for SignatureMPCOutputDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::LowerHex::fmt(&self.0, f)
+    }
+}
+
+impl fmt::UpperHex for SignatureMPCOutputDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::UpperHex::fmt(&self.0, f)
+    }
+}
+
+impl std::str::FromStr for SignatureMPCOutputDigest {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut result = [0; 32];
+        result.copy_from_slice(&Base58::decode(s).map_err(|e| anyhow::anyhow!(e))?);
+        Ok(SignatureMPCOutputDigest::new(result))
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct CheckpointContentsDigest(Digest);
 

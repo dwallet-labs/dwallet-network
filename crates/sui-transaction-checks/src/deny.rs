@@ -65,9 +65,9 @@ fn check_disabled_hardcoded_features(
 ) -> SuiResult {
     tx_signatures.iter().try_for_each(|s| {
         for command in tx_data.kind().iter_commands() {
-            if let Command::MoveCall(pt) = command {
-                deny_if_true!(pt.package != SUI_SYSTEM_PACKAGE_ID, "Only system package is allowed");
-            }
+            // if let Command::MoveCall(pt) = command {
+            //     deny_if_true!(pt.package != SUI_SYSTEM_PACKAGE_ID, "Only system package is allowed");
+            // }
             deny_if_true!(
                 matches!(command, Command::Publish(..)),
                 "Package publish is disabled"

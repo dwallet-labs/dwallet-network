@@ -35,6 +35,8 @@ use tokio::{
     time::{timeout, Duration},
 };
 use tracing::debug;
+use sui_types::messages_signature_mpc::{SignatureMPCMessageSummary, SignedSignatureMPCOutput, SignedSignatureMPCMessageSummary};
+
 // Maximum amount of time we wait for a batch to fill up before verifying a partial batch.
 const BATCH_TIMEOUT_MS: Duration = Duration::from_millis(10);
 
@@ -179,10 +181,12 @@ impl SignatureVerifier {
     }
 
     /// Verifies all certs, returns Ok only if all are valid.
-    pub fn verify_certs_and_checkpoints(
+    pub fn verify_certs_and_checkpoints_and_signature_mpc_messages(
         &self,
         certs: Vec<CertifiedTransaction>,
         checkpoints: Vec<SignedCheckpointSummary>,
+        signature_mpc_messages: Vec<SignedSignatureMPCMessageSummary>,
+        signed_dkg_signature_mpc_outputs: Vec<SignedSignatureMPCOutput>,
     ) -> SuiResult {
         let certs: Vec<_> = certs
             .into_iter()
@@ -194,7 +198,7 @@ impl SignatureVerifier {
         for cert in &certs {
             self.verify_tx(cert.data())?;
         }
-        batch_verify_all_certificates_and_checkpoints(&self.committee, &certs, &checkpoints)?;
+        batch_verify_all_certificates_and_checkpoints_and_signature_mpc_messages(&self.committee, &certs, &checkpoints, &signature_mpc_messages, &signed_dkg_signature_mpc_outputs)?;
         self.certificate_cache
             .cache_digests(certs.into_iter().map(|c| c.certificate_digest()).collect());
         Ok(())
@@ -483,10 +487,12 @@ impl SignatureVerifierMetrics {
 }
 
 /// Verifies all certificates - if any fail return error.
-pub fn batch_verify_all_certificates_and_checkpoints(
+pub fn batch_verify_all_certificates_and_checkpoints_and_signature_mpc_messages(
     committee: &Committee,
     certs: &[CertifiedTransaction],
     checkpoints: &[SignedCheckpointSummary],
+    signature_mpc_messages: &[SignedSignatureMPCMessageSummary],
+    signed_dkg_signature_mpc_outputs: &[SignedSignatureMPCOutput],
 ) -> SuiResult {
     // certs.data() is assumed to be verified already by the caller.
 
@@ -494,7 +500,15 @@ pub fn batch_verify_all_certificates_and_checkpoints(
         ckpt.data().verify_epoch(committee.epoch())?;
     }
 
-    batch_verify(committee, certs, checkpoints)
+    for msg in signature_mpc_messages {
+        msg.data().verify_epoch(committee.epoch())?;
+    }
+
+    for msg in signed_dkg_signature_mpc_outputs {
+        msg.data().verify_epoch(committee.epoch())?;
+    }
+
+    batch_verify(committee, certs, checkpoints, signature_mpc_messages, signed_dkg_signature_mpc_outputs)
 }
 
 /// Verifies certificates in batch mode, but returns a separate result for each cert.
@@ -510,7 +524,7 @@ pub fn batch_verify_certificates(
         true,
         true,
     );
-    match batch_verify(committee, certs, &[]) {
+    match batch_verify(committee, certs, &[], &[], &[]) {
         Ok(_) => vec![Ok(()); certs.len()],
 
         // Verify one by one to find which certs were invalid.
@@ -529,6 +543,8 @@ fn batch_verify(
     committee: &Committee,
     certs: &[CertifiedTransaction],
     checkpoints: &[SignedCheckpointSummary],
+    signature_mpc_messages: &[SignedSignatureMPCMessageSummary],
+    signed_dkg_signature_mpc_outputs: &[SignedSignatureMPCOutput],
 ) -> SuiResult {
     let mut obligation = VerificationObligation::default();
 
@@ -541,6 +557,18 @@ fn batch_verify(
     for ckpt in checkpoints {
         let idx = obligation.add_message(ckpt.data(), ckpt.epoch(), Intent::sui_app(ckpt.scope()));
         ckpt.auth_sig()
+            .add_to_verification_obligation(committee, &mut obligation, idx)?;
+    }
+
+    for msg in signature_mpc_messages {
+        let idx = obligation.add_message(msg.data(), msg.epoch(), Intent::sui_app(msg.scope()));
+        msg.auth_sig()
+            .add_to_verification_obligation(committee, &mut obligation, idx)?;
+    }
+
+    for msg in signed_dkg_signature_mpc_outputs {
+        let idx = obligation.add_message(msg.data(), msg.epoch(), Intent::sui_app(msg.scope()));
+        msg.auth_sig()
             .add_to_verification_obligation(committee, &mut obligation, idx)?;
     }
 

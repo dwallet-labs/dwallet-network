@@ -1,9 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::authority::authority_per_epoch_store::{
-    AuthorityPerEpochStore, ConsensusStats, ConsensusStatsAPI, ExecutionIndicesWithStats,
-};
+use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, ConsensusCertificateResult, ConsensusStats, ConsensusStatsAPI, ExecutionIndicesWithStats};
 use crate::authority::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::{AuthorityMetrics, AuthorityState, AuthorityStore};
 use crate::checkpoints::{CheckpointService, CheckpointServiceNotify};
@@ -39,10 +37,13 @@ use sui_types::storage::ObjectStore;
 use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemStateTrait;
 use sui_types::transaction::{SenderSignedData, VerifiedTransaction};
 use tracing::{debug, error, info, instrument, trace_span};
+use sui_types::messages_signature_mpc::{SignatureMPCOutput, SignatureMPCOutputValue};
+use crate::signature_mpc::{SignatureMPCService, SignatureMPCServiceNotify};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
     checkpoint_service: Arc<CheckpointService>,
+    signature_mpc_service: Arc<SignatureMPCService>,
     epoch_store: Arc<AuthorityPerEpochStore>,
     low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
     throughput_calculator: Arc<ConsensusThroughputCalculator>,
@@ -52,6 +53,7 @@ impl ConsensusHandlerInitializer {
     pub fn new(
         state: Arc<AuthorityState>,
         checkpoint_service: Arc<CheckpointService>,
+        signature_mpc_service: Arc<SignatureMPCService>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
         throughput_calculator: Arc<ConsensusThroughputCalculator>,
@@ -59,6 +61,7 @@ impl ConsensusHandlerInitializer {
         Self {
             state,
             checkpoint_service,
+            signature_mpc_service,
             epoch_store,
             low_scoring_authorities,
             throughput_calculator,
@@ -68,10 +71,12 @@ impl ConsensusHandlerInitializer {
     pub fn new_for_testing(
         state: Arc<AuthorityState>,
         checkpoint_service: Arc<CheckpointService>,
+        signature_mpc_service: Arc<SignatureMPCService>,
     ) -> Self {
         Self {
             state: state.clone(),
             checkpoint_service,
+            signature_mpc_service,
             epoch_store: state.epoch_store_for_testing().clone(),
             low_scoring_authorities: Arc::new(Default::default()),
             throughput_calculator: Arc::new(ConsensusThroughputCalculator::new(
@@ -82,13 +87,14 @@ impl ConsensusHandlerInitializer {
     }
     pub fn new_consensus_handler(
         &self,
-    ) -> ConsensusHandler<Arc<AuthorityStore>, CheckpointService> {
+    ) -> ConsensusHandler<Arc<AuthorityStore>, CheckpointService, SignatureMPCService> {
         let new_epoch_start_state = self.epoch_store.epoch_start_state();
         let committee = new_epoch_start_state.get_narwhal_committee();
 
         ConsensusHandler::new(
             self.epoch_store.clone(),
             self.checkpoint_service.clone(),
+            self.signature_mpc_service.clone(),
             self.state.transaction_manager().clone(),
             self.state.db(),
             self.low_scoring_authorities.clone(),
@@ -99,7 +105,7 @@ impl ConsensusHandlerInitializer {
     }
 }
 
-pub struct ConsensusHandler<T, C> {
+pub struct ConsensusHandler<T, C, S> {
     /// A store created for each epoch. ConsensusHandler is recreated each epoch, with the
     /// corresponding store. This store is also used to get the current epoch ID.
     epoch_store: Arc<AuthorityPerEpochStore>,
@@ -108,6 +114,7 @@ pub struct ConsensusHandler<T, C> {
     /// checking chain consistency, and accumulating per-epoch consensus output stats.
     last_consensus_stats: ExecutionIndicesWithStats,
     checkpoint_service: Arc<C>,
+    signature_mpc_service: Arc<S>,
     /// parent_sync_store is needed when determining the next version to assign for shared objects.
     object_store: T,
     /// Reputation scores used by consensus adapter that we update, forwarded from consensus
@@ -126,10 +133,11 @@ pub struct ConsensusHandler<T, C> {
 
 const PROCESSED_CACHE_CAP: usize = 1024 * 1024;
 
-impl<T, C> ConsensusHandler<T, C> {
+impl<T, C, S> ConsensusHandler<T, C, S> {
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         checkpoint_service: Arc<C>,
+        signature_mpc_service: Arc<S>,
         transaction_manager: Arc<TransactionManager>,
         object_store: T,
         low_scoring_authorities: Arc<ArcSwap<HashMap<AuthorityName, u64>>>,
@@ -151,6 +159,7 @@ impl<T, C> ConsensusHandler<T, C> {
             epoch_store,
             last_consensus_stats,
             checkpoint_service,
+            signature_mpc_service,
             object_store,
             low_scoring_authorities,
             committee,
@@ -197,8 +206,8 @@ fn update_index_and_hash(
 }
 
 #[async_trait]
-impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync> ExecutionState
-    for ConsensusHandler<T, C>
+impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync, S: SignatureMPCServiceNotify + Send + Sync> ExecutionState
+    for ConsensusHandler<T, C, S>
 {
     /// This function will be called by Narwhal, after Narwhal sequenced this certificate.
     #[instrument(level = "debug", skip_all)]
@@ -213,8 +222,8 @@ impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync> Exe
     }
 }
 
-impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync>
-    ConsensusHandler<T, C>
+impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync, S: SignatureMPCServiceNotify + Send + Sync>
+    ConsensusHandler<T, C, S>
 {
     #[instrument(level = "debug", skip_all)]
     async fn handle_consensus_output_internal(
@@ -349,6 +358,33 @@ impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync>
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
+
+                    if let ConsensusTransactionKind::SignedDKGSignatureMPCOutput(
+                        output,
+                    ) = &transaction.kind
+                    {
+                        let is_sign = if let SignatureMPCOutputValue::Sign(_) = output.value {
+                            true
+                        } else {
+                            false
+                        };
+                        if is_sign || self.epoch_store.try_aggregate_signed_signature_mpc_output(*output.clone()).is_ok() {
+                            debug!("adding ConsensusTransactionKind tx for output {output:?}");
+                            let signature_mpc_output_transaction = self
+                                .signature_mpc_output_transaction(
+                                    output.data().clone()
+                                );
+
+                            transactions.push((
+                                empty_bytes.as_slice(),
+                                SequencedConsensusTransactionKind::System(
+                                    signature_mpc_output_transaction,
+                                ),
+                                consensus_output.leader_author_index(),
+                            ));
+                        }
+                    }
+
                     if let ConsensusTransactionKind::RandomnessStateUpdate(
                         randomness_round,
                         bytes,
@@ -372,7 +408,7 @@ impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync>
                         } else {
                             debug!("ignoring RandomnessStateUpdate tx for commit round {round:?}, randomness round {randomness_round:?}: randomness state is not enabled on this node")
                         }
-                    } else {
+                    }  else {
                         let transaction = SequencedConsensusTransactionKind::External(transaction);
                         transactions.push((serialized_transaction, transaction, authority_index));
                     }
@@ -457,6 +493,7 @@ impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync>
                 all_transactions,
                 &self.last_consensus_stats,
                 &self.checkpoint_service,
+                &self.signature_mpc_service,
                 &self.object_store,
                 round,
                 timestamp,
@@ -517,7 +554,7 @@ pub struct MysticetiConsensusHandler {
 
 impl MysticetiConsensusHandler {
     pub fn new(
-        mut consensus_handler: ConsensusHandler<Arc<AuthorityStore>, CheckpointService>,
+        mut consensus_handler: ConsensusHandler<Arc<AuthorityStore>, CheckpointService, SignatureMPCService>,
         mut receiver: tokio::sync::mpsc::UnboundedReceiver<
             mysticeti_core::consensus::linearizer::CommittedSubDag,
         >,
@@ -539,7 +576,7 @@ impl Drop for MysticetiConsensusHandler {
     }
 }
 
-impl<T, C> ConsensusHandler<T, C> {
+impl<T, C, S> ConsensusHandler<T, C, S> {
     fn consensus_commit_prologue_transaction(
         &self,
         round: u64,
@@ -611,6 +648,21 @@ impl<T, C> ConsensusHandler<T, C> {
         VerifiedExecutableTransaction::new_system(transaction, self.epoch())
     }
 
+    fn signature_mpc_output_transaction(
+        &self,
+        output: SignatureMPCOutput,
+    ) -> VerifiedExecutableTransaction {
+        assert!(self.epoch_store.protocol_config().signature_mpc());
+        let transaction = VerifiedTransaction::new_signature_mpc_output(
+            output
+        );
+        debug!(
+            "created signature mpc output transaction: {:?}",
+            transaction.digest()
+        );
+        VerifiedExecutableTransaction::new_system(transaction, self.epoch())
+    }
+
     fn epoch(&self) -> EpochId {
         self.epoch_store.epoch()
     }
@@ -626,6 +678,8 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
             }
         }
         ConsensusTransactionKind::CheckpointSignature(_) => "checkpoint_signature",
+        ConsensusTransactionKind::SignatureMPCMessage(_) => "signature_mpc_message",
+        ConsensusTransactionKind::SignedDKGSignatureMPCOutput(_) => "signed_dkg_signature_mpc_output",
         ConsensusTransactionKind::EndOfPublish(_) => "end_of_publish",
         ConsensusTransactionKind::CapabilityNotification(_) => "capability_notification",
         ConsensusTransactionKind::NewJWKFetched(_, _, _) => "new_jwk_fetched",
@@ -817,6 +871,7 @@ mod tests {
     use crate::authority::authority_per_epoch_store::{ConsensusStats, ConsensusStatsAPI};
     use crate::authority::test_authority_builder::TestAuthorityBuilder;
     use crate::checkpoints::CheckpointServiceNoop;
+    use crate::signature_mpc::SignatureMPCServiceNoop;
     use crate::consensus_adapter::consensus_tests::{test_certificates, test_gas_objects};
     use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
     use narwhal_config::AuthorityIdentifier;
@@ -868,6 +923,7 @@ mod tests {
         let mut consensus_handler = ConsensusHandler::new(
             epoch_store,
             Arc::new(CheckpointServiceNoop {}),
+            Arc::new(SignatureMPCServiceNoop {}),
             state.transaction_manager().clone(),
             state.db(),
             Arc::new(ArcSwap::default()),

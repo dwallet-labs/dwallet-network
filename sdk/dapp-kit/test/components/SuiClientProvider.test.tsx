@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient } from '@mysten/sui.js/client';
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { screen } from '@testing-library/dom';
 import { render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -23,7 +23,7 @@ describe('SuiClientProvider', () => {
 	it('provides a SuiClient instance to its children', () => {
 		const ChildComponent = () => {
 			const client = useSuiClient();
-			expect(client).toBeInstanceOf(SuiClient);
+			expect(client).toBeInstanceOf(DWalletClient);
 			return <div>Test</div>;
 		};
 
@@ -35,10 +35,10 @@ describe('SuiClientProvider', () => {
 	});
 
 	it('can accept pre-configured SuiClients', () => {
-		const suiClient = new SuiClient({ url: 'http://localhost:8080' });
+		const suiClient = new DWalletClient({ url: 'http://localhost:8080' });
 		const ChildComponent = () => {
 			const client = useSuiClient();
-			expect(client).toBeInstanceOf(SuiClient);
+			expect(client).toBeInstanceOf(DWalletClient);
 			expect(client).toBe(suiClient);
 			return <div>Test</div>;
 		};
@@ -83,7 +83,7 @@ describe('SuiClientProvider', () => {
 					}}
 					createClient={(name, { custom, ...config }) => {
 						custom(name);
-						return new SuiClient(config);
+						return new DWalletClient(config);
 					}}
 				>
 					<div>{`selected network: ${selectedNetwork}`}</div>

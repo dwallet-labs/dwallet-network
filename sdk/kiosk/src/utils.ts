@@ -3,14 +3,14 @@
 
 import {
 	PaginationArguments,
-	SuiClient,
+	DWalletClient,
 	SuiObjectData,
 	SuiObjectDataFilter,
 	SuiObjectDataOptions,
 	SuiObjectResponse,
 	type DynamicFieldInfo,
-} from '@mysten/sui.js/client';
-import { normalizeStructTag, normalizeSuiAddress, parseStructTag } from '@mysten/sui.js/utils';
+} from '@dwallet-network/dwallet.js/client';
+import { normalizeStructTag, normalizeSuiAddress, parseStructTag } from '@dwallet-network/dwallet.js/utils';
 
 import { bcs } from './bcs';
 import {
@@ -24,7 +24,7 @@ import {
 
 const DEFAULT_QUERY_LIMIT = 50;
 
-export async function getKioskObject(client: SuiClient, id: string): Promise<Kiosk> {
+export async function getKioskObject(client: DWalletClient, id: string): Promise<Kiosk> {
 	const queryRes = await client.getObject({ id, options: { showBcs: true } });
 
 	if (!queryRes || queryRes.error || !queryRes.data) {
@@ -159,7 +159,7 @@ export function attachLockedItems(kioskData: KioskData, lockedItemIds: string[])
  * RPC calls that allow filtering of Type / batch fetching of spec
  */
 export async function getAllDynamicFields(
-	client: SuiClient,
+	client: DWalletClient,
 	parentId: string,
 	pagination: PaginationArguments<string>,
 ) {
@@ -187,7 +187,7 @@ export async function getAllDynamicFields(
  * Requests are sent using `Promise.all`.
  */
 export async function getAllObjects(
-	client: SuiClient,
+	client: DWalletClient,
 	ids: string[],
 	options: SuiObjectDataOptions,
 	limit: number = DEFAULT_QUERY_LIMIT,
@@ -219,7 +219,7 @@ export async function getAllOwnedObjects({
 	limit = DEFAULT_QUERY_LIMIT,
 	options = { showType: true, showContent: true },
 }: {
-	client: SuiClient;
+	client: DWalletClient;
 	owner: string;
 	filter?: SuiObjectDataFilter;
 	options?: SuiObjectDataOptions;

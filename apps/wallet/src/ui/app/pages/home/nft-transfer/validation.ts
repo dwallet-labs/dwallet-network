@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { createSuiAddressValidation } from '_components/address-input/validation';
-import { type SuiClient } from '@mysten/sui.js/client';
+import { type DWalletClient } from '@dwallet-network/dwallet.js/client';
 import * as Yup from 'yup';
 
 export function createValidationSchema(
-	client: SuiClient,
+	client: DWalletClient,
 	suiNSEnabled: boolean,
 	senderAddress: string,
 	objectId: string,

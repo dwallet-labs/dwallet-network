@@ -964,6 +964,8 @@ impl TestClusterBuilder {
             envs: Default::default(),
             active_address,
             active_env: Default::default(),
+            dwallets: vec![],
+            active_dwallet: None,
         }
         .save(wallet_path)?;
 

@@ -105,7 +105,7 @@ export interface OrderArguments {
  * Configuration options for the SuiClient
  * You must provide either a `url` or a `transport`
  */
-export type SuiClientOptions = NetworkOrTransport;
+export type DWalletClientOptions = NetworkOrTransport;
 
 export type NetworkOrTransport =
 	| {
@@ -117,20 +117,20 @@ export type NetworkOrTransport =
 			url?: never;
 	  };
 
-export const SUI_CLIENT_BRAND = Symbol.for('@mysten/SuiClient');
+export const DWALLET_CLIENT_BRAND = Symbol.for('@dwallet-network/SuiClient');
 
-export function isSuiClient(client: unknown): client is SuiClient {
+export function isDWalletClient(client: unknown): client is DWalletClient {
 	return (
 		typeof client === 'object' &&
 		client !== null &&
-		(client as { [SUI_CLIENT_BRAND]: unknown })[SUI_CLIENT_BRAND] === true
+		(client as { [DWALLET_CLIENT_BRAND]: unknown })[DWALLET_CLIENT_BRAND] === true
 	);
 }
 
-export class SuiClient {
+export class DWalletClient {
 	protected transport: SuiTransport;
 
-	get [SUI_CLIENT_BRAND]() {
+	get [DWALLET_CLIENT_BRAND]() {
 		return true;
 	}
 
@@ -139,7 +139,7 @@ export class SuiClient {
 	 *
 	 * @param options configuration options for the API Client
 	 */
-	constructor(options: SuiClientOptions) {
+	constructor(options: DWalletClientOptions) {
 		this.transport = options.transport ?? new SuiHTTPTransport({ url: options.url });
 	}
 
@@ -772,7 +772,7 @@ export class SuiClient {
 		timeout?: number;
 		/** The amount of time to wait between checks for the transaction block. Defaults to 2 seconds. */
 		pollInterval?: number;
-	} & Parameters<SuiClient['getTransactionBlock']>[0]): Promise<SuiTransactionBlockResponse> {
+	} & Parameters<DWalletClient['getTransactionBlock']>[0]): Promise<SuiTransactionBlockResponse> {
 		const timeoutSignal = AbortSignal.timeout(timeout);
 		const timeoutPromise = new Promise((_, reject) => {
 			timeoutSignal.addEventListener('abort', () => reject(timeoutSignal.reason));

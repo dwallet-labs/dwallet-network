@@ -9,12 +9,14 @@ use rand::rngs::OsRng;
 use std::path::PathBuf;
 use std::time::Duration;
 use std::{num::NonZeroUsize, path::Path, sync::Arc};
+use std::collections::HashMap;
 use sui_config::genesis::{TokenAllocation, TokenDistributionScheduleBuilder};
 use sui_config::node::OverloadThresholdConfig;
 use sui_protocol_config::SupportedProtocolVersions;
 use sui_types::base_types::{AuthorityName, SuiAddress};
 use sui_types::committee::{Committee, ProtocolVersion};
 use sui_types::crypto::{get_key_pair_from_rng, AccountKeyPair, KeypairTraits, PublicKey};
+use signature_mpc::twopc_mpc_protocols::{config_signature_mpc_secret_for_network_for_testing, DecryptionPublicParameters, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PartyID, SecretKeyShareSizedNumber, tiresias_deal_trusted_shares};
 use sui_types::object::Object;
 
 pub enum CommitteeConfig {
@@ -221,6 +223,8 @@ impl<R> ConfigBuilder<R> {
     }
 }
 
+
+
 impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
     //TODO right now we always randomize ports, we may want to have a default port configuration
     pub fn build(self) -> NetworkConfig {
@@ -233,12 +237,18 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 // external test randomness because it uses a fixed seed). Necessary because some
                 // tests call `make_tx_certs_and_signed_effects`, which locally forges a cert using
                 // this same committee.
-                let (_, keys) = Committee::new_simple_test_committee_of_size(size.into());
+                let (_, mut keys) = Committee::new_simple_test_committee_of_size(size.into());
 
+                let (decryption_key_share_public_parameters, decryption_key_shares) = config_signature_mpc_secret_for_network_for_testing(size.get() as PartyID);
+
+                keys.sort_by_key(|k| AuthorityName::from(k.public()));
                 keys.into_iter()
-                    .map(|authority_key| {
+                    .enumerate()
+                    .map(|(i, authority_key)| {
                         let mut builder = ValidatorGenesisConfigBuilder::new()
-                            .with_protocol_key_pair(authority_key);
+                            .with_protocol_key_pair(authority_key)
+                            .with_signature_mpc_tiresias_public_parameters(decryption_key_share_public_parameters.clone())
+                            .with_signature_mpc_tiresias_key_share_decryption_key_share(*decryption_key_shares.get(&((i + 1) as PartyID)).unwrap());
                         if let Some(rgp) = self.reference_gas_price {
                             builder = builder.with_gas_price(rgp);
                         }

@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiClient } from '@mysten/sui.js/client';
-import { TransactionObjectArgument } from '@mysten/sui.js/transactions';
+import { type DWalletClient } from '@dwallet-network/dwallet.js/client';
+import { TransactionObjectArgument } from '@dwallet-network/dwallet.js/transactions';
 
 import { BaseRulePackageIds } from '../constants';
 
@@ -29,7 +29,7 @@ export enum Network {
  * The Client Options for Both KioskClient & TransferPolicyManager.
  */
 export type KioskClientOptions = {
-	client: SuiClient;
+	client: DWalletClient;
 	network: Network;
 	packageIds?: BaseRulePackageIds;
 };

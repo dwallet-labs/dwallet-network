@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useSuiClient } from '@mysten/dapp-kit';
-import { SuiClient } from '@mysten/sui.js/client';
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { useMemo } from 'react';
 
 import { useNetwork } from '~/context';
@@ -13,7 +13,7 @@ export function useEnhancedRpcClient() {
 	const client = useSuiClient();
 	const enhancedRpc = useMemo(() => {
 		if (network === Network.LOCAL) {
-			return new SuiClient({ url: 'http://localhost:9124' });
+			return new DWalletClient({ url: 'http://localhost:9124' });
 		}
 
 		return client;

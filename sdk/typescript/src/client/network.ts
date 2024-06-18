@@ -3,8 +3,8 @@
 
 export function getFullnodeUrl(network: 'mainnet' | 'testnet' | 'devnet' | 'localnet') {
 	switch (network) {
-		case 'mainnet':
-			return 'https://fullnode.mainnet.sui.io:443';
+		// case 'mainnet':
+		// 	return 'https://fullnode.mainnet.sui.io:443';
 		case 'testnet':
 			return 'http://fullnode.alpha.testnet.dwallet.cloud:9000';
 		case 'devnet':

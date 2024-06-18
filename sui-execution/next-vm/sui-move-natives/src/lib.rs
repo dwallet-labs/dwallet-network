@@ -148,7 +148,6 @@ pub struct NativesCostTable {
 
     // Receive object
     pub transfer_receive_object_internal_cost_params: TransferReceiveObjectInternalCostParams,
-
     // twopc mpc
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
 }
@@ -732,10 +731,10 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
                 )
             });
     let sui_system_natives: &[(&str, &str, NativeFunction)] = &[(
-        "validator",
-        "validate_metadata_bcs",
-        make_native!(validator::validate_metadata_bcs),
-    ),
+            "validator",
+            "validate_metadata_bcs",
+            make_native!(validator::validate_metadata_bcs),
+        ),
         (
             "dwallet_2pc_mpc_ecdsa_k1",
             "dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share",

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@mysten/sui.js/client';
+import type { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import type { UseQueryOptions, UseQueryResult } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 
@@ -9,19 +9,19 @@ import type { PartialBy } from '../types/utilityTypes.js';
 import { useSuiClientContext } from './useSuiClient.js';
 
 export type SuiRpcMethodName = {
-	[K in keyof SuiClient]: SuiClient[K] extends ((input: any) => Promise<any>) | (() => Promise<any>)
+	[K in keyof DWalletClient]: DWalletClient[K] extends ((input: any) => Promise<any>) | (() => Promise<any>)
 		? K
 		: never;
-}[keyof SuiClient];
+}[keyof DWalletClient];
 
 export type SuiRpcMethods = {
-	[K in SuiRpcMethodName]: SuiClient[K] extends (input: infer P) => Promise<infer R>
+	[K in SuiRpcMethodName]: DWalletClient[K] extends (input: infer P) => Promise<infer R>
 		? {
 				name: K;
 				result: R;
 				params: P;
 		  }
-		: SuiClient[K] extends () => Promise<infer R>
+		: DWalletClient[K] extends () => Promise<infer R>
 		? {
 				name: K;
 				result: R;

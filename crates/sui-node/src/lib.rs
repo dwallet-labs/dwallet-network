@@ -136,7 +136,9 @@ pub struct ValidatorComponents {
     // is copied into each checkpoint service task, and they are listening to any change to this
     // channel. When the sender is dropped, a change is triggered and those tasks will exit.
     checkpoint_service_exit: watch::Sender<()>,
+    signature_mpc_service_exit: watch::Sender<()>,
     checkpoint_metrics: Arc<CheckpointMetrics>,
+    signature_mpc_metrics: Arc<SignatureMPCMetrics>,
     sui_tx_validator_metrics: Arc<SuiTxValidatorMetrics>,
 }
 
@@ -198,6 +200,8 @@ use simulator::*;
 pub use simulator::set_jwk_injector;
 use sui_core::consensus_handler::ConsensusHandlerInitializer;
 use sui_core::mysticeti_adapter::LazyMysticetiClient;
+use sui_core::signature_mpc::{SignatureMPCMetrics, SignatureMPCService, SubmitSignatureMPCToConsensus};
+use sui_types::messages_signature_mpc::InitiateSignatureMPCProtocol;
 
 pub struct SuiNode {
     config: NodeConfig,
@@ -1063,6 +1067,7 @@ impl SuiNode {
         consensus_epoch_data_remover.run().await;
 
         let checkpoint_metrics = CheckpointMetrics::new(&registry_service.default_registry());
+        let signature_mpc_metrics = SignatureMPCMetrics::new(&registry_service.default_registry());
         let sui_tx_validator_metrics =
             SuiTxValidatorMetrics::new(&registry_service.default_registry());
 
@@ -1073,6 +1078,7 @@ impl SuiNode {
             &registry_service.default_registry(),
         )
         .await?;
+
 
         Self::start_epoch_specific_validator_components(
             config,
@@ -1086,6 +1092,7 @@ impl SuiNode {
             accumulator,
             validator_server_handle,
             checkpoint_metrics,
+            signature_mpc_metrics,
             sui_node_metrics,
             sui_tx_validator_metrics,
         )
@@ -1104,6 +1111,7 @@ impl SuiNode {
         accumulator: Arc<StateAccumulator>,
         validator_server_handle: JoinHandle<Result<()>>,
         checkpoint_metrics: Arc<CheckpointMetrics>,
+        signature_mpc_metrics: Arc<SignatureMPCMetrics>,
         sui_node_metrics: Arc<SuiNodeMetrics>,
         sui_tx_validator_metrics: Arc<SuiTxValidatorMetrics>,
     ) -> Result<ValidatorComponents> {
@@ -1116,6 +1124,14 @@ impl SuiNode {
             state_sync_handle,
             accumulator,
             checkpoint_metrics.clone(),
+        );
+
+        let (signature_mpc_service, signature_mpc_service_exit) = Self::start_signature_mpc_service(
+            config,
+            consensus_adapter.clone(),
+            epoch_store.clone(),
+            state.clone(),
+            signature_mpc_metrics.clone(),
         );
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
@@ -1143,6 +1159,7 @@ impl SuiNode {
         let consensus_handler_initializer = ConsensusHandlerInitializer::new(
             state.clone(),
             checkpoint_service.clone(),
+            signature_mpc_service.clone(),
             epoch_store.clone(),
             low_scoring_authorities,
             throughput_calculator,
@@ -1178,7 +1195,9 @@ impl SuiNode {
             consensus_epoch_data_remover,
             consensus_adapter,
             checkpoint_service_exit,
+            signature_mpc_service_exit,
             checkpoint_metrics,
+            signature_mpc_metrics,
             sui_tx_validator_metrics,
         })
     }
@@ -1228,6 +1247,51 @@ impl SuiNode {
             checkpoint_metrics,
             max_tx_per_checkpoint,
             max_checkpoint_size_bytes,
+        )
+    }
+
+    fn start_signature_mpc_service(
+        config: &NodeConfig,
+        consensus_adapter: Arc<ConsensusAdapter>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        state: Arc<AuthorityState>,
+        signature_mpc_metrics: Arc<SignatureMPCMetrics>,
+    ) -> (Arc<SignatureMPCService>, watch::Sender<()>) {
+        let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
+        let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
+
+        debug!(
+            "Starting signature mpc service with epoch start timestamp {}
+            and epoch duration {}",
+            epoch_start_timestamp_ms, epoch_duration_ms
+        );
+
+        //let secret = Arc::pin(config.signature_mpc_key_pair().copy());
+
+        let signature_mpc_submit = Arc::new(SubmitSignatureMPCToConsensus {
+            sender: consensus_adapter,
+            signer: state.secret.clone(),
+            authority: config.protocol_public_key(),
+            next_reconfiguration_timestamp_ms: epoch_start_timestamp_ms
+                .checked_add(epoch_duration_ms)
+                .expect("Overflow calculating next_reconfiguration_timestamp_ms"),
+            metrics: signature_mpc_metrics.clone(),
+        });
+
+        // TODO: replace unwrap
+        let tiresias_public_parameters = epoch_store.protocol_config().signature_mpc_tiresias_public_parameters().unwrap();
+
+        let signature_mpc_tiresias = config.signature_mpc_tiresias().expect("signature_mpc_tiresias should be populated");
+        let (tiresias_public_parameters, tiresias_key_share_decryption_key_share) = signature_mpc_tiresias.signature_mpc_tiresias().expect("signature_mpc_tiresias should be populated");
+
+
+        SignatureMPCService::spawn(
+            tiresias_public_parameters.clone(),
+            tiresias_key_share_decryption_key_share.clone(),
+            state.clone(),
+            epoch_store,
+            signature_mpc_submit,
+            signature_mpc_metrics,
         )
     }
 
@@ -1448,13 +1512,16 @@ impl SuiNode {
                 consensus_epoch_data_remover,
                 consensus_adapter,
                 checkpoint_service_exit,
+                signature_mpc_service_exit,
                 checkpoint_metrics,
+                signature_mpc_metrics,
                 sui_tx_validator_metrics,
-            }) = self.validator_components.lock().await.take()
+              }) = self.validator_components.lock().await.take()
             {
                 info!("Reconfiguring the validator.");
                 // Stop the old checkpoint service.
                 drop(checkpoint_service_exit);
+                drop(signature_mpc_service_exit);
 
                 consensus_manager.shutdown().await;
 
@@ -1487,6 +1554,7 @@ impl SuiNode {
                             self.accumulator.clone(),
                             validator_server_handle,
                             checkpoint_metrics,
+                            signature_mpc_metrics,
                             self.metrics.clone(),
                             sui_tx_validator_metrics,
                         )

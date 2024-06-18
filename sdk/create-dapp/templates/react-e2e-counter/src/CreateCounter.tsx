@@ -1,4 +1,4 @@
-import { TransactionBlock } from "@mysten/sui.js/transactions";
+import { TransactionBlock } from "@dwallet-network/dwallet.js/transactions";
 import { Button, Container } from "@radix-ui/themes";
 import {
   useSignAndExecuteTransactionBlock,
