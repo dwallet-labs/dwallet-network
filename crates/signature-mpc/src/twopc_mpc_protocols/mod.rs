@@ -47,7 +47,7 @@ pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
 
 pub use twopc_mpc::{Result, Error};
 use twopc_mpc::secp256k1::paillier::bulletproofs::{PresignProofVerificationRoundParty, SignaturePartialDecryptionProofParty, SignatureVerificationParty};
-use twopc_mpc::sign::decentralized_party::identifiable_abort::signature_partial_decryption_verification_round;
+pub use twopc_mpc::sign::decentralized_party::identifiable_abort::signature_partial_decryption_verification_round;
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;

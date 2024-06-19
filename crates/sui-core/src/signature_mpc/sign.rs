@@ -5,9 +5,10 @@ use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 use std::collections::{HashMap, HashSet};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId, ObjectRef};
-use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash, generate_proof};
+use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash, generate_proof, signature_partial_decryption_verification_round};
 use std::convert::TryInto;
 use std::mem;
+use futures::StreamExt;
 use tracing::error;
 
 #[derive(Default)]
@@ -15,7 +16,10 @@ pub(crate) enum SignRound {
     FirstRound {
         signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>
     },
-    IdentifiableAbortFirstRound,
+    IdentifiableAbortFirstRound{
+        party_id: PartyID,
+        proofs : Vec<DecryptionKeyShare::PartialDecryptionProof>
+    },
     IdentifiableAbortSecondRound,
     #[default]
     None,
@@ -88,25 +92,25 @@ impl SignRound {
                     Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures))
                 } else {
                     // TODO: Generate and send proof
-                    // create the decryption key share
-                    // generate the proof
                     let decryption_key_share = DecryptionKeyShare::new(
                         state.party_id,
                         state.tiresias_key_share_decryption_key_share,
                         &state.tiresias_public_parameters,
                     )?;
-                    for i in decrypt_result.failed_messages_indices {
-                        let (proof, party) = generate_proof(
-                            state.tiresias_public_parameters.clone(),
-                            decryption_key_share.clone(),
-                            state.party_id,
-                            state.presigns[i],
-                            state.tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
-                            state.public_nonce_encrypted_partial_signature_and_proofs[i],
-                        );
+                    let (proofs, party) = decrypt_result.failed_messages_indices.map(
+                        |index| {
+                            generate_proof(
+                                state.tiresias_public_parameters.clone(),
+                                decryption_key_share.clone(),
+                                state.party_id,
+                                state.presigns[index],
+                                state.tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
+                                state.public_nonce_encrypted_partial_signature_and_proofs[index],
+                            )
+                        }).collect();
 
-                    }
-                    Ok(SignRoundCompletion::ProofOutput(vec![vec![7, 8, 9]]))
+                    Ok(SignRoundCompletion::ProofOutput(state.party_id, proofs))
+
                 }
             }
 
@@ -124,7 +128,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    ProofOutput(PartyID, DecryptionKeyShare::PartialDecryptionProof),
+    ProofOutput(PartyID, Vec<DecryptionKeyShare::PartialDecryptionProof>),
     None,
 }
 

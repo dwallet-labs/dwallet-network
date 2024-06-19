@@ -379,6 +379,7 @@ impl SignatureMPCAggregator {
                         party_id,
                         parties,
                         session_id,
+
                     )
                 });
 
@@ -679,15 +680,16 @@ impl SignatureMPCAggregator {
         });
     }
 
-    fn spawn_complete_identifiable_abort_first_round(epoch: EpochId,
-                                                     epoch_store: Arc<AuthorityPerEpochStore>,
-                                                     party_id: PartyID,
-                                                     session_id: SignatureMPCSessionID,
-                                                     session_ref: ObjectRef,
-                                                     state: SignState,
-                                                     sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
-                                                     sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
-                                                     submit: Arc<dyn SubmitSignatureMPC>,
+    fn spawn_complete_identifiable_abort_first_round(
+        epoch: EpochId,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        party_id: PartyID,
+        session_id: SignatureMPCSessionID,
+        session_ref: ObjectRef,
+        state: SignState,
+        sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
+        sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
+        submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
         let m =
