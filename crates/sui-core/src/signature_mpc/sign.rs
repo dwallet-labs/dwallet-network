@@ -76,41 +76,38 @@ impl SignRound {
         let round = mem::take(self);
         match round {
             SignRound::FirstRound { signature_threshold_decryption_round_parties } => {
-                let res = decrypt_signature_decentralized_party_sign(
+                let decrypt_result = decrypt_signature_decentralized_party_sign(
                     state.messages.unwrap(),
                     state.tiresias_public_parameters.clone(),
                     state.decryption_shares.clone(),
                     state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap(),
-                    signature_threshold_decryption_round_parties
+                    signature_threshold_decryption_round_parties,
                 );
 
-                match res {
-                    Ok(signatures_s) => {
-                        Ok(SignRoundCompletion::SignatureOutput(signatures_s))
-                    },
-                    Err(e) => {
-                        // TODO: Generate and send proof
-                        // create the decryption key share
-                        let decryption_key_share = DecryptionKeyShare::new(
-                            state.party_id,
-                            state.tiresias_key_share_decryption_key_share,
-                            &state.tiresias_public_parameters,
-                        )?;
-                        // generate the proof
+                if decrypt_result.failed_messages_indices.len() == 0 {
+                    Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures))
+                } else {
+                    // TODO: Generate and send proof
+                    // create the decryption key share
+                    let decryption_key_share = DecryptionKeyShare::new(
+                        state.party_id,
+                        state.tiresias_key_share_decryption_key_share,
+                        &state.tiresias_public_parameters,
+                    )?;
+                    // generate the proof
 
-                        let (proof, party) = generate_proof(
-                            state.tiresias_public_parameters.clone(),
-                            decryption_key_share,
-                            state.party_id,
-                            _,
-                            state.tiresias_public_parameters.encryption_scheme_public_parameters,
-                            _
-                        )
-
-                        // Ok(SignRoundCompletion::ProofOutput(vec![vec![7, 8, 9]]))
-                    }
+                    let (proof, party) = generate_proof(
+                        state.tiresias_public_parameters.clone(),
+                        decryption_key_share,
+                        state.party_id,
+                        _,
+                        state.tiresias_public_parameters.encryption_scheme_public_parameters,
+                        _,
+                    );
+                    Ok(SignRoundCompletion::ProofOutput(vec![vec![7, 8, 9]]))
                 }
             }
+
             SignRound::IdentifiableAbortFirstRound => {
                 println!("recv wohwoh: IdentifiableAbortFirstRound message");
                 Ok(SignRoundCompletion::None)
@@ -151,7 +148,7 @@ impl SignState {
         party_id: PartyID,
         parties: HashSet<PartyID>,
         session_id: SignatureMPCSessionID,
-        presign: DecentralizedPartyPresign
+        presign: DecentralizedPartyPresign,
     ) -> Self {
         let aggregator_party_id = ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap()) % parties.len() as u64) + 1) as PartyID;
 

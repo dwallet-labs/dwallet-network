@@ -364,8 +364,8 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
 }
 
 struct DecryptResult {
-    messages_signatures: Vec<Vec<u8>>,
-    failed_messages_indices: Vec<u64>,
+    pub messages_signatures: Vec<Vec<u8>>,
+    pub failed_messages_indices: Vec<u64>,
 }
 
 pub fn decrypt_signature_decentralized_party_sign(
