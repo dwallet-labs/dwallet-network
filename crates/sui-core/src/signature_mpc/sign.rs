@@ -89,21 +89,23 @@ impl SignRound {
                 } else {
                     // TODO: Generate and send proof
                     // create the decryption key share
+                    // generate the proof
                     let decryption_key_share = DecryptionKeyShare::new(
                         state.party_id,
                         state.tiresias_key_share_decryption_key_share,
                         &state.tiresias_public_parameters,
                     )?;
-                    // generate the proof
+                    for i in decrypt_result.failed_messages_indices {
+                        let (proof, party) = generate_proof(
+                            state.tiresias_public_parameters.clone(),
+                            decryption_key_share.clone(),
+                            state.party_id,
+                            state.presigns[i],
+                            state.tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
+                            state.public_nonce_encrypted_partial_signature_and_proofs[i],
+                        );
 
-                    let (proof, party) = generate_proof(
-                        state.tiresias_public_parameters.clone(),
-                        decryption_key_share,
-                        state.party_id,
-                        _,
-                        state.tiresias_public_parameters.encryption_scheme_public_parameters,
-                        _,
-                    );
+                    }
                     Ok(SignRoundCompletion::ProofOutput(vec![vec![7, 8, 9]]))
                 }
             }
@@ -136,7 +138,7 @@ pub(crate) struct SignState {
     tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
     messages: Option<Vec<Vec<u8>>>,
     public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
-    presign: DecentralizedPartyPresign,
+    presigns: Vec<DecentralizedPartyPresign>,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
 }
 
@@ -148,7 +150,7 @@ impl SignState {
         party_id: PartyID,
         parties: HashSet<PartyID>,
         session_id: SignatureMPCSessionID,
-        presign: DecentralizedPartyPresign,
+        presigns: Vec<DecentralizedPartyPresign>,
     ) -> Self {
         let aggregator_party_id = ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap()) % parties.len() as u64) + 1) as PartyID;
 
@@ -162,7 +164,7 @@ impl SignState {
             public_nonce_encrypted_partial_signature_and_proofs: None,
             decryption_shares: HashMap::new(),
             tiresias_key_share_decryption_key_share,
-            presign,
+            presigns,
         }
     }
 

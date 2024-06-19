@@ -347,7 +347,6 @@ impl SignatureMPCAggregator {
                         party_id,
                         parties,
                         session_id,
-
                     )
                 });
 
@@ -824,8 +823,10 @@ impl SignatureMPCAggregator {
                     presigns,
                     hash.into(),
                 ) {
-                    let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
-                        SignState::new(tiresias_key_share_decryption_key_share, tiresias_public_parameters, epoch, party_id, parties, session_id)
+                    let mut state = sign_session_states.entry(
+                        session_id).or_insert_with(|| {
+                        SignState::new(tiresias_key_share_decryption_key_share, tiresias_public_parameters,
+                                       epoch, party_id, parties, session_id, presigns.clone())
                     });
 
                     state.set(messages, public_nonce_encrypted_partial_signature_and_proofs);
