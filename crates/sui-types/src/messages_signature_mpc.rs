@@ -71,6 +71,35 @@ pub enum SignatureMPCMessageProtocols {
     PresignFirstRound(SignatureMPCBulletProofAggregatesMessage),
     PresignSecondRound(SignatureMPCBulletProofAggregatesMessage),
     Sign(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
+    IdentifiableAbortFirstRound(u8),
+    IdentifiableAbortSecondRound(SignatureMPCBulletProofAggregatesMessage),
+}
+impl Display for SignatureMPCMessageProtocols {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            SignatureMPCMessageProtocols::DKG(_) => {
+                f.write_str("DKG")
+            }
+            SignatureMPCMessageProtocols::PresignFirstRound(_) => {
+                f.write_str("PresignFirstRound")
+            }
+            SignatureMPCMessageProtocols::PresignSecondRound(_) => {
+                f.write_str("PresignSecondRound")
+            }
+            SignatureMPCMessageProtocols::Sign(_) => {
+                f.write_str("Sign")
+            }
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_) => {
+                f.write_str("IdentifiableAbortFirstRound")
+            }
+            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => {
+                f.write_str("IdentifiableAbortSecondRound")
+            }
+            _ => {
+                f.write_str("Unknown")
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -148,6 +177,7 @@ pub enum SignatureMPCOutputValue {
     PresignOutput(Vec<u8>),
     Presign(Vec<u8>),
     Sign(Vec<Vec<u8>>),
+    // Q: What is the identifiable abort output?
 }
 
 impl Display for SignatureMPCOutputValue {
@@ -338,6 +368,8 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(_) => 2,
             SignatureMPCMessageProtocols::PresignSecondRound(_) => 3,
             SignatureMPCMessageProtocols::Sign(_) => 3,
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_) => 4,
+            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => 5,
         }
     }
 
@@ -347,6 +379,8 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(m) => m.round(),
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
             SignatureMPCMessageProtocols::Sign(_) => 1,
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(m) => 7,
+            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(m) => m.round(),
         }
     }
 }
