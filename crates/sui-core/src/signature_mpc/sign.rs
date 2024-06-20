@@ -105,7 +105,8 @@ impl SignRound {
                                 state.party_id,
                                 state.presigns[index],
                                 state.tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
-                                state.public_nonce_encrypted_partial_signature_and_proofs[index],
+                                state
+                                    .public_nonce_encrypted_partial_signature_and_proofs.unwrap()[index],
                             )
                         }).collect();
 
