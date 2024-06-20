@@ -455,10 +455,11 @@ pub fn generate_proof(
     decryption_key_share: DecryptionKeyShare,
     designated_decrypting_party_id: PartyID,
     presign: DecentralizedPartyPresign,
-    encryption_scheme_public_parameters: EncryptionKey::PublicParameters,
+    // encryption_scheme_public_parameters: EncryptionKey::PublicParameters,
+    encryption_scheme_public_parameters: <EncryptionKey as AdditivelyHomomorphicEncryptionKey<PLAINTEXT_SPACE_SCALAR_LIMBS>>::PublicParameters,
     public_nonce_encrypted_partial_signature_and_proof: PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
 ) -> Result<(
-    DecryptionKeyShare::PartialDecryptionProof,
+    <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PartialDecryptionProof,
     signature_partial_decryption_verification_round::Party<
         PLAINTEXT_SPACE_SCALAR_LIMBS,
         EncryptionKey,
