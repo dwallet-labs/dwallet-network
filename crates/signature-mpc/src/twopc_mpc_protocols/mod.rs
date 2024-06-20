@@ -419,10 +419,10 @@ pub fn decrypt_signature_decentralized_party_sign(
             messages.into_iter()
                 .zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter())
                 .zip(decryption_shares.into_iter()))
-        .enumerate().map(|index, (signature_threshold_decryption_round_party,
+        .enumerate().map(|(index, (signature_threshold_decryption_round_party,
         ((message, public_nonce_encrypted_partial_signature_and_proof
         ), (partial_signature_decryption_shares,
-            masked_nonce_decryption_shares)))| {
+            masked_nonce_decryption_shares))))| {
         let result = signature_threshold_decryption_round_party.decrypt_signature(
             lagrange_coefficients.clone(),
             partial_signature_decryption_shares,
