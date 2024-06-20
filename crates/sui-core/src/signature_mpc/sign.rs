@@ -5,7 +5,7 @@ use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 use std::collections::{HashMap, HashSet};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId, ObjectRef};
-use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash, generate_proof, signature_partial_decryption_verification_round};
+use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash, generate_proof, signature_partial_decryption_verification_round, identify_malicious_parties};
 use std::convert::TryInto;
 use std::mem;
 use futures::StreamExt;
@@ -114,11 +114,22 @@ impl SignRound {
                     if proof_results.len() == 0 {
                         println!("Failed to generate proofs");
                     } else {
-                        for result in proof_results {
+                        for (i, message_index) in decrypt_result.failed_messages_indices.iter().enumerate() {
+                            let result = proof_results.get(i).unwrap();
                             match result {
                                 Ok((proof, party)) => {
+
+                                    let party_proof_map = HashMap::from((state.party_id, proof));
+
                                     println!("Generated Proof: {:?}", proof);
                                     // TODO: make sure the proof is valid
+                                        identify_malicious_parties(
+                                            party,
+                                            HashMap::from((state.party_id, state.decryption_shares.clone()[state.party_id][message_index].0)),
+                                            HashMap::from((state.party_id, state.decryption_shares.clone()[state.party_id][message_index].1)),
+                                            state.tiresias_public_parameters.clone(),
+                                            party_proof_map,
+                                        );
 
                                 }
                                 Err(e) => {

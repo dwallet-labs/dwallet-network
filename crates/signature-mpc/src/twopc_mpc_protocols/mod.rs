@@ -458,18 +458,15 @@ type ProofParty = signature_partial_decryption_verification_round::Party<
 
 pub fn identify_malicious_parties(
     verification_round_party: ProofParty,
-    partial_signature_decryption_shares:  HashMap<PartyID, <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::DecryptionShare>, // decryption shares sent initially
-    masked_nonce_decryption_shares: HashMap<PartyID, <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::DecryptionShare>, // decryption shares sent initially
+    partial_signature_decryption_share : HashMap<PartyID, <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::DecryptionShare>,
+    masked_nonce_decryption_share : HashMap<PartyID, <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::DecryptionShare>,
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     signature_partial_decryption_proofs: HashMap<
         PartyID,
         <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PartialDecryptionProof
-    >
+    >,
 ) -> Vec<PartyID> // malicious_party_ids
 {
-
-    // extract lagrange_coefficients
-    // e.g. see twopc_mpc_protocols::mod::decrypt_signature_decentralized_party_sign
 
     let decrypters: Vec<_> = signature_partial_decryption_proofs.keys().cloned().collect();
 
@@ -497,7 +494,7 @@ pub fn identify_malicious_parties(
         partial_signature_decryption_shares,
         masked_nonce_decryption_shares,
         signature_partial_decryption_proofs,
-        &mut OsRng
+        &mut OsRng,
     );
 
     println!("error: {:?}", error);
