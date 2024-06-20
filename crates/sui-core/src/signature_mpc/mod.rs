@@ -821,7 +821,7 @@ impl SignatureMPCAggregator {
                     messages.clone(),
                     dkg_output,
                     public_nonce_encrypted_partial_signature_and_proofs.clone(),
-                    presigns,
+                    presigns.clone(),
                     hash.into(),
                 ) {
                     let mut state = sign_session_states.entry(
