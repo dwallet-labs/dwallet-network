@@ -17,8 +17,8 @@ pub(crate) enum SignRound {
         signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>
     },
     IdentifiableAbortFirstRound{
-        party_id: PartyID,
-        proofs : Vec<DecryptionKeyShare::PartialDecryptionProof>
+        // party_id: PartyID,
+        // proofs : Vec<DecryptionKeyShare::PartialDecryptionProof>
     },
     IdentifiableAbortSecondRound,
     #[default]
@@ -128,7 +128,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    ProofOutput(PartyID, Vec<DecryptionKeyShare::PartialDecryptionProof>),
+    ProofOutput(),
     None,
 }
 
@@ -142,7 +142,7 @@ pub(crate) struct SignState {
     tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
     messages: Option<Vec<Vec<u8>>>,
     public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
-    presigns: Vec<DecentralizedPartyPresign>,
+    presigns: Option<Vec<DecentralizedPartyPresign>>,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
 }
 
@@ -153,8 +153,7 @@ impl SignState {
         epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,
-        session_id: SignatureMPCSessionID,
-        presigns: Vec<DecentralizedPartyPresign>,
+        session_id: SignatureMPCSessionID
     ) -> Self {
         let aggregator_party_id = ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap()) % parties.len() as u64) + 1) as PartyID;
 
@@ -168,7 +167,7 @@ impl SignState {
             public_nonce_encrypted_partial_signature_and_proofs: None,
             decryption_shares: HashMap::new(),
             tiresias_key_share_decryption_key_share,
-            presigns,
+            presigns: None,
         }
     }
 
@@ -176,9 +175,11 @@ impl SignState {
         &mut self,
         messages: Vec<Vec<u8>>,
         public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
+        presigns: Vec<DecentralizedPartyPresign>,
     ) {
         self.messages = Some(messages);
         self.public_nonce_encrypted_partial_signature_and_proofs = Some(public_nonce_encrypted_partial_signature_and_proofs);
+        self.presigns = Some(presigns);
     }
 
     pub(crate) fn insert_first_round(
