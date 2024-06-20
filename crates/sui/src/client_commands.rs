@@ -15,16 +15,20 @@ use fastcrypto::{
     encoding::{Base64, Encoding},
     traits::ToFromBytes,
 };
-
 use json_to_table::json_to_table;
 use move_core_types::language_storage::TypeTag;
 use move_package::BuildConfig as MoveBuildConfig;
 use prometheus::Registry;
 use serde::Serialize;
 use serde_json::{json, Value};
-use sui_move::build::resolve_lock_file_path;
-use sui_protocol_config::ProtocolConfig;
-use sui_source_validation::{BytecodeSourceVerifier, SourceMode};
+use tabled::{
+    builder::Builder as TableBuilder,
+    settings::{
+        Border as TableBorder, Modify as TableModify, object::Cell as TableCell,
+        Panel as TablePanel, Style as TableStyle, style::HorizontalLine,
+    },
+};
+use tracing::info;
 
 use shared_crypto::intent::Intent;
 use sui_execution::verifier::VerifierOverrides;
@@ -36,14 +40,17 @@ use sui_json_rpc_types::{
 };
 use sui_json_rpc_types::{SuiExecutionStatus, SuiObjectDataOptions};
 use sui_keys::keystore::AccountKeystore;
+use sui_move::build::resolve_lock_file_path;
 use sui_move_build::{
-    build_from_resolution_graph, check_invalid_dependencies, check_unpublished_dependencies,
-    gather_published_ids, BuildConfig, CompiledPackage, PackageDependencies, PublishedAtError,
+    build_from_resolution_graph, BuildConfig, check_invalid_dependencies,
+    check_unpublished_dependencies, CompiledPackage, gather_published_ids, PackageDependencies, PublishedAtError,
 };
+use sui_protocol_config::ProtocolConfig;
 use sui_replay::ReplayToolCommand;
 use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
-use sui_sdk::wallet_context::WalletContext;
 use sui_sdk::SuiClient;
+use sui_sdk::wallet_context::WalletContext;
+use sui_source_validation::{BytecodeSourceVerifier, SourceMode};
 use sui_types::{
     base_types::{ObjectID, SequenceNumber, SuiAddress},
     crypto::SignatureScheme,
@@ -59,15 +66,7 @@ use sui_types::{
     transaction::{SenderSignedData, Transaction, TransactionData, TransactionDataAPI},
 };
 
-use tabled::{
-    builder::Builder as TableBuilder,
-    settings::{
-        object::Cell as TableCell, style::HorizontalLine, Border as TableBorder,
-        Modify as TableModify, Panel as TablePanel, Style as TableStyle,
-    },
-};
-use tracing::info;
-
+use crate::eth_client_commands::{create_eth_dwallet, EthClientCommands};
 use crate::key_identity::{get_identity_address, KeyIdentity};
 
 #[macro_export]
@@ -415,7 +414,7 @@ pub enum SuiClientCommands {
     },
 
     /// Split a coin object into multiple coins.
-    #[clap(group(ArgGroup::new("split").required(true).args(&["amounts", "count"])))]
+    #[clap(group(ArgGroup::new("split").required(true).args(& ["amounts", "count"])))]
     SplitCoin {
         /// Coin to Split, in 20 bytes Hex string
         #[clap(long)]
@@ -650,7 +649,7 @@ pub enum SuiClientCommands {
     #[command(name = "eth-lc")]
     EthereumClient {
         #[clap(subcommand)]
-        cmd: Option<EthClientCommands>,
+        cmd: EthClientCommands,
     },
 }
 
@@ -751,7 +750,7 @@ impl SuiClientCommands {
                         with_unpublished_dependencies,
                         skip_dependency_verification,
                     )
-                    .await?;
+                        .await?;
 
                 let package_id = package_id.map_err(|e| match e {
                     PublishedAtError::NotPresent => {
@@ -829,16 +828,16 @@ impl SuiClientCommands {
                 if build_config.test_mode {
                     return Err(SuiError::ModulePublishFailure {
                         error:
-                            "The `publish` subcommand should not be used with the `--test` flag\n\
+                        "The `publish` subcommand should not be used with the `--test` flag\n\
                             \n\
                             Code in published packages must not depend on test code.\n\
                             In order to fix this and publish the package without `--test`, \
                             remove any non-test dependencies on test-only code.\n\
                             You can ensure all test-only dependencies have been removed by \
                             compiling the package normally with `sui move build`."
-                                .to_string(),
+                            .to_string(),
                     }
-                    .into());
+                        .into());
                 }
 
                 let sender = context.try_get_object_owner(&gas).await?;
@@ -852,7 +851,7 @@ impl SuiClientCommands {
                     with_unpublished_dependencies,
                     skip_dependency_verification,
                 )
-                .await?;
+                    .await?;
 
                 let data = client
                     .transaction_builder()
@@ -956,7 +955,7 @@ impl SuiClientCommands {
                 let tx_data = construct_move_call_transaction(
                     package, &module, &function, type_args, gas, gas_budget, args, context,
                 )
-                .await?;
+                    .await?;
                 serialize_or_execute!(
                     tx_data,
                     serialize_unsigned_transaction,
@@ -1313,7 +1312,7 @@ impl SuiClientCommands {
                                 .to_vec()
                                 .map_err(|e| anyhow!(e))?,
                         )
-                        .map_err(|e| anyhow!(e))?,
+                            .map_err(|e| anyhow!(e))?,
                     );
                 }
                 let transaction = Transaction::from_generic_sig_data(data, sigs);
@@ -1362,7 +1361,7 @@ impl SuiClientCommands {
                     run_bytecode_verifier: true,
                     print_diags_to_stderr: true,
                 }
-                .build(package_path)?;
+                    .build(package_path)?;
 
                 let client = context.get_client().await?;
 
@@ -1379,6 +1378,30 @@ impl SuiClientCommands {
                     .await?;
 
                 SuiClientCommandResult::VerifySource
+            }
+            SuiClientCommands::EthereumClient { cmd } => {
+                match cmd {
+                    EthClientCommands::CreateEthDwallet {
+                        dwallet_cap_id,
+                        smart_contract_address,
+                        smart_contract_approved_tx_slot,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    } => {
+                        create_eth_dwallet(
+                            context,
+                            dwallet_cap_id,
+                            smart_contract_address,
+                            smart_contract_approved_tx_slot,
+                            gas,
+                            gas_budget,
+                            serialize_unsigned_transaction,
+                            serialize_signed_transaction,
+                        ).await?
+                    }
+                }
             }
         });
         ret
@@ -1455,7 +1478,7 @@ async fn compile_package(
                     already_published.self_id(),
                 ),
             }
-            .into());
+                .into());
         }
     }
     if with_unpublished_dependencies {
@@ -1478,7 +1501,7 @@ async fn compile_package(
                      --skip-dependency-verification flag."
                 ),
             }
-            .into());
+                .into());
         } else {
             eprintln!(
                 "{}",
@@ -1987,7 +2010,7 @@ impl ObjectsOutput {
                 } else {
                     address
                 };
-                format!("{}::{}::{}", address, x.module(), x.name(),)
+                format!("{}::{}::{}", address, x.module(), x.name(), )
             }
             Some(sui_types::base_types::ObjectType::Package) => "Package".to_string(),
             None => "unknown".to_string(),
