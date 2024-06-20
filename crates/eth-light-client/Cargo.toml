@@ -11,3 +11,4 @@ serde.workspace = true
 ethers.workspace = true
 eyre.workspace = true
 log = "0.4.21"
+bcs.workspace = true

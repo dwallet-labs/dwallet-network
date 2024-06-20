@@ -4181,6 +4181,7 @@ name = "eth-light-client"
 version = "1.16.2"
 dependencies = [
  "anyhow",
+ "bcs",
  "ethers",
  "eyre",
  "helios",

@@ -1,7 +1,10 @@
 use anyhow::{anyhow, Error};
 use ethers::addressbook::Address;
+use ethers::utils::__serde_json::{Number, Value};
 use ethers::utils::hex::hex;
 use helios::config::networks::Network;
+use serde::Serialize;
+use sui_sdk::json::SuiJsonValue;
 use sui_sdk::rpc_types::{SuiObjectDataOptions, SuiRawData};
 use sui_sdk::sui_client_config::{EthLightClientConfig, SuiEnv};
 use sui_sdk::types::base_types::ObjectID;
@@ -13,6 +16,19 @@ use sui_sdk::wallet_context::WalletContext;
 use crate::light_client::EthLightClient;
 use crate::proof::{ProofParameters, ProofResponse};
 use crate::update::UpdatesResponse;
+
+
+fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, Error>
+    where
+        T: ?Sized + Serialize,
+{
+    let object_bytes = bcs::to_bytes(&object)?;
+    let object_json = object_bytes
+        .iter()
+        .map(|v| Value::Number(Number::from(*v)))
+        .collect();
+    Ok(SuiJsonValue::new(Value::Array(object_json))?)
+}
 
 pub async fn get_object_bcs_by_id(
     context: &mut WalletContext,

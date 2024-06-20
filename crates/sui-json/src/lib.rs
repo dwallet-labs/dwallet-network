@@ -364,18 +364,6 @@ impl Debug for SuiJsonValue {
     }
 }
 
-pub fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, dyn Error>
-    where
-        T: ?Sized + Serialize,
-{
-    let object_bytes = bcs::to_bytes(&object)?;
-    let object_json = object_bytes
-        .iter()
-        .map(|v| Value::Number(Number::from(*v)))
-        .collect();
-    Ok(SuiJsonValue::new(Value::Array(object_json))?)
-}
-
 fn json_value_to_sui_address(value: &JsonValue) -> anyhow::Result<SuiAddress> {
     match value {
         JsonValue::String(s) => {
