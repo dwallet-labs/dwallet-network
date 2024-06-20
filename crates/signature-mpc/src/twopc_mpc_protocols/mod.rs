@@ -363,7 +363,7 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
         .collect()
 }
 
-struct DecryptResult {
+pub struct DecryptResult {
     pub messages_signatures: Vec<Vec<u8>>,
     pub failed_messages_indices: Vec<usize>,
 }
