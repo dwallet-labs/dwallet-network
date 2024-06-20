@@ -458,8 +458,9 @@ type ProofParty = signature_partial_decryption_verification_round::Party<
 
 pub fn identify_malicious_parties(
     verification_round_party: ProofParty,
-    partial_signature_decryption_shares:  HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>, // decryption shares sent initially
+    partial_signature_decryption_shares:  HashMap<PartyID, DecryptionKeyShare::DecryptionShare>, // decryption shares sent initially
     masked_nonce_decryption_shares: HashMap<PartyID, DecryptionKeyShare::DecryptionShare>, // decryption shares sent initially
+    decryption_key_share_public_parameters: DecryptionPublicParameters,
     signature_partial_decryption_proofs: HashMap<
         PartyID,
         DecryptionKeyShare::PartialDecryptionProof,
@@ -470,17 +471,39 @@ pub fn identify_malicious_parties(
     // extract lagrange_coefficients
     // e.g. see twopc_mpc_protocols::mod::decrypt_signature_decentralized_party_sign
 
+    let decrypters: Vec<_> = signature_partial_decryption_proofs.keys().cloned().collect();
+
+    let lagrange_coefficients: HashMap<
+        PartyID,
+        AdjustedLagrangeCoefficientSizedNumber,
+    > = decrypters
+        .clone()
+        .into_iter()
+        .map(|j| {
+            (
+                j,
+                DecryptionKeyShare::compute_lagrange_coefficient(
+                    j,
+                    decryption_key_share_public_parameters.number_of_parties,
+                    decrypters.clone(),
+                    &decryption_key_share_public_parameters,
+                ),
+            )
+        })
+        .collect();
+
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
         partial_signature_decryption_shares,
         masked_nonce_decryption_shares,
-        signature_partial_decryption_proofs
-    )
+        signature_partial_decryption_proofs,
+        &mut OsRng
+    );
 
     match error {
         Error::UnresponsiveParties(x) => x,
-        Error::MaliciousDesignatedDecryptingParty(x) => x
-        _ => raise Error, // <- should never happen, programming mistake
+        Error::MaliciousDesignatedDecryptingParty(x) => x,
+        _ => {Err()}, // <- should never happen, programming mistake
     }
 }
 
