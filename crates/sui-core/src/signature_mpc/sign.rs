@@ -16,10 +16,10 @@ pub(crate) enum SignRound {
     FirstRound {
         signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>
     },
-    IdentifiableAbortFirstRound{
+    IdentifiableAbortFirstRound
         // party_id: PartyID,
         // proofs : Vec<DecryptionKeyShare::PartialDecryptionProof>
-    },
+    ,
     IdentifiableAbortSecondRound,
     #[default]
     None,
@@ -109,7 +109,7 @@ impl SignRound {
                             )
                         }).collect();
 
-                    Ok(SignRoundCompletion::ProofOutput(state.party_id, proofs))
+                    Ok(SignRoundCompletion::ProofOutput())
 
                 }
             }
