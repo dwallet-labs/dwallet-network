@@ -12,6 +12,17 @@ use sui_config::Config;
 use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
 
+/// Configuration settings for an Ethereum light client.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EthClientSettings {
+    pub eth_execution_rpc: Option<String>,
+    pub eth_consensus_rpc: Option<String>,
+    pub eth_chain_id: Option<u64>,
+    pub eth_genesis_time: Option<u64>,
+    pub eth_genesis_validators_root: Option<String>,
+    pub state_object_id: Option<ObjectID>,
+}
+
 #[serde_as]
 #[derive(Serialize, Deserialize)]
 pub struct SuiClientConfig {
@@ -64,6 +75,7 @@ pub struct SuiEnv {
     pub alias: String,
     pub rpc: String,
     pub ws: Option<String>,
+    pub eth_client_settings: Option<EthClientSettings>
 }
 
 impl SuiEnv {
