@@ -70,6 +70,7 @@ use tracing::info;
 
 use crate::key_identity::{get_identity_address, KeyIdentity};
 
+#[macro_export]
 macro_rules! serialize_or_execute {
     ($tx_data:expr, $serialize_unsigned:expr, $serialize_signed:expr, $context:expr, $result_variant:ident) => {{
         assert!(
@@ -1762,7 +1763,7 @@ impl Display for SuiClientCommandResult {
     }
 }
 
-async fn construct_move_call_transaction(
+pub(crate) async fn construct_move_call_transaction(
     package: ObjectID,
     module: &str,
     function: &str,
