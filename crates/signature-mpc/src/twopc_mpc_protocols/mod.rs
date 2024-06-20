@@ -491,8 +491,8 @@ pub fn identify_malicious_parties(
 
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
-        partial_signature_decryption_shares,
-        masked_nonce_decryption_shares,
+        partial_signature_decryption_share,
+        masked_nonce_decryption_share,
         signature_partial_decryption_proofs,
         &mut OsRng,
     );

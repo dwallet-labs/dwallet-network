@@ -122,11 +122,12 @@ impl SignRound {
                                     let party_proof_map = HashMap::from((state.party_id, proof));
 
                                     println!("Generated Proof: {:?}", proof);
+                                    let cloned_partu = party.clone();
                                     // TODO: make sure the proof is valid
                                         identify_malicious_parties(
-                                            party,
-                                            HashMap::from((state.party_id, state.decryption_shares.clone()[state.party_id][message_index].0)),
-                                            HashMap::from((state.party_id, state.decryption_shares.clone()[state.party_id][message_index].1)),
+                                            *cloned_partu,
+                                            HashMap::from((state.party_id, state.decryption_shares.clone().get(state.party_id).unwrap().get(message_index).unwrap().0)),
+                                            HashMap::from((state.party_id, state.decryption_shares.clone().get(state.party_id).unwrap().get(message_index).unwrap().1)),
                                             state.tiresias_public_parameters.clone(),
                                             party_proof_map,
                                         );
