@@ -435,11 +435,11 @@ pub fn decrypt_signature_decentralized_party_sign(
                 // You can use nonce_x_coordinate and signature_s here
                 let signature_s_inner: k256::Scalar = signature_s.into();
 
-                Ok(Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(nonce_x_coordinate), signature_s_inner).unwrap().to_vec())
+                Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(nonce_x_coordinate), signature_s_inner).unwrap().to_vec()
             }
             Err(e) => {
                 failed_messages_indices.push(index);
-                Ok(Vec::new())
+                Vec::new()
             }
         }
     })
