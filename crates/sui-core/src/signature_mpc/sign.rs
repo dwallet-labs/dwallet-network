@@ -97,13 +97,13 @@ impl SignRound {
                         state.tiresias_key_share_decryption_key_share,
                         &state.tiresias_public_parameters,
                     )?;
-                    let (proofs, party) = decrypt_result.failed_messages_indices.map(
-                        |index| {
+                    let (proofs, party) = decrypt_result.failed_messages_indices.iter().map(
+                        |&index| {
                             generate_proof(
                                 state.tiresias_public_parameters.clone(),
                                 decryption_key_share.clone(),
                                 state.party_id,
-                                state.presigns.unwrap()[index],
+                                state.presigns.unwrap()[&index],
                                 state.tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
                                 state
                                     .public_nonce_encrypted_partial_signature_and_proofs.unwrap()[index],
