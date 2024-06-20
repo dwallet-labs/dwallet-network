@@ -18,8 +18,8 @@ pub(crate) enum SignRound {
         signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>
     },
     IdentifiableAbortFirstRound
-        // party_id: PartyID,
-        // proofs : Vec<DecryptionKeyShare::PartialDecryptionProof>
+    // party_id: PartyID,
+    // proofs : Vec<DecryptionKeyShare::PartialDecryptionProof>
     ,
     IdentifiableAbortSecondRound,
     #[default]
@@ -99,7 +99,7 @@ impl SignRound {
                         &state.tiresias_public_parameters,
                     )?;
 
-                    let res: Vec<_> = decrypt_result.failed_messages_indices.iter().map(
+                    let proof_results: Vec<_> = decrypt_result.failed_messages_indices.iter().map(
                         |index| {
                             generate_proof(
                                 state.tiresias_public_parameters.clone(),
@@ -111,14 +111,26 @@ impl SignRound {
                                     .public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap().get(*index).unwrap().clone(),
                             )
                         }).collect();
+                    if proof_results.len() == 0 {
+                        println!("Failed to generate proofs");
+                    } else {
+                        for result in proof_results {
+                            match result {
+                                Ok((proof, party)) => {
+                                    println!("Generated Proof: {:?}", proof);
+                                }
+                                Err(e) => {
+                                    println!("Failed to generate proof: {:?}", e);
+                                }
+                            }
+                        }
+                    }
 
                     Ok(SignRoundCompletion::ProofOutput())
-
                 }
             }
 
             SignRound::IdentifiableAbortFirstRound => {
-                println!("recv wohwoh: IdentifiableAbortFirstRound message");
                 Ok(SignRoundCompletion::None)
             }
             _ => {
@@ -156,7 +168,7 @@ impl SignState {
         epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,
-        session_id: SignatureMPCSessionID
+        session_id: SignatureMPCSessionID,
     ) -> Self {
         let aggregator_party_id = ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap()) % parties.len() as u64) + 1) as PartyID;
 

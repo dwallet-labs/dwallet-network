@@ -632,7 +632,7 @@ impl SignatureMPCAggregator {
             if let Some(m) = m {
                 match m {
                     SignRoundCompletion::ProofOutput() => {
-                        println!("start sending output");
+                        // println!("start sending output");
                         // let _ = submit
                         //             .sign_and_submit_output(
                         //                 &SignatureMPCOutput::new_sign(
@@ -645,7 +645,7 @@ impl SignatureMPCAggregator {
                         //                 &epoch_store,
                         //             )
                         //             .await;
-                        println!("sent output successfully");
+                        // println!("sent output successfully");
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
@@ -656,7 +656,7 @@ impl SignatureMPCAggregator {
                                 &epoch_store,
                             )
                             .await;
-                        println!("sent message successfully");
+                        // println!("sent message successfully");
 
                     }
                     SignRoundCompletion::SignatureOutput(sigs) => {
