@@ -26,7 +26,8 @@ use move_core_types::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Number, Value as JsonValue};
+use serde::de::Error;
+use serde_json::{json, Number, Value as JsonValue, Value};
 
 use sui_types::base_types::{
     ObjectID, SuiAddress, TxContext, TxContextKind, RESOLVED_ASCII_STR, RESOLVED_STD_OPTION,
@@ -361,6 +362,18 @@ impl Debug for SuiJsonValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
     }
+}
+
+pub fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, dyn Error>
+    where
+        T: ?Sized + Serialize,
+{
+    let object_bytes = bcs::to_bytes(&object)?;
+    let object_json = object_bytes
+        .iter()
+        .map(|v| Value::Number(Number::from(*v)))
+        .collect();
+    Ok(SuiJsonValue::new(Value::Array(object_json))?)
 }
 
 fn json_value_to_sui_address(value: &JsonValue) -> anyhow::Result<SuiAddress> {

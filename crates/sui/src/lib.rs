@@ -13,4 +13,4 @@ pub mod shell;
 pub mod sui_commands;
 pub mod validator_commands;
 pub mod zklogin_commands_util;
-mod eth_client_commands;
+pub mod eth_client_commands;

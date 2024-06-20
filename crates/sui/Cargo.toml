@@ -77,12 +77,14 @@ prometheus.workspace = true
 fs_extra.workspace = true
 expect-test.workspace = true
 assert_cmd.workspace = true
-
+ethers.workspace = true
+eyre.workspace = true
+helios.workspace = true
 test-cluster.workspace = true
 sui-macros.workspace = true
 sui-simulator.workspace = true
 sui-test-transaction-builder.workspace = true
-
+eth-light-client.workspace = true
 [package.metadata.cargo-udeps.ignore]
 normal = ["jemalloc-ctl"]
 

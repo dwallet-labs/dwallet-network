@@ -4180,7 +4180,13 @@ dependencies = [
 name = "eth-light-client"
 version = "1.16.2"
 dependencies = [
+ "anyhow",
+ "ethers",
+ "eyre",
  "helios",
+ "log",
+ "serde",
+ "sui-sdk",
 ]
 
 [[package]]
@@ -12609,11 +12615,15 @@ dependencies = [
  "colored",
  "const-str",
  "csv",
+ "eth-light-client",
+ "ethers",
  "expect-test",
+ "eyre",
  "fastcrypto",
  "fastcrypto-zkp",
  "fs_extra",
  "git-version",
+ "helios",
  "im",
  "inquire",
  "jemalloc-ctl",
@@ -14436,6 +14446,7 @@ dependencies = [
  "fastcrypto",
  "futures",
  "futures-core",
+ "helios",
  "jsonrpsee 0.16.2",
  "move-core-types",
  "rand 0.8.5",
@@ -14955,6 +14966,7 @@ dependencies = [
  "eyre",
  "fastcrypto",
  "fastcrypto-zkp",
+ "helios",
  "im",
  "indexmap 2.2.6",
  "itertools 0.10.5",

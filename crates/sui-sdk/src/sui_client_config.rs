@@ -4,13 +4,29 @@
 use std::fmt::{Display, Formatter, Write};
 
 use anyhow::anyhow;
+use helios::prelude::networks::Network;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 use sui_config::Config;
 use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
+
+use crate::{SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL, SuiClient, SuiClientBuilder};
+
+/// Configuration for the Ethereum Light Client.
+#[derive(Default, Clone)]
+pub struct EthLightClientConfig {
+    // Eth Network (Mainnet, Goerli, etc).
+    pub network: Network,
+    // Eth RPC URL.
+    pub execution_rpc: String,
+    // Consensus RPC URL.
+    pub consensus_rpc: String,
+    pub max_checkpoint_age: u64,
+    // Beacon Checkpoint
+    pub checkpoint: String,
+}
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -64,6 +80,12 @@ pub struct SuiEnv {
     pub alias: String,
     pub rpc: String,
     pub ws: Option<String>,
+    pub eth_execution_rpc: Option<String>,
+    pub eth_consensus_rpc: Option<String>,
+    pub eth_chain_id: Option<u64>,
+    pub eth_genesis_time:Option<u64>,
+    pub eth_genesis_validators_root:Option<String>,
+    pub state_object_id: Option<ObjectID>,
 }
 
 impl SuiEnv {
@@ -91,6 +113,9 @@ impl SuiEnv {
             alias: "devnet".to_string(),
             rpc: SUI_DEVNET_URL.into(),
             ws: None,
+            eth_execution_rpc: None,
+            eth_consensus_rpc: None,
+            state_object_id: None,
         }
     }
     pub fn testnet() -> Self {
@@ -98,6 +123,9 @@ impl SuiEnv {
             alias: "testnet".to_string(),
             rpc: SUI_TESTNET_URL.into(),
             ws: None,
+            eth_execution_rpc: None,
+            eth_consensus_rpc: None,
+            state_object_id: None,
         }
     }
 
@@ -106,6 +134,9 @@ impl SuiEnv {
             alias: "local".to_string(),
             rpc: SUI_LOCAL_NETWORK_URL.into(),
             ws: None,
+            eth_execution_rpc: None,
+            eth_consensus_rpc: None,
+            state_object_id: None,
         }
     }
 }

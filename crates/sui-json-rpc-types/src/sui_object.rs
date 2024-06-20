@@ -7,7 +7,7 @@ use std::fmt;
 use std::fmt::Write;
 use std::fmt::{Display, Formatter};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Error};
 use colored::Colorize;
 use fastcrypto::encoding::Base64;
 use move_bytecode_utils::module_cache::GetModule;
@@ -27,6 +27,7 @@ use sui_types::base_types::{
     TransactionDigest,
 };
 use sui_types::error::{ExecutionError, SuiObjectResponseError, UserInputError, UserInputResult};
+use sui_types::eth_types::eth_dwallet_cap::EthDWalletCap;
 use sui_types::gas_coin::GasCoin;
 use sui_types::messages_checkpoint::CheckpointSequenceNumber;
 use sui_types::move_package::{MovePackage, TypeOrigin, UpgradeInfo};
@@ -710,6 +711,17 @@ pub enum SuiRawData {
     // Manually handle generic schema generation
     MoveObject(SuiRawMoveObject),
     Package(SuiRawMovePackage),
+}
+
+impl TryFrom<SuiRawData> for EthDWalletCap {
+    type Error = Error;
+    fn try_from(sui_raw_data: SuiRawData) -> Result<Self, Error> {
+        sui_raw_data
+            .try_as_move()
+            .ok_or_else(|| anyhow!("Object is not a Move Object"))?
+            .deserialize()
+            .map_err(|e| anyhow!("Error deserializing object: {e}"))
+    }
 }
 
 impl SuiData for SuiRawData {
