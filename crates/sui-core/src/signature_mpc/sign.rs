@@ -118,6 +118,8 @@ impl SignRound {
                             match result {
                                 Ok((proof, party)) => {
                                     println!("Generated Proof: {:?}", proof);
+                                    // TODO: make sure the proof is valid
+
                                 }
                                 Err(e) => {
                                     println!("Failed to generate proof: {:?}", e);
@@ -159,6 +161,7 @@ pub(crate) struct SignState {
     public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
     presigns: Option<Vec<DecentralizedPartyPresign>>,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
+
 }
 
 impl SignState {

@@ -450,6 +450,40 @@ pub fn decrypt_signature_decentralized_party_sign(
     }
 }
 
+type ProofParty = signature_partial_decryption_verification_round::Party<
+    PLAINTEXT_SPACE_SCALAR_LIMBS,
+    EncryptionKey,
+    DecryptionKeyShare,
+>;
+
+pub fn identify_malicious_parties(
+    verification_round_party: ProofParty,
+    partial_signature_decryption_shares:  HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>, // decryption shares sent initially
+    masked_nonce_decryption_shares: HashMap<PartyID, DecryptionKeyShare::DecryptionShare>, // decryption shares sent initially
+    signature_partial_decryption_proofs: HashMap<
+        PartyID,
+        DecryptionKeyShare::PartialDecryptionProof,
+    >
+) -> Vec<PartyID> // malicious_party_ids
+{
+
+    // extract lagrange_coefficients
+    // e.g. see twopc_mpc_protocols::mod::decrypt_signature_decentralized_party_sign
+
+    let error = verification_round_party.identify_malicious_decrypters(
+        lagrange_coefficients,
+        partial_signature_decryption_shares,
+        masked_nonce_decryption_shares,
+        signature_partial_decryption_proofs
+    )
+
+    match error {
+        Error::UnresponsiveParties(x) => x,
+        Error::MaliciousDesignatedDecryptingParty(x) => x
+        _ => raise Error, // <- should never happen, programming mistake
+    }
+}
+
 pub fn generate_proof(
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     decryption_key_share: DecryptionKeyShare,
@@ -460,11 +494,7 @@ pub fn generate_proof(
     public_nonce_encrypted_partial_signature_and_proof: PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
 ) -> Result<(
     <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PartialDecryptionProof,
-    signature_partial_decryption_verification_round::Party<
-        PLAINTEXT_SPACE_SCALAR_LIMBS,
-        EncryptionKey,
-        DecryptionKeyShare,
-    >,
+    ProofParty,
 )> {
     let proof_party = SignaturePartialDecryptionProofParty::new(
         decryption_key_share_public_parameters.threshold,
