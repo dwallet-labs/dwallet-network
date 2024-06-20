@@ -9,6 +9,7 @@ use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare
 use std::convert::TryInto;
 use std::mem;
 use futures::StreamExt;
+use itertools::Itertools;
 use tracing::error;
 
 #[derive(Default)]
@@ -97,16 +98,17 @@ impl SignRound {
                         state.tiresias_key_share_decryption_key_share,
                         &state.tiresias_public_parameters,
                     )?;
-                    let (proofs, party) = decrypt_result.failed_messages_indices.iter().map(
-                        |&index| {
+
+                    let res: Vec<_> = decrypt_result.failed_messages_indices.iter().map(
+                        |index| {
                             generate_proof(
                                 state.tiresias_public_parameters.clone(),
                                 decryption_key_share.clone(),
                                 state.party_id,
-                                state.presigns.unwrap()[&index],
+                                state.presigns.clone().unwrap().get(*index).unwrap().clone(),
                                 state.tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
                                 state
-                                    .public_nonce_encrypted_partial_signature_and_proofs.unwrap()[index],
+                                    .public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap().get(*index).unwrap().clone(),
                             )
                         }).collect();
 
