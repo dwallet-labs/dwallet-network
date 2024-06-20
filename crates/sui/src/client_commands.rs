@@ -70,6 +70,7 @@ use tracing::info;
 
 use crate::key_identity::{get_identity_address, KeyIdentity};
 
+#[macro_export]
 macro_rules! serialize_or_execute {
     ($tx_data:expr, $serialize_unsigned:expr, $serialize_signed:expr, $context:expr, $result_variant:ident) => {{
         assert!(
@@ -643,6 +644,13 @@ pub enum SuiClientCommands {
         /// If an error is encountered during a transaction, this specifies whether to terminate or continue
         #[arg(long, short)]
         terminate_early: bool,
+    },
+
+    /// Ethereum client subcommands.
+    #[command(name = "eth-lc")]
+    EthereumClient {
+        #[clap(subcommand)]
+        cmd: Option<EthClientCommands>,
     },
 }
 
@@ -1762,7 +1770,7 @@ impl Display for SuiClientCommandResult {
     }
 }
 
-async fn construct_move_call_transaction(
+pub(crate) async fn construct_move_call_transaction(
     package: ObjectID,
     module: &str,
     function: &str,
