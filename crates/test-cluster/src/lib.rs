@@ -873,6 +873,7 @@ impl TestClusterBuilder {
             alias: "localnet".to_string(),
             rpc: fullnode_handle.rpc_url.clone(),
             ws: Some(fullnode_handle.ws_url.clone()),
+            state_object_id: None,
         });
         wallet_conf.active_env = Some("localnet".to_string());
 

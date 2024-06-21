@@ -66,7 +66,7 @@ use sui_types::{
     transaction::{SenderSignedData, Transaction, TransactionData, TransactionDataAPI},
 };
 
-use crate::eth_client_commands::{create_eth_dwallet, EthClientCommands};
+use crate::eth_client_commands::{create_eth_dwallet, EthClientCommands, init_ethereum_state};
 use crate::key_identity::{get_identity_address, KeyIdentity};
 
 #[macro_export]
@@ -1326,7 +1326,7 @@ impl SuiClientCommands {
                         "Environment config with name [{alias}] already exists."
                     ));
                 }
-                let env = SuiEnv { alias, rpc, ws };
+                let env = SuiEnv { alias, rpc, ws, state_object_id: None };
 
                 // Check urls are valid and server is reachable
                 env.create_rpc_client(None, None).await?;
@@ -1399,6 +1399,22 @@ impl SuiClientCommands {
                             gas_budget,
                             serialize_unsigned_transaction,
                             serialize_signed_transaction,
+                        ).await?
+                    }
+                    EthClientCommands::InitEthState {
+                        checkpoint,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction
+                    } => {
+                        init_ethereum_state(
+                            checkpoint,
+                            context,
+                            gas,
+                            gas_budget,
+                            serialize_unsigned_transaction,
+                            serialize_signed_transaction
                         ).await?
                     }
                 }
