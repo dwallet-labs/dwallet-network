@@ -1,5 +1,10 @@
 use anyhow::{anyhow, Error};
+use clap::Subcommand;
 use serde_json::{Number, Value};
+use shared_crypto::intent::Intent;
+use sui_types::transaction::{SenderSignedData, Transaction, TransactionDataAPI};
+use sui_json_rpc_types::{SuiExecutionStatus, SuiTransactionBlockEffectsAPI};
+use sui_keys::keystore::AccountKeystore;
 
 use sui_json::SuiJsonValue;
 use sui_sdk::wallet_context::WalletContext;
@@ -11,6 +16,7 @@ use crate::client_commands::{construct_move_call_transaction, SuiClientCommandRe
 use crate::serialize_or_execute;
 
 // Ethereum light client commands
+#[derive(Subcommand)]
 pub enum EthClientCommands {
     /// Connect dWallet to be controlled by Eth contract.
     #[command(name = "dwallet-connect-eth")]
