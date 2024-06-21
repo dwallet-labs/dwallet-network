@@ -1,16 +1,16 @@
 use anyhow::{anyhow, Error};
 use clap::Subcommand;
 use serde_json::{Number, Value};
-use shared_crypto::intent::Intent;
-use sui_types::transaction::{SenderSignedData, Transaction, TransactionDataAPI};
-use sui_json_rpc_types::{SuiExecutionStatus, SuiTransactionBlockEffectsAPI};
-use sui_keys::keystore::AccountKeystore;
 
+use shared_crypto::intent::Intent;
 use sui_json::SuiJsonValue;
+use sui_json_rpc_types::SuiExecutionStatus;
+use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
-use sui_types::eth_types::eth_dwallet_cap::{CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETH_DWALLET_MODULE_NAME, ETHEREUM_STATE_MODULE_NAME, INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME};
+use sui_types::eth_types::eth_dwallet_cap::{CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETH_DWALLET_MODULE_NAME};
 use sui_types::SUI_SYSTEM_PACKAGE_ID;
+use sui_types::transaction::{SenderSignedData, Transaction, TransactionDataAPI};
 
 use crate::client_commands::{construct_move_call_transaction, SuiClientCommandResult};
 use crate::serialize_or_execute;
@@ -47,7 +47,6 @@ pub enum EthClientCommands {
         serialize_signed_transaction: bool,
     },
 }
-
 
 
 pub(crate) async fn create_eth_dwallet(
