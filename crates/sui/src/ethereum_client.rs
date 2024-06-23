@@ -1,5 +1,4 @@
 use clap::Subcommand;
-use serde::{Deserialize, Serialize};
 use sui_types::base_types::ObjectID;
 
 #[derive(Subcommand)]

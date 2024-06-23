@@ -1327,7 +1327,7 @@ impl SuiClientCommands {
                         "Environment config with name [{alias}] already exists."
                     ));
                 }
-                let env = SuiEnv { alias, rpc, ws };
+                let env = SuiEnv { alias, rpc, ws, eth_client_settings: None };
 
                 // Check urls are valid and server is reachable
                 env.create_rpc_client(None, None).await?;
@@ -1380,7 +1380,7 @@ impl SuiClientCommands {
 
                 SuiClientCommandResult::VerifySource
             },
-            SuiClientCommands::EthLightClient { command } => {
+            SuiClientCommands::EthClient { command } => {
                 match command {
                     EthClientCommands::EthApproveMessage { .. } => { todo!() }
                     EthClientCommands::CreateEthDwallet { .. } => { todo!() }
