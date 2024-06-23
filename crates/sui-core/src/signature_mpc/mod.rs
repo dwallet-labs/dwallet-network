@@ -370,7 +370,8 @@ impl SignatureMPCAggregator {
                     }
                 }
             }
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_) => {
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(prover_party_id, proofs) => {
+                println!("got proofs {:?} from party id {:?} successfully", proofs, prover_party_id);
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
                         tiresias_key_share_decryption_key_share,
@@ -616,10 +617,11 @@ impl SignatureMPCAggregator {
         submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
+        let mut state_clone = state.clone();
         let m =
             match sign_session_rounds.get_mut(&session_id) {
             Some(mut round) =>
-                match round.complete_round(state.clone()) {
+                match round.complete_round(&mut state_clone) {
                 Ok(result) => Some(result),
                 Err(e) => {None}
             },
@@ -645,8 +647,6 @@ impl SignatureMPCAggregator {
                                 &epoch_store,
                             )
                             .await;
-                        // println!("sent message successfully");
-
                     }
                     SignRoundCompletion::SignatureOutput(sigs) => {
                         let _ = submit
@@ -683,7 +683,7 @@ impl SignatureMPCAggregator {
         let m =
             match sign_session_rounds.get_mut(&session_id) {
             Some(mut round) =>
-                match round.complete_round(state.clone()) {
+                match round.complete_round(&mut state.clone()) {
                 Ok(result) => Some(result),
                 Err(e) => None,
             },

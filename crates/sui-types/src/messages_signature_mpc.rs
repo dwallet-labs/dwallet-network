@@ -91,7 +91,8 @@ impl Display for SignatureMPCMessageProtocols {
             SignatureMPCMessageProtocols::Sign(_) => {
                 f.write_str("Sign")
             }
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_) => {
+            // TODO: Implement proofs reception #2
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_, _) => {
                 f.write_str("IdentifiableAbortFirstRound")
             }
             SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => {
@@ -370,7 +371,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(_) => 2,
             SignatureMPCMessageProtocols::PresignSecondRound(_) => 3,
             SignatureMPCMessageProtocols::Sign(_) => 3,
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_) => 4,
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_, _) => 4,
             SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => 5,
         }
     }
@@ -381,7 +382,8 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(m) => m.round(),
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
             SignatureMPCMessageProtocols::Sign(_) => 1,
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(m) => 7,
+            // TODO: Implement proofs reception #1
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_, _) => 7,
             SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(m) => m.round(),
         }
     }
