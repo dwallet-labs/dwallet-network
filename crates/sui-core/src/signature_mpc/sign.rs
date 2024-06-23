@@ -122,7 +122,14 @@ impl SignRound {
                 let proof_results = self.generate_proofs(&state, &decrypt_result.failed_messages_indices);
 
                 // TODO: save all parties
+                // Maybe we should create a new state for all the IA data rather than using the existing state?
+                // We need to have the following parameters to start the last round of the IA protocol
+                // 1. decryption_shares
+                // 2. message indices that failed
+                // 3. proofs and parties for every message that failed
+
                 // TODO: Send proof to all parties
+                // Data we need to send to other parties: party_id, HashMap(message_index, proof)
 
 
                 for (message_index, (proof, party)) in decrypt_result.failed_messages_indices.into_iter().zip(proof_results.into_iter()) {
