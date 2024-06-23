@@ -114,35 +114,36 @@ impl SignRound {
                     signature_threshold_decryption_round_parties,
                 );
 
-                if decrypt_result.failed_messages_indices.len() == 0 {
-                    Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures))
-                } else {
-                    // TODO: Generate and send proof
-                    let proof_results = self.generate_proofs(&state, &decrypt_result.failed_messages_indices);
-
-                    for (message_index, (proof, party)) in decrypt_result.failed_messages_indices.into_iter().zip(proof_results.into_iter()) {
-                        let mut party_proof_map = HashMap::new();
-                        party_proof_map.insert(state.party_id, proof.clone());
-                        let a = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index).unwrap().clone().0;
-                        let b = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index).unwrap().clone().1;
-                        let mut a_map: HashMap<PartyID, PaillierModulusSizedNumber> = HashMap::new();
-                        let mut b_map: HashMap<PartyID, PaillierModulusSizedNumber> = HashMap::new();
-                        a_map.insert(state.party_id, a);
-                        b_map.insert(state.party_id, b);
-
-                        println!("Generated Proof: {:?}", proof);
-                        // TODO: make sure the proof is valid
-                        identify_malicious_parties(
-                            party,
-                            a_map,
-                            b_map,
-                            state.tiresias_public_parameters.clone(),
-                            party_proof_map,
-                        );
-                    }
-
-                    Ok(SignRoundCompletion::ProofOutput())
+                if decrypt_result.failed_messages_indices.is_empty() {
+                    return Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures))
                 }
+
+                // TODO: Generate and send proof
+                let proof_results = self.generate_proofs(&state, &decrypt_result.failed_messages_indices);
+
+                // TODO: save all parties
+                // TODO: Send proof to all parties
+
+
+                for (message_index, (proof, party)) in decrypt_result.failed_messages_indices.into_iter().zip(proof_results.into_iter()) {
+
+                    let party_proof_map = HashMap::from([(state.party_id, proof.clone())]);
+
+                    let (a, b) = state.decryption_shares[&state.party_id][message_index].clone();
+                    let a_map = HashMap::from([(state.party_id, a)]);
+                    let b_map = HashMap::from([(state.party_id, b)]);
+
+                    println!("Generated Proof: {:?}", proof);
+                    // TODO: make sure the proof is valid
+                    identify_malicious_parties(
+                        party,
+                        a_map,
+                        b_map,
+                        state.tiresias_public_parameters.clone(),
+                        party_proof_map,
+                    );
+                }
+                Ok(SignRoundCompletion::ProofOutput())
             }
 
             SignRound::IdentifiableAbortFirstRound => {
