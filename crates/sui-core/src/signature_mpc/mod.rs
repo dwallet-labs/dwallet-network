@@ -631,26 +631,15 @@ impl SignatureMPCAggregator {
 
             if let Some(m) = m {
                 match m {
-                    SignRoundCompletion::ProofOutput() => {
-                        // println!("start sending output");
-                        // let _ = submit
-                        //             .sign_and_submit_output(
-                        //                 &SignatureMPCOutput::new_sign(
-                        //                     epoch,
-                        //                     session_id,
-                        //                     session_ref,
-                        //                     // sigs,
-                        //                 )
-                        //                 .unwrap(),
-                        //                 &epoch_store,
-                        //             )
-                        //             .await;
-                        // println!("sent output successfully");
+                    SignRoundCompletion::ProofsMessage() => {
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
                                     epoch,
-                                    SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(7),
+                                    SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(
+                                    state.party_id,
+                                    state.proofs.unwrap().get(&state.party_id).unwrap().clone(),
+                                ),
                                     session_id,
                                 ),
                                 &epoch_store,

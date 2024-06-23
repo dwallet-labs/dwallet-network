@@ -126,6 +126,7 @@ impl SignRound {
                 let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
                 let proofs_map = HashMap::from([(state.party_id, proofs)]);
                 state.proofs = Some(proofs_map);
+
                 // TODO: save all parties
                 // Maybe we should create a new state for all the IA data rather than using the existing state?
                 // We need to have the following parameters to start the last round of the IA protocol
@@ -153,7 +154,7 @@ impl SignRound {
                 //         party_proof_map,
                 //     );
                 // }
-                Ok(SignRoundCompletion::ProofOutput())
+                Ok(SignRoundCompletion::ProofsMessage())
             }
 
             SignRound::IdentifiableAbortFirstRound => {
@@ -169,14 +170,14 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    ProofOutput(),
+    ProofsMessage(),
     None,
 }
 
 #[derive(Clone)]
 pub(crate) struct SignState {
     epoch: EpochId,
-    party_id: PartyID,
+    pub party_id: PartyID,
     parties: HashSet<PartyID>,
     aggregator_party_id: PartyID,
     tiresias_public_parameters: DecryptionPublicParameters,
@@ -185,7 +186,7 @@ pub(crate) struct SignState {
     public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
     presigns: Option<Vec<DecentralizedPartyPresign>>,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
-    proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
+    pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
     failed_messages_indices: Option<Vec<usize>>,
 }
 
