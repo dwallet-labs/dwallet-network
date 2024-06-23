@@ -369,7 +369,7 @@ impl SignatureMPCAggregator {
                     }
                 }
             }
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(prover_party_id, proofs) => {
+            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(prover_party_id, new_proofs) => {
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
                         tiresias_key_share_decryption_key_share,
@@ -384,14 +384,15 @@ impl SignatureMPCAggregator {
                 if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                     if state.ready_for_complete_first_round(&r) {
                         drop(r);
-                        let state = state.clone();
-                        match state.clone().proofs {
-                            Some(new_proofs) => {
-                                if new_proofs.contains_key(prover_party_id) {return ();}
-                                new_proofs.clone().insert(*prover_party_id, proofs.clone());
+                        println!("recv proof from {}", prover_party_id);
+                        match &state.proofs {
+                            Some(proofs) => {
+                                if proofs.contains_key(prover_party_id) {return ();}
+                                proofs.clone().insert(*prover_party_id, new_proofs.clone());
                             }
                             None => {}
                         }
+                        println!("proofs len: {}", state.clone().proofs.unwrap().len());
                         Self::spawn_complete_identifiable_abort_first_round(
                             epoch,
                             epoch_store.clone(),
@@ -695,7 +696,6 @@ impl SignatureMPCAggregator {
                 None
             }
         };
-
     });
     }
 

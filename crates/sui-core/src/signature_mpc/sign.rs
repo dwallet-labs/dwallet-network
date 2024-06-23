@@ -135,18 +135,18 @@ impl SignRound {
             SignRound::IdentifiableAbortFirstRound=> {
                 // what other validations we need to check?
                 if state.proofs.clone().unwrap().len() != state.parties.len() {
+                    println!("waiting for all proofs to be received, recv {:?}", state.clone().proofs.unwrap().keys());
                     return Ok(SignRoundCompletion::None); // TODO: handle this case
                 }
                 // start the second round
-                // generate the proofs
+
+                println!("received all proofs, starting second round");
                 let proof_results = self.generate_proofs(
                     &state, &state.failed_messages_indices.clone().unwrap());
 
+                let mut malicious_parties = HashSet::new();
                 for ((i, message_index), (proof, party)) in state.clone().failed_messages_indices.unwrap().into_iter().enumerate().zip(proof_results.into_iter()) {
 
-
-                //     let party_proof_map = HashMap::from([(state.party_id, proof.clone())]);
-                //
                     let (partial_signature_decryption_share, masked_nonce_decryption_share) = state.decryption_shares[&state.party_id][message_index].clone();
 
                     let a : HashMap::<PartyID, _> =
@@ -161,11 +161,12 @@ impl SignRound {
                         HashMap::from([(state.party_id, masked_nonce_decryption_share)]),
                         state.tiresias_public_parameters.clone(),
                         a,
-                    );
+                    ).iter().for_each(|party_id| {
+                        malicious_parties.insert(*party_id);
+                    });
                 }
-
-
-                Ok(SignRoundCompletion::None)
+                println!("malicious parties: {:?}", malicious_parties);
+                Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties))
             }
             _ => {
                 Ok(SignRoundCompletion::None)
@@ -178,6 +179,7 @@ impl SignRound {
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
     ProofsMessage(),
+    MaliciousPartiesOutput(HashSet<PartyID>),
     None,
 }
 
