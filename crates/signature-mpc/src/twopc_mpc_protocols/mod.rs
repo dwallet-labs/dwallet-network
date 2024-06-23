@@ -489,6 +489,29 @@ pub fn identify_malicious_parties(
         })
         .collect();
 
+
+    let decrypters: HashSet<_> = lagrange_coefficients.clone().into_keys().collect();
+    println!("decrypters len: {:?}", decrypters.len());
+    {
+
+        println!("decrypters: {:?}", decrypters);
+        println!("partial_signature_decryption_share: {:?}", partial_signature_decryption_share.keys().cloned().collect::<HashSet<_>>());
+        println!("masked_nonce_decryption_share: {:?}", masked_nonce_decryption_share.keys().cloned().collect::<HashSet<_>>());
+
+        println!("first condition: {}", decrypters
+            != partial_signature_decryption_share
+            .keys()
+            .cloned()
+            .collect::<HashSet<_>>());
+
+        println!("second condition: {}", decrypters
+        != masked_nonce_decryption_share
+        .keys()
+        .cloned()
+        .collect::<HashSet<_>>());
+
+    }
+
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
         partial_signature_decryption_share,
