@@ -114,26 +114,23 @@ impl SignRound {
                     if proof_results.len() == 0 {
                         println!("Failed to generate proofs");
                     } else {
-                        for (i, message_index) in decrypt_result.failed_messages_indices.iter().enumerate() {
-                            let result = proof_results.get(i).unwrap();
+                        for (message_index, result)in decrypt_result.failed_messages_indices.into_iter().zip(proof_results.into_iter()){
                             match result {
                                 Ok((proof, party)) => {
 
                                     let mut party_proof_map = HashMap::new();
                                     party_proof_map.insert(state.party_id, proof.clone());
-                                    let a = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(*message_index).unwrap().clone().0;
-                                    let b = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(*message_index).unwrap().clone().1;
+                                    let a = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index).unwrap().clone().0;
+                                    let b = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index).unwrap().clone().1;
                                     let mut a_map : HashMap<PartyID, PaillierModulusSizedNumber> = HashMap::new();
                                     let mut b_map : HashMap<PartyID, PaillierModulusSizedNumber> = HashMap::new();
-
-                                    //a_map[state.party_id] =  a;;
                                     a_map.insert(state.party_id, a);
                                     b_map.insert(state.party_id, b);
 
                                     println!("Generated Proof: {:?}", proof);
                                     // TODO: make sure the proof is valid
                                         identify_malicious_parties(
-                                            party.clone(),
+                                            party,
                                             a_map,
                                             b_map,
                                             state.tiresias_public_parameters.clone(),

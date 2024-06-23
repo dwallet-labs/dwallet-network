@@ -450,7 +450,7 @@ pub fn decrypt_signature_decentralized_party_sign(
     }
 }
 
-type ProofParty = signature_partial_decryption_verification_round::Party<
+pub(crate) type ProofParty = signature_partial_decryption_verification_round::Party<
     PLAINTEXT_SPACE_SCALAR_LIMBS,
     EncryptionKey,
     DecryptionKeyShare,
