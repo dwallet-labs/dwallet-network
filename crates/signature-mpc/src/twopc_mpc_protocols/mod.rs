@@ -55,6 +55,7 @@ pub type SignatureMPCMessageKind = u64;
 pub type SignatureMPCTimestamp = u64;
 pub type PublicKeyValue = group::Value<GroupElement>;
 pub type SignatureK256Secp256k1 = Signature<k256::Secp256k1>;
+pub type PartialDecryptionProof = <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PartialDecryptionProof;
 
 struct PublicParameters {
     tiresias_public_parameters: tiresias::encryption_key::PublicParameters,
@@ -450,7 +451,7 @@ pub fn decrypt_signature_decentralized_party_sign(
     }
 }
 
-pub(crate) type ProofParty = signature_partial_decryption_verification_round::Party<
+pub type ProofParty = signature_partial_decryption_verification_round::Party<
     PLAINTEXT_SPACE_SCALAR_LIMBS,
     EncryptionKey,
     DecryptionKeyShare,
@@ -463,7 +464,7 @@ pub fn identify_malicious_parties(
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     signature_partial_decryption_proofs: HashMap<
         PartyID,
-        <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PartialDecryptionProof
+        PartialDecryptionProof
     >,
 ) -> Vec<PartyID> // malicious_party_ids
 {
@@ -489,29 +490,6 @@ pub fn identify_malicious_parties(
         })
         .collect();
 
-
-    let decrypters: HashSet<_> = lagrange_coefficients.clone().into_keys().collect();
-    println!("decrypters len: {:?}", decrypters.len());
-    {
-
-        println!("decrypters: {:?}", decrypters);
-        println!("partial_signature_decryption_share: {:?}", partial_signature_decryption_share.keys().cloned().collect::<HashSet<_>>());
-        println!("masked_nonce_decryption_share: {:?}", masked_nonce_decryption_share.keys().cloned().collect::<HashSet<_>>());
-
-        println!("first condition: {}", decrypters
-            != partial_signature_decryption_share
-            .keys()
-            .cloned()
-            .collect::<HashSet<_>>());
-
-        println!("second condition: {}", decrypters
-        != masked_nonce_decryption_share
-        .keys()
-        .cloned()
-        .collect::<HashSet<_>>());
-
-    }
-
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
         partial_signature_decryption_share,
@@ -532,10 +510,7 @@ pub fn generate_proof(
     // encryption_scheme_public_parameters: EncryptionKey::PublicParameters,
     encryption_scheme_public_parameters: <EncryptionKey as AdditivelyHomomorphicEncryptionKey<PLAINTEXT_SPACE_SCALAR_LIMBS>>::PublicParameters,
     public_nonce_encrypted_partial_signature_and_proof: PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
-) -> Result<(
-    <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PartialDecryptionProof,
-    ProofParty,
-)> {
+) -> (PartialDecryptionProof, ProofParty) {
     let proof_party = SignaturePartialDecryptionProofParty::new(
         decryption_key_share_public_parameters.threshold,
         designated_decrypting_party_id,
@@ -547,7 +522,7 @@ pub fn generate_proof(
     ).unwrap();
 
     // Q: does it ever return an error?
-    proof_party.prove_correct_signature_partial_decryption(&mut OsRng)
+    proof_party.prove_correct_signature_partial_decryption(&mut OsRng).unwrap() // TODO: handle error or not - this error should never occur
 }
 
 pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {

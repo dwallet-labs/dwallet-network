@@ -5,7 +5,7 @@ use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 use std::collections::{HashMap, HashSet};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId, ObjectRef};
-use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash, generate_proof, signature_partial_decryption_verification_round, identify_malicious_parties};
+use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash, generate_proof, signature_partial_decryption_verification_round, identify_malicious_parties, PartialDecryptionProof, ProofParty};
 use std::convert::TryInto;
 use std::mem;
 use futures::StreamExt;
@@ -74,6 +74,31 @@ impl SignRound {
         ))
     }
 
+    fn generate_proofs(
+        &mut self,
+        state: &SignState,
+        failed_messages_indices: &Vec<usize>,
+    ) -> Vec<(PartialDecryptionProof, ProofParty)> {
+        let decryption_key_share = DecryptionKeyShare::new(
+            state.party_id,
+            state.tiresias_key_share_decryption_key_share,
+            &state.tiresias_public_parameters,
+        ).unwrap();
+
+        failed_messages_indices.iter().map(
+            |index| {
+                generate_proof(
+                    state.tiresias_public_parameters.clone(),
+                    decryption_key_share.clone(),
+                    state.party_id,
+                    state.presigns.clone().unwrap().get(*index).unwrap().clone(),
+                    state.tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
+                    state
+                        .public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap().get(*index).unwrap().clone(),
+                )
+            }).collect()
+    }
+
     pub(crate) fn complete_round(
         &mut self,
         state: SignState,
@@ -82,7 +107,7 @@ impl SignRound {
         match round {
             SignRound::FirstRound { signature_threshold_decryption_round_parties } => {
                 let decrypt_result = decrypt_signature_decentralized_party_sign(
-                    state.messages.unwrap(),
+                    state.messages.clone().unwrap(),
                     state.tiresias_public_parameters.clone(),
                     state.decryption_shares.clone(),
                     state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap(),
@@ -93,56 +118,27 @@ impl SignRound {
                     Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures))
                 } else {
                     // TODO: Generate and send proof
-                    let decryption_key_share = DecryptionKeyShare::new(
-                        state.party_id,
-                        state.tiresias_key_share_decryption_key_share,
-                        &state.tiresias_public_parameters,
-                    )?;
+                    let proof_results = self.generate_proofs(&state, &decrypt_result.failed_messages_indices);
 
-                    let proof_results: Vec<_> = decrypt_result.failed_messages_indices.iter().map(
-                        |index| {
-                            generate_proof(
-                                state.tiresias_public_parameters.clone(),
-                                decryption_key_share.clone(),
-                                state.party_id,
-                                state.presigns.clone().unwrap().get(*index).unwrap().clone(),
-                                state.tiresias_public_parameters.encryption_scheme_public_parameters.clone(),
-                                state
-                                    .public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap().get(*index).unwrap().clone(),
-                            )
-                        }).collect();
-                    if proof_results.len() == 0 {
-                        println!("Failed to generate proofs");
-                    } else {
-                        for (message_index, result)in decrypt_result.failed_messages_indices.into_iter().zip(proof_results.into_iter()){
-                            match result {
-                                Ok((proof, party)) => {
+                    for (message_index, (proof, party)) in decrypt_result.failed_messages_indices.into_iter().zip(proof_results.into_iter()) {
+                        let mut party_proof_map = HashMap::new();
+                        party_proof_map.insert(state.party_id, proof.clone());
+                        let a = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index).unwrap().clone().0;
+                        let b = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index).unwrap().clone().1;
+                        let mut a_map: HashMap<PartyID, PaillierModulusSizedNumber> = HashMap::new();
+                        let mut b_map: HashMap<PartyID, PaillierModulusSizedNumber> = HashMap::new();
+                        a_map.insert(state.party_id, a);
+                        b_map.insert(state.party_id, b);
 
-                                    let mut party_proof_map = HashMap::new();
-                                    party_proof_map.insert(state.party_id, proof.clone());
-                                    let a = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index).unwrap().clone().0;
-                                    let b = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index).unwrap().clone().1;
-                                    let mut a_map : HashMap<PartyID, PaillierModulusSizedNumber> = HashMap::new();
-                                    let mut b_map : HashMap<PartyID, PaillierModulusSizedNumber> = HashMap::new();
-                                    a_map.insert(state.party_id, a);
-                                    b_map.insert(state.party_id, b);
-
-                                    println!("Generated Proof: {:?}", proof);
-                                    // TODO: make sure the proof is valid
-                                        identify_malicious_parties(
-                                            party,
-                                            a_map,
-                                            b_map,
-                                            state.tiresias_public_parameters.clone(),
-                                            party_proof_map,
-                                        );
-
-                                }
-                                Err(e) => {
-                                    println!("Failed to generate proof: {:?}", e);
-                                }
-                            }
-                        }
+                        println!("Generated Proof: {:?}", proof);
+                        // TODO: make sure the proof is valid
+                        identify_malicious_parties(
+                            party,
+                            a_map,
+                            b_map,
+                            state.tiresias_public_parameters.clone(),
+                            party_proof_map,
+                        );
                     }
 
                     Ok(SignRoundCompletion::ProofOutput())
