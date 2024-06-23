@@ -101,7 +101,7 @@ impl SignRound {
 
     pub(crate) fn complete_round(
         &mut self,
-        state: SignState,
+        state: &mut SignState,
     ) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
@@ -115,14 +115,17 @@ impl SignRound {
                 );
 
                 if decrypt_result.failed_messages_indices.is_empty() {
-                    return Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures))
+                    return Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures));
                 }
 
                 // TODO: Generate and send proof
-                let proof_results = self.generate_proofs(&state, &decrypt_result.failed_messages_indices);
-                let mut map = HashMap::new();
-                map.insert(state.party_id, proof_results.);
-
+                state.failed_messages_indices = Some(decrypt_result.failed_messages_indices.clone());
+                let proofs_tuples = self.generate_proofs(
+                    &state, &decrypt_result.failed_messages_indices);
+                // map the proofs_tuples, a vector of tuples, to a vector of proofs, the first element in each tuple
+                let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
+                let proofs_map = HashMap::from([(state.party_id, proofs)]);
+                state.proofs = Some(proofs_map);
                 // TODO: save all parties
                 // Maybe we should create a new state for all the IA data rather than using the existing state?
                 // We need to have the following parameters to start the last round of the IA protocol
