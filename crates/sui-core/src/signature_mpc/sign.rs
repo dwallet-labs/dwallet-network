@@ -115,19 +115,18 @@ impl SignRound {
                         println!("Failed to generate proofs");
                     } else {
                         for (i, message_index) in decrypt_result.failed_messages_indices.iter().enumerate() {
-                            let result = proof_results.clone().get(i).unwrap();
+                            let result = proof_results.clone().get(i).unwrap().clone();
                             match result {
                                 Ok((proof, party)) => {
 
                                     let party_proof_map = HashMap::from((state.party_id, proof));
-                                    let a = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index.clone()).unwrap().clone().0;
-                                    let b = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(message_index.clone()).unwrap().clone().1;
-                                    let cloned_partu = party;
+                                    let a = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(*message_index).unwrap().clone().0;
+                                    let b = state.decryption_shares.clone().get(&state.party_id).unwrap().clone().get(*message_index).unwrap().clone().1;
                                     println!("Generated Proof: {:?}", proof);
                                     // TODO: make sure the proof is valid
                                         identify_malicious_parties(
-                                            *cloned_partu,
-                                            HashMap::from((state.party_id, a)),
+                                            party,
+                                            HashMap::from((state.party_id, a)) : HashMap<PartyID, PaillierModulusSizedNumber>,
                                             HashMap::from((state.party_id, b)),
                                             state.tiresias_public_parameters.clone(),
                                             party_proof_map,
