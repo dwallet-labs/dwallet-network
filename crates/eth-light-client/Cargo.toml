@@ -4,4 +4,4 @@ edition = "2021"
 version.workspace = true
 
 [dependencies]
-helios.workspace = true
+ethereum-client.workspace = true
