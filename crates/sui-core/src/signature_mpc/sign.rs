@@ -126,36 +126,45 @@ impl SignRound {
                 let proofs_map = HashMap::from([(state.party_id, proofs)]);
                 state.proofs = Some(proofs_map);
 
-                // TODO: save all parties
-                // Maybe we should create a new state for all the IA data rather than using the existing state?
-                // We need to have the following parameters to start the last round of the IA protocol
-                // 1. decryption_shares
-                // 2. message indices that failed
-                // 3. proofs and parties for every message that failed
-
                 // TODO: Send proof to all parties
                 // Data we need to send to other parties: party_id, HashMap(message_index, proof)
-                // for (message_index, (proof, party)) in decrypt_result.failed_messages_indices.into_iter().zip(proof_results.into_iter()) {
                 //
-                //     let party_proof_map = HashMap::from([(state.party_id, proof.clone())]);
-                //
-                //     let (a, b) = state.decryption_shares[&state.party_id][message_index].clone();
-                //     let a_map = HashMap::from([(state.party_id, a)]);
-                //     let b_map = HashMap::from([(state.party_id, b)]);
-                //
-                //     // TODO: make sure the proof is valid
-                //     identify_malicious_parties(
-                //         party,
-                //         a_map,
-                //         b_map,
-                //         state.tiresias_public_parameters.clone(),
-                //         party_proof_map,
-                //     );
-                // }
                 Ok(SignRoundCompletion::ProofsMessage())
             }
 
-            SignRound::IdentifiableAbortFirstRound => {
+            SignRound::IdentifiableAbortFirstRound=> {
+                // what other validations we need to check?
+                if state.proofs.clone().unwrap().len() != state.parties.len() {
+                    return Ok(SignRoundCompletion::None); // TODO: handle this case
+                }
+                // start the second round
+                // generate the proofs
+                let proof_results = self.generate_proofs(
+                    &state, &state.failed_messages_indices.clone().unwrap());
+
+                for ((i, message_index), (proof, party)) in state.clone().failed_messages_indices.unwrap().into_iter().enumerate().zip(proof_results.into_iter()) {
+
+
+                //     let party_proof_map = HashMap::from([(state.party_id, proof.clone())]);
+                //
+                    let (partial_signature_decryption_share, masked_nonce_decryption_share) = state.decryption_shares[&state.party_id][message_index].clone();
+
+                    let a : HashMap::<PartyID, _> =
+                        state.proofs.clone().unwrap().into_iter().map(|(party_id, proofs)| {
+                        (party_id, proofs[i].clone())
+                    }).collect();
+
+                    // TODO: make sure the proof is valid
+                    identify_malicious_parties(
+                        party,
+                        HashMap::from([(state.party_id, partial_signature_decryption_share)]),
+                        HashMap::from([(state.party_id, masked_nonce_decryption_share)]),
+                        state.tiresias_public_parameters.clone(),
+                        a,
+                    );
+                }
+
+
                 Ok(SignRoundCompletion::None)
             }
             _ => {

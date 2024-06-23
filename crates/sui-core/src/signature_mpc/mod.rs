@@ -386,13 +386,20 @@ impl SignatureMPCAggregator {
                     if state.ready_for_complete_first_round(&r) {
                         drop(r);
                         let state = state.clone();
+                        match state.clone().proofs {
+                            Some(new_proofs) => {
+                                if new_proofs.contains_key(prover_party_id) {return ();}
+                                new_proofs.clone().insert(*prover_party_id, proofs.clone());
+                            }
+                            None => {}
+                        }
                         Self::spawn_complete_identifiable_abort_first_round(
                             epoch,
                             epoch_store.clone(),
                             party_id,
                             session_id,
                             session_ref,
-                            state,
+                            state.clone(),
                             sign_session_rounds.clone(),
                             sign_session_states.clone(),
                             submit.clone(),
@@ -814,8 +821,7 @@ impl SignatureMPCAggregator {
                 ) {
                     let mut state = sign_session_states.entry(
                         session_id).or_insert_with(|| {
-                        SignState::new(tiresias_key_share_decryption_key_share, tiresias_public_parameters,
-                                       epoch, party_id, parties, session_id)
+                        SignState::new(tiresias_key_share_decryption_key_share, tiresias_public_parameters, epoch, party_id, parties, session_id)
                     });
 
                     state.set(
