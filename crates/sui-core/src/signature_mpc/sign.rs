@@ -65,7 +65,6 @@ impl SignRound {
         if party_id == 1 {
             v[0] = (PaillierModulusSizedNumber::from_u16(200), PaillierModulusSizedNumber::from_u16(200));
         }
-        println!("logilog: {:?}", party_id);
         Ok((
             SignRound::FirstRound {
                 signature_threshold_decryption_round_parties
@@ -144,7 +143,6 @@ impl SignRound {
                 //     let a_map = HashMap::from([(state.party_id, a)]);
                 //     let b_map = HashMap::from([(state.party_id, b)]);
                 //
-                //     println!("Generated Proof: {:?}", proof);
                 //     // TODO: make sure the proof is valid
                 //     identify_malicious_parties(
                 //         party,

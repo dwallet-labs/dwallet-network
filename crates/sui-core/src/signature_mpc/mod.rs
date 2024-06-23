@@ -249,7 +249,6 @@ impl SignatureMPCAggregator {
             return;
         };
         let session_ref = session_ref.clone();
-        println!("summary message {}", &message.summary.message);
         match &message.summary.message {  // Q: Where is the message.summary.message field defined?
             SignatureMPCMessageProtocols::DKG(m) => {
                 let mut state = dkg_session_states
