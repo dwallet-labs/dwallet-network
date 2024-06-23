@@ -103,6 +103,7 @@ impl SuiEnv {
             alias: "devnet".to_string(),
             rpc: SUI_DEVNET_URL.into(),
             ws: None,
+            eth_client_settings: None,
         }
     }
     pub fn testnet() -> Self {
@@ -110,6 +111,7 @@ impl SuiEnv {
             alias: "testnet".to_string(),
             rpc: SUI_TESTNET_URL.into(),
             ws: None,
+            eth_client_settings: None,
         }
     }
 
@@ -118,6 +120,7 @@ impl SuiEnv {
             alias: "local".to_string(),
             rpc: SUI_LOCAL_NETWORK_URL.into(),
             ws: None,
+            eth_client_settings: None,
         }
     }
 }
