@@ -370,7 +370,6 @@ impl SignatureMPCAggregator {
                 }
             }
             SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(prover_party_id, proofs) => {
-                println!("got proofs {:?} from party id {:?} successfully", proofs, prover_party_id);
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
                         tiresias_key_share_decryption_key_share,
@@ -639,7 +638,6 @@ impl SignatureMPCAggregator {
             if let Some(m) = m {
                 match m {
                     SignRoundCompletion::ProofsMessage() => {
-                        println!("Sending proofs message {:?} " , state.proofs.clone());
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
@@ -653,7 +651,6 @@ impl SignatureMPCAggregator {
                                 &epoch_store,
                             )
                             .await;
-                        println!("Sent proofs message");
                     }
                     SignRoundCompletion::SignatureOutput(sigs) => {
                         let _ = submit
