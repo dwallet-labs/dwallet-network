@@ -120,6 +120,8 @@ impl SignRound {
 
                 // TODO: Generate and send proof
                 let proof_results = self.generate_proofs(&state, &decrypt_result.failed_messages_indices);
+                let mut map = HashMap::new();
+                map.insert(state.party_id, proof_results.);
 
                 // TODO: save all parties
                 // Maybe we should create a new state for all the IA data rather than using the existing state?
@@ -130,26 +132,24 @@ impl SignRound {
 
                 // TODO: Send proof to all parties
                 // Data we need to send to other parties: party_id, HashMap(message_index, proof)
-
-
-                for (message_index, (proof, party)) in decrypt_result.failed_messages_indices.into_iter().zip(proof_results.into_iter()) {
-
-                    let party_proof_map = HashMap::from([(state.party_id, proof.clone())]);
-
-                    let (a, b) = state.decryption_shares[&state.party_id][message_index].clone();
-                    let a_map = HashMap::from([(state.party_id, a)]);
-                    let b_map = HashMap::from([(state.party_id, b)]);
-
-                    println!("Generated Proof: {:?}", proof);
-                    // TODO: make sure the proof is valid
-                    identify_malicious_parties(
-                        party,
-                        a_map,
-                        b_map,
-                        state.tiresias_public_parameters.clone(),
-                        party_proof_map,
-                    );
-                }
+                // for (message_index, (proof, party)) in decrypt_result.failed_messages_indices.into_iter().zip(proof_results.into_iter()) {
+                //
+                //     let party_proof_map = HashMap::from([(state.party_id, proof.clone())]);
+                //
+                //     let (a, b) = state.decryption_shares[&state.party_id][message_index].clone();
+                //     let a_map = HashMap::from([(state.party_id, a)]);
+                //     let b_map = HashMap::from([(state.party_id, b)]);
+                //
+                //     println!("Generated Proof: {:?}", proof);
+                //     // TODO: make sure the proof is valid
+                //     identify_malicious_parties(
+                //         party,
+                //         a_map,
+                //         b_map,
+                //         state.tiresias_public_parameters.clone(),
+                //         party_proof_map,
+                //     );
+                // }
                 Ok(SignRoundCompletion::ProofOutput())
             }
 
@@ -182,7 +182,8 @@ pub(crate) struct SignState {
     public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
     presigns: Option<Vec<DecentralizedPartyPresign>>,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
-
+    proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
+    failed_messages_indices: Option<Vec<usize>>,
 }
 
 impl SignState {
@@ -207,6 +208,8 @@ impl SignState {
             decryption_shares: HashMap::new(),
             tiresias_key_share_decryption_key_share,
             presigns: None,
+            proofs: None,
+            failed_messages_indices: None,
         }
     }
 
