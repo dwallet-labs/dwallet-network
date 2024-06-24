@@ -124,11 +124,20 @@ impl SignRound {
                 // map the proofs_tuples, a vector of tuples, to a vector of proofs, the first element in each tuple
                 let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
                 let proofs_map = HashMap::from([(state.party_id, proofs)]);
-                state.proofs = Some(proofs_map);
+
+                match &mut state.proofs {
+                    Some(proofs) => {
+                        proofs.extend(proofs_map);
+                    }
+                    None => {
+                        state.proofs = Some(proofs_map);
+                    }
+                }
 
                 // TODO: Send proof to all parties
                 // Data we need to send to other parties: party_id, HashMap(message_index, proof)
-                //
+
+                *self = SignRound::IdentifiableAbortFirstRound;
                 Ok(SignRoundCompletion::ProofsMessage())
             }
 

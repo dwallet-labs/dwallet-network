@@ -390,7 +390,11 @@ impl SignatureMPCAggregator {
                                 if proofs.contains_key(prover_party_id) {return ();}
                                 proofs.insert(*prover_party_id, new_proofs.clone());
                             }
-                            None => {}
+                            None => {
+                                let mut proofs = HashMap::new();
+                                proofs.insert(*prover_party_id, new_proofs.clone());
+                                state.proofs = Some(proofs);
+                            }
                         }
                         println!("proofs len: {}", state.clone().proofs.unwrap().len());
                         Self::spawn_complete_identifiable_abort_first_round(
@@ -406,7 +410,6 @@ impl SignatureMPCAggregator {
                         );
                     }
                 }
-                // create new state and call spawn_complete_presign_first_round
             }
             SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => {
                 // create new state and call spawn_complete_presign_second_round
