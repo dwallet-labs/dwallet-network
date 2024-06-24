@@ -370,6 +370,7 @@ impl SignatureMPCAggregator {
                 }
             }
             SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(prover_party_id, new_proofs) => {
+                println!("recv proof from {}", prover_party_id);
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
                         tiresias_key_share_decryption_key_share,
@@ -381,29 +382,20 @@ impl SignatureMPCAggregator {
                     )
                 });
 
+                let _ = state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
+                println!("proofs len: {}", state.clone().proofs.unwrap().len());
+
                 if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                     if state.ready_for_complete_first_round(&r) {
                         drop(r);
-                        println!("recv proof from {}", prover_party_id);
-                        match &mut state.proofs {
-                            Some(proofs) => {
-                                if proofs.contains_key(prover_party_id) {return ();}
-                                proofs.insert(*prover_party_id, new_proofs.clone());
-                            }
-                            None => {
-                                let mut proofs = HashMap::new();
-                                proofs.insert(*prover_party_id, new_proofs.clone());
-                                state.proofs = Some(proofs);
-                            }
-                        }
-                        println!("proofs len: {}", state.clone().proofs.unwrap().len());
+                        let state = state.clone();
                         Self::spawn_complete_identifiable_abort_first_round(
                             epoch,
                             epoch_store.clone(),
                             party_id,
                             session_id,
                             session_ref,
-                            state.clone(),
+                            state,
                             sign_session_rounds.clone(),
                             sign_session_states.clone(),
                             submit.clone(),
@@ -620,7 +612,7 @@ impl SignatureMPCAggregator {
         party_id: PartyID,
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
-        mut state: SignState,
+        state: SignState,
         sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
@@ -629,7 +621,7 @@ impl SignatureMPCAggregator {
         let m =
             match sign_session_rounds.get_mut(&session_id) {
             Some(mut round) =>
-                match round.complete_round(&mut state) {
+                match round.complete_round(state) {
                 Ok(result) => Some(result),
                 Err(e) => {None}
             },
@@ -641,7 +633,9 @@ impl SignatureMPCAggregator {
 
             if let Some(m) = m {
                 match m {
-                    SignRoundCompletion::ProofsMessage() => {
+                    SignRoundCompletion::ProofsMessage(proofs, message_indices ) => {
+                        let _ = state.insert_proofs(state.party_id.clone(), proofs.clone());
+                        println!("sending proofs message");
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
@@ -655,6 +649,7 @@ impl SignatureMPCAggregator {
                                 &epoch_store,
                             )
                             .await;
+                        println!("sent proofs message party is {}", state.party_id);
                     }
                     SignRoundCompletion::SignatureOutput(sigs) => {
                         let _ = submit
@@ -682,7 +677,7 @@ impl SignatureMPCAggregator {
         party_id: PartyID,
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
-        mut state: SignState,
+        state: SignState,
         sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
@@ -691,7 +686,7 @@ impl SignatureMPCAggregator {
         let m =
             match sign_session_rounds.get_mut(&session_id) {
             Some(mut round) =>
-                match round.complete_round(&mut state) {
+                match round.complete_round(state) {
                 Ok(result) => Some(result),
                 Err(e) => None,
             },
