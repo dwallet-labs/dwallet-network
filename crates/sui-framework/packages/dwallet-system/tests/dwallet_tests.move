@@ -9,7 +9,7 @@ module dwallet_system::dwallet_tests {
 
 
     #[test]
-    public fun test_approve_messages_with_matching_sign_message_happy_path() {
+    public fun test_sign_with_matching_sign_message_happy_path() {
         let ctx = &mut tx_context::dummy();
 
         let messages = vector::empty<vector<u8>>();
@@ -42,7 +42,7 @@ module dwallet_system::dwallet_tests {
 
     #[test]
     #[expected_failure(abort_code = EMesssageApprovalDWalletMismatch)]
-    public fun test_approve_messages_with_vector_length_missmatch_should_fail() {
+    public fun test_sign_with_vector_length_missmatch_should_fail() {
         let ctx = &mut tx_context::dummy();
 
         let messages = vector::empty<vector<u8>>();
@@ -74,7 +74,7 @@ module dwallet_system::dwallet_tests {
 
     #[test]
     #[expected_failure(abort_code = EMesssageApprovalDWalletMismatch)]
-    public fun test_approve_messages_with_different_messages_order_should_fail() {
+    public fun test_sign_with_different_messages_order_should_fail() {
         let ctx = &mut tx_context::dummy();
 
         let messages = vector::empty<vector<u8>>();
@@ -107,7 +107,7 @@ module dwallet_system::dwallet_tests {
 
     #[test]
     #[expected_failure(abort_code = EMesssageApprovalDWalletMismatch)]
-    public fun test_approve_messages_with_cap_id_missmatch_should_fail() {
+    public fun test_sign_with_cap_id_missmatch_should_fail() {
         let ctx = &mut tx_context::dummy();
 
         let messages = vector::empty<vector<u8>>();
