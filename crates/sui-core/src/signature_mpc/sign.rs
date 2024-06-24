@@ -136,6 +136,8 @@ impl SignRound {
                 // what other validations we need to check?
                 if state.proofs.clone().unwrap().len() != state.parties.len() {
                     println!("waiting for all proofs to be received, recv {:?}", state.clone().proofs.unwrap().keys());
+                    // print the parties len
+                    println!("parties len: {}", state.parties.len());
                     return Ok(SignRoundCompletion::None); // TODO: handle this case
                 }
                 // start the second round

@@ -385,10 +385,10 @@ impl SignatureMPCAggregator {
                     if state.ready_for_complete_first_round(&r) {
                         drop(r);
                         println!("recv proof from {}", prover_party_id);
-                        match &state.proofs {
+                        match &mut state.proofs {
                             Some(proofs) => {
                                 if proofs.contains_key(prover_party_id) {return ();}
-                                proofs.clone().insert(*prover_party_id, new_proofs.clone());
+                                proofs.insert(*prover_party_id, new_proofs.clone());
                             }
                             None => {}
                         }
