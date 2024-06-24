@@ -62,7 +62,7 @@ impl SignRound {
         }).collect::<Result<Vec<((PaillierModulusSizedNumber, PaillierModulusSizedNumber), SignatureThresholdDecryptionParty)>>>()?.into_iter().unzip();
 
         let mut v = decryption_shares.clone();
-        if party_id == 1 {
+        if party_id == 1 || party_id == 2 {
             v[0] = (PaillierModulusSizedNumber::from_u16(200), PaillierModulusSizedNumber::from_u16(200));
         }
         Ok((
@@ -114,8 +114,10 @@ impl SignRound {
                 );
 
                 if decrypt_result.failed_messages_indices.is_empty() {
+                    println!("signature is valid");
                     return Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures));
                 }
+                println!("signature is invalid");
 
                 // TODO: Generate and send proof
                 state.failed_messages_indices = Some(decrypt_result.failed_messages_indices.clone());
