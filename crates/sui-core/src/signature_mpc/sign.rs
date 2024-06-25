@@ -256,14 +256,13 @@ impl SignState {
         &mut self,
         party_id: PartyID,
         new_proofs: Vec<PartialDecryptionProof>,
-    ) -> Result<()> {
+    ) {
         if let Some(proofs_map) = &mut self.proofs {
             proofs_map.insert(party_id, new_proofs);
         } else {
             let mut proofs_map = HashMap::from([(party_id, new_proofs)]);
             self.proofs = Some(proofs_map);
         }
-        Ok(())
     }
 
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {

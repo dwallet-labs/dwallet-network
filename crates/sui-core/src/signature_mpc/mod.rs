@@ -37,13 +37,7 @@ use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
 use sui_types::error::{SuiError, SuiResult};
 use sui_types::message_envelope::Message;
 
-use signature_mpc::twopc_mpc_protocols::{
-    initiate_decentralized_party_dkg, Commitment,
-    DecommitmentProofVerificationRoundParty,
-    SecretKeyShareEncryptionAndProof, DecryptionPublicParameters,
-    PartyID, ProtocolContext, SecretKeyShareSizedNumber,
-    PublicNonceEncryptedPartialSignatureAndProof,
-};
+use signature_mpc::twopc_mpc_protocols::{initiate_decentralized_party_dkg, Commitment, DecommitmentProofVerificationRoundParty, SecretKeyShareEncryptionAndProof, DecryptionPublicParameters, PartyID, ProtocolContext, SecretKeyShareSizedNumber, PublicNonceEncryptedPartialSignatureAndProof, PartialDecryptionProof};
 use sui_types::sui_system_state::{SuiSystemState, SuiSystemStateTrait};
 use sui_types::transaction::{TransactionDataAPI, TransactionKind};
 use tokio::sync::mpsc;
@@ -354,18 +348,20 @@ impl SignatureMPCAggregator {
                 if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                     if state.ready_for_complete_first_round(&r) {
                         drop(r);
-                        let state = state.clone();
-                        Self::spawn_complete_sign_round(
+                        let generated_proofs = Self::spawn_complete_sign_round(
                             epoch,
                             epoch_store.clone(),
                             party_id,
                             session_id,
                             session_ref,
-                            state,
+                            state.clone(),
                             sign_session_rounds.clone(),
                             sign_session_states.clone(),
                             submit.clone(),
                         );
+                        if let Some(proofs) = generated_proofs {
+                            state.insert_proofs(party_id, proofs);
+                        }
                     }
                 }
             }
@@ -616,12 +612,12 @@ impl SignatureMPCAggregator {
         sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
-    ) {
+    ) -> Option<Vec<PartialDecryptionProof>> {
         spawn_monitored_task!(async move {
         let m =
             match sign_session_rounds.get_mut(&session_id) {
             Some(mut round) =>
-                match round.complete_round(state) {
+                match round.complete_round(state.clone()) {
                 Ok(result) => Some(result),
                 Err(e) => {None}
             },
@@ -634,7 +630,7 @@ impl SignatureMPCAggregator {
             if let Some(m) = m {
                 match m {
                     SignRoundCompletion::ProofsMessage(proofs, message_indices ) => {
-                        let _ = state.insert_proofs(state.party_id.clone(), proofs.clone());
+                        // let _ = state.insert_proofs(state.party_id.clone(), proofs.clone());
                         println!("sending proofs message");
                         let _ = submit
                             .sign_and_submit_message(
@@ -642,14 +638,14 @@ impl SignatureMPCAggregator {
                                     epoch,
                                     SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(
                                     state.party_id,
-                                    state.proofs.unwrap().get(&state.party_id).unwrap().clone(),
+                                    proofs.clone(),
                                 ),
                                     session_id,
                                 ),
                                 &epoch_store,
                             )
                             .await;
-                        println!("sent proofs message party is {}", state.party_id);
+                        Some(proofs)
                     }
                     SignRoundCompletion::SignatureOutput(sigs) => {
                         let _ = submit
@@ -664,9 +660,16 @@ impl SignatureMPCAggregator {
                                         &epoch_store,
                                     )
                                     .await;
+                        None
                     }
-                    SignRoundCompletion::None => {}
-                _ => {}}
+                    SignRoundCompletion::None => {
+                        None
+                    }
+                _ => {
+                        None
+                    }}
+            } else {
+                None
             }
         });
     }
