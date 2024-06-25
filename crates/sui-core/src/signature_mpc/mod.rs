@@ -377,6 +377,7 @@ impl SignatureMPCAggregator {
 
                 // TODO: check if the message_indices are valid and keep track of the party that sends the indices
                 state.failed_messages_indices = Some(message_indices.clone());
+                state.involved_parties = involved_parties.clone();
                 state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
                 println!("proofs len: {}", state.clone().proofs.unwrap().len());
                 // check if my party id is in the state proofs
@@ -646,6 +647,7 @@ impl SignatureMPCAggregator {
                 SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties) => {
                     // Borrow state mutably to call insert_proofs
                         mut_state.failed_messages_indices = Some(message_indices.clone());
+                        mut_state.involved_parties = involved_parties.clone();
                     let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
 
                     let _ = submit

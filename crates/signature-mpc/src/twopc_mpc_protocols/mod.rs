@@ -492,6 +492,9 @@ pub fn identify_malicious_parties(
         })
         .collect();
 
+
+    let signature_partial_decryption_proofs: HashMap<PartyID, PartialDecryptionProof> = signature_partial_decryption_proofs.into_iter().filter(|(party_id, _)| decrypters.contains(party_id)).collect();
+
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
         partial_signature_decryption_share,
