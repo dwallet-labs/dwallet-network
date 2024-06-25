@@ -118,26 +118,10 @@ impl SignRound {
                     return Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures));
                 }
 
-                println!("sign failed, generating proofs party {}", state.party_id);
-
-                // state.failed_messages_indices = Some(decrypt_result.failed_messages_indices.clone());
-                let proofs_tuples = self.generate_proofs(
-                    &state, &decrypt_result.failed_messages_indices);
-                // map the proofs_tuples, a vector of tuples, to a vector of proofs, the first element in each tuple
-                let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
-
-
-                // match &mut state.proofs {
-                //     Some(proofs) => {
-                //         proofs.extend(proofs_map);
-                //     }
-                //     None => {
-                //         state.proofs = Some(proofs_map);
-                //     }
-                // }
+                println!("sign failed {}", state.party_id);
 
                 *self = SignRound::IdentifiableAbortFirstRound;
-                Ok(SignRoundCompletion::ProofsMessage(proofs, decrypt_result.failed_messages_indices))
+                Ok(SignRoundCompletion::SignatureFailedOutput(decrypt_result.failed_messages_indices))
             }
 
             SignRound::IdentifiableAbortFirstRound => {
@@ -186,6 +170,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
+    SignatureFailedOutput(Vec<usize>),
     ProofsMessage(Vec<PartialDecryptionProof>, Vec<usize>),
     MaliciousPartiesOutput(HashSet<PartyID>),
     None,

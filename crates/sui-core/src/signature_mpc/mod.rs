@@ -625,6 +625,22 @@ impl SignatureMPCAggregator {
 
             if let Some(m) = m {
                 match m {
+                    SignRoundCompletion::SignatureFailedOutput(message_indices) => {
+                        // TODO: add consensus logic to the new output type
+                        // Q: do we start collecting the proofs before all indices sent and agreed upon?
+                        let _ = submit
+                            .sign_and_submit_output(
+                                &SignatureMPCOutput::new_sign_failure(
+                                            epoch,
+                                            session_id,
+                                            session_ref,
+                                            message_indices,
+                                        )
+                                        .unwrap(),
+                                &epoch_store,
+                            )
+                            .await;
+                    }
                     SignRoundCompletion::ProofsMessage(proofs, message_indices ) => {
                         // let _ = state.insert_proofs(state.party_id.clone(), proofs.clone());
                         println!("sending proofs message");

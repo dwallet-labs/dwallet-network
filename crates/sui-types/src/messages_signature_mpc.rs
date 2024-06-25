@@ -180,6 +180,7 @@ pub enum SignatureMPCOutputValue {
     PresignOutput(Vec<u8>),
     Presign(Vec<u8>),
     Sign(Vec<Vec<u8>>),
+    SignFailure(Vec<usize>),
     // Q: What is the identifiable abort output?
 }
 
@@ -330,6 +331,20 @@ impl SignatureMPCOutput {
             session_id,
             session_ref,
             value: SignatureMPCOutputValue::Sign(sigs),
+        })
+    }
+
+    pub fn new_sign_failure(
+        epoch: EpochId,
+        session_id: SignatureMPCSessionID,
+        session_ref: ObjectRef,
+        message_indices: Vec<usize>,
+    ) -> SuiResult<SignatureMPCOutput> {
+        Ok(Self {
+            epoch,
+            session_id,
+            session_ref,
+            value: SignatureMPCOutputValue::SignFailure(message_indices),
         })
     }
 
