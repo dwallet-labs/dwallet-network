@@ -184,7 +184,7 @@ pub(crate) enum SignRoundCompletion {
 pub(crate) struct SignState {
     epoch: EpochId,
     pub party_id: PartyID,
-    parties: HashSet<PartyID>,
+    pub parties: HashSet<PartyID>,
     aggregator_party_id: PartyID,
     tiresias_public_parameters: DecryptionPublicParameters,
     tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,

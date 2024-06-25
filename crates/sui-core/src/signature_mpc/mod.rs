@@ -30,6 +30,7 @@ use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
+use move_symbol_pool::static_symbols;
 use sui_types::base_types::{AuthorityName, EpochId, TransactionDigest};
 use tap::TapFallible;
 
@@ -392,7 +393,7 @@ impl SignatureMPCAggregator {
                     sign_session_rounds.clone(),
                     sign_session_states.clone(),
                     submit.clone(),
-                    message_indices,
+                    message_indices.clone(),
                 );
                 // if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                 //     if state.ready_for_complete_first_round(&r) {
@@ -687,16 +688,16 @@ impl SignatureMPCAggregator {
         sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
-        failed_messages_indices: &Vec<usize>,
+        failed_messages_indices: Vec<usize>,
     ) {
+        spawn_monitored_task!(async move {
         let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
         let state = mut_state.clone();
-        spawn_monitored_task!(async move {
-        let m =
             match sign_session_rounds.get_mut(&session_id) {
                 Some(mut round) => {
-                    let proofs = round.generate_proofs(&state, failed_messages_indices);
-                    mut_state.insert_proofs(party_id, proofs);
+                    let proofs = round.generate_proofs(&state, &failed_messages_indices);
+                    let proofs : Vec<_>= proofs.iter().map(|(proof, _)| proof.clone()).collect();
+                    mut_state.insert_proofs(party_id, proofs.clone());
                     let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
@@ -704,28 +705,20 @@ impl SignatureMPCAggregator {
                                     SignatureMPCMessageProtocols::SignProofs(
                                         state.party_id,
                                         proofs.clone(),
-                                        failed_messages_indices,
+                                        failed_messages_indices.clone(),
                                     ),
                                     session_id,
                                 ),
                                 &epoch_store,
                             )
                             .await;
-                    if state.proofs.len() == state.parties.len() {
-                        print("received all proofs");
+                    if state.proofs.is_some() && state.proofs.unwrap().len() == state.parties.len() {
+                        println!("received all proofs");
                     }
-
-                    None
                 },
-                None => {
-                    None
-                }
+                None => {}
             };
     });
-    }
-
-    fn spawn_complete_identifiable_abort_second_round() {
-        // call complete_round, create the output and submit it to the consensus
     }
 
     async fn initiate_protocol(
