@@ -367,6 +367,7 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
 pub struct DecryptResult {
     pub messages_signatures: Vec<Vec<u8>>,
     pub failed_messages_indices: Vec<usize>,
+    pub involved_parties: Vec<PartyID>,
 }
 
 pub fn decrypt_signature_decentralized_party_sign(
@@ -448,6 +449,7 @@ pub fn decrypt_signature_decentralized_party_sign(
     DecryptResult {
         messages_signatures,
         failed_messages_indices,
+        involved_parties: decrypters,
     }
 }
 
@@ -466,11 +468,11 @@ pub fn identify_malicious_parties(
         PartyID,
         PartialDecryptionProof
     >,
+    decrypters: Vec<PartyID>,
 ) -> Vec<PartyID> // malicious_party_ids
 {
 
-    let decrypters: Vec<_> = signature_partial_decryption_proofs.keys().cloned().collect();
-
+    // let decrypters: Vec<_> = signature_partial_decryption_proofs.keys().cloned().collect();
     let lagrange_coefficients: HashMap<
         PartyID,
         AdjustedLagrangeCoefficientSizedNumber,

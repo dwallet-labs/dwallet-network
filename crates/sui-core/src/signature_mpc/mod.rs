@@ -362,7 +362,7 @@ impl SignatureMPCAggregator {
                     }
                 }
             }
-            SignatureMPCMessageProtocols::SignProofs(prover_party_id, new_proofs, message_indices) => {
+            SignatureMPCMessageProtocols::SignProofs(prover_party_id, new_proofs, message_indices, involved_parties) => {
                 println!("recv proof from {}", prover_party_id);
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
@@ -397,6 +397,7 @@ impl SignatureMPCAggregator {
                     sign_session_states.clone(),
                     submit.clone(),
                     message_indices.clone(),
+                    involved_parties.clone(),
                 );
                 // if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                 //     if state.ready_for_complete_first_round(&r) {
@@ -642,7 +643,7 @@ impl SignatureMPCAggregator {
 
         if let Some(m) = m {
             match m {
-                SignRoundCompletion::ProofsMessage(proofs, message_indices) => {
+                SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties) => {
                     // Borrow state mutably to call insert_proofs
                         mut_state.failed_messages_indices = Some(message_indices.clone());
                     let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
@@ -655,6 +656,7 @@ impl SignatureMPCAggregator {
                                     state.party_id,
                                     proofs.clone(),
                                     message_indices,
+                                    involved_parties
                                 ),
                                 session_id,
                             ),
@@ -692,6 +694,7 @@ impl SignatureMPCAggregator {
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
         failed_messages_indices: Vec<usize>,
+        involved_parties: Vec<PartyID>,
     ) {
         spawn_monitored_task!(async move {
         let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
@@ -709,6 +712,7 @@ impl SignatureMPCAggregator {
                                         state.party_id,
                                         proofs.clone(),
                                         failed_messages_indices.clone(),
+                                        involved_parties,
                                     ),
                                     session_id,
                                 ),

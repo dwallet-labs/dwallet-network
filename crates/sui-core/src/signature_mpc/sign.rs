@@ -119,7 +119,7 @@ impl SignRound {
                     &state, &decrypt_result.failed_messages_indices);
                 let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
 
-                Ok(SignRoundCompletion::ProofsMessage(proofs, decrypt_result.failed_messages_indices))
+                Ok(SignRoundCompletion::ProofsMessage(proofs, decrypt_result.failed_messages_indices, decrypt_result.involved_parties))
             }
             _ => {
                 Ok(SignRoundCompletion::None)
@@ -138,7 +138,7 @@ impl SignRound {
 
             let (partial_signature_decryption_share, masked_nonce_decryption_share) = state.decryption_shares[&state.party_id][message_index].clone();
 
-            let a: HashMap::<PartyID, _> =
+            let a : HashMap::<PartyID, _> =
                 state.proofs.clone().unwrap().into_iter().map(|(party_id, proofs)| {
                     (party_id, proofs[i].clone())
                 }).collect();
@@ -150,6 +150,7 @@ impl SignRound {
                 HashMap::from([(state.party_id, masked_nonce_decryption_share)]),
                 state.tiresias_public_parameters.clone(),
                 a,
+                state.involved_parties.clone(),
             ).iter().for_each(|party_id| {
                 malicious_parties.insert(*party_id);
             });
@@ -162,7 +163,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    ProofsMessage(Vec<PartialDecryptionProof>, Vec<usize>),
+    ProofsMessage(Vec<PartialDecryptionProof>, Vec<usize>, Vec<PartyID>),
     MaliciousPartiesOutput(HashSet<PartyID>),
     None,
 }
@@ -181,6 +182,7 @@ pub(crate) struct SignState {
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
     pub failed_messages_indices: Option<Vec<usize>>,
+    pub involved_parties: Vec<PartyID>,
 }
 
 impl SignState {
@@ -207,6 +209,7 @@ impl SignState {
             presigns: None,
             proofs: None,
             failed_messages_indices: None,
+            involved_parties: Vec::new()
         }
     }
 
