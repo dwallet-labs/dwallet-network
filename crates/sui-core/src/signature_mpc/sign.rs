@@ -100,7 +100,7 @@ impl SignRound {
 
     pub(crate) fn complete_round(
         &mut self,
-        state: &mut SignState,
+        state: SignState,
     ) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
@@ -114,43 +114,34 @@ impl SignRound {
                 );
 
                 if decrypt_result.failed_messages_indices.is_empty() {
-                    println!("signature is valid");
+                    println!("sign successful");
                     return Ok(SignRoundCompletion::SignatureOutput(decrypt_result.messages_signatures));
                 }
-                println!("signature is invalid");
 
-                // TODO: Generate and send proof
-                state.failed_messages_indices = Some(decrypt_result.failed_messages_indices.clone());
+                println!("sign failed, generating proofs party {}", state.party_id);
+
+                // state.failed_messages_indices = Some(decrypt_result.failed_messages_indices.clone());
                 let proofs_tuples = self.generate_proofs(
                     &state, &decrypt_result.failed_messages_indices);
                 // map the proofs_tuples, a vector of tuples, to a vector of proofs, the first element in each tuple
                 let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
-                let proofs_map = HashMap::from([(state.party_id, proofs)]);
 
-                match &mut state.proofs {
-                    Some(proofs) => {
-                        proofs.extend(proofs_map);
-                    }
-                    None => {
-                        state.proofs = Some(proofs_map);
-                    }
-                }
 
-                // TODO: Send proof to all parties
-                // Data we need to send to other parties: party_id, HashMap(message_index, proof)
+                // match &mut state.proofs {
+                //     Some(proofs) => {
+                //         proofs.extend(proofs_map);
+                //     }
+                //     None => {
+                //         state.proofs = Some(proofs_map);
+                //     }
+                // }
 
                 *self = SignRound::IdentifiableAbortFirstRound;
-                Ok(SignRoundCompletion::ProofsMessage())
+                Ok(SignRoundCompletion::ProofsMessage(proofs, decrypt_result.failed_messages_indices))
             }
 
-            SignRound::IdentifiableAbortFirstRound=> {
-                // what other validations we need to check?
-                if state.proofs.clone().unwrap().len() != state.parties.len() {
-                    println!("waiting for all proofs to be received, recv {:?}", state.clone().proofs.unwrap().keys());
-                    // print the parties len
-                    println!("parties len: {}", state.parties.len());
-                    return Ok(SignRoundCompletion::None); // TODO: handle this case
-                }
+            SignRound::IdentifiableAbortFirstRound => {
+
                 // start the second round
 
                 println!("received all proofs, starting second round");
@@ -162,10 +153,10 @@ impl SignRound {
 
                     let (partial_signature_decryption_share, masked_nonce_decryption_share) = state.decryption_shares[&state.party_id][message_index].clone();
 
-                    let a : HashMap::<PartyID, _> =
+                    let a: HashMap::<PartyID, _> =
                         state.proofs.clone().unwrap().into_iter().map(|(party_id, proofs)| {
-                        (party_id, proofs[i].clone())
-                    }).collect();
+                            (party_id, proofs[i].clone())
+                        }).collect();
 
                     // TODO: make sure the proof is valid
                     identify_malicious_parties(
@@ -191,7 +182,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    ProofsMessage(),
+    ProofsMessage(Vec<PartialDecryptionProof>, Vec<usize>),
     MaliciousPartiesOutput(HashSet<PartyID>),
     None,
 }
@@ -258,6 +249,20 @@ impl SignState {
         let _ = self
             .decryption_shares
             .insert(party_id, message);
+        Ok(())
+    }
+
+    pub(crate) fn insert_proofs(
+        &mut self,
+        party_id: PartyID,
+        new_proofs: Vec<PartialDecryptionProof>,
+    ) -> Result<()> {
+        if let Some(proofs_map) = &mut self.proofs {
+            proofs_map.insert(party_id, new_proofs);
+        } else {
+            let mut proofs_map = HashMap::from([(party_id, new_proofs)]);
+            self.proofs = Some(proofs_map);
+        }
         Ok(())
     }
 
