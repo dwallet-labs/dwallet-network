@@ -59,21 +59,13 @@ impl SignatureMPCBulletProofAggregatesMessage {
     }
 }
 
-// #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
-// pub enum DKGSignatureMPCMessageProtocol {
-//     BulletproofsCommitment(DKGSignatureMPCBulletproofsCommitment),
-//     BulletproofsDecommitment(DKGSignatureMPCBulletproofsDecommitment),
-//     BulletproofsProofShare(DKGSignatureMPCBulletproofsProofShare),
-// }
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SignatureMPCMessageProtocols {
     DKG(SignatureMPCBulletProofAggregatesMessage),
     PresignFirstRound(SignatureMPCBulletProofAggregatesMessage),
     PresignSecondRound(SignatureMPCBulletProofAggregatesMessage),
     Sign(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
-    IdentifiableAbortFirstRound(PartyID, Vec<(PartialDecryptionProof)>),
-    IdentifiableAbortSecondRound(SignatureMPCBulletProofAggregatesMessage),
+    SignProofs(PartyID, Vec<(PartialDecryptionProof)>, Vec<usize>),
 }
 
 impl Display for SignatureMPCMessageProtocols {
@@ -92,11 +84,8 @@ impl Display for SignatureMPCMessageProtocols {
                 f.write_str("Sign")
             }
             // TODO: Implement proofs reception #2
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_, _) => {
+            SignatureMPCMessageProtocols::SignProofs(_, _, _) => {
                 f.write_str("IdentifiableAbortFirstRound")
-            }
-            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => {
-                f.write_str("IdentifiableAbortSecondRound")
             }
             _ => {
                 f.write_str("Unknown")
@@ -180,7 +169,6 @@ pub enum SignatureMPCOutputValue {
     PresignOutput(Vec<u8>),
     Presign(Vec<u8>),
     Sign(Vec<Vec<u8>>),
-    SignFailure(Vec<usize>),
     // Q: What is the identifiable abort output?
 }
 
@@ -334,20 +322,6 @@ impl SignatureMPCOutput {
         })
     }
 
-    pub fn new_sign_failure(
-        epoch: EpochId,
-        session_id: SignatureMPCSessionID,
-        session_ref: ObjectRef,
-        message_indices: Vec<usize>,
-    ) -> SuiResult<SignatureMPCOutput> {
-        Ok(Self {
-            epoch,
-            session_id,
-            session_ref,
-            value: SignatureMPCOutputValue::SignFailure(message_indices),
-        })
-    }
-
     pub fn message_kind(&self) -> SignatureMPCMessageKind {
         match &self.value {
             SignatureMPCOutputValue::DKG { .. } => 1,
@@ -386,8 +360,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(_) => 2,
             SignatureMPCMessageProtocols::PresignSecondRound(_) => 3,
             SignatureMPCMessageProtocols::Sign(_) => 3,
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_, _) => 4,
-            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => 5,
+            SignatureMPCMessageProtocols::SignProofs(_, _, _) => 4,
         }
     }
 
@@ -398,8 +371,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
             SignatureMPCMessageProtocols::Sign(_) => 1,
             // TODO: Implement proofs reception #1
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(_, _) => 7,
-            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(m) => m.round(),
+            SignatureMPCMessageProtocols::SignProofs(_, _, _) => 7,
         }
     }
 }

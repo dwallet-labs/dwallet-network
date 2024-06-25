@@ -121,18 +121,23 @@ impl SignRound {
                 println!("sign failed {}", state.party_id);
 
                 *self = SignRound::IdentifiableAbortFirstRound;
-                Ok(SignRoundCompletion::SignatureFailedOutput(decrypt_result.failed_messages_indices))
+
+                // TODO: decrypt all from all parties (send output decrypt failed. message indices)
+                let proofs_tuples = self.generate_proofs(
+                    &state, &decrypt_result.failed_messages_indices);
+                let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
+
+                Ok(SignRoundCompletion::ProofsMessage(proofs, decrypt_result.failed_messages_indices))
             }
 
             SignRound::IdentifiableAbortFirstRound => {
-
                 // start the second round
 
-                // TODO: decrypt all from all parties (send output decrypt failed. message indices)
                 // TODO: generate proofs and send message
                 // TODO: collect all proofs from all parties
                 // TODO: find malicious parties and send output
                 println!("received all proofs, starting second round");
+
                 let proof_results = self.generate_proofs(
                     &state, &state.failed_messages_indices.clone().unwrap());
 
@@ -170,7 +175,6 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    SignatureFailedOutput(Vec<usize>),
     ProofsMessage(Vec<PartialDecryptionProof>, Vec<usize>),
     MaliciousPartiesOutput(HashSet<PartyID>),
     None,
@@ -189,7 +193,7 @@ pub(crate) struct SignState {
     presigns: Option<Vec<DecentralizedPartyPresign>>,
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
-    failed_messages_indices: Option<Vec<usize>>,
+    pub failed_messages_indices: Option<Vec<usize>>,
 }
 
 impl SignState {
@@ -257,7 +261,7 @@ impl SignState {
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {
         match round {
             SignRound::FirstRound { .. } if self.decryption_shares.len() == self.parties.len() && self.party_id == self.aggregator_party_id => true,
-            SignRound::IdentifiableAbortFirstRound => true, // TODO: this is probably not correct
+            SignRound::IdentifiableAbortFirstRound => true, //self.failed_messages_indices.is_some() && self.proofs.keys().len() == self.parties.len(),
             _ => false
         }
     }

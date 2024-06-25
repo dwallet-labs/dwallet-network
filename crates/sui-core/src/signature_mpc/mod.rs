@@ -361,7 +361,7 @@ impl SignatureMPCAggregator {
                     }
                 }
             }
-            SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(prover_party_id, new_proofs) => {
+            SignatureMPCMessageProtocols::SignProofs(prover_party_id, new_proofs, message_indices) => {
                 println!("recv proof from {}", prover_party_id);
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
@@ -394,9 +394,6 @@ impl SignatureMPCAggregator {
                         );
                     }
                 }
-            }
-            SignatureMPCMessageProtocols::IdentifiableAbortSecondRound(_) => {
-                // create new state and call spawn_complete_presign_second_round
             }
             _ => {}
         }
@@ -609,13 +606,12 @@ impl SignatureMPCAggregator {
         submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
-        let mut state = sign_session_states.get_mut(&session_id).unwrap();
-        let m =
-            match sign_session_rounds.get_mut(&session_id) {
-            Some(mut round) =>
-                match round.complete_round(state.clone()) {
+        let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
+        let state = mut_state.clone();
+        let m = match sign_session_rounds.get_mut(&session_id) {
+            Some(mut round) => match round.complete_round(state.clone()) {
                 Ok(result) => Some(result),
-                Err(e) => {None}
+                Err(_) => None,
             },
             None => {
                 println!("Failed to find session round");
@@ -623,59 +619,46 @@ impl SignatureMPCAggregator {
             }
         };
 
-            if let Some(m) = m {
-                match m {
-                    SignRoundCompletion::SignatureFailedOutput(message_indices) => {
-                        // TODO: add consensus logic to the new output type
-                        // Q: do we start collecting the proofs before all indices sent and agreed upon?
-                        let _ = submit
-                            .sign_and_submit_output(
-                                &SignatureMPCOutput::new_sign_failure(
-                                            epoch,
-                                            session_id,
-                                            session_ref,
-                                            message_indices,
-                                        )
-                                        .unwrap(),
-                                &epoch_store,
-                            )
-                            .await;
-                    }
-                    SignRoundCompletion::ProofsMessage(proofs, message_indices ) => {
-                        // let _ = state.insert_proofs(state.party_id.clone(), proofs.clone());
-                        println!("sending proofs message");
-                        let _ = submit
-                            .sign_and_submit_message(
-                                &SignatureMPCMessageSummary::new(
-                                    epoch,
-                                    SignatureMPCMessageProtocols::IdentifiableAbortFirstRound(
+        if let Some(m) = m {
+            match m {
+                SignRoundCompletion::ProofsMessage(proofs, message_indices) => {
+                    // Borrow state mutably to call insert_proofs
+                        mut_state.failed_messages_indices = Some(message_indices.clone());
+                    let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
+
+                    let _ = submit
+                        .sign_and_submit_message(
+                            &SignatureMPCMessageSummary::new(
+                                epoch,
+                                SignatureMPCMessageProtocols::SignProofs(
                                     state.party_id,
                                     proofs.clone(),
+                                    message_indices,
                                 ),
-                                    session_id,
-                                ),
-                                &epoch_store,
+                                session_id,
+                            ),
+                            &epoch_store,
+                        )
+                        .await;
+                }
+                SignRoundCompletion::SignatureOutput(sigs) => {
+                    let _ = submit
+                        .sign_and_submit_output(
+                            &SignatureMPCOutput::new_sign(
+                                epoch,
+                                session_id,
+                                session_ref,
+                                sigs,
                             )
-                            .await;
-                    }
-                    SignRoundCompletion::SignatureOutput(sigs) => {
-                        let _ = submit
-                                    .sign_and_submit_output(
-                                        &SignatureMPCOutput::new_sign(
-                                            epoch,
-                                            session_id,
-                                            session_ref,
-                                            sigs,
-                                        )
-                                        .unwrap(),
-                                        &epoch_store,
-                                    )
-                                    .await;
-                    }
-                    SignRoundCompletion::None => {}
-                _ => {}}
-            } else {}
-        });
+                            .unwrap(),
+                            &epoch_store,
+                        )
+                        .await;
+                }
+                SignRoundCompletion::None => {}
+            SignRoundCompletion::MaliciousPartiesOutput(_) => {}}
+        }
+    });
     }
 
     fn spawn_complete_identifiable_abort_first_round(
