@@ -17,11 +17,6 @@ pub(crate) enum SignRound {
     FirstRound {
         signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>
     },
-    IdentifiableAbortFirstRound
-    // party_id: PartyID,
-    // proofs : Vec<DecryptionKeyShare::PartialDecryptionProof>
-    ,
-    IdentifiableAbortSecondRound,
     #[default]
     None,
 }
@@ -74,7 +69,6 @@ impl SignRound {
     }
 
     pub fn generate_proofs(
-        &mut self,
         state: &SignState,
         failed_messages_indices: &Vec<usize>,
     ) -> Vec<(PartialDecryptionProof, ProofParty)> {
@@ -120,55 +114,48 @@ impl SignRound {
 
                 println!("sign failed {}", state.party_id);
 
-                *self = SignRound::IdentifiableAbortFirstRound;
-
                 // TODO: decrypt all from all parties (send output decrypt failed. message indices)
-                let proofs_tuples = self.generate_proofs(
+                let proofs_tuples = Self::generate_proofs(
                     &state, &decrypt_result.failed_messages_indices);
                 let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
 
                 Ok(SignRoundCompletion::ProofsMessage(proofs, decrypt_result.failed_messages_indices))
             }
-
-            SignRound::IdentifiableAbortFirstRound => {
-                // start the second round
-
-                // TODO: generate proofs and send message
-                // TODO: collect all proofs from all parties
-                // TODO: find malicious parties and send output
-                println!("received all proofs, starting second round");
-
-                let proof_results = self.generate_proofs(
-                    &state, &state.failed_messages_indices.clone().unwrap());
-
-                let mut malicious_parties = HashSet::new();
-                for ((i, message_index), (proof, party)) in state.clone().failed_messages_indices.unwrap().into_iter().enumerate().zip(proof_results.into_iter()) {
-
-                    let (partial_signature_decryption_share, masked_nonce_decryption_share) = state.decryption_shares[&state.party_id][message_index].clone();
-
-                    let a: HashMap::<PartyID, _> =
-                        state.proofs.clone().unwrap().into_iter().map(|(party_id, proofs)| {
-                            (party_id, proofs[i].clone())
-                        }).collect();
-
-                    // TODO: make sure the proof is valid
-                    identify_malicious_parties(
-                        party,
-                        HashMap::from([(state.party_id, partial_signature_decryption_share)]),
-                        HashMap::from([(state.party_id, masked_nonce_decryption_share)]),
-                        state.tiresias_public_parameters.clone(),
-                        a,
-                    ).iter().for_each(|party_id| {
-                        malicious_parties.insert(*party_id);
-                    });
-                }
-                println!("malicious parties: {:?}", malicious_parties);
-                Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties))
-            }
             _ => {
                 Ok(SignRoundCompletion::None)
             }
         }
+    }
+
+    pub(crate) fn identify_malicious(
+        state: &SignState,
+    ) -> Result<SignRoundCompletion> {
+        let proof_results = Self::generate_proofs(
+            &state, &state.failed_messages_indices.clone().unwrap());
+
+        let mut malicious_parties = HashSet::new();
+        for ((i, message_index), (proof, party)) in state.clone().failed_messages_indices.unwrap().into_iter().enumerate().zip(proof_results.into_iter()) {
+
+            let (partial_signature_decryption_share, masked_nonce_decryption_share) = state.decryption_shares[&state.party_id][message_index].clone();
+
+            let a: HashMap::<PartyID, _> =
+                state.proofs.clone().unwrap().into_iter().map(|(party_id, proofs)| {
+                    (party_id, proofs[i].clone())
+                }).collect();
+
+            // TODO: make sure the proof is valid
+            identify_malicious_parties(
+                party,
+                HashMap::from([(state.party_id, partial_signature_decryption_share)]),
+                HashMap::from([(state.party_id, masked_nonce_decryption_share)]),
+                state.tiresias_public_parameters.clone(),
+                a,
+            ).iter().for_each(|party_id| {
+                malicious_parties.insert(*party_id);
+            });
+        }
+        println!("malicious parties: {:?}", malicious_parties);
+        Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties))
     }
 }
 
@@ -261,7 +248,7 @@ impl SignState {
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {
         match round {
             SignRound::FirstRound { .. } if self.decryption_shares.len() == self.parties.len() && self.party_id == self.aggregator_party_id => true,
-            SignRound::IdentifiableAbortFirstRound => true, //self.failed_messages_indices.is_some() && self.proofs.keys().len() == self.parties.len(),
+            // SignRound::IdentifiableAbortFirstRound => true, //self.failed_messages_indices.is_some() && self.proofs.keys().len() == self.parties.len(),
             _ => false
         }
     }

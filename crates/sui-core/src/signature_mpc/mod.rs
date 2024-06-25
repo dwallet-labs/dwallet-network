@@ -375,11 +375,14 @@ impl SignatureMPCAggregator {
                     )
                 });
 
+                // TODO: check if the message_indices are valid and keep track of the party that sends the indices
+                state.failed_messages_indices = Some(message_indices.clone());
                 state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
                 println!("proofs len: {}", state.clone().proofs.unwrap().len());
                 // check if my party id is in the state proofs
                 if state.clone().proofs.unwrap().len() == parties.clone().len() {
                     println!("received all proofs");
+                    SignRound::identify_malicious(&state);
                 }
                 if state.clone().proofs.unwrap().contains_key(&party_id) {
                     return;
@@ -695,7 +698,7 @@ impl SignatureMPCAggregator {
         let state = mut_state.clone();
             match sign_session_rounds.get_mut(&session_id) {
                 Some(mut round) => {
-                    let proofs = round.generate_proofs(&state, &failed_messages_indices);
+                    let proofs = SignRound::generate_proofs(&state, &failed_messages_indices);
                     let proofs : Vec<_>= proofs.iter().map(|(proof, _)| proof.clone()).collect();
                     mut_state.insert_proofs(party_id, proofs.clone());
                     let _ = submit
@@ -712,8 +715,9 @@ impl SignatureMPCAggregator {
                                 &epoch_store,
                             )
                             .await;
-                    if state.proofs.is_some() && state.proofs.unwrap().len() == state.parties.len() {
+                    if state.proofs.is_some() && state.proofs.clone().unwrap().len() == state.parties.len() {
                         println!("received all proofs");
+                        SignRound::identify_malicious(&state);
                     }
                 },
                 None => {}
