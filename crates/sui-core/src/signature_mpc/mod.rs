@@ -374,26 +374,40 @@ impl SignatureMPCAggregator {
                     )
                 });
 
-                let _ = state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
+                state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
                 println!("proofs len: {}", state.clone().proofs.unwrap().len());
-
-                if let Some(r) = sign_session_rounds.get_mut(&session_id) {
-                    if state.ready_for_complete_first_round(&r) {
-                        drop(r);
-                        let state = state.clone();
-                        Self::spawn_complete_identifiable_abort_first_round(
-                            epoch,
-                            epoch_store.clone(),
-                            party_id,
-                            session_id,
-                            session_ref,
-                            state,
-                            sign_session_rounds.clone(),
-                            sign_session_states.clone(),
-                            submit.clone(),
-                        );
-                    }
+                // check if my party id is in the state proofs
+                if state.clone().proofs.unwrap().contains_key(&party_id) {
+                    return;
                 }
+                Self::spawn_generate_proof(
+                    epoch,
+                    epoch_store.clone(),
+                    party_id,
+                    session_id,
+                    session_ref,
+                    sign_session_rounds.clone(),
+                    sign_session_states.clone(),
+                    submit.clone(),
+                    message_indices,
+                );
+                // if let Some(r) = sign_session_rounds.get_mut(&session_id) {
+                //     if state.ready_for_complete_first_round(&r) {
+                //         drop(r);
+                //         let state = state.clone();
+                //         Self::spawn_complete_identifiable_abort_first_round(
+                //             epoch,
+                //             epoch_store.clone(),
+                //             party_id,
+                //             session_id,
+                //             session_ref,
+                //             state,
+                //             sign_session_rounds.clone(),
+                //             sign_session_states.clone(),
+                //             submit.clone(),
+                //         );
+                //     }
+                // }
             }
             _ => {}
         }
@@ -661,29 +675,45 @@ impl SignatureMPCAggregator {
     });
     }
 
-    fn spawn_complete_identifiable_abort_first_round(
+    fn spawn_generate_proof(
         epoch: EpochId,
         epoch_store: Arc<AuthorityPerEpochStore>,
         party_id: PartyID,
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
-        state: SignState,
         sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
+        failed_messages_indices: &Vec<usize>,
     ) {
+        let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
+        let state = mut_state.clone();
         spawn_monitored_task!(async move {
         let m =
             match sign_session_rounds.get_mut(&session_id) {
             Some(mut round) =>
-                match round.complete_round(state) {
-                Ok(result) => Some(result),
-                Err(e) => None,
+                let proofs = round.generate_proofs(&state, failed_messages_indices);
+                mut_state.insert_proofs(party_id, proofs);
+                let _ = submit
+                        .sign_and_submit_message(
+                            &SignatureMPCMessageSummary::new(
+                                epoch,
+                                SignatureMPCMessageProtocols::SignProofs(
+                                    state.party_id,
+                                    proofs.clone(),
+                                    failed_messages_indices,
+                                ),
+                                session_id,
+                            ),
+                            &epoch_store,
+                        )
+                        .await;
+
+                None
             },
             None => {
                 None
             }
-        };
     });
     }
 

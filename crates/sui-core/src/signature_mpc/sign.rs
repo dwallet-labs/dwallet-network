@@ -73,7 +73,7 @@ impl SignRound {
         ))
     }
 
-    fn generate_proofs(
+    pub fn generate_proofs(
         &mut self,
         state: &SignState,
         failed_messages_indices: &Vec<usize>,
