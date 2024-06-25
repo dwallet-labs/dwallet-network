@@ -369,7 +369,7 @@ impl SignatureMPCAggregator {
                         tiresias_public_parameters.clone(),
                         epoch,
                         party_id,
-                        parties,
+                        parties.clone(),
                         session_id,
                     )
                 });
@@ -377,6 +377,9 @@ impl SignatureMPCAggregator {
                 state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
                 println!("proofs len: {}", state.clone().proofs.unwrap().len());
                 // check if my party id is in the state proofs
+                if state.clone().proofs.unwrap().len() == parties.clone().len() {
+                    println!("received all proofs");
+                }
                 if state.clone().proofs.unwrap().contains_key(&party_id) {
                     return;
                 }
@@ -691,29 +694,33 @@ impl SignatureMPCAggregator {
         spawn_monitored_task!(async move {
         let m =
             match sign_session_rounds.get_mut(&session_id) {
-            Some(mut round) =>
-                let proofs = round.generate_proofs(&state, failed_messages_indices);
-                mut_state.insert_proofs(party_id, proofs);
-                let _ = submit
-                        .sign_and_submit_message(
-                            &SignatureMPCMessageSummary::new(
-                                epoch,
-                                SignatureMPCMessageProtocols::SignProofs(
-                                    state.party_id,
-                                    proofs.clone(),
-                                    failed_messages_indices,
+                Some(mut round) => {
+                    let proofs = round.generate_proofs(&state, failed_messages_indices);
+                    mut_state.insert_proofs(party_id, proofs);
+                    let _ = submit
+                            .sign_and_submit_message(
+                                &SignatureMPCMessageSummary::new(
+                                    epoch,
+                                    SignatureMPCMessageProtocols::SignProofs(
+                                        state.party_id,
+                                        proofs.clone(),
+                                        failed_messages_indices,
+                                    ),
+                                    session_id,
                                 ),
-                                session_id,
-                            ),
-                            &epoch_store,
-                        )
-                        .await;
+                                &epoch_store,
+                            )
+                            .await;
+                    if state.proofs.len() == state.parties.len() {
+                        print("received all proofs");
+                    }
 
-                None
-            },
-            None => {
-                None
-            }
+                    None
+                },
+                None => {
+                    None
+                }
+            };
     });
     }
 
