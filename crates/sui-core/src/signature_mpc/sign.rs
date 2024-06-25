@@ -5,7 +5,7 @@ use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 use std::collections::{HashMap, HashSet};
 use rand::rngs::OsRng;
 use sui_types::base_types::{EpochId, ObjectRef};
-use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash, generate_proof, signature_partial_decryption_verification_round, identify_malicious_parties, PartialDecryptionProof, ProofParty};
+use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash, generate_proof, signature_partial_decryption_verification_round, identify_malicious_parties, PartialDecryptionProof, ProofParty, DecryptionShare};
 use std::convert::TryInto;
 use std::mem;
 use futures::StreamExt;
@@ -119,7 +119,7 @@ impl SignRound {
                     &state, &decrypt_result.failed_messages_indices);
                 let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
 
-                Ok(SignRoundCompletion::ProofsMessage(proofs, decrypt_result.failed_messages_indices, decrypt_result.involved_parties))
+                Ok(SignRoundCompletion::ProofsMessage(proofs, decrypt_result.failed_messages_indices, decrypt_result.involved_parties, decrypt_result.decryption_shares))
             }
             _ => {
                 Ok(SignRoundCompletion::None)
@@ -136,8 +136,6 @@ impl SignRound {
         let mut malicious_parties = HashSet::new();
         for ((i, message_index), (proof, party)) in state.clone().failed_messages_indices.unwrap().into_iter().enumerate().zip(proof_results.into_iter()) {
 
-            let (partial_signature_decryption_share, masked_nonce_decryption_share) = state.decryption_shares[&state.party_id][message_index].clone();
-
             let a : HashMap::<PartyID, _> =
                 state.proofs.clone().unwrap().into_iter().map(|(party_id, proofs)| {
                     (party_id, proofs[i].clone())
@@ -146,8 +144,8 @@ impl SignRound {
             // TODO: make sure the proof is valid
             identify_malicious_parties(
                 party,
-                HashMap::from([(state.party_id, partial_signature_decryption_share)]),
-                HashMap::from([(state.party_id, masked_nonce_decryption_share)]),
+                state.involved_decryption_shares.get(message_index).unwrap().clone().0,
+                state.involved_decryption_shares.get(message_index).unwrap().clone().1,
                 state.tiresias_public_parameters.clone(),
                 a,
                 state.involved_parties.clone(),
@@ -163,7 +161,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    ProofsMessage(Vec<PartialDecryptionProof>, Vec<usize>, Vec<PartyID>),
+    ProofsMessage(Vec<PartialDecryptionProof>, Vec<usize>, Vec<PartyID>, Vec<(HashMap<PartyID, DecryptionShare> , HashMap<PartyID, DecryptionShare>)>),
     MaliciousPartiesOutput(HashSet<PartyID>),
     None,
 }
@@ -183,6 +181,7 @@ pub(crate) struct SignState {
     pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
     pub failed_messages_indices: Option<Vec<usize>>,
     pub involved_parties: Vec<PartyID>,
+    pub involved_decryption_shares :Vec<(HashMap<PartyID, DecryptionShare> , HashMap<PartyID, DecryptionShare>)>,
 }
 
 impl SignState {
@@ -209,7 +208,8 @@ impl SignState {
             presigns: None,
             proofs: None,
             failed_messages_indices: None,
-            involved_parties: Vec::new()
+            involved_parties: Vec::new(),
+            involved_decryption_shares : Vec::new(),
         }
     }
 

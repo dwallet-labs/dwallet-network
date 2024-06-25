@@ -38,7 +38,7 @@ use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
 use sui_types::error::{SuiError, SuiResult};
 use sui_types::message_envelope::Message;
 
-use signature_mpc::twopc_mpc_protocols::{initiate_decentralized_party_dkg, Commitment, DecommitmentProofVerificationRoundParty, SecretKeyShareEncryptionAndProof, DecryptionPublicParameters, PartyID, ProtocolContext, SecretKeyShareSizedNumber, PublicNonceEncryptedPartialSignatureAndProof, PartialDecryptionProof};
+use signature_mpc::twopc_mpc_protocols::{initiate_decentralized_party_dkg, Commitment, DecommitmentProofVerificationRoundParty, SecretKeyShareEncryptionAndProof, DecryptionPublicParameters, PartyID, ProtocolContext, SecretKeyShareSizedNumber, PublicNonceEncryptedPartialSignatureAndProof, PartialDecryptionProof, DecryptionShare};
 use sui_types::sui_system_state::{SuiSystemState, SuiSystemStateTrait};
 use sui_types::transaction::{TransactionDataAPI, TransactionKind};
 use tokio::sync::mpsc;
@@ -362,7 +362,7 @@ impl SignatureMPCAggregator {
                     }
                 }
             }
-            SignatureMPCMessageProtocols::SignProofs(prover_party_id, new_proofs, message_indices, involved_parties) => {
+            SignatureMPCMessageProtocols::SignProofs(prover_party_id, new_proofs, message_indices, involved_parties, involved_decryption_shares) => {
                 println!("recv proof from {}", prover_party_id);
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
@@ -378,6 +378,7 @@ impl SignatureMPCAggregator {
                 // TODO: check if the message_indices are valid and keep track of the party that sends the indices
                 state.failed_messages_indices = Some(message_indices.clone());
                 state.involved_parties = involved_parties.clone();
+                state.involved_decryption_shares = involved_decryption_shares.clone();
                 state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
                 println!("proofs len: {}", state.clone().proofs.unwrap().len());
                 // check if my party id is in the state proofs
@@ -399,6 +400,7 @@ impl SignatureMPCAggregator {
                     submit.clone(),
                     message_indices.clone(),
                     involved_parties.clone(),
+                    involved_decryption_shares.clone()
                 );
                 // if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                 //     if state.ready_for_complete_first_round(&r) {
@@ -644,10 +646,11 @@ impl SignatureMPCAggregator {
 
         if let Some(m) = m {
             match m {
-                SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties) => {
+                SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties, involved_decryption_shares) => {
                     // Borrow state mutably to call insert_proofs
                         mut_state.failed_messages_indices = Some(message_indices.clone());
                         mut_state.involved_parties = involved_parties.clone();
+                        mut_state.involved_decryption_shares = involved_decryption_shares.clone();
                     let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
 
                     let _ = submit
@@ -658,7 +661,8 @@ impl SignatureMPCAggregator {
                                     state.party_id,
                                     proofs.clone(),
                                     message_indices,
-                                    involved_parties
+                                    involved_parties,
+                                    involved_decryption_shares,
                                 ),
                                 session_id,
                             ),
@@ -697,6 +701,7 @@ impl SignatureMPCAggregator {
         submit: Arc<dyn SubmitSignatureMPC>,
         failed_messages_indices: Vec<usize>,
         involved_parties: Vec<PartyID>,
+        involved_decryption_shares: Vec<(HashMap<PartyID, DecryptionShare> , HashMap<PartyID, DecryptionShare>)>,
     ) {
         spawn_monitored_task!(async move {
         let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
@@ -715,6 +720,7 @@ impl SignatureMPCAggregator {
                                         proofs.clone(),
                                         failed_messages_indices.clone(),
                                         involved_parties,
+                                involved_decryption_shares,
                                     ),
                                     session_id,
                                 ),

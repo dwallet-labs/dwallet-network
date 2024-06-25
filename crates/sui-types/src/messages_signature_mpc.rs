@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use signature_mpc::twopc_mpc_protocols::{Commitment, DecentralizedPartyPresign, DecryptionPublicParameters, DKGDecentralizedPartyOutput, EncDHCommitment, EncDHDecommitment, EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PartialDecryptionProof, PartyID, PresignDecentralizedPartyOutput, PublicKeyValue, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof, tiresias_deal_trusted_shares};
+use signature_mpc::twopc_mpc_protocols::{Commitment, DecentralizedPartyPresign, DecryptionPublicParameters, DecryptionShare, DKGDecentralizedPartyOutput, EncDHCommitment, EncDHDecommitment, EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PartialDecryptionProof, PartyID, PresignDecentralizedPartyOutput, PublicKeyValue, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof, tiresias_deal_trusted_shares};
 
 pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointDigest;
@@ -65,7 +65,7 @@ pub enum SignatureMPCMessageProtocols {
     PresignFirstRound(SignatureMPCBulletProofAggregatesMessage),
     PresignSecondRound(SignatureMPCBulletProofAggregatesMessage),
     Sign(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
-    SignProofs(PartyID, Vec<(PartialDecryptionProof)>, Vec<usize>, Vec<PartyID>),
+    SignProofs(PartyID, Vec<(PartialDecryptionProof)>, Vec<usize>, Vec<PartyID>, Vec<(HashMap<PartyID, DecryptionShare> , HashMap<PartyID, DecryptionShare>)>),
 }
 
 impl Display for SignatureMPCMessageProtocols {
@@ -84,7 +84,7 @@ impl Display for SignatureMPCMessageProtocols {
                 f.write_str("Sign")
             }
             // TODO: Implement proofs reception #2
-            SignatureMPCMessageProtocols::SignProofs(_, _, _, _) => {
+            SignatureMPCMessageProtocols::SignProofs(_, _, _,_,_) => {
                 f.write_str("IdentifiableAbortFirstRound")
             }
             _ => {
@@ -360,7 +360,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(_) => 2,
             SignatureMPCMessageProtocols::PresignSecondRound(_) => 3,
             SignatureMPCMessageProtocols::Sign(_) => 3,
-            SignatureMPCMessageProtocols::SignProofs(_, _, _, _) => 4,
+            SignatureMPCMessageProtocols::SignProofs(_, _, _, _, _) => 4,
         }
     }
 
@@ -371,7 +371,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
             SignatureMPCMessageProtocols::Sign(_) => 1,
             // TODO: Implement proofs reception #1
-            SignatureMPCMessageProtocols::SignProofs(_, _, _, _) => 7,
+            SignatureMPCMessageProtocols::SignProofs(_, _, _, _, _) => 7,
         }
     }
 }

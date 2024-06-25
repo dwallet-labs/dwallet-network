@@ -56,6 +56,7 @@ pub type SignatureMPCTimestamp = u64;
 pub type PublicKeyValue = group::Value<GroupElement>;
 pub type SignatureK256Secp256k1 = Signature<k256::Secp256k1>;
 pub type PartialDecryptionProof = <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PartialDecryptionProof;
+pub type DecryptionShare = <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::DecryptionShare;
 
 struct PublicParameters {
     tiresias_public_parameters: tiresias::encryption_key::PublicParameters,
@@ -368,6 +369,7 @@ pub struct DecryptResult {
     pub messages_signatures: Vec<Vec<u8>>,
     pub failed_messages_indices: Vec<usize>,
     pub involved_parties: Vec<PartyID>,
+    pub decryption_shares : Vec<(HashMap<PartyID, DecryptionShare> , HashMap<PartyID, DecryptionShare>)>,
 }
 
 pub fn decrypt_signature_decentralized_party_sign(
@@ -420,15 +422,15 @@ pub fn decrypt_signature_decentralized_party_sign(
         .zip(
             messages.into_iter()
                 .zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter())
-                .zip(decryption_shares.into_iter()))
+                .zip(decryption_shares.iter()))
         .enumerate().map(|(index, (signature_threshold_decryption_round_party,
         ((message, public_nonce_encrypted_partial_signature_and_proof
         ), (partial_signature_decryption_shares,
             masked_nonce_decryption_shares))))| {
         let result = signature_threshold_decryption_round_party.decrypt_signature(
             lagrange_coefficients.clone(),
-            partial_signature_decryption_shares,
-            masked_nonce_decryption_shares,
+            partial_signature_decryption_shares.clone(),
+            masked_nonce_decryption_shares.clone(),
         );
 
         match result {
@@ -450,6 +452,7 @@ pub fn decrypt_signature_decentralized_party_sign(
         messages_signatures,
         failed_messages_indices,
         involved_parties: decrypters,
+        decryption_shares,
     }
 }
 
@@ -461,8 +464,8 @@ pub type ProofParty = signature_partial_decryption_verification_round::Party<
 
 pub fn identify_malicious_parties(
     verification_round_party: ProofParty,
-    partial_signature_decryption_share : HashMap<PartyID, <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::DecryptionShare>,
-    masked_nonce_decryption_share : HashMap<PartyID, <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::DecryptionShare>,
+    partial_signature_decryption_share : HashMap<PartyID, DecryptionShare>,
+    masked_nonce_decryption_share : HashMap<PartyID, DecryptionShare>,
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     signature_partial_decryption_proofs: HashMap<
         PartyID,
