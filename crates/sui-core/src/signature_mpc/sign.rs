@@ -144,6 +144,10 @@ impl SignRound {
 
                 // start the second round
 
+                // TODO: decrypt all from all parties (send output decrypt failed. message indices)
+                // TODO: generate proofs and send message
+                // TODO: collect all proofs from all parties
+                // TODO: find malicious parties and send output
                 println!("received all proofs, starting second round");
                 let proof_results = self.generate_proofs(
                     &state, &state.failed_messages_indices.clone().unwrap());

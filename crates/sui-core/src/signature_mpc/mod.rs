@@ -348,20 +348,16 @@ impl SignatureMPCAggregator {
                 if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                     if state.ready_for_complete_first_round(&r) {
                         drop(r);
-                        let generated_proofs = Self::spawn_complete_sign_round(
+                        Self::spawn_complete_sign_round(
                             epoch,
                             epoch_store.clone(),
                             party_id,
                             session_id,
                             session_ref,
-                            state.clone(),
                             sign_session_rounds.clone(),
                             sign_session_states.clone(),
                             submit.clone(),
                         );
-                        if let Some(proofs) = generated_proofs {
-                            state.insert_proofs(party_id, proofs);
-                        }
                     }
                 }
             }
@@ -608,12 +604,12 @@ impl SignatureMPCAggregator {
         party_id: PartyID,
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
-        state: SignState,
         sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
-    ) -> Option<Vec<PartialDecryptionProof>> {
+    ) {
         spawn_monitored_task!(async move {
+        let mut state = sign_session_states.get_mut(&session_id).unwrap();
         let m =
             match sign_session_rounds.get_mut(&session_id) {
             Some(mut round) =>
@@ -645,7 +641,6 @@ impl SignatureMPCAggregator {
                                 &epoch_store,
                             )
                             .await;
-                        Some(proofs)
                     }
                     SignRoundCompletion::SignatureOutput(sigs) => {
                         let _ = submit
@@ -660,17 +655,10 @@ impl SignatureMPCAggregator {
                                         &epoch_store,
                                     )
                                     .await;
-                        None
                     }
-                    SignRoundCompletion::None => {
-                        None
-                    }
-                _ => {
-                        None
-                    }}
-            } else {
-                None
-            }
+                    SignRoundCompletion::None => {}
+                _ => {}}
+            } else {}
         });
     }
 
