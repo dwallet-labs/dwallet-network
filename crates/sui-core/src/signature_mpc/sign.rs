@@ -171,7 +171,6 @@ impl SignRound {
                             proofs,
                             decryption_error.failed_messages_indices,
                             decryption_error.involved_parties,
-                            decryption_error.decryption_shares,
                         ))
                     }
                 }
@@ -204,18 +203,8 @@ impl SignRound {
             // TODO: make sure the proof is valid
             identify_malicious_parties(
                 party,
-                state
-                    .involved_decryption_shares
-                    .get(message_index)
-                    .unwrap()
-                    .clone()
-                    .0,
-                state
-                    .involved_decryption_shares
-                    .get(message_index)
-                    .unwrap()
-                    .clone()
-                    .1,
+                _, // TODO: Parse involved decryption shares from decryption shares
+               _,
                 state.tiresias_public_parameters.clone(),
                 a,
                 state.involved_parties.clone(),
@@ -238,10 +227,6 @@ pub(crate) enum SignRoundCompletion {
         Vec<PartialDecryptionProof>,
         Vec<usize>,
         Vec<PartyID>,
-        Vec<(
-            HashMap<PartyID, DecryptionShare>,
-            HashMap<PartyID, DecryptionShare>,
-        )>,
     ),
     MaliciousPartiesOutput(HashSet<PartyID>),
     None,
@@ -263,34 +248,7 @@ pub(crate) struct SignState {
         HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
     pub failed_messages_indices: Option<Vec<usize>>,
-    pub involved_parties: Vec<PartyID>,
-    pub involved_decryption_shares: Vec<(
-        HashMap<PartyID, DecryptionShare>,
-        HashMap<PartyID, DecryptionShare>,
-    )>,
-}
-
-#[derive(Clone)]
-pub(crate) struct IAState {
-    epoch: EpochId,
-    pub party_id: PartyID,
-    pub parties: HashSet<PartyID>,
-    aggregator_party_id: PartyID,
-    tiresias_public_parameters: DecryptionPublicParameters,
-    tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
-    messages: Option<Vec<Vec<u8>>>,
-    public_nonce_encrypted_partial_signature_and_proofs:
-        Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
-    presigns: Option<Vec<DecentralizedPartyPresign>>,
-    decryption_shares:
-        HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
-    pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
-    pub failed_messages_indices: Option<Vec<usize>>,
-    pub involved_parties: Vec<PartyID>,
-    pub involved_decryption_shares: Vec<(
-        HashMap<PartyID, DecryptionShare>,
-        HashMap<PartyID, DecryptionShare>,
-    )>,
+    pub involved_parties: Vec<PartyID>
 }
 
 impl SignState {
@@ -320,7 +278,6 @@ impl SignState {
             proofs: None,
             failed_messages_indices: None,
             involved_parties: Vec::new(),
-            involved_decryption_shares: Vec::new(),
         }
     }
 
