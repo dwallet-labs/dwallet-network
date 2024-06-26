@@ -270,6 +270,29 @@ pub(crate) struct SignState {
     )>,
 }
 
+#[derive(Clone)]
+pub(crate) struct IAState {
+    epoch: EpochId,
+    pub party_id: PartyID,
+    pub parties: HashSet<PartyID>,
+    aggregator_party_id: PartyID,
+    tiresias_public_parameters: DecryptionPublicParameters,
+    tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+    messages: Option<Vec<Vec<u8>>>,
+    public_nonce_encrypted_partial_signature_and_proofs:
+        Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
+    presigns: Option<Vec<DecentralizedPartyPresign>>,
+    decryption_shares:
+        HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
+    pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
+    pub failed_messages_indices: Option<Vec<usize>>,
+    pub involved_parties: Vec<PartyID>,
+    pub involved_decryption_shares: Vec<(
+        HashMap<PartyID, DecryptionShare>,
+        HashMap<PartyID, DecryptionShare>,
+    )>,
+}
+
 impl SignState {
     pub(crate) fn new(
         tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
