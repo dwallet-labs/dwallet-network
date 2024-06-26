@@ -361,6 +361,7 @@ impl SignatureMPCAggregator {
 
                 if let Some(proofs) = state.clone().proofs {
                     if proofs.len() == parties.clone().len() && state.received_all_decryption_shares() {
+                        println!("run IA from received last share id {}", state.party_id);
                         let _ = SignRound::identify_malicious(&state);
                         return;
                     }
@@ -408,7 +409,7 @@ impl SignatureMPCAggregator {
                 if state.clone().proofs.unwrap().len() == parties.clone().len()
                     && state.received_all_decryption_shares()
                 {
-                    println!("received all proofs");
+                    println!("received all proofs, run IA from received proof, id {}", state.party_id);
                     let _ = SignRound::identify_malicious(&state);
                 }
                 if state.clone().proofs.unwrap().contains_key(&party_id) {
@@ -727,7 +728,7 @@ impl SignatureMPCAggregator {
                         && state.proofs.clone().unwrap().len() == state.parties.len()
                         && state.received_all_decryption_shares()
                     {
-                        println!("received all proofs");
+                        println!("received all proofs, start IA from sending my proof last, id {}", state.party_id);
                         SignRound::identify_malicious(&state);
                     }
                 }

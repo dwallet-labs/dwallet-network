@@ -1,4 +1,5 @@
 use crate::twopc_mpc_protocols::ProtocolContext;
+use crypto_bigint::U704;
 use ecdsa::Signature;
 use group::PartyID;
 use homomorphic_encryption::{AdditivelyHomomorphicDecryptionKeyShare, GroupsPublicParametersAccessors};
@@ -32,20 +33,22 @@ pub struct DecryptionError {
     )>,
 }
 
-pub fn decrypt_signature_decentralized_party_sign(
-    messages: Vec<Vec<u8>>,
-    decryption_key_share_public_parameters: DecryptionPublicParameters,
+fn take_threshold_decrypters(
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     public_nonce_encrypted_partial_signature_and_proofs: Vec<
         PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
     >,
-    signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
-) -> Result<Vec<Vec<u8>>, DecryptionError> {
+    decryption_key_share_public_parameters: DecryptionPublicParameters,
+) -> (
+    Vec<PartyID>,
+    Vec<(HashMap<PartyID, U704>, HashMap<PartyID, U704>)>,
+) {
     let decrypters: Vec<_> = decryption_shares
         .keys()
         .take(decryption_key_share_public_parameters.threshold.into())
         .copied()
         .collect();
+
     let decryption_shares: Vec<(HashMap<_, _>, HashMap<_, _>)> = (0
         ..public_nonce_encrypted_partial_signature_and_proofs.len())
         .map(|i| {
@@ -64,7 +67,14 @@ pub fn decrypt_signature_decentralized_party_sign(
         })
         .collect();
 
-    let lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber> = decrypters
+    (decrypters, decryption_shares)
+}
+
+fn generate_lagrange_coefficients(
+    decryption_key_share_public_parameters: DecryptionPublicParameters,
+    decrypters: Vec<PartyID>,
+) -> HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber> {
+    decrypters
         .clone()
         .into_iter()
         .map(|j| {
@@ -78,7 +88,28 @@ pub fn decrypt_signature_decentralized_party_sign(
                 ),
             )
         })
-        .collect();
+        .collect()
+}
+
+pub fn decrypt_signature_decentralized_party_sign(
+    messages: Vec<Vec<u8>>,
+    decryption_key_share_public_parameters: DecryptionPublicParameters,
+    decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
+    public_nonce_encrypted_partial_signature_and_proofs: Vec<
+        PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
+    >,
+    signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
+) -> Result<Vec<Vec<u8>>, DecryptionError> {
+    let (decrypters, decryption_shares) = take_threshold_decrypters(
+        decryption_shares,
+        public_nonce_encrypted_partial_signature_and_proofs.clone(),
+        decryption_key_share_public_parameters.clone(),
+    );
+
+    let lagrange_coefficients = generate_lagrange_coefficients(
+        decryption_key_share_public_parameters.clone(),
+        decrypters.clone(),
+    );
 
     let mut failed_messages_indices = Vec::new();
     let messages_signatures: Vec<Vec<u8>> = signature_threshold_decryption_round_parties
