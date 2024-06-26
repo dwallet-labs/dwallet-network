@@ -4,50 +4,50 @@
 
 use std::collections::{HashMap, HashSet};
 
-pub use commitment::{Commitment};
+pub use commitment::Commitment;
 use rand::rngs::OsRng;
-use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 use k256::{AffinePoint, CompressedPoint, elliptic_curve, sha2};
 pub use group::PartyID;
 use k256::sha2::Digest;
-use crypto_bigint::{U256};
-use ecdsa::{elliptic_curve::{ops::Reduce}, hazmat::{bits2field, DigestPrimitive}, RecoveryId, Signature, VerifyingKey};
+use crypto_bigint::U256;
+use ecdsa::{elliptic_curve::ops::Reduce, hazmat::{bits2field, DigestPrimitive}, RecoveryId, Signature, VerifyingKey};
 use ecdsa::signature::DigestVerifier;
 pub use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 pub use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use k256::elliptic_curve::group::GroupEncoding;
 
-use group::{secp256k1, GroupElement as _, AffineXCoordinate};
+use group::{AffineXCoordinate, GroupElement as _, secp256k1};
 pub use group::Value;
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey,
     AdditivelyHomomorphicEncryptionKey, GroupsPublicParametersAccessors,
 };
-use k256::{sha2::digest::FixedOutput};
+use k256::sha2::digest::FixedOutput;
 pub use proof::aggregation::{
     CommitmentRoundParty, DecommitmentRoundParty, ProofAggregationRoundParty, ProofShareRoundParty,
 };
 pub use tiresias::{
-    decryption_key_share::PublicParameters as DecryptionPublicParameters,
-    encryption_key::PublicParameters as EncryptionPublicParameters,
-    test_exports::deal_trusted_shares as tiresias_deal_trusted_shares, DecryptionKeyShare,
-    LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, SecretKeyShareSizedNumber,
     AdjustedLagrangeCoefficientSizedNumber,
+    decryption_key_share::PublicParameters as DecryptionPublicParameters,
+    DecryptionKeyShare, encryption_key::PublicParameters as EncryptionPublicParameters,
+    LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, SecretKeyShareSizedNumber,
+    test_exports::deal_trusted_shares as tiresias_deal_trusted_shares,
 };
-use tiresias::{EncryptionKey};
+use tiresias::EncryptionKey;
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
-pub use twopc_mpc::secp256k1::{SCALAR_LIMBS, GroupElement, Scalar};
+pub use twopc_mpc::secp256k1::{GroupElement, Scalar, SCALAR_LIMBS};
 pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
-    CentralizedPartyPresign, DecommitmentProofVerificationRoundParty, DKGCommitmentRoundParty, EncryptionOfSecretKeyShareRoundParty, PresignCommitmentRoundParty, ProtocolPublicParameters, SignatureHomomorphicEvaluationParty, SignatureNonceSharesCommitmentsAndBatchedProof, SignaturePartialDecryptionParty, SignatureThresholdDecryptionParty, DKGCentralizedPartyOutput,
-    PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, EncDHCommitment, EncDHCommitmentRoundParty, EncDHProofAggregationRoundParty, EncDHProofShareRoundParty, EncDLCommitment, EncDHDecommitment, EncDLDecommitment, EncDHProofShare, EncDLProofShare,
-    EncDLCommitmentRoundParty, EncDLDecommitmentRoundParty, EncryptedMaskedNoncesRoundParty, EncryptedMaskedKeyShareRoundParty, PresignDecentralizedPartyOutput,
-    EncDLProofAggregationOutput, EncDLProofAggregationRoundParty, EncDLProofShareRoundParty, EncryptedMaskAndMaskedNonceShare, EncryptedNonceShareAndPublicShare, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput, DKGDecommitmentRoundParty, DKGDecommitmentRoundState};
+    CentralizedPartyPresign, DecentralizedPartyPresign, DecommitmentProofVerificationRoundParty, DKGCentralizedPartyOutput, DKGCommitmentRoundParty, DKGDecentralizedPartyOutput, DKGDecommitmentRoundParty, DKGDecommitmentRoundState, EncDHCommitment, EncDHCommitmentRoundParty, EncDHDecommitment,
+    EncDHDecommitmentRoundParty, EncDHProofAggregationOutput, EncDHProofAggregationRoundParty, EncDHProofShare, EncDHProofShareRoundParty, EncDLCommitment, EncDLCommitmentRoundParty, EncDLDecommitment, EncDLDecommitmentRoundParty, EncDLProofAggregationOutput, EncDLProofAggregationRoundParty, EncDLProofShare, EncDLProofShareRoundParty, EncryptedMaskAndMaskedNonceShare,
+    EncryptedMaskedKeyShareRoundParty, EncryptedMaskedNoncesRoundParty, EncryptedNonceShareAndPublicShare, EncryptionOfSecretKeyShareRoundParty, PresignCommitmentRoundParty,
+    PresignDecentralizedPartyOutput, ProtocolPublicParameters, PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, SignatureHomomorphicEvaluationParty, SignatureNonceSharesCommitmentsAndBatchedProof, SignaturePartialDecryptionParty, SignatureThresholdDecryptionParty};
 
-pub use twopc_mpc::{Result, Error};
+pub use twopc_mpc::{Error, Result};
 use twopc_mpc::secp256k1::paillier::bulletproofs::{PresignProofVerificationRoundParty, SignaturePartialDecryptionProofParty, SignatureVerificationParty};
 pub use twopc_mpc::sign::decentralized_party::identifiable_abort::signature_partial_decryption_verification_round;
+use crate::decrypt::{DecryptionShare, PartialDecryptionProof};
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;
@@ -55,8 +55,6 @@ pub type SignatureMPCMessageKind = u64;
 pub type SignatureMPCTimestamp = u64;
 pub type PublicKeyValue = group::Value<GroupElement>;
 pub type SignatureK256Secp256k1 = Signature<k256::Secp256k1>;
-pub type PartialDecryptionProof = <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PartialDecryptionProof;
-pub type DecryptionShare = <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::DecryptionShare;
 
 struct PublicParameters {
     tiresias_public_parameters: tiresias::encryption_key::PublicParameters,
@@ -363,97 +361,6 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
             )
         })
         .collect()
-}
-
-pub struct DecryptResult {
-    pub messages_signatures: Vec<Vec<u8>>,
-    pub failed_messages_indices: Vec<usize>,
-    pub involved_parties: Vec<PartyID>,
-    pub decryption_shares : Vec<(HashMap<PartyID, DecryptionShare> , HashMap<PartyID, DecryptionShare>)>,
-}
-
-pub fn decrypt_signature_decentralized_party_sign(
-    messages: Vec<Vec<u8>>,
-    decryption_key_share_public_parameters: DecryptionPublicParameters,
-    decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
-    public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
-    signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
-) -> DecryptResult {
-    let protocol_public_parameters = ProtocolPublicParameters::new(*decryption_key_share_public_parameters.encryption_scheme_public_parameters.plaintext_space_public_parameters().modulus);
-    // TODO: choose multiple?
-    let decrypters: Vec<_> = decryption_shares.keys().take(decryption_key_share_public_parameters.threshold.into()).copied().collect();
-
-    let decryption_shares: Vec<(HashMap<_, _>, HashMap<_, _>)> = (0..public_nonce_encrypted_partial_signature_and_proofs.len())
-        .map(|i| {
-            decryption_shares
-                .iter()
-                .filter(|(party_id, _)| decrypters.contains(party_id))
-                .map(|(party_id, decryption_share)| {
-                    let (partial_signature_decryption_shares, masked_nonce_decryption_shares) = decryption_share[i].clone();
-                    (
-                        (*party_id, partial_signature_decryption_shares),
-                        (*party_id, masked_nonce_decryption_shares),
-                    )
-                })
-                .unzip()
-        })
-        .collect();
-
-    let lagrange_coefficients: HashMap<
-        PartyID,
-        AdjustedLagrangeCoefficientSizedNumber,
-    > = decrypters
-        .clone()
-        .into_iter()
-        .map(|j| {
-            (
-                j,
-                DecryptionKeyShare::compute_lagrange_coefficient(
-                    j,
-                    decryption_key_share_public_parameters.number_of_parties,
-                    decrypters.clone(),
-                    &decryption_key_share_public_parameters,
-                ),
-            )
-        })
-        .collect();
-    let mut failed_messages_indices = Vec::new();
-    let messages_signatures = signature_threshold_decryption_round_parties.into_iter()
-        .zip(
-            messages.into_iter()
-                .zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter())
-                .zip(decryption_shares.iter()))
-        .enumerate().map(|(index, (signature_threshold_decryption_round_party,
-        ((message, public_nonce_encrypted_partial_signature_and_proof
-        ), (partial_signature_decryption_shares,
-            masked_nonce_decryption_shares))))| {
-        let result = signature_threshold_decryption_round_party.decrypt_signature(
-            lagrange_coefficients.clone(),
-            partial_signature_decryption_shares.clone(),
-            masked_nonce_decryption_shares.clone(),
-        );
-
-        match result {
-            Ok((nonce_x_coordinate, signature_s)) => {
-                // Handle the success case
-                // You can use nonce_x_coordinate and signature_s here
-                let signature_s_inner: k256::Scalar = signature_s.into();
-
-                Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(nonce_x_coordinate), signature_s_inner).unwrap().to_vec()
-            }
-            Err(e) => {
-                failed_messages_indices.push(index);
-                Vec::new()
-            }
-        }
-    })
-        .collect();
-    DecryptResult {
-        messages_signatures,
-        failed_messages_indices,
-        involved_parties: decrypters,
-        decryption_shares,
-    }
 }
 
 pub type ProofParty = signature_partial_decryption_verification_round::Party<

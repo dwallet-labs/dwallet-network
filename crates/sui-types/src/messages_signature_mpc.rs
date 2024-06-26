@@ -2,19 +2,20 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::committee::EpochId;
-use crate::crypto::{default_hash, AuthoritySignInfo, AuthorityStrongQuorumSignInfo};
+use crate::crypto::{AuthoritySignInfo, AuthorityStrongQuorumSignInfo, default_hash};
 use crate::digests::{SignatureMPCMessageDigest, SignatureMPCOutputDigest};
 use crate::error::SuiResult;
 use crate::message_envelope::{Envelope, Message, UnauthenticatedMessage};
 use crate::{committee::Committee, error::SuiError};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
-use signature_mpc::twopc_mpc_protocols::{Commitment, DecentralizedPartyPresign, DecryptionPublicParameters, DecryptionShare, DKGDecentralizedPartyOutput, EncDHCommitment, EncDHDecommitment, EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PartialDecryptionProof, PartyID, PresignDecentralizedPartyOutput, PublicKeyValue, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof, tiresias_deal_trusted_shares};
-
+pub use signature_mpc::decrypt::{DecryptionShare, PartialDecryptionProof};
+pub use signature_mpc::twopc_mpc_protocols::{Commitment, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, EncDHCommitment, EncDHDecommitment, EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PresignDecentralizedPartyOutput, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof, tiresias_deal_trusted_shares};
+pub use signature_mpc::twopc_mpc_protocols::{DecryptionPublicParameters, PartyID};
 pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointDigest;
 use crate::base_types::ObjectRef;
