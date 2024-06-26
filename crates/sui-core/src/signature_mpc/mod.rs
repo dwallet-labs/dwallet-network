@@ -53,6 +53,7 @@ use crate::authority::{AuthorityState, EffectsNotifyRead};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority_client::AuthorityAPI;
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
+use crate::signature_mpc::identifiable_abort::spawn_generate_proof;
 pub use crate::signature_mpc::metrics::SignatureMPCMetrics;
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
 use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
@@ -400,13 +401,10 @@ impl SignatureMPCAggregator {
                         session_id,
                     )
                 });
-
-                // TODO: check if the message_indices are valid and keep track of the party that sends the indices
                 state.failed_messages_indices = Some(message_indices.clone());
                 state.involved_parties = involved_parties.clone();
                 state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
                 println!("proofs len: {}", state.clone().proofs.unwrap().len());
-                // check if my party id is in the state proofs
                 if state.should_identify_malicious_actors() {
                     println!(
                         "received all proofs, run IA from received proof, id {}",
@@ -417,7 +415,7 @@ impl SignatureMPCAggregator {
                 if state.clone().proofs.unwrap().contains_key(&party_id) {
                     return;
                 }
-                Self::spawn_generate_proof(
+                spawn_generate_proof(
                     epoch,
                     epoch_store.clone(),
                     party_id,
@@ -690,48 +688,6 @@ impl SignatureMPCAggregator {
         });
     }
 
-    fn spawn_generate_proof(
-        epoch: EpochId,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        party_id: PartyID,
-        session_id: SignatureMPCSessionID,
-        session_ref: ObjectRef,
-        sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
-        sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
-        submit: Arc<dyn SubmitSignatureMPC>,
-        failed_messages_indices: Vec<usize>,
-        involved_parties: Vec<PartyID>,
-    ) {
-        spawn_monitored_task!(async move {
-            let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
-            let state = mut_state.clone();
-            let proofs = generate_proofs(&state, &failed_messages_indices);
-            let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
-            mut_state.insert_proofs(party_id, proofs.clone());
-            let _ = submit
-                .sign_and_submit_message(
-                    &SignatureMPCMessageSummary::new(
-                        epoch,
-                        SignatureMPCMessageProtocols::SignProofs(
-                            state.party_id,
-                            proofs.clone(),
-                            failed_messages_indices.clone(),
-                            involved_parties,
-                        ),
-                        session_id,
-                    ),
-                    &epoch_store,
-                )
-                .await;
-            if state.should_identify_malicious_actors() {
-                println!(
-                    "received all proofs, start IA from sending my proof last, id {}",
-                    state.party_id
-                );
-                identify_malicious(&state);
-            }
-        });
-    }
 
     async fn initiate_protocol(
         epoch: EpochId,
