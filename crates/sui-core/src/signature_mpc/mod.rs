@@ -16,12 +16,13 @@ use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
 pub use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPCToConsensus;
 use futures::FutureExt;
 use itertools::Itertools;
-use mysten_metrics::{monitored_scope, MonitoredFutureExt, spawn_monitored_task};
+use mysten_metrics::{monitored_scope, spawn_monitored_task, MonitoredFutureExt};
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::{ConciseableName, ObjectRef};
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use dashmap::DashMap;
+use move_symbol_pool::static_symbols;
 use rand::rngs::OsRng;
 use rand::seq::SliceRandom;
 use std::collections::{HashMap, HashSet};
@@ -30,7 +31,6 @@ use std::io::Write;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
-use move_symbol_pool::static_symbols;
 use sui_types::base_types::{AuthorityName, EpochId, TransactionDigest};
 use tap::TapFallible;
 
@@ -38,12 +38,16 @@ use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
 use sui_types::error::{SuiError, SuiResult};
 use sui_types::message_envelope::Message;
 
-use signature_mpc::twopc_mpc_protocols::{Commitment, DecommitmentProofVerificationRoundParty, DecryptionPublicParameters, initiate_decentralized_party_dkg, PartyID, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber};
+use signature_mpc::twopc_mpc_protocols::{
+    initiate_decentralized_party_dkg, Commitment, DecommitmentProofVerificationRoundParty,
+    DecryptionPublicParameters, PartyID, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof,
+    SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber,
+};
 use sui_types::sui_system_state::{SuiSystemState, SuiSystemStateTrait};
 use sui_types::transaction::{TransactionDataAPI, TransactionKind};
 use tokio::sync::mpsc;
 use tokio::{
-    sync::{Notify, watch},
+    sync::{watch, Notify},
     time::timeout,
 };
 use tokio_stream::wrappers::WatchStream;
@@ -52,9 +56,12 @@ use typed_store::traits::{TableSummary, TypedStoreDebug};
 use typed_store::Map;
 
 use dkg::DKGState;
-use tokio_stream::StreamExt;
 use signature_mpc::decrypt::{DecryptionShare, PartialDecryptionProof};
-use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID};
+use sui_types::messages_signature_mpc::{
+    InitiateSignatureMPCProtocol, SignatureMPCMessage, SignatureMPCMessageProtocols,
+    SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID,
+};
+use tokio_stream::StreamExt;
 
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
@@ -239,13 +246,18 @@ impl SignatureMPCAggregator {
         message: SignatureMPCMessage,
     ) {
         let session_id = message.summary.session_id;
-        let sender_party_id = (epoch_store.committee().authority_index(&message.summary.auth_sig().authority).unwrap() + 1) as PartyID;
+        let sender_party_id = (epoch_store
+            .committee()
+            .authority_index(&message.summary.auth_sig().authority)
+            .unwrap()
+            + 1) as PartyID;
 
         let Some(session_ref) = session_refs.get(&session_id) else {
             return;
         };
         let session_ref = session_ref.clone();
-        match &message.summary.message {  // Q: Where is the message.summary.message field defined?
+        match &message.summary.message {
+            // Q: Where is the message.summary.message field defined?
             SignatureMPCMessageProtocols::DKG(m) => {
                 let mut state = dkg_session_states
                     .entry(message.summary.session_id)
@@ -363,7 +375,12 @@ impl SignatureMPCAggregator {
                     }
                 }
             }
-            SignatureMPCMessageProtocols::SignProofs(prover_party_id, new_proofs, message_indices, involved_parties, involved_decryption_shares) => {
+            SignatureMPCMessageProtocols::SignProofs(
+                prover_party_id,
+                new_proofs,
+                message_indices,
+                involved_parties
+            ) => {
                 println!("recv proof from {}", prover_party_id);
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
@@ -399,26 +416,8 @@ impl SignatureMPCAggregator {
                     sign_session_states.clone(),
                     submit.clone(),
                     message_indices.clone(),
-                    involved_parties.clone(),
-                    involved_decryption_shares.clone()
+                    involved_parties.clone()
                 );
-                // if let Some(r) = sign_session_rounds.get_mut(&session_id) {
-                //     if state.ready_for_complete_first_round(&r) {
-                //         drop(r);
-                //         let state = state.clone();
-                //         Self::spawn_complete_identifiable_abort_first_round(
-                //             epoch,
-                //             epoch_store.clone(),
-                //             party_id,
-                //             session_id,
-                //             session_ref,
-                //             state,
-                //             sign_session_rounds.clone(),
-                //             sign_session_states.clone(),
-                //             submit.clone(),
-                //         );
-                //     }
-                // }
             }
             _ => {}
         }
@@ -517,25 +516,23 @@ impl SignatureMPCAggregator {
                             )
                             .await;
                     }
-                    PresignRoundCompletion::FirstRoundOutput(
-                        (output,
-                            message_to_submit,
-                            individual_encrypted_nonce_shares_and_public_shares)) => {
+                    PresignRoundCompletion::FirstRoundOutput((
+                        output,
+                        message_to_submit,
+                        individual_encrypted_nonce_shares_and_public_shares,
+                    )) => {
                         {
-                            if let Some(mut s) = presign_session_states
-                            .get_mut(&session_id) {
+                            if let Some(mut s) = presign_session_states.get_mut(&session_id) {
                                 let _ = s.set_individual_encrypted_nonce_shares_and_public_shares(
-                                individual_encrypted_nonce_shares_and_public_shares);
+                                    individual_encrypted_nonce_shares_and_public_shares,
+                                );
                             }
-
                         }
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
                                     epoch,
-                                    SignatureMPCMessageProtocols::PresignSecondRound(
-                                        message_to_submit,
-                                    ),
+                                    SignatureMPCMessageProtocols::PresignSecondRound(message_to_submit),
                                     session_id,
                                 ),
                                 &epoch_store,
@@ -619,7 +616,6 @@ impl SignatureMPCAggregator {
         });
     }
 
-
     fn spawn_complete_sign_round(
         epoch: EpochId,
         epoch_store: Arc<AuthorityPerEpochStore>,
@@ -631,62 +627,57 @@ impl SignatureMPCAggregator {
         submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
-        let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
-        let state = mut_state.clone();
-        let m = match sign_session_rounds.get_mut(&session_id) {
-            Some(mut round) => match round.complete_round(state.clone()) {
-                Ok(result) => Some(result),
-                Err(_) => None,
-            },
-            None => {
-                println!("Failed to find session round");
-                None
-            }
-        };
+            let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
+            let state = mut_state.clone();
+            let m = match sign_session_rounds.get_mut(&session_id) {
+                Some(mut round) => match round.complete_round(state.clone()) {
+                    Ok(result) => Some(result),
+                    Err(_) => None,
+                },
+                None => {
+                    println!("Failed to find session round");
+                    None
+                }
+            };
 
-        if let Some(m) = m {
-            match m {
-                SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties) => {
-                    // Borrow state mutably to call insert_proofs
+            if let Some(m) = m {
+                match m {
+                    SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties) => {
+                        // Borrow state mutably to call insert_proofs
                         mut_state.failed_messages_indices = Some(message_indices.clone());
                         mut_state.involved_parties = involved_parties.clone();
-                    let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
+                        let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
 
-                    let _ = submit
-                        .sign_and_submit_message(
-                            &SignatureMPCMessageSummary::new(
-                                epoch,
-                                SignatureMPCMessageProtocols::SignProofs(
-                                    state.party_id,
-                                    proofs.clone(),
-                                    message_indices,
-                                    involved_parties,
-                                    involved_decryption_shares,
+                        let _ = submit
+                            .sign_and_submit_message(
+                                &SignatureMPCMessageSummary::new(
+                                    epoch,
+                                    SignatureMPCMessageProtocols::SignProofs(
+                                        state.party_id,
+                                        proofs.clone(),
+                                        message_indices,
+                                        involved_parties
+                                    ),
+                                    session_id,
                                 ),
-                                session_id,
-                            ),
-                            &epoch_store,
-                        )
-                        .await;
-                }
-                SignRoundCompletion::SignatureOutput(sigs) => {
-                    let _ = submit
-                        .sign_and_submit_output(
-                            &SignatureMPCOutput::new_sign(
-                                epoch,
-                                session_id,
-                                session_ref,
-                                sigs,
+                                &epoch_store,
                             )
-                            .unwrap(),
-                            &epoch_store,
-                        )
-                        .await;
+                            .await;
+                    }
+                    SignRoundCompletion::SignatureOutput(sigs) => {
+                        let _ = submit
+                            .sign_and_submit_output(
+                                &SignatureMPCOutput::new_sign(epoch, session_id, session_ref, sigs)
+                                    .unwrap(),
+                                &epoch_store,
+                            )
+                            .await;
+                    }
+                    SignRoundCompletion::None => {}
+                    SignRoundCompletion::MaliciousPartiesOutput(_) => {}
                 }
-                SignRoundCompletion::None => {}
-            SignRoundCompletion::MaliciousPartiesOutput(_) => {}}
-        }
-    });
+            }
+        });
     }
 
     fn spawn_generate_proof(
@@ -700,40 +691,40 @@ impl SignatureMPCAggregator {
         submit: Arc<dyn SubmitSignatureMPC>,
         failed_messages_indices: Vec<usize>,
         involved_parties: Vec<PartyID>,
-        involved_decryption_shares: Vec<(HashMap<PartyID, DecryptionShare> , HashMap<PartyID, DecryptionShare>)>,
     ) {
         spawn_monitored_task!(async move {
-        let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
-        let state = mut_state.clone();
+            let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
+            let state = mut_state.clone();
             match sign_session_rounds.get_mut(&session_id) {
                 Some(mut round) => {
                     let proofs = SignRound::generate_proofs(&state, &failed_messages_indices);
-                    let proofs : Vec<_>= proofs.iter().map(|(proof, _)| proof.clone()).collect();
+                    let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
                     mut_state.insert_proofs(party_id, proofs.clone());
                     let _ = submit
-                            .sign_and_submit_message(
-                                &SignatureMPCMessageSummary::new(
-                                    epoch,
-                                    SignatureMPCMessageProtocols::SignProofs(
-                                        state.party_id,
-                                        proofs.clone(),
-                                        failed_messages_indices.clone(),
-                                        involved_parties,
-                                involved_decryption_shares,
-                                    ),
-                                    session_id,
+                        .sign_and_submit_message(
+                            &SignatureMPCMessageSummary::new(
+                                epoch,
+                                SignatureMPCMessageProtocols::SignProofs(
+                                    state.party_id,
+                                    proofs.clone(),
+                                    failed_messages_indices.clone(),
+                                    involved_parties
                                 ),
-                                &epoch_store,
-                            )
-                            .await;
-                    if state.proofs.is_some() && state.proofs.clone().unwrap().len() == state.parties.len() {
+                                session_id,
+                            ),
+                            &epoch_store,
+                        )
+                        .await;
+                    if state.proofs.is_some()
+                        && state.proofs.clone().unwrap().len() == state.parties.len()
+                    {
                         println!("received all proofs");
                         SignRound::identify_malicious(&state);
                     }
-                },
+                }
                 None => {}
             };
-    });
+        });
     }
 
     async fn initiate_protocol(
@@ -793,8 +784,7 @@ impl SignatureMPCAggregator {
             } => {
                 session_refs.insert(session_id, session_ref);
                 if let Ok((round, message)) = PresignRound::new(
-                    tiresias_public_parameters
-                        .clone(),
+                    tiresias_public_parameters.clone(),
                     epoch,
                     party_id,
                     parties.clone(),
@@ -834,7 +824,7 @@ impl SignatureMPCAggregator {
                 dkg_output,
                 public_nonce_encrypted_partial_signature_and_proofs,
                 presigns,
-                hash
+                hash,
             } => {
                 session_refs.insert(session_id, session_ref);
                 if let Ok((round, message)) = SignRound::new(
@@ -850,14 +840,22 @@ impl SignatureMPCAggregator {
                     presigns.clone(),
                     hash.into(),
                 ) {
-                    let mut state = sign_session_states.entry(
-                        session_id).or_insert_with(|| {
-                        SignState::new(tiresias_key_share_decryption_key_share, tiresias_public_parameters, epoch, party_id, parties, session_id)
+                    let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
+                        SignState::new(
+                            tiresias_key_share_decryption_key_share,
+                            tiresias_public_parameters,
+                            epoch,
+                            party_id,
+                            parties,
+                            session_id,
+                        )
                     });
 
                     state.set(
-                        messages, public_nonce_encrypted_partial_signature_and_proofs,
-                        presigns.clone());
+                        messages,
+                        public_nonce_encrypted_partial_signature_and_proofs,
+                        presigns.clone(),
+                    );
 
                     sign_session_rounds.insert(session_id, round);
 
@@ -902,11 +900,7 @@ impl SignatureMPCService {
         let (exit_snd, exit_rcv) = watch::channel(());
 
         // TODO: remove unwrap
-        let party_id = (epoch_store
-            .committee()
-            .authority_index(&state.name)
-            .unwrap()
-            + 1) as PartyID;
+        let party_id = (epoch_store.committee().authority_index(&state.name).unwrap() + 1) as PartyID;
 
         let epoch = epoch_store.epoch();
 
@@ -988,13 +982,13 @@ impl SignatureMPCServiceNotify for SignatureMPCServiceNoop {
 
 #[cfg(test)]
 mod tests {
+    use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
     use crate::signature_mpc::SubmitSignatureMPC;
-    use std::sync::Arc;
     use either::Either;
-    use tokio::sync::mpsc;
+    use std::sync::Arc;
     use sui_types::error::SuiResult;
     use sui_types::messages_signature_mpc::{SignatureMPCMessageSummary, SignatureMPCOutput};
-    use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+    use tokio::sync::mpsc;
 
     #[async_trait::async_trait]
     impl SubmitSignatureMPC for mpsc::Sender<Either<SignatureMPCMessageSummary, SignatureMPCOutput>> {

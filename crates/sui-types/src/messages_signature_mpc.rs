@@ -66,7 +66,7 @@ pub enum SignatureMPCMessageProtocols {
     PresignFirstRound(SignatureMPCBulletProofAggregatesMessage),
     PresignSecondRound(SignatureMPCBulletProofAggregatesMessage),
     Sign(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
-    SignProofs(PartyID, Vec<(PartialDecryptionProof)>, Vec<usize>, Vec<PartyID>, Vec<(HashMap<PartyID, DecryptionShare> , HashMap<PartyID, DecryptionShare>)>),
+    SignProofs(PartyID, Vec<(PartialDecryptionProof)>, Vec<usize>, Vec<PartyID>),
 }
 
 impl Display for SignatureMPCMessageProtocols {

@@ -325,7 +325,6 @@ impl SignState {
             {
                 true
             }
-            // SignRound::IdentifiableAbortFirstRound => true, //self.failed_messages_indices.is_some() && self.proofs.keys().len() == self.parties.len(),
             _ => false,
         }
     }
