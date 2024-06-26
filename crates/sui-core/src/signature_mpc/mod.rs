@@ -352,7 +352,7 @@ impl SignatureMPCAggregator {
                         tiresias_public_parameters.clone(),
                         epoch,
                         party_id,
-                        parties,
+                        parties.clone(),
                         session_id,
                     )
                 });
@@ -360,7 +360,7 @@ impl SignatureMPCAggregator {
                 let _ = state.insert_first_round(sender_party_id, m.clone());
 
                 if let Some(proofs) = state.clone().proofs {
-                    if proofs.len() == parties.len() && state.received_all_decryption_shares() {
+                    if proofs.len() == parties.clone().len() && state.received_all_decryption_shares() {
                         let _ = SignRound::identify_malicious(&state);
                         return;
                     }
