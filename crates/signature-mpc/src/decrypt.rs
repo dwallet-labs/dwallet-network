@@ -91,26 +91,15 @@ fn generate_lagrange_coefficients(
         .collect()
 }
 
-pub fn decrypt_signature_decentralized_party_sign(
-    messages: Vec<Vec<u8>>,
-    decryption_key_share_public_parameters: DecryptionPublicParameters,
-    decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
+fn generate_signatures(
+    lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
+    decryption_shares: Vec<(HashMap<PartyID, U704>, HashMap<PartyID, U704>)>,
     public_nonce_encrypted_partial_signature_and_proofs: Vec<
         PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
     >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
-) -> Result<Vec<Vec<u8>>, DecryptionError> {
-    let (decrypters, decryption_shares) = take_threshold_decrypters(
-        decryption_shares,
-        public_nonce_encrypted_partial_signature_and_proofs.clone(),
-        decryption_key_share_public_parameters.clone(),
-    );
-
-    let lagrange_coefficients = generate_lagrange_coefficients(
-        decryption_key_share_public_parameters.clone(),
-        decrypters.clone(),
-    );
-
+    messages: Vec<Vec<u8>>,
+) -> Result<Vec<Vec<u8>>, Vec<usize>> {
     let mut failed_messages_indices = Vec::new();
     let messages_signatures: Vec<Vec<u8>> = signature_threshold_decryption_round_parties
         .into_iter()
@@ -158,12 +147,45 @@ pub fn decrypt_signature_decentralized_party_sign(
         .collect();
 
     if !failed_messages_indices.is_empty() {
-        return Err(DecryptionError {
+        return Err(failed_messages_indices);
+    }
+    Ok(messages_signatures)
+}
+
+pub fn decrypt_signature_decentralized_party_sign(
+    messages: Vec<Vec<u8>>,
+    decryption_key_share_public_parameters: DecryptionPublicParameters,
+    decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
+    public_nonce_encrypted_partial_signature_and_proofs: Vec<
+        PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
+    >,
+    signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
+) -> Result<Vec<Vec<u8>>, DecryptionError> {
+    let (decrypters, decryption_shares) = take_threshold_decrypters(
+        decryption_shares,
+        public_nonce_encrypted_partial_signature_and_proofs.clone(),
+        decryption_key_share_public_parameters.clone(),
+    );
+
+    let lagrange_coefficients = generate_lagrange_coefficients(
+        decryption_key_share_public_parameters.clone(),
+        decrypters.clone(),
+    );
+
+    let messages_signatures_result = generate_signatures(
+        lagrange_coefficients,
+        decryption_shares.clone(),
+        public_nonce_encrypted_partial_signature_and_proofs,
+        signature_threshold_decryption_round_parties,
+        messages,
+    );
+
+    match messages_signatures_result {
+        Ok(messages_signatures) => Ok(messages_signatures),
+        Err(failed_messages_indices) => Err(DecryptionError {
             failed_messages_indices,
             involved_parties: decrypters,
             decryption_shares,
-        });
+        }),
     }
-
-    Ok(messages_signatures)
 }
