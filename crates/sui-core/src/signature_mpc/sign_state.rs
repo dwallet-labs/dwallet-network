@@ -4,7 +4,7 @@ use signature_mpc::decrypt::PartialDecryptionProof;
 use signature_mpc::twopc_mpc_protocols;
 use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::SignatureMPCSessionID;
-use crate::signature_mpc::sign::SignRound;
+use crate::signature_mpc::sign_round::SignRound;
 
 #[derive(Clone)]
 pub(crate) struct SignState {

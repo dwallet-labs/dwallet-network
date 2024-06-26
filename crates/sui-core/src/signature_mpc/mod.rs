@@ -5,10 +5,11 @@ mod aggregate;
 mod dkg;
 mod metrics;
 mod presign;
-mod sign;
+mod sign_round;
+mod sign_state;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
-mod sign_state;
+mod identifiable_abort;
 
 use crate::authority::{AuthorityState, EffectsNotifyRead};
 use crate::authority_client::AuthorityAPI;
@@ -57,17 +58,18 @@ use typed_store::traits::{TableSummary, TypedStoreDebug};
 use typed_store::Map;
 
 use dkg::DKGState;
+use sign_state::SignState;
 use signature_mpc::decrypt::{DecryptionShare, PartialDecryptionProof};
 use sui_types::messages_signature_mpc::{
     InitiateSignatureMPCProtocol, SignatureMPCMessage, SignatureMPCMessageProtocols,
     SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID,
 };
 use tokio_stream::StreamExt;
-use sign_state::SignState;
+use identifiable_abort::{generate_proofs, identify_malicious};
 
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
-use crate::signature_mpc::sign::{SignRound, SignRoundCompletion};
+use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
 use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
 
 pub trait SignatureMPCServiceNotify {
@@ -364,7 +366,7 @@ impl SignatureMPCAggregator {
                 if let Some(proofs) = state.clone().proofs {
                     if proofs.len() == parties.clone().len() && state.received_all_decryption_shares() {
                         println!("run IA from received last share id {}", state.party_id);
-                        let _ = SignRound::identify_malicious(&state);
+                        let _ = identify_malicious(&state);
                         return;
                     }
                 }
@@ -411,8 +413,11 @@ impl SignatureMPCAggregator {
                 if state.clone().proofs.unwrap().len() == parties.clone().len()
                     && state.received_all_decryption_shares()
                 {
-                    println!("received all proofs, run IA from received proof, id {}", state.party_id);
-                    let _ = SignRound::identify_malicious(&state);
+                    println!(
+                        "received all proofs, run IA from received proof, id {}",
+                        state.party_id
+                    );
+                    let _ = identify_malicious(&state);
                 }
                 if state.clone().proofs.unwrap().contains_key(&party_id) {
                     return;
@@ -654,7 +659,6 @@ impl SignatureMPCAggregator {
             if let Some(m) = m {
                 match m {
                     SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties) => {
-                        // Borrow state mutably to call insert_proofs
                         mut_state.failed_messages_indices = Some(message_indices.clone());
                         mut_state.involved_parties = involved_parties.clone();
                         let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
@@ -706,36 +710,34 @@ impl SignatureMPCAggregator {
         spawn_monitored_task!(async move {
             let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
             let state = mut_state.clone();
-            match sign_session_rounds.get_mut(&session_id) {
-                Some(mut round) => {
-                    let proofs = SignRound::generate_proofs(&state, &failed_messages_indices);
-                    let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
-                    mut_state.insert_proofs(party_id, proofs.clone());
-                    let _ = submit
-                        .sign_and_submit_message(
-                            &SignatureMPCMessageSummary::new(
-                                epoch,
-                                SignatureMPCMessageProtocols::SignProofs(
-                                    state.party_id,
-                                    proofs.clone(),
-                                    failed_messages_indices.clone(),
-                                    involved_parties,
-                                ),
-                                session_id,
-                            ),
-                            &epoch_store,
-                        )
-                        .await;
-                    if state.proofs.is_some()
-                        && state.proofs.clone().unwrap().len() == state.parties.len()
-                        && state.received_all_decryption_shares()
-                    {
-                        println!("received all proofs, start IA from sending my proof last, id {}", state.party_id);
-                        SignRound::identify_malicious(&state);
-                    }
-                }
-                None => {}
-            };
+            let proofs = generate_proofs(&state, &failed_messages_indices);
+            let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
+            mut_state.insert_proofs(party_id, proofs.clone());
+            let _ = submit
+                .sign_and_submit_message(
+                    &SignatureMPCMessageSummary::new(
+                        epoch,
+                        SignatureMPCMessageProtocols::SignProofs(
+                            state.party_id,
+                            proofs.clone(),
+                            failed_messages_indices.clone(),
+                            involved_parties,
+                        ),
+                        session_id,
+                    ),
+                    &epoch_store,
+                )
+                .await;
+            if state.proofs.is_some()
+                && state.proofs.clone().unwrap().len() == state.parties.len()
+                && state.received_all_decryption_shares()
+            {
+                println!(
+                    "received all proofs, start IA from sending my proof last, id {}",
+                    state.party_id
+                );
+                identify_malicious(&state);
+            }
         });
     }
 
@@ -842,10 +844,8 @@ impl SignatureMPCAggregator {
                 if let Ok((round, message)) = SignRound::new(
                     tiresias_public_parameters.clone(),
                     tiresias_key_share_decryption_key_share,
-                    epoch,
                     party_id,
                     parties.clone(),
-                    session_id,
                     messages.clone(),
                     dkg_output,
                     public_nonce_encrypted_partial_signature_and_proofs.clone(),

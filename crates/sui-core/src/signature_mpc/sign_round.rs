@@ -1,22 +1,24 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use std::collections::HashSet;
+use std::mem;
+
 use futures::StreamExt;
 use rand::rngs::OsRng;
+
 use signature_mpc::decrypt::{
     decrypt_signature_decentralized_party_sign, PartialDecryptionProof,
 };
 use signature_mpc::twopc_mpc_protocols::{
-    AdditivelyHomomorphicDecryptionKeyShare, DecentralizedPartyPresign, DecryptionKeyShare, DecryptionPublicParameters,
-    DKGDecentralizedPartyOutput, generate_proof, Hash,
-    identify_malicious_parties, initiate_decentralized_party_sign, message_digest, PaillierModulusSizedNumber, PartyID,
-    ProofParty, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
+    AdditivelyHomomorphicDecryptionKeyShare, DecentralizedPartyPresign, DecryptionPublicParameters,
+    DKGDecentralizedPartyOutput, Hash
+    , initiate_decentralized_party_sign, message_digest, PaillierModulusSizedNumber, PartyID
+    , ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
     SecretKeyShareSizedNumber, SignatureThresholdDecryptionParty,
 };
-use std::collections::{HashMap, HashSet};
-use std::mem;
-use sui_types::base_types::EpochId;
-use sui_types::messages_signature_mpc::SignatureMPCSessionID;
+
+use crate::signature_mpc::identifiable_abort;
 use crate::signature_mpc::sign_state::SignState;
 
 #[derive(Default)]
@@ -32,10 +34,8 @@ impl SignRound {
     pub(crate) fn new(
         tiresias_public_parameters: DecryptionPublicParameters,
         tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
-        epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,
-        session_id: SignatureMPCSessionID,
         messages: Vec<Vec<u8>>,
         dkg_output: DKGDecentralizedPartyOutput,
         public_nonce_encrypted_partial_signature_and_proofs: Vec<
@@ -50,10 +50,8 @@ impl SignRound {
         let sign_mpc_party_per_message = initiate_decentralized_party_sign(
             tiresias_key_share_decryption_key_share,
             tiresias_public_parameters.clone(),
-            //epoch,
             party_id,
             parties.clone(),
-            //session_id,
             dkg_output,
             presigns.clone(),
         )?;
@@ -101,40 +99,6 @@ impl SignRound {
         ))
     }
 
-    pub fn generate_proofs(
-        state: &SignState,
-        failed_messages_indices: &Vec<usize>,
-    ) -> Vec<(PartialDecryptionProof, ProofParty)> {
-        let decryption_key_share = DecryptionKeyShare::new(
-            state.party_id,
-            state.tiresias_key_share_decryption_key_share,
-            &state.tiresias_public_parameters,
-        )
-        .unwrap();
-
-        failed_messages_indices
-            .iter()
-            .map(|index| {
-                generate_proof(
-                    state.tiresias_public_parameters.clone(),
-                    decryption_key_share.clone(),
-                    state.party_id,
-                    state.presigns.clone().unwrap().get(*index).unwrap().clone(),
-                    state
-                        .tiresias_public_parameters
-                        .encryption_scheme_public_parameters
-                        .clone(),
-                    state
-                        .public_nonce_encrypted_partial_signature_and_proofs
-                        .clone()
-                        .unwrap()
-                        .get(*index)
-                        .unwrap()
-                        .clone(),
-                )
-            })
-            .collect()
-    }
 
     pub(crate) fn complete_round(&mut self, state: SignState) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
@@ -158,7 +122,7 @@ impl SignRound {
                     }
                     Err(decryption_error) => {
                         let proofs_tuples =
-                            Self::generate_proofs(&state, &decryption_error.failed_messages_indices);
+                            identifiable_abort::generate_proofs(&state, &decryption_error.failed_messages_indices);
                         let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
                         Ok(SignRoundCompletion::ProofsMessage(
                             proofs,
@@ -171,64 +135,6 @@ impl SignRound {
             _ => Ok(SignRoundCompletion::None),
         }
     }
-
-    pub(crate) fn identify_malicious(state: &SignState) -> Result<SignRoundCompletion> {
-        let proof_results =
-            Self::generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
-
-        let mut malicious_parties = HashSet::new();
-        let involved_shares: HashMap<
-            PartyID,
-            Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
-        > = state
-            .clone()
-            .decryption_shares
-            .into_iter()
-            .filter(|(party_id, _)| state.involved_parties.contains(party_id))
-            .collect();
-
-        for ((i, message_index), (proof, party)) in state
-            .clone()
-            .failed_messages_indices
-            .unwrap()
-            .into_iter()
-            .enumerate()
-            .zip(proof_results.into_iter())
-        {
-            let shares = involved_shares
-                .clone()
-                .into_iter()
-                .map(|(party_id, shares)| (party_id, shares[message_index].0.clone())).collect();
-            let masked_shares = involved_shares
-                .clone()
-                .into_iter()
-                .map(|(party_id, shares)| (party_id, shares[message_index].1.clone())).collect();
-
-            let a: HashMap<PartyID, _> = state
-                .proofs
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(|(party_id, proofs)| (party_id, proofs[i].clone()))
-                .collect();
-
-            // TODO: make sure the proof is valid
-            identify_malicious_parties(
-                party,
-                shares, // TODO: Parse involved decryption shares from decryption shares
-                masked_shares,
-                state.tiresias_public_parameters.clone(),
-                a,
-                state.involved_parties.clone(),
-            )
-            .iter()
-            .for_each(|party_id| {
-                malicious_parties.insert(*party_id);
-            });
-        }
-        println!("found by {}", state.party_id);
-        Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties))
-    }
 }
 
 pub(crate) enum SignRoundCompletion {
@@ -237,3 +143,4 @@ pub(crate) enum SignRoundCompletion {
     MaliciousPartiesOutput(HashSet<PartyID>),
     None,
 }
+
