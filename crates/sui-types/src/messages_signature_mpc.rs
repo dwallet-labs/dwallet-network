@@ -69,32 +69,6 @@ pub enum SignatureMPCMessageProtocols {
     SignProofs(PartyID, Vec<(PartialDecryptionProof)>, Vec<usize>, Vec<PartyID>),
 }
 
-impl Display for SignatureMPCMessageProtocols {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match &self {
-            SignatureMPCMessageProtocols::DKG(_) => {
-                f.write_str("DKG")
-            }
-            SignatureMPCMessageProtocols::PresignFirstRound(_) => {
-                f.write_str("PresignFirstRound")
-            }
-            SignatureMPCMessageProtocols::PresignSecondRound(_) => {
-                f.write_str("PresignSecondRound")
-            }
-            SignatureMPCMessageProtocols::Sign(_) => {
-                f.write_str("Sign")
-            }
-            // TODO: Implement proofs reception #2
-            SignatureMPCMessageProtocols::SignProofs(_, _, _,_) => {
-                f.write_str("IdentifiableAbortFirstRound")
-            }
-            _ => {
-                f.write_str("Unknown")
-            }
-        }
-    }
-}
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SignatureMPCMessageSummary {
     pub epoch: EpochId,
