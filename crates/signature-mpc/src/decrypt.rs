@@ -1,5 +1,4 @@
 use crate::twopc_mpc_protocols::ProtocolContext;
-use crypto_bigint::U704;
 use ecdsa::Signature;
 use group::PartyID;
 use homomorphic_encryption::{AdditivelyHomomorphicDecryptionKeyShare, GroupsPublicParametersAccessors};
@@ -41,7 +40,10 @@ fn take_threshold_decrypters(
     decryption_key_share_public_parameters: DecryptionPublicParameters,
 ) -> (
     Vec<PartyID>,
-    Vec<(HashMap<PartyID, U704>, HashMap<PartyID, U704>)>,
+    Vec<(
+        HashMap<PartyID, PaillierModulusSizedNumber>,
+        HashMap<PartyID, PaillierModulusSizedNumber>,
+    )>,
 ) {
     let decrypters: Vec<_> = decryption_shares
         .keys()
@@ -93,7 +95,10 @@ fn generate_lagrange_coefficients(
 
 fn generate_signatures(
     lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
-    decryption_shares: Vec<(HashMap<PartyID, U704>, HashMap<PartyID, U704>)>,
+    decryption_shares: Vec<(
+        HashMap<PartyID, PaillierModulusSizedNumber>,
+        HashMap<PartyID, PaillierModulusSizedNumber>,
+    )>,
     public_nonce_encrypted_partial_signature_and_proofs: Vec<
         PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
     >,
