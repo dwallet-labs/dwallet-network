@@ -8,6 +8,7 @@ mod presign;
 mod sign;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
+mod sign_state;
 
 use crate::authority::{AuthorityState, EffectsNotifyRead};
 use crate::authority_client::AuthorityAPI;
@@ -16,7 +17,7 @@ use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
 pub use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPCToConsensus;
 use futures::FutureExt;
 use itertools::Itertools;
-use mysten_metrics::{monitored_scope, spawn_monitored_task, MonitoredFutureExt};
+use mysten_metrics::{monitored_scope, MonitoredFutureExt, spawn_monitored_task};
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::{ConciseableName, ObjectRef};
 
@@ -39,15 +40,15 @@ use sui_types::error::{SuiError, SuiResult};
 use sui_types::message_envelope::Message;
 
 use signature_mpc::twopc_mpc_protocols::{
-    initiate_decentralized_party_dkg, Commitment, DecommitmentProofVerificationRoundParty,
-    DecryptionPublicParameters, PartyID, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof,
+    Commitment, DecommitmentProofVerificationRoundParty, DecryptionPublicParameters,
+    initiate_decentralized_party_dkg, PartyID, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof,
     SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber,
 };
 use sui_types::sui_system_state::{SuiSystemState, SuiSystemStateTrait};
 use sui_types::transaction::{TransactionDataAPI, TransactionKind};
 use tokio::sync::mpsc;
 use tokio::{
-    sync::{watch, Notify},
+    sync::{Notify, watch},
     time::timeout,
 };
 use tokio_stream::wrappers::WatchStream;
@@ -62,10 +63,11 @@ use sui_types::messages_signature_mpc::{
     SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID,
 };
 use tokio_stream::StreamExt;
+use sign_state::SignState;
 
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
-use crate::signature_mpc::sign::{SignRound, SignRoundCompletion, SignState};
+use crate::signature_mpc::sign::{SignRound, SignRoundCompletion};
 use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
 
 pub trait SignatureMPCServiceNotify {
