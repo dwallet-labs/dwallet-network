@@ -409,7 +409,7 @@ impl SignatureMPCAggregator {
                     && state.received_all_decryption_shares()
                 {
                     println!("received all proofs");
-                    SignRound::identify_malicious(&state);
+                    let _ = SignRound::identify_malicious(&state);
                 }
                 if state.clone().proofs.unwrap().contains_key(&party_id) {
                     return;
