@@ -84,6 +84,11 @@ const sidebars = {
 							id: 'developers-guide/getting-started/your-first-dwallet',
 						},
 						{
+							type: 'doc',
+							label: 'Future Transactions',
+							id: 'developers-guide/getting-started/future-transaction',
+						},
+						{
 							type: 'category',
 							label: 'Examples',
 							collapsed: true,
