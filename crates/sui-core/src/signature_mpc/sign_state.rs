@@ -1,10 +1,13 @@
-use signature_mpc::twopc_mpc_protocols::{DecentralizedPartyPresign, DecryptionPublicParameters, PaillierModulusSizedNumber, PartyID, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareSizedNumber};
-use std::collections::{HashMap, HashSet};
+use crate::signature_mpc::sign_round::SignRound;
 use signature_mpc::decrypt::PartialDecryptionProof;
 use signature_mpc::twopc_mpc_protocols;
+use signature_mpc::twopc_mpc_protocols::{
+    DecentralizedPartyPresign, DecryptionPublicParameters, PaillierModulusSizedNumber, PartyID,
+    ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareSizedNumber,
+};
+use std::collections::{HashMap, HashSet};
 use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::SignatureMPCSessionID;
-use crate::signature_mpc::sign_round::SignRound;
 
 #[derive(Clone)]
 pub(crate) struct SignState {
@@ -18,7 +21,8 @@ pub(crate) struct SignState {
     pub public_nonce_encrypted_partial_signature_and_proofs:
         Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
     pub presigns: Option<Vec<DecentralizedPartyPresign>>,
-    pub decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
+    pub decryption_shares:
+        HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
     pub failed_messages_indices: Option<Vec<usize>>,
     pub involved_parties: Vec<PartyID>,
@@ -97,5 +101,12 @@ impl SignState {
 
     pub(crate) fn received_all_decryption_shares(&self) -> bool {
         return self.decryption_shares.len() == self.parties.len();
+    }
+
+    pub(crate) fn should_identify_malicious_actors(&self) -> bool {
+        if let Some(proofs) = self.clone().proofs {
+            return proofs.len() == self.parties.clone().len() && self.received_all_decryption_shares();
+        }
+        return false;
     }
 }
