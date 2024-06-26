@@ -14,8 +14,7 @@ use shared_crypto::intent::IntentScope;
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 pub use signature_mpc::decrypt::{DecryptionShare, PartialDecryptionProof};
-pub use signature_mpc::twopc_mpc_protocols::{Commitment, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, EncDHCommitment, EncDHDecommitment, EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PresignDecentralizedPartyOutput, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof, tiresias_deal_trusted_shares};
-pub use signature_mpc::twopc_mpc_protocols::{DecryptionPublicParameters, PartyID};
+pub use signature_mpc::twopc_mpc_protocols::{Commitment, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, EncDHCommitment, EncDHDecommitment, EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PresignDecentralizedPartyOutput, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof, tiresias_deal_trusted_shares, DecryptionPublicParameters, PartyID};
 pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointDigest;
 use crate::base_types::ObjectRef;
@@ -345,8 +344,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(m) => m.round(),
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
             SignatureMPCMessageProtocols::Sign(_) => 1,
-            // TODO: Implement proofs reception #1
-            SignatureMPCMessageProtocols::SignProofs(_, _, _, _) => 7,
+            SignatureMPCMessageProtocols::SignProofs(_, _, _, _) => 1,
         }
     }
 }
