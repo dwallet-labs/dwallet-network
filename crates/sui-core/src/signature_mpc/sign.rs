@@ -4,16 +4,14 @@
 use futures::StreamExt;
 use rand::rngs::OsRng;
 use signature_mpc::decrypt::{
-    decrypt_signature_decentralized_party_sign, DecryptionError, DecryptionShare,
-    PartialDecryptionProof,
+    decrypt_signature_decentralized_party_sign, DecryptionError, DecryptionShare, PartialDecryptionProof,
 };
 use signature_mpc::twopc_mpc_protocols::{
     generate_proof, identify_malicious_parties, initiate_decentralized_party_sign, message_digest,
-    AdditivelyHomomorphicDecryptionKeyShare, DKGDecentralizedPartyOutput,
-    DecentralizedPartyPresign, DecryptionKeyShare, DecryptionPublicParameters, Hash,
-    PaillierModulusSizedNumber, PartyID, ProofParty, ProtocolContext,
-    PublicNonceEncryptedPartialSignatureAndProof, Result, SecretKeyShareSizedNumber,
-    SignatureThresholdDecryptionParty,
+    AdditivelyHomomorphicDecryptionKeyShare, DKGDecentralizedPartyOutput, DecentralizedPartyPresign,
+    DecryptionKeyShare, DecryptionPublicParameters, Hash, PaillierModulusSizedNumber, PartyID,
+    ProofParty, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
+    SecretKeyShareSizedNumber, SignatureThresholdDecryptionParty,
 };
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
@@ -159,14 +157,9 @@ impl SignRound {
                         return Ok(SignRoundCompletion::SignatureOutput(signatures));
                     }
                     Err(decryption_error) => {
-                        let proofs_tuples = Self::generate_proofs(
-                            &state,
-                            &decryption_error.failed_messages_indices,
-                        );
-                        let proofs = proofs_tuples
-                            .iter()
-                            .map(|(proof, _)| proof.clone())
-                            .collect();
+                        let proofs_tuples =
+                            Self::generate_proofs(&state, &decryption_error.failed_messages_indices);
+                        let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
                         Ok(SignRoundCompletion::ProofsMessage(
                             proofs,
                             decryption_error.failed_messages_indices,
@@ -204,7 +197,7 @@ impl SignRound {
             identify_malicious_parties(
                 party,
                 _, // TODO: Parse involved decryption shares from decryption shares
-               _,
+                _,
                 state.tiresias_public_parameters.clone(),
                 a,
                 state.involved_parties.clone(),
@@ -215,19 +208,13 @@ impl SignRound {
             });
         }
         println!("malicious parties: {:?}", malicious_parties);
-        Ok(SignRoundCompletion::MaliciousPartiesOutput(
-            malicious_parties,
-        ))
+        Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties))
     }
 }
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    ProofsMessage(
-        Vec<PartialDecryptionProof>,
-        Vec<usize>,
-        Vec<PartyID>,
-    ),
+    ProofsMessage(Vec<PartialDecryptionProof>, Vec<usize>, Vec<PartyID>),
     MaliciousPartiesOutput(HashSet<PartyID>),
     None,
 }
@@ -244,11 +231,10 @@ pub(crate) struct SignState {
     public_nonce_encrypted_partial_signature_and_proofs:
         Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
     presigns: Option<Vec<DecentralizedPartyPresign>>,
-    decryption_shares:
-        HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
+    decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
     pub failed_messages_indices: Option<Vec<usize>>,
-    pub involved_parties: Vec<PartyID>
+    pub involved_parties: Vec<PartyID>,
 }
 
 impl SignState {
@@ -304,11 +290,7 @@ impl SignState {
         Ok(())
     }
 
-    pub(crate) fn insert_proofs(
-        &mut self,
-        party_id: PartyID,
-        new_proofs: Vec<PartialDecryptionProof>,
-    ) {
+    pub(crate) fn insert_proofs(&mut self, party_id: PartyID, new_proofs: Vec<PartialDecryptionProof>) {
         if let Some(proofs_map) = &mut self.proofs {
             proofs_map.insert(party_id, new_proofs);
         } else {
@@ -327,5 +309,10 @@ impl SignState {
             }
             _ => false,
         }
+    }
+
+    pub(crate) fn receieved_all_decryption_shares(&self) -> bool {
+        return self.decryption_shares.len() == self.parties.len()
+            && self.party_id == self.aggregator_party_id;
     }
 }
