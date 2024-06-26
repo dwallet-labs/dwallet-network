@@ -693,11 +693,6 @@ impl SuiDWalletCommands {
                 let is_valid = verify_signature(messages_vec, &hash, dkg_output.public_key.clone(), sign_output.signatures.clone());
 
                 println!("is_valid: {}", is_valid);
-                if (!is_valid) {
-                    return Err(anyhow!("Signature verification failed"));
-                    // TODO: Find malicious party and return it
-
-                }
                 
                 let signatures = sign_output.signatures.iter().map(|s| Base64::encode(s)).collect::<Vec<_>>();
 
