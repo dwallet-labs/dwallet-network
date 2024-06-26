@@ -301,18 +301,14 @@ impl SignState {
 
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {
         match round {
-            SignRound::FirstRound { .. }
-                if self.decryption_shares.len() == self.parties.len()
-                    && self.party_id == self.aggregator_party_id =>
-            {
-                true
+            SignRound::FirstRound { .. } => {
+                self.received_all_decryption_shares() && self.party_id == self.aggregator_party_id
             }
             _ => false,
         }
     }
 
-    pub(crate) fn receieved_all_decryption_shares(&self) -> bool {
-        return self.decryption_shares.len() == self.parties.len()
-            && self.party_id == self.aggregator_party_id;
+    pub(crate) fn received_all_decryption_shares(&self) -> bool {
+        return self.decryption_shares.len() == self.parties.len();
     }
 }

@@ -359,6 +359,12 @@ impl SignatureMPCAggregator {
 
                 let _ = state.insert_first_round(sender_party_id, m.clone());
 
+                if let Some(proofs) = state.clone().proofs {
+                    if proofs.len() == parties.len() && state.received_all_decryption_shares() {
+                        let _ = SignRound::identify_malicious(&state);
+                        return;
+                    }
+                }
                 if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                     if state.ready_for_complete_first_round(&r) {
                         drop(r);
@@ -379,7 +385,7 @@ impl SignatureMPCAggregator {
                 prover_party_id,
                 new_proofs,
                 message_indices,
-                involved_parties
+                involved_parties,
             ) => {
                 println!("recv proof from {}", prover_party_id);
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
@@ -399,7 +405,9 @@ impl SignatureMPCAggregator {
                 state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
                 println!("proofs len: {}", state.clone().proofs.unwrap().len());
                 // check if my party id is in the state proofs
-                if state.clone().proofs.unwrap().len() == parties.clone().len() {
+                if state.clone().proofs.unwrap().len() == parties.clone().len()
+                    && state.received_all_decryption_shares()
+                {
                     println!("received all proofs");
                     SignRound::identify_malicious(&state);
                 }
@@ -416,7 +424,7 @@ impl SignatureMPCAggregator {
                     sign_session_states.clone(),
                     submit.clone(),
                     message_indices.clone(),
-                    involved_parties.clone()
+                    involved_parties.clone(),
                 );
             }
             _ => {}
@@ -656,7 +664,7 @@ impl SignatureMPCAggregator {
                                         state.party_id,
                                         proofs.clone(),
                                         message_indices,
-                                        involved_parties
+                                        involved_parties,
                                     ),
                                     session_id,
                                 ),
@@ -708,7 +716,7 @@ impl SignatureMPCAggregator {
                                     state.party_id,
                                     proofs.clone(),
                                     failed_messages_indices.clone(),
-                                    involved_parties
+                                    involved_parties,
                                 ),
                                 session_id,
                             ),
@@ -717,6 +725,7 @@ impl SignatureMPCAggregator {
                         .await;
                     if state.proofs.is_some()
                         && state.proofs.clone().unwrap().len() == state.parties.len()
+                        && state.received_all_decryption_shares()
                     {
                         println!("received all proofs");
                         SignRound::identify_malicious(&state);
