@@ -226,7 +226,7 @@ impl SignRound {
                 malicious_parties.insert(*party_id);
             });
         }
-        println!("malicious parties: {:?} found by {}", malicious_parties, state.party_id);
+        println!("found by {}", state.party_id);
         Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties))
     }
 }
