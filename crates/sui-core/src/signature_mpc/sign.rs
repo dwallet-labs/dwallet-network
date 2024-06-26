@@ -177,6 +177,11 @@ impl SignRound {
             Self::generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
 
         let mut malicious_parties = HashSet::new();
+        let involved_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>> = state.clone().decryption_shares.into_iter()
+            .filter(|(party_id, _)| state.involved_parties.contains(party_id))
+            .collect();
+
+
         for ((i, message_index), (proof, party)) in state
             .clone()
             .failed_messages_indices
@@ -185,6 +190,9 @@ impl SignRound {
             .enumerate()
             .zip(proof_results.into_iter())
         {
+            let shares = involved_shares.map(|(party_id, shares)| (party_id, shares[message_index].0.clone()));
+            let masked_shares = involved_shares.map(|(party_id, shares)| (party_id, shares[message_index].1.clone()));
+
             let a: HashMap<PartyID, _> = state
                 .proofs
                 .clone()
@@ -196,8 +204,8 @@ impl SignRound {
             // TODO: make sure the proof is valid
             identify_malicious_parties(
                 party,
-                _, // TODO: Parse involved decryption shares from decryption shares
-                _,
+                shares, // TODO: Parse involved decryption shares from decryption shares
+                masked_shares,
                 state.tiresias_public_parameters.clone(),
                 a,
                 state.involved_parties.clone(),
