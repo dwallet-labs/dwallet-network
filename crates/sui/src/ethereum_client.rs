@@ -118,7 +118,9 @@ pub(crate) async fn create_eth_dwallet(
         .iter()
         .map(|v| Value::Number(Number::from(*v)))
         .collect();
+    // Remove '*' prefix from the smart contract address
     smart_contract_address.remove(0);
+
     let smart_contract_address = SuiJsonValue::new(Value::Array(smart_contract_address)).unwrap();
 
     let args = vec![
