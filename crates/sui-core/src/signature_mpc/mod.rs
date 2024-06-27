@@ -361,7 +361,6 @@ impl SignatureMPCAggregator {
                 let _ = state.insert_first_round(sender_party_id, m.clone());
 
                 if state.should_identify_malicious_actors() {
-                    println!("run IA from received last share id {}", state.party_id);
                     if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
                         identify_malicious(&state)
                     {
@@ -391,7 +390,6 @@ impl SignatureMPCAggregator {
                 message_indices,
                 involved_parties,
             ) => {
-                println!("recv proof from {}", prover_party_id);
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
                         tiresias_key_share_decryption_key_share,
@@ -405,12 +403,7 @@ impl SignatureMPCAggregator {
                 state.failed_messages_indices = Some(message_indices.clone());
                 state.involved_parties = involved_parties.clone();
                 state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
-                println!("proofs len: {}", state.clone().proofs.unwrap().len());
                 if state.should_identify_malicious_actors() {
-                    println!(
-                        "received all proofs, run IA from received proof, id {}",
-                        state.party_id
-                    );
                     if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
                         identify_malicious(&state)
                     {
@@ -649,7 +642,6 @@ impl SignatureMPCAggregator {
                     Err(_) => None,
                 },
                 None => {
-                    println!("Failed to find session round");
                     None
                 }
             };

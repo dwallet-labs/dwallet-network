@@ -158,11 +158,6 @@ pub fn spawn_generate_proof(
 
         // TODO: Handle error properly
         if state.should_identify_malicious_actors() {
-            println!(
-                "received all proofs, start IA from sending my proof last, id {}",
-                state.party_id
-            );
-
             if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
                 identify_malicious(&state)
             {
