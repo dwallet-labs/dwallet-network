@@ -23,8 +23,10 @@ pub type DecryptionShare = <DecryptionKeyShare as AdditivelyHomomorphicDecryptio
     EncryptionKey,
 >>::DecryptionShare;
 
+pub type FailedMessagesIndices = Vec<usize>;
+
 pub struct DecryptionError {
-    pub failed_messages_indices: Vec<usize>,
+    pub failed_messages_indices: FailedMessagesIndices,
     pub involved_parties: Vec<PartyID>,
     pub decryption_shares: Vec<(
         HashMap<PartyID, DecryptionShare>,
@@ -104,7 +106,7 @@ fn generate_signatures(
     >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
     messages: Vec<Vec<u8>>,
-) -> Result<Vec<Vec<u8>>, Vec<usize>> {
+) -> Result<Vec<Vec<u8>>, FailedMessagesIndices> {
     let mut failed_messages_indices = Vec::new();
     let messages_signatures: Vec<Vec<u8>> = signature_threshold_decryption_round_parties
         .into_iter()
