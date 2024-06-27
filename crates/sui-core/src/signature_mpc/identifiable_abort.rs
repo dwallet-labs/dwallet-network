@@ -1,16 +1,21 @@
-use signature_mpc::decrypt::PartialDecryptionProof;
-use signature_mpc::twopc_mpc_protocols;
-use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, DecryptionKeyShare, generate_proof, identify_malicious_parties, PaillierModulusSizedNumber, PartyID, ProofParty};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
-use dashmap::DashMap;
-use mysten_metrics::spawn_monitored_task;
-use sui_types::base_types::{EpochId, ObjectRef};
-use sui_types::messages_signature_mpc::{SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
 use crate::signature_mpc::sign_state::SignState;
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
+use dashmap::DashMap;
+use mysten_metrics::spawn_monitored_task;
+use signature_mpc::decrypt::PartialDecryptionProof;
+use signature_mpc::twopc_mpc_protocols;
+use signature_mpc::twopc_mpc_protocols::{
+    generate_proof, identify_malicious_parties, AdditivelyHomomorphicDecryptionKeyShare,
+    DecryptionKeyShare, PaillierModulusSizedNumber, PartyID, ProofParty,
+};
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use sui_types::base_types::{EpochId, ObjectRef};
+use sui_types::messages_signature_mpc::{
+    SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID,
+};
 
 pub fn generate_proofs(
     state: &SignState,
@@ -21,7 +26,7 @@ pub fn generate_proofs(
         state.tiresias_key_share_decryption_key_share,
         &state.tiresias_public_parameters,
     )
-        .unwrap();
+    .unwrap();
 
     failed_messages_indices
         .iter()
@@ -70,10 +75,10 @@ pub(crate) fn identify_malicious(state: &SignState) -> twopc_mpc_protocols::Resu
             involved_proofs,
             state.involved_parties.clone(),
         )
-            .iter()
-            .for_each(|party_id| {
-                malicious_parties.insert(*party_id);
-            });
+        .iter()
+        .for_each(|party_id| {
+            malicious_parties.insert(*party_id);
+        });
     }
     Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties))
 }
@@ -96,7 +101,9 @@ fn extract_shares(
         .collect()
 }
 
-fn get_involved_shares(state: &SignState) -> HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>> {
+fn get_involved_shares(
+    state: &SignState,
+) -> HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>> {
     state
         .clone()
         .decryption_shares
@@ -128,32 +135,39 @@ pub fn spawn_generate_proof(
     involved_parties: Vec<PartyID>,
 ) {
     spawn_monitored_task!(async move {
-            let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
-            let state = mut_state.clone();
-            let proofs = generate_proofs(&state, &failed_messages_indices);
-            let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
-            mut_state.insert_proofs(party_id, proofs.clone());
-            let _ = submit
-                .sign_and_submit_message(
-                    &SignatureMPCMessageSummary::new(
-                        epoch,
-                        SignatureMPCMessageProtocols::SignProofs(
-                            state.party_id,
-                            proofs.clone(),
-                            failed_messages_indices.clone(),
-                            involved_parties,
-                        ),
-                        session_id,
+        let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
+        let state = mut_state.clone();
+        let proofs = generate_proofs(&state, &failed_messages_indices);
+        let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
+        mut_state.insert_proofs(party_id, proofs.clone());
+        let _ = submit
+            .sign_and_submit_message(
+                &SignatureMPCMessageSummary::new(
+                    epoch,
+                    SignatureMPCMessageProtocols::SignProofs(
+                        state.party_id,
+                        proofs.clone(),
+                        failed_messages_indices.clone(),
+                        involved_parties,
                     ),
-                    &epoch_store,
-                )
-                .await;
-            if state.should_identify_malicious_actors() {
-                println!(
-                    "received all proofs, start IA from sending my proof last, id {}",
-                    state.party_id
-                );
-                identify_malicious(&state);
+                    session_id,
+                ),
+                &epoch_store,
+            )
+            .await;
+
+        // TODO: Handle error properly
+        if state.should_identify_malicious_actors() {
+            println!(
+                "received all proofs, start IA from sending my proof last, id {}",
+                state.party_id
+            );
+
+            if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
+                identify_malicious(&state)
+            {
+                println!("Identified malicious parties: {:?}", malicious_parties);
             }
-        });
+        }
+    });
 }

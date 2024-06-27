@@ -362,7 +362,11 @@ impl SignatureMPCAggregator {
 
                 if state.should_identify_malicious_actors() {
                     println!("run IA from received last share id {}", state.party_id);
-                    let _ = identify_malicious(&state);
+                    if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
+                        identify_malicious(&state)
+                    {
+                        println!("Identified malicious parties: {:?}", malicious_parties);
+                    }
                     return;
                 }
                 if let Some(r) = sign_session_rounds.get_mut(&session_id) {
@@ -407,7 +411,11 @@ impl SignatureMPCAggregator {
                         "received all proofs, run IA from received proof, id {}",
                         state.party_id
                     );
-                    let _ = identify_malicious(&state);
+                    if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
+                        identify_malicious(&state)
+                    {
+                        println!("Identified malicious parties: {:?}", malicious_parties);
+                    }
                 }
                 if state.clone().proofs.unwrap().contains_key(&party_id) {
                     return;

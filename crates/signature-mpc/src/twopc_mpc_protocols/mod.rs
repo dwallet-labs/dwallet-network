@@ -31,7 +31,6 @@ use k256::sha2::digest::FixedOutput;
 pub use proof::aggregation::{
     CommitmentRoundParty, DecommitmentRoundParty, ProofAggregationRoundParty, ProofShareRoundParty,
 };
-use tiresias::EncryptionKey;
 pub use tiresias::{
     decryption_key_share::PublicParameters as DecryptionPublicParameters,
     encryption_key::PublicParameters as EncryptionPublicParameters,
@@ -39,6 +38,7 @@ pub use tiresias::{
     AdjustedLagrangeCoefficientSizedNumber, DecryptionKeyShare, LargeBiPrimeSizedNumber,
     PaillierModulusSizedNumber, SecretKeyShareSizedNumber,
 };
+use tiresias::{EncryptionKey, ProtocolError};
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
 pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
     CentralizedPartyPresign, DKGCentralizedPartyOutput, DKGCommitmentRoundParty,
@@ -450,7 +450,6 @@ pub fn identify_malicious_parties(
     decrypters: Vec<PartyID>,
 ) -> Vec<PartyID> // malicious_party_ids
 {
-    // let decrypters: Vec<_> = signature_partial_decryption_proofs.keys().cloned().collect();
     let lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber> = decrypters
         .clone()
         .into_iter()
@@ -481,8 +480,14 @@ pub fn identify_malicious_parties(
         &mut OsRng,
     );
 
-    println!("error: {:?}", error);
-    vec![16, 17]
+    // TODO: handle other errors
+    match error {
+        Error::Tiresias(tiresias::Error::ProtocolError(ProtocolError::ProofVerificationError {
+            malicious_parties,
+            ..
+        })) => malicious_parties,
+        _ => Vec::new(),
+    }
 }
 
 pub fn generate_proof(
