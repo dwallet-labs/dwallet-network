@@ -153,6 +153,7 @@ pub(crate) async fn create_eth_dwallet(
 }
 
 //todo(yuval): in future, we should load also the sync committee from binary data file.
+/// Updates the current Ethereum state and creates a LatestEthState object
 pub(crate) async fn init_ethereum_state(
     checkpoint: String,
     context: &mut WalletContext,
