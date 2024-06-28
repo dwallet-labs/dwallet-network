@@ -12,22 +12,22 @@ async-trait.workspace = true
 bcs.workspace = true
 bytes.workspace = true
 clap.workspace = true
-move-core-types = { git = "https://github.com/MystenLabs/sui", package = "move-core-types", rev="e5f0809" }
+move-core-types = { git = "https://github.com/MystenLabs/sui", package = "move-core-types", rev="f58faa4" }
 serde.workspace = true
 tokio = { workspace = true, features = ["full"] }
 serde_yaml.workspace = true
 serde_json.workspace = true
-sui-types = { git = "https://github.com/MystenLabs/sui", package = "sui-types",rev="e5f0809" }
-sui-config = { git = "https://github.com/MystenLabs/sui", package = "sui-config",rev="e5f0809" }
-sui-rest-api = { git = "https://github.com/MystenLabs/sui", package = "sui-rest-api",rev="e5f0809" }
-sui-json = { git = "https://github.com/MystenLabs/sui", package = "sui-json",rev="e5f0809" }
-sui-sdk = { git = "https://github.com/MystenLabs/sui", package = "sui-sdk" ,rev="e5f0809"}
-sui-keys = { git = "https://github.com/MystenLabs/sui", package = "sui-keys",rev="e5f0809" }
-shared-crypto = { git = "https://github.com/MystenLabs/sui", package = "shared-crypto" ,rev="e5f0809"}
+sui-types = { git = "https://github.com/MystenLabs/sui", package = "sui-types",rev="f58faa4" }
+sui-config = { git = "https://github.com/MystenLabs/sui", package = "sui-config",rev="f58faa4" }
+sui-rest-api = { git = "https://github.com/MystenLabs/sui", package = "sui-rest-api",rev="f58faa4" }
+sui-json = { git = "https://github.com/MystenLabs/sui", package = "sui-json",rev="f58faa4" }
+sui-sdk = { git = "https://github.com/MystenLabs/sui", package = "sui-sdk" ,rev="f58faa4"}
+sui-keys = { git = "https://github.com/MystenLabs/sui", package = "sui-keys",rev="f58faa4" }
+shared-crypto = { git = "https://github.com/MystenLabs/sui", package = "shared-crypto" ,rev="f58faa4"}
 
-move-binary-format = { git = "https://github.com/MystenLabs/sui", package = "move-binary-format",rev="e5f0809" }
-sui-json-rpc-types = { git = "https://github.com/MystenLabs/sui", package = "sui-json-rpc-types",rev="e5f0809" }
-sui-package-resolver = { git = "https://github.com/MystenLabs/sui", package = "sui-package-resolver",rev="e5f0809" }
+move-binary-format = { git = "https://github.com/MystenLabs/sui", package = "move-binary-format",rev="f58faa4" }
+sui-json-rpc-types = { git = "https://github.com/MystenLabs/sui", package = "sui-json-rpc-types",rev="f58faa4" }
+sui-package-resolver = { git = "https://github.com/MystenLabs/sui", package = "sui-package-resolver",rev="f58faa4" }
 
 
 axum.workspace = true
