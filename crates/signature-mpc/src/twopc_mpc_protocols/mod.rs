@@ -60,11 +60,12 @@ pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
 pub use twopc_mpc::secp256k1::{GroupElement, Scalar, SCALAR_LIMBS};
 
 use crate::decrypt::{DecryptionShare, PartialDecryptionProof};
-use twopc_mpc::secp256k1::paillier::bulletproofs::{
+pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
     PresignProofVerificationRoundParty, SignaturePartialDecryptionProofParty, SignatureVerificationParty,
 };
 pub use twopc_mpc::sign::decentralized_party::identifiable_abort::signature_partial_decryption_verification_round;
 pub use twopc_mpc::{Error, Result};
+pub use twopc_mpc::secp256k1::paillier::bulletproofs::SignaturePartialDecryptionProofVerificationParty;
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;
@@ -435,16 +436,10 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
         .collect()
 }
 
-pub type ProofParty = signature_partial_decryption_verification_round::Party<
-    PLAINTEXT_SPACE_SCALAR_LIMBS,
-    EncryptionKey,
-    DecryptionKeyShare,
->;
-
 pub fn identify_malicious_parties(
-    verification_round_party: ProofParty,
-    partial_signature_decryption_share: HashMap<PartyID, DecryptionShare>,
-    masked_nonce_decryption_share: HashMap<PartyID, DecryptionShare>,
+    verification_round_party: SignaturePartialDecryptionProofVerificationParty,
+    partial_signature_decryption_shares: HashMap<PartyID, DecryptionShare>,
+    masked_nonce_decryption_shares: HashMap<PartyID, DecryptionShare>,
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     signature_partial_decryption_proofs: HashMap<PartyID, PartialDecryptionProof>,
     decrypters: Vec<PartyID>,
@@ -474,8 +469,8 @@ pub fn identify_malicious_parties(
 
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
-        partial_signature_decryption_share,
-        masked_nonce_decryption_share,
+        partial_signature_decryption_shares,
+        masked_nonce_decryption_shares,
         signature_partial_decryption_proofs,
         &mut OsRng,
     );
@@ -495,14 +490,13 @@ pub fn generate_proof(
     decryption_key_share: DecryptionKeyShare,
     designated_decrypting_party_id: PartyID,
     presign: DecentralizedPartyPresign,
-    // encryption_scheme_public_parameters: EncryptionKey::PublicParameters,
     encryption_scheme_public_parameters: <EncryptionKey as AdditivelyHomomorphicEncryptionKey<
         PLAINTEXT_SPACE_SCALAR_LIMBS,
     >>::PublicParameters,
     public_nonce_encrypted_partial_signature_and_proof: PublicNonceEncryptedPartialSignatureAndProof<
         ProtocolContext,
     >,
-) -> (PartialDecryptionProof, ProofParty) {
+) -> (PartialDecryptionProof, SignaturePartialDecryptionProofVerificationParty) {
     let proof_party = SignaturePartialDecryptionProofParty::new(
         decryption_key_share_public_parameters.threshold,
         designated_decrypting_party_id,
@@ -514,7 +508,6 @@ pub fn generate_proof(
     )
     .unwrap();
 
-    // Q: does it ever return an error?
     proof_party
         .prove_correct_signature_partial_decryption(&mut OsRng)
         .unwrap() // TODO: handle error or not - this error should never occur

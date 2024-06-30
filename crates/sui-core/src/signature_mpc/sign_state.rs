@@ -11,10 +11,10 @@ use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 
 #[derive(Clone)]
 pub(crate) struct SignState {
-    pub epoch: EpochId,
+    epoch: EpochId,
     pub party_id: PartyID,
-    pub parties: HashSet<PartyID>,
-    pub aggregator_party_id: PartyID,
+    parties: HashSet<PartyID>,
+    aggregator_party_id: PartyID,
     pub tiresias_public_parameters: DecryptionPublicParameters,
     pub tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
     pub messages: Option<Vec<Vec<u8>>>,

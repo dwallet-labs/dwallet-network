@@ -8,7 +8,8 @@ use signature_mpc::decrypt::PartialDecryptionProof;
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::{
     generate_proof, identify_malicious_parties, AdditivelyHomomorphicDecryptionKeyShare,
-    DecryptionKeyShare, PaillierModulusSizedNumber, PartyID, ProofParty,
+    DecryptionKeyShare, PaillierModulusSizedNumber, PartyID, SignaturePartialDecryptionProofParty,
+    SignaturePartialDecryptionProofVerificationParty,
 };
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
@@ -20,7 +21,10 @@ use sui_types::messages_signature_mpc::{
 pub fn generate_proofs(
     state: &SignState,
     failed_messages_indices: &Vec<usize>,
-) -> Vec<(PartialDecryptionProof, ProofParty)> {
+) -> Vec<(
+    PartialDecryptionProof,
+    SignaturePartialDecryptionProofVerificationParty,
+)> {
     let decryption_key_share = DecryptionKeyShare::new(
         state.party_id,
         state.tiresias_key_share_decryption_key_share,
@@ -64,8 +68,7 @@ pub(crate) fn identify_malicious(state: &SignState) -> twopc_mpc_protocols::Resu
         .enumerate()
         .zip(proof_results.into_iter())
     {
-        let shares = extract_shares(&involved_shares, message_index, 0);
-        let masked_shares = extract_shares(&involved_shares, message_index, 1);
+        let (shares, masked_shares) = extract_shares(&involved_shares, message_index);
         let involved_proofs = get_involved_proofs(&state, i);
         identify_malicious_parties(
             party,
@@ -86,19 +89,19 @@ pub(crate) fn identify_malicious(state: &SignState) -> twopc_mpc_protocols::Resu
 fn extract_shares(
     involved_shares: &HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     message_index: usize,
-    element_index: usize,
-) -> HashMap<PartyID, PaillierModulusSizedNumber> {
+) -> (
+    HashMap<PartyID, PaillierModulusSizedNumber>,
+    HashMap<PartyID, PaillierModulusSizedNumber>,
+) {
     involved_shares
         .iter()
         .map(|(party_id, shares)| {
-            let element = match element_index {
-                0 => shares[message_index].0.clone(),
-                1 => shares[message_index].1.clone(),
-                _ => panic!("Invalid element index"),
-            };
-            (*party_id, element)
+            (
+                (*party_id, shares[message_index].0.clone()),
+                (*party_id, shares[message_index].1.clone()),
+            )
         })
-        .collect()
+        .unzip()
 }
 
 fn get_involved_shares(
@@ -122,13 +125,11 @@ fn get_involved_proofs(state: &SignState, i: usize) -> HashMap<PartyID, PartialD
         .collect()
 }
 
-pub fn spawn_generate_proof(
+pub fn spawn_proof_generation_and_conditional_malicious_identification(
     epoch: EpochId,
     epoch_store: Arc<AuthorityPerEpochStore>,
     party_id: PartyID,
     session_id: SignatureMPCSessionID,
-    session_ref: ObjectRef,
-    sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
     sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
     submit: Arc<dyn SubmitSignatureMPC>,
     failed_messages_indices: Vec<usize>,
@@ -137,27 +138,29 @@ pub fn spawn_generate_proof(
     spawn_monitored_task!(async move {
         let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
         let state = mut_state.clone();
-        let proofs = generate_proofs(&state, &failed_messages_indices);
-        let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
-        mut_state.insert_proofs(party_id, proofs.clone());
-        let _ = submit
-            .sign_and_submit_message(
-                &SignatureMPCMessageSummary::new(
-                    epoch,
-                    SignatureMPCMessageProtocols::SignProofs(
-                        state.party_id,
-                        proofs.clone(),
-                        failed_messages_indices.clone(),
-                        involved_parties,
+
+        if state.clone().proofs.unwrap().contains_key(&party_id) {
+            let proofs = generate_proofs(&state, &failed_messages_indices);
+            let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
+            mut_state.insert_proofs(party_id, proofs.clone());
+            let _ = submit
+                .sign_and_submit_message(
+                    &SignatureMPCMessageSummary::new(
+                        epoch,
+                        SignatureMPCMessageProtocols::SignProofs(
+                            proofs.clone(),
+                            failed_messages_indices.clone(),
+                            involved_parties,
+                        ),
+                        session_id,
                     ),
-                    session_id,
-                ),
-                &epoch_store,
-            )
-            .await;
+                    &epoch_store,
+                )
+                .await;
+        }
 
         // TODO: Handle error properly
-        if state.should_identify_malicious_actors() {
+        if mut_state.should_identify_malicious_actors() {
             if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
                 identify_malicious(&state)
             {

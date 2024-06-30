@@ -53,7 +53,7 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::{AuthorityState, EffectsNotifyRead};
 use crate::authority_client::AuthorityAPI;
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
-use crate::signature_mpc::identifiable_abort::spawn_generate_proof;
+use crate::signature_mpc::identifiable_abort::spawn_proof_generation_and_conditional_malicious_identification;
 pub use crate::signature_mpc::metrics::SignatureMPCMetrics;
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
 use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
@@ -385,7 +385,6 @@ impl SignatureMPCAggregator {
                 }
             }
             SignatureMPCMessageProtocols::SignProofs(
-                prover_party_id,
                 new_proofs,
                 message_indices,
                 involved_parties,
@@ -402,24 +401,12 @@ impl SignatureMPCAggregator {
                 });
                 state.failed_messages_indices = Some(message_indices.clone());
                 state.involved_parties = involved_parties.clone();
-                state.insert_proofs(prover_party_id.clone(), new_proofs.clone());
-                if state.should_identify_malicious_actors() {
-                    if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
-                        identify_malicious(&state)
-                    {
-                        println!("Identified malicious parties: {:?}", malicious_parties);
-                    }
-                }
-                if state.clone().proofs.unwrap().contains_key(&party_id) {
-                    return;
-                }
-                spawn_generate_proof(
+                state.insert_proofs(sender_party_id, new_proofs.clone());
+                spawn_proof_generation_and_conditional_malicious_identification(
                     epoch,
                     epoch_store.clone(),
                     party_id,
                     session_id,
-                    session_ref,
-                    sign_session_rounds.clone(),
                     sign_session_states.clone(),
                     submit.clone(),
                     message_indices.clone(),
@@ -641,9 +628,7 @@ impl SignatureMPCAggregator {
                     Ok(result) => Some(result),
                     Err(_) => None,
                 },
-                None => {
-                    None
-                }
+                None => None,
             };
 
             if let Some(m) = m {
@@ -657,7 +642,6 @@ impl SignatureMPCAggregator {
                                 &SignatureMPCMessageSummary::new(
                                     epoch,
                                     SignatureMPCMessageProtocols::SignProofs(
-                                        state.party_id,
                                         proofs.clone(),
                                         message_indices,
                                         involved_parties,

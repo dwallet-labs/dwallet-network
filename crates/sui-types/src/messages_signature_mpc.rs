@@ -65,7 +65,7 @@ pub enum SignatureMPCMessageProtocols {
     PresignFirstRound(SignatureMPCBulletProofAggregatesMessage),
     PresignSecondRound(SignatureMPCBulletProofAggregatesMessage),
     Sign(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
-    SignProofs(PartyID, Vec<(PartialDecryptionProof)>, Vec<usize>, Vec<PartyID>),
+    SignProofs(Vec<(PartialDecryptionProof)>, Vec<usize>, Vec<PartyID>),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -334,7 +334,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(_) => 2,
             SignatureMPCMessageProtocols::PresignSecondRound(_) => 3,
             SignatureMPCMessageProtocols::Sign(_) => 3,
-            SignatureMPCMessageProtocols::SignProofs(_, _, _, _) => 4,
+            SignatureMPCMessageProtocols::SignProofs( _, _, _) => 4,
         }
     }
 
@@ -344,7 +344,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(m) => m.round(),
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
             SignatureMPCMessageProtocols::Sign(_) => 1,
-            SignatureMPCMessageProtocols::SignProofs(_, _, _, _) => 1,
+            SignatureMPCMessageProtocols::SignProofs( _, _, _) => 1,
         }
     }
 }
