@@ -15,11 +15,9 @@ use sui_types::base_types::*;
 /// Configuration settings for an Ethereum light client.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EthClientSettings {
+    pub eth_devnet_network_config_filename: Option<String>,
     pub eth_execution_rpc: Option<String>,
     pub eth_consensus_rpc: Option<String>,
-    pub eth_chain_id: Option<u64>,
-    pub eth_genesis_time: Option<u64>,
-    pub eth_genesis_validators_root: Option<String>,
     pub state_object_id: Option<ObjectID>,
 }
 
@@ -57,6 +55,31 @@ impl SuiClientConfig {
                 self.active_env.as_deref().unwrap_or("None")
             )
         })
+    }
+
+    pub fn get_active_env_mut(&mut self) -> Result<&mut SuiEnv, anyhow::Error> {
+        let active_env = self.active_env.clone(); // Clone active_env to avoid immutable borrow
+        match self.get_env_mut(&active_env) {
+            None => Err(anyhow!(
+            "Environment configuration not found for env [{}]",
+            active_env.as_deref().unwrap_or("None")
+        )),
+            Some(env) => Ok(env),
+        }
+    }
+
+    pub fn get_env_mut(&mut self, alias: &Option<String>) -> Option<&mut SuiEnv> {
+        if let Some(alias) = alias {
+            self.envs.iter_mut().find(|env| &env.alias == alias)
+        } else {
+            self.envs.first_mut()
+        }
+    }
+
+    pub fn update_ethereum_state_object_id(&mut self, object_id: ObjectID) {
+        if let Some(env) = self.get_active_env_mut().ok() {
+            env.eth_client_settings.as_mut().expect("Eth client metadata").state_object_id = Some(object_id);
+        }
     }
 
     pub fn add_env(&mut self, env: SuiEnv) {
