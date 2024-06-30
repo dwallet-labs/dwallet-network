@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient, SuiObjectResponse } from '@mysten/sui.js/client';
+import { DWalletClient, SuiObjectResponse } from '@dwallet-network/dwallet.js/client';
 
 // get NFT's owner from RPC.
-export const getOwner = async (client: SuiClient, nftId: string): Promise<string | null> => {
+export const getOwner = async (client: DWalletClient, nftId: string): Promise<string | null> => {
 	const ownerResponse = await client.getObject({
 		id: nftId,
 		options: { showOwner: true },
@@ -18,7 +18,7 @@ export const getOwner = async (client: SuiClient, nftId: string): Promise<string
 };
 
 // get avatar NFT Object from RPC.
-export const getAvatar = async (client: SuiClient, avatar: string): Promise<SuiObjectResponse> => {
+export const getAvatar = async (client: DWalletClient, avatar: string): Promise<SuiObjectResponse> => {
 	return await client.getObject({
 		id: avatar,
 		options: {

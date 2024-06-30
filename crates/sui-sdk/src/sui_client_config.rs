@@ -11,7 +11,7 @@ use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, 
 use sui_config::Config;
 use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
-use sui_types::messages_signature_mpc::DKGSignatureMPCCentralizedOutput;
+use signature_mpc::twopc_mpc_protocols::{DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput};
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -162,7 +162,7 @@ impl Display for SuiEnv {
 pub struct DWalletSecretShare {
     pub alias: String,
     //pub public_key: String,
-    pub dkg_output: DKGSignatureMPCCentralizedOutput,
+    pub dkg_output: DKGCentralizedPartyOutput,
     pub dwallet_id: ObjectID,
     pub dwallet_cap_id: ObjectID,
 }

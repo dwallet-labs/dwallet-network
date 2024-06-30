@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient } from '@mysten/sui.js/client';
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
 
 import { DataFields, NameObject, NetworkType, SuiNSContract } from './types/objects';
 import { DEVNET_JSON_FILE, GCS_URL, TESTNET_JSON_FILE } from './utils/constants';
@@ -11,12 +11,12 @@ import { getAvatar, getOwner } from './utils/queries';
 export const AVATAR_NOT_OWNED = 'AVATAR_NOT_OWNED';
 
 class SuinsClient {
-	private suiClient: SuiClient;
+	private suiClient: DWalletClient;
 	contractObjects: SuiNSContract | undefined;
 	networkType: NetworkType | undefined;
 
 	constructor(
-		suiClient: SuiClient,
+		suiClient: DWalletClient,
 		options?: {
 			contractObjects?: SuiNSContract;
 			networkType?: NetworkType;

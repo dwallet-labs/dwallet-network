@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type SerializedUIAccount } from '_src/background/accounts/Account';
-import { type SuiClient } from '@mysten/sui.js/client';
-import type { SerializedSignature } from '@mysten/sui.js/cryptography';
+import { type DWalletClient } from '@dwallet-network/dwallet.js/client';
+import type { SerializedSignature } from '@dwallet-network/dwallet.js/cryptography';
 
 import type { BackgroundClient } from '.';
 import { WalletSigner } from '../WalletSigner';
@@ -12,7 +12,7 @@ export class BackgroundServiceSigner extends WalletSigner {
 	readonly #account: SerializedUIAccount;
 	readonly #backgroundClient: BackgroundClient;
 
-	constructor(account: SerializedUIAccount, backgroundClient: BackgroundClient, client: SuiClient) {
+	constructor(account: SerializedUIAccount, backgroundClient: BackgroundClient, client: DWalletClient) {
 		super(client);
 		this.#account = account;
 		this.#backgroundClient = backgroundClient;
@@ -26,7 +26,7 @@ export class BackgroundServiceSigner extends WalletSigner {
 		return this.#backgroundClient.signData(this.#account.id, data);
 	}
 
-	connect(client: SuiClient) {
+	connect(client: DWalletClient) {
 		return new BackgroundServiceSigner(this.#account, this.#backgroundClient, client);
 	}
 }

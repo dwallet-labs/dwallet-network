@@ -4,7 +4,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { TransactionBlock } from '../../src/builder';
-import { OwnedObjectRef, SuiClient } from '../../src/client';
+import { OwnedObjectRef, DWalletClient } from '../../src/client';
 import type { Keypair } from '../../src/cryptography';
 import { publishPackage, setup, TestToolbox } from './utils/setup';
 
@@ -130,7 +130,7 @@ describe('Transfer to Object', () => {
 	});
 });
 
-async function validateTransaction(client: SuiClient, signer: Keypair, tx: TransactionBlock) {
+async function validateTransaction(client: DWalletClient, signer: Keypair, tx: TransactionBlock) {
 	tx.setSenderIfNotSet(signer.getPublicKey().toSuiAddress());
 	const localDigest = await tx.getDigest({ client });
 	const result = await client.signAndExecuteTransactionBlock({

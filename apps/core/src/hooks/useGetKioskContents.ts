@@ -3,7 +3,7 @@
 
 import { useSuiClientContext } from '@mysten/dapp-kit';
 import { KIOSK_ITEM, KioskClient, KioskItem, KioskOwnerCap } from '@mysten/kiosk';
-import { SuiClient } from '@mysten/sui.js/client';
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { useQuery } from '@tanstack/react-query';
 
 import { getKioskIdFromOwnerCap, ORIGINBYTE_KIOSK_OWNER_TOKEN } from '../utils/kiosk';
@@ -22,7 +22,7 @@ export type Kiosk = {
 	ownerCap?: KioskOwnerCap;
 };
 
-async function getOriginByteKioskContents(address: string, client: SuiClient) {
+async function getOriginByteKioskContents(address: string, client: DWalletClient) {
 	const data = await client.getOwnedObjects({
 		owner: address,
 		filter: {

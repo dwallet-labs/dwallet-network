@@ -5,13 +5,13 @@ import { execSync } from 'child_process';
 import {
 	DevInspectResults,
 	getFullnodeUrl,
-	SuiClient,
+	DWalletClient,
 	SuiObjectChangePublished,
 	SuiTransactionBlockResponse,
-} from '@mysten/sui.js/client';
-import { FaucetRateLimitError, getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
-import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+} from '@dwallet-network/dwallet.js/client';
+import { FaucetRateLimitError, getFaucetHost, requestSuiFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 import tmp from 'tmp';
 import { retry } from 'ts-retry-promise';
 import { expect } from 'vitest';
@@ -27,9 +27,9 @@ const SUI_BIN = import.meta.env.VITE_SUI_BIN ?? 'cargo run --bin sui';
 
 export class TestToolbox {
 	keypair: Ed25519Keypair;
-	client: SuiClient;
+	client: DWalletClient;
 
-	constructor(keypair: Ed25519Keypair, client: SuiClient) {
+	constructor(keypair: Ed25519Keypair, client: DWalletClient) {
 		this.keypair = keypair;
 		this.client = client;
 	}
@@ -43,13 +43,13 @@ export class TestToolbox {
 	}
 }
 
-export function getClient(): SuiClient {
-	return new SuiClient({
+export function getClient(): DWalletClient {
+	return new DWalletClient({
 		url: DEFAULT_FULLNODE_URL,
 	});
 }
 
-// TODO: expose these testing utils from @mysten/sui.js
+// TODO: expose these testing utils from @dwallet-network/dwallet.js
 export async function setupSuiClient() {
 	const keypair = Ed25519Keypair.generate();
 	const address = keypair.getPublicKey().toSuiAddress();
@@ -65,7 +65,7 @@ export async function setupSuiClient() {
 	return new TestToolbox(keypair, client);
 }
 
-// TODO: expose these testing utils from @mysten/sui.js
+// TODO: expose these testing utils from @dwallet-network/dwallet.js
 export async function publishPackage(packagePath: string, toolbox?: TestToolbox) {
 	// TODO: We create a unique publish address per publish, but we really could share one for all publishes.
 	if (!toolbox) {

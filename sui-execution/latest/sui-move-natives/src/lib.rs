@@ -33,7 +33,7 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
-use crate::crypto::{twopc_mpc, zklogin};
+use crate::crypto::{twopc_mpc, zklogin, sui_state_proof};
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
@@ -57,6 +57,8 @@ use sui_protocol_config::ProtocolConfig;
 use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
 use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
+use crate::crypto::sui_state_proof::SuiStateProofCostParams;
+
 
 mod address;
 mod crypto;
@@ -151,6 +153,9 @@ pub struct NativesCostTable {
 
     // twopc mpc
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
+
+    // sui state proof
+    pub sui_state_proof_cost_params: SuiStateProofCostParams,
 }
 
 impl NativesCostTable {
@@ -507,6 +512,14 @@ impl NativesCostTable {
                 dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: protocol_config
                     .dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base()
                     .into(),
+                sign_verify_encrypted_signature_parts_prehash_cost_base: protocol_config
+                    .sign_verify_encrypted_signature_parts_prehash_cost_base()
+                    .into(),
+            },
+            sui_state_proof_cost_params: SuiStateProofCostParams {
+                sui_state_proof_verify_committee_cost_base: protocol_config.sui_state_proof_verify_committee_cost_base().into(),
+                sui_state_proof_verify_link_cap_base: protocol_config.sui_state_proof_verify_link_cap_base().into(),
+                sui_state_proof_verify_transaction_base: protocol_config.sui_state_proof_verify_transaction_base().into(),
             },
         }
     }
@@ -737,7 +750,27 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dwallet_2pc_mpc_ecdsa_k1",
             "dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share",
             make_native!(twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share),
-    )];
+        ),
+        (
+            "sui_state_proof",
+            "sui_state_proof_verify_committee",
+            make_native!(sui_state_proof::sui_state_proof_verify_committee),
+        ),
+        (
+            "sui_state_proof",
+            "sui_state_proof_verify_link_cap",
+            make_native!(sui_state_proof::sui_state_proof_verify_link_cap),
+        ),
+        (
+            "sui_state_proof",
+            "sui_state_proof_verify_transaction",
+            make_native!(sui_state_proof::sui_state_proof_verify_transaction),
+        ),
+        (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "sign_verify_encrypted_signature_parts_prehash",
+            make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
+        )];
     sui_system_natives
         .iter()
         .cloned()

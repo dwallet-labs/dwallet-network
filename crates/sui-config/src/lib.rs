@@ -29,7 +29,6 @@ pub const SUI_KEYSTORE_FILENAME: &str = "dwallet.keystore";
 pub const SUI_KEYSTORE_ALIASES_FILENAME: &str = "dwallet.aliases";
 pub const SUI_BENCHMARK_GENESIS_GAS_KEYSTORE_FILENAME: &str = "benchmark.keystore";
 pub const SUI_GENESIS_FILENAME: &str = "genesis.blob";
-pub const SUI_DEV_NET_URL: &str = "https://fullnode.alpha.testnet.dwallet.cloud:443";
 
 pub const AUTHORITIES_DB_NAME: &str = "authorities_db";
 pub const CONSENSUS_DB_NAME: &str = "consensus_db";

@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 use crate::signature_mpc::aggregate::{
     BulletProofAggregateRound, BulletProofAggregateRoundCompletion, BulletProofAggregateState,
 };
@@ -9,21 +10,22 @@ use rand::rngs::OsRng;
 use std::collections::{HashMap, HashSet};
 use std::mem;
 use sui_types::base_types::{EpochId, ObjectRef};
-use sui_types::messages_signature_mpc::{initiate_decentralized_party_presign, new_decentralized_party_presign_batch, DKGSignatureMPCDecentralizedOutput, EncryptedDecentralizedPartySecretKeyShareValue, EncryptionPublicParameters, EnhancedLanguageStatementAccessors, PartyID, PresignSignatureMPCCentralizedSignatureNonceSharesCommitmentsAndBatchedProof, PresignSignatureMPCDecentralizedEncryptedMaskedNoncesRoundParty, PresignSignatureMPCDecentralizedPartyOutput, PresignSignatureMPCDecentralizedPartyPresign, PresignSignatureMPCEncryptedNonceShareAndPublicShare, PresignSignatureMPCMasksAndEncryptedMaskedKeyShare, SignatureMPCBulletProofAggregatesMessage, SignatureMPCSessionID, TwopcMPCResult, EncDHProofAggregationOutput, EncDLProofAggregationOutput, IndividualEncryptedMaskedNonceShares, IndividualEncryptedNonceSharesAndPublicShares};
+use signature_mpc::twopc_mpc_protocols::{initiate_decentralized_party_presign, new_decentralized_party_presign_batch, Result, DKGDecentralizedPartyOutput, EncryptedDecentralizedPartySecretKeyShareValue, EncryptionPublicParameters, EnhancedLanguageStatementAccessors, PartyID, SignatureNonceSharesCommitmentsAndBatchedProof, EncryptedMaskedNoncesRoundParty, PresignDecentralizedPartyOutput, DecentralizedPartyPresign, EncryptedNonceShareAndPublicShare, EncryptedMaskAndMaskedNonceShare, EncDHProofAggregationOutput, EncDLProofAggregationOutput, DecryptionPublicParameters, ProtocolContext, Value};
+use sui_types::messages_signature_mpc::SignatureMPCBulletProofAggregatesMessage;
 
 #[derive(Default)]
 pub(crate) enum PresignRound {
     FirstRound {
         bullet_proof_aggregates_round: BulletProofAggregateRound,
         decentralized_party_encrypted_masked_nonce_shares_round_party:
-            PresignSignatureMPCDecentralizedEncryptedMaskedNoncesRoundParty,
+            EncryptedMaskedNoncesRoundParty<ProtocolContext>,
     },
     SecondRound {
         bullet_proof_aggregates_round: BulletProofAggregateRound,
         masks_and_encrypted_masked_key_shares:
-            Vec<PresignSignatureMPCMasksAndEncryptedMaskedKeyShare>,
+            Vec<EncryptedMaskAndMaskedNonceShare>,
         encrypted_nonce_shares_and_public_shares:
-            Vec<PresignSignatureMPCEncryptedNonceShareAndPublicShare>,
+            Vec<EncryptedNonceShareAndPublicShare>,
     },
     #[default]
     None,
@@ -31,21 +33,21 @@ pub(crate) enum PresignRound {
 
 impl PresignRound {
     pub(crate) fn new(
-        tiresias_public_parameters: EncryptionPublicParameters,
+        tiresias_public_parameters: DecryptionPublicParameters,
         epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,
         session_id: SignatureMPCSessionID,
-        dkg_output: DKGSignatureMPCDecentralizedOutput,
-        commitments_and_proof_to_centralized_party_nonce_shares: PresignSignatureMPCCentralizedSignatureNonceSharesCommitmentsAndBatchedProof,
-    ) -> TwopcMPCResult<(Self, SignatureMPCBulletProofAggregatesMessage)> {
+        dkg_output: DKGDecentralizedPartyOutput,
+        commitments_and_proof_to_centralized_party_nonce_shares: SignatureNonceSharesCommitmentsAndBatchedProof<ProtocolContext>,
+    ) -> Result<(Self, SignatureMPCBulletProofAggregatesMessage)> {
         let decentralized_party_encrypted_masked_key_share_and_public_nonce_shares_party =
             initiate_decentralized_party_presign(
                 tiresias_public_parameters,
-                epoch,
+                //epoch,
                 party_id,
                 parties.clone(),
-                session_id,
+                //session_id,
                 dkg_output.clone(),
             )?;
 
@@ -77,7 +79,7 @@ impl PresignRound {
     pub(crate) fn complete_round(
         &mut self,
         state: PresignState,
-    ) -> TwopcMPCResult<PresignRoundCompletion> {
+    ) -> Result<PresignRoundCompletion> {
         let round = mem::take(self);
         match round {
             PresignRound::FirstRound {
@@ -109,7 +111,7 @@ impl PresignRound {
                             encrypted_nonce_shares_and_public_shares,
                         ) = public_nonce_shares.first().unwrap().clone();
 
-                        let output = PresignSignatureMPCDecentralizedPartyOutput::new(
+                        let output = PresignDecentralizedPartyOutput::new(
                             masks_and_encrypted_masked_key_share.clone(),
                             masks_and_encrypted_masked_key_share_proof,
                             encrypted_nonce_shares_and_public_shares.clone(),
@@ -118,7 +120,7 @@ impl PresignRound {
                         .unwrap();
 
                         let masks_and_encrypted_masked_key_shares: Vec<
-                            PresignSignatureMPCMasksAndEncryptedMaskedKeyShare,
+                            EncryptedMaskAndMaskedNonceShare,
                         > = masks_and_encrypted_masked_key_share
                             .into_iter()
                             .map(|mask_and_encrypted_masked_key_share| {
@@ -129,7 +131,7 @@ impl PresignRound {
                             .collect();
 
                         let encrypted_nonce_shares_and_public_shares: Vec<
-                            PresignSignatureMPCEncryptedNonceShareAndPublicShare,
+                            EncryptedNonceShareAndPublicShare,
                         > = encrypted_nonce_shares_and_public_shares
                             .into_iter()
                             .map(|encrypted_nonce_share_and_public_share| {
@@ -226,12 +228,12 @@ pub(crate) enum PresignRoundCompletion {
     Message(SignatureMPCBulletProofAggregatesMessage),
     FirstRoundOutput(
         (
-            PresignSignatureMPCDecentralizedPartyOutput,
+            PresignDecentralizedPartyOutput<ProtocolContext>,
             SignatureMPCBulletProofAggregatesMessage,
-            IndividualEncryptedNonceSharesAndPublicShares
+            HashMap<PartyID, Vec<Value<EncryptedNonceShareAndPublicShare>>>
         ),
     ),
-    SecondRoundOutput(Vec<PresignSignatureMPCDecentralizedPartyPresign>),
+    SecondRoundOutput(Vec<DecentralizedPartyPresign>),
     None,
 }
 
@@ -241,9 +243,9 @@ pub(crate) struct PresignState {
     parties: HashSet<PartyID>,
 
     commitments_and_proof_to_centralized_party_nonce_shares:
-        Option<PresignSignatureMPCCentralizedSignatureNonceSharesCommitmentsAndBatchedProof>,
+        Option<SignatureNonceSharesCommitmentsAndBatchedProof<ProtocolContext>>,
 
-    individual_encrypted_nonce_shares_and_public_shares: Option<IndividualEncryptedNonceSharesAndPublicShares>,
+    individual_encrypted_nonce_shares_and_public_shares: Option< HashMap<PartyID, Vec<Value<EncryptedNonceShareAndPublicShare>>>>,
 
     first_round_bullet_proof_aggregates_state: BulletProofAggregateState,
     second_round_bullet_proof_aggregates_state: BulletProofAggregateState,
@@ -274,7 +276,7 @@ impl PresignState {
 
     pub(crate) fn set(
         &mut self,
-        commitments_and_proof_to_centralized_party_nonce_shares: PresignSignatureMPCCentralizedSignatureNonceSharesCommitmentsAndBatchedProof,
+        commitments_and_proof_to_centralized_party_nonce_shares: SignatureNonceSharesCommitmentsAndBatchedProof<ProtocolContext>,
     ) {
         self.commitments_and_proof_to_centralized_party_nonce_shares =
             Some(commitments_and_proof_to_centralized_party_nonce_shares);
@@ -282,7 +284,7 @@ impl PresignState {
 
     pub(crate) fn set_individual_encrypted_nonce_shares_and_public_shares(
         &mut self,
-        individual_encrypted_nonce_shares_and_public_shares: IndividualEncryptedNonceSharesAndPublicShares,
+        individual_encrypted_nonce_shares_and_public_shares:  HashMap<PartyID, Vec<Value<EncryptedNonceShareAndPublicShare>>>,
     ) {
         self.individual_encrypted_nonce_shares_and_public_shares =
             Some(individual_encrypted_nonce_shares_and_public_shares);
@@ -292,7 +294,7 @@ impl PresignState {
         &mut self,
         party_id: PartyID,
         message: SignatureMPCBulletProofAggregatesMessage,
-    ) -> TwopcMPCResult<()> {
+    ) -> Result<()> {
         self.first_round_bullet_proof_aggregates_state
             .insert(party_id, message)
     }
@@ -301,7 +303,7 @@ impl PresignState {
         &mut self,
         party_id: PartyID,
         message: SignatureMPCBulletProofAggregatesMessage,
-    ) -> TwopcMPCResult<()> {
+    ) -> Result<()> {
         self.second_round_bullet_proof_aggregates_state
             .insert(party_id, message)
     }

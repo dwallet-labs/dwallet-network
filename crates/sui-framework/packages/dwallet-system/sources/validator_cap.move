@@ -9,6 +9,7 @@ module dwallet_system::validator_cap {
     friend dwallet_system::validator;
     friend dwallet_system::validator_set;
 
+
     #[test_only]
     friend dwallet_system::dwallet_system_tests;
     #[test_only]
@@ -29,7 +30,7 @@ module dwallet_system::validator_cap {
         id: UID,
         authorizer_validator_address: address,
     }
-
+    
     /// Privileged operations require `ValidatorOperationCap` for permission check.
     /// This is only constructed after successful verification.
     struct ValidatorOperationCap has drop {
