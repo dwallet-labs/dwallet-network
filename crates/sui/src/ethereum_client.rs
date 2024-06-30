@@ -1,34 +1,34 @@
-use anyhow::anyhow;
-use anyhow::Error;
-use clap::Subcommand;
-use move_core_types::ident_str;
-use move_core_types::identifier::IdentStr;
-use serde_json::{Number, Value};
+//! Ethereum Client Commands Module
+//!
+//! This module provides commands and functions to interact with an Ethereum-based decentralized wallet
+//! (dWallet) in a Sui blockchain environment.
+//! The primary functionalities include verifying Ethereum transactions,
+//! connecting dWallets to Ethereum smart contracts, and initializing Ethereum state.
 
+use anyhow::{anyhow, Error};
+use clap::Subcommand;
+use serde_json::{Number, Value};
+use helios::dwallet::eth_state::EthState;
+use helios::dwallet::light_client::{EthLightClient, EthLightClientConfig, ProofRequestParameters};
+use helios::prelude::networks::Network;
+use helios::types::Address;
+use serde::Serialize;
 use shared_crypto::intent::Intent;
 use sui_json::SuiJsonValue;
-use sui_json_rpc_types::{ObjectChange, SuiExecutionStatus, SuiTransactionBlockEffectsAPI}; // todo!(ide keeps deleting SuiTransactionBlockEffectsAPI)
+use sui_json_rpc_types::{ObjectChange, SuiData, SuiExecutionStatus, SuiObjectDataOptions, SuiRawData, SuiTransactionBlockEffectsAPI, SuiTransactionBlockResponse}; // todo!(ide keeps deleting SuiTransactionBlockEffectsAPI)
 use sui_keys::keystore::AccountKeystore;
+use sui_sdk::sui_client_config::SuiEnv;
 use sui_sdk::wallet_context::WalletContext;
 
 use sui_types::base_types::ObjectID;
+use sui_types::eth_dwallet::{APPROVE_MESSAGE_FUNC_NAME, CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETH_DWALLET_MODULE_NAME, EthDWalletCap, ETHEREUM_STATE_MODULE_NAME, EthStateObject, INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME, LatestEthStateObject, VERIFY_ETH_STATE_FUNC_NAME};
+use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::SUI_SYSTEM_PACKAGE_ID;
-use sui_types::transaction::{ObjectArg, SenderSignedData, Transaction, TransactionDataAPI};
+use sui_types::transaction::{ObjectArg, SenderSignedData, SharedInputObject, Transaction, TransactionDataAPI};
 
 use crate::client_commands::{construct_move_call_transaction, SuiClientCommandResult};
 use crate::serialize_or_execute;
-
-pub const ETH_DWALLET_MODULE_NAME: &IdentStr = ident_str!("eth_dwallet");
-pub const CREATE_ETH_DWALLET_CAP_FUNC_NAME: &IdentStr = ident_str!("create_eth_dwallet_cap");
-pub const INIT_STATE_FUNC_NAME: &IdentStr = ident_str!("init_state");
-pub const ETHEREUM_STATE_MODULE_NAME: &IdentStr = ident_str!("ethereum_state");
-pub const LATEST_ETH_STATE_STRUCT_NAME: &IdentStr = ident_str!("LatestEthereumState");
-pub const VERIFY_ETH_STATE_FUNC_NAME: &IdentStr = ident_str!("verify_new_eth_state");
-pub const APPROVE_MESSAGE_FUNC_NAME: &IdentStr = ident_str!("approve_message");
-
-
-
 
 #[derive(Subcommand)]
 pub enum EthClientCommands {
@@ -110,6 +110,7 @@ pub enum EthClientCommands {
     },
 }
 
+/// Connects a dWallet to be controlled by an Ethereum smart contract.
 pub(crate) async fn create_eth_dwallet(
     context: &mut WalletContext,
     dwallet_cap_id: ObjectID,
@@ -155,8 +156,12 @@ pub(crate) async fn create_eth_dwallet(
     ))
 }
 
-//todo(yuval): in future, we should load also the sync committee from binary data file.
-/// Updates the current Ethereum state and creates a LatestEthState object
+/// Initializes a shared LatestEthereumState object in the dWallet network
+/// with the given checkpoint.
+/// This function should only be called once to initialize the Ethereum state.
+/// After the state is initialized, the Ethereum state object ID is saved in the configuration,
+/// and the state is updated whenever a new state is successfully verified.
+// todo(yuval): in future, we should load also the sync committee from binary data file.
 pub(crate) async fn init_ethereum_state(
     checkpoint: String,
     context: &mut WalletContext,
@@ -200,7 +205,7 @@ pub(crate) async fn init_ethereum_state(
             ..
         } = oc {
             if object_type.module == ETHEREUM_STATE_MODULE_NAME.into() && object_type.name == LATEST_ETH_STATE_STRUCT_NAME.into() {
-                return Some(object_id)
+                return Some(object_id);
             }
         }
         None
@@ -212,6 +217,42 @@ pub(crate) async fn init_ethereum_state(
     Ok(SuiClientCommandResult::Call(state))
 }
 
+/// Approves an Ethereum transaction for a given dWallet.
+///
+/// Interacts with the Ethereum light client to verify and approve a transaction message
+/// using an Ethereum smart contract linked to a dWallet within the dWallet blockchain context.
+/// The verification of the state & message is done offline, inside the dWallet module.
+/// # Logic
+/// 1. **Retrieve Configuration**: It starts by retrieving the Ethereum state object ID from
+///      the active environment.
+/// 2. **Fetch Ethereum Objects**: It retrieves and deserializes the `EthDWalletCap`,
+///      `LatestEthStateObject`, and `EthStateObject` to collect the latest Ethereum state data.
+/// 3. **Initialize Light Client**: Initializes the Ethereum light client with the deserialized
+///      Ethereum state.
+/// 4. **Prepare Proof Parameters**: Constructs proof request parameters using the message,
+///      dWallet ID, and data slot obtained from the `EthDWalletCap`.
+/// 5. **Fetch Updates and Proofs**: Retrieves the necessary updates and cryptographic proofs from
+///      the Ethereum light client.
+/// 6. **Build Transaction**: Uses the Sui programmable transaction builder to serialize transaction
+///      parameters, including the Ethereum state, updates, and shared state object,
+///      and prepares the transaction to call the `VERIFY_ETH_STATE_FUNC_NAME` function in the
+///      Ethereum state module.
+/// 7. **Send Transaction**: Constructs the transaction data, including the proof and dWallet ID,
+///      and executes or serializes it based on the provided flags.
+/// # Arguments
+/// * `eth_dwallet_cap_id` - The `ObjectID` of the Ethereum dWallet capability,
+///     representing the link between the dWallet and Ethereum.
+/// * `message` - The Ethereum transaction message to be approved.
+/// * `dwallet_id` - The `ObjectID` of the dWallet to which the transaction belongs.
+/// # Returns
+/// * `Result<SuiClientCommandResult, Error>` -
+/// Result containing either the transaction execution result or an error.
+/// # Errors
+/// The function returns an error if any of the following occur:
+/// - Missing Ethereum state configuration.
+/// - Errors during object deserialization.
+/// - Failure in fetching updates or proofs from the Ethereum light client.
+/// - Transaction construction or execution failures.
 pub(crate) async fn eth_approve_message(
     context: &mut WalletContext,
     eth_dwallet_cap_id: ObjectID,
@@ -222,53 +263,69 @@ pub(crate) async fn eth_approve_message(
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
 ) -> Result<SuiClientCommandResult, Error> {
-    let latest_state_object_id = context
+    let active_env = context
         .config
         .get_active_env()?
-        .eth_client_settings.as_ref().expect("Eth client metadata")
-        .state_object_id
-        .clone()
-        .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
+        .clone();
+
+    let latest_state_object_id = match active_env
+        .eth_client_settings
+    {
+        Some(eth_client_settings) => eth_client_settings
+            .state_object_id
+            .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?,
+        None => return Err(anyhow!("ETH State object ID configuration not found"))
+    };
 
     let eth_dwallet_cap_data_bcs = get_object_bcs_by_id(context, eth_dwallet_cap_id).await?;
-    let eth_dwallet_cap_obj: EthDWalletCap = eth_dwallet_cap_data_bcs.try_into()?;
-
+    let eth_dwallet_cap_obj: EthDWalletCap = eth_dwallet_cap_data_bcs
+        .try_as_move()
+        .ok_or_else(|| anyhow!("Object is not a Move Object"))?
+        .deserialize()
+        .map_err(|e| anyhow!("Error deserializing object: {e}"))?;
 
     let latest_eth_state_data_bcs = get_object_bcs_by_id(context, latest_state_object_id).await?;
-    let latest_eth_state_obj: LatestEthStateObject = latest_eth_state_data_bcs.try_into()?;
-    let latest_eth_state_shared_object =
-        get_shared_object_input_by_id(context, latest_state_object_id).await?;
+    let latest_eth_state_obj: LatestEthStateObject = latest_eth_state_data_bcs
+        .try_as_move()
+        .ok_or_else(|| anyhow!("Object is not a Move Object"))?
+        .deserialize()
+        .map_err(|e| anyhow!("Error deserializing object: {e}"))?;
 
     let eth_state_object_id = latest_eth_state_obj.eth_state_id;
     let eth_state_data_bcs = get_object_bcs_by_id(context, eth_state_object_id).await?;
-    let eth_state_obj: EthStateObject = eth_state_data_bcs.try_into()?;
+    let eth_state_obj: EthStateObject = eth_state_data_bcs
+        .try_as_move()
+        .ok_or_else(|| anyhow!("Object is not a Move Object"))?
+        .deserialize()
+        .map_err(|e| anyhow!("Error deserializing object: {e}"))?;
 
-    // Desrialize Eth State object
+    let latest_eth_state_shared_object =
+        get_shared_object_input_by_id(context, latest_state_object_id).await?;
+
     let mut eth_state = bcs::from_bytes::<EthState>(&eth_state_obj.data)
         .map_err(|e| anyhow!("error parsing eth state data: {e}"))?;
 
     let (data_slot, contract_addr) = get_data_from_eth_dwallet_cap(eth_dwallet_cap_obj)?;
 
-    let mut eth_lc_config = get_eth_config(context)?;
-    eth_lc_config.checkpoint = eth_state.last_checkpoint.clone();
+    let eth_lc_config = get_eth_config(context)?;
 
-    let proof_params = ProofParameters {
+    // We need to set the network in the eth_state object for the state verification process.
+    let eth_state = eth_state
+        .set_network(eth_lc_config.network.clone());
+
+    let mut eth_lc = EthLightClient::init_new_light_client(eth_lc_config.clone(), eth_state.clone()).await?;
+
+    let proof_params = ProofRequestParameters {
         message: message.clone(),
         dwallet_id: dwallet_id.as_slice().to_vec(),
         data_slot,
     };
 
-    let mut eth_lc = init_light_client(eth_lc_config.clone()).await?;
-    let mut eth_state = eth_state
-        .set_rpc(eth_lc_config.consensus_rpc.clone())
-        .set_network(eth_lc_config.network.clone());
-
-    // Fetch updates & proof from the consensus RPC
-    let updates = fetch_consensus_updates(&mut eth_state)
+    let updates = eth_lc.get_updates()
         .await
-        .map_err(|e| anyhow!("Could not fetch updates."))?;
+        .map_err(|e| anyhow!("Could not fetch updates: {e}"))?;
 
-    let proof = fetch_proofs(&mut eth_lc, &eth_state, &contract_addr, proof_params)
+    let proof = eth_lc.get_proofs(&contract_addr, proof_params)
         .await
         .map_err(|e| anyhow!("Could not fetch proof: {e}"))?;
 
@@ -305,8 +362,6 @@ pub(crate) async fn eth_approve_message(
 
     let proof_sui_json =
         serialize_object(&proof).map_err(|e| anyhow!("Could not serialize proof. {e}"))?;
-    let dwallet_id_json = serialize_object(&dwallet_id.as_slice().to_vec())
-        .map_err(|e| anyhow!("Could not serialize dwallet_id. {e}"))?;
 
     let client = context.get_client().await?;
 
@@ -320,7 +375,7 @@ pub(crate) async fn eth_approve_message(
             Vec::new(),
             Vec::from([
                 SuiJsonValue::from_object_id(eth_dwallet_cap_id),
-                dwallet_id_json,
+                SuiJsonValue::from_object_id(dwallet_id),
                 proof_sui_json,
             ]),
         )
@@ -341,3 +396,124 @@ pub(crate) async fn eth_approve_message(
     Ok(session_response)
 }
 
+fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, Error>
+where
+    T: ?Sized + Serialize,
+{
+    let object_bytes = bcs::to_bytes(&object)?;
+    let object_json = object_bytes
+        .iter()
+        .map(|v| Value::Number(Number::from(*v)))
+        .collect();
+    Ok(SuiJsonValue::new(Value::Array(object_json))?)
+}
+
+async fn get_object_bcs_by_id(
+    context: &mut WalletContext,
+    object_id: ObjectID,
+) -> Result<SuiRawData, Error> {
+    let object_resp = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(
+            object_id,
+            SuiObjectDataOptions::default().with_bcs().with_owner(),
+        )
+        .await?;
+
+    match object_resp.data {
+        Some(data) => Ok(
+            data.bcs.ok_or_else(|| anyhow!("missing object data"))?,
+        ),
+        None => Err(anyhow!("Could not find object with ID: {:?}", object_id)),
+    }
+}
+
+async fn get_shared_object_input_by_id(
+    context: &mut WalletContext,
+    object_id: ObjectID,
+) -> Result<SharedInputObject, Error> {
+    let object_resp = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(object_id, SuiObjectDataOptions::default().with_owner())
+        .await?;
+
+    match object_resp.data {
+        Some(_) => {
+            let owner = object_resp
+                .owner()
+                .ok_or_else(|| anyhow!("missing object owner"))?;
+            let initial_shared_version = match owner {
+                Owner::Shared {
+                    initial_shared_version,
+                } => initial_shared_version,
+                _ => return Err(anyhow!("Object is not shared")),
+            };
+            Ok(SharedInputObject {
+                id: object_id,
+                initial_shared_version,
+                mutable: true,
+            })
+        }
+        None => Err(anyhow!("Could not find object with ID: {:?}", object_id)),
+    }
+}
+
+fn get_data_from_eth_dwallet_cap(
+    eth_dwallet_cap_obj: EthDWalletCap,
+) -> Result<(u64, Address), Error> {
+    let data_slot = eth_dwallet_cap_obj.eth_smart_contract_slot;
+    let contract_addr: String = eth_dwallet_cap_obj.eth_smart_contract_addr;
+    let contract_addr = contract_addr.clone().parse::<Address>()?;
+    Ok((data_slot, contract_addr))
+}
+
+fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, Error> {
+    let mut eth_lc_config = EthLightClientConfig::default();
+    let sui_env_config = context.config.get_active_env()?;
+
+    let eth_client_settings = sui_env_config.eth_client_settings.clone().ok_or_else(|| {
+        anyhow!("ETH client settings configuration not found")
+    })?;
+
+    let eth_execution_rpc = eth_client_settings
+        .eth_execution_rpc
+        .clone()
+        .ok_or_else(|| anyhow!("ETH execution RPC configuration not found"))?;
+    let eth_consensus_rpc = eth_client_settings
+        .eth_consensus_rpc
+        .clone()
+        .ok_or_else(|| anyhow!("ETH consensus RPC configuration not found"))?;
+
+    eth_lc_config.network = get_network_by_sui_env(sui_env_config)?;
+    eth_lc_config.execution_rpc = eth_execution_rpc;
+    eth_lc_config.consensus_rpc = eth_consensus_rpc;
+
+    Ok(eth_lc_config)
+}
+
+fn get_network_by_sui_env(sui_env_config: &SuiEnv) -> Result<Network, Error> {
+    let network = match sui_env_config.alias.as_str() {
+        "mainnet" => Network::MAINNET,
+        "testnet" => Network::HOLESKY,
+        "localnet" => get_eth_devnet_network_config(sui_env_config)?,
+        _ => Network::MAINNET,
+    };
+    Ok(network)
+}
+
+fn get_eth_devnet_network_config(sui_env_config: &SuiEnv) -> Result<Network, Error> {
+    let eth_client_settings = sui_env_config.eth_client_settings.clone().ok_or_else(|| {
+        anyhow!("ETH client settings configuration not found")
+    })?;
+
+    let path_to_config = eth_client_settings
+        .eth_devnet_network_config_filename
+        .clone()
+        .ok_or_else(|| anyhow!("eth_devnet_network_config_filename not found in sui configuration."))?;
+
+    Ok(Network::DEVNET(path_to_config))
+}

@@ -80,6 +80,7 @@ pub mod zk_login_util;
 #[cfg(any(test, feature = "test-utils"))]
 #[path = "./unit_tests/utils.rs"]
 pub mod utils;
+pub mod eth_dwallet;
 
 /// 0x1-- account address where Move stdlib modules are stored
 /// Same as the ObjectID
