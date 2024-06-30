@@ -15,6 +15,7 @@ use sui_types::base_types::*;
 /// Configuration settings for an Ethereum light client.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EthClientSettings {
+    pub eth_devnet_network_config_filename: Option<String>,
     pub eth_execution_rpc: Option<String>,
     pub eth_consensus_rpc: Option<String>,
     pub eth_chain_id: Option<u64>,
