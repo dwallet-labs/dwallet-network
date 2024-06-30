@@ -21,6 +21,7 @@ tokio.workspace = true
 bcs.workspace = true
 thiserror.workspace = true
 reqwest.workspace = true
+time.workspace = true
 
 sui-json-rpc-api.workspace = true
 sui-transaction-builder.workspace = true
