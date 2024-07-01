@@ -1,66 +1,6 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
-use std::sync::Arc;
-use std::time::Duration;
-
-use dashmap::DashMap;
-use futures::FutureExt;
-use itertools::Itertools;
-use move_symbol_pool::static_symbols;
-use rand::rngs::OsRng;
-use rand::seq::SliceRandom;
-use serde::{Deserialize, Serialize};
-use tap::TapFallible;
-use tokio::sync::mpsc;
-use tokio::{
-    sync::{watch, Notify},
-    time::timeout,
-};
-use tokio_stream::wrappers::WatchStream;
-use tokio_stream::StreamExt;
-use tracing::{debug, error, info, instrument, warn};
-
-use dkg::DKGState;
-use identifiable_abort::{generate_proofs, identify_malicious};
-use mysten_metrics::{monitored_scope, spawn_monitored_task, MonitoredFutureExt};
-use sign_state::SignState;
-use signature_mpc::decrypt::{DecryptionShare, PartialDecryptionProof};
-use signature_mpc::twopc_mpc_protocols::{
-    initiate_decentralized_party_dkg, Commitment, DecommitmentProofVerificationRoundParty,
-    DecryptionPublicParameters, PartyID, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof,
-    SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber,
-};
-use sui_types::base_types::{AuthorityName, EpochId, TransactionDigest};
-use sui_types::base_types::{ConciseableName, ObjectRef};
-use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
-use sui_types::error::{SuiError, SuiResult};
-use sui_types::message_envelope::Message;
-use sui_types::messages_signature_mpc::{
-    InitiateSignatureMPCProtocol, SignatureMPCMessage, SignatureMPCMessageProtocols,
-    SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID,
-};
-use sui_types::sui_system_state::{SuiSystemState, SuiSystemStateTrait};
-use sui_types::transaction::{TransactionDataAPI, TransactionKind};
-use typed_store::traits::{TableSummary, TypedStoreDebug};
-use typed_store::Map;
-
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::authority::{AuthorityState, EffectsNotifyRead};
-use crate::authority_client::AuthorityAPI;
-use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
-use crate::signature_mpc::identifiable_abort::spawn_proof_generation_and_conditional_malicious_identification;
-pub use crate::signature_mpc::metrics::SignatureMPCMetrics;
-use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
-use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
-use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
-use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
-pub use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPCToConsensus;
-
 mod aggregate;
 mod dkg;
 mod identifiable_abort;
@@ -70,6 +10,63 @@ mod sign_round;
 mod sign_state;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
+
+use crate::authority::{AuthorityState, EffectsNotifyRead};
+use crate::authority_client::AuthorityAPI;
+pub use crate::signature_mpc::metrics::SignatureMPCMetrics;
+use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
+pub use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPCToConsensus;
+use futures::FutureExt;
+use itertools::Itertools;
+use mysten_metrics::{monitored_scope, spawn_monitored_task, MonitoredFutureExt};
+use serde::{Deserialize, Serialize};
+use sui_types::base_types::{ConciseableName, ObjectRef};
+use crate::signature_mpc::identifiable_abort::{identify_malicious, spawn_proof_generation_and_conditional_malicious_identification};
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use dashmap::DashMap;
+use rand::rngs::OsRng;
+use rand::seq::SliceRandom;
+use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
+use std::sync::Arc;
+use std::time::Duration;
+use sui_types::base_types::{AuthorityName, EpochId, TransactionDigest};
+use tap::TapFallible;
+
+use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
+use sui_types::error::{SuiError, SuiResult};
+use sui_types::message_envelope::Message;
+
+use signature_mpc::twopc_mpc_protocols::{
+    initiate_decentralized_party_dkg, Commitment,
+    DecommitmentProofVerificationRoundParty,
+    SecretKeyShareEncryptionAndProof, DecryptionPublicParameters,
+    PartyID, ProtocolContext, SecretKeyShareSizedNumber,
+    PublicNonceEncryptedPartialSignatureAndProof,
+};
+use sui_types::sui_system_state::{SuiSystemState, SuiSystemStateTrait};
+use sui_types::transaction::{TransactionDataAPI, TransactionKind};
+use tokio::sync::mpsc;
+use tokio::{
+    sync::{watch, Notify},
+    time::timeout,
+};
+use tokio_stream::wrappers::WatchStream;
+use tracing::{debug, error, info, instrument, warn};
+use typed_store::traits::{TableSummary, TypedStoreDebug};
+use typed_store::Map;
+
+use dkg::DKGState;
+use tokio_stream::StreamExt;
+use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID};
+
+use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
+use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
+use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
+use crate::signature_mpc::sign_state::SignState;
+use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
 
 pub trait SignatureMPCServiceNotify {
     fn notify_signature_mpc_message(
@@ -155,6 +152,7 @@ impl SignatureMPCAggregator {
                     info!("Shutting down SignatureMPCService");
                     return;
                 }
+
                 Some(
                     signature_mpc_protocol_message
                 ) = self.rx_signature_mpc_protocol_message_sender.recv() => {
@@ -248,11 +246,7 @@ impl SignatureMPCAggregator {
         message: SignatureMPCMessage,
     ) {
         let session_id = message.summary.session_id;
-        let sender_party_id = (epoch_store
-            .committee()
-            .authority_index(&message.summary.auth_sig().authority)
-            .unwrap()
-            + 1) as PartyID;
+        let sender_party_id = (epoch_store.committee().authority_index(&message.summary.auth_sig().authority).unwrap() + 1) as PartyID;
 
         let Some(session_ref) = session_refs.get(&session_id) else {
             return;
@@ -413,7 +407,7 @@ impl SignatureMPCAggregator {
                     involved_parties.clone(),
                 );
             }
-            _ => {}
+
         }
     }
 
@@ -499,6 +493,10 @@ impl SignatureMPCAggregator {
             if let Some(m) = m {
                 match m {
                     PresignRoundCompletion::Message(m) => {
+                        // if let Some(mut s) = presign_session_states.get_mut(&session_id) {
+                        //     let _ = s.insert_first_round(party_id, m.clone());
+                        //     drop(s);
+                        // }
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
@@ -510,23 +508,39 @@ impl SignatureMPCAggregator {
                             )
                             .await;
                     }
-                    PresignRoundCompletion::FirstRoundOutput((
-                        output,
-                        message_to_submit,
-                        individual_encrypted_nonce_shares_and_public_shares,
-                    )) => {
+                    PresignRoundCompletion::FirstRoundOutput((output, message_to_submit, individual_encrypted_nonce_shares_and_public_shares)) => {
                         {
                             if let Some(mut s) = presign_session_states.get_mut(&session_id) {
-                                let _ = s.set_individual_encrypted_nonce_shares_and_public_shares(
-                                    individual_encrypted_nonce_shares_and_public_shares,
-                                );
+                                let _ = s.set_individual_encrypted_nonce_shares_and_public_shares(individual_encrypted_nonce_shares_and_public_shares);
                             }
+
                         }
+                        // if let Some(mut s) = presign_session_states.get_mut(&session_id) {
+                        //     let _ = s.insert_second_round(party_id, message_to_submit.clone());
+                        //     drop(s);
+                            // if let Some(r) = presign_session_rounds.get_mut(&session_id) {
+                            //     if state.ready_for_complete_second_round(&r) {
+                            //         Self::spawn_complete_presign_second_round(
+                            //             epoch,
+                            //             epoch_store.clone(),
+                            //             party_id,
+                            //             session_id,
+                            //             session_ref,
+                            //             state.clone(),
+                            //             presign_session_rounds.clone(),
+                            //             presign_session_states.clone(),
+                            //             submit.clone(),
+                            //         );
+                            //     }
+                            // }
+                        //}
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
                                     epoch,
-                                    SignatureMPCMessageProtocols::PresignSecondRound(message_to_submit),
+                                    SignatureMPCMessageProtocols::PresignSecondRound(
+                                        message_to_submit,
+                                    ),
                                     session_id,
                                 ),
                                 &epoch_store,
@@ -576,6 +590,10 @@ impl SignatureMPCAggregator {
             if let Some(m) = m {
                 match m {
                     PresignRoundCompletion::Message(m) => {
+                        // if let Some(mut s) = presign_session_states.get_mut(&session_id) {
+                        //     let _ = s.insert_second_round(party_id, m.clone());
+                        //     drop(s);
+                        // }
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
@@ -609,6 +627,7 @@ impl SignatureMPCAggregator {
             }
         });
     }
+
 
     fn spawn_complete_sign_round(
         epoch: EpochId,
@@ -725,7 +744,8 @@ impl SignatureMPCAggregator {
             } => {
                 session_refs.insert(session_id, session_ref);
                 if let Ok((round, message)) = PresignRound::new(
-                    tiresias_public_parameters.clone(),
+                    tiresias_public_parameters
+                        .clone(),
                     epoch,
                     party_id,
                     parties.clone(),
@@ -839,7 +859,11 @@ impl SignatureMPCService {
         let (exit_snd, exit_rcv) = watch::channel(());
 
         // TODO: remove unwrap
-        let party_id = (epoch_store.committee().authority_index(&state.name).unwrap() + 1) as PartyID;
+        let party_id = (epoch_store
+            .committee()
+            .authority_index(&state.name)
+            .unwrap()
+            + 1) as PartyID;
 
         let epoch = epoch_store.epoch();
 
@@ -908,7 +932,6 @@ impl SignatureMPCServiceNotify for SignatureMPCService {
 
 // test helper
 pub struct SignatureMPCServiceNoop {}
-
 impl SignatureMPCServiceNotify for SignatureMPCServiceNoop {
     fn notify_signature_mpc_message(
         &self,
@@ -921,19 +944,17 @@ impl SignatureMPCServiceNotify for SignatureMPCServiceNoop {
 
 #[cfg(test)]
 mod tests {
+    use crate::signature_mpc::SubmitSignatureMPC;
     use std::sync::Arc;
-
     use either::Either;
     use tokio::sync::mpsc;
-
     use sui_types::error::SuiResult;
     use sui_types::messages_signature_mpc::{SignatureMPCMessageSummary, SignatureMPCOutput};
-
     use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-    use crate::signature_mpc::SubmitSignatureMPC;
 
     #[async_trait::async_trait]
     impl SubmitSignatureMPC for mpsc::Sender<Either<SignatureMPCMessageSummary, SignatureMPCOutput>> {
+
         async fn sign_and_submit_message(
             &self,
             summary: &SignatureMPCMessageSummary,
