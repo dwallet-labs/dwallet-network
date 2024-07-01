@@ -30,3 +30,5 @@ workspace-hack.workspace = true
 axum.workspace = true
 tracing-subscriber.workspace = true
 tracing.workspace = true
+sui-keys.workspace = true # wasent in the PR
+shared-crypto.workspace = true # wasent in the PR
