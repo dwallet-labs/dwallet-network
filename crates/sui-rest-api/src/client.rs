@@ -25,13 +25,13 @@ impl Client {
         let url = format!("{}/checkpoints", self.base_url);
         let checkpoint = self
             .inner
-            .get(url)
-            .header(reqwest::header::ACCEPT, crate::APPLICATION_JSON)
+            .get(url.clone())
+            .header(reqwest::header::ACCEPT, crate::APPLICATION_BCS)
             .send()
             .await?
-            .json()
+            .bytes()
             .await?;
-        Ok(checkpoint)
+        bcs::from_bytes(&checkpoint).map_err(Into::into)
     }
 
     pub async fn get_full_checkpoint(
