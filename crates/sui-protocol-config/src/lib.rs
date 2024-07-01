@@ -849,6 +849,15 @@ pub struct ProtocolConfig {
     // The cutoff value for the MED outlier detection
     scoring_decision_cutoff_value: Option<f64>,
 
+    //sui_state_proof::sui_state_proof_verify_committee_cost_base
+    sui_state_proof_verify_committee_cost_base: Option<u64>,
+
+    //sui_state_proof::sui_state_proof_verify_link_cap_base
+    sui_state_proof_verify_link_cap_base: Option<u64>,
+
+    //sui_state_proof::sui_state_proof_verify_transaction_base
+    sui_state_proof_verify_transaction_base: Option<u64>,
+
     /// === Execution Version ===
     execution_version: Option<u64>,
 
@@ -1200,7 +1209,7 @@ impl ProtocolConfig {
             max_arguments: Some(512),
             max_type_arguments: Some(16),
             max_type_argument_depth: Some(16),
-            max_pure_argument_size: Some(16 * 1024),
+            max_pure_argument_size: Some(1024 * 1024), // TODO change back to 1
             max_programmable_tx_commands: Some(1024),
             move_binary_format_version: Some(6),
             max_move_object_size: Some(250 * 1024),
@@ -1428,6 +1437,13 @@ impl ProtocolConfig {
             check_zklogin_id_cost_base: None,
             // zklogin::check_zklogin_issuer
             check_zklogin_issuer_cost_base: None,
+
+            //sui_state_proof::sui_state_proof_verify_committee_cost_base
+            sui_state_proof_verify_committee_cost_base: Some(52),
+            //sui_state_proof::sui_state_proof_verify_link_cap_base
+            sui_state_proof_verify_link_cap_base: Some(52),
+            //sui_state_proof::sui_state_proof_verify_transaction_base
+            sui_state_proof_verify_transaction_base: Some(52),
 
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,
