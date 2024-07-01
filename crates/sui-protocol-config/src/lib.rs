@@ -868,6 +868,14 @@ pub struct ProtocolConfig {
     /// Maximum allowed precision loss when reducing voting weights for the random beacon
     /// protocol.
     random_beacon_reduction_allowed_delta: Option<u16>,
+
+    // eth_dwallet::verify_eth_state_cost_base
+    verify_eth_state_cost_base: Option<u64>,
+    // eth_dwallet::verify_message_proof_cost_base
+    verify_message_proof_cost_base: Option<u64>,
+    // eth_dwallet::create_initial_eth_state_data_cost_base
+    create_initial_eth_state_data_cost_base: Option<u64>,
+
 }
 
 // feature flags
@@ -1454,6 +1462,10 @@ impl ProtocolConfig {
 
             random_beacon_reduction_allowed_delta: None,
 
+            verify_eth_state_cost_base: None,
+            verify_message_proof_cost_base: None,
+            create_initial_eth_state_data_cost_base: None,
+
             // When adding a new constant, set it to None in the earliest version, like this:
             // new_constant: None,
         };
@@ -1728,6 +1740,10 @@ impl ProtocolConfig {
                     cfg.feature_flags.enable_jwk_consensus_updates = false;
                     cfg.feature_flags.zklogin_supported_providers = Default::default();
                     cfg.feature_flags.random_beacon = false;
+
+                    cfg.verify_eth_state_cost_base = Some(52);
+                    cfg.verify_message_proof_cost_base = Some(52);
+                    cfg.create_initial_eth_state_data_cost_base = Some(52);
                 }
                 // Use this template when making changes:
                 //
