@@ -10,3 +10,4 @@ pub mod groth16;
 pub mod hash;
 pub mod hmac;
 pub mod zklogin;
+mod sui_state_proof;
