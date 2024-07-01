@@ -38,7 +38,7 @@ module dwallet_system::dwallet {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
 
-    struct DWalletCap has key, store {
+    public struct DWalletCap has key, store {
         id: UID,
     }
 

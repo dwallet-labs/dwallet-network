@@ -3,6 +3,7 @@ module dwallet_system::dwallet_tests {
     use dwallet::object::{Self};
     use dwallet_system::dwallet;
     use dwallet::tx_context;
+    use dwallet::DWalletCap;
     use std::vector;
     use dwallet_system::dwallet::EMesssageApprovalDWalletMismatch;
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{create_mock_sign_data_event, create_mock_sign_data};
@@ -16,9 +17,13 @@ module dwallet_system::dwallet_tests {
         vector::push_back(&mut messages, b"message_1");
         vector::push_back(&mut messages, b"message_1");
 
+        let dwallet_cap = DWalletCap {
+            id: object::id_from_address(@0xB)
+        };
+
         let dwallet_id = object::id_from_address(@0xC);
         let dwallet_cap_id = object::id_from_address(@0xB);
-        let message_approvals = dwallet::mock_approve_messages(dwallet_cap_id, messages);
+        let message_approvals = dwallet::approve_messages(dwallet_cap_id, messages);
 
         let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
 
