@@ -11,6 +11,9 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet_system::dwallet::{create_dwallet_cap, PartialUserSignedMessages, DWalletCap};
     use dwallet_system::dwallet;
 
+    #[test_only]
+    friend dwallet_system::dwallet_tests;
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
     const EMesssagesLengthMustBeGreaterThanZero: u64 = 1;
@@ -274,5 +277,26 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         };
 
         dwallet::create_partial_user_signed_messages(dwallet_id, dwallet_cap_id, session.messages, sign_data, sign_data_event, ctx)
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
+        SignData {
+            presign_session_id,
+            hash: 0,
+            public_nonce_encrypted_partial_signature_and_proofs: vector::empty<u8>(),
+            presigns: vector::empty<u8>()
+        }
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_sign_data_event(presign_session_id: ID): NewSignDataEvent {
+        NewSignDataEvent {
+            presign_session_id,
+            hash: 0,
+            dkg_output: vector::empty<u8>(),
+            public_nonce_encrypted_partial_signature_and_proofs: vector::empty<u8>(),
+            presigns: vector::empty<u8>()
+        }
     }
 }

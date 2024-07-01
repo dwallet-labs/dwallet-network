@@ -11,6 +11,9 @@ module dwallet_system::dwallet {
 
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 
+    #[test_only]
+    friend dwallet_system::dwallet_tests;
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
@@ -108,7 +111,19 @@ module dwallet_system::dwallet {
     public fun approve_messages(dwallet_cap: &DWalletCap, messages: vector<vector<u8>>): vector<MessageApproval> {
         let dwallet_cap_id = object::id(dwallet_cap);
         let message_approvals = vector::empty<MessageApproval>();
-        while(vector::length(&messages) > 0) {
+        while (vector::length(&messages) > 0) {
+            let message = vector::pop_back(&mut messages);
+            vector::push_back(&mut message_approvals, MessageApproval {
+                dwallet_cap_id,
+                message,
+            });
+        };
+        message_approvals
+    }
+
+    public fun mock_approve_messages(dwallet_cap_id: ID, messages: vector<vector<u8>>): vector<MessageApproval> {
+        let message_approvals = vector::empty<MessageApproval>();
+        while (vector::length(&messages) > 0) {
             let message = vector::pop_back(&mut messages);
             vector::push_back(&mut message_approvals, MessageApproval {
                 dwallet_cap_id,
@@ -134,7 +149,10 @@ module dwallet_system::dwallet {
         (dwallet_cap_id, message)
     }
 
-    public fun create_shared_partial_user_signed_messages<S: store, E: store + copy + drop>(partial_user_signed_messages: PartialUserSignedMessages<S, E>, ctx: &mut TxContext) {
+    public fun create_shared_partial_user_signed_messages<S: store, E: store + copy + drop>(
+        partial_user_signed_messages: PartialUserSignedMessages<S, E>,
+        ctx: &mut TxContext
+    ) {
         let holder = SharedPartialUserSignedMessages {
             id: object::new(ctx),
             partial_user_signed_messages,
@@ -142,7 +160,11 @@ module dwallet_system::dwallet {
         transfer::share_object(holder);
     }
 
-    public fun sign_shared<S: store, E: store + copy + drop>(shared: SharedPartialUserSignedMessages<S, E>, message_approvals: vector<MessageApproval>, ctx: &mut TxContext) {
+    public fun sign_shared<S: store, E: store + copy + drop>(
+        shared: SharedPartialUserSignedMessages<S, E>,
+        message_approvals: vector<MessageApproval>,
+        ctx: &mut TxContext
+    ) {
         let SharedPartialUserSignedMessages {
             id,
             partial_user_signed_messages,
@@ -151,7 +173,14 @@ module dwallet_system::dwallet {
         sign(partial_user_signed_messages, message_approvals, ctx)
     }
 
-    public(friend) fun create_partial_user_signed_messages<S: store, E: store + copy + drop>(dwallet_id: ID, dwallet_cap_id: ID, messages: vector<vector<u8>>, sign_data: S, sign_data_event: E, ctx: &mut TxContext): PartialUserSignedMessages<S, E> {
+    public(friend) fun create_partial_user_signed_messages<S: store, E: store + copy + drop>(
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        messages: vector<vector<u8>>,
+        sign_data: S,
+        sign_data_event: E,
+        ctx: &mut TxContext
+    ): PartialUserSignedMessages<S, E> {
         PartialUserSignedMessages {
             id: object::new(ctx),
             dwallet_id,
@@ -162,19 +191,29 @@ module dwallet_system::dwallet {
         }
     }
 
-    public fun partial_user_signed_messages_dwallet_id<S: store, E: store + copy + drop>(partial_user_signed_messages: &PartialUserSignedMessages<S, E>): ID {
+    public fun partial_user_signed_messages_dwallet_id<S: store, E: store + copy + drop>(
+        partial_user_signed_messages: &PartialUserSignedMessages<S, E>
+    ): ID {
         partial_user_signed_messages.dwallet_id
     }
 
-    public fun partial_user_signed_messages_dwallet_cap_id<S: store, E: store + copy + drop>(partial_user_signed_messages: &PartialUserSignedMessages<S, E>): ID {
+    public fun partial_user_signed_messages_dwallet_cap_id<S: store, E: store + copy + drop>(
+        partial_user_signed_messages: &PartialUserSignedMessages<S, E>
+    ): ID {
         partial_user_signed_messages.dwallet_cap_id
     }
 
-    public fun partial_user_signed_messages_messages<S: store, E: store + copy + drop>(partial_user_signed_messages: &PartialUserSignedMessages<S, E>): vector<vector<u8>> {
+    public fun partial_user_signed_messages_messages<S: store, E: store + copy + drop>(
+        partial_user_signed_messages: &PartialUserSignedMessages<S, E>
+    ): vector<vector<u8>> {
         partial_user_signed_messages.messages
     }
 
-    public fun sign<S: store, E: store + copy + drop>(partial_user_signed_messages: PartialUserSignedMessages<S, E>, message_approvals: vector<MessageApproval>, ctx: &mut TxContext) {
+    public fun sign<S: store, E: store + copy + drop>(
+        partial_user_signed_messages: PartialUserSignedMessages<S, E>,
+        message_approvals: vector<MessageApproval>,
+        ctx: &mut TxContext
+    ) {
         let PartialUserSignedMessages {
             id,
             dwallet_id,
@@ -196,7 +235,7 @@ module dwallet_system::dwallet {
             assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
             let message = vector::borrow(&messages, i);
             assert!(message == &approved_message, EMesssageApprovalDWalletMismatch);
-            i = i +1;
+            i = i + 1;
         };
 
         vector::destroy_empty(message_approvals);
