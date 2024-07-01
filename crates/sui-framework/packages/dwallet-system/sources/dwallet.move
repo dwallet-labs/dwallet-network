@@ -121,18 +121,6 @@ module dwallet_system::dwallet {
         message_approvals
     }
 
-    public fun mock_approve_messages(dwallet_cap_id: ID, messages: vector<vector<u8>>): vector<MessageApproval> {
-        let message_approvals = vector::empty<MessageApproval>();
-        while (vector::length(&messages) > 0) {
-            let message = vector::pop_back(&mut messages);
-            vector::push_back(&mut message_approvals, MessageApproval {
-                dwallet_cap_id,
-                message,
-            });
-        };
-        message_approvals
-    }
-
     public fun message_approval_dwallet_cap_id(message_approval: &MessageApproval): ID {
         message_approval.dwallet_cap_id
     }

@@ -4,7 +4,8 @@ module dwallet_system::dwallet_tests {
     use dwallet_system::dwallet;
     use dwallet::tx_context;
     use std::vector;
-    use dwallet_system::dwallet::EMesssageApprovalDWalletMismatch;
+    use dwallet::test_utils;
+    use dwallet_system::dwallet::{EMesssageApprovalDWalletMismatch, create_dwallet_cap};
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{create_mock_sign_data_event, create_mock_sign_data};
 
 
@@ -17,8 +18,8 @@ module dwallet_system::dwallet_tests {
         vector::push_back(&mut messages, b"message_1");
 
         let dwallet_id = object::id_from_address(@0xC);
-        let dwallet_cap_id = object::id_from_address(@0xB);
-        let message_approvals = dwallet::mock_approve_messages(dwallet_cap_id, messages);
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let message_approvals = dwallet::approve_messages(&dwallet_cap, messages);
 
         let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
 
@@ -30,14 +31,15 @@ module dwallet_system::dwallet_tests {
 
         let partial_user_signed_messages = dwallet::create_partial_user_signed_messages(
             dwallet_id,
-            dwallet_cap_id,
+            object::id(&dwallet_cap),
             sign_messages,
             sign_data,
             sign_data_event,
             ctx
         );
 
-        dwallet::sign(partial_user_signed_messages, message_approvals, ctx)
+        dwallet::sign(partial_user_signed_messages, message_approvals, ctx);
+        test_utils::destroy(dwallet_cap);
     }
 
     #[test]
@@ -49,8 +51,8 @@ module dwallet_system::dwallet_tests {
         vector::push_back(&mut messages, b"message_1");
 
         let dwallet_id = object::id_from_address(@0xC);
-        let dwallet_cap_id = object::id_from_address(@0xB);
-        let message_approvals = dwallet::mock_approve_messages(dwallet_cap_id, messages);
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let message_approvals = dwallet::approve_messages(&dwallet_cap, messages);
 
         let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
 
@@ -62,14 +64,15 @@ module dwallet_system::dwallet_tests {
 
         let partial_user_signed_messages = dwallet::create_partial_user_signed_messages(
             dwallet_id,
-            dwallet_cap_id,
+            object::id(&dwallet_cap),
             sign_messages,
             sign_data,
             sign_data_event,
             ctx
         );
 
-        dwallet::sign(partial_user_signed_messages, message_approvals, ctx)
+        dwallet::sign(partial_user_signed_messages, message_approvals, ctx);
+        test_utils::destroy(dwallet_cap);
     }
 
     #[test]
@@ -82,8 +85,8 @@ module dwallet_system::dwallet_tests {
         vector::push_back(&mut messages, b"message_1");
 
         let dwallet_id = object::id_from_address(@0xC);
-        let dwallet_cap_id = object::id_from_address(@0xB);
-        let message_approvals = dwallet::mock_approve_messages(dwallet_cap_id, messages);
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let message_approvals = dwallet::approve_messages(&dwallet_cap, messages);
 
         let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
 
@@ -95,14 +98,15 @@ module dwallet_system::dwallet_tests {
 
         let partial_user_signed_messages = dwallet::create_partial_user_signed_messages(
             dwallet_id,
-            dwallet_cap_id,
+            object::id(&dwallet_cap),
             sign_messages,
             sign_data,
             sign_data_event,
             ctx
         );
 
-        dwallet::sign(partial_user_signed_messages, message_approvals, ctx)
+        dwallet::sign(partial_user_signed_messages, message_approvals, ctx);
+        test_utils::destroy(dwallet_cap);
     }
 
     #[test]
@@ -114,8 +118,8 @@ module dwallet_system::dwallet_tests {
         vector::push_back(&mut messages, b"message_1");
 
         let dwallet_id = object::id_from_address(@0xC);
-        let dwallet_cap_id = object::id_from_address(@0xB);
-        let message_approvals = dwallet::mock_approve_messages(dwallet_cap_id, messages);
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let message_approvals = dwallet::approve_messages(&dwallet_cap, messages);
 
         let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
 
@@ -134,6 +138,7 @@ module dwallet_system::dwallet_tests {
             ctx
         );
 
-        dwallet::sign(partial_user_signed_messages, message_approvals, ctx)
+        dwallet::sign(partial_user_signed_messages, message_approvals, ctx);
+        test_utils::destroy(dwallet_cap);
     }
 }
