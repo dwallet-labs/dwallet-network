@@ -14,9 +14,7 @@ use signature_mpc::twopc_mpc_protocols::{
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use sui_types::base_types::{EpochId, ObjectRef};
-use sui_types::messages_signature_mpc::{
-    SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID,
-};
+use sui_types::messages_signature_mpc::{SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID, SignMessage};
 
 pub fn generate_proofs(
     state: &SignState,
@@ -146,26 +144,19 @@ pub fn spawn_proof_generation_and_conditional_malicious_identification(
             let _ = submit
                 .sign_and_submit_message(
                     &SignatureMPCMessageSummary::new(
-                        epoch,
-                        SignatureMPCMessageProtocols::SignProofs(
-                            proofs.clone(),
-                            failed_messages_indices.clone(),
+                    epoch,
+                    SignatureMPCMessageProtocols::Sign(
+                        SignMessage::Proofs {
+                            proofs,
+                            failed_messages_indices,
                             involved_parties,
-                        ),
-                        session_id,
+                        },
+                    ),
+                    session_id,
                     ),
                     &epoch_store,
                 )
                 .await;
-        }
-
-        // TODO: Handle error properly
-        if mut_state.should_identify_malicious_actors() {
-            if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
-                identify_malicious(&state)
-            {
-                println!("Identified malicious parties: {:?}", malicious_parties);
-            }
         }
     });
 }

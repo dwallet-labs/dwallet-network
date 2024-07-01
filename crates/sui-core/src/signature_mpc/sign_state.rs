@@ -7,7 +7,8 @@ use signature_mpc::twopc_mpc_protocols::{
 };
 use std::collections::{HashMap, HashSet};
 use sui_types::base_types::EpochId;
-use sui_types::messages_signature_mpc::SignatureMPCSessionID;
+use sui_types::messages_signature_mpc::{SignMessage, SignatureMPCSessionID};
+use crate::signature_mpc::identifiable_abort::spawn_proof_generation_and_conditional_malicious_identification;
 
 #[derive(Clone)]
 pub(crate) struct SignState {
@@ -75,9 +76,18 @@ impl SignState {
     pub(crate) fn insert_first_round(
         &mut self,
         party_id: PartyID,
-        message: Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
+        message: SignMessage,
     ) -> twopc_mpc_protocols::Result<()> {
-        let _ = self.decryption_shares.insert(party_id, message);
+        match message {
+            SignMessage::DecryptionShares(shares) => {
+                let _ = self.decryption_shares.insert(party_id, shares);
+            }
+            SignMessage::Proofs { proofs, failed_messages_indices, involved_parties } => {
+                self.failed_messages_indices = Some(failed_messages_indices.clone());
+                self.involved_parties = involved_parties.clone();
+                self.insert_proofs(party_id, proofs.clone());
+            }
+        }
         Ok(())
     }
 

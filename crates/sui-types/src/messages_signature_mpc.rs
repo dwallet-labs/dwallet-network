@@ -43,6 +43,17 @@ pub struct SignatureMPCSessionID(pub [u8; SESSION_ID_LENGTH]);
 pub type ProtocolContext = PhantomData<()>;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub enum SignMessage {
+    DecryptionShares(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
+    Proofs{
+        proofs: Vec<PartialDecryptionProof>,
+        failed_messages_indices: Vec<usize>,
+        involved_parties: Vec<PartyID>,
+    },
+}
+
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SignatureMPCBulletProofAggregatesMessage {
     Commitment((Vec<EncDHCommitment<ProtocolContext>>, Vec<EncDLCommitment<ProtocolContext>>)),
     Decommitment((Vec<EncDHDecommitment<ProtocolContext>>, Vec<EncDLDecommitment<ProtocolContext>>)),
@@ -64,8 +75,7 @@ pub enum SignatureMPCMessageProtocols {
     DKG(SignatureMPCBulletProofAggregatesMessage),
     PresignFirstRound(SignatureMPCBulletProofAggregatesMessage),
     PresignSecondRound(SignatureMPCBulletProofAggregatesMessage),
-    Sign(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
-    SignProofs(Vec<(PartialDecryptionProof)>, Vec<usize>, Vec<PartyID>),
+    Sign(SignMessage),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -334,7 +344,6 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(_) => 2,
             SignatureMPCMessageProtocols::PresignSecondRound(_) => 3,
             SignatureMPCMessageProtocols::Sign(_) => 3,
-            SignatureMPCMessageProtocols::SignProofs( _, _, _) => 4,
         }
     }
 
@@ -344,7 +353,6 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::PresignFirstRound(m) => m.round(),
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
             SignatureMPCMessageProtocols::Sign(_) => 1,
-            SignatureMPCMessageProtocols::SignProofs( _, _, _) => 1,
         }
     }
 }
