@@ -3,11 +3,12 @@
 
 module dwallet_system::dwallet {
     use std::vector;
-    use dwallet::object::{Self, UID, ID};
-    use dwallet::transfer;
+
     use dwallet::event;
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::transfer;
     use dwallet::tx_context;
-    use dwallet::tx_context::{TxContext};
+    use dwallet::tx_context::TxContext;
 
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 
@@ -38,7 +39,7 @@ module dwallet_system::dwallet {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
 
-    public struct DWalletCap has key, store {
+    struct DWalletCap has key, store {
         id: UID,
     }
 
