@@ -849,6 +849,12 @@ pub struct ProtocolConfig {
     // The cutoff value for the MED outlier detection
     scoring_decision_cutoff_value: Option<f64>,
 
+    // twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
+    dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: Option<u64>,
+
+    // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
+    sign_verify_encrypted_signature_parts_prehash_cost_base: Option<u64>,
+
     /// === Execution Version ===
     execution_version: Option<u64>,
 
@@ -1428,6 +1434,11 @@ impl ProtocolConfig {
             check_zklogin_id_cost_base: None,
             // zklogin::check_zklogin_issuer
             check_zklogin_issuer_cost_base: None,
+
+            // twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
+            dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: Some(52),
+            // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
+            sign_verify_encrypted_signature_parts_prehash_cost_base: Some(52),
 
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,

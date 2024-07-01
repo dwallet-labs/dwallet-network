@@ -33,7 +33,7 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
-use crate::crypto::zklogin;
+use crate::crypto::{twopc_mpc, zklogin};
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
@@ -56,6 +56,7 @@ use std::sync::Arc;
 use sui_protocol_config::ProtocolConfig;
 use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
+use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
 
 mod address;
 mod crypto;
@@ -147,6 +148,9 @@ pub struct NativesCostTable {
 
     // Receive object
     pub transfer_receive_object_internal_cost_params: TransferReceiveObjectInternalCostParams,
+
+    // twopc mpc
+    pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
 }
 
 impl NativesCostTable {
@@ -499,6 +503,14 @@ impl NativesCostTable {
                     .check_zklogin_issuer_cost_base_as_option()
                     .map(Into::into),
             },
+            twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams {
+                dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: protocol_config
+                    .dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base()
+                    .into(),
+                sign_verify_encrypted_signature_parts_prehash_cost_base: protocol_config
+                    .sign_verify_encrypted_signature_parts_prehash_cost_base()
+                    .into(),
+            },
         }
     }
 }
@@ -723,7 +735,17 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
         "validator",
         "validate_metadata_bcs",
         make_native!(validator::validate_metadata_bcs),
-    )];
+        ),
+        (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share",
+            make_native!(twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share),
+        ),
+        (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "sign_verify_encrypted_signature_parts_prehash",
+            make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
+        )];
     sui_system_natives
         .iter()
         .cloned()
