@@ -4,12 +4,14 @@
 #[allow(unused_const)]
 module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use std::vector;
-    use dwallet::object::{Self, UID, ID};
-    use dwallet::transfer;
+
     use dwallet::event;
+    use dwallet::object::{Self, ID, UID};
+    use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
-    use dwallet_system::dwallet::{create_dwallet_cap, PartialUserSignedMessages, DWalletCap};
+
     use dwallet_system::dwallet;
+    use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap, PartialUserSignedMessages};
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
@@ -120,7 +122,13 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         presigns: vector<u8>,
     }
 
-    public fun create_dkg_session(commitment_to_centralized_party_secret_key_share: vector<u8>, ctx: &mut TxContext): DWalletCap {
+    /// Starts a DKG session.
+    /// Capabilities are used to control access to the wallet.
+    /// todo(zeev): might be entry?
+    public fun create_dkg_session(
+        commitment_to_centralized_party_secret_key_share: vector<u8>,
+        ctx: &mut TxContext
+    ): DWalletCap {
         let cap = create_dwallet_cap(ctx);
         let sender = tx_context::sender(ctx);
         let session = DKGSession {
@@ -140,7 +148,12 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_function)]
-    fun create_dkg_output(session: &DKGSession, commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, ctx: &mut TxContext) {
+    fun create_dkg_output(
+        session: &DKGSession,
+        commitment_to_centralized_party_secret_key_share: vector<u8>,
+        secret_key_share_encryption_and_proof: vector<u8>,
+        ctx: &mut TxContext
+    ) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         let output = DKGSessionOutput {
             id: object::new(ctx),
@@ -152,7 +165,11 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         transfer::transfer(output, session.sender);
     }
 
-    public fun create_dwallet(output: DKGSessionOutput, centralized_party_public_key_share_decommitment_and_proof: vector<u8>, ctx: &mut TxContext) {
+    public fun create_dwallet(
+        output: DKGSessionOutput,
+        centralized_party_public_key_share_decommitment_and_proof: vector<u8>,
+        ctx: &mut TxContext
+    ) {
         let DKGSessionOutput {
             id,
             session_id,
@@ -162,7 +179,12 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         } = output;
         object::delete(id);
 
-        let (output, public_key) = dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share, secret_key_share_encryption_and_proof, centralized_party_public_key_share_decommitment_and_proof);
+        // Native func.
+        let (output, public_key) = dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
+            commitment_to_centralized_party_secret_key_share,
+            secret_key_share_encryption_and_proof,
+            centralized_party_public_key_share_decommitment_and_proof
+        );
 
         let result = DWallet {
             id: object::new(ctx),
@@ -171,12 +193,25 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             output,
             public_key,
         };
+        // Create dwallet +
         transfer::freeze_object(result);
     }
 
-    native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>);
+    native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
+        commitment_to_centralized_party_secret_key_share: vector<u8>,
+        secret_key_share_encryption_and_proof: vector<u8>,
+        centralized_party_public_key_share_decommitment_and_proofs: vector<u8>
+    ): (vector<u8>, vector<u8>);
 
-    public fun create_presign_session(dwallet: &DWallet, messages: vector<vector<u8>>, commitments_and_proof_to_centralized_party_nonce_shares: vector<u8>, hash: u8, ctx: &mut TxContext) {
+
+    public fun create_presign_session(
+        dwallet: &DWallet,
+        messages: vector<vector<u8>>,
+        commitments_and_proof_to_centralized_party_nonce_shares: vector<u8>,
+        // hash = sha256 or sha3
+        hash: u8,
+        ctx: &mut TxContext
+    ) {
         assert!(hash == SHA256 || hash == KECCAK256, ENotSupported);
         let messages_len = vector::length(&messages);
         assert!(messages_len > 0, EMesssagesLengthMustBeGreaterThanZero);
@@ -207,6 +242,9 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_function)]
+    /// This function is called by blockchain itself.
+    /// Validtors call it, it's part of the blockchain logic.
+    /// This is the first part of the out presign session (the validators first output this)
     fun create_presign_output(session: &PresignSession, output: vector<u8>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         let output = PresignSessionOutput {
@@ -220,8 +258,12 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_function)]
+    /// This function is called by blockchain itself.
+    /// Validtors call it, it's part of the blockchain logic.
+    /// This is the second part of the presign session.
     fun create_presign(session: &PresignSession, presigns: vector<u8>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+        // The user needs this object and PresignSessionOutput in order to Sign the message.
         let presign = Presign {
             id: object::new(ctx),
             session_id: object::id(session),
@@ -232,14 +274,42 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         transfer::transfer(presign, session.sender);
     }
 
-    native fun sign_verify_encrypted_signature_parts_prehash(messages: vector<vector<u8>>, dkg_output: vector<u8>, public_nonce_encrypted_partial_signature_and_proofs: vector<u8>, presigns: vector<u8>, hash: u8): bool;
+    native fun sign_verify_encrypted_signature_parts_prehash(
+        messages: vector<vector<u8>>,
+        dkg_output: vector<u8>,
+        public_nonce_encrypted_partial_signature_and_proofs: vector<u8>,
+        presigns: vector<u8>,
+        hash: u8
+    ): bool;
 
-    public fun create_partial_user_signed_messages(dwallet: &DWallet, session: &PresignSession, output: PresignSessionOutput, presign: Presign, public_nonce_encrypted_partial_signature_and_proofs: vector<u8>, ctx: &mut TxContext): PartialUserSignedMessages<SignData, NewSignDataEvent> {
-        assert!(object::id(session) == output.session_id && object::id(dwallet) == output.dwallet_id && output.dwallet_id == presign.dwallet_id && output.dwallet_cap_id == presign.dwallet_cap_id && output.session_id == presign.session_id, EPresignOutputAndPresignMismatch);
+    /// This function start the sign proccess, note that it must get PresignSessionOutput and Presign.
+    public fun create_partial_user_signed_messages(
+        dwallet: &DWallet,
+        session: &PresignSession,
+        output: PresignSessionOutput,
+        presign: Presign,
+        // The user part of the signature.
+        public_nonce_encrypted_partial_signature_and_proofs: vector<u8>,
+        ctx: &mut TxContext
+    ): PartialUserSignedMessages<SignData, NewSignDataEvent> {
+        assert!(
+            object::id(session) == output.session_id && object::id(
+                dwallet
+            ) == output.dwallet_id && output.dwallet_id == presign.dwallet_id && output.dwallet_cap_id == presign.dwallet_cap_id && output.session_id == presign.session_id,
+            EPresignOutputAndPresignMismatch
+        );
 
-        let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(session.messages, dwallet.output, public_nonce_encrypted_partial_signature_and_proofs, presign.presigns, session.hash);
+        // Native function to sign the message.
+        let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
+            session.messages,
+            dwallet.output,
+            public_nonce_encrypted_partial_signature_and_proofs,
+            presign.presigns,
+            session.hash
+        );
         assert!(valid_signature_parts, ESignInvalidSignatureParts);
 
+        // Drop the object so it won't be used again.
         let PresignSessionOutput {
             id,
             session_id: _,
@@ -249,6 +319,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         } = output;
         object::delete(id);
 
+        // Drop the object so it won't be used again.
         let Presign {
             id,
             session_id,
@@ -265,6 +336,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             presigns,
         };
 
+        // These events are listenbd by the blockhain.
+        // This is a "hack" to pass the information.
         let sign_data_event = NewSignDataEvent {
             presign_session_id: session_id,
             hash: session.hash,
@@ -273,6 +346,13 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             presigns,
         };
 
-        dwallet::create_partial_user_signed_messages(dwallet_id, dwallet_cap_id, session.messages, sign_data, sign_data_event, ctx)
+        dwallet::create_partial_user_signed_messages(
+            dwallet_id,
+            dwallet_cap_id,
+            session.messages,
+            sign_data,
+            sign_data_event,
+            ctx
+        )
     }
 }

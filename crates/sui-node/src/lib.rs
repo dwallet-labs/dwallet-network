@@ -1,6 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use std::collections::{BTreeSet, HashMap, HashSet};
+use std::fmt;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::Arc;
+#[cfg(msim)]
+use std::sync::atomic::Ordering;
+use std::time::Duration;
+
 use anemo::Network;
 use anemo_tower::callback::CallbackLayer;
 use anemo_tower::trace::DefaultMakeSpan;
@@ -9,62 +18,58 @@ use anemo_tower::trace::TraceLayer;
 use anyhow::anyhow;
 use anyhow::Result;
 use arc_swap::ArcSwap;
+use fastcrypto_zkp::bn254::zk_login::JWK;
 use fastcrypto_zkp::bn254::zk_login::JwkId;
 use fastcrypto_zkp::bn254::zk_login::OIDCProvider;
 use futures::TryFutureExt;
-use narwhal_worker::LazyNarwhalClient;
 use prometheus::Registry;
-use std::collections::{BTreeSet, HashMap, HashSet};
-use std::fmt;
-use std::path::PathBuf;
-use std::str::FromStr;
-#[cfg(msim)]
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::time::Duration;
-use sui_core::authority::CHAIN_IDENTIFIER;
-use sui_core::consensus_adapter::SubmitToConsensus;
-use sui_json_rpc_api::JsonRpcMetrics;
-use sui_types::base_types::ConciseableName;
-use sui_types::digests::ChainIdentifier;
-use sui_types::message_envelope::get_google_jwk_bytes;
-use sui_types::sui_system_state::SuiSystemState;
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
+use tokio::sync::{Mutex, watch};
 use tokio::sync::broadcast;
 use tokio::sync::oneshot;
-use tokio::sync::{watch, Mutex};
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;
 use tracing::{debug, error, warn};
 use tracing::{error_span, info, Instrument};
 
 use checkpoint_executor::CheckpointExecutor;
-use fastcrypto_zkp::bn254::zk_login::JWK;
 pub use handle::SuiNodeHandle;
-use mysten_metrics::{spawn_monitored_task, RegistryService};
+use mysten_metrics::{RegistryService, spawn_monitored_task};
 use mysten_network::server::ServerBuilder;
-use narwhal_network::metrics::MetricsMakeCallbackHandler;
 use narwhal_network::metrics::{NetworkConnectionMetrics, NetworkMetrics};
+use narwhal_network::metrics::MetricsMakeCallbackHandler;
+use narwhal_worker::LazyNarwhalClient;
+#[cfg(msim)]
+use simulator::*;
+#[cfg(msim)]
+pub use simulator::set_jwk_injector;
 use sui_archival::reader::ArchiveReaderBalancer;
 use sui_archival::writer::ArchiveWriter;
+use sui_config::{ConsensusConfig, NodeConfig};
 use sui_config::node::{ConsensusProtocol, DBCheckpointConfig};
 use sui_config::node_config_metrics::NodeConfigMetrics;
-use sui_config::{ConsensusConfig, NodeConfig};
+use sui_core::{
+    authority::{AuthorityState, AuthorityStore},
+    authority_client::NetworkAuthorityClient,
+};
 use sui_core::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use sui_core::authority::authority_store_tables::AuthorityPerpetualTables;
+use sui_core::authority::CHAIN_IDENTIFIER;
 use sui_core::authority::epoch_start_configuration::EpochStartConfigTrait;
 use sui_core::authority::epoch_start_configuration::EpochStartConfiguration;
 use sui_core::authority_aggregator::AuthorityAggregator;
 use sui_core::authority_server::{ValidatorService, ValidatorServiceMetrics};
-use sui_core::checkpoints::checkpoint_executor;
 use sui_core::checkpoints::{
     CheckpointMetrics, CheckpointService, CheckpointStore, SendCheckpointToStateSync,
     SubmitCheckpointToConsensus,
 };
+use sui_core::checkpoints::checkpoint_executor;
 use sui_core::consensus_adapter::{
     CheckConnection, ConnectionMonitorStatus, ConsensusAdapter, ConsensusAdapterMetrics,
 };
+use sui_core::consensus_adapter::SubmitToConsensus;
+use sui_core::consensus_handler::ConsensusHandlerInitializer;
 use sui_core::consensus_manager::{ConsensusManager, ConsensusManagerTrait};
 use sui_core::consensus_throughput_calculator::{
     ConsensusThroughputCalculator, ConsensusThroughputProfiler, ThroughputProfileRanges,
@@ -76,22 +81,21 @@ use sui_core::epoch::data_removal::EpochDataRemover;
 use sui_core::epoch::epoch_metrics::EpochMetrics;
 use sui_core::epoch::reconfiguration::ReconfigurationInitiator;
 use sui_core::module_cache_metrics::ResolverMetrics;
+use sui_core::mysticeti_adapter::LazyMysticetiClient;
+use sui_core::signature_mpc::{SignatureMPCMetrics, SignatureMPCService, SubmitSignatureMPCToConsensus};
 use sui_core::signature_verifier::SignatureVerifierMetrics;
 use sui_core::state_accumulator::StateAccumulator;
 use sui_core::storage::RocksDbStore;
 use sui_core::transaction_orchestrator::TransactiondOrchestrator;
-use sui_core::{
-    authority::{AuthorityState, AuthorityStore},
-    authority_client::NetworkAuthorityClient,
-};
 use sui_json_rpc::coin_api::CoinReadApi;
 use sui_json_rpc::governance_api::GovernanceReadApi;
 use sui_json_rpc::indexer_api::IndexerApi;
+use sui_json_rpc::JsonRpcServerBuilder;
 use sui_json_rpc::move_utils::MoveUtils;
 use sui_json_rpc::read_api::ReadApi;
 use sui_json_rpc::transaction_builder_api::TransactionBuilderApi;
 use sui_json_rpc::transaction_execution_api::TransactionExecutionApi;
-use sui_json_rpc::JsonRpcServerBuilder;
+use sui_json_rpc_api::JsonRpcMetrics;
 use sui_kvstore::writer::setup_key_value_store_uploader;
 use sui_macros::{fail_point_async, replay_log};
 use sui_network::api::ValidatorServer;
@@ -100,26 +104,31 @@ use sui_network::discovery::TrustedPeerChangeEvent;
 use sui_network::state_sync;
 use sui_protocol_config::{Chain, ProtocolConfig, SupportedProtocolVersions};
 use sui_snapshot::uploader::StateSnapshotUploader;
-use sui_storage::object_store::{ObjectStoreConfig, ObjectStoreType};
 use sui_storage::{
     http_key_value_store::HttpKVStore,
     key_value_store::{FallbackTransactionKVStore, TransactionKeyValueStore},
     key_value_store_metrics::KeyValueStoreMetrics,
 };
 use sui_storage::{FileCompression, IndexStore, StorageFormat};
+use sui_storage::object_store::{ObjectStoreConfig, ObjectStoreType};
 use sui_types::base_types::{AuthorityName, EpochId};
+use sui_types::base_types::ConciseableName;
 use sui_types::committee::Committee;
 use sui_types::crypto::KeypairTraits;
+use sui_types::digests::ChainIdentifier;
 use sui_types::error::{SuiError, SuiResult};
+use sui_types::message_envelope::get_google_jwk_bytes;
 use sui_types::messages_consensus::{
-    check_total_jwk_size, AuthorityCapabilities, ConsensusTransaction,
+    AuthorityCapabilities, check_total_jwk_size, ConsensusTransaction,
 };
+use sui_types::messages_signature_mpc::InitiateSignatureMPCProtocol;
 use sui_types::quorum_driver_types::QuorumDriverEffectsQueueResult;
 use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemState;
 use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemStateTrait;
+use sui_types::sui_system_state::SuiSystemState;
 use sui_types::sui_system_state::SuiSystemStateTrait;
-use typed_store::rocks::default_db_options;
 use typed_store::DBMetrics;
+use typed_store::rocks::default_db_options;
 
 use crate::metrics::{GrpcMetrics, SuiNodeMetrics};
 
@@ -144,8 +153,10 @@ pub struct ValidatorComponents {
 
 #[cfg(msim)]
 mod simulator {
-    use super::*;
     use std::sync::atomic::AtomicBool;
+
+    use super::*;
+
     pub(super) struct SimState {
         pub sim_node: sui_simulator::runtime::NodeHandle,
         pub sim_safe_mode_expected: AtomicBool,
@@ -163,9 +174,9 @@ mod simulator {
     }
 
     type JwkInjector = dyn Fn(AuthorityName, &OIDCProvider) -> SuiResult<Vec<(JwkId, JWK)>>
-        + Send
-        + Sync
-        + 'static;
+    + Send
+    + Sync
+    + 'static;
 
     fn default_fetch_jwks(
         _authority: AuthorityName,
@@ -177,7 +188,7 @@ mod simulator {
             sui_types::zk_login_util::DEFAULT_JWK_BYTES,
             &OIDCProvider::Twitch,
         )
-        .map_err(|_| SuiError::JWKRetrievalError)
+            .map_err(|_| SuiError::JWKRetrievalError)
     }
 
     thread_local! {
@@ -192,16 +203,6 @@ mod simulator {
         JWK_INJECTOR.with(|cell| *cell.borrow_mut() = injector);
     }
 }
-
-#[cfg(msim)]
-use simulator::*;
-
-#[cfg(msim)]
-pub use simulator::set_jwk_injector;
-use sui_core::consensus_handler::ConsensusHandlerInitializer;
-use sui_core::mysticeti_adapter::LazyMysticetiClient;
-use sui_core::signature_mpc::{SignatureMPCMetrics, SignatureMPCService, SubmitSignatureMPCToConsensus};
-use sui_types::messages_signature_mpc::InitiateSignatureMPCProtocol;
 
 pub struct SuiNode {
     config: NodeConfig,
@@ -445,7 +446,7 @@ impl SuiNode {
                 .enable_epoch_sui_conservation_check(),
             &prometheus_registry,
         )
-        .await?;
+            .await?;
         let cur_epoch = store.get_recovery_epoch_at_restart()?;
         let committee = committee_store
             .get_committee(&cur_epoch)?
@@ -549,7 +550,7 @@ impl SuiNode {
             &trusted_peer_change_tx,
             epoch_store.epoch_start_state(),
         )
-        .expect("Initial trusted peers must be set");
+            .expect("Initial trusted peers must be set");
 
         // Start uploading transactions/events to remote key value store
         let kv_store_uploader_handle = setup_key_value_store_uploader(
@@ -557,7 +558,7 @@ impl SuiNode {
             &config.transaction_kv_store_write_config,
             &prometheus_registry,
         )
-        .await?;
+            .await?;
 
         // Start archiving local state to remote store
         let state_archive_handle =
@@ -603,7 +604,7 @@ impl SuiNode {
             config.overload_threshold_config.clone(),
             archive_readers,
         )
-        .await;
+            .await;
         // ensure genesis txn was executed
         if epoch_store.epoch() == 0 {
             let txn = &genesis.transaction();
@@ -696,7 +697,7 @@ impl SuiNode {
                 &registry_service,
                 sui_node_metrics.clone(),
             )
-            .await?;
+                .await?;
             // This is only needed during cold start.
             components.consensus_adapter.submit_recovered(&epoch_store);
 
@@ -806,7 +807,7 @@ impl SuiNode {
                 256 * 1024 * 1024,
                 prometheus_registry,
             )
-            .await?;
+                .await?;
             Ok(Some(archive_writer.start(state_sync_store).await?))
         } else {
             Ok(None)
@@ -1077,7 +1078,7 @@ impl SuiNode {
             consensus_adapter.clone(),
             &registry_service.default_registry(),
         )
-        .await?;
+            .await?;
 
 
         Self::start_epoch_specific_validator_components(
@@ -1096,7 +1097,7 @@ impl SuiNode {
             sui_node_metrics,
             sui_tx_validator_metrics,
         )
-        .await
+            .await
     }
 
     async fn start_epoch_specific_validator_components(
@@ -1126,6 +1127,8 @@ impl SuiNode {
             checkpoint_metrics.clone(),
         );
 
+        // Start MPC service for the current epoch.
+        // This object holds the channel for a validator to validator msgs.
         let (signature_mpc_service, signature_mpc_service_exit) = Self::start_signature_mpc_service(
             config,
             consensus_adapter.clone(),
@@ -1159,6 +1162,7 @@ impl SuiNode {
         let consensus_handler_initializer = ConsensusHandlerInitializer::new(
             state.clone(),
             checkpoint_service.clone(),
+            // Pass the MPC object + channel to the ConsensusHandlerInitializer.
             signature_mpc_service.clone(),
             epoch_store.clone(),
             low_scoring_authorities,
@@ -1261,7 +1265,7 @@ impl SuiNode {
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
 
         debug!(
-            "Starting signature mpc service with epoch start timestamp {}
+            "Starting signature mpc service–epoch start timestamp {}
             and epoch duration {}",
             epoch_start_timestamp_ms, epoch_duration_ms
         );
@@ -1507,16 +1511,16 @@ impl SuiNode {
             // was a validator in the previous epoch, and whether the node is a validator
             // in the new epoch.
             let new_validator_components = if let Some(ValidatorComponents {
-                validator_server_handle,
-                consensus_manager,
-                consensus_epoch_data_remover,
-                consensus_adapter,
-                checkpoint_service_exit,
-                signature_mpc_service_exit,
-                checkpoint_metrics,
-                signature_mpc_metrics,
-                sui_tx_validator_metrics,
-              }) = self.validator_components.lock().await.take()
+                                                           validator_server_handle,
+                                                           consensus_manager,
+                                                           consensus_epoch_data_remover,
+                                                           consensus_adapter,
+                                                           checkpoint_service_exit,
+                                                           signature_mpc_service_exit,
+                                                           checkpoint_metrics,
+                                                           signature_mpc_metrics,
+                                                           sui_tx_validator_metrics,
+                                                       }) = self.validator_components.lock().await.take()
             {
                 info!("Reconfiguring the validator.");
                 // Stop the old checkpoint service.
@@ -1558,7 +1562,7 @@ impl SuiNode {
                             self.metrics.clone(),
                             sui_tx_validator_metrics,
                         )
-                        .await?,
+                            .await?,
                     )
                 } else {
                     info!("This node is no longer a validator after reconfiguration");
@@ -1591,7 +1595,7 @@ impl SuiNode {
                             &self.registry_service,
                             self.metrics.clone(),
                         )
-                        .await?,
+                            .await?,
                     )
                 } else {
                     None
@@ -1611,11 +1615,11 @@ impl SuiNode {
                 None | Some(u64::MAX) | Some(0)
             ) {
                 self.state
-                .prune_checkpoints_for_eligible_epochs(
-                    self.config.clone(),
-                    sui_core::authority::authority_store_pruner::AuthorityStorePruningMetrics::new_for_test(),
-                )
-                .await?;
+                    .prune_checkpoints_for_eligible_epochs(
+                        self.config.clone(),
+                        sui_core::authority::authority_store_pruner::AuthorityStorePruningMetrics::new_for_test(),
+                    )
+                    .await?;
             }
 
             info!("Reconfiguration finished");
@@ -1643,7 +1647,7 @@ impl SuiNode {
             *last_checkpoint.digest(),
             &state.database,
         )
-        .expect("EpochStartConfiguration construction cannot fail");
+            .expect("EpochStartConfiguration construction cannot fail");
 
         let new_epoch_store = self
             .state

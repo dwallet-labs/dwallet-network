@@ -106,6 +106,7 @@ impl SignState {
         parties: HashSet<PartyID>,
         session_id: SignatureMPCSessionID,
     ) -> Self {
+        // todo(omer): ???
         let aggregator_party_id = ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap()) % parties.len() as u64) + 1) as PartyID;
 
         Self {

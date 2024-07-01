@@ -2,8 +2,19 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::authority::authority_store_types::{StoreObject, StoreObjectWrapper};
-use crate::verify_indexes::verify_indexes;
+use std::{
+    collections::{HashMap, HashSet},
+    fs,
+    pin::Pin,
+    sync::Arc,
+    thread, vec,
+};
+use std::collections::BTreeMap;
+use std::fs::File;
+use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
+
 use anyhow::anyhow;
 use arc_swap::{ArcSwap, Guard};
 use async_trait::async_trait;
@@ -16,52 +27,36 @@ use itertools::Itertools;
 use move_binary_format::CompiledModule;
 use move_core_types::annotated_value::MoveStructLayout;
 use move_core_types::language_storage::ModuleId;
-use mysten_metrics::{TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX};
+use once_cell::sync::OnceCell;
 use parking_lot::Mutex;
 use prometheus::{
-    register_histogram_vec_with_registry, register_histogram_with_registry,
-    register_int_counter_vec_with_registry, register_int_counter_with_registry,
-    register_int_gauge_vec_with_registry, register_int_gauge_with_registry, Histogram, IntCounter,
-    IntCounterVec, IntGauge, IntGaugeVec, Registry,
+    Histogram, IntCounter,
+    IntCounterVec, IntGauge,
+    IntGaugeVec, register_histogram_vec_with_registry, register_histogram_with_registry, register_int_counter_vec_with_registry,
+    register_int_counter_with_registry, register_int_gauge_vec_with_registry, register_int_gauge_with_registry, Registry,
 };
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::fs::File;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
-use std::{
-    collections::{HashMap, HashSet},
-    fs,
-    pin::Pin,
-    sync::Arc,
-    thread, vec,
-};
-use sui_config::node::{OverloadThresholdConfig, StateDebugDumpConfig};
-use sui_config::NodeConfig;
-use sui_types::type_resolver::LayoutResolver;
+use serde::de::DeserializeOwned;
 use tap::{TapFallible, TapOptional};
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::oneshot;
-use tokio_retry::strategy::{jitter, ExponentialBackoff};
-use tracing::{debug, error, info, instrument, trace, warn, Instrument};
+use tokio_retry::strategy::{ExponentialBackoff, jitter};
+use tracing::{debug, error, info, instrument, Instrument, trace, warn};
 
-use self::authority_store::ExecutionLockWriteGuard;
-use self::authority_store_pruner::AuthorityStorePruningMetrics;
 pub use authority_notify_read::EffectsNotifyRead;
 pub use authority_store::{AuthorityStore, ResolverWrapper, UpdateType};
+use mysten_metrics::{TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX};
 use mysten_metrics::{monitored_scope, spawn_monitored_task};
-
-use once_cell::sync::OnceCell;
 use mysten_network::multiaddr::Error;
 use shared_crypto::intent::{Intent, IntentScope};
 use sui_archival::reader::ArchiveReaderBalancer;
 use sui_config::certificate_deny_config::CertificateDenyConfig;
 use sui_config::genesis::Genesis;
+use sui_config::node::{OverloadThresholdConfig, StateDebugDumpConfig};
 use sui_config::node::{
     AuthorityStorePruningConfig, DBCheckpointConfig, ExpensiveSafetyCheckConfig,
 };
+use sui_config::NodeConfig;
 use sui_config::transaction_deny_config::TransactionDenyConfig;
 use sui_framework::{BuiltInFramework, SystemPackage};
 use sui_json_rpc_types::{
@@ -72,12 +67,16 @@ use sui_json_rpc_types::{
 use sui_macros::{fail_point, fail_point_async, fail_point_if};
 use sui_protocol_config::{ProtocolConfig, SupportedProtocolVersions};
 use sui_storage::indexes::{CoinInfo, ObjectIndexChanges};
+use sui_storage::IndexStore;
 use sui_storage::key_value_store::{TransactionKeyValueStore, TransactionKeyValueStoreTrait};
 use sui_storage::key_value_store_metrics::KeyValueStoreMetrics;
-use sui_storage::IndexStore;
+use sui_types::{base_types::*, committee::Committee, crypto::AuthoritySignature, error::{SuiError, SuiResult}, fp_ensure, object::{Object, ObjectRead}, SUI_SYSTEM_ADDRESS, SUI_SYSTEM_PACKAGE_ID, transaction::*};
+use sui_types::{is_system_package, TypeTag};
 use sui_types::authenticator_state::get_authenticator_state;
 use sui_types::committee::{EpochId, ProtocolVersion};
-use sui_types::crypto::{default_hash, AuthoritySignInfo, Signer};
+#[cfg(msim)]
+use sui_types::committee::CommitteeTrait;
+use sui_types::crypto::{AuthoritySignInfo, default_hash, Signer};
 use sui_types::digests::ChainIdentifier;
 use sui_types::digests::TransactionEventsDigest;
 use sui_types::dynamic_field::{DynamicFieldInfo, DynamicFieldName, DynamicFieldType};
@@ -105,20 +104,22 @@ use sui_types::messages_grpc::{
     HandleTransactionResponse, LayoutGenerationOption, ObjectInfoRequest, ObjectInfoRequestKind,
     ObjectInfoResponse, TransactionInfoRequest, TransactionInfoResponse, TransactionStatus,
 };
+use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCSessionID};
 use sui_types::metrics::{BytecodeVerifierMetrics, LimitsMetrics};
-use sui_types::object::{MoveObject, Owner, PastObjectRead, OBJECT_START_VERSION};
+use sui_types::object::{MoveObject, OBJECT_START_VERSION, Owner, PastObjectRead};
+use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, DKG_SESSION_STRUCT_NAME, DKGSession, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, NewDKGSessionEvent, NewPresignSessionEvent, NewSignDataEvent, NewSignSessionEvent, PRESIGN_SESSION_STRUCT_NAME, PresignSession, SIGN_FUNC_NAME, SIGN_SESSION_STRUCT_NAME, SignData, SignSession};
 use sui_types::storage::{GetSharedLocks, ObjectKey, ObjectStore, WriteKind};
+use sui_types::sui_system_state::{get_sui_system_state, SuiSystemState};
 use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemStateTrait;
 use sui_types::sui_system_state::SuiSystemStateTrait;
-use sui_types::sui_system_state::{get_sui_system_state, SuiSystemState};
-use sui_types::{base_types::*, committee::Committee, crypto::AuthoritySignature, error::{SuiError, SuiResult}, fp_ensure, object::{Object, ObjectRead}, transaction::*, SUI_SYSTEM_ADDRESS, SUI_SYSTEM_PACKAGE_ID};
-use sui_types::{is_system_package, TypeTag};
+use sui_types::type_resolver::LayoutResolver;
 use typed_store::Map;
 
 use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, CertTxGuard};
 use crate::authority::authority_per_epoch_store_pruner::AuthorityPerEpochStorePruner;
 use crate::authority::authority_store::{ExecutionLockReadGuard, ObjectLockStatus};
 use crate::authority::authority_store_pruner::AuthorityStorePruner;
+use crate::authority::authority_store_types::{StoreObject, StoreObjectWrapper};
 use crate::authority::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
 use crate::checkpoints::checkpoint_executor::CheckpointExecutor;
@@ -132,11 +133,10 @@ use crate::state_accumulator::{StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
+use crate::verify_indexes::verify_indexes;
 
-#[cfg(msim)]
-use sui_types::committee::CommitteeTrait;
-use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCSessionID};
-use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, NewDKGSessionEvent, DKGSession, DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, PRESIGN_SESSION_STRUCT_NAME, DWALLET_STRUCT_NAME, DWallet, PresignSession, SIGN_FUNC_NAME, SIGN_SESSION_STRUCT_NAME, SignSession, DWALLET_MODULE_NAME, SignData, NewPresignSessionEvent, NewSignSessionEvent, NewSignDataEvent};
+use self::authority_store::ExecutionLockWriteGuard;
+use self::authority_store_pruner::AuthorityStorePruningMetrics;
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -273,7 +273,7 @@ impl AuthorityMetrics {
             LATENCY_SEC_BUCKETS.to_vec(),
             registry,
         )
-        .unwrap();
+            .unwrap();
 
         let execute_certificate_latency_single_writer =
             execute_certificate_latency.with_label_values(&[TX_TYPE_SINGLE_WRITER_TX]);
@@ -286,75 +286,75 @@ impl AuthorityMetrics {
                 "Total number of transaction orders",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             total_certs: register_int_counter_with_registry!(
                 "total_transaction_certificates",
                 "Total number of transaction certificates handled",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             total_cert_attempts: register_int_counter_with_registry!(
                 "total_handle_certificate_attempts",
                 "Number of calls to handle_certificate",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             // total_effects == total transactions finished
             total_effects: register_int_counter_with_registry!(
                 "total_transaction_effects",
                 "Total number of transaction effects produced",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
 
             shared_obj_tx: register_int_counter_with_registry!(
                 "num_shared_obj_tx",
                 "Number of transactions involving shared objects",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
 
             sponsored_tx: register_int_counter_with_registry!(
                 "num_sponsored_tx",
                 "Number of sponsored transactions",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
 
             tx_already_processed: register_int_counter_with_registry!(
                 "num_tx_already_processed",
                 "Number of transaction orders already processed previously",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             num_input_objs: register_histogram_with_registry!(
                 "num_input_objects",
                 "Distribution of number of input TX objects per TX",
                 POSITIVE_INT_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             num_shared_objects: register_histogram_with_registry!(
                 "num_shared_objects",
                 "Number of shared input objects per TX",
                 POSITIVE_INT_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             batch_size: register_histogram_with_registry!(
                 "batch_size",
                 "Distribution of size of transaction batch",
                 POSITIVE_INT_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             authority_state_handle_transaction_latency: register_histogram_with_registry!(
                 "authority_state_handle_transaction_latency",
                 "Latency of handling transactions",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             execute_certificate_latency_single_writer,
             execute_certificate_latency_shared_object,
             execute_certificate_with_effects_latency: register_histogram_with_registry!(
@@ -363,28 +363,28 @@ impl AuthorityMetrics {
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             internal_execution_latency: register_histogram_with_registry!(
                 "authority_state_internal_execution_latency",
                 "Latency of actual certificate executions",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             prepare_certificate_latency: register_histogram_with_registry!(
                 "authority_state_prepare_certificate_latency",
                 "Latency of executing certificates, before committing the results",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             commit_certificate_latency: register_histogram_with_registry!(
                 "authority_state_commit_certificate_latency",
                 "Latency of committing certificate execution results",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             db_checkpoint_latency: register_histogram_with_registry!(
                 "db_checkpoint_latency",
                 "Latency of checkpointing dbs",
@@ -397,134 +397,134 @@ impl AuthorityMetrics {
                 &["result"],
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_num_missing_objects: register_int_gauge_with_registry!(
                 "transaction_manager_num_missing_objects",
                 "Current number of missing objects in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_num_pending_certificates: register_int_gauge_with_registry!(
                 "transaction_manager_num_pending_certificates",
                 "Number of certificates pending in TransactionManager, with at least 1 missing input object",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_num_executing_certificates: register_int_gauge_with_registry!(
                 "transaction_manager_num_executing_certificates",
                 "Number of executing certificates, including queued and actually running certificates",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_num_ready: register_int_gauge_with_registry!(
                 "transaction_manager_num_ready",
                 "Number of ready transactions in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_object_cache_size: register_int_gauge_with_registry!(
                 "transaction_manager_object_cache_size",
                 "Current size of object-availability cache in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_object_cache_hits: register_int_counter_with_registry!(
                 "transaction_manager_object_cache_hits",
                 "Number of object-availability cache hits in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_object_cache_misses: register_int_counter_with_registry!(
                 "transaction_manager_object_cache_misses",
                 "Number of object-availability cache misses in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_object_cache_evictions: register_int_counter_with_registry!(
                 "transaction_manager_object_cache_evictions",
                 "Number of object-availability cache evictions in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_package_cache_size: register_int_gauge_with_registry!(
                 "transaction_manager_package_cache_size",
                 "Current size of package-availability cache in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_package_cache_hits: register_int_counter_with_registry!(
                 "transaction_manager_package_cache_hits",
                 "Number of package-availability cache hits in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_package_cache_misses: register_int_counter_with_registry!(
                 "transaction_manager_package_cache_misses",
                 "Number of package-availability cache misses in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_package_cache_evictions: register_int_counter_with_registry!(
                 "transaction_manager_package_cache_evictions",
                 "Number of package-availability cache evictions in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_transaction_queue_age_s: register_histogram_with_registry!(
                 "transaction_manager_transaction_queue_age_s",
                 "Time spent in waiting for transaction in the queue",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             execution_driver_executed_transactions: register_int_counter_with_registry!(
                 "execution_driver_executed_transactions",
                 "Cumulative number of transaction executed by execution driver",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             execution_driver_dispatch_queue: register_int_gauge_with_registry!(
                 "execution_driver_dispatch_queue",
                 "Number of transaction pending in execution driver dispatch queue",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             skipped_consensus_txns: register_int_counter_with_registry!(
                 "skipped_consensus_txns",
                 "Total number of consensus transactions skipped",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             skipped_consensus_txns_cache_hit: register_int_counter_with_registry!(
                 "skipped_consensus_txns_cache_hit",
                 "Total number of consensus transactions skipped because of local cache hit",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             post_processing_total_events_emitted: register_int_counter_with_registry!(
                 "post_processing_total_events_emitted",
                 "Total number of events emitted in post processing",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             post_processing_total_tx_indexed: register_int_counter_with_registry!(
                 "post_processing_total_tx_indexed",
                 "Total number of txes indexed in post processing",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             post_processing_total_tx_had_event_processed: register_int_counter_with_registry!(
                 "post_processing_total_tx_had_event_processed",
                 "Total number of txes finished event processing in post processing",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             post_processing_total_failures: register_int_counter_with_registry!(
                 "post_processing_total_failures",
                 "Total number of failure in post processing",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             consensus_handler_processed_bytes: register_int_counter_with_registry!(
                 "consensus_handler_processed_bytes",
                 "Number of bytes processed by consensus_handler",
@@ -568,19 +568,19 @@ impl AuthorityMetrics {
                 "Number of failed authenticator state updates",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             zklogin_sig_count: register_int_counter_with_registry!(
                 "zklogin_sig_count",
                 "Count of zkLogin signatures",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             multisig_sig_count: register_int_counter_with_registry!(
                 "multisig_sig_count",
                 "Count of zkLogin signatures",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             consensus_calculated_throughput: register_int_gauge_with_registry!(
                 "consensus_calculated_throughput",
                 "The calculated throughput from consensus output. Result is calculated based on unique transactions.",
@@ -590,7 +590,7 @@ impl AuthorityMetrics {
                 "consensus_calculated_throughput_profile",
                 "The current active calculated throughput profile",
                 registry
-            ).unwrap()
+            ).unwrap(),
         }
     }
 }
@@ -990,8 +990,8 @@ impl AuthorityState {
             expected_effects_digest,
             epoch_store,
         )
-        .await
-        .tap_err(|e| info!(?tx_digest, "process_certificate failed: {e}"))
+            .await
+            .tap_err(|e| info!(?tx_digest, "process_certificate failed: {e}"))
     }
 
     /// Test only wrapper for `try_execute_immediately()` above, useful for checking errors if the
@@ -1059,8 +1059,8 @@ impl AuthorityState {
             inner_temporary_store,
             certificate,
         )?
-        .write_to_file(&dump_dir)
-        .map_err(|e| SuiError::FileIOError(e.to_string()))
+            .write_to_file(&dump_dir)
+            .map_err(|e| SuiError::FileIOError(e.to_string()))
     }
 
     #[instrument(level = "trace", skip_all)]
@@ -1168,7 +1168,7 @@ impl AuthorityState {
             execution_guard,
             epoch_store,
         )
-        .await?;
+            .await?;
 
         if let TransactionKind::AuthenticatorStateUpdate(auth_state) =
             certificate.data().transaction_data().kind()
@@ -1256,8 +1256,11 @@ impl AuthorityState {
             effects_sig.as_ref(),
         )?;
 
-        // if the tx is initiate for signature mpc protocol (e.g. dkg, presign, sign...)
-        // intiate the protocol
+        // NOTE: this is a hack, we ignore the output, so it will never kill the blockchain.
+        // While the code is like this, can't notify the user if there is a failure.
+        // todo: find a way to notify the user if there is a failure.
+        // If the tx is an initiate for signature mpc protocol (e.g., dkg, presign, sign...)
+        // Initiate the protocol
         let _ = self.initiate_signature_mpc_protocol(certificate, &inner_temporary_store, effects, epoch_store);
 
         // Allow testing what happens if we crash here.
@@ -1287,24 +1290,27 @@ impl AuthorityState {
     }
 
     fn initiate_signature_mpc_protocol(&self, certificate: &VerifiedExecutableTransaction, inner_temporary_store: &InnerTemporaryStore, effects: &TransactionEffects, epoch_store: &Arc<AuthorityPerEpochStore>) -> Result<(), anyhow::Error> {
+        // make sure this is a validator node.
         if self.is_validator(epoch_store) {
             let status = match &effects {
                 TransactionEffects::V1(effects) => effects.status(),
                 TransactionEffects::V2(effects) => effects.status(),
             };
-            // TODO: should we do something in case of a faild tx?
+            // TODO: should we do something in case of a failed tx?
             if status.is_err() {
                 return Ok(());
             }
             let mut messages = Vec::new();
             let events = &inner_temporary_store.events.data;
+            /// Check events and decide if we need to initiate a signature mpc protocol
             for event in events {
-                if NewDKGSessionEvent::type_() == event.type_  {
+                if NewDKGSessionEvent::type_() == event.type_ {
                     let event = NewDKGSessionEvent::from_bcs_bytes(&event.contents)?;
                     debug!("event: NewDKGSessionEvent {:?}", event);
                     let commitment_to_centralized_party_secret_key_share = event.commitment_to_centralized_party_secret_key_share;
 
                     let obj_ref = Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                    // Start DKG protocol from the Validator side.
                     let message = InitiateSignatureMPCProtocol::DKG {
                         session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
                         session_ref: obj_ref,
@@ -1345,7 +1351,7 @@ impl AuthorityState {
                         dkg_output: bcs::from_bytes(&*dkg_output)?,
                         public_nonce_encrypted_partial_signature_and_proofs: bcs::from_bytes(&*public_nonce_encrypted_partial_signature_and_proofs)?,
                         presigns: bcs::from_bytes(&*presigns)?,
-                        hash
+                        hash,
                     };
 
                     messages.push(message);
@@ -1966,11 +1972,11 @@ impl AuthorityState {
                             error!("try_create_dynamic_field_info should not fail, {}, new_object={:?}", e, new_object);
                             None
                         }
-                    )
-                        else {
-                            // Skip indexing for non dynamic field objects.
-                            continue;
-                        };
+                        )
+                    else {
+                        // Skip indexing for non dynamic field objects.
+                        continue;
+                    };
                     new_dynamic_fields.push(((ObjectID::from(owner), *id), df_info))
                 }
                 _ => {}
@@ -2252,7 +2258,7 @@ impl AuthorityState {
                 .get_checkpoint_by_sequence_number(seq)?,
             None => self.checkpoint_store.get_latest_certified_checkpoint(),
         }
-        .map(|v| v.into_inner());
+            .map(|v| v.into_inner());
         let contents = match &summary {
             Some(s) => self
                 .checkpoint_store
@@ -2277,7 +2283,7 @@ impl AuthorityState {
                     .get_checkpoint_by_sequence_number(seq)?,
                 None => self.checkpoint_store.get_latest_certified_checkpoint(),
             }
-            .map(|v| v.into_inner());
+                .map(|v| v.into_inner());
             summary.map(CheckpointSummaryResponse::Certified)
         } else {
             let summary = match request.sequence_number {
@@ -2426,7 +2432,7 @@ impl AuthorityState {
             config.indirect_objects_threshold,
             archive_readers,
         )
-        .await
+            .await
     }
 
     pub fn transaction_manager(&self) -> &Arc<TransactionManager> {
@@ -2599,7 +2605,7 @@ impl AuthorityState {
             new_protocol_version,
             cur_epoch_store.get_chain_identifier().chain(),
         )
-        .simplified_unwrap_then_delete();
+            .simplified_unwrap_then_delete();
         // If in the new epoch the simplified_unwrap_then_delete is enabled for the first time,
         // we re-accumulate state root.
         let should_reaccumulate =
@@ -2655,10 +2661,10 @@ impl AuthorityState {
                                     );
                                 }
                                 if matches!(prev.1.inner(), StoreObject::Wrapped)
-                                    && object_key.0 != prev.0 .0
+                                    && object_key.0 != prev.0.0
                                 {
                                     wrapped_objects_to_remove
-                                        .push(WrappedObject::new(prev.0 .0, prev.0 .1));
+                                        .push(WrappedObject::new(prev.0.0, prev.0.1));
                                 }
 
                                 prev = (object_key, object);
@@ -2670,7 +2676,7 @@ impl AuthorityState {
                         }
                     }
                     if matches!(prev.1.inner(), StoreObject::Wrapped) {
-                        wrapped_objects_to_remove.push(WrappedObject::new(prev.0 .0, prev.0 .1));
+                        wrapped_objects_to_remove.push(WrappedObject::new(prev.0.0, prev.0.1));
                     }
                     info!(
                         "[Re-accumulate] Task {}: object scanned: {}, wrapped objects: {}",
@@ -3039,7 +3045,7 @@ impl AuthorityState {
                     object_id: *object_id,
                     version: Some(obj_ref.1),
                 }
-                .into())
+                    .into())
             }
         }
     }
@@ -3112,7 +3118,7 @@ impl AuthorityState {
         cursor: (String, ObjectID),
         limit: usize,
         one_coin_type_only: bool,
-    ) -> SuiResult<impl Iterator<Item = (String, ObjectID, CoinInfo)> + '_> {
+    ) -> SuiResult<impl Iterator<Item=(String, ObjectID, CoinInfo)> + '_> {
         if let Some(indexes) = &self.indexes {
             indexes.get_owned_coins_iterator_with_cursor(owner, cursor, limit, one_coin_type_only)
         } else {
@@ -3127,7 +3133,7 @@ impl AuthorityState {
         // If `Some`, the query will start from the next item after the specified cursor
         cursor: Option<ObjectID>,
         filter: Option<SuiObjectDataFilter>,
-    ) -> SuiResult<impl Iterator<Item = ObjectInfo> + '_> {
+    ) -> SuiResult<impl Iterator<Item=ObjectInfo> + '_> {
         let cursor_u = cursor.unwrap_or(ObjectID::ZERO);
         if let Some(indexes) = &self.indexes {
             indexes.get_owner_objects_iterator(owner, cursor_u, filter)
@@ -3195,7 +3201,7 @@ impl AuthorityState {
         owner: ObjectID,
         // If `Some`, the query will start from the next item after the specified cursor
         cursor: Option<ObjectID>,
-    ) -> SuiResult<impl Iterator<Item = (ObjectID, DynamicFieldInfo)> + '_> {
+    ) -> SuiResult<impl Iterator<Item=(ObjectID, DynamicFieldInfo)> + '_> {
         if let Some(indexes) = &self.indexes {
             indexes.get_dynamic_fields_iterator(owner, cursor)
         } else {
@@ -3635,7 +3641,7 @@ impl AuthorityState {
                 .iter()
                 .map(|o| self.insert_genesis_object(o.clone())),
         )
-        .await;
+            .await;
     }
 
     /// Make a status response for a transaction
@@ -3849,7 +3855,7 @@ impl AuthorityState {
                     provided_obj_ref: *object_ref,
                     current_version: locked_ref.1,
                 }
-                .into());
+                    .into());
             }
             ObjectLockStatus::Initialized => {
                 return Ok(None);
@@ -3964,7 +3970,7 @@ impl AuthorityState {
                 max_binary_format_version,
                 no_extraneous_module_bytes,
             )
-            .await
+                .await
             else {
                 return vec![];
             };
@@ -4034,7 +4040,7 @@ impl AuthorityState {
                         move_binary_format_version,
                         no_extraneous_module_bytes,
                     )
-                    .unwrap()
+                        .unwrap()
                 })
                 .collect();
 
@@ -4483,7 +4489,7 @@ impl AuthorityState {
     #[cfg(test)]
     pub(crate) fn iter_live_object_set_for_testing(
         &self,
-    ) -> impl Iterator<Item = authority_store_tables::LiveObject> + '_ {
+    ) -> impl Iterator<Item=authority_store_tables::LiveObject> + '_ {
         let include_wrapped_object = !self
             .epoch_store_for_testing()
             .protocol_config()
@@ -4514,7 +4520,7 @@ impl AuthorityState {
             AuthorityStorePruningMetrics::new_for_test(),
             usize::MAX,
         )
-        .await;
+            .await;
         let _ = AuthorityStorePruner::compact(&self.database.perpetual_tables);
     }
 }
@@ -4642,9 +4648,11 @@ impl TransactionKeyValueStoreTrait for AuthorityState {
 
 #[cfg(msim)]
 pub mod framework_injection {
-    use move_binary_format::CompiledModule;
-    use std::collections::BTreeMap;
     use std::{cell::RefCell, collections::BTreeSet};
+    use std::collections::BTreeMap;
+
+    use move_binary_format::CompiledModule;
+
     use sui_framework::{BuiltInFramework, SystemPackage};
     use sui_types::base_types::{AuthorityName, ObjectID};
     use sui_types::is_system_package;
@@ -4659,7 +4667,7 @@ pub mod framework_injection {
     type Framework = Vec<CompiledModule>;
 
     pub type PackageUpgradeCallback =
-        Box<dyn Fn(AuthorityName) -> Option<Framework> + Send + Sync + 'static>;
+    Box<dyn Fn(AuthorityName) -> Option<Framework> + Send + Sync + 'static>;
 
     enum PackageOverrideConfig {
         Global(Framework),

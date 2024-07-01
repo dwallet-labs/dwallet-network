@@ -1,50 +1,82 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use arc_swap::ArcSwapOption;
-use enum_dispatch::enum_dispatch;
-use fastcrypto_zkp::bn254::zk_login::{JwkId, OIDCProvider, JWK};
-use fastcrypto_zkp::bn254::zk_login_api::ZkLoginEnv;
-use futures::future::{join_all, select, Either};
-use futures::FutureExt;
-use itertools::{izip, Itertools};
-use narwhal_executor::ExecutionIndices;
-use parking_lot::RwLock;
-use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
-use rocksdb::Options;
-use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::future::Future;
 use std::iter;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
+
+use arc_swap::ArcSwapOption;
+use enum_dispatch::enum_dispatch;
+use fastcrypto_zkp::bn254::zk_login::{JWK, JwkId, OIDCProvider};
+use fastcrypto_zkp::bn254::zk_login_api::ZkLoginEnv;
+use futures::future::{Either, join_all, select};
+use futures::FutureExt;
+use itertools::{Itertools, izip};
+use move_bytecode_utils::module_cache::SyncModuleCache;
+use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
+use parking_lot::RwLock;
+use prometheus::IntCounter;
+use rocksdb::Options;
+use serde::{Deserialize, Serialize};
+use tap::TapOptional;
+use tokio::time::Instant;
+use tracing::{debug, error, info, instrument, trace, warn};
+
+use mysten_common::sync::notify_once::NotifyOnce;
+use mysten_common::sync::notify_read::NotifyRead;
+use mysten_metrics::monitored_scope;
+use narwhal_executor::ExecutionIndices;
+use narwhal_types::{RandomnessRound, Round, TimestampMs};
 use sui_config::node::ExpensiveSafetyCheckConfig;
+use sui_execution::{self, Executor};
+use sui_macros::fail_point;
+use sui_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
+use sui_storage::mutex_table::{MutexGuard, MutexTable};
 use sui_types::accumulator::Accumulator;
-use sui_types::authenticator_state::{get_authenticator_state, ActiveJwk};
-use sui_types::base_types::ConciseableName;
+use sui_types::authenticator_state::{ActiveJwk, get_authenticator_state};
 use sui_types::base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest};
+use sui_types::base_types::ConciseableName;
 use sui_types::committee::Committee;
 use sui_types::committee::CommitteeTrait;
 use sui_types::crypto::{AuthoritySignInfo, AuthorityStrongQuorumSignInfo};
 use sui_types::digests::{ChainIdentifier, SignatureMPCOutputDigest};
+use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
 use sui_types::error::{SuiError, SuiResult};
+use sui_types::executable_transaction::{CertificateProof, ExecutableTransaction, TrustedExecutableTransaction, VerifiedExecutableTransaction};
+use sui_types::message_envelope::TrustedEnvelope;
+use sui_types::messages_checkpoint::{CheckpointContents, CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointSummary, SignedCheckpointSummary};
+use sui_types::messages_consensus::{
+    AuthorityCapabilities, check_total_jwk_size, ConsensusTransaction, ConsensusTransactionKey,
+    ConsensusTransactionKind,
+};
+use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, InitSignatureMPCProtocolSequenceNumber, SignatureMPCOutput, SignedSignatureMPCOutput};
 use sui_types::signature::GenericSignature;
+use sui_types::storage::{
+    GetSharedLocks, ObjectKey, ObjectStore, transaction_input_object_keys,
+    transaction_receiving_object_keys,
+};
+use sui_types::SUI_RANDOMNESS_STATE_OBJECT_ID;
+use sui_types::sui_system_state::epoch_start_sui_system_state::{
+    EpochStartSystemState, EpochStartSystemStateTrait,
+};
 use sui_types::transaction::{
     AuthenticatorStateUpdate, CertifiedTransaction, SenderSignedData, SharedInputObject,
     Transaction, TransactionDataAPI, TransactionKind, VerifiedCertificate,
     VerifiedSignedTransaction, VerifiedTransaction,
 };
-use sui_types::SUI_RANDOMNESS_STATE_OBJECT_ID;
-use tracing::{debug, error, info, instrument, trace, warn};
 use typed_store::{
-    rocks::{default_db_options, DBBatch, DBMap, DBOptions, MetricConf},
+    rocks::{DBBatch, DBMap, DBOptions, default_db_options, MetricConf},
     traits::{TableSummary, TypedStoreDebug},
     TypedStoreError,
 };
+use typed_store::{Map, retry_transaction_forever};
+use typed_store_derive::DBMapUtils;
 
-use super::epoch_start_configuration::EpochStartConfigTrait;
-use crate::authority::epoch_start_configuration::{EpochFlag, EpochStartConfiguration};
 use crate::authority::{AuthorityStore, ResolverWrapper};
+use crate::authority::epoch_start_configuration::{EpochFlag, EpochStartConfiguration};
 use crate::checkpoints::{
     BuilderCheckpointSummary, CheckpointCommitHeight, CheckpointServiceNotify, EpochStats,
     PendingCheckpoint, PendingCheckpointInfo,
@@ -57,40 +89,11 @@ use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
+use crate::signature_mpc::SignatureMPCServiceNotify;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, InsertResult, MultiStakeAggregator, StakeAggregator};
-use move_bytecode_utils::module_cache::SyncModuleCache;
-use mysten_common::sync::notify_once::NotifyOnce;
-use mysten_common::sync::notify_read::NotifyRead;
-use mysten_metrics::monitored_scope;
-use narwhal_types::{RandomnessRound, Round, TimestampMs};
-use prometheus::IntCounter;
-use std::str::FromStr;
-use sui_execution::{self, Executor};
-use sui_macros::fail_point;
-use sui_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
-use sui_storage::mutex_table::{MutexGuard, MutexTable};
-use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
-use sui_types::executable_transaction::{CertificateProof, ExecutableTransaction, TrustedExecutableTransaction, VerifiedExecutableTransaction};
-use sui_types::message_envelope::TrustedEnvelope;
-use sui_types::messages_checkpoint::{CheckpointContents, CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointSummary, SignedCheckpointSummary};
-use sui_types::messages_consensus::{
-    check_total_jwk_size, AuthorityCapabilities, ConsensusTransaction, ConsensusTransactionKey,
-    ConsensusTransactionKind,
-};
-use sui_types::storage::{
-    transaction_input_object_keys, transaction_receiving_object_keys, GetSharedLocks, ObjectKey,
-    ObjectStore,
-};
-use sui_types::sui_system_state::epoch_start_sui_system_state::{
-    EpochStartSystemState, EpochStartSystemStateTrait,
-};
-use tap::TapOptional;
-use tokio::time::Instant;
-use sui_types::messages_signature_mpc::{SignatureMPCOutput, InitiateSignatureMPCProtocol, InitSignatureMPCProtocolSequenceNumber, SignedSignatureMPCOutput};
-use typed_store::{retry_transaction_forever, Map};
-use typed_store_derive::DBMapUtils;
-use crate::signature_mpc::SignatureMPCServiceNotify;
+
+use super::epoch_start_configuration::EpochStartConfigTrait;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -637,7 +640,7 @@ impl AuthorityEpochTables {
         checkpoint_seq: CheckpointSequenceNumber,
         starting_index: u64,
     ) -> SuiResult<
-        impl Iterator<Item = ((CheckpointSequenceNumber, u64), CheckpointSignatureMessage)> + '_,
+        impl Iterator<Item=((CheckpointSequenceNumber, u64), CheckpointSignatureMessage)> + '_,
     > {
         let key = (checkpoint_seq, starting_index);
         debug!("Scanning pending checkpoint signatures from {:?}", key);
@@ -667,7 +670,9 @@ impl AuthorityEpochTables {
 pub(crate) const MUTEX_TABLE_SIZE: usize = 1024;
 
 impl AuthorityPerEpochStore {
-    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
+    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(
+        epoch = committee.epoch
+    ))]
     pub fn new(
         name: AuthorityName,
         committee: Arc<Committee>,
@@ -1027,7 +1032,7 @@ impl AuthorityPerEpochStore {
 
     pub fn effects_signatures_exists<'a>(
         &self,
-        digests: impl IntoIterator<Item = &'a TransactionDigest>,
+        digests: impl IntoIterator<Item=&'a TransactionDigest>,
     ) -> SuiResult<Vec<bool>> {
         Ok(self
             .tables()?
@@ -1051,7 +1056,7 @@ impl AuthorityPerEpochStore {
 
     pub fn multi_get_next_shared_object_versions<'a>(
         &self,
-        ids: impl Iterator<Item = &'a ObjectID>,
+        ids: impl Iterator<Item=&'a ObjectID>,
     ) -> SuiResult<Vec<Option<SequenceNumber>>> {
         Ok(self.tables()?.next_shared_object_versions.multi_get(ids)?)
     }
@@ -1242,7 +1247,7 @@ impl AuthorityPerEpochStore {
     // successfully for each affected object id.
     async fn get_or_init_next_object_versions(
         &self,
-        objects_to_init: impl Iterator<Item = (ObjectID, SequenceNumber)> + Clone,
+        objects_to_init: impl Iterator<Item=(ObjectID, SequenceNumber)> + Clone,
         object_store: impl ObjectStore,
     ) -> SuiResult<HashMap<ObjectID, SequenceNumber>> {
         let mut ret: HashMap<_, _>;
@@ -1458,7 +1463,7 @@ impl AuthorityPerEpochStore {
                 .collect(),
             object_store,
         )
-        .await
+            .await
     }
 
     /// When submitting a certificate caller **must** provide a ReconfigState lock guard
@@ -1563,7 +1568,7 @@ impl AuthorityPerEpochStore {
 
     pub fn check_consensus_messages_processed<'a>(
         &self,
-        keys: impl Iterator<Item = &'a SequencedConsensusTransactionKey>,
+        keys: impl Iterator<Item=&'a SequencedConsensusTransactionKey>,
     ) -> SuiResult<Vec<bool>> {
         Ok(self
             .tables()?
@@ -1612,7 +1617,7 @@ impl AuthorityPerEpochStore {
                         "Can not find user signature for checkpoint for transaction {:?}",
                         digest
                     )
-                    .as_str(),
+                        .as_str(),
                 ));
             };
             result.push(signatures);
@@ -1726,8 +1731,8 @@ impl AuthorityPerEpochStore {
         let votes = jwk_aggregator.votes_for_authority(authority);
         if votes
             >= self
-                .protocol_config()
-                .max_jwk_votes_per_validator_per_epoch()
+            .protocol_config()
+            .max_jwk_votes_per_validator_per_epoch()
         {
             warn!(
                 "validator {:?} has already voted {} times this epoch, ignoring vote",
@@ -2053,40 +2058,40 @@ impl AuthorityPerEpochStore {
         // Signatures are verified as part of narwhal payload verification in SuiTxValidator
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::UserTransaction(_certificate),
-                ..
-            }) => {}
+                                                            kind: ConsensusTransactionKind::UserTransaction(_certificate),
+                                                            ..
+                                                        }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CheckpointSignature(data),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::CheckpointSignature(data),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != data.summary.auth_sig().authority {
                     warn!("CheckpointSignature authority {} does not match narwhal certificate source {}", data.summary.auth_sig().authority, transaction.certificate_author_index );
                     return None;
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCMessage(data),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::SignatureMPCMessage(data),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != data.summary.auth_sig().authority {
                     warn!("SignatureMPCMessage authority {} does not match narwhal certificate source {}", data.summary.auth_sig().authority, transaction.certificate_author_index );
                     return None;
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignedDKGSignatureMPCOutput(data),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::SignedDKGSignatureMPCOutput(data),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != data.auth_sig().authority {
                     warn!("SignedDKGSignatureMPCOutput authority {} does not match narwhal certificate source {}", data.auth_sig().authority, transaction.certificate_author_index );
                     return None;
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(authority),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::EndOfPublish(authority),
+                                                            ..
+                                                        }) => {
                 if &transaction.sender_authority() != authority {
                     warn!(
                         "EndOfPublish authority {} does not match narwhal certificate source {}",
@@ -2096,9 +2101,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CapabilityNotification(capabilities),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::CapabilityNotification(capabilities),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != capabilities.authority {
                     warn!(
                         "CapabilityNotification authority {} does not match narwhal certificate source {}",
@@ -2109,9 +2114,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::NewJWKFetched(authority, id, jwk),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::NewJWKFetched(authority, id, jwk),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != *authority {
                     warn!(
                         "NewJWKFetched authority {} does not match narwhal certificate source {}",
@@ -2128,9 +2133,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::RandomnessStateUpdate(_round, _bytes),
-                ..
-            }) => {}
+                                                            kind: ConsensusTransactionKind::RandomnessStateUpdate(_round, _bytes),
+                                                            ..
+                                                        }) => {}
             SequencedConsensusTransactionKind::System(_) => {}
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))
@@ -2333,7 +2338,7 @@ impl AuthorityPerEpochStore {
             0,
             skipped_consensus_txns,
         )
-        .await
+            .await
     }
 
     fn process_notifications(
@@ -2402,7 +2407,7 @@ impl AuthorityPerEpochStore {
                 unique_shared_input_objects.into_iter(),
                 &object_store,
             )
-            .await?
+                .await?
         };
 
         let mut deferred_txns: BTreeMap<DeferralKey, Vec<VerifiedSequencedConsensusTransaction>> =
@@ -2479,14 +2484,14 @@ impl AuthorityPerEpochStore {
 
         for transaction in transactions {
             let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
-                transaction,
-                ..
-            }) = transaction;
+                                                          transaction,
+                                                          ..
+                                                      }) = transaction;
 
             if let SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(authority),
-                ..
-            }) = transaction
+                                                                   kind: ConsensusTransactionKind::EndOfPublish(authority),
+                                                                   ..
+                                                               }) = transaction
             {
                 debug!(
                     "Received EndOfPublish for epoch {} from {:?}",
@@ -2498,8 +2503,8 @@ impl AuthorityPerEpochStore {
                 // And this function itself is always executed from consensus task
                 let collected_end_of_publish = if lock.is_none()
                     && self
-                        .get_reconfig_state_read_lock_guard()
-                        .should_accept_consensus_certs()
+                    .get_reconfig_state_read_lock_guard()
+                    .should_accept_consensus_certs()
                 {
                     write_batch.insert_batch(&self.tables()?.end_of_publish, [(authority, ())])?;
                     self.end_of_publish.try_lock()
@@ -2583,18 +2588,18 @@ impl AuthorityPerEpochStore {
     ) -> SuiResult<ConsensusCertificateResult> {
         let _scope = monitored_scope("HandleConsensusTransaction");
         let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
-            certificate_author_index: _,
-            certificate_author,
-            consensus_index,
-            transaction,
-        }) = transaction;
+                                                      certificate_author_index: _,
+                                                      certificate_author,
+                                                      consensus_index,
+                                                      transaction,
+                                                  }) = transaction;
         let tracking_id = transaction.get_tracking_id();
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::UserTransaction(certificate),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::UserTransaction(certificate),
+                                                            ..
+                                                        }) => {
                 if certificate.epoch() != self.epoch() {
                     // Epoch has changed after this certificate was sequenced, ignore it.
                     debug!(
@@ -2652,7 +2657,7 @@ impl AuthorityPerEpochStore {
                         shared_input_next_versions,
                         &certificate,
                     )
-                    .await?;
+                        .await?;
                 } else {
                     self.record_owned_object_cert_from_consensus(batch, &certificate)
                         .await?;
@@ -2661,9 +2666,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::SuiTransaction(certificate))
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CheckpointSignature(info),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::CheckpointSignature(info),
+                                                            ..
+                                                        }) => {
                 // We usually call notify_checkpoint_signature in SuiTxValidator, but that step can
                 // be skipped when a batch is already part of a certificate, so we must also
                 // notify here.
@@ -2671,9 +2676,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCMessage(message),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::SignatureMPCMessage(message),
+                                                            ..
+                                                        }) => {
                 // TODO: should we? We usually call notify_signature_mpc_message in SuiTxValidator, but that step can
                 // be skipped when a batch is already part of a certificate, so we must also
                 // notify here.
@@ -2681,9 +2686,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignedDKGSignatureMPCOutput(output),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::SignedDKGSignatureMPCOutput(output),
+                                                            ..
+                                                        }) => {
                 let transaction = VerifiedTransaction::new_signature_mpc_output(output.data().clone());
                 let certificate = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
 
@@ -2695,16 +2700,16 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(_),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::EndOfPublish(_),
+                                                            ..
+                                                        }) => {
                 // these are partitioned earlier
                 panic!("process_consensus_transaction called with end-of-publish transaction");
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CapabilityNotification(capabilities),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::CapabilityNotification(capabilities),
+                                                            ..
+                                                        }) => {
                 let authority = capabilities.authority;
                 if self
                     .get_reconfig_state_read_lock_guard()
@@ -2724,9 +2729,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::NewJWKFetched(authority, jwk_id, jwk),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::NewJWKFetched(authority, jwk_id, jwk),
+                                                            ..
+                                                        }) => {
                 if self
                     .get_reconfig_state_read_lock_guard()
                     .should_accept_consensus_certs()
@@ -2747,9 +2752,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::RandomnessStateUpdate(_, _),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::RandomnessStateUpdate(_, _),
+                                                            ..
+                                                        }) => {
                 // These are always generated as System transactions (handled below).
                 panic!("process_consensus_transaction called with external RandomnessStateUpdate");
             }
@@ -2787,7 +2792,7 @@ impl AuthorityPerEpochStore {
                         shared_input_next_versions,
                         system_transaction,
                     )
-                    .await?;
+                        .await?;
                 }
 
                 Ok(ConsensusCertificateResult::SuiTransaction(
@@ -2885,6 +2890,7 @@ impl AuthorityPerEpochStore {
         Ok(iter.collect())
     }
 
+    /// After collecting all signatures, this code starts the MPC protocol.
     pub fn get_initiate_signature_mpc_protocols(
         &self,
         last: InitSignatureMPCProtocolSequenceNumber,
@@ -2894,19 +2900,22 @@ impl AuthorityPerEpochStore {
         Ok(iter.collect())
     }
 
+    /// Initialize the state for the MPC protocol.
     pub fn insert_initiate_signature_mpc_protocols(
         &self,
         messages: &[InitiateSignatureMPCProtocol],
     ) -> SuiResult<()> {
+        // todo: make sure this is correct.
         let last = self.tables()?.initiate_signature_mpc_protocols.unbounded_iter()
             .skip_to_last()
             .next()
             .map(|(key, _)| key)
             .unwrap_or_default();
         let mut batch = self.tables()?.initiate_signature_mpc_protocols.batch();
+        // THis code collects the MPC protocol messages.
         batch.insert_batch(
             &self.tables()?.initiate_signature_mpc_protocols,
-            messages.into_iter().map(|m| (last + 1, m))
+            messages.into_iter().map(|m| (last + 1, m)),
         )?;
         batch.write()?;
         Ok(())
@@ -3013,7 +3022,7 @@ impl AuthorityPerEpochStore {
 
     pub fn builder_included_transactions_in_checkpoint<'a>(
         &self,
-        digests: impl Iterator<Item = &'a TransactionDigest>,
+        digests: impl Iterator<Item=&'a TransactionDigest>,
     ) -> SuiResult<Vec<bool>> {
         Ok(self
             .tables()?

@@ -1,27 +1,27 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::authority::{AuthorityState};
-
-use mysten_metrics::{spawn_monitored_task};
-use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, InitSignatureMPCProtocolSequenceNumber, SignatureMPCSessionID};
-
-use std::hash::{Hash};
-use std::sync::Arc;
-use tokio::sync::{mpsc, watch};
-
-use sui_types::storage::ObjectStore;
-use tracing::{debug, error, info, instrument, subscriber, trace_span};
-use sui_json_rpc_types::TransactionFilter;
-use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, DKGSession, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME};
-use sui_types::SUI_SYSTEM_ADDRESS;
-use tokio_stream::{Stream, StreamExt};
-use futures::FutureExt;
-use sui_types::base_types::SuiAddress;
+use std::hash::Hash;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::time::Duration;
+
 use futures::future::{Either, select};
+use futures::FutureExt;
+use tokio::sync::{mpsc, watch};
+use tokio_stream::{Stream, StreamExt};
+use tracing::{debug, error, info, instrument, subscriber, trace_span};
+
+use mysten_metrics::spawn_monitored_task;
+use sui_json_rpc_types::TransactionFilter;
+use sui_types::base_types::SuiAddress;
+use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, InitSignatureMPCProtocolSequenceNumber, SignatureMPCSessionID};
+use sui_types::signature_mpc::{CREATE_DKG_SESSION_FUNC_NAME, DKGSession, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME};
+use sui_types::storage::ObjectStore;
+use sui_types::SUI_SYSTEM_ADDRESS;
+
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::authority::AuthorityState;
 use crate::signature_mpc::MAX_MESSAGES_IN_PROGRESS;
 
 pub struct SignatureMpcSubscriber {
@@ -31,19 +31,21 @@ pub struct SignatureMpcSubscriber {
     last: InitSignatureMPCProtocolSequenceNumber,
 }
 
+
 impl SignatureMpcSubscriber {
+    /// Create a channel for sending and receiving MPC messages.
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         exit: watch::Receiver<()>,
     ) -> mpsc::Receiver<InitiateSignatureMPCProtocol> {
-
         let (tx_initiate_signature_mpc_protocol_sender, rx_initiate_signature_mpc_protocol_sender) = mpsc::channel(MAX_MESSAGES_IN_PROGRESS);
 
+        // Subscribe to MPC msgs.
         let subscriber = Self {
             epoch_store,
             exit,
             tx_initiate_signature_mpc_protocol_sender,
-            last: 0
+            last: 0,
         };
 
         spawn_monitored_task!(subscriber.run());
@@ -51,11 +53,12 @@ impl SignatureMpcSubscriber {
         rx_initiate_signature_mpc_protocol_sender
     }
 
+    // A special subscriber that listens for new MPC sessions.
     async fn run(mut self) {
         info!("Starting SignatureMpcSubscriber");
         loop {
-            // Check whether an exit signal has been received, if so we break the loop.
-            // This gives us a chance to exit, in case checkpoint making keeps failing.
+            // If an exit signal received, break the loop.
+            // This gives a chance to exit, if checkpoint making keeps failing.
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
                     break;
@@ -64,6 +67,8 @@ impl SignatureMpcSubscriber {
             };
             let messages = self.epoch_store.get_initiate_signature_mpc_protocols(self.last).unwrap();
             for (last, message) in messages {
+                // Send MPC messages to channel.
+                // todo: handle error.
                 let _ = self.tx_initiate_signature_mpc_protocol_sender.send(message).await;
                 self.last = last;
             }
