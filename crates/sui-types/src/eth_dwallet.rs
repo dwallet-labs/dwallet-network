@@ -13,7 +13,7 @@ pub const ETHEREUM_STATE_MODULE_NAME: &IdentStr = ident_str!("ethereum_state");
 pub const LATEST_ETH_STATE_STRUCT_NAME: &IdentStr = ident_str!("LatestEthereumState");
 pub const INIT_STATE_FUNC_NAME: &IdentStr = ident_str!("init_state");
 pub const CREATE_ETH_DWALLET_CAP_FUNC_NAME: &IdentStr = ident_str!("create_eth_dwallet_cap");
-pub const VERIFY_ETH_STATE_FUNC_NAME: &IdentStr = ident_str!("verify_new_eth_state");
+pub const VERIFY_ETH_STATE_FUNC_NAME: &IdentStr = ident_str!("verify_new_state");
 pub const APPROVE_MESSAGE_FUNC_NAME: &IdentStr = ident_str!("approve_message");
 
 /// Rust version of the Move sui_system::eth_dwallet::EthDWalletCap type

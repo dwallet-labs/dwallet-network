@@ -56,6 +56,7 @@ use std::sync::Arc;
 use sui_protocol_config::ProtocolConfig;
 use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
+use crate::eth_state_proof::EthDWalletCostParams;
 
 mod address;
 mod crypto;
@@ -69,6 +70,7 @@ mod transfer;
 mod tx_context;
 mod types;
 mod validator;
+mod eth_state_proof;
 
 #[derive(Tid)]
 pub struct NativesCostTable {
@@ -147,6 +149,9 @@ pub struct NativesCostTable {
 
     // Receive object
     pub transfer_receive_object_internal_cost_params: TransferReceiveObjectInternalCostParams,
+
+    // eth state proof
+    pub eth_state_proof: EthDWalletCostParams,
 }
 
 impl NativesCostTable {
@@ -499,6 +504,17 @@ impl NativesCostTable {
                     .check_zklogin_issuer_cost_base_as_option()
                     .map(Into::into),
             },
+            eth_state_proof: EthDWalletCostParams {
+                verify_eth_state_cost_base: protocol_config
+                    .verify_eth_state_cost_base()
+                    .into(),
+                verify_message_proof_cost_base: protocol_config
+                    .verify_message_proof_cost_base()
+                    .into(),
+                create_initial_eth_state_data_cost_base: protocol_config
+                    .create_initial_eth_state_data_cost_base()
+                    .into(),
+            },
         }
     }
 }
@@ -705,6 +721,21 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "zklogin_verified_issuer",
             "check_zklogin_issuer_internal",
             make_native!(zklogin::check_zklogin_issuer_internal),
+        ),
+        (
+            "ethereum_state",
+            "verify_eth_state",
+            make_native!(eth_state_proof::verify_eth_state),
+        ),
+        (
+            "eth_dwallet",
+            "verify_message_proof",
+            make_native!(eth_state_proof::verify_message_proof),
+        ),
+        (
+            "ethereum_state",
+            "create_initial_eth_state_data",
+            make_native!(eth_state_proof::create_initial_eth_state_data),
         ),
     ];
     let sui_framework_natives_iter =
