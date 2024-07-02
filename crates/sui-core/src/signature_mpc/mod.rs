@@ -3,9 +3,11 @@
 
 mod aggregate;
 mod dkg;
+mod identifiable_abort;
 mod metrics;
 mod presign;
-mod sign;
+mod sign_round;
+mod sign_state;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
 
@@ -19,7 +21,7 @@ use itertools::Itertools;
 use mysten_metrics::{monitored_scope, spawn_monitored_task, MonitoredFutureExt};
 use serde::{Deserialize, Serialize};
 use sui_types::base_types::{ConciseableName, ObjectRef};
-
+use crate::signature_mpc::identifiable_abort::{identify_malicious, spawn_proof_generation_and_conditional_malicious_identification};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use dashmap::DashMap;
 use rand::rngs::OsRng;
@@ -58,11 +60,12 @@ use typed_store::Map;
 
 use dkg::DKGState;
 use tokio_stream::StreamExt;
-use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID};
+use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignMessage, SignatureMPCMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCOutput, SignatureMPCSessionID};
 
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
-use crate::signature_mpc::sign::{SignRound, SignRoundCompletion, SignState};
+use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
+use crate::signature_mpc::sign_state::SignState;
 use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
 
 pub trait SignatureMPCServiceNotify {
@@ -340,32 +343,49 @@ impl SignatureMPCAggregator {
             SignatureMPCMessageProtocols::Sign(m) => {
                 let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
                     SignState::new(
+                        tiresias_key_share_decryption_key_share,
                         tiresias_public_parameters.clone(),
                         epoch,
                         party_id,
-                        parties,
+                        parties.clone(),
                         session_id,
                     )
                 });
-
                 let _ = state.insert_first_round(sender_party_id, m.clone());
-
                 if let Some(r) = sign_session_rounds.get_mut(&session_id) {
                     if state.ready_for_complete_first_round(&r) {
                         drop(r);
-                        let state = state.clone();
                         Self::spawn_complete_sign_round(
                             epoch,
                             epoch_store.clone(),
                             party_id,
                             session_id,
                             session_ref,
-                            state,
                             sign_session_rounds.clone(),
                             sign_session_states.clone(),
                             submit.clone(),
                         );
                     }
+                }
+                if let SignMessage::Proofs { proofs, failed_messages_indices , involved_parties } = m {
+                    spawn_proof_generation_and_conditional_malicious_identification(
+                        epoch,
+                        epoch_store.clone(),
+                        party_id,
+                        session_id,
+                        sign_session_states.clone(),
+                        submit.clone(),
+                        failed_messages_indices.clone(),
+                        involved_parties.clone(),
+                    );
+                }
+                if state.should_identify_malicious_actors() {
+                    if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
+                        identify_malicious(&state)
+                    {
+                        println!("Identified malicious parties: {:?}", malicious_parties);
+                    }
+                    return;
                 }
             }
         }
@@ -595,36 +615,54 @@ impl SignatureMPCAggregator {
         party_id: PartyID,
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
-        state: SignState,
         sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
-            let m = {
-                if let Some(mut round) = sign_session_rounds.get_mut(&session_id) {
-                    round.complete_round(state.clone()).ok()
-                } else {
-                    None
-                }
+            let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
+            let state = mut_state.clone();
+            let m = match sign_session_rounds.get_mut(&session_id) {
+                Some(mut round) => match round.complete_round(state.clone()) {
+                    Ok(result) => Some(result),
+                    Err(_) => None,
+                },
+                None => None,
             };
+
             if let Some(m) = m {
                 match m {
-                    SignRoundCompletion::Output(sigs) => {
+                    SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties) => {
+                        mut_state.failed_messages_indices = Some(message_indices.clone());
+                        mut_state.involved_parties = involved_parties.clone();
+                        let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
                         let _ = submit
-                                    .sign_and_submit_output(
-                                        &SignatureMPCOutput::new_sign(
-                                            epoch,
-                                            session_id,
-                                            session_ref,
-                                            sigs,
-                                        )
-                                        .unwrap(),
-                                        &epoch_store,
-                                    )
-                                    .await;
+                            .sign_and_submit_message(
+                                &SignatureMPCMessageSummary::new(
+                                    epoch,
+                                    SignatureMPCMessageProtocols::Sign(
+                                    SignMessage::Proofs {
+                                        proofs,
+                                        involved_parties,
+                                        failed_messages_indices: message_indices,}
+                                    ),
+                                    session_id,
+                                ),
+                                &epoch_store,
+                            )
+                            .await;
+                    }
+                    SignRoundCompletion::SignatureOutput(sigs) => {
+                        let _ = submit
+                            .sign_and_submit_output(
+                                &SignatureMPCOutput::new_sign(epoch, session_id, session_ref, sigs)
+                                    .unwrap(),
+                                &epoch_store,
+                            )
+                            .await;
                     }
                     SignRoundCompletion::None => {}
+                    SignRoundCompletion::MaliciousPartiesOutput(_) => {}
                 }
             }
         });
@@ -728,37 +766,53 @@ impl SignatureMPCAggregator {
                 dkg_output,
                 public_nonce_encrypted_partial_signature_and_proofs,
                 presigns,
-                hash
+                hash,
             } => {
                 session_refs.insert(session_id, session_ref);
                 if let Ok((round, message)) = SignRound::new(
                     tiresias_public_parameters.clone(),
                     tiresias_key_share_decryption_key_share,
-                    epoch,
                     party_id,
                     parties.clone(),
-                    session_id,
                     messages.clone(),
                     dkg_output,
                     public_nonce_encrypted_partial_signature_and_proofs.clone(),
-                    presigns,
-                    hash.into()
+                    presigns.clone(),
+                    hash.into(),
                 ) {
                     let mut state = sign_session_states.entry(session_id).or_insert_with(|| {
-                        SignState::new(tiresias_public_parameters, epoch, party_id, parties, session_id)
+                        SignState::new(
+                            tiresias_key_share_decryption_key_share,
+                            tiresias_public_parameters,
+                            epoch,
+                            party_id,
+                            parties,
+                            session_id,
+                        )
                     });
 
-                    state.set(messages, public_nonce_encrypted_partial_signature_and_proofs);
+                    state.set(
+                        messages,
+                        public_nonce_encrypted_partial_signature_and_proofs,
+                        presigns.clone(),
+                    );
 
                     sign_session_rounds.insert(session_id, round);
 
                     let summary = SignatureMPCMessageSummary::new(
                         epoch,
-                        SignatureMPCMessageProtocols::Sign(message),
+                        SignatureMPCMessageProtocols::Sign(
+                            SignMessage::DecryptionShares(message)),
                         session_id,
                     );
                     // TODO: Handle error
-                    let _ = submit.sign_and_submit_message(&summary, &epoch_store).await;
+                    let result = submit.sign_and_submit_message(&summary, &epoch_store).await;
+                    match result {
+                        Ok(_) => {}
+                        Err(e) => {
+                            error!("Failed to submit sign message: {:?}", e);
+                        }
+                    }
                 }
             }
         }
