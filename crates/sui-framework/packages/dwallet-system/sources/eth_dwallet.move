@@ -1,3 +1,9 @@
+/*
+ * eth_dwallet module provides functionality for managing Ethereum dWallets within the dwallet_system.
+ * It includes structures to represent dWallet capabilities, functions to create and manage Ethereum dWallets,
+ * and native functions to verify message proofs.
+*/
+
 module dwallet_system::eth_dwallet {
     use std::string::String;
     use dwallet::object::{Self, UID};
@@ -13,7 +19,7 @@ module dwallet_system::eth_dwallet {
         id: UID,
     }
 
-    /// Holds the DWalletCap.
+    /// Holds the DWalletCap along with Ethereum-specific information.
     struct EthDWalletCap has key {
         id: UID,
         dwallet_cap: DWalletCap,
@@ -21,8 +27,7 @@ module dwallet_system::eth_dwallet {
         eth_smart_contract_slot: u64,
     }
 
-    /// Create the Eth dWallet Object.
-    /// Wrap the dWalletCap.
+    /// Creates an Ethereum dWallet capability object by wrapping an existing DWalletCap.
     public entry fun create_eth_dwallet_cap(
         dwallet_cap: DWalletCap,
         eth_smart_contract_addr: String,
@@ -39,7 +44,9 @@ module dwallet_system::eth_dwallet {
     }
 
     // todo(yuval): after merging dwallet.move module, fix parameters name and uncomment function call.
-    /// Approve a message by a dWallet.
+
+    /// Verifies the provided proof using the verify_message_proof native function.
+    /// If the proof is valid, the message is approved.
     public fun approve_message(
         _eth_dwallet_cap: &EthDWalletCap,
         _message: vector<u8>,
@@ -50,7 +57,7 @@ module dwallet_system::eth_dwallet {
         // dwallet::approve_messages(&eth_dwallet_cap.dwallet_cap, vector[message])
     }
 
-    /// Verify the Message inside the Storage Merkel Root.
+    /// Verify the Message inside the Storage Merkle Root.
     native fun verify_message_proof(
         proof: vector<u8>
     ): bool;

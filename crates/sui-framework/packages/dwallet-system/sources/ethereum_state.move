@@ -1,20 +1,31 @@
+/*
+ * ethereum_state module provides functionality for managing and verifying the state of Ethereum within
+ * the dwallet_system. It includes structures to represent Ethereum state, functions to initialize and update state,
+ * and native functions to verify state updates and create initial state data.
+*/
 module dwallet_system::ethereum_state {
     use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
     use dwallet::tx_context::TxContext;
 
+    /// Ethereum state object.
     struct EthState has key {
         id: UID,
         data: vector<u8>,
         time_slot: u64,
     }
 
+    /// Latest Ethereum state object.
+    /// Holds the ID of the latest Ethereum state object that is verified by the dWallet network.
     struct LatestEthereumState has key, store {
         id: UID,
         eth_state_id: ID,
         last_slot: u64,
     }
 
+    /// Initializes the first Ethereum state with the given checkpoint.
+    /// Creates an EthState object, shares a LatestEthereumState object pointing to it,
+    /// and freezes the EthState object.
     public fun init_state(checkpoint: vector<u8>, ctx: &mut TxContext){
         let state_data = create_initial_eth_state_data(checkpoint);
         let state = EthState {
@@ -31,6 +42,7 @@ module dwallet_system::ethereum_state {
         transfer::freeze_object(state);
     }
 
+    /// Updates the latest Ethereum state reference if the provided EthState object has a newer time slot.
     public fun update_latest_eth_state(
         self: &mut LatestEthereumState,
         eth_state: &EthState,
@@ -41,8 +53,9 @@ module dwallet_system::ethereum_state {
         }
     }
 
-    /// Verify the Eth state according to the updates.
-    public fun verify_new_eth_state(
+    /// Verifies the new Ethereum state according to the provided updates, and updates the LatestEthereumState object
+    /// if the new state is valid and has a newer time slot.
+    public fun verify_new_state(
         updates_bytes: vector<u8>,
         state_bytes: vector<u8>,
         latest_ethereum_state: &mut LatestEthereumState,
@@ -66,12 +79,15 @@ module dwallet_system::ethereum_state {
         transfer::freeze_object(new_state);
     }
 
-    /// Verify the Eth state according to the updates.
+    /// Native function.
+    /// Verifies the Ethereum state according to the provided updates.
     native fun verify_eth_state(
         updates: vector<u8>,
         eth_state: vector<u8>
     ): (vector<u8>, u64);
 
+    /// Native function.
+    /// Creates the initial Ethereum state data with the given checkpoint.
     native fun create_initial_eth_state_data(
         checkpoint: vector<u8>,
     ): vector<u8>;
