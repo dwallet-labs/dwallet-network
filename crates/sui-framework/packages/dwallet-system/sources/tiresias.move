@@ -1,9 +1,11 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+// todo(zeev): insert this one also.
+
 #[allow(unused_const)]
 module dwallet_system::tiresias {
-    use dwallet::object::{UID, ID};
+    use dwallet::object::{ID, UID};
 
     #[allow(unused_field)]
     struct NetworkPublicKey has key, store {

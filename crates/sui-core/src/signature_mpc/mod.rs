@@ -107,6 +107,7 @@ impl SignatureMPCAggregator {
         parties: HashSet<PartyID>,
         tiresias_public_parameters: DecryptionPublicParameters,
         tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+        // This is a trait to make it testable.
         submit: Arc<dyn SubmitSignatureMPC>,
         metrics: Arc<SignatureMPCMetrics>,
         exit: watch::Receiver<()>,
@@ -138,6 +139,7 @@ impl SignatureMPCAggregator {
     }
 
     async fn run(mut self) {
+        // todo: make this more efficient and cleanup.
         info!("Starting SignatureMPCAggregator");
 
         loop {
@@ -153,6 +155,7 @@ impl SignatureMPCAggregator {
                 Some(
                     signature_mpc_protocol_message
                 ) = self.rx_signature_mpc_protocol_message_sender.recv() => {
+                    // Handle a message from the MPC protocol.
                     let epoch_store = self.epoch_store.clone();
                     let parties = self.parties.clone();
                     let tiresias_public_parameters = self.tiresias_public_parameters.clone();
@@ -167,7 +170,7 @@ impl SignatureMPCAggregator {
                     let presign_session_states = self.presign_session_states.clone();
                     let sign_session_rounds = self.sign_session_rounds.clone();
                     let sign_session_states = self.sign_session_states.clone();
-                    /// Messages from a validator?
+                    // Messages from a validator?
                     spawn_monitored_task!(Self::insert_message(
                         self.epoch,
                         epoch_store,
@@ -777,8 +780,9 @@ impl SignatureMPCAggregator {
     }
 }
 
-/// This is a service used to communicate with other pieces of sui(for ex. authority)
+/// This is a service used to communicate with other pieces of sui(for example. Authority)
 pub struct SignatureMPCService {
+    // todo(zeev): should channels be passed in structs?
     tx_signature_mpc_protocol_message_sender: mpsc::Sender<SignatureMPCMessage>,
 }
 
@@ -808,7 +812,7 @@ impl SignatureMPCService {
 
         let epoch = epoch_store.epoch();
 
-        // Create the channels for the MPC service.
+        // Create the channels for the MPC service to receive messages from User MPC events.
         let rx_initiate_signature_mpc_protocol_sender =
             SignatureMpcSubscriber::new(epoch_store.clone(), exit_rcv.clone());
 
@@ -821,7 +825,7 @@ impl SignatureMPCService {
                 .map(|p| (p + 1) as PartyID),
         );
 
-        // Aggregate all messages.
+        // Aggregate all messages and perform the MPC.
         let aggregator = SignatureMPCAggregator::new(
             epoch,
             epoch_store,
@@ -847,6 +851,9 @@ impl SignatureMPCService {
 }
 
 impl SignatureMPCServiceNotify for SignatureMPCService {
+    /// Send messages from the reliable broadcast channel-the blockchain broadcast,
+    /// and push to the MPC channel.
+    /// todo(zeev): Omer based this code on Checkpoint code, should be refactored.
     fn notify_signature_mpc_message(
         &self,
         epoch_store: &AuthorityPerEpochStore,

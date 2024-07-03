@@ -5,17 +5,45 @@ pub use checked::*;
 
 #[sui_macros::with_checked_arithmetic]
 mod checked {
-
-    use move_binary_format::CompiledModule;
-    use move_vm_runtime::move_vm::MoveVM;
     use std::{collections::HashSet, sync::Arc};
+
+    use move_binary_format::access::ModuleAccess;
+    use move_binary_format::CompiledModule;
+    use move_core_types::language_storage::TypeTag;
+    use move_vm_runtime::move_vm::MoveVM;
+    use tracing::{info, instrument, trace, warn};
+
+    use sui_protocol_config::{check_limit_by_meter, LimitThresholdCrossed, ProtocolConfig};
+    use sui_types::{
+        base_types::{ObjectID, ObjectRef, SuiAddress, TransactionDigest, TxContext},
+        messages_signature_mpc::SignatureMPCOutput,
+        object::{Object, ObjectInner},
+        signature_mpc::{CREATE_DKG_OUTPUT_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME}, SUI_AUTHENTICATOR_STATE_OBJECT_ID, SUI_FRAMEWORK_ADDRESS,
+        SUI_FRAMEWORK_PACKAGE_ID,
+        SUI_SYSTEM_PACKAGE_ID,
+        sui_system_state::{ADVANCE_EPOCH_FUNCTION_NAME, SUI_SYSTEM_MODULE_NAME},
+    };
+    use sui_types::authenticator_state::{
+        AUTHENTICATOR_STATE_CREATE_FUNCTION_NAME, AUTHENTICATOR_STATE_EXPIRE_JWKS_FUNCTION_NAME,
+        AUTHENTICATOR_STATE_MODULE_NAME, AUTHENTICATOR_STATE_UPDATE_FUNCTION_NAME,
+    };
     use sui_types::balance::{
         BALANCE_CREATE_REWARDS_FUNCTION_NAME, BALANCE_DESTROY_REBATES_FUNCTION_NAME,
         BALANCE_MODULE_NAME,
     };
+    use sui_types::clock::{CLOCK_MODULE_NAME, CONSENSUS_COMMIT_PROLOGUE_FUNCTION_NAME};
+    use sui_types::committee::EpochId;
+    use sui_types::effects::TransactionEffects;
+    use sui_types::error::{ExecutionError, ExecutionErrorKind};
+    use sui_types::execution::is_certificate_denied;
     use sui_types::execution_mode::{self, ExecutionMode};
+    use sui_types::execution_status::ExecutionStatus;
+    use sui_types::gas::GasCostSummary;
+    use sui_types::gas::SuiGasStatus;
     use sui_types::gas_coin::GAS;
+    use sui_types::inner_temporary_store::InnerTemporaryStore;
     use sui_types::messages_checkpoint::CheckpointTimestamp;
+    use sui_types::messages_signature_mpc::SignatureMPCOutputValue;
     use sui_types::metrics::LimitsMetrics;
     use sui_types::object::OBJECT_START_VERSION;
     use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
@@ -23,49 +51,22 @@ mod checked {
         RANDOMNESS_MODULE_NAME, RANDOMNESS_STATE_CREATE_FUNCTION_NAME,
         RANDOMNESS_STATE_UPDATE_FUNCTION_NAME,
     };
-    use sui_types::SUI_RANDOMNESS_STATE_OBJECT_ID;
-    use tracing::{info, instrument, trace, warn};
-
-    use crate::programmable_transactions;
-    use crate::type_layout_resolver::TypeLayoutResolver;
-    use crate::{gas_charger::GasCharger, temporary_store::TemporaryStore};
-    use move_binary_format::access::ModuleAccess;
-    use move_core_types::language_storage::TypeTag;
-    use sui_protocol_config::{check_limit_by_meter, LimitThresholdCrossed, ProtocolConfig};
-    use sui_types::authenticator_state::{
-        AUTHENTICATOR_STATE_CREATE_FUNCTION_NAME, AUTHENTICATOR_STATE_EXPIRE_JWKS_FUNCTION_NAME,
-        AUTHENTICATOR_STATE_MODULE_NAME, AUTHENTICATOR_STATE_UPDATE_FUNCTION_NAME,
-    };
-    use sui_types::clock::{CLOCK_MODULE_NAME, CONSENSUS_COMMIT_PROLOGUE_FUNCTION_NAME};
-    use sui_types::committee::EpochId;
-    use sui_types::effects::TransactionEffects;
-    use sui_types::error::{ExecutionError, ExecutionErrorKind};
-    use sui_types::execution::is_certificate_denied;
-    use sui_types::execution_status::ExecutionStatus;
-    use sui_types::gas::GasCostSummary;
-    use sui_types::gas::SuiGasStatus;
-    use sui_types::inner_temporary_store::InnerTemporaryStore;
+    use sui_types::signature_mpc::{CREATE_PRESIGN_FUNC_NAME, CREATE_PRESIGN_OUTPUT_FUNC_NAME, CREATE_SIGN_OUTPUT_FUNC_NAME, DWALLET_MODULE_NAME, SignData};
     use sui_types::storage::BackingStore;
+    use sui_types::SUI_RANDOMNESS_STATE_OBJECT_ID;
+    use sui_types::sui_system_state::{ADVANCE_EPOCH_SAFE_MODE_FUNCTION_NAME, AdvanceEpochParams};
     #[cfg(msim)]
     use sui_types::sui_system_state::advance_epoch_result_injection::maybe_modify_result;
-    use sui_types::sui_system_state::{AdvanceEpochParams, ADVANCE_EPOCH_SAFE_MODE_FUNCTION_NAME};
     use sui_types::transaction::{
         Argument, AuthenticatorStateExpire, AuthenticatorStateUpdate, CallArg, ChangeEpoch,
         Command, EndOfEpochTransactionKind, GenesisTransaction, ObjectArg, ProgrammableTransaction,
         TransactionKind,
     };
     use sui_types::transaction::{CheckedInputObjects, RandomnessStateUpdate};
-    use sui_types::{
-        base_types::{ObjectRef, SuiAddress, TransactionDigest, TxContext, ObjectID},
-        object::{Object, ObjectInner},
-        sui_system_state::{ADVANCE_EPOCH_FUNCTION_NAME, SUI_SYSTEM_MODULE_NAME},
-        SUI_AUTHENTICATOR_STATE_OBJECT_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID,
-        SUI_SYSTEM_PACKAGE_ID,
-        messages_signature_mpc::SignatureMPCOutput,
-        signature_mpc::{CREATE_DKG_OUTPUT_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME},
-    };
-    use sui_types::messages_signature_mpc::SignatureMPCOutputValue;
-    use sui_types::signature_mpc::{CREATE_PRESIGN_FUNC_NAME, CREATE_PRESIGN_OUTPUT_FUNC_NAME, CREATE_SIGN_OUTPUT_FUNC_NAME, DWALLET_MODULE_NAME, SignData};
+
+    use crate::{gas_charger::GasCharger, temporary_store::TemporaryStore};
+    use crate::programmable_transactions;
+    use crate::type_layout_resolver::TypeLayoutResolver;
 
     #[instrument(name = "tx_execute_to_effects", level = "debug", skip_all)]
     pub fn execute_transaction_to_effects<Mode: ExecutionMode>(
@@ -421,7 +422,7 @@ mod checked {
                 }
             }
         } // else, we're in the genesis transaction which mints the SUI supply, and hence does not satisfy SUI conservation, or
-          // we're in the non-production dev inspect mode which allows us to violate conservation
+        // we're in the non-production dev inspect mode which allows us to violate conservation
         result
     }
 
@@ -561,7 +562,7 @@ mod checked {
                     protocol_config,
                     metrics,
                 )
-                .expect("ConsensusCommitPrologue cannot fail");
+                    .expect("ConsensusCommitPrologue cannot fail");
                 Ok(Mode::empty_results())
             }
             TransactionKind::ConsensusCommitPrologueV2(prologue) => {
@@ -574,7 +575,7 @@ mod checked {
                     protocol_config,
                     metrics,
                 )
-                .expect("ConsensusCommitPrologueV2 cannot fail");
+                    .expect("ConsensusCommitPrologueV2 cannot fail");
                 Ok(Mode::empty_results())
             }
             TransactionKind::ProgrammableTransaction(pt) => {
@@ -720,9 +721,9 @@ mod checked {
             CallArg::Pure(bcs::to_bytes(&params.reward_slashing_rate).unwrap()),
             CallArg::Pure(bcs::to_bytes(&params.epoch_start_timestamp_ms).unwrap()),
         ]
-        .into_iter()
-        .map(|a| builder.input(a))
-        .collect::<Result<_, _>>();
+            .into_iter()
+            .map(|a| builder.input(a))
+            .collect::<Result<_, _>>();
 
         assert_invariant!(
             call_arg_arguments.is_ok(),
@@ -862,7 +863,7 @@ mod checked {
                     gas_charger,
                     advance_epoch_safe_mode_pt,
                 )
-                .expect("Advance epoch with safe mode must succeed");
+                    .expect("Advance epoch with safe mode must succeed");
             }
         }
 
@@ -876,7 +877,7 @@ mod checked {
                         max_format_version,
                         protocol_config.no_extraneous_module_bytes(),
                     )
-                    .unwrap()
+                        .unwrap()
                 })
                 .collect();
 
@@ -899,7 +900,7 @@ mod checked {
                     gas_charger,
                     publish_pt,
                 )
-                .expect("System Package Publish must succeed");
+                    .expect("System Package Publish must succeed");
             } else {
                 let mut new_package = Object::new_system_package(
                     &deserialized_modules,
@@ -1109,6 +1110,7 @@ mod checked {
         )
     }
 
+    /// These are the system transactions for the MPC outputs.
     fn setup_signature_mpc_output(
         data: SignatureMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
@@ -1118,7 +1120,7 @@ mod checked {
         protocol_config: &ProtocolConfig,
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
-            let pt = {
+        let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
             let res = match &data.value {
                 SignatureMPCOutputValue::DKG {

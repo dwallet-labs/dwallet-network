@@ -1,37 +1,42 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::pin::Pin;
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::SubmitToConsensus;
-use crate::epoch::reconfiguration::ReconfigurationInitiator;
-use async_trait::async_trait;
 use std::sync::Arc;
-use fastcrypto::ed25519::Ed25519Signature;
-use fastcrypto::traits::Signer;
+
+use async_trait::async_trait;
+use tracing::instrument;
+
 use sui_types::base_types::AuthorityName;
 use sui_types::error::SuiResult;
-use sui_types::message_envelope::Message;
-use sui_types::messages_checkpoint::{
-    CertifiedCheckpointSummary, CheckpointContents, CheckpointSignatureMessage, CheckpointSummary,
-    SignedCheckpointSummary, VerifiedCheckpoint,
-};
 use sui_types::messages_consensus::ConsensusTransaction;
-use tracing::{debug, info, instrument, trace};
-use sui_types::crypto::{AuthoritySignature, NetworkKeyPair};
-use sui_types::messages_signature_mpc::{SignatureMPCOutput, SignatureMPCMessage, SignatureMPCMessageSummary, SignedSignatureMPCOutput, SignedSignatureMPCMessageSummary};
+use sui_types::messages_signature_mpc::{SignatureMPCMessage, SignatureMPCMessageSummary, SignatureMPCOutput, SignedSignatureMPCMessageSummary, SignedSignatureMPCOutput};
+
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::StableSyncAuthoritySigner;
+use crate::consensus_adapter::SubmitToConsensus;
+use crate::epoch::reconfiguration::ReconfigurationInitiator;
 
 use super::SignatureMPCMetrics;
 
 #[async_trait]
 pub trait SubmitSignatureMPC: Sync + Send + 'static {
+    /// Function `sign_and_submit_message` sends a message from the current MPC round,
+    /// each Party sends its own message (a unique message).
+    /// The Aggregator is then used to aggregate the messages.
     async fn sign_and_submit_message(
         &self,
         summary: &SignatureMPCMessageSummary,
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> SuiResult;
 
+    /// Function `sign_and_submit_output` sends the output of the MPC protocol (DKG, Presign, Sign).
+    /// All the Parties create send the same message.
+    /// The Consensus is used to make sure 2/3rds of them agreed on the same output.
+    /// After Consensus is reached, the chosen Aggregator creates a `system transaction`
+    /// and sends it to the network.
+    /// The transaction is created using the private functions in the `dwallet` module.
+    /// This way the output Object is created and transferred to the original transaction sender
+    /// (the dwallet owner).
     async fn sign_and_submit_output(
         &self,
         output: &SignatureMPCOutput,
@@ -51,7 +56,7 @@ pub struct SubmitSignatureMPCToConsensus<T> {
 
 #[async_trait]
 impl<T: SubmitToConsensus + ReconfigurationInitiator> SubmitSignatureMPC
-    for SubmitSignatureMPCToConsensus<T>
+for SubmitSignatureMPCToConsensus<T>
 {
     #[instrument(level = "debug", skip_all)]
     async fn sign_and_submit_message(
@@ -80,7 +85,6 @@ impl<T: SubmitToConsensus + ReconfigurationInitiator> SubmitSignatureMPC
         output: &SignatureMPCOutput,
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> SuiResult {
-
         let message = SignedSignatureMPCOutput::new(
             epoch_store.epoch(),
             output.clone(),

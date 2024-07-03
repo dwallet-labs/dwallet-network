@@ -24,7 +24,10 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::AuthorityState;
 use crate::signature_mpc::MAX_MESSAGES_IN_PROGRESS;
 
+/// A subscriber that listens for new MPC new (initiate) sessions.
+/// todo(zeev): rename.
 pub struct SignatureMpcSubscriber {
+    // note: this store is restarted on every epoch.
     epoch_store: Arc<AuthorityPerEpochStore>,
     exit: watch::Receiver<()>,
     tx_initiate_signature_mpc_protocol_sender: mpsc::Sender<InitiateSignatureMPCProtocol>,
@@ -32,6 +35,7 @@ pub struct SignatureMpcSubscriber {
 }
 
 
+// todo(zeev): rename.
 impl SignatureMpcSubscriber {
     /// Create a channel for sending and receiving MPC messages.
     pub fn new(
@@ -65,9 +69,10 @@ impl SignatureMpcSubscriber {
                 }
                 Ok(false) => (),
             };
+            // todo(zeev): how often is it called? maybe some delay should be introduced?
             let messages = self.epoch_store.get_initiate_signature_mpc_protocols(self.last).unwrap();
             for (last, message) in messages {
-                // Send MPC messages to channel.
+                // Send MPC messages to init channel.
                 // todo: handle error.
                 let _ = self.tx_initiate_signature_mpc_protocol_sender.send(message).await;
                 self.last = last;
@@ -77,6 +82,7 @@ impl SignatureMpcSubscriber {
         info!("Shutting down SignatureMpcSubscriber");
     }
 
+    // todo(omer): ??
     // fn stream(&self) -> impl Stream<Item = sui_json_rpc_types::SuiTransactionBlockEffects> {
     //     self.state.subscription_handler.subscribe_transactions(TransactionFilter::MoveFunction {
     //         package: "0x3".parse().unwrap(),

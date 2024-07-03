@@ -1,6 +1,8 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+/// Generic dWallet representation.
+/// This is conceptually the dwallet interface.
 module dwallet_system::dwallet {
     use std::vector;
 
@@ -36,21 +38,29 @@ module dwallet_system::dwallet {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
 
+    /// DWalletCap holder can control the dwallet
     struct DWalletCap has key, store {
         id: UID,
     }
 
+    /// MessageApprovalsHolder holds MessageApproval's.
     struct MessageApprovalsHolder has key {
         id: UID,
         message_approvals: vector<MessageApproval>,
     }
 
-    /// todo: approved messages.
+    /// MessareApproval represents messages to be approved in the future.
+    /// Bound to a DWalletCap.
+    /// todo: rename (future tense).
     struct MessageApproval has store {
         dwallet_cap_id: ID,
         message: vector<u8>,
     }
 
+    /// Partially signed messages by the user, these messasegs are ready to be signed by the blockchain.
+    /// It's only half of the `sign` process.
+    /// To Sign a message both this Struct and MessageApproval must be present.
+    /// The messeses field must be the same as the messages in the MessageApproval.
     struct PartialUserSignedMessages<S: store, E: store + copy + drop> has key, store {
         id: UID,
         dwallet_id: ID,
@@ -60,12 +70,14 @@ module dwallet_system::dwallet {
         sign_data_event: E,
     }
 
+    /// SharedPartialUserSignedMessages is a shared version of PartialUserSignedMessages.
+    /// This is shared and passes throuh concesus, use only when needed, prefer PartialUserSignedMessages.
     struct SharedPartialUserSignedMessages<S: store, E: store + copy + drop> has key {
         id: UID,
         partial_user_signed_messages: PartialUserSignedMessages<S, E>,
     }
 
-    /// SignSession holds the sign session data.
+    /// SignSession holds the sign session data, created when we send a sign request to the netowrk.
     struct SignSession<S: store> has key {
         id: UID,
         dwallet_id: ID,
@@ -93,6 +105,7 @@ module dwallet_system::dwallet {
         }
     }
 
+    // Create a new MessageApprovalsHolder.
     public fun create_message_approvals_holder(message_approvals: vector<MessageApproval>, ctx: &mut TxContext) {
         let holder = MessageApprovalsHolder {
             id: object::new(ctx),
@@ -101,6 +114,7 @@ module dwallet_system::dwallet {
         transfer::transfer(holder, tx_context::sender(ctx));
     }
 
+    /// Remove the MessageApprovalsHolder and return the MessageApprovals's.
     public fun remove_message_approvals_holder(holder: MessageApprovalsHolder): vector<MessageApproval> {
         let MessageApprovalsHolder {
             id,
@@ -110,8 +124,11 @@ module dwallet_system::dwallet {
         message_approvals
     }
 
-    /// Create a new MessageApproval vectors.
-    /// todo: fix naming and doc (plural).
+    /// Aprrove a given set of `messages`.
+    /// The messages must be approved in the same order as they were created.
+    /// The messages must be approved by the same `dwallet_cap_id`.
+    /// todo: this function does not approve anything, it only create MessageApproval's.
+    /// todo: rename to create_message_approvals? or something similar.
     public fun approve_messages(dwallet_cap: &DWalletCap, messages: vector<vector<u8>>): vector<MessageApproval> {
         let dwallet_cap_id = object::id(dwallet_cap);
         let message_approvals = vector::empty<MessageApproval>();
@@ -166,7 +183,8 @@ module dwallet_system::dwallet {
         sign(partial_user_signed_messages, message_approvals, ctx)
     }
 
-    // Create the partial user signed messages.
+    /// Create the partial user signed messages.
+    /// This part only creates the object, it will be later used in `sign()` function.
     public(friend) fun create_partial_user_signed_messages<S: store, E: store + copy + drop>(
         dwallet_id: ID,
         dwallet_cap_id: ID,
@@ -204,6 +222,8 @@ module dwallet_system::dwallet {
     }
 
     /// Main sign function.
+    /// Note that we must have MessageApproval's for the messages.
+    /// and PartialUserSignedMessages object.
     public fun sign<S: store, E: store + copy + drop>(
         partial_user_signed_messages: PartialUserSignedMessages<S, E>,
         message_approvals: vector<MessageApproval>,
@@ -244,6 +264,8 @@ module dwallet_system::dwallet {
             sender,
             sign_data,
         };
+
+        // This part really start the sign proccess in the blockchain.
         event::emit(NewSignSessionEvent {
             session_id: object::id(&sign_session),
             dwallet_id,
@@ -257,6 +279,7 @@ module dwallet_system::dwallet {
 
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
+    /// NOT a native function.
     /// todo: Why is it here and dkg + presign are in the dwallet_2pc_mpc_ecdsa_k1 module?
     #[allow(unused_function)]
     fun create_sign_output<S: store>(session: &SignSession<S>, signatures: vector<vector<u8>>, ctx: &mut TxContext) {

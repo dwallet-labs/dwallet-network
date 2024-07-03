@@ -1,6 +1,10 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+
+/// Note: currently in order to start DKG, Presign and Sign, the Valdators are waiting for an Event.
+/// The events are here below, this is a "hack" to pass the information, we might find a better way in the future.
+
 #[allow(unused_const)]
 module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use std::vector;
@@ -144,10 +148,13 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             sender,
         });
         transfer::freeze_object(session);
+        /// todo(omer): why do we need to return the cap?
         cap
     }
 
     #[allow(unused_function)]
+    /// This function is called by blockchain itself.
+    /// Validtors call it, it's part of the blockchain logic.
     fun create_dkg_output(
         session: &DKGSession,
         commitment_to_centralized_party_secret_key_share: vector<u8>,
@@ -162,9 +169,13 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             commitment_to_centralized_party_secret_key_share,
             secret_key_share_encryption_and_proof
         };
+        // Send the blockchain DKG output to the user.
         transfer::transfer(output, session.sender);
     }
 
+    /// Create a new dwallet.
+    /// The user needs to call this function after receiving the DKG output.
+    /// The user needs to provide the decommitment and proof of the centralized party public key share.
     public fun create_dwallet(
         output: DKGSessionOutput,
         centralized_party_public_key_share_decommitment_and_proof: vector<u8>,
@@ -180,6 +191,10 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         object::delete(id);
 
         // Native func.
+        // todo(zeev): what is the output? and public key? which public key is this? of the ECDSA? rename output.
+        // todo(zeev): Output is used by the blockchain to continue the DKG, need to rename and doc.
+        // Answer on public_key == the ECDSA public key.
+        // Note that these functuion returns only after 2/3 or the validators reached concesus.
         let (output, public_key) = dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
             commitment_to_centralized_party_secret_key_share,
             secret_key_share_encryption_and_proof,
@@ -193,7 +208,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             output,
             public_key,
         };
-        // Create dwallet +
+        // Create dwallet + make it immutable.
+        // todo(omer): why?
         transfer::freeze_object(result);
     }
 
@@ -204,8 +220,13 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     ): (vector<u8>, vector<u8>);
 
 
+    /// Create a new Presgin session.
+    /// Note that the dwallet is immutable, and can be called by everyone.
+    /// But, the commitments_and_proof_to_centralized_party_nonce_shares is owned by a specific user.
     public fun create_presign_session(
         dwallet: &DWallet,
+        // Note that in terms on the MPC, the `messages` is not mandatory on pre-signing,
+        // currently it will be provided to prevent some attack vectors.
         messages: vector<vector<u8>>,
         commitments_and_proof_to_centralized_party_nonce_shares: vector<u8>,
         // hash = sha256 or sha3
@@ -261,6 +282,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
     /// This is the second part of the presign session.
+    /// todo: rename to finalize or something.
     fun create_presign(session: &PresignSession, presigns: vector<u8>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         // The user needs this object and PresignSessionOutput in order to Sign the message.
@@ -274,6 +296,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         transfer::transfer(presign, session.sender);
     }
 
+    /// Verifies parts of the signature, todo(zeev): which and hwy?
     native fun sign_verify_encrypted_signature_parts_prehash(
         messages: vector<vector<u8>>,
         dkg_output: vector<u8>,
@@ -283,6 +306,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     ): bool;
 
     /// This function start the sign proccess, note that it must get PresignSessionOutput and Presign.
+    /// The user needs to call this function after receiving the Presign and PresignSessionOutput.
+    /// The user needs to provide the public_nonce_encrypted_partial_signature_and_proofs.
     public fun create_partial_user_signed_messages(
         dwallet: &DWallet,
         session: &PresignSession,
@@ -299,7 +324,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             EPresignOutputAndPresignMismatch
         );
 
-        // Native function to sign the message.
+        // todo(zeev): doc this.
         let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
             session.messages,
             dwallet.output,
@@ -338,6 +363,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
         // These events are listenbd by the blockhain.
         // This is a "hack" to pass the information.
+        // Note: that in this case event is not emmitted!
+        // It is passed to `create_partial_user_signed_messages()` func.
         let sign_data_event = NewSignDataEvent {
             presign_session_id: session_id,
             hash: session.hash,

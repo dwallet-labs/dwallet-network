@@ -1289,6 +1289,7 @@ impl AuthorityState {
         Ok(())
     }
 
+    /// Initiate a MPC protocol.
     fn initiate_signature_mpc_protocol(&self, certificate: &VerifiedExecutableTransaction, inner_temporary_store: &InnerTemporaryStore, effects: &TransactionEffects, epoch_store: &Arc<AuthorityPerEpochStore>) -> Result<(), anyhow::Error> {
         // make sure this is a validator node.
         if self.is_validator(epoch_store) {
@@ -1357,6 +1358,8 @@ impl AuthorityState {
                     messages.push(message);
                 }
             }
+            // Put MPC protocol messages into the current Epoch store, later fetched by
+            // get_initiate_signature_mpc_protocols.
             epoch_store.insert_initiate_signature_mpc_protocols(&messages)?;
         }
         Ok(())
