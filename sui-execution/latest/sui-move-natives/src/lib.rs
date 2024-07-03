@@ -721,22 +721,7 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "zklogin_verified_issuer",
             "check_zklogin_issuer_internal",
             make_native!(zklogin::check_zklogin_issuer_internal),
-        ),
-        (
-            "ethereum_state",
-            "verify_eth_state",
-            make_native!(eth_state_proof::verify_eth_state),
-        ),
-        (
-            "eth_dwallet",
-            "verify_message_proof",
-            make_native!(eth_state_proof::verify_message_proof),
-        ),
-        (
-            "ethereum_state",
-            "create_initial_eth_state_data",
-            make_native!(eth_state_proof::create_initial_eth_state_data),
-        ),
+        )
     ];
     let sui_framework_natives_iter =
         sui_framework_natives
@@ -754,7 +739,22 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
         "validator",
         "validate_metadata_bcs",
         make_native!(validator::validate_metadata_bcs),
-    )];
+        ),
+        (
+            "ethereum_state",
+            "verify_eth_state",
+            make_native!(eth_state_proof::verify_eth_state),
+        ),
+        (
+            "eth_dwallet",
+            "verify_message_proof",
+            make_native!(eth_state_proof::verify_message_proof),
+        ),
+        (
+            "ethereum_state",
+            "create_initial_eth_state_data",
+            make_native!(eth_state_proof::create_initial_eth_state_data),
+        ),];
     sui_system_natives
         .iter()
         .cloned()
