@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use anyhow::{anyhow, Ok};
+use anyhow::anyhow;
 use async_trait::async_trait;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use serde::{Deserialize, Serialize};
@@ -84,21 +84,12 @@ impl RemotePackageStore {
 
 #[async_trait]
 impl PackageStore for RemotePackageStore {
-    /// Latest version of the object at `id`.
-    async fn version(&self, id: AccountAddress) -> ResolverResult<SequenceNumber> {
-        std::result::Result::Ok(self.client.get_object(id.into()).await.unwrap().version())
-    }
     /// Read package contents. Fails if `id` is not an object, not a package, or is malformed in
     /// some way.
     async fn fetch(&self, id: AccountAddress) -> ResolverResult<Arc<Package>> {
         let object = get_verified_object(&self.config, id.into()).await.unwrap();
-        let res = Package::read(&object);
-        if let Err(e) = res {
-            println!("Error: {:?}", e);
-        }
-
-        let package = Package::read(&object).unwrap();
-        std::result::Result::Ok(Arc::new(package))
+        let package = Package::read_from_object(&object).unwrap();
+        Ok(Arc::new(package))
     }
 }
 
@@ -365,7 +356,7 @@ async fn check_and_sync_checkpoints(config: &Config) -> anyhow::Result<()> {
         println!("{}", summary.auth_sig().epoch);
         println!("{}", summary.data().epoch);
 
-        summary.clone().verify(&prev_committee)?;
+        summary.clone().try_into_verified(&prev_committee)?;
         println!("verified checkpoint");
 
         // Check if the checkpoint needs to be submitted to the dwallet network
