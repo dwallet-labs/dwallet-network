@@ -74,7 +74,7 @@ pub(crate) fn identify_malicious(state: &SignState) -> twopc_mpc_protocols::Resu
             masked_shares,
             state.tiresias_public_parameters.clone(),
             involved_proofs,
-            state.involved_parties.clone(),
+            state.involved_parties.as_deref().unwrap_or(&Vec::new()).into(),
         )
         .iter()
         .for_each(|party_id| {
@@ -109,7 +109,7 @@ fn get_involved_shares(
         .clone()
         .decryption_shares
         .into_iter()
-        .filter(|(party_id, _)| state.involved_parties.contains(party_id))
+        .filter(|(party_id, _)| state.involved_parties.as_deref().unwrap_or(&Vec::new()).contains(party_id))
         .collect()
 }
 

@@ -26,7 +26,7 @@ pub(crate) struct SignState {
         HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
     pub failed_messages_indices: Option<Vec<usize>>,
-    pub involved_parties: Vec<PartyID>,
+    pub involved_parties: Option<Vec<PartyID>>,
 }
 
 impl SignState {
@@ -55,7 +55,7 @@ impl SignState {
             presigns: None,
             proofs: None,
             failed_messages_indices: None,
-            involved_parties: Vec::new(),
+            involved_parties: Some(Vec::new()),
         }
     }
 
@@ -75,29 +75,28 @@ impl SignState {
 
     pub(crate) fn insert_first_round(
         &mut self,
-        party_id: PartyID,
+        sender_id: PartyID,
         message: SignMessage,
     ) -> twopc_mpc_protocols::Result<()> {
         match message {
             SignMessage::DecryptionShares(shares) => {
-                let _ = self.decryption_shares.insert(party_id, shares);
+                let _ = self.decryption_shares.insert(sender_id, shares);
             }
             SignMessage::Proofs { proofs, failed_messages_indices, involved_parties } => {
-                self.failed_messages_indices = Some(failed_messages_indices.clone());
-                self.involved_parties = involved_parties.clone();
-                self.insert_proofs(party_id, proofs.clone());
+                if self.failed_messages_indices.is_none() {
+                    self.failed_messages_indices = Some(failed_messages_indices.clone());
+                }
+                if self.involved_parties.is_none() {
+                    self.involved_parties = Some(involved_parties.clone());
+                }
+                self.insert_proofs(sender_id, proofs.clone());
             }
         }
         Ok(())
     }
 
     pub(crate) fn insert_proofs(&mut self, party_id: PartyID, new_proofs: Vec<PartialDecryptionProof>) {
-        if let Some(proofs_map) = &mut self.proofs {
-            proofs_map.insert(party_id, new_proofs);
-        } else {
-            let mut proofs_map = HashMap::from([(party_id, new_proofs)]);
-            self.proofs = Some(proofs_map);
-        }
+        self.proofs.get_or_insert(HashMap::new()).insert(party_id, new_proofs);
     }
 
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {
@@ -110,7 +109,7 @@ impl SignState {
     }
 
     pub(crate) fn received_all_decryption_shares(&self) -> bool {
-        return self.decryption_shares.len() == self.parties.len();
+        self.decryption_shares.len() == self.parties.len()
     }
 
     pub(crate) fn should_identify_malicious_actors(&self) -> bool {

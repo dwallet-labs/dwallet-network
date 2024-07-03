@@ -111,7 +111,7 @@ impl SignRound {
                 );
                 match decrypt_result {
                     Ok(signatures) => {
-                        return Ok(SignRoundCompletion::SignatureOutput(signatures));
+                        Ok(SignRoundCompletion::SignatureOutput(signatures))
                     }
                     Err(decryption_error) => {
                         let proofs_tuples =

@@ -634,7 +634,7 @@ impl SignatureMPCAggregator {
                 match m {
                     SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties) => {
                         mut_state.failed_messages_indices = Some(message_indices.clone());
-                        mut_state.involved_parties = involved_parties.clone();
+                        mut_state.involved_parties = Some(involved_parties.clone());
                         let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
                         let _ = submit
                             .sign_and_submit_message(
