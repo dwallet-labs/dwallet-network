@@ -115,7 +115,7 @@ function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
 	}
 }
 
-export async function createSignMessages(
+export async function createPartialUserSignedMessages(
 	dwalletId: string,
 	dkgOutput: number[],
 	messages: Uint8Array[],
@@ -200,7 +200,7 @@ export async function createSignMessages(
 
 			const txFinal = new TransactionBlock();
 			const [signMessagesObject] = txFinal.moveCall({
-				target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_sign_messages`,
+				target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_partial_user_signed_messages`,
 				arguments: [
 					txFinal.object(dwalletId),
 					txFinal.object(sessionRef.objectId),

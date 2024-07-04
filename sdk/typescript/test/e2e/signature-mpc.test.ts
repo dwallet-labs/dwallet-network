@@ -3,7 +3,11 @@
 
 import { beforeAll, describe, it } from 'vitest';
 
-import { approveAndSign, createDWallet, createSignMessages } from '../../src/signature-mpc';
+import {
+	approveAndSign,
+	createDWallet,
+	createPartialUserSignedMessages,
+} from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test signature mpc', () => {
@@ -19,7 +23,7 @@ describe('Test signature mpc', () => {
 
 		const bytes: Uint8Array = new TextEncoder().encode('Sign it!!!');
 
-		const signMessagesIdSHA256 = await createSignMessages(
+		const signMessagesIdSHA256 = await createPartialUserSignedMessages(
 			dkg?.dwalletId!,
 			dkg?.dkgOutput,
 			[bytes],
@@ -38,7 +42,7 @@ describe('Test signature mpc', () => {
 		console.log('sigSHA256:');
 		console.log(sigSHA256);
 
-		const signMessagesIdKECCAK256 = await createSignMessages(
+		const signMessagesIdKECCAK256 = await createPartialUserSignedMessages(
 			dkg?.dwalletId!,
 			dkg?.dkgOutput,
 			[bytes],
