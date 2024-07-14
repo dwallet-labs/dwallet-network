@@ -364,6 +364,7 @@ impl SignatureMPCAggregator {
                             sign_session_rounds.clone(),
                             sign_session_states.clone(),
                             submit.clone(),
+                            state.clone(),
                         );
                     }
                 }
@@ -617,10 +618,9 @@ impl SignatureMPCAggregator {
         sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
+        state: SignState,
     ) {
         spawn_monitored_task!(async move {
-            let mut mut_state = sign_session_states.get_mut(&session_id).unwrap();
-            let state = mut_state.clone();
             let m = match sign_session_rounds.get_mut(&session_id) {
                 Some(mut round) => match round.complete_round(state.clone()) {
                     Ok(result) => Some(result),
@@ -632,9 +632,6 @@ impl SignatureMPCAggregator {
             if let Some(m) = m {
                 match m {
                     SignRoundCompletion::ProofsMessage(proofs, message_indices, involved_parties) => {
-                        mut_state.failed_messages_indices = Some(message_indices.clone());
-                        mut_state.involved_parties = Some(involved_parties.clone());
-                        let _ = mut_state.insert_proofs(state.party_id, proofs.clone());
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
