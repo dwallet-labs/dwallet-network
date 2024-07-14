@@ -1,5 +1,5 @@
 use crate::signature_mpc::sign_round::SignRound;
-use signature_mpc::decrypt::PartialDecryptionProof;
+use signature_mpc::twopc_mpc_protocols::decrypt::PartialDecryptionProof;
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::{
     DecentralizedPartyPresign, DecryptionPublicParameters, PaillierModulusSizedNumber, PartyID,

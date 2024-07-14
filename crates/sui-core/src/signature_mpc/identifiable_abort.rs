@@ -4,7 +4,7 @@ use crate::signature_mpc::sign_state::SignState;
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
 use dashmap::DashMap;
 use mysten_metrics::spawn_monitored_task;
-use signature_mpc::decrypt::PartialDecryptionProof;
+use signature_mpc::twopc_mpc_protocols::decrypt::PartialDecryptionProof;
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::{
     generate_proof, identify_malicious_parties, AdditivelyHomomorphicDecryptionKeyShare,

@@ -608,7 +608,6 @@ impl SignatureMPCAggregator {
         });
     }
 
-
     fn spawn_complete_sign_round(
         epoch: EpochId,
         epoch_store: Arc<AuthorityPerEpochStore>,
