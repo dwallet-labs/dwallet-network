@@ -83,7 +83,6 @@ impl SignRound {
                 >>()?
                 .into_iter()
                 .unzip();
-
         Ok((
             SignRound::FirstRound {
                 signature_threshold_decryption_round_parties,

@@ -82,7 +82,7 @@ impl SignState {
             SignMessage::DecryptionShares(shares) => {
                 let _ = self.decryption_shares.insert(sender_id, shares);
             }
-            SignMessage::Proofs { proofs, failed_messages_indices, involved_parties } => {
+            SignMessage::Proofs((proofs, failed_messages_indices, involved_parties)) => {
                 if self.failed_messages_indices.is_none() {
                     self.failed_messages_indices = Some(failed_messages_indices.clone());
                 }

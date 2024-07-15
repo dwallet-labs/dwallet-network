@@ -2,22 +2,29 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::committee::EpochId;
-use crate::crypto::{AuthoritySignInfo, AuthorityStrongQuorumSignInfo, default_hash};
+use crate::crypto::{default_hash, AuthoritySignInfo, AuthorityStrongQuorumSignInfo};
 use crate::digests::{SignatureMPCMessageDigest, SignatureMPCOutputDigest};
 use crate::error::SuiResult;
 use crate::message_envelope::{Envelope, Message, UnauthenticatedMessage};
 use crate::{committee::Committee, error::SuiError};
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
-use shared_crypto::intent::IntentScope;
-use std::fmt::{Debug, Display, Formatter};
-use std::marker::PhantomData;
-pub use signature_mpc::twopc_mpc_protocols::decrypt::{DecryptionShare, PartialDecryptionProof};
-pub use signature_mpc::twopc_mpc_protocols::{Commitment, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, EncDHCommitment, EncDHDecommitment, EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber, PresignDecentralizedPartyOutput, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof, tiresias_deal_trusted_shares, DecryptionPublicParameters, PartyID};
+use crate::base_types::ObjectRef;
 pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointDigest;
-use crate::base_types::ObjectRef;
+use serde::{Deserialize, Serialize};
+use shared_crypto::intent::IntentScope;
+pub use signature_mpc::twopc_mpc_protocols::decrypt::{DecryptionShare, PartialDecryptionProof};
+pub use signature_mpc::twopc_mpc_protocols::{
+    tiresias_deal_trusted_shares, Commitment, DKGDecentralizedPartyOutput,
+    DecentralizedPartyPresign, DecryptionPublicParameters, EncDHCommitment, EncDHDecommitment,
+    EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber,
+    PaillierModulusSizedNumber, PartyID, PresignDecentralizedPartyOutput,
+    PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof,
+    SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof,
+};
+use std::fmt::{Debug, Display, Formatter};
+use std::marker::PhantomData;
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;
@@ -45,19 +52,29 @@ pub type ProtocolContext = PhantomData<()>;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SignMessage {
     DecryptionShares(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
-    Proofs{
-        proofs: Vec<PartialDecryptionProof>,
-        failed_messages_indices: Vec<usize>,
-        involved_parties: Vec<PartyID>,
-    },
+    Proofs((Vec<PartialDecryptionProof>, Vec<usize>, Vec<PartyID>)),
 }
-
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SignatureMPCBulletProofAggregatesMessage {
-    Commitment((Vec<EncDHCommitment<ProtocolContext>>, Vec<EncDLCommitment<ProtocolContext>>)),
-    Decommitment((Vec<EncDHDecommitment<ProtocolContext>>, Vec<EncDLDecommitment<ProtocolContext>>)),
-    ProofShare((Vec<EncDHProofShare<ProtocolContext>>, Vec<EncDLProofShare<ProtocolContext>>)),
+    Commitment(
+        (
+            Vec<EncDHCommitment<ProtocolContext>>,
+            Vec<EncDLCommitment<ProtocolContext>>,
+        ),
+    ),
+    Decommitment(
+        (
+            Vec<EncDHDecommitment<ProtocolContext>>,
+            Vec<EncDLDecommitment<ProtocolContext>>,
+        ),
+    ),
+    ProofShare(
+        (
+            Vec<EncDHProofShare<ProtocolContext>>,
+            Vec<EncDLProofShare<ProtocolContext>>,
+        ),
+    ),
 }
 
 impl SignatureMPCBulletProofAggregatesMessage {
@@ -66,6 +83,15 @@ impl SignatureMPCBulletProofAggregatesMessage {
             SignatureMPCBulletProofAggregatesMessage::Commitment(_) => 1,
             SignatureMPCBulletProofAggregatesMessage::Decommitment(_) => 2,
             SignatureMPCBulletProofAggregatesMessage::ProofShare(_) => 3,
+        }
+    }
+}
+
+impl SignMessage {
+    pub fn round(&self) -> SignatureMPCRound {
+        match self {
+            SignMessage::DecryptionShares(_) => 1,
+            SignMessage::Proofs(_) => 2
         }
     }
 }
@@ -185,11 +211,7 @@ impl Display for SignatureMPCOutputValue {
                 )
             }
             SignatureMPCOutputValue::Sign(sigs) => {
-                write!(
-                    f,
-                    "DKGSignatureMPCOutputValue::Sign {{ sigs: {:?}}}",
-                    sigs,
-                )
+                write!(f, "DKGSignatureMPCOutputValue::Sign {{ sigs: {:?}}}", sigs,)
             }
         }
     }
@@ -330,8 +352,7 @@ impl Display for SignatureMPCOutput {
 
 pub type SignatureMPCOutputEnvelope<S> = Envelope<SignatureMPCOutput, S>;
 pub type SignedSignatureMPCOutput = SignatureMPCOutputEnvelope<AuthoritySignInfo>;
-pub type CertifiedSignatureMPCOutput =
-SignatureMPCOutputEnvelope<AuthorityStrongQuorumSignInfo>;
+pub type CertifiedSignatureMPCOutput = SignatureMPCOutputEnvelope<AuthorityStrongQuorumSignInfo>;
 
 impl SignatureMPCMessage {
     pub fn verify(&self, committee: &Committee) -> SuiResult {
@@ -352,7 +373,7 @@ impl SignatureMPCMessage {
             SignatureMPCMessageProtocols::DKG(m) => m.round(),
             SignatureMPCMessageProtocols::PresignFirstRound(m) => m.round(),
             SignatureMPCMessageProtocols::PresignSecondRound(m) => m.round(),
-            SignatureMPCMessageProtocols::Sign(_) => 1,
+            SignatureMPCMessageProtocols::Sign(m) => m.round(),
         }
     }
 }
@@ -369,20 +390,26 @@ pub enum InitiateSignatureMPCProtocol {
         session_ref: ObjectRef,
         dkg_output: DKGDecentralizedPartyOutput,
         commitments_and_proof_to_centralized_party_nonce_shares:
-        SignatureNonceSharesCommitmentsAndBatchedProof<ProtocolContext>,
+            SignatureNonceSharesCommitmentsAndBatchedProof<ProtocolContext>,
     },
     Sign {
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
         messages: Vec<Vec<u8>>,
         dkg_output: DKGDecentralizedPartyOutput,
-        public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
+        public_nonce_encrypted_partial_signature_and_proofs:
+            Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
         presigns: Vec<DecentralizedPartyPresign>,
         hash: u8,
     },
 }
 
-pub fn config_signature_mpc_secret_for_network_for_testing(number_of_parties: PartyID) -> (DecryptionPublicParameters, HashMap<PartyID, SecretKeyShareSizedNumber>) {
+pub fn config_signature_mpc_secret_for_network_for_testing(
+    number_of_parties: PartyID,
+) -> (
+    DecryptionPublicParameters,
+    HashMap<PartyID, SecretKeyShareSizedNumber>,
+) {
     let t = (((number_of_parties * 2) / 3) + 1) as PartyID;
 
     pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
