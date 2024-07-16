@@ -23,10 +23,8 @@ pub type DecryptionShare = <DecryptionKeyShare as AdditivelyHomomorphicDecryptio
     EncryptionKey,
 >>::DecryptionShare;
 
-pub type FailedMessagesIndices = Vec<usize>;
-
 pub struct DecryptionError {
-    pub failed_messages_indices: FailedMessagesIndices,
+    pub failed_messages_indices: Vec<usize>,
     pub involved_parties: Vec<PartyID>,
     pub decryption_shares: Vec<(
         HashMap<PartyID, DecryptionShare>,
