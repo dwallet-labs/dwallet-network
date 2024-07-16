@@ -14,7 +14,7 @@ pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointDigest;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
-pub use signature_mpc::twopc_mpc_protocols::decrypt::{DecryptionShare, PartialDecryptionProof};
+pub use signature_mpc::twopc_mpc_protocols::decrypt_signature::{DecryptionShare, PartialDecryptionProof};
 pub use signature_mpc::twopc_mpc_protocols::{
     tiresias_deal_trusted_shares, Commitment, DKGDecentralizedPartyOutput,
     DecentralizedPartyPresign, DecryptionPublicParameters, EncDHCommitment, EncDHDecommitment,

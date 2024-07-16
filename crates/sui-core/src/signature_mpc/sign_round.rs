@@ -7,7 +7,7 @@ use std::mem;
 use futures::StreamExt;
 use rand::rngs::OsRng;
 
-use signature_mpc::twopc_mpc_protocols::decrypt::{
+use signature_mpc::twopc_mpc_protocols::decrypt_signature::{
     decrypt_signature_decentralized_party_sign, PartialDecryptionProof,
 };
 use signature_mpc::twopc_mpc_protocols::{

@@ -1,7 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-pub mod decrypt;
+pub mod decrypt_signature;
 
 use std::collections::{HashMap, HashSet};
 
@@ -48,7 +48,7 @@ pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
 
 pub use twopc_mpc::{Result, Error};
 pub use twopc_mpc::secp256k1::paillier::bulletproofs::{PresignProofVerificationRoundParty, SignaturePartialDecryptionProofParty, SignaturePartialDecryptionProofVerificationParty, SignatureVerificationParty};
-use decrypt::{DecryptionShare, PartialDecryptionProof};
+use decrypt_signature::{DecryptionShare, PartialDecryptionProof};
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;
