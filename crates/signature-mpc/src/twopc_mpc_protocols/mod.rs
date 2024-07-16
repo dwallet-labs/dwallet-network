@@ -438,7 +438,7 @@ pub fn generate_proof(
 
     proof_party
         .prove_correct_signature_partial_decryption(&mut OsRng)
-        .unwrap() // TODO: handle error or not - this error should never occur
+        .unwrap()
 }
 
 
