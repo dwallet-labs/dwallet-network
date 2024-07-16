@@ -18,6 +18,7 @@ pub type PartialDecryptionProof = <DecryptionKeyShare as AdditivelyHomomorphicDe
     PLAINTEXT_SPACE_SCALAR_LIMBS,
     EncryptionKey,
 >>::PartialDecryptionProof;
+
 pub type DecryptionShare = <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<
     PLAINTEXT_SPACE_SCALAR_LIMBS,
     EncryptionKey,
@@ -104,7 +105,7 @@ fn generate_signatures(
     >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
     messages: Vec<Vec<u8>>,
-) -> Result<Vec<Vec<u8>>, FailedMessagesIndices> {
+) -> Result<Vec<Vec<u8>>, Vec<usize>> {
     let mut failed_messages_indices = Vec::new();
     let messages_signatures: Vec<Vec<u8>> = signature_threshold_decryption_round_parties
         .into_iter()

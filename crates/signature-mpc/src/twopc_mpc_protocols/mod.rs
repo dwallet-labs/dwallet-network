@@ -203,7 +203,7 @@ pub fn verify_signature(
     public_key: PublicKeyValue,
     signatures: Vec<Vec<u8>>
 ) -> bool {
-    messages.into_iter().zip(signatures).map(|(message, signature)| { 
+    messages.into_iter().zip(signatures).map(|(message, signature)| {
         match hash {
             Hash::KECCAK256 => {
                 let signature: Signature<k256::Secp256k1> =
@@ -403,12 +403,12 @@ pub fn identify_malicious_parties(
         &mut OsRng,
     );
 
-    // TODO: handle other errors
     match error {
-        Error::Tiresias(tiresias::Error::ProtocolError(ProtocolError::ProofVerificationError {
-                                                           malicious_parties,
-                                                           ..
-                                                       })) => malicious_parties,
+        Error::Tiresias(tiresias::Error::ProtocolError(
+                            ProtocolError::ProofVerificationError {
+                                malicious_parties,
+                                ..
+                            })) => malicious_parties,
         _ => Vec::new(),
     }
 }
@@ -443,7 +443,7 @@ pub fn generate_proof(
 
 
 pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {
-    
+
     //todo: remove unwrap!
     let m = match hash {
         Hash::KECCAK256 =>  bits2field::<k256::Secp256k1>(
