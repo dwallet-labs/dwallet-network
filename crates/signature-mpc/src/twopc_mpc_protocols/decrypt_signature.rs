@@ -24,13 +24,19 @@ pub type DecryptionShare = <DecryptionKeyShare as AdditivelyHomomorphicDecryptio
     EncryptionKey,
 >>::DecryptionShare;
 
+/**
+ * Returned when the signature decryption fails & contains all the neccessary information to
+ * start an Identifiable abort round.
+ */
 pub struct DecryptionError {
+    // The indices of the messages that their decryption failed out of the current messages batch.
+    // We sign on a batch of messages at each time.
     pub failed_messages_indices: Vec<usize>,
+
+    // The IDs of the parties that we used to decrypt the signature. We need only threshold of them to
+    // decrypt the signature, and we communicate them to the other parties, so they'll know they should
+    // use their decryption shares to find the malicious parties.
     pub involved_parties: Vec<PartyID>,
-    pub decryption_shares: Vec<(
-        HashMap<PartyID, DecryptionShare>,
-        HashMap<PartyID, DecryptionShare>,
-    )>,
 }
 
 fn take_threshold_decrypters(
@@ -191,7 +197,6 @@ pub fn decrypt_signature_decentralized_party_sign(
         Err(failed_messages_indices) => Err(DecryptionError {
             failed_messages_indices,
             involved_parties: decrypters,
-            decryption_shares,
         }),
     }
 }
