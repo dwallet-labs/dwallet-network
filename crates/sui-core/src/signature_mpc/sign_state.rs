@@ -55,7 +55,7 @@ impl SignState {
             presigns: None,
             proofs: None,
             failed_messages_indices: None,
-            involved_parties: Some(Vec::new()),
+            involved_parties: None,
         }
     }
 
