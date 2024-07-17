@@ -7,7 +7,7 @@ use mysten_metrics::spawn_monitored_task;
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::{
     AdditivelyHomomorphicDecryptionKeyShare, DecryptionKeyShare, generate_proof,
-    identify_malicious_parties, PaillierModulusSizedNumber, PartyID, SignaturePartialDecryptionProofParty,
+    identify_message_malicious_parties, PaillierModulusSizedNumber, PartyID, SignaturePartialDecryptionProofParty,
     SignaturePartialDecryptionProofVerificationParty,
 };
 use signature_mpc::twopc_mpc_protocols::decrypt_signature::PartialDecryptionProof;
@@ -61,7 +61,8 @@ pub fn generate_proofs(
         .collect()
 }
 
-pub(crate) fn identify_malicious(
+/// Identify all the parties that behaved maliciously in this messages batch.
+pub(crate) fn identify_batch_malicious_parties(
     state: &SignState,
 ) -> twopc_mpc_protocols::Result<SignRoundCompletion> {
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
@@ -79,7 +80,7 @@ pub(crate) fn identify_malicious(
     {
         let (shares, masked_shares) = change_shares_type(&involved_shares, message_index);
         let involved_proofs = get_involved_proofs(&state, i);
-        identify_malicious_parties(
+        identify_message_malicious_parties(
             party,
             shares,
             masked_shares,
@@ -150,7 +151,9 @@ fn get_involved_proofs(state: &SignState, i: usize) -> HashMap<PartyID, PartialD
         .collect()
 }
 
-pub fn spawn_proof_generation_and_conditional_malicious_identification(
+/// Generates proofs, one for evert message in the batch, that this party behaved honestly while
+/// signing it. Then, sends the proofs to the other parties.
+pub fn spawn_proof_generation(
     epoch: EpochId,
     epoch_store: Arc<AuthorityPerEpochStore>,
     party_id: PartyID,

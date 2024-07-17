@@ -364,13 +364,13 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
         .collect()
 }
 
- /// Identify the parties that acted maliciously during the decryption of the signature, after all the parties
+ /// Identify the parties that acted maliciously while signing this specific message, after all the parties
  /// that were involved in decrypting it have sent a proof that they behaved honestly.
  ///
  /// In case one of the involved parties failed to generate a proof, only this party will be returned.
  /// If all the involved parties sent a proof, and some of the proofs are invalid, all the parties that
  /// their proof was invalid will be returned.
-pub fn identify_malicious_parties(
+pub fn identify_message_malicious_parties(
     verification_round_party: SignaturePartialDecryptionProofVerificationParty,
     partial_signature_decryption_shares: HashMap<PartyID, DecryptionShare>,
     masked_nonce_decryption_shares: HashMap<PartyID, DecryptionShare>,

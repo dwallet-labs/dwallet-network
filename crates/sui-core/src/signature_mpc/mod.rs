@@ -15,7 +15,7 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::{AuthorityState, EffectsNotifyRead};
 use crate::authority_client::AuthorityAPI;
 use crate::signature_mpc::identifiable_abort::{
-    identify_malicious, spawn_proof_generation_and_conditional_malicious_identification,
+    identify_batch_malicious_parties, spawn_proof_generation,
 };
 pub use crate::signature_mpc::metrics::SignatureMPCMetrics;
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
@@ -378,7 +378,7 @@ impl SignatureMPCAggregator {
                 }
                 if let SignMessage::Proofs((proofs, failed_messages_indices, involved_parties)) = m {
                     // state.involved_parties = Some(involved_parties.clone());
-                    spawn_proof_generation_and_conditional_malicious_identification(
+                    spawn_proof_generation(
                         epoch,
                         epoch_store.clone(),
                         party_id,
@@ -392,7 +392,7 @@ impl SignatureMPCAggregator {
                 }
                 if state.should_identify_malicious_actors() {
                     if let Ok(SignRoundCompletion::MaliciousPartiesOutput(malicious_parties)) =
-                        identify_malicious(&state)
+                        identify_batch_malicious_parties(&state)
                     {
                         println!("Identified malicious parties: {:?}", malicious_parties);
                     }

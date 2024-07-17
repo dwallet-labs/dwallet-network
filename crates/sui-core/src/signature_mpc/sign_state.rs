@@ -8,7 +8,7 @@ use signature_mpc::twopc_mpc_protocols::{
 use std::collections::{HashMap, HashSet};
 use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::{SignMessage, SignatureMPCSessionID};
-use crate::signature_mpc::identifiable_abort::spawn_proof_generation_and_conditional_malicious_identification;
+use crate::signature_mpc::identifiable_abort::spawn_proof_generation;
 
 #[derive(Clone)]
 pub(crate) struct SignState {
