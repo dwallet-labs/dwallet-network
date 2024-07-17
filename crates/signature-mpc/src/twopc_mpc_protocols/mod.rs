@@ -451,7 +451,7 @@ pub fn decrypt_signature_decentralized_party_sign(
     let protocol_public_parameters = ProtocolPublicParameters::new(*decryption_key_share_public_parameters.encryption_scheme_public_parameters.plaintext_space_public_parameters().modulus);
 
     // TODO: choose multiple?
-    let decrypters: Vec<_> = decryption_shares.keys().take(decryption_key_share_public_parameters.threshold.into()).copied().collect();
+    let decrypters: Vec<PartyID> = decryption_shares.keys().take(decryption_key_share_public_parameters.threshold.into()).copied().collect();
 
     let decryption_shares: Vec<(HashMap<_, _>, HashMap<_, _>)> = (0..public_nonce_encrypted_partial_signature_and_proofs.len())
         .map(|i| {
@@ -535,12 +535,6 @@ pub fn identify_message_malicious_parties(
             )
         })
         .collect();
-
-    let signature_partial_decryption_proofs: HashMap<PartyID, PartialDecryptionProof> =
-        signature_partial_decryption_proofs
-            .into_iter()
-            .filter(|(party_id, _)| decrypters.contains(party_id))
-            .collect();
 
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
