@@ -163,7 +163,7 @@ pub fn spawn_proof_generation(
     state: SignState,
 ) {
     spawn_monitored_task!(async move {
-        if !state.clone().proofs.unwrap().contains_key(&party_id) {
+        if state.proofs.is_none() || !state.clone().proofs.unwrap().contains_key(&party_id) {
             let proofs = generate_proofs(&state, &failed_messages_indices);
             let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
             let _ = submit
