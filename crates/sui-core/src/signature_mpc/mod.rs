@@ -10,6 +10,7 @@ mod sign_state;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
 mod sign_round;
+mod sign;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::{AuthorityState, EffectsNotifyRead};
