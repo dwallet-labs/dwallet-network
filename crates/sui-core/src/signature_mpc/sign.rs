@@ -215,7 +215,8 @@ impl SignState {
 
     pub(crate) fn should_identify_malicious_actors(&self) -> bool {
         if let Some(proofs) = self.clone().proofs {
-            return proofs.len() == self.tiresias_public_parameters.threshold.into() && self.received_all_decryption_shares();
+            let threshold: usize = self.tiresias_public_parameters.threshold.into();
+            return proofs.len() == threshold && self.received_all_decryption_shares();
         }
         return false;
     }
