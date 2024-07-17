@@ -46,7 +46,7 @@ pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
     EncDLCommitmentRoundParty,  EncDLDecommitmentRoundParty, EncryptedMaskedNoncesRoundParty, EncryptedMaskedKeyShareRoundParty, PresignDecentralizedPartyOutput,
     EncDLProofAggregationOutput, EncDLProofAggregationRoundParty,EncDLProofShareRoundParty, EncryptedMaskAndMaskedNonceShare, EncryptedNonceShareAndPublicShare, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput, DKGDecommitmentRoundParty, DKGDecommitmentRoundState};
 
-pub use twopc_mpc::{Error, Result as TwoPCMPCResult};
+pub use twopc_mpc::{Error, Result};
 pub use twopc_mpc::secp256k1::paillier::bulletproofs::{PresignProofVerificationRoundParty, SignaturePartialDecryptionProofParty, SignaturePartialDecryptionProofVerificationParty, SignatureVerificationParty};
 use decrypt_signature::{DecryptionShare, PartialDecryptionProof};
 
@@ -190,7 +190,7 @@ pub fn finalize_centralized_party_sign(
         message,
         dkg_output.public_key,
         &protocol_public_parameters.group_public_parameters,
-    )).collect::<TwoPCMPCResult<Vec<_>>>()?;
+    )).collect::<Result<Vec<_>>>()?;
 
     public_nonce_encrypted_partial_signature_and_proofs.into_iter().zip(signatures_s.into_iter()).zip(parties.into_iter()).map(|((public_nonce_encrypted_partial_signature_and_proof, signature_s,), party)|
         GroupElement::new(public_nonce_encrypted_partial_signature_and_proof.public_nonce, &protocol_public_parameters.group_public_parameters).map_err(Error::from).and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
@@ -388,7 +388,7 @@ fn generate_signatures(
     >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
     messages: Vec<Vec<u8>>,
-) -> Result<Vec<Vec<u8>>, Vec<usize>> {
+) -> std::result::Result<Vec<Vec<u8>>, Vec<usize>> {
     let mut failed_messages_indices = Vec::new();
     let messages_signatures: Vec<Vec<u8>> = signature_threshold_decryption_round_parties
         .into_iter()
@@ -447,7 +447,7 @@ pub fn decrypt_signature_decentralized_party_sign(
     decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
-) -> Result<Vec<Vec<u8>>, DecryptionError> {
+) -> std::result::Result<Vec<Vec<u8>>, DecryptionError> {
     let protocol_public_parameters = ProtocolPublicParameters::new(*decryption_key_share_public_parameters.encryption_scheme_public_parameters.plaintext_space_public_parameters().modulus);
 
     // TODO: choose multiple?
