@@ -52,7 +52,8 @@ pub type ProtocolContext = PhantomData<()>;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SignMessage {
     DecryptionShares(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
-    Proofs((Vec<PartialDecryptionProof>, Vec<usize>, Vec<PartyID>)),
+    StartIdentifiableAbortFlow(Vec<usize>, Vec<PartyID>),
+    Proofs(Vec<PartialDecryptionProof>),
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
