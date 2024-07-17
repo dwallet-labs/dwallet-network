@@ -1,26 +1,28 @@
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+
+use dashmap::DashMap;
+
+use mysten_metrics::spawn_monitored_task;
+use signature_mpc::twopc_mpc_protocols;
+use signature_mpc::twopc_mpc_protocols::{
+    AdditivelyHomomorphicDecryptionKeyShare, DecryptionKeyShare, generate_proof,
+    identify_malicious_parties, PaillierModulusSizedNumber, PartyID, SignaturePartialDecryptionProofParty,
+    SignaturePartialDecryptionProofVerificationParty,
+};
+use signature_mpc::twopc_mpc_protocols::decrypt_signature::PartialDecryptionProof;
+use sui_types::base_types::{EpochId, ObjectRef};
+use sui_types::messages_signature_mpc::{
+    SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID, SignMessage,
+};
+
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
 use crate::signature_mpc::sign_state::SignState;
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
-use dashmap::DashMap;
-use mysten_metrics::spawn_monitored_task;
-use signature_mpc::twopc_mpc_protocols;
-use signature_mpc::twopc_mpc_protocols::decrypt_signature::PartialDecryptionProof;
-use signature_mpc::twopc_mpc_protocols::{
-    generate_proof, identify_malicious_parties, AdditivelyHomomorphicDecryptionKeyShare,
-    DecryptionKeyShare, PaillierModulusSizedNumber, PartyID, SignaturePartialDecryptionProofParty,
-    SignaturePartialDecryptionProofVerificationParty,
-};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
-use sui_types::base_types::{EpochId, ObjectRef};
-use sui_types::messages_signature_mpc::{
-    SignMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID,
-};
 
-
-
-
+/// Generate a list of proofs, one for every message in the messages batch that its decryption failed.
+/// Each proof proves that the executing party id (state.party_id) while signing on that message.
 pub fn generate_proofs(
     state: &SignState,
     failed_messages_indices: &Vec<usize>,
@@ -62,7 +64,9 @@ pub fn generate_proofs(
 pub(crate) fn identify_malicious(
     state: &SignState,
 ) -> twopc_mpc_protocols::Result<SignRoundCompletion> {
-    let proof_results = generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
+    // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
+    // that are necessary to call the [`identify_malicious_parties`] function.
+    let failed_messages_parties = generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
     let mut malicious_parties = HashSet::new();
     let involved_shares = get_involved_shares(&state);
     for ((i, message_index), (_, party)) in state
@@ -71,9 +75,9 @@ pub(crate) fn identify_malicious(
         .unwrap()
         .into_iter()
         .enumerate()
-        .zip(proof_results.into_iter())
+        .zip(failed_messages_parties.into_iter())
     {
-        let (shares, masked_shares) = extract_shares(&involved_shares, message_index);
+        let (shares, masked_shares) = change_shares_type(&involved_shares, message_index);
         let involved_proofs = get_involved_proofs(&state, i);
         identify_malicious_parties(
             party,
@@ -97,7 +101,8 @@ pub(crate) fn identify_malicious(
     ))
 }
 
-fn extract_shares(
+/// Maps the decryption shares to the type expected by the identify_malicious_decrypters function from the 2pc-mpc repository.
+fn change_shares_type(
     involved_shares: &HashMap<
         PartyID,
         Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
