@@ -1,18 +1,20 @@
-use crate::twopc_mpc_protocols::ProtocolContext;
+use std::collections::HashMap;
+
 use ecdsa::Signature;
 use group::PartyID;
-use homomorphic_encryption::{AdditivelyHomomorphicDecryptionKeyShare, GroupsPublicParametersAccessors};
-use std::collections::HashMap;
-use tiresias::decryption_key_share::PublicParameters as DecryptionPublicParameters;
+use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use tiresias::{
     AdjustedLagrangeCoefficientSizedNumber, DecryptionKeyShare, EncryptionKey,
     PaillierModulusSizedNumber,
 };
+use tiresias::decryption_key_share::PublicParameters as DecryptionPublicParameters;
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
 use twopc_mpc::secp256k1::paillier::bulletproofs::{
-    ProtocolPublicParameters, PublicNonceEncryptedPartialSignatureAndProof,
+    PublicNonceEncryptedPartialSignatureAndProof,
     SignatureThresholdDecryptionParty,
 };
+
+use crate::twopc_mpc_protocols::ProtocolContext;
 
 pub type PartialDecryptionProof = <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<
     PLAINTEXT_SPACE_SCALAR_LIMBS,
@@ -24,10 +26,8 @@ pub type DecryptionShare = <DecryptionKeyShare as AdditivelyHomomorphicDecryptio
     EncryptionKey,
 >>::DecryptionShare;
 
-/**
- * Returned when the signature decryption fails & contains all the neccessary information to
- * start an Identifiable abort round.
- */
+/// Returned when the signature decryption fails & contains all the necessary information to
+/// start an Identifiable abort round.
 pub struct DecryptionError {
     // The indices of the messages that their decryption failed out of the current messages batch.
     // We sign on a batch of messages at each time.
