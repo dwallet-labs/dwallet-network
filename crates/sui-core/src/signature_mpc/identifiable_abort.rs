@@ -17,8 +17,8 @@ use sui_types::messages_signature_mpc::{
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
-use crate::signature_mpc::sign_state::SignState;
+use crate::signature_mpc::sign::{SignRound, SignRoundCompletion};
+use crate::signature_mpc::sign::SignState;
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
 
 /// Generate a list of proofs, one for every message in the messages batch that its decryption failed.

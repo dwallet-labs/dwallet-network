@@ -6,10 +6,8 @@ mod dkg;
 mod identifiable_abort;
 mod metrics;
 mod presign;
-mod sign_state;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
-mod sign_round;
 mod sign;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
@@ -69,8 +67,8 @@ use tokio_stream::StreamExt;
 
 use crate::signature_mpc::dkg::{DKGRound, DKGRoundCompletion};
 use crate::signature_mpc::presign::{PresignRound, PresignRoundCompletion, PresignState};
-use crate::signature_mpc::sign_round::{SignRound, SignRoundCompletion};
-use crate::signature_mpc::sign_state::SignState;
+use crate::signature_mpc::sign::{SignRound, SignRoundCompletion};
+use crate::signature_mpc::sign::SignState;
 use crate::signature_mpc::signature_mpc_subscriber::SignatureMpcSubscriber;
 
 pub trait SignatureMPCServiceNotify {
