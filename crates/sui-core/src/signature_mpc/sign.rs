@@ -86,11 +86,7 @@ impl SignRound {
                         Ok(SignRoundCompletion::SignatureOutput(signatures))
                     }
                     Err(decryption_error) => {
-                        let proofs_tuples =
-                            identifiable_abort::generate_proofs(&state, &decryption_error.failed_messages_indices);
-                        let proofs = proofs_tuples.iter().map(|(proof, _)| proof.clone()).collect();
-                        Ok(SignRoundCompletion::ProofsMessage(
-                            proofs,
+                        Ok(SignRoundCompletion::StartIAFlow(
                             decryption_error.failed_messages_indices,
                             decryption_error.involved_parties,
                         ))
@@ -104,8 +100,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    ProofsMessage(Vec<PartialDecryptionProof>, Vec<usize>, Vec<PartyID>),
-    MaliciousPartiesOutput(HashSet<PartyID>),
+    StartIAFlow(Vec<usize>, Vec<PartyID>),
     None,
 }
 #[derive(Clone)]
@@ -180,7 +175,7 @@ impl SignState {
             SignMessage::DecryptionShares(shares) => {
                 let _ = self.decryption_shares.insert(sender_id, shares);
             }
-            SignMessage::StartIdentifiableAbortFlow(failed_messages_indices, involved_parties) => {
+            SignMessage::StartIAFlow(failed_messages_indices, involved_parties) => {
                 if self.failed_messages_indices.is_none() {
                     self.failed_messages_indices = Some(failed_messages_indices.clone());
                 }

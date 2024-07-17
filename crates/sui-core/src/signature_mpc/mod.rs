@@ -376,7 +376,7 @@ impl SignatureMPCAggregator {
                                 );
                             }
                         }
-                        SignMessage::StartIdentifiableAbortFlow(
+                        SignMessage::StartIAFlow(
                             failed_messages_indices,
                             involved_parties,
                         ) => {
@@ -394,9 +394,7 @@ impl SignatureMPCAggregator {
                         }
                         SignMessage::Proofs(_) => {
                             if state.should_identify_malicious_actors() {
-                                if let Ok(SignRoundCompletion::MaliciousPartiesOutput(
-                                    malicious_parties,
-                                )) = identify_batch_malicious_parties(&state)
+                                if let Ok(malicious_parties) = identify_batch_malicious_parties(&state)
                                 {
                                     println!(
                                         "Identified malicious parties: {:?}",
@@ -633,8 +631,7 @@ impl SignatureMPCAggregator {
 
             if let Some(m) = m {
                 match m {
-                    SignRoundCompletion::ProofsMessage(
-                        proofs,
+                    SignRoundCompletion::StartIAFlow(
                         message_indices,
                         involved_parties,
                     ) => {
@@ -642,11 +639,7 @@ impl SignatureMPCAggregator {
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
                                     epoch,
-                                    SignatureMPCMessageProtocols::Sign(SignMessage::Proofs((
-                                        proofs,
-                                        message_indices,
-                                        involved_parties,
-                                    ))),
+                                    SignatureMPCMessageProtocols::Sign(SignMessage::StartIAFlow(message_indices, involved_parties)),
                                     session_id,
                                 ),
                                 &epoch_store,
@@ -663,7 +656,6 @@ impl SignatureMPCAggregator {
                             .await;
                     }
                     SignRoundCompletion::None => {}
-                    SignRoundCompletion::MaliciousPartiesOutput(_) => {}
                 }
             }
         });

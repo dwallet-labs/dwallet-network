@@ -64,7 +64,7 @@ pub fn generate_proofs(
 /// Identify all the parties that behaved maliciously in this messages batch.
 pub(crate) fn identify_batch_malicious_parties(
     state: &SignState,
-) -> twopc_mpc_protocols::Result<SignRoundCompletion> {
+) -> twopc_mpc_protocols::Result<HashSet<PartyID>> {
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
     // that are necessary to call the [`identify_malicious_parties`] function.
     let failed_messages_parties = generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
@@ -97,9 +97,7 @@ pub(crate) fn identify_batch_malicious_parties(
             malicious_parties.insert(*party_id);
         });
     }
-    Ok(SignRoundCompletion::MaliciousPartiesOutput(
-        malicious_parties,
-    ))
+    Ok(malicious_parties)
 }
 
 /// Maps the decryption shares to the type expected by the identify_malicious_decrypters function from the 2pc-mpc repository.
@@ -172,11 +170,7 @@ pub fn spawn_proof_generation(
                 .sign_and_submit_message(
                     &SignatureMPCMessageSummary::new(
                         epoch,
-                        SignatureMPCMessageProtocols::Sign(SignMessage::Proofs((
-                            proofs,
-                            failed_messages_indices,
-                            involved_parties,
-                        ))),
+                        SignatureMPCMessageProtocols::Sign(SignMessage::Proofs(proofs)),
                         session_id,
                     ),
                     &epoch_store,
