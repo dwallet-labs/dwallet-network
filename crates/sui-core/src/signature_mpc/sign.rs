@@ -197,7 +197,9 @@ impl SignState {
     }
 
     pub(crate) fn insert_proofs(&mut self, party_id: PartyID, new_proofs: Vec<PartialDecryptionProof>) {
-        self.proofs.get_or_insert(HashMap::new()).insert(party_id, new_proofs);
+        if self.clone().involved_parties.unwrap().contains(&party_id) {
+            self.proofs.get_or_insert(HashMap::new()).insert(party_id, new_proofs);
+        }
     }
 
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {
