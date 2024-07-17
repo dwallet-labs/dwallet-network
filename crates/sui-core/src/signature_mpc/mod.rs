@@ -6,10 +6,10 @@ mod dkg;
 mod identifiable_abort;
 mod metrics;
 mod presign;
-mod sign_round;
 mod sign_state;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
+mod sign_round;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::authority::{AuthorityState, EffectsNotifyRead};
