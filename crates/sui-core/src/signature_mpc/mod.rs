@@ -377,7 +377,6 @@ impl SignatureMPCAggregator {
                     }
                 }
                 if let SignMessage::Proofs((proofs, failed_messages_indices, involved_parties)) = m {
-                    // state.involved_parties = Some(involved_parties.clone());
                     spawn_proof_generation(
                         epoch,
                         epoch_store.clone(),

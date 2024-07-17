@@ -91,7 +91,9 @@ impl SignRound {
         ))
     }
 
-
+    /// Tries to decrypt the signatures and return them.
+    /// In case one or more of the signatures is invalid, it will generate proofs, one for every message in the batch, that it behaved honestly, and will return them and
+    /// more information needed to launch the identifiable abort flow.
     pub(crate) fn complete_round(&mut self, state: SignState) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
