@@ -48,7 +48,7 @@ const sui_client = new SuiClient({ url: suiTestnetURL });
 const dwallet_client = new DWalletClient({ url: dWalletNodeUrl });
 ```
 
-## Link a dWallet Capability on Sui to the Wrapped dWallet Capability on the dWallet Network
+## Link a dWallet Capability on Sui to the Wrapped dWallet Capability on the dWallet Network {#link}
 After [following these steps to create a dWallet](../getting-started/your-first-dwallet.md#create-a-dwallet), you should have ownership of the `DWalletCap` object that has absolute control over it.
 Extract the dWallet ID from the output, as we'll need it later on:
 ```typescript
@@ -62,7 +62,7 @@ let { dwalletCapId } = dkg;
 
 In order to control it from a Sui module, the `DWalletCap` object from the Sui `dwallet_cap` module is used.
 Ownership of this object will allow complete control over the dWallet linked to it; thus, limiting control over this object (e.g. by wrapping it by your own module's object) effectively allows controlling the dWallet linked to it.
-```rust
+```sui move
 struct DWalletCap has key, store {
     id: UID,
     dwallet_network_cap_id: ID,
@@ -106,13 +106,14 @@ if (first) {
 
 Now that we have executed the `create_cap` on Sui Tx `createCapTxId`, we can prove that to the dWallet Network.
 This transaction emits a `DWalletNetworkInitCapRequest` event that specifies the object ID of the newly created `DWalletCap` object and the object ID of the dWallet Cap we wish to control on dWallet Network:
-```rust
+```sui move
 struct DWalletNetworkInitCapRequest has copy, drop {
     cap_id: ID,
     dwallet_network_cap_id: ID,
 }
 ```
 
+### {#prove-cap}
 To prove this event was created to the dWallet Network, call the `submitDwalletCreationProof()` function, which will take submit a state proof that this transaction id on Sui Testnet created a new `DWalletCap`.
 We use the output of the dkg for extracting the `DWalletCap` id on dWallet Network, so we can wrap it to link to the sui capability.
 ```typescript
@@ -128,7 +129,7 @@ await submitDWalletCreationProof(
 ```
 
 This will create a new `CapWrapper` object in dWallet Network, that wraps the `DWalletCap` and registers the corresponding `cap_id` on Sui, thus forming the link between the two objects:
-```rust
+```sui move
 struct CapWrapper has key, store {
     id: UID,
     cap_id_sui: ID,
@@ -136,7 +137,7 @@ struct CapWrapper has key, store {
 }
 ```
 
-## Approve Message on Sui for Signing in dWallet Network
+## Approve Message on Sui for Signing in dWallet Network {#approve}
 Now that our dWallet is linked to a `DWalletCap` on Sui, its owner on Sui can use it to approve a message for signing.
 Let's say we want to sign the message `"dWallets are coming... to Sui"`, we can now call the `dwallet_cap::approve_message()` method on Sui:
 ```typescript
@@ -165,15 +166,16 @@ const approveMsgTxId = res.digest;
 
 Now that we have executed the `create_cap` on Sui Tx `createCapTxId`, we can prove that to the dWallet Network.
 This transaction emits a `DWalletNetworkApproveRequest` event that specifies the object ID of the `DWalletCap` object and approved message bytes:
-```rust
+```sui move
 struct DWalletNetworkApproveRequest has copy, drop {
     cap_id: ID,
     message: vector<u8>,
 }
 ```
 
+### {#submit-proof}
 Now [we follow the steps to sign with a dWallet](../getting-started/your-first-dwallet.md#sign-a-message-using-your-dwallet) but we stop after creating the `signMessages` object.
-Next, we call the `submitDwalletCreationProof()` function, which will take submit a state proof to the dWallet network that this transaction on Sui Testnet approved this message for signing.
+Next, we call the `submitTxStateProof()` function, which will take submit a state proof to the dWallet network that this transaction on Sui Testnet approved this message for signing.
 ```typescript
 let res = await submitTxStateProof(
     dwallet_client,
@@ -190,7 +192,7 @@ console.log('res', res);
 ```
 
 This will generate a signature:
-```typsecript
+```typescript
 res {
   signOutputId: '0x876fa89ee94ef75116a72dc7b92365f85a83e25be629ac4757e05ad3ac58c78f',
   signatures: [
