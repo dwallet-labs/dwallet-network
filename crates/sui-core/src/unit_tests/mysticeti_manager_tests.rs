@@ -17,7 +17,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use sui_swarm_config::network_config_builder::ConfigBuilder;
 use tokio::time::sleep;
-use sui_types::messages_signature_mpc::{config_signature_mpc_secret_for_network_for_testing, PartyID};
+use sui_types::messages_signature_mpc::{PartyID};
 
 #[tokio::test(flavor = "current_thread", start_paused = true)]
 async fn test_mysticeti_manager() {

@@ -9,8 +9,8 @@ use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare
 use std::convert::TryInto;
 use std::mem;
 use signature_mpc::twopc_mpc_protocols;
-use signature_mpc::twopc_mpc_protocols::decrypt_signature::PartialDecryptionProof;
 use crate::signature_mpc::identifiable_abort;
+use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
 
 #[derive(Default)]
 pub(crate) enum SignRound {

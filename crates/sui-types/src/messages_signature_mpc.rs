@@ -14,7 +14,6 @@ pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointDigest;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
-pub use signature_mpc::twopc_mpc_protocols::decrypt_signature::{DecryptionShare, PartialDecryptionProof};
 pub use signature_mpc::twopc_mpc_protocols::{
     tiresias_deal_trusted_shares, Commitment, DKGDecentralizedPartyOutput,
     DecentralizedPartyPresign, DecryptionPublicParameters, EncDHCommitment, EncDHDecommitment,
@@ -25,6 +24,7 @@ pub use signature_mpc::twopc_mpc_protocols::{
 };
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
+use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;

@@ -27,7 +27,7 @@ use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemS
 use sui_types::sui_system_state::SuiSystemStateTrait;
 use tokio::sync::{broadcast, mpsc};
 use tokio::time::{interval, sleep};
-use sui_types::messages_signature_mpc::{config_signature_mpc_secret_for_network_for_testing, DecryptionPublicParameters, PartyID, SecretKeyShareSizedNumber, SignatureMPCMessageSummary, SignatureMPCOutput};
+use sui_types::messages_signature_mpc::{DecryptionPublicParameters, PartyID, SecretKeyShareSizedNumber, SignatureMPCMessageSummary, SignatureMPCOutput};
 use crate::signature_mpc::{SignatureMPCService, SignatureMPCMetrics};
 
 async fn send_transactions(

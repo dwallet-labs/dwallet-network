@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use dashmap::DashMap;
+use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
 
 use mysten_metrics::spawn_monitored_task;
 use signature_mpc::twopc_mpc_protocols;
@@ -10,7 +11,6 @@ use signature_mpc::twopc_mpc_protocols::{
     identify_message_malicious_parties, PaillierModulusSizedNumber, PartyID, SignaturePartialDecryptionProofParty,
     SignaturePartialDecryptionProofVerificationParty,
 };
-use signature_mpc::twopc_mpc_protocols::decrypt_signature::PartialDecryptionProof;
 use sui_types::base_types::{EpochId, ObjectRef};
 use sui_types::messages_signature_mpc::{
     SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID, SignMessage,
