@@ -374,7 +374,12 @@ pub struct DecryptionError {
     pub decrypters: Vec<PartyID>,
 }
 
-fn generate_signatures(
+#[derive(Debug, Clone)]
+struct SignaturesDecryptionError {
+    failed_messages_indices: Vec<usize>
+}
+
+fn decrypt_signatures(
     lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
     decryption_shares: Vec<(
         HashMap<PartyID, PaillierModulusSizedNumber>,
@@ -385,7 +390,7 @@ fn generate_signatures(
     >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
     messages: Vec<Vec<u8>>,
-) -> std::result::Result<Vec<Vec<u8>>, Vec<usize>> {
+) -> std::result::Result<Vec<Vec<u8>>, SignaturesDecryptionError> {
     let mut failed_messages_indices = Vec::new();
     let messages_signatures: Vec<Vec<u8>> = signature_threshold_decryption_round_parties
         .into_iter()
@@ -433,7 +438,9 @@ fn generate_signatures(
         .collect();
 
     if !failed_messages_indices.is_empty() {
-        return Err(failed_messages_indices);
+        return Err(SignaturesDecryptionError {
+            failed_messages_indices,
+        });
     }
     Ok(messages_signatures)
 }
@@ -485,7 +492,7 @@ pub fn decrypt_signature_decentralized_party_sign(
         })
         .collect();
 
-    let messages_signatures_result = generate_signatures(
+    let messages_signatures_result = decrypt_signatures(
         lagrange_coefficients,
         decryption_shares.clone(),
         public_nonce_encrypted_partial_signature_and_proofs,
@@ -495,9 +502,9 @@ pub fn decrypt_signature_decentralized_party_sign(
 
     match messages_signatures_result {
         Ok(messages_signatures) => Ok(messages_signatures),
-        Err(failed_messages_indices) => Err(DecryptionError {
-            failed_messages_indices,
-            decrypters: decrypters,
+        Err(decryption_error) => Err(DecryptionError {
+            failed_messages_indices: decryption_error.failed_messages_indices,
+            decrypters,
         }),
     }
 }
