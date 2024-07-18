@@ -549,7 +549,7 @@ pub fn identify_message_malicious_parties(
                                 ..
                             })) => malicious_parties,
         _ => {
-            panic!("Failed to identify malicious parties {:?}", error);
+            panic!(error);
         }
     }
 }
