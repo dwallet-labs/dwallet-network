@@ -1,8 +1,6 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-pub mod decrypt_signature;
-
 use std::collections::{HashMap, HashSet};
 
 pub use commitment::{Commitment};
@@ -550,7 +548,9 @@ pub fn identify_message_malicious_parties(
                                 malicious_parties,
                                 ..
                             })) => malicious_parties,
-        _ => Vec::new(),
+        _ => {
+            panic!("Failed to identify malicious parties {:?}", error);
+        }
     }
 }
 
