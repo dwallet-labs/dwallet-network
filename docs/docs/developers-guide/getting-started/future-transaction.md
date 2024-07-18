@@ -10,11 +10,11 @@ The system offers transparency and verification through addresses and SPV light 
 Additionally, the programmable nature of this feature, built on the Zero Trust Protocol (ZTP) infrastructure, supports secure operations across multiple blockchain networks, including EVM, Solana, and Cosmos. 
 Designed for easy integration, it enables developers to build innovative and secure products, enhancing flexibility and security without compromising the sovereignty of individual blockchains.
 
-## How does a dWallet Signature created?
+## How is a dWallet Signature created?
 
 Generating a signature using a dWallet requires 2 parts - the user part and the network part. This is what `2PC` in the [2PC-MPC](../../core-concepts/cryptography/2pc-mpc.md) stands for.
 
-Creating a dWallet, return the following outputs that will all be used in order to sign a transaction: 
+Creating a dWallet, returns the following outputs that will all be used in order to sign a transaction: 
 - `dwalletId`
 - `dwalletCapId`
 - `dkgOutput`
@@ -41,16 +41,20 @@ This is what we call a Future Transaction.
 ### How does it actually work in the dWallet Network?
 
 When we want to utilize a policy, we will wrap the dWallet Capability object and link it to a smart contract or module on a different chain.
-The dWallet Network cannot finalize a signature without the dWallet Capability. 
+The dWallet Network cannot approve a message without the dWallet Capability. 
 Therefore, this way we can assure that the transaction will be completely signed and finalized only when the conditions of the policy are met.
  
 The future transaction is the message that the user signs with the dWallet's user share.
 
-Why is it future if the user signs it the same way as an instant transaction?
-Because the network will finalize it only when the policy controlling this dWallet approves it.
+What makes it a future transaction if the user signs it the same way as an instant transaction?
+The user won't call the ```approveAndSign()``` function and the network will do it only when the policy controlling this dWallet approves it.
 
-When a policy approves a message, it triggers an event. This event output should be taken and sent to the dWallet Network as a proof.
+When a policy on another chain approves a message, it triggers an event. This event output should be sent to the dWallet Network as a proof.
 Then the dWallet Network approves the message and finalizes the signature of this message.
+
+It's important to realize that anyone can submit the event as a proof to the dWallet Network. 
+It doesn't require the actual DWalletCap object anymore because it's wrapped and shared (meaning it's public) in the dWallet Network.
+Therefore, once an approval event was triggered on the chain controlling this dWallet, anyone can submit it to the dWallet Network.
 
 ## Example using Sui Network
 
@@ -108,7 +112,7 @@ struct DWalletNetworkApproveRequest has copy, drop {
 }
 ```
 
-Once this event has occurred, we'll prove it to the dWallet Network using the `submitDwalletCreationProof()` function in the sui light client module in the dWallet Network.
+Once this event has occurred, we'll prove it to the dWallet Network using the `submitTxStateProof()` function in the sui light client module in the dWallet Network.
 ```typescript
 let res = await submitTxStateProof(
     dwallet_client,
