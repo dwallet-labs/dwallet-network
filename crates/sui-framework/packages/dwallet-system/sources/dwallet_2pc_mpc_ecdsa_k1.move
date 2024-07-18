@@ -164,14 +164,14 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
         let (output, public_key) = dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share, secret_key_share_encryption_and_proof, centralized_party_public_key_share_decommitment_and_proof);
 
-        let result = DWallet {
+        let dwallet = DWallet {
             id: object::new(ctx),
             session_id,
             dwallet_cap_id,
             output,
             public_key,
         };
-        transfer::freeze_object(result);
+        transfer::freeze_object(dwallet);
     }
 
     native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>);
