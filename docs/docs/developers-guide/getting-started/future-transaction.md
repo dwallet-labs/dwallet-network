@@ -10,16 +10,16 @@ The system offers transparency and verification through addresses and SPV light 
 Additionally, the programmable nature of this feature, built on the Zero Trust Protocol (ZTP) infrastructure, supports secure operations across multiple blockchain networks, including EVM, Solana, and Cosmos. 
 Designed for easy integration, it enables developers to build innovative and secure products, enhancing flexibility and security without compromising the sovereignty of individual blockchains.
 
-## How does a dWallet Signature work?
+## How does a dWallet Signature created?
 
 Generating a signature using a dWallet requires 2 parts - the user part and the network part. This is what `2PC` in the [2PC-MPC](../../core-concepts/cryptography/2pc-mpc.md) stands for.
 
-When creating a dWallet, we get 3 outputs that will be required for signing: 
+Creating a dWallet, return the following outputs that will all be used in order to sign a transaction: 
 - `dwalletId`
 - `dwalletCapId`
 - `dkgOutput`
 
-[Read more](./your-first-dwallet#create-a-dwallet-1).
+You can read more about each of these outputs [here](./your-first-dwallet#create-a-dwallet-1).
 
 The user signature is created when the user calls the ```createSignMessages()``` function of the dwallet module in the dWallet Network. 
 To do that, we need to supply the `dwalletId` it signs from, and the `dkgOutput` that contains the user share keys of this particular dWallet.
@@ -54,17 +54,13 @@ Then the dWallet Network approves the message and finalizes the signature of thi
 
 ## Example using Sui Network
 
-The dWallet Network has an integration with Sui using a [Sui light client module](../lightclients/sui-lightclient.md).
+The dWallet Network has an integration with Sui using a [Sui light client](../lightclients/sui-lightclient).
 Please read this before continuing to the next steps.
 
 In the following example we will show the process needs to be taken on the dWallet Network side.
-Please read the Sui light client docs
 
-If you don't have a dWallet yet, please [create](./your-first-dwallet.md#create-a-dwallet) one.
-
-Then you'll have to create a dWallet Capability using the `dwallet_cap::create_cap()` method on the Sui network.
-
-This will emit a `DWalletNetworkInitCapRequest` event as following
+After [creating a dWallet](./your-first-dwallet.md#create-a-dwallet-1), you'll have to create a dWallet Capability using the `dwallet_cap::create_cap()` method on the Sui network.
+This will emit a `DWalletNetworkInitCapRequest` event as following on Sui.
 ```sui move
 struct DWalletNetworkInitCapRequest has copy, drop {
     cap_id: ID,
@@ -103,7 +99,7 @@ const signMessagesIdSHA256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgO
 
 This way we have signed a future transaction.
 The dWallet Network will not sign it unless it gets a proof of approval triggered in the Sui Network.
-If you want to know how to [emit this event](../lightclients/sui-lightclient.md#approve) follow the steps of the Sui Lightclient docs.
+If you want to know how to [emit this event](../lightclients/sui-lightclient#approve) follow the steps of the Sui Lightclient docs.
 Eventually, this will be the emitted event.
 ```sui move
 struct DWalletNetworkApproveRequest has copy, drop {
