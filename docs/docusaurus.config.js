@@ -16,7 +16,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 const config = {
   title: 'dWallet Docs',
   tagline: 'The dWallet Network Documentation',
-  favicon: 'img/dwallet 443 sizes-14.png',
+  favicon: 'img/logo.png',
 
   // Set the production url of your site here
   url: 'https://your-docusaurus-site.example.com',
@@ -82,7 +82,7 @@ const config = {
         title: 'dWallet Docs',
         logo: {
           alt: 'dWallet Logo',
-          src: 'img/dwallet 443 sizes-14.png',
+          src: 'img/logo.png',
         },
         items: [
           {
