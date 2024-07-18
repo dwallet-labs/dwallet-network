@@ -365,7 +365,7 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
 }
 
 /// Returned when the signature decryption fails & contains all the necessary information to
-/// start an Identifiable abort round.
+/// start an Identifiable Abort protocol.
 pub struct DecryptionError {
     // The indices of the messages that their decryption failed out of the current messages batch.
     // We sign on a batch of messages at each time.
