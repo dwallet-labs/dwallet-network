@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// Generic dWallet representation.
-/// This is conceptually the Dwallet interface.
+/// This is conceptually the `Dwallet` interface.
 module dwallet_system::dwallet {
     use std::vector;
 
