@@ -548,7 +548,7 @@ pub fn identify_message_malicious_parties(
                                 ..
                             })) => malicious_parties,
         _ => {
-            panic!(error);
+            panic!("{}", error);
         }
     }
 }
