@@ -368,7 +368,6 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
 /// start an Identifiable Abort protocol.
 pub struct DecryptionError {
     // The indices of the messages that their decryption failed out of the current messages batch.
-    // We sign on a batch of messages at each time.
     pub failed_messages_indices: Vec<usize>,
 
     // The IDs of the parties that we used to decrypt the signature. We need only threshold of them to
