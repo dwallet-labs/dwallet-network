@@ -290,7 +290,6 @@ module dwallet_system::dwallet {
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
     /// NOT a native function.
-    /// todo: Why is it here and dkg + presign are in the dwallet_2pc_mpc_ecdsa_k1 module?
     #[allow(unused_function)]
     fun create_sign_output<S: store>(session: &SignSession<S>, signatures: vector<vector<u8>>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
