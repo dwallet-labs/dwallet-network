@@ -371,7 +371,7 @@ pub struct DecryptionError {
     // The IDs of the parties that participated in the aborted signing protocol. We need only threshold of them to
     // decrypt the signature, and we communicate them to the other parties, so they'll know they should
     // use their decryption shares to find the malicious parties.
-    pub involved_parties: Vec<PartyID>,
+    pub decrypters: Vec<PartyID>,
 }
 
 fn generate_signatures(
@@ -497,7 +497,7 @@ pub fn decrypt_signature_decentralized_party_sign(
         Ok(messages_signatures) => Ok(messages_signatures),
         Err(failed_messages_indices) => Err(DecryptionError {
             failed_messages_indices,
-            involved_parties: decrypters,
+            decrypters: decrypters,
         }),
     }
 }

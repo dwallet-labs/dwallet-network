@@ -86,7 +86,7 @@ impl SignRound {
                     Err(decryption_error) => {
                         Ok(SignRoundCompletion::StartIAFlow(
                             decryption_error.failed_messages_indices,
-                            decryption_error.involved_parties,
+                            decryption_error.decrypters,
                         ))
                     }
                 }
