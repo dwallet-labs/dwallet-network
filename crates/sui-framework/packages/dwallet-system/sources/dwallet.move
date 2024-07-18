@@ -40,19 +40,19 @@ module dwallet_system::dwallet {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
 
-    /// DWalletCap holder controls a corresponding Dwallet.
+    /// `DWalletCap` holder controls a corresponding `Dwallet`.
     struct DWalletCap has key, store {
         id: UID,
     }
 
-    /// MessageApprovalsRequestHolder holds MessageApprovalRequest's.
+    /// `MessageApprovalsRequestHolder` holds `MessageApprovalRequest's`.
     struct MessageApprovalsRequestHolder has key {
         id: UID,
         message_approvals: vector<MessageApprovalRequest>,
     }
 
-    /// MessageApprovalRequest represents messages to be approved in the future.
-    /// Bound to a DWalletCap.
+    /// `MessageApprovalRequest` represents messages to be approved in the future.
+    /// Bound to a `DWalletCap`.
     struct MessageApprovalRequest has store {
         dwallet_cap_id: ID,
         message: vector<u8>,
@@ -60,8 +60,8 @@ module dwallet_system::dwallet {
 
     /// Partially signed messages by the user, these messasegs are ready to be signed by the blockchain.
     /// It's only half of the `sign` process.
-    /// To Sign a message both this Struct and MessageApprovalRequest must be present.
-    /// The messeses field must be the same as the messages in the MessageApprovalRequest, and in the same order.
+    /// To Sign a message both this Struct and `MessageApprovalRequest` must be present.
+    /// The messeses field must be the same as the messages in the `MessageApprovalRequest`, and in the same order.
     struct PartialUserSignedMessages<S: store, E: store + copy + drop> has key, store {
         id: UID,
         dwallet_id: ID,
