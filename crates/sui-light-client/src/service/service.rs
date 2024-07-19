@@ -1,34 +1,23 @@
 use std::{str::FromStr, sync::Arc};
 
-use anyhow::{Result};
-use axum::{
-    routing::{get},
-    Router,
-    Json,
-    extract::Query,
-};
-use sui_json_rpc_types::{ SuiTransactionBlockResponseOptions};
+use anyhow::Result;
+use axum::{extract::Query, routing::get, Json, Router};
+use sui_json_rpc_types::SuiTransactionBlockResponseOptions;
 use sui_sdk::SuiClientBuilder;
 
-use serde::{Deserialize, Serialize};
 use anyhow::{anyhow, Ok};
+use serde::{Deserialize, Serialize};
 
-use sui_rest_api::{Client};
-use axum::{
-    response::{IntoResponse},
-    http::StatusCode,
-};
+use axum::{http::StatusCode, response::IntoResponse};
+use sui_rest_api::Client;
 use sui_types::digests::TransactionDigest;
 
-
 // const SUI_FULLNODE_URL : &str = "https://fullnode.devnet.sui.io:443";
-const SUI_FULLNODE_URL : &str = "http://usw1a-tnt-rpc-0-3a5838e.testnet.sui.io:9000";
+const SUI_FULLNODE_URL: &str = "http://usw1a-tnt-rpc-0-3a5838e.testnet.sui.io:9000";
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let server_url = "0.0.0.0:6920";
-
-    
 
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
@@ -39,18 +28,16 @@ async fn main() -> Result<()> {
     println!("Starting server on address {}", server_url);
 
     let handle = tokio::spawn(async move {
-
-    println!("Listening WS and HTTP on address {}", server_url);
-    axum::Server::bind(&server_url.parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
-});
+        println!("Listening WS and HTTP on address {}", server_url);
+        axum::Server::bind(&server_url.parse().unwrap())
+            .serve(app.into_make_service())
+            .await
+            .unwrap();
+    });
 
     tokio::join!(handle).0?;
     Ok(())
 }
-
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TxDataRequest {
@@ -65,11 +52,8 @@ pub struct TxDataResponse {
     pub transaction_bytes: Vec<u8>,
 }
 
-
 pub async fn get_tx_data(payload: Query<TxDataRequest>) -> impl IntoResponse {
-
     let tid = TransactionDigest::from_str(&payload.tx_id).unwrap();
-
 
     // TOOD don't hardcode
     let sui_client: Arc<sui_sdk::SuiClient> = Arc::new(
@@ -80,18 +64,17 @@ pub async fn get_tx_data(payload: Query<TxDataRequest>) -> impl IntoResponse {
     );
 
     let options = SuiTransactionBlockResponseOptions::new();
-    let seq = sui_client.read_api()
+    let seq = sui_client
+        .read_api()
         .get_transaction_with_options(tid, options)
         .await
         .unwrap()
         .checkpoint
-        .ok_or(anyhow!("Transaction not found")).unwrap();
-
+        .ok_or(anyhow!("Transaction not found"))
+        .unwrap();
 
     let rest_client: Client = Client::new(format!("{}/rest", SUI_FULLNODE_URL));
     let full_checkpoint = rest_client.get_full_checkpoint(seq).await.unwrap();
-
-
 
     let (matching_tx, _) = full_checkpoint
         .transactions
@@ -102,7 +85,8 @@ pub async fn get_tx_data(payload: Query<TxDataRequest>) -> impl IntoResponse {
         .find(|(tx, digest)| {
             tx.effects.execution_digests() == **digest && digest.transaction == tid
         })
-        .ok_or(anyhow!("Transaction not found in checkpoint contents")).unwrap();
+        .ok_or(anyhow!("Transaction not found in checkpoint contents"))
+        .unwrap();
 
     let res = TxDataResponse {
         ckp_epoch_id: full_checkpoint.checkpoint_summary.data().epoch,
@@ -113,4 +97,3 @@ pub async fn get_tx_data(payload: Query<TxDataRequest>) -> impl IntoResponse {
 
     (StatusCode::OK, Json(res)).into_response()
 }
-

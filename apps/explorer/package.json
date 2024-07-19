@@ -2,7 +2,7 @@
 	"name": "sui-explorer",
 	"private": true,
 	"scripts": {
-		"dev": "vite --port 3000",
+		"dev": "vite --port 4000",
 		"test": "pnpm test:unit",
 		"test:unit": "vitest run",
 		"typecheck": "tsc -b",

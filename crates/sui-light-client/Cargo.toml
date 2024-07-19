@@ -34,6 +34,11 @@ axum.workspace = true
 tracing-subscriber.workspace = true
 tracing.workspace = true
 
+object_store = { version = "0.7", features = ["aws", "gcp", "azure", "http"] }
+sui-data-ingestion-core = { git = "https://github.com/MystenLabs/sui", package = "sui-data-ingestion-core",rev="f58faa4" }
+backoff = { version = "0.4.0", features = ["tokio"] }
+
+sui-storage = { git = "https://github.com/MystenLabs/sui", package = "sui-storage",rev="f58faa4"}
 
 
 [[bin]]
