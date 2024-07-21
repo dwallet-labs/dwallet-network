@@ -28,7 +28,7 @@ module dwallet_system::dwallet {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
     /// Event to start a `Sign` session, caught by the Validators.
-    /// This is a glboal event that expects a particular sign data event per each `Dwallet` type.
+    /// This is a glboal event that expects a particular `SignDataEvent` per each `Dwallet` type.
     struct NewSignSessionEvent<E: store + copy + drop> has copy, drop {
         session_id: ID,
         dwallet_id: ID,
@@ -45,23 +45,23 @@ module dwallet_system::dwallet {
         id: UID,
     }
 
-    /// `MessageApprovalsRequestHolder` holds `MessageApprovalRequest's`.
-    struct MessageApprovalsRequestHolder has key {
+    /// `MessageApprovalsHolder` holds `MessageApproval's`.
+    struct MessageApprovalsHolder has key {
         id: UID,
-        message_approvals: vector<MessageApprovalRequest>,
+        message_approvals: vector<MessageApproval>,
     }
 
-    /// `MessageApprovalRequest` represents messages to be approved in the future.
+    /// `MessageApproval` represents a message that was approved.
     /// Bound to a `DWalletCap`.
-    struct MessageApprovalRequest has store {
+    struct MessageApproval has store {
         dwallet_cap_id: ID,
         message: vector<u8>,
     }
 
     /// Partially signed messages by the user, these messasegs are ready to be signed by the blockchain.
-    /// It's only half of the `sign` process.
-    /// To Sign a message both this Struct and `MessageApprovalRequest` must be present.
-    /// The messeses field must be the same as the messages in the `MessageApprovalRequest`, and in the same order.
+    /// It's only half of the `Sign` process.
+    /// To Sign a message both this Struct and `MessageApproval` must be present.
+    /// The messeses field must be the same as the messages in the `MessageApproval`, and in the same order.
     struct PartialUserSignedMessages<S: store, E: store + copy + drop> has key, store {
         id: UID,
         dwallet_id: ID,
@@ -71,14 +71,14 @@ module dwallet_system::dwallet {
         sign_data_event: E,
     }
 
-    /// SharedPartialUserSignedMessages is a shared version of PartialUserSignedMessages.
-    /// Since this is shared it passes throuh concesus, use only when needed, prefer PartialUserSignedMessages.
+    /// `SharedPartialUserSignedMessages` is a shared version of `PartialUserSignedMessages`.
+    /// Since this is shared it passes throuh concesus, use only when needed, prefer `PartialUserSignedMessages`.
     struct SharedPartialUserSignedMessages<S: store, E: store + copy + drop> has key {
         id: UID,
         partial_user_signed_messages: PartialUserSignedMessages<S, E>,
     }
 
-    /// SignSession holds the `Sign` session data, created when a `Sign` request is sent to the netowrk.
+    /// `SignSession` holds the `Sign` session data, created when a `Sign` request is sent to the netowrk.
     struct SignSession<S: store> has key {
         id: UID,
         dwallet_id: ID,
@@ -89,7 +89,7 @@ module dwallet_system::dwallet {
     }
 
     #[allow(unused_field)]
-    /// SignOutput is the final output from the Valditors of the Sign process.
+    /// `SignOutput` is the final output from the Bloackchian(Valditors) of the `Sign` process.
     struct SignOutput has key {
         id: UID,
         session_id: ID,
@@ -99,26 +99,26 @@ module dwallet_system::dwallet {
         sender: address,
     }
 
-    /// Create a new DWalletCap
-    /// The holder of this capability owns the DWallet.
+    /// Create a new `DWalletCap`
+    /// The holder of this capability owns the `DWallet`.
     public(friend) fun create_dwallet_cap(ctx: &mut TxContext): DWalletCap {
         DWalletCap {
             id: object::new(ctx),
         }
     }
 
-    /// Create a new MessageApprovalsRequestHolder.
-    public fun create_message_approvals_holder(message_approvals: vector<MessageApprovalRequest>, ctx: &mut TxContext) {
-        let holder = MessageApprovalsRequestHolder {
+    /// Create a new `MessageApprovalsHolder`.
+    public fun create_message_approvals_holder(message_approvals: vector<MessageApproval>, ctx: &mut TxContext) {
+        let holder = MessageApprovalsHolder {
             id: object::new(ctx),
             message_approvals,
         };
         transfer::transfer(holder, tx_context::sender(ctx));
     }
 
-    /// Removes the MessageApprovalsRequestHolder and return the MessageApprovalRequest's.
-    public fun remove_message_approvals_holder(holder: MessageApprovalsRequestHolder): vector<MessageApprovalRequest> {
-        let MessageApprovalsRequestHolder {
+    /// Removes the `MessageApprovalsHolder` and return the `MessageApproval`'s.
+    public fun remove_message_approvals_holder(holder: MessageApprovalsHolder): vector<MessageApproval> {
+        let MessageApprovalsHolder {
             id,
             message_approvals,
         } = holder;
@@ -126,38 +126,38 @@ module dwallet_system::dwallet {
         message_approvals
     }
 
-    /// Create a set of message approval requests.
+    /// Create a set of message approvals.
     /// The messages must be approved in the same order as they were created.
     /// The messages must be approved by the same `dwallet_cap_id`.
-    public fun create_message_approval_requests(
+    public fun create_message_approvals(
         dwallet_cap: &DWalletCap,
         messages: vector<vector<u8>>
-    ): vector<MessageApprovalRequest> {
+    ): vector<MessageApproval> {
         let dwallet_cap_id = object::id(dwallet_cap);
-        let message_approval_requests = vector::empty<MessageApprovalRequest>();
+        let message_approvals = vector::empty<MessageApproval>();
         while (vector::length(&messages) > 0) {
             let message = vector::pop_back(&mut messages);
-            vector::push_back(&mut message_approval_requests, MessageApprovalRequest {
+            vector::push_back(&mut message_approvals, MessageApproval {
                 dwallet_cap_id,
                 message,
             });
         };
-        message_approval_requests
+        message_approvals
     }
 
-    /// Get the corresponding `DWalletCap` ID from a `MessageApprovalRequest`.
-    public fun message_approval_req_dwallet_cap_id(msg_approval_req: &MessageApprovalRequest): ID {
+    /// Get the corresponding `DWalletCap` ID from a `MessageApproval`.
+    public fun message_approval_dwallet_cap_id(msg_approval_req: &MessageApproval): ID {
         msg_approval_req.dwallet_cap_id
     }
 
-    /// Get the `message` from a `MessageApprovalRequest`.
-    public fun message_approval_req_message(message_approval: &MessageApprovalRequest): vector<u8> {
+    /// Get the `message` from a `MessageApproval`.
+    public fun message_approval_message(message_approval: &MessageApproval): vector<u8> {
         message_approval.message
     }
 
-    /// Remove a `MessageApprovalRequest` and return the `dwallet_cap_id` and the `message`.
-    public fun remove_message_approval_req(message_approval: MessageApprovalRequest): (ID, vector<u8>) {
-        let MessageApprovalRequest {
+    /// Remove a `MessageApproval` and return the `dwallet_cap_id` and the `message`.
+    public fun remove_message_approval(message_approval: MessageApproval): (ID, vector<u8>) {
+        let MessageApproval {
             dwallet_cap_id,
             message
         } = message_approval;
@@ -179,7 +179,7 @@ module dwallet_system::dwallet {
     /// The shared version of `Sign` function.
     public fun sign_shared<S: store, E: store + copy + drop>(
         shared: SharedPartialUserSignedMessages<S, E>,
-        message_approvals: vector<MessageApprovalRequest>,
+        message_approvals: vector<MessageApproval>,
         ctx: &mut TxContext
     ) {
         let SharedPartialUserSignedMessages {
@@ -210,14 +210,14 @@ module dwallet_system::dwallet {
         }
     }
 
-    /// Get the `dwallet id` from a `PartialUserSignedMessages`.
+    /// Get the `Dwallet` ID from a `PartialUserSignedMessages`.
     public fun partial_user_signed_messages_dwallet_id<S: store, E: store + copy + drop>(
         partial_user_signed_messages: &PartialUserSignedMessages<S, E>
     ): ID {
         partial_user_signed_messages.dwallet_id
     }
 
-    /// Get the `dwallet cap id` from a `PartialUserSignedMessages`.
+    /// Get the `DwalletCap` ID from a `PartialUserSignedMessages`.
     public fun partial_user_signed_messages_dwallet_cap_id<S: store, E: store + copy + drop>(
         partial_user_signed_messages: &PartialUserSignedMessages<S, E>
     ): ID {
@@ -232,11 +232,11 @@ module dwallet_system::dwallet {
     }
 
     /// Main sign function.
-    /// Note that we must have MessageApprovalRequest's for the messages, and a PartialUserSignedMessages object.
+    /// Note that we must have MessageApproval's for the messages, and a PartialUserSignedMessages object.
     /// Both must hold the same messages in the same order.
     public fun sign<S: store, E: store + copy + drop>(
         partial_user_signed_messages: PartialUserSignedMessages<S, E>,
-        message_approvals: vector<MessageApprovalRequest>,
+        message_approvals: vector<MessageApproval>,
         ctx: &mut TxContext
     ) {
         let PartialUserSignedMessages {
@@ -256,7 +256,7 @@ module dwallet_system::dwallet {
 
         while (i < messages_len) {
             let message_approval = vector::pop_back(&mut message_approvals);
-            let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval_req(message_approval);
+            let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
             assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
             let message = vector::borrow(&messages, i);
             assert!(message == &approved_message, EMesssageApprovalDWalletMismatch);
