@@ -162,6 +162,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_function)]
+    /// Create the final DKG output, transfer it to the user.
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
     fun create_dkg_output(
@@ -182,7 +183,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         transfer::transfer(output, session.sender);
     }
 
-    /// Create a new dwallet.
+    /// Create a new Dwallet.
     /// The user needs to call this function after receiving the DKG output.
     /// The user needs to provide the decommitment and proof of the centralized party public key share.
     public fun create_dwallet(
@@ -232,6 +233,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Create a new Presgin session.
     /// Note that the `Dwallet` is immutable, and can be called by everyone.
     /// But, the `commitments_and_proof_to_centralized_party_nonce_shares` is owned by a specific user.
+    /// This is trhe first part of the `PreSign` process.
     public fun create_presign_session(
         dwallet: &DWallet,
         // Note that in terms on the MPC, the `messages` is not mandatory on pre-signing,
@@ -274,8 +276,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     #[allow(unused_function)]
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
-    /// This is the _FIRST PART_ of the PreSign session (the validators first output this).
-    /// Later this is used to finalize the PreSign session.
+    /// This is the _FIRST PART_ of the `PreSign` proccess (the validators first output this).
+    /// Later this is used to finalize the `PreSign` session.
     fun create_presign_output(session: &PresignSession, output: vector<u8>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         let output = PresignSessionOutput {
@@ -291,7 +293,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     #[allow(unused_function)]
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
-    /// This is the second part of the presign session.
+    /// This is the _SECOND PART of the `PreSign` proccess.
     fun create_presign(session: &PresignSession, presigns: vector<u8>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         // The user needs this object and PresignSessionOutput in order to Sign the message.
@@ -305,8 +307,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         transfer::transfer(presign, session.sender);
     }
 
-    /// Verifies parts of the signature
-    ///  todo: which and why?
+    /// Verifies parts of the signature.
     native fun sign_verify_encrypted_signature_parts_prehash(
         messages: vector<vector<u8>>,
         dkg_output: vector<u8>,
@@ -315,7 +316,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         hash: u8
     ): bool;
 
-    /// This function start the sign proccess, note that it must get `PresignSessionOutput` and `Presign`.
+    /// This function starts the `Sign` proccess, note that it must get `PresignSessionOutput` and `Presign`.
     /// The user needs to call this function after receiving the `Presign` and `PresignSessionOutput`.
     /// The user needs to provide the `public_nonce_encrypted_partial_signature_and_proofs`.
     public fun create_partial_user_signed_messages(
@@ -334,7 +335,6 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             EPresignOutputAndPresignMismatch
         );
 
-        // todo(zeev): doc this.
         let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
             session.messages,
             dwallet.output,
