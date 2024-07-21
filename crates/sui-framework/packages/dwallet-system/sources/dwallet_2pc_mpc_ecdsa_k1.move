@@ -208,7 +208,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             centralized_party_public_key_share_decommitment_and_proof
         );
 
-        let result = DWallet {
+        let dwallet = DWallet {
             id: object::new(ctx),
             session_id,
             dwallet_cap_id,
@@ -216,7 +216,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             public_key,
         };
         // Create dwallet + make it immutable.
-        transfer::freeze_object(result);
+        transfer::freeze_object(dwallet);
     }
 
     /// This function implements steps 4 and 5 of the 2PCMPC - Protocol 4 (DKG):
@@ -292,7 +292,6 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
     /// This is the second part of the presign session.
-    /// todo: rename to finalize_presign_session
     fun create_presign(session: &PresignSession, presigns: vector<u8>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         // The user needs this object and PresignSessionOutput in order to Sign the message.

@@ -249,9 +249,9 @@ module dwallet_system::dwallet {
         } = partial_user_signed_messages;
 
         object::delete(id);
-        let i = 0;
-        let messages_len = vector::length(&messages);
-        let approval_len = vector::length(&message_approvals);
+        let i: u64 = 0;
+        let messages_len: u64 = vector::length(&messages);
+        let approval_len: u64 = vector::length(&message_approvals);
         assert!(messages_len == approval_len, EMesssageApprovalDWalletMismatch);
 
         while (i < messages_len) {
