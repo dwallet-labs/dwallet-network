@@ -1,3 +1,6 @@
+// Copyright (c) Mysten Labs, Inc.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 use std::collections::VecDeque;
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
@@ -92,8 +95,8 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
     match res {
         Ok((output, public_key)) => {
             Ok(NativeResult::ok(
-                    cost,
-                    smallvec![
+                cost,
+                smallvec![
                     Value::vector_u8(bcs::to_bytes(&output).unwrap()),
                     Value::vector_u8(public_key),
                 ],
