@@ -129,7 +129,7 @@ module dwallet_system::dwallet {
     /// Create a set of message approvals.
     /// The messages must be approved in the same order as they were created.
     /// The messages must be approved by the same `dwallet_cap_id`.
-    public fun create_message_approvals(
+    public fun approve_messages(
         dwallet_cap: &DWalletCap,
         messages: vector<vector<u8>>
     ): vector<MessageApproval> {
