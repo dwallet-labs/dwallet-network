@@ -146,8 +146,8 @@ module dwallet_system::dwallet {
     }
 
     /// Get the corresponding `DWalletCap` ID from a `MessageApproval`.
-    public fun message_approval_dwallet_cap_id(msg_approval_req: &MessageApproval): ID {
-        msg_approval_req.dwallet_cap_id
+    public fun message_approval_dwallet_cap_id(msg_approval: &MessageApproval): ID {
+        msg_approval.dwallet_cap_id
     }
 
     /// Get the `message` from a `MessageApproval`.
@@ -287,10 +287,10 @@ module dwallet_system::dwallet {
         transfer::freeze_object(sign_session);
     }
 
+    #[allow(unused_function)]
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
     /// NOT a native function.
-    #[allow(unused_function)]
     fun create_sign_output<S: store>(session: &SignSession<S>, signatures: vector<vector<u8>>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
 

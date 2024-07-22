@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 
-/// Note: currently in order to start DKG, Presign and Sign, the Valdators are waiting for an Event.
-/// The events are here below, this is a "hack" to pass the information, we might find a better way in the future.
-
 #[allow(unused_const)]
 module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
+    /// Note: currently in order to start DKG, Presign and Sign, the Valdators are waiting for an Event.
+    /// The events are here below, this is a "hack" to pass the information, we might find a better way in the future.
+
     use std::vector;
 
     use dwallet::event;
