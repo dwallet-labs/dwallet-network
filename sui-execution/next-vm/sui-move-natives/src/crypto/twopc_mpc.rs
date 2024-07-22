@@ -84,16 +84,25 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
     };
 
     let signature_mpc_tiresias_public_parameters = object_runtime.local_config.signature_mpc_tiresias_public_parameters.as_deref().unwrap();
-    // TODO: handle error instead of `unwrap()`
-    let (output, public_key) = decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(signature_mpc_tiresias_public_parameters, commitment_to_centralized_party_secret_key_share, centralized_party_public_key_share_decommitment_and_proof, secret_key_share_encryption_and_proof).unwrap();
+    let res = decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(signature_mpc_tiresias_public_parameters, commitment_to_centralized_party_secret_key_share, centralized_party_public_key_share_decommitment_and_proof, secret_key_share_encryption_and_proof);
 
-    Ok(NativeResult::ok(
-        cost,
-        smallvec![
-            Value::vector_u8(bcs::to_bytes(&output).unwrap()),
-            Value::vector_u8(public_key),
-        ],
-    ))
+    match res {
+        Ok((output, public_key)) => {
+            Ok(NativeResult::ok(
+                cost,
+                smallvec![
+                    Value::vector_u8(bcs::to_bytes(&output).unwrap()),
+                    Value::vector_u8(public_key),
+                ],
+            ))
+        }
+        Err(_) => {
+            Ok(NativeResult::err(
+                cost,
+                INVALID_INPUT,
+            ))
+        }
+    }
 }
 
 /***************************************************************************************************
