@@ -89,7 +89,7 @@ pub(crate) fn identify_batch_malicious_parties(
             state
                 .involved_parties
                 .as_deref()
-                .unwrap_or(&Vec::new())
+                .unwrap()
                 .into(),
         )
         .iter()
@@ -133,7 +133,7 @@ fn get_involved_shares(
             state
                 .involved_parties
                 .as_deref()
-                .unwrap_or(&Vec::new())
+                .unwrap()
                 .contains(party_id)
         })
         .collect()
