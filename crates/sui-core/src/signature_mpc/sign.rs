@@ -62,7 +62,7 @@ impl SignRound {
     }
 
     /// Tries to decrypt the signatures and return them.
-    /// In case one or more of the signatures is invalid, it will return a [`SignRoundCompletion::StartIAFlow`] to launch the IA flow.
+    /// In case one or more of the signatures is invalid, it will return a [`SignRoundCompletion::StartIdentifiableAbortFlow`] to launch the IA flow.
     pub(crate) fn complete_round(&mut self, state: SignState) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
@@ -84,7 +84,7 @@ impl SignRound {
                         Ok(SignRoundCompletion::SignatureOutput(signatures))
                     }
                     Err(decryption_error) => {
-                        Ok(SignRoundCompletion::StartIAFlow(
+                        Ok(SignRoundCompletion::StartIdentifiableAbortFlow(
                             decryption_error.failed_messages_indices,
                             decryption_error.decrypters,
                         ))
@@ -98,7 +98,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    StartIAFlow(Vec<usize>, Vec<PartyID>),
+    StartIdentifiableAbortFlow(Vec<usize>, Vec<PartyID>),
     None,
 }
 #[derive(Clone)]
@@ -208,6 +208,7 @@ impl SignState {
     }
 
     pub(crate) fn should_identify_malicious_actors(&self) -> bool {
+        // TODO: Handle the case a validator does not send its proof.
         if let Some(proofs) = self.clone().proofs {
             let threshold: usize = self.tiresias_public_parameters.threshold.into();
             return proofs.len() == threshold && self.received_all_decryption_shares();

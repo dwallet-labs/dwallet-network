@@ -631,7 +631,7 @@ impl SignatureMPCAggregator {
 
             if let Some(m) = m {
                 match m {
-                    SignRoundCompletion::StartIAFlow(
+                    SignRoundCompletion::StartIdentifiableAbortFlow(
                         message_indices,
                         involved_parties,
                     ) => {
