@@ -6,7 +6,7 @@
 
 dWallet Network, a composable modular signature network is the home of dWallets. A dWallet is a noncollusive and massively decentralized signing mechanism, used as a building block by builders on other networks to add native multi-chain interoperability to any smart contract.
 
-A live alpha version environment of the testnet released in this repo will be available soon, follow us on [Discord](https://discord.gg/dWallet) or [Twitter](https://twitter.com/dWalletNetwork) to stay up to date. To join the incentivized testnet, apply on [our website](https://www.dwallet.io/apply-incentivized-testnets).
+A live alpha version environment of the testnet released in this repo will be available soon, follow us on [Discord](https://discord.gg/dWallet) or [Twitter](https://twitter.com/dWalletNetwork) to stay up to date. To join the incentivized testnet, apply on [our website](https://docs.google.com/forms/d/e/1FAIpQLSfd2T6OpXIT4TW0ULMXp__VSI2IA27vPnM6c4GFNNmqDJxRIw/viewform).
 
 > _***Disclaimer***: This project is under development, and there are known bugs and issues that are being addressed. Additionally, in the testnet, the network secret shares of dWallets ARE NOT SECURE, and cannot be trusted to use with any real applications or assets. Please read the [full section below](#alpha-testnet-release) before exploring the code._
 
@@ -37,7 +37,7 @@ As a composable modular signature network, dWallets on the dWallet Network are c
 
 The dWallet Network has a native token called DWLT that is used (much like Sui) to pay for gas, and is also used as [delegated stake on authorities](https://learn.bybit.com/blockchain/delegated-proof-of-stake-dpos/) within an epoch. The voting power of authorities within this epoch is a function of this delegated stake. Authorities are periodically reconfigured according to the stake delegated to them. In any epoch, the set of authorities is [Byzantine fault tolerant](https://pmg.csail.mit.edu/papers/osdi99.pdf). At the end of the epoch, fees collected through all transactions processed are distributed to authorities according to their contribution to the operation of the system. Authorities can in turn share some of the fees as rewards to users that delegated stakes to them.
 
-Sui is backed by a number of state-of-the-art [peer-reviewed works](https://github.com/MystenLabs/sui/blob/main/docs/content/references/research-papers.mdx) and years of open source development that we are building upon with the dWallet Network.
+Sui is backed by a number of state-of-the-art [peer-reviewed works](https://github.com/MystenLabs/sui/blob/main/docs/content/concepts/research-papers.mdx) and years of open source development that we are building upon with the dWallet Network.
 
 ## Alpha Testnet Release
 
