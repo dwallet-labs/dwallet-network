@@ -849,6 +849,12 @@ pub struct ProtocolConfig {
     // The cutoff value for the MED outlier detection
     scoring_decision_cutoff_value: Option<f64>,
 
+    // twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
+    dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: Option<u64>,
+
+    // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
+    sign_verify_encrypted_signature_parts_prehash_cost_base: Option<u64>,
+
     /// === Execution Version ===
     execution_version: Option<u64>,
 
@@ -1292,7 +1298,7 @@ impl ProtocolConfig {
             dynamic_field_borrow_child_object_cost_base: Some(100),
             dynamic_field_borrow_child_object_child_ref_cost_per_byte: Some(10),
             dynamic_field_borrow_child_object_type_cost_per_byte: Some(10),
-             // Cost params for the Move native function `remove_child_object<Child: key>(parent: address, id: address): Child`
+            // Cost params for the Move native function `remove_child_object<Child: key>(parent: address, id: address): Child`
             dynamic_field_remove_child_object_cost_base: Some(100),
             dynamic_field_remove_child_object_child_cost_per_byte: Some(2),
             dynamic_field_remove_child_object_type_cost_per_byte: Some(2),
@@ -1308,7 +1314,7 @@ impl ProtocolConfig {
             event_emit_cost_base: Some(52),
             event_emit_value_size_derivation_cost_per_byte: Some(2),
             event_emit_tag_size_derivation_cost_per_byte: Some(5),
-            event_emit_output_cost_per_byte:Some(10),
+            event_emit_output_cost_per_byte: Some(10),
 
             //  `object` module
             // Cost params for the Move native function `borrow_uid<T: key>(obj: &T): &UID`
@@ -1428,6 +1434,11 @@ impl ProtocolConfig {
             check_zklogin_id_cost_base: None,
             // zklogin::check_zklogin_issuer
             check_zklogin_issuer_cost_base: None,
+
+            // twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
+            dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: Some(52),
+            // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
+            sign_verify_encrypted_signature_parts_prehash_cost_base: Some(52),
 
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,
