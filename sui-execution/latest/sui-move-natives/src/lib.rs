@@ -149,7 +149,7 @@ pub struct NativesCostTable {
     // Receive object
     pub transfer_receive_object_internal_cost_params: TransferReceiveObjectInternalCostParams,
 
-    // twopc mpc
+    // TwoPC-MPC.
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
 }
 
