@@ -36,6 +36,7 @@ module dwallet_system::sui_state_proof {
 
     struct EpochCommitteeSubmitted has copy, drop {
         epoch: u64,
+        registry_id: ID,
         epoch_committee_id: ID,
     }
 
@@ -81,6 +82,7 @@ module dwallet_system::sui_state_proof {
 
         event::emit(EpochCommitteeSubmitted {
             epoch: epoch_id_committee,
+            registry_id: object::uid_to_inner(&registry.id),
             epoch_committee_id: object::id(&first_committee),
         });
         
@@ -114,6 +116,7 @@ module dwallet_system::sui_state_proof {
 
         event::emit(EpochCommitteeSubmitted {
             epoch: registry.highest_epoch,
+            registry_id: object::uid_to_inner(&registry.id),
             epoch_committee_id: object::id(&committee_new),
         });
         

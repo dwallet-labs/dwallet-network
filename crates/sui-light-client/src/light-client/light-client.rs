@@ -619,6 +619,7 @@ async fn retrieve_highest_epoch(config: &Config) -> anyhow::Result<u64> {
     let max = res.data
                                             .iter()
                                             .filter(|event| event.parsed_json.get("epoch").is_some())
+                                            .filter(|event| event.parsed_json.get("registry_id").unwrap().as_str().unwrap() == config.dwltn_registry_object_id)
                                             .map(|event| u64::from_str(event.parsed_json.get("epoch").unwrap().as_str().unwrap()).unwrap())
                                             .max()
                                             .unwrap();
@@ -928,6 +929,8 @@ pub async fn main() {
 
         }
         Some(SCommands::Sync {}) => {
+
+
             let res = check_and_sync_checkpoints(&config).await;
         
             if res.is_err() {
