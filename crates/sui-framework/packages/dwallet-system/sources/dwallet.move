@@ -15,7 +15,6 @@ module dwallet_system::dwallet {
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
-    const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
@@ -70,7 +69,6 @@ module dwallet_system::dwallet {
         dwallet_public_key: vector<u8>,
         sign_data: S,
         sign_data_event: E,
-        hash: u8,
     }
 
     /// `SharedPartialUserSignedMessages` is a shared version of `PartialUserSignedMessages`.
@@ -88,9 +86,13 @@ module dwallet_system::dwallet {
         messages: vector<vector<u8>>,
         sender: address,
         sign_data: S,
-        hash: u8,
         dwallet_public_key: vector<u8>,
     }
+
+    public(friend) fun dwallet_public_key<S: store>(session: &SignSession<S>): vector<u8> { session.dwallet_public_key }
+    public(friend) fun sign_data<S: store>(session: &SignSession<S>): &S { &session.sign_data }
+    public(friend) fun messages<S: store>(session: &SignSession<S>): vector<vector<u8>> { session.messages }
+    public(friend) fun sender<S: store>(session: &SignSession<S>): address { session.sender }
 
     #[allow(unused_field)]
     /// `SignOutput` is the final output from the Bloackchian(Valditors) of the `Sign` process.
@@ -203,7 +205,6 @@ module dwallet_system::dwallet {
         dwallet_public_key: vector<u8>,
         sign_data: S,
         sign_data_event: E,
-        hash: u8,
         ctx: &mut TxContext
     ): PartialUserSignedMessages<S, E> {
         PartialUserSignedMessages {
@@ -214,7 +215,6 @@ module dwallet_system::dwallet {
             sign_data,
             sign_data_event,
             dwallet_public_key,
-            hash
         }
     }
 
@@ -255,7 +255,6 @@ module dwallet_system::dwallet {
             sign_data,
             sign_data_event,
             dwallet_public_key,
-            hash,
         } = partial_user_signed_messages;
         object::delete(id);
         let i: u64 = 0;
@@ -282,7 +281,6 @@ module dwallet_system::dwallet {
             messages,
             sender,
             sign_data,
-            hash,
             dwallet_public_key
         };
 
@@ -301,7 +299,7 @@ module dwallet_system::dwallet {
     #[allow(unused_field)]
     struct MaliciousAggregatorSignOutput has key {
         id: UID,
-        aggregaor_pk: vector<u8>,
+        aggregator_public_key: vector<u8>,
         epoch: u64,
         signatures: vector<vector<u8>>,
         messages: vector<vector<u8>>,
@@ -309,59 +307,51 @@ module dwallet_system::dwallet {
     }
 
     struct MaliciousAggregatorEvent has copy, drop {
-        aggregaor_pk: vector<u8>,
+        aggregator_public_key: vector<u8>,
         epoch: u64,
         signatures: vector<vector<u8>>,
         messages: vector<vector<u8>>,
         dwallet_id: ID,
     }
 
-
-    #[allow(unused_function)]
-    /// This function is called by blockchain itself.
-    /// Validtors call it, it's part of the blockchain logic.
-    /// NOT a native function.
-    fun create_sign_output<S: store>(
+    public(friend) fun create_sign_output<S: store>(
         session: &SignSession<S>,
         signatures: vector<vector<u8>>,
-        _aggregator_pk: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
-        if (verify_signatures_native(session.messages, signatures, session.hash, session.dwallet_public_key)) {
-            let sign_output = SignOutput {
-                id: object::new(ctx),
-                session_id: object::id(session),
-                dwallet_id: session.dwallet_id,
-                dwallet_cap_id: session.dwallet_cap_id,
-                signatures,
-                sender: session.sender,
-            };
-            transfer::transfer(sign_output, session.sender);
-        } else {
-            let failed_sign_output = MaliciousAggregatorSignOutput {
-                id: object::new(ctx),
-                aggregaor_pk: _aggregator_pk,
-                epoch: tx_context::epoch(ctx),
-                signatures,
-                messages: session.messages,
-                dwallet_id: session.dwallet_id,
-            };
-            transfer::transfer(failed_sign_output, session.sender);
-            event::emit(MaliciousAggregatorEvent {
-                aggregaor_pk: _aggregator_pk,
-                epoch: tx_context::epoch(ctx),
-                signatures,
-                messages: session.messages,
-                dwallet_id: session.dwallet_id,
-            });
-        }
+        ctx: &mut TxContext){
+        let sign_output = SignOutput {
+            id: object::new(ctx),
+            session_id: object::id(session),
+            dwallet_id: session.dwallet_id,
+            dwallet_cap_id: session.dwallet_cap_id,
+            signatures,
+            sender: session.sender,
+        };
+        // TODO: Change output to be immutable instead of owned
+        transfer::transfer(sign_output, sender(session));
     }
 
-    native fun verify_signatures_native(
-        messages: vector<vector<u8>>,
-        sigs: vector<vector<u8>>,
-        hash: u8,
-        dwallet_public_key: vector<u8>
-    ): bool;
+    public(friend) fun create_malicious_aggregator_sign_output<S: store>(
+        aggregator_public_key: vector<u8>,
+        session: &SignSession<S>,
+        signatures: vector<vector<u8>>,
+        ctx: &mut TxContext
+    ) {
+        event::emit(MaliciousAggregatorEvent {
+            aggregator_public_key,
+            epoch: tx_context::epoch(ctx),
+            signatures,
+            messages: session.messages,
+            dwallet_id: session.dwallet_id,
+        });
+        let failed_sign_output = MaliciousAggregatorSignOutput {
+            id: object::new(ctx),
+            aggregator_public_key,
+            epoch: tx_context::epoch(ctx),
+            signatures,
+            messages: session.messages,
+            dwallet_id: session.dwallet_id,
+        };
+        // TODO: Change output to be immutable instead of owned
+        transfer::transfer(failed_sign_output, sender(session));
+    }
 }

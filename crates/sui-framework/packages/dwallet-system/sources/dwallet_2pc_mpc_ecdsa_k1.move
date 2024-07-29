@@ -13,8 +13,19 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
+
     use dwallet_system::dwallet;
-    use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap, PartialUserSignedMessages};
+    use dwallet_system::dwallet::{
+        create_dwallet_cap,
+        create_malicious_aggregator_sign_output,
+        create_sign_output,
+        dwallet_public_key,
+        DWalletCap,
+        messages,
+        PartialUserSignedMessages,
+        sign_data,
+        SignSession
+    };
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
@@ -389,8 +400,32 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet.public_key,
             sign_data,
             sign_data_event,
-            session.hash,
             ctx
         )
     }
+
+    #[allow(unused_function)]
+    /// This function is called by blockchain itself.
+    /// Validtors call it, it's part of the blockchain logic.
+    /// NOT a native function.
+    fun verify_and_create_sign_output(
+        session: &SignSession<SignData>,
+        signatures: vector<vector<u8>>,
+        aggregator_public_key: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+        if (verify_signatures_native(messages(session), signatures, sign_data(session).hash, dwallet_public_key(session))) {
+            create_sign_output(session, signatures, ctx);
+        } else {
+            create_malicious_aggregator_sign_output(aggregator_public_key, session, signatures, ctx);
+        }
+    }
+
+    native fun verify_signatures_native(
+        messages: vector<vector<u8>>,
+        sigs: vector<vector<u8>>,
+        hash: u8,
+        dwallet_public_key: vector<u8>
+    ): bool;
 }
