@@ -203,10 +203,7 @@ impl<'a> TestAuthorityBuilder<'a> {
             &genesis.objects(),
         )
         .unwrap();
-        let expensive_safety_checks = match self.expensive_safety_checks {
-            None => ExpensiveSafetyCheckConfig::default(),
-            Some(config) => config,
-        };
+        let expensive_safety_checks = self.expensive_safety_checks.unwrap_or_default();
         let epoch_store = AuthorityPerEpochStore::new(
             name,
             Arc::new(genesis_committee.clone()),

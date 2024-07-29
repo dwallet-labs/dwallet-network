@@ -164,8 +164,7 @@ impl HttpKVStore {
         let fetches = stream::iter(
             uris_vec
                 .into_iter()
-                .enumerate()
-                .map(|(_i, uri)| self.fetch(uri)),
+                .map(|uri| self.fetch(uri)),
         );
         fetches.buffered(uris.len()).collect::<Vec<_>>().await
     }

@@ -67,3 +67,5 @@ yarn-error.log*
 .env
 checkpoints_dir/*
 light_client.yaml
+
+sdk/typescript/*.js

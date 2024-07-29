@@ -509,6 +509,12 @@ impl Attributes {
     }
 }
 
+impl Default for UseFuns {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl UseFuns {
     pub fn new() -> Self {
         Self {

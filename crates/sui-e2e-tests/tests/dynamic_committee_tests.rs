@@ -259,7 +259,7 @@ impl StressTestRunner {
             })
             .collect();
         assert!(found.len() <= 1, "Multiple objects of type {name} found");
-        found.get(0).cloned()
+        found.first().cloned()
     }
 }
 
@@ -350,7 +350,7 @@ async fn fuzz_dynamic_committee() {
     let num_operations = 10;
 
     // Add more actions here as we create them
-    let actions = vec![Box::new(add_stake::RequestAddStakeGen)];
+    let actions = [Box::new(add_stake::RequestAddStakeGen)];
 
     let mut runner = StressTestRunner::new().await;
 

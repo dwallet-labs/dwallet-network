@@ -451,7 +451,7 @@ mod tests {
     }
 
     fn data<T: Serialize>(layout: A::MoveTypeLayout, data: T) -> Result<MoveData, Error> {
-        let tag: TypeTag = (&layout).try_into().expect("Error fetching type tag");
+        let tag: TypeTag = (&layout).into();
 
         // The format for type from its `Display` impl does not technically match the format that
         // the RPC expects from the data layer (where a type's package should be canonicalized), but
@@ -471,7 +471,7 @@ mod tests {
     }
 
     fn json<T: Serialize>(layout: A::MoveTypeLayout, data: T) -> Result<Json, Error> {
-        let tag: TypeTag = (&layout).try_into().expect("Error fetching type tag");
+        let tag: TypeTag = (&layout).into();
         let type_ = MoveType::new(tag);
         let bcs = Base64(bcs::to_bytes(&data).unwrap());
         MoveValue { type_, bcs }.json_impl(layout)
