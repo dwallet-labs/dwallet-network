@@ -20,10 +20,7 @@ env:
   rust_nightly: nightly
   CARGO_NET_GIT_FETCH_WITH_CLI: true
 
-
 jobs:
-
-
   fmt:
     name: Format Check
     runs-on: ubuntu-latest
