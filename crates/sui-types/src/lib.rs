@@ -335,9 +335,10 @@ mod tests {
 
     #[test]
     fn test_complex_struct_tag_with_short_addr() {
-        let result =
-            parse_sui_struct_tag("0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::dwlt::DWLT>>>")
-                .expect("should not error");
+        let result = parse_sui_struct_tag(
+            "0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::dwlt::DWLT>>>",
+        )
+        .expect("should not error");
 
         let expected = expect!["0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::dwlt::DWLT>>>"];
         expected.assert_eq(&result.to_string());
