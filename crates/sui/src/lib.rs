@@ -4,6 +4,7 @@
 
 pub mod client_commands;
 pub mod console;
+mod ethereum_client;
 pub mod fire_drill;
 pub mod genesis_ceremony;
 pub mod genesis_inspector;
@@ -13,4 +14,3 @@ pub mod shell;
 pub mod sui_commands;
 pub mod validator_commands;
 pub mod zklogin_commands_util;
-mod ethereum_client;

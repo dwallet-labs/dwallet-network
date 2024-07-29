@@ -293,7 +293,8 @@ where
                 .flatten()
                 .find(|ev| {
                     ev.type_.address == SUI_SYSTEM_ADDRESS
-                        && ev.type_.module.as_ident_str() == ident_str!("dwallet_system_state_inner")
+                        && ev.type_.module.as_ident_str()
+                            == ident_str!("dwallet_system_state_inner")
                         && ev.type_.name.as_ident_str() == ident_str!("SystemEpochInfoEvent")
                 });
 

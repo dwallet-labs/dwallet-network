@@ -43,7 +43,9 @@ use sui_types::metrics::LimitsMetrics;
 use sui_types::object::{Object, Owner};
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::sui_system_state::{get_sui_system_state, SuiSystemState, SuiSystemStateTrait};
-use sui_types::transaction::{Argument, CallArg, CheckedInputObjects, Command, InputObjectKind, ObjectReadResult, Transaction};
+use sui_types::transaction::{
+    Argument, CallArg, CheckedInputObjects, Command, InputObjectKind, ObjectReadResult, Transaction,
+};
 use sui_types::{SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use tracing::trace;
 use validator_info::{GenesisValidatorInfo, GenesisValidatorMetadata, ValidatorInfo};
@@ -1064,7 +1066,9 @@ pub fn generate_genesis_system_object(
             ident_str!("new").to_owned(),
             vec![],
             vec![],
-        ) else { return Err(Error::msg("")) };
+        ) else {
+            return Err(Error::msg(""));
+        };
 
         let coin_treasury = Argument::NestedResult(coin, 0);
         let coin_supply = Argument::NestedResult(coin, 1);
