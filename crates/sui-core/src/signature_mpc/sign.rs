@@ -1,18 +1,25 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use sui_types::messages_signature_mpc::SignatureMPCSessionID;
-use std::collections::{HashMap, HashSet};
 use rand::rngs::OsRng;
-use sui_types::base_types::{EpochId, ObjectRef};
-use signature_mpc::twopc_mpc_protocols::{AdditivelyHomomorphicDecryptionKeyShare, GroupElement, PartyID, Result, DecryptionPublicParameters, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, initiate_decentralized_party_sign, SecretKeyShareSizedNumber, message_digest, PublicNonceEncryptedPartialSignatureAndProof, DecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, decrypt_signature_decentralized_party_sign, PaillierModulusSizedNumber, ProtocolContext, Commitment, SignatureThresholdDecryptionParty, Value, Hash};
+use signature_mpc::twopc_mpc_protocols::{
+    decrypt_signature_decentralized_party_sign, initiate_decentralized_party_sign, message_digest,
+    AdditivelyHomomorphicDecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, Commitment,
+    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, DecryptionKeyShare,
+    DecryptionPublicParameters, GroupElement, Hash, PaillierModulusSizedNumber, PartyID,
+    ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
+    SecretKeyShareSizedNumber, SignatureThresholdDecryptionParty, Value,
+};
+use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::mem;
+use sui_types::base_types::{EpochId, ObjectRef};
+use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 
 #[derive(Default)]
 pub(crate) enum SignRound {
     FirstRound {
-        signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>
+        signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
     },
     #[default]
     None,
@@ -28,10 +35,15 @@ impl SignRound {
         session_id: SignatureMPCSessionID,
         messages: Vec<Vec<u8>>,
         dkg_output: DKGDecentralizedPartyOutput,
-        public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
+        public_nonce_encrypted_partial_signature_and_proofs: Vec<
+            PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
+        >,
         presigns: Vec<DecentralizedPartyPresign>,
         hash: Hash,
-    ) -> Result<(Self, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>)> {
+    ) -> Result<(
+        Self,
+        Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
+    )> {
         let sign_mpc_party_per_message = initiate_decentralized_party_sign(
             tiresias_key_share_decryption_key_share,
             tiresias_public_parameters.clone(),
@@ -43,41 +55,65 @@ impl SignRound {
             presigns.clone(),
         )?;
 
-        let (decryption_shares, signature_threshold_decryption_round_parties): (Vec<_>, Vec<_>) = messages.iter().zip(sign_mpc_party_per_message.into_iter()).zip(public_nonce_encrypted_partial_signature_and_proofs.clone().into_iter()).map(|((m, party), public_nonce_encrypted_partial_signature_and_proof)| {
-            let m = message_digest(m, &hash);
-            party
-                .partially_decrypt_encrypted_signature_parts_prehash(
-                    m,
-                    public_nonce_encrypted_partial_signature_and_proof,
-                    &mut OsRng,
+        let (decryption_shares, signature_threshold_decryption_round_parties): (Vec<_>, Vec<_>) =
+            messages
+                .iter()
+                .zip(sign_mpc_party_per_message.into_iter())
+                .zip(
+                    public_nonce_encrypted_partial_signature_and_proofs
+                        .clone()
+                        .into_iter(),
                 )
-        }).collect::<Result<Vec<((PaillierModulusSizedNumber, PaillierModulusSizedNumber), SignatureThresholdDecryptionParty)>>>()?.into_iter().unzip();
+                .map(
+                    |((m, party), public_nonce_encrypted_partial_signature_and_proof)| {
+                        let m = message_digest(m, &hash);
+                        party.partially_decrypt_encrypted_signature_parts_prehash(
+                            m,
+                            public_nonce_encrypted_partial_signature_and_proof,
+                            &mut OsRng,
+                        )
+                    },
+                )
+                .collect::<Result<
+                    Vec<(
+                        (PaillierModulusSizedNumber, PaillierModulusSizedNumber),
+                        SignatureThresholdDecryptionParty,
+                    )>,
+                >>()?
+                .into_iter()
+                .unzip();
 
         Ok((
             SignRound::FirstRound {
-                signature_threshold_decryption_round_parties
+                signature_threshold_decryption_round_parties,
             },
-            decryption_shares
+            decryption_shares,
         ))
     }
 
-    pub(crate) fn complete_round(
-        &mut self,
-        state: SignState
-    ) -> Result<SignRoundCompletion> {
+    pub(crate) fn complete_round(&mut self, state: SignState) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
-            SignRound::FirstRound { signature_threshold_decryption_round_parties } => {
-                let signatures_s = decrypt_signature_decentralized_party_sign(state.messages.unwrap(), state.tiresias_public_parameters.clone(), state.decryption_shares.clone(), state.public_nonce_encrypted_partial_signature_and_proofs.clone().unwrap(), signature_threshold_decryption_round_parties)?;
+            SignRound::FirstRound {
+                signature_threshold_decryption_round_parties,
+            } => {
+                let signatures_s = decrypt_signature_decentralized_party_sign(
+                    state.messages.unwrap(),
+                    state.tiresias_public_parameters.clone(),
+                    state.decryption_shares.clone(),
+                    state
+                        .public_nonce_encrypted_partial_signature_and_proofs
+                        .clone()
+                        .unwrap(),
+                    signature_threshold_decryption_round_parties,
+                )?;
 
-                Ok(SignRoundCompletion::Output(signatures_s))            }
-            _ => Ok(SignRoundCompletion::None)
+                Ok(SignRoundCompletion::Output(signatures_s))
+            }
+            _ => Ok(SignRoundCompletion::None),
         }
-
-
     }
 }
-
 
 pub(crate) enum SignRoundCompletion {
     Output(Vec<Vec<u8>>),
@@ -93,9 +129,11 @@ pub(crate) struct SignState {
     tiresias_public_parameters: DecryptionPublicParameters,
 
     messages: Option<Vec<Vec<u8>>>,
-    public_nonce_encrypted_partial_signature_and_proofs: Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
+    public_nonce_encrypted_partial_signature_and_proofs:
+        Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
 
-    decryption_shares: HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
+    decryption_shares:
+        HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
 }
 
 impl SignState {
@@ -106,7 +144,9 @@ impl SignState {
         parties: HashSet<PartyID>,
         session_id: SignatureMPCSessionID,
     ) -> Self {
-        let aggregator_party_id = ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap()) % parties.len() as u64) + 1) as PartyID;
+        let aggregator_party_id = ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap())
+            % parties.len() as u64)
+            + 1) as PartyID;
 
         Self {
             epoch,
@@ -123,10 +163,13 @@ impl SignState {
     pub(crate) fn set(
         &mut self,
         messages: Vec<Vec<u8>>,
-        public_nonce_encrypted_partial_signature_and_proofs: Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>,
+        public_nonce_encrypted_partial_signature_and_proofs: Vec<
+            PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
+        >,
     ) {
         self.messages = Some(messages);
-        self.public_nonce_encrypted_partial_signature_and_proofs = Some(public_nonce_encrypted_partial_signature_and_proofs);
+        self.public_nonce_encrypted_partial_signature_and_proofs =
+            Some(public_nonce_encrypted_partial_signature_and_proofs);
     }
 
     pub(crate) fn insert_first_round(
@@ -134,16 +177,19 @@ impl SignState {
         party_id: PartyID,
         message: Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
     ) -> Result<()> {
-        let _ = self
-            .decryption_shares
-            .insert(party_id, message);
+        let _ = self.decryption_shares.insert(party_id, message);
         Ok(())
     }
 
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {
         match round {
-            SignRound::FirstRound { .. } if self.decryption_shares.len() == self.parties.len() && self.party_id == self.aggregator_party_id => true,
-            _ => false
+            SignRound::FirstRound { .. }
+                if self.decryption_shares.len() == self.parties.len()
+                    && self.party_id == self.aggregator_party_id =>
+            {
+                true
+            }
+            _ => false,
         }
     }
 }

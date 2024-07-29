@@ -5,7 +5,7 @@ use self::{
     consensus_commit_prologue::ConsensusCommitPrologueTransaction,
     end_of_epoch::ChangeEpochTransaction, genesis::GenesisTransaction,
     randomness_state_update::RandomnessStateUpdateTransaction,
-    signature_mpc::SignatureMPCOutputTransaction
+    signature_mpc::SignatureMPCOutputTransaction,
 };
 use crate::types::transaction_block_kind::{
     authenticator_state_update::AuthenticatorStateUpdateTransaction,
@@ -50,7 +50,9 @@ impl From<NativeTransactionKind> for TransactionBlockKind {
             }
             K::EndOfEpochTransaction(eoe) => T::EndOfEpoch(EndOfEpochTransaction(eoe)),
             K::RandomnessStateUpdate(rsu) => T::Randomness(RandomnessStateUpdateTransaction(rsu)),
-            K::SignatureMPCOutput(dsmo) => T::SignatureMPCOutput(SignatureMPCOutputTransaction(dsmo)),
+            K::SignatureMPCOutput(dsmo) => {
+                T::SignatureMPCOutput(SignatureMPCOutputTransaction(dsmo))
+            }
         }
     }
 }
