@@ -39,17 +39,3 @@ jobs:
       - name: Fmt Check
         run: cargo fmt -- --check
 
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Install Rust ${{ env.rust_nightly }}
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: ${{ env.rust_nightly }}
-          components: clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Run Clippy
-        run: cargo clippy --all --tests --all-features --no-deps

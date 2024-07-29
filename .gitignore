@@ -68,4 +68,8 @@ yarn-error.log*
 checkpoints_dir/*
 light_client.yaml
 
-sdk/typescript/*.js
+# Ignore all .js files in sdk/typescript and its subdirectories
+sdk/typescript/**/*.js
+
+# Ignore all .js.map files in sdk/typescript and its subdirectories
+sdk/typescript/**/*.js.map
