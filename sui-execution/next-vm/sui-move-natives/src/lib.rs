@@ -148,7 +148,8 @@ pub struct NativesCostTable {
 
     // Receive object
     pub transfer_receive_object_internal_cost_params: TransferReceiveObjectInternalCostParams,
-    // twopc mpc
+
+    // TwoPC-MPC.
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
 }
 
@@ -194,46 +195,46 @@ impl NativesCostTable {
                     .into(),
             },
             dynamic_field_borrow_child_object_cost_params:
-                DynamicFieldBorrowChildObjectCostParams {
-                    dynamic_field_borrow_child_object_cost_base: protocol_config
-                        .dynamic_field_borrow_child_object_cost_base()
-                        .into(),
-                    dynamic_field_borrow_child_object_child_ref_cost_per_byte: protocol_config
-                        .dynamic_field_borrow_child_object_child_ref_cost_per_byte()
-                        .into(),
-                    dynamic_field_borrow_child_object_type_cost_per_byte: protocol_config
-                        .dynamic_field_borrow_child_object_type_cost_per_byte()
-                        .into(),
-                },
+            DynamicFieldBorrowChildObjectCostParams {
+                dynamic_field_borrow_child_object_cost_base: protocol_config
+                    .dynamic_field_borrow_child_object_cost_base()
+                    .into(),
+                dynamic_field_borrow_child_object_child_ref_cost_per_byte: protocol_config
+                    .dynamic_field_borrow_child_object_child_ref_cost_per_byte()
+                    .into(),
+                dynamic_field_borrow_child_object_type_cost_per_byte: protocol_config
+                    .dynamic_field_borrow_child_object_type_cost_per_byte()
+                    .into(),
+            },
             dynamic_field_remove_child_object_cost_params:
-                DynamicFieldRemoveChildObjectCostParams {
-                    dynamic_field_remove_child_object_cost_base: protocol_config
-                        .dynamic_field_remove_child_object_cost_base()
-                        .into(),
-                    dynamic_field_remove_child_object_child_cost_per_byte: protocol_config
-                        .dynamic_field_remove_child_object_child_cost_per_byte()
-                        .into(),
-                    dynamic_field_remove_child_object_type_cost_per_byte: protocol_config
-                        .dynamic_field_remove_child_object_type_cost_per_byte()
-                        .into(),
-                },
+            DynamicFieldRemoveChildObjectCostParams {
+                dynamic_field_remove_child_object_cost_base: protocol_config
+                    .dynamic_field_remove_child_object_cost_base()
+                    .into(),
+                dynamic_field_remove_child_object_child_cost_per_byte: protocol_config
+                    .dynamic_field_remove_child_object_child_cost_per_byte()
+                    .into(),
+                dynamic_field_remove_child_object_type_cost_per_byte: protocol_config
+                    .dynamic_field_remove_child_object_type_cost_per_byte()
+                    .into(),
+            },
             dynamic_field_has_child_object_cost_params: DynamicFieldHasChildObjectCostParams {
                 dynamic_field_has_child_object_cost_base: protocol_config
                     .dynamic_field_has_child_object_cost_base()
                     .into(),
             },
             dynamic_field_has_child_object_with_ty_cost_params:
-                DynamicFieldHasChildObjectWithTyCostParams {
-                    dynamic_field_has_child_object_with_ty_cost_base: protocol_config
-                        .dynamic_field_has_child_object_with_ty_cost_base()
-                        .into(),
-                    dynamic_field_has_child_object_with_ty_type_cost_per_byte: protocol_config
-                        .dynamic_field_has_child_object_with_ty_type_cost_per_byte()
-                        .into(),
-                    dynamic_field_has_child_object_with_ty_type_tag_cost_per_byte: protocol_config
-                        .dynamic_field_has_child_object_with_ty_type_tag_cost_per_byte()
-                        .into(),
-                },
+            DynamicFieldHasChildObjectWithTyCostParams {
+                dynamic_field_has_child_object_with_ty_cost_base: protocol_config
+                    .dynamic_field_has_child_object_with_ty_cost_base()
+                    .into(),
+                dynamic_field_has_child_object_with_ty_type_cost_per_byte: protocol_config
+                    .dynamic_field_has_child_object_with_ty_type_cost_per_byte()
+                    .into(),
+                dynamic_field_has_child_object_with_ty_type_tag_cost_per_byte: protocol_config
+                    .dynamic_field_has_child_object_with_ty_type_tag_cost_per_byte()
+                    .into(),
+            },
 
             event_emit_cost_params: EventEmitCostParams {
                 event_emit_value_size_derivation_cost_per_byte: protocol_config
@@ -457,26 +458,26 @@ impl NativesCostTable {
                     .into(),
             },
             groth16_verify_groth16_proof_internal_cost_params:
-                Groth16VerifyGroth16ProofInternalCostParams {
-                    groth16_verify_groth16_proof_internal_bls12381_cost_base: protocol_config
-                        .groth16_verify_groth16_proof_internal_bls12381_cost_base()
-                        .into(),
-                    groth16_verify_groth16_proof_internal_bls12381_cost_per_public_input:
-                        protocol_config
-                            .groth16_verify_groth16_proof_internal_bls12381_cost_per_public_input()
-                            .into(),
-                    groth16_verify_groth16_proof_internal_bn254_cost_base: protocol_config
-                        .groth16_verify_groth16_proof_internal_bn254_cost_base()
-                        .into(),
-                    groth16_verify_groth16_proof_internal_bn254_cost_per_public_input:
-                        protocol_config
-                            .groth16_verify_groth16_proof_internal_bn254_cost_per_public_input()
-                            .into(),
-                    groth16_verify_groth16_proof_internal_public_input_cost_per_byte:
-                        protocol_config
-                            .groth16_verify_groth16_proof_internal_public_input_cost_per_byte()
-                            .into(),
-                },
+            Groth16VerifyGroth16ProofInternalCostParams {
+                groth16_verify_groth16_proof_internal_bls12381_cost_base: protocol_config
+                    .groth16_verify_groth16_proof_internal_bls12381_cost_base()
+                    .into(),
+                groth16_verify_groth16_proof_internal_bls12381_cost_per_public_input:
+                protocol_config
+                    .groth16_verify_groth16_proof_internal_bls12381_cost_per_public_input()
+                    .into(),
+                groth16_verify_groth16_proof_internal_bn254_cost_base: protocol_config
+                    .groth16_verify_groth16_proof_internal_bn254_cost_base()
+                    .into(),
+                groth16_verify_groth16_proof_internal_bn254_cost_per_public_input:
+                protocol_config
+                    .groth16_verify_groth16_proof_internal_bn254_cost_per_public_input()
+                    .into(),
+                groth16_verify_groth16_proof_internal_public_input_cost_per_byte:
+                protocol_config
+                    .groth16_verify_groth16_proof_internal_public_input_cost_per_byte()
+                    .into(),
+            },
             hmac_hmac_sha3_256_cost_params: HmacHmacSha3256CostParams {
                 hmac_hmac_sha3_256_cost_base: protocol_config.hmac_hmac_sha3_256_cost_base().into(),
                 hmac_hmac_sha3_256_input_cost_per_byte: protocol_config
@@ -740,7 +741,7 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share",
             make_native!(twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share),
         ),
-        (        
+        (
             "dwallet_2pc_mpc_ecdsa_k1",
             "sign_verify_encrypted_signature_parts_prehash",
             make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),

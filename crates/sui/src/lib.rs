@@ -14,3 +14,4 @@ pub mod sui_commands;
 pub mod dwallet_commands;
 pub mod validator_commands;
 pub mod zklogin_commands_util;
+mod ethereum_client;

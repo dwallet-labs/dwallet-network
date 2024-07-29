@@ -61,6 +61,7 @@ use crate::dwallet_commands::SuiDWalletCommands;
 
 use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::sui_commands::SuiCommand;
+use crate::ethereum_client::EthClientCommands;
 
 #[macro_export]
 macro_rules! serialize_or_execute {
@@ -647,6 +648,12 @@ pub enum SuiClientCommands {
         #[clap(subcommand)]
         cmd: Option<SuiDWalletCommands>,
     },
+    /// Ethereum light-client subcommands.
+    #[command(name = "eth-lc")]
+    EthClient {
+        #[command(subcommand)]
+        command: EthClientCommands
+    }
 }
 
 impl SuiClientCommands {
@@ -1326,7 +1333,7 @@ impl SuiClientCommands {
                         "Environment config with name [{alias}] already exists."
                     ));
                 }
-                let env = SuiEnv { alias, rpc, ws };
+                let env = SuiEnv { alias, rpc, ws, eth_client_settings: None };
 
                 // Check urls are valid and server is reachable
                 env.create_rpc_client(None, None).await?;
@@ -1378,6 +1385,13 @@ impl SuiClientCommands {
                     .await?;
 
                 SuiClientCommandResult::VerifySource
+            },
+            SuiClientCommands::EthClient { command } => {
+                match command {
+                    EthClientCommands::EthApproveMessage { .. } => { todo!() }
+                    EthClientCommands::CreateEthDwallet { .. } => { todo!() }
+                    EthClientCommands::InitEthState { .. } => { todo!() }
+                }
             }
             SuiClientCommands::DWallet {
                 cmd,
