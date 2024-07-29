@@ -7,6 +7,7 @@ use anyhow::Result;
 use fastcrypto::traits::KeyPair;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
+use signature_mpc::twopc_mpc_protocols::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
 use sui_config::genesis::{GenesisCeremonyParameters, TokenAllocation};
 use sui_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
 use sui_config::{local_ip_utils, Config};
@@ -18,7 +19,6 @@ use sui_types::crypto::{
 };
 use sui_types::multiaddr::Multiaddr;
 use tracing::info;
-use signature_mpc::twopc_mpc_protocols::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]
@@ -149,13 +149,21 @@ impl ValidatorGenesisConfigBuilder {
         self
     }
 
-    pub fn with_signature_mpc_tiresias_public_parameters(mut self, signature_mpc_tiresias_public_parameters: DecryptionPublicParameters) -> Self {
-        self.signature_mpc_tiresias_public_parameters = Some(signature_mpc_tiresias_public_parameters);
+    pub fn with_signature_mpc_tiresias_public_parameters(
+        mut self,
+        signature_mpc_tiresias_public_parameters: DecryptionPublicParameters,
+    ) -> Self {
+        self.signature_mpc_tiresias_public_parameters =
+            Some(signature_mpc_tiresias_public_parameters);
         self
     }
 
-    pub fn with_signature_mpc_tiresias_key_share_decryption_key_share(mut self, signature_mpc_tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber) -> Self {
-        self.signature_mpc_tiresias_key_share_decryption_key_share = Some(signature_mpc_tiresias_key_share_decryption_key_share);
+    pub fn with_signature_mpc_tiresias_key_share_decryption_key_share(
+        mut self,
+        signature_mpc_tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+    ) -> Self {
+        self.signature_mpc_tiresias_key_share_decryption_key_share =
+            Some(signature_mpc_tiresias_key_share_decryption_key_share);
         self
     }
 
@@ -221,7 +229,8 @@ impl ValidatorGenesisConfigBuilder {
             metrics_address: metrics_address.to_socket_addr().unwrap(),
             narwhal_metrics_address,
             signature_mpc_tiresias_public_parameters: self.signature_mpc_tiresias_public_parameters,
-            signature_mpc_tiresias_key_share_decryption_key_share: self.signature_mpc_tiresias_key_share_decryption_key_share,
+            signature_mpc_tiresias_key_share_decryption_key_share: self
+                .signature_mpc_tiresias_key_share_decryption_key_share,
             gas_price,
             commission_rate: DEFAULT_COMMISSION_RATE,
             narwhal_primary_address,

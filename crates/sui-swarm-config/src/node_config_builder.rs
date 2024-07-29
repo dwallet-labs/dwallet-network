@@ -9,7 +9,13 @@ use narwhal_config::{NetworkAdminServerParameters, PrometheusMetricsParameters};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::time::Duration;
-use sui_config::node::{default_enable_index_processing, default_end_of_epoch_broadcast_channel_capacity, AuthorityKeyPairWithPath, AuthorityStorePruningConfig, CheckpointExecutorConfig, DBCheckpointConfig, ExpensiveSafetyCheckConfig, Genesis, KeyPairWithPath, OverloadThresholdConfig, StateArchiveConfig, StateSnapshotConfig, DEFAULT_GRPC_CONCURRENCY_LIMIT, SignatureMPCTiresias};
+use sui_config::node::{
+    default_enable_index_processing, default_end_of_epoch_broadcast_channel_capacity,
+    AuthorityKeyPairWithPath, AuthorityStorePruningConfig, CheckpointExecutorConfig,
+    DBCheckpointConfig, ExpensiveSafetyCheckConfig, Genesis, KeyPairWithPath,
+    OverloadThresholdConfig, SignatureMPCTiresias, StateArchiveConfig, StateSnapshotConfig,
+    DEFAULT_GRPC_CONCURRENCY_LIMIT,
+};
 use sui_config::node::{default_zklogin_oauth_providers, ConsensusProtocol};
 use sui_config::p2p::{P2pConfig, SeedPeer};
 use sui_config::{
@@ -183,7 +189,12 @@ impl ValidatorConfigBuilder {
                 .unwrap_or(3600),
             zklogin_oauth_providers: default_zklogin_oauth_providers(),
             overload_threshold_config: self.overload_threshold_config.unwrap_or_default(),
-            signature_mpc_tiresias: Some(SignatureMPCTiresias::new(validator.signature_mpc_tiresias_public_parameters.unwrap(), validator.signature_mpc_tiresias_key_share_decryption_key_share.unwrap())),
+            signature_mpc_tiresias: Some(SignatureMPCTiresias::new(
+                validator.signature_mpc_tiresias_public_parameters.unwrap(),
+                validator
+                    .signature_mpc_tiresias_key_share_decryption_key_share
+                    .unwrap(),
+            )),
         }
     }
 

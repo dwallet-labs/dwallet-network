@@ -90,7 +90,12 @@ impl SuiTxValidator {
 
         self.epoch_store
             .signature_verifier
-            .verify_certs_and_checkpoints_and_signature_mpc_messages(cert_batch, ckpt_batch, signature_mpc_messages_batch, signed_dkg_signature_mpc_outputs_batch)
+            .verify_certs_and_checkpoints_and_signature_mpc_messages(
+                cert_batch,
+                ckpt_batch,
+                signature_mpc_messages_batch,
+                signed_dkg_signature_mpc_outputs_batch,
+            )
             .tap_err(|e| warn!("batch verification error: {}", e))
             .wrap_err("Malformed batch (failed to verify)")?;
 

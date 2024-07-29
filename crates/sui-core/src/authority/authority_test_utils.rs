@@ -4,6 +4,7 @@
 
 use crate::checkpoints::CheckpointServiceNoop;
 use crate::consensus_handler::SequencedConsensusTransaction;
+use crate::signature_mpc::{SignatureMPCService, SignatureMPCServiceNoop};
 use core::default::Default;
 use fastcrypto::hash::MultisetHash;
 use fastcrypto::traits::KeyPair;
@@ -16,7 +17,6 @@ use sui_types::messages_consensus::ConsensusTransaction;
 use sui_types::move_package::UpgradePolicy;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::utils::to_sender_signed_transaction;
-use crate::signature_mpc::{SignatureMPCService, SignatureMPCServiceNoop};
 
 use super::test_authority_builder::TestAuthorityBuilder;
 use super::*;

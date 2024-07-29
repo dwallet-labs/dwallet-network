@@ -17,6 +17,9 @@ use std::hash::Hash;
 use std::sync::Arc;
 use sui_types::digests::SenderSignedDataDigest;
 use sui_types::digests::ZKLoginInputsDigest;
+use sui_types::messages_signature_mpc::{
+    SignatureMPCMessageSummary, SignedSignatureMPCMessageSummary, SignedSignatureMPCOutput,
+};
 use sui_types::transaction::SenderSignedData;
 use sui_types::{
     committee::Committee,
@@ -35,7 +38,6 @@ use tokio::{
     time::{timeout, Duration},
 };
 use tracing::debug;
-use sui_types::messages_signature_mpc::{SignatureMPCMessageSummary, SignedSignatureMPCOutput, SignedSignatureMPCMessageSummary};
 
 // Maximum amount of time we wait for a batch to fill up before verifying a partial batch.
 const BATCH_TIMEOUT_MS: Duration = Duration::from_millis(10);
@@ -198,7 +200,13 @@ impl SignatureVerifier {
         for cert in &certs {
             self.verify_tx(cert.data())?;
         }
-        batch_verify_all_certificates_and_checkpoints_and_signature_mpc_messages(&self.committee, &certs, &checkpoints, &signature_mpc_messages, &signed_dkg_signature_mpc_outputs)?;
+        batch_verify_all_certificates_and_checkpoints_and_signature_mpc_messages(
+            &self.committee,
+            &certs,
+            &checkpoints,
+            &signature_mpc_messages,
+            &signed_dkg_signature_mpc_outputs,
+        )?;
         self.certificate_cache
             .cache_digests(certs.into_iter().map(|c| c.certificate_digest()).collect());
         Ok(())
@@ -508,7 +516,13 @@ pub fn batch_verify_all_certificates_and_checkpoints_and_signature_mpc_messages(
         msg.data().verify_epoch(committee.epoch())?;
     }
 
-    batch_verify(committee, certs, checkpoints, signature_mpc_messages, signed_dkg_signature_mpc_outputs)
+    batch_verify(
+        committee,
+        certs,
+        checkpoints,
+        signature_mpc_messages,
+        signed_dkg_signature_mpc_outputs,
+    )
 }
 
 /// Verifies certificates in batch mode, but returns a separate result for each cert.

@@ -7,6 +7,7 @@ use crate::crypto::{random_committee_key_pairs_of_size, AuthorityKeyPair, Author
 use crate::error::{SuiError, SuiResult};
 use crate::multiaddr::Multiaddr;
 use fastcrypto::traits::KeyPair;
+use itertools::Itertools;
 use rand::rngs::ThreadRng;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -15,7 +16,6 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::Write;
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
-use itertools::Itertools;
 pub use sui_protocol_config::ProtocolVersion;
 
 pub type EpochId = u64;
@@ -130,7 +130,11 @@ impl Committee {
     }
 
     pub fn authority_indexes(&self) -> Vec<u32> {
-        self.index_map.values().map(|i| *i as u32).sorted().collect()
+        self.index_map
+            .values()
+            .map(|i| *i as u32)
+            .sorted()
+            .collect()
     }
 
     pub fn authority_by_index(&self, index: u32) -> Option<&AuthorityName> {

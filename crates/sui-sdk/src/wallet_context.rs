@@ -56,7 +56,6 @@ impl WalletContext {
     }
 
     pub async fn get_client(&self) -> Result<SuiClient, anyhow::Error> {
-
         let client = self
             .config
             .get_active_env()?

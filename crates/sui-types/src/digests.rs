@@ -449,7 +449,6 @@ impl std::str::FromStr for SignatureMPCMessageDigest {
     }
 }
 
-
 /// Representation of a SignatureMPCOutput's digest
 #[derive(
     Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
