@@ -68,8 +68,8 @@ use tabled::{
 };
 use tracing::info;
 
-use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::ethereum_client::EthClientCommands;
+use crate::key_identity::{get_identity_address, KeyIdentity};
 
 macro_rules! serialize_or_execute {
     ($tx_data:expr, $serialize_unsigned:expr, $serialize_signed:expr, $context:expr, $result_variant:ident) => {{
@@ -650,8 +650,8 @@ pub enum SuiClientCommands {
     #[command(name = "eth-lc")]
     EthClient {
         #[command(subcommand)]
-        command: EthClientCommands
-    }
+        command: EthClientCommands,
+    },
 }
 
 impl SuiClientCommands {
@@ -1327,7 +1327,12 @@ impl SuiClientCommands {
                         "Environment config with name [{alias}] already exists."
                     ));
                 }
-                let env = SuiEnv { alias, rpc, ws, eth_client_settings: None };
+                let env = SuiEnv {
+                    alias,
+                    rpc,
+                    ws,
+                    eth_client_settings: None,
+                };
 
                 // Check urls are valid and server is reachable
                 env.create_rpc_client(None, None).await?;
@@ -1379,14 +1384,18 @@ impl SuiClientCommands {
                     .await?;
 
                 SuiClientCommandResult::VerifySource
-            },
-            SuiClientCommands::EthClient { command } => {
-                match command {
-                    EthClientCommands::EthApproveMessage { .. } => { todo!() }
-                    EthClientCommands::CreateEthDwallet { .. } => { todo!() }
-                    EthClientCommands::InitEthState { .. } => { todo!() }
-                }
             }
+            SuiClientCommands::EthClient { command } => match command {
+                EthClientCommands::EthApproveMessage { .. } => {
+                    todo!()
+                }
+                EthClientCommands::CreateEthDwallet { .. } => {
+                    todo!()
+                }
+                EthClientCommands::InitEthState { .. } => {
+                    todo!()
+                }
+            },
         });
         ret
     }

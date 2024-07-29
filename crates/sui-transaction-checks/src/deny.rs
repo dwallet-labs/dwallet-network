@@ -3,7 +3,14 @@
 
 use fastcrypto_zkp::bn254::zk_login::OIDCProvider;
 use sui_config::transaction_deny_config::TransactionDenyConfig;
-use sui_types::{base_types::ObjectRef, error::{SuiError, SuiResult, UserInputError}, signature::GenericSignature, storage::BackingPackageStore, SUI_SYSTEM_PACKAGE_ID, transaction::{Command, InputObjectKind, TransactionData, TransactionDataAPI}};
+use sui_types::{
+    base_types::ObjectRef,
+    error::{SuiError, SuiResult, UserInputError},
+    signature::GenericSignature,
+    storage::BackingPackageStore,
+    transaction::{Command, InputObjectKind, TransactionData, TransactionDataAPI},
+    SUI_SYSTEM_PACKAGE_ID,
+};
 macro_rules! deny_if_true {
     ($cond:expr, $msg:expr) => {
         if ($cond) {
@@ -66,7 +73,10 @@ fn check_disabled_hardcoded_features(
     tx_signatures.iter().try_for_each(|s| {
         for command in tx_data.kind().iter_commands() {
             if let Command::MoveCall(pt) = command {
-                deny_if_true!(pt.package != SUI_SYSTEM_PACKAGE_ID, "Only system package is allowed");
+                deny_if_true!(
+                    pt.package != SUI_SYSTEM_PACKAGE_ID,
+                    "Only system package is allowed"
+                );
             }
             deny_if_true!(
                 matches!(command, Command::Publish(..)),
