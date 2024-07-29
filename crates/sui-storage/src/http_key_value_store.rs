@@ -161,11 +161,7 @@ impl HttpKVStore {
 
     async fn multi_fetch(&self, uris: Vec<Key>) -> Vec<SuiResult<Option<Bytes>>> {
         let uris_vec = uris.to_vec();
-        let fetches = stream::iter(
-            uris_vec
-                .into_iter()
-                .map(|uri| self.fetch(uri)),
-        );
+        let fetches = stream::iter(uris_vec.into_iter().map(|uri| self.fetch(uri)));
         fetches.buffered(uris.len()).collect::<Vec<_>>().await
     }
 

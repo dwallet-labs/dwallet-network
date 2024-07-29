@@ -50,8 +50,6 @@ where
     S: BuildHasher,
 {
     fn shard_id(&self, key: &K) -> usize {
-        
-        
         let h = self.hasher.hash_one(key) as usize;
         h % self.shards.len()
     }

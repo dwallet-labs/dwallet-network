@@ -316,7 +316,8 @@ impl SimulatorStore for PersistedStore {
             .read_write
             .epoch_to_committee
             .get(&())
-            .expect("Fatal: DB read failed").unwrap_or_default();
+            .expect("Fatal: DB read failed")
+            .unwrap_or_default();
 
         if committees.get(epoch).is_some() {
             return;
@@ -395,7 +396,8 @@ impl SimulatorStore for PersistedStore {
                 .read_write
                 .objects
                 .get(&object_id)
-                .expect("Fatal: DB read failed").unwrap_or_default();
+                .expect("Fatal: DB read failed")
+                .unwrap_or_default();
             q.insert(version, object);
             self.read_write
                 .objects

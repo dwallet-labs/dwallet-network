@@ -532,8 +532,10 @@ async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
 
     // Try a transfer
     // This should fail due to mismatch of object being sent
-    let args = [SuiJsonValue::new(json!(obj))?,
-        SuiJsonValue::new(json!(address2))?];
+    let args = [
+        SuiJsonValue::new(json!(obj))?,
+        SuiJsonValue::new(json!(address2))?,
+    ];
 
     let resp = SuiClientCommands::Call {
         package,
@@ -558,8 +560,10 @@ async fn test_move_call_args_linter_command() -> Result<(), anyhow::Error> {
     // assert!(err_string.contains(&format!("Expected argument of type {package_addr}::object_basics::Object, but found type {framework_addr}::coin::Coin<{framework_addr}::sui::SUI>")));
 
     // Try a proper transfer
-    let args = [SuiJsonValue::new(json!(created_obj))?,
-        SuiJsonValue::new(json!(address2))?];
+    let args = [
+        SuiJsonValue::new(json!(created_obj))?,
+        SuiJsonValue::new(json!(address2))?,
+    ];
 
     SuiClientCommands::Call {
         package,
@@ -1634,7 +1638,8 @@ async fn test_native_transfer() -> Result<(), anyhow::Error> {
                 .effects
                 .as_ref()
                 .unwrap()
-                .mutated().first()
+                .mutated()
+                .first()
                 .unwrap()
                 .reference
                 .object_id,
@@ -1733,7 +1738,8 @@ async fn test_native_transfer() -> Result<(), anyhow::Error> {
                 .effects
                 .as_ref()
                 .unwrap()
-                .mutated().first()
+                .mutated()
+                .first()
                 .unwrap()
                 .reference
                 .object_id,
