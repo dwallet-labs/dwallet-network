@@ -1,30 +1,31 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::committee::EpochId;
-use crate::crypto::{default_hash, AuthoritySignInfo, AuthorityStrongQuorumSignInfo};
-use crate::digests::{SignatureMPCMessageDigest, SignatureMPCOutputDigest};
-use crate::error::SuiResult;
-use crate::message_envelope::{Envelope, Message, UnauthenticatedMessage};
-use crate::{committee::Committee, error::SuiError};
-use std::collections::HashMap;
-
-use crate::base_types::ObjectRef;
-pub use crate::digests::CheckpointContentsDigest;
-pub use crate::digests::CheckpointDigest;
-use serde::{Deserialize, Serialize};
-use shared_crypto::intent::IntentScope;
-pub use signature_mpc::twopc_mpc_protocols::{
-    tiresias_deal_trusted_shares, Commitment, DKGDecentralizedPartyOutput,
-    DecentralizedPartyPresign, DecryptionPublicParameters, EncDHCommitment, EncDHDecommitment,
-    EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber,
-    PaillierModulusSizedNumber, PartyID, PresignDecentralizedPartyOutput,
-    PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof,
-    SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof,
-};
 use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
+
+use serde::{Deserialize, Serialize};
 use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
+
+use shared_crypto::intent::IntentScope;
+pub use signature_mpc::twopc_mpc_protocols::{
+    Commitment, DecentralizedPartyPresign, DecryptionPublicParameters,
+    DKGDecentralizedPartyOutput, EncDHCommitment, EncDHDecommitment, EncDHProofShare,
+    EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber, PaillierModulusSizedNumber,
+    PartyID, PresignDecentralizedPartyOutput, PublicNonceEncryptedPartialSignatureAndProof,
+    SecretKeyShareEncryptionAndProof, SecretKeyShareSizedNumber,
+    SignatureNonceSharesCommitmentsAndBatchedProof, tiresias_deal_trusted_shares,
+};
+
+use crate::{committee::Committee, error::SuiError};
+use crate::base_types::{ObjectID, ObjectRef};
+use crate::committee::EpochId;
+use crate::crypto::{AuthoritySignInfo, AuthorityStrongQuorumSignInfo, default_hash};
+use crate::digests::{SignatureMPCMessageDigest, SignatureMPCOutputDigest};
+pub use crate::digests::CheckpointContentsDigest;
+pub use crate::digests::CheckpointDigest;
+use crate::error::SuiResult;
+use crate::message_envelope::{Envelope, Message, UnauthenticatedMessage};
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;
@@ -93,7 +94,7 @@ impl SignMessage {
         match self {
             SignMessage::DecryptionShares(_) => 1,
             SignMessage::Proofs(_) => 2,
-            SignMessage::StartIAFlow(_, _) => 3
+            SignMessage::StartIAFlow(_, _) => 3,
         }
     }
 }
@@ -180,8 +181,11 @@ pub enum SignatureMPCOutputValue {
     },
     PresignOutput(Vec<u8>),
     Presign(Vec<u8>),
-    Sign(Vec<Vec<u8>>),
-    // Q: What is the identifiable abort output?
+    Sign {
+        sigs: Vec<Vec<u8>>,
+        /// Used to punish a malicious validator in case of an attempt to send an invalid signature
+        aggregator_public_key: Vec<u8>,
+    },
 }
 
 impl Display for SignatureMPCOutputValue {
@@ -212,7 +216,7 @@ impl Display for SignatureMPCOutputValue {
                     presigns,
                 )
             }
-            SignatureMPCOutputValue::Sign(sigs) => {
+            SignatureMPCOutputValue::Sign { sigs, .. } => {
                 write!(f, "DKGSignatureMPCOutputValue::Sign {{ sigs: {:?}}}", sigs,)
             }
         }
@@ -326,7 +330,10 @@ impl SignatureMPCOutput {
             epoch,
             session_id,
             session_ref,
-            value: SignatureMPCOutputValue::Sign(sigs),
+            value: SignatureMPCOutputValue::Sign {
+                sigs,
+                aggregator_public_key: Vec::new(),
+            },
         })
     }
 
@@ -335,7 +342,7 @@ impl SignatureMPCOutput {
             SignatureMPCOutputValue::DKG { .. } => 1,
             SignatureMPCOutputValue::PresignOutput(_) => 2,
             SignatureMPCOutputValue::Presign(_) => 3,
-            SignatureMPCOutputValue::Sign(_) => 4,
+            SignatureMPCOutputValue::Sign { .. } => 4,
         }
     }
 }

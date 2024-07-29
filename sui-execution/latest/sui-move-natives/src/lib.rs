@@ -56,7 +56,7 @@ use std::sync::Arc;
 use sui_protocol_config::ProtocolConfig;
 use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
-use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
+use crate::crypto::twopc_mpc::{SignCostParams, TwoPCMPCDKGCostParams};
 
 mod address;
 mod crypto;
@@ -151,6 +151,7 @@ pub struct NativesCostTable {
 
     // twopc mpc
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
+    pub sign_cost_params: SignCostParams,
 }
 
 impl NativesCostTable {
@@ -511,6 +512,11 @@ impl NativesCostTable {
                     .sign_verify_encrypted_signature_parts_prehash_cost_base()
                     .into(),
             },
+            sign_cost_params: SignCostParams {
+                verify_signatures_cost_base: protocol_config
+                    .verify_signatures_cost_base()
+                    .into()
+            }
         }
     }
 }
@@ -745,7 +751,13 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dwallet_2pc_mpc_ecdsa_k1",
             "sign_verify_encrypted_signature_parts_prehash",
             make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
-        )];
+        ),
+        (
+            "dwallet",
+            "verify_signatures_native",
+            make_native!(twopc_mpc::verify_signatures_native),
+        )
+    ];
     sui_system_natives
         .iter()
         .cloned()

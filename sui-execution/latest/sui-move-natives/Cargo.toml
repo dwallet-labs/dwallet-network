@@ -28,3 +28,4 @@ workspace-hack.workspace = true
 tracing.workspace = true
 
 signature-mpc.workspace = true
+k256 = { git = 'https://github.com/ycscaly/elliptic-curves.git', branch = "13.3-fixed", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }

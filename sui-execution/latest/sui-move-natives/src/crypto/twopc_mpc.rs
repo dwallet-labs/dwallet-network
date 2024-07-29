@@ -14,10 +14,11 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 
-use signature_mpc::twopc_mpc_protocols::{Commitment, decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, ProtocolContext, PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof};
+use signature_mpc::twopc_mpc_protocols::{affine_point_to_public_key, Commitment, decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, Hash, ProtocolContext, PublicKeyShareDecommitmentAndProof, PublicKeyValue, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof, verify_signature};
 
 use crate::NativesCostTable;
 use crate::object_runtime::ObjectRuntime;
+use k256::AffinePoint;
 
 pub const INVALID_INPUT: u64 = 0;
 
@@ -29,6 +30,12 @@ pub struct TwoPCMPCDKGCostParams {
     pub dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: InternalGas,
     /// Base cost for invoking the `sign_verify_encrypted_signature_parts_prehash` function.
     pub sign_verify_encrypted_signature_parts_prehash_cost_base: InternalGas,
+}
+
+#[derive(Clone)]
+pub struct SignCostParams {
+    /// Base cost for invoking the `verify_signatures` function
+    pub verify_signatures_cost_base: InternalGas,
 }
 /***************************************************************************************************
  * native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
@@ -183,5 +190,38 @@ pub fn sign_verify_encrypted_signature_parts_prehash(
         smallvec![
             Value::bool(valid),
         ],
+    ))
+}
+
+pub fn verify_signatures_native(
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>, ) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 4);
+    let sign_cost_params = &context
+        .extensions()
+        .get::<NativesCostTable>()
+        .sign_cost_params
+        .clone();
+    native_charge_gas_early_exit!(
+        context,
+        sign_cost_params.verify_signatures_cost_base
+    );
+
+    let cost = context.gas_used();
+
+    let public_key = pop_arg!(args, Vec<u8>);
+    let public_key = affine_point_to_public_key(&public_key).expect("Invalid public key");
+    let hash = pop_arg!(args, u8);
+    let hash = Hash::from(hash);
+    let signatures = pop_arg!(args, Vec<Value>);
+    let signatures = signatures.into_iter().map(|m| m.value_as::<Vec<u8>>()).collect::<PartialVMResult<Vec<_>>>()?;
+    let messages = pop_arg!(args, Vec<Value>);
+    let messages = messages.into_iter().map(|m| m.value_as::<Vec<u8>>()).collect::<PartialVMResult<Vec<_>>>()?;
+    let is_valid = verify_signature(messages, &hash, public_key, signatures);
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::bool(is_valid),]
     ))
 }

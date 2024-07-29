@@ -863,6 +863,8 @@ pub struct ProtocolConfig {
     // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
     sign_verify_encrypted_signature_parts_prehash_cost_base: Option<u64>,
 
+    verify_signatures_cost_base: Option<u64>,
+
     /// === Execution Version ===
     execution_version: Option<u64>,
 
@@ -1455,7 +1457,7 @@ impl ProtocolConfig {
             dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: Some(52),
             // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
             sign_verify_encrypted_signature_parts_prehash_cost_base: Some(52),
-
+            verify_signatures_cost_base: Some(52),
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,
 

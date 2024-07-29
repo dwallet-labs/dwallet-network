@@ -13114,6 +13114,7 @@ dependencies = [
  "fastcrypto",
  "fastcrypto-zkp",
  "indexmap 2.2.6",
+ "k256 0.13.3 (git+https://github.com/ycscaly/elliptic-curves.git?branch=13.3-fixed)",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",

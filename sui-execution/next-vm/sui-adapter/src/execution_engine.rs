@@ -1147,7 +1147,7 @@ mod checked {
                         ],
                     )
                 }
-                SignatureMPCOutputValue::Sign(sigs) => {
+                SignatureMPCOutputValue::Sign{ sigs, .. } => {
                     builder.move_call(
                         SUI_SYSTEM_PACKAGE_ID.into(),
                         DWALLET_MODULE_NAME.to_owned(),

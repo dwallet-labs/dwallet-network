@@ -359,21 +359,34 @@ impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync, S: 
                             .inc_num_user_transactions(authority_index as usize);
                     }
 
-                    if let ConsensusTransactionKind::SignedDKGSignatureMPCOutput(
-                        output,
-                    ) = &transaction.kind
+                    if let ConsensusTransactionKind::SignedDKGSignatureMPCOutput(output) =
+                        &transaction.kind
                     {
-                        let is_sign = if let SignatureMPCOutputValue::Sign(_) = output.value {
+                        let is_sign = if let SignatureMPCOutputValue::Sign { .. } = output.value {
                             true
                         } else {
                             false
                         };
-                        if is_sign || self.epoch_store.try_aggregate_signed_signature_mpc_output(*output.clone()).is_ok() {
+                        if is_sign
+                            || self
+                            .epoch_store
+                            .try_aggregate_signed_signature_mpc_output(*output.clone())
+                            .is_ok()
+                        {
+                            let output = match &output.value {
+                                SignatureMPCOutputValue::Sign { sigs, .. } => {
+                                    let mut copied_output = output.clone();
+                                    copied_output.value = SignatureMPCOutputValue::Sign {
+                                        sigs: sigs.clone(),
+                                        aggregator_public_key: output.auth_sig().authority.0.to_vec(),
+                                    };
+                                    &copied_output.clone()
+                                }
+                                _ => output,
+                            };
                             debug!("adding ConsensusTransactionKind tx for output {output:?}");
-                            let signature_mpc_output_transaction = self
-                                .signature_mpc_output_transaction(
-                                    output.data().clone()
-                                );
+                            let signature_mpc_output_transaction =
+                                self.signature_mpc_output_transaction(output.data().clone());
 
                             transactions.push((
                                 empty_bytes.as_slice(),

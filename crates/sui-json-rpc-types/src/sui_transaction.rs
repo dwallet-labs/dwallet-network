@@ -500,7 +500,7 @@ impl SuiTransactionBlockKind {
                         },
                         SignatureMPCOutputValue::PresignOutput(o) => SuiDKGSignatureMPCOutputValue::PresignOutput(o),
                         SignatureMPCOutputValue::Presign(o) => SuiDKGSignatureMPCOutputValue::Presign(o),
-                        SignatureMPCOutputValue::Sign(s) => SuiDKGSignatureMPCOutputValue::Sign(s),
+                        SignatureMPCOutputValue::Sign{ sigs, .. } => SuiDKGSignatureMPCOutputValue::Sign(sigs),
                     },
                 })
             }

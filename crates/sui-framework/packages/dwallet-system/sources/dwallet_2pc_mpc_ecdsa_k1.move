@@ -13,7 +13,6 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
-
     use dwallet_system::dwallet;
     use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap, PartialUserSignedMessages};
 
@@ -387,8 +386,10 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             session.messages,
+            dwallet.public_key,
             sign_data,
             sign_data_event,
+            session.hash,
             ctx
         )
     }
