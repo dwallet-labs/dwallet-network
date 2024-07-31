@@ -1,2 +1,5 @@
 [toolchain]
-channel = "stable"
+# Hardcode a Rust version.
+channel = "1.79"
+# Use Rust Nighlty version.
+#channel = "nighlty"
