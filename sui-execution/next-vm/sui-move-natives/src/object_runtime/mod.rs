@@ -138,7 +138,9 @@ impl LocalProtocolConfig {
                 .object_runtime_max_num_store_entries_system_tx(),
             loaded_child_object_format: config.loaded_child_object_format(),
             loaded_child_object_format_type: config.loaded_child_object_format_type(),
-            signature_mpc_tiresias_public_parameters: config.signature_mpc_tiresias_public_parameters().map(|s| s.to_string()),
+            signature_mpc_tiresias_public_parameters: config
+                .signature_mpc_tiresias_public_parameters()
+                .map(|s| s.to_string()),
         }
     }
 }

@@ -7,18 +7,18 @@ use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
 use mysten_metrics::spawn_monitored_task;
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::{
-    AdditivelyHomomorphicDecryptionKeyShare, DecryptionKeyShare, generate_proof,
-    identify_message_malicious_parties, PaillierModulusSizedNumber, PartyID, SignaturePartialDecryptionProofParty,
+    generate_proof, identify_message_malicious_parties, AdditivelyHomomorphicDecryptionKeyShare,
+    DecryptionKeyShare, PaillierModulusSizedNumber, PartyID, SignaturePartialDecryptionProofParty,
     SignaturePartialDecryptionProofVerificationParty,
 };
 use sui_types::base_types::{EpochId, ObjectRef};
 use sui_types::messages_signature_mpc::{
-    SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID, SignMessage,
+    SignMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID,
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::signature_mpc::sign::{SignRound, SignRoundCompletion};
 use crate::signature_mpc::sign::SignState;
+use crate::signature_mpc::sign::{SignRound, SignRoundCompletion};
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
 
 /// Generate a list of proofs, one for every message in the messages batch that its decryption failed.
@@ -67,7 +67,8 @@ pub(crate) fn identify_batch_malicious_parties(
 ) -> twopc_mpc_protocols::Result<HashSet<PartyID>> {
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
     // that are necessary to call the [`identify_malicious_parties`] function.
-    let failed_messages_parties = generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
+    let failed_messages_parties =
+        generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
     let mut malicious_parties = HashSet::new();
     let involved_shares = get_involved_shares(&state);
     for ((i, message_index), (_, party)) in state
@@ -86,11 +87,7 @@ pub(crate) fn identify_batch_malicious_parties(
             masked_shares,
             state.tiresias_public_parameters.clone(),
             involved_proofs,
-            state
-                .involved_parties
-                .as_deref()
-                .unwrap()
-                .into(),
+            state.involved_parties.as_deref().unwrap().into(),
         )
         .iter()
         .for_each(|party_id| {
@@ -163,7 +160,9 @@ pub fn spawn_proof_generation(
     state: SignState,
 ) {
     spawn_monitored_task!(async move {
-        if (state.proofs.is_none() || !state.clone().proofs.unwrap().contains_key(&party_id)) && involved_parties.contains(&party_id) {
+        if (state.proofs.is_none() || !state.clone().proofs.unwrap().contains_key(&party_id))
+            && involved_parties.contains(&party_id)
+        {
             let proofs = generate_proofs(&state, &failed_messages_indices);
             let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
             let _ = submit
