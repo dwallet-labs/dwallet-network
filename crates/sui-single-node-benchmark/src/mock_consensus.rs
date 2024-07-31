@@ -9,11 +9,11 @@ use sui_core::authority::AuthorityState;
 use sui_core::checkpoints::CheckpointServiceNoop;
 use sui_core::consensus_adapter::SubmitToConsensus;
 use sui_core::consensus_handler::SequencedConsensusTransaction;
+use sui_core::signature_mpc::SignatureMPCServiceNoop;
 use sui_types::error::SuiResult;
 use sui_types::messages_consensus::ConsensusTransaction;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
-use sui_core::signature_mpc::SignatureMPCServiceNoop;
 
 pub(crate) struct MockConsensusClient {
     tx_sender: mpsc::Sender<ConsensusTransaction>,

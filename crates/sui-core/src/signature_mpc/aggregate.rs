@@ -6,7 +6,16 @@ use rand::rngs::OsRng;
 use std::collections::{HashMap, HashSet};
 use std::mem;
 
-use signature_mpc::twopc_mpc_protocols::{CommitmentRoundParty, Result, DecommitmentRoundParty, EncDHDecommitment, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput, EncDHProofAggregationRoundParty, EncDHProofShare, EncDHProofShareRoundParty, EncDLCommitment, EncDLCommitmentRoundParty, EncDLDecommitment, EncDLDecommitmentRoundParty, EncDLProofAggregationOutput, EncDLProofAggregationRoundParty, EncDLProofShare, EncDLProofShareRoundParty, EnhancedLanguageStatementAccessors, EncryptedNonceShareAndPublicShare, EncryptedMaskAndMaskedNonceShare, Error, PartyID, ProofAggregationRoundParty, ProofShareRoundParty, EncDHCommitmentRoundParty, ProtocolContext, Value, EncDHCommitment};
+use signature_mpc::twopc_mpc_protocols::{
+    CommitmentRoundParty, DecommitmentRoundParty, EncDHCommitment, EncDHCommitmentRoundParty,
+    EncDHDecommitment, EncDHDecommitmentRoundParty, EncDHProofAggregationOutput,
+    EncDHProofAggregationRoundParty, EncDHProofShare, EncDHProofShareRoundParty, EncDLCommitment,
+    EncDLCommitmentRoundParty, EncDLDecommitment, EncDLDecommitmentRoundParty,
+    EncDLProofAggregationOutput, EncDLProofAggregationRoundParty, EncDLProofShare,
+    EncDLProofShareRoundParty, EncryptedMaskAndMaskedNonceShare, EncryptedNonceShareAndPublicShare,
+    EnhancedLanguageStatementAccessors, Error, PartyID, ProofAggregationRoundParty,
+    ProofShareRoundParty, ProtocolContext, Result, Value,
+};
 use sui_types::messages_signature_mpc::SignatureMPCBulletProofAggregatesMessage;
 
 #[derive(Default)]
@@ -208,7 +217,8 @@ impl BulletProofAggregateRound {
                     })
                     .collect();
 
-                let decommitments_vecs: HashMap<_, Vec<_>> = state.decommitments
+                let decommitments_vecs: HashMap<_, Vec<_>> = state
+                    .decommitments
                     .iter()
                     .map(|(party_id, v)| {
                         (
@@ -239,7 +249,6 @@ impl BulletProofAggregateRound {
                     })
                     .collect();
 
-
                 let enc_dh_output = enc_dh
                     .into_iter()
                     .zip(enc_dh_proof_shares.into_iter())
@@ -266,7 +275,8 @@ impl BulletProofAggregateRound {
                 //     .map(|p| p.maurer_proof_aggregation_round_party.statements.clone().into_iter().map(|(id, s)| (id, s.clone().into_iter().map(|f| f.language_statement().clone()).collect::<Vec<_>>())).collect::<HashMap<_, _>>())
                 //     .reduce(|i1, i2| i1.into_iter().map(|(id, s)| (id, i2.get(&id).unwrap().clone().into_iter().chain(s.into_iter()).collect::<Vec<_>>())).collect::<HashMap<_, _>>()).unwrap();
 
-                let decommitments_vecs: HashMap<_, Vec<_>> = state.decommitments
+                let decommitments_vecs: HashMap<_, Vec<_>> = state
+                    .decommitments
                     .iter()
                     .map(|(party_id, v)| {
                         (
@@ -278,25 +288,24 @@ impl BulletProofAggregateRound {
                     })
                     .collect();
 
-                let individual_encrypted_nonce_shares_and_public_shares =
-                    decommitments_vecs
-                        .into_iter()
-                        .map(|(party_id, decommitments)| {
-                            (
-                                party_id,
-                                decommitments
-                                    .into_iter()
-                                    .flat_map(|maurer_decommitment| {
-                                        maurer_decommitment.statements.into_iter().map(|statement| {
-                                            let (_, language_statement) = statement.into();
+                let individual_encrypted_nonce_shares_and_public_shares = decommitments_vecs
+                    .into_iter()
+                    .map(|(party_id, decommitments)| {
+                        (
+                            party_id,
+                            decommitments
+                                .into_iter()
+                                .flat_map(|maurer_decommitment| {
+                                    maurer_decommitment.statements.into_iter().map(|statement| {
+                                        let (_, language_statement) = statement.into();
 
-                                            language_statement
-                                        })
+                                        language_statement
                                     })
-                                    .collect(),
-                            )
-                        })
-                        .collect();
+                                })
+                                .collect(),
+                        )
+                    })
+                    .collect();
 
                 let enc_dl_output = enc_dl
                     .into_iter()
@@ -343,9 +352,27 @@ pub(crate) struct BulletProofAggregateState {
     party_id: PartyID,
     parties: HashSet<PartyID>,
 
-    commitments: HashMap<PartyID, (Vec<EncDHCommitment<ProtocolContext>>, Vec<EncDLCommitment<ProtocolContext>>)>,
-    decommitments: HashMap<PartyID, (Vec<EncDHDecommitment<ProtocolContext>>, Vec<EncDLDecommitment<ProtocolContext>>)>,
-    proof_shares: HashMap<PartyID, (Vec<EncDHProofShare<ProtocolContext>>, Vec<EncDLProofShare<ProtocolContext>>)>,
+    commitments: HashMap<
+        PartyID,
+        (
+            Vec<EncDHCommitment<ProtocolContext>>,
+            Vec<EncDLCommitment<ProtocolContext>>,
+        ),
+    >,
+    decommitments: HashMap<
+        PartyID,
+        (
+            Vec<EncDHDecommitment<ProtocolContext>>,
+            Vec<EncDLDecommitment<ProtocolContext>>,
+        ),
+    >,
+    proof_shares: HashMap<
+        PartyID,
+        (
+            Vec<EncDHProofShare<ProtocolContext>>,
+            Vec<EncDLProofShare<ProtocolContext>>,
+        ),
+    >,
 }
 
 impl BulletProofAggregateState {

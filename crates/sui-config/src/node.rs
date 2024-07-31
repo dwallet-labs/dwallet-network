@@ -7,11 +7,13 @@ use crate::p2p::P2pConfig;
 use crate::transaction_deny_config::TransactionDenyConfig;
 use crate::Config;
 use anyhow::{anyhow, Context, Result};
+use fastcrypto::encoding::{Base64, Encoding};
 use narwhal_config::Parameters as ConsensusParameters;
 use once_cell::sync::OnceCell;
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use signature_mpc::twopc_mpc_protocols::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
 use std::collections::{BTreeMap, BTreeSet};
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
@@ -19,7 +21,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use std::{fs, usize};
-use fastcrypto::encoding::{Base64, Encoding};
 use sui_keys::keypair_file::{read_authority_keypair_from_file, read_keypair_from_file};
 use sui_protocol_config::{Chain, SupportedProtocolVersions};
 use sui_storage::object_store::ObjectStoreConfig;
@@ -31,7 +32,6 @@ use sui_types::crypto::SuiKeyPair;
 use sui_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use sui_types::multiaddr::Multiaddr;
 use tracing::{info, trace};
-use signature_mpc::twopc_mpc_protocols::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
 
 // Default max number of concurrent requests served
 pub const DEFAULT_GRPC_CONCURRENCY_LIMIT: usize = 20000000000;
@@ -720,28 +720,43 @@ pub struct SignatureMPCTiresias {
 }
 
 impl SignatureMPCTiresias {
-    pub fn new(public_parameters: DecryptionPublicParameters, key_share_decryption_key_share: SecretKeyShareSizedNumber) -> Self {
+    pub fn new(
+        public_parameters: DecryptionPublicParameters,
+        key_share_decryption_key_share: SecretKeyShareSizedNumber,
+    ) -> Self {
         Self {
-            signature_mpc_tiresias_location: SignatureMPCTiresiasLocation::InPlace { public_parameters, key_share_decryption_key_share },
-            public_parameters: Default::default(),
-            key_share_decryption_key_share: Default::default(),
-        }
-    }
-
-    pub fn new_from_file<P: Into<PathBuf>>(public_parameters_path: P, key_share_decryption_key_share_path: P) -> Self {
-        Self {
-            signature_mpc_tiresias_location: SignatureMPCTiresiasLocation::File {
-                public_parameters_file_location: public_parameters_path.into(),
-                key_share_decryption_key_share_file_location: key_share_decryption_key_share_path.into(),
+            signature_mpc_tiresias_location: SignatureMPCTiresiasLocation::InPlace {
+                public_parameters,
+                key_share_decryption_key_share,
             },
             public_parameters: Default::default(),
             key_share_decryption_key_share: Default::default(),
         }
     }
 
-    pub fn signature_mpc_tiresias(&self) -> Result<(&DecryptionPublicParameters, &SecretKeyShareSizedNumber)> {
+    pub fn new_from_file<P: Into<PathBuf>>(
+        public_parameters_path: P,
+        key_share_decryption_key_share_path: P,
+    ) -> Self {
+        Self {
+            signature_mpc_tiresias_location: SignatureMPCTiresiasLocation::File {
+                public_parameters_file_location: public_parameters_path.into(),
+                key_share_decryption_key_share_file_location: key_share_decryption_key_share_path
+                    .into(),
+            },
+            public_parameters: Default::default(),
+            key_share_decryption_key_share: Default::default(),
+        }
+    }
+
+    pub fn signature_mpc_tiresias(
+        &self,
+    ) -> Result<(&DecryptionPublicParameters, &SecretKeyShareSizedNumber)> {
         match &self.signature_mpc_tiresias_location {
-            SignatureMPCTiresiasLocation::InPlace { public_parameters, key_share_decryption_key_share } => Ok((public_parameters, key_share_decryption_key_share)),
+            SignatureMPCTiresiasLocation::InPlace {
+                public_parameters,
+                key_share_decryption_key_share,
+            } => Ok((public_parameters, key_share_decryption_key_share)),
             SignatureMPCTiresiasLocation::File {
                 public_parameters_file_location,
                 key_share_decryption_key_share_file_location,
@@ -807,7 +822,6 @@ pub struct Genesis {
     #[serde(skip)]
     genesis: once_cell::sync::OnceCell<genesis::Genesis>,
 }
-
 
 impl Genesis {
     pub fn new(genesis: genesis::Genesis) -> Self {

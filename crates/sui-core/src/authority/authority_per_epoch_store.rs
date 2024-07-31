@@ -57,8 +57,11 @@ use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::reconfiguration::ReconfigState;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
+use crate::signature_mpc::SignatureMPCServiceNotify;
 use crate::signature_verifier::*;
-use crate::stake_aggregator::{GenericMultiStakeAggregator, InsertResult, MultiStakeAggregator, StakeAggregator};
+use crate::stake_aggregator::{
+    GenericMultiStakeAggregator, InsertResult, MultiStakeAggregator, StakeAggregator,
+};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -71,12 +74,22 @@ use sui_macros::fail_point;
 use sui_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use sui_storage::mutex_table::{MutexGuard, MutexTable};
 use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
-use sui_types::executable_transaction::{CertificateProof, ExecutableTransaction, TrustedExecutableTransaction, VerifiedExecutableTransaction};
+use sui_types::executable_transaction::{
+    CertificateProof, ExecutableTransaction, TrustedExecutableTransaction,
+    VerifiedExecutableTransaction,
+};
 use sui_types::message_envelope::TrustedEnvelope;
-use sui_types::messages_checkpoint::{CheckpointContents, CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointSummary, SignedCheckpointSummary};
+use sui_types::messages_checkpoint::{
+    CheckpointContents, CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointSummary,
+    SignedCheckpointSummary,
+};
 use sui_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilities, ConsensusTransaction, ConsensusTransactionKey,
     ConsensusTransactionKind,
+};
+use sui_types::messages_signature_mpc::{
+    InitSignatureMPCProtocolSequenceNumber, InitiateSignatureMPCProtocol, SignatureMPCOutput,
+    SignedSignatureMPCOutput,
 };
 use sui_types::storage::{
     transaction_input_object_keys, transaction_receiving_object_keys, GetSharedLocks, ObjectKey,
@@ -87,10 +100,8 @@ use sui_types::sui_system_state::epoch_start_sui_system_state::{
 };
 use tap::TapOptional;
 use tokio::time::Instant;
-use sui_types::messages_signature_mpc::{SignatureMPCOutput, InitiateSignatureMPCProtocol, InitSignatureMPCProtocolSequenceNumber, SignedSignatureMPCOutput};
 use typed_store::{retry_transaction_forever, Map};
 use typed_store_derive::DBMapUtils;
-use crate::signature_mpc::SignatureMPCServiceNotify;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -111,7 +122,8 @@ impl CertTxGuard {
 }
 
 type JwkAggregator = GenericMultiStakeAggregator<(JwkId, JWK), true>;
-type SignatureMPCOutputAggregator = MultiStakeAggregator<SignatureMPCOutputDigest, SignatureMPCOutput, true>;
+type SignatureMPCOutputAggregator =
+    MultiStakeAggregator<SignatureMPCOutputDigest, SignatureMPCOutput, true>;
 
 pub enum ConsensusCertificateResult {
     /// The consensus message was ignored (e.g. because it has already been processed).
@@ -399,7 +411,8 @@ pub struct AuthorityEpochTables {
     builder_checkpoint_summary_v2: DBMap<CheckpointSequenceNumber, BuilderCheckpointSummary>,
 
     /// Maps sequence number to InitiateSignatureMPCProtocol, used by CheckpointBuilder to build checkpoint within epoch
-    initiate_signature_mpc_protocols: DBMap<InitSignatureMPCProtocolSequenceNumber, InitiateSignatureMPCProtocol>,
+    initiate_signature_mpc_protocols:
+        DBMap<InitSignatureMPCProtocolSequenceNumber, InitiateSignatureMPCProtocol>,
 
     // Maps checkpoint sequence number to an accumulator with accumulated state
     // only for the checkpoint that the key references. Append-only, i.e.,
@@ -782,8 +795,8 @@ impl AuthorityPerEpochStore {
 
         let jwk_aggregator = Mutex::new(jwk_aggregator);
 
-
-        let signature_mpc_output_signatures_by_digest = Mutex::new(SignatureMPCOutputAggregator::new(committee.clone()));
+        let signature_mpc_output_signatures_by_digest =
+            Mutex::new(SignatureMPCOutputAggregator::new(committee.clone()));
 
         let s = Arc::new(Self {
             committee,
@@ -2315,7 +2328,10 @@ impl AuthorityPerEpochStore {
     // Also, ConsensusStats and hash will not be updated in the db with this function, unlike in
     // process_consensus_transactions_and_commit_boundary().
     #[cfg(any(test, feature = "test-utils"))]
-    pub async fn process_consensus_transactions_for_tests<C: CheckpointServiceNotify, S: SignatureMPCServiceNotify>(
+    pub async fn process_consensus_transactions_for_tests<
+        C: CheckpointServiceNotify,
+        S: SignatureMPCServiceNotify,
+    >(
         self: &Arc<Self>,
         transactions: Vec<SequencedConsensusTransaction>,
         checkpoint_service: &Arc<C>,
@@ -2684,8 +2700,10 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SignedDKGSignatureMPCOutput(output),
                 ..
             }) => {
-                let transaction = VerifiedTransaction::new_signature_mpc_output(output.data().clone());
-                let certificate = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
+                let transaction =
+                    VerifiedTransaction::new_signature_mpc_output(output.data().clone());
+                let certificate =
+                    VerifiedExecutableTransaction::new_system(transaction, self.epoch());
 
                 batch.insert_batch(
                     &self.tables()?.pending_execution,
@@ -2778,7 +2796,8 @@ impl AuthorityPerEpochStore {
                     //     &self.tables()?.pending_execution,
                     //     [(*system_transaction.digest(), system_transaction.clone().serializable())],
                     // )?;
-                    self.record_owned_object_cert_from_consensus(batch, system_transaction).await?;
+                    self.record_owned_object_cert_from_consensus(batch, system_transaction)
+                        .await?;
                 } else {
                     // If needed we can support owned object system transactions as well...
                     assert!(system_transaction.contains_shared_object());
@@ -2803,7 +2822,8 @@ impl AuthorityPerEpochStore {
     ) -> Result<AuthorityStrongQuorumSignInfo, ()> {
         let digest = *data.digest();
         let author = data.auth_sig().authority;
-        let mut signature_mpc_output_signatures_by_digest = self.signature_mpc_output_signatures_by_digest.lock();
+        let mut signature_mpc_output_signatures_by_digest =
+            self.signature_mpc_output_signatures_by_digest.lock();
         match signature_mpc_output_signatures_by_digest.insert(digest, data) {
             InsertResult::Failed { error } => {
                 warn!(
@@ -2833,9 +2853,7 @@ impl AuthorityPerEpochStore {
             InsertResult::NotEnoughVotes {
                 bad_votes: _,
                 bad_authorities: _,
-            } => {
-                Err(())
-            }
+            } => Err(()),
         }
     }
 
@@ -2888,9 +2906,17 @@ impl AuthorityPerEpochStore {
     pub fn get_initiate_signature_mpc_protocols(
         &self,
         last: InitSignatureMPCProtocolSequenceNumber,
-    ) -> SuiResult<Vec<(InitSignatureMPCProtocolSequenceNumber, InitiateSignatureMPCProtocol)>> {
+    ) -> SuiResult<
+        Vec<(
+            InitSignatureMPCProtocolSequenceNumber,
+            InitiateSignatureMPCProtocol,
+        )>,
+    > {
         let tables = self.tables()?;
-        let iter = tables.initiate_signature_mpc_protocols.unbounded_iter().skip_to(&(last + 1))?;
+        let iter = tables
+            .initiate_signature_mpc_protocols
+            .unbounded_iter()
+            .skip_to(&(last + 1))?;
         Ok(iter.collect())
     }
 
@@ -2898,7 +2924,10 @@ impl AuthorityPerEpochStore {
         &self,
         messages: &[InitiateSignatureMPCProtocol],
     ) -> SuiResult<()> {
-        let last = self.tables()?.initiate_signature_mpc_protocols.unbounded_iter()
+        let last = self
+            .tables()?
+            .initiate_signature_mpc_protocols
+            .unbounded_iter()
             .skip_to_last()
             .next()
             .map(|(key, _)| key)
@@ -2906,7 +2935,7 @@ impl AuthorityPerEpochStore {
         let mut batch = self.tables()?.initiate_signature_mpc_protocols.batch();
         batch.insert_batch(
             &self.tables()?.initiate_signature_mpc_protocols,
-            messages.into_iter().map(|m| (last + 1, m))
+            messages.into_iter().map(|m| (last + 1, m)),
         )?;
         batch.write()?;
         Ok(())

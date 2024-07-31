@@ -93,7 +93,7 @@ impl SignMessage {
         match self {
             SignMessage::DecryptionShares(_) => 1,
             SignMessage::Proofs(_) => 2,
-            SignMessage::StartIAFlow(_, _) => 3
+            SignMessage::StartIAFlow(_, _) => 3,
         }
     }
 }

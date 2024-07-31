@@ -436,9 +436,7 @@ impl From<&SuiTransactionBlockKind> for OperationType {
             SuiTransactionBlockKind::RandomnessStateUpdate(_) => {
                 OperationType::RandomnessStateUpdate
             }
-            SuiTransactionBlockKind::SignatureMPCOutput(_) => {
-                OperationType::DKGSignatureMPCOutput
-            }
+            SuiTransactionBlockKind::SignatureMPCOutput(_) => OperationType::DKGSignatureMPCOutput,
             SuiTransactionBlockKind::EndOfEpochTransaction(_) => {
                 OperationType::EndOfEpochTransaction
             }
