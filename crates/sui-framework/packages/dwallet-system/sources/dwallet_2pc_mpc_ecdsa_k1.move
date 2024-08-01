@@ -196,7 +196,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     #[allow(unused_function)]
     #[test_only]
-    /// the same as create_dkg_output, but is public for testing.
+    /// Call the underline `create_dkg_output`.
+    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_only
     public fun create_dkg_output_for_testing(
         session: &DKGSession,
         commitment_to_centralized_party_secret_key_share: vector<u8>,
