@@ -7,8 +7,9 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
     use dwallet::test_scenario::TransactionEffects;
     use dwallet::test_utils;
     use dwallet::vec_map;
+
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
-    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{DKGSession, DKGSessionOutput, ENotSystemAddress, EEmptyCommitment};
+    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{DKGSession, DKGSessionOutput, EEmptyCommitment, ENotSystemAddress};
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
     const SENDER_ADDRESS: address = @0xA;
