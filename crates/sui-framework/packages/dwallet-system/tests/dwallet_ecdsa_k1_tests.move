@@ -9,7 +9,7 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
     use dwallet::vec_map;
 
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
-    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{DKGSession, DKGSessionOutput, ENotSystemAddress};
+    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{DKGSession, DKGSessionOutput, ENotSystemAddress, EEmptyCommitment};
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
     const SENDER_ADDRESS: address = @0xA;
@@ -39,7 +39,7 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
-            let commitment_to_centralized_party_secret_key_share = vector::empty<u8>();
+            let commitment_to_centralized_party_secret_key_share = b"testing";
             let dwallet_cap = dwallet_2pc_mpc_ecdsa_k1::create_dkg_session(
                 commitment_to_centralized_party_secret_key_share,
                 ctx
@@ -61,12 +61,31 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
     }
 
     #[test]
-    public fun test_create_dkg_output() {
+    #[expected_failure(abort_code = EEmptyCommitment)]
+    public fun test_create_dkg_session_empty_commitment() {
         let (sender, scenario) = set_up();
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let commitment_to_centralized_party_secret_key_share = vector::empty<u8>();
+            let dwallet_cap = dwallet_2pc_mpc_ecdsa_k1::create_dkg_session(
+                commitment_to_centralized_party_secret_key_share,
+                ctx
+            );
+
+            test_utils::destroy(dwallet_cap);
+        };
+
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    public fun test_create_dkg_output() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let commitment_to_centralized_party_secret_key_share = b"testing";
             let dwallet_cap = dwallet_2pc_mpc_ecdsa_k1::create_dkg_session(
                 commitment_to_centralized_party_secret_key_share,
                 ctx
@@ -81,7 +100,7 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
 
         {
             let dkg_session = test_scenario::take_immutable<DKGSession>(&scenario);
-            let commitment_to_centralized_party_secret_key_share = vector::empty<u8>();
+            let commitment_to_centralized_party_secret_key_share = b"testing";
             let secret_key_share_encryption_and_proof = vector::empty<u8>();
             let ctx = test_scenario::ctx(&mut scenario);
 
@@ -118,7 +137,7 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
 
-            let commitment_to_centralized_party_secret_key_share = vector::empty<u8>();
+            let commitment_to_centralized_party_secret_key_share = b"testing";
             let dwallet_cap = dwallet_2pc_mpc_ecdsa_k1::create_dkg_session(
                 commitment_to_centralized_party_secret_key_share,
                 ctx

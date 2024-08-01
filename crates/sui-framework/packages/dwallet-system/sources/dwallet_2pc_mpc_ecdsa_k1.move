@@ -30,6 +30,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     const EPresignOutputAndPresignMismatch: u64 = 2;
     const ESignInvalidSignatureParts: u64 = 3;
     const ENotSupported: u64 = 4;
+    const EEmptyCommitment: u64 = 5;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -38,6 +39,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
 
+    const SYSTEM_ADDRESS: address = @0x0;
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
 
 
@@ -151,9 +153,9 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         commitment_to_centralized_party_secret_key_share: vector<u8>,
         ctx: &mut TxContext
     ): DWalletCap {
+        assert!(commitment_to_centralized_party_secret_key_share != vector::empty<u8>(), EEmptyCommitment);
         let cap = create_dwallet_cap(ctx);
         let sender = tx_context::sender(ctx);
-        // todo(yuval): check if empty vector, add test for empty vector.
         let session = DKGSession {
             id: object::new(ctx),
             dwallet_cap_id: object::id(&cap),
@@ -180,8 +182,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         secret_key_share_encryption_and_proof: vector<u8>,
         ctx: &mut TxContext
     ) {
-        // todo(yuval): change this also to SYSTEM_ADDRESS
-        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+        assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
         let output = DKGSessionOutput {
             id: object::new(ctx),
             session_id: object::id(session),
