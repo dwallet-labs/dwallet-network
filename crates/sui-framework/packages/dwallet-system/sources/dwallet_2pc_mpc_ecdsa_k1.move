@@ -172,7 +172,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Create the final DKG output, transfer it to the user.
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
-    public(friend) fun create_dkg_output(
+    fun create_dkg_output(
         session: &DKGSession,
         commitment_to_centralized_party_secret_key_share: vector<u8>,
         secret_key_share_encryption_and_proof: vector<u8>,
