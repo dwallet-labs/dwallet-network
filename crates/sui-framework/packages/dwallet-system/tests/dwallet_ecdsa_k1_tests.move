@@ -74,7 +74,7 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
             test_utils::destroy(dwallet_cap);
         };
 
-        // Get effects and perform next transaction as SYSTEM_ADDRESS
+        // Get effects and perform next transaction as SYSTEM_ADDRESS.
         let effects = test_scenario::next_tx(&mut scenario, SYSTEM_ADDRESS);
         let frozen_objects = test_scenario::frozen(&effects);
         assert!(vector::length(&frozen_objects) == 1, EWrongEventNumber);
@@ -126,7 +126,7 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
             test_utils::destroy(dwallet_cap);
         };
 
-        // Get effects and perform next transaction as SENDER_ADDRESS (not SYSTEM_ADDRESS)
+        // Get effects and perform next transaction as SENDER_ADDRESS (not SYSTEM_ADDRESS).
         let effects = test_scenario::next_tx(&mut scenario, SENDER_ADDRESS);
         let frozen_objects = test_scenario::frozen(&effects);
         assert!(vector::length(&frozen_objects) == 1, EWrongEventNumber);

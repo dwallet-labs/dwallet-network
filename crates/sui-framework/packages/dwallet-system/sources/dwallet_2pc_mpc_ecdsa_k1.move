@@ -153,6 +153,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     ): DWalletCap {
         let cap = create_dwallet_cap(ctx);
         let sender = tx_context::sender(ctx);
+        // todo(yuval): check if empty vector, add test for empty vector.
         let session = DKGSession {
             id: object::new(ctx),
             dwallet_cap_id: object::id(&cap),
@@ -179,6 +180,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         secret_key_share_encryption_and_proof: vector<u8>,
         ctx: &mut TxContext
     ) {
+        // todo(yuval): change this also to SYSTEM_ADDRESS
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         let output = DKGSessionOutput {
             id: object::new(ctx),
