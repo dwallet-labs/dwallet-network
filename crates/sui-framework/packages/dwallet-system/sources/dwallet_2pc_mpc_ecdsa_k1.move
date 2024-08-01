@@ -190,6 +190,18 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         transfer::transfer(output, session.sender);
     }
 
+    #[allow(unused_function)]
+    #[test_only]
+    /// the same as create_dkg_output, but is public for testing.
+    public fun create_dkg_output_for_testing(
+        session: &DKGSession,
+        commitment_to_centralized_party_secret_key_share: vector<u8>,
+        secret_key_share_encryption_and_proof: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        create_dkg_output(session, commitment_to_centralized_party_secret_key_share, secret_key_share_encryption_and_proof, ctx);
+    }
+
     /// Create a new Dwallet.
     /// The user needs to call this function after receiving the DKG output.
     /// The user needs to provide the decommitment and proof of the centralized party public key share.
