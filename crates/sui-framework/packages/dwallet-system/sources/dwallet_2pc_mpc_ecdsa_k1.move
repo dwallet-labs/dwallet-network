@@ -172,27 +172,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Create the final DKG output, transfer it to the user.
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
-    fun create_dkg_output(
-        session: &DKGSession,
-        commitment_to_centralized_party_secret_key_share: vector<u8>,
-        secret_key_share_encryption_and_proof: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
-        let output = DKGSessionOutput {
-            id: object::new(ctx),
-            session_id: object::id(session),
-            dwallet_cap_id: session.dwallet_cap_id,
-            commitment_to_centralized_party_secret_key_share,
-            secret_key_share_encryption_and_proof
-        };
-        // Send the blockchain DKG output to the user.
-        transfer::transfer(output, session.sender);
-    }
-
-    #[allow(unused_function)]
-    /// the same as create_dkg_output, but is public for testing.
-    public fun create_dkg_output_for_testing(
+    public(friend) fun create_dkg_output(
         session: &DKGSession,
         commitment_to_centralized_party_secret_key_share: vector<u8>,
         secret_key_share_encryption_and_proof: vector<u8>,

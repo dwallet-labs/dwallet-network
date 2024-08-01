@@ -84,7 +84,7 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
             let secret_key_share_encryption_and_proof = vector::empty<u8>();
             let ctx = test_scenario::ctx(&mut scenario);
 
-            dwallet_2pc_mpc_ecdsa_k1::create_dkg_output_for_testing(
+            dwallet_2pc_mpc_ecdsa_k1::create_dkg_output(
                 &dkg_session,
                 commitment_to_centralized_party_secret_key_share,
                 secret_key_share_encryption_and_proof,
@@ -136,7 +136,7 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
         let secret_key_share_encryption_and_proof = vector::empty<u8>();
         let ctx = test_scenario::ctx(&mut scenario);
 
-        dwallet_2pc_mpc_ecdsa_k1::create_dkg_output_for_testing(
+        dwallet_2pc_mpc_ecdsa_k1::create_dkg_output(
             &dkg_session,
             commitment_to_centralized_party_secret_key_share,
             secret_key_share_encryption_and_proof,
