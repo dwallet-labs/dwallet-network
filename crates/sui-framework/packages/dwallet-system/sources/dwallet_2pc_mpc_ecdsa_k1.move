@@ -144,8 +144,9 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         presigns: vector<u8>,
     }
 
-    /// Starts a DKG session.
+    /// Starts a DKG (Distributed key generation) session.
     /// Capabilities are used to control access to the Dwallet.
+    /// This function start the DKG proccess in the Validators.
     public fun create_dkg_session(
         commitment_to_centralized_party_secret_key_share: vector<u8>,
         ctx: &mut TxContext
@@ -199,7 +200,12 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         secret_key_share_encryption_and_proof: vector<u8>,
         ctx: &mut TxContext
     ) {
-        create_dkg_output(session, commitment_to_centralized_party_secret_key_share, secret_key_share_encryption_and_proof, ctx);
+        create_dkg_output(
+            session,
+            commitment_to_centralized_party_secret_key_share,
+            secret_key_share_encryption_and_proof,
+            ctx
+        );
     }
 
     /// Create a new Dwallet.
