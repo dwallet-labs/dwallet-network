@@ -390,7 +390,7 @@ pub fn initiate_decentralized_party_sign(
                 decryption_key_share_public_parameters,
                 presign,
                 encryption_scheme_public_parameters,
-                public_nonce_encrypted_partial_signature_and_proof
+                public_nonce_encrypted_partial_signature_and_proof,
             )
         })
         .collect()
