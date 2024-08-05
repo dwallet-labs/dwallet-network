@@ -18,10 +18,12 @@ module dwallet_system::dwallet_tests {
         (sender, scenario)
     }
 
+    // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const EWrongEventNumber: u64 = 0;
     const EWrongFrozenObjectsNum: u64 = 1;
     const EWrongCreatedObjectsNum: u64 = 2;
     const EObjectMismatchCreateAndFrozen: u64 = 3;
+    // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
     #[test]
     public fun test_sign_succesfull() {
