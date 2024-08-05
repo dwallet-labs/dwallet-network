@@ -304,6 +304,7 @@ module dwallet_system::dwallet {
         signatures: vector<vector<u8>>,
         messages: vector<vector<u8>>,
         dwallet_id: ID,
+        session_id: ID,
     }
 
     struct MaliciousAggregatorEvent has copy, drop {
@@ -350,6 +351,7 @@ module dwallet_system::dwallet {
             signatures,
             messages: session.messages,
             dwallet_id: session.dwallet_id,
+            session_id: object::id(session),
         };
         // TODO (#126): Change output to be immutable instead of owned
         transfer::transfer(failed_sign_output, sender(session));
