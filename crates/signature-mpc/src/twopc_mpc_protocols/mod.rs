@@ -18,11 +18,9 @@ use k256::elliptic_curve::group::GroupEncoding;
 use k256::sha2::Digest;
 use k256::{elliptic_curve, sha2, AffinePoint, CompressedPoint};
 use rand::rngs::OsRng;
-use serde::Serialize;
 use std::fmt::{Debug, Display};
 use std::marker::PhantomData;
 
-use bincode;
 pub use group::Value;
 use group::{secp256k1, AffineXCoordinate, GroupElement as _};
 use homomorphic_encryption::{
@@ -494,7 +492,7 @@ fn decrypt_signatures(
                     masked_nonce_decryption_shares.clone(),
                 );
                 match result {
-                    Ok(sig) => bincode::serialize(&sig).unwrap(),
+                    Ok(sig) => bcs::to_bytes(&sig).unwrap(),
                     Err(_) => {
                         failed_messages_indices.push(index);
                         Vec::new()
