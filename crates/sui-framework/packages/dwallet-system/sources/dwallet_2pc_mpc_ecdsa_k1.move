@@ -146,7 +146,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         presigns: vector<u8>,
     }
 
-    /// Starts a DKG (Distributed key generation) session.
+    /// Starts a Distributed Key Generation (DKG) session.
     /// Capabilities are used to control access to the Dwallet.
     /// This function start the DKG proccess in the Validators.
     public fun create_dkg_session(
