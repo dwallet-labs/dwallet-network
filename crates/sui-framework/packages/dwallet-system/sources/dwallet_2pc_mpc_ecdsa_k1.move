@@ -406,7 +406,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     #[allow(unused_function)]
     /// This function is called by blockchain itself.
-    /// Validtors call it, it's part of the blockchain logic.
+    /// Validators call it, it's part of the blockchain logic.
     /// NOT a native function.
     fun verify_and_create_sign_output(
         session: &SignSession<SignData>,
