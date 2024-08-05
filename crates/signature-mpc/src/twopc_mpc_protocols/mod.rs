@@ -386,11 +386,12 @@ pub fn initiate_decentralized_party_sign(
         .map(|presign| {
             SignaturePartialDecryptionParty::new(
                 decryption_key_share_public_parameters.threshold,
-                decryption_key_share,
-                decryption_key_share_public_parameters,
+                decryption_key_share.clone(),
+                decryption_key_share_public_parameters.clone(),
+                PhantomData,
+                protocol_public_parameters.clone(),
+                dkg_output.clone(),
                 presign,
-                encryption_scheme_public_parameters,
-                public_nonce_encrypted_partial_signature_and_proof,
             )
         })
         .collect()
