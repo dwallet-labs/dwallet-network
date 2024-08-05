@@ -326,7 +326,7 @@ module dwallet_system::dwallet {
             signatures,
             sender: session.sender,
         };
-        // TODO: Change output to be immutable instead of owned
+        // TODO (#126): Change output to be immutable instead of owned
         transfer::transfer(sign_output, sender(session));
     }
 
@@ -351,7 +351,7 @@ module dwallet_system::dwallet {
             messages: session.messages,
             dwallet_id: session.dwallet_id,
         };
-        // TODO: Change output to be immutable instead of owned
+        // TODO (#126): Change output to be immutable instead of owned
         transfer::transfer(failed_sign_output, sender(session));
     }
 }
