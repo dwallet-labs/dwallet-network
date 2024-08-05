@@ -79,7 +79,9 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         public_key: vector<u8>,
     }
 
-    /// `DKGSession` stores the DKG session data.
+    public fun output(dwallet: &DWallet): vector<u8> { dwallet.output }
+
+    /// `DKGSessionOutput` stores the DKG session output.
     struct DKGSession has key {
         id: UID,
         dwallet_cap_id: ID,

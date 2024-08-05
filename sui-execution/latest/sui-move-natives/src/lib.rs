@@ -33,7 +33,7 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
-use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
+use crate::crypto::twopc_mpc::{TransferDWalletCostParams, TwoPCMPCDKGCostParams};
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
 use crate::crypto::{twopc_mpc, zklogin};
 use better_any::{Tid, TidAble};
@@ -73,6 +73,8 @@ mod validator;
 
 #[derive(Tid)]
 pub struct NativesCostTable {
+    transfer_dwallet_cost_params: TransferDWalletCostParams,
+
     // Address natives
     pub address_from_bytes_cost_params: AddressFromBytesCostParams,
     pub address_to_u256_cost_params: AddressToU256CostParams,
@@ -511,6 +513,9 @@ impl NativesCostTable {
                     .sign_verify_encrypted_signature_parts_prehash_cost_base()
                     .into(),
             },
+            transfer_dwallet_cost_params: TransferDWalletCostParams {
+                transfer_dwallet_gas: protocol_config.transfer_dwallet_cost_base().into(),
+            },
         }
     }
 }
@@ -731,6 +736,7 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
                     func,
                 )
             });
+
     let sui_system_natives: &[(&str, &str, NativeFunction)] = &[
         (
             "validator",
@@ -748,6 +754,11 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dwallet_2pc_mpc_ecdsa_k1",
             "sign_verify_encrypted_signature_parts_prehash",
             make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
+        ),
+        (
+            "dwallet_transfer",
+            "verify_dwallet_transfer",
+            make_native!(twopc_mpc::verify_dwallet_transfer),
         ),
     ];
     sui_system_natives

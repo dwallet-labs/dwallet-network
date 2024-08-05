@@ -3,8 +3,7 @@
 
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
-use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_presign;
-use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_sign;
+use signature_mpc::twopc_mpc_protocols::{DKGDecentralizedPartyOutput, finalize_centralized_party_sign};
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_presign;
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_sign;
 use signature_mpc::twopc_mpc_protocols::message_digest;
@@ -15,10 +14,11 @@ use signature_mpc::twopc_mpc_protocols::PublicNonceEncryptedPartialSignatureAndP
 use signature_mpc::twopc_mpc_protocols::Result as TwoPCMPCResult;
 use signature_mpc::twopc_mpc_protocols::Scalar;
 use signature_mpc::twopc_mpc_protocols::{
-    decommitment_round_centralized_party_dkg, initiate_centralized_party_dkg,
-    DKGDecommitmentRoundState, ProtocolContext, SecretKeyShareEncryptionAndProof,
-    recovery_id, PublicKeyValue, SignatureK256Secp256k1, Hash, affine_point_to_public_key
+    affine_point_to_public_key, decommitment_round_centralized_party_dkg,
+    initiate_centralized_party_dkg, recovery_id, DKGDecommitmentRoundState, Hash, ProtocolContext,
+    PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1,
 };
+use signature_mpc::twopc_mpc_protocols::{finalize_centralized_party_presign, DecryptionKey};
 use wasm_bindgen::prelude::*;
 
 #[derive(Serialize, Deserialize)]
@@ -217,6 +217,32 @@ pub fn recovery_id_sha256(
         message: "Can't generate RecoveryId".to_string(),
         display: "Can't generate RecoveryId".to_string(),
     })?.into())
+}
+
+#[wasm_bindgen]
+pub fn generate_keypair() -> JsValue {
+    let (public_key, private_key) = signature_mpc::twopc_mpc_protocols::dwallet_transfer::generate_keypair();
+    serde_wasm_bindgen::to_value(&(public_key, private_key)).unwrap()
+}
+
+#[wasm_bindgen]
+pub fn generate_proof(
+    secret_share: Vec<u8>,
+    public_key: Vec<u8>,
+) -> JsValue {
+    let language_public_parameters = signature_mpc::twopc_mpc_protocols::dwallet_transfer::get_proof_public_parameters(public_key.clone());
+    let proof_public_output =
+        signature_mpc::twopc_mpc_protocols::dwallet_transfer::generate_proof(
+            public_key,
+            secret_share,
+            language_public_parameters,
+        );
+
+    let proof = bcs::to_bytes(&proof_public_output.proof).unwrap();
+    let encypted_discrete_log = bcs::to_bytes(&proof_public_output.encrypted_discrete_log).unwrap();
+    let range_proof_commitment = bcs::to_bytes(&proof_public_output.range_proof_commitment).unwrap();
+
+    serde_wasm_bindgen::to_value(&(proof, encypted_discrete_log, range_proof_commitment)).unwrap()
 }
 
 #[derive(Serialize, Deserialize)]

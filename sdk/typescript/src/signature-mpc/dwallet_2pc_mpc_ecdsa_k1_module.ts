@@ -18,6 +18,8 @@ import { fetchObjectBySessionId } from './utils.js';
 export {
 	recovery_id_keccak256 as recoveryIdKeccak256,
 	recovery_id_sha256 as recoveryIdSha256,
+	generate_keypair,
+	generate_proof,
 } from '@dwallet-network/signature-mpc-wasm';
 
 const packageId = '0x3';

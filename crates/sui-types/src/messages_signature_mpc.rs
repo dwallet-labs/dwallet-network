@@ -15,7 +15,7 @@ use signature_mpc::twopc_mpc_protocols::{
     tiresias_deal_trusted_shares, Commitment, DKGDecentralizedPartyOutput,
     DecentralizedPartyPresign, DecryptionPublicParameters, EncDHCommitment, EncDHDecommitment,
     EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber,
-    PaillierModulusSizedNumber, PartyID, PresignDecentralizedPartyOutput, PublicKeyValue,
+    PaillierModulusSizedNumber, PartyID, PresignDecentralizedPartyOutput,
     PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof,
     SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof,
 };

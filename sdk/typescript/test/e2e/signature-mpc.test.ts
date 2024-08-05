@@ -7,6 +7,11 @@ import {
 	approveAndSign,
 	createDWallet,
 	createPartialUserSignedMessages,
+	generate_keypair,
+	generate_proof,
+	getPublicKeyByObjectId,
+	storePublicKey,
+	transferDwallet,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
 
@@ -60,5 +65,56 @@ describe('Test signature mpc', () => {
 
 		console.log('sigKECCAK256:');
 		console.log(sigKECCAK256);
+	});
+});
+
+describe('Create public key', () => {
+	let toolbox: TestToolbox;
+
+	beforeAll(async () => {
+		toolbox = await setup();
+	});
+
+	it('the signature mpc create dwallet', async () => {
+		const [pub_key, _] = generate_keypair();
+		const pubKeyRef = await storePublicKey(pub_key, toolbox.keypair, toolbox.client);
+		console.log({ pubKeyRef });
+	});
+});
+
+describe('Test key share transfer', () => {
+	let toolbox: TestToolbox;
+
+	beforeAll(async () => {
+		toolbox = await setup();
+	});
+
+	it('should encrypt and transfer a dwallet to a newly generated public key', async () => {
+		const [pub_key, _] = generate_keypair();
+		const pubKeyRef = await storePublicKey(pub_key, toolbox.keypair, toolbox.client);
+		const publicKeyID = pubKeyRef?.objectId;
+		const recipientData = await getPublicKeyByObjectId(toolbox.client, publicKeyID);
+
+		// Before running this test, you need to create a dwallet and out its object ID and secret share here.
+		const secretKeyshare = '<SECRET_SHARE>';
+		const dwalletID = '<DWALLET_OBJECT_ID>';
+
+		let parsedKeyshare = Uint8Array.from(Buffer.from(secretKeyshare, 'hex'));
+
+		const [proof, encryptedSecretShare, rangeCommitment] = generate_proof(
+			parsedKeyshare,
+			recipientData?.publicKey!,
+		);
+
+		await transferDwallet(
+			toolbox.client,
+			toolbox.keypair,
+			proof,
+			encryptedSecretShare,
+			rangeCommitment,
+			publicKeyID,
+			dwalletID,
+			recipientData?.keyOwnerAddress!,
+		);
 	});
 });

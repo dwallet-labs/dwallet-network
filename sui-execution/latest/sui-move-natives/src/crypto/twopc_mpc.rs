@@ -1,8 +1,7 @@
-// Copyright (c) dWallet Labs, Ltd.
+// Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-
-use std::collections::VecDeque;
-
+use crate::object_runtime::ObjectRuntime;
+use crate::NativesCostTable;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeContext};
@@ -12,35 +11,87 @@ use move_vm_types::{
     pop_arg,
     values::{Value, Vector},
 };
+use signature_mpc::twopc_mpc_protocols::{Commitment, decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, ProtocolContext, PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof};
 use smallvec::smallvec;
-
-use signature_mpc::twopc_mpc_protocols::{
-    decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share,
-    decentralized_party_sign_verify_encrypted_signature_parts_prehash, Commitment,
-    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, ProtocolContext,
-    PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof,
-    SecretKeyShareEncryptionAndProof,
-};
-
-use crate::object_runtime::ObjectRuntime;
-use crate::NativesCostTable;
-
+use std::collections::VecDeque;
+use signature_mpc::twopc_mpc_protocols::dwallet_transfer::{get_proof_public_parameters, is_valid_proof, ProofPublicOutput, SecretShareProof};
 pub const INVALID_INPUT: u64 = 0;
 
 #[derive(Clone)]
 pub struct TwoPCMPCDKGCostParams {
-    /// Base cost
-    /// for invoking the `dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share`
-    /// function.
+    /// Base cost for invoking the `dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share` function
     pub dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base:
         InternalGas,
-    /// Base cost for invoking the `sign_verify_encrypted_signature_parts_prehash` function.
+    /// Base cost for invoking the `sign_verify_encrypted_signature_parts_prehash` function
     pub sign_verify_encrypted_signature_parts_prehash_cost_base: InternalGas,
 }
+
+#[derive(Clone)]
+pub struct TransferDWalletCostParams {
+    pub transfer_dwallet_gas: InternalGas,
+}
+
+/***************************************************************************************************
+ * native fun transfer_dwallet
+ **************************************************************************************************/
+pub fn verify_dwallet_transfer(
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 5);
+    let twopc_mpc_dkg_cost_params = &context
+        .extensions()
+        .get::<NativesCostTable>()
+        .transfer_dwallet_cost_params
+        .clone();
+    native_charge_gas_early_exit!(context, twopc_mpc_dkg_cost_params.transfer_dwallet_gas);
+
+    let cost = context.gas_used();
+    let dwallet_output = pop_arg!(args, Vector);
+    let dwallet_output = dwallet_output.to_vec_u8()?;
+    let Ok(dkg_output) = bcs::from_bytes::<DKGDecentralizedPartyOutput>(&dwallet_output) else {
+        return Ok(NativeResult::err(cost, INVALID_INPUT));
+    };
+    let encrypted_secret_share = pop_arg!(args, Vector);
+    let encrypted_secret_share = encrypted_secret_share.to_vec_u8()?;
+
+    let public_encryption_key = pop_arg!(args, Vector);
+    let public_encryption_key = public_encryption_key.to_vec_u8()?;
+
+    let encrypted_secret_share = bcs::from_bytes(&encrypted_secret_share).unwrap();
+    let language_public_parameters = get_proof_public_parameters(public_encryption_key.clone());
+    
+    let proof = pop_arg!(args, Vector);
+    let proof = proof.to_vec_u8()?;
+    let proof = bcs::from_bytes::<SecretShareProof>(&proof).unwrap();
+
+    let range_proof_commitment = pop_arg!(args, Vector);
+    let range_proof_commitment = range_proof_commitment.to_vec_u8()?;
+    let range_proof_commitment = bcs::from_bytes(&range_proof_commitment).unwrap();
+
+    let proof_output = ProofPublicOutput {
+        proof,
+        encrypted_discrete_log: encrypted_secret_share,
+        range_proof_commitment,
+    };
+
+    let is_valid_proof = is_valid_proof(
+        language_public_parameters,
+        proof_output,
+        dkg_output.centralized_party_public_key_share,
+    );
+
+    Ok(NativeResult::ok(cost, smallvec![
+        Value::bool(is_valid_proof)
+    ]))
+}
+
 /***************************************************************************************************
  * native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
  * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>);`
- * gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base  | base cost for function call and fixed operators.
+ *   gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base   | base cost for function call and fixed operation.
  **************************************************************************************************/
 pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
     context: &mut NativeContext,
@@ -104,6 +155,7 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
         .signature_mpc_tiresias_public_parameters()
         .unwrap();
 
+    // TODO: handle error instead of `unwrap()`
     let res =
         decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
             signature_mpc_tiresias_public_parameters,
