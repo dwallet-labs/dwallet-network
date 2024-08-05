@@ -237,7 +237,6 @@ pub fn verify_signatures_native(
         .into_iter()
         .map(|m| m.value_as::<Vec<u8>>())
         .collect::<PartialVMResult<Vec<_>>>()?;
-    messages[0][0] = 5;
     let is_valid = twopc_mpc_protocols::verify_signatures(messages, &hash, public_key, signatures);
     Ok(NativeResult::ok(cost, smallvec![Value::bool(is_valid),]))
 }
