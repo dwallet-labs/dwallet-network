@@ -222,7 +222,7 @@ pub fn verify_signatures_native(
     native_charge_gas_early_exit!(context, sign_cost_params.verify_signatures_cost_base);
     let cost = context.gas_used();
     let public_key = pop_arg!(args, Vec<u8>);
-    let public_key = affine_point_to_public_key(&public_key)?;
+    let public_key = affine_point_to_public_key(&public_key).ok_or(Err("Failed to parse public key while verifying signature"))?;
     let hash = pop_arg!(args, u8);
     let hash = Hash::from(hash);
     let signatures = pop_arg!(args, Vec<Value>);
