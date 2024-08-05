@@ -40,6 +40,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -910,6 +919,7 @@ name = "signature-mpc"
 version = "0.1.0"
 dependencies = [
  "bcs",
+ "bincode",
  "commitment",
  "crypto-bigint",
  "ecdsa",
@@ -1047,7 +1057,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/2pc-mpc.git#c509064e18f5261ec298d1d4d697dfb260ed85fe"
+source = "git+https://github.com/dwallet-labs/2pc-mpc.git#f8c3bf96c039b2485a284dada097157ae707b55e"
 dependencies = [
  "commitment",
  "crypto-bigint",

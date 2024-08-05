@@ -1,8 +1,9 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::collections::VecDeque;
-
+use crate::object_runtime::ObjectRuntime;
+use crate::NativesCostTable;
+use group::GroupElement as g;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeContext};
@@ -12,20 +13,17 @@ use move_vm_types::{
     pop_arg,
     values::{Value, Vector},
 };
-use smallvec::smallvec;
-
+use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::{
     affine_point_to_public_key,
     decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share,
-    decentralized_party_sign_verify_encrypted_signature_parts_prehash, verify_signature,
-    Commitment, DKGDecentralizedPartyOutput, DecentralizedPartyPresign, Hash, ProtocolContext,
-    PublicKeyShareDecommitmentAndProof, PublicKeyValue,
-    PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof,
+    decentralized_party_sign_verify_encrypted_signature_parts_prehash, Commitment,
+    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, Hash, ProtocolContext,
+    PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof,
+    SecretKeyShareEncryptionAndProof,
 };
-
-use crate::object_runtime::ObjectRuntime;
-use crate::NativesCostTable;
-use k256::AffinePoint;
+use smallvec::smallvec;
+use std::collections::VecDeque;
 
 pub const INVALID_INPUT: u64 = 0;
 
@@ -239,6 +237,6 @@ pub fn verify_signatures_native(
         .into_iter()
         .map(|m| m.value_as::<Vec<u8>>())
         .collect::<PartialVMResult<Vec<_>>>()?;
-    let is_valid = verify_signature(messages, &hash, public_key, signatures);
+    let is_valid = twopc_mpc_protocols::verify_signatures(messages, &hash, public_key, signatures);
     Ok(NativeResult::ok(cost, smallvec![Value::bool(is_valid),]))
 }

@@ -11364,6 +11364,7 @@ name = "signature-mpc"
 version = "0.1.0"
 dependencies = [
  "bcs",
+ "bincode",
  "commitment",
  "crypto-bigint 0.5.5",
  "ecdsa 0.16.9",
@@ -13114,7 +13115,6 @@ dependencies = [
  "fastcrypto",
  "fastcrypto-zkp",
  "indexmap 2.2.6",
- "k256 0.13.3 (git+https://github.com/ycscaly/elliptic-curves.git?branch=13.3-fixed)",
  "move-binary-format",
  "move-core-types",
  "move-stdlib",
@@ -15418,7 +15418,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/2pc-mpc.git#c509064e18f5261ec298d1d4d697dfb260ed85fe"
+source = "git+https://github.com/dwallet-labs/2pc-mpc.git#f8c3bf96c039b2485a284dada097157ae707b55e"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
