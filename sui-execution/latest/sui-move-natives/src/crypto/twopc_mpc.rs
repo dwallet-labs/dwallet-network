@@ -11,10 +11,18 @@ use move_vm_types::{
     pop_arg,
     values::{Value, Vector},
 };
-use signature_mpc::twopc_mpc_protocols::{Commitment, decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash, DecentralizedPartyPresign, DKGDecentralizedPartyOutput, ProtocolContext, PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof};
+use signature_mpc::twopc_mpc_protocols::dwallet_transfer::{
+    get_proof_public_parameters, is_valid_proof, ProofPublicOutput, SecretShareProof,
+};
+use signature_mpc::twopc_mpc_protocols::{
+    decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share,
+    decentralized_party_sign_verify_encrypted_signature_parts_prehash, Commitment,
+    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, ProtocolContext,
+    PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof,
+    SecretKeyShareEncryptionAndProof,
+};
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use signature_mpc::twopc_mpc_protocols::dwallet_transfer::{get_proof_public_parameters, is_valid_proof, ProofPublicOutput, SecretShareProof};
 pub const INVALID_INPUT: u64 = 0;
 
 #[derive(Clone)]
@@ -62,7 +70,7 @@ pub fn verify_dwallet_transfer(
 
     let encrypted_secret_share = bcs::from_bytes(&encrypted_secret_share).unwrap();
     let language_public_parameters = get_proof_public_parameters(public_encryption_key.clone());
-    
+
     let proof = pop_arg!(args, Vector);
     let proof = proof.to_vec_u8()?;
     let proof = bcs::from_bytes::<SecretShareProof>(&proof).unwrap();
@@ -83,15 +91,16 @@ pub fn verify_dwallet_transfer(
         dkg_output.centralized_party_public_key_share,
     );
 
-    Ok(NativeResult::ok(cost, smallvec![
-        Value::bool(is_valid_proof)
-    ]))
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::bool(is_valid_proof)],
+    ))
 }
 
 /***************************************************************************************************
  * native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
  * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>);`
- *   gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base   | base cost for function call and fixed operation.
+ *  gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base  | base cost for function call and fixed operation.
  **************************************************************************************************/
 pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
     context: &mut NativeContext,
@@ -155,7 +164,6 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
         .signature_mpc_tiresias_public_parameters()
         .unwrap();
 
-    // TODO: handle error instead of `unwrap()`
     let res =
         decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
             signature_mpc_tiresias_public_parameters,

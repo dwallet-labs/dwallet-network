@@ -309,12 +309,15 @@ pub fn is_valid_proof(
     )
         .into();
 
-    proof_public_output.proof.verify(
-        &PhantomData,
-        &enhanced_language_public_parameters,
-        vec![statement],
-        &mut OsRng,
-    ).is_ok()
+    proof_public_output
+        .proof
+        .verify(
+            &PhantomData,
+            &enhanced_language_public_parameters,
+            vec![statement],
+            &mut OsRng,
+        )
+        .is_ok()
 }
 
 #[cfg(test)]
