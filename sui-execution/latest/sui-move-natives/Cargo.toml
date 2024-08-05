@@ -28,3 +28,4 @@ workspace-hack.workspace = true
 tracing.workspace = true
 
 signature-mpc.workspace = true
+group = { git = "https://github.com/dwallet-labs/group.git" }

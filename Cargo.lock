@@ -13114,6 +13114,7 @@ dependencies = [
  "better_any",
  "fastcrypto",
  "fastcrypto-zkp",
+ "group 0.1.0",
  "indexmap 2.2.6",
  "move-binary-format",
  "move-core-types",
