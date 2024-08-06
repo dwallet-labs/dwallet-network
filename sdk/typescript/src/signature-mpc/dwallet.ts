@@ -45,16 +45,14 @@ export async function approveAndSign(
 	const signSessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
 		.reference!;
 
-	const signOutput = await fetchObjectBySessionId(
-		signSessionRef.objectId,
-		`${packageId}::${dWalletModuleName}::SignOutput`,
-		keypair,
-		client,
-	);
+	const signOutput = await client.getObject({
+		id: signSessionRef.objectId,
+		options: { showContent: true },
+	});
 
 	const fields =
-		signOutput?.dataType === 'moveObject'
-			? (signOutput.fields as {
+		signOutput?.data?.content?.dataType === 'moveObject'
+			? (signOutput.data?.content?.fields as {
 					id: { id: string };
 					signatures: number[][];
 			  })
