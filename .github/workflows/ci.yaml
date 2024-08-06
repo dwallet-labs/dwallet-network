@@ -40,7 +40,7 @@ jobs:
         run: rustup target add ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v2
       - name: Build
-        run: cargo build --workspace --all-targets  --all-features --release --target ${{ matrix.os }}
+        run: cargo build --bin dwallet --target ${{ matrix.os }}
 
   fmt:
     name: Format Check
