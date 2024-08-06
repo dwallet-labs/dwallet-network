@@ -62,9 +62,9 @@ pub(crate) type EnhancedLang<
     Lang,
 >;
 
-pub struct ProofPublicOutput {
+pub struct EncryptedUserShareAndProof {
     pub proof: SecretShareProof,
-    pub encrypted_discrete_log: CiphertextSpaceValue,
+    pub encrypted_user_share: CiphertextSpaceValue,
     pub range_proof_commitment: range::CommitmentSchemeCommitmentSpaceValue<
         { COMMITMENT_SCHEME_MESSAGE_SPACE_SCALAR_LIMBS },
         { RANGE_CLAIMS_PER_SCALAR },
@@ -133,14 +133,14 @@ fn parse_plaintext(
 
 pub fn generate_proof(
     encryption_key: Vec<u8>,
-    plaintext: Vec<u8>,
+    user_share: Vec<u8>,
     language_public_parameters: encryption_of_discrete_log::PublicParameters<
         PLAINTEXT_SPACE_SCALAR_LIMBS,
         SCALAR_LIMBS,
         twopc_mpc::secp256k1::GroupElement,
         EncryptionKey,
     >,
-) -> ProofPublicOutput {
+) -> EncryptedUserShareAndProof {
     let paillier_public_parameters: tiresias::encryption_key::PublicParameters =
         bcs::from_bytes(&encryption_key).unwrap();
 
@@ -148,7 +148,7 @@ pub fn generate_proof(
         .randomness_space_public_parameters()
         .clone();
 
-    let plaintext = parse_plaintext(plaintext, &paillier_public_parameters);
+    let plaintext = parse_plaintext(user_share, &paillier_public_parameters);
 
     let randomness = RandomnessSpaceGroupElement::sample(
         language_public_parameters
@@ -178,9 +178,9 @@ pub fn generate_proof(
     )
     .unwrap();
 
-    ProofPublicOutput {
+    EncryptedUserShareAndProof {
         proof: proofs,
-        encrypted_discrete_log: statements[0]
+        encrypted_user_share: statements[0]
             .language_statement()
             .encrypted_discrete_log()
             .value(),
@@ -256,7 +256,7 @@ pub fn enhanced_language_public_parameters<
 }
 pub fn is_valid_proof(
     language_public_parameters: LangPublicParams,
-    proof_public_output: ProofPublicOutput,
+    proof_public_output: EncryptedUserShareAndProof,
     centralized_public_keyshare: group::Value<secp256k1::GroupElement>,
 ) -> bool {
     let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
@@ -296,7 +296,7 @@ pub fn is_valid_proof(
     .unwrap();
 
     let encrypted_secret_share: CiphertextSpaceGroupElement = CiphertextSpaceGroupElement::new(
-        proof_public_output.encrypted_discrete_log,
+        proof_public_output.encrypted_user_share,
         language_public_parameters
             .encryption_scheme_public_parameters
             .ciphertext_space_public_parameters(),

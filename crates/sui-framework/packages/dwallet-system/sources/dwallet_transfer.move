@@ -12,7 +12,7 @@ module dwallet_system::dwallet_transfer {
 
     const DWALLET_TRANSFER_ERROR: u64 = 0x1;
 
-    struct DwalletTransfer has key{
+    struct EncryptedUserShare has key{
         id: UID,
         dwallet_id: ID,
         encrypted_secret_share: vector<u8>,
@@ -20,14 +20,14 @@ module dwallet_system::dwallet_transfer {
 
     struct PublicKey has key {
         id: UID,
-        public_key: vector<u8>,
+        encryption_key: vector<u8>,
         key_owner_address: address,
     }
 
     public fun store_public_key(key: vector<u8>, ctx: &mut TxContext): ID {
         let pk = PublicKey {
             id: object::new(ctx),
-            public_key: key,
+            encryption_key: key,
             key_owner_address: tx_context::sender(ctx),
         };
         let pk_id = object::id(&pk);
@@ -35,7 +35,7 @@ module dwallet_system::dwallet_transfer {
         pk_id
     }
 
-    public fun transfer_dwallet(
+    public fun encrypt_user_share(
         dwallet: &DWallet,
         public_key: &PublicKey,
         proof: vector<u8>,
@@ -47,14 +47,14 @@ module dwallet_system::dwallet_transfer {
         let is_valid = verify_dwallet_transfer(
             range_proof_commitment_value,
             proof,
-            public_key.public_key,
+            public_key.encryption_key,
             encrypted_secret_share,
             output(dwallet),
         );
 
         if (!is_valid) abort DWALLET_TRANSFER_ERROR;
 
-        let dwallet_transfer = DwalletTransfer {
+        let dwallet_transfer = EncryptedUserShare {
             id: object::new(ctx),
             dwallet_id: object::id(dwallet),
             encrypted_secret_share,

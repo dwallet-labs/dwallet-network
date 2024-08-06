@@ -12,7 +12,7 @@ use move_vm_types::{
     values::{Value, Vector},
 };
 use signature_mpc::twopc_mpc_protocols::dwallet_transfer::{
-    get_proof_public_parameters, is_valid_proof, ProofPublicOutput, SecretShareProof,
+    get_proof_public_parameters, is_valid_proof, EncryptedUserShareAndProof, SecretShareProof,
 };
 use signature_mpc::twopc_mpc_protocols::{
     decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share,
@@ -79,9 +79,9 @@ pub fn verify_dwallet_transfer(
     let range_proof_commitment = range_proof_commitment.to_vec_u8()?;
     let range_proof_commitment = bcs::from_bytes(&range_proof_commitment).unwrap();
 
-    let proof_output = ProofPublicOutput {
+    let proof_output = EncryptedUserShareAndProof {
         proof,
-        encrypted_discrete_log: encrypted_secret_share,
+        encrypted_user_share: encrypted_secret_share,
         range_proof_commitment,
     };
 

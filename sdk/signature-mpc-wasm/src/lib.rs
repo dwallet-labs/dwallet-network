@@ -239,7 +239,7 @@ pub fn generate_proof(
         );
 
     let proof = bcs::to_bytes(&proof_public_output.proof).unwrap();
-    let encypted_discrete_log = bcs::to_bytes(&proof_public_output.encrypted_discrete_log).unwrap();
+    let encypted_discrete_log = bcs::to_bytes(&proof_public_output.encrypted_user_share).unwrap();
     let range_proof_commitment = bcs::to_bytes(&proof_public_output.range_proof_commitment).unwrap();
 
     serde_wasm_bindgen::to_value(&(proof, encypted_discrete_log, range_proof_commitment)).unwrap()

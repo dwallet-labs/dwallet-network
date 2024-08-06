@@ -128,7 +128,7 @@ export const transferDwallet = async (
 	const dwallet = tx.object(dwalletID);
 
 	tx.moveCall({
-		target: `${packageId}::${dWalletTransferModuleName}::transfer_dwallet`,
+		target: `${packageId}::${dWalletTransferModuleName}::encrypt_user_share`,
 		arguments: [
 			dwallet,
 			pub_key_obj,
