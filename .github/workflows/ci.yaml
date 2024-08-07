@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - new-main
-#  pull_request:
+  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -22,6 +22,7 @@ env:
 
 jobs:
   build:
+    if: github.event_name == 'push'
     name: Build
     runs-on: ubuntu-latest
     strategy:
