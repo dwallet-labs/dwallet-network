@@ -3,10 +3,7 @@ use commitment::GroupsPublicParametersAccessors;
 use crypto_bigint::{Uint, U256};
 use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
 use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
-use enhanced_maurer::{
-    encryption_of_discrete_log, EnhanceableLanguage, EnhancedLanguage, Proof,
-    PublicParameters as MaurerPublicParameters, WitnessSpaceGroupElement,
-};
+use enhanced_maurer::{encryption_of_discrete_log, EnhanceableLanguage, EnhancedLanguage, Error, Proof, PublicParameters as MaurerPublicParameters, WitnessSpaceGroupElement};
 use group::{secp256k1, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicEncryptionKey,
@@ -140,7 +137,7 @@ pub fn generate_proof(
         twopc_mpc::secp256k1::GroupElement,
         EncryptionKey,
     >,
-) -> EncryptedUserShareAndProof {
+) -> Result<EncryptedUserShareAndProof, Error> {
     let paillier_public_parameters: tiresias::encryption_key::PublicParameters =
         bcs::from_bytes(&encryption_key).unwrap();
 
@@ -170,22 +167,26 @@ pub fn generate_proof(
 
     let witnesses = generate_witnesses(randomness, &enhanced_language_public_parameters, plaintext);
 
-    let (proofs, statements) = SecretShareProof::prove(
+    let (proofs, statements) = match SecretShareProof::prove(
         &PhantomData,
         &enhanced_language_public_parameters,
         witnesses,
         &mut OsRng,
-    )
-    .unwrap();
+    ) {
+        Ok((proofs, statements)) => (proofs, statements),
+        Err(e) => {
+            return Err(e);
+        }
+    };
 
-    EncryptedUserShareAndProof {
+    Ok(EncryptedUserShareAndProof {
         proof: proofs,
         encrypted_user_share: statements[0]
             .language_statement()
             .encrypted_discrete_log()
             .value(),
         range_proof_commitment: statements[0].range_proof_commitment().value(),
-    }
+    })
 }
 
 fn generate_witnesses(
@@ -346,15 +347,18 @@ mod tests {
             bcs::from_bytes(&encryption_key).unwrap();
         let language_public_parameters = get_proof_public_parameters(encryption_key.clone());
 
-        let proof_public_output = generate_proof(
+        let encrypted_user_share_and_proof = match generate_proof(
             encryption_key.clone(),
             discrete_log.clone(),
             language_public_parameters.clone(),
-        );
+        ) {
+            Ok(proof) => proof,
+            Err(e) => panic!("Error generating proof: {:?}", e),
+        };
 
         assert!(is_valid_proof(
             language_public_parameters,
-            proof_public_output,
+            encrypted_user_share_and_proof,
             centralized_party_public_key_share,
         ));
     }

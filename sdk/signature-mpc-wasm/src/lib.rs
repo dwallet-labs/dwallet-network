@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use std::marker::PhantomData;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use signature_mpc::twopc_mpc_protocols::{DKGDecentralizedPartyOutput, finalize_centralized_party_sign};
@@ -229,20 +230,19 @@ pub fn generate_keypair() -> JsValue {
 pub fn generate_proof(
     secret_share: Vec<u8>,
     public_key: Vec<u8>,
-) -> JsValue {
+) -> Result<JsValue, JsErr> {
     let language_public_parameters = signature_mpc::twopc_mpc_protocols::dwallet_transfer::get_proof_public_parameters(public_key.clone());
-    let proof_public_output =
-        signature_mpc::twopc_mpc_protocols::dwallet_transfer::generate_proof(
-            public_key,
-            secret_share,
-            language_public_parameters,
-        );
+    let proof_public_output = signature_mpc::twopc_mpc_protocols::dwallet_transfer::generate_proof(
+        public_key,
+        secret_share,
+        language_public_parameters,
+    )?;
 
     let proof = bcs::to_bytes(&proof_public_output.proof).unwrap();
     let encypted_discrete_log = bcs::to_bytes(&proof_public_output.encrypted_user_share).unwrap();
     let range_proof_commitment = bcs::to_bytes(&proof_public_output.range_proof_commitment).unwrap();
 
-    serde_wasm_bindgen::to_value(&(proof, encypted_discrete_log, range_proof_commitment)).unwrap()
+    Ok(serde_wasm_bindgen::to_value(&(proof, encypted_discrete_log, range_proof_commitment)).unwrap())
 }
 
 #[derive(Serialize, Deserialize)]

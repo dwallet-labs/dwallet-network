@@ -91,7 +91,10 @@ export const storeEncryptionKey = async (
 	return result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
 };
 
-export const getEncryptionKeyByObjectId = async (client: DWalletClient, encryptionKeyObjID: string) => {
+export const getEncryptionKeyByObjectId = async (
+	client: DWalletClient,
+	encryptionKeyObjID: string,
+) => {
 	const response = await client.getObject({
 		id: encryptionKeyObjID,
 		options: { showContent: true },
@@ -148,4 +151,4 @@ export const transferDwallet = async (
 	});
 };
 
-const parseArg = (arg, tx) => tx.pure(bcs.vector(bcs.u8()).serialize(arg));
+const parseArg = (arg: any, tx: any) => tx.pure(bcs.vector(bcs.u8()).serialize(arg));

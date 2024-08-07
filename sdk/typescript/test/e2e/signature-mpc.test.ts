@@ -76,8 +76,8 @@ describe('Create public key', () => {
 	});
 
 	it('the signature mpc create dwallet', async () => {
-		const [pub_key, _] = generate_keypair();
-		const pubKeyRef = await storeEncryptionKey(pub_key, toolbox.keypair, toolbox.client);
+		const [encryption_key, _] = generate_keypair();
+		const pubKeyRef = await storeEncryptionKey(encryption_key, toolbox.keypair, toolbox.client);
 		console.log({ pubKeyRef });
 	});
 });
@@ -103,7 +103,7 @@ describe('Test key share transfer', () => {
 
 		const [proof, encryptedSecretShare, rangeCommitment] = generate_proof(
 			parsedKeyshare,
-			recipientData?.publicKey!,
+			recipientData?.encryptionKey!,
 		);
 
 		await transferDwallet(
