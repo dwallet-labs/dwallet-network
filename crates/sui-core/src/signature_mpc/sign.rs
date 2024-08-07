@@ -97,13 +97,13 @@ impl SignRound {
                 signature_threshold_decryption_round_parties,
             } => {
                 let decrypt_result = decrypt_signature_decentralized_party_sign(
-                    state.messages.clone().unwrap(),
+                    state.messages.clone().ok_or(twopc_mpc::Error::InvalidParameters)?,
                     state.tiresias_public_parameters.clone(),
                     state.decryption_shares.clone(),
                     state
                         .public_nonce_encrypted_partial_signature_and_proofs
                         .clone()
-                        .unwrap(),
+                        .ok_or(twopc_mpc::Error::InvalidParameters)?,
                     signature_threshold_decryption_round_parties,
                 );
                 match decrypt_result {
