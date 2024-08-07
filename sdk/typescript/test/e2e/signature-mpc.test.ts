@@ -9,8 +9,8 @@ import {
 	createPartialUserSignedMessages,
 	generate_keypair,
 	generate_proof,
-	getPublicKeyByObjectId,
-	storePublicKey,
+	getEncryptionKeyByObjectId,
+	storeEncryptionKey,
 	transferDwallet,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
@@ -77,7 +77,7 @@ describe('Create public key', () => {
 
 	it('the signature mpc create dwallet', async () => {
 		const [pub_key, _] = generate_keypair();
-		const pubKeyRef = await storePublicKey(pub_key, toolbox.keypair, toolbox.client);
+		const pubKeyRef = await storeEncryptionKey(pub_key, toolbox.keypair, toolbox.client);
 		console.log({ pubKeyRef });
 	});
 });
@@ -91,9 +91,9 @@ describe('Test key share transfer', () => {
 
 	it('should encrypt and transfer a dwallet to a newly generated public key', async () => {
 		const [pub_key, _] = generate_keypair();
-		const pubKeyRef = await storePublicKey(pub_key, toolbox.keypair, toolbox.client);
+		const pubKeyRef = await storeEncryptionKey(pub_key, toolbox.keypair, toolbox.client);
 		const publicKeyID = pubKeyRef?.objectId;
-		const recipientData = await getPublicKeyByObjectId(toolbox.client, publicKeyID);
+		const recipientData = await getEncryptionKeyByObjectId(toolbox.client, publicKeyID);
 
 		// Before running this test, you need to create a dwallet and out its object ID and secret share here.
 		const secretKeyshare = '<SECRET_SHARE>';

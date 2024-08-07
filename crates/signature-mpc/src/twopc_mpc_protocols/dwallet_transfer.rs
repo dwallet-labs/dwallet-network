@@ -1,4 +1,4 @@
-use crate::twopc_mpc_protocols::DUMMY_PUBLIC_KEY;
+use crate::twopc_mpc_protocols::N;
 use commitment::GroupsPublicParametersAccessors;
 use crypto_bigint::{Uint, U256};
 use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
@@ -83,10 +83,10 @@ fn pad_vector(vec: Vec<u8>) -> Vec<u8> {
 }
 
 pub fn generate_keypair() -> (Vec<u8>, Vec<u8>) {
-    let (public_key, private_key) = DecryptionKey::generate(&mut OsRng).unwrap();
-    let private_key = bcs::to_bytes(&private_key.secret_key).unwrap();
-    let public_key = bcs::to_bytes(&public_key).unwrap();
-    (public_key, private_key)
+    let (encryption_key, decryption_key) = DecryptionKey::generate(&mut OsRng).unwrap();
+    let decryption_key = bcs::to_bytes(&decryption_key.secret_key).unwrap();
+    let encryption_key = bcs::to_bytes(&encryption_key).unwrap();
+    (encryption_key, decryption_key)
 }
 
 pub fn get_proof_public_parameters(pub_key: Vec<u8>) -> LangPublicParams {
@@ -260,7 +260,7 @@ pub fn is_valid_proof(
     centralized_public_keyshare: group::Value<secp256k1::GroupElement>,
 ) -> bool {
     let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
-    let protocol_public_parameters = ProtocolPublicParameters::new(DUMMY_PUBLIC_KEY);
+    let protocol_public_parameters = ProtocolPublicParameters::new(N);
 
     let unbounded_witness_public_parameters = language_public_parameters
         .randomness_space_public_parameters()

@@ -18,14 +18,14 @@ module dwallet_system::dwallet_transfer {
         encrypted_secret_share: vector<u8>,
     }
 
-    struct PublicKey has key {
+    struct EncryptionKey has key {
         id: UID,
         encryption_key: vector<u8>,
         key_owner_address: address,
     }
 
-    public fun store_public_key(key: vector<u8>, ctx: &mut TxContext): ID {
-        let pk = PublicKey {
+    public fun store_encryption_key(key: vector<u8>, ctx: &mut TxContext): ID {
+        let pk = EncryptionKey {
             id: object::new(ctx),
             encryption_key: key,
             key_owner_address: tx_context::sender(ctx),
@@ -37,7 +37,7 @@ module dwallet_system::dwallet_transfer {
 
     public fun encrypt_user_share(
         dwallet: &DWallet,
-        public_key: &PublicKey,
+        encryption_key: &EncryptionKey,
         proof: vector<u8>,
         range_proof_commitment_value: vector<u8>,
         encrypted_secret_share: vector<u8>,
@@ -47,7 +47,7 @@ module dwallet_system::dwallet_transfer {
         let is_valid = verify_dwallet_transfer(
             range_proof_commitment_value,
             proof,
-            public_key.encryption_key,
+            encryption_key.encryption_key,
             encrypted_secret_share,
             output(dwallet),
         );

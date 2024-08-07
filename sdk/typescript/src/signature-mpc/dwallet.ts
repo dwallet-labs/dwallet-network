@@ -70,15 +70,15 @@ export async function approveAndSign(
 		: null;
 }
 
-export const storePublicKey = async (
-	public_key: Uint8Array,
+export const storeEncryptionKey = async (
+	encryption_key: Uint8Array,
 	keypair: Keypair,
 	client: DWalletClient,
 ): Promise<SuiObjectRef> => {
 	const tx = new TransactionBlock();
-	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(public_key));
+	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryption_key));
 	tx.moveCall({
-		target: `${packageId}::${dWalletTransferModuleName}::store_public_key`,
+		target: `${packageId}::${dWalletTransferModuleName}::store_encryption_key`,
 		arguments: [purePubKey],
 	});
 	let result = await client.signAndExecuteTransactionBlock({
@@ -91,23 +91,23 @@ export const storePublicKey = async (
 	return result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
 };
 
-export const getPublicKeyByObjectId = async (client: DWalletClient, publicKeyObjID: string) => {
+export const getEncryptionKeyByObjectId = async (client: DWalletClient, encryptionKeyObjID: string) => {
 	const response = await client.getObject({
-		id: publicKeyObjID,
+		id: encryptionKeyObjID,
 		options: { showContent: true },
 	});
 
 	const objectFields =
 		response.data?.content?.dataType === 'moveObject'
 			? (response.data?.content?.fields as {
-					public_key: Uint8Array;
+					encryption_key: Uint8Array;
 					key_owner_address: string;
 			  })
 			: null;
 
 	return objectFields
 		? {
-				publicKey: objectFields?.public_key,
+				encryptionKey: objectFields?.encryption_key,
 				keyOwnerAddress: objectFields?.key_owner_address,
 		  }
 		: null;
@@ -119,12 +119,12 @@ export const transferDwallet = async (
 	proof: Uint8Array,
 	encrypted_secret_share: Uint8Array,
 	range_commitment: Uint8Array,
-	publicKeyObjID: string,
+	encryptionKeyObjID: string,
 	dwalletID: string,
 	recipient_address: string,
 ) => {
 	const tx = new TransactionBlock();
-	const pub_key_obj = tx.object(publicKeyObjID);
+	const pub_key_obj = tx.object(encryptionKeyObjID);
 	const dwallet = tx.object(dwalletID);
 
 	tx.moveCall({
