@@ -7,8 +7,8 @@ use std::time::Duration;
 use anyhow::anyhow;
 use bip32::secp256k1::elliptic_curve::rand_core::OsRng;
 use clap::*;
-use fastcrypto::{encoding::Base64, traits::ToFromBytes};
 use fastcrypto::encoding::Encoding;
+use fastcrypto::{encoding::Base64, traits::ToFromBytes};
 use move_core_types::language_storage::TypeTag;
 use serde_json::{Number, Value};
 use tokio::time::sleep;
@@ -16,36 +16,33 @@ use tokio::time::sleep;
 use shared_crypto::intent::Intent;
 use signature_mpc::twopc_mpc_protocols::{
     initiate_centralized_party_dkg, initiate_centralized_party_presign,
-    initiate_centralized_party_sign, message_digest, PresignDecentralizedPartyOutput,
-    ProtocolContext, SecretKeyShareEncryptionAndProof, verify_signature,
+    initiate_centralized_party_sign, message_digest, verify_signature,
+    PresignDecentralizedPartyOutput, ProtocolContext, SecretKeyShareEncryptionAndProof,
 };
 use sui_json::SuiJsonValue;
 use sui_json_rpc_types::{
-    ObjectChange, RPCTransactionRequestParams, SuiData, SuiObjectData, SuiObjectDataFilter,
-    SuiObjectResponse, SuiObjectResponseQuery, SuiParsedData, SuiRawData,
-    SuiTransactionBlockEffects, SuiTransactionBlockEffectsAPI, SuiTransactionBlockResponse,
-    SuiTransactionBlockResponseOptions, TransactionFilter,
+    ObjectChange, SuiData, SuiObjectDataFilter, SuiObjectResponseQuery,
+    SuiTransactionBlockEffectsAPI,
 };
 use sui_json_rpc_types::{SuiExecutionStatus, SuiObjectDataOptions};
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::sui_client_config::DWalletSecretShare;
 use sui_sdk::wallet_context::WalletContext;
-use sui_types::{
-    base_types::ObjectID,
-    SUI_SYSTEM_PACKAGE_ID,
-    transaction::{SenderSignedData, Transaction, TransactionDataAPI},
-};
 use sui_types::base_types::ObjectRef;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::signature_mpc::{
-    APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME, CREATE_PARTIAL_USER_SIGNED_MESSAGES_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, DKG_SESSION_STRUCT_NAME,
-    DKGSessionOutput, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
-    DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME
-    , Presign, PRESIGN_SESSION_STRUCT_NAME,
-    PresignSessionOutput, SIGN_FUNC_NAME, SIGN_SESSION_STRUCT_NAME, SignData,
-    SignOutput,
+    DKGSessionOutput, DWallet, Presign, PresignSessionOutput, SignData, SignOutput,
+    APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME,
+    CREATE_PARTIAL_USER_SIGNED_MESSAGES_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME,
+    DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
+    DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, SIGN_FUNC_NAME, SIGN_SESSION_STRUCT_NAME,
 };
 use sui_types::transaction::{Argument, CallArg, ObjectArg};
+use sui_types::{
+    base_types::ObjectID,
+    transaction::{SenderSignedData, Transaction, TransactionDataAPI},
+    SUI_SYSTEM_PACKAGE_ID,
+};
 
 use crate::client_commands::{
     construct_move_call_transaction, NewDWalletOutput, NewSignOutput, SuiClientCommandResult,
@@ -212,7 +209,8 @@ impl SuiDWalletCommands {
                             if object_type.address == SUI_SYSTEM_PACKAGE_ID.into()
                                 && object_type.module == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into()
                                 && object_type.name == DKG_SESSION_STRUCT_NAME.into()
-                            {}
+                            {
+                            }
                             return Some(object_id);
                         }
                         None
@@ -332,7 +330,7 @@ impl SuiDWalletCommands {
                     ]),
                     context,
                 )
-                    .await?;
+                .await?;
 
                 let dwallet_response = serialize_or_execute!(
                     tx_data,
@@ -360,7 +358,8 @@ impl SuiDWalletCommands {
                             if object_type.address == SUI_SYSTEM_PACKAGE_ID.into()
                                 && object_type.module == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into()
                                 && object_type.name == DWALLET_STRUCT_NAME.into()
-                            {}
+                            {
+                            }
                             return Some(object_id);
                         }
                         None
@@ -470,7 +469,7 @@ impl SuiDWalletCommands {
                     SuiJsonValue::new(Value::Array(
                         centralized_party_nonce_shares_commitments_and_batched_proof,
                     ))
-                        .unwrap();
+                    .unwrap();
 
                 let messages_vec_input = messages_vec
                     .iter()
@@ -552,7 +551,8 @@ impl SuiDWalletCommands {
                             if object_type.address == SUI_SYSTEM_PACKAGE_ID.into()
                                 && object_type.module == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into()
                                 && object_type.name == PRESIGN_SESSION_STRUCT_NAME.into()
-                            {}
+                            {
+                            }
                             return Some((*object_id, o.object_ref()));
                         }
                         None
@@ -765,7 +765,8 @@ impl SuiDWalletCommands {
                             if object_type.address == SUI_SYSTEM_PACKAGE_ID.into()
                                 && object_type.module == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into()
                                 && object_type.name == SIGN_SESSION_STRUCT_NAME.into()
-                            {}
+                            {
+                            }
                             return Some(object_id);
                         }
                         None

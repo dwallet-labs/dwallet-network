@@ -48,7 +48,7 @@ pub struct SubmitSignatureMPCToConsensus<T> {
 
 #[async_trait]
 impl<T: SubmitToConsensus + ReconfigurationInitiator> SubmitSignatureMPC
-for SubmitSignatureMPCToConsensus<T>
+    for SubmitSignatureMPCToConsensus<T>
 {
     #[instrument(level = "debug", skip_all)]
     async fn sign_and_submit_message(
