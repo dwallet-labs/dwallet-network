@@ -4,16 +4,15 @@
 use rand::rngs::OsRng;
 use signature_mpc::twopc_mpc_protocols::{
     decrypt_signature_decentralized_party_sign, initiate_decentralized_party_sign, message_digest,
-    AdditivelyHomomorphicDecryptionKeyShare,
-    DKGDecentralizedPartyOutput, DecentralizedPartyPresign,
-    DecryptionPublicParameters, Hash, PaillierModulusSizedNumber, PartyID,
-    ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
+    AdditivelyHomomorphicDecryptionKeyShare, DKGDecentralizedPartyOutput,
+    DecentralizedPartyPresign, DecryptionPublicParameters, Hash, PaillierModulusSizedNumber,
+    PartyID, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
     SecretKeyShareSizedNumber, SignatureThresholdDecryptionParty,
 };
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::mem;
-use sui_types::base_types::{EpochId};
+use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::{SignMessage, SignatureMPCSessionID};
 use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
 
@@ -214,11 +213,7 @@ impl SignState {
         Ok(())
     }
 
-    fn insert_proofs(
-        &mut self,
-        party_id: PartyID,
-        new_proofs: Vec<PartialDecryptionProof>,
-    ) {
+    fn insert_proofs(&mut self, party_id: PartyID, new_proofs: Vec<PartialDecryptionProof>) {
         if self.clone().involved_parties.unwrap().contains(&party_id) {
             self.proofs
                 .get_or_insert(HashMap::new())

@@ -19,10 +19,7 @@ use std::marker::PhantomData;
 
 pub use group::Value;
 use group::{secp256k1, AffineXCoordinate, GroupElement};
-use homomorphic_encryption::{
-    AdditivelyHomomorphicEncryptionKey,
-    GroupsPublicParametersAccessors,
-};
+use homomorphic_encryption::{AdditivelyHomomorphicEncryptionKey, GroupsPublicParametersAccessors};
 use k256::sha2::digest::FixedOutput;
 pub use proof::aggregation::{
     CommitmentRoundParty, DecommitmentRoundParty, ProofAggregationRoundParty, ProofShareRoundParty,
@@ -228,8 +225,8 @@ pub fn finalize_centralized_party_sign(
                     public_nonce_encrypted_partial_signature_and_proof.public_nonce,
                     &protocol_public_parameters.group_public_parameters,
                 )
-                    .map_err(Error::from)
-                    .and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
+                .map_err(Error::from)
+                .and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
             },
         )
 }
@@ -300,7 +297,7 @@ pub fn new_decentralized_party_presign_batch(
 
 pub type EncryptedDecentralizedPartySecretKeyShare = tiresias::CiphertextSpaceGroupElement;
 pub type EncryptedDecentralizedPartySecretKeyShareValue =
-<tiresias::CiphertextSpaceGroupElement as GroupElement>::Value;
+    <tiresias::CiphertextSpaceGroupElement as GroupElement>::Value;
 
 pub fn initiate_decentralized_party_presign(
     decryption_key_share_public_parameters: <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PublicParameters,
@@ -463,15 +460,15 @@ fn decrypt_signatures(
         .enumerate()
         .map(
             |(
-                 index,
-                 (
-                     signature_threshold_decryption_round_party,
-                     (
-                         (_message, _public_nonce_encrypted_partial_signature_and_proof),
-                         (partial_signature_decryption_shares, masked_nonce_decryption_shares),
-                     ),
-                 ),
-             )| {
+                index,
+                (
+                    signature_threshold_decryption_round_party,
+                    (
+                        (_message, _public_nonce_encrypted_partial_signature_and_proof),
+                        (partial_signature_decryption_shares, masked_nonce_decryption_shares),
+                    ),
+                ),
+            )| {
                 let result = signature_threshold_decryption_round_party.decrypt_signature(
                     lagrange_coefficients.clone(),
                     partial_signature_decryption_shares.clone(),
@@ -485,8 +482,8 @@ fn decrypt_signatures(
                             k256::Scalar::from(nonce_x_coordinate),
                             signature_s_inner,
                         )
-                            .unwrap()
-                            .to_vec()
+                        .unwrap()
+                        .to_vec()
                     }
                     Err(_) => {
                         failed_messages_indices.push(index);
@@ -618,10 +615,10 @@ pub fn identify_message_malicious_parties(
 
     match error {
         Error::Tiresias(tiresias::Error::ProtocolError(
-                            ProtocolError::ProofVerificationError {
-                                malicious_parties, ..
-                            },
-                        )) => malicious_parties,
+            ProtocolError::ProofVerificationError {
+                malicious_parties, ..
+            },
+        )) => malicious_parties,
         _ => {
             panic!("{}", error);
         }
@@ -651,7 +648,7 @@ pub fn generate_proof(
         encryption_scheme_public_parameters,
         public_nonce_encrypted_partial_signature_and_proof,
     )
-        .unwrap();
+    .unwrap();
 
     proof_party
         .prove_correct_signature_partial_decryption(&mut OsRng)
@@ -668,7 +665,7 @@ pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {
             bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
         }
     }
-        .unwrap();
+    .unwrap();
 
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&m);
     U256::from(m).into()

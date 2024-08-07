@@ -6,9 +6,8 @@ use crate::signature_mpc::aggregate::{
 };
 use rand::rngs::OsRng;
 use signature_mpc::twopc_mpc_protocols::{
-    initiate_decentralized_party_dkg, Commitment, DecryptionPublicParameters,
-    PartyID, ProtocolContext, Result,
-    SecretKeyShareEncryptionAndProof,
+    initiate_decentralized_party_dkg, Commitment, DecryptionPublicParameters, PartyID,
+    ProtocolContext, Result, SecretKeyShareEncryptionAndProof,
 };
 use std::collections::HashSet;
 use std::mem;

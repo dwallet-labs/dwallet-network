@@ -1,7 +1,6 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-
 use mysten_metrics::spawn_monitored_task;
 use sui_types::messages_signature_mpc::{
     InitSignatureMPCProtocolSequenceNumber, InitiateSignatureMPCProtocol, SignatureMPCSessionID,

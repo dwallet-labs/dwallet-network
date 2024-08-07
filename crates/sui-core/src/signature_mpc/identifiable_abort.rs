@@ -11,7 +11,7 @@ use signature_mpc::twopc_mpc_protocols::{
     DecryptionKeyShare, PaillierModulusSizedNumber, PartyID,
     SignaturePartialDecryptionProofVerificationParty,
 };
-use sui_types::base_types::{EpochId};
+use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::{
     SignMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID,
 };
@@ -34,7 +34,7 @@ pub fn generate_proofs(
         state.tiresias_key_share_decryption_key_share,
         &state.tiresias_public_parameters,
     )
-        .unwrap();
+    .unwrap();
 
     failed_messages_indices
         .iter()
@@ -88,10 +88,10 @@ pub(crate) fn identify_batch_malicious_parties(
             involved_proofs,
             state.involved_parties.as_deref().unwrap().into(),
         )
-            .iter()
-            .for_each(|party_id| {
-                malicious_parties.insert(*party_id);
-            });
+        .iter()
+        .for_each(|party_id| {
+            malicious_parties.insert(*party_id);
+        });
     }
     Ok(malicious_parties)
 }

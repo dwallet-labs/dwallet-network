@@ -1,14 +1,14 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::time::Duration;
 
 use anyhow::anyhow;
 use bip32::secp256k1::elliptic_curve::rand_core::OsRng;
 use clap::*;
+use fastcrypto::encoding::Base64;
 use fastcrypto::encoding::Encoding;
-use fastcrypto::{encoding::Base64};
 use move_core_types::language_storage::TypeTag;
 use serde_json::{Number, Value};
 use tokio::time::sleep;
@@ -209,7 +209,8 @@ impl SuiDWalletCommands {
                             if object_type.address == SUI_SYSTEM_PACKAGE_ID.into()
                                 && object_type.module == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into()
                                 && object_type.name == DKG_SESSION_STRUCT_NAME.into()
-                            {}
+                            {
+                            }
                             return Some(object_id);
                         }
                         None
@@ -329,7 +330,7 @@ impl SuiDWalletCommands {
                     ]),
                     context,
                 )
-                    .await?;
+                .await?;
 
                 let dwallet_response = serialize_or_execute!(
                     tx_data,
@@ -357,7 +358,8 @@ impl SuiDWalletCommands {
                             if object_type.address == SUI_SYSTEM_PACKAGE_ID.into()
                                 && object_type.module == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into()
                                 && object_type.name == DWALLET_STRUCT_NAME.into()
-                            {}
+                            {
+                            }
                             return Some(object_id);
                         }
                         None
@@ -467,7 +469,7 @@ impl SuiDWalletCommands {
                     SuiJsonValue::new(Value::Array(
                         centralized_party_nonce_shares_commitments_and_batched_proof,
                     ))
-                        .unwrap();
+                    .unwrap();
 
                 let messages_vec_input = messages_vec
                     .iter()
@@ -549,7 +551,8 @@ impl SuiDWalletCommands {
                             if object_type.address == SUI_SYSTEM_PACKAGE_ID.into()
                                 && object_type.module == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into()
                                 && object_type.name == PRESIGN_SESSION_STRUCT_NAME.into()
-                            {}
+                            {
+                            }
                             return Some((*object_id, o.object_ref()));
                         }
                         None
@@ -762,7 +765,8 @@ impl SuiDWalletCommands {
                             if object_type.address == SUI_SYSTEM_PACKAGE_ID.into()
                                 && object_type.module == DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.into()
                                 && object_type.name == SIGN_SESSION_STRUCT_NAME.into()
-                            {}
+                            {
+                            }
                             return Some(object_id);
                         }
                         None
