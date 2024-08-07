@@ -19,6 +19,7 @@ use sui_types::messages_signature_mpc::{
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::signature_mpc::sign::SignState;
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
+use twopc_mpc::Result;
 
 /// Generate a list of proofs, one for every message in the batch.
 /// Each proof proves that the executing party ID
@@ -26,16 +27,15 @@ use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
 pub fn generate_proofs(
     state: &SignState,
     failed_messages_indices: &Vec<usize>,
-) -> Vec<(
+) -> Result<Vec<(
     PartialDecryptionProof,
     SignaturePartialDecryptionProofVerificationParty,
-)> {
+)>> {
     let decryption_key_share = DecryptionKeyShare::new(
         state.party_id,
         state.tiresias_key_share_decryption_key_share,
         &state.tiresias_public_parameters,
-    )
-    .unwrap();
+    )?;
 
     failed_messages_indices
         .iter()
@@ -44,7 +44,7 @@ pub fn generate_proofs(
                 state.tiresias_public_parameters.clone(),
                 decryption_key_share.clone(),
                 state.party_id,
-                state.presigns.clone().unwrap().get(*index).unwrap().clone(),
+                state.presigns.clone().ok_or(twopc_mpc::Error::InvalidParameters).get(*index).ok_or(twopc_mpc::Error::InvalidParameters).clone(),
                 state
                     .tiresias_public_parameters
                     .encryption_scheme_public_parameters
@@ -52,13 +52,14 @@ pub fn generate_proofs(
                 state
                     .public_nonce_encrypted_partial_signature_and_proofs
                     .clone()
-                    .unwrap()
+                    .ok_or(twopc_mpc::Error::InvalidParameters)
                     .get(*index)
-                    .unwrap()
+                    .ok_or(twopc_mpc::Error::InvalidParameters)
                     .clone(),
             )
         })
         .collect()
+
 }
 
 /// Identify all the parties that behaved maliciously in this messages batch.
