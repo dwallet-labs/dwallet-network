@@ -1,21 +1,19 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::signature_mpc::identifiable_abort;
 use rand::rngs::OsRng;
-use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::{
     decrypt_signature_decentralized_party_sign, initiate_decentralized_party_sign, message_digest,
-    AdditivelyHomomorphicDecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, Commitment,
-    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, DecryptionKeyShare,
-    DecryptionPublicParameters, GroupElement, Hash, PaillierModulusSizedNumber, PartyID,
+    AdditivelyHomomorphicDecryptionKeyShare,
+    DKGDecentralizedPartyOutput, DecentralizedPartyPresign,
+    DecryptionPublicParameters, Hash, PaillierModulusSizedNumber, PartyID,
     ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
-    SecretKeyShareSizedNumber, SignatureThresholdDecryptionParty, Value,
+    SecretKeyShareSizedNumber, SignatureThresholdDecryptionParty,
 };
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::mem;
-use sui_types::base_types::{EpochId, ObjectRef};
+use sui_types::base_types::{EpochId};
 use sui_types::messages_signature_mpc::{SignMessage, SignatureMPCSessionID};
 use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
 
@@ -87,12 +85,13 @@ impl SignRound {
             SignRound::FirstRound {
                 signature_threshold_decryption_round_parties,
             },
-            decryption_shares.clone(),
+            decryption_shares,
         ))
     }
 
     /// Tries to decrypt the signatures and return them.
-    /// In case one or more of the signatures is invalid, it will return a [`SignRoundCompletion::StartIdentifiableAbortFlow`] to launch the IA flow.
+    /// If one or more of the signatures is invalid,
+    /// it will return a [`SignRoundCompletion::StartIdentifiableAbortFlow`] to launch the IA flow.
     pub(crate) fn complete_round(&mut self, state: SignState) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
@@ -127,6 +126,7 @@ pub(crate) enum SignRoundCompletion {
     StartIdentifiableAbortFlow(Vec<usize>, Vec<PartyID>),
     None,
 }
+
 #[derive(Clone)]
 pub(crate) struct SignState {
     epoch: EpochId,
@@ -141,7 +141,7 @@ pub(crate) struct SignState {
     pub presigns: Option<Vec<DecentralizedPartyPresign>>,
     pub decryption_shares:
         HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
-    pub proofs: Option<HashMap<PartyID, Vec<(PartialDecryptionProof)>>>,
+    pub proofs: Option<HashMap<PartyID, Vec<PartialDecryptionProof>>>,
     pub failed_messages_indices: Option<Vec<usize>>,
     pub involved_parties: Option<Vec<PartyID>>,
 }
@@ -194,7 +194,7 @@ impl SignState {
         &mut self,
         sender_id: PartyID,
         message: SignMessage,
-    ) -> twopc_mpc_protocols::Result<()> {
+    ) -> Result<()> {
         match message {
             SignMessage::DecryptionShares(shares) => {
                 let _ = self.decryption_shares.insert(sender_id, shares);
@@ -207,14 +207,14 @@ impl SignState {
                     self.involved_parties = Some(involved_parties.clone());
                 }
             }
-            SignMessage::Proofs((proofs)) => {
+            SignMessage::Proofs(proofs) => {
                 self.insert_proofs(sender_id, proofs.clone());
             }
         }
         Ok(())
     }
 
-    pub(crate) fn insert_proofs(
+    fn insert_proofs(
         &mut self,
         party_id: PartyID,
         new_proofs: Vec<PartialDecryptionProof>,
@@ -235,7 +235,7 @@ impl SignState {
         }
     }
 
-    pub(crate) fn received_all_decryption_shares(&self) -> bool {
+    fn received_all_decryption_shares(&self) -> bool {
         self.decryption_shares.len() == self.parties.len()
     }
 
@@ -245,6 +245,6 @@ impl SignState {
             let threshold: usize = self.tiresias_public_parameters.threshold.into();
             return proofs.len() == threshold && self.received_all_decryption_shares();
         }
-        return false;
+        false
     }
 }

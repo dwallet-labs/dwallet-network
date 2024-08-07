@@ -33,7 +33,7 @@ pub type SignatureMPCTimestamp = u64;
 
 const SESSION_ID_LENGTH: usize = 32;
 
-/// The session id of the mpc is working on.
+/// The session ID of the mpc is working on.
 #[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SignatureMPCSessionID(pub [u8; SESSION_ID_LENGTH]);
 
@@ -166,7 +166,7 @@ impl Display for SignatureMPCMessageSummary {
 pub type SignatureMPCMessageSummaryEnvelope<S> = Envelope<SignatureMPCMessageSummary, S>;
 pub type SignedSignatureMPCMessageSummary = SignatureMPCMessageSummaryEnvelope<AuthoritySignInfo>;
 
-/// This is a message validators publish to consensus in order to sign checkpoint
+/// This is a message validators publish to consensus to sign checkpoint.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SignatureMPCMessage {
     pub summary: SignedSignatureMPCMessageSummary,
@@ -181,7 +181,6 @@ pub enum SignatureMPCOutputValue {
     PresignOutput(Vec<u8>),
     Presign(Vec<u8>),
     Sign(Vec<Vec<u8>>),
-    // Q: What is the identifiable abort output?
 }
 
 impl Display for SignatureMPCOutputValue {
@@ -193,7 +192,8 @@ impl Display for SignatureMPCOutputValue {
             } => {
                 write!(
                     f,
-                    "DKGSignatureMPCOutputValue::DKG {{ commitment_to_centralized_party_secret_key_share: {:?}, secret_key_share_encryption_and_proof: {:?}}}",
+                    "DKGSignatureMPCOutputValue::DKG {{ commitment_to_centralized_party_secret_key_share: \
+                    {:?}, secret_key_share_encryption_and_proof: {:?}}}",
                     commitment_to_centralized_party_secret_key_share,
                     secret_key_share_encryption_and_proof,
                 )

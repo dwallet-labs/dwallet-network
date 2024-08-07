@@ -6,11 +6,7 @@ use std::collections::{HashMap, HashSet};
 pub use commitment::Commitment;
 use crypto_bigint::U256;
 use ecdsa::signature::DigestVerifier;
-use ecdsa::{
-    elliptic_curve::ops::Reduce,
-    hazmat::{bits2field, DigestPrimitive},
-    RecoveryId, Signature, VerifyingKey,
-};
+use ecdsa::{elliptic_curve::ops::Reduce, hazmat::bits2field, RecoveryId, Signature, VerifyingKey};
 pub use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 pub use group::PartyID;
 pub use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -18,14 +14,13 @@ use k256::elliptic_curve::group::GroupEncoding;
 use k256::sha2::Digest;
 use k256::{elliptic_curve, sha2, AffinePoint, CompressedPoint};
 use rand::rngs::OsRng;
-use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
 pub use group::Value;
-use group::{secp256k1, AffineXCoordinate, GroupElement as _};
+use group::{secp256k1, AffineXCoordinate, GroupElement};
 use homomorphic_encryption::{
-    AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
+    AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors,
 };
 use k256::sha2::digest::FixedOutput;
@@ -58,7 +53,7 @@ pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
     SignatureNonceSharesCommitmentsAndBatchedProof, SignaturePartialDecryptionParty,
     SignatureThresholdDecryptionParty,
 };
-pub use twopc_mpc::secp256k1::{GroupElement, Scalar, SCALAR_LIMBS};
+pub use twopc_mpc::secp256k1::{GroupElement as Secp256K1GroupElement, Scalar, SCALAR_LIMBS};
 
 use twopc_mpc::secp256k1::paillier::bulletproofs::{DecryptionShare, PartialDecryptionProof};
 pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
@@ -71,12 +66,8 @@ pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;
 pub type SignatureMPCMessageKind = u64;
 pub type SignatureMPCTimestamp = u64;
-pub type PublicKeyValue = group::Value<GroupElement>;
+pub type PublicKeyValue = Value<Secp256K1GroupElement>;
 pub type SignatureK256Secp256k1 = Signature<k256::Secp256k1>;
-
-struct PublicParameters {
-    tiresias_public_parameters: tiresias::encryption_key::PublicParameters,
-}
 
 #[derive(Clone, Debug)]
 pub enum Hash {
@@ -103,8 +94,7 @@ impl From<Hash> for u8 {
     }
 }
 
-pub fn initiate_centralized_party_dkg(//tiresias_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
-) -> twopc_mpc::Result<DKGCommitmentRoundParty<ProtocolContext>> {
+pub fn initiate_centralized_party_dkg() -> Result<DKGCommitmentRoundParty<ProtocolContext>> {
     pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
 
     let protocol_public_parameters = ProtocolPublicParameters::new(N);
@@ -117,7 +107,7 @@ pub fn initiate_centralized_party_dkg(//tiresias_public_parameters: &str, epoch:
 
 pub fn decommitment_round_centralized_party_dkg(
     state: DKGDecommitmentRoundState<ProtocolContext>,
-) -> twopc_mpc::Result<DKGDecommitmentRoundParty<ProtocolContext>> {
+) -> Result<DKGDecommitmentRoundParty<ProtocolContext>> {
     pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
 
     let protocol_public_parameters = ProtocolPublicParameters::new(N);
@@ -135,7 +125,7 @@ pub fn initiate_decentralized_party_dkg(
     party_id: PartyID,
     parties: HashSet<PartyID>,
     //session_id: SignatureMPCSessionID,
-) -> twopc_mpc::Result<EncryptionOfSecretKeyShareRoundParty<ProtocolContext>> {
+) -> Result<EncryptionOfSecretKeyShareRoundParty<ProtocolContext>> {
     let protocol_public_parameters = ProtocolPublicParameters::new(
         *decryption_key_share_public_parameters
             .encryption_scheme_public_parameters
@@ -159,7 +149,7 @@ pub fn decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_part
         ProtocolContext,
     >,
     secret_key_share_encryption_and_proof: SecretKeyShareEncryptionAndProof<ProtocolContext>,
-) -> twopc_mpc::Result<(DKGDecentralizedPartyOutput, Vec<u8>)> {
+) -> Result<(DKGDecentralizedPartyOutput, Vec<u8>)> {
     let protocol_public_parameters = ProtocolPublicParameters::new(
         LargeBiPrimeSizedNumber::from_be_hex(tiresias_public_parameters),
     );
@@ -181,7 +171,7 @@ pub fn decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_part
 
 pub fn initiate_centralized_party_presign(
     dkg_output: DKGCentralizedPartyOutput,
-) -> twopc_mpc::Result<PresignCommitmentRoundParty<ProtocolContext>> {
+) -> Result<PresignCommitmentRoundParty<ProtocolContext>> {
     pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
 
     let protocol_public_parameters = ProtocolPublicParameters::new(N);
@@ -192,7 +182,7 @@ pub fn initiate_centralized_party_presign(
 pub fn finalize_centralized_party_presign(
     dkg_output: DKGCentralizedPartyOutput,
     signature_nonce_shares_and_commitment_randomnesses: Vec<(Scalar, Scalar)>,
-) -> twopc_mpc::Result<PresignProofVerificationRoundParty<ProtocolContext>> {
+) -> Result<PresignProofVerificationRoundParty<ProtocolContext>> {
     pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
 
     let protocol_public_parameters = ProtocolPublicParameters::new(N);
@@ -212,7 +202,7 @@ pub fn finalize_centralized_party_sign(
         PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
     >,
     signatures_s: Vec<Scalar>,
-) -> twopc_mpc::Result<()> {
+) -> Result<()> {
     pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
 
     let protocol_public_parameters = ProtocolPublicParameters::new(N);
@@ -230,19 +220,18 @@ pub fn finalize_centralized_party_sign(
 
     public_nonce_encrypted_partial_signature_and_proofs
         .into_iter()
-        .zip(signatures_s.into_iter())
-        .zip(parties.into_iter())
-        .map(
+        .zip(signatures_s)
+        .zip(parties)
+        .try_for_each(
             |((public_nonce_encrypted_partial_signature_and_proof, signature_s), party)| {
-                GroupElement::new(
+                Secp256K1GroupElement::new(
                     public_nonce_encrypted_partial_signature_and_proof.public_nonce,
                     &protocol_public_parameters.group_public_parameters,
                 )
-                .map_err(Error::from)
-                .and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
+                    .map_err(Error::from)
+                    .and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
             },
         )
-        .collect()
 }
 
 pub fn verify_signature(
@@ -288,13 +277,13 @@ pub fn new_decentralized_party_presign_batch(
         Vec<Value<EncryptedMaskAndMaskedNonceShare>>,
     >,
     encrypted_masked_nonce_shares: Vec<EncryptedMaskAndMaskedNonceShare>,
-) -> twopc_mpc::Result<Vec<DecentralizedPartyPresign>> {
+) -> Result<Vec<DecentralizedPartyPresign>> {
     let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
 
     DecentralizedPartyPresign::new_batch::<
         SCALAR_LIMBS,
         PLAINTEXT_SPACE_SCALAR_LIMBS,
-        GroupElement,
+        Secp256K1GroupElement,
         EncryptionKey,
         ProtocolContext,
     >(
@@ -311,16 +300,14 @@ pub fn new_decentralized_party_presign_batch(
 
 pub type EncryptedDecentralizedPartySecretKeyShare = tiresias::CiphertextSpaceGroupElement;
 pub type EncryptedDecentralizedPartySecretKeyShareValue =
-    <tiresias::CiphertextSpaceGroupElement as group::GroupElement>::Value;
+<tiresias::CiphertextSpaceGroupElement as GroupElement>::Value;
 
 pub fn initiate_decentralized_party_presign(
     decryption_key_share_public_parameters: <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PublicParameters,
-    //epoch: EpochId,
     party_id: PartyID,
     parties: HashSet<PartyID>,
-    //session_id: SignatureMPCSessionID,
     dkg_output: DKGDecentralizedPartyOutput,
-) -> twopc_mpc::Result<EncryptedMaskedKeyShareRoundParty<ProtocolContext>> {
+) -> Result<EncryptedMaskedKeyShareRoundParty<ProtocolContext>> {
     let protocol_public_parameters = ProtocolPublicParameters::new(
         *decryption_key_share_public_parameters
             .encryption_scheme_public_parameters
@@ -341,7 +328,7 @@ pub fn initiate_decentralized_party_presign(
 pub fn initiate_centralized_party_sign(
     dkg_output: DKGCentralizedPartyOutput,
     presigns: Vec<CentralizedPartyPresign>,
-) -> twopc_mpc::Result<Vec<SignatureHomomorphicEvaluationParty<ProtocolContext>>> {
+) -> Result<Vec<SignatureHomomorphicEvaluationParty<ProtocolContext>>> {
     pub const N: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_hex("97431848911c007fa3a15b718ae97da192e68a4928c0259f2d19ab58ed01f1aa930e6aeb81f0d4429ac2f037def9508b91b45875c11668cea5dc3d4941abd8fbb2d6c8750e88a69727f982e633051f60252ad96ba2e9c9204f4c766c1c97bc096bb526e4b7621ec18766738010375829657c77a23faf50e3a31cb471f72c7abecdec61bdf45b2c73c666aa3729add2d01d7d96172353380c10011e1db3c47199b72da6ae769690c883e9799563d6605e0670a911a57ab5efc69a8c5611f158f1ae6e0b1b6434bafc21238921dc0b98a294195e4e88c173c8dab6334b207636774daad6f35138b9802c1784f334a82cbff480bb78976b22bb0fb41e78fdcb8095");
 
     let protocol_public_parameters = ProtocolPublicParameters::new(N);
@@ -360,16 +347,13 @@ pub fn initiate_centralized_party_sign(
 }
 
 pub fn initiate_decentralized_party_sign(
-    //tiresias_public_parameters: &str, epoch: EpochId, party_id: PartyID, threshold: PartyID, number_of_parties: PartyID, session_id: SignatureMpcSessionID
     tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
     decryption_key_share_public_parameters: <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PublicParameters,
-    //epoch: EpochId,
     party_id: PartyID,
-    parties: HashSet<PartyID>,
-    //session_id: SignatureMPCSessionID,
+    _parties: HashSet<PartyID>,
     dkg_output: DKGDecentralizedPartyOutput,
     presigns: Vec<DecentralizedPartyPresign>,
-) -> twopc_mpc::Result<Vec<SignaturePartialDecryptionParty<ProtocolContext>>> {
+) -> Result<Vec<SignaturePartialDecryptionParty<ProtocolContext>>> {
     let protocol_public_parameters = ProtocolPublicParameters::new(
         *decryption_key_share_public_parameters
             .encryption_scheme_public_parameters
@@ -408,16 +392,16 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
     dkg_output: DKGDecentralizedPartyOutput,
     presigns: Vec<DecentralizedPartyPresign>,
     hash: Hash,
-) -> twopc_mpc::Result<()> {
+) -> Result<()> {
     let protocol_public_parameters = ProtocolPublicParameters::new(
         LargeBiPrimeSizedNumber::from_be_hex(tiresias_public_parameters),
     );
 
     messages
         .into_iter()
-        .zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter())
-        .zip(presigns.into_iter())
-        .map(
+        .zip(public_nonce_encrypted_partial_signature_and_proofs)
+        .zip(presigns)
+        .try_for_each(
             |((message, public_nonce_encrypted_partial_signature_and_proofs), presign)| {
                 let m = message_digest(&message, &hash);
                 SignaturePartialDecryptionParty::verify_encrypted_signature_parts_prehash(
@@ -435,17 +419,17 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
                 )
             },
         )
-        .collect()
 }
 
-/// Returned when the signature decryption fails & contains all the necessary information to
-/// start an Identifiable Abort protocol.
+/// Returned when the signature decryption fails.
+/// Contains all the necessary information to start an Identifiable Abort protocol.
 pub struct DecryptionError {
     // The indices of the messages that their decryption failed out of the current messages batch.
     pub failed_messages_indices: Vec<usize>,
 
-    // The IDs of the parties that participated in the aborted signing protocol. We need only threshold of them to
-    // decrypt the signature, and we communicate them to the other parties, so they'll know they should
+    // The IDs of the parties that participated in the aborted signing protocol.
+    // We need only a threshold of them to decrypt the signature,
+    // and we communicate them to the other parties, so they'll know they should
     // use their decryption shares to find the malicious parties.
     pub decrypters: Vec<PartyID>,
 }
@@ -473,21 +457,21 @@ fn decrypt_signatures(
         .zip(
             messages
                 .into_iter()
-                .zip(public_nonce_encrypted_partial_signature_and_proofs.into_iter())
+                .zip(public_nonce_encrypted_partial_signature_and_proofs)
                 .zip(decryption_shares.iter()),
         )
         .enumerate()
         .map(
             |(
-                index,
-                (
-                    signature_threshold_decryption_round_party,
-                    (
-                        (message, public_nonce_encrypted_partial_signature_and_proof),
-                        (partial_signature_decryption_shares, masked_nonce_decryption_shares),
-                    ),
-                ),
-            )| {
+                 index,
+                 (
+                     signature_threshold_decryption_round_party,
+                     (
+                         (_message, _public_nonce_encrypted_partial_signature_and_proof),
+                         (partial_signature_decryption_shares, masked_nonce_decryption_shares),
+                     ),
+                 ),
+             )| {
                 let result = signature_threshold_decryption_round_party.decrypt_signature(
                     lagrange_coefficients.clone(),
                     partial_signature_decryption_shares.clone(),
@@ -501,8 +485,8 @@ fn decrypt_signatures(
                             k256::Scalar::from(nonce_x_coordinate),
                             signature_s_inner,
                         )
-                        .unwrap()
-                        .to_vec()
+                            .unwrap()
+                            .to_vec()
                     }
                     Err(_) => {
                         failed_messages_indices.push(index);
@@ -533,13 +517,6 @@ pub fn decrypt_signature_decentralized_party_sign(
     >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
 ) -> std::result::Result<Vec<Vec<u8>>, DecryptionError> {
-    let protocol_public_parameters = ProtocolPublicParameters::new(
-        *decryption_key_share_public_parameters
-            .encryption_scheme_public_parameters
-            .plaintext_space_public_parameters()
-            .modulus,
-    );
-
     // TODO: choose multiple?
     let decrypters: Vec<PartyID> = decryption_shares
         .keys()
@@ -555,7 +532,7 @@ pub fn decrypt_signature_decentralized_party_sign(
                 .filter(|(party_id, _)| decrypters.contains(party_id))
                 .map(|(party_id, decryption_share)| {
                     let (partial_signature_decryption_shares, masked_nonce_decryption_shares) =
-                        decryption_share[i].clone();
+                        decryption_share[i];
                     (
                         (*party_id, partial_signature_decryption_shares),
                         (*party_id, masked_nonce_decryption_shares),
@@ -599,11 +576,12 @@ pub fn decrypt_signature_decentralized_party_sign(
     }
 }
 
-/// Identify the parties that acted maliciously while signing this specific message, after all the parties
-/// that were involved in decrypting it have sent a proof that they behaved honestly.
+/// Identify the parties that acted maliciously while signing this specific message,
+/// after all the parties that were involved in decrypting it have sent a proof
+/// that they behaved honestly.
 ///
-/// In case one of the involved parties failed to generate a proof, only this party will be returned.
-/// If all the involved parties sent a proof, and some of the proofs are invalid, all the parties that
+/// If one of the involved parties didn't generate a proof, only this party will be returned.
+/// If all the involved parties sent a proof, and some proofs are invalid, all the parties that
 /// their proof was invalid will be returned.
 pub fn identify_message_malicious_parties(
     verification_round_party: SignaturePartialDecryptionProofVerificationParty,
@@ -640,10 +618,10 @@ pub fn identify_message_malicious_parties(
 
     match error {
         Error::Tiresias(tiresias::Error::ProtocolError(
-            ProtocolError::ProofVerificationError {
-                malicious_parties, ..
-            },
-        )) => malicious_parties,
+                            ProtocolError::ProofVerificationError {
+                                malicious_parties, ..
+                            },
+                        )) => malicious_parties,
         _ => {
             panic!("{}", error);
         }
@@ -653,7 +631,7 @@ pub fn identify_message_malicious_parties(
 pub fn generate_proof(
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     decryption_key_share: DecryptionKeyShare,
-    designated_decrypting_party_id: PartyID,
+    _designated_decrypting_party_id: PartyID,
     presign: DecentralizedPartyPresign,
     encryption_scheme_public_parameters: <EncryptionKey as AdditivelyHomomorphicEncryptionKey<
         PLAINTEXT_SPACE_SCALAR_LIMBS,
@@ -667,14 +645,13 @@ pub fn generate_proof(
 ) {
     let proof_party = SignaturePartialDecryptionProofParty::new(
         decryption_key_share_public_parameters.threshold,
-        designated_decrypting_party_id,
         decryption_key_share,
         decryption_key_share_public_parameters,
         presign,
         encryption_scheme_public_parameters,
         public_nonce_encrypted_partial_signature_and_proof,
     )
-    .unwrap();
+        .unwrap();
 
     proof_party
         .prove_correct_signature_partial_decryption(&mut OsRng)
@@ -691,7 +668,7 @@ pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {
             bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
         }
     }
-    .unwrap();
+        .unwrap();
 
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&m);
     U256::from(m).into()
@@ -728,16 +705,13 @@ pub fn config_signature_mpc_secret_for_network_for_testing(
     tiresias_deal_trusted_shares(t, number_of_parties, N, SECRET_KEY, BASE)
 }
 
-// a workaround to decrialize to PublicKeyValue - TODO: add from_bytes to PublicKeyValue
-pub fn affine_point_to_public_key(public_key: &Vec<u8>) -> Option<PublicKeyValue> {
+// A workaround to deserialize to PublicKeyValue - TODO: add from_bytes to PublicKeyValue
+pub fn affine_point_to_public_key(public_key: &[u8]) -> Option<PublicKeyValue> {
     let public_key: Option<AffinePoint> =
         AffinePoint::from_bytes(CompressedPoint::from_slice(public_key)).into();
-    let public_key = public_key.map(|pk| bcs::to_bytes(&pk).ok()).flatten();
-    let public_key = public_key
-        .map(|pk| bcs::from_bytes::<PublicKeyValue>(&pk).ok())
-        .flatten();
-
     public_key
+        .and_then(|pk| bcs::to_bytes(&pk).ok())
+        .and_then(|pk| bcs::from_bytes::<PublicKeyValue>(&pk).ok())
 }
 
 pub fn recovery_id(

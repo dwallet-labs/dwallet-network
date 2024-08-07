@@ -8,21 +8,20 @@ use mysten_metrics::spawn_monitored_task;
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::{
     generate_proof, identify_message_malicious_parties, AdditivelyHomomorphicDecryptionKeyShare,
-    DecryptionKeyShare, PaillierModulusSizedNumber, PartyID, SignaturePartialDecryptionProofParty,
+    DecryptionKeyShare, PaillierModulusSizedNumber, PartyID,
     SignaturePartialDecryptionProofVerificationParty,
 };
-use sui_types::base_types::{EpochId, ObjectRef};
+use sui_types::base_types::{EpochId};
 use sui_types::messages_signature_mpc::{
     SignMessage, SignatureMPCMessageProtocols, SignatureMPCMessageSummary, SignatureMPCSessionID,
 };
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::signature_mpc::sign::SignState;
-use crate::signature_mpc::sign::{SignRound, SignRoundCompletion};
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
 
-/// Generate a list of proofs, one for every message in the messages batch that its decryption failed.
-/// Each proof proves that the executing party id (state.party_id) while signing on that message.
+/// Generate a list of proofs, one for every message in the message batch that its decryption failed.
+/// Each proof proves that the executing party ID (state.party_id) while signing on that message.
 pub fn generate_proofs(
     state: &SignState,
     failed_messages_indices: &Vec<usize>,
@@ -35,7 +34,7 @@ pub fn generate_proofs(
         state.tiresias_key_share_decryption_key_share,
         &state.tiresias_public_parameters,
     )
-    .unwrap();
+        .unwrap();
 
     failed_messages_indices
         .iter()
@@ -89,15 +88,16 @@ pub(crate) fn identify_batch_malicious_parties(
             involved_proofs,
             state.involved_parties.as_deref().unwrap().into(),
         )
-        .iter()
-        .for_each(|party_id| {
-            malicious_parties.insert(*party_id);
-        });
+            .iter()
+            .for_each(|party_id| {
+                malicious_parties.insert(*party_id);
+            });
     }
     Ok(malicious_parties)
 }
 
-/// Maps the decryption shares to the type expected by the identify_malicious_decrypters function from the 2pc-mpc repository.
+/// Maps the decryption shares to the type
+/// expected by the identify_malicious_decrypters function from the `2PC-MPC` repository.
 fn change_shares_type(
     involved_shares: &HashMap<
         PartyID,
@@ -147,13 +147,14 @@ fn get_involved_proofs(state: &SignState, i: usize) -> HashMap<PartyID, PartialD
 }
 
 /// Generates proofs, one for every message in the batch, that this party behaved honestly while
-/// signing it. Then, sends the proofs to the other parties.
+/// signing it.
+/// Then, send the proofs to the other parties.
 pub fn spawn_proof_generation(
     epoch: EpochId,
     epoch_store: Arc<AuthorityPerEpochStore>,
     party_id: PartyID,
     session_id: SignatureMPCSessionID,
-    sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
+    _sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
     submit: Arc<dyn SubmitSignatureMPC>,
     failed_messages_indices: Vec<usize>,
     involved_parties: Vec<PartyID>,

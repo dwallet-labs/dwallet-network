@@ -1,14 +1,12 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::authority::AuthorityState;
 
 use mysten_metrics::spawn_monitored_task;
 use sui_types::messages_signature_mpc::{
     InitSignatureMPCProtocolSequenceNumber, InitiateSignatureMPCProtocol, SignatureMPCSessionID,
 };
 
-use std::hash::Hash;
 use std::sync::Arc;
 use tokio::sync::{mpsc, watch};
 
@@ -18,7 +16,6 @@ use futures::future::{select, Either};
 use futures::FutureExt;
 use std::str::FromStr;
 use std::time::Duration;
-use sui_json_rpc_types::TransactionFilter;
 use sui_types::base_types::SuiAddress;
 use sui_types::signature_mpc::{
     DKGSession, CREATE_DKG_SESSION_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
@@ -58,8 +55,8 @@ impl SignatureMpcSubscriber {
     async fn run(mut self) {
         info!("Starting SignatureMpcSubscriber");
         loop {
-            // Check whether an exit signal has been received, if so we break the loop.
-            // This gives us a chance to exit, in case checkpoint making keeps failing.
+            // Check whether an exit signal has been received if so we break the loop.
+            // This gives us a chance to exit if checkpoint making keeps failing.
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
                     break;
