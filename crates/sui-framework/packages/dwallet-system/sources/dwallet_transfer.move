@@ -28,7 +28,7 @@ module dwallet_system::dwallet_transfer {
         key_owner_address: address,
     }
 
-    public fun store_encryption_key(key: vector<u8>, ctx: &mut TxContext): ID {
+    public fun register_encryption_key(key: vector<u8>, ctx: &mut TxContext): ID {
         let pk = EncryptionKey {
             id: object::new(ctx),
             encryption_key: key,

@@ -78,7 +78,7 @@ export const storeEncryptionKey = async (
 	const tx = new TransactionBlock();
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryption_key));
 	tx.moveCall({
-		target: `${packageId}::${dWalletTransferModuleName}::store_encryption_key`,
+		target: `${packageId}::${dWalletTransferModuleName}::register_encryption_key`,
 		arguments: [purePubKey],
 	});
 	let result = await client.signAndExecuteTransactionBlock({
