@@ -174,17 +174,19 @@ pub fn spawn_proof_generation(
             && involved_parties.contains(&party_id)
         {
             let proofs = generate_proofs(&state, &failed_messages_indices);
-            let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
-            let _ = submit
-                .sign_and_submit_message(
-                    &SignatureMPCMessageSummary::new(
-                        epoch,
-                        SignatureMPCMessageProtocols::Sign(SignMessage::IAProofs(proofs)),
-                        session_id,
-                    ),
-                    &epoch_store,
-                )
-                .await;
+            if let Ok(proofs) = proofs {
+                let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
+                let _ = submit
+                    .sign_and_submit_message(
+                        &SignatureMPCMessageSummary::new(
+                            epoch,
+                            SignatureMPCMessageProtocols::Sign(SignMessage::IAProofs(proofs)),
+                            session_id,
+                        ),
+                        &epoch_store,
+                    )
+                    .await;
+            }
         }
     });
 }
