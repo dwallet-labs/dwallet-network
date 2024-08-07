@@ -69,7 +69,7 @@ pub(crate) fn identify_batch_malicious_parties(
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
     // that are necessary to call the [`identify_message_malicious_parties`] function.
     let failed_messages_parties =
-        generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
+        generate_proofs(&state, &state.failed_messages_indices.clone().unwrap())?;
     let mut malicious_parties = HashSet::new();
     let involved_shares = get_involved_shares(&state);
     for ((i, message_index), (_, party)) in state
