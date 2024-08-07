@@ -12,12 +12,16 @@ module dwallet_system::dwallet_transfer {
 
     const DWALLET_TRANSFER_ERROR: u64 = 0x1;
 
-    struct EncryptedUserShare has key{
+    struct EncryptedUserShare has key {
         id: UID,
         dwallet_id: ID,
         encrypted_secret_share: vector<u8>,
+        encryption_key_id: ID,
     }
 
+    /// An Additively Homomorphic Encryption (AHE) public key
+    /// that can be used to encrypt a user share in order to prove to the network that
+    /// the recipient can sign with a dWallet when it is transferred or access is granted to it.
     struct EncryptionKey has key {
         id: UID,
         encryption_key: vector<u8>,
@@ -58,6 +62,7 @@ module dwallet_system::dwallet_transfer {
             id: object::new(ctx),
             dwallet_id: object::id(dwallet),
             encrypted_secret_share,
+            encryption_key_id: object::id(encryption_key),
         };
 
         let dt_id = object::id(&dwallet_transfer);
