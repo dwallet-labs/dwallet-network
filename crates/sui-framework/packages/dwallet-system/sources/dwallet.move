@@ -14,6 +14,12 @@ module dwallet_system::dwallet {
 
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 
+    #[test_only]
+    friend dwallet_system::dwallet_tests;
+
+    #[test_only]
+    friend dwallet_system::dwallet_ecdsa_k1_tests;
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
@@ -249,11 +255,11 @@ module dwallet_system::dwallet {
         } = partial_user_signed_messages;
 
         object::delete(id);
-        let i: u64 = 0;
         let messages_len: u64 = vector::length(&messages);
         let approval_len: u64 = vector::length(&message_approvals);
         assert!(messages_len == approval_len, EMesssageApprovalDWalletMismatch);
 
+        let i: u64 = 0;
         while (i < messages_len) {
             let message_approval = vector::pop_back(&mut message_approvals);
             let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);

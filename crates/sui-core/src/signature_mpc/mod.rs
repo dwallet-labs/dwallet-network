@@ -233,7 +233,7 @@ impl SignatureMPCAggregator {
         party_id: PartyID,
         parties: HashSet<PartyID>,
         tiresias_public_parameters: DecryptionPublicParameters,
-        tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
+        _tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
         submit: Arc<dyn SubmitSignatureMPC>,
         session_refs: Arc<DashMap<SignatureMPCSessionID, ObjectRef>>,
         dkg_session_rounds: Arc<DashMap<SignatureMPCSessionID, DKGRound>>,
@@ -380,12 +380,12 @@ impl SignatureMPCAggregator {
     fn spawn_complete_dkg_round(
         epoch: EpochId,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        party_id: PartyID,
+        _party_id: PartyID,
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
         state: DKGState,
         dkg_session_rounds: Arc<DashMap<SignatureMPCSessionID, DKGRound>>,
-        dkg_session_states: Arc<DashMap<SignatureMPCSessionID, DKGState>>,
+        _dkg_session_states: Arc<DashMap<SignatureMPCSessionID, DKGState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
@@ -440,7 +440,7 @@ impl SignatureMPCAggregator {
     fn spawn_complete_presign_first_round(
         epoch: EpochId,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        party_id: PartyID,
+        _party_id: PartyID,
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
         state: PresignState,
@@ -542,12 +542,12 @@ impl SignatureMPCAggregator {
     fn spawn_complete_presign_second_round(
         epoch: EpochId,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        party_id: PartyID,
+        _party_id: PartyID,
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
         state: PresignState,
         presign_session_rounds: Arc<DashMap<SignatureMPCSessionID, PresignRound>>,
-        presign_session_states: Arc<DashMap<SignatureMPCSessionID, PresignState>>,
+        _presign_session_states: Arc<DashMap<SignatureMPCSessionID, PresignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
@@ -602,12 +602,12 @@ impl SignatureMPCAggregator {
     fn spawn_complete_sign_round(
         epoch: EpochId,
         epoch_store: Arc<AuthorityPerEpochStore>,
-        party_id: PartyID,
+        _party_id: PartyID,
         session_id: SignatureMPCSessionID,
         session_ref: ObjectRef,
         state: SignState,
         sign_session_rounds: Arc<DashMap<SignatureMPCSessionID, SignRound>>,
-        sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
+        _sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         submit: Arc<dyn SubmitSignatureMPC>,
     ) {
         spawn_monitored_task!(async move {
@@ -778,7 +778,7 @@ impl SignatureMPCAggregator {
     }
 }
 
-/// This is a service used to communicate with other pieces of sui(for ex. authority)
+/// This is a service used to communicate with other pieces of sui (for example, Authority)
 pub struct SignatureMPCService {
     tx_signature_mpc_protocol_message_sender: mpsc::Sender<SignatureMPCMessage>,
 }
@@ -859,14 +859,9 @@ impl SignatureMPCServiceNotify for SignatureMPCService {
             sender
                 .send(message)
                 .await
-                .tap_err(|e| warn!("Submit signature mpc message failed with {:?}", e))
+                .tap_err(|e| warn!("Submit a signature mpc message failed with error: {:?}", e))
                 .expect("TODO: panic message");
         });
-        //
-        // self.tx_signature_mpc_protocol_message_sender.send(message.clone())
-        //     .tap_err(|e| warn!("Submit signature mpc message failed with {:?}", e))
-        //     .map_err(|e| SuiError::Unknown(format!("{:?}", e)))?;
-
         Ok(())
     }
 }
