@@ -36,15 +36,16 @@ pub fn generate_proofs(
         state.tiresias_key_share_decryption_key_share,
         &state.tiresias_public_parameters,
     )?;
-
+    let presigns = state.presigns.clone().ok_or(twopc_mpc::Error::InvalidParameters)?;
     failed_messages_indices
         .iter()
         .map(|index| {
+            let presign = presigns.get(*index).ok_or(twopc_mpc::Error::InvalidParameters).clone()?;
             generate_proof(
                 state.tiresias_public_parameters.clone(),
                 decryption_key_share.clone(),
                 state.party_id,
-                state.presigns.clone().ok_or(twopc_mpc::Error::InvalidParameters).get(*index).ok_or(twopc_mpc::Error::InvalidParameters).clone(),
+                presign.clone(),
                 state
                     .tiresias_public_parameters
                     .encryption_scheme_public_parameters
