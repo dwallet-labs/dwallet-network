@@ -27,21 +27,36 @@ use twopc_mpc::Result;
 pub fn generate_proofs(
     state: &SignState,
     failed_messages_indices: &Vec<usize>,
-) -> Result<Vec<(
-    PartialDecryptionProof,
-    SignaturePartialDecryptionProofVerificationParty,
-)>> {
+) -> Result<
+    Vec<(
+        PartialDecryptionProof,
+        SignaturePartialDecryptionProofVerificationParty,
+    )>,
+> {
     let decryption_key_share = DecryptionKeyShare::new(
         state.party_id,
         state.tiresias_key_share_decryption_key_share,
         &state.tiresias_public_parameters,
     )?;
-    let presigns = state.presigns.clone().ok_or(twopc_mpc::Error::InvalidParameters)?;
+    let presigns = state
+        .presigns
+        .clone()
+        .ok_or(twopc_mpc::Error::InvalidParameters)?;
+    let public_nonce_encrypted_partial_signature_and_proofs = state
+        .public_nonce_encrypted_partial_signature_and_proofs
+        .clone()
+        .ok_or(twopc_mpc::Error::InvalidParameters)?;
     failed_messages_indices
         .iter()
         .map(|index| {
-            let presign = presigns.get(*index).ok_or(twopc_mpc::Error::InvalidParameters).clone()?;
-            generate_proof(
+            let presign = presigns
+                .get(*index)
+                .ok_or(twopc_mpc::Error::InvalidParameters)?;
+            let public_nonce_encrypted_partial_signature_and_proof =
+                public_nonce_encrypted_partial_signature_and_proofs
+                    .get(*index)
+                    .ok_or(twopc_mpc::Error::InvalidParameters)?;
+            Ok(generate_proof(
                 state.tiresias_public_parameters.clone(),
                 decryption_key_share.clone(),
                 state.party_id,
@@ -50,17 +65,10 @@ pub fn generate_proofs(
                     .tiresias_public_parameters
                     .encryption_scheme_public_parameters
                     .clone(),
-                state
-                    .public_nonce_encrypted_partial_signature_and_proofs
-                    .clone()
-                    .ok_or(twopc_mpc::Error::InvalidParameters)
-                    .get(*index)
-                    .ok_or(twopc_mpc::Error::InvalidParameters)
-                    .clone(),
-            )
+                public_nonce_encrypted_partial_signature_and_proof.clone(),
+            ))
         })
-        .collect()
-
+        .collect::<Result<Vec<_>>>()
 }
 
 /// Identify all the parties that behaved maliciously in this messages batch.
