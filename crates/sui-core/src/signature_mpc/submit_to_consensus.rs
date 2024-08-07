@@ -1,29 +1,23 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::authority::StableSyncAuthoritySigner;
-use crate::consensus_adapter::SubmitToConsensus;
-use crate::epoch::reconfiguration::ReconfigurationInitiator;
-use async_trait::async_trait;
-use fastcrypto::ed25519::Ed25519Signature;
-use fastcrypto::traits::Signer;
-use std::pin::Pin;
 use std::sync::Arc;
+
+use async_trait::async_trait;
+use tracing::instrument;
+
 use sui_types::base_types::AuthorityName;
-use sui_types::crypto::{AuthoritySignature, NetworkKeyPair};
 use sui_types::error::SuiResult;
-use sui_types::message_envelope::Message;
-use sui_types::messages_checkpoint::{
-    CertifiedCheckpointSummary, CheckpointContents, CheckpointSignatureMessage, CheckpointSummary,
-    SignedCheckpointSummary, VerifiedCheckpoint,
-};
 use sui_types::messages_consensus::ConsensusTransaction;
 use sui_types::messages_signature_mpc::{
     SignatureMPCMessage, SignatureMPCMessageSummary, SignatureMPCOutput,
     SignedSignatureMPCMessageSummary, SignedSignatureMPCOutput,
 };
-use tracing::{debug, info, instrument, trace};
+
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::authority::StableSyncAuthoritySigner;
+use crate::consensus_adapter::SubmitToConsensus;
+use crate::epoch::reconfiguration::ReconfigurationInitiator;
 
 use super::SignatureMPCMetrics;
 
@@ -54,7 +48,7 @@ pub struct SubmitSignatureMPCToConsensus<T> {
 
 #[async_trait]
 impl<T: SubmitToConsensus + ReconfigurationInitiator> SubmitSignatureMPC
-    for SubmitSignatureMPCToConsensus<T>
+for SubmitSignatureMPCToConsensus<T>
 {
     #[instrument(level = "debug", skip_all)]
     async fn sign_and_submit_message(

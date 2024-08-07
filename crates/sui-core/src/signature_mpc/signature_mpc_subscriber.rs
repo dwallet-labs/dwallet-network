@@ -58,8 +58,8 @@ impl SignatureMpcSubscriber {
     async fn run(mut self) {
         info!("Starting SignatureMpcSubscriber");
         loop {
-            // Check whether an exit signal has been received, if so we break the loop.
-            // This gives us a chance to exit, in case checkpoint making keeps failing.
+            // Check whether an exit signal has been received if so we break the loop.
+            // This gives us a chance to exit if checkpoint making keeps failing.
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
                     break;
