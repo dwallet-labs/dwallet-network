@@ -388,7 +388,7 @@ impl SignatureMPCAggregator {
                                 state.clone(),
                             );
                         }
-                        SignMessage::Proofs(_) => {
+                        SignMessage::IAProofs(_) => {
                             if state.should_identify_malicious_actors() {
                                 if let Ok(malicious_parties) =
                                     identify_batch_malicious_parties(&state)

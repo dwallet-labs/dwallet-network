@@ -94,6 +94,7 @@ impl SignRound {
     pub(crate) fn complete_round(&mut self, state: SignState) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
+            // todo(zeev): remove this enum and handle the `mem` code.
             SignRound::FirstRound {
                 signature_threshold_decryption_round_parties,
             } => {
@@ -206,7 +207,7 @@ impl SignState {
                     self.involved_parties = Some(involved_parties.clone());
                 }
             }
-            SignMessage::Proofs(proofs) => {
+            SignMessage::IAProofs(proofs) => {
                 self.insert_proofs(sender_id, proofs.clone());
             }
         }

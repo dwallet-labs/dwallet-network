@@ -20,8 +20,9 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::signature_mpc::sign::SignState;
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
 
-/// Generate a list of proofs, one for every message in the message batch that its decryption failed.
-/// Each proof proves that the executing party ID (state.party_id) while signing on that message.
+/// Generate a list of proofs, one for every message in the batch.
+/// Each proof proves that the executing party ID
+/// (state.party_id) behaved honestly while signing the message.
 pub fn generate_proofs(
     state: &SignState,
     failed_messages_indices: &Vec<usize>,
@@ -65,7 +66,7 @@ pub(crate) fn identify_batch_malicious_parties(
     state: &SignState,
 ) -> twopc_mpc_protocols::Result<HashSet<PartyID>> {
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
-    // that are necessary to call the [`identify_malicious_parties`] function.
+    // that are necessary to call the [`identify_message_malicious_parties`] function.
     let failed_messages_parties =
         generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
     let mut malicious_parties = HashSet::new();
@@ -79,13 +80,20 @@ pub(crate) fn identify_batch_malicious_parties(
         .zip(failed_messages_parties.into_iter())
     {
         let (shares, masked_shares) = change_shares_type(&involved_shares, message_index);
-        let involved_proofs = get_involved_proofs(&state, i);
+        let proofs = state
+            .proofs
+            .clone()
+            .unwrap()
+            .into_iter()
+            .map(|(party_id, proofs)| (party_id, proofs[i].clone()))
+            .collect();
+
         identify_message_malicious_parties(
             party,
             shares,
             masked_shares,
             state.tiresias_public_parameters.clone(),
-            involved_proofs,
+            proofs,
             state.involved_parties.as_deref().unwrap().into(),
         )
         .iter()
@@ -136,18 +144,8 @@ fn get_involved_shares(
         .collect()
 }
 
-fn get_involved_proofs(state: &SignState, i: usize) -> HashMap<PartyID, PartialDecryptionProof> {
-    state
-        .proofs
-        .clone()
-        .unwrap()
-        .into_iter()
-        .map(|(party_id, proofs)| (party_id, proofs[i].clone()))
-        .collect()
-}
-
-/// Generates proofs, one for every message in the batch, that this party behaved honestly while
-/// signing it.
+/// Generates a proof that this party behaved honestly while signing a message.
+/// One for every message in the batch,
 /// Then, send the proofs to the other parties.
 pub fn spawn_proof_generation(
     epoch: EpochId,
@@ -161,6 +159,7 @@ pub fn spawn_proof_generation(
     state: SignState,
 ) {
     spawn_monitored_task!(async move {
+        // todo(zeev): remove unwrap.
         if (state.proofs.is_none() || !state.clone().proofs.unwrap().contains_key(&party_id))
             && involved_parties.contains(&party_id)
         {
@@ -170,7 +169,7 @@ pub fn spawn_proof_generation(
                 .sign_and_submit_message(
                     &SignatureMPCMessageSummary::new(
                         epoch,
-                        SignatureMPCMessageProtocols::Sign(SignMessage::Proofs(proofs)),
+                        SignatureMPCMessageProtocols::Sign(SignMessage::IAProofs(proofs)),
                         session_id,
                     ),
                     &epoch_store,

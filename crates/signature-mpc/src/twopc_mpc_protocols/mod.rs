@@ -448,48 +448,33 @@ fn decrypt_signatures(
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
     messages: Vec<Vec<u8>>,
 ) -> std::result::Result<Vec<Vec<u8>>, SignaturesDecryptionError> {
+    // todo(zeev): insert to iter.
     let mut failed_messages_indices = Vec::new();
-    let messages_signatures: Vec<Vec<u8>> = signature_threshold_decryption_round_parties
+
+    let zipped_data = signature_threshold_decryption_round_parties
         .into_iter()
-        .zip(
-            messages
-                .into_iter()
-                .zip(public_nonce_encrypted_partial_signature_and_proofs)
-                .zip(decryption_shares.iter()),
-        )
+        .zip(messages)
+        .zip(public_nonce_encrypted_partial_signature_and_proofs)
+        .zip(decryption_shares.iter());
+
+    let messages_signatures: Vec<Vec<u8>> = zipped_data
         .enumerate()
         .map(
             |(
                 index,
                 (
-                    signature_threshold_decryption_round_party,
-                    (
-                        (_message, _public_nonce_encrypted_partial_signature_and_proof),
-                        (partial_signature_decryption_shares, masked_nonce_decryption_shares),
-                    ),
+                    ((signature_threshold_decryption_round_party, message), proof),
+                    (partial_shares, masked_shares),
                 ),
             )| {
-                let result = signature_threshold_decryption_round_party.decrypt_signature(
-                    lagrange_coefficients.clone(),
-                    partial_signature_decryption_shares.clone(),
-                    masked_nonce_decryption_shares.clone(),
-                );
-
-                match result {
-                    Ok((nonce_x_coordinate, signature_s)) => {
-                        let signature_s_inner: k256::Scalar = signature_s.into();
-                        Signature::<k256::Secp256k1>::from_scalars(
-                            k256::Scalar::from(nonce_x_coordinate),
-                            signature_s_inner,
-                        )
-                        .unwrap()
-                        .to_vec()
-                    }
-                    Err(_) => {
-                        failed_messages_indices.push(index);
-                        Vec::new()
-                    }
-                }
+                decrypt_single_signature(
+                    index,
+                    &mut failed_messages_indices,
+                    &lagrange_coefficients,
+                    signature_threshold_decryption_round_party,
+                    partial_shares,
+                    masked_shares,
+                )
             },
         )
         .collect();
@@ -499,7 +484,39 @@ fn decrypt_signatures(
             failed_messages_indices,
         });
     }
+
     Ok(messages_signatures)
+}
+
+fn decrypt_single_signature(
+    index: usize,
+    failed_messages_indices: &mut Vec<usize>,
+    lagrange_coefficients: &HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
+    party: SignatureThresholdDecryptionParty,
+    partial_shares: &HashMap<PartyID, PaillierModulusSizedNumber>,
+    masked_shares: &HashMap<PartyID, PaillierModulusSizedNumber>,
+) -> Vec<u8> {
+    let result = party.decrypt_signature(
+        lagrange_coefficients.clone(),
+        partial_shares.clone(),
+        masked_shares.clone(),
+    );
+
+    match result {
+        Ok((nonce_x_coordinate, signature_s)) => {
+            let signature_s_inner: k256::Scalar = signature_s.into();
+            Signature::<k256::Secp256k1>::from_scalars(
+                k256::Scalar::from(nonce_x_coordinate),
+                signature_s_inner,
+            )
+            .unwrap()
+            .to_vec()
+        }
+        Err(_) => {
+            failed_messages_indices.push(index);
+            Vec::new()
+        }
+    }
 }
 
 pub fn decrypt_signature_decentralized_party_sign(
@@ -514,7 +531,6 @@ pub fn decrypt_signature_decentralized_party_sign(
     >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
 ) -> std::result::Result<Vec<Vec<u8>>, DecryptionError> {
-    // TODO: choose multiple?
     let decrypters: Vec<PartyID> = decryption_shares
         .keys()
         .take(decryption_key_share_public_parameters.threshold.into())
@@ -564,6 +580,7 @@ pub fn decrypt_signature_decentralized_party_sign(
         messages,
     );
 
+    // todo(zeev): remove match.
     match messages_signatures_result {
         Ok(messages_signatures) => Ok(messages_signatures),
         Err(decryption_error) => Err(DecryptionError {
@@ -625,11 +642,13 @@ pub fn identify_message_malicious_parties(
     }
 }
 
+/// Generate a proof that the partial decryption of the signature is correct.
 pub fn generate_proof(
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     decryption_key_share: DecryptionKeyShare,
     _designated_decrypting_party_id: PartyID,
     presign: DecentralizedPartyPresign,
+    // todo(zeev): fix this.
     encryption_scheme_public_parameters: <EncryptionKey as AdditivelyHomomorphicEncryptionKey<
         PLAINTEXT_SPACE_SCALAR_LIMBS,
     >>::PublicParameters,
