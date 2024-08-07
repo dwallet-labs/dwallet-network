@@ -45,10 +45,8 @@ impl SignRound {
         let sign_mpc_party_per_message = initiate_decentralized_party_sign(
             tiresias_key_share_decryption_key_share,
             tiresias_public_parameters.clone(),
-            //epoch,
             party_id,
             parties.clone(),
-            //session_id,
             dkg_output,
             presigns.clone(),
         )?;
