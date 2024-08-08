@@ -102,7 +102,7 @@ impl SignRound {
                     state
                         .public_nonce_encrypted_partial_signature_and_proofs
                         .clone()
-                        .unwrap(),
+                        .ok_or(twopc_mpc::Error::InvalidParameters)?,
                     signature_threshold_decryption_round_parties,
                 );
                 match decrypt_result {

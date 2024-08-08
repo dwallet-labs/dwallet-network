@@ -19,6 +19,7 @@ use sui_types::messages_signature_mpc::{
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::signature_mpc::sign::SignState;
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
+use twopc_mpc::Result;
 
 /// Generate a list of proofs, one for every message in the batch.
 /// Each proof proves that the executing party ID
@@ -26,39 +27,48 @@ use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
 pub fn generate_proofs(
     state: &SignState,
     failed_messages_indices: &Vec<usize>,
-) -> Vec<(
-    PartialDecryptionProof,
-    SignaturePartialDecryptionProofVerificationParty,
-)> {
+) -> Result<
+    Vec<(
+        PartialDecryptionProof,
+        SignaturePartialDecryptionProofVerificationParty,
+    )>,
+> {
     let decryption_key_share = DecryptionKeyShare::new(
         state.party_id,
         state.tiresias_key_share_decryption_key_share,
         &state.tiresias_public_parameters,
-    )
-    .unwrap();
-
+    )?;
+    let presigns = state
+        .presigns
+        .clone()
+        .ok_or(twopc_mpc::Error::InvalidParameters)?;
+    let public_nonce_encrypted_partial_signature_and_proofs = state
+        .public_nonce_encrypted_partial_signature_and_proofs
+        .clone()
+        .ok_or(twopc_mpc::Error::InvalidParameters)?;
     failed_messages_indices
         .iter()
         .map(|index| {
-            generate_proof(
+            let presign = presigns
+                .get(*index)
+                .ok_or(twopc_mpc::Error::InvalidParameters)?;
+            let public_nonce_encrypted_partial_signature_and_proof =
+                public_nonce_encrypted_partial_signature_and_proofs
+                    .get(*index)
+                    .ok_or(twopc_mpc::Error::InvalidParameters)?;
+            Ok(generate_proof(
                 state.tiresias_public_parameters.clone(),
                 decryption_key_share.clone(),
                 state.party_id,
-                state.presigns.clone().unwrap().get(*index).unwrap().clone(),
+                presign.clone(),
                 state
                     .tiresias_public_parameters
                     .encryption_scheme_public_parameters
                     .clone(),
-                state
-                    .public_nonce_encrypted_partial_signature_and_proofs
-                    .clone()
-                    .unwrap()
-                    .get(*index)
-                    .unwrap()
-                    .clone(),
-            )
+                public_nonce_encrypted_partial_signature_and_proof.clone(),
+            ))
         })
-        .collect()
+        .collect::<Result<Vec<_>>>()
 }
 
 /// Identify all the parties that behaved maliciously in this messages batch.
@@ -68,7 +78,7 @@ pub(crate) fn identify_batch_malicious_parties(
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
     // that are necessary to call the [`identify_message_malicious_parties`] function.
     let failed_messages_parties =
-        generate_proofs(&state, &state.failed_messages_indices.clone().unwrap());
+        generate_proofs(&state, &state.failed_messages_indices.clone().unwrap())?;
     let mut malicious_parties = HashSet::new();
     let involved_shares = get_involved_shares(&state);
     for ((i, message_index), (_, party)) in state
@@ -165,17 +175,19 @@ pub fn spawn_proof_generation(
             .map_or(true, |proofs| !proofs.contains_key(&party_id));
         if party_id_proof_doest_not_exist && involved_parties.contains(&party_id) {
             let proofs = generate_proofs(&state, &failed_messages_indices);
-            let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
-            let _ = submit
-                .sign_and_submit_message(
-                    &SignatureMPCMessageSummary::new(
-                        epoch,
-                        SignatureMPCMessageProtocols::Sign(SignMessage::IAProofs(proofs)),
-                        session_id,
-                    ),
-                    &epoch_store,
-                )
-                .await;
+            if let Ok(proofs) = proofs {
+                let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
+                let _ = submit
+                    .sign_and_submit_message(
+                        &SignatureMPCMessageSummary::new(
+                            epoch,
+                            SignatureMPCMessageProtocols::Sign(SignMessage::IAProofs(proofs)),
+                            session_id,
+                        ),
+                        &epoch_store,
+                    )
+                    .await;
+            }
         }
     });
 }
