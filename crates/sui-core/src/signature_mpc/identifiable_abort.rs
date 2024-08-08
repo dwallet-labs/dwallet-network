@@ -5,7 +5,6 @@ use dashmap::DashMap;
 use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
 
 use mysten_metrics::spawn_monitored_task;
-use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::{
     generate_proof, identify_message_malicious_parties, AdditivelyHomomorphicDecryptionKeyShare,
     DecryptionKeyShare, PaillierModulusSizedNumber, PartyID,
@@ -19,7 +18,7 @@ use sui_types::messages_signature_mpc::{
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::signature_mpc::sign::SignState;
 use crate::signature_mpc::submit_to_consensus::SubmitSignatureMPC;
-use twopc_mpc::Result;
+use twopc_mpc::{Error, Result};
 
 /// Generate a list of proofs, one for every message in the batch.
 /// Each proof proves that the executing party ID
@@ -57,17 +56,16 @@ pub fn generate_proofs(
                 public_nonce_encrypted_partial_signature_and_proofs
                     .get(index)
                     .ok_or(twopc_mpc::Error::InvalidParameters)?;
-            Ok(generate_proof(
-                state.tiresias_public_parameters.clone(),
-                decryption_key_share.clone(),
+            generate_proof(
+                &state.tiresias_public_parameters,
+                &decryption_key_share,
                 state.party_id,
-                presign.clone(),
-                state
+                presign,
+                &state
                     .tiresias_public_parameters
-                    .encryption_scheme_public_parameters
-                    .clone(),
-                public_nonce_encrypted_partial_signature_and_proof.clone(),
-            ))
+                    .encryption_scheme_public_parameters,
+                public_nonce_encrypted_partial_signature_and_proof,
+            )
         })
         .collect::<Result<Vec<_>>>()
 }
@@ -76,16 +74,16 @@ pub fn generate_proofs(
 pub(crate) fn identify_batch_malicious_parties(state: &SignState) -> Result<HashSet<PartyID>> {
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
     // that are necessary to call the [`identify_message_malicious_parties`] function.
-    let parties_with_proofs = generate_proofs(&state)?;
+    let parties_with_proofs = generate_proofs(state)?;
     // let mut malicious_parties = HashSet::new();
-    let involved_shares = get_involved_shares(&state);
+    let involved_shares = get_involved_shares(state);
 
     let malicious_parties = parties_with_proofs
         .into_iter()
         .enumerate()
         .map(|(i, (_, party))| {
             let (shares, masked_shares) =
-                normalize_shares_for_identify_malicious_decrypters(&involved_shares, i);
+                normalize_shares_for_identify_malicious_decrypters(&involved_shares, i)?;
             let party_to_msg_proof = state
                 .proofs
                 .iter()
@@ -115,19 +113,31 @@ fn normalize_shares_for_identify_malicious_decrypters(
         Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
     >,
     message_index: usize,
-) -> (
+) -> Result<(
     HashMap<PartyID, PaillierModulusSizedNumber>,
     HashMap<PartyID, PaillierModulusSizedNumber>,
-) {
-    involved_shares
+)> {
+    let (partial_signature_map, masked_nonce_map): (HashMap<_, _>, HashMap<_, _>) = involved_shares
         .iter()
         .map(|(party_id, shares)| {
-            (
-                (*party_id, shares[message_index].0.clone()),
-                (*party_id, shares[message_index].1.clone()),
-            )
+            shares
+                .get(message_index)
+                .map(
+                    |(partial_signature_decryption_share, masked_nonce_decryption_share)| {
+                        (
+                            (*party_id, *partial_signature_decryption_share),
+                            (*party_id, *masked_nonce_decryption_share),
+                        )
+                    },
+                )
+                // todo(zeev): improve this lib error handling, we shouldn't rely on 2pc-mpc.
+                .ok_or(Error::InvalidParameters)
         })
-        .unzip()
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .unzip();
+
+    Ok((partial_signature_map, masked_nonce_map))
 }
 
 fn get_involved_shares(

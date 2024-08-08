@@ -429,12 +429,13 @@ pub struct DecryptionError {
     pub decrypters: Vec<PartyID>,
 }
 
+#[allow(clippy::type_complexity)]
 fn decrypt_signatures(
     lagrange_coefficients: &HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
-    decryption_shares: &Vec<(
+    decryption_shares: &[(
         HashMap<PartyID, PaillierModulusSizedNumber>,
         HashMap<PartyID, PaillierModulusSizedNumber>,
-    )>,
+    )],
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
 ) -> Result<Vec<Vec<u8>>> {
     signature_threshold_decryption_round_parties
@@ -446,6 +447,7 @@ fn decrypt_signatures(
         .collect()
 }
 
+#[allow(clippy::type_complexity)]
 fn decrypt_single_signature(
     lagrange_coefficients: &HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
     parties_with_decryption_shares: (
@@ -477,13 +479,13 @@ fn decrypt_single_signature(
 
 /// See: [2PC-MPC](https://eprint.iacr.org/archive/2024/253/1708183928.pdf)
 /// Page 27 Optimized Threshold Decryption.
-pub fn decrypt_signature_decentralized_party_sign(
+pub fn decrypt_signatures_decentralized_party_sign(
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     // PartyID => (partial_signature_decryption_share,
     // masked_nonce_decryption_share) per Message.
     batch_decryption_shares: HashMap<
         PartyID,
-        // partial_signature_decryption_share, masked_nonce_decryption_share.
+        // Vec<(partial_signature_decryption_share, masked_nonce_decryption_share)>.
         Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
     >,
     public_nonce_encrypted_partial_signature_and_proofs: Vec<
@@ -498,7 +500,10 @@ pub fn decrypt_signature_decentralized_party_sign(
         .copied()
         .collect();
 
-    let decryption_shares = (0..public_nonce_encrypted_partial_signature_and_proofs.len())
+    let decryption_shares: Vec<(
+        HashMap<PartyID, PaillierModulusSizedNumber>,
+        HashMap<PartyID, PaillierModulusSizedNumber>,
+    )> = (0..public_nonce_encrypted_partial_signature_and_proofs.len())
         .map(|i| {
             batch_decryption_shares
                 .iter()
@@ -526,29 +531,26 @@ pub fn decrypt_signature_decentralized_party_sign(
         &decryption_shares,
         signature_threshold_decryption_round_parties,
     )
-    .or_else(|decryption_error| {
-        Err(DecryptionError {
-            decrypters: threshold_decrypters,
-        })
+    .map_err(|_decryption_error| DecryptionError {
+        decrypters: threshold_decrypters,
     })
 }
 
 fn compute_lagrange_coefficient(
     decryption_key_share_public_parameters: &PublicParameters,
-    decrypters: &Vec<PartyID>,
+    decrypters: &[PartyID],
 ) -> HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber> {
     let lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber> =
         decrypters
-            .clone()
-            .into_iter()
-            .map(|j| {
+            .iter()
+            .map(|party_id| {
                 (
-                    j,
+                    *party_id,
                     DecryptionKeyShare::compute_lagrange_coefficient(
-                        j,
+                        *party_id,
                         decryption_key_share_public_parameters.number_of_parties,
-                        decrypters.clone(),
-                        &decryption_key_share_public_parameters,
+                        decrypters.to_vec(),
+                        decryption_key_share_public_parameters,
                     ),
                 )
             })
@@ -569,10 +571,10 @@ pub fn identify_message_malicious_parties(
     masked_nonce_decryption_shares: HashMap<PartyID, DecryptionShare>,
     decryption_key_share_public_parameters: &PublicParameters,
     signature_partial_decryption_proofs: HashMap<PartyID, PartialDecryptionProof>,
-    involved_parties: &Vec<PartyID>,
+    involved_parties: &[PartyID],
 ) -> Result<Vec<PartyID>> {
     let lagrange_coefficients =
-        compute_lagrange_coefficient(&decryption_key_share_public_parameters, &involved_parties);
+        compute_lagrange_coefficient(decryption_key_share_public_parameters, involved_parties);
 
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
@@ -595,38 +597,33 @@ pub fn identify_message_malicious_parties(
 
 /// Generate a proof that the partial decryption of the signature is correct.
 pub fn generate_proof(
-    decryption_key_share_public_parameters: DecryptionPublicParameters,
-    decryption_key_share: DecryptionKeyShare,
+    decryption_key_share_public_parameters: &DecryptionPublicParameters,
+    decryption_key_share: &DecryptionKeyShare,
     _designated_decrypting_party_id: PartyID,
-    presign: DecentralizedPartyPresign,
-    encryption_scheme_public_parameters: <EncryptionKey as AdditivelyHomomorphicEncryptionKey<
+    presign: &DecentralizedPartyPresign,
+    encryption_scheme_public_parameters: &<EncryptionKey as AdditivelyHomomorphicEncryptionKey<
         PLAINTEXT_SPACE_SCALAR_LIMBS,
     >>::PublicParameters,
-    public_nonce_encrypted_partial_signature_and_proof: PublicNonceEncryptedPartialSignatureAndProof<
-        ProtocolContext,
-    >,
-) -> (
+    public_nonce_encrypted_partial_signature_and_proof: &PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
+) -> Result<(
     PartialDecryptionProof,
     SignaturePartialDecryptionProofVerificationParty,
-) {
+)> {
     let proof_party = SignaturePartialDecryptionProofParty::new(
         decryption_key_share_public_parameters.threshold,
-        decryption_key_share,
-        decryption_key_share_public_parameters,
-        presign,
-        encryption_scheme_public_parameters,
-        public_nonce_encrypted_partial_signature_and_proof,
-    )
-    .unwrap();
+        decryption_key_share.clone(),
+        decryption_key_share_public_parameters.clone(),
+        presign.clone(),
+        encryption_scheme_public_parameters.clone(),
+        public_nonce_encrypted_partial_signature_and_proof.clone(),
+    )?;
 
-    proof_party
-        .prove_correct_signature_partial_decryption(&mut OsRng)
-        .unwrap()
+    proof_party.prove_correct_signature_partial_decryption(&mut OsRng)
 }
 
-pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {
+pub fn message_digest(message: &[u8], hash_type: &Hash) -> secp256k1::Scalar {
     //todo: remove unwrap!
-    let m = match hash {
+    let hash = match hash_type {
         Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
             &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
         ),
@@ -635,8 +632,8 @@ pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {
         }
     }
     .unwrap();
-
-    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&m.into());
+    #[allow(clippy::useless_conversion)]
+    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
     U256::from(m).into()
 }
 

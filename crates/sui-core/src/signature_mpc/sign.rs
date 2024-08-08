@@ -3,16 +3,15 @@
 
 use rand::rngs::OsRng;
 use signature_mpc::twopc_mpc_protocols::{
-    decrypt_signature_decentralized_party_sign, initiate_decentralized_party_sign, message_digest,
-    AdditivelyHomomorphicDecryptionKeyShare, DKGDecentralizedPartyOutput,
-    DecentralizedPartyPresign, DecryptionPublicParameters, Hash, PaillierModulusSizedNumber,
-    PartyID, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
-    SecretKeyShareSizedNumber, SignatureThresholdDecryptionParty,
+    decrypt_signatures_decentralized_party_sign, initiate_decentralized_party_sign, message_digest,
+    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, DecryptionPublicParameters, Hash,
+    PaillierModulusSizedNumber, PartyID, ProtocolContext,
+    PublicNonceEncryptedPartialSignatureAndProof, Result, SecretKeyShareSizedNumber,
+    SignatureThresholdDecryptionParty,
 };
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::mem;
-use sui_swarm_config::network_config_builder::ProtocolVersionsConfig::Default;
 use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::{SignMessage, SignatureMPCSessionID};
 use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
@@ -97,7 +96,7 @@ impl SignRound {
             SignRound::FirstRound {
                 signature_threshold_decryption_round_parties,
             } => {
-                let decrypt_result = decrypt_signature_decentralized_party_sign(
+                let decrypt_result = decrypt_signatures_decentralized_party_sign(
                     state.tiresias_public_parameters.clone(),
                     state.decryption_shares.clone(),
                     state
@@ -231,6 +230,6 @@ impl SignState {
     pub(crate) fn should_identify_malicious_actors(&self) -> bool {
         // TODO: Handle the case a validator does not send its proof.
         let threshold: usize = self.tiresias_public_parameters.threshold.into();
-        return self.proofs.len() == threshold && self.received_all_decryption_shares();
+        self.proofs.len() == threshold && self.received_all_decryption_shares()
     }
 }

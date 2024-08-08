@@ -352,7 +352,7 @@ impl SignatureMPCAggregator {
                         tiresias_public_parameters.clone(),
                         epoch,
                         party_id,
-                        parties.clone(),
+                        parties,
                         session_id,
                     )
                 });
@@ -924,7 +924,7 @@ mod tests {
         async fn sign_and_submit_message(
             &self,
             summary: &SignatureMPCMessageSummary,
-            epoch_store: &Arc<AuthorityPerEpochStore>,
+            _epoch_store: &Arc<AuthorityPerEpochStore>,
         ) -> SuiResult {
             self.try_send(Either::Left(summary.clone())).unwrap();
             Ok(())
@@ -933,7 +933,7 @@ mod tests {
         async fn sign_and_submit_output(
             &self,
             output: &SignatureMPCOutput,
-            epoch_store: &Arc<AuthorityPerEpochStore>,
+            _epoch_store: &Arc<AuthorityPerEpochStore>,
         ) -> SuiResult {
             self.try_send(Either::Right(output.clone())).unwrap();
             Ok(())
