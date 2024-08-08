@@ -49,10 +49,17 @@ pub struct SignatureMPCSessionID(pub [u8; SESSION_ID_LENGTH]);
 // TODO: remove this temp hack
 pub type ProtocolContext = PhantomData<()>;
 
+/// The messages that may be sent between validators while performing the sign flow.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SignMessage {
+    /// A validator will send this message after decrypting a message. This message contains a vector of decryption
+    /// shares, one for every message in the batch.
     DecryptionShares(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
+    /// The aggregator only may send this message if calling [`twopc_mpc_protocols::decrypt_signatures`]
+    /// returned an error. This message tells to each of the involved validators to generate a proof that
+    /// he behaved honestly in the decryption.
     StartIAFlow(Vec<PartyID>),
+    /// This message contains the proofs a validator may generate after receiving the [`SignMessage::StartIAFlow`] message.
     IAProofs(Vec<PartialDecryptionProof>),
 }
 
