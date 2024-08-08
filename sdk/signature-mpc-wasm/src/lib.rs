@@ -243,11 +243,10 @@ pub fn generate_proof(
     Ok(serde_wasm_bindgen::to_value(&proof_public_output).unwrap())
 }
 
-pub fn decrypt(encryption_key: Vec<u8>, decryption_key: Vec<u8>, encrypted_user_share_and_proof: Vec<u8>)-> Result<Vec<u8>, JsErr> {
-    let encrypted_user_share_and_proof: EncryptedUserShareAndProof = bcs::from_bytes(&encrypted_user_share_and_proof)?;
-    let user_share = signature_mpc::twopc_mpc_protocols::dwallet_transfer::decrypt(encryption_key, decryption_key, encrypted_user_share_and_proof);
-
-    Ok(user_share)
+pub fn decrypt_user_share(encryption_key: Vec<u8>, decryption_key: Vec<u8>, encrypted_user_share_and_proof: Vec<u8>)-> Vec<u8> {
+    let encrypted_user_share_and_proof: EncryptedUserShareAndProof = bcs::from_bytes(&encrypted_user_share_and_proof).unwrap();
+    let user_share = signature_mpc::twopc_mpc_protocols::dwallet_transfer::decrypt_user_share(encryption_key, decryption_key, encrypted_user_share_and_proof);
+    user_share
 }
 
 #[derive(Serialize, Deserialize)]

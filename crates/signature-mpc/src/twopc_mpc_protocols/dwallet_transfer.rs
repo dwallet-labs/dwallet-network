@@ -325,7 +325,7 @@ pub fn is_valid_proof(
         .is_ok()
 }
 
-pub fn decrypt(
+pub fn decrypt_user_share(
     encryption_key: Vec<u8>,
     decryption_key: Vec<u8>,
     encrypted_user_share_and_proof: EncryptedUserShareAndProof,
@@ -392,7 +392,7 @@ mod tests {
             centralized_party_public_key_share,
         ));
 
-        let decrypted = decrypt(
+        let decrypted = decrypt_user_share(
             encryption_key.clone(),
             decryption_key.clone(),
             encrypted_user_share_and_proof,
