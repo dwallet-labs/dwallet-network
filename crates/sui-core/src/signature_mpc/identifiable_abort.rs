@@ -169,10 +169,11 @@ pub fn spawn_proof_generation(
     state: SignState,
 ) {
     spawn_monitored_task!(async move {
-        // todo(zeev): remove unwrap.
-        if (state.proofs.is_none() || !state.clone().proofs.unwrap().contains_key(&party_id))
-            && involved_parties.contains(&party_id)
-        {
+        let party_id_proof_doest_not_exist = state
+            .proofs
+            .as_ref()
+            .map_or(true, |proofs| !proofs.contains_key(&party_id));
+        if party_id_proof_doest_not_exist && involved_parties.contains(&party_id) {
             let proofs = generate_proofs(&state, &failed_messages_indices);
             if let Ok(proofs) = proofs {
                 let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();

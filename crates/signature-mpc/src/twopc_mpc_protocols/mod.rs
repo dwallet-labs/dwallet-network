@@ -24,6 +24,7 @@ use k256::sha2::digest::FixedOutput;
 pub use proof::aggregation::{
     CommitmentRoundParty, DecommitmentRoundParty, ProofAggregationRoundParty, ProofShareRoundParty,
 };
+use tiresias::decryption_key_share::PublicParameters;
 pub use tiresias::{
     decryption_key_share::PublicParameters as DecryptionPublicParameters,
     encryption_key::PublicParameters as EncryptionPublicParameters,
@@ -437,46 +438,27 @@ struct SignaturesDecryptionError {
 }
 
 fn decrypt_signatures(
-    lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
-    decryption_shares: Vec<(
+    lagrange_coefficients: &HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
+    decryption_shares: &Vec<(
         HashMap<PartyID, PaillierModulusSizedNumber>,
         HashMap<PartyID, PaillierModulusSizedNumber>,
     )>,
-    public_nonce_encrypted_partial_signature_and_proofs: Vec<
-        PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
-    >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
-    messages: Vec<Vec<u8>>,
 ) -> std::result::Result<Vec<Vec<u8>>, SignaturesDecryptionError> {
-    // todo(zeev): insert to iter.
     let mut failed_messages_indices = Vec::new();
 
-    let zipped_data = signature_threshold_decryption_round_parties
+    let messages_signatures: Vec<Vec<u8>> = signature_threshold_decryption_round_parties
         .into_iter()
-        .zip(messages)
-        .zip(public_nonce_encrypted_partial_signature_and_proofs)
-        .zip(decryption_shares.iter());
-
-    let messages_signatures: Vec<Vec<u8>> = zipped_data
+        .zip(decryption_shares.iter())
         .enumerate()
-        .map(
-            |(
-                index,
-                (
-                    ((signature_threshold_decryption_round_party, message), proof),
-                    (partial_shares, masked_shares),
-                ),
-            )| {
-                decrypt_single_signature(
-                    index,
-                    &mut failed_messages_indices,
-                    &lagrange_coefficients,
-                    signature_threshold_decryption_round_party,
-                    partial_shares,
-                    masked_shares,
-                )
-            },
-        )
+        .filter_map(|(index, parties_with_decryption_shares)| {
+            decrypt_single_signature(lagrange_coefficients, parties_with_decryption_shares)
+                .ok()
+                .or_else(|| {
+                    failed_messages_indices.push(index);
+                    None
+                })
+        })
         .collect();
 
     if !failed_messages_indices.is_empty() {
@@ -489,38 +471,35 @@ fn decrypt_signatures(
 }
 
 fn decrypt_single_signature(
-    index: usize,
-    failed_messages_indices: &mut Vec<usize>,
     lagrange_coefficients: &HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
-    party: SignatureThresholdDecryptionParty,
-    partial_shares: &HashMap<PartyID, PaillierModulusSizedNumber>,
-    masked_shares: &HashMap<PartyID, PaillierModulusSizedNumber>,
-) -> Vec<u8> {
-    let result = party.decrypt_signature(
-        lagrange_coefficients.clone(),
-        partial_shares.clone(),
-        masked_shares.clone(),
-    );
-
-    match result {
-        Ok((nonce_x_coordinate, signature_s)) => {
+    parties_with_decryption_shares: (
+        SignatureThresholdDecryptionParty,
+        &(
+            HashMap<PartyID, PaillierModulusSizedNumber>,
+            HashMap<PartyID, PaillierModulusSizedNumber>,
+        ),
+    ),
+) -> Result<Vec<u8>> {
+    let (party, decryption_shares) = parties_with_decryption_shares;
+    let (partial_decryption_shares, masked_nonce_shares) = decryption_shares;
+    party
+        .decrypt_signature(
+            lagrange_coefficients.clone(),
+            partial_decryption_shares.clone(),
+            masked_nonce_shares.clone(),
+        )
+        .and_then(|(nonce_x_coordinate, signature_s)| {
             let signature_s_inner: k256::Scalar = signature_s.into();
             Signature::<k256::Secp256k1>::from_scalars(
                 k256::Scalar::from(nonce_x_coordinate),
                 signature_s_inner,
             )
-            .unwrap()
-            .to_vec()
-        }
-        Err(_) => {
-            failed_messages_indices.push(index);
-            Vec::new()
-        }
-    }
+            .map(|sig| sig.to_vec())
+            .map_err(|_| Error::InternalError)
+        })
 }
 
 pub fn decrypt_signature_decentralized_party_sign(
-    messages: Vec<Vec<u8>>,
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     decryption_shares: HashMap<
         PartyID,
@@ -537,6 +516,9 @@ pub fn decrypt_signature_decentralized_party_sign(
         .copied()
         .collect();
 
+    // todo(itay): explain this, why public_nonce_encrypted_partial_signature_and_proofs,
+    // todo: why not decryption_shares?
+    // todo(zeev): fix.
     let decryption_shares: Vec<(HashMap<_, _>, HashMap<_, _>)> = (0
         ..public_nonce_encrypted_partial_signature_and_proofs.len())
         .map(|i| {
@@ -555,6 +537,26 @@ pub fn decrypt_signature_decentralized_party_sign(
         })
         .collect();
 
+    let lagrange_coefficients =
+        compute_lagrange_coefficient(&decryption_key_share_public_parameters, &decrypters);
+
+    decrypt_signatures(
+        &lagrange_coefficients,
+        &decryption_shares,
+        signature_threshold_decryption_round_parties,
+    )
+    .or_else(|decryption_error| {
+        Err(DecryptionError {
+            failed_messages_indices: decryption_error.failed_messages_indices,
+            decrypters,
+        })
+    })
+}
+
+fn compute_lagrange_coefficient(
+    decryption_key_share_public_parameters: &PublicParameters,
+    decrypters: &Vec<PartyID>,
+) -> HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber> {
     let lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber> =
         decrypters
             .clone()
@@ -571,23 +573,7 @@ pub fn decrypt_signature_decentralized_party_sign(
                 )
             })
             .collect();
-
-    let messages_signatures_result = decrypt_signatures(
-        lagrange_coefficients,
-        decryption_shares.clone(),
-        public_nonce_encrypted_partial_signature_and_proofs,
-        signature_threshold_decryption_round_parties,
-        messages,
-    );
-
-    // todo(zeev): remove match.
-    match messages_signatures_result {
-        Ok(messages_signatures) => Ok(messages_signatures),
-        Err(decryption_error) => Err(DecryptionError {
-            failed_messages_indices: decryption_error.failed_messages_indices,
-            decrypters,
-        }),
-    }
+    lagrange_coefficients
 }
 
 /// Identify the parties that acted maliciously while signing this specific message,
@@ -605,22 +591,8 @@ pub fn identify_message_malicious_parties(
     signature_partial_decryption_proofs: HashMap<PartyID, PartialDecryptionProof>,
     decrypters: Vec<PartyID>,
 ) -> Vec<PartyID> {
-    let lagrange_coefficients: HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber> =
-        decrypters
-            .clone()
-            .into_iter()
-            .map(|j| {
-                (
-                    j,
-                    DecryptionKeyShare::compute_lagrange_coefficient(
-                        j,
-                        decryption_key_share_public_parameters.number_of_parties,
-                        decrypters.clone(),
-                        &decryption_key_share_public_parameters,
-                    ),
-                )
-            })
-            .collect();
+    let lagrange_coefficients =
+        compute_lagrange_coefficient(&decryption_key_share_public_parameters, &decrypters);
 
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
@@ -648,7 +620,6 @@ pub fn generate_proof(
     decryption_key_share: DecryptionKeyShare,
     _designated_decrypting_party_id: PartyID,
     presign: DecentralizedPartyPresign,
-    // todo(zeev): fix this.
     encryption_scheme_public_parameters: <EncryptionKey as AdditivelyHomomorphicEncryptionKey<
         PLAINTEXT_SPACE_SCALAR_LIMBS,
     >>::PublicParameters,
