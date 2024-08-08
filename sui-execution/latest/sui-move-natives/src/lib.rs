@@ -756,7 +756,7 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
         ),
         (
-            "dwallet_transfer",
+            "dwallet",
             "verify_dwallet_transfer",
             make_native!(twopc_mpc::verify_dwallet_transfer),
         ),

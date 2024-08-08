@@ -11,7 +11,7 @@ module dwallet_system::dwallet {
     use dwallet::transfer;
     use dwallet::tx_context;
     use dwallet::tx_context::TxContext;
-    use dwallet_system::dwalllet_object::{output, DWallet};
+    use dwallet_system::dwallet_object::{output, DWallet};
 
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 

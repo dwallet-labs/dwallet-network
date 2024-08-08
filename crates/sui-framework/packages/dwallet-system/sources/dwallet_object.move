@@ -1,5 +1,5 @@
 #[allow(unused_const)]
-module dwallet_system::dwalllet_object {
+module dwallet_system::dwallet_object {
     use dwallet::object;
     use dwallet::object::{UID, ID};
     use dwallet::tx_context::TxContext;
