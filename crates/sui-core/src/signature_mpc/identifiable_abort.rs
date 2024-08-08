@@ -130,7 +130,7 @@ fn normalize_shares_for_identify_malicious_decrypters(
                         )
                     },
                 )
-                // todo(zeev): improve this lib error handling, we shouldn't rely on 2pc-mpc.
+                // TODO (#130): Stop using the [`twopc_mpc`] error type in the [`signature_mpc`] module.
                 .ok_or(Error::InvalidParameters)
         })
         .collect::<Result<Vec<_>>>()?
