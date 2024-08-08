@@ -97,7 +97,6 @@ impl SignRound {
                 signature_threshold_decryption_round_parties,
             } => {
                 let decrypt_result = decrypt_signature_decentralized_party_sign(
-                    state.messages.clone().unwrap(),
                     state.tiresias_public_parameters.clone(),
                     state.decryption_shares.clone(),
                     state
