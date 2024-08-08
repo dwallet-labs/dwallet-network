@@ -475,10 +475,15 @@ fn decrypt_single_signature(
         })
 }
 
+/// See: [2PC-MPC](https://eprint.iacr.org/archive/2024/253/1708183928.pdf)
+/// Page 27 Optimized Threshold Decryption.
 pub fn decrypt_signature_decentralized_party_sign(
     decryption_key_share_public_parameters: DecryptionPublicParameters,
-    decryption_shares: HashMap<
+    // PartyID => (partial_signature_decryption_share,
+    // masked_nonce_decryption_share) per Message.
+    batch_decryption_shares: HashMap<
         PartyID,
+        // partial_signature_decryption_share, masked_nonce_decryption_share.
         Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
     >,
     public_nonce_encrypted_partial_signature_and_proofs: Vec<
@@ -486,42 +491,46 @@ pub fn decrypt_signature_decentralized_party_sign(
     >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
 ) -> std::result::Result<Vec<Vec<u8>>, DecryptionError> {
-    let decrypters: Vec<PartyID> = decryption_shares
+    let threshold = decryption_key_share_public_parameters.threshold as usize;
+    let threshold_decrypters: Vec<PartyID> = batch_decryption_shares
         .keys()
-        .take(decryption_key_share_public_parameters.threshold.into())
+        .take(threshold)
         .copied()
         .collect();
 
-    // todo(itay): explain this, why public_nonce_encrypted_partial_signature_and_proofs,
-    // todo: why not decryption_shares?
-    // todo(zeev): fix.
-    let decryption_shares: Vec<(HashMap<_, _>, HashMap<_, _>)> = (0
-        ..public_nonce_encrypted_partial_signature_and_proofs.len())
+    let decryption_shares = (0..public_nonce_encrypted_partial_signature_and_proofs.len())
         .map(|i| {
-            decryption_shares
+            batch_decryption_shares
                 .iter()
-                .filter(|(party_id, _)| decrypters.contains(party_id))
-                .map(|(party_id, decryption_share)| {
-                    let (partial_signature_decryption_shares, masked_nonce_decryption_shares) =
-                        decryption_share[i];
-                    (
-                        (*party_id, partial_signature_decryption_shares),
-                        (*party_id, masked_nonce_decryption_shares),
-                    )
-                })
-                .unzip()
+                .filter(|(party_id, _)| threshold_decrypters.contains(party_id))
+                .fold(
+                    (HashMap::new(), HashMap::new()),
+                    |(mut partial_map, mut masked_map), (party_id, decryption_shares)| {
+                        let (partial_signature_decryption_shares, masked_nonce_decryption_shares) =
+                            decryption_shares[i];
+                        partial_map.insert(*party_id, partial_signature_decryption_shares);
+                        masked_map.insert(*party_id, masked_nonce_decryption_shares);
+                        (partial_map, masked_map)
+                    },
+                )
         })
         .collect();
 
-    let lagrange_coefficients =
-        compute_lagrange_coefficient(&decryption_key_share_public_parameters, &decrypters);
+    let lagrange_coefficients = compute_lagrange_coefficient(
+        &decryption_key_share_public_parameters,
+        &threshold_decrypters,
+    );
 
     decrypt_signatures(
         &lagrange_coefficients,
         &decryption_shares,
         signature_threshold_decryption_round_parties,
     )
-    .or_else(|decryption_error| Err(DecryptionError { decrypters }))
+    .or_else(|decryption_error| {
+        Err(DecryptionError {
+            decrypters: threshold_decrypters,
+        })
+    })
 }
 
 fn compute_lagrange_coefficient(
@@ -627,7 +636,7 @@ pub fn message_digest(message: &[u8], hash: &Hash) -> secp256k1::Scalar {
     }
     .unwrap();
 
-    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&m);
+    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&m.into());
     U256::from(m).into()
 }
 

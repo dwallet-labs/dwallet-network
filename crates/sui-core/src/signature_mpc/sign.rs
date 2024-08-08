@@ -102,7 +102,6 @@ impl SignRound {
                     state.decryption_shares.clone(),
                     state
                         .public_nonce_encrypted_partial_signature_and_proofs
-                        .clone()
                         .ok_or(twopc_mpc::Error::InvalidParameters)?,
                     signature_threshold_decryption_round_parties,
                 );
@@ -136,6 +135,7 @@ pub(crate) struct SignState {
     pub public_nonce_encrypted_partial_signature_and_proofs:
         Option<Vec<PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>>>,
     pub presigns: Option<Vec<DecentralizedPartyPresign>>,
+    // PartyID => (partial_signature_decryption_share, masked_nonce_decryption_share) per Message.
     pub decryption_shares:
         HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     // Mapping from PartyID => Vec<PartialDecryptionProof> for each message
