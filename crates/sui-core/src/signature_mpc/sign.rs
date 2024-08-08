@@ -92,7 +92,7 @@ impl SignRound {
     pub(crate) fn complete_round(&mut self, state: SignState) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
-            // todo(zeev): remove this enum and handle the `mem` code.
+            // TODO (#131): Remove redundant enum and handle mem call.
             SignRound::FirstRound {
                 signature_threshold_decryption_round_parties,
             } => {
