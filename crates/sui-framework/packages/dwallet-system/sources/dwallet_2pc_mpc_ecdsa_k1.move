@@ -13,6 +13,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
+    use dwallet_system::dwalllet_object::{DWallet, new_dwallet, output, dwallet_cap_id};
 
     use dwallet_system::dwallet;
     use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap, PartialUserSignedMessages};
@@ -66,20 +67,6 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
-
-
-    #[allow(unused_field)]
-    /// `DWallet` represents a wallet that is created after the DKG process.
-    struct DWallet has key, store {
-        id: UID,
-        session_id: ID,
-        dwallet_cap_id: ID,
-        // `output` is output for `verify_decommitment_and_proof_of_centralized_party_public_key_share()`
-        output: vector<u8>,
-        public_key: vector<u8>,
-    }
-
-    public fun output(dwallet: &DWallet): vector<u8> { dwallet.output }
 
     /// `DKGSessionOutput` stores the DKG session output.
     struct DKGSession has key {
@@ -211,15 +198,9 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             centralized_party_public_key_share_decommitment_and_proof
         );
 
-        let dwallet = DWallet {
-            id: object::new(ctx),
-            session_id,
-            dwallet_cap_id,
-            output,
-            public_key,
-        };
+        let dwallet = new_dwallet(session_id, dwallet_cap_id, output, public_key, ctx);
         // Create dwallet + make it immutable.
-        transfer::freeze_object(dwallet);
+        transfer::public_freeze_object(dwallet);
     }
 
     /// This function implements steps 4 and 5 of the 2PCMPC - Protocol 4 (DKG):
@@ -250,7 +231,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let messages_len = vector::length(&messages);
         assert!(messages_len > 0, EMesssagesLengthMustBeGreaterThanZero);
         let dwallet_id = object::id(dwallet);
-        let dwallet_cap_id = dwallet.dwallet_cap_id;
+        let dwallet_cap_id = dwallet_cap_id(dwallet);
         let sender = tx_context::sender(ctx);
 
         let session = PresignSession {
@@ -267,7 +248,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             hash,
-            dkg_output: dwallet.output,
+            dkg_output: output(dwallet),
             commitments_and_proof_to_centralized_party_nonce_shares,
             messages,
             sender,
@@ -339,7 +320,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
         let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
             session.messages,
-            dwallet.output,
+            output(dwallet),
             public_nonce_encrypted_partial_signature_and_proofs,
             presign.presigns,
             session.hash
@@ -380,7 +361,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let sign_data_event = NewSignDataEvent {
             presign_session_id: session_id,
             hash: session.hash,
-            dkg_output: dwallet.output,
+            dkg_output: output(dwallet),
             public_nonce_encrypted_partial_signature_and_proofs,
             presigns,
         };

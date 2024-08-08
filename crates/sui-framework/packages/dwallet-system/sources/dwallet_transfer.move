@@ -8,7 +8,7 @@ module dwallet_system::dwallet_transfer {
     use dwallet::transfer;
     use dwallet::tx_context;
     use dwallet::tx_context::TxContext;
-    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{DWallet, output};
+    use dwallet_system::dwalllet_object::{DWallet, output};
 
     const DWALLET_TRANSFER_ERROR: u64 = 0x1;
 
