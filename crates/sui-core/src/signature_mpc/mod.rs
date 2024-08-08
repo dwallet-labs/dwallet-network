@@ -375,7 +375,7 @@ impl SignatureMPCAggregator {
                                 );
                             }
                         }
-                        SignMessage::StartIAFlow(failed_messages_indices, involved_parties) => {
+                        SignMessage::StartIAFlow(involved_parties) => {
                             spawn_proof_generation(
                                 epoch,
                                 epoch_store.clone(),
@@ -383,7 +383,6 @@ impl SignatureMPCAggregator {
                                 session_id,
                                 sign_session_states.clone(),
                                 submit.clone(),
-                                failed_messages_indices.clone(),
                                 involved_parties.clone(),
                                 state.clone(),
                             );
@@ -628,16 +627,12 @@ impl SignatureMPCAggregator {
 
             if let Some(m) = m {
                 match m {
-                    SignRoundCompletion::StartIdentifiableAbortFlow(
-                        message_indices,
-                        involved_parties,
-                    ) => {
+                    SignRoundCompletion::StartIdentifiableAbortFlow(involved_parties) => {
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
                                     epoch,
                                     SignatureMPCMessageProtocols::Sign(SignMessage::StartIAFlow(
-                                        message_indices,
                                         involved_parties,
                                     )),
                                     session_id,

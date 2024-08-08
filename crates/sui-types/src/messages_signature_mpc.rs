@@ -52,7 +52,7 @@ pub type ProtocolContext = PhantomData<()>;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SignMessage {
     DecryptionShares(Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>),
-    StartIAFlow(Vec<usize>, Vec<PartyID>),
+    StartIAFlow(Vec<PartyID>),
     IAProofs(Vec<PartialDecryptionProof>),
 }
 
@@ -93,7 +93,7 @@ impl SignMessage {
         match self {
             SignMessage::DecryptionShares(_) => 1,
             SignMessage::IAProofs(_) => 2,
-            SignMessage::StartIAFlow(_, _) => 3,
+            SignMessage::StartIAFlow(_) => 3,
         }
     }
 }

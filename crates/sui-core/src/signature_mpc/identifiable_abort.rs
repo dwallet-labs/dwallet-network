@@ -26,7 +26,6 @@ use twopc_mpc::Result;
 /// (state.party_id) behaved honestly while signing the message.
 pub fn generate_proofs(
     state: &SignState,
-    failed_messages_indices: &Vec<usize>,
 ) -> Result<
     Vec<(
         PartialDecryptionProof,
@@ -46,15 +45,17 @@ pub fn generate_proofs(
         .public_nonce_encrypted_partial_signature_and_proofs
         .clone()
         .ok_or(twopc_mpc::Error::InvalidParameters)?;
-    failed_messages_indices
+    state
+        .messages
         .iter()
-        .map(|index| {
+        .enumerate()
+        .map(|(index, _)| {
             let presign = presigns
-                .get(*index)
+                .get(index)
                 .ok_or(twopc_mpc::Error::InvalidParameters)?;
             let public_nonce_encrypted_partial_signature_and_proof =
                 public_nonce_encrypted_partial_signature_and_proofs
-                    .get(*index)
+                    .get(index)
                     .ok_or(twopc_mpc::Error::InvalidParameters)?;
             Ok(generate_proof(
                 state.tiresias_public_parameters.clone(),
@@ -77,19 +78,18 @@ pub(crate) fn identify_batch_malicious_parties(
 ) -> twopc_mpc_protocols::Result<HashSet<PartyID>> {
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
     // that are necessary to call the [`identify_message_malicious_parties`] function.
-    let failed_messages_parties =
-        generate_proofs(&state, &state.failed_messages_indices.clone().unwrap())?;
+    let failed_messages_parties = generate_proofs(&state)?;
     let mut malicious_parties = HashSet::new();
     let involved_shares = get_involved_shares(&state);
-    for ((i, message_index), (_, party)) in state
+    for ((i, _), (_, party)) in state
         .clone()
-        .failed_messages_indices
+        .messages
         .unwrap()
         .into_iter()
         .enumerate()
         .zip(failed_messages_parties.into_iter())
     {
-        let (shares, masked_shares) = change_shares_type(&involved_shares, message_index);
+        let (shares, masked_shares) = change_shares_type(&involved_shares, i);
         let proofs = state
             .proofs
             .clone()
@@ -164,7 +164,6 @@ pub fn spawn_proof_generation(
     session_id: SignatureMPCSessionID,
     _sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
     submit: Arc<dyn SubmitSignatureMPC>,
-    failed_messages_indices: Vec<usize>,
     involved_parties: Vec<PartyID>,
     state: SignState,
 ) {
@@ -174,7 +173,7 @@ pub fn spawn_proof_generation(
             .as_ref()
             .map_or(true, |proofs| !proofs.contains_key(&party_id));
         if party_id_proof_doest_not_exist && involved_parties.contains(&party_id) {
-            let proofs = generate_proofs(&state, &failed_messages_indices);
+            let proofs = generate_proofs(&state);
             if let Ok(proofs) = proofs {
                 let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
                 let _ = submit

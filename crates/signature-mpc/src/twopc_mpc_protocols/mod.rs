@@ -422,9 +422,6 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
 /// Returned when the signature decryption fails.
 /// Contains all the necessary information to start an Identifiable Abort protocol.
 pub struct DecryptionError {
-    // The indices of the messages that their decryption failed out of the current messages batch.
-    pub failed_messages_indices: Vec<usize>,
-
     // The IDs of the parties that participated in the aborted signing protocol.
     // We need only a threshold of them to decrypt the signature,
     // and we communicate them to the other parties, so they'll know they should
@@ -444,30 +441,15 @@ fn decrypt_signatures(
         HashMap<PartyID, PaillierModulusSizedNumber>,
     )>,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
-) -> std::result::Result<Vec<Vec<u8>>, SignaturesDecryptionError> {
-    let mut failed_messages_indices = Vec::new();
-
-    let messages_signatures: Vec<Vec<u8>> = signature_threshold_decryption_round_parties
+) -> Result<Vec<Vec<u8>>> {
+    signature_threshold_decryption_round_parties
         .into_iter()
         .zip(decryption_shares.iter())
         .enumerate()
-        .filter_map(|(index, parties_with_decryption_shares)| {
+        .map(|(index, parties_with_decryption_shares)| {
             decrypt_single_signature(lagrange_coefficients, parties_with_decryption_shares)
-                .ok()
-                .or_else(|| {
-                    failed_messages_indices.push(index);
-                    None
-                })
         })
-        .collect();
-
-    if !failed_messages_indices.is_empty() {
-        return Err(SignaturesDecryptionError {
-            failed_messages_indices,
-        });
-    }
-
-    Ok(messages_signatures)
+        .collect()
 }
 
 fn decrypt_single_signature(
@@ -545,12 +527,7 @@ pub fn decrypt_signature_decentralized_party_sign(
         &decryption_shares,
         signature_threshold_decryption_round_parties,
     )
-    .or_else(|decryption_error| {
-        Err(DecryptionError {
-            failed_messages_indices: decryption_error.failed_messages_indices,
-            decrypters,
-        })
-    })
+    .or_else(|decryption_error| Err(DecryptionError { decrypters }))
 }
 
 fn compute_lagrange_coefficient(

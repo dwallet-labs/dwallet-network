@@ -108,7 +108,6 @@ impl SignRound {
                 match decrypt_result {
                     Ok(signatures) => Ok(SignRoundCompletion::SignatureOutput(signatures)),
                     Err(decryption_error) => Ok(SignRoundCompletion::StartIdentifiableAbortFlow(
-                        decryption_error.failed_messages_indices,
                         decryption_error.decrypters,
                     )),
                 }
@@ -120,7 +119,7 @@ impl SignRound {
 
 pub(crate) enum SignRoundCompletion {
     SignatureOutput(Vec<Vec<u8>>),
-    StartIdentifiableAbortFlow(Vec<usize>, Vec<PartyID>),
+    StartIdentifiableAbortFlow(Vec<PartyID>),
     None,
 }
 
@@ -139,7 +138,6 @@ pub(crate) struct SignState {
     pub decryption_shares:
         HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
     pub proofs: Option<HashMap<PartyID, Vec<PartialDecryptionProof>>>,
-    pub failed_messages_indices: Option<Vec<usize>>,
     pub involved_parties: Option<Vec<PartyID>>,
 }
 
@@ -168,7 +166,6 @@ impl SignState {
             tiresias_key_share_decryption_key_share,
             presigns: None,
             proofs: None,
-            failed_messages_indices: None,
             involved_parties: None,
         }
     }
@@ -196,10 +193,7 @@ impl SignState {
             SignMessage::DecryptionShares(shares) => {
                 let _ = self.decryption_shares.insert(sender_id, shares);
             }
-            SignMessage::StartIAFlow(failed_messages_indices, involved_parties) => {
-                if self.failed_messages_indices.is_none() {
-                    self.failed_messages_indices = Some(failed_messages_indices.clone());
-                }
+            SignMessage::StartIAFlow(involved_parties) => {
                 if self.involved_parties.is_none() {
                     self.involved_parties = Some(involved_parties.clone());
                 }
