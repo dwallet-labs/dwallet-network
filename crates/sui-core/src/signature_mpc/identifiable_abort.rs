@@ -75,19 +75,18 @@ pub fn generate_proofs(
 /// Identify all the parties that behaved maliciously in this messages batch.
 pub(crate) fn identify_batch_malicious_parties(
     state: &SignState,
-) -> twopc_mpc_protocols::Result<HashSet<PartyID>> {
+) -> Result<HashSet<PartyID>> {
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
     // that are necessary to call the [`identify_message_malicious_parties`] function.
-    let failed_messages_parties = generate_proofs(&state)?;
+    let parties_with_proofs = generate_proofs(&state)?;
     let mut malicious_parties = HashSet::new();
     let involved_shares = get_involved_shares(&state);
     for ((i, _), (_, party)) in state
-        .clone()
         .messages
-        .unwrap()
-        .into_iter()
+        .as_ref()
+        .iter()
         .enumerate()
-        .zip(failed_messages_parties.into_iter())
+        .zip(parties_with_proofs.into_iter())
     {
         let (shares, masked_shares) = change_shares_type(&involved_shares, i);
         let proofs = state
