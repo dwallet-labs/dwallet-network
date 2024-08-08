@@ -12,7 +12,7 @@ const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-enum EncryptionKeyScheme {
+export enum EncryptionKeyScheme {
 	Paillier = 0,
 }
 
@@ -74,15 +74,16 @@ export async function approveAndSign(
 }
 
 export const storeEncryptionKey = async (
-	encryption_key: Uint8Array,
+	encryptionKey: Uint8Array,
+	encryptionKeyScheme: EncryptionKeyScheme,
 	keypair: Keypair,
 	client: DWalletClient,
 ): Promise<SuiObjectRef> => {
 	const tx = new TransactionBlock();
-	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryption_key));
+	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey));
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::register_encryption_key`,
-		arguments: [purePubKey, tx.pure(EncryptionKeyScheme.Paillier)],
+		arguments: [purePubKey, tx.pure(bcs.u8().serialize(encryptionKeyScheme))],
 	});
 	let result = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
