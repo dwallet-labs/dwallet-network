@@ -4,7 +4,7 @@
 use std::marker::PhantomData;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
-use signature_mpc::twopc_mpc_protocols::{DKGDecentralizedPartyOutput, finalize_centralized_party_sign};
+use signature_mpc::twopc_mpc_protocols::{DKGDecentralizedPartyOutput, EncryptionKey, finalize_centralized_party_sign};
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_presign;
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_sign;
 use signature_mpc::twopc_mpc_protocols::message_digest;
@@ -21,6 +21,7 @@ use signature_mpc::twopc_mpc_protocols::{
 };
 use signature_mpc::twopc_mpc_protocols::{finalize_centralized_party_presign, DecryptionKey};
 use wasm_bindgen::prelude::*;
+use signature_mpc::twopc_mpc_protocols::dwallet_transfer::EncryptedUserShareAndProof;
 
 #[derive(Serialize, Deserialize)]
 pub struct InitiateDKGValue {
@@ -240,6 +241,13 @@ pub fn generate_proof(
     let proof_public_output = bcs::to_bytes(&proof_public_output).unwrap();
 
     Ok(serde_wasm_bindgen::to_value(&proof_public_output).unwrap())
+}
+
+pub fn decrypt(encryption_key: Vec<u8>, decryption_key: Vec<u8>, encrypted_user_share_and_proof: Vec<u8>)-> Result<Vec<u8>, JsErr> {
+    let encrypted_user_share_and_proof: EncryptedUserShareAndProof = bcs::from_bytes(&encrypted_user_share_and_proof)?;
+    let user_share = signature_mpc::twopc_mpc_protocols::dwallet_transfer::decrypt(encryption_key, decryption_key, encrypted_user_share_and_proof);
+
+    Ok(user_share)
 }
 
 #[derive(Serialize, Deserialize)]

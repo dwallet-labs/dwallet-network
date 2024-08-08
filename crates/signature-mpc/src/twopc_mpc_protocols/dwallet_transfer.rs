@@ -3,10 +3,13 @@ use commitment::GroupsPublicParametersAccessors;
 use crypto_bigint::{Uint, U256};
 use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
 use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
-use enhanced_maurer::{encryption_of_discrete_log, EnhanceableLanguage, EnhancedLanguage, Error, Proof, PublicParameters as MaurerPublicParameters, WitnessSpaceGroupElement};
+use enhanced_maurer::{
+    encryption_of_discrete_log, EnhanceableLanguage, EnhancedLanguage, Error, Proof,
+    PublicParameters as MaurerPublicParameters, WitnessSpaceGroupElement,
+};
 use group::{secp256k1, GroupElement, Samplable};
 use homomorphic_encryption::{
-    AdditivelyHomomorphicEncryptionKey,
+    AdditivelyHomomorphicDecryptionKey, AdditivelyHomomorphicEncryptionKey,
     GroupsPublicParametersAccessors as PublicParametersAccessors,
 };
 use maurer::{language, SOUND_PROOFS_REPETITIONS};
@@ -59,7 +62,7 @@ pub(crate) type EnhancedLang<
     Lang,
 >;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct EncryptedUserShareAndProof {
     pub proof: SecretShareProof,
     pub encrypted_user_share: CiphertextSpaceValue,
@@ -322,6 +325,32 @@ pub fn is_valid_proof(
         .is_ok()
 }
 
+pub fn decrypt(
+    encryption_key: Vec<u8>,
+    decryption_key: Vec<u8>,
+    encrypted_user_share_and_proof: EncryptedUserShareAndProof,
+) -> Vec<u8> {
+    let language_public_parameters = get_proof_public_parameters(encryption_key.clone());
+    let ciphertext = CiphertextSpaceGroupElement::new(
+        encrypted_user_share_and_proof.encrypted_user_share,
+        language_public_parameters
+            .encryption_scheme_public_parameters
+            .ciphertext_space_public_parameters(),
+    )
+    .unwrap();
+
+    let paillier_public_parameters: tiresias::encryption_key::PublicParameters =
+        bcs::from_bytes(&encryption_key).unwrap();
+    let decryption_key = bcs::from_bytes(&decryption_key).unwrap();
+    let decryption_key = DecryptionKey::new(decryption_key, &paillier_public_parameters).unwrap();
+
+    let plaintext = decryption_key
+        .decrypt(&ciphertext, &paillier_public_parameters)
+        .unwrap();
+    let plaintext = bcs::to_bytes(&plaintext.value()).unwrap();
+    plaintext
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -341,16 +370,16 @@ mod tests {
         let dgk_output = bcs::from_bytes::<DKGDecentralizedPartyOutput>(&dgk_output);
         let centralized_party_public_key_share =
             dgk_output.unwrap().centralized_party_public_key_share;
-        let discrete_log = hex::decode(SECRET_KEYSHARE).expect("Decoding failed");
+        let user_share = hex::decode(SECRET_KEYSHARE).expect("Decoding failed");
 
-        let (encryption_key, _) = generate_keypair();
+        let (encryption_key, decryption_key) = generate_keypair();
         let deserialized_pub_params: tiresias::encryption_key::PublicParameters =
             bcs::from_bytes(&encryption_key).unwrap();
         let language_public_parameters = get_proof_public_parameters(encryption_key.clone());
 
         let encrypted_user_share_and_proof = match generate_proof(
             encryption_key.clone(),
-            discrete_log.clone(),
+            user_share.clone(),
             language_public_parameters.clone(),
         ) {
             Ok(proof) => proof,
@@ -359,8 +388,19 @@ mod tests {
 
         assert!(is_valid_proof(
             language_public_parameters,
-            encrypted_user_share_and_proof,
+            encrypted_user_share_and_proof.clone(),
             centralized_party_public_key_share,
         ));
+
+        let decrypted = decrypt(
+            encryption_key.clone(),
+            decryption_key.clone(),
+            encrypted_user_share_and_proof,
+        );
+
+        /// slice the first 32 bytes from user_share
+        let mut user_share_mut = user_share;
+        user_share_mut.reverse();
+        assert_eq!(decrypted[0..32].to_vec(), user_share_mut);
     }
 }
