@@ -12,6 +12,7 @@ use signature_mpc::twopc_mpc_protocols::{
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::mem;
+use sui_swarm_config::network_config_builder::ProtocolVersionsConfig::Default;
 use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::{SignMessage, SignatureMPCSessionID};
 use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
@@ -137,8 +138,11 @@ pub(crate) struct SignState {
     pub presigns: Option<Vec<DecentralizedPartyPresign>>,
     pub decryption_shares:
         HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>,
-    pub proofs: Option<HashMap<PartyID, Vec<PartialDecryptionProof>>>,
-    pub involved_parties: Option<Vec<PartyID>>,
+    // Mapping from PartyID => Vec<PartialDecryptionProof> for each message
+    // (same order as the messages).
+    pub proofs: HashMap<PartyID, Vec<PartialDecryptionProof>>,
+    // Parties that are involved in this Signature Decryption protocol.
+    pub involved_parties: Vec<PartyID>,
 }
 
 impl SignState {
@@ -165,8 +169,8 @@ impl SignState {
             decryption_shares: HashMap::new(),
             tiresias_key_share_decryption_key_share,
             presigns: None,
-            proofs: None,
-            involved_parties: None,
+            proofs: HashMap::new(),
+            involved_parties: Vec::new(),
         }
     }
 
@@ -194,8 +198,8 @@ impl SignState {
                 let _ = self.decryption_shares.insert(sender_id, shares);
             }
             SignMessage::StartIAFlow(involved_parties) => {
-                if self.involved_parties.is_none() {
-                    self.involved_parties = Some(involved_parties.clone());
+                if self.involved_parties.is_empty() {
+                    self.involved_parties = involved_parties;
                 }
             }
             SignMessage::IAProofs(proofs) => {
@@ -206,10 +210,8 @@ impl SignState {
     }
 
     fn insert_proofs(&mut self, party_id: PartyID, new_proofs: Vec<PartialDecryptionProof>) {
-        if self.clone().involved_parties.unwrap().contains(&party_id) {
-            self.proofs
-                .get_or_insert(HashMap::new())
-                .insert(party_id, new_proofs);
+        if self.clone().involved_parties.contains(&party_id) {
+            self.proofs.insert(party_id, new_proofs);
         }
     }
 
@@ -228,10 +230,7 @@ impl SignState {
 
     pub(crate) fn should_identify_malicious_actors(&self) -> bool {
         // TODO: Handle the case a validator does not send its proof.
-        if let Some(proofs) = self.clone().proofs {
-            let threshold: usize = self.tiresias_public_parameters.threshold.into();
-            return proofs.len() == threshold && self.received_all_decryption_shares();
-        }
-        false
+        let threshold: usize = self.tiresias_public_parameters.threshold.into();
+        return self.proofs.len() == threshold && self.received_all_decryption_shares();
     }
 }

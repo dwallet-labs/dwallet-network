@@ -429,11 +429,6 @@ pub struct DecryptionError {
     pub decrypters: Vec<PartyID>,
 }
 
-#[derive(Debug, Clone)]
-struct SignaturesDecryptionError {
-    failed_messages_indices: Vec<usize>,
-}
-
 fn decrypt_signatures(
     lagrange_coefficients: &HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
     decryption_shares: &Vec<(
@@ -445,8 +440,7 @@ fn decrypt_signatures(
     signature_threshold_decryption_round_parties
         .into_iter()
         .zip(decryption_shares.iter())
-        .enumerate()
-        .map(|(index, parties_with_decryption_shares)| {
+        .map(|parties_with_decryption_shares| {
             decrypt_single_signature(lagrange_coefficients, parties_with_decryption_shares)
         })
         .collect()
@@ -553,8 +547,8 @@ fn compute_lagrange_coefficient(
     lagrange_coefficients
 }
 
-/// Identify the parties that acted maliciously while signing this specific message,
-/// after all the parties that were involved in decrypting it have sent a proof
+/// Identify the parties that acted maliciously while signing this specific message;
+/// after all the parties that were involved in the decryption sent a proof
 /// that they behaved honestly.
 ///
 /// If one of the involved parties didn't generate a proof, only this party will be returned.
@@ -564,12 +558,12 @@ pub fn identify_message_malicious_parties(
     verification_round_party: SignaturePartialDecryptionProofVerificationParty,
     partial_signature_decryption_shares: HashMap<PartyID, DecryptionShare>,
     masked_nonce_decryption_shares: HashMap<PartyID, DecryptionShare>,
-    decryption_key_share_public_parameters: DecryptionPublicParameters,
+    decryption_key_share_public_parameters: &PublicParameters,
     signature_partial_decryption_proofs: HashMap<PartyID, PartialDecryptionProof>,
-    decrypters: Vec<PartyID>,
-) -> Vec<PartyID> {
+    involved_parties: &Vec<PartyID>,
+) -> Result<Vec<PartyID>> {
     let lagrange_coefficients =
-        compute_lagrange_coefficient(&decryption_key_share_public_parameters, &decrypters);
+        compute_lagrange_coefficient(&decryption_key_share_public_parameters, &involved_parties);
 
     let error = verification_round_party.identify_malicious_decrypters(
         lagrange_coefficients,
@@ -579,16 +573,15 @@ pub fn identify_message_malicious_parties(
         &mut OsRng,
     );
 
-    match error {
-        Error::Tiresias(tiresias::Error::ProtocolError(
-            ProtocolError::ProofVerificationError {
-                malicious_parties, ..
-            },
-        )) => malicious_parties,
-        _ => {
-            panic!("{}", error);
-        }
+    if let Error::Tiresias(tiresias::Error::ProtocolError(
+        ProtocolError::ProofVerificationError {
+            malicious_parties, ..
+        },
+    )) = error
+    {
+        return Ok(malicious_parties);
     }
+    Err(error)
 }
 
 /// Generate a proof that the partial decryption of the signature is correct.

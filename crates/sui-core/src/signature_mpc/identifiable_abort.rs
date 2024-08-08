@@ -73,49 +73,43 @@ pub fn generate_proofs(
 }
 
 /// Identify all the parties that behaved maliciously in this messages batch.
-pub(crate) fn identify_batch_malicious_parties(
-    state: &SignState,
-) -> Result<HashSet<PartyID>> {
+pub(crate) fn identify_batch_malicious_parties(state: &SignState) -> Result<HashSet<PartyID>> {
     // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
     // that are necessary to call the [`identify_message_malicious_parties`] function.
     let parties_with_proofs = generate_proofs(&state)?;
-    let mut malicious_parties = HashSet::new();
+    // let mut malicious_parties = HashSet::new();
     let involved_shares = get_involved_shares(&state);
-    for ((i, _), (_, party)) in state
-        .messages
-        .as_ref()
-        .iter()
-        .enumerate()
-        .zip(parties_with_proofs.into_iter())
-    {
-        let (shares, masked_shares) = change_shares_type(&involved_shares, i);
-        let proofs = state
-            .proofs
-            .clone()
-            .unwrap()
-            .into_iter()
-            .map(|(party_id, proofs)| (party_id, proofs[i].clone()))
-            .collect();
 
-        identify_message_malicious_parties(
-            party,
-            shares,
-            masked_shares,
-            state.tiresias_public_parameters.clone(),
-            proofs,
-            state.involved_parties.as_deref().unwrap().into(),
-        )
-        .iter()
-        .for_each(|party_id| {
-            malicious_parties.insert(*party_id);
-        });
-    }
+    let malicious_parties = parties_with_proofs
+        .into_iter()
+        .enumerate()
+        .map(|(i, (_, party))| {
+            let (shares, masked_shares) =
+                normalize_shares_for_identify_malicious_decrypters(&involved_shares, i);
+            let party_to_msg_proof = state
+                .proofs
+                .iter()
+                .map(|(party_id, proofs)| (*party_id, proofs[i].clone()))
+                .collect();
+            identify_message_malicious_parties(
+                party,
+                shares,
+                masked_shares,
+                &state.tiresias_public_parameters,
+                party_to_msg_proof,
+                &state.involved_parties,
+            )
+        })
+        .collect::<Result<Vec<Vec<_>>>>()?
+        .into_iter()
+        .flatten()
+        .collect::<HashSet<_>>();
     Ok(malicious_parties)
 }
 
 /// Maps the decryption shares to the type
 /// expected by the identify_malicious_decrypters function from the `2PC-MPC` repository.
-fn change_shares_type(
+fn normalize_shares_for_identify_malicious_decrypters(
     involved_shares: &HashMap<
         PartyID,
         Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
@@ -140,15 +134,13 @@ fn get_involved_shares(
     state: &SignState,
 ) -> HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>> {
     state
-        .clone()
         .decryption_shares
-        .into_iter()
-        .filter(|(party_id, _)| {
-            state
-                .involved_parties
-                .as_deref()
-                .unwrap()
-                .contains(party_id)
+        .iter()
+        .filter_map(|(party_id, data)| {
+            if state.involved_parties.contains(party_id) {
+                return Some((*party_id, data.clone()));
+            }
+            None
         })
         .collect()
 }
@@ -167,11 +159,7 @@ pub fn spawn_proof_generation(
     state: SignState,
 ) {
     spawn_monitored_task!(async move {
-        let party_id_proof_doest_not_exist = state
-            .proofs
-            .as_ref()
-            .map_or(true, |proofs| !proofs.contains_key(&party_id));
-        if party_id_proof_doest_not_exist && involved_parties.contains(&party_id) {
+        if !state.proofs.contains_key(&party_id) && involved_parties.contains(&party_id) {
             let proofs = generate_proofs(&state);
             if let Ok(proofs) = proofs {
                 let proofs: Vec<_> = proofs.iter().map(|(proof, _)| proof.clone()).collect();
