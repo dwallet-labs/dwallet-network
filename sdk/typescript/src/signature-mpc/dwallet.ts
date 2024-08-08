@@ -12,6 +12,10 @@ const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
+enum EncryptionKeyScheme {
+	Paillier = 0,
+}
+
 export async function approveAndSign(
 	dwalletCapId: string,
 	signMessagesId: string,
@@ -78,7 +82,7 @@ export const storeEncryptionKey = async (
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryption_key));
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::register_encryption_key`,
-		arguments: [purePubKey],
+		arguments: [purePubKey, tx.pure(EncryptionKeyScheme.Paillier)],
 	});
 	let result = await client.signAndExecuteTransactionBlock({
 		signer: keypair,

@@ -308,6 +308,7 @@ module dwallet_system::dwallet {
 
     /// Encrypt DWallet secret share with an AHE public key.
     const EEncryptUserShare: u64 = 0x1;
+    const EInvalidEncryptionKeyScheme: u64 = 0x2;
 
     struct EncryptedUserShare has key {
         id: UID,
@@ -321,19 +322,27 @@ module dwallet_system::dwallet {
     /// the recipient can sign with a dWallet when it is transferred or access is granted to it.
     struct EncryptionKey has key {
         id: UID,
+        scheme: u8,
         encryption_key: vector<u8>,
         key_owner_address: address,
     }
 
-    public fun register_encryption_key(key: vector<u8>, ctx: &mut TxContext): ID {
-        let pk = EncryptionKey {
+    const PaillierEncryptionKey: u8 = 0;
+    fun is_valid_encryption_key_scheme(scheme: u8): bool {
+        scheme == PaillierEncryptionKey // || scheme == ...
+    }
+
+    public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
+        assert!(!is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
+        let encryption_key = EncryptionKey {
             id: object::new(ctx),
+            scheme: scheme,
             encryption_key: key,
             key_owner_address: tx_context::sender(ctx),
         };
-        let pk_id = object::id(&pk);
-        transfer::freeze_object(pk);
-        pk_id
+        let encryption_key_id = object::id(&encryption_key);
+        transfer::freeze_object(encryption_key);
+        encryption_key_id
     }
 
     public fun encrypt_user_share(
@@ -343,7 +352,7 @@ module dwallet_system::dwallet {
         recipient: address,
         ctx: &mut TxContext,
     ): ID {
-        let is_valid = verify_dwallet_transfer(
+        let is_valid = validate_encrypted_user_secret_share(
             encryption_key.encryption_key,
             encrypted_secret_share_and_proof,
             output(dwallet),
@@ -364,7 +373,7 @@ module dwallet_system::dwallet {
     }
 
     #[allow(unused_function)]
-    native fun verify_dwallet_transfer(
+    native fun validate_encrypted_user_secret_share(
         secret_share_public_key: vector<u8>,
         encrypted_secret_share_and_proof: vector<u8>,
         dwallet_output: vector<u8>,

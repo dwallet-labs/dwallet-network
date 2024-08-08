@@ -757,8 +757,8 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
         ),
         (
             "dwallet",
-            "verify_dwallet_transfer",
-            make_native!(twopc_mpc::verify_dwallet_transfer),
+            "validate_encrypted_user_secret_share",
+            make_native!(twopc_mpc::validate_encrypted_user_secret_share),
         ),
     ];
     sui_system_natives

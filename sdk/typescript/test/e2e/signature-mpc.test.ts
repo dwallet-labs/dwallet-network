@@ -109,7 +109,7 @@ describe('Test key share transfer', () => {
 		await transferDwallet(
 			toolbox.client,
 			toolbox.keypair,
-			encryptedUserShareAndProof
+			encryptedUserShareAndProof,
 			publicKeyID,
 			dwalletID,
 			recipientData?.keyOwnerAddress!,

@@ -40,9 +40,9 @@ pub struct TransferDWalletCostParams {
 }
 
 /***************************************************************************************************
- * native fun transfer_dwallet
+ * native fun validate_encrypted_user_secret_share
  **************************************************************************************************/
-pub fn verify_dwallet_transfer(
+pub fn validate_encrypted_user_secret_share(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
