@@ -237,12 +237,9 @@ pub fn generate_proof(
         secret_share,
         language_public_parameters,
     )?;
+    let proof_public_output = bcs::to_bytes(&proof_public_output).unwrap();
 
-    let proof = bcs::to_bytes(&proof_public_output.proof).unwrap();
-    let encypted_discrete_log = bcs::to_bytes(&proof_public_output.encrypted_user_share).unwrap();
-    let range_proof_commitment = bcs::to_bytes(&proof_public_output.range_proof_commitment).unwrap();
-
-    Ok(serde_wasm_bindgen::to_value(&(proof, encypted_discrete_log, range_proof_commitment)).unwrap())
+    Ok(serde_wasm_bindgen::to_value(&proof_public_output).unwrap())
 }
 
 #[derive(Serialize, Deserialize)]

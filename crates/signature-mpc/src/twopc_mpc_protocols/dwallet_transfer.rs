@@ -59,6 +59,7 @@ pub(crate) type EnhancedLang<
     Lang,
 >;
 
+#[derive(Serialize, Deserialize)]
 pub struct EncryptedUserShareAndProof {
     pub proof: SecretShareProof,
     pub encrypted_user_share: CiphertextSpaceValue,

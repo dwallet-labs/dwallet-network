@@ -62,32 +62,18 @@ pub fn verify_dwallet_transfer(
     let Ok(dkg_output) = bcs::from_bytes::<DKGDecentralizedPartyOutput>(&dwallet_output) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
-    let encrypted_secret_share = pop_arg!(args, Vector);
-    let encrypted_secret_share = encrypted_secret_share.to_vec_u8()?;
+    let encrypted_secret_share_and_proof = pop_arg!(args, Vector);
+    let encrypted_secret_share_and_proof = encrypted_secret_share_and_proof.to_vec_u8()?;
 
     let public_encryption_key = pop_arg!(args, Vector);
     let public_encryption_key = public_encryption_key.to_vec_u8()?;
 
-    let encrypted_secret_share = bcs::from_bytes(&encrypted_secret_share).unwrap();
+    let encrypted_secret_share_and_proof = bcs::from_bytes(&encrypted_secret_share_and_proof).unwrap();
     let language_public_parameters = get_proof_public_parameters(public_encryption_key.clone());
-
-    let proof = pop_arg!(args, Vector);
-    let proof = proof.to_vec_u8()?;
-    let proof = bcs::from_bytes::<SecretShareProof>(&proof).unwrap();
-
-    let range_proof_commitment = pop_arg!(args, Vector);
-    let range_proof_commitment = range_proof_commitment.to_vec_u8()?;
-    let range_proof_commitment = bcs::from_bytes(&range_proof_commitment).unwrap();
-
-    let proof_output = EncryptedUserShareAndProof {
-        proof,
-        encrypted_user_share: encrypted_secret_share,
-        range_proof_commitment,
-    };
 
     let is_valid_proof = is_valid_proof(
         language_public_parameters,
-        proof_output,
+        encrypted_secret_share_and_proof,
         dkg_output.centralized_party_public_key_share,
     );
 

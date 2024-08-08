@@ -307,12 +307,12 @@ module dwallet_system::dwallet {
     }
 
     /// Encrypt DWallet secret share with an AHE public key.
-    const ENCRYPT_USER_SHARE_ERROR: u64 = 0x1;
+    const EEncryptUserShare: u64 = 0x1;
 
     struct EncryptedUserShare has key {
         id: UID,
         dwallet_id: ID,
-        encrypted_secret_share: vector<u8>,
+        encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
     }
 
@@ -339,26 +339,22 @@ module dwallet_system::dwallet {
     public fun encrypt_user_share(
         dwallet: &DWallet,
         encryption_key: &EncryptionKey,
-        proof: vector<u8>,
-        range_proof_commitment_value: vector<u8>,
-        encrypted_secret_share: vector<u8>,
+        encrypted_secret_share_and_proof: vector<u8>,
         recipient: address,
         ctx: &mut TxContext,
     ): ID {
         let is_valid = verify_dwallet_transfer(
-            range_proof_commitment_value,
-            proof,
             encryption_key.encryption_key,
-            encrypted_secret_share,
+            encrypted_secret_share_and_proof,
             output(dwallet),
         );
 
-        assert!(!is_valid, ENCRYPT_USER_SHARE_ERROR);
+        assert!(!is_valid, EEncryptUserShare);
 
         let encrypt_user_share = EncryptedUserShare {
             id: object::new(ctx),
             dwallet_id: object::id(dwallet),
-            encrypted_secret_share,
+            encrypted_secret_share_and_proof,
             encryption_key_id: object::id(encryption_key),
         };
 
@@ -369,10 +365,8 @@ module dwallet_system::dwallet {
 
     #[allow(unused_function)]
     native fun verify_dwallet_transfer(
-        range_proof_commitment_value: vector<u8>,
-        proof: vector<u8>,
         secret_share_public_key: vector<u8>,
-        encrypted_secret_share: vector<u8>,
+        encrypted_secret_share_and_proof: vector<u8>,
         dwallet_output: vector<u8>,
     ): bool;
 }

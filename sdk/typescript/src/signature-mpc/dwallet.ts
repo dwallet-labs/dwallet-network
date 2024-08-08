@@ -118,9 +118,7 @@ export const getEncryptionKeyByObjectId = async (
 export const transferDwallet = async (
 	client: DWalletClient,
 	keypair: Keypair,
-	proof: Uint8Array,
-	encrypted_secret_share: Uint8Array,
-	range_commitment: Uint8Array,
+	encryptedUserShareAndProof: Uint8Array,
 	encryptionKeyObjID: string,
 	dwalletID: string,
 	recipient_address: string,
@@ -134,9 +132,7 @@ export const transferDwallet = async (
 		arguments: [
 			dwallet,
 			pub_key_obj,
-			tx.pure(proof),
-			parseArg(range_commitment, tx),
-			parseArg(encrypted_secret_share, tx),
+			tx.pure(encryptedUserShareAndProof),
 			tx.pure(recipient_address),
 		],
 	});
@@ -149,5 +145,3 @@ export const transferDwallet = async (
 		},
 	});
 };
-
-const parseArg = (arg: any, tx: any) => tx.pure(bcs.vector(bcs.u8()).serialize(arg));

@@ -101,7 +101,7 @@ describe('Test key share transfer', () => {
 
 		let parsedKeyshare = Uint8Array.from(Buffer.from(secretKeyshare, 'hex'));
 
-		const [proof, encryptedSecretShare, rangeCommitment] = generate_proof(
+		const encryptedUserShareAndProof = generate_proof(
 			parsedKeyshare,
 			recipientData?.encryptionKey!,
 		);
@@ -109,9 +109,7 @@ describe('Test key share transfer', () => {
 		await transferDwallet(
 			toolbox.client,
 			toolbox.keypair,
-			proof,
-			encryptedSecretShare,
-			rangeCommitment,
+			encryptedUserShareAndProof
 			publicKeyID,
 			dwalletID,
 			recipientData?.keyOwnerAddress!,
