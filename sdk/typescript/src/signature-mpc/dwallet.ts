@@ -11,7 +11,6 @@ import { fetchObjectBySessionId } from './utils.js';
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
-const dWalletTransferModuleName = 'dwallet_transfer';
 
 export async function approveAndSign(
 	dwalletCapId: string,
@@ -78,7 +77,7 @@ export const storeEncryptionKey = async (
 	const tx = new TransactionBlock();
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryption_key));
 	tx.moveCall({
-		target: `${packageId}::${dWalletTransferModuleName}::register_encryption_key`,
+		target: `${packageId}::${dWalletModuleName}::register_encryption_key`,
 		arguments: [purePubKey],
 	});
 	let result = await client.signAndExecuteTransactionBlock({
@@ -131,7 +130,7 @@ export const transferDwallet = async (
 	const dwallet = tx.object(dwalletID);
 
 	tx.moveCall({
-		target: `${packageId}::${dWalletTransferModuleName}::encrypt_user_share`,
+		target: `${packageId}::${dWalletModuleName}::encrypt_user_share`,
 		arguments: [
 			dwallet,
 			pub_key_obj,
