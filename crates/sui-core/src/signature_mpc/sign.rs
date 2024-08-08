@@ -16,6 +16,17 @@ use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::{SignMessage, SignatureMPCSessionID};
 use twopc_mpc::secp256k1::paillier::bulletproofs::PartialDecryptionProof;
 
+/// The possible results of a call to [`SignRound::complete_round`].
+pub(crate) enum SignRoundCompletion {
+    /// The decrypted signatures, returned if all the parties behaved honestly.
+    SignatureOutput(Vec<Vec<u8>>),
+    /// A message to start the identifiable abort flow, returned if some parties behaved maliciously.
+    /// The vector contains the IDs of the threshold parties that were involved in decrypting those signatures,
+    /// and should be used to identify the malicious parties.
+    StartIdentifiableAbortFlow(Vec<PartyID>),
+    None,
+}
+
 #[derive(Default)]
 pub(crate) enum SignRound {
     FirstRound {
@@ -115,17 +126,6 @@ impl SignRound {
             _ => Ok(SignRoundCompletion::None),
         }
     }
-}
-
-/// The possible results of a call to [`SignRound::complete_round`].
-pub(crate) enum SignRoundCompletion {
-    /// The decrypted signatures, returned if all the parties behaved honestly.
-    SignatureOutput(Vec<Vec<u8>>),
-    /// A message to start the identifiable abort flow, returned if some parties behaved maliciously.
-    /// The vector contains the IDs of the threshold parties that were involved in decrypting those signatures,
-    /// and should be used to identify the malicious parties.
-    StartIdentifiableAbortFlow(Vec<PartyID>),
-    None,
 }
 
 #[derive(Clone)]
