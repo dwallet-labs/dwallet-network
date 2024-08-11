@@ -1,7 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::fmt::{Debug, Display, Formatter, Write};
+use std::fmt::{Debug, Display};
 use std::time::Duration;
 
 use anyhow::anyhow;
@@ -10,24 +10,37 @@ use clap::*;
 use fastcrypto::encoding::Encoding;
 use fastcrypto::{encoding::Base64, traits::ToFromBytes};
 use move_core_types::language_storage::TypeTag;
-
-use serde_json::{json, Number, Value};
+use serde_json::{Number, Value};
+use tokio::time::sleep;
 
 use shared_crypto::intent::Intent;
+use signature_mpc::twopc_mpc_protocols::{
+    initiate_centralized_party_dkg, initiate_centralized_party_presign,
+    initiate_centralized_party_sign, message_digest, verify_signature,
+    PresignDecentralizedPartyOutput, ProtocolContext, SecretKeyShareEncryptionAndProof,
+};
 use sui_json::SuiJsonValue;
 use sui_json_rpc_types::{
-    ObjectChange, RPCTransactionRequestParams, SuiData, SuiObjectData, SuiObjectDataFilter,
-    SuiObjectResponse, SuiObjectResponseQuery, SuiParsedData, SuiRawData,
-    SuiTransactionBlockEffects, SuiTransactionBlockEffectsAPI, SuiTransactionBlockResponse,
-    SuiTransactionBlockResponseOptions, TransactionFilter,
+    ObjectChange, SuiData, SuiObjectDataFilter, SuiObjectResponseQuery,
+    SuiTransactionBlockEffectsAPI,
 };
 use sui_json_rpc_types::{SuiExecutionStatus, SuiObjectDataOptions};
 use sui_keys::keystore::AccountKeystore;
-use sui_sdk::sui_client_config::{DWalletSecretShare, SuiClientConfig, SuiEnv};
+use sui_sdk::sui_client_config::DWalletSecretShare;
 use sui_sdk::wallet_context::WalletContext;
+use sui_types::base_types::ObjectRef;
+use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
+use sui_types::signature_mpc::{
+    DKGSessionOutput, DWallet, Presign, PresignSessionOutput, SignData, SignOutput,
+    APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME,
+    CREATE_PARTIAL_USER_SIGNED_MESSAGES_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME,
+    DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME,
+    DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, SIGN_FUNC_NAME, SIGN_SESSION_STRUCT_NAME,
+};
+use sui_types::transaction::{Argument, CallArg, ObjectArg};
 use sui_types::{
     base_types::ObjectID,
-    transaction::{SenderSignedData, Transaction, TransactionData, TransactionDataAPI},
+    transaction::{SenderSignedData, Transaction, TransactionDataAPI},
     SUI_SYSTEM_PACKAGE_ID,
 };
 
@@ -35,23 +48,6 @@ use crate::client_commands::{
     construct_move_call_transaction, NewDWalletOutput, NewSignOutput, SuiClientCommandResult,
 };
 use crate::serialize_or_execute;
-use signature_mpc::twopc_mpc_protocols::{
-    initiate_centralized_party_dkg, initiate_centralized_party_presign,
-    initiate_centralized_party_sign, message_digest, verify_signature,
-    PresignDecentralizedPartyOutput, ProtocolContext, SecretKeyShareEncryptionAndProof,
-};
-use sui_types::base_types::ObjectRef;
-use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::signature_mpc::{
-    DKGSessionOutput, DWallet, Presign, PresignSessionOutput, SignData, SignOutput,
-    APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME,
-    CREATE_PARTIAL_USER_SIGNED_MESSAGES_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME,
-    DKG_SESSION_OUTPUT_STRUCT_NAME, DKG_SESSION_STRUCT_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME,
-    DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, SIGN_FUNC_NAME,
-    SIGN_SESSION_STRUCT_NAME,
-};
-use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionKind};
-use tokio::time::sleep;
 
 #[derive(ValueEnum, Clone, Debug)]
 pub enum Hash {
@@ -77,7 +73,7 @@ pub enum SuiDWalletCommands {
         #[clap(long)]
         alias: String,
         /// ID of the gas object for gas payment, in 20 bytes Hex string
-        /// If not provided, a gas object with at least gas_budget value will be selected
+        /// If not provided, a gas object with at least `gas_budget` value will be selected.
         #[clap(long)]
         gas: Option<ObjectID>,
 
@@ -104,11 +100,11 @@ pub enum SuiDWalletCommands {
         messages: Vec<String>,
 
         /// The hash function, either "KECCAK256" (default) or "SHA256".
-        #[clap(long, value_enum, default_value_t=Hash::KECCAK256)]
+        #[clap(long, value_enum, default_value_t = Hash::KECCAK256)]
         hash: Hash,
 
         /// ID of the gas object for gas payment, in 20 bytes Hex string
-        /// If not provided, a gas object with at least gas_budget value will be selected
+        /// If not provided, a gas object with at least `gas_budget` value will be selected.
         #[clap(long)]
         gas: Option<ObjectID>,
 
@@ -143,7 +139,7 @@ impl SuiDWalletCommands {
             } => {
                 if context.config.dwallets.iter().any(|d| d.alias == alias) {
                     return Err(anyhow!(
-                        "dWallet config with name [{alias}] already exists."
+                        "dWallet config with the name [{alias}] already exists."
                     ));
                 }
 
@@ -622,7 +618,7 @@ impl SuiDWalletCommands {
                     .collect::<Vec<_>>();
                 let (
                     public_nonce_encrypted_partial_signature_and_proofs,
-                    signature_verification_round_parties,
+                    _signature_verification_round_parties,
                 ): (Vec<_>, Vec<_>) = digests
                     .clone()
                     .into_iter()
@@ -679,7 +675,7 @@ impl SuiDWalletCommands {
                         cursor = None;
                     }
                 }
-                let (decentralized_presign, decentralized_presign_ref) =
+                let (_decentralized_presign, decentralized_presign_ref) =
                     decentralized_presign.unwrap();
 
                 let mut pt_builder = ProgrammableTransactionBuilder::new();

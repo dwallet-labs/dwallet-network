@@ -18,12 +18,20 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet_system::dwallet;
     use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap, PartialUserSignedMessages};
 
+    #[test_only]
+    friend dwallet_system::dwallet_tests;
+
+    #[test_only]
+    friend dwallet_system::dwallet_ecdsa_k1_tests;
+
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
     const EMesssagesLengthMustBeGreaterThanZero: u64 = 1;
     const EPresignOutputAndPresignMismatch: u64 = 2;
     const ESignInvalidSignatureParts: u64 = 3;
     const ENotSupported: u64 = 4;
+    const EEmptyCommitment: u64 = 5;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -32,6 +40,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     const KECCAK256: u8 = 0;
     const SHA256: u8 = 1;
 
+    const SYSTEM_ADDRESS: address = @0x0;
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
 
 
@@ -126,12 +135,14 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         presigns: vector<u8>,
     }
 
-    /// Starts a DKG session.
+    /// Starts a Distributed Key Generation (DKG) session.
     /// Capabilities are used to control access to the Dwallet.
+    /// This function start the DKG proccess in the Validators.
     public fun create_dkg_session(
         commitment_to_centralized_party_secret_key_share: vector<u8>,
         ctx: &mut TxContext
     ): DWalletCap {
+        assert!(commitment_to_centralized_party_secret_key_share != vector::empty<u8>(), EEmptyCommitment);
         let cap = create_dwallet_cap(ctx);
         let sender = tx_context::sender(ctx);
         let session = DKGSession {
@@ -160,7 +171,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         secret_key_share_encryption_and_proof: vector<u8>,
         ctx: &mut TxContext
     ) {
-        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+        assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
         let output = DKGSessionOutput {
             id: object::new(ctx),
             session_id: object::id(session),
@@ -170,6 +181,24 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         };
         // Send the blockchain DKG output to the user.
         transfer::transfer(output, session.sender);
+    }
+
+    #[allow(unused_function)]
+    #[test_only]
+    /// Call the underline `create_dkg_output`.
+    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_only
+    public fun create_dkg_output_for_testing(
+        session: &DKGSession,
+        commitment_to_centralized_party_secret_key_share: vector<u8>,
+        secret_key_share_encryption_and_proof: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        create_dkg_output(
+            session,
+            commitment_to_centralized_party_secret_key_share,
+            secret_key_share_encryption_and_proof,
+            ctx
+        );
     }
 
     /// Create a new Dwallet.
@@ -228,7 +257,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         ctx: &mut TxContext
     ) {
         assert!(hash == SHA256 || hash == KECCAK256, ENotSupported);
-        let messages_len = vector::length(&messages);
+        let messages_len: u64 = vector::length(&messages);
         assert!(messages_len > 0, EMesssagesLengthMustBeGreaterThanZero);
         let dwallet_id = object::id(dwallet);
         let dwallet_cap_id = dwallet_cap_id(dwallet);
@@ -374,5 +403,26 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             sign_data_event,
             ctx
         )
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
+        SignData {
+            presign_session_id,
+            hash: 0,
+            public_nonce_encrypted_partial_signature_and_proofs: vector::empty<u8>(),
+            presigns: vector::empty<u8>()
+        }
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_sign_data_event(presign_session_id: ID): NewSignDataEvent {
+        NewSignDataEvent {
+            presign_session_id,
+            hash: 0,
+            dkg_output: vector::empty<u8>(),
+            public_nonce_encrypted_partial_signature_and_proofs: vector::empty<u8>(),
+            presigns: vector::empty<u8>()
+        }
     }
 }

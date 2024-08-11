@@ -1,19 +1,20 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use rand::rngs::OsRng;
-use signature_mpc::twopc_mpc_protocols::{
-    decrypt_signature_decentralized_party_sign, initiate_decentralized_party_sign, message_digest,
-    AdditivelyHomomorphicDecryptionKeyShare, AdjustedLagrangeCoefficientSizedNumber, Commitment,
-    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, DecryptionKeyShare,
-    DecryptionPublicParameters, GroupElement, Hash, PaillierModulusSizedNumber, PartyID,
-    ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
-    SecretKeyShareSizedNumber, SignatureThresholdDecryptionParty, Value,
-};
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 use std::mem;
-use sui_types::base_types::{EpochId, ObjectRef};
+
+use rand::rngs::OsRng;
+
+use signature_mpc::twopc_mpc_protocols::{
+    decrypt_signature_decentralized_party_sign, initiate_decentralized_party_sign, message_digest,
+    AdditivelyHomomorphicDecryptionKeyShare, DKGDecentralizedPartyOutput,
+    DecentralizedPartyPresign, DecryptionPublicParameters, Hash, PaillierModulusSizedNumber,
+    PartyID, ProtocolContext, PublicNonceEncryptedPartialSignatureAndProof, Result,
+    SecretKeyShareSizedNumber, SignatureThresholdDecryptionParty,
+};
+use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 
 #[derive(Default)]
@@ -29,10 +30,10 @@ impl SignRound {
     pub(crate) fn new(
         tiresias_public_parameters: DecryptionPublicParameters,
         tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
-        epoch: EpochId,
+        _epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,
-        session_id: SignatureMPCSessionID,
+        _session_id: SignatureMPCSessionID,
         messages: Vec<Vec<u8>>,
         dkg_output: DKGDecentralizedPartyOutput,
         public_nonce_encrypted_partial_signature_and_proofs: Vec<
@@ -47,10 +48,8 @@ impl SignRound {
         let sign_mpc_party_per_message = initiate_decentralized_party_sign(
             tiresias_key_share_decryption_key_share,
             tiresias_public_parameters.clone(),
-            //epoch,
             party_id,
             parties.clone(),
-            //session_id,
             dkg_output,
             presigns.clone(),
         )?;

@@ -1,15 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::committee::EpochId;
-use crate::crypto::{default_hash, AuthoritySignInfo, AuthorityStrongQuorumSignInfo};
-use crate::digests::{SignatureMPCMessageDigest, SignatureMPCOutputDigest};
-use crate::error::SuiResult;
-use crate::message_envelope::{Envelope, Message, UnauthenticatedMessage};
-use crate::{committee::Committee, error::SuiError};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::fmt::{Debug, Display, Formatter};
+use std::marker::PhantomData;
 
 use serde::{Deserialize, Serialize};
+
 use shared_crypto::intent::IntentScope;
 use signature_mpc::twopc_mpc_protocols::{
     tiresias_deal_trusted_shares, Commitment, DKGDecentralizedPartyOutput,
@@ -19,12 +16,16 @@ use signature_mpc::twopc_mpc_protocols::{
     PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof,
     SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof,
 };
-use std::fmt::{Debug, Display, Formatter};
-use std::marker::PhantomData;
 
 use crate::base_types::ObjectRef;
+use crate::committee::EpochId;
+use crate::crypto::{default_hash, AuthoritySignInfo, AuthorityStrongQuorumSignInfo};
 pub use crate::digests::CheckpointContentsDigest;
 pub use crate::digests::CheckpointDigest;
+use crate::digests::{SignatureMPCMessageDigest, SignatureMPCOutputDigest};
+use crate::error::SuiResult;
+use crate::message_envelope::{Envelope, Message, UnauthenticatedMessage};
+use crate::{committee::Committee, error::SuiError};
 
 pub type InitSignatureMPCProtocolSequenceNumber = u64;
 pub type SignatureMPCRound = u64;
@@ -32,7 +33,7 @@ pub type SignatureMPCMessageKind = u64;
 pub type SignatureMPCTimestamp = u64;
 
 const SESSION_ID_LENGTH: usize = 32;
-/// The session id of the mpc is working on.
+/// The session ID of the mpc is working on.
 #[derive(Clone, Copy, Serialize, Deserialize, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SignatureMPCSessionID(pub [u8; SESSION_ID_LENGTH]);
 
@@ -155,7 +156,7 @@ impl Display for SignatureMPCMessageSummary {
 pub type SignatureMPCMessageSummaryEnvelope<S> = Envelope<SignatureMPCMessageSummary, S>;
 pub type SignedSignatureMPCMessageSummary = SignatureMPCMessageSummaryEnvelope<AuthoritySignInfo>;
 
-/// This is a message validators publish to consensus in order to sign checkpoint
+/// This is a message validators publish to consensus to sign checkpoint.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SignatureMPCMessage {
     pub summary: SignedSignatureMPCMessageSummary,
@@ -181,7 +182,8 @@ impl Display for SignatureMPCOutputValue {
             } => {
                 write!(
                     f,
-                    "DKGSignatureMPCOutputValue::DKG {{ commitment_to_centralized_party_secret_key_share: {:?}, secret_key_share_encryption_and_proof: {:?}}}",
+                    "DKGSignatureMPCOutputValue::DKG {{ commitment_to_centralized_party_secret_key_share: \
+                    {:?}, secret_key_share_encryption_and_proof: {:?}}}",
                     commitment_to_centralized_party_secret_key_share,
                     secret_key_share_encryption_and_proof,
                 )
