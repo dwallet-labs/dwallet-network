@@ -56,6 +56,44 @@ impl SuiClientConfig {
         })
     }
 
+    pub fn get_active_env_mut(&mut self) -> Result<&mut SuiEnv, anyhow::Error> {
+        let active_env = self.active_env.clone();
+        match self.get_env_mut(&active_env) {
+            None => Err(anyhow!(
+                "Environment configuration not found for env [{}]",
+                active_env.as_deref().unwrap_or("None")
+            )),
+            Some(env) => Ok(env),
+        }
+    }
+
+    pub fn get_env_mut(&mut self, alias: &Option<String>) -> Option<&mut SuiEnv> {
+        if let Some(alias) = alias {
+            self.envs.iter_mut().find(|env| &env.alias == alias)
+        } else {
+            self.envs.first_mut()
+        }
+    }
+
+    pub fn update_ethereum_state_object_id(
+        &mut self,
+        object_id: ObjectID,
+    ) -> Result<(), anyhow::Error> {
+        if let Some(env) = self.get_active_env_mut().ok() {
+            let eth_config = env.eth_client_settings.as_mut();
+            if let Some(config) = eth_config {
+                Ok(config.state_object_id = Some(object_id))
+            } else {
+                Err(anyhow!(
+                    "no Ethereum State object ID found for active environment `{}`",
+                    env.alias
+                ))
+            }
+        } else {
+            Err(anyhow!("no active environment found"))
+        }
+    }
+
     pub fn add_env(&mut self, env: SuiEnv) {
         if !self
             .envs
