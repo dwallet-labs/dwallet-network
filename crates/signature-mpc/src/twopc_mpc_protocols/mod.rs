@@ -24,7 +24,6 @@ use k256::sha2::digest::FixedOutput;
 pub use proof::aggregation::{
     CommitmentRoundParty, DecommitmentRoundParty, ProofAggregationRoundParty, ProofShareRoundParty,
 };
-pub use tiresias::{EncryptionKey, DecryptionKey};
 pub use tiresias::{
     decryption_key_share::PublicParameters as DecryptionPublicParameters,
     encryption_key::PublicParameters as EncryptionPublicParameters,
@@ -32,6 +31,7 @@ pub use tiresias::{
     AdjustedLagrangeCoefficientSizedNumber, DecryptionKeyShare, LargeBiPrimeSizedNumber,
     PaillierModulusSizedNumber, SecretKeyShareSizedNumber,
 };
+pub use tiresias::{DecryptionKey, EncryptionKey};
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
 pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
     CentralizedPartyPresign, DKGCentralizedPartyOutput, DKGCommitmentRoundParty,

@@ -68,7 +68,8 @@ pub fn validate_encrypted_user_secret_share(
     let public_encryption_key = pop_arg!(args, Vector);
     let public_encryption_key = public_encryption_key.to_vec_u8()?;
 
-    let encrypted_secret_share_and_proof = bcs::from_bytes(&encrypted_secret_share_and_proof).unwrap();
+    let encrypted_secret_share_and_proof =
+        bcs::from_bytes(&encrypted_secret_share_and_proof).unwrap();
     let language_public_parameters = get_proof_public_parameters(public_encryption_key.clone());
 
     let is_valid_proof = is_valid_proof(
