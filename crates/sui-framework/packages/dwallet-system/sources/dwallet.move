@@ -364,7 +364,7 @@ module dwallet_system::dwallet {
             output(dwallet),
         );
 
-        assert!(!is_valid, EEncryptUserShare);
+        assert!(is_valid, EEncryptUserShare);
 
         let encrypt_user_share = EncryptedUserShare {
             id: object::new(ctx),

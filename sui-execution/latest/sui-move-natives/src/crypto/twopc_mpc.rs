@@ -48,7 +48,7 @@ pub fn validate_encrypted_user_secret_share(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     debug_assert!(ty_args.is_empty());
-    debug_assert!(args.len() == 4);
+    debug_assert!(args.len() == 3);
     let twopc_mpc_dkg_cost_params = &context
         .extensions()
         .get::<NativesCostTable>()
