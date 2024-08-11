@@ -501,10 +501,14 @@ pub fn decrypt_signatures_decentralized_party_sign(
         .copied()
         .collect();
 
+    // Format the decryption shares to the type expected by [`twopc_mpc::SignatureThresholdDecryptionParty::decrypt_signature`] function.
+    // We initially have them in the format of `HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>`, mapping every party to
+    // a vector of decryption shares for each message. Each decryption share is a tuple of the partial signature decryption share and the masked nonce decryption share.
+    // We need a vector of tuples, where each tuple contains a HashMap of the partial signature decryption shares and a HashMap of the masked nonce decryption shares.
     let formatted_decryption_shares: Vec<(
         HashMap<PartyID, PaillierModulusSizedNumber>,
         HashMap<PartyID, PaillierModulusSizedNumber>,
-    )> = (0..public_nonce_encrypted_partial_signature_and_proofs.len())
+    )> = (0..decryption_shares.len())
         .map(|i| {
             decryption_shares
                 .iter()
