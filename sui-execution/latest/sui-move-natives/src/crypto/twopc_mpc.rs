@@ -1,4 +1,4 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::object_runtime::ObjectRuntime;
 use crate::NativesCostTable;
@@ -86,7 +86,7 @@ pub fn validate_encrypted_user_secret_share(
 /***************************************************************************************************
  * native fun dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
  * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>);`
- *  gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base  | base cost for function call and fixed operation.
+ * gas cost: dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base  | base cost for function call and fixed operators.
  **************************************************************************************************/
 pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
     context: &mut NativeContext,
