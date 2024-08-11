@@ -483,7 +483,7 @@ pub fn decrypt_signatures_decentralized_party_sign(
     decryption_key_share_public_parameters: DecryptionPublicParameters,
     // PartyID => (partial_signature_decryption_share,
     // masked_nonce_decryption_share) per Message.
-    batch_decryption_shares: HashMap<
+    decryption_shares: HashMap<
         PartyID,
         // Vec<(partial_signature_decryption_share, masked_nonce_decryption_share)>.
         Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
@@ -494,18 +494,18 @@ pub fn decrypt_signatures_decentralized_party_sign(
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
 ) -> std::result::Result<Vec<Vec<u8>>, DecryptionError> {
     let threshold = decryption_key_share_public_parameters.threshold as usize;
-    let threshold_decrypters: Vec<PartyID> = batch_decryption_shares
+    let threshold_decrypters: Vec<PartyID> = decryption_shares
         .keys()
         .take(threshold)
         .copied()
         .collect();
 
-    let decryption_shares: Vec<(
+    let formatted_decryption_shares: Vec<(
         HashMap<PartyID, PaillierModulusSizedNumber>,
         HashMap<PartyID, PaillierModulusSizedNumber>,
     )> = (0..public_nonce_encrypted_partial_signature_and_proofs.len())
         .map(|i| {
-            batch_decryption_shares
+            decryption_shares
                 .iter()
                 .filter(|(party_id, _)| threshold_decrypters.contains(party_id))
                 .fold(
@@ -528,7 +528,7 @@ pub fn decrypt_signatures_decentralized_party_sign(
 
     decrypt_signatures(
         &lagrange_coefficients,
-        &decryption_shares,
+        &formatted_decryption_shares,
         signature_threshold_decryption_round_parties,
     )
     .map_err(|_decryption_error| DecryptionError {
