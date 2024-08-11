@@ -494,7 +494,7 @@ pub fn decrypt_signatures_decentralized_party_sign(
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
 ) -> std::result::Result<Vec<Vec<u8>>, DecryptionError> {
     let threshold = decryption_key_share_public_parameters.threshold as usize;
-    let threshold_decrypters: Vec<PartyID> = decryption_shares
+    let decrypters: Vec<PartyID> = decryption_shares
         .keys()
         .take(threshold)
         .copied()
@@ -507,7 +507,7 @@ pub fn decrypt_signatures_decentralized_party_sign(
         .map(|i| {
             decryption_shares
                 .iter()
-                .filter(|(party_id, _)| threshold_decrypters.contains(party_id))
+                .filter(|(party_id, _)| decrypters.contains(party_id))
                 .fold(
                     (HashMap::new(), HashMap::new()),
                     |(mut partial_map, mut masked_map), (party_id, decryption_shares)| {
@@ -523,7 +523,7 @@ pub fn decrypt_signatures_decentralized_party_sign(
 
     let lagrange_coefficients = compute_lagrange_coefficient(
         &decryption_key_share_public_parameters,
-        &threshold_decrypters,
+        &decrypters,
     );
 
     decrypt_signatures(
@@ -532,7 +532,7 @@ pub fn decrypt_signatures_decentralized_party_sign(
         signature_threshold_decryption_round_parties,
     )
     .map_err(|_decryption_error| DecryptionError {
-        decrypters: threshold_decrypters,
+        decrypters,
     })
 }
 
