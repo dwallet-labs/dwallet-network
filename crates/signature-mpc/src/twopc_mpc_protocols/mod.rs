@@ -14,7 +14,7 @@ use k256::elliptic_curve::group::GroupEncoding;
 use k256::sha2::Digest;
 use k256::{elliptic_curve, sha2, AffinePoint, CompressedPoint};
 use rand::rngs::OsRng;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 
 pub use group::Value;
@@ -430,6 +430,12 @@ pub struct DecryptionError {
     pub decrypters: Vec<PartyID>,
 }
 
+impl Display for DecryptionError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str("test")
+    }
+}
+
 #[allow(clippy::type_complexity)]
 fn decrypt_signatures(
     lagrange_coefficients: &HashMap<PartyID, AdjustedLagrangeCoefficientSizedNumber>,
@@ -489,7 +495,7 @@ pub fn decrypt_signatures_decentralized_party_sign(
         // Vec<(partial_signature_decryption_share, masked_nonce_decryption_share)>.
         Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>,
     >,
-    public_nonce_encrypted_partial_signature_and_proofs: Vec<
+    _public_nonce_encrypted_partial_signature_and_proofs: Vec<
         PublicNonceEncryptedPartialSignatureAndProof<ProtocolContext>,
     >,
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
