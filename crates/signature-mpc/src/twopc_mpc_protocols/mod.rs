@@ -421,6 +421,7 @@ pub fn decentralized_party_sign_verify_encrypted_signature_parts_prehash(
 
 /// Returned when the signature decryption fails.
 /// Contains all the necessary information to start an Identifiable Abort protocol.
+#[derive(thiserror::Error, Debug)]
 pub struct DecryptionError {
     // The IDs of the parties that participated in the aborted signing protocol.
     // We need only a threshold of them to decrypt the signature,
@@ -622,7 +623,6 @@ pub fn generate_proof(
 }
 
 pub fn message_digest(message: &[u8], hash_type: &Hash) -> secp256k1::Scalar {
-    //todo: remove unwrap!
     let hash = match hash_type {
         Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
             &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
