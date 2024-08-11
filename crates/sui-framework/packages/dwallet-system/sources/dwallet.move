@@ -339,7 +339,7 @@ module dwallet_system::dwallet {
     }
 
     public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
-        assert!(!is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
+        assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         let encryption_key = EncryptionKey {
             id: object::new(ctx),
             scheme: scheme,

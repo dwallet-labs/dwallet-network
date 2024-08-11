@@ -108,8 +108,8 @@ describe('Test key share transfer', () => {
 		const recipientData = await getEncryptionKeyByObjectId(toolbox.client, publicKeyID);
 
 		// Before running this test, you need to create a dwallet and out its object ID and secret share here.
-		const secretKeyshare = '<SECRET_SHARE_HEX>';
-		const dwalletID = '<DWALLET_OBJECT_ID>';
+		const secretKeyshare = '39F2B7545578B75C7A8CAB24837F1FF2B2F51CCC03480634C71550BF747C5103';
+		const dwalletID = '0x63a7d415aed9c15e1df11c6e52664f723293b8c2743a4ebcb44131d07736c7c0';
 
 		let parsedKeyshare = Uint8Array.from(Buffer.from(secretKeyshare, 'hex'));
 
