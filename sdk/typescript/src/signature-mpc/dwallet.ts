@@ -106,7 +106,7 @@ export const getEncryptionKeyByObjectId = async (
 
 	const objectFields =
 		response.data?.content?.dataType === 'moveObject'
-			? (response.data?.content?.fields as {
+			? (response.data?.content?.fields as unknown as {
 					encryption_key: Uint8Array;
 					key_owner_address: string;
 			  })
