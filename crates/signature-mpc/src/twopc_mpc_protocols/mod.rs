@@ -706,6 +706,7 @@ pub fn recovery_id(
     }
 }
 
+/// Verifies that all the signatures are valid. Return true if all are valid, false otherwise.
 pub fn verify_signatures(
     messages: Vec<Vec<u8>>,
     hash: &Hash,
@@ -723,7 +724,7 @@ pub fn verify_signatures(
     true
 }
 
-pub fn verify_single_signature(
+fn verify_single_signature(
     message: &Vec<u8>,
     signature: &Vec<u8>,
     public_key: PublicKeyValue,
