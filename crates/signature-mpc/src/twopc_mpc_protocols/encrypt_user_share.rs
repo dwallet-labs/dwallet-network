@@ -1,4 +1,3 @@
-use crate::twopc_mpc_protocols::N;
 use commitment::GroupsPublicParametersAccessors;
 use crypto_bigint::{Uint, U256};
 use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
@@ -242,7 +241,7 @@ pub fn is_valid_proof(
     centralized_public_keyshare: group::Value<secp256k1::GroupElement>,
 ) -> bool {
     let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
-    let protocol_public_parameters = ProtocolPublicParameters::new(N);
+    let range_proof_enc_dl_public_parameters = proof::range::bulletproofs::PublicParameters::<RANGE_CLAIMS_PER_SCALAR>::default();
 
     let unbounded_witness_public_parameters = language_public_parameters
         .randomness_space_public_parameters()
@@ -258,14 +257,14 @@ pub fn is_valid_proof(
         language_public_parameters.clone(),
     );
 
-    let range_proof_commitment = range::CommitmentSchemeCommitmentSpaceGroupElement::<
+    let range_proof_commitment =
+        range::CommitmentSchemeCommitmentSpaceGroupElement::<
         { COMMITMENT_SCHEME_MESSAGE_SPACE_SCALAR_LIMBS },
         { RANGE_CLAIMS_PER_SCALAR },
         bulletproofs::RangeProof,
     >::new(
         proof_public_output.range_proof_commitment,
-        protocol_public_parameters
-            .range_proof_enc_dl_public_parameters
+        range_proof_enc_dl_public_parameters
             .commitment_scheme_public_parameters
             .commitment_space_public_parameters(),
     )
