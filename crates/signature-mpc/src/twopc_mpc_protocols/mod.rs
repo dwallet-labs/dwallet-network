@@ -501,11 +501,7 @@ pub fn decrypt_signatures_decentralized_party_sign(
     signature_threshold_decryption_round_parties: Vec<SignatureThresholdDecryptionParty>,
 ) -> std::result::Result<Vec<Vec<u8>>, DecryptionError> {
     let threshold = decryption_key_share_public_parameters.threshold as usize;
-    let decrypters: Vec<PartyID> = decryption_shares
-        .keys()
-        .take(threshold)
-        .copied()
-        .collect();
+    let decrypters: Vec<PartyID> = decryption_shares.keys().take(threshold).copied().collect();
 
     // Format the decryption shares to the type expected by [`twopc_mpc::SignatureThresholdDecryptionParty::decrypt_signature`] function.
     // We initially have them in the format of `HashMap<PartyID, Vec<(PaillierModulusSizedNumber, PaillierModulusSizedNumber)>>`, mapping every party to
@@ -532,19 +528,15 @@ pub fn decrypt_signatures_decentralized_party_sign(
         })
         .collect();
 
-    let lagrange_coefficients = compute_lagrange_coefficient(
-        &decryption_key_share_public_parameters,
-        &decrypters,
-    );
+    let lagrange_coefficients =
+        compute_lagrange_coefficient(&decryption_key_share_public_parameters, &decrypters);
 
     decrypt_signatures(
         &lagrange_coefficients,
         &formatted_decryption_shares,
         signature_threshold_decryption_round_parties,
     )
-    .map_err(|_decryption_error| DecryptionError {
-        decrypters,
-    })
+    .map_err(|_decryption_error| DecryptionError { decrypters })
 }
 
 fn compute_lagrange_coefficient(
