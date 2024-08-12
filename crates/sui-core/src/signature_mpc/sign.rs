@@ -232,7 +232,6 @@ impl SignState {
     }
 
     pub(crate) fn should_identify_malicious_actors(&self) -> bool {
-        // TODO (#133): Handle the case a validator does not send its proof.
         let threshold: usize = self.tiresias_public_parameters.threshold.into();
         self.proofs.len() == threshold && self.received_all_decryption_shares()
     }
