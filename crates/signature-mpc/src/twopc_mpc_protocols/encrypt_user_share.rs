@@ -342,6 +342,7 @@ pub fn decrypt_user_share(
     let decryption_key = bcs::from_bytes(&decryption_key).unwrap();
     let decryption_key = DecryptionKey::new(decryption_key, &paillier_public_parameters).unwrap();
 
+    // safe to `unwrap` as decryption in Paillier always succeeds
     let plaintext = decryption_key
         .decrypt(&ciphertext, &paillier_public_parameters)
         .unwrap();
