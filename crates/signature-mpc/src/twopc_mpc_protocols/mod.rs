@@ -713,15 +713,12 @@ pub fn verify_signatures(
     public_key: PublicKeyValue,
     signatures: Vec<Vec<u8>>,
 ) -> bool {
-    for (message, signature) in messages.iter().zip(signatures.iter()) {
-        match verify_single_signature(message, signature, public_key, hash) {
-            Ok(_) => {}
-            Err(Error::MaliciousDesignatedDecryptingParty) => return false,
-            // TODO (#135): Understand how to handle different errors that may be returned from [`SignatureThresholdDecryptionParty::verify_decrypted_signature`].
-            _ => return false,
-        }
-    }
-    true
+    messages
+        .iter()
+        .zip(signatures.iter())
+        .all(|(message, signature)| {
+            verify_single_signature(message, signature, public_key, hash).is_ok()
+        })
 }
 
 fn verify_single_signature(
