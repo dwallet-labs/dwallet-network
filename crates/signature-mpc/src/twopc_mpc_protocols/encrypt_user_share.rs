@@ -330,17 +330,15 @@ pub fn decrypt_user_share(
     decryption_key: Vec<u8>,
     encrypted_user_share_and_proof: EncryptedUserShareAndProof,
 ) -> Vec<u8> {
-    let language_public_parameters = get_proof_public_parameters(encryption_key.clone());
+    let paillier_public_parameters: tiresias::encryption_key::PublicParameters =
+        bcs::from_bytes(&encryption_key).unwrap();
     let ciphertext = CiphertextSpaceGroupElement::new(
         encrypted_user_share_and_proof.encrypted_user_share,
-        language_public_parameters
-            .encryption_scheme_public_parameters
+        paillier_public_parameters
             .ciphertext_space_public_parameters(),
     )
     .unwrap();
 
-    let paillier_public_parameters: tiresias::encryption_key::PublicParameters =
-        bcs::from_bytes(&encryption_key).unwrap();
     let decryption_key = bcs::from_bytes(&decryption_key).unwrap();
     let decryption_key = DecryptionKey::new(decryption_key, &paillier_public_parameters).unwrap();
 
@@ -354,7 +352,7 @@ pub fn decrypt_user_share(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::twopc_mpc_protocols::dwallet_transfer::{
+    use crate::twopc_mpc_protocols::encrypt_user_share::{
         generate_keypair, generate_proof, get_proof_public_parameters,
     };
     use twopc_mpc::secp256k1::paillier::bulletproofs::DKGDecentralizedPartyOutput;
