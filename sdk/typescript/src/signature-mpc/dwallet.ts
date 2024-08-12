@@ -155,7 +155,6 @@ export const transferDwallet = async (
 	encryptedUserShareAndProof: Uint8Array,
 	encryptionKeyObjID: string,
 	dwalletID: string,
-	recipient_address: string,
 ) => {
 	const tx = new TransactionBlock();
 	const pub_key_obj = tx.object(encryptionKeyObjID);
@@ -167,7 +166,6 @@ export const transferDwallet = async (
 			dwallet,
 			pub_key_obj,
 			tx.pure(encryptedUserShareAndProof),
-			tx.pure(recipient_address),
 		],
 	});
 

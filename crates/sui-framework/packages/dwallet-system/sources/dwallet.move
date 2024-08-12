@@ -13,7 +13,6 @@ module dwallet_system::dwallet {
     use dwallet::transfer;
     use dwallet::tx_context;
     use dwallet::tx_context::TxContext;
-    use dwallet_system::dwallet_object::{output, DWallet, dwallet_cap_id};
 
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 
@@ -49,6 +48,31 @@ module dwallet_system::dwallet {
     }
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
+
+    #[allow(unused_field)]
+    /// `DWallet` represents a wallet that is created after the DKG process.
+    struct DWallet has key, store {
+        id: UID,
+        session_id: ID,
+        dwallet_cap_id: ID,
+        // `output` is output for `verify_decommitment_and_proof_of_centralized_party_public_key_share()`
+        output: vector<u8>,
+        public_key: vector<u8>,
+    }
+
+    public fun new_dwallet(session_id: ID, dwallet_cap_id: ID, output: vector<u8>, public_key: vector<u8>, ctx: &mut TxContext): DWallet {
+        DWallet {
+            id: object::new(ctx),
+            session_id,
+            dwallet_cap_id,
+            output,
+            public_key,
+        }
+    }
+
+    public fun output(dwallet: &DWallet): vector<u8> { dwallet.output }
+
+    public fun dwallet_cap_id(dwallet: &DWallet): ID { dwallet.dwallet_cap_id }
 
     /// `DWalletCap` holder controls a corresponding `Dwallet`.
     struct DWalletCap has key, store {
@@ -387,13 +411,12 @@ module dwallet_system::dwallet {
         dwallet: &DWallet,
         encryption_key: &EncryptionKey,
         encrypted_secret_share_and_proof: vector<u8>,
-        recipient: address,
         ctx: &mut TxContext,
     ): ID {
         let is_valid = validate_encrypted_user_secret_share(
             encryption_key.encryption_key,
             encrypted_secret_share_and_proof,
-            output(dwallet),
+            dwallet.output,
         );
 
         assert!(is_valid, EEncryptUserShare);
@@ -406,7 +429,7 @@ module dwallet_system::dwallet {
         };
 
         let encrypt_user_share_obj_id = object::id(&encrypt_user_share);
-        transfer::transfer(encrypt_user_share, recipient);
+        transfer::freeze_object(encrypt_user_share);
         encrypt_user_share_obj_id
     }
 

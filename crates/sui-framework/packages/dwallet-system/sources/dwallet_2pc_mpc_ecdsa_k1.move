@@ -13,10 +13,11 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
-    use dwallet_system::dwallet_object::{DWallet, new_dwallet, output, dwallet_cap_id};
 
     use dwallet_system::dwallet;
-    use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap, PartialUserSignedMessages};
+    use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap, PartialUserSignedMessages, output, dwallet_cap_id,
+        new_dwallet, DWallet,
+    };
 
     #[test_only]
     friend dwallet_system::dwallet_tests;
