@@ -1,4 +1,3 @@
-use crate::twopc_mpc_protocols::N;
 use commitment::GroupsPublicParametersAccessors;
 use crypto_bigint::{Uint, U256};
 use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
@@ -108,19 +107,6 @@ pub fn get_proof_public_parameters(pub_key: Vec<u8>) -> LangPublicParams {
     )
 }
 
-fn parse_plaintext(
-    plaintext: Vec<u8>,
-    public_parameters: &tiresias::encryption_key::PublicParameters,
-) -> PlaintextSpaceGroupElement {
-    let plaintext: LargeBiPrimeSizedNumber = (&U256::from_be_slice(&plaintext)).into();;
-    let plaintext = PlaintextSpaceGroupElement::new(
-        plaintext,
-        public_parameters.plaintext_space_public_parameters(),
-    )
-    .unwrap();
-    plaintext
-}
-
 pub fn generate_proof(
     encryption_key: Vec<u8>,
     user_share: Vec<u8>,
@@ -138,7 +124,10 @@ pub fn generate_proof(
         .randomness_space_public_parameters()
         .clone();
 
-    let plaintext = parse_plaintext(user_share, &paillier_public_parameters);
+    let plaintext = PlaintextSpaceGroupElement::new(
+        (&U256::from_be_slice(&user_share)).into(),
+        paillier_public_parameters.plaintext_space_public_parameters(),
+    ).unwrap();
 
     let randomness = RandomnessSpaceGroupElement::sample(
         language_public_parameters
@@ -146,7 +135,7 @@ pub fn generate_proof(
             .randomness_space_public_parameters(),
         &mut OsRng,
     )
-    .unwrap();
+        .unwrap();
 
     let enhanced_language_public_parameters = enhanced_language_public_parameters::<
         { maurer::SOUND_PROOFS_REPETITIONS },
@@ -158,12 +147,12 @@ pub fn generate_proof(
         language_public_parameters,
     );
 
-    let witnesses = generate_witnesses(randomness, &enhanced_language_public_parameters, plaintext);
+    let witness = generate_witness(randomness, &enhanced_language_public_parameters, plaintext);
 
     let (proofs, statements) = match SecretShareProof::prove(
         &PhantomData,
         &enhanced_language_public_parameters,
-        witnesses,
+        vec![witness],
         &mut OsRng,
     ) {
         Ok((proofs, statements)) => (proofs, statements),
@@ -182,7 +171,7 @@ pub fn generate_proof(
     })
 }
 
-fn generate_witnesses(
+fn generate_witness(
     randomness: RandomnessSpaceGroupElement,
     enhanced_language_public_parameters: &language::PublicParameters<
         { maurer::SOUND_PROOFS_REPETITIONS },
@@ -194,20 +183,18 @@ fn generate_witnesses(
         >,
     >,
     plaintext: PlaintextSpaceGroupElement,
-) -> Vec<
-    WitnessSpaceGroupElement<
-        { maurer::SOUND_PROOFS_REPETITIONS },
-        RANGE_CLAIMS_PER_SCALAR,
-        COMMITMENT_SCHEME_MESSAGE_SPACE_SCALAR_LIMBS,
-        bulletproofs::RangeProof,
-        RandomnessSpaceGroupElement,
-        Lang,
-    >,
+) -> WitnessSpaceGroupElement<
+    { maurer::SOUND_PROOFS_REPETITIONS },
+    RANGE_CLAIMS_PER_SCALAR,
+    COMMITMENT_SCHEME_MESSAGE_SPACE_SCALAR_LIMBS,
+    bulletproofs::RangeProof,
+    RandomnessSpaceGroupElement,
+    Lang,
 > {
-    let witnesses: Vec<language::WitnessSpaceGroupElement<1, Lang>> =
-        vec![(plaintext, randomness).into()];
+    let witnesses: language::WitnessSpaceGroupElement<1, Lang> =
+        (plaintext, randomness).into();
 
-    let witnesses =
+    let witness =
         EnhancedLanguage::<
             { maurer::SOUND_PROOFS_REPETITIONS },
             RANGE_CLAIMS_PER_SCALAR,
@@ -215,9 +202,9 @@ fn generate_witnesses(
             bulletproofs::RangeProof,
             RandomnessSpaceGroupElement,
             Lang,
-        >::generate_witnesses(witnesses, &enhanced_language_public_parameters, &mut OsRng)
-        .unwrap();
-    witnesses
+        >::generate_witness(witnesses, &enhanced_language_public_parameters, &mut OsRng)
+            .unwrap();
+    witness
 }
 
 pub fn enhanced_language_public_parameters<
@@ -246,7 +233,7 @@ pub fn enhanced_language_public_parameters<
         bulletproofs::PublicParameters::default(),
         language_public_parameters,
     )
-    .unwrap()
+        .unwrap()
 }
 pub fn is_valid_proof(
     language_public_parameters: LangPublicParams,
@@ -254,7 +241,7 @@ pub fn is_valid_proof(
     centralized_public_keyshare: group::Value<secp256k1::GroupElement>,
 ) -> bool {
     let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
-    let protocol_public_parameters = ProtocolPublicParameters::new(N);
+    let range_proof_enc_dl_public_parameters = proof::range::bulletproofs::PublicParameters::<RANGE_CLAIMS_PER_SCALAR>::default();
 
     let unbounded_witness_public_parameters = language_public_parameters
         .randomness_space_public_parameters()
@@ -270,24 +257,24 @@ pub fn is_valid_proof(
         language_public_parameters.clone(),
     );
 
-    let range_proof_commitment = range::CommitmentSchemeCommitmentSpaceGroupElement::<
+    let range_proof_commitment =
+        range::CommitmentSchemeCommitmentSpaceGroupElement::<
         { COMMITMENT_SCHEME_MESSAGE_SPACE_SCALAR_LIMBS },
         { RANGE_CLAIMS_PER_SCALAR },
         bulletproofs::RangeProof,
     >::new(
         proof_public_output.range_proof_commitment,
-        protocol_public_parameters
-            .range_proof_enc_dl_public_parameters
+        range_proof_enc_dl_public_parameters
             .commitment_scheme_public_parameters
             .commitment_space_public_parameters(),
     )
-    .unwrap();
+        .unwrap();
 
     let public_key_share = group::secp256k1::group_element::GroupElement::new(
         centralized_public_keyshare,
         &secp256k1_group_public_parameters,
     )
-    .unwrap();
+        .unwrap();
 
     let encrypted_secret_share: CiphertextSpaceGroupElement = CiphertextSpaceGroupElement::new(
         proof_public_output.encrypted_user_share,
@@ -295,7 +282,7 @@ pub fn is_valid_proof(
             .encryption_scheme_public_parameters
             .ciphertext_space_public_parameters(),
     )
-    .unwrap();
+        .unwrap();
 
     let statement = (
         range_proof_commitment,
@@ -326,7 +313,7 @@ pub fn decrypt_user_share(
         paillier_public_parameters
             .ciphertext_space_public_parameters(),
     )
-    .unwrap();
+        .unwrap();
 
     let decryption_key = bcs::from_bytes(&decryption_key).unwrap();
     let decryption_key = DecryptionKey::new(decryption_key, &paillier_public_parameters).unwrap();
