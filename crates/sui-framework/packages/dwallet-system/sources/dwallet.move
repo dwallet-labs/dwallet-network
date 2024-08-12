@@ -329,7 +329,7 @@ module dwallet_system::dwallet {
     /// An Additively Homomorphic Encryption (AHE) public key
     /// that can be used to encrypt a user share in order to prove to the network that
     /// the recipient can sign with a dWallet when it is transferred or access is granted to it.
-    struct EncryptionKey has key {
+    struct EncryptionKey has key, store {
         id: UID,
         scheme: u8,
         encryption_key: vector<u8>,
@@ -356,30 +356,31 @@ module dwallet_system::dwallet {
 
     struct EncryptionKeysHolder has key {
         id: UID,
-        encryption_keys: Table<ID, &EncryptionKey>,
+        encryption_keys: Table<ID, ID>,
     }
 
-    public fun init(ctx: &mut TxContext) {
+    fun init(ctx: &mut TxContext) {
         create_encryption_keys_holder(ctx);
     }
 
     public fun create_encryption_keys_holder(ctx: &mut TxContext) {
+        // TODO: set a proper ID
         let holder = EncryptionKeysHolder {
-            id: object::new(ctx), /// TODO: set a proper ID
+            id: object::new(ctx),
             encryption_keys: table::new(ctx),
         };
         transfer::transfer(holder, tx_context::sender(ctx));
     }
 
-    public fun set_primary_encryption_key(encryption_key_holder: &mut EncryptionKeysHolder, dwallet: &DWallet, dwallet_cap: &DWalletCap , encryption_key: &EncryptionKey, ctx: &mut TxContext) {
+    public fun set_primary_encryption_key(encryption_key_holder: &mut EncryptionKeysHolder, dwallet: &DWallet, dwallet_cap: &DWalletCap , encryption_key: &EncryptionKey, _ctx: &mut TxContext) {
         assert!(object::id(dwallet_cap) == dwallet_cap_id(dwallet), EDWalletOwnershipMismatch);
         if (table::contains(&encryption_key_holder.encryption_keys, object::id(dwallet))) {
             table::remove(&mut encryption_key_holder.encryption_keys, object::id(dwallet));
         };
-        table::add(&mut encryption_key_holder.encryption_keys, object::id(dwallet), encryption_key);
+        table::add(&mut encryption_key_holder.encryption_keys, object::id(dwallet), object::id(encryption_key));
     }
 
-    public fun get_primary_encryption_key(encryption_key_holder: &EncryptionKeysHolder, dwallet_id: ID): &EncryptionKey {
+    public fun get_primary_encryption_key(encryption_key_holder: &EncryptionKeysHolder, dwallet_id: ID): &ID {
         table::borrow(&encryption_key_holder.encryption_keys, dwallet_id)
     }
 
