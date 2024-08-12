@@ -26,6 +26,7 @@ module dwallet_system::dwallet {
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
+    const EDWalletOwnershipMismatch: u64 = 2;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -371,7 +372,7 @@ module dwallet_system::dwallet {
     }
 
     public fun set_primary_encryption_key(encryption_key_holder: &mut EncryptionKeysHolder, dwallet: &DWallet, dwallet_cap: &DWalletCap , encryption_key: &EncryptionKey, ctx: &mut TxContext) {
-        assert!(object::id(dwallet_cap) == dwallet_cap_id(dwallet), ENotSystemAddress);
+        assert!(object::id(dwallet_cap) == dwallet_cap_id(dwallet), EDWalletOwnershipMismatch);
         if (table::contains(&encryption_key_holder.encryption_keys, object::id(dwallet))) {
             table::remove(&mut encryption_key_holder.encryption_keys, object::id(dwallet));
         };
