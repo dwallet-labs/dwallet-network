@@ -457,6 +457,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         }
     }
 
+    /// The "cannoical form" is the serialized signature using the standard `ecdsa` crate.
+    /// The form of `sigs` is the one used in the `2pc-mpc` crate.
     fun convert_signatures_to_canonical_form(sigs: vector<vector<u8>>): vector<vector<u8>> {
         vector::reverse(&mut sigs);
         let i = 0;
