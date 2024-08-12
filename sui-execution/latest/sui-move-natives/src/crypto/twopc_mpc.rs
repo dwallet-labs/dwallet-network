@@ -11,7 +11,7 @@ use move_vm_types::{
     pop_arg,
     values::{Value, Vector},
 };
-use signature_mpc::twopc_mpc_protocols::dwallet_transfer::{
+use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
     get_proof_public_parameters, is_valid_proof, EncryptedUserShareAndProof, SecretShareProof,
 };
 use signature_mpc::twopc_mpc_protocols::{

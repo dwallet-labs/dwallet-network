@@ -73,16 +73,6 @@ pub struct EncryptedUserShareAndProof {
     >,
 }
 
-fn pad_vector(vec: Vec<u8>) -> Vec<u8> {
-    let target_length = 256;
-    if vec.len() >= target_length {
-        return vec;
-    }
-    let mut padded_vec = vec![0; target_length - vec.len()];
-    padded_vec.extend(vec);
-    padded_vec
-}
-
 pub fn generate_keypair() -> (Vec<u8>, Vec<u8>) {
     let (encryption_key, decryption_key) = DecryptionKey::generate(&mut OsRng).unwrap();
     let decryption_key = bcs::to_bytes(&decryption_key.secret_key).unwrap();
@@ -122,8 +112,7 @@ fn parse_plaintext(
     plaintext: Vec<u8>,
     public_parameters: &tiresias::encryption_key::PublicParameters,
 ) -> PlaintextSpaceGroupElement {
-    let plaintext = pad_vector(plaintext);
-    let plaintext: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_slice(&plaintext);
+    let plaintext: LargeBiPrimeSizedNumber = (&U256::from_be_slice(&plaintext)).into();;
     let plaintext = PlaintextSpaceGroupElement::new(
         plaintext,
         public_parameters.plaintext_space_public_parameters(),
@@ -330,20 +319,19 @@ pub fn decrypt_user_share(
     decryption_key: Vec<u8>,
     encrypted_user_share_and_proof: EncryptedUserShareAndProof,
 ) -> Vec<u8> {
-    let language_public_parameters = get_proof_public_parameters(encryption_key.clone());
+    let paillier_public_parameters: tiresias::encryption_key::PublicParameters =
+        bcs::from_bytes(&encryption_key).unwrap();
     let ciphertext = CiphertextSpaceGroupElement::new(
         encrypted_user_share_and_proof.encrypted_user_share,
-        language_public_parameters
-            .encryption_scheme_public_parameters
+        paillier_public_parameters
             .ciphertext_space_public_parameters(),
     )
     .unwrap();
 
-    let paillier_public_parameters: tiresias::encryption_key::PublicParameters =
-        bcs::from_bytes(&encryption_key).unwrap();
     let decryption_key = bcs::from_bytes(&decryption_key).unwrap();
     let decryption_key = DecryptionKey::new(decryption_key, &paillier_public_parameters).unwrap();
 
+    // safe to `unwrap` as decryption in Paillier always succeeds
     let plaintext = decryption_key
         .decrypt(&ciphertext, &paillier_public_parameters)
         .unwrap();
@@ -354,7 +342,7 @@ pub fn decrypt_user_share(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::twopc_mpc_protocols::dwallet_transfer::{
+    use crate::twopc_mpc_protocols::encrypt_user_share::{
         generate_keypair, generate_proof, get_proof_public_parameters,
     };
     use twopc_mpc::secp256k1::paillier::bulletproofs::DKGDecentralizedPartyOutput;
