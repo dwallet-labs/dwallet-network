@@ -333,8 +333,7 @@ module dwallet_system::dwallet {
             signatures,
             sender: session.sender,
         };
-        // TODO (#126): Change output to be immutable instead of owned
-        transfer::transfer(sign_output, sender(session));
+        transfer::freeze_object(sign_output);
     }
 
     public(friend) fun create_malicious_aggregator_sign_output<S: store>(
@@ -359,7 +358,6 @@ module dwallet_system::dwallet {
             dwallet_id: session.dwallet_id,
             session_id: object::id(session),
         };
-        // TODO (#126): Change output to be immutable instead of owned
-        transfer::transfer(failed_sign_output, sender(session));
+        transfer::freeze_object(failed_sign_output);
     }
 }
