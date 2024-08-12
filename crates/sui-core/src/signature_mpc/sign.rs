@@ -115,7 +115,6 @@ impl SignRound {
                     signature_threshold_decryption_round_parties,
                 );
                 match decrypt_result {
-                    // TODO (#132): If some signatures are valid and some not, publish the valid signatures.
                     Ok(signatures) => Ok(SignRoundCompletion::SignatureOutput(signatures)),
                     Err(decryption_error) => Ok(SignRoundCompletion::StartIdentifiableAbortFlow(
                         decryption_error.decrypters,
