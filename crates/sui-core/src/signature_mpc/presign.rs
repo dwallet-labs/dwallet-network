@@ -4,20 +4,18 @@
 use crate::signature_mpc::aggregate::{
     BulletProofAggregateRound, BulletProofAggregateRoundCompletion, BulletProofAggregateState,
 };
-use crate::signature_mpc::dkg::DKGRound;
 use rand::rngs::OsRng;
 use signature_mpc::twopc_mpc_protocols::{
     initiate_decentralized_party_presign, new_decentralized_party_presign_batch,
     DKGDecentralizedPartyOutput, DecentralizedPartyPresign, DecryptionPublicParameters,
-    EncDHProofAggregationOutput, EncDLProofAggregationOutput,
-    EncryptedDecentralizedPartySecretKeyShareValue, EncryptedMaskAndMaskedNonceShare,
-    EncryptedMaskedNoncesRoundParty, EncryptedNonceShareAndPublicShare, EncryptionPublicParameters,
+    EncryptedMaskAndMaskedNonceShare, EncryptedMaskedNoncesRoundParty,
+    EncryptedNonceShareAndPublicShare, EncryptionPublicParameters,
     EnhancedLanguageStatementAccessors, PartyID, PresignDecentralizedPartyOutput, ProtocolContext,
     Result, SignatureNonceSharesCommitmentsAndBatchedProof, Value,
 };
 use std::collections::{HashMap, HashSet};
 use std::mem;
-use sui_types::base_types::{EpochId, ObjectRef};
+use sui_types::base_types::EpochId;
 use sui_types::messages_signature_mpc::SignatureMPCBulletProofAggregatesMessage;
 use sui_types::messages_signature_mpc::SignatureMPCSessionID;
 
@@ -40,20 +38,18 @@ pub(crate) enum PresignRound {
 impl PresignRound {
     pub(crate) fn new(
         tiresias_public_parameters: DecryptionPublicParameters,
-        epoch: EpochId,
+        _epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,
-        session_id: SignatureMPCSessionID,
+        _session_id: SignatureMPCSessionID,
         dkg_output: DKGDecentralizedPartyOutput,
         commitments_and_proof_to_centralized_party_nonce_shares: SignatureNonceSharesCommitmentsAndBatchedProof<ProtocolContext>,
     ) -> Result<(Self, SignatureMPCBulletProofAggregatesMessage)> {
         let decentralized_party_encrypted_masked_key_share_and_public_nonce_shares_party =
             initiate_decentralized_party_presign(
                 tiresias_public_parameters,
-                //epoch,
                 party_id,
                 parties.clone(),
-                //session_id,
                 dkg_output.clone(),
             )?;
 
@@ -260,11 +256,11 @@ pub(crate) struct PresignState {
 
 impl PresignState {
     pub(crate) fn new(
-        tiresias_public_parameters: EncryptionPublicParameters,
-        epoch: EpochId,
+        _tiresias_public_parameters: EncryptionPublicParameters,
+        _epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,
-        session_id: SignatureMPCSessionID,
+        _session_id: SignatureMPCSessionID,
     ) -> Self {
         Self {
             party_id,
