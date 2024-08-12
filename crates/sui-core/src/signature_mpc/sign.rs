@@ -103,7 +103,6 @@ impl SignRound {
     pub(crate) fn complete_round(&mut self, state: SignState) -> Result<SignRoundCompletion> {
         let round = mem::take(self);
         match round {
-            // TODO (#131): Remove redundant enum and handle mem call.
             SignRound::FirstRound {
                 signature_threshold_decryption_round_parties,
             } => {
