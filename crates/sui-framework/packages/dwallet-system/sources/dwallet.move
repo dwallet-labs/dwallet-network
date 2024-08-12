@@ -358,7 +358,6 @@ module dwallet_system::dwallet {
             dwallet_id: session.dwallet_id,
             session_id: object::id(session),
         };
-        // TODO (#126): Change output to be immutable instead of owned
         transfer::transfer(failed_sign_output, sender(session));
     }
 }
