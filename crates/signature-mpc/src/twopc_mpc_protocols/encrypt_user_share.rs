@@ -73,16 +73,6 @@ pub struct EncryptedUserShareAndProof {
     >,
 }
 
-fn pad_vector(vec: Vec<u8>) -> Vec<u8> {
-    let target_length = 256;
-    if vec.len() >= target_length {
-        return vec;
-    }
-    let mut padded_vec = vec![0; target_length - vec.len()];
-    padded_vec.extend(vec);
-    padded_vec
-}
-
 pub fn generate_keypair() -> (Vec<u8>, Vec<u8>) {
     let (encryption_key, decryption_key) = DecryptionKey::generate(&mut OsRng).unwrap();
     let decryption_key = bcs::to_bytes(&decryption_key.secret_key).unwrap();
@@ -122,8 +112,7 @@ fn parse_plaintext(
     plaintext: Vec<u8>,
     public_parameters: &tiresias::encryption_key::PublicParameters,
 ) -> PlaintextSpaceGroupElement {
-    let plaintext = pad_vector(plaintext);
-    let plaintext: LargeBiPrimeSizedNumber = LargeBiPrimeSizedNumber::from_be_slice(&plaintext);
+    let plaintext: LargeBiPrimeSizedNumber = (&U256::from_be_slice(&plaintext)).into();;
     let plaintext = PlaintextSpaceGroupElement::new(
         plaintext,
         public_parameters.plaintext_space_public_parameters(),

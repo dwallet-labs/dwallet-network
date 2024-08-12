@@ -333,9 +333,9 @@ module dwallet_system::dwallet {
         key_owner_address: address,
     }
 
-    const PaillierEncryptionKey: u8 = 0;
+    const Paillier: u8 = 0;
     fun is_valid_encryption_key_scheme(scheme: u8): bool {
-        scheme == PaillierEncryptionKey // || scheme == ...
+        scheme == Paillier // || scheme == ...
     }
 
     public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
