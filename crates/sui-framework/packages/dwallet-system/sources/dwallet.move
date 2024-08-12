@@ -380,7 +380,7 @@ module dwallet_system::dwallet {
         table::add(&mut encryption_key_holder.encryption_keys, object::id(dwallet), object::id(encryption_key));
     }
 
-    public fun get_primary_encryption_key(encryption_key_holder: &EncryptionKeysHolder, dwallet_id: ID): &ID {
+    public fun get_dwallet_primary_encryption_key_id(encryption_key_holder: &EncryptionKeysHolder, dwallet_id: ID): &ID {
         table::borrow(&encryption_key_holder.encryption_keys, dwallet_id)
     }
 

@@ -105,6 +105,8 @@ describe('Test key share transfer', () => {
 			toolbox.client,
 		);
 		const publicKeyID = pubKeyRef?.objectId;
+		//register to holder
+		// get from holder
 		const recipientData = await getEncryptionKeyByObjectId(toolbox.client, publicKeyID);
 
 		// Before running this test, you need to create a dwallet and out its object ID and secret share here.
