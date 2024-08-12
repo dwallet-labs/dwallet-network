@@ -735,7 +735,12 @@ pub fn verify_single_signature(
         public_key,
         &group::PublicParameters::<Secp256K1GroupElement>::default(),
     )?;
-    SignatureThresholdDecryptionParty::verify_decrypted_signature(r, s, message, public_key)?;
+    SignatureThresholdDecryptionParty::verify_decrypted_signature(
+        r,
+        s,
+        message_digest,
+        public_key,
+    )?;
     Ok(())
 }
 
