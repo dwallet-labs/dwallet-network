@@ -727,7 +727,7 @@ pub fn verify_single_signature(
     public_key: PublicKeyValue,
     hash: &Hash,
 ) -> Result<()> {
-    let message = message_digest(message.as_slice(), hash);
+    let message_digest = message_digest(message.as_slice(), hash);
     let (r, s) =
         bcs::from_bytes::<(Scalar, Scalar)>(signature).map_err(|_| Error::InvalidParameters)?;
     let public_key = Secp256K1GroupElement::new(
