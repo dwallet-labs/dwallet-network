@@ -716,7 +716,6 @@ pub fn verify_signatures(
         match verify_single_signature(message, signature, public_key, hash) {
             Ok(_) => {}
             Err(Error::MaliciousDesignatedDecryptingParty) => return false,
-            // TODO (#135): Understand how to handle different errors that may be returned from [`SignatureThresholdDecryptionParty::verify_decrypted_signature`].
             _ => return false,
         }
     }
