@@ -247,6 +247,7 @@ impl SignatureMPCAggregator {
         message: SignatureMPCMessage,
     ) {
         let session_id = message.summary.session_id;
+        // TODO (#134): Remove unwrap.
         let sender_party_id = (epoch_store
             .committee()
             .authority_index(&message.summary.auth_sig().authority)
