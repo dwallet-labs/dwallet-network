@@ -70,6 +70,7 @@ use tracing::info;
 
 use crate::ethereum_client::EthClientCommands;
 use crate::key_identity::{get_identity_address, KeyIdentity};
+use crate::ethereum_client_commands::EthClientCommands;
 
 macro_rules! serialize_or_execute {
     ($tx_data:expr, $serialize_unsigned:expr, $serialize_signed:expr, $context:expr, $result_variant:ident) => {{
@@ -650,8 +651,8 @@ pub enum SuiClientCommands {
     #[command(name = "eth-lc")]
     EthClient {
         #[command(subcommand)]
-        command: EthClientCommands,
-    },
+        command: EthClientCommands
+    }
 }
 
 impl SuiClientCommands {
@@ -1321,7 +1322,7 @@ impl SuiClientCommands {
                 let response = context.execute_transaction_may_fail(transaction).await?;
                 SuiClientCommandResult::ExecuteSignedTx(response)
             }
-            SuiClientCommands::NewEnv { alias, rpc, ws } => {
+            SuiClientCommands::NewEnv { alias, rpc, ws} => {
                 if context.config.envs.iter().any(|env| env.alias == alias) {
                     return Err(anyhow!(
                         "Environment config with name [{alias}] already exists."
@@ -1727,7 +1728,7 @@ impl Display for SuiClientCommandResult {
                 write!(writer, "{}", env.as_deref().unwrap_or("None"))?;
             }
             SuiClientCommandResult::NewEnv(env) => {
-                writeln!(writer, "Added new Sui env [{}] to config.", env.alias)?;
+                writeln!(writer, "Added new dWallet env [{}] to config.", env.alias)?;
             }
             SuiClientCommandResult::Envs(envs, active) => {
                 let mut builder = TableBuilder::default();
@@ -1786,7 +1787,7 @@ impl Display for SuiClientCommandResult {
     }
 }
 
-async fn construct_move_call_transaction(
+pub(crate) async fn construct_move_call_transaction(
     package: ObjectID,
     module: &str,
     function: &str,
