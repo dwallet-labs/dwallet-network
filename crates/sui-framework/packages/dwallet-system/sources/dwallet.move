@@ -333,7 +333,6 @@ module dwallet_system::dwallet {
             signatures,
             sender: session.sender,
         };
-        // TODO (#126): Change output to be immutable instead of owned
         transfer::transfer(sign_output, sender(session));
     }
 
