@@ -72,7 +72,8 @@ pub fn generate_proofs(
 
 /// Identify all the parties that behaved maliciously in this messages batch.
 pub(crate) fn identify_batch_malicious_parties(state: &SignState) -> Result<HashSet<PartyID>> {
-    // Need to call [`generate_proofs`] to re-generate the SignaturePartialDecryptionProofVerificationParty objects,
+    // Need to call [`generate_proofs`] to
+    // re-generate the [`SignaturePartialDecryptionProofVerificationParty`] objects,
     // that are necessary to call the [`identify_message_malicious_parties`] function.
     let parties_with_proofs = generate_proofs(state)?;
     let involved_shares = get_involved_shares(state);
