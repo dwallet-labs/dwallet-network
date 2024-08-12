@@ -26,6 +26,8 @@ module dwallet_system::dwallet {
     const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
     const EDWalletOwnershipMismatch: u64 = 2;
+    const EEncryptUserShare: u64 = 3;
+    const EInvalidEncryptionKeyScheme: u64 = 4;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -339,10 +341,6 @@ module dwallet_system::dwallet {
         transfer::transfer(sign_output, session.sender);
     }
 
-    /// Encrypt DWallet secret share with an AHE public key.
-    const EEncryptUserShare: u64 = 0x1;
-    const EInvalidEncryptionKeyScheme: u64 = 0x2;
-
     struct EncryptedUserShare has key {
         id: UID,
         dwallet_id: ID,
@@ -392,7 +390,7 @@ module dwallet_system::dwallet {
             id: object::new(ctx),
             encryption_keys: table::new(ctx),
         };
-        transfer::transfer(holder, tx_context::sender(ctx));
+        transfer::share_object(holder);
     }
 
     public fun set_primary_encryption_key(encryption_key_holder: &mut EncryptionKeysHolder, dwallet: &DWallet, dwallet_cap: &DWalletCap , encryption_key: &EncryptionKey, _ctx: &mut TxContext) {

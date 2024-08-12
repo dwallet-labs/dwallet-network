@@ -148,7 +148,6 @@ export const setDwalletPrimaryEncryptionKey = async (
 
 //(encryption_key_holder: &mut EncryptionKeysHolder
 
-
 export const transferDwallet = async (
 	client: DWalletClient,
 	keypair: Keypair,
