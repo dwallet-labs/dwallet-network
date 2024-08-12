@@ -379,7 +379,6 @@ module dwallet_system::dwallet {
         dwallet: &DWallet,
         encryption_key: &EncryptionKey,
         encrypted_secret_share_and_proof: vector<u8>,
-        recipient: address,
         ctx: &mut TxContext,
     ): ID {
         let is_valid = validate_encrypted_user_secret_share(
@@ -398,7 +397,7 @@ module dwallet_system::dwallet {
         };
 
         let encrypt_user_share_obj_id = object::id(&encrypt_user_share);
-        transfer::transfer(encrypt_user_share, recipient);
+        transfer::freeze_object(encrypt_user_share);
         encrypt_user_share_obj_id
     }
 

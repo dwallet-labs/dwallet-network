@@ -124,7 +124,6 @@ describe('Test key share transfer', () => {
 			encryptedUserShareAndProof,
 			publicKeyID,
 			dwalletID,
-			recipientData?.keyOwnerAddress!,
 		);
 
 		const decryptedKeyshare = decrypt_user_share(
