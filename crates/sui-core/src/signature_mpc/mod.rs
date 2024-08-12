@@ -65,7 +65,7 @@ mod dkg;
 mod identifiable_abort;
 mod metrics;
 mod presign;
-mod sign;
+pub(crate) mod sign;
 mod signature_mpc_subscriber;
 mod submit_to_consensus;
 

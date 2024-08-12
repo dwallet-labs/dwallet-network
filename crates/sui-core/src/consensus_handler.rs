@@ -13,7 +13,7 @@ use crate::consensus_types::committee_api::CommitteeAPI;
 use crate::consensus_types::consensus_output_api::ConsensusOutputAPI;
 use crate::consensus_types::AuthorityIndex;
 use crate::scoring_decision::update_low_scoring_authorities;
-use crate::signature_mpc::{SignatureMPCService, SignatureMPCServiceNotify};
+use crate::signature_mpc::{sign, SignatureMPCService, SignatureMPCServiceNotify};
 use crate::transaction_manager::TransactionManager;
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
@@ -371,7 +371,7 @@ impl<
                     if let ConsensusTransactionKind::SignedDKGSignatureMPCOutput(output) =
                         &transaction.kind
                     {
-                        let is_sign = if let SignatureMPCOutputValue::Sign(_) = output.value {
+                        let is_sign = if let SignatureMPCOutputValue::Sign { .. } = output.value {
                             true
                         } else {
                             false
@@ -382,17 +382,51 @@ impl<
                                 .try_aggregate_signed_signature_mpc_output(*output.clone())
                                 .is_ok()
                         {
-                            debug!("adding ConsensusTransactionKind tx for output {output:?}");
-                            let signature_mpc_output_transaction =
-                                self.signature_mpc_output_transaction(output.data().clone());
+                            let sender_id = authority_index + 1;
+                            let aggregator_id = sign::calculate_aggregator_id(
+                                output.session_id,
+                                self.epoch_store.committee().authority_indexes().len(),
+                            );
+                            if is_sign && (aggregator_id == sender_id) {
+                                let output = match &output.value {
+                                    SignatureMPCOutputValue::Sign { sigs, .. } => {
+                                        let mut copied_output = output.clone();
+                                        copied_output.value = SignatureMPCOutputValue::Sign {
+                                            sigs: sigs.clone(),
+                                            aggregator_public_key: output
+                                                .auth_sig()
+                                                .authority
+                                                .0
+                                                .to_vec(),
+                                        };
+                                        &copied_output.clone()
+                                    }
+                                    _ => output,
+                                };
+                                debug!("adding ConsensusTransactionKind tx for output {output:?}");
+                                let signature_mpc_output_transaction =
+                                    self.signature_mpc_output_transaction(output.data().clone());
 
-                            transactions.push((
-                                empty_bytes.as_slice(),
-                                SequencedConsensusTransactionKind::System(
-                                    signature_mpc_output_transaction,
-                                ),
-                                consensus_output.leader_author_index(),
-                            ));
+                                transactions.push((
+                                    empty_bytes.as_slice(),
+                                    SequencedConsensusTransactionKind::System(
+                                        signature_mpc_output_transaction,
+                                    ),
+                                    consensus_output.leader_author_index(),
+                                ));
+                            } else if !is_sign {
+                                debug!("adding ConsensusTransactionKind tx for output {output:?}");
+                                let signature_mpc_output_transaction =
+                                    self.signature_mpc_output_transaction(output.data().clone());
+
+                                transactions.push((
+                                    empty_bytes.as_slice(),
+                                    SequencedConsensusTransactionKind::System(
+                                        signature_mpc_output_transaction,
+                                    ),
+                                    consensus_output.leader_author_index(),
+                                ));
+                            }
                         }
                     }
 

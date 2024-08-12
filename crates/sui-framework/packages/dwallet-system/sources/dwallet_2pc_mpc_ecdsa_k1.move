@@ -15,7 +15,17 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::tx_context::{Self, TxContext};
 
     use dwallet_system::dwallet;
-    use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap, PartialUserSignedMessages};
+    use dwallet_system::dwallet::{
+        create_dwallet_cap,
+        create_malicious_aggregator_sign_output,
+        create_sign_output,
+        dwallet_public_key,
+        DWalletCap,
+        messages,
+        PartialUserSignedMessages,
+        sign_data,
+        SignSession
+    };
 
     #[test_only]
     friend dwallet_system::dwallet_tests;
@@ -416,11 +426,57 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             session.messages,
+            dwallet.public_key,
             sign_data,
             sign_data_event,
             ctx
         )
     }
+
+
+    #[allow(unused_function)]
+    /// This function is called by blockchain itself.
+    /// Validators call it, it's part of the blockchain logic.
+    /// NOT a native function.
+    fun verify_and_create_sign_output(
+        session: &SignSession<SignData>,
+        signatures: vector<vector<u8>>,
+        aggregator_public_key: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+        if (verify_signatures_native(
+            messages(session),
+            signatures,
+            sign_data(session).hash,
+            dwallet_public_key(session),
+        )) {
+            create_sign_output(session, convert_signatures_to_canonical_form(signatures), ctx);
+        } else {
+            create_malicious_aggregator_sign_output(aggregator_public_key, session, signatures, ctx);
+        }
+    }
+
+    fun convert_signatures_to_canonical_form(sigs: vector<vector<u8>>): vector<vector<u8>> {
+        vector::reverse(&mut sigs);
+        let i = 0;
+        let sigs_length = vector::length(&sigs);
+        let parsed_sigs: vector<vector<u8>> = vector[];
+        while (i < sigs_length) {
+            vector::push_back(&mut parsed_sigs, convert_signature_to_canonical_form(vector::pop_back(&mut sigs)));
+            i = i + 1;
+        };
+        parsed_sigs
+    }
+
+    native fun convert_signature_to_canonical_form(signature: vector<u8>): vector<u8>;
+
+    native fun verify_signatures_native(
+        messages: vector<vector<u8>>,
+        sigs: vector<vector<u8>>,
+        hash: u8,
+        dwallet_public_key: vector<u8>,
+    ): bool;
 
     #[test_only]
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
