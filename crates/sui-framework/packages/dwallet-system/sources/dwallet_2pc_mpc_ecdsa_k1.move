@@ -462,6 +462,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let i = 0;
         let sigs_length = vector::length(&sigs);
         let parsed_sigs: vector<vector<u8>> = vector[];
+        // Using this hacky way to map because Move vector tooling is limited.
         while (i < sigs_length) {
             vector::push_back(&mut parsed_sigs, convert_signature_to_canonical_form(vector::pop_back(&mut sigs)));
             i = i + 1;
