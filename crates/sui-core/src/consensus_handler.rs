@@ -388,10 +388,13 @@ impl<
                                 self.epoch_store.committee().authority_indexes().len(),
                             );
                             if is_sign && (aggregator_id == sender_id) {
+                                // Save the aggregator public key in the output, so that it can be
+                                // punished if it is malicious.
+                                // Validate that this is the correct aggregator.
                                 let output = match &output.value {
                                     SignatureMPCOutputValue::Sign { sigs, .. } => {
-                                        let mut copied_output = output.clone();
-                                        copied_output.value = SignatureMPCOutputValue::Sign {
+                                        let mut modified_output = output.clone();
+                                        modified_output.value = SignatureMPCOutputValue::Sign {
                                             sigs: sigs.clone(),
                                             aggregator_public_key: output
                                                 .auth_sig()
@@ -399,11 +402,11 @@ impl<
                                                 .0
                                                 .to_vec(),
                                         };
-                                        &copied_output.clone()
+                                        &modified_output.clone()
                                     }
                                     _ => output,
                                 };
-                                debug!("adding ConsensusTransactionKind tx for output {output:?}");
+                                debug!("Adding ConsensusTransactionKind tx for output {output:?}");
                                 let signature_mpc_output_transaction =
                                     self.signature_mpc_output_transaction(output.data().clone());
 

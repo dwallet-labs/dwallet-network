@@ -189,7 +189,7 @@ pub enum SignatureMPCOutputValue {
     Presign(Vec<u8>),
     Sign {
         sigs: Vec<Vec<u8>>,
-        /// Used to punish a malicious validator in case of an attempt to send an invalid signature
+        /// Used to punish a malicious validator if it attempts to send an invalid signature.
         aggregator_public_key: Vec<u8>,
     },
 }
