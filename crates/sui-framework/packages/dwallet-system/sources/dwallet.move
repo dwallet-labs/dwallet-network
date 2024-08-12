@@ -371,7 +371,7 @@ module dwallet_system::dwallet {
             id: object::new(ctx),
             scheme: scheme,
             encryption_key: key,
-            key_owner_address: ctx.sender(),
+            key_owner_address: tx_context::sender(ctx),
         };
         let encryption_key_id = object::id(&encryption_key);
         transfer::freeze_object(encryption_key);
@@ -392,7 +392,7 @@ module dwallet_system::dwallet {
             id: object::new(ctx),
             encryption_keys: table::new(ctx),
         };
-        transfer::transfer(holder, ctx.sender());
+        transfer::transfer(holder, tx_context::sender(ctx));
     }
 
     public fun set_primary_encryption_key(encryption_key_holder: &mut EncryptionKeysHolder, dwallet: &DWallet, dwallet_cap: &DWalletCap , encryption_key: &EncryptionKey, _ctx: &mut TxContext) {
