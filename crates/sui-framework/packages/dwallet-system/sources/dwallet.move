@@ -8,10 +8,12 @@ module dwallet_system::dwallet {
 
     use dwallet::event;
     use dwallet::object::{Self, ID, UID};
+    use dwallet::table;
+    use dwallet::table::Table;
     use dwallet::transfer;
     use dwallet::tx_context;
     use dwallet::tx_context::TxContext;
-    use dwallet_system::dwallet_object::{output, DWallet};
+    use dwallet_system::dwallet_object::{output, DWallet, dwallet_cap_id};
 
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 
@@ -349,6 +351,35 @@ module dwallet_system::dwallet {
         let encryption_key_id = object::id(&encryption_key);
         transfer::freeze_object(encryption_key);
         encryption_key_id
+    }
+
+    struct EncryptionKeysHolder has key {
+        id: UID,
+        encryption_keys: Table<ID, &EncryptionKey>,
+    }
+
+    public fun init(ctx: &mut TxContext) {
+        create_encryption_keys_holder(ctx);
+    }
+
+    public fun create_encryption_keys_holder(ctx: &mut TxContext) {
+        let holder = EncryptionKeysHolder {
+            id: object::new(ctx), /// TODO: set a proper ID
+            encryption_keys: table::new(ctx),
+        };
+        transfer::transfer(holder, tx_context::sender(ctx));
+    }
+
+    public fun set_primary_encryption_key(encryption_key_holder: &mut EncryptionKeysHolder, dwallet: &DWallet, dwallet_cap: &DWalletCap , encryption_key: &EncryptionKey, ctx: &mut TxContext) {
+        assert!(object::id(dwallet_cap) == dwallet_cap_id(dwallet), ENotSystemAddress);
+        if (table::contains(&encryption_key_holder.encryption_keys, object::id(dwallet))) {
+            table::remove(&mut encryption_key_holder.encryption_keys, object::id(dwallet));
+        };
+        table::add(&mut encryption_key_holder.encryption_keys, object::id(dwallet), encryption_key);
+    }
+
+    public fun get_primary_encryption_key(encryption_key_holder: &EncryptionKeysHolder, dwallet_id: ID): &EncryptionKey {
+        table::borrow(&encryption_key_holder.encryption_keys, dwallet_id)
     }
 
     public fun encrypt_user_share(
