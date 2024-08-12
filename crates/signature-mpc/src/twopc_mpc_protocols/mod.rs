@@ -722,19 +722,19 @@ pub fn verify_signatures(
 }
 
 fn verify_single_signature(
-    message: &Vec<u8>,
-    signature: &Vec<u8>,
+    message: &[u8],
+    signature: &[u8],
     public_key: PublicKeyValue,
     hash: &Hash,
 ) -> Result<()> {
-    let message = message_digest(message.as_slice(), hash);
+    let message_digest = message_digest(message, hash);
     let (r, s) =
         bcs::from_bytes::<(Scalar, Scalar)>(signature).map_err(|_| Error::InvalidParameters)?;
     let public_key = Secp256K1GroupElement::new(
         public_key,
         &group::PublicParameters::<Secp256K1GroupElement>::default(),
     )?;
-    SignatureThresholdDecryptionParty::verify_decrypted_signature(r, s, message, public_key)?;
+    SignatureThresholdDecryptionParty::verify_decrypted_signature(r, s, message_digest, public_key)?;
     Ok(())
 }
 
