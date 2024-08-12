@@ -79,5 +79,5 @@ pub enum EthClientCommands {
         /// (SenderSignedData) using base64 encoding, and print out the string.
         #[clap(long, required = false)]
         serialize_signed_transaction: bool,
-    }
+    },
 }

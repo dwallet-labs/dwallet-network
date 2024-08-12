@@ -72,7 +72,7 @@ pub struct SuiEnv {
     pub alias: String,
     pub rpc: String,
     pub ws: Option<String>,
-    pub eth_client_settings: Option<EthClientSettings>
+    pub eth_client_settings: Option<EthClientSettings>,
 }
 
 impl SuiEnv {

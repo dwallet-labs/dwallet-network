@@ -69,8 +69,8 @@ use tabled::{
 use tracing::info;
 
 use crate::ethereum_client::EthClientCommands;
-use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::ethereum_client_commands::EthClientCommands;
+use crate::key_identity::{get_identity_address, KeyIdentity};
 
 macro_rules! serialize_or_execute {
     ($tx_data:expr, $serialize_unsigned:expr, $serialize_signed:expr, $context:expr, $result_variant:ident) => {{
@@ -651,8 +651,8 @@ pub enum SuiClientCommands {
     #[command(name = "eth-lc")]
     EthClient {
         #[command(subcommand)]
-        command: EthClientCommands
-    }
+        command: EthClientCommands,
+    },
 }
 
 impl SuiClientCommands {
@@ -1322,7 +1322,7 @@ impl SuiClientCommands {
                 let response = context.execute_transaction_may_fail(transaction).await?;
                 SuiClientCommandResult::ExecuteSignedTx(response)
             }
-            SuiClientCommands::NewEnv { alias, rpc, ws} => {
+            SuiClientCommands::NewEnv { alias, rpc, ws } => {
                 if context.config.envs.iter().any(|env| env.alias == alias) {
                     return Err(anyhow!(
                         "Environment config with name [{alias}] already exists."
