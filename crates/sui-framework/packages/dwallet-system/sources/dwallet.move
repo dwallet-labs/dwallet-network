@@ -313,6 +313,8 @@ module dwallet_system::dwallet {
         session_id: ID,
     }
 
+    /// An event that being emitted when an aggregator tries to publish an invalid signature.
+    /// Being used to punish the aggregator.
     struct MaliciousAggregatorEvent has copy, drop {
         aggregator_public_key: vector<u8>,
         epoch: u64,
