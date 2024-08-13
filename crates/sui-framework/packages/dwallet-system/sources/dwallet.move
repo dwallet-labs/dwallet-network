@@ -102,7 +102,7 @@ module dwallet_system::dwallet {
 
     #[allow(unused_field)]
     struct SignOutputEvent has copy, drop {
-        output_id: ID,
+        sign_output_id: ID,
         signatures: vector<vector<u8>>,
         dwallet_id: ID
     }
@@ -328,7 +328,7 @@ module dwallet_system::dwallet {
         signatures: vector<vector<u8>>,
         messages: vector<vector<u8>>,
         dwallet_id: ID,
-        output_id: ID,
+        malicious_sign_output_id: ID,
     }
 
     public(friend) fun create_sign_output<S: store>(
@@ -344,7 +344,7 @@ module dwallet_system::dwallet {
             sender: session.sender,
         };
         event::emit(SignOutputEvent {
-            output_id: object::id(&sign_output),
+            sign_output_id: object::id(&sign_output),
             signatures,
             dwallet_id: session.dwallet_id,
         });
@@ -372,7 +372,7 @@ module dwallet_system::dwallet {
             signatures,
             messages: session.messages,
             dwallet_id: session.dwallet_id,
-            output_id: object::id(&failed_sign_output),
+            malicious_sign_output_id: object::id(&failed_sign_output),
         });
         transfer::freeze_object(failed_sign_output);
     }
