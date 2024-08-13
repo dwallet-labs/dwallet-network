@@ -4,6 +4,7 @@
  * and native functions to verify state updates and create initial state data.
 */
 module dwallet_system::ethereum_state {
+    use std::string::String;
     use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
     use dwallet::tx_context::TxContext;
@@ -22,12 +23,20 @@ module dwallet_system::ethereum_state {
         id: UID,
         eth_state_id: ID,
         last_slot: u64,
+        eth_smart_contract_addr: String,
+        eth_smart_contract_slot: u64,
     }
 
     /// Initializes the first Ethereum state with the given checkpoint.
     /// Creates an EthereumState object, shares a LatestEthereumState object pointing to it,
     /// and freezes the EthereumState object.
-    public fun init_state(checkpoint: vector<u8>, network: vector<u8>, ctx: &mut TxContext) {
+    public fun init_state(
+        checkpoint: vector<u8>,
+        network: vector<u8>,
+        eth_smart_contract_addr: String,
+        eth_smart_contract_slot: u64,
+        ctx: &mut TxContext
+    ) {
         let state_data = create_initial_eth_state_data(checkpoint, network);
         let state = EthereumState {
             id: object::new(ctx),
@@ -39,6 +48,8 @@ module dwallet_system::ethereum_state {
             id: object::new(ctx),
             eth_state_id: object::id(&state),
             last_slot: state.time_slot,
+            eth_smart_contract_addr,
+            eth_smart_contract_slot,
         });
         transfer::freeze_object(state);
     }
