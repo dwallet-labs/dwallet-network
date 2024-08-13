@@ -1,6 +1,5 @@
 use anyhow::anyhow;
 use clap::Subcommand;
-use serde::{Deserialize, Serialize};
 use serde_json::{Number, Value};
 use shared_crypto::intent::Intent;
 use sui_json::SuiJsonValue;
@@ -95,6 +94,13 @@ pub enum EthClientCommands {
     },
 }
 
+/// Creates an Ethereum-based dwallet using the provided parameters.
+/// This function constructs a Move call transaction to create an Ethereum dWallet.
+/// The transaction involves passing a smart contract address,
+/// a transaction slot that was previously approved, and other necessary parameters.
+/// The function serializes the smart contract address,
+/// processes it into a format compatible with the Move
+/// TX, and removes any leading '*' prefix from the address.
 pub(crate) async fn create_eth_dwallet(
     context: &mut WalletContext,
     dwallet_cap_id: ObjectID,
@@ -111,7 +117,7 @@ pub(crate) async fn create_eth_dwallet(
         .iter()
         .map(|v| Value::Number(Number::from(*v)))
         .collect();
-    // Remove '*' prefix from the smart contract address
+    // Remove '*' prefix from the smart cowtract address
     smart_contract_address.remove(0);
 
     let smart_contract_address = SuiJsonValue::new(Value::Array(smart_contract_address)).unwrap();
@@ -133,6 +139,7 @@ pub(crate) async fn create_eth_dwallet(
         context,
     )
     .await?;
+
     Ok(serialize_or_execute!(
         tx_data,
         serialize_unsigned_transaction,
