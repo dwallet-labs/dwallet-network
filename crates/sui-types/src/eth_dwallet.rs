@@ -16,7 +16,7 @@ pub const CREATE_ETH_DWALLET_CAP_FUNC_NAME: &IdentStr = ident_str!("create_eth_d
 pub const VERIFY_ETH_STATE_FUNC_NAME: &IdentStr = ident_str!("verify_new_state");
 pub const APPROVE_MESSAGE_FUNC_NAME: &IdentStr = ident_str!("approve_message");
 
-/// Rust version of the Move sui_system::eth_dwallet::EthDWalletCap type
+/// Rust version of the Move sui_system::eth_dwallet::EthereumDWalletCap type
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct EthereumDWalletCap {
     pub id: UID,
@@ -33,7 +33,7 @@ pub struct LatestEthereumStateObject {
     pub time_slot: u64,
 }
 
-/// Rust version of the Move sui_system::ethereum_state::EthState type
+/// Rust version of the Move sui_system::ethereum_state::EthereumState type
 #[derive(Deserialize, Serialize)]
 pub struct EthereumStateObject {
     pub id: UID,

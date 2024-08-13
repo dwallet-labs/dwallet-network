@@ -13,6 +13,8 @@ bcs.workspace = true
 indexmap.workspace = true
 smallvec.workspace = true
 
+helios.workspace = true
+ethers.workspace = true
 fastcrypto-zkp.workspace = true
 fastcrypto.workspace = true
 move-binary-format.workspace = true
