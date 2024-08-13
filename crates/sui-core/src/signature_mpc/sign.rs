@@ -148,6 +148,7 @@ pub(crate) struct SignState {
     pub involved_parties: Vec<PartyID>,
 }
 
+/// Deterministically calculate the aggregator party ID based on the session ID & the number of parties.
 pub fn calculate_aggregator_id(
     session_id: SignatureMPCSessionID,
     parties_amount: usize,
