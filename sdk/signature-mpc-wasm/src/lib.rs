@@ -21,7 +21,7 @@ use signature_mpc::twopc_mpc_protocols::{
 };
 use signature_mpc::twopc_mpc_protocols::{finalize_centralized_party_presign, DecryptionKey};
 use wasm_bindgen::prelude::*;
-use signature_mpc::twopc_mpc_protocols::dwallet_transfer::EncryptedUserShareAndProof;
+use signature_mpc::twopc_mpc_protocols::encrypt_user_share::EncryptedUserShareAndProof;
 
 #[derive(Serialize, Deserialize)]
 pub struct InitiateDKGValue {
@@ -223,7 +223,7 @@ pub fn recovery_id_sha256(
 
 #[wasm_bindgen]
 pub fn generate_keypair() -> JsValue {
-    let (public_key, private_key) = signature_mpc::twopc_mpc_protocols::dwallet_transfer::generate_keypair();
+    let (public_key, private_key) = signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair();
     serde_wasm_bindgen::to_value(&(public_key, private_key)).unwrap()
 }
 
@@ -232,8 +232,8 @@ pub fn generate_proof(
     secret_share: Vec<u8>,
     public_key: Vec<u8>,
 ) -> Result<JsValue, JsErr> {
-    let language_public_parameters = signature_mpc::twopc_mpc_protocols::dwallet_transfer::get_proof_public_parameters(public_key.clone());
-    let proof_public_output = signature_mpc::twopc_mpc_protocols::dwallet_transfer::generate_proof(
+    let language_public_parameters = signature_mpc::twopc_mpc_protocols::encrypt_user_share::get_proof_public_parameters(public_key.clone());
+    let proof_public_output = signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_proof(
         public_key,
         secret_share,
         language_public_parameters,
@@ -246,7 +246,7 @@ pub fn generate_proof(
 #[wasm_bindgen]
 pub fn decrypt_user_share(encryption_key: Vec<u8>, decryption_key: Vec<u8>, encrypted_user_share_and_proof: Vec<u8>)-> Vec<u8> {
     let encrypted_user_share_and_proof: EncryptedUserShareAndProof = bcs::from_bytes(&encrypted_user_share_and_proof).unwrap();
-    let user_share = signature_mpc::twopc_mpc_protocols::dwallet_transfer::decrypt_user_share(encryption_key, decryption_key, encrypted_user_share_and_proof);
+    let user_share = signature_mpc::twopc_mpc_protocols::encrypt_user_share::decrypt_user_share(encryption_key, decryption_key, encrypted_user_share_and_proof);
     user_share
 }
 
