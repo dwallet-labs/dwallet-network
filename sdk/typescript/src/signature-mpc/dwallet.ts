@@ -3,9 +3,9 @@
 
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
-import type { DWalletClient } from '../client/index.js';
+import {DWalletClient, ObjectOwner} from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { SuiObjectRef } from '../types';
+import type { SuiObjectRef } from '../types/index.js';
 import { fetchObjectBySessionId } from './utils.js';
 
 const packageId = '0x3';
@@ -131,6 +131,9 @@ export const setDwalletPrimaryEncryptionKey = async (
 	const EncKeyObj = tx.object(encryptionKeyObjID);
 	const dwallet = tx.object(dwalletID);
 	const dwalletCap = tx.object(dwalletCapID);
+	// const encryptionKeysHolder = await getEncryptionKeysHolderID(client);
+	await createEncryptionKeysHolder(client, keypair);
+	// console.log({ encryptionKeysHolder });
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::set_primary_encryption_key`,
@@ -146,7 +149,28 @@ export const setDwalletPrimaryEncryptionKey = async (
 	});
 };
 
-//(encryption_key_holder: &mut EncryptionKeysHolder
+export const createEncryptionKeysHolder = async (client: DWalletClient, keypair: Keypair) => {
+	const tx = new TransactionBlock();
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::create_encryption_keys_holder`,
+		arguments: [],
+	});
+
+	let result = await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+
+	return result.effects?.created?.filter(
+		(o) =>
+			typeof o.owner === 'object' &&
+			'Shared' in o.owner &&
+			o.owner.Shared.initial_shared_version !== undefined,
+	)[0].reference!.objectId;
+};
 
 export const transferDwallet = async (
 	client: DWalletClient,
@@ -161,11 +185,7 @@ export const transferDwallet = async (
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::encrypt_user_share`,
-		arguments: [
-			dwallet,
-			pub_key_obj,
-			tx.pure(encryptedUserShareAndProof),
-		],
+		arguments: [dwallet, pub_key_obj, tx.pure(encryptedUserShareAndProof)],
 	});
 
 	return await client.signAndExecuteTransactionBlock({

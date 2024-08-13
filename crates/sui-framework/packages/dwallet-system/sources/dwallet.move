@@ -381,11 +381,11 @@ module dwallet_system::dwallet {
         encryption_keys: Table<ID, ID>,
     }
 
-    fun init(ctx: &mut TxContext) {
-        create_encryption_keys_holder(ctx);
-    }
+    // fun init(ctx: &mut TxContext) {
+    //     create_encryption_keys_holder(ctx);
+    // }
 
-    fun create_encryption_keys_holder(ctx: &mut TxContext) {
+    public fun create_encryption_keys_holder(ctx: &mut TxContext) {
         let holder = EncryptionKeysHolder {
             id: object::new(ctx),
             encryption_keys: table::new(ctx),
