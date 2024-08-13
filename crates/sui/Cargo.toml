@@ -34,6 +34,8 @@ num-bigint.workspace = true
 regex.workspace = true
 reqwest.workspace = true
 im.workspace = true
+helios.workspace = true
+hex.workspace = true
 
 sui-config.workspace = true
 sui-execution = { path = "../../sui-execution" }
