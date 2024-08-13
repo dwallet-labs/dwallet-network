@@ -302,6 +302,7 @@ module dwallet_system::dwallet {
         transfer::freeze_object(sign_session);
     }
 
+    /// The output that being written when an aggregator tries to publish an invalid signature.
     #[allow(unused_field)]
     struct MaliciousAggregatorSignOutput has key {
         id: UID,
