@@ -126,18 +126,17 @@ export const setDwalletPrimaryEncryptionKey = async (
 	dwalletID: string,
 	dwalletCapID: string,
 	encryptionKeyObjID: string,
+	encryptionKeysHolderID: string,
 ) => {
 	const tx = new TransactionBlock();
 	const EncKeyObj = tx.object(encryptionKeyObjID);
 	const dwallet = tx.object(dwalletID);
 	const dwalletCap = tx.object(dwalletCapID);
-	// const encryptionKeysHolder = await getEncryptionKeysHolderID(client);
-	await createEncryptionKeysHolder(client, keypair);
-	// console.log({ encryptionKeysHolder });
+	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::set_primary_encryption_key`,
-		arguments: [dwallet, dwalletCap, EncKeyObj],
+		arguments: [encryptionKeysHolder, dwallet, dwalletCap, EncKeyObj],
 	});
 
 	return await client.signAndExecuteTransactionBlock({
@@ -169,7 +168,7 @@ export const createEncryptionKeysHolder = async (client: DWalletClient, keypair:
 			typeof o.owner === 'object' &&
 			'Shared' in o.owner &&
 			o.owner.Shared.initial_shared_version !== undefined,
-	)[0].reference!.objectId;
+	)[0].reference!;
 };
 
 export const transferDwallet = async (
