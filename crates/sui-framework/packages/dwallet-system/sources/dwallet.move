@@ -25,9 +25,8 @@ module dwallet_system::dwallet {
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
-    const EDWalletOwnershipMismatch: u64 = 2;
-    const EEncryptUserShare: u64 = 3;
-    const EInvalidEncryptionKeyScheme: u64 = 4;
+    const EEncryptUserShare: u64 = 2;
+    const EInvalidEncryptionKeyScheme: u64 = 3;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -62,7 +61,13 @@ module dwallet_system::dwallet {
         public_key: vector<u8>,
     }
 
-    public fun new_dwallet(session_id: ID, dwallet_cap_id: ID, output: vector<u8>, public_key: vector<u8>, ctx: &mut TxContext): DWallet {
+    public fun new_dwallet(
+        session_id: ID,
+        dwallet_cap_id: ID,
+        output: vector<u8>,
+        public_key: vector<u8>,
+        ctx: &mut TxContext
+    ): DWallet {
         DWallet {
             id: object::new(ctx),
             session_id,
@@ -359,6 +364,7 @@ module dwallet_system::dwallet {
     }
 
     const Paillier: u8 = 0;
+
     fun is_valid_encryption_key_scheme(scheme: u8): bool {
         scheme == Paillier // || scheme == ...
     }
@@ -378,7 +384,7 @@ module dwallet_system::dwallet {
 
     struct EncryptionKeysHolder has key {
         id: UID,
-        encryption_keys: Table<ID, ID>,
+        encryption_keys: Table<address, ID>,
     }
 
     // fun init(ctx: &mut TxContext) {
@@ -393,12 +399,30 @@ module dwallet_system::dwallet {
         transfer::share_object(holder);
     }
 
-    public fun set_primary_encryption_key(encryption_key_holder: &mut EncryptionKeysHolder, dwallet: &DWallet, dwallet_cap: &DWalletCap , encryption_key: &EncryptionKey, _ctx: &mut TxContext) {
-        assert!(object::id(dwallet_cap) == dwallet_cap_id(dwallet), EDWalletOwnershipMismatch);
-        if (table::contains(&encryption_key_holder.encryption_keys, object::id(dwallet))) {
-            table::remove(&mut encryption_key_holder.encryption_keys, object::id(dwallet));
+    public fun set_primary_encryption_key(
+        encryption_key_holder: &mut EncryptionKeysHolder,
+        encryption_key: &EncryptionKey,
+        _ctx: &mut TxContext
+    ) {
+        if (table::contains(&encryption_key_holder.encryption_keys, encryption_key.key_owner_address)) {
+            table::remove(&mut encryption_key_holder.encryption_keys, encryption_key.key_owner_address);
         };
-        table::add(&mut encryption_key_holder.encryption_keys, object::id(dwallet), object::id(encryption_key));
+        table::add(
+            &mut encryption_key_holder.encryption_keys,
+            encryption_key.key_owner_address,
+            object::id(encryption_key)
+        );
+    }
+
+    public fun encrypt_user_share_with_primary(
+        dwallet: &DWallet,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_holder: &EncryptionKeysHolder,
+        key_owner: address,
+        ctx: &mut TxContext,
+    ): &ID {
+        let encryption_key = table::borrow(&encryption_key_holder.encryption_keys, key_owner);
+        encrypt_user_share(dwallet, encryption_key, encrypted_secret_share_and_proof, ctx)
     }
 
     public fun encrypt_user_share(
