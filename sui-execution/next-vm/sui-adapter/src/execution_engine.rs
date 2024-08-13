@@ -1149,7 +1149,7 @@ mod checked {
                         CallArg::Pure(bcs::to_bytes(presigns).unwrap()),
                     ],
                 ),
-                SignatureMPCOutputValue::Sign(sigs) => builder.move_call(
+                SignatureMPCOutputValue::Sign { sigs, .. } => builder.move_call(
                     SUI_SYSTEM_PACKAGE_ID.into(),
                     DWALLET_MODULE_NAME.to_owned(),
                     CREATE_SIGN_OUTPUT_FUNC_NAME.to_owned(),

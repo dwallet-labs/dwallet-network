@@ -45,7 +45,7 @@ pub const CREATE_PRESIGN_OUTPUT_FUNC_NAME: &IdentStr = ident_str!("create_presig
 pub const CREATE_PRESIGN_FUNC_NAME: &IdentStr = ident_str!("create_presign");
 pub const CREATE_PARTIAL_USER_SIGNED_MESSAGES_FUNC_NAME: &IdentStr =
     ident_str!("create_partial_user_signed_messages");
-pub const CREATE_SIGN_OUTPUT_FUNC_NAME: &IdentStr = ident_str!("create_sign_output");
+pub const CREATE_SIGN_OUTPUT_FUNC_NAME: &IdentStr = ident_str!("verify_and_create_sign_output");
 
 // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
 

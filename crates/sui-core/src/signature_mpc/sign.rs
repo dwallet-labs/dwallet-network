@@ -148,6 +148,16 @@ pub(crate) struct SignState {
     pub involved_parties: Vec<PartyID>,
 }
 
+/// Deterministically calculate the aggregator party ID based on the session ID & the number of parties.
+pub fn calculate_aggregator_id(
+    session_id: SignatureMPCSessionID,
+    parties_amount: usize,
+) -> PartyID {
+    ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap_or_default())
+        % parties_amount as u64)
+        + 1) as PartyID
+}
+
 impl SignState {
     pub(crate) fn new(
         tiresias_key_share_decryption_key_share: SecretKeyShareSizedNumber,
@@ -157,9 +167,7 @@ impl SignState {
         parties: HashSet<PartyID>,
         session_id: SignatureMPCSessionID,
     ) -> Self {
-        let aggregator_party_id = ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap())
-            % parties.len() as u64)
-            + 1) as PartyID;
+        let aggregator_party_id = calculate_aggregator_id(session_id, parties.len());
 
         Self {
             epoch,
