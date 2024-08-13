@@ -5,7 +5,6 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { fetchObjectBySessionId } from './utils.js';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
