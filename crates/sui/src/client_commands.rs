@@ -68,10 +68,11 @@ use tabled::{
 };
 use tracing::info;
 
-use crate::ethereum_client::EthClientCommands;
-use crate::ethereum_client_commands::EthClientCommands;
+use crate::ethereum_client_commands::{create_eth_dwallet, EthClientCommands};
 use crate::key_identity::{get_identity_address, KeyIdentity};
+use crate::sui_commands::SuiCommand;
 
+#[macro_export]
 macro_rules! serialize_or_execute {
     ($tx_data:expr, $serialize_unsigned:expr, $serialize_signed:expr, $context:expr, $result_variant:ident) => {{
         assert!(
@@ -1390,8 +1391,26 @@ impl SuiClientCommands {
                 EthClientCommands::EthApproveMessage { .. } => {
                     todo!()
                 }
-                EthClientCommands::CreateEthDwallet { .. } => {
-                    todo!()
+                EthClientCommands::CreateEthDwallet {
+                    dwallet_cap_id,
+                    smart_contract_address,
+                    smart_contract_approved_tx_slot,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                } => {
+                    create_eth_dwallet(
+                        context,
+                        dwallet_cap_id,
+                        smart_contract_address,
+                        smart_contract_approved_tx_slot,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    )
+                    .await?
                 }
                 EthClientCommands::InitEthState { .. } => {
                     todo!()
