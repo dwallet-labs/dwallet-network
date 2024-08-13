@@ -269,6 +269,7 @@ module dwallet_system::dwallet {
             sign_data_event,
             dwallet_public_key,
         } = partial_user_signed_messages;
+
         object::delete(id);
         let messages_len: u64 = vector::length(&messages);
         let approval_len: u64 = vector::length(&message_approvals);

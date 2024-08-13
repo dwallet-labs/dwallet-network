@@ -706,7 +706,8 @@ pub fn recovery_id(
     }
 }
 
-/// Verifies that all the signatures are valid. Return true if all are valid, false otherwise.
+/// Verifies that all the signatures are valid.
+/// Return true if all are valid, false otherwise.
 pub fn verify_signatures(
     messages: Vec<Vec<u8>>,
     hash: &Hash,
@@ -721,13 +722,13 @@ pub fn verify_signatures(
         })
 }
 
-pub fn verify_single_signature(
-    message: &Vec<u8>,
-    signature: &Vec<u8>,
+fn verify_single_signature(
+    message: &[u8],
+    signature: &[u8],
     public_key: PublicKeyValue,
     hash: &Hash,
 ) -> Result<()> {
-    let message_digest = message_digest(message.as_slice(), hash);
+    let message_digest = message_digest(message, hash);
     let (r, s) =
         bcs::from_bytes::<(Scalar, Scalar)>(signature).map_err(|_| Error::InvalidParameters)?;
     let public_key = Secp256K1GroupElement::new(
@@ -743,7 +744,7 @@ pub fn verify_single_signature(
     Ok(())
 }
 
-/// Converts the signature to its "canonical form", i.e. the serialized bytes of the standard
+/// Converts the signature to its "canonical form", i.e., the serialized bytes of the standard
 /// [`ecdsa`] library.
 pub fn convert_signature_to_canonical_form(signature: Vec<u8>) -> Result<Vec<u8>> {
     let (r, s) = bcs::from_bytes::<(Scalar, Scalar)>(signature.as_slice())
