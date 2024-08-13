@@ -152,7 +152,7 @@ pub fn calculate_aggregator_id(
     session_id: SignatureMPCSessionID,
     parties_amount: usize,
 ) -> PartyID {
-    ((u64::from_be_bytes((&session_id.0[0..8]).into()) % parties_amount as u64) + 1)
+    ((u64::from_be_bytes((&session_id.0[0..8]).try_into().unwrap_or_default()) % parties_amount as u64) + 1)
         as PartyID
 }
 
