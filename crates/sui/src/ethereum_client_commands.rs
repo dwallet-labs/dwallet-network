@@ -110,54 +110,6 @@ pub enum EthClientCommands {
     },
 }
 
-/// Connects a dWallet to be controlled by an Ethereum smart contract.
-pub(crate) async fn create_eth_dwallet(
-    context: &mut WalletContext,
-    dwallet_cap_id: ObjectID,
-    contract_address: String,
-    contract_approved_tx_slot: u64,
-    gas: Option<ObjectID>,
-    gas_budget: u64,
-    serialize_unsigned_transaction: bool,
-    serialize_signed_transaction: bool,
-) -> Result<SuiClientCommandResult, anyhow::Error> {
-    let smart_contract_address = bcs::to_bytes(&contract_address)?;
-    let mut smart_contract_address: Vec<Value> = smart_contract_address
-        .iter()
-        .map(|v| Value::Number(Number::from(*v)))
-        .collect();
-
-    // For some reason, when creating the smart contract address, the first element is always `*`.
-    let _ = smart_contract_address.remove(0);
-
-    let smart_contract_address = SuiJsonValue::new(Value::Array(smart_contract_address))?;
-
-    let args = vec![
-        SuiJsonValue::from_object_id(dwallet_cap_id),
-        smart_contract_address,
-        SuiJsonValue::new(Value::Number(Number::from(contract_approved_tx_slot)))?,
-    ];
-
-    let tx_data = construct_move_call_transaction(
-        SUI_SYSTEM_PACKAGE_ID,
-        ETH_DWALLET_MODULE_NAME.as_str(),
-        CREATE_ETH_DWALLET_CAP_FUNC_NAME.as_str(),
-        vec![],
-        gas,
-        gas_budget,
-        args,
-        context,
-    )
-    .await?;
-    Ok(serialize_or_execute!(
-        tx_data,
-        serialize_unsigned_transaction,
-        serialize_signed_transaction,
-        context,
-        Call
-    ))
-}
-
 /// Initializes a shared LatestEthereumState object in the dWallet network
 /// with the given checkpoint.
 /// This function should only be called once to initialize the Ethereum state.
@@ -231,4 +183,59 @@ pub(crate) async fn init_ethereum_state(
     context.config.save()?;
 
     Ok(SuiClientCommandResult::Call(state))
+}
+
+/// Creates an Ethereum-based dwallet using the provided parameters.
+/// This function constructs a Move call transaction to create an Ethereum dWallet.
+/// The transaction involves passing a smart contract address,
+/// a transaction slot that was previously approved, and other necessary parameters.
+/// The function serializes the smart contract address,
+/// processes it into a format compatible with the Move
+/// TX, and removes any leading '*' prefix from the address.
+pub(crate) async fn create_eth_dwallet(
+    context: &mut WalletContext,
+    dwallet_cap_id: ObjectID,
+    smart_contract_address: String,
+    smart_contract_approved_tx_slot: u64,
+    gas: Option<ObjectID>,
+    gas_budget: u64,
+    serialize_unsigned_transaction: bool,
+    serialize_signed_transaction: bool,
+) -> Result<SuiClientCommandResult, anyhow::Error> {
+    // Serialize to the Move TX format.
+    let smart_contract_address = bcs::to_bytes(&smart_contract_address)?;
+    let mut smart_contract_address: Vec<Value> = smart_contract_address
+        .iter()
+        .map(|v| Value::Number(Number::from(*v)))
+        .collect();
+    // Remove '*' prefix from the smart contract address.
+    smart_contract_address.remove(0);
+
+    let smart_contract_address = SuiJsonValue::new(Value::Array(smart_contract_address))?;
+
+    let args = vec![
+        SuiJsonValue::from_object_id(dwallet_cap_id),
+        smart_contract_address,
+        SuiJsonValue::new(Value::Number(Number::from(smart_contract_approved_tx_slot)))?,
+    ];
+
+    let tx_data = construct_move_call_transaction(
+        SUI_SYSTEM_PACKAGE_ID,
+        ETH_DWALLET_MODULE_NAME.as_str(),
+        CREATE_ETH_DWALLET_CAP_FUNC_NAME.as_str(),
+        vec![],
+        gas,
+        gas_budget,
+        args,
+        context,
+    )
+    .await?;
+
+    Ok(serialize_or_execute!(
+        tx_data,
+        serialize_unsigned_transaction,
+        serialize_signed_transaction,
+        context,
+        Call
+    ))
 }
