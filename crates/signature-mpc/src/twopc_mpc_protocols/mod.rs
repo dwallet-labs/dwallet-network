@@ -744,7 +744,6 @@ pub fn verify_single_signature(
 }
 
 pub fn convert_signature_to_canonical_form(signature: Vec<u8>) -> std::result::Result<Vec<u8>, ()> {
-    // TODO (#130): Use a different error type for [`crates/sui-core/src/signature_mpc`].
     let (r, s) = bcs::from_bytes::<(Scalar, Scalar)>(signature.as_slice()).map_err(|_| ())?;
     let signature_s_inner: k256::Scalar = s.into();
     Ok(
