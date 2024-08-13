@@ -19,11 +19,11 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         create_dwallet_cap,
         create_malicious_aggregator_sign_output,
         create_sign_output,
-        dwallet_public_key,
+        get_dwallet_public_key,
         DWalletCap,
-        messages,
+        get_messages,
         PartialUserSignedMessages,
-        sign_data,
+        get_sign_data,
         SignSession
     };
 
@@ -446,10 +446,10 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     ) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         if (verify_signatures_native(
-            messages(session),
+            get_messages(session),
             signatures,
-            sign_data(session).hash,
-            dwallet_public_key(session),
+            get_sign_data(session).hash,
+            get_dwallet_public_key(session),
         )) {
             create_sign_output(session, convert_signatures_to_canonical_form(signatures), ctx);
         } else {

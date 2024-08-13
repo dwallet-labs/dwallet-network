@@ -95,10 +95,10 @@ module dwallet_system::dwallet {
         dwallet_public_key: vector<u8>,
     }
 
-    public(friend) fun dwallet_public_key<S: store>(session: &SignSession<S>): vector<u8> { session.dwallet_public_key }
-    public(friend) fun sign_data<S: store>(session: &SignSession<S>): &S { &session.sign_data }
-    public(friend) fun messages<S: store>(session: &SignSession<S>): vector<vector<u8>> { session.messages }
-    public(friend) fun sender<S: store>(session: &SignSession<S>): address { session.sender }
+    public(friend) fun get_dwallet_public_key<S: store>(session: &SignSession<S>): vector<u8> { session.dwallet_public_key }
+    public(friend) fun get_sign_data<S: store>(session: &SignSession<S>): &S { &session.sign_data }
+    public(friend) fun get_messages<S: store>(session: &SignSession<S>): vector<vector<u8>> { session.messages }
+    public(friend) fun get_sender<S: store>(session: &SignSession<S>): address { session.sender }
 
     #[allow(unused_field)]
     /// `SignOutput` is the final output from the Bloackchian(Valditors) of the `Sign` process.
@@ -303,8 +303,7 @@ module dwallet_system::dwallet {
     }
 
     /// The output that being written when an aggregator tries to publish an invalid signature.
-    #[allow(unused_field)]
-    struct MaliciousAggregatorSignOutput has key {
+]    struct MaliciousAggregatorSignOutput has key {
         id: UID,
         aggregator_public_key: vector<u8>,
         epoch: u64,
@@ -336,7 +335,7 @@ module dwallet_system::dwallet {
             signatures,
             sender: session.sender,
         };
-        transfer::transfer(sign_output, sender(session));
+        transfer::transfer(sign_output, get_sender(session));
     }
 
     public(friend) fun create_malicious_aggregator_sign_output<S: store>(
@@ -361,6 +360,6 @@ module dwallet_system::dwallet {
             dwallet_id: session.dwallet_id,
             session_id: object::id(session),
         };
-        transfer::transfer(failed_sign_output, sender(session));
+        transfer::transfer(failed_sign_output, get_sender(session));
     }
 }
