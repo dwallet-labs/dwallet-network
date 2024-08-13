@@ -1413,8 +1413,6 @@ impl SuiClientCommands {
                 }
                 EthClientCommands::CreateEthDwallet {
                     dwallet_cap_id,
-                    contract_address,
-                    contract_approved_tx_slot,
                     gas,
                     gas_budget,
                     serialize_unsigned_transaction,
@@ -1423,8 +1421,6 @@ impl SuiClientCommands {
                     create_eth_dwallet(
                         context,
                         dwallet_cap_id,
-                        contract_address,
-                        contract_approved_tx_slot,
                         gas,
                         gas_budget,
                         serialize_unsigned_transaction,
@@ -1435,6 +1431,8 @@ impl SuiClientCommands {
                 EthClientCommands::InitEthState {
                     checkpoint,
                     network,
+                    contract_address,
+                    contract_approved_tx_slot,
                     gas,
                     gas_budget,
                     serialize_unsigned_transaction,
@@ -1443,6 +1441,8 @@ impl SuiClientCommands {
                     init_ethereum_state(
                         checkpoint,
                         network,
+                        contract_address,
+                        contract_approved_tx_slot,
                         context,
                         gas,
                         gas_budget,
