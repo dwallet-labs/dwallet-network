@@ -292,7 +292,6 @@ impl SuiDWalletCommands {
                     bcs::from_bytes::<SecretKeyShareEncryptionAndProof<ProtocolContext>>(
                         &output.secret_key_share_encryption_and_proof,
                     )?;
-
                 let (
                     centralized_party_public_key_share_decommitment_and_proof,
                     centralized_party_dkg_output,

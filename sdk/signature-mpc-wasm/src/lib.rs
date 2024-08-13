@@ -50,6 +50,7 @@ pub struct InitiateSignValue {
 #[wasm_bindgen]
 pub fn initiate_dkg() -> Result<JsValue, JsErr> {
     let party = initiate_centralized_party_dkg()?;
+
     let (commitment_to_secret_key_share, decommitment_round_party) =
         party.sample_commit_and_prove_secret_key_share(&mut OsRng)?;
     let decommitment_round_party_state = decommitment_round_party.to_state();
