@@ -7,10 +7,11 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 use sui_config::Config;
 use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
+
+use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -50,7 +51,7 @@ impl SuiClientConfig {
     pub fn get_active_env(&self) -> Result<&SuiEnv, anyhow::Error> {
         self.get_env(&self.active_env).ok_or_else(|| {
             anyhow!(
-                "Environment configuration not found for env [{}]",
+                "Environment configuration wasn't found for the environment: [{}]",
                 self.active_env.as_deref().unwrap_or("None")
             )
         })
