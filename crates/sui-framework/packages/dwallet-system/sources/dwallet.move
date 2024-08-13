@@ -303,7 +303,7 @@ module dwallet_system::dwallet {
     }
 
     /// The output that being written when an aggregator tries to publish an invalid signature.
-]    struct MaliciousAggregatorSignOutput has key {
+    struct MaliciousAggregatorSignOutput has key {
         id: UID,
         aggregator_public_key: vector<u8>,
         epoch: u64,
