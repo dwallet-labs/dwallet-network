@@ -82,12 +82,6 @@ pub enum EthClientCommands {
         /// The ObjectID of the dWallet *cap*ability.
         #[clap(long)]
         dwallet_cap_id: ObjectID,
-        /// The address of the contract.
-        #[clap(long)]
-        contract_address: String,
-        /// The slot of the Data structure that holds approved transactions in eth smart contract.
-        #[clap(long)]
-        contract_approved_tx_slot: u64,
         /// The address of the gas object for gas payment.
         #[clap(long)]
         gas: Option<ObjectID>,
@@ -113,8 +107,14 @@ pub enum EthClientCommands {
         #[clap(long)]
         checkpoint: String,
         /// The corresponding Ethereum network.
-        network: String,
         #[clap(long)]
+        network: String,
+        /// The address of the contract.
+        #[clap(long)]
+        contract_address: String,
+        /// The slot of the Data structure that holds approved transactions in eth smart contract.
+        #[clap(long)]
+        contract_approved_tx_slot: u64,
         /// The address of the gas object for gas payment.
         #[clap(long)]
         gas: Option<ObjectID>,
@@ -138,29 +138,12 @@ pub enum EthClientCommands {
 pub(crate) async fn create_eth_dwallet(
     context: &mut WalletContext,
     dwallet_cap_id: ObjectID,
-    contract_address: String,
-    contract_approved_tx_slot: u64,
     gas: Option<ObjectID>,
     gas_budget: u64,
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
-) -> Result<SuiClientCommandResult, Error> {
-    let smart_contract_address = bcs::to_bytes(&contract_address)?;
-    let mut smart_contract_address: Vec<Value> = smart_contract_address
-        .iter()
-        .map(|v| Value::Number(Number::from(*v)))
-        .collect();
-
-    // For some reason, when creating the smart contract address, the first element is always `*`.
-    let _ = smart_contract_address.remove(0);
-
-    let smart_contract_address = SuiJsonValue::new(Value::Array(smart_contract_address))?;
-
-    let args = vec![
-        SuiJsonValue::from_object_id(dwallet_cap_id),
-        smart_contract_address,
-        SuiJsonValue::new(Value::Number(Number::from(contract_approved_tx_slot)))?,
-    ];
+) -> Result<SuiClientCommandResult, anyhow::Error> {
+    let args = vec![SuiJsonValue::from_object_id(dwallet_cap_id)];
 
     let tx_data = construct_move_call_transaction(
         SUI_SYSTEM_PACKAGE_ID,
@@ -190,6 +173,8 @@ pub(crate) async fn create_eth_dwallet(
 pub(crate) async fn init_ethereum_state(
     checkpoint: String,
     network: String,
+    contract_address: String,
+    contract_slot: u64,
     context: &mut WalletContext,
     gas: Option<ObjectID>,
     gas_budget: u64,
@@ -199,6 +184,8 @@ pub(crate) async fn init_ethereum_state(
     let args = vec![
         SuiJsonValue::new(Value::String(checkpoint))?,
         SuiJsonValue::new(Value::String(network.to_string()))?,
+        SuiJsonValue::new(Value::String(contract_address))?,
+        SuiJsonValue::new(Value::Number(Number::from(contract_slot)))?,
     ];
 
     let tx_data = construct_move_call_transaction(
@@ -232,8 +219,8 @@ pub(crate) async fn init_ethereum_state(
 
     let latest_state_object_id = get_object_from_transaction_changes(
         object_changes,
-        ETHEREUM_STATE_MODULE_NAME,
-        LATEST_ETH_STATE_STRUCT_NAME,
+        ETHEREUM_STATE_MODULE_NAME.into(),
+        LATEST_ETH_STATE_STRUCT_NAME.into(),
     )?;
 
     context
@@ -300,13 +287,6 @@ pub(crate) async fn eth_approve_message(
         None => return Err(anyhow!("ETH State object ID configuration not found")),
     };
 
-    let eth_dwallet_cap_data_bcs = get_object_bcs_by_id(context, eth_dwallet_cap_id).await?;
-    let eth_dwallet_cap_obj: EthereumDWalletCap = eth_dwallet_cap_data_bcs
-        .try_as_move()
-        .ok_or_else(|| anyhow!("object is not a Move Object"))?
-        .deserialize()
-        .map_err(|e| anyhow!("error deserializing object: {e}"))?;
-
     let latest_eth_state_data_bcs = get_object_bcs_by_id(context, latest_state_object_id).await?;
     let latest_eth_state_obj: LatestEthereumStateObject = latest_eth_state_data_bcs
         .try_as_move()
@@ -335,8 +315,8 @@ pub(crate) async fn eth_approve_message(
         return Err(anyhow!("checkpoint is missing in the Ethereum state"));
     }
 
-    let data_slot = eth_dwallet_cap_obj.eth_smart_contract_slot;
-    let contract_addr: String = eth_dwallet_cap_obj.eth_smart_contract_addr;
+    let data_slot = latest_eth_state_obj.eth_smart_contract_slot;
+    let contract_addr: String = latest_eth_state_obj.eth_smart_contract_address;
     let contract_addr = contract_addr.clone().parse::<Address>()?;
 
     let mut eth_lc = EthLightClientWrapper::init_new_light_client(eth_lc_config.clone()).await?;
@@ -416,8 +396,8 @@ pub(crate) async fn eth_approve_message(
 
     let verified_state_object_id = get_object_from_transaction_changes(
         object_changes,
-        ETHEREUM_STATE_MODULE_NAME,
-        ETH_STATE_STRUCT_NAME,
+        ETHEREUM_STATE_MODULE_NAME.into(),
+        ETH_STATE_STRUCT_NAME.into(),
     )?;
 
     let verified_eth_state_data_bcs =
