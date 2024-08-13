@@ -226,8 +226,8 @@ pub fn finalize_centralized_party_sign(
                     public_nonce_encrypted_partial_signature_and_proof.public_nonce,
                     &protocol_public_parameters.group_public_parameters,
                 )
-                .map_err(Error::from)
-                .and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
+                    .map_err(Error::from)
+                    .and_then(|public_nonce| party.verify_signature(public_nonce.x(), signature_s))
             },
         )
 }
@@ -298,7 +298,7 @@ pub fn new_decentralized_party_presign_batch(
 
 pub type EncryptedDecentralizedPartySecretKeyShare = tiresias::CiphertextSpaceGroupElement;
 pub type EncryptedDecentralizedPartySecretKeyShareValue =
-    <tiresias::CiphertextSpaceGroupElement as GroupElement>::Value;
+<tiresias::CiphertextSpaceGroupElement as GroupElement>::Value;
 
 pub fn initiate_decentralized_party_presign(
     decryption_key_share_public_parameters: <DecryptionKeyShare as AdditivelyHomomorphicDecryptionKeyShare<PLAINTEXT_SPACE_SCALAR_LIMBS, EncryptionKey>>::PublicParameters,
@@ -479,8 +479,8 @@ fn decrypt_single_signature(
                 k256::Scalar::from(nonce_x_coordinate),
                 signature_s_inner,
             )
-            .map(|sig| sig.to_vec())
-            .map_err(|_| Error::InternalError)
+                .map(|sig| sig.to_vec())
+                .map_err(|_| Error::InternalError)
         })
 }
 
@@ -542,7 +542,7 @@ pub fn decrypt_signatures_decentralized_party_sign(
         &formatted_decryption_shares,
         signature_threshold_decryption_round_parties,
     )
-    .map_err(|_decryption_error| DecryptionError { decrypters })
+        .map_err(|_decryption_error| DecryptionError { decrypters })
 }
 
 fn compute_lagrange_coefficient(
@@ -594,10 +594,10 @@ pub fn identify_message_malicious_parties(
     );
 
     if let Error::Tiresias(tiresias::Error::ProtocolError(
-        ProtocolError::ProofVerificationError {
-            malicious_parties, ..
-        },
-    )) = error
+                               ProtocolError::ProofVerificationError {
+                                   malicious_parties, ..
+                               },
+                           )) = error
     {
         return Ok(malicious_parties);
     }
@@ -639,7 +639,7 @@ pub fn message_digest(message: &[u8], hash_type: &Hash) -> secp256k1::Scalar {
             bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
         }
     }
-    .unwrap();
+        .unwrap();
     #[allow(clippy::useless_conversion)]
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
     U256::from(m).into()
@@ -743,12 +743,14 @@ pub fn verify_single_signature(
     Ok(())
 }
 
-pub fn convert_signature_to_canonical_form(signature: Vec<u8>) -> std::result::Result<Vec<u8>, ()> {
-    let (r, s) = bcs::from_bytes::<(Scalar, Scalar)>(signature.as_slice()).map_err(|_| ())?;
+/// Converts the signature to its "canonical form", i.e. the serialized bytes of the standard
+/// [`ecdsa`] library.
+pub fn convert_signature_to_canonical_form(signature: Vec<u8>) -> Result<Vec<u8>> {
+    let (r, s) = bcs::from_bytes::<(Scalar, Scalar)>(signature.as_slice()).map_err(|_| Error::InvalidParameters)?;
     let signature_s_inner: k256::Scalar = s.into();
     Ok(
         Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(r), signature_s_inner)
-            .map_err(|_| ())?
+            .map_err(|_| Error::InvalidParameters)?
             .to_vec(),
     )
 }
