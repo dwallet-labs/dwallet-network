@@ -95,10 +95,10 @@ module dwallet_system::dwallet {
         dwallet_public_key: vector<u8>,
     }
 
-    public(friend) fun dwallet_public_key<S: store>(session: &SignSession<S>): vector<u8> { session.dwallet_public_key }
-    public(friend) fun sign_data<S: store>(session: &SignSession<S>): &S { &session.sign_data }
-    public(friend) fun messages<S: store>(session: &SignSession<S>): vector<vector<u8>> { session.messages }
-    public(friend) fun sender<S: store>(session: &SignSession<S>): address { session.sender }
+    public(friend) fun get_dwallet_public_key<S: store>(session: &SignSession<S>): vector<u8> { session.dwallet_public_key }
+    public(friend) fun get_sign_data<S: store>(session: &SignSession<S>): &S { &session.sign_data }
+    public(friend) fun get_messages<S: store>(session: &SignSession<S>): vector<vector<u8>> { session.messages }
+    public(friend) fun get_sender<S: store>(session: &SignSession<S>): address { session.sender }
 
     #[allow(unused_field)]
     struct SignOutputEvent has copy, drop {
@@ -309,7 +309,7 @@ module dwallet_system::dwallet {
         transfer::freeze_object(sign_session);
     }
 
-    #[allow(unused_field)]
+    /// The output that being written when an aggregator tries to publish an invalid signature.
     struct MaliciousAggregatorSignOutput has key {
         id: UID,
         aggregator_public_key: vector<u8>,
@@ -320,6 +320,8 @@ module dwallet_system::dwallet {
         session_id: ID,
     }
 
+    /// An event that being emitted when an aggregator tries to publish an invalid signature.
+    /// Being used to punish the aggregator.
     struct MaliciousAggregatorEvent has copy, drop {
         aggregator_public_key: vector<u8>,
         epoch: u64,

@@ -706,21 +706,19 @@ pub fn recovery_id(
     }
 }
 
+/// Verifies that all the signatures are valid. Return true if all are valid, false otherwise.
 pub fn verify_signatures(
     messages: Vec<Vec<u8>>,
     hash: &Hash,
     public_key: PublicKeyValue,
     signatures: Vec<Vec<u8>>,
 ) -> bool {
-    for (message, signature) in messages.iter().zip(signatures.iter()) {
-        match verify_single_signature(message, signature, public_key, hash) {
-            Ok(_) => {}
-            Err(Error::MaliciousDesignatedDecryptingParty) => return false,
-            // TODO (#135): Understand how to handle different errors that may be returned from [`SignatureThresholdDecryptionParty::verify_decrypted_signature`].
-            _ => return false,
-        }
-    }
-    true
+    messages
+        .iter()
+        .zip(signatures.iter())
+        .all(|(message, signature)| {
+            verify_single_signature(message, signature, public_key, hash).is_ok()
+        })
 }
 
 pub fn verify_single_signature(
@@ -729,24 +727,31 @@ pub fn verify_single_signature(
     public_key: PublicKeyValue,
     hash: &Hash,
 ) -> Result<()> {
-    let message = message_digest(message.as_slice(), hash);
+    let message_digest = message_digest(message.as_slice(), hash);
     let (r, s) =
         bcs::from_bytes::<(Scalar, Scalar)>(signature).map_err(|_| Error::InvalidParameters)?;
     let public_key = Secp256K1GroupElement::new(
         public_key,
         &group::PublicParameters::<Secp256K1GroupElement>::default(),
     )?;
-    SignatureThresholdDecryptionParty::verify_decrypted_signature(r, s, message, public_key)?;
+    SignatureThresholdDecryptionParty::verify_decrypted_signature(
+        r,
+        s,
+        message_digest,
+        public_key,
+    )?;
     Ok(())
 }
 
-pub fn convert_signature_to_canonical_form(signature: Vec<u8>) -> std::result::Result<Vec<u8>, ()> {
-    // TODO (#130): Use a different error type for [`crates/sui-core/src/signature_mpc`].
-    let (r, s) = bcs::from_bytes::<(Scalar, Scalar)>(signature.as_slice()).map_err(|_| ())?;
+/// Converts the signature to its "canonical form", i.e. the serialized bytes of the standard
+/// [`ecdsa`] library.
+pub fn convert_signature_to_canonical_form(signature: Vec<u8>) -> Result<Vec<u8>> {
+    let (r, s) = bcs::from_bytes::<(Scalar, Scalar)>(signature.as_slice())
+        .map_err(|_| Error::InvalidParameters)?;
     let signature_s_inner: k256::Scalar = s.into();
     Ok(
         Signature::<k256::Secp256k1>::from_scalars(k256::Scalar::from(r), signature_s_inner)
-            .map_err(|_| ())?
+            .map_err(|_| Error::InvalidParameters)?
             .to_vec(),
     )
 }
