@@ -5,7 +5,6 @@
 */
 
 module dwallet_system::eth_dwallet {
-    use std::string::String;
     use dwallet::object::{Self, UID};
     use dwallet::transfer;
     use dwallet::tx_context::TxContext;
@@ -18,22 +17,16 @@ module dwallet_system::eth_dwallet {
     struct EthereumDWalletCap has key {
         id: UID,
         dwallet_cap: DWalletCap,
-        eth_smart_contract_addr: String,
-        eth_smart_contract_slot: u64,
     }
 
     /// Creates an Ethereum dWallet capability object by wrapping an existing DWalletCap.
     public entry fun create_eth_dwallet_cap(
         dwallet_cap: DWalletCap,
-        eth_smart_contract_addr: String,
-        eth_smart_contract_slot: u64,
         ctx: &mut TxContext
     ) {
         let eth_dwallet_cap = EthereumDWalletCap {
             id: object::new(ctx),
             dwallet_cap,
-            eth_smart_contract_addr,
-            eth_smart_contract_slot
         };
         transfer::share_object(eth_dwallet_cap);
     }
