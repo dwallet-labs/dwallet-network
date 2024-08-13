@@ -4,7 +4,7 @@
 
 pub mod client_commands;
 pub mod console;
-mod ethereum_client;
+mod ethereum_client_commands;
 pub mod fire_drill;
 pub mod genesis_ceremony;
 pub mod genesis_inspector;

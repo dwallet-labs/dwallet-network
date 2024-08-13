@@ -1,10 +1,11 @@
 use clap::Subcommand;
+use serde::{Deserialize, Serialize};
 use sui_types::base_types::ObjectID;
 
 #[derive(Subcommand)]
 pub enum EthClientCommands {
     /// Approve a TX with Eth contract for a given dWallet.
-    #[command(name = "dwallet-eth-verify")]
+    #[command(name = "verify-message")]
     EthApproveMessage {
         #[clap(long)]
         /// Object of a [EthDwalletCap].
@@ -32,7 +33,7 @@ pub enum EthClientCommands {
     },
 
     /// Connect dWallet to be controlled by Eth contract.
-    #[command(name = "dwallet-connect-eth")]
+    #[command(name = "connect-eth-dwallet")]
     CreateEthDwallet {
         /// The ObjectID of the dWallet *cap*ability.
         #[clap(long)]

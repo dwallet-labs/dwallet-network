@@ -69,6 +69,7 @@ use tabled::{
 use tracing::info;
 
 use crate::ethereum_client::EthClientCommands;
+use crate::ethereum_client_commands::EthClientCommands;
 use crate::key_identity::{get_identity_address, KeyIdentity};
 
 macro_rules! serialize_or_execute {
@@ -1727,7 +1728,7 @@ impl Display for SuiClientCommandResult {
                 write!(writer, "{}", env.as_deref().unwrap_or("None"))?;
             }
             SuiClientCommandResult::NewEnv(env) => {
-                writeln!(writer, "Added new Sui env [{}] to config.", env.alias)?;
+                writeln!(writer, "Added new dWallet env [{}] to config.", env.alias)?;
             }
             SuiClientCommandResult::Envs(envs, active) => {
                 let mut builder = TableBuilder::default();
@@ -1786,7 +1787,7 @@ impl Display for SuiClientCommandResult {
     }
 }
 
-async fn construct_move_call_transaction(
+pub(crate) async fn construct_move_call_transaction(
     package: ObjectID,
     module: &str,
     function: &str,
