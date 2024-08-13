@@ -34,36 +34,26 @@ export async function approveAndSign(
 		],
 		arguments: [tx.object(signMessagesId), messageApprovals],
 	});
-	const result = await client.signAndExecuteTransactionBlock({
+
+	await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx,
 		options: {
 			showEffects: true,
 		},
 	});
-
-	const signSessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
-		.reference!;
-
-	const signOutput = await fetchObjectBySessionId(
-		signSessionRef.objectId,
-		`${packageId}::${dWalletModuleName}::SignOutput`,
-		keypair,
-		client,
-	);
-
-	const fields =
-		signOutput?.dataType === 'moveObject'
-			? (signOutput.fields as {
-					id: { id: string };
-					signatures: number[][];
-			  })
-			: null;
-
-	return fields
-		? {
-				signOutputId: fields.id.id,
-				signatures: fields.signatures,
-		  }
-		: null;
+	return await waitForSignOutput(client);
 }
+
+const waitForSignOutput = async (client: DWalletClient) => {
+	return new Promise((resolve) => {
+		client.subscribeEvent({
+			filter: {
+				MoveEventType: `${packageId}::${dWalletModuleName}::SignOutputEvent`,
+			},
+			onMessage: (event) => {
+				resolve(event?.parsedJson?.signatures);
+			},
+		});
+	});
+};

@@ -101,6 +101,13 @@ module dwallet_system::dwallet {
     public(friend) fun sender<S: store>(session: &SignSession<S>): address { session.sender }
 
     #[allow(unused_field)]
+    struct SignOutputEvent has copy, drop {
+        output_id: ID,
+        signatures: vector<vector<u8>>,
+        dwallet_id: ID
+    }
+
+    #[allow(unused_field)]
     /// `SignOutput` is the final output from the Bloackchian(Valditors) of the `Sign` process.
     struct SignOutput has key {
         id: UID,
@@ -319,6 +326,7 @@ module dwallet_system::dwallet {
         signatures: vector<vector<u8>>,
         messages: vector<vector<u8>>,
         dwallet_id: ID,
+        output_id: ID,
     }
 
     public(friend) fun create_sign_output<S: store>(
@@ -333,6 +341,11 @@ module dwallet_system::dwallet {
             signatures,
             sender: session.sender,
         };
+        event::emit(SignOutputEvent {
+            output_id: object::id(&sign_output),
+            signatures,
+            dwallet_id: session.dwallet_id,
+        });
         transfer::freeze_object(sign_output);
     }
 
@@ -342,13 +355,6 @@ module dwallet_system::dwallet {
         signatures: vector<vector<u8>>,
         ctx: &mut TxContext
     ) {
-        event::emit(MaliciousAggregatorEvent {
-            aggregator_public_key,
-            epoch: tx_context::epoch(ctx),
-            signatures,
-            messages: session.messages,
-            dwallet_id: session.dwallet_id,
-        });
         let failed_sign_output = MaliciousAggregatorSignOutput {
             id: object::new(ctx),
             aggregator_public_key,
@@ -358,6 +364,14 @@ module dwallet_system::dwallet {
             dwallet_id: session.dwallet_id,
             session_id: object::id(session),
         };
+        event::emit(MaliciousAggregatorEvent {
+            aggregator_public_key,
+            epoch: tx_context::epoch(ctx),
+            signatures,
+            messages: session.messages,
+            dwallet_id: session.dwallet_id,
+            output_id: object::id(&failed_sign_output),
+        });
         transfer::freeze_object(failed_sign_output);
     }
 }
