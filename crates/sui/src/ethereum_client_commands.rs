@@ -4,7 +4,6 @@
 //! (dWallet) in a Sui blockchain environment.
 //! The primary functionalities include verifying Ethereum transactions,
 //! connecting dWallets to Ethereum smart contracts, and initializing Ethereum state.
-
 use anyhow::{anyhow, Error};
 use clap::Subcommand;
 use helios::consensus::nimbus_rpc::NimbusRpc;
@@ -15,15 +14,18 @@ use helios::dwallet::light_client::{
 use helios::prelude::networks::Network;
 use helios::prelude::Address;
 use hex::encode;
-use move_core_types::identifier::Identifier;
+use light_client_helpers::{
+    get_object_bcs_by_id, get_object_from_transaction_changes, get_shared_object_input_by_id,
+};
+
 use serde::{Deserialize, Serialize};
 use serde_json::{Number, Value};
 use shared_crypto::intent::Intent;
 use sui_json::SuiJsonValue;
+use sui_json_rpc_types::SuiData;
 #[allow(unused_imports)]
 // SuiTransactionBlockEffectsAPI is called in a macro; therefore, the IDE doesn't recognize it.
 use sui_json_rpc_types::{ObjectChange, SuiExecutionStatus, SuiTransactionBlockEffectsAPI};
-use sui_json_rpc_types::{SuiData, SuiObjectDataOptions, SuiRawData};
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::sui_client_config::SuiEnv;
 use sui_sdk::wallet_context::WalletContext;
@@ -34,11 +36,8 @@ use sui_types::eth_dwallet::{
     ETH_STATE_STRUCT_NAME, INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME,
     VERIFY_ETH_STATE_FUNC_NAME,
 };
-use sui_types::object::Owner;
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{
-    ObjectArg, SenderSignedData, SharedInputObject, Transaction, TransactionDataAPI,
-};
+use sui_types::transaction::{ObjectArg, SenderSignedData, Transaction, TransactionDataAPI};
 use sui_types::SUI_SYSTEM_PACKAGE_ID;
 
 use crate::client_commands::{construct_move_call_transaction, SuiClientCommandResult};
@@ -481,58 +480,6 @@ where
     Ok(SuiJsonValue::new(Value::Array(object_json))?)
 }
 
-async fn get_object_bcs_by_id(
-    context: &mut WalletContext,
-    object_id: ObjectID,
-) -> Result<SuiRawData, Error> {
-    let object_resp = context
-        .get_client()
-        .await?
-        .read_api()
-        .get_object_with_options(
-            object_id,
-            SuiObjectDataOptions::default().with_bcs().with_owner(),
-        )
-        .await?;
-
-    match object_resp.data {
-        Some(data) => Ok(data.bcs.ok_or_else(|| anyhow!("missing object data"))?),
-        None => Err(anyhow!("could not find an object with ID: {:?}", object_id)),
-    }
-}
-
-async fn get_shared_object_input_by_id(
-    context: &mut WalletContext,
-    object_id: ObjectID,
-) -> Result<SharedInputObject, Error> {
-    let object_resp = context
-        .get_client()
-        .await?
-        .read_api()
-        .get_object_with_options(object_id, SuiObjectDataOptions::default().with_owner())
-        .await?;
-
-    match object_resp.data {
-        Some(_) => {
-            let owner = object_resp
-                .owner()
-                .ok_or_else(|| anyhow!("missing object owner"))?;
-            let initial_shared_version = match owner {
-                Owner::Shared {
-                    initial_shared_version,
-                } => initial_shared_version,
-                _ => return Err(anyhow!("object is not shared")),
-            };
-            Ok(SharedInputObject {
-                id: object_id,
-                initial_shared_version,
-                mutable: true,
-            })
-        }
-        None => Err(anyhow!("could not find an object with ID: {:?}", object_id)),
-    }
-}
-
 fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, Error> {
     let mut eth_lc_config = EthLightClientConfig::default();
     let sui_env_config = context.config.get_active_env()?;
@@ -566,28 +513,4 @@ fn get_network_by_sui_env(sui_env_config: &SuiEnv) -> Result<Network, Error> {
         _ => Network::MAINNET,
     };
     Ok(network)
-}
-
-fn get_object_from_transaction_changes(
-    object_changes: Vec<ObjectChange>,
-    module: Identifier,
-    type_name: Identifier,
-) -> Result<ObjectID, Error> {
-    let latest_state_object_id = object_changes
-        .iter()
-        .find_map(|oc| {
-            if let ObjectChange::Created {
-                object_id,
-                object_type,
-                ..
-            } = oc
-            {
-                if object_type.module == module && object_type.name == type_name {
-                    return Some(object_id);
-                }
-            }
-            None
-        })
-        .ok_or_else(|| anyhow!("can't get latest state object ID."))?;
-    Ok(latest_state_object_id.clone())
 }
