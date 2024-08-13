@@ -95,9 +95,14 @@ module dwallet_system::dwallet {
         dwallet_public_key: vector<u8>,
     }
 
-    public(friend) fun get_dwallet_public_key<S: store>(session: &SignSession<S>): vector<u8> { session.dwallet_public_key }
+    public(friend) fun get_dwallet_public_key<S: store>(
+        session: &SignSession<S>
+    ): vector<u8> { session.dwallet_public_key }
+
     public(friend) fun get_sign_data<S: store>(session: &SignSession<S>): &S { &session.sign_data }
+
     public(friend) fun get_messages<S: store>(session: &SignSession<S>): vector<vector<u8>> { session.messages }
+
     public(friend) fun get_sender<S: store>(session: &SignSession<S>): address { session.sender }
 
     #[allow(unused_field)]
@@ -332,10 +337,12 @@ module dwallet_system::dwallet {
         malicious_sign_output_id: ID,
     }
 
+    /// Generic function to create a `SignOutput`.
+    /// Creates the output for various signature algorithms.
     public(friend) fun create_sign_output<S: store>(
         session: &SignSession<S>,
         signatures: vector<vector<u8>>,
-        ctx: &mut TxContext){
+        ctx: &mut TxContext) {
         let sign_output = SignOutput {
             id: object::new(ctx),
             session_id: object::id(session),
@@ -352,6 +359,8 @@ module dwallet_system::dwallet {
         transfer::freeze_object(sign_output);
     }
 
+    /// Generic function to create a `MaliciousAggregatorSignOutput`.
+    /// Creates the output for various signature algorithms.
     public(friend) fun create_malicious_aggregator_sign_output<S: store>(
         aggregator_public_key: vector<u8>,
         session: &SignSession<S>,

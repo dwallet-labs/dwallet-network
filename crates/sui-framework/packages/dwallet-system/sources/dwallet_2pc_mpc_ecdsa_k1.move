@@ -474,6 +474,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     native fun convert_signature_to_canonical_form(signature: vector<u8>): vector<u8>;
 
+    /// Verifies the ECDSA signatures.
     native fun verify_signatures_native(
         messages: vector<vector<u8>>,
         sigs: vector<vector<u8>>,
