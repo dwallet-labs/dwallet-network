@@ -5,7 +5,7 @@
 //! The primary functionalities include verifying Ethereum transactions,
 //! connecting dWallets to Ethereum smart contracts, and initializing Ethereum state.
 
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, Result};
 use clap::Subcommand;
 use helios::consensus::nimbus_rpc::NimbusRpc;
 use helios::consensus::ConsensusStateManager;
@@ -15,8 +15,6 @@ use helios::dwallet::light_client::{
 use helios::prelude::networks::Network;
 use helios::prelude::Address;
 use hex::encode;
-use serde::{Deserialize, Serialize};
-use serde_json::{Number, Value};
 
 use light_client_helpers::{
     get_object_bcs_by_id, get_object_from_transaction_changes, get_shared_object_input_by_id,

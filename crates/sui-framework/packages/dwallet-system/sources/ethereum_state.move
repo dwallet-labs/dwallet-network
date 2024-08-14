@@ -24,6 +24,7 @@ module dwallet_system::ethereum_state {
         last_slot: u64,
         eth_smart_contract_addr: vector<u8>,
         eth_smart_contract_slot: u64,
+        network: vector<u8>,
     }
 
     /// Initializes the first Ethereum state with the given checkpoint.
@@ -49,19 +50,9 @@ module dwallet_system::ethereum_state {
             last_slot: state.time_slot,
             eth_smart_contract_addr,
             eth_smart_contract_slot,
+            network,
         });
         transfer::freeze_object(state);
-    }
-
-    /// Updates the latest Ethereum state reference if the provided EthereumState object has a newer time slot.
-    public fun update_latest_eth_state(
-        self: &mut LatestEthereumState,
-        eth_state: &EthereumState,
-    ) {
-        if (eth_state.time_slot > self.last_slot) {
-            self.eth_state_id = object::id(eth_state);
-            self.last_slot = eth_state.time_slot;
-        }
     }
 
     /// Verifies the new Ethereum state according to the provided updates, and updates the LatestEthereumState object
