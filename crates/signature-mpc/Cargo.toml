@@ -32,6 +32,7 @@ thiserror = "1.0"
 workspace-hack.workspace = true
 bcs.workspace = true
 sha3 = "0.10.8"
+anyhow.workspace = true
 
 [dev-dependencies]
 hex = "0.4.3"

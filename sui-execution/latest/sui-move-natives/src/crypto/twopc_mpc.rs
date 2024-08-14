@@ -1,11 +1,12 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::object_runtime::ObjectRuntime;
-use crate::NativesCostTable;
+use std::collections::VecDeque;
+
 use group::GroupElement as g;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::InternalGas;
+use move_core_types::vm_status::StatusCode;
 use move_core_types::vm_status::StatusCode::INVALID_PARAM_TYPE_FOR_DESERIALIZATION;
 use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeContext};
 use move_vm_types::{
@@ -14,20 +15,24 @@ use move_vm_types::{
     pop_arg,
     values::{Value, Vector},
 };
+use smallvec::smallvec;
+
 use signature_mpc::twopc_mpc_protocols;
-use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
-    get_proof_public_parameters, is_valid_proof, EncryptedUserShareAndProof, SecretShareProof,
-};
 use signature_mpc::twopc_mpc_protocols::{
     affine_point_to_public_key,
-    decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share,
-    decentralized_party_sign_verify_encrypted_signature_parts_prehash, Commitment,
-    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, Hash, ProtocolContext,
-    PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof, Scalar,
+    Commitment,
+    decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash,
+    DecentralizedPartyPresign, DKGDecentralizedPartyOutput, Hash, ProtocolContext,
+    PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof,
     SecretKeyShareEncryptionAndProof,
 };
-use smallvec::smallvec;
-use std::collections::VecDeque;
+use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
+    get_encryption_of_discrete_log_public_parameters, verify_proof,
+};
+
+use crate::NativesCostTable;
+use crate::object_runtime::ObjectRuntime;
+
 pub const INVALID_INPUT: u64 = 0;
 
 #[derive(Clone)]
@@ -77,9 +82,14 @@ pub fn validate_encrypted_user_secret_share(
 
     let encrypted_secret_share_and_proof =
         bcs::from_bytes(&encrypted_secret_share_and_proof).unwrap();
-    let language_public_parameters = get_proof_public_parameters(public_encryption_key.clone());
+    let language_public_parameters = get_encryption_of_discrete_log_public_parameters(
+        public_encryption_key.clone(),
+    )
+    .map_err(|e| {
+        PartialVMError::new(INVALID_PARAM_TYPE_FOR_DESERIALIZATION).with_message(e.to_string())
+    })?;
 
-    let is_valid_proof = is_valid_proof(
+    let is_valid_proof = verify_proof(
         language_public_parameters,
         encrypted_secret_share_and_proof,
         dkg_output.centralized_party_public_key_share,
@@ -87,7 +97,7 @@ pub fn validate_encrypted_user_secret_share(
 
     Ok(NativeResult::ok(
         cost,
-        smallvec![Value::bool(is_valid_proof)],
+        smallvec![Value::bool(is_valid_proof.is_ok())],
     ))
 }
 

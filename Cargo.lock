@@ -11381,6 +11381,7 @@ dependencies = [
 name = "signature-mpc"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bcs",
  "commitment",
  "crypto-bigint 0.5.5",
