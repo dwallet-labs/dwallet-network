@@ -4,6 +4,7 @@
 //! (dWallet) in a Sui blockchain environment.
 //! The primary functionalities include verifying Ethereum transactions,
 //! connecting dWallets to Ethereum smart contracts, and initializing Ethereum state.
+
 use anyhow::{anyhow, Error};
 use clap::Subcommand;
 use helios::consensus::nimbus_rpc::NimbusRpc;
@@ -17,6 +18,7 @@ use hex::encode;
 use light_client_helpers::{
     get_object_bcs_by_id, get_object_from_transaction_changes, get_shared_object_input_by_id,
 };
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Number, Value};
@@ -447,7 +449,9 @@ pub(crate) async fn eth_approve_message(
             Vec::new(),
             Vec::from([
                 SuiJsonValue::from_object_id(eth_dwallet_cap_id),
+                SuiJsonValue::new(Value::String(message))?,
                 SuiJsonValue::from_object_id(dwallet_id),
+                SuiJsonValue::new(Value::Number(Number::from(data_slot)))?,
                 proof_sui_json,
             ]),
         )

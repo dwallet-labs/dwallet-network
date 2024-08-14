@@ -36,15 +36,20 @@ module dwallet_system::eth_dwallet {
     public fun approve_message(
         eth_dwallet_cap: &EthereumDWalletCap,
         message: vector<u8>,
+        dwallet_id: vector<u8>,
+        data_slot: u64,
         proof: vector<u8>,
     ): vector<MessageApproval> {
-        let is_valid = verify_message_proof(proof);
+        let is_valid = verify_message_proof(proof, message, dwallet_id, data_slot);
         assert!(is_valid, EInvalidStateProof);
         dwallet::approve_messages(&eth_dwallet_cap.dwallet_cap, vector[message])
     }
 
     /// Verify the Message inside the Storage Merkle Root.
     native fun verify_message_proof(
-        proof: vector<u8>
+        proof: vector<u8>,
+        message: vector<u8>,
+        dwallet_id: vector<u8>,
+        data_slot: u64,
     ): bool;
 }
