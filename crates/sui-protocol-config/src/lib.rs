@@ -1197,7 +1197,7 @@ impl ProtocolConfig {
             feature_flags: Default::default(),
 
             // `max_tx_size_bytes` and `max_pure_argument_size` increased to 1024 * 1024
-            // to be able to support Ethereum light client proofs
+            // to be able to support Ethereum light client proofs.
             max_tx_size_bytes: Some(1024 * 1024),
             // We need this number to be at least 100x less than `max_serialized_tx_effects_size_bytes`otherwise effects can be huge
             max_input_objects: Some(2048),

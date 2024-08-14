@@ -1,10 +1,10 @@
 //! Ethereum Client Commands Module
 //!
-//! This module provides commands and functions to interact with an Ethereum-based decentralized wallet
-//! (dWallet) in a Sui blockchain environment.
+//! This module provides commands and functions to interact with an
+//! Ethereum-based dWallet smart contracts in dWallet blockchain environment.
 //! The primary functionalities include verifying Ethereum transactions,
 //! connecting dWallets to Ethereum smart contracts, and initializing Ethereum state.
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, Result};
 use clap::Subcommand;
 use helios::consensus::ConsensusStateManager;
 use helios::consensus::nimbus_rpc::NimbusRpc;
@@ -148,7 +148,7 @@ pub(crate) async fn init_ethereum_state(
     gas_budget: u64,
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
-) -> Result<SuiClientCommandResult, Error> {
+) -> Result<SuiClientCommandResult> {
     let args = vec![
         SuiJsonValue::new(Value::String(checkpoint))?,
         SuiJsonValue::new(Value::String(network.to_string()))?,
@@ -207,7 +207,7 @@ pub(crate) async fn create_eth_dwallet(
     gas_budget: u64,
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
-) -> Result<SuiClientCommandResult, anyhow::Error> {
+) -> Result<SuiClientCommandResult> {
     let args = vec![SuiJsonValue::from_object_id(dwallet_cap_id)];
 
     let tx_data = construct_move_call_transaction(
@@ -239,17 +239,18 @@ pub(crate) async fn create_eth_dwallet(
 /// # Logic
 /// 1. **Retrieve Configuration**: It starts by retrieving the Ethereum state object ID from
 ///      the active environment.
-/// 2. **Fetch Ethereum Objects**: It retrieves and deserializes the `EthereumDWalletCap`,
-///      `LatestEthereumStateObject`, and `EthereumStateObject` to collect the latest Ethereum state data.
+/// 2. **Fetch Ethereum Objects**: It retrieves and deserializes the [`EthereumDWalletCap`],
+///     [`LatestEthereumStateObject`], and [`EthereumStateObject`] to collect the
+///     latest Ethereum state data.
 /// 3. **Initialize Light Client**: Initializes the Ethereum light client with the deserialized
 ///      Ethereum state.
 /// 4. **Prepare Proof Parameters**: Constructs proof request parameters using the message,
-///      dWallet ID, and data slot get from the `EthereumDWalletCap`.
+///      dWallet ID, and data slot get from the [`EthereumDWalletCap`].
 /// 5. **Fetch Updates and Proofs**: Retrieves the necessary updates and cryptographic proofs from
 ///      the Ethereum light client.
 /// 6. **Build Transaction**: Uses the Sui programmable transaction builder to serialize transaction
 ///      parameters, including the Ethereum state, updates, and shared state object,
-///      and prepares the transaction to call the `VERIFY_ETH_STATE_FUNC_NAME` function in the
+///      and prepares the transaction to call the [`VERIFY_ETH_STATE_FUNC_NAME`] function in the
 ///      Ethereum state module.
 /// 7. **Send Transaction**: Constructs the transaction data, including the proof and dWallet ID,
 ///      and executes or serializes it based on the provided flags.
@@ -259,7 +260,7 @@ pub(crate) async fn create_eth_dwallet(
 /// * `message` – The Ethereum transaction message to be approved.
 /// * `dwallet_id` – The `ObjectID` of the dWallet to which the transaction belongs.
 /// # Returns
-/// * `Result<SuiClientCommandResult, Error>` –
+/// * `Result<SuiClientCommandResult>` –
 /// Result containing either the transaction execution result or an error.
 /// # Errors
 /// The function returns an error if any of the following occur:
@@ -276,7 +277,7 @@ pub(crate) async fn eth_approve_message(
     gas_budget: u64,
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
-) -> Result<SuiClientCommandResult, Error> {
+) -> Result<SuiClientCommandResult> {
     let active_env = context.config.get_active_env()?.clone();
     let mut eth_lc_config = get_eth_config(context)?;
 
@@ -333,19 +334,19 @@ pub(crate) async fn eth_approve_message(
     let mut pt_builder = ProgrammableTransactionBuilder::new();
     let eth_state_arg = pt_builder
         .pure(serde_json::to_vec(&eth_state)?)
-        .map_err(|e| anyhow!("could not serialize eth_state. {e}"))?;
+        .map_err(|e| anyhow!("could not serialize eth_state: {e}"))?;
 
     let updates_vec_arg = pt_builder
         .pure(serde_json::to_vec(&updates_response.updates)?)
-        .map_err(|e| anyhow!("could not serialize updates. {e}"))?;
+        .map_err(|e| anyhow!("could not serialize updates: {e}"))?;
 
     let finality_update_arg = pt_builder
         .pure(serde_json::to_vec(&updates_response.finality_update)?)
-        .map_err(|e| anyhow!("could not serialize finality_updates. {e}"))?;
+        .map_err(|e| anyhow!("could not serialize `finality_updates`: {e}"))?;
 
     let optimistic_update_arg = pt_builder
         .pure(serde_json::to_vec(&updates_response.optimistic_update)?)
-        .map_err(|e| anyhow!("could not serialize optimistic_updates. {e}"))?;
+        .map_err(|e| anyhow!("could not serialize `optimistic_updates`: {e}"))?;
 
     let latest_eth_state_shared_object_arg = ObjectArg::SharedObject {
         id: latest_eth_state_shared_object.id,
@@ -355,7 +356,7 @@ pub(crate) async fn eth_approve_message(
 
     let latest_eth_state_arg = pt_builder
         .obj(latest_eth_state_shared_object_arg)
-        .map_err(|e| anyhow!("could not serialize latest_eth_state_id. {e}"))?;
+        .map_err(|e| anyhow!("could not serialize `latest_eth_state_id`: {e}"))?;
 
     pt_builder.programmable_move_call(
         SUI_SYSTEM_PACKAGE_ID,
@@ -386,13 +387,13 @@ pub(crate) async fn eth_approve_message(
     );
 
     let SuiClientCommandResult::Call(state) = verify_state_session_response else {
-        return Err(anyhow!("can't get response."));
+        return Err(anyhow!("can't get response"));
     };
 
     let object_changes = state
         .object_changes
         .clone()
-        .ok_or_else(|| anyhow!("can't get object changes."))?;
+        .ok_or_else(|| anyhow!("can't get object changes"))?;
 
     let verified_state_object_id = get_object_from_transaction_changes(
         object_changes,
@@ -435,7 +436,7 @@ pub(crate) async fn eth_approve_message(
         .map_err(|e| anyhow!("could not fetch proof: {e}"))?;
 
     let proof_sui_json =
-        serialize_object(&proof).map_err(|e| anyhow!("could not serialize proof. {e}"))?;
+        serialize_object(&proof).map_err(|e| anyhow!("could not serialize proof: {e}"))?;
 
     let mut pt_builder = ProgrammableTransactionBuilder::new();
     client
@@ -469,20 +470,19 @@ pub(crate) async fn eth_approve_message(
     Ok(session_response)
 }
 
-fn serialize_object<T>(object: &T) -> Result<SuiJsonValue, Error>
+// todo(zeev): check if we can add a type validation in here.
+fn serialize_object<T>(object: &T) -> Result<SuiJsonValue>
 where
     T: ?Sized + Serialize,
 {
-    let object_bytes = bcs::to_bytes(&object)?;
-    let object_json = object_bytes
+    let object_json = bcs::to_bytes(&object)?
         .iter()
         .map(|v| Value::Number(Number::from(*v)))
         .collect();
-    Ok(SuiJsonValue::new(Value::Array(object_json))?)
+    SuiJsonValue::new(Value::Array(object_json))
 }
 
-fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, Error> {
-    let mut eth_lc_config = EthLightClientConfig::default();
+fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig> {
     let sui_env_config = context.config.get_active_env()?;
 
     let eth_client_settings = sui_env_config
@@ -499,6 +499,7 @@ fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, E
         .clone()
         .ok_or_else(|| anyhow!("ETH consensus RPC configuration not found"))?;
 
+    let mut eth_lc_config = EthLightClientConfig::default();
     eth_lc_config.network = get_network_by_sui_env(sui_env_config)?;
     eth_lc_config.execution_rpc = eth_execution_rpc;
     eth_lc_config.consensus_rpc = eth_consensus_rpc;
@@ -506,7 +507,7 @@ fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig, E
     Ok(eth_lc_config)
 }
 
-fn get_network_by_sui_env(sui_env_config: &SuiEnv) -> Result<Network, Error> {
+fn get_network_by_sui_env(sui_env_config: &SuiEnv) -> Result<Network> {
     let network = match sui_env_config.alias.as_str() {
         "mainnet" => Network::MAINNET,
         "testnet" => Network::HOLESKY,
