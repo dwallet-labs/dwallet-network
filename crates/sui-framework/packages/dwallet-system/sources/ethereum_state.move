@@ -4,7 +4,6 @@
  * and native functions to verify state updates and create initial state data.
 */
 module dwallet_system::ethereum_state {
-    use std::string::String;
     use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
     use dwallet::tx_context::TxContext;
@@ -19,21 +18,25 @@ module dwallet_system::ethereum_state {
 
     /// Latest Ethereum state object.
     /// Holds the ID of the latest Ethereum state object that is verified by the dWallet network.
+    /// This object should have exactly one instance per `network`.
     struct LatestEthereumState has key, store {
         id: UID,
         eth_state_id: ID,
         last_slot: u64,
-        eth_smart_contract_addr: String,
+        eth_smart_contract_addr: vector<u8>,
         eth_smart_contract_slot: u64,
+        network: vector<u8>,
     }
 
     /// Initializes the first Ethereum state with the given checkpoint.
     /// Creates an EthereumState object, shares a LatestEthereumState object pointing to it,
     /// and freezes the EthereumState object.
+    /// NOTE: this function performs no verification on the `checkpoint`, 
+    /// and it serves as an initial "trusted" state which users should verify externally (once) before using.
     public fun init_state(
         checkpoint: vector<u8>,
         network: vector<u8>,
-        eth_smart_contract_addr: String,
+        eth_smart_contract_addr: vector<u8>,
         eth_smart_contract_slot: u64,
         ctx: &mut TxContext
     ) {
@@ -50,19 +53,9 @@ module dwallet_system::ethereum_state {
             last_slot: state.time_slot,
             eth_smart_contract_addr,
             eth_smart_contract_slot,
+            network,
         });
         transfer::freeze_object(state);
-    }
-
-    /// Updates the latest Ethereum state reference if the provided EthereumState object has a newer time slot.
-    public fun update_latest_eth_state(
-        self: &mut LatestEthereumState,
-        eth_state: &EthereumState,
-    ) {
-        if (eth_state.time_slot > self.last_slot) {
-            self.eth_state_id = object::id(eth_state);
-            self.last_slot = eth_state.time_slot;
-        }
     }
 
     /// Verifies the new Ethereum state according to the provided updates, and updates the LatestEthereumState object
