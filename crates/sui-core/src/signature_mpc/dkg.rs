@@ -6,9 +6,8 @@ use crate::signature_mpc::aggregate::{
 };
 use rand::rngs::OsRng;
 use signature_mpc::twopc_mpc_protocols::{
-    initiate_decentralized_party_dkg, Commitment, DecryptionPublicParameters,
-    EncryptionPublicParameters, Error, PartyID, ProtocolContext, Result,
-    SecretKeyShareEncryptionAndProof,
+    initiate_decentralized_party_dkg, Commitment, DecryptionPublicParameters, PartyID,
+    ProtocolContext, Result, SecretKeyShareEncryptionAndProof,
 };
 use std::collections::HashSet;
 use std::mem;
@@ -28,18 +27,16 @@ pub(crate) enum DKGRound {
 impl DKGRound {
     pub(crate) fn new(
         tiresias_public_parameters: DecryptionPublicParameters,
-        epoch: EpochId,
+        _epoch: EpochId,
         party_id: PartyID,
         parties: HashSet<PartyID>,
-        session_id: SignatureMPCSessionID,
+        _session_id: SignatureMPCSessionID,
         commitment_to_centralized_party_secret_key_share: Commitment,
     ) -> Result<(Self, SignatureMPCBulletProofAggregatesMessage)> {
         let encryption_of_secret_key_share_round_party = initiate_decentralized_party_dkg(
             tiresias_public_parameters,
-            //epoch,
             party_id,
             parties.clone(),
-            //session_id,
         )?;
 
         let (encryption_of_secret_key_share_commitment_round_party, _) =

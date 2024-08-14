@@ -760,6 +760,16 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "validate_encrypted_user_secret_share",
             make_native!(twopc_mpc::validate_encrypted_user_secret_share),
         ),
+        (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "verify_signatures_native",
+            make_native!(twopc_mpc::verify_signatures_native),
+        ),
+        (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "convert_signature_to_canonical_form",
+            make_native!(twopc_mpc::convert_signature_to_canonical_form),
+        ),
     ];
     sui_system_natives
         .iter()

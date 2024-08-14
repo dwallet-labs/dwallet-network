@@ -1,7 +1,6 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-
 #[allow(unused_const)]
 module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Note: currently in order to start DKG, Presign and Sign, the Valdators are waiting for an Event.
@@ -13,10 +12,22 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
-
     use dwallet_system::dwallet;
-    use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap, PartialUserSignedMessages, output, dwallet_cap_id,
-        new_dwallet, DWallet,
+
+    use dwallet_system::dwallet::{
+        create_dwallet_cap,
+        create_malicious_aggregator_sign_output,
+        create_sign_output,
+        DWallet,
+        get_dwallet_cap_id,
+        DWalletCap,
+        get_dwallet_public_key,
+        get_messages,
+        get_sign_data,
+        new_dwallet,
+        get_output,
+        PartialUserSignedMessages,
+        SignSession, get_public_key,
     };
 
     #[test_only]
@@ -261,7 +272,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let messages_len: u64 = vector::length(&messages);
         assert!(messages_len > 0, EMesssagesLengthMustBeGreaterThanZero);
         let dwallet_id = object::id(dwallet);
-        let dwallet_cap_id = dwallet_cap_id(dwallet);
+        let dwallet_cap_id = get_dwallet_cap_id(dwallet);
         let sender = tx_context::sender(ctx);
 
         let session = PresignSession {
@@ -278,7 +289,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             hash,
-            dkg_output: output(dwallet),
+            dkg_output: get_output(dwallet),
             commitments_and_proof_to_centralized_party_nonce_shares,
             messages,
             sender,
@@ -350,7 +361,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
         let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
             session.messages,
-            output(dwallet),
+            get_output(dwallet),
             public_nonce_encrypted_partial_signature_and_proofs,
             presign.presigns,
             session.hash
@@ -391,7 +402,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let sign_data_event = NewSignDataEvent {
             presign_session_id: session_id,
             hash: session.hash,
-            dkg_output: output(dwallet),
+            dkg_output: get_output(dwallet),
             public_nonce_encrypted_partial_signature_and_proofs,
             presigns,
         };
@@ -400,11 +411,61 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             session.messages,
+            get_public_key(dwallet),
             sign_data,
             sign_data_event,
             ctx
         )
     }
+
+
+    #[allow(unused_function)]
+    /// This function is called by blockchain itself.
+    /// Validators call it, it's part of the blockchain logic.
+    /// NOT a native function.
+    fun verify_and_create_sign_output(
+        session: &SignSession<SignData>,
+        signatures: vector<vector<u8>>,
+        aggregator_public_key: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+        if (verify_signatures_native(
+            get_messages(session),
+            signatures,
+            get_sign_data(session).hash,
+            get_dwallet_public_key(session),
+        )) {
+            create_sign_output(session, convert_signatures_to_canonical_form(signatures), ctx);
+        } else {
+            create_malicious_aggregator_sign_output(aggregator_public_key, session, signatures, ctx);
+        }
+    }
+
+    /// The "cannoical form" is the serialized signature using the standard `ecdsa` crate.
+    /// The form of `sigs` is the one used in the `2pc-mpc` crate.
+    fun convert_signatures_to_canonical_form(sigs: vector<vector<u8>>): vector<vector<u8>> {
+        vector::reverse(&mut sigs);
+        let i = 0;
+        let sigs_length = vector::length(&sigs);
+        let parsed_sigs: vector<vector<u8>> = vector[];
+        // Using this hacky way to map because Move vector tooling is limited.
+        while (i < sigs_length) {
+            vector::push_back(&mut parsed_sigs, convert_signature_to_canonical_form(vector::pop_back(&mut sigs)));
+            i = i + 1;
+        };
+        parsed_sigs
+    }
+
+    native fun convert_signature_to_canonical_form(signature: vector<u8>): vector<u8>;
+
+    /// Verifies the ECDSA signatures.
+    native fun verify_signatures_native(
+        messages: vector<vector<u8>>,
+        sigs: vector<vector<u8>>,
+        hash: u8,
+        dwallet_public_key: vector<u8>,
+    ): bool;
 
     #[test_only]
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
