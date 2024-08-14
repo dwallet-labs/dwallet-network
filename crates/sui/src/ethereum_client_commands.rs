@@ -6,39 +6,39 @@
 //! connecting dWallets to Ethereum smart contracts, and initializing Ethereum state.
 use anyhow::{anyhow, Error};
 use clap::Subcommand;
-use helios::consensus::nimbus_rpc::NimbusRpc;
 use helios::consensus::ConsensusStateManager;
+use helios::consensus::nimbus_rpc::NimbusRpc;
 use helios::dwallet::light_client::{
     EthLightClientConfig, EthLightClientWrapper, ProofRequestParameters,
 };
-use helios::prelude::networks::Network;
 use helios::prelude::Address;
+use helios::prelude::networks::Network;
 use hex::encode;
+use serde::{Deserialize, Serialize};
+use serde_json::{Number, Value};
+
 use light_client_helpers::{
     get_object_bcs_by_id, get_object_from_transaction_changes, get_shared_object_input_by_id,
 };
-
-use serde::{Deserialize, Serialize};
-use serde_json::{Number, Value};
 use shared_crypto::intent::Intent;
 use sui_json::SuiJsonValue;
-use sui_json_rpc_types::SuiData;
 #[allow(unused_imports)]
 // SuiTransactionBlockEffectsAPI is called in a macro; therefore, the IDE doesn't recognize it.
 use sui_json_rpc_types::{ObjectChange, SuiExecutionStatus, SuiTransactionBlockEffectsAPI};
+use sui_json_rpc_types::SuiData;
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::sui_client_config::SuiEnv;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::eth_dwallet::{
-    EthereumDWalletCap, EthereumStateObject, LatestEthereumStateObject, APPROVE_MESSAGE_FUNC_NAME,
-    CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME,
-    ETH_STATE_STRUCT_NAME, INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME,
+    APPROVE_MESSAGE_FUNC_NAME, CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETH_DWALLET_MODULE_NAME, ETH_STATE_STRUCT_NAME,
+    ETHEREUM_STATE_MODULE_NAME, EthereumDWalletCap, EthereumStateObject,
+    INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME, LatestEthereumStateObject,
     VERIFY_ETH_STATE_FUNC_NAME,
 };
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{ObjectArg, SenderSignedData, Transaction, TransactionDataAPI};
 use sui_types::SUI_SYSTEM_PACKAGE_ID;
+use sui_types::transaction::{ObjectArg, SenderSignedData, Transaction, TransactionDataAPI};
 
 use crate::client_commands::{construct_move_call_transaction, SuiClientCommandResult};
 use crate::serialize_or_execute;
@@ -133,37 +133,6 @@ pub enum EthClientCommands {
     },
 }
 
-/// Connects a dWallet to be controlled by an Ethereum smart contract.
-pub(crate) async fn create_eth_dwallet(
-    context: &mut WalletContext,
-    dwallet_cap_id: ObjectID,
-    gas: Option<ObjectID>,
-    gas_budget: u64,
-    serialize_unsigned_transaction: bool,
-    serialize_signed_transaction: bool,
-) -> Result<SuiClientCommandResult, anyhow::Error> {
-    let args = vec![SuiJsonValue::from_object_id(dwallet_cap_id)];
-
-    let tx_data = construct_move_call_transaction(
-        SUI_SYSTEM_PACKAGE_ID,
-        ETH_DWALLET_MODULE_NAME.as_str(),
-        CREATE_ETH_DWALLET_CAP_FUNC_NAME.as_str(),
-        vec![],
-        gas,
-        gas_budget,
-        args,
-        context,
-    )
-    .await?;
-    Ok(serialize_or_execute!(
-        tx_data,
-        serialize_unsigned_transaction,
-        serialize_signed_transaction,
-        context,
-        Call
-    ))
-}
-
 /// Initializes a shared LatestEthereumState object in the dWallet network
 /// with the given checkpoint.
 /// This function should only be called once to initialize the Ethereum state.
@@ -197,7 +166,7 @@ pub(crate) async fn init_ethereum_state(
         args,
         context,
     )
-    .await?;
+        .await?;
 
     let latest_state = serialize_or_execute!(
         tx_data,
@@ -230,6 +199,38 @@ pub(crate) async fn init_ethereum_state(
     Ok(SuiClientCommandResult::Call(state))
 }
 
+/// Connects a dWallet to be controlled by an Ethereum smart contract.
+pub(crate) async fn create_eth_dwallet(
+    context: &mut WalletContext,
+    dwallet_cap_id: ObjectID,
+    gas: Option<ObjectID>,
+    gas_budget: u64,
+    serialize_unsigned_transaction: bool,
+    serialize_signed_transaction: bool,
+) -> Result<SuiClientCommandResult, anyhow::Error> {
+    let args = vec![SuiJsonValue::from_object_id(dwallet_cap_id)];
+
+    let tx_data = construct_move_call_transaction(
+        SUI_SYSTEM_PACKAGE_ID,
+        ETH_DWALLET_MODULE_NAME.as_str(),
+        CREATE_ETH_DWALLET_CAP_FUNC_NAME.as_str(),
+        vec![],
+        gas,
+        gas_budget,
+        args,
+        context,
+    )
+        .await?;
+    Ok(serialize_or_execute!(
+        tx_data,
+        serialize_unsigned_transaction,
+        serialize_signed_transaction,
+        context,
+        Call
+    ))
+}
+
+
 /// Approves an Ethereum transaction for a given dWallet.
 ///
 /// Interacts with the Ethereum light client to verify and approve a transaction message
@@ -243,7 +244,7 @@ pub(crate) async fn init_ethereum_state(
 /// 3. **Initialize Light Client**: Initializes the Ethereum light client with the deserialized
 ///      Ethereum state.
 /// 4. **Prepare Proof Parameters**: Constructs proof request parameters using the message,
-///      dWallet ID, and data slot obtained from the `EthereumDWalletCap`.
+///      dWallet ID, and data slot get from the `EthereumDWalletCap`.
 /// 5. **Fetch Updates and Proofs**: Retrieves the necessary updates and cryptographic proofs from
 ///      the Ethereum light client.
 /// 6. **Build Transaction**: Uses the Sui programmable transaction builder to serialize transaction
@@ -253,12 +254,12 @@ pub(crate) async fn init_ethereum_state(
 /// 7. **Send Transaction**: Constructs the transaction data, including the proof and dWallet ID,
 ///      and executes or serializes it based on the provided flags.
 /// # Arguments
-/// * `eth_dwallet_cap_id` - The `ObjectID` of the Ethereum dWallet capability,
+/// * `eth_dwallet_cap_id` – The `ObjectID` of the Ethereum dWallet capability,
 ///     representing the link between the dWallet and Ethereum.
-/// * `message` - The Ethereum transaction message to be approved.
-/// * `dwallet_id` - The `ObjectID` of the dWallet to which the transaction belongs.
+/// * `message` – The Ethereum transaction message to be approved.
+/// * `dwallet_id` – The `ObjectID` of the dWallet to which the transaction belongs.
 /// # Returns
-/// * `Result<SuiClientCommandResult, Error>` -
+/// * `Result<SuiClientCommandResult, Error>` –
 /// Result containing either the transaction execution result or an error.
 /// # Errors
 /// The function returns an error if any of the following occur:
