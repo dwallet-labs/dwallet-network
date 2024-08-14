@@ -18,6 +18,7 @@ module dwallet_system::ethereum_state {
 
     /// Latest Ethereum state object.
     /// Holds the ID of the latest Ethereum state object that is verified by the dWallet network.
+    /// This object should have exactly one instance per `network`.
     struct LatestEthereumState has key, store {
         id: UID,
         eth_state_id: ID,
@@ -30,6 +31,8 @@ module dwallet_system::ethereum_state {
     /// Initializes the first Ethereum state with the given checkpoint.
     /// Creates an EthereumState object, shares a LatestEthereumState object pointing to it,
     /// and freezes the EthereumState object.
+    /// NOTE: this function performs no verification on the `checkpoint`, 
+    /// and it serves as an initial "trusted" state which users should verify externally (once) before using.
     public fun init_state(
         checkpoint: vector<u8>,
         network: vector<u8>,
