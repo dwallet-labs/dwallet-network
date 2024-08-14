@@ -117,7 +117,7 @@ describe('Test key share transfer', () => {
 		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
 		let parsed_output = DKGOutput.parse(new Uint8Array(dwallet?.dkgOutput));
 		// Before running this test, you need to create a dwallet and out its object ID and secret share here.
-		const dwalletID = '<DWALLET_OBJECT_ID>';
+		const dwalletID = dwallet?.dwalletId!;
 
 		let parsedSecretKeyshare = new Uint8Array(parsed_output.secret_key_share);
 
