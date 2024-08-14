@@ -382,7 +382,7 @@ module dwallet_system::dwallet {
         encryption_key_id
     }
 
-    struct EncryptionKeysHolder has key {
+    struct ActiveEncryptionKeys has key {
         id: UID,
         encryption_keys: Table<address, ID>,
     }
@@ -392,15 +392,15 @@ module dwallet_system::dwallet {
     // }
 
     public fun create_encryption_keys_holder(ctx: &mut TxContext) {
-        let holder = EncryptionKeysHolder {
+        let holder = ActiveEncryptionKeys {
             id: object::new(ctx),
             encryption_keys: table::new(ctx),
         };
         transfer::share_object(holder);
     }
 
-    public fun set_primary_encryption_key(
-        encryption_key_holder: &mut EncryptionKeysHolder,
+    public fun set_active_encryption_key(
+        encryption_key_holder: &mut ActiveEncryptionKeys,
         encryption_key: &EncryptionKey,
         _ctx: &mut TxContext
     ) {
@@ -414,16 +414,16 @@ module dwallet_system::dwallet {
         );
     }
 
-    public fun encrypt_user_share_with_primary(
-        dwallet: &DWallet,
-        encrypted_secret_share_and_proof: vector<u8>,
-        encryption_key_holder: &EncryptionKeysHolder,
-        key_owner: address,
-        ctx: &mut TxContext,
-    ): &ID {
-        let encryption_key = table::borrow(&encryption_key_holder.encryption_keys, key_owner);
-        encrypt_user_share(dwallet, encryption_key, encrypted_secret_share_and_proof, ctx)
-    }
+    // public fun encrypt_user_share_with_primary(
+    //     dwallet: &DWallet,
+    //     encrypted_secret_share_and_proof: vector<u8>,
+    //     encryption_key_holder: &ActiveEncryptionKeys,
+    //     key_owner: address,
+    //     ctx: &mut TxContext,
+    // ): &ID {
+    //     let encryption_key = table::borrow(&encryption_key_holder.encryption_keys, key_owner);
+    //     encrypt_user_share(dwallet, encryption_key, encrypted_secret_share_and_proof, ctx)
+    // }
 
     public fun encrypt_user_share(
         dwallet: &DWallet,

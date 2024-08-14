@@ -11,7 +11,7 @@ import {
 	decrypt_user_share,
 	EncryptionKeyScheme,
 	generate_keypair,
-	generate_proof,
+	generate_proof, getEncryptionActiveKey,
 	getEncryptionKeyByObjectId,
 	setDwalletPrimaryEncryptionKey,
 	storeEncryptionKey,
@@ -91,12 +91,9 @@ describe('Create public key', () => {
 		console.log({ pubKeyRef });
 
 		const encryptionKeysHolder = await createEncryptionKeysHolder(toolbox.client, toolbox.keypair);
-
 		await setDwalletPrimaryEncryptionKey(
 			toolbox.client,
 			toolbox.keypair,
-			dkg?.dwalletId!,
-			dkg?.dwalletCapId!,
 			pubKeyRef?.objectId!,
 			encryptionKeysHolder.objectId,
 		);

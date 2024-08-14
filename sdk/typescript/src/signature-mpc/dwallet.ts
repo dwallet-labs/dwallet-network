@@ -129,11 +129,10 @@ export const setDwalletPrimaryEncryptionKey = async (
 	const tx = new TransactionBlock();
 	const EncKeyObj = tx.object(encryptionKeyObjID);
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
-	const keyOwner = tx.pure(keypair.toSuiAddress());
 
 	tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::set_primary_encryption_key`,
-		arguments: [encryptionKeysHolder, keyOwner, EncKeyObj],
+		target: `${packageId}::${dWalletModuleName}::set_active_encryption_key`,
+		arguments: [encryptionKeysHolder, EncKeyObj],
 	});
 
 	return await client.signAndExecuteTransactionBlock({
