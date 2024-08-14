@@ -62,17 +62,15 @@ impl SuiClientConfig {
         self.get_env_mut(&active_env).ok_or_else(|| {
             anyhow!(
                 "Environment configuration wasn't found for the environment: [{}]",
-                active_env.as_deref().unwrap_or("None")
+                active_env.unwrap_or("None".to_string())
             )
         })
     }
 
     fn get_env_mut(&mut self, alias: &Option<String>) -> Option<&mut SuiEnv> {
-        let envs = &mut self.envs;
         alias
             .as_ref()
-            .and_then(|alias| envs.iter_mut().find(|env| &env.alias == alias))
-            .or_else(|| None)
+            .and_then(|alias| self.envs.iter_mut().find(|env| &env.alias == alias))
     }
 
     pub fn update_ethereum_state_object_id(
