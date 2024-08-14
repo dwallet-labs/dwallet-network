@@ -119,10 +119,8 @@ describe('Test key share transfer', () => {
 		// Before running this test, you need to create a dwallet and out its object ID and secret share here.
 		const dwalletID = dwallet?.dwalletId!;
 
-		const encryptedUserShareAndProof = generate_proof(
-			dwallet?.secret_key_share!,
-			recipientData?.encryptionKey!,
-		);
+		let secretShare = new Uint8Array(dwallet?.secretKeyShare!);
+		const encryptedUserShareAndProof = generate_proof(secretShare, recipientData?.encryptionKey!);
 
 		await transferDwallet(
 			toolbox.client,
@@ -138,6 +136,6 @@ describe('Test key share transfer', () => {
 			encryptedUserShareAndProof,
 		);
 
-		expect(decryptedKeyshare).toEqual(dwallet?.secret_key_share!);
+		expect(decryptedKeyshare).toEqual(secretShare);
 	});
 });
