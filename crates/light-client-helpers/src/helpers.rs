@@ -8,6 +8,7 @@ use sui_types::base_types::ObjectID;
 use sui_types::object::Owner;
 use sui_types::transaction::SharedInputObject;
 
+/// Get a bcs serialized object by its ID.
 pub async fn get_object_bcs_by_id(
     context: &mut WalletContext,
     object_id: ObjectID,
@@ -26,6 +27,13 @@ pub async fn get_object_bcs_by_id(
         .ok_or_else(|| anyhow!("could not find an object with ID: {:?}", object_id))
 }
 
+/// Retrieves a shared object by its ID for use as an input to a transaction.
+///
+/// This function is used when you need to send a shared object as an input to a transaction.
+/// It retrieves the object and checks if it is shared, then returns the `initial_shared_version`
+/// of the object.
+/// The `initial_shared_version` refers to the version of the object when it was
+/// first shared.
 pub async fn get_shared_object_input_by_id(
     context: &mut WalletContext,
     object_id: ObjectID,
