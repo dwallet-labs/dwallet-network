@@ -178,41 +178,48 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
     public fun test_verify_and_create_sign_output_not_system_address() {
         let (sender, scenario) = set_up();
         test_scenario::next_tx(&mut scenario, sender);
-        let ctx = test_scenario::ctx(&mut scenario);
-        let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
-        create_mock_sign_session(vector::empty(), vector::empty(), sign_data, ctx);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
+            create_mock_sign_session(vector::empty(), vector::empty(), sign_data, ctx);
+        };
         test_scenario::next_tx(&mut scenario, SENDER_ADDRESS);
-        let sign_session = test_scenario::take_immutable<SignSession<SignData>>(&scenario);
-        let ctx = test_scenario::ctx(&mut scenario);
-        verify_and_create_sign_output_for_testing(&sign_session, vector::empty(), vector::empty(), ctx);
-        test_scenario::next_tx(&mut scenario, sender);
-        test_utils::destroy(sign_session);
+        {
+            let sign_session = test_scenario::take_immutable<SignSession<SignData>>(&scenario);
+            let ctx = test_scenario::ctx(&mut scenario);
+            verify_and_create_sign_output_for_testing(&sign_session, vector::empty(), vector::empty(), ctx);
+            test_utils::destroy(sign_session);
+        };
         test_scenario::end(scenario);
     }
 
     #[test]
-    public fun test_verify_and_create_sign_output_happy_path() {
+    public fun test_verify_and_create_sign_output_successful() {
         let (sender, scenario) = set_up();
         test_scenario::next_tx(&mut scenario, sender);
-        // A dwallet public key, a message, and a valid signature that been signed by the dwallet private key.
-        let golden_messages = vector[vector[83, 105, 103, 110, 32, 105, 116, 33, 33, 33]];
-        let golden_signatures: vector<vector<u8>> = vector[vector[178, 76, 60, 199, 138, 181, 166, 18, 64, 0, 90, 61, 129, 125, 56, 156, 110, 221, 178, 74, 4, 144, 219, 66, 255, 197, 231, 190, 173, 59, 189, 209, 32, 69, 113, 111, 25, 139, 175, 185, 40, 37, 80, 8, 196, 237, 91, 1, 114, 129, 81, 173, 65, 100, 180, 222, 48, 143, 227, 252, 194, 174, 68, 170]];
-        let golden_dwallet_public_key = vector[3, 254, 2, 228, 100, 194, 223, 2, 105, 140, 230, 159, 139, 227, 58, 68, 131, 176, 138, 177, 8, 245, 230, 127, 210, 9, 143, 227, 255, 126, 131, 90, 236];
+        {
+            // A dwallet public key, a message, and a valid signature that been signed by the dwallet private key.
+            let messages = vector[vector[83, 105, 103, 110, 32, 105, 116, 33, 33, 33]];
+            let dwallet_public_key = vector[3, 254, 2, 228, 100, 194, 223, 2, 105, 140, 230, 159, 139, 227, 58, 68, 131, 176, 138, 177, 8, 245, 230, 127, 210, 9, 143, 227, 255, 126, 131, 90, 236];
 
-        let ctx = test_scenario::ctx(&mut scenario);
-        let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
-        create_mock_sign_session(golden_messages, golden_dwallet_public_key, sign_data, ctx);
+            let ctx = test_scenario::ctx(&mut scenario);
+            let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
+            create_mock_sign_session(messages, dwallet_public_key, sign_data, ctx);
+        };
         test_scenario::next_tx(&mut scenario, SYSTEM_ADDRESS);
-        let sign_session = test_scenario::take_immutable<SignSession<SignData>>(&scenario);
-        let ctx = test_scenario::ctx(&mut scenario);
-        verify_and_create_sign_output_for_testing(&sign_session, golden_signatures, vector::empty(), ctx);
-        let effects = test_scenario::next_tx(&mut scenario, SYSTEM_ADDRESS);
-        assert!(test_scenario::has_most_recent_immutable<SignOutput>(), EWrongCreatedObject);
-        let created_objects = test_scenario::created(&effects);
-        assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
-        let events_num = test_scenario::num_user_events(&effects);
-        assert!(events_num == 1, EWrongEventNumber);
-        test_utils::destroy(sign_session);
+        {
+            let signatures: vector<vector<u8>> = vector[vector[178, 76, 60, 199, 138, 181, 166, 18, 64, 0, 90, 61, 129, 125, 56, 156, 110, 221, 178, 74, 4, 144, 219, 66, 255, 197, 231, 190, 173, 59, 189, 209, 32, 69, 113, 111, 25, 139, 175, 185, 40, 37, 80, 8, 196, 237, 91, 1, 114, 129, 81, 173, 65, 100, 180, 222, 48, 143, 227, 252, 194, 174, 68, 170]];
+            let sign_session = test_scenario::take_immutable<SignSession<SignData>>(&scenario);
+            let ctx = test_scenario::ctx(&mut scenario);
+            verify_and_create_sign_output_for_testing(&sign_session, signatures, vector::empty(), ctx);
+            let effects = test_scenario::next_tx(&mut scenario, SYSTEM_ADDRESS);
+            assert!(test_scenario::has_most_recent_immutable<SignOutput>(), EWrongCreatedObject);
+            let created_objects = test_scenario::created(&effects);
+            assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+            let events_num = test_scenario::num_user_events(&effects);
+            assert!(events_num == 1, EWrongEventNumber);
+            test_utils::destroy(sign_session);
+        };
         test_scenario::end(scenario);
     }
 
@@ -220,25 +227,29 @@ module dwallet_system::dwallet_ecdsa_k1_tests {
     public fun test_verify_and_create_sign_output_malicious_path() {
         let (sender, scenario) = set_up();
         test_scenario::next_tx(&mut scenario, sender);
-        // A dwallet public key, a message, and an invalid signature that has not been signed by the dwallet private key.
-        let golden_messages = vector[vector[83, 105, 103, 110, 32, 105, 116, 33, 33, 33]];
-        let golden_signatures: vector<vector<u8>> = vector[vector[178, 76, 60, 199, 138, 181, 166, 18, 64, 0, 90, 61, 129, 125, 56, 156, 110, 221, 178, 74, 4, 144, 219, 66, 255, 197, 231, 190, 173, 59, 189, 209, 32, 69, 113, 111, 25, 139, 175, 185, 40, 37, 80, 8, 196, 237, 91, 1, 114, 129, 81, 173, 65, 100, 180, 222, 48, 143, 227, 252, 194, 174, 68, 170]];
-        let golden_dwallet_public_key = vector[5, 254, 2, 228, 100, 194, 223, 2, 105, 140, 230, 159, 139, 227, 58, 68, 131, 176, 138, 177, 8, 245, 230, 127, 210, 9, 143, 227, 255, 126, 131, 90, 236];
+        {
+            // A dwallet public key, a message, and an invalid signature that has not been signed by the dwallet private key.
+            let messages = vector[vector[83, 105, 103, 110, 32, 105, 116, 33, 33, 33]];
+            let dwallet_public_key = vector[5, 254, 2, 228, 100, 194, 223, 2, 105, 140, 230, 159, 139, 227, 58, 68, 131, 176, 138, 177, 8, 245, 230, 127, 210, 9, 143, 227, 255, 126, 131, 90, 236];
 
-        let ctx = test_scenario::ctx(&mut scenario);
-        let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
-        create_mock_sign_session(golden_messages, golden_dwallet_public_key, sign_data, ctx);
+            let ctx = test_scenario::ctx(&mut scenario);
+            let sign_data = create_mock_sign_data(object::id_from_address(@0xA));
+            create_mock_sign_session(messages, dwallet_public_key, sign_data, ctx);
+        };
         test_scenario::next_tx(&mut scenario, SYSTEM_ADDRESS);
-        let sign_session = test_scenario::take_immutable<SignSession<SignData>>(&scenario);
-        let ctx = test_scenario::ctx(&mut scenario);
-        verify_and_create_sign_output_for_testing(&sign_session, golden_signatures, vector::empty(), ctx);
-        let effects = test_scenario::next_tx(&mut scenario, SYSTEM_ADDRESS);
-        assert!(test_scenario::has_most_recent_immutable<MaliciousAggregatorSignOutput>(), EWrongCreatedObject);
-        let created_objects = test_scenario::created(&effects);
-        assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
-        let events_num = test_scenario::num_user_events(&effects);
-        assert!(events_num == 1, EWrongEventNumber);
-        test_utils::destroy(sign_session);
+        {
+            let malicious_signatures: vector<vector<u8>> = vector[vector[178, 76, 60, 199, 138, 181, 166, 18, 64, 0, 90, 61, 129, 125, 56, 156, 110, 221, 178, 74, 4, 144, 219, 66, 255, 197, 231, 190, 173, 59, 189, 209, 32, 69, 113, 111, 25, 139, 175, 185, 40, 37, 80, 8, 196, 237, 91, 1, 114, 129, 81, 173, 65, 100, 180, 222, 48, 143, 227, 252, 194, 174, 68, 170]];
+            let sign_session = test_scenario::take_immutable<SignSession<SignData>>(&scenario);
+            let ctx = test_scenario::ctx(&mut scenario);
+            verify_and_create_sign_output_for_testing(&sign_session, malicious_signatures, vector::empty(), ctx);
+            let effects = test_scenario::next_tx(&mut scenario, SYSTEM_ADDRESS);
+            assert!(test_scenario::has_most_recent_immutable<MaliciousAggregatorSignOutput>(), EWrongCreatedObject);
+            let created_objects = test_scenario::created(&effects);
+            assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+            let events_num = test_scenario::num_user_events(&effects);
+            assert!(events_num == 1, EWrongEventNumber);
+            test_utils::destroy(sign_session);
+        };
         test_scenario::end(scenario);
     }
 }
