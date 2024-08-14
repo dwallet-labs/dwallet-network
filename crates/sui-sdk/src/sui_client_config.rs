@@ -7,10 +7,11 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 use sui_config::Config;
 use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
+
+use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -50,10 +51,42 @@ impl SuiClientConfig {
     pub fn get_active_env(&self) -> Result<&SuiEnv, anyhow::Error> {
         self.get_env(&self.active_env).ok_or_else(|| {
             anyhow!(
-                "Environment configuration not found for env [{}]",
+                "Environment configuration wasn't found for the environment: [{}]",
                 self.active_env.as_deref().unwrap_or("None")
             )
         })
+    }
+
+    fn get_active_env_mut(&mut self) -> Result<&mut SuiEnv, anyhow::Error> {
+        self.get_env_mut(&self.active_env).ok_or_else(|| {
+            anyhow!(
+                "Environment configuration wasn't found for the environment: [{}]",
+                self.active_env.as_deref().unwrap_or("None")
+            )
+        })
+    }
+
+    fn get_env_mut(&mut self, alias: &Option<String>) -> Option<&mut SuiEnv> {
+        alias
+            .as_ref()
+            .and_then(|alias| self.envs.iter_mut().find(|env| &env.alias == alias))
+            .or_else(|| self.envs.first_mut())
+    }
+
+    pub fn update_ethereum_state_object_id(
+        &mut self,
+        object_id: ObjectID,
+    ) -> Result<(), anyhow::Error> {
+        let env = self.get_active_env_mut()?;
+        env.eth_client_settings
+            .as_mut()
+            .map(|config| config.state_object_id = Some(object_id))
+            .ok_or_else(|| {
+                anyhow!(
+                    "no Ethereum State object ID found for active environment: [{}]",
+                    env.alias
+                )
+            })
     }
 
     pub fn add_env(&mut self, env: SuiEnv) {

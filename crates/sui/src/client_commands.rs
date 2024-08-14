@@ -68,7 +68,7 @@ use tabled::{
 };
 use tracing::info;
 
-use crate::ethereum_client_commands::{create_eth_dwallet, EthClientCommands};
+use crate::ethereum_client_commands::{create_eth_dwallet, init_ethereum_state, EthClientCommands};
 use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::sui_commands::SuiCommand;
 
@@ -1393,8 +1393,8 @@ impl SuiClientCommands {
                 }
                 EthClientCommands::CreateEthDwallet {
                     dwallet_cap_id,
-                    smart_contract_address,
-                    smart_contract_approved_tx_slot,
+                    contract_address,
+                    contract_approved_tx_slot,
                     gas,
                     gas_budget,
                     serialize_unsigned_transaction,
@@ -1403,8 +1403,8 @@ impl SuiClientCommands {
                     create_eth_dwallet(
                         context,
                         dwallet_cap_id,
-                        smart_contract_address,
-                        smart_contract_approved_tx_slot,
+                        contract_address,
+                        contract_approved_tx_slot,
                         gas,
                         gas_budget,
                         serialize_unsigned_transaction,
@@ -1412,8 +1412,24 @@ impl SuiClientCommands {
                     )
                     .await?
                 }
-                EthClientCommands::InitEthState { .. } => {
-                    todo!()
+                EthClientCommands::InitEthState {
+                    checkpoint,
+                    network,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                } => {
+                    init_ethereum_state(
+                        checkpoint,
+                        network,
+                        context,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    )
+                    .await?
                 }
             },
         });
