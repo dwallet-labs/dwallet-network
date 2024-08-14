@@ -447,11 +447,13 @@ module dwallet_system::dwallet {
         scheme == Paillier // || scheme == ...
     }
 
+    /// Register an encryption key to encrypt a user share.
+    /// The key is saved as an immutable object.
     public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         let encryption_key = EncryptionKey {
             id: object::new(ctx),
-            scheme: scheme,
+            scheme,
             encryption_key: key,
             key_owner_address: tx_context::sender(ctx),
         };
@@ -460,6 +462,7 @@ module dwallet_system::dwallet {
         encryption_key_id
     }
 
+    /// Encrypt a user share with an AHE encryption key.
     public fun encrypt_user_share(
         dwallet: &DWallet,
         encryption_key: &EncryptionKey,

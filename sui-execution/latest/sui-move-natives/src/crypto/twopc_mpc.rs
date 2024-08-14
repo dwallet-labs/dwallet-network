@@ -18,31 +18,31 @@ use move_vm_types::{
 use smallvec::smallvec;
 
 use signature_mpc::twopc_mpc_protocols;
-use signature_mpc::twopc_mpc_protocols::{
-    affine_point_to_public_key,
-    Commitment,
-    decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share, decentralized_party_sign_verify_encrypted_signature_parts_prehash,
-    DecentralizedPartyPresign, DKGDecentralizedPartyOutput, Hash, ProtocolContext,
-    PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof,
-    SecretKeyShareEncryptionAndProof,
-};
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
     get_encryption_of_discrete_log_public_parameters, verify_proof,
 };
+use signature_mpc::twopc_mpc_protocols::{
+    affine_point_to_public_key,
+    decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share,
+    decentralized_party_sign_verify_encrypted_signature_parts_prehash, Commitment,
+    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, Hash, ProtocolContext,
+    PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof,
+    SecretKeyShareEncryptionAndProof,
+};
 
-use crate::NativesCostTable;
 use crate::object_runtime::ObjectRuntime;
+use crate::NativesCostTable;
 
 pub const INVALID_INPUT: u64 = 0;
 
 #[derive(Clone)]
 pub struct TwoPCMPCDKGCostParams {
     /// Base cost
-    /// for invoking the `dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share`
+    /// for invoking the [`dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share`]
     /// function.
     pub dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base:
         InternalGas,
-    /// Base cost for invoking the [`sign_verify_encrypted_signature_parts_prehash`] function
+    /// Base cost for invoking the [`sign_verify_encrypted_signature_parts_prehash`] function.
     pub sign_verify_encrypted_signature_parts_prehash_cost_base: InternalGas,
 }
 
@@ -80,14 +80,15 @@ pub fn validate_encrypted_user_secret_share(
     let public_encryption_key = pop_arg!(args, Vector);
     let public_encryption_key = public_encryption_key.to_vec_u8()?;
 
-    let encrypted_secret_share_and_proof =
-        bcs::from_bytes(&encrypted_secret_share_and_proof).unwrap();
-    let language_public_parameters = get_encryption_of_discrete_log_public_parameters(
-        public_encryption_key.clone(),
-    )
-    .map_err(|e| {
-        PartialVMError::new(INVALID_PARAM_TYPE_FOR_DESERIALIZATION).with_message(e.to_string())
-    })?;
+    let Ok(encrypted_secret_share_and_proof) = bcs::from_bytes(&encrypted_secret_share_and_proof)
+    else {
+        return Ok(NativeResult::err(cost, INVALID_INPUT));
+    };
+    let Ok(language_public_parameters) =
+        get_encryption_of_discrete_log_public_parameters(public_encryption_key.clone())
+    else {
+        return Ok(NativeResult::err(cost, INVALID_INPUT));
+    };
 
     let is_valid_proof = verify_proof(
         language_public_parameters,
@@ -190,7 +191,7 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
 /***************************************************************************************************
  * native fun sign_verify_encrypted_signature_parts_prehash
  * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::sign_verify_encrypted_signature_parts_prehash(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
- *   gas cost: sign_verify_encrypted_signature_parts_prehash_cost_base   | base cost for function call and fixed opers.
+ *   gas cost: sign_verify_encrypted_signature_parts_prehash_cost_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
 pub fn sign_verify_encrypted_signature_parts_prehash(
     context: &mut NativeContext,
