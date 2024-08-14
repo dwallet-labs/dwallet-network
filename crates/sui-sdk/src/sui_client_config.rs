@@ -7,10 +7,11 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 use sui_config::Config;
 use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
+
+use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -50,48 +51,44 @@ impl SuiClientConfig {
     pub fn get_active_env(&self) -> Result<&SuiEnv, anyhow::Error> {
         self.get_env(&self.active_env).ok_or_else(|| {
             anyhow!(
-                "Environment configuration not found for env [{}]",
+                "Environment configuration wasn't found for the environment: [{}]",
                 self.active_env.as_deref().unwrap_or("None")
             )
         })
     }
 
-    pub fn get_active_env_mut(&mut self) -> Result<&mut SuiEnv, anyhow::Error> {
+    fn get_active_env_mut(&mut self) -> Result<&mut SuiEnv, anyhow::Error> {
         let active_env = self.active_env.clone();
-        match self.get_env_mut(&active_env) {
-            None => Err(anyhow!(
-                "Environment configuration not found for env [{}]",
+        self.get_env_mut(&active_env).ok_or_else(|| {
+            anyhow!(
+                "Environment configuration wasn't found for the environment: [{}]",
                 active_env.as_deref().unwrap_or("None")
-            )),
-            Some(env) => Ok(env),
-        }
+            )
+        })
     }
 
-    pub fn get_env_mut(&mut self, alias: &Option<String>) -> Option<&mut SuiEnv> {
-        if let Some(alias) = alias {
-            self.envs.iter_mut().find(|env| &env.alias == alias)
-        } else {
-            self.envs.first_mut()
-        }
+    fn get_env_mut(&mut self, alias: &Option<String>) -> Option<&mut SuiEnv> {
+        let envs = &mut self.envs;
+        alias
+            .as_ref()
+            .and_then(|alias| envs.iter_mut().find(|env| &env.alias == alias))
+            .or_else(|| None)
     }
 
     pub fn update_ethereum_state_object_id(
         &mut self,
         object_id: ObjectID,
     ) -> Result<(), anyhow::Error> {
-        if let Some(env) = self.get_active_env_mut().ok() {
-            let eth_config = env.eth_client_settings.as_mut();
-            if let Some(config) = eth_config {
-                Ok(config.state_object_id = Some(object_id))
-            } else {
-                Err(anyhow!(
-                    "no Ethereum State object ID found for active environment `{}`",
+        let env = self.get_active_env_mut()?;
+        env.eth_client_settings
+            .as_mut()
+            .map(|config| config.state_object_id = Some(object_id))
+            .ok_or_else(|| {
+                anyhow!(
+                    "no Ethereum State object ID found for active environment: [{}]",
                     env.alias
-                ))
-            }
-        } else {
-            Err(anyhow!("no active environment found"))
-        }
+                )
+            })
     }
 
     pub fn add_env(&mut self, env: SuiEnv) {
