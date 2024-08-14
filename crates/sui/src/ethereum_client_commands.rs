@@ -6,13 +6,13 @@
 //! connecting dWallets to Ethereum smart contracts, and initializing Ethereum state.
 use anyhow::{anyhow, Result};
 use clap::Subcommand;
-use helios::consensus::ConsensusStateManager;
 use helios::consensus::nimbus_rpc::NimbusRpc;
+use helios::consensus::ConsensusStateManager;
 use helios::dwallet::light_client::{
     EthLightClientConfig, EthLightClientWrapper, ProofRequestParameters,
 };
-use helios::prelude::Address;
 use helios::prelude::networks::Network;
+use helios::prelude::Address;
 use hex::encode;
 use serde::{Deserialize, Serialize};
 use serde_json::{Number, Value};
@@ -22,23 +22,23 @@ use light_client_helpers::{
 };
 use shared_crypto::intent::Intent;
 use sui_json::SuiJsonValue;
+use sui_json_rpc_types::SuiData;
 #[allow(unused_imports)]
 // SuiTransactionBlockEffectsAPI is called in a macro; therefore, the IDE doesn't recognize it.
 use sui_json_rpc_types::{ObjectChange, SuiExecutionStatus, SuiTransactionBlockEffectsAPI};
-use sui_json_rpc_types::SuiData;
 use sui_keys::keystore::AccountKeystore;
 use sui_sdk::sui_client_config::SuiEnv;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::eth_dwallet::{
-    APPROVE_MESSAGE_FUNC_NAME, CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETH_DWALLET_MODULE_NAME, ETH_STATE_STRUCT_NAME,
-    ETHEREUM_STATE_MODULE_NAME, EthereumDWalletCap, EthereumStateObject,
-    INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME, LatestEthereumStateObject,
+    EthereumDWalletCap, EthereumStateObject, LatestEthereumStateObject, APPROVE_MESSAGE_FUNC_NAME,
+    CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME,
+    ETH_STATE_STRUCT_NAME, INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME,
     VERIFY_ETH_STATE_FUNC_NAME,
 };
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::SUI_SYSTEM_PACKAGE_ID;
 use sui_types::transaction::{ObjectArg, SenderSignedData, Transaction, TransactionDataAPI};
+use sui_types::SUI_SYSTEM_PACKAGE_ID;
 
 use crate::client_commands::{construct_move_call_transaction, SuiClientCommandResult};
 use crate::serialize_or_execute;
@@ -166,7 +166,7 @@ pub(crate) async fn init_ethereum_state(
         args,
         context,
     )
-        .await?;
+    .await?;
 
     let latest_state = serialize_or_execute!(
         tx_data,
@@ -220,7 +220,7 @@ pub(crate) async fn create_eth_dwallet(
         args,
         context,
     )
-        .await?;
+    .await?;
     Ok(serialize_or_execute!(
         tx_data,
         serialize_unsigned_transaction,
@@ -229,7 +229,6 @@ pub(crate) async fn create_eth_dwallet(
         Call
     ))
 }
-
 
 /// Approves an Ethereum transaction for a given dWallet.
 ///
