@@ -115,14 +115,12 @@ describe('Test key share transfer', () => {
 			secret_key_share: bcs.vector(bcs.u8()),
 		});
 		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		let parsed_output = DKGOutput.parse(new Uint8Array(dwallet?.dkgOutput));
+		// let parsed_output = DKGOutput.parse(new Uint8Array(dwallet?.dkgOutput));
 		// Before running this test, you need to create a dwallet and out its object ID and secret share here.
 		const dwalletID = dwallet?.dwalletId!;
 
-		let parsedSecretKeyshare = new Uint8Array(parsed_output.secret_key_share);
-
 		const encryptedUserShareAndProof = generate_proof(
-			parsedSecretKeyshare,
+			dwallet?.secret_key_share!,
 			recipientData?.encryptionKey!,
 		);
 
@@ -140,6 +138,6 @@ describe('Test key share transfer', () => {
 			encryptedUserShareAndProof,
 		);
 
-		expect(decryptedKeyshare).toEqual(parsedSecretKeyshare);
+		expect(decryptedKeyshare).toEqual(dwallet?.secret_key_share!);
 	});
 });

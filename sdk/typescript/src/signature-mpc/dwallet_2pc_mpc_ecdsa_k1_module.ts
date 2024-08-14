@@ -104,6 +104,7 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 					dwalletId: dwalletRef?.objectId,
 					dkgOutput: final['dkg_output'],
 					dwalletCapId: dwalletObjectFields.dwallet_cap_id,
+					secret_key_share: final['secret_key_share'],
 			  }
 			: null;
 	}
