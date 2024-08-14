@@ -1,7 +1,8 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { beforeAll, describe, expect, it } from "vitest";
+import { bcs } from '@mysten/bcs';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	approveAndSign,
@@ -14,10 +15,8 @@ import {
 	getEncryptionKeyByObjectId,
 	storeEncryptionKey,
 	transferDwallet,
-} from "../../src/signature-mpc";
+} from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
-import { bcs } from '@mysten/bcs';
-
 
 describe('Test signature mpc', () => {
 	let toolbox: TestToolbox;
@@ -91,6 +90,10 @@ describe('Create public key', () => {
 	});
 });
 
+function bytesToHex(bytes: number[]): string {
+	return bytes.map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 describe('Test key share transfer', () => {
 	let toolbox: TestToolbox;
 
@@ -117,7 +120,7 @@ describe('Test key share transfer', () => {
 		const secretKeyshare = '<SECRET_KEYSHARE>';
 		const dwalletID = '<DWALLET_OBJECT_ID>';
 
-		let parsedKeyshare = Uint8Array.from(Buffer.from(secretKeyshare, 'hex'));
+		let parsedKeyshare = new Uint8Array(parsed_output.secret_key_share);
 
 		const encryptedUserShareAndProof = generate_proof(
 			parsedKeyshare,
