@@ -90,10 +90,6 @@ describe('Create public key', () => {
 	});
 });
 
-function bytesToHex(bytes: number[]): string {
-	return bytes.map((byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
 describe('Test key share transfer', () => {
 	let toolbox: TestToolbox;
 
