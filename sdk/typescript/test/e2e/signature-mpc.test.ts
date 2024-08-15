@@ -14,7 +14,7 @@ import {
 	getEncryptionKeyByObjectId,
 	storeEncryptionKey,
 	transferDwallet,
-} from "../../src/signature-mpc";
+} from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test signature mpc', () => {
@@ -106,17 +106,13 @@ describe('Test key share transfer', () => {
 		);
 		const publicKeyID = pubKeyRef?.objectId;
 		const recipientData = await getEncryptionKeyByObjectId(toolbox.client, publicKeyID);
-
-		// Before running this test, you need to create a dwallet and out its object ID and secret share here.
-		const secretKeyshare = '<SECRET_KEYSHARE>';
-		const dwalletID = '<DWALLET_OBJECT_ID>';
-
-		let parsedKeyshare = Uint8Array.from(Buffer.from(secretKeyshare, 'hex'));
-
-		const encryptedUserShareAndProof = generate_proof(
-			parsedKeyshare,
-			recipientData?.encryptionKey!,
-		);
+		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
+		const dwalletID = dwallet?.dwalletId!;
+		// Extract the secret share from the DKGOutput.
+		// It's the first 32 bytes because it's the first field in the Output Rust struct.
+		let secretShareBytes = dwallet?.dkgOutput!.slice(0, 32);
+		let secretShare = new Uint8Array(secretShareBytes);
+		const encryptedUserShareAndProof = generate_proof(secretShare, recipientData?.encryptionKey!);
 
 		await transferDwallet(
 			toolbox.client,
@@ -133,7 +129,7 @@ describe('Test key share transfer', () => {
 		);
 
 		let secretUserShare = new Uint8Array(256);
-		secretUserShare.set(Uint8Array.from(Buffer.from(secretKeyshare, 'hex')).reverse());
+		secretUserShare.set(secretShare.reverse());
 		expect(decryptedKeyshare).toEqual(secretUserShare);
 	});
 });
