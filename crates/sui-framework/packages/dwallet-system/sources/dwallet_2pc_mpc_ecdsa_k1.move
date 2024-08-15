@@ -24,10 +24,9 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         get_dwallet_public_key,
         get_messages,
         get_sign_data,
-        create_dwallet,
         get_output,
         PartialUserSignedMessages,
-        SignSession, get_public_key,
+        SignSession, get_public_key, EncryptionKey, create_encrypted_user_share, get_encryption_key,
     };
 
     #[test_only]
@@ -44,6 +43,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     const ESignInvalidSignatureParts: u64 = 3;
     const ENotSupported: u64 = 4;
     const EEmptyCommitment: u64 = 5;
+    const EEncryptUserShare: u64 = 6;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -240,7 +240,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             centralized_party_public_key_share_decommitment_and_proof
         );
 
-        let dwallet = create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, public_key, ctx);
+        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, public_key, ctx);
         // Create dwallet + make it immutable.
         transfer::public_freeze_object(dwallet);
     }
@@ -467,6 +467,37 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         hash: u8,
         dwallet_public_key: vector<u8>,
     ): bool;
+
+    /// Encrypt a user share with an AHE encryption key.
+    public fun encrypt_user_share(
+        dwallet: &DWallet<Secp256K1>,
+        encryption_key: &EncryptionKey,
+        encrypted_secret_share_and_proof: vector<u8>,
+        ctx: &mut TxContext,
+    ) {
+        let is_valid = verify_encrypted_user_secret_share(
+            get_encryption_key(encryption_key),
+            encrypted_secret_share_and_proof,
+            get_output(dwallet),
+        );
+
+        assert!(is_valid, EEncryptUserShare);
+
+        create_encrypted_user_share(
+            object::id(dwallet),
+            encrypted_secret_share_and_proof,
+            object::id(encryption_key),
+            ctx
+        );
+    }
+
+    #[allow(unused_function)]
+    native fun verify_encrypted_user_secret_share(
+        secret_share_public_key: vector<u8>,
+        encrypted_secret_share_and_proof: vector<u8>,
+        dwallet_output: vector<u8>,
+    ): bool;
+
 
     #[test_only]
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
