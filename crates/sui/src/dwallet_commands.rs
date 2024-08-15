@@ -1,14 +1,14 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::time::Duration;
 
 use anyhow::anyhow;
 use bip32::secp256k1::elliptic_curve::rand_core::OsRng;
 use clap::*;
+use fastcrypto::encoding::Base64;
 use fastcrypto::encoding::Encoding;
-use fastcrypto::{encoding::Base64, traits::ToFromBytes};
 use move_core_types::language_storage::TypeTag;
 use serde_json::{Number, Value};
 use tokio::time::sleep;
@@ -221,7 +221,7 @@ impl SuiDWalletCommands {
                 sleep(Duration::from_millis(500)).await;
 
                 let mut cursor = None;
-                let mut output: Option<DKGSessionOutput> = None;
+                let mut output: Option<DKGSessionOutput>;
                 loop {
                     let client = context.get_client().await?;
                     let response = client
@@ -562,7 +562,7 @@ impl SuiDWalletCommands {
                 sleep(Duration::from_millis(500)).await;
 
                 let mut cursor = None;
-                let mut output: Option<(PresignSessionOutput, ObjectRef)> = None;
+                let mut output: Option<(PresignSessionOutput, ObjectRef)>;
                 loop {
                     let client = context.get_client().await?;
                     let response = client
@@ -640,7 +640,7 @@ impl SuiDWalletCommands {
 
                 sleep(Duration::from_millis(500)).await;
                 let mut cursor = None;
-                let mut decentralized_presign: Option<(Presign, ObjectRef)> = None;
+                let mut decentralized_presign: Option<(Presign, ObjectRef)>;
                 loop {
                     let client = context.get_client().await?;
                     let response = client
@@ -775,7 +775,7 @@ impl SuiDWalletCommands {
 
                 sleep(Duration::from_millis(500)).await;
                 let mut cursor = None;
-                let mut sign_output: Option<SignOutput> = None;
+                let mut sign_output: Option<SignOutput>;
                 loop {
                     let client = context.get_client().await?;
                     let response = client

@@ -1163,14 +1163,18 @@ mod checked {
                         CallArg::Pure(bcs::to_bytes(presigns).unwrap()),
                     ],
                 ),
-                SignatureMPCOutputValue::Sign(sigs) => builder.move_call(
+                SignatureMPCOutputValue::Sign {
+                    sigs,
+                    aggregator_public_key,
+                } => builder.move_call(
                     SUI_SYSTEM_PACKAGE_ID.into(),
-                    DWALLET_MODULE_NAME.to_owned(),
+                    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
                     CREATE_SIGN_OUTPUT_FUNC_NAME.to_owned(),
-                    vec![TypeTag::Struct(Box::new(SignData::type_()))],
+                    vec![],
                     vec![
                         CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
                         CallArg::Pure(bcs::to_bytes(sigs).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(aggregator_public_key).unwrap()),
                     ],
                 ),
             };

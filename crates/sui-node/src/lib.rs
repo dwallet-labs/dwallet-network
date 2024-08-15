@@ -1279,12 +1279,6 @@ impl SuiNode {
             metrics: signature_mpc_metrics.clone(),
         });
 
-        // TODO: replace unwrap
-        let tiresias_public_parameters = epoch_store
-            .protocol_config()
-            .signature_mpc_tiresias_public_parameters()
-            .unwrap();
-
         let signature_mpc_tiresias = config
             .signature_mpc_tiresias()
             .expect("signature_mpc_tiresias should be populated");
