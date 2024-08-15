@@ -125,7 +125,8 @@ describe('Test key share transfer', () => {
 			decryptionKey,
 			encryptedUserShareAndProof,
 		);
-
-		expect(decryptedKeyshare).toEqual(secretShare);
+		let secretUserShare = new Uint8Array(256);
+		secretUserShare.set(secretShare.reverse());
+		expect(decryptedKeyshare).toEqual(secretUserShare);
 	});
 });
