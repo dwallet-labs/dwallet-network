@@ -95,9 +95,25 @@ module dwallet_system::dwallet {
         dwallet_public_key: vector<u8>,
     }
 
-    public(friend) fun get_dwallet_public_key<S: store>(
-        session: &SignSession<S>
-    ): vector<u8> { session.dwallet_public_key }
+    #[allow(unused_function)]
+    #[test_only]
+    /// Creates a sign session.
+    public fun create_mock_sign_session<S: store>(
+        messages: vector<vector<u8>>, dwallet_public_key: vector<u8> ,sign_data: S, ctx: &mut TxContext,
+    ) {
+        let session = SignSession<S> {
+            dwallet_id: object::id_from_address(@0x0),
+            messages,
+            sign_data,
+            dwallet_public_key,
+            sender: tx_context::sender(ctx),
+            dwallet_cap_id: object::id_from_address(@0x0),
+            id: object::new(ctx),
+        };
+        transfer::freeze_object(session);
+    }
+
+    public(friend) fun get_dwallet_public_key<S: store>(session: &SignSession<S>): vector<u8> { session.dwallet_public_key }
 
     public(friend) fun get_sign_data<S: store>(session: &SignSession<S>): &S { &session.sign_data }
 

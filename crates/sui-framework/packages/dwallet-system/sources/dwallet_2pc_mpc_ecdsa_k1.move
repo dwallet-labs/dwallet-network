@@ -433,6 +433,22 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         )
     }
 
+    #[allow(unused_function)]
+    #[test_only]
+    /// Call the underline `verify_and_create_sign_output`.
+    public fun verify_and_create_sign_output_for_testing(
+        session: &SignSession<SignData>,
+        signatures: vector<vector<u8>>,
+        aggregator_public_key: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        verify_and_create_sign_output(
+            session,
+            signatures,
+            aggregator_public_key,
+            ctx
+        );
+    }
 
     #[allow(unused_function)]
     /// This function is called by blockchain itself.
@@ -486,7 +502,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
         SignData {
             presign_session_id,
-            hash: 0,
+            hash: SHA256,
             public_nonce_encrypted_partial_signature_and_proofs: vector::empty<u8>(),
             presigns: vector::empty<u8>()
         }
