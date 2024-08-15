@@ -4,7 +4,10 @@
 use std::collections::VecDeque;
 use std::str::FromStr;
 
-use ethers::utils::{hex, keccak256};
+use ethers::{
+    types::U256,
+    utils::{hex, keccak256},
+};
 use helios::config::networks::Network;
 use helios::consensus::ConsensusStateManager;
 use helios::consensus::{nimbus_rpc::NimbusRpc, ConsensusRpc};
@@ -61,6 +64,9 @@ pub fn verify_message_proof(
     );
 
     let cost = context.gas_used();
+    let map_slot = pop_arg!(args, u64);
+    let dwallet_id = pop_arg!(args, Vector).to_vec_u8()?;
+    let message = pop_arg!(args, Vector).to_vec_u8()?;
     let proof = pop_arg!(args, Vector).to_vec_u8()?;
 
     let Ok(proof) = bcs::from_bytes::<ProofResponse>(proof.as_slice()) else {
@@ -79,6 +85,30 @@ pub fn verify_message_proof(
     );
 
     if !is_valid_account_proof {
+        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+    }
+
+    let Ok(message) = String::from_utf8(message.clone()) else {
+        return Ok(NativeResult::err(
+            cost,
+            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
+        ));
+    };
+    let Ok(message_map_index) =
+        get_message_storage_slot(message, dwallet_id.clone(), map_slot.clone())
+    else {
+        return Ok(NativeResult::err(
+            cost,
+            StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR.into(),
+        ));
+    };
+
+    let message_map_index = U256::from(message_map_index.as_bytes());
+    let mut msg_storage_proof_key_bytes = [0u8; 32];
+    message_map_index.to_big_endian(&mut msg_storage_proof_key_bytes);
+    let storage_key_hash = keccak256(msg_storage_proof_key_bytes);
+
+    if storage_key_hash != proof.storage_proof.path.as_slice() {
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     }
 
