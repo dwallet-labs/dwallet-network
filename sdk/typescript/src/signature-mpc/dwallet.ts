@@ -122,6 +122,7 @@ export const transferDwallet = async (
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::encrypt_user_share`,
+		typeArguments: [`0x2::dwlt::DWLT`],
 		arguments: [dwallet, encryptionKey, tx.pure(encryptedUserShareAndProof)],
 	});
 

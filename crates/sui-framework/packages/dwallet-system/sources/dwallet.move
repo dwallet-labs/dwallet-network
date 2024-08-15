@@ -47,7 +47,7 @@ module dwallet_system::dwallet {
 
     #[allow(unused_field)]
     /// `DWallet` represents a wallet that is created after the DKG process.
-    struct DWallet has key, store {
+    struct DWallet<phantom T> has key, store {
         id: UID,
         session_id: ID,
         dwallet_cap_id: ID,
@@ -56,14 +56,14 @@ module dwallet_system::dwallet {
         public_key: vector<u8>,
     }
 
-    public fun new_dwallet(
+    public fun new_dwallet<T: drop>(
         session_id: ID,
         dwallet_cap_id: ID,
         output: vector<u8>,
         public_key: vector<u8>,
         ctx: &mut TxContext
-    ): DWallet {
-        DWallet {
+    ): DWallet<T> {
+        DWallet<T> {
             id: object::new(ctx),
             session_id,
             dwallet_cap_id,
@@ -72,11 +72,11 @@ module dwallet_system::dwallet {
         }
     }
 
-    public fun get_output(dwallet: &DWallet): vector<u8> { dwallet.output }
+    public fun get_output<T: drop>(dwallet: &DWallet<T>): vector<u8> { dwallet.output }
 
-    public fun get_dwallet_cap_id(dwallet: &DWallet): ID { dwallet.dwallet_cap_id }
+    public fun get_dwallet_cap_id<T: drop>(dwallet: &DWallet<T>): ID { dwallet.dwallet_cap_id }
 
-    public fun get_public_key(dwallet: &DWallet): vector<u8> { dwallet.public_key }
+    public fun get_public_key<T: drop>(dwallet: &DWallet<T>): vector<u8> { dwallet.public_key }
 
     /// `DWalletCap` holder controls a corresponding `Dwallet`.
     struct DWalletCap has key, store {
@@ -463,8 +463,8 @@ module dwallet_system::dwallet {
     }
 
     /// Encrypt a user share with an AHE encryption key.
-    public fun encrypt_user_share(
-        dwallet: &DWallet,
+    public fun encrypt_user_share<T: drop>(
+        dwallet: &DWallet<T>,
         encryption_key: &EncryptionKey,
         encrypted_secret_share_and_proof: vector<u8>,
         ctx: &mut TxContext,

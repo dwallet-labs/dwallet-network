@@ -7,6 +7,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// The events are here below, this is a "hack" to pass the information, we might find a better way in the future.
 
     use std::vector;
+    use dwallet::dwlt::DWLT;
 
     use dwallet::event;
     use dwallet::object::{Self, ID, UID};
@@ -239,7 +240,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             centralized_party_public_key_share_decommitment_and_proof
         );
 
-        let dwallet = new_dwallet(session_id, dwallet_cap_id, output, public_key, ctx);
+        let dwallet = new_dwallet<DWLT>(session_id, dwallet_cap_id, output, public_key, ctx);
         // Create dwallet + make it immutable.
         transfer::public_freeze_object(dwallet);
     }
@@ -259,7 +260,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// But, the `commitments_and_proof_to_centralized_party_nonce_shares` is owned by a specific user.
     /// This is trhe first part of the `PreSign` process.
     public fun create_presign_session(
-        dwallet: &DWallet,
+        dwallet: &DWallet<DWLT>,
         // Note that in terms on the MPC, the `messages` is not mandatory on pre-signing,
         // currently it will be provided to prevent some attack vectors.
         messages: vector<vector<u8>>,
@@ -344,7 +345,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// The user needs to call this function after receiving the `Presign` and `PresignSessionOutput`.
     /// The user needs to provide the `public_nonce_encrypted_partial_signature_and_proofs`.
     public fun create_partial_user_signed_messages(
-        dwallet: &DWallet,
+        dwallet: &DWallet<DWLT>,
         session: &PresignSession,
         output: PresignSessionOutput,
         presign: Presign,
