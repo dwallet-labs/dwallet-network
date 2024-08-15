@@ -60,7 +60,7 @@ module dwallet_system::dwallet {
         public_key: vector<u8>,
     }
 
-    public fun new_dwallet<T: drop>(
+    public(friend) fun create_dwallet<T: drop>(
         session_id: ID,
         dwallet_cap_id: ID,
         output: vector<u8>,
@@ -424,6 +424,8 @@ module dwallet_system::dwallet {
         transfer::freeze_object(failed_sign_output);
     }
 
+    /// Encrypt DWallet secret share with an AHE public key.
+
     struct EncryptedUserShare has key {
         id: UID,
         dwallet_id: ID,
@@ -439,6 +441,10 @@ module dwallet_system::dwallet {
         scheme: u8,
         encryption_key: vector<u8>,
         key_owner_address: address,
+    }
+
+    public fun get_encryption_key(encryption_key: &EncryptionKey): vector<u8> {
+        encryption_key.encryption_key
     }
 
     const Paillier: u8 = 0;
@@ -498,37 +504,18 @@ module dwallet_system::dwallet {
         id_to_address(table::borrow(&encryption_key_holder.encryption_keys, key_owner))
     }
 
-    /// Encrypt a user share with an AHE encryption key.
-    public fun encrypt_user_share<T: drop>(
-        dwallet: &DWallet<T>,
-        encryption_key: &EncryptionKey,
+    public(friend) fun create_encrypted_user_share(
+        dwallet_id: ID,
         encrypted_secret_share_and_proof: vector<u8>,
-        ctx: &mut TxContext,
-    ): ID {
-        let is_valid = verify_encrypted_user_secret_share(
-            encryption_key.encryption_key,
-            encrypted_secret_share_and_proof,
-            dwallet.output,
-        );
-
-        assert!(is_valid, EEncryptUserShare);
-
-        let encrypt_user_share = EncryptedUserShare {
+        encryption_key_id: ID,
+        ctx: &mut TxContext
+    ) {
+        let encrypted_user_share = EncryptedUserShare {
             id: object::new(ctx),
-            dwallet_id: object::id(dwallet),
+            dwallet_id,
             encrypted_secret_share_and_proof,
-            encryption_key_id: object::id(encryption_key),
+            encryption_key_id,
         };
-
-        let encrypt_user_share_obj_id = object::id(&encrypt_user_share);
-        transfer::freeze_object(encrypt_user_share);
-        encrypt_user_share_obj_id
+        transfer::freeze_object(encrypted_user_share);
     }
-
-    #[allow(unused_function)]
-    native fun verify_encrypted_user_secret_share(
-        secret_share_public_key: vector<u8>,
-        encrypted_secret_share_and_proof: vector<u8>,
-        dwallet_output: vector<u8>,
-    ): bool;
 }
