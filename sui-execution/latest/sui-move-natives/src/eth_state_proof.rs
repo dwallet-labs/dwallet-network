@@ -4,16 +4,19 @@
 use std::collections::VecDeque;
 use std::str::FromStr;
 
+use ethers::prelude::EIP1186ProofResponse;
 use ethers::{
     types::U256,
     utils::{hex, keccak256},
 };
 use helios::config::networks::Network;
 use helios::consensus::ConsensusStateManager;
-use helios::consensus::{nimbus_rpc::NimbusRpc, ConsensusRpc};
-use helios::dwallet::light_client::ProofResponse;
-use helios::execution::verify_proof;
+use helios::consensus::{nimbus_rpc::NimbusRpc, Bytes32, ConsensusRpc};
+use helios::dwallet::{create_account_proof, extract_storage_proof, light_client::ProofResponse};
+use helios::execution;
+use helios::execution::{get_message_storage_slot, verify_proof};
 use helios::prelude::{AggregateUpdates, FinalityUpdate, OptimisticUpdate, Update};
+use helios::types::Address;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_binary_format::file_format::StructFieldInformation::Native;
 use move_core_types::{gas_algebra::InternalGas, vm_status::StatusCode};
@@ -64,59 +67,49 @@ pub fn verify_message_proof(
     );
 
     let cost = context.gas_used();
+
+    let contract_address = pop_arg!(args, Vector).to_vec_u8()?;
+    let state_root = pop_arg!(args, Vector).to_vec_u8()?;
     let map_slot = pop_arg!(args, u64);
     let dwallet_id = pop_arg!(args, Vector).to_vec_u8()?;
     let message = pop_arg!(args, Vector).to_vec_u8()?;
     let proof = pop_arg!(args, Vector).to_vec_u8()?;
 
-    let Ok(proof) = bcs::from_bytes::<ProofResponse>(proof.as_slice()) else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
-        ));
-    };
+    let proof = bcs::from_bytes::<EIP1186ProofResponse>(proof.as_slice())
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let message = String::from_utf8(message.clone())
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let message_map_index = get_message_storage_slot(message.clone(), dwallet_id.clone(), map_slot)
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_STATUS))?;
+
+    let contract_address = Address::from_slice(contract_address.as_slice());
+    let state_root = Bytes32::try_from(state_root)
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let account_proof = create_account_proof(&contract_address, &state_root, &proof);
 
     // Verify the account proof against the state root.
     let is_valid_account_proof = verify_proof(
-        &proof.account_proof.proof.as_slice(),
-        &proof.account_proof.root,
-        &proof.account_proof.path,
-        &proof.account_proof.value,
+        &account_proof.proof.as_slice(),
+        &account_proof.root,
+        &account_proof.path,
+        &account_proof.value,
     );
 
     if !is_valid_account_proof {
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     }
 
-    let Ok(message) = String::from_utf8(message.clone()) else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
-        ));
-    };
-    let Ok(message_map_index) =
-        get_message_storage_slot(message, dwallet_id.clone(), map_slot.clone())
-    else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR.into(),
-        ));
-    };
-
-    let message_map_index = U256::from(message_map_index.as_bytes());
-    let mut msg_storage_proof_key_bytes = [0u8; 32];
-    message_map_index.to_big_endian(&mut msg_storage_proof_key_bytes);
-    let storage_key_hash = keccak256(msg_storage_proof_key_bytes);
-
-    if storage_key_hash != proof.storage_proof.path.as_slice() {
-        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
-    }
+    let storage_proof = extract_storage_proof(message_map_index, proof)
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_STATUS))?;
 
     let is_valid = verify_proof(
-        &proof.storage_proof.proof,
-        &proof.storage_proof.root,
-        &proof.storage_proof.path,
-        &proof.storage_proof.value,
+        &storage_proof.proof,
+        &storage_proof.root,
+        &storage_proof.path,
+        &storage_proof.value,
     );
     Ok(NativeResult::ok(cost, smallvec![Value::bool(is_valid)]))
 }
@@ -132,7 +125,7 @@ pub(crate) fn verify_eth_state(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     // Load the cost parameters from the protocol config
-    let verify_message_proof_cost_params = &context
+    let verify_eth_state_cost_params = &context
         .extensions()
         .get::<NativesCostTable>()
         .eth_state_proof
@@ -141,7 +134,7 @@ pub(crate) fn verify_eth_state(
     // Charge the base cost for this operation.
     native_charge_gas_early_exit!(
         context,
-        verify_message_proof_cost_params.verify_eth_state_cost_base
+        verify_eth_state_cost_params.verify_eth_state_cost_base
     );
 
     let cost = context.gas_used();
@@ -152,38 +145,19 @@ pub(crate) fn verify_eth_state(
         pop_arg!(args, Vector).to_vec_u8()?,
     );
 
-    let Ok(mut eth_state) =
+    let mut eth_state =
         serde_json::from_slice::<ConsensusStateManager<NimbusRpc>>(current_eth_state.as_slice())
-    else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
-        ));
-    };
+            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
-    let Ok(updates_vec) = serde_json::from_slice::<Vec<Update>>(updates_vec.as_slice()) else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
-        ));
-    };
+    let updates_vec = serde_json::from_slice::<Vec<Update>>(updates_vec.as_slice())
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
-    let Ok(finality_update) = serde_json::from_slice::<FinalityUpdate>(finality_update.as_slice())
-    else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
-        ));
-    };
+    let finality_update = serde_json::from_slice::<FinalityUpdate>(finality_update.as_slice())
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
-    let Ok(optimistic_update) =
+    let optimistic_update =
         serde_json::from_slice::<OptimisticUpdate>(optimistic_update.as_slice())
-    else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT.into(),
-        ));
-    };
+            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
     let updates = AggregateUpdates {
         updates: updates_vec,
@@ -191,16 +165,23 @@ pub(crate) fn verify_eth_state(
         optimistic_update,
     };
 
-    let Ok((new_state_bcs, slot)) = process_eth_state_updates(&mut eth_state, updates) else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR.into(),
-        ));
-    };
+    eth_state.verify_and_apply_updates(&updates).map_err(|e| {
+        info!("Failed to verify updates: {:?}", e);
+        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+    })?;
+
+    let state_root = eth_state.clone().get_current_state_root();
+    let new_state_bcs = bcs::to_bytes(&eth_state)
+        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
+    let slot = u64::from(eth_state.get_latest_slot());
 
     Ok(NativeResult::ok(
         cost,
-        smallvec![Value::vector_u8(new_state_bcs), Value::u64(slot)],
+        smallvec![
+            Value::vector_u8(new_state_bcs),
+            Value::u64(slot),
+            Value::vector_u8(state_root.to_vec()),
+        ],
     ))
 }
 
@@ -252,20 +233,4 @@ pub(crate) fn create_initial_eth_state_data(
         cost,
         smallvec![Value::vector_u8(eth_state_bytes)],
     ))
-}
-
-fn process_eth_state_updates(
-    eth_state: &mut ConsensusStateManager<NimbusRpc>,
-    updates: AggregateUpdates,
-) -> Result<(Vec<u8>, u64), PartialVMError> {
-    eth_state.verify_and_apply_updates(&updates).map_err(|e| {
-        info!("Failed to verify updates: {:?}", e);
-        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-    })?;
-
-    let new_state_bytes = bcs::to_bytes(&eth_state)
-        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
-    let slot = u64::from(eth_state.get_latest_slot());
-
-    Ok((new_state_bytes, slot))
 }
