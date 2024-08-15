@@ -23,7 +23,6 @@ module dwallet_system::dwallet {
     friend dwallet_system::dwallet_ecdsa_k1_tests;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
-    const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
     const EEncryptUserShare: u64 = 2;
     const EInvalidEncryptionKeyScheme: u64 = 3;
