@@ -7,7 +7,7 @@ module dwallet_system::dwallet {
     use std::vector;
 
     use dwallet::event;
-    use dwallet::object::{Self, ID, UID, id_to_address};
+    use dwallet::object::{Self, ID, UID};
     use dwallet::table;
     use dwallet::table::Table;
     use dwallet::transfer;
@@ -499,8 +499,8 @@ module dwallet_system::dwallet {
     public fun get_active_encryption_key(
         encryption_key_holder: &ActiveEncryptionKeys,
         key_owner: address,
-    ): address {
-        id_to_address(table::borrow(&encryption_key_holder.encryption_keys, key_owner))
+    ): &ID {
+        table::borrow(&encryption_key_holder.encryption_keys, key_owner)
     }
 
     public(friend) fun create_encrypted_user_share(

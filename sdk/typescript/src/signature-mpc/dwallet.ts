@@ -110,7 +110,7 @@ export const getEncryptionKeyByObjectId = async (
 };
 
 export const getDwalletActiveEncryptionKey = async (
-	// client: DWalletClient,
+	client: DWalletClient,
 	keypair: Keypair,
 	encryptionKeysHolderID: string,
 ) => {
@@ -119,23 +119,17 @@ export const getDwalletActiveEncryptionKey = async (
 
 	console.log(keypair.toSuiAddress());
 
-	let [active_encryption_key_id] = tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::get_encryption_key`,
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
 		arguments: [encryptionKeysHolder, tx.pure(keypair.toSuiAddress())],
 	});
 
-	// console.log(b);
+	let res = await client.devInspectTransactionBlock({
+		sender: keypair.toSuiAddress(),
+		transactionBlock: tx,
+	});
 
-	// let a = await client.signAndExecuteTransactionBlock({
-	// 	signer: keypair,
-	// 	transactionBlock: tx,
-	// 	options: {
-	// 		showEffects: true,
-	// 	},
-	// });
-
-	// console.log(a);
-	return active_encryption_key_id;
+	return res.results?.at(0)?.returnValues?.at(0)?.at(0);
 };
 
 export const setDwalletPrimaryEncryptionKey = async (

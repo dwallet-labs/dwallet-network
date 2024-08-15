@@ -90,6 +90,7 @@ describe('Create public key', () => {
 		console.log({ pubKeyRef });
 
 		const encryptionKeysHolder = await createEncryptionKeysHolder(toolbox.client, toolbox.keypair);
+
 		await setDwalletPrimaryEncryptionKey(
 			toolbox.client,
 			toolbox.keypair,
@@ -97,10 +98,14 @@ describe('Create public key', () => {
 			encryptionKeysHolder.objectId,
 		);
 
-		let id = await getDwalletActiveEncryptionKey(
+		const activeEncryptionKey = await getDwalletActiveEncryptionKey(
+			toolbox.client,
 			toolbox.keypair,
 			encryptionKeysHolder.objectId,
 		);
+
+		const activeKeyHex = Buffer.from(new Uint8Array(activeEncryptionKey)).toString('hex');
+		expect(`0x${activeKeyHex}`).toEqual(pubKeyRef?.objectId!);
 	});
 });
 
