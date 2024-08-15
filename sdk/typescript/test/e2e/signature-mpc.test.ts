@@ -1,8 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/bcs';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from "vitest";
 
 import {
 	approveAndSign,
@@ -15,7 +14,7 @@ import {
 	getEncryptionKeyByObjectId,
 	storeEncryptionKey,
 	transferDwallet,
-} from '../../src/signature-mpc';
+} from "../../src/signature-mpc";
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test signature mpc', () => {
@@ -107,10 +106,17 @@ describe('Test key share transfer', () => {
 		);
 		const publicKeyID = pubKeyRef?.objectId;
 		const recipientData = await getEncryptionKeyByObjectId(toolbox.client, publicKeyID);
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		const dwalletID = dwallet?.dwalletId!;
-		let secretShare = new Uint8Array(dwallet?.secretKeyShare!);
-		const encryptedUserShareAndProof = generate_proof(secretShare, recipientData?.encryptionKey!);
+
+		// Before running this test, you need to create a dwallet and out its object ID and secret share here.
+		const secretKeyshare = '<SECRET_KEYSHARE>';
+		const dwalletID = '<DWALLET_OBJECT_ID>';
+
+		let parsedKeyshare = Uint8Array.from(Buffer.from(secretKeyshare, 'hex'));
+
+		const encryptedUserShareAndProof = generate_proof(
+			parsedKeyshare,
+			recipientData?.encryptionKey!,
+		);
 
 		await transferDwallet(
 			toolbox.client,
@@ -125,8 +131,9 @@ describe('Test key share transfer', () => {
 			decryptionKey,
 			encryptedUserShareAndProof,
 		);
+
 		let secretUserShare = new Uint8Array(256);
-		secretUserShare.set(secretShare.reverse());
+		secretUserShare.set(Uint8Array.from(Buffer.from(secretKeyshare, 'hex')).reverse());
 		expect(decryptedKeyshare).toEqual(secretUserShare);
 	});
 });

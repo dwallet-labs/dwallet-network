@@ -34,7 +34,6 @@ pub struct InitiateDKGValue {
 pub struct FinalizeDKGValue {
     pub public_key_share_decommitment_and_proof: Vec<u8>,
     pub dkg_output: Vec<u8>,
-    pub secret_keyshare: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,7 +51,6 @@ pub struct InitiateSignValue {
 #[wasm_bindgen]
 pub fn initiate_dkg() -> Result<JsValue, JsErr> {
     let party = initiate_centralized_party_dkg()?;
-
     let (commitment_to_secret_key_share, decommitment_round_party) =
         party.sample_commit_and_prove_secret_key_share(&mut OsRng)?;
     let decommitment_round_party_state = decommitment_round_party.to_state();
@@ -85,7 +83,6 @@ pub fn finalize_dkg(
             &public_key_share_decommitment_and_proof,
         )?,
         dkg_output: bcs::to_bytes(&dkg_output)?,
-        secret_keyshare: bcs::to_bytes(&dkg_output.secret_key_share)?
     };
     Ok(serde_wasm_bindgen::to_value(&value)?)
 }
