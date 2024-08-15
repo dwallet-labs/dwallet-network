@@ -99,15 +99,13 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 				  })
 				: null;
 
-		let ret_value = dwalletObjectFields
+		return dwalletObjectFields
 			? {
 					dwalletId: dwalletRef?.objectId,
 					dkgOutput: final['dkg_output'],
 					dwalletCapId: dwalletObjectFields.dwallet_cap_id,
-					secretKeyShare: final['secret_keyshare']!,
 			  }
 			: null;
-		return ret_value;
 	}
 	return null;
 }
