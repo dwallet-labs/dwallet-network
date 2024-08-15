@@ -469,7 +469,7 @@ module dwallet_system::dwallet {
         encrypted_secret_share_and_proof: vector<u8>,
         ctx: &mut TxContext,
     ): ID {
-        let is_valid = validate_encrypted_user_secret_share(
+        let is_valid = verify_encrypted_user_secret_share(
             encryption_key.encryption_key,
             encrypted_secret_share_and_proof,
             dwallet.output,
@@ -490,7 +490,7 @@ module dwallet_system::dwallet {
     }
 
     #[allow(unused_function)]
-    native fun validate_encrypted_user_secret_share(
+    native fun verify_encrypted_user_secret_share(
         secret_share_public_key: vector<u8>,
         encrypted_secret_share_and_proof: vector<u8>,
         dwallet_output: vector<u8>,
