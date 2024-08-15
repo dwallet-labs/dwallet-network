@@ -402,9 +402,9 @@ impl<
                                                 .0
                                                 .to_vec(),
                                         };
-                                        &modified_output.clone()
+                                        modified_output
                                     }
-                                    _ => output,
+                                    _ => output.clone(),
                                 };
                                 debug!("Adding ConsensusTransactionKind tx for output {output:?}");
                                 let signature_mpc_output_transaction =
