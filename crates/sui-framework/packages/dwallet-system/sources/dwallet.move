@@ -24,8 +24,7 @@ module dwallet_system::dwallet {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const EMesssageApprovalDWalletMismatch: u64 = 1;
-    const EEncryptUserShare: u64 = 2;
-    const EInvalidEncryptionKeyScheme: u64 = 3;
+    const EInvalidEncryptionKeyScheme: u64 = 2;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -497,7 +496,7 @@ module dwallet_system::dwallet {
         );
     }
 
-    public fun get_encryption_key(
+    public fun get_active_encryption_key(
         encryption_key_holder: &ActiveEncryptionKeys,
         key_owner: address,
     ): address {
