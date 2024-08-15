@@ -117,12 +117,12 @@ export const transferDwallet = async (
 	dwalletID: string,
 ) => {
 	const tx = new TransactionBlock();
-	const pub_key_obj = tx.object(encryptionKeyObjID);
+	const encryptionKey = tx.object(encryptionKeyObjID);
 	const dwallet = tx.object(dwalletID);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::encrypt_user_share`,
-		arguments: [dwallet, pub_key_obj, tx.pure(encryptedUserShareAndProof)],
+		arguments: [dwallet, encryptionKey, tx.pure(encryptedUserShareAndProof)],
 	});
 
 	return await client.signAndExecuteTransactionBlock({
