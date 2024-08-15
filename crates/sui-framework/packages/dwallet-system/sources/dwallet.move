@@ -56,7 +56,7 @@ module dwallet_system::dwallet {
         public_key: vector<u8>,
     }
 
-    public fun new_dwallet<T: drop>(
+    public(friend) fun create_dwallet<T: drop>(
         session_id: ID,
         dwallet_cap_id: ID,
         output: vector<u8>,

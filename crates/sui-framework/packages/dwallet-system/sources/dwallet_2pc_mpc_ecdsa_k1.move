@@ -24,7 +24,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         get_dwallet_public_key,
         get_messages,
         get_sign_data,
-        new_dwallet,
+        create_dwallet,
         get_output,
         PartialUserSignedMessages,
         SignSession, get_public_key,
@@ -240,7 +240,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             centralized_party_public_key_share_decommitment_and_proof
         );
 
-        let dwallet = new_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, public_key, ctx);
+        let dwallet = create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, public_key, ctx);
         // Create dwallet + make it immutable.
         transfer::public_freeze_object(dwallet);
     }
