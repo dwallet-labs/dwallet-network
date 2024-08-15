@@ -179,7 +179,7 @@ export const createEncryptionKeysHolder = async (client: DWalletClient, keypair:
 	)[0].reference!;
 };
 
-export const transferDwallet = async (
+export const encryptUserShare = async (
 	client: DWalletClient,
 	keypair: Keypair,
 	encryptedUserShareAndProof: Uint8Array,
@@ -191,8 +191,8 @@ export const transferDwallet = async (
 	const dwallet = tx.object(dwalletID);
 
 	tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::encrypt_user_share`,
-		typeArguments: [`0x2::dwlt::DWLT`],
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::encrypt_user_share`,
+		typeArguments: [],
 		arguments: [dwallet, encryptionKey, tx.pure(encryptedUserShareAndProof)],
 	});
 
