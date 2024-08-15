@@ -502,7 +502,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
         SignData {
             presign_session_id,
-            hash: 1,
+            hash: SHA256,
             public_nonce_encrypted_partial_signature_and_proofs: vector::empty<u8>(),
             presigns: vector::empty<u8>()
         }
