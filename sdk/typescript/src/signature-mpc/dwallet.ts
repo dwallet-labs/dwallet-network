@@ -3,7 +3,7 @@
 
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
-import {DWalletClient, ObjectOwner} from '../client/index.js';
+import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
 
@@ -109,7 +109,7 @@ export const getEncryptionKeyByObjectId = async (
 		: null;
 };
 
-export const getDwalletActiveEncryptionKey = async (
+export const getActiveEncryptionKey = async (
 	client: DWalletClient,
 	keypair: Keypair,
 	encryptionKeysHolderID: string,
@@ -132,7 +132,7 @@ export const getDwalletActiveEncryptionKey = async (
 	return res.results?.at(0)?.returnValues?.at(0)?.at(0);
 };
 
-export const setDwalletPrimaryEncryptionKey = async (
+export const setActiveEncryptionKey = async (
 	client: DWalletClient,
 	keypair: Keypair,
 	encryptionKeyObjID: string,
@@ -156,10 +156,10 @@ export const setDwalletPrimaryEncryptionKey = async (
 	});
 };
 
-export const createEncryptionKeysHolder = async (client: DWalletClient, keypair: Keypair) => {
+export const createActiveEncryptionKeysTable = async (client: DWalletClient, keypair: Keypair) => {
 	const tx = new TransactionBlock();
 	tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::create_encryption_keys_holder`,
+		target: `${packageId}::${dWalletModuleName}::create_active_encryption_keys`,
 		arguments: [],
 	});
 

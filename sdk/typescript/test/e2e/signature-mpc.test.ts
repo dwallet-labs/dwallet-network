@@ -1,21 +1,22 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	approveAndSign,
+	createActiveEncryptionKeysTable,
 	createDWallet,
-	createEncryptionKeysHolder,
 	createPartialUserSignedMessages,
 	decrypt_user_share,
 	EncryptionKeyScheme,
-	generate_keypair,
-	generate_proof, getDwalletActiveEncryptionKey,
-	getEncryptionKeyByObjectId,
-	setDwalletPrimaryEncryptionKey,
-	storeEncryptionKey,
 	encryptUserShare,
+	generate_keypair,
+	generate_proof,
+	getActiveEncryptionKey,
+	getEncryptionKeyByObjectId,
+	setActiveEncryptionKey,
+	storeEncryptionKey,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
 
@@ -89,16 +90,16 @@ describe('Create public key', () => {
 		);
 		console.log({ pubKeyRef });
 
-		const encryptionKeysHolder = await createEncryptionKeysHolder(toolbox.client, toolbox.keypair);
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(toolbox.client, toolbox.keypair);
 
-		await setDwalletPrimaryEncryptionKey(
+		await setActiveEncryptionKey(
 			toolbox.client,
 			toolbox.keypair,
 			pubKeyRef?.objectId!,
 			encryptionKeysHolder.objectId,
 		);
 
-		const activeEncryptionKey = await getDwalletActiveEncryptionKey(
+		const activeEncryptionKey = await getActiveEncryptionKey(
 			toolbox.client,
 			toolbox.keypair,
 			encryptionKeysHolder.objectId,
