@@ -3,7 +3,7 @@
 
 import { blake2b } from '@noble/hashes/blake2b';
 
-import type { SuiClient } from '../client/index.js';
+import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/keypair.js';
 import { toSerializedSignature } from '../cryptography/signature.js';
 import type { SerializedSignature } from '../cryptography/signature.js';
@@ -12,7 +12,7 @@ import { SignerWithProvider } from './signer-with-provider.js';
 export class RawSigner extends SignerWithProvider {
 	private readonly keypair: Keypair;
 
-	constructor(keypair: Keypair, client: SuiClient) {
+	constructor(keypair: Keypair, client: DWalletClient) {
 		super(client);
 		this.keypair = keypair;
 	}
@@ -34,7 +34,7 @@ export class RawSigner extends SignerWithProvider {
 		});
 	}
 
-	connect(client: SuiClient): SignerWithProvider {
+	connect(client: DWalletClient): SignerWithProvider {
 		return new RawSigner(this.keypair, client);
 	}
 }

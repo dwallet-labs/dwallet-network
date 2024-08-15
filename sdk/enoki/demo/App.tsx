@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { getFullnodeUrl, DWalletClient } from '@dwallet-network/dwallet.js/client';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 import { useState } from 'react';
 
 import { useAuthCallback, useEnokiFlow, useZkLogin } from '../src/react.tsx';
@@ -48,7 +48,7 @@ export function App() {
 							const result = await flow.sponsorAndExecuteTransactionBlock({
 								network: 'testnet',
 								// @ts-expect-error: Type references not quite doing their thing:
-								client: new SuiClient({ url: getFullnodeUrl('testnet') }),
+								client: new DWalletClient({ url: getFullnodeUrl('testnet') }),
 								// @ts-expect-error: Type references not quite doing their thing:
 								transactionBlock,
 							});

@@ -1,6 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { getFullnodeUrl } from '@dwallet-network/dwallet.js/client';
+import { TransactionBlock } from '@dwallet-network/dwallet.js/transactions';
 import {
 	ConnectButton,
 	SuiClientProvider,
@@ -17,8 +19,6 @@ import {
 	useWallets,
 	WalletProvider,
 } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui.js/client';
-import { TransactionBlock } from '@mysten/sui.js/transactions';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ComponentProps, useEffect, useState } from 'react';
 
