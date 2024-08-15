@@ -76,7 +76,7 @@ impl From<NativeSignatureMPCOutputValue>
 
             N::PresignOutput(output) => crate::types::transaction_block_kind::signature_mpc::SignatureMPCOutputValue::PresignOutput(crate::types::transaction_block_kind::signature_mpc::PresignOutput { output }),
             N::Presign(presigns) => crate::types::transaction_block_kind::signature_mpc::SignatureMPCOutputValue::Presign(crate::types::transaction_block_kind::signature_mpc::Presign { presigns }),
-            N::Sign(sigs) => crate::types::transaction_block_kind::signature_mpc::SignatureMPCOutputValue::Sign(crate::types::transaction_block_kind::signature_mpc::Sign { sigs }),
+            N::Sign{sigs, .. } => crate::types::transaction_block_kind::signature_mpc::SignatureMPCOutputValue::Sign(crate::types::transaction_block_kind::signature_mpc::Sign { sigs }),
         }
     }
 }

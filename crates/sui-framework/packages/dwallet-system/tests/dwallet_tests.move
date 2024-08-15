@@ -50,6 +50,7 @@ module dwallet_system::dwallet_tests {
                 dwallet_id,
                 object::id(&dwallet_cap),
                 sign_messages,
+                vector::empty(),
                 sign_data,
                 sign_data_event,
                 ctx
@@ -94,6 +95,7 @@ module dwallet_system::dwallet_tests {
             dwallet_id,
             object::id(&dwallet_cap),
             sign_messages,
+            vector::empty(),
             sign_data,
             sign_data_event,
             ctx
@@ -127,6 +129,7 @@ module dwallet_system::dwallet_tests {
             dwallet_id,
             object::id(&dwallet_cap),
             sign_messages,
+            vector::empty(),
             sign_data,
             sign_data_event,
             ctx
@@ -161,6 +164,7 @@ module dwallet_system::dwallet_tests {
             dwallet_id,
             object::id(&dwallet_cap),
             sign_messages,
+            vector::empty(),
             sign_data,
             sign_data_event,
             ctx
@@ -195,6 +199,7 @@ module dwallet_system::dwallet_tests {
             dwallet_id,
             object::id(&dwallet_cap),
             sign_messages,
+            vector::empty(),
             sign_data,
             sign_data_event,
             ctx
@@ -228,6 +233,7 @@ module dwallet_system::dwallet_tests {
             dwallet_id,
             different_dwallet_cap_id,
             sign_messages,
+            vector::empty(),
             sign_data,
             sign_data_event,
             ctx

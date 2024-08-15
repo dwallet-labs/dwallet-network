@@ -25,8 +25,8 @@ use sui_types::messages_checkpoint::{
     CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary,
 };
 use sui_types::messages_signature_mpc::{
-    config_signature_mpc_secret_for_network_for_testing, DecryptionPublicParameters, PartyID,
-    SecretKeyShareSizedNumber, SignatureMPCMessageSummary, SignatureMPCOutput,
+    DecryptionPublicParameters, PartyID, SecretKeyShareSizedNumber, SignatureMPCMessageSummary,
+    SignatureMPCOutput,
 };
 use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemStateTrait;
 use sui_types::sui_system_state::SuiSystemStateTrait;

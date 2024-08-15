@@ -90,6 +90,7 @@ signature-mpc.workspace = true
 workspace-hack.workspace = true
 zeroize.workspace = true
 mysticeti-core = { git = "https://github.com/MystenLabs/mysticeti", rev = "318d61d27f47d257d99a86983d835e9e9756bc59" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/2pc-mpc.git", features = ["secp256k1", "bulletproofs", "paillier"] }
 
 [dev-dependencies]
 clap.workspace = true

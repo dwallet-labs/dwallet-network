@@ -52,7 +52,7 @@ module dwallet_system::dwallet {
 
     #[allow(unused_field)]
     /// `DWallet` represents a wallet that is created after the DKG process.
-    struct DWallet has key, store {
+    struct DWallet<phantom T> has key, store {
         id: UID,
         session_id: ID,
         dwallet_cap_id: ID,
@@ -61,14 +61,14 @@ module dwallet_system::dwallet {
         public_key: vector<u8>,
     }
 
-    public fun new_dwallet(
+    public fun new_dwallet<T: drop>(
         session_id: ID,
         dwallet_cap_id: ID,
         output: vector<u8>,
         public_key: vector<u8>,
         ctx: &mut TxContext
-    ): DWallet {
-        DWallet {
+    ): DWallet<T> {
+        DWallet<T> {
             id: object::new(ctx),
             session_id,
             dwallet_cap_id,
@@ -77,9 +77,11 @@ module dwallet_system::dwallet {
         }
     }
 
-    public fun output(dwallet: &DWallet): vector<u8> { dwallet.output }
+    public fun get_output<T: drop>(dwallet: &DWallet<T>): vector<u8> { dwallet.output }
 
-    public fun dwallet_cap_id(dwallet: &DWallet): ID { dwallet.dwallet_cap_id }
+    public fun get_dwallet_cap_id<T: drop>(dwallet: &DWallet<T>): ID { dwallet.dwallet_cap_id }
+
+    public fun get_public_key<T: drop>(dwallet: &DWallet<T>): vector<u8> { dwallet.public_key }
 
     /// `DWalletCap` holder controls a corresponding `Dwallet`.
     struct DWalletCap has key, store {
@@ -108,6 +110,7 @@ module dwallet_system::dwallet {
         dwallet_id: ID,
         dwallet_cap_id: ID,
         messages: vector<vector<u8>>,
+        dwallet_public_key: vector<u8>,
         sign_data: S,
         sign_data_event: E,
     }
@@ -127,6 +130,24 @@ module dwallet_system::dwallet {
         messages: vector<vector<u8>>,
         sender: address,
         sign_data: S,
+        dwallet_public_key: vector<u8>,
+    }
+
+    public(friend) fun get_dwallet_public_key<S: store>(
+        session: &SignSession<S>
+    ): vector<u8> { session.dwallet_public_key }
+
+    public(friend) fun get_sign_data<S: store>(session: &SignSession<S>): &S { &session.sign_data }
+
+    public(friend) fun get_messages<S: store>(session: &SignSession<S>): vector<vector<u8>> { session.messages }
+
+    public(friend) fun get_sender<S: store>(session: &SignSession<S>): address { session.sender }
+
+    #[allow(unused_field)]
+    struct SignOutputEvent has copy, drop {
+        sign_output_id: ID,
+        signatures: vector<vector<u8>>,
+        dwallet_id: ID
     }
 
     #[allow(unused_field)]
@@ -237,6 +258,7 @@ module dwallet_system::dwallet {
         dwallet_id: ID,
         dwallet_cap_id: ID,
         messages: vector<vector<u8>>,
+        dwallet_public_key: vector<u8>,
         sign_data: S,
         sign_data_event: E,
         ctx: &mut TxContext
@@ -248,6 +270,7 @@ module dwallet_system::dwallet {
             messages,
             sign_data,
             sign_data_event,
+            dwallet_public_key,
         }
     }
 
@@ -287,6 +310,7 @@ module dwallet_system::dwallet {
             messages,
             sign_data,
             sign_data_event,
+            dwallet_public_key,
         } = partial_user_signed_messages;
 
         object::delete(id);
@@ -314,6 +338,7 @@ module dwallet_system::dwallet {
             messages,
             sender,
             sign_data,
+            dwallet_public_key
         };
 
         // This part actaully starts the `Sign` proccess in the blockchain.
@@ -328,13 +353,34 @@ module dwallet_system::dwallet {
         transfer::freeze_object(sign_session);
     }
 
-    #[allow(unused_function)]
-    /// This function is called by blockchain itself.
-    /// Validtors call it, it's part of the blockchain logic.
-    /// NOT a native function.
-    fun create_sign_output<S: store>(session: &SignSession<S>, signatures: vector<vector<u8>>, ctx: &mut TxContext) {
-        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+    /// The output that being written when an aggregator tries to publish an invalid signature.
+    struct MaliciousAggregatorSignOutput has key {
+        id: UID,
+        aggregator_public_key: vector<u8>,
+        epoch: u64,
+        signatures: vector<vector<u8>>,
+        messages: vector<vector<u8>>,
+        dwallet_id: ID,
+        session_id: ID,
+    }
 
+    /// An event that being emitted when an aggregator tries to publish an invalid signature.
+    /// Being used to punish the aggregator.
+    struct MaliciousAggregatorEvent has copy, drop {
+        aggregator_public_key: vector<u8>,
+        epoch: u64,
+        signatures: vector<vector<u8>>,
+        messages: vector<vector<u8>>,
+        dwallet_id: ID,
+        malicious_sign_output_id: ID,
+    }
+
+    /// Generic function to create a `SignOutput`.
+    /// Creates the output for various signature algorithms.
+    public(friend) fun create_sign_output<S: store>(
+        session: &SignSession<S>,
+        signatures: vector<vector<u8>>,
+        ctx: &mut TxContext) {
         let sign_output = SignOutput {
             id: object::new(ctx),
             session_id: object::id(session),
@@ -343,7 +389,40 @@ module dwallet_system::dwallet {
             signatures,
             sender: session.sender,
         };
-        transfer::transfer(sign_output, session.sender);
+        event::emit(SignOutputEvent {
+            sign_output_id: object::id(&sign_output),
+            signatures,
+            dwallet_id: session.dwallet_id,
+        });
+        transfer::freeze_object(sign_output);
+    }
+
+    /// Generic function to create a `MaliciousAggregatorSignOutput`.
+    /// Creates the output for various signature algorithms.
+    public(friend) fun create_malicious_aggregator_sign_output<S: store>(
+        aggregator_public_key: vector<u8>,
+        session: &SignSession<S>,
+        signatures: vector<vector<u8>>,
+        ctx: &mut TxContext
+    ) {
+        let failed_sign_output = MaliciousAggregatorSignOutput {
+            id: object::new(ctx),
+            aggregator_public_key,
+            epoch: tx_context::epoch(ctx),
+            signatures,
+            messages: session.messages,
+            dwallet_id: session.dwallet_id,
+            session_id: object::id(session),
+        };
+        event::emit(MaliciousAggregatorEvent {
+            aggregator_public_key,
+            epoch: tx_context::epoch(ctx),
+            signatures,
+            messages: session.messages,
+            dwallet_id: session.dwallet_id,
+            malicious_sign_output_id: object::id(&failed_sign_output),
+        });
+        transfer::freeze_object(failed_sign_output);
     }
 
     struct EncryptedUserShare has key {
@@ -356,7 +435,7 @@ module dwallet_system::dwallet {
     /// An Additively Homomorphic Encryption (AHE) public key
     /// that can be used to encrypt a user share in order to prove to the network that
     /// the recipient can sign with a dWallet when it is transferred or access is granted to it.
-    struct EncryptionKey has key, store {
+    struct EncryptionKey has key {
         id: UID,
         scheme: u8,
         encryption_key: vector<u8>,
@@ -364,16 +443,17 @@ module dwallet_system::dwallet {
     }
 
     const Paillier: u8 = 0;
-
     fun is_valid_encryption_key_scheme(scheme: u8): bool {
         scheme == Paillier // || scheme == ...
     }
 
+    /// Register an encryption key to encrypt a user share.
+    /// The key is saved as an immutable object.
     public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext) {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         let encryption_key = EncryptionKey {
             id: object::new(ctx),
-            scheme: scheme,
+            scheme,
             encryption_key: key,
             key_owner_address: tx_context::sender(ctx),
         };
@@ -419,13 +499,14 @@ module dwallet_system::dwallet {
         id_to_address(table::borrow(&encryption_key_holder.encryption_keys, key_owner))
     }
 
-    public fun encrypt_user_share(
-        dwallet: &DWallet,
+    /// Encrypt a user share with an AHE encryption key.
+    public fun encrypt_user_share<T: drop>(
+        dwallet: &DWallet<T>,
         encryption_key: &EncryptionKey,
         encrypted_secret_share_and_proof: vector<u8>,
         ctx: &mut TxContext,
     ): ID {
-        let is_valid = validate_encrypted_user_secret_share(
+        let is_valid = verify_encrypted_user_secret_share(
             encryption_key.encryption_key,
             encrypted_secret_share_and_proof,
             dwallet.output,
@@ -446,7 +527,7 @@ module dwallet_system::dwallet {
     }
 
     #[allow(unused_function)]
-    native fun validate_encrypted_user_secret_share(
+    native fun verify_encrypted_user_secret_share(
         secret_share_public_key: vector<u8>,
         encrypted_secret_share_and_proof: vector<u8>,
         dwallet_output: vector<u8>,

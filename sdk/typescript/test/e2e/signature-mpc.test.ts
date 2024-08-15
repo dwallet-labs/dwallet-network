@@ -80,9 +80,9 @@ describe('Create public key', () => {
 	});
 
 	it('the signature mpc create dwallet', async () => {
-		const [encryption_key, _] = generate_keypair();
+		const [encryptionKey, _] = generate_keypair();
 		const pubKeyRef = await storeEncryptionKey(
-			encryption_key,
+			encryptionKey,
 			EncryptionKeyScheme.Paillier,
 			toolbox.keypair,
 			toolbox.client,

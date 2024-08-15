@@ -25,10 +25,10 @@ pub const INVALID_INPUT: u64 = 0;
 
 #[derive(Clone)]
 pub struct TwoPCMPCDKGCostParams {
-    /// Base cost for invoking the `dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share` function
+    /// Base cost for invoking the `dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share` function.
     pub dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base:
         InternalGas,
-    /// Base cost for invoking the `sign_verify_encrypted_signature_parts_prehash` function
+    /// Base cost for invoking the `sign_verify_encrypted_signature_parts_prehash` function.
     pub sign_verify_encrypted_signature_parts_prehash_cost_base: InternalGas,
 }
 /***************************************************************************************************

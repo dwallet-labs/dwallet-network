@@ -1,9 +1,13 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-use crate::object_runtime::ObjectRuntime;
-use crate::NativesCostTable;
+
+use std::collections::VecDeque;
+
+use group::GroupElement as g;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::InternalGas;
+use move_core_types::vm_status::StatusCode;
+use move_core_types::vm_status::StatusCode::INVALID_PARAM_TYPE_FOR_DESERIALIZATION;
 use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeContext};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -11,26 +15,34 @@ use move_vm_types::{
     pop_arg,
     values::{Value, Vector},
 };
+use smallvec::smallvec;
+
+use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
-    get_proof_public_parameters, is_valid_proof, EncryptedUserShareAndProof, SecretShareProof,
+    get_encryption_of_discrete_log_public_parameters, verify_proof,
 };
 use signature_mpc::twopc_mpc_protocols::{
+    affine_point_to_public_key,
     decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share,
     decentralized_party_sign_verify_encrypted_signature_parts_prehash, Commitment,
-    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, ProtocolContext,
+    DKGDecentralizedPartyOutput, DecentralizedPartyPresign, Hash, ProtocolContext,
     PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof,
     SecretKeyShareEncryptionAndProof,
 };
-use smallvec::smallvec;
-use std::collections::VecDeque;
+
+use crate::object_runtime::ObjectRuntime;
+use crate::NativesCostTable;
+
 pub const INVALID_INPUT: u64 = 0;
 
 #[derive(Clone)]
 pub struct TwoPCMPCDKGCostParams {
-    /// Base cost for invoking the `dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share` function
+    /// Base cost
+    /// for invoking the [`dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share`]
+    /// function.
     pub dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base:
         InternalGas,
-    /// Base cost for invoking the `sign_verify_encrypted_signature_parts_prehash` function
+    /// Base cost for invoking the [`sign_verify_encrypted_signature_parts_prehash`] function.
     pub sign_verify_encrypted_signature_parts_prehash_cost_base: InternalGas,
 }
 
@@ -40,9 +52,9 @@ pub struct TransferDWalletCostParams {
 }
 
 /***************************************************************************************************
- * native fun validate_encrypted_user_secret_share
+ * native fun verify_encrypted_user_secret_share
  **************************************************************************************************/
-pub fn validate_encrypted_user_secret_share(
+pub fn verify_encrypted_user_secret_share(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -68,11 +80,17 @@ pub fn validate_encrypted_user_secret_share(
     let public_encryption_key = pop_arg!(args, Vector);
     let public_encryption_key = public_encryption_key.to_vec_u8()?;
 
-    let encrypted_secret_share_and_proof =
-        bcs::from_bytes(&encrypted_secret_share_and_proof).unwrap();
-    let language_public_parameters = get_proof_public_parameters(public_encryption_key.clone());
+    let Ok(encrypted_secret_share_and_proof) = bcs::from_bytes(&encrypted_secret_share_and_proof)
+    else {
+        return Ok(NativeResult::err(cost, INVALID_INPUT));
+    };
+    let Ok(language_public_parameters) =
+        get_encryption_of_discrete_log_public_parameters(public_encryption_key.clone())
+    else {
+        return Ok(NativeResult::err(cost, INVALID_INPUT));
+    };
 
-    let is_valid_proof = is_valid_proof(
+    let is_valid_proof = verify_proof(
         language_public_parameters,
         encrypted_secret_share_and_proof,
         dkg_output.centralized_party_public_key_share,
@@ -80,7 +98,7 @@ pub fn validate_encrypted_user_secret_share(
 
     Ok(NativeResult::ok(
         cost,
-        smallvec![Value::bool(is_valid_proof)],
+        smallvec![Value::bool(is_valid_proof.is_ok())],
     ))
 }
 
@@ -173,7 +191,7 @@ pub fn dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
 /***************************************************************************************************
  * native fun sign_verify_encrypted_signature_parts_prehash
  * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::sign_verify_encrypted_signature_parts_prehash(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
- *   gas cost: sign_verify_encrypted_signature_parts_prehash_cost_base   | base cost for function call and fixed opers.
+ *   gas cost: sign_verify_encrypted_signature_parts_prehash_cost_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
 pub fn sign_verify_encrypted_signature_parts_prehash(
     context: &mut NativeContext,
@@ -246,4 +264,47 @@ pub fn sign_verify_encrypted_signature_parts_prehash(
     .is_ok();
 
     Ok(NativeResult::ok(cost, smallvec![Value::bool(valid),]))
+}
+
+pub fn verify_signatures_native(
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 4);
+    let cost = context.gas_used();
+    let public_key = pop_arg!(args, Vec<u8>);
+    let public_key = affine_point_to_public_key(&public_key).unwrap();
+    let hash = pop_arg!(args, u8);
+    let hash = Hash::from(hash);
+    let signatures = pop_arg!(args, Vec<Value>);
+    let signatures = signatures
+        .into_iter()
+        .map(|m| m.value_as::<Vec<u8>>())
+        .collect::<PartialVMResult<Vec<_>>>()?;
+    let messages = pop_arg!(args, Vec<Value>);
+    let messages = messages
+        .into_iter()
+        .map(|m| m.value_as::<Vec<u8>>())
+        .collect::<PartialVMResult<Vec<_>>>()?;
+    let is_valid = twopc_mpc_protocols::verify_signatures(messages, &hash, public_key, signatures);
+    Ok(NativeResult::ok(cost, smallvec![Value::bool(is_valid)]))
+}
+
+pub fn convert_signature_to_canonical_form(
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 1);
+    let cost = context.gas_used();
+    let signature = pop_arg!(args, Vec<u8>);
+    let signature = twopc_mpc_protocols::convert_signature_to_canonical_form(signature)
+        .map_err(|_| PartialVMError::new(INVALID_PARAM_TYPE_FOR_DESERIALIZATION))?;
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::vector_u8(signature)],
+    ))
 }
