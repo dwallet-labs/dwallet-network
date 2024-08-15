@@ -4,12 +4,12 @@
 import networkEnv from '_src/background/NetworkEnv';
 import { API_ENV, ENV_TO_API, type NetworkEnvType } from '_src/shared/api-env';
 import { SentryHttpTransport } from '@mysten/core';
-import { SuiClient, SuiHTTPTransport } from '@mysten/sui.js/client';
+import { DWalletClient, SuiHTTPTransport } from '@dwallet-network/dwallet.js/client';
 
-const suiClientPerNetwork = new Map<string, SuiClient>();
+const suiClientPerNetwork = new Map<string, DWalletClient>();
 const SENTRY_MONITORED_ENVS = [API_ENV.mainnet];
 
-export function getSuiClient({ env, customRpcUrl }: NetworkEnvType): SuiClient {
+export function getSuiClient({ env, customRpcUrl }: NetworkEnvType): DWalletClient {
 	const key = `${env}_${customRpcUrl}`;
 	if (!suiClientPerNetwork.has(key)) {
 		const connection = customRpcUrl ? customRpcUrl : ENV_TO_API[env];
@@ -18,7 +18,7 @@ export function getSuiClient({ env, customRpcUrl }: NetworkEnvType): SuiClient {
 		}
 		suiClientPerNetwork.set(
 			key,
-			new SuiClient({
+			new DWalletClient({
 				transport:
 					!customRpcUrl && SENTRY_MONITORED_ENVS.includes(env)
 						? new SentryHttpTransport(connection)
@@ -29,6 +29,6 @@ export function getSuiClient({ env, customRpcUrl }: NetworkEnvType): SuiClient {
 	return suiClientPerNetwork.get(key)!;
 }
 
-export async function getActiveNetworkSuiClient(): Promise<SuiClient> {
+export async function getActiveNetworkSuiClient(): Promise<DWalletClient> {
 	return getSuiClient(await networkEnv.getActiveNetwork());
 }

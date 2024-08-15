@@ -129,7 +129,6 @@
 		"ws": "^8.14.2"
 	},
 	"dependencies": {
-		"@dwallet-network/signature-mpc-wasm": "workspace:*",
 		"@mysten/bcs": "0.11.1",
 		"@mysten/sui.js": "^0.51.2",
 		"@noble/curves": "^1.1.0",

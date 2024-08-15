@@ -51,6 +51,7 @@ const waitForSignOutput = async (client: DWalletClient) => {
 				MoveEventType: `${packageId}::${dWalletModuleName}::SignOutputEvent`,
 			},
 			onMessage: (event) => {
+				// @ts-ignore
 				resolve(event?.parsedJson?.signatures);
 			},
 		});
