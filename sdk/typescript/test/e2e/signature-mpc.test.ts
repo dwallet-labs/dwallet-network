@@ -13,7 +13,7 @@ import {
 	generate_proof,
 	getEncryptionKeyByObjectId,
 	storeEncryptionKey,
-	transferDwallet,
+	encryptUserShare,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
 
@@ -114,7 +114,7 @@ describe('Test key share transfer', () => {
 		let secretShare = new Uint8Array(secretShareBytes);
 		const encryptedUserShareAndProof = generate_proof(secretShare, recipientData?.encryptionKey!);
 
-		await transferDwallet(
+		await encryptUserShare(
 			toolbox.client,
 			toolbox.keypair,
 			encryptedUserShareAndProof,
