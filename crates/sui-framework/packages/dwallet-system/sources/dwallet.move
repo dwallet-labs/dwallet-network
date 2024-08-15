@@ -7,7 +7,7 @@ module dwallet_system::dwallet {
     use std::vector;
 
     use dwallet::event;
-    use dwallet::object::{Self, ID, UID};
+    use dwallet::object::{Self, ID, UID, id_to_address};
     use dwallet::table;
     use dwallet::table::Table;
     use dwallet::transfer;
@@ -369,7 +369,7 @@ module dwallet_system::dwallet {
         scheme == Paillier // || scheme == ...
     }
 
-    public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
+    public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext) {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         let encryption_key = EncryptionKey {
             id: object::new(ctx),
@@ -377,9 +377,7 @@ module dwallet_system::dwallet {
             encryption_key: key,
             key_owner_address: tx_context::sender(ctx),
         };
-        let encryption_key_id = object::id(&encryption_key);
         transfer::freeze_object(encryption_key);
-        encryption_key_id
     }
 
     struct ActiveEncryptionKeys has key {
@@ -414,16 +412,12 @@ module dwallet_system::dwallet {
         );
     }
 
-    // public fun encrypt_user_share_with_primary(
-    //     dwallet: &DWallet,
-    //     encrypted_secret_share_and_proof: vector<u8>,
-    //     encryption_key_holder: &ActiveEncryptionKeys,
-    //     key_owner: address,
-    //     ctx: &mut TxContext,
-    // ): &ID {
-    //     let encryption_key = table::borrow(&encryption_key_holder.encryption_keys, key_owner);
-    //     encrypt_user_share(dwallet, encryption_key, encrypted_secret_share_and_proof, ctx)
-    // }
+    public fun get_encryption_key(
+        encryption_key_holder: &ActiveEncryptionKeys,
+        key_owner: address,
+    ): address {
+        id_to_address(table::borrow(&encryption_key_holder.encryption_keys, key_owner))
+    }
 
     public fun encrypt_user_share(
         dwallet: &DWallet,

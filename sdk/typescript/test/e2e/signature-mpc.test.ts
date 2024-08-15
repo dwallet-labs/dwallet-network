@@ -11,7 +11,7 @@ import {
 	decrypt_user_share,
 	EncryptionKeyScheme,
 	generate_keypair,
-	generate_proof, getEncryptionActiveKey,
+	generate_proof, getDwalletActiveEncryptionKey,
 	getEncryptionKeyByObjectId,
 	setDwalletPrimaryEncryptionKey,
 	storeEncryptionKey,
@@ -80,7 +80,6 @@ describe('Create public key', () => {
 	});
 
 	it('the signature mpc create dwallet', async () => {
-		const dkg = await createDWallet(toolbox.keypair, toolbox.client);
 		const [encryption_key, _] = generate_keypair();
 		const pubKeyRef = await storeEncryptionKey(
 			encryption_key,
@@ -95,6 +94,11 @@ describe('Create public key', () => {
 			toolbox.client,
 			toolbox.keypair,
 			pubKeyRef?.objectId!,
+			encryptionKeysHolder.objectId,
+		);
+
+		let id = await getDwalletActiveEncryptionKey(
+			toolbox.keypair,
 			encryptionKeysHolder.objectId,
 		);
 	});

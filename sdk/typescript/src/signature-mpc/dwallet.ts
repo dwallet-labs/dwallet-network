@@ -120,6 +120,35 @@ export const getEncryptionKeyByObjectId = async (
 		: null;
 };
 
+export const getDwalletActiveEncryptionKey = async (
+	// client: DWalletClient,
+	keypair: Keypair,
+	encryptionKeysHolderID: string,
+) => {
+	const tx = new TransactionBlock();
+	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
+
+	console.log(keypair.toSuiAddress());
+
+	let [active_encryption_key_id] = tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::get_encryption_key`,
+		arguments: [encryptionKeysHolder, tx.pure(keypair.toSuiAddress())],
+	});
+
+	// console.log(b);
+
+	// let a = await client.signAndExecuteTransactionBlock({
+	// 	signer: keypair,
+	// 	transactionBlock: tx,
+	// 	options: {
+	// 		showEffects: true,
+	// 	},
+	// });
+
+	// console.log(a);
+	return active_encryption_key_id;
+};
+
 export const setDwalletPrimaryEncryptionKey = async (
 	client: DWalletClient,
 	keypair: Keypair,
