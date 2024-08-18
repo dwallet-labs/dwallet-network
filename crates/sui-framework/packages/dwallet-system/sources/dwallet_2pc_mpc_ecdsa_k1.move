@@ -475,7 +475,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         encrypted_secret_share_and_proof: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        let is_valid = verify_encrypted_user_secret_share(
+        let is_valid = verify_encrypted_user_secret_share_secp256k1(
             get_encryption_key(encryption_key),
             encrypted_secret_share_and_proof,
             get_output(dwallet),
@@ -492,7 +492,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_function)]
-    native fun verify_encrypted_user_secret_share(
+    native fun verify_encrypted_user_secret_share_secp256k1(
         secret_share_public_key: vector<u8>,
         encrypted_secret_share_and_proof: vector<u8>,
         dwallet_output: vector<u8>,

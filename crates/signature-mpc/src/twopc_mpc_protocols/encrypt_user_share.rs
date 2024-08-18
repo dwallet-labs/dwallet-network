@@ -69,8 +69,8 @@ pub fn generate_keypair() -> Result<(Vec<u8>, Vec<u8>)> {
 }
 
 /// Create a public parameters object for encryption of discrete log langauge.
-/// `encryption_key`: The public key of the Paillier encryption scheme, serialized as bcs bytes.
-pub fn get_encryption_of_discrete_log_public_parameters(
+/// `encryption_key`: The public key (of the Paillier encryption scheme) to encrypt to, serialized as bcs bytes.
+pub fn encryption_of_discrete_log_public_parameters(
     encryption_key: Vec<u8>,
 ) -> Result<LangPublicParams> {
     let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
@@ -259,7 +259,7 @@ mod tests {
     use twopc_mpc::secp256k1::paillier::bulletproofs::DKGDecentralizedPartyOutput;
 
     use crate::twopc_mpc_protocols::encrypt_user_share::{
-        generate_keypair, generate_proof, get_encryption_of_discrete_log_public_parameters,
+        generate_keypair, generate_proof, encryption_of_discrete_log_public_parameters,
     };
 
     use super::*;
@@ -281,7 +281,7 @@ mod tests {
         let (encryption_key, decryption_key) = generate_keypair().unwrap();
 
         let language_public_parameters =
-            get_encryption_of_discrete_log_public_parameters(encryption_key.clone()).unwrap();
+            encryption_of_discrete_log_public_parameters(encryption_key.clone()).unwrap();
 
         let encrypted_user_share_and_proof = match generate_proof(
             encryption_key.clone(),

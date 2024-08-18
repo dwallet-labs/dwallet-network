@@ -757,8 +757,8 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
         ),
         (
             "dwallet_2pc_mpc_ecdsa_k1",
-            "verify_encrypted_user_secret_share",
-            make_native!(twopc_mpc::verify_encrypted_user_secret_share),
+            "verify_encrypted_user_secret_share_secp256k1",
+            make_native!(twopc_mpc::verify_encrypted_user_secret_share_secp256k1),
         ),
         (
             "dwallet_2pc_mpc_ecdsa_k1",

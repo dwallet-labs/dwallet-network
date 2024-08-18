@@ -13,7 +13,7 @@ use signature_mpc::twopc_mpc_protocols::{
 };
 use signature_mpc::twopc_mpc_protocols::CentralizedPartyPresign;
 use signature_mpc::twopc_mpc_protocols::DKGCentralizedPartyOutput;
-use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{EncryptedUserShareAndProof, get_encryption_of_discrete_log_public_parameters};
+use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{EncryptedUserShareAndProof, encryption_of_discrete_log_public_parameters};
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_presign;
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_sign;
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_presign;
@@ -246,7 +246,7 @@ pub fn generate_keypair() -> Result<JsValue, JsErr> {
 
 #[wasm_bindgen]
 pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsValue, JsErr> {
-    let language_public_parameters = get_encryption_of_discrete_log_public_parameters(public_key.clone()).map_err(|e| to_js_err(e))?;
+    let language_public_parameters = encryption_of_discrete_log_public_parameters(public_key.clone()).map_err(|e| to_js_err(e))?;
     let proof_public_output =
         signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_proof(
             public_key,
