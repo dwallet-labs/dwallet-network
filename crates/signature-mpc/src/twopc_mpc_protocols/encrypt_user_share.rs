@@ -138,8 +138,7 @@ pub fn generate_proof(
         unbounded_witness_public_parameters,
         bulletproofs::PublicParameters::default(),
         language_public_parameters,
-    )
-    .unwrap();
+    )?;
 
     let witness: language::WitnessSpaceGroupElement<1, EncDescLogLang> =
         (plaintext, randomness).into();
@@ -259,7 +258,7 @@ mod tests {
     use twopc_mpc::secp256k1::paillier::bulletproofs::DKGDecentralizedPartyOutput;
 
     use crate::twopc_mpc_protocols::encrypt_user_share::{
-        generate_keypair, generate_proof, encryption_of_discrete_log_public_parameters,
+        encryption_of_discrete_log_public_parameters, generate_keypair, generate_proof,
     };
 
     use super::*;
