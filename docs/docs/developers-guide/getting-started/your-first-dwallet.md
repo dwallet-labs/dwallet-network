@@ -103,6 +103,21 @@ const keypair = new Ed25519Keypair();
 ```
 To read more, refer to [Sui TypeScript SDK documentation](https://sdk.mystenlabs.com/typescript).
 
+### Get funds on the dWallet Network
+To create a dWallet and use its functionalities on the dWallet Network, you'll have to pay gas fees.
+You can get funds on our testnet in the following way using the `keypair` you created in the previous step.
+
+```typescript
+// get tokens from the Testnet faucet server
+const response = await requestDwltFromFaucetV0({
+    // connect to Testnet
+    host: 'http://faucet.alpha.testnet.dwallet.cloud/gas',
+    recipient: keypair.toSuiAddress(),
+});
+
+console.log(response);
+```
+
 ### Create a dWallet
 
 Call the `createDWallet()` function in the following way after you generated `keypair` and `client` parameters [above](#prerequisites):
