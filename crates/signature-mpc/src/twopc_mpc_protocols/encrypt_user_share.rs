@@ -68,8 +68,10 @@ pub fn generate_keypair() -> Result<(Vec<u8>, Vec<u8>)> {
     Ok((encryption_key, decryption_key))
 }
 
-/// Create a public parameters object for encryption of discrete log langauge.
-/// `encryption_key`: The public key (of the Paillier encryption scheme) to encrypt to, serialized as bcs bytes.
+/// Create a public parameters object for encryption of discrete log language.
+/// # Parameters
+/// `encryption_key`: The public key (of the Paillier encryption scheme) to encrypt to,
+/// serialized as bcs bytes.
 pub fn encryption_of_discrete_log_public_parameters(
     encryption_key: Vec<u8>,
 ) -> Result<LangPublicParams> {
