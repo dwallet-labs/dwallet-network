@@ -68,12 +68,14 @@ pub fn verify_message_proof(
 
     let cost = context.gas_used();
 
-    let contract_address = pop_arg!(args, Vector).to_vec_u8()?;
-    let state_root = pop_arg!(args, Vector).to_vec_u8()?;
-    let map_slot = pop_arg!(args, u64);
-    let dwallet_id = pop_arg!(args, Vector).to_vec_u8()?;
-    let message = pop_arg!(args, Vector).to_vec_u8()?;
-    let proof = pop_arg!(args, Vector).to_vec_u8()?;
+    let (contract_address, state_root, map_slot, dwallet_id, message, proof) = (
+        pop_arg!(args, Vector).to_vec_u8()?,
+        pop_arg!(args, Vector).to_vec_u8()?,
+        pop_arg!(args, u64),
+        pop_arg!(args, Vector).to_vec_u8()?,
+        pop_arg!(args, Vector).to_vec_u8()?,
+        pop_arg!(args, Vector).to_vec_u8()?,
+    );
 
     let proof = bcs::from_bytes::<EIP1186ProofResponse>(proof.as_slice())
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
@@ -85,7 +87,7 @@ pub fn verify_message_proof(
         .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_STATUS))?;
 
     let contract_address = Address::from_slice(contract_address.as_slice());
-    let state_root = Bytes32::try_from(state_root)
+    let state_root = Bytes32::try_from(state_root.as_slice())
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
     let account_proof = create_account_proof(&contract_address, &state_root, &proof);
@@ -170,7 +172,7 @@ pub(crate) fn verify_eth_state(
         PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
     })?;
 
-    let state_root = eth_state.clone().get_current_state_root();
+    let state_root = eth_state.clone().get_finalized_state_root();
     let new_state_bcs = bcs::to_bytes(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
     let slot = u64::from(eth_state.get_latest_slot());
