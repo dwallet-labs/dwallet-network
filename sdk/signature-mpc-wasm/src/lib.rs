@@ -33,6 +33,7 @@ pub struct InitiateDKGValue {
 #[derive(Serialize, Deserialize)]
 pub struct FinalizeDKGValue {
     pub public_key_share_decommitment_and_proof: Vec<u8>,
+    pub secret_key_share: Vec<u8>,
     pub dkg_output: Vec<u8>,
 }
 
@@ -82,6 +83,7 @@ pub fn finalize_dkg(
         public_key_share_decommitment_and_proof: bcs::to_bytes(
             &public_key_share_decommitment_and_proof,
         )?,
+        secret_key_share: bcs::to_bytes(&dkg_output.secret_key_share)?,
         dkg_output: bcs::to_bytes(&dkg_output)?,
     };
     Ok(serde_wasm_bindgen::to_value(&value)?)
@@ -243,6 +245,9 @@ pub fn generate_keypair() -> Result<JsValue, JsErr> {
             .map_err(|e| to_js_err(e))?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
+
+#[wasm_bindgen]
+pub fn extract_user_share_from_dkg_output(dkg_output: Vec<u8>){}
 
 #[wasm_bindgen]
 pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsValue, JsErr> {
