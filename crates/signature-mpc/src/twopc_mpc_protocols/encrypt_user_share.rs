@@ -2,13 +2,13 @@ use std::marker::PhantomData;
 
 use anyhow::Result;
 use commitment::GroupsPublicParametersAccessors;
-use crypto_bigint::{Uint, U256};
-use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
-use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
+use crypto_bigint::{U256, Uint};
 use enhanced_maurer::{
     encryption_of_discrete_log, EnhancedLanguage, Proof, PublicParameters as MaurerPublicParameters,
 };
-use group::{secp256k1, GroupElement, Samplable};
+use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
+use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
+use group::{GroupElement, MulByGenerator, Samplable, secp256k1};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey,
     GroupsPublicParametersAccessors as PublicParametersAccessors,
@@ -24,7 +24,11 @@ use tiresias::{
     PlaintextSpaceGroupElement, RandomnessSpaceGroupElement,
 };
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
-pub use twopc_mpc::secp256k1::{Scalar, SCALAR_LIMBS};
+pub use twopc_mpc::secp256k1::{Scalar as Secp256k1Scalar, SCALAR_LIMBS};
+use twopc_mpc::secp256k1::paillier::bulletproofs::{
+    DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput,
+};
+use crate::twopc_mpc_protocols::Secp256K1GroupElement;
 
 type LangPublicParams = language::PublicParameters<SOUND_PROOFS_REPETITIONS, EncDescLogLang>;
 
@@ -124,7 +128,6 @@ pub fn generate_proof(
         (&U256::from_be_slice(&user_share)).into(),
         paillier_public_parameters.plaintext_space_public_parameters(),
     )?;
-
     let randomness = RandomnessSpaceGroupElement::sample(
         language_public_parameters
             .encryption_scheme_public_parameters
@@ -247,12 +250,30 @@ pub fn decrypt_user_share(
     )?;
     let decryption_key = bcs::from_bytes(&decryption_key)?;
     let decryption_key = DecryptionKey::new(decryption_key, &paillier_public_parameters)?;
-
     // safe to `unwrap` as decryption in Paillier always succeeds
     let plaintext = decryption_key
         .decrypt(&ciphertext, &paillier_public_parameters)
         .unwrap();
     Ok(bcs::to_bytes(&plaintext.value())?)
+}
+
+fn verify_secret_share(secret_key: Secp256k1Scalar, public_key: Secp256K1GroupElement) -> Result<bool> {
+    let public_parameters = secp256k1::group_element::PublicParameters::default();
+    let generator_group_element =
+        Secp256K1GroupElement::new(public_parameters.generator, &public_parameters)?;
+    Ok(secret_key * generator_group_element == public_key)
+}
+
+/// Parses the secret share & DKG output, and verifies that the secret share
+/// matches the public key share.
+pub fn parse_and_verify_secret_share(secret_share: &[u8], dkg_output: &[u8]) -> Result<bool> {
+    let parsed_secret_key = Secp256k1Scalar::from(Uint::<{ SCALAR_LIMBS }>::from_be_slice(secret_share));
+    let dkg_output = bcs::from_bytes::<DKGCentralizedPartyOutput>(&dkg_output)?;
+    let public_share = Secp256K1GroupElement::new(
+        dkg_output.public_key_share,
+        &secp256k1::group_element::PublicParameters::default(),
+    )?;
+    Ok(verify_secret_share(parsed_secret_key, public_share)?)
 }
 
 #[cfg(test)]
@@ -273,10 +294,10 @@ mod tests {
 
     #[test]
     fn verify_valid_proof_successfully() {
-        let dgk_output = hex::decode(PUBLIC_DKG_OUTPUT).unwrap();
-        let dgk_output = bcs::from_bytes::<DKGDecentralizedPartyOutput>(&dgk_output);
+        let dkg_output = hex::decode(PUBLIC_DKG_OUTPUT).unwrap();
+        let dkg_output = bcs::from_bytes::<DKGDecentralizedPartyOutput>(&dkg_output);
         let centralized_party_public_key_share =
-            dgk_output.unwrap().centralized_party_public_key_share;
+            dkg_output.unwrap().centralized_party_public_key_share;
         let user_share = hex::decode(SECRET_KEY_SHARE).expect("Decoding failed");
 
         let (encryption_key, decryption_key) = generate_keypair().unwrap();

@@ -30,6 +30,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
 
 [[package]]
+name = "base64"
+version = "0.21.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
+
+[[package]]
 name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -929,6 +935,7 @@ name = "signature-mpc"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64",
  "bcs",
  "commitment",
  "crypto-bigint",
@@ -1068,7 +1075,6 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/2pc-mpc.git#4604af01e6a10bcaab11feede064a63e32281875"
 dependencies = [
  "commitment",
  "crypto-bigint",

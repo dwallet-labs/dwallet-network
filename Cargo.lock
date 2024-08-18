@@ -11389,6 +11389,7 @@ name = "signature-mpc"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64 0.21.7",
  "bcs",
  "commitment",
  "crypto-bigint 0.5.5",
@@ -15445,7 +15446,6 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/2pc-mpc.git#4604af01e6a10bcaab11feede064a63e32281875"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",

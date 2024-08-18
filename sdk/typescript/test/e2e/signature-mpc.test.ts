@@ -1,7 +1,8 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { beforeAll, describe, expect, it } from "vitest";
+import { verify_user_share } from '@dwallet-network/signature-mpc-wasm';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	approveAndSign,
@@ -9,11 +10,11 @@ import {
 	createPartialUserSignedMessages,
 	decrypt_user_share,
 	EncryptionKeyScheme,
+	encryptUserShare,
 	generate_keypair,
 	generate_proof,
 	getEncryptionKeyByObjectId,
 	storeEncryptionKey,
-	encryptUserShare,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
 
@@ -128,5 +129,12 @@ describe('Test key share transfer', () => {
 		let secretUserShare = new Uint8Array(256);
 		secretUserShare.set(secretShare.reverse());
 		expect(decryptedKeyshare).toEqual(secretUserShare);
+
+		expect(
+			verify_user_share(
+				new Uint8Array(decryptedKeyshare.slice(0, 32).reverse()),
+				new Uint8Array(dwallet?.dkgOutput!),
+			),
+		).toBeTruthy();
 	});
 });
