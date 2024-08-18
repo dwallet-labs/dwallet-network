@@ -48,20 +48,15 @@ if (dwallet?.data?.content?.dataType == 'moveObject') {
     // @ts-ignore
     const dWalletPubkey = Buffer.from(dwallet?.data?.content?.fields['public_key']);
 
-    // The rest of the code will be shown in the next steps 
-}
-```
-
-```typescript
-function getBitcoinAddressAndOutput(dWalletPubkey: Buffer, network: bitcoin.networks.Network): { address: string, output: Buffer } {
     // Getting the Bitcoin Testnet address and the output 
     const address = bitcoin.payments.p2wpkh({pubkey: dWalletPubkey, network: network}).address!;
     const output = bitcoin.payments.p2wpkh({pubkey: dWalletPubkey, network: network}).output!;
 
     console.log("The Bitcoin Testnet address of the dWallet is", address);
     console.log("The Bitcoin Testnet output of the dWallet is", output);
-    
-    return { address: address, output: output }
+
+
+    // The rest of the code will be shown in the next steps 
 }
 ```
 
@@ -102,8 +97,9 @@ async function getUTXO(address: string): { utxo: any, txid: string, vout: number
 
 ### Create a New Transaction
 
+The following code should be inserted to the if in the previous step.
+
 ```typescript
-const { addresss, output } = getBitcoinAddressAndOutput(dWalletPubkey, TESTNET);
 const recipientAddress = 'put the recipient address here';
 const amonut = 500; // Put any number you want to send in satoshis
 
