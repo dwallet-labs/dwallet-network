@@ -26,7 +26,7 @@ module dwallet_system::ethereum_state {
         id: UID,
         eth_state_id: ID,
         last_slot: u64,
-        eth_smart_contract_addr: vector<u8>,
+        eth_smart_contract_address: vector<u8>,
         eth_smart_contract_slot: u64,
         network: vector<u8>,
     }
@@ -39,7 +39,7 @@ module dwallet_system::ethereum_state {
     public fun init_state(
         checkpoint: vector<u8>,
         network: vector<u8>,
-        eth_smart_contract_addr: vector<u8>,
+        eth_smart_contract_address: vector<u8>,
         eth_smart_contract_slot: u64,
         ctx: &mut TxContext
     ) {
@@ -55,7 +55,7 @@ module dwallet_system::ethereum_state {
             id: object::new(ctx),
             eth_state_id: object::id(&state),
             last_slot: state.time_slot,
-            eth_smart_contract_addr,
+            eth_smart_contract_address,
             eth_smart_contract_slot,
             network,
         });
@@ -79,18 +79,18 @@ module dwallet_system::ethereum_state {
             state_bytes
         );
 
-        let new_state = EthereumState {
-            id: object::new(ctx),
-            data,
-            time_slot,
-            state_root
-        };
+        if (time_slot > latest_ethereum_state.last_slot) {
+            let new_state = EthereumState {
+                id: object::new(ctx),
+                data,
+                time_slot,
+                state_root
+            };
 
-        if (new_state.time_slot > latest_ethereum_state.last_slot) {
             latest_ethereum_state.eth_state_id = object::id(&new_state);
             latest_ethereum_state.last_slot = new_state.time_slot;
+            transfer::freeze_object(new_state);
         };
-        transfer::freeze_object(new_state);
     }
 
     public(friend) fun get_ethereum_state_id_from_latest(
@@ -114,7 +114,13 @@ module dwallet_system::ethereum_state {
     public(friend) fun get_contract_address(
         latest_ethereum_state: &LatestEthereumState
     ): vector<u8> {
-        latest_ethereum_state.eth_smart_contract_addr
+        latest_ethereum_state.eth_smart_contract_address
+    }
+
+    public(friend) fun get_contract_approved_transactions_slot(
+        latest_ethereum_state: &LatestEthereumState
+    ): u64 {
+        latest_ethereum_state.eth_smart_contract_slot
     }
 
     /// Native function.

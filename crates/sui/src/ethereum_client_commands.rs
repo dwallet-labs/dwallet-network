@@ -453,7 +453,6 @@ pub(crate) async fn eth_approve_message(
                 SuiJsonValue::from_object_id(eth_dwallet_cap_id),
                 SuiJsonValue::new(Value::String(message))?,
                 SuiJsonValue::from_object_id(dwallet_id),
-                SuiJsonValue::new(Value::Number(Number::from(data_slot)))?,
                 proof_sui_json,
                 SuiJsonValue::from_object_id(latest_eth_state_shared_object.id),
                 SuiJsonValue::from_object_id(verified_state_object_id),

@@ -12,7 +12,7 @@ use ethers::{
 use helios::config::networks::Network;
 use helios::consensus::ConsensusStateManager;
 use helios::consensus::{nimbus_rpc::NimbusRpc, Bytes32, ConsensusRpc};
-use helios::dwallet::{create_account_proof, extract_storage_proof, light_client::ProofResponse};
+use helios::dwallet::encode_account;
 use helios::execution;
 use helios::execution::{get_message_storage_slot, verify_proof};
 use helios::prelude::{AggregateUpdates, FinalityUpdate, OptimisticUpdate, Update};
@@ -28,10 +28,13 @@ use move_vm_types::{
     values::{Value, Vector},
 };
 use smallvec::smallvec;
-use tracing::log::info;
+use tracing::log::error;
 
 use crate::object_runtime::ObjectRuntime;
 use crate::NativesCostTable;
+
+/// The value of `True` in the contract's storage map.
+const TRUE_VALUE: u8 = 1;
 
 #[derive(Clone)]
 pub struct EthDWalletCostParams {
@@ -90,35 +93,46 @@ pub fn verify_message_proof(
     let state_root = Bytes32::try_from(state_root.as_slice())
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
-    let account_proof = create_account_proof(&contract_address, &state_root, &proof);
+    let account_path = keccak256(contract_address.as_bytes()).to_vec();
+    let account_encoded = encode_account(&proof);
 
     // Verify the account proof against the state root.
     let is_valid_account_proof = verify_proof(
-        &account_proof.proof.as_slice(),
-        &account_proof.root,
-        &account_proof.path,
-        &account_proof.value,
+        &proof.clone().account_proof,
+        &state_root.as_slice().to_vec(),
+        &account_path,
+        &account_encoded,
     );
 
     if !is_valid_account_proof {
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     }
 
-    let storage_proof = extract_storage_proof(message_map_index, proof)
-        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_STATUS))?;
+    let msg_storage_proof = proof
+        .storage_proof
+        .iter()
+        .find(|p| p.key == U256::from(message_map_index.as_bytes()))
+        .ok_or_else(|| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
+
+    let storage_value = [TRUE_VALUE].to_vec();
+    let mut msg_storage_proof_key_bytes = [0u8; 32];
+    msg_storage_proof
+        .key
+        .to_big_endian(&mut msg_storage_proof_key_bytes);
+    let storage_key_hash = keccak256(msg_storage_proof_key_bytes);
 
     let is_valid = verify_proof(
-        &storage_proof.proof,
-        &storage_proof.root,
-        &storage_proof.path,
-        &storage_proof.value,
+        &msg_storage_proof.clone().proof,
+        &proof.storage_hash.as_bytes().to_vec(),
+        &storage_key_hash.to_vec(),
+        &storage_value,
     );
     Ok(NativeResult::ok(cost, smallvec![Value::bool(is_valid)]))
 }
 
 /***************************************************************************************************
  * native fun verify_eth_state
- * Implementation of the Move native function `eth_dwallet::verify_eth_state(proof: vector<vector<u8>>, proof_len: u64, root: vector<u8>, eth_smart_contract_addr: vector<u8>, eth_smart_contract_slot: u64, message: vector<u8>): bool;`
+ * Implementation of the Move native function `eth_dwallet::verify_eth_state(proof: vector<vector<u8>>, proof_len: u64, root: vector<u8>, eth_smart_contract_address: vector<u8>, eth_smart_contract_slot: u64, message: vector<u8>): bool;`
  * gas cost: verify_eth_state_cost_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
 pub(crate) fn verify_eth_state(
@@ -168,7 +182,7 @@ pub(crate) fn verify_eth_state(
     };
 
     eth_state.verify_and_apply_updates(&updates).map_err(|e| {
-        info!("Failed to verify updates: {:?}", e);
+        error!("failed to verify updates: {:?}", e);
         PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
     })?;
 

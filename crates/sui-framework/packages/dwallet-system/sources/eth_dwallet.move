@@ -14,6 +14,7 @@ module dwallet_system::eth_dwallet {
     use dwallet_system::dwallet::{DWalletCap, MessageApproval};
 
     const EInvalidStateProof: u64 = 1;
+    const ENetworkMismatch: u64 = 2;
 
     /// Holds the DWalletCap along with Ethereum-specific information.
     struct EthereumDWalletCap has key {
@@ -42,22 +43,17 @@ module dwallet_system::eth_dwallet {
         eth_dwallet_cap: &EthereumDWalletCap,
         message: vector<u8>,
         dwallet_id: vector<u8>,
-        data_slot: u64,
         proof: vector<u8>,
         latest_ethereum_state: &LatestEthereumState,
         current_wrapped_eth_state: &EthereumState,
     ): vector<MessageApproval> {
-        // Validate that the current Ethereum state from the user is the latest Ethereum state.
-        let current_ethereum_state_id = object::id(current_wrapped_eth_state);
-        let ethereum_state_id_from_latest = ethereum_state::get_ethereum_state_id_from_latest(latest_ethereum_state);
-        assert!(current_ethereum_state_id == ethereum_state_id_from_latest, 0x1);
-
         // Validate that the Ethereum dWallet capability is for the correct network.
         let state_network = ethereum_state::get_ethereum_state_network(latest_ethereum_state);
-        assert!(eth_dwallet_cap.network == state_network, 0x2);
+        assert!(eth_dwallet_cap.network == state_network, ENetworkMismatch);
 
         let state_root = ethereum_state::get_ethereum_state_root(current_wrapped_eth_state);
         let contract_address = ethereum_state::get_contract_address(latest_ethereum_state);
+        let data_slot = ethereum_state::get_contract_approved_transactions_slot(latest_ethereum_state);
 
         let is_valid = verify_message_proof(proof, message, dwallet_id, data_slot, state_root, contract_address);
         assert!(is_valid, EInvalidStateProof);
