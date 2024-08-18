@@ -36,7 +36,7 @@ We used SegWit address format on the Bitcoin Testnet.
 ```typescript
 const dWalletNodeUrl = 'https://fullnode.alpha.testnet.dwallet.cloud';
 const dwalletClient = new DWalletClient({url: dWalletNodeUrl});
-// Set the required network. We will use it in the following steps.
+// Set the required network.
 const TESTNET = bitcoin.networks.testnet;
 
 const {dwalletId, dkgOutput, dwalletCapId} = dkg;
@@ -49,8 +49,8 @@ if (dwallet?.data?.content?.dataType == 'moveObject') {
     const dWalletPubkey = Buffer.from(dwallet?.data?.content?.fields['public_key']);
 
     // Getting the Bitcoin Testnet address and the output 
-    const address = bitcoin.payments.p2wpkh({pubkey: dWalletPubkey, network: network}).address!;
-    const output = bitcoin.payments.p2wpkh({pubkey: dWalletPubkey, network: network}).output!;
+    const address = bitcoin.payments.p2wpkh({pubkey: dWalletPubkey, network: TESTNET}).address!;
+    const output = bitcoin.payments.p2wpkh({pubkey: dWalletPubkey, network: TESTNET}).output!;
 
     console.log("The Bitcoin Testnet address of the dWallet is", address);
     console.log("The Bitcoin Testnet output of the dWallet is", output);
@@ -71,7 +71,7 @@ To create a bitcoin transaction we need to provide the input of the funds we wan
 The input is the proof of owning the funds we want to send and we get it from the previous transaction that sent funds to our address.
 In case of using the testnet, this should be the transaction of the faucet we used.
 
-To get the unspent transactions we are going to use the BlockStream API. There are other APIs if you would like to use somethi
+To get the unspent transactions we are going to use the Blockstream API. There are other APIs if you would like to use something else.
 
 ### Get UTXOs
 ```typescript
@@ -103,8 +103,8 @@ The following code should be inserted to the if in the previous step.
 const recipientAddress = 'put the recipient address here';
 const amonut = 500; // Put any number you want to send in satoshis
 
-// Get the UTXO
-const { utxo, txid, vout, satoshis } = await GetUTXO(senderAddress);
+// Get the UTXO for the sender address
+const { utxo, txid, vout, satoshis } = await GetUTXO(address);
 
 const psbt = new bitcoin.Psbt({ network: TESTNET });
 
@@ -278,7 +278,7 @@ const txHex = tx.toHex();
 ## Broadcast the signed Transaction
 
 After we got the transaction hex, we can broadcast it to the Bitcoin Testnet.
-Again, we will do it using the BlockStream API.
+Again, we will do it using the Blockstream API.
 ```typescript
 // Broadcast the transaction
 const broadcastUrl = `https://blockstream.info/testnet/api/tx`;
