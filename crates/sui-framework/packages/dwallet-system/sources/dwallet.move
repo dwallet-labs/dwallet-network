@@ -45,6 +45,39 @@ module dwallet_system::dwallet {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
 
+    #[allow(unused_field)]
+    /// `DWallet` represents a wallet that is created after the DKG process.
+    struct DWallet<phantom T> has key, store {
+        id: UID,
+        session_id: ID,
+        dwallet_cap_id: ID,
+        // `output` is output for `verify_decommitment_and_proof_of_centralized_party_public_key_share()`
+        output: vector<u8>,
+        public_key: vector<u8>,
+    }
+
+    public(friend) fun create_dwallet<T: drop>(
+        session_id: ID,
+        dwallet_cap_id: ID,
+        output: vector<u8>,
+        public_key: vector<u8>,
+        ctx: &mut TxContext
+    ): DWallet<T> {
+        DWallet<T> {
+            id: object::new(ctx),
+            session_id,
+            dwallet_cap_id,
+            output,
+            public_key,
+        }
+    }
+
+    public fun get_output<T: drop>(dwallet: &DWallet<T>): vector<u8> { dwallet.output }
+
+    public fun get_dwallet_cap_id<T: drop>(dwallet: &DWallet<T>): ID { dwallet.dwallet_cap_id }
+
+    public fun get_public_key<T: drop>(dwallet: &DWallet<T>): vector<u8> { dwallet.public_key }
+
     /// `DWalletCap` holder controls a corresponding `Dwallet`.
     struct DWalletCap has key, store {
         id: UID,
@@ -401,5 +434,64 @@ module dwallet_system::dwallet {
             malicious_sign_output_id: object::id(&failed_sign_output),
         });
         transfer::freeze_object(failed_sign_output);
+    }
+
+    /// Encrypt DWallet secret share with an AHE public key.
+    const EInvalidEncryptionKeyScheme: u64 = 0x2;
+
+    struct EncryptedUserShare has key {
+        id: UID,
+        dwallet_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_id: ID,
+    }
+
+    /// An Additively Homomorphic Encryption (AHE) public key
+    /// that can be used to encrypt a user share in order to prove to the network that
+    /// the recipient can sign with a dWallet when it is transferred or access is granted to it.
+    struct EncryptionKey has key {
+        id: UID,
+        scheme: u8,
+        encryption_key: vector<u8>,
+        key_owner_address: address,
+    }
+
+    public fun get_encryption_key(encryption_key: &EncryptionKey): vector<u8> {
+        encryption_key.encryption_key
+    }
+
+    const Paillier: u8 = 0;
+    fun is_valid_encryption_key_scheme(scheme: u8): bool {
+        scheme == Paillier // || scheme == ...
+    }
+
+    /// Register an encryption key to encrypt a user share.
+    /// The key is saved as an immutable object.
+    public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
+        assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
+        let encryption_key = EncryptionKey {
+            id: object::new(ctx),
+            scheme,
+            encryption_key: key,
+            key_owner_address: tx_context::sender(ctx),
+        };
+        let encryption_key_id = object::id(&encryption_key);
+        transfer::freeze_object(encryption_key);
+        encryption_key_id
+    }
+
+    public(friend) fun create_encrypted_user_share(
+        dwallet_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_id: ID,
+        ctx: &mut TxContext
+    ) {
+        let encrypted_user_share = EncryptedUserShare {
+            id: object::new(ctx),
+            dwallet_id,
+            encrypted_secret_share_and_proof,
+            encryption_key_id,
+        };
+        transfer::freeze_object(encrypted_user_share);
     }
 }

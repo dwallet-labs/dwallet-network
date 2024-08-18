@@ -1,7 +1,6 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-
 #[allow(unused_const)]
 module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Note: currently in order to start DKG, Presign and Sign, the Valdators are waiting for an Event.
@@ -13,18 +12,21 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
-
     use dwallet_system::dwallet;
+
     use dwallet_system::dwallet::{
         create_dwallet_cap,
         create_malicious_aggregator_sign_output,
         create_sign_output,
-        get_dwallet_public_key,
+        DWallet,
+        get_dwallet_cap_id,
         DWalletCap,
+        get_dwallet_public_key,
         get_messages,
-        PartialUserSignedMessages,
         get_sign_data,
-        SignSession
+        get_output,
+        PartialUserSignedMessages,
+        SignSession, get_public_key, EncryptionKey, create_encrypted_user_share, get_encryption_key,
     };
 
     #[test_only]
@@ -41,6 +43,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     const ESignInvalidSignatureParts: u64 = 3;
     const ENotSupported: u64 = 4;
     const EEmptyCommitment: u64 = 5;
+    const EEncryptUserShare: u64 = 6;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -52,6 +55,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     const SYSTEM_ADDRESS: address = @0x0;
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
 
+    struct Secp256K1 has drop {}
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
     /// Event to start a `DKG` session, caught by the Validators.
@@ -86,19 +90,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
 
-
-    #[allow(unused_field)]
-    /// `DWallet` represents a wallet that is created after the DKG process.
-    struct DWallet has key, store {
-        id: UID,
-        session_id: ID,
-        dwallet_cap_id: ID,
-        // `output` is output for `verify_decommitment_and_proof_of_centralized_party_public_key_share()`
-        output: vector<u8>,
-        public_key: vector<u8>,
-    }
-
-    /// `DKGSession` stores the DKG session data.
+    /// `DKGSessionOutput` stores the DKG session output.
     struct DKGSession has key {
         id: UID,
         dwallet_cap_id: ID,
@@ -248,15 +240,9 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             centralized_party_public_key_share_decommitment_and_proof
         );
 
-        let dwallet = DWallet {
-            id: object::new(ctx),
-            session_id,
-            dwallet_cap_id,
-            output,
-            public_key,
-        };
+        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, public_key, ctx);
         // Create dwallet + make it immutable.
-        transfer::freeze_object(dwallet);
+        transfer::public_freeze_object(dwallet);
     }
 
     /// This function implements steps 4 and 5 of the 2PCMPC - Protocol 4 (DKG):
@@ -274,7 +260,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// But, the `commitments_and_proof_to_centralized_party_nonce_shares` is owned by a specific user.
     /// This is trhe first part of the `PreSign` process.
     public fun create_presign_session(
-        dwallet: &DWallet,
+        dwallet: &DWallet<Secp256K1>,
         // Note that in terms on the MPC, the `messages` is not mandatory on pre-signing,
         // currently it will be provided to prevent some attack vectors.
         messages: vector<vector<u8>>,
@@ -287,7 +273,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let messages_len: u64 = vector::length(&messages);
         assert!(messages_len > 0, EMesssagesLengthMustBeGreaterThanZero);
         let dwallet_id = object::id(dwallet);
-        let dwallet_cap_id = dwallet.dwallet_cap_id;
+        let dwallet_cap_id = get_dwallet_cap_id(dwallet);
         let sender = tx_context::sender(ctx);
 
         let session = PresignSession {
@@ -304,7 +290,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             hash,
-            dkg_output: dwallet.output,
+            dkg_output: get_output(dwallet),
             commitments_and_proof_to_centralized_party_nonce_shares,
             messages,
             sender,
@@ -359,7 +345,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// The user needs to call this function after receiving the `Presign` and `PresignSessionOutput`.
     /// The user needs to provide the `public_nonce_encrypted_partial_signature_and_proofs`.
     public fun create_partial_user_signed_messages(
-        dwallet: &DWallet,
+        dwallet: &DWallet<Secp256K1>,
         session: &PresignSession,
         output: PresignSessionOutput,
         presign: Presign,
@@ -376,7 +362,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
         let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
             session.messages,
-            dwallet.output,
+            get_output(dwallet),
             public_nonce_encrypted_partial_signature_and_proofs,
             presign.presigns,
             session.hash
@@ -417,7 +403,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let sign_data_event = NewSignDataEvent {
             presign_session_id: session_id,
             hash: session.hash,
-            dkg_output: dwallet.output,
+            dkg_output: get_output(dwallet),
             public_nonce_encrypted_partial_signature_and_proofs,
             presigns,
         };
@@ -426,7 +412,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             dwallet_cap_id,
             session.messages,
-            dwallet.public_key,
+            get_public_key(dwallet),
             sign_data,
             sign_data_event,
             ctx
@@ -497,6 +483,37 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         hash: u8,
         dwallet_public_key: vector<u8>,
     ): bool;
+
+    /// Encrypt a user share with an AHE encryption key.
+    public fun encrypt_user_share(
+        dwallet: &DWallet<Secp256K1>,
+        encryption_key: &EncryptionKey,
+        encrypted_secret_share_and_proof: vector<u8>,
+        ctx: &mut TxContext,
+    ) {
+        let is_valid = verify_encrypted_user_secret_share_secp256k1(
+            get_encryption_key(encryption_key),
+            encrypted_secret_share_and_proof,
+            get_output(dwallet),
+        );
+
+        assert!(is_valid, EEncryptUserShare);
+
+        create_encrypted_user_share(
+            object::id(dwallet),
+            encrypted_secret_share_and_proof,
+            object::id(encryption_key),
+            ctx
+        );
+    }
+
+    #[allow(unused_function)]
+    native fun verify_encrypted_user_secret_share_secp256k1(
+        secret_share_public_key: vector<u8>,
+        encrypted_secret_share_and_proof: vector<u8>,
+        dwallet_output: vector<u8>,
+    ): bool;
+
 
     #[test_only]
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {

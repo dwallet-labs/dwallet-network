@@ -1,12 +1,19 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { beforeAll, describe, it } from 'vitest';
+import { beforeAll, describe, expect, it } from "vitest";
 
 import {
 	approveAndSign,
 	createDWallet,
 	createPartialUserSignedMessages,
+	decrypt_user_share,
+	EncryptionKeyScheme,
+	generate_keypair,
+	generate_proof,
+	getEncryptionKeyByObjectId,
+	storeEncryptionKey,
+	encryptUserShare,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
 
@@ -60,5 +67,66 @@ describe('Test signature mpc', () => {
 
 		console.log('sigKECCAK256:');
 		console.log(sigKECCAK256);
+	});
+});
+
+describe('Create public key', () => {
+	let toolbox: TestToolbox;
+
+	beforeAll(async () => {
+		toolbox = await setup();
+	});
+
+	it('the signature mpc create dwallet', async () => {
+		const [encryptionKey, _] = generate_keypair();
+		const pubKeyRef = await storeEncryptionKey(
+			encryptionKey,
+			EncryptionKeyScheme.Paillier,
+			toolbox.keypair,
+			toolbox.client,
+		);
+		console.log({ pubKeyRef });
+	});
+});
+
+describe('Test key share transfer', () => {
+	let toolbox: TestToolbox;
+
+	beforeAll(async () => {
+		toolbox = await setup();
+	});
+
+	it('should encrypt and transfer a dwallet to a newly generated public key', async () => {
+		const [encryptionKey, decryptionKey] = generate_keypair();
+		const pubKeyRef = await storeEncryptionKey(
+			encryptionKey,
+			EncryptionKeyScheme.Paillier,
+			toolbox.keypair,
+			toolbox.client,
+		);
+		const publicKeyID = pubKeyRef?.objectId;
+		const recipientData = await getEncryptionKeyByObjectId(toolbox.client, publicKeyID);
+		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
+		const dwalletID = dwallet?.dwalletId!;
+		const secretShare = dwallet?.secretKeyShare!;
+		const encryptedUserShareAndProof = generate_proof(secretShare, recipientData?.encryptionKey!);
+
+		await encryptUserShare(
+			toolbox.client,
+			toolbox.keypair,
+			encryptedUserShareAndProof,
+			publicKeyID,
+			dwalletID,
+		);
+
+		const decryptedKeyshare = decrypt_user_share(
+			encryptionKey,
+			decryptionKey,
+			encryptedUserShareAndProof,
+		);
+
+		let secretUserShare = new Uint8Array(256);
+		secretUserShare.set(secretShare.reverse());
+		expect(decryptedKeyshare).toEqual(secretUserShare);
 	});
 });

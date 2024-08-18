@@ -18,7 +18,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::marker::PhantomData;
 
 pub use group::Value;
-use group::{secp256k1, AffineXCoordinate, GroupElement};
+pub use group::{secp256k1, AffineXCoordinate, GroupElement};
 use homomorphic_encryption::{AdditivelyHomomorphicEncryptionKey, GroupsPublicParametersAccessors};
 use k256::sha2::digest::FixedOutput;
 pub use proof::aggregation::{
@@ -32,7 +32,7 @@ pub use tiresias::{
     AdjustedLagrangeCoefficientSizedNumber, DecryptionKeyShare, LargeBiPrimeSizedNumber,
     PaillierModulusSizedNumber, SecretKeyShareSizedNumber,
 };
-use tiresias::{EncryptionKey, ProtocolError};
+pub use tiresias::{DecryptionKey, EncryptionKey, ProtocolError};
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
 pub use twopc_mpc::secp256k1::paillier::bulletproofs::{
     CentralizedPartyPresign, DKGCentralizedPartyOutput, DKGCommitmentRoundParty,
@@ -66,6 +66,8 @@ pub type SignatureMPCMessageKind = u64;
 pub type SignatureMPCTimestamp = u64;
 pub type PublicKeyValue = Value<Secp256K1GroupElement>;
 pub type SignatureK256Secp256k1 = Signature<k256::Secp256k1>;
+
+pub mod encrypt_user_share;
 
 #[derive(Clone, Debug)]
 pub enum Hash {
