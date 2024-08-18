@@ -25,6 +25,7 @@ module dwallet_system::dwallet {
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const EMesssageApprovalDWalletMismatch: u64 = 1;
     const EInvalidEncryptionKeyScheme: u64 = 2;
+    const EInvalidEncryptionKeyOwner: u64 = 3;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -480,8 +481,9 @@ module dwallet_system::dwallet {
     public fun set_active_encryption_key(
         encryption_key_holder: &mut ActiveEncryptionKeys,
         encryption_key: &EncryptionKey,
-        _ctx: &mut TxContext
+        ctx: &mut TxContext
     ) {
+        assert!(encryption_key.key_owner_address == tx_context::sender(ctx), EInvalidEncryptionKeyOwner);
         if (table::contains(&encryption_key_holder.encryption_keys, encryption_key.key_owner_address)) {
             table::remove(&mut encryption_key_holder.encryption_keys, encryption_key.key_owner_address);
         };
