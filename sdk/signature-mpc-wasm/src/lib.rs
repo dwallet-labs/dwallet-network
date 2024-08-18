@@ -246,9 +246,6 @@ pub fn generate_keypair() -> Result<JsValue, JsErr> {
 }
 
 #[wasm_bindgen]
-pub fn extract_user_share_from_dkg_output(dkg_output: Vec<u8>){}
-
-#[wasm_bindgen]
 pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsValue, JsErr> {
     let language_public_parameters = encryption_of_discrete_log_public_parameters(public_key.clone()).map_err(to_js_err)?;
     let proof_public_output =
