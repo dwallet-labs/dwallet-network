@@ -17,6 +17,7 @@ module dwallet_system::ethereum_state {
         data: vector<u8>,
         time_slot: u64,
         state_root: vector<u8>,
+        network: vector<u8>,
     }
 
     /// Latest Ethereum state object.
@@ -49,6 +50,7 @@ module dwallet_system::ethereum_state {
             data: state_data,
             time_slot: 0u64,
             state_root: vector::empty(),
+            network,
         };
 
         transfer::share_object(LatestEthereumState {
@@ -72,19 +74,20 @@ module dwallet_system::ethereum_state {
         latest_ethereum_state: &mut LatestEthereumState,
         ctx: &mut TxContext,
     ) {
-        let (data, time_slot, state_root) = verify_eth_state(
+        let (data, time_slot, state_root, network) = verify_eth_state(
             updates_bytes,
             finality_update_bytes,
             optimistic_update_bytes,
             state_bytes
         );
 
-        if (time_slot > latest_ethereum_state.last_slot) {
+        if (time_slot > latest_ethereum_state.last_slot && network == latest_ethereum_state.network) {
             let new_state = EthereumState {
                 id: object::new(ctx),
                 data,
                 time_slot,
-                state_root
+                state_root,
+                network
             };
 
             latest_ethereum_state.eth_state_id = object::id(&new_state);
@@ -99,16 +102,10 @@ module dwallet_system::ethereum_state {
         latest_ethereum_state.eth_state_id
     }
 
-    public(friend) fun get_ethereum_state_network(
+    public(friend) fun get_latest_ethereum_state_network(
         latest_ethereum_state: &LatestEthereumState
     ): vector<u8> {
         latest_ethereum_state.network
-    }
-
-    public(friend) fun get_ethereum_state_root(
-        state: &EthereumState
-    ): vector<u8> {
-        state.state_root
     }
 
     public(friend) fun get_contract_address(
@@ -123,6 +120,18 @@ module dwallet_system::ethereum_state {
         latest_ethereum_state.eth_smart_contract_slot
     }
 
+    public(friend) fun get_ethereum_state_root(
+        state: &EthereumState
+    ): vector<u8> {
+        state.state_root
+    }
+
+    public(friend) fun get_ethereum_state_network(
+        state: &EthereumState
+    ): vector<u8> {
+        state.network
+    }
+
     /// Native function.
     /// Verifies the Ethereum state according to the provided updates.
     native fun verify_eth_state(
@@ -130,7 +139,7 @@ module dwallet_system::ethereum_state {
         finality_update: vector<u8>,
         optimistic_update: vector<u8>,
         eth_state: vector<u8>
-    ): (vector<u8>, u64, vector<u8>);
+    ): (vector<u8>, u64, vector<u8>, vector<u8>);
 
     /// Native function.
     /// Creates the initial Ethereum state data with the given checkpoint.

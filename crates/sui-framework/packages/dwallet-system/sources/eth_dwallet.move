@@ -8,6 +8,8 @@ module dwallet_system::eth_dwallet {
     use dwallet::object::{Self, UID};
     use dwallet::transfer;
     use dwallet::tx_context::TxContext;
+    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
+    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::DWallet;
     use dwallet_system::ethereum_state;
     use dwallet_system::ethereum_state::{LatestEthereumState, EthereumState};
     use dwallet_system::dwallet;
@@ -15,6 +17,7 @@ module dwallet_system::eth_dwallet {
 
     const EInvalidStateProof: u64 = 1;
     const ENetworkMismatch: u64 = 2;
+    const EInvalidDWalletCap: u64 = 3;
 
     /// Holds the DWalletCap along with Ethereum-specific information.
     struct EthereumDWalletCap has key {
@@ -42,20 +45,35 @@ module dwallet_system::eth_dwallet {
     public fun approve_message(
         eth_dwallet_cap: &EthereumDWalletCap,
         message: vector<u8>,
-        dwallet_id: vector<u8>,
+        dwallet: &DWallet,
         proof: vector<u8>,
         latest_ethereum_state: &LatestEthereumState,
-        current_wrapped_eth_state: &EthereumState,
+        eth_state: &EthereumState,
     ): vector<MessageApproval> {
         // Validate that the Ethereum dWallet capability is for the correct network.
-        let state_network = ethereum_state::get_ethereum_state_network(latest_ethereum_state);
-        assert!(eth_dwallet_cap.network == state_network, ENetworkMismatch);
+        let latest_state_network = ethereum_state::get_latest_ethereum_state_network(latest_ethereum_state);
+        assert!(eth_dwallet_cap.network == latest_state_network, ENetworkMismatch);
 
-        let state_root = ethereum_state::get_ethereum_state_root(current_wrapped_eth_state);
+        // Validate that the EthereumState is for the correct network.
+        let eth_state_network = ethereum_state::get_ethereum_state_network(eth_state);
+        assert!(eth_state_network == latest_state_network, ENetworkMismatch);
+
+        // Validate that the Ethereum dWallet capability is for the correct DWallet.
+        let dwallet_cap_id = dwallet_2pc_mpc_ecdsa_k1::get_dwallet_cap_id(dwallet);
+        assert!(object::id(&eth_dwallet_cap.dwallet_cap) == dwallet_cap_id, EInvalidDWalletCap);
+
+        let state_root = ethereum_state::get_ethereum_state_root(eth_state);
         let contract_address = ethereum_state::get_contract_address(latest_ethereum_state);
         let data_slot = ethereum_state::get_contract_approved_transactions_slot(latest_ethereum_state);
 
-        let is_valid = verify_message_proof(proof, message, dwallet_id, data_slot, state_root, contract_address);
+        let is_valid = verify_message_proof(
+            proof,
+            message,
+            object::id_to_bytes(&object::id(dwallet)),
+            data_slot,
+            state_root,
+            contract_address
+        );
         assert!(is_valid, EInvalidStateProof);
         dwallet::approve_messages(&eth_dwallet_cap.dwallet_cap, vector[message])
     }

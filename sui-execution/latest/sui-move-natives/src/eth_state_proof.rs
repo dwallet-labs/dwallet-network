@@ -108,18 +108,20 @@ pub fn verify_message_proof(
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     }
 
+    // Get only the proof that matches the message_map_index.
     let msg_storage_proof = proof
         .storage_proof
         .iter()
         .find(|p| p.key == U256::from(message_map_index.as_bytes()))
         .ok_or_else(|| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
-
-    let storage_value = [TRUE_VALUE].to_vec();
+    // Cast the storage key to a 32-byte array, and hash using keccak256 algorithm.
     let mut msg_storage_proof_key_bytes = [0u8; 32];
     msg_storage_proof
         .key
         .to_big_endian(&mut msg_storage_proof_key_bytes);
+
     let storage_key_hash = keccak256(msg_storage_proof_key_bytes);
+    let storage_value = [TRUE_VALUE].to_vec();
 
     let is_valid = verify_proof(
         &msg_storage_proof.clone().proof,
@@ -186,17 +188,24 @@ pub(crate) fn verify_eth_state(
         PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
     })?;
 
-    let state_root = eth_state.clone().get_finalized_state_root();
+    let state_root = eth_state.clone().get_finalized_state_root().to_vec();
     let new_state_bcs = bcs::to_bytes(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
-    let slot = u64::from(eth_state.get_latest_slot());
+    let slot = u64::from(eth_state.clone().get_latest_slot());
+    let network = eth_state
+        .get_network()
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?
+        .to_string()
+        .as_bytes()
+        .to_vec();
 
     Ok(NativeResult::ok(
         cost,
         smallvec![
             Value::vector_u8(new_state_bcs),
             Value::u64(slot),
-            Value::vector_u8(state_root.to_vec()),
+            Value::vector_u8(state_root),
+            Value::vector_u8(network),
         ],
     ))
 }

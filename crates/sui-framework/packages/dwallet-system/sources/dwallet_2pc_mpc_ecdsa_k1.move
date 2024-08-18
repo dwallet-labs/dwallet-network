@@ -422,6 +422,10 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         )
     }
 
+    public(friend) fun get_dwallet_cap_id(dwallet: &DWallet): ID {
+        dwallet.dwallet_cap_id
+    }
+
     #[test_only]
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
         SignData {
