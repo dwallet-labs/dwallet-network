@@ -6,23 +6,25 @@ use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use signature_mpc::twopc_mpc_protocols::{
-    affine_point_to_public_key, decommitment_round_centralized_party_dkg,
-    DKGDecommitmentRoundState, Hash, initiate_centralized_party_dkg, ProtocolContext, PublicKeyValue,
-    recovery_id, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1,
+use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
+    encryption_of_discrete_log_public_parameters, EncryptedUserShareAndProof,
 };
-use signature_mpc::twopc_mpc_protocols::CentralizedPartyPresign;
-use signature_mpc::twopc_mpc_protocols::DKGCentralizedPartyOutput;
-use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{EncryptedUserShareAndProof, encryption_of_discrete_log_public_parameters};
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_presign;
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_sign;
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_presign;
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_sign;
 use signature_mpc::twopc_mpc_protocols::message_digest;
+use signature_mpc::twopc_mpc_protocols::CentralizedPartyPresign;
+use signature_mpc::twopc_mpc_protocols::DKGCentralizedPartyOutput;
 use signature_mpc::twopc_mpc_protocols::PresignDecentralizedPartyOutput;
 use signature_mpc::twopc_mpc_protocols::PublicNonceEncryptedPartialSignatureAndProof;
 use signature_mpc::twopc_mpc_protocols::Result as TwoPCMPCResult;
 use signature_mpc::twopc_mpc_protocols::Scalar;
+use signature_mpc::twopc_mpc_protocols::{
+    affine_point_to_public_key, decommitment_round_centralized_party_dkg,
+    initiate_centralized_party_dkg, recovery_id, DKGDecommitmentRoundState, Hash, ProtocolContext,
+    PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct InitiateDKGValue {
@@ -192,7 +194,7 @@ pub fn finalize_sign(
         public_nonce_encrypted_partial_signature_and_proofs,
         signatures_s,
     )
-        .map_err(JsErr::from).map(|_| ())
+    .map_err(JsErr::from)
 }
 
 #[wasm_bindgen]
@@ -247,13 +249,15 @@ pub fn generate_keypair() -> Result<JsValue, JsErr> {
 
 #[wasm_bindgen]
 pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsValue, JsErr> {
-    let language_public_parameters = encryption_of_discrete_log_public_parameters(public_key.clone()).map_err(to_js_err)?;
+    let language_public_parameters =
+        encryption_of_discrete_log_public_parameters(public_key.clone()).map_err(to_js_err)?;
     let proof_public_output =
         signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_proof(
             public_key,
             secret_share,
             language_public_parameters,
-        ).map_err(to_js_err)?;
+        )
+        .map_err(to_js_err)?;
     let proof_public_output = bcs::to_bytes(&proof_public_output)?;
 
     Ok(serde_wasm_bindgen::to_value(&proof_public_output)?)
@@ -271,7 +275,8 @@ pub fn decrypt_user_share(
         encryption_key,
         decryption_key,
         encrypted_user_share_and_proof,
-    ).map_err(to_js_err)?;
+    )
+    .map_err(to_js_err)?;
     Ok(user_share)
 }
 
