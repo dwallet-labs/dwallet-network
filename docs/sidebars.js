@@ -99,6 +99,11 @@ const sidebars = {
 									id: 'developers-guide/getting-started/examples/broadcast-ether-tx',
 								},
 								{
+									type: 'doc',
+									label: 'Using dWallets on Bitcoin',
+									id: 'developers-guide/getting-started/examples/broadcast-bitcoin-tx',
+								},
+								{
 									type: 'category',
 									label: 'Bitcoin Multi-Sig',
 									collapsed: false,
