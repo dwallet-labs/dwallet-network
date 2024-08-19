@@ -9,11 +9,11 @@ import {
 	initiate_sign,
 } from '@dwallet-network/signature-mpc-wasm';
 
-import {bcs} from '../bcs/index.js';
-import {TransactionBlock} from '../builder/index.js';
-import type {DWalletClient} from '../client/index.js';
-import type {Keypair} from '../cryptography/index.js';
-import {fetchObjectBySessionId} from './utils.js';
+import { bcs } from '../bcs/index.js';
+import { TransactionBlock } from '../builder/index.js';
+import type { DWalletClient } from '../client/index.js';
+import type { Keypair } from '../cryptography/index.js';
+import { fetchObjectBySessionId } from './utils.js';
 
 export {
 	decrypt_user_share,
@@ -57,7 +57,7 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 			? (sessionOutput.fields as {
 					id: { id: string };
 					secret_key_share_encryption_and_proof: number[];
-			  })
+				})
 			: null;
 
 	if (sessionOutputFields) {
@@ -95,16 +95,17 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 				? (dwalletObject.data?.content?.fields as {
 						dwallet_cap_id: string;
 						output: number[];
-				  })
+					})
 				: null;
 
 		return dwalletObjectFields
 			? {
 					dwalletId: dwalletRef?.objectId,
-					dkgOutput: dwalletObjectFields.output,
+					centralizedDKGOutput: final['dkg_output'],
+					decentralizedDKGOutput: dwalletObjectFields.output,
 					dwalletCapId: dwalletObjectFields.dwallet_cap_id,
 					secretKeyShare: final['secret_key_share'],
-			  }
+				}
 			: null;
 	}
 	return null;
@@ -167,7 +168,7 @@ export async function createPartialUserSignedMessages(
 			? (sessionOutput.fields as {
 					id: { id: string };
 					output: number[];
-			  })
+				})
 			: null;
 
 	if (sessionOutputFields) {
@@ -188,7 +189,7 @@ export async function createPartialUserSignedMessages(
 			presignOutput?.dataType === 'moveObject'
 				? (presignOutput.fields as {
 						id: { id: string };
-				  })
+					})
 				: null;
 
 		if (presignOutputFields) {

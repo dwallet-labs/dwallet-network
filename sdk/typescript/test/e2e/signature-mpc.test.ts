@@ -33,7 +33,7 @@ describe('Test signature mpc', () => {
 
 		const signMessagesIdSHA256 = await createPartialUserSignedMessages(
 			dkg?.dwalletId!,
-			dkg?.dkgOutput,
+			dkg?.centralizedDKGOutput,
 			[bytes],
 			'SHA256',
 			toolbox.keypair,
@@ -52,7 +52,7 @@ describe('Test signature mpc', () => {
 
 		const signMessagesIdKECCAK256 = await createPartialUserSignedMessages(
 			dkg?.dwalletId!,
-			dkg?.dkgOutput,
+			dkg?.centralizedDKGOutput,
 			[bytes],
 			'KECCAK256',
 			toolbox.keypair,
@@ -137,7 +137,7 @@ describe('Test key share transfer', () => {
 				// This is because of BCS and PlaintextSpaceGroupElement serialization.
 				// PlaintextSpaceGroupElement is U2048 and has 32LIMBS of 64 bits each.
 				new Uint8Array(decryptedKeyShare.slice(0, 32).reverse()),
-				new Uint8Array(dwallet?.dkgOutput!),
+				new Uint8Array(dwallet?.decentralizedDKGOutput!),
 			),
 		).toBeTruthy();
 	});
