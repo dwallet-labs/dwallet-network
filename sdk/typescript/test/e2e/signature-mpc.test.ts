@@ -132,6 +132,8 @@ describe('Test key share transfer', () => {
 
 		expect(
 			verify_user_share(
+				// Take the first 32 bytes, the only ones that are non-zero, and reverse them to convert them
+				// from little-endian encoding to big-endian
 				new Uint8Array(decryptedKeyshare.slice(0, 32).reverse()),
 				new Uint8Array(dwallet?.dkgOutput!),
 			),
