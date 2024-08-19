@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+
 #[allow(unused_const)]
 module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Note: currently in order to start DKG, Presign and Sign, the Valdators are waiting for an Event.
@@ -12,8 +13,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
-    use dwallet_system::dwallet;
 
+    use dwallet_system::dwallet;
     use dwallet_system::dwallet::{
         create_dwallet_cap,
         create_malicious_aggregator_sign_output,
@@ -419,6 +420,22 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         )
     }
 
+    #[allow(unused_function)]
+    #[test_only]
+    /// Call the underline `verify_and_create_sign_output`.
+    public fun verify_and_create_sign_output_for_testing(
+        session: &SignSession<SignData>,
+        signatures: vector<vector<u8>>,
+        aggregator_public_key: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        verify_and_create_sign_output(
+            session,
+            signatures,
+            aggregator_public_key,
+            ctx
+        );
+    }
 
     #[allow(unused_function)]
     /// This function is called by blockchain itself.
@@ -475,7 +492,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         encrypted_secret_share_and_proof: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        let is_valid = verify_encrypted_user_secret_share(
+        let is_valid = verify_encrypted_user_secret_share_secp256k1(
             get_encryption_key(encryption_key),
             encrypted_secret_share_and_proof,
             get_output(dwallet),
@@ -492,7 +509,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_function)]
-    native fun verify_encrypted_user_secret_share(
+    native fun verify_encrypted_user_secret_share_secp256k1(
         secret_share_public_key: vector<u8>,
         encrypted_secret_share_and_proof: vector<u8>,
         dwallet_output: vector<u8>,
@@ -503,7 +520,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
         SignData {
             presign_session_id,
-            hash: 0,
+            hash: SHA256,
             public_nonce_encrypted_partial_signature_and_proofs: vector::empty<u8>(),
             presigns: vector::empty<u8>()
         }

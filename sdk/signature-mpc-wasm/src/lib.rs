@@ -14,6 +14,11 @@ use signature_mpc::twopc_mpc_protocols::{
 use signature_mpc::twopc_mpc_protocols::CentralizedPartyPresign;
 use signature_mpc::twopc_mpc_protocols::DKGCentralizedPartyOutput;
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{EncryptedUserShareAndProof, get_encryption_of_discrete_log_public_parameters};
+use wasm_bindgen::prelude::*;
+
+use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
+    encryption_of_discrete_log_public_parameters, EncryptedUserShareAndProof,
+};
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_presign;
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_sign;
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_presign;
@@ -23,6 +28,11 @@ use signature_mpc::twopc_mpc_protocols::PresignDecentralizedPartyOutput;
 use signature_mpc::twopc_mpc_protocols::PublicNonceEncryptedPartialSignatureAndProof;
 use signature_mpc::twopc_mpc_protocols::Result as TwoPCMPCResult;
 use signature_mpc::twopc_mpc_protocols::Scalar;
+use signature_mpc::twopc_mpc_protocols::{
+    affine_point_to_public_key, decommitment_round_centralized_party_dkg,
+    initiate_centralized_party_dkg, recovery_id, DKGDecommitmentRoundState, Hash, ProtocolContext,
+    PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1,
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct InitiateDKGValue {
@@ -33,6 +43,7 @@ pub struct InitiateDKGValue {
 #[derive(Serialize, Deserialize)]
 pub struct FinalizeDKGValue {
     pub public_key_share_decommitment_and_proof: Vec<u8>,
+    pub secret_key_share: Vec<u8>,
     pub dkg_output: Vec<u8>,
 }
 
@@ -82,6 +93,7 @@ pub fn finalize_dkg(
         public_key_share_decommitment_and_proof: bcs::to_bytes(
             &public_key_share_decommitment_and_proof,
         )?,
+        secret_key_share: bcs::to_bytes(&dkg_output.secret_key_share)?,
         dkg_output: bcs::to_bytes(&dkg_output)?,
     };
     Ok(serde_wasm_bindgen::to_value(&value)?)
@@ -184,14 +196,13 @@ pub fn finalize_sign(
     > = bcs::from_bytes(&public_nonce_encrypted_partial_signature_and_proofs)?;
     let signatures_s: Vec<Scalar> = bcs::from_bytes(&signatures_s)?;
 
-    Ok(finalize_centralized_party_sign(
+    finalize_centralized_party_sign(
         messages,
         dkg_output,
         public_nonce_encrypted_partial_signature_and_proofs,
         signatures_s,
     )
-        .map_err(JsErr::from)
-        .and_then(|_| Ok(()))?)
+    .map_err(JsErr::from)
 }
 
 #[wasm_bindgen]
@@ -240,22 +251,24 @@ pub fn recovery_id_sha256(
 pub fn generate_keypair() -> Result<JsValue, JsErr> {
     let (public_key, private_key) =
         signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair()
-            .map_err(|e| to_js_err(e))?;
+            .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
 
 #[wasm_bindgen]
 pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsValue, JsErr> {
-    let language_public_parameters = get_encryption_of_discrete_log_public_parameters(public_key.clone()).map_err(|e| to_js_err(e))?;
+    let language_public_parameters =
+        encryption_of_discrete_log_public_parameters(public_key.clone()).map_err(to_js_err)?;
     let proof_public_output =
         signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_proof(
             public_key,
             secret_share,
             language_public_parameters,
-        ).map_err(|e| to_js_err(e))?;
-    let proof_public_output = bcs::to_bytes(&proof_public_output).unwrap();
+        )
+        .map_err(to_js_err)?;
+    let proof_public_output = bcs::to_bytes(&proof_public_output)?;
 
-    Ok(serde_wasm_bindgen::to_value(&proof_public_output).unwrap())
+    Ok(serde_wasm_bindgen::to_value(&proof_public_output)?)
 }
 
 #[wasm_bindgen]
@@ -265,12 +278,13 @@ pub fn decrypt_user_share(
     encrypted_user_share_and_proof: Vec<u8>,
 ) -> Result<Vec<u8>, JsErr> {
     let encrypted_user_share_and_proof: EncryptedUserShareAndProof =
-        bcs::from_bytes(&encrypted_user_share_and_proof).unwrap();
+        bcs::from_bytes(&encrypted_user_share_and_proof)?;
     let user_share = signature_mpc::twopc_mpc_protocols::encrypt_user_share::decrypt_user_share(
         encryption_key,
         decryption_key,
         encrypted_user_share_and_proof,
-    ).map_err(|e| to_js_err(e))?;
+    )
+    .map_err(to_js_err)?;
     Ok(user_share)
 }
 

@@ -129,10 +129,7 @@ describe('Test key share transfer', () => {
 		const recipientData = await getEncryptionKeyByObjectId(toolbox.client, publicKeyID);
 		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
 		const dwalletID = dwallet?.dwalletId!;
-		// Extract the secret share from the DKGOutput.
-		// It's the first 32 bytes because it's the first field in the Output Rust struct.
-		let secretShareBytes = dwallet?.dkgOutput!.slice(0, 32);
-		let secretShare = new Uint8Array(secretShareBytes);
+		const secretShare = dwallet?.secretKeyShare!;
 		const encryptedUserShareAndProof = generate_proof(secretShare, recipientData?.encryptionKey!);
 
 		await encryptUserShare(

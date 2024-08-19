@@ -19,7 +19,7 @@ use smallvec::smallvec;
 
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
-    get_encryption_of_discrete_log_public_parameters, verify_proof,
+    encryption_of_discrete_log_public_parameters, verify_proof,
 };
 use signature_mpc::twopc_mpc_protocols::{
     affine_point_to_public_key,
@@ -52,9 +52,9 @@ pub struct TransferDWalletCostParams {
 }
 
 /***************************************************************************************************
- * native fun verify_encrypted_user_secret_share
+ * native fun verify_encrypted_user_secret_share_secp256k1
  **************************************************************************************************/
-pub fn verify_encrypted_user_secret_share(
+pub fn verify_encrypted_user_secret_share_secp256k1(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -85,7 +85,7 @@ pub fn verify_encrypted_user_secret_share(
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
     let Ok(language_public_parameters) =
-        get_encryption_of_discrete_log_public_parameters(public_encryption_key.clone())
+        encryption_of_discrete_log_public_parameters(public_encryption_key.clone())
     else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
