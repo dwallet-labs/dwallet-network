@@ -257,7 +257,7 @@ pub fn decrypt_user_share(
     Ok(bcs::to_bytes(&plaintext.value())?)
 }
 
-fn verify_secret_share(
+fn secret_key_matches_public_key(
     secret_key: Secp256k1Scalar,
     public_key: Secp256K1GroupElement,
 ) -> Result<bool> {
@@ -277,7 +277,7 @@ pub fn parse_and_verify_secret_share(secret_share: &[u8], dkg_output: &[u8]) -> 
         dkg_output.centralized_party_public_key_share,
         &secp256k1::group_element::PublicParameters::default(),
     )?;
-    Ok(verify_secret_share(parsed_secret_key, public_share)?)
+    secret_key_matches_public_key(parsed_secret_key, public_share)
 }
 
 #[cfg(test)]
