@@ -63,13 +63,14 @@ if (dwallet?.data?.content?.dataType == 'moveObject') {
 ##  Fund your dWallet's Bitcoin Address
 You need to find a faucet if you're using the Bitcoin Testnet or any other test network.
 For main networks, make sure you have the funds to be able to transfer BTC and pay for gas for broadcasting the signed transaction.
+We used Bitcoin Testnet Faucet at [https://bitcoinfaucet.uo1.net/](https://bitcoinfaucet.uo1.net/).
 
 
 ## Create a Bitcoin Transaction
 
 To create a bitcoin transaction we need to provide the input of the funds we want to send and the output which is the target addresses we want to transfer the funds to.
 The input is the proof of owning the funds we want to send and we get it from the previous transaction that sent funds to our address.
-In case of using the testnet, this should be the transaction of the faucet we used.
+In case of running this for the first time and using the testnet, this should be the transaction of the faucet we used.
 
 To get the unspent transactions we are going to use the Blockstream API. There are other APIs if you would like to use something else.
 
@@ -97,11 +98,14 @@ async function getUTXO(address: string): { utxo: any, txid: string, vout: number
 
 ### Create a New Transaction
 
-The following code should be inserted to the if in the previous step.
+The following code should be inserted to the `if` statement in the previous step.
 
 ```typescript
+// The recipient address is also a bitcoin testnet address. 
+// You can generate it in the same way we created the dWallet's 
+// address by providing it's own key pair.
 const recipientAddress = 'put the recipient address here';
-const amonut = 500; // Put any number you want to send in satoshis
+const amount = 500; // Put any number you want to send in satoshis
 
 // Get the UTXO for the sender address
 const { utxo, txid, vout, satoshis } = await GetUTXO(address);
@@ -125,7 +129,7 @@ psbt.addOutput({
 });
 
 // Calculate change and add change output if necessary
-const fee = 150; // 1000 satoshis as a simple fee. Choose the value you want to spend
+const fee = 150; // 1000 satoshis is a simple fee. Choose the value you want to spend
 const change = satoshis - amount - fee;
 
 // Sending the rest to the back to the sender
@@ -140,10 +144,15 @@ const tx = bitcoin.Transaction.fromBuffer(psbt.data.getTransaction());
 ```
 
 ### Sign the transaction with your dWallet
-First of all, in order to sign the transaction, we copied the inner function of Transaction `hashForWitnessV0`and modified its output.
+First of all, in order to sign the transaction, we copied the inner function of Transaction `hashForWitnessV0` and modified its output.
 We do it because the bitcoin hashes the bytes of a message twice using sha256.
-The dWallet Network also hashes the message one time before it signs it so we need to modify the message output in order to avoid hashing 3 times instead of two.
-Please copy these functions as is in order to use them to generate the bytes to sign.
+
+We want to allow seeing the message to be signed before it's hashed.
+Once you want to sign this message, hash it **once** before you send it to the dWallet Network.
+The dWallet Network also hashes the message one time before it signs it. 
+This way we'll eventually perform two *sha256* hashes on the message to sign, just like Bitcoin.
+
+Please copy these functions as-is in order to use them to generate the bytes to sign.
 ```typescript
 function varSliceSize(someScript: Buffer): number {
     const length = someScript.length;
@@ -151,13 +160,13 @@ function varSliceSize(someScript: Buffer): number {
     return varuint.encodingLength(length) + length;
 }
 
-function hashForWitnessV0(
+function txBytesToSign(
     tx: bitcoin.Transaction,
     inIndex: number,
     prevOutScript: Buffer,
     value: number,
     hashType: number,
-): Uint8Array {
+): Buffer {
     const ZERO: Buffer = Buffer.from(
         '0000000000000000000000000000000000000000000000000000000000000000',
         'hex',
@@ -244,21 +253,19 @@ function hashForWitnessV0(
     bufferWriter.writeUInt32(tx.locktime);
     bufferWriter.writeUInt32(hashType);
     
-    // If you'd like, you can return the buffer without hashing but don't forget 
-    // to hash the buffer once before you send it for signing in the dWallet Network
-    return sha256(tbuffer);
+    return tbuffer;
 }
 ```
 
-Now, we can generate the bytes for signing and we can use the dWallet Network to sign our transaction.
+Now, we can generate the bytes for signing, and we can use the dWallet Network to sign our transaction.
 ```typescript
 const signingScript = bitcoin.payments.p2pkh({ hash: output.slice(2) }).output!;
 console.log("Signing script:", signingScript.toString('hex'));
 
-const hashToSign = hashForWitnessV0(txFromPsbt, 0, signingScript, satoshis, bitcoin.Transaction.SIGHASH_ALL);
+const bytesToSign = txBytesToSign(txFromPsbt, 0, signingScript, satoshis, bitcoin.Transaction.SIGHASH_ALL);
 
-const signMessagesIdSHA256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgOutput, [hashToSign], "SHA256", keypair, dwalletClient);
-const sigSHA256 = await approveAndSign(dkg?.dwalletCapId!, signMessagesIdSHA256!, [hashToSign], keypair, dwalletClient);
+const signMessagesIdSHA256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgOutput, [sha256(bytesToSign)], "SHA256", keypair, dwalletClient);
+const sigSHA256 = await approveAndSign(dkg?.dwalletCapId!, signMessagesIdSHA256!, [sha256(bytesToSign)], keypair, dwalletClient);
 
 const dWalletSig = Buffer.from(sigSHA256?.signatures[0]!);
 
@@ -292,4 +299,4 @@ try {
 
 The transaction is now sent! 
 
-You can view the transaction at: [https://blockstream.info/](https://blockstream.info/) and look for the transaction hash printed to the console.
+You can view the transaction at: [https://blockstream.info/](https://blockstream.info/) by searching the tx hash printed to the console.
