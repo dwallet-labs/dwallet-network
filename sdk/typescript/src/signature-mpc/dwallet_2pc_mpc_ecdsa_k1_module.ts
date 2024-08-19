@@ -96,13 +96,14 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 			dwalletObject.data?.content?.dataType === 'moveObject'
 				? (dwalletObject.data?.content?.fields as {
 						dwallet_cap_id: string;
+						output: number[];
 				  })
 				: null;
 
 		return dwalletObjectFields
 			? {
 					dwalletId: dwalletRef?.objectId,
-					dkgOutput: final['dkg_output'],
+					dkgOutput: dwalletObjectFields.output,
 					dwalletCapId: dwalletObjectFields.dwallet_cap_id,
 					secretKeyShare: final['secret_key_share'],
 			  }

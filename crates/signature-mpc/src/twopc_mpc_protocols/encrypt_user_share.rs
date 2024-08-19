@@ -272,7 +272,7 @@ fn verify_secret_share(
 pub fn parse_and_verify_secret_share(secret_share: &[u8], dkg_output: &[u8]) -> Result<bool> {
     let parsed_secret_key =
         Secp256k1Scalar::from(Uint::<{ SCALAR_LIMBS }>::from_be_slice(secret_share));
-    let dkg_output = bcs::from_bytes::<DKGCentralizedPartyOutput>(&dkg_output)?;
+    let dkg_output = bcs::from_bytes::<DKGDecentralizedPartyOutput>(&dkg_output)?;
     let public_share = Secp256K1GroupElement::new(
         dkg_output.public_key_share,
         &secp256k1::group_element::PublicParameters::default(),
