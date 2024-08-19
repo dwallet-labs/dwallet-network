@@ -5,7 +5,7 @@ title: Use a dWallet on Bitcoin
 After [creating a dWallet](../your-first-dwallet.md#using-typescript-sdk) we can derive the dWallet's Bitcoin address, create transactions from that address, sign them with the dWallet Network, and broadcast the signed transactions to the Bitcoin network.
 
 ## Setup
-First, we must setup the environment. Begin by importing necessary functions:
+First, we must set up the environment.
 ```typescript
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import { DWalletClient } from '@dwallet-network/dwallet.js/client';
@@ -65,7 +65,7 @@ if (dwallet?.data?.content?.dataType == 'moveObject') {
 You need to find a faucet if you're using the Bitcoin Testnet or any other test network.
 For main networks, make sure you have the funds to be able to transfer BTC and pay for gas for broadcasting the signed transaction.
 
-We used Bitcoin Testnet Faucet at [https://bitcoinfaucet.uo1.net/](https://bitcoinfaucet.uo1.net/).
+We used Bitcoin Testnet Faucet at https://bitcoinfaucet.uo1.net/.
 
 
 ## Create a Bitcoin Transaction
@@ -150,9 +150,11 @@ First of all, in order to sign the transaction, we copied the inner function of 
 We do it because the bitcoin hashes the bytes of a message twice using sha256.
 
 We want to allow seeing the message to be signed before it's hashed.
-Once you want to sign this message, hash it **once** before you send it to the dWallet Network.
-The dWallet Network also hashes the message one time before it signs it. 
-This way we'll eventually perform two *sha256* hashes on the message to sign, just like Bitcoin.
+
+For Bitcoin transactions, the message should be hashed using the SHA-256d algorithm which is just twice `sha256`.
+The dWallet Network doesn't support this hashing algorithm yet, but does support SHA256 once. 
+Therefore, we will hash the message one time and the dWallet Network will do the second time.
+We have an open issue for adding this support: https://github.com/dwallet-labs/dwallet-network/issues/161.
 
 Please copy these functions as-is in order to use them to generate the bytes to sign.
 ```typescript
@@ -266,8 +268,11 @@ console.log("Signing script:", signingScript.toString('hex'));
 
 const bytesToSign = txBytesToSign(txFromPsbt, 0, signingScript, satoshis, bitcoin.Transaction.SIGHASH_ALL);
 
-const signMessagesIdSHA256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgOutput, [sha256(bytesToSign)], "SHA256", keypair, dwalletClient);
-const sigSHA256 = await approveAndSign(dkg?.dwalletCapId!, signMessagesIdSHA256!, [sha256(bytesToSign)], keypair, dwalletClient);
+// We calculate the hash to sign manually because the dWallet Network doesn't support this bitcoin hashing algorithm yet.
+// This will be fixed in the following issue: https://github.com/dwallet-labs/dwallet-network/issues/161.
+const hashToSign = sha256(bytesToSign);
+const signMessagesIdSHA256 = await createSignMessages(dkg?.dwalletId!, dkg?.dkgOutput, [hashToSign], "SHA256", keypair, dwalletClient);
+const sigSHA256 = await approveAndSign(dkg?.dwalletCapId!, signMessagesIdSHA256!, [hashToSign], keypair, dwalletClient);
 
 const dWalletSig = Buffer.from(sigSHA256?.signatures[0]!);
 
@@ -301,4 +306,4 @@ try {
 
 The transaction is now sent! 
 
-You can view the transaction at: [https://blockstream.info/](https://blockstream.info/) by searching the tx hash printed to the console.
+You can view the transaction at https://blockstream.info/ by searching the tx hash printed to the console.
