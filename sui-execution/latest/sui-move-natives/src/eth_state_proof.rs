@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::collections::VecDeque;
+use std::fs::File;
+use std::io::Read;
 use std::str::FromStr;
 
 use ethers::prelude::EIP1186ProofResponse;
@@ -235,24 +237,18 @@ pub(crate) fn create_initial_eth_state_data(
 
     let cost = context.gas_used();
 
-    let (network, checkpoint) = (
-        pop_arg!(args, Vector).to_vec_u8()?,
-        pop_arg!(args, Vector).to_vec_u8()?,
-    );
+    let network = pop_arg!(args, Vector).to_vec_u8()?;
 
     let network = String::from_utf8(network)
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-    let network = Network::from_str(&network)
-        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
-    let eth_state = ConsensusStateManager::<NimbusRpc>::new_from_checkpoint(checkpoint, network);
+    let file_path = format!("crates/eth-initial-state/eth_state_{}.bcs", network);
 
-    let Ok(eth_state_bytes) = bcs::to_bytes(&eth_state) else {
-        return Ok(NativeResult::err(
-            cost,
-            StatusCode::VALUE_SERIALIZATION_ERROR.into(),
-        ));
-    };
+    let mut file = File::open(file_path)
+        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
+    let mut eth_state_bytes = Vec::new();
+    File::read_to_end(&mut file, &mut eth_state_bytes)
+        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
 
     Ok(NativeResult::ok(
         cost,

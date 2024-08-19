@@ -17,7 +17,8 @@ use helios::prelude::Address;
 use hex::encode;
 
 use light_client_helpers::{
-    get_object_bcs_by_id, get_object_from_transaction_changes, get_shared_object_input_by_id,
+    get_object_bcs_by_id, get_object_from_transaction_changes, get_object_ref_by_id,
+    get_shared_object_input_by_id,
 };
 use std::str::FromStr;
 
@@ -105,9 +106,6 @@ pub enum EthClientCommands {
     /// Initiate the LatestEthereumState struct in the DWallet module.
     #[command(name = "init-eth-state")]
     InitEthState {
-        /// A Trusted checkpoint to initialize the state.
-        #[clap(long)]
-        checkpoint: String,
         /// The corresponding Ethereum network.
         #[clap(long)]
         network: String,
@@ -142,7 +140,6 @@ pub enum EthClientCommands {
 /// After the state is initialized, the Ethereum state object ID is saved in the configuration,
 /// and the state is updated whenever a new state is successfully verified.
 pub(crate) async fn init_ethereum_state(
-    checkpoint: String,
     network: String,
     contract_address: String,
     contract_slot: u64,
@@ -153,7 +150,6 @@ pub(crate) async fn init_ethereum_state(
     serialize_signed_transaction: bool,
 ) -> Result<SuiClientCommandResult> {
     let args = vec![
-        SuiJsonValue::new(Value::String(checkpoint))?,
         SuiJsonValue::new(Value::String(network.to_string()))?,
         SuiJsonValue::new(Value::String(contract_address))?,
         SuiJsonValue::new(Value::Number(Number::from(contract_slot)))?,
@@ -211,7 +207,21 @@ pub(crate) async fn create_eth_dwallet(
     serialize_unsigned_transaction: bool,
     serialize_signed_transaction: bool,
 ) -> Result<SuiClientCommandResult> {
-    let args = vec![SuiJsonValue::from_object_id(dwallet_cap_id)];
+    let eth_client_settings = context
+        .config
+        .get_active_env()?
+        .clone()
+        .eth_client_settings
+        .ok_or_else(|| anyhow!("ETH client settings configuration not found"))?;
+
+    let latest_eth_state_object_id = eth_client_settings
+        .state_object_id
+        .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?;
+
+    let args = vec![
+        SuiJsonValue::from_object_id(dwallet_cap_id),
+        SuiJsonValue::from_object_id(latest_eth_state_object_id),
+    ];
 
     let tx_data = construct_move_call_transaction(
         SUI_SYSTEM_PACKAGE_ID,
@@ -320,10 +330,8 @@ pub(crate) async fn eth_approve_message(
     }
 
     let data_slot = latest_eth_state_obj.eth_smart_contract_slot;
-    let contract_addr = latest_eth_state_obj.eth_smart_contract_address;
-    let contract_addr = contract_addr.clone().parse::<Address>()?;
-
-    let mut eth_lc = EthLightClientWrapper::init_new_light_client(eth_lc_config.clone()).await?;
+    let contract_address = latest_eth_state_obj.eth_smart_contract_address;
+    let contract_address = contract_address.clone().parse::<Address>()?;
 
     let updates_response = eth_state
         .get_updates_since_checkpoint()
@@ -335,10 +343,6 @@ pub(crate) async fn eth_approve_message(
 
     // Serialize Move parameters
     let mut pt_builder = ProgrammableTransactionBuilder::new();
-    let eth_state_arg = pt_builder
-        .pure(serde_json::to_vec(&eth_state)?)
-        .map_err(|e| anyhow!("could not serialize eth_state: {e}"))?;
-
     let updates_vec_arg = pt_builder
         .pure(serde_json::to_vec(&updates_response.updates)?)
         .map_err(|e| anyhow!("could not serialize updates: {e}"))?;
@@ -359,6 +363,11 @@ pub(crate) async fn eth_approve_message(
         })
         .map_err(|e| anyhow!("could not serialize `latest_eth_state_id`: {e}"))?;
 
+    let eth_state_object_ref = get_object_ref_by_id(context, eth_state_object_id).await?;
+    let eth_state_id_arg = pt_builder
+        .pure(ObjectArg::ImmOrOwnedObject(eth_state_object_ref))
+        .map_err(|e| anyhow!("could not serialize `eth_state_id`: {e}"))?;
+
     pt_builder.programmable_move_call(
         SUI_SYSTEM_PACKAGE_ID,
         ETHEREUM_STATE_MODULE_NAME.into(),
@@ -368,8 +377,8 @@ pub(crate) async fn eth_approve_message(
             updates_vec_arg,
             finality_update_arg,
             optimistic_update_arg,
-            eth_state_arg,
             latest_eth_state_arg,
+            eth_state_id_arg,
         ]),
     );
 
@@ -432,8 +441,13 @@ pub(crate) async fn eth_approve_message(
         data_slot,
     };
 
+    let mut eth_lc = EthLightClientWrapper::init_new_light_client(eth_lc_config.clone()).await?;
     let proof = eth_lc
-        .get_proofs(&contract_addr, proof_params, latest_finalized_block_number)
+        .get_proofs(
+            &contract_address,
+            proof_params,
+            latest_finalized_block_number,
+        )
         .await
         .map_err(|e| anyhow!("could not fetch proof: {e}"))?;
 

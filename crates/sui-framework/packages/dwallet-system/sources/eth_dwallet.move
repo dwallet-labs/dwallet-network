@@ -5,7 +5,7 @@
 */
 
 module dwallet_system::eth_dwallet {
-    use dwallet::object::{Self, UID};
+    use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;
     use dwallet::tx_context::TxContext;
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
@@ -16,26 +16,26 @@ module dwallet_system::eth_dwallet {
     use dwallet_system::dwallet::{DWalletCap, MessageApproval};
 
     const EInvalidStateProof: u64 = 1;
-    const ENetworkMismatch: u64 = 2;
+    const EStateObjectMismatch: u64 = 2;
     const EInvalidDWalletCap: u64 = 3;
 
     /// Holds the DWalletCap along with Ethereum-specific information.
     struct EthereumDWalletCap has key {
         id: UID,
         dwallet_cap: DWalletCap,
-        network: vector<u8>,
+        latest_ethereum_state_id: ID,
     }
 
     /// Creates an Ethereum dWallet capability object by wrapping an existing DWalletCap.
     public entry fun create_eth_dwallet_cap(
         dwallet_cap: DWalletCap,
-        network: vector<u8>,
+        latest_ethereum_state: &LatestEthereumState,
         ctx: &mut TxContext
     ) {
         let eth_dwallet_cap = EthereumDWalletCap {
             id: object::new(ctx),
             dwallet_cap,
-            network,
+            latest_ethereum_state_id: object::id(latest_ethereum_state),
         };
         transfer::share_object(eth_dwallet_cap);
     }
@@ -51,12 +51,11 @@ module dwallet_system::eth_dwallet {
         eth_state: &EthereumState,
     ): vector<MessageApproval> {
         // Validate that the Ethereum dWallet capability is for the correct network.
-        let latest_state_network = ethereum_state::get_latest_ethereum_state_network(latest_ethereum_state);
-        assert!(eth_dwallet_cap.network == latest_state_network, ENetworkMismatch);
+        assert!(eth_dwallet_cap.latest_ethereum_state_id == object::id(latest_ethereum_state), EStateObjectMismatch);
 
         // Validate that the EthereumState is for the correct network.
-        let eth_state_network = ethereum_state::get_ethereum_state_network(eth_state);
-        assert!(eth_state_network == latest_state_network, ENetworkMismatch);
+        let eth_state_id = object::id(eth_state);
+        assert!(eth_state_id == ethereum_state::get_ethereum_state_id_from_latest(latest_ethereum_state), EStateObjectMismatch);
 
         // Validate that the Ethereum dWallet capability is for the correct DWallet.
         let dwallet_cap_id = dwallet_2pc_mpc_ecdsa_k1::get_dwallet_cap_id(dwallet);

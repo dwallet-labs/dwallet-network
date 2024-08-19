@@ -4,7 +4,7 @@ use move_core_types::identifier::Identifier;
 use sui_json_rpc_types::ObjectChange;
 use sui_json_rpc_types::{SuiObjectDataOptions, SuiRawData};
 use sui_sdk::wallet_context::WalletContext;
-use sui_types::base_types::ObjectID;
+use sui_types::base_types::{ObjectID, ObjectRef};
 use sui_types::object::Owner;
 use sui_types::transaction::SharedInputObject;
 
@@ -61,6 +61,21 @@ pub async fn get_shared_object_input_by_id(
         initial_shared_version,
         mutable: true,
     })
+}
+
+pub async fn get_object_ref_by_id(
+    context: &mut WalletContext,
+    object_id: ObjectID,
+) -> Result<ObjectRef> {
+    let object_resp = context
+        .get_client()
+        .await?
+        .read_api()
+        .get_object_with_options(object_id, SuiObjectDataOptions::default().with_owner())
+        .await?
+        .into_object();
+
+    Ok(object_resp?.object_ref())
 }
 
 pub fn get_object_from_transaction_changes(
