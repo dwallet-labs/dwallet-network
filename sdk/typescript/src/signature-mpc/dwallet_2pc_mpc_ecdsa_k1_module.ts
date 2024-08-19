@@ -16,8 +16,6 @@ import type {Keypair} from '../cryptography/index.js';
 import {fetchObjectBySessionId} from './utils.js';
 
 export {
-	recovery_id_keccak256 as recoveryIdKeccak256,
-	recovery_id_sha256 as recoveryIdSha256,
 	decrypt_user_share,
 	generate_keypair,
 	generate_proof,

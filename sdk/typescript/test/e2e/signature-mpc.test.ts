@@ -120,7 +120,7 @@ describe('Test key share transfer', () => {
 			dwalletID,
 		);
 
-		const decryptedKeyshare = decrypt_user_share(
+		const decryptedKeyShare = decrypt_user_share(
 			encryptionKey,
 			decryptionKey,
 			encryptedUserShareAndProof,
@@ -128,13 +128,15 @@ describe('Test key share transfer', () => {
 
 		let secretUserShare = new Uint8Array(256);
 		secretUserShare.set(secretShare.reverse());
-		expect(decryptedKeyshare).toEqual(secretUserShare);
+		expect(decryptedKeyShare).toEqual(secretUserShare);
 
 		expect(
 			verify_user_share(
 				// Take the first 32 bytes, the only ones that are non-zero, and reverse them to convert them
-				// from little-endian encoding to big-endian
-				new Uint8Array(decryptedKeyshare.slice(0, 32).reverse()),
+				// from little-endian encoding to big-endian.
+				// This is because of BCS and PlaintextSpaceGroupElement serialization.
+				// PlaintextSpaceGroupElement is U2048 and has 32LIMBS of 64 bits each.
+				new Uint8Array(decryptedKeyShare.slice(0, 32).reverse()),
 				new Uint8Array(dwallet?.dkgOutput!),
 			),
 		).toBeTruthy();

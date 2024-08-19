@@ -9,7 +9,7 @@ use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 use enhanced_maurer::{
     encryption_of_discrete_log, EnhancedLanguage, Proof, PublicParameters as MaurerPublicParameters,
 };
-use group::{secp256k1, GroupElement, MulByGenerator, Samplable};
+use group::{secp256k1, GroupElement, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey,
     GroupsPublicParametersAccessors as PublicParametersAccessors,
@@ -26,7 +26,7 @@ use tiresias::{
 };
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
 use twopc_mpc::secp256k1::paillier::bulletproofs::{
-    DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput,
+    DKGDecentralizedPartyOutput,
 };
 pub use twopc_mpc::secp256k1::{Scalar as Secp256k1Scalar, SCALAR_LIMBS};
 
@@ -250,7 +250,7 @@ pub fn decrypt_user_share(
     )?;
     let decryption_key = bcs::from_bytes(&decryption_key)?;
     let decryption_key = DecryptionKey::new(decryption_key, &paillier_public_parameters)?;
-    // safe to `unwrap` as decryption in Paillier always succeeds
+    // Safe to `unwrap` as decryption in Paillier always succeeds
     let plaintext = decryption_key
         .decrypt(&ciphertext, &paillier_public_parameters)
         .unwrap();
@@ -272,7 +272,7 @@ fn secret_key_matches_public_key(
 pub fn parse_and_verify_secret_share(secret_share: &[u8], dkg_output: &[u8]) -> Result<bool> {
     let parsed_secret_key =
         Secp256k1Scalar::from(Uint::<{ SCALAR_LIMBS }>::from_be_slice(secret_share));
-    let dkg_output = bcs::from_bytes::<DKGDecentralizedPartyOutput>(&dkg_output)?;
+    let dkg_output = bcs::from_bytes::<DKGDecentralizedPartyOutput>(dkg_output)?;
     let public_share = Secp256K1GroupElement::new(
         dkg_output.centralized_party_public_key_share,
         &secp256k1::group_element::PublicParameters::default(),
