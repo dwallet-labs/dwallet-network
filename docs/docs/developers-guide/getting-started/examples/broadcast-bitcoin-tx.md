@@ -31,6 +31,7 @@ Don't forget to [fund your address](../your-first-dwallet.md#get-funds-on-the-dw
 ## Get the dWallet's Bitcoin address
 
 To create transactions in the Bitcoin network we need a Bitcoin address.
+
 We used SegWit address format on the Bitcoin Testnet.
 
 ```typescript
@@ -63,6 +64,7 @@ if (dwallet?.data?.content?.dataType == 'moveObject') {
 ##  Fund your dWallet's Bitcoin Address
 You need to find a faucet if you're using the Bitcoin Testnet or any other test network.
 For main networks, make sure you have the funds to be able to transfer BTC and pay for gas for broadcasting the signed transaction.
+
 We used Bitcoin Testnet Faucet at [https://bitcoinfaucet.uo1.net/](https://bitcoinfaucet.uo1.net/).
 
 
