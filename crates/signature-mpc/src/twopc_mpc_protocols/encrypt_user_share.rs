@@ -1,14 +1,15 @@
 use std::marker::PhantomData;
 
+use crate::twopc_mpc_protocols::Secp256K1GroupElement;
 use anyhow::Result;
 use commitment::GroupsPublicParametersAccessors;
-use crypto_bigint::{U256, Uint};
+use crypto_bigint::{Uint, U256};
+use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
+use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 use enhanced_maurer::{
     encryption_of_discrete_log, EnhancedLanguage, Proof, PublicParameters as MaurerPublicParameters,
 };
-use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
-use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
-use group::{GroupElement, MulByGenerator, Samplable, secp256k1};
+use group::{secp256k1, GroupElement, MulByGenerator, Samplable};
 use homomorphic_encryption::{
     AdditivelyHomomorphicDecryptionKey,
     GroupsPublicParametersAccessors as PublicParametersAccessors,
@@ -24,11 +25,10 @@ use tiresias::{
     PlaintextSpaceGroupElement, RandomnessSpaceGroupElement,
 };
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
-pub use twopc_mpc::secp256k1::{Scalar as Secp256k1Scalar, SCALAR_LIMBS};
 use twopc_mpc::secp256k1::paillier::bulletproofs::{
     DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput,
 };
-use crate::twopc_mpc_protocols::Secp256K1GroupElement;
+pub use twopc_mpc::secp256k1::{Scalar as Secp256k1Scalar, SCALAR_LIMBS};
 
 type LangPublicParams = language::PublicParameters<SOUND_PROOFS_REPETITIONS, EncDescLogLang>;
 
@@ -257,7 +257,10 @@ pub fn decrypt_user_share(
     Ok(bcs::to_bytes(&plaintext.value())?)
 }
 
-fn verify_secret_share(secret_key: Secp256k1Scalar, public_key: Secp256K1GroupElement) -> Result<bool> {
+fn verify_secret_share(
+    secret_key: Secp256k1Scalar,
+    public_key: Secp256K1GroupElement,
+) -> Result<bool> {
     let public_parameters = secp256k1::group_element::PublicParameters::default();
     let generator_group_element =
         Secp256K1GroupElement::new(public_parameters.generator, &public_parameters)?;
@@ -267,7 +270,8 @@ fn verify_secret_share(secret_key: Secp256k1Scalar, public_key: Secp256K1GroupEl
 /// Parses the secret share & DKG output, and verifies that the secret share
 /// matches the public key share.
 pub fn parse_and_verify_secret_share(secret_share: &[u8], dkg_output: &[u8]) -> Result<bool> {
-    let parsed_secret_key = Secp256k1Scalar::from(Uint::<{ SCALAR_LIMBS }>::from_be_slice(secret_share));
+    let parsed_secret_key =
+        Secp256k1Scalar::from(Uint::<{ SCALAR_LIMBS }>::from_be_slice(secret_share));
     let dkg_output = bcs::from_bytes::<DKGCentralizedPartyOutput>(&dkg_output)?;
     let public_share = Secp256K1GroupElement::new(
         dkg_output.public_key_share,
