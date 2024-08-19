@@ -25,9 +25,7 @@ use tiresias::{
     PlaintextSpaceGroupElement, RandomnessSpaceGroupElement,
 };
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
-use twopc_mpc::secp256k1::paillier::bulletproofs::{
-    DKGDecentralizedPartyOutput,
-};
+use twopc_mpc::secp256k1::paillier::bulletproofs::DKGDecentralizedPartyOutput;
 pub use twopc_mpc::secp256k1::{Scalar as Secp256k1Scalar, SCALAR_LIMBS};
 
 type LangPublicParams = language::PublicParameters<SOUND_PROOFS_REPETITIONS, EncDescLogLang>;
