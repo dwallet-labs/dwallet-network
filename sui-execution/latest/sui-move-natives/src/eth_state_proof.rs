@@ -250,8 +250,16 @@ pub(crate) fn create_initial_eth_state_data(
     File::read_to_end(&mut file, &mut eth_state_bytes)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
 
+    let eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&eth_state_bytes)
+        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
+
+    let state_root = eth_state.get_finalized_state_root().to_vec();
+
     Ok(NativeResult::ok(
         cost,
-        smallvec![Value::vector_u8(eth_state_bytes)],
+        smallvec![
+            Value::vector_u8(eth_state_bytes),
+            Value::vector_u8(state_root)
+        ],
     ))
 }
