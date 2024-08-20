@@ -64,7 +64,7 @@ module dwallet_system::ethereum_state {
             network,
         };
 
-        set_latest_ethereum_state_id(&mut state, &object::uid_to_inner(&latest_ethereum_state.id));
+        state.latest_ethereum_state_id = object::uid_to_inner(&latest_ethereum_state.id);
         transfer::freeze_object(state);
         transfer::share_object(latest_ethereum_state);
     }

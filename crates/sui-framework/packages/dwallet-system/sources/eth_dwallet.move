@@ -54,8 +54,8 @@ module dwallet_system::eth_dwallet {
         assert!(eth_dwallet_cap.latest_ethereum_state_id == object::id(latest_ethereum_state), EStateObjectMismatch);
 
         // Validate that the EthereumState is for the correct network.
-        let eth_state_id = object::id(eth_state);
-        assert!(eth_state_id == ethereum_state::get_ethereum_state_id_from_latest(latest_ethereum_state), EStateObjectMismatch);
+        let latest_ethereum_state_id = object::id(latest_ethereum_state);
+        assert!(latest_ethereum_state_id == ethereum_state::get_ethereum_state_latest_state_id(eth_state), EStateObjectMismatch);
 
         // Validate that the Ethereum dWallet capability is for the correct DWallet.
         let dwallet_cap_id = dwallet_2pc_mpc_ecdsa_k1::get_dwallet_cap_id(dwallet);
