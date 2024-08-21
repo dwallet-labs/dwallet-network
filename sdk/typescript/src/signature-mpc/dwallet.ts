@@ -49,7 +49,7 @@ export async function approveAndSign(
 	return await waitForSignOutput(client);
 }
 
-interface SignOutputEventData {
+export interface SignOutputEventData {
 	signatures: Uint8Array[];
 }
 
