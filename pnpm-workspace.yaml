@@ -9,6 +9,7 @@ packages:
   - '!sdk/typescript/scripts'
   - '!sdk/typescript/builder'
   - '!sdk/typescript/cryptography'
+  - '!sdk/typescript/signature-mpc'
   - '!sdk/typescript/faucet'
   - '!sdk/typescript/transactions'
   - '!sdk/typescript/client'
@@ -19,4 +20,3 @@ packages:
   - '!sdk/typescript/zklogin'
   - '!sdk/enoki/react'
   - '!sdk/move-binary-format-wasm/pkg'
-  - '!sdk/typescript/signature-mpc'
