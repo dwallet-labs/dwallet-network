@@ -229,7 +229,8 @@ impl SignState {
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {
         match round {
             SignRound::FirstRound { .. } => {
-                self.received_threshold_decryption_shares() && self.party_id == self.aggregator_party_id
+                self.received_threshold_decryption_shares()
+                    && self.party_id == self.aggregator_party_id
             }
             _ => false,
         }
