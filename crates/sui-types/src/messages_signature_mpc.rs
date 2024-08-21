@@ -9,7 +9,7 @@ pub use signature_mpc::twopc_mpc_protocols::{
     EncDHProofShare, EncDLCommitment, EncDLDecommitment, EncDLProofShare, LargeBiPrimeSizedNumber,
     PaillierModulusSizedNumber, PartyID, PresignDecentralizedPartyOutput,
     PublicNonceEncryptedPartialSignatureAndProof, SecretKeyShareEncryptionAndProof,
-    SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof,
+    SecretKeyShareSizedNumber, SignatureNonceSharesCommitmentsAndBatchedProof, config_signature_mpc_secret_for_network_for_testing
 };
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter};
