@@ -486,6 +486,7 @@ module dwallet_system::dwallet {
         encryption_keys: Table<address, ID>,
     }
 
+    // TODO: make private and call from within the init, find a way to get the object id - https://github.com/dwallet-labs/dwallet-network/issues/157
     public fun create_active_encryption_keys(ctx: &mut TxContext) {
         let holder = ActiveEncryptionKeys {
             id: object::new(ctx),
