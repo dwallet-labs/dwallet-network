@@ -1,7 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	approveAndSign,
@@ -9,11 +9,11 @@ import {
 	createPartialUserSignedMessages,
 	decrypt_user_share,
 	EncryptionKeyScheme,
+	encryptUserShare,
 	generate_keypair,
 	generate_proof,
 	getEncryptionKeyByObjectId,
 	storeEncryptionKey,
-	encryptUserShare,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
 
@@ -114,6 +114,15 @@ describe('Test key share transfer', () => {
 		const dwalletID = dwallet?.dwalletId!;
 		const secretShare = dwallet?.secretKeyShare!;
 		const encryptedUserShareAndProof = generate_proof(secretShare, recipientData?.encryptionKey!);
+
+		// Verifies that the encryption key has been signed by the desired destination Sui address.
+		let isValidEncryptionKey = await toolbox.keypair
+			.getPublicKey()
+			.verify(
+				new Uint8Array(recipientData?.encryptionKey!),
+				new Uint8Array(recipientData?.signedEncryptionKey!),
+			);
+		expect(isValidEncryptionKey).toBeTruthy();
 
 		await encryptUserShare(
 			toolbox.client,
