@@ -481,11 +481,14 @@ module dwallet_system::dwallet {
         transfer::freeze_object(encryption_key);
     }
 
+    /// Shared object that holds the active encryption keys per user.
+    /// 'encryption_keys' is a key-value table where the key is the user address and the value is the encryption key object ID.
     struct ActiveEncryptionKeys has key {
         id: UID,
         encryption_keys: Table<address, ID>,
     }
 
+    /// Create a shared object that holds the active encryption keys per user.
     public fun create_active_encryption_keys(ctx: &mut TxContext) {
         let holder = ActiveEncryptionKeys {
             id: object::new(ctx),
@@ -494,6 +497,7 @@ module dwallet_system::dwallet {
         transfer::share_object(holder);
     }
 
+    /// Set the active encryption key for a user (the sender).
     public fun set_active_encryption_key(
         encryption_key_holder: &mut ActiveEncryptionKeys,
         encryption_key: &EncryptionKey,
@@ -510,6 +514,7 @@ module dwallet_system::dwallet {
         );
     }
 
+    /// Get the active encryption key ID by user adderss.
     public fun get_active_encryption_key(
         encryption_key_holder: &ActiveEncryptionKeys,
         key_owner: address,
