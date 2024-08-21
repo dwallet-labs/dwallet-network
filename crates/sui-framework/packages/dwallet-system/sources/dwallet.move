@@ -454,6 +454,7 @@ module dwallet_system::dwallet {
         scheme: u8,
         encryption_key: vector<u8>,
         key_owner_address: address,
+        signed_encryption_key: vector<u8>,
     }
 
     public fun get_encryption_key(encryption_key: &EncryptionKey): vector<u8> {
@@ -467,13 +468,14 @@ module dwallet_system::dwallet {
 
     /// Register an encryption key to encrypt a user share.
     /// The key is saved as an immutable object.
-    public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
+    public fun register_encryption_key(key: vector<u8>, signed_key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         let encryption_key = EncryptionKey {
             id: object::new(ctx),
             scheme,
             encryption_key: key,
             key_owner_address: tx_context::sender(ctx),
+            signed_encryption_key: signed_key,
         };
         let encryption_key_id = object::id(&encryption_key);
         transfer::freeze_object(encryption_key);

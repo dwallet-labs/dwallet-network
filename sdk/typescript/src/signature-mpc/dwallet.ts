@@ -69,15 +69,17 @@ const waitForSignOutput = async (client: DWalletClient) => {
 
 export const storeEncryptionKey = async (
 	encryptionKey: Uint8Array,
+	signedEncryptionKey: Uint8Array,
 	encryptionKeyScheme: EncryptionKeyScheme,
 	keypair: Keypair,
 	client: DWalletClient,
 ): Promise<SuiObjectRef> => {
 	const tx = new TransactionBlock();
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey));
+	let pureSignedPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(signedEncryptionKey));
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::register_encryption_key`,
-		arguments: [purePubKey, tx.pure(bcs.u8().serialize(encryptionKeyScheme))],
+		arguments: [purePubKey, pureSignedPubKey, tx.pure(bcs.u8().serialize(encryptionKeyScheme))],
 	});
 	let result = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
