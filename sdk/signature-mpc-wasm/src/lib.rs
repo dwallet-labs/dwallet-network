@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
-    encryption_of_discrete_log_public_parameters, EncryptedUserShareAndProof,
+    encryption_of_discrete_log_public_parameters, parse_and_verify_secret_share,
+    EncryptedUserShareAndProof,
 };
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_presign;
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_sign;
@@ -286,6 +287,13 @@ pub fn decrypt_user_share(
     )
         .map_err(to_js_err)?;
     Ok(user_share)
+}
+
+#[wasm_bindgen]
+pub fn verify_user_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> Result<JsValue, JsErr> {
+    let is_matching =
+        parse_and_verify_secret_share(&secret_share, &dkg_output).map_err(to_js_err)?;
+    Ok(JsValue::from(is_matching))
 }
 
 #[derive(Serialize, Deserialize)]

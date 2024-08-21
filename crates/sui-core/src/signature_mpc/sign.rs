@@ -229,10 +229,15 @@ impl SignState {
     pub(crate) fn ready_for_complete_first_round(&self, round: &SignRound) -> bool {
         match round {
             SignRound::FirstRound { .. } => {
-                self.received_all_decryption_shares() && self.party_id == self.aggregator_party_id
+                self.received_threshold_decryption_shares()
+                    && self.party_id == self.aggregator_party_id
             }
             _ => false,
         }
+    }
+
+    pub(crate) fn received_threshold_decryption_shares(&self) -> bool {
+        self.decryption_shares.len() == self.tiresias_public_parameters.threshold as usize
     }
 
     fn received_all_decryption_shares(&self) -> bool {
