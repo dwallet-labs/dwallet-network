@@ -268,9 +268,13 @@ pub(crate) fn create_initial_eth_state_data(
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
 
     let state_root = eth_state.get_finalized_state_root().to_vec();
-
+    let time_slot = eth_state.get_latest_slot();
     Ok(NativeResult::ok(
         cost,
-        smallvec![Value::vector_u8(state_bytes), Value::vector_u8(state_root)],
+        smallvec![
+            Value::vector_u8(state_bytes),
+            Value::vector_u8(state_root),
+            Value::u64(time_slot.as_u64())
+        ],
     ))
 }

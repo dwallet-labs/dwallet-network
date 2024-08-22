@@ -41,4 +41,5 @@ pub struct EthereumStateObject {
     pub data: Vec<u8>,
     pub time_slot: u64,
     pub state_root: Vec<u8>,
+    pub latest_ethereum_state_id: ObjectID,
 }

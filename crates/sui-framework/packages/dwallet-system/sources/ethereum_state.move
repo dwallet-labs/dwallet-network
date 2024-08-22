@@ -49,11 +49,11 @@ module dwallet_system::ethereum_state {
         eth_smart_contract_slot: u64,
         ctx: &mut TxContext
     ) {
-        let (state_data, state_root) = create_initial_eth_state_data(state_bytes ,network);
+        let (data, state_root, time_slot) = create_initial_eth_state_data(state_bytes, network);
         let state = EthereumState {
             id: object::new(ctx),
-            data: state_data,
-            time_slot: 0u64,
+            data,
+            time_slot,
             state_root,
             latest_ethereum_state_id: object::id_from_address(@0x0),
         };
@@ -79,7 +79,7 @@ module dwallet_system::ethereum_state {
         finality_update_bytes: vector<u8>,
         optimistic_update_bytes: vector<u8>,
         latest_ethereum_state: &mut LatestEthereumState,
-        eth_state:  &EthereumState,
+        eth_state: &EthereumState,
         ctx: &mut TxContext,
     ) {
         // Verify that the state is the latest state
@@ -170,5 +170,5 @@ module dwallet_system::ethereum_state {
     native fun create_initial_eth_state_data(
         state_bytes: vector<u8>,
         network: vector<u8>,
-    ): (vector<u8>, vector<u8>);
+    ): (vector<u8>, vector<u8>, u64);
 }

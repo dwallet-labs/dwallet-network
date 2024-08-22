@@ -106,9 +106,6 @@ pub enum EthClientCommands {
     /// Initiate the LatestEthereumState struct in the DWallet module.
     #[command(name = "init-eth-state")]
     InitEthState {
-        /// A Trusted checkpoint to initialize the state.
-        #[clap(long)]
-        checkpoint: String,
         /// The corresponding Ethereum network.
         #[clap(long)]
         network: String,
@@ -145,14 +142,7 @@ pub enum EthClientCommands {
 /// This function should only be called once to initialize the Ethereum state.
 /// After the state is initialized, the Ethereum state object ID is saved in the configuration,
 /// and the state is updated whenever a new state is successfully verified.
-///
-/// There are only two acceptable checkpoints for the Ethereum state to initialize it:
-/// MAINNET Checkpoint: 0x8bfa089414dc5fe78dadc8b160a097fe744f17a80251f08eed0a3cdcc60b42f4
-/// HOLESKY Checkpoint: 0x8f867e31e2c55d9257dcd83effa0b7b74d7566a08bf2aabc5e133e91ffd11e2f
-///
-/// NOTE: Any other checkpoint would end up failing to create the initial state.
 pub(crate) async fn init_ethereum_state(
-    checkpoint: String,
     network: String,
     rpc: String,
     contract_address: String,
@@ -164,7 +154,13 @@ pub(crate) async fn init_ethereum_state(
     serialize_signed_transaction: bool,
 ) -> Result<SuiClientCommandResult> {
     let network = Network::from_str(&network)?;
-    let checkpoint = hex::decode(checkpoint.strip_prefix("0x").unwrap_or(&checkpoint))?;
+    let checkpoint = match network {
+        Network::MAINNET => "0x8bfa089414dc5fe78dadc8b160a097fe744f17a80251f08eed0a3cdcc60b42f4",
+        Network::HOLESKY => "0x8f867e31e2c55d9257dcd83effa0b7b74d7566a08bf2aabc5e133e91ffd11e2f",
+        _ => return Err(anyhow!("invalid network")),
+    };
+
+    let checkpoint = hex::decode(checkpoint.strip_prefix("0x").unwrap())?;
     let state = ConsensusStateManager::<NimbusRpc>::new_from_checkpoint(checkpoint, network, rpc)
         .await
         .map_err(|e| anyhow!("error deserializing object: {e}"))?;
