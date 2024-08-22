@@ -9,7 +9,7 @@ module dwallet_system::dwallet_tests {
     use dwallet::tx_context;
 
     use dwallet_system::dwallet;
-    use dwallet_system::dwallet::{create_dwallet_cap, EMesssageApprovalDWalletMismatch};
+    use dwallet_system::dwallet::{create_dwallet_cap, EMesssageApprovalDWalletMismatch, create_active_encryption_keys};
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{create_mock_sign_data, create_mock_sign_data_event};
 
     fun set_up(): (address, test_scenario::Scenario) {
@@ -241,5 +241,19 @@ module dwallet_system::dwallet_tests {
 
         dwallet::sign(partial_user_signed_messages, message_approvals, ctx);
         test_utils::destroy(dwallet_cap);
+    }
+
+    #[test]
+    public fun test_register_active_encryption_key(){
+        let ctx = &mut tx_context::dummy();
+        let key = vector::empty<u8>();
+
+        create_active_encryption_keys(ctx);
+        let active_encryption_keys_obj_id = tx_context::last_created_object_id(ctx);
+
+        dwallet::register_encryption_key(key, 0, ctx);
+        let encryption_key_obj_id = tx_context::last_created_object_id(ctx);
+
+        dwallet::set_active_encryption_key(&active_encryption_keys_obj_id, object::id(&encryption_key_obj_id), ctx));
     }
 }
