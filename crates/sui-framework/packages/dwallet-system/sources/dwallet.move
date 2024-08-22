@@ -473,7 +473,7 @@ module dwallet_system::dwallet {
 
     /// Register an encryption key to encrypt a user share.
     /// The key is saved as an immutable object.
-    public fun register_encryption_key(key: vector<u8>, signed_key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
+    public fun register_encryption_key(key: vector<u8>, signed_key: vector<u8>, scheme: u8, ctx: &mut TxContext) {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         let encryption_key = EncryptionKey {
             id: object::new(ctx),
