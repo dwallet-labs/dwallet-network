@@ -59,9 +59,13 @@ use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FU
 use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionKind};
 use crate::dwallet_commands::SuiDWalletCommands;
 
+use crate::ethereum_client_commands::{create_eth_dwallet, init_ethereum_state, EthClientCommands};
 use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::sui_commands::SuiCommand;
+<<<<<<< HEAD
 use crate::ethereum_client::EthClientCommands;
+=======
+>>>>>>> ts-and-move
 
 #[macro_export]
 macro_rules! serialize_or_execute {
@@ -652,8 +656,8 @@ pub enum SuiClientCommands {
     #[command(name = "eth-lc")]
     EthClient {
         #[command(subcommand)]
-        command: EthClientCommands
-    }
+        command: EthClientCommands,
+    },
 }
 
 impl SuiClientCommands {
@@ -1333,7 +1337,12 @@ impl SuiClientCommands {
                         "Environment config with name [{alias}] already exists."
                     ));
                 }
-                let env = SuiEnv { alias, rpc, ws, eth_client_settings: None };
+                let env = SuiEnv {
+                    alias,
+                    rpc,
+                    ws,
+                    eth_client_settings: None,
+                };
 
                 // Check urls are valid and server is reachable
                 env.create_rpc_client(None, None).await?;
@@ -1385,14 +1394,8 @@ impl SuiClientCommands {
                     .await?;
 
                 SuiClientCommandResult::VerifySource
-            },
-            SuiClientCommands::EthClient { command } => {
-                match command {
-                    EthClientCommands::EthApproveMessage { .. } => { todo!() }
-                    EthClientCommands::CreateEthDwallet { .. } => { todo!() }
-                    EthClientCommands::InitEthState { .. } => { todo!() }
-                }
             }
+<<<<<<< HEAD
             SuiClientCommands::DWallet {
                 cmd,
             } => {
@@ -1408,6 +1411,53 @@ impl SuiClientCommands {
                     );
                 }
             }
+=======
+            SuiClientCommands::EthClient { command } => match command {
+                EthClientCommands::EthApproveMessage { .. } => {
+                    todo!()
+                }
+                EthClientCommands::CreateEthDwallet {
+                    dwallet_cap_id,
+                    contract_address,
+                    contract_approved_tx_slot,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                } => {
+                    create_eth_dwallet(
+                        context,
+                        dwallet_cap_id,
+                        contract_address,
+                        contract_approved_tx_slot,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    )
+                    .await?
+                }
+                EthClientCommands::InitEthState {
+                    checkpoint,
+                    network,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                } => {
+                    init_ethereum_state(
+                        checkpoint,
+                        network,
+                        context,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    )
+                    .await?
+                }
+            },
+>>>>>>> ts-and-move
         });
         ret
     }

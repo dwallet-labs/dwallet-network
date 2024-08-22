@@ -33,8 +33,13 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
+<<<<<<< HEAD
 use crate::crypto::{twopc_mpc, zklogin, sui_state_proof};
+=======
+use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
+>>>>>>> ts-and-move
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
+use crate::crypto::{twopc_mpc, zklogin};
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
@@ -56,9 +61,12 @@ use std::sync::Arc;
 use sui_protocol_config::ProtocolConfig;
 use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
+<<<<<<< HEAD
 use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
 use crate::crypto::sui_state_proof::SuiStateProofCostParams;
 
+=======
+>>>>>>> ts-and-move
 
 mod address;
 mod crypto;
@@ -741,7 +749,12 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
                     func,
                 )
             });
+<<<<<<< HEAD
     let sui_system_natives: &[(&str, &str, NativeFunction)] = &[(
+=======
+    let sui_system_natives: &[(&str, &str, NativeFunction)] = &[
+        (
+>>>>>>> ts-and-move
             "validator",
             "validate_metadata_bcs",
             make_native!(validator::validate_metadata_bcs),
@@ -749,7 +762,9 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
         (
             "dwallet_2pc_mpc_ecdsa_k1",
             "dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share",
-            make_native!(twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share),
+            make_native!(
+                twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
+            ),
         ),
         (
             "sui_state_proof",
@@ -770,7 +785,8 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dwallet_2pc_mpc_ecdsa_k1",
             "sign_verify_encrypted_signature_parts_prehash",
             make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
-        )];
+        ),
+    ];
     sui_system_natives
         .iter()
         .cloned()

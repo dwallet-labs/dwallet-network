@@ -7,10 +7,7 @@ use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::{
-    loaded_data::runtime_types::Type,
-    natives::function::NativeResult
-    ,
-    values::Value,
+    loaded_data::runtime_types::Type, natives::function::NativeResult, values::Value,
 };
 
 pub const INVALID_INPUT: u64 = 0;
@@ -20,7 +17,8 @@ pub struct TwoPCMPCDKGCostParams {
     /// Base cost
     /// for invoking the `dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share`
     /// function.
-    pub dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base: InternalGas,
+    pub dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share_cost_base:
+        InternalGas,
     /// Base cost for invoking the `sign_verify_encrypted_signature_parts_prehash` function.
     pub sign_verify_encrypted_signature_parts_prehash_cost_base: InternalGas,
 }

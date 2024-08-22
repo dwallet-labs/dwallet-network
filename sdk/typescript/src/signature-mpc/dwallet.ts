@@ -5,7 +5,6 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { fetchObjectBySessionId } from './utils.js';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -27,43 +26,34 @@ export async function approveAndSign(
 		],
 	});
 	tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::sign_messages`,
+		target: `${packageId}::${dWalletModuleName}::sign`,
 		typeArguments: [
 			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`,
 			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::NewSignDataEvent`,
 		],
 		arguments: [tx.object(signMessagesId), messageApprovals],
 	});
-	const result = await client.signAndExecuteTransactionBlock({
+
+	await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx,
 		options: {
 			showEffects: true,
 		},
 	});
-
-	const signSessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
-		.reference!;
-
-	const signOutput = await fetchObjectBySessionId(
-		signSessionRef.objectId,
-		`${packageId}::${dWalletModuleName}::SignOutput`,
-		keypair,
-		client,
-	);
-
-	const fields =
-		signOutput?.dataType === 'moveObject'
-			? (signOutput.fields as {
-					id: { id: string };
-					signatures: number[][];
-			  })
-			: null;
-
-	return fields
-		? {
-				signOutputId: fields.id.id,
-				signatures: fields.signatures,
-		  }
-		: null;
+	return await waitForSignOutput(client);
 }
+
+const waitForSignOutput = async (client: DWalletClient) => {
+	return new Promise((resolve) => {
+		client.subscribeEvent({
+			filter: {
+				MoveEventType: `${packageId}::${dWalletModuleName}::SignOutputEvent`,
+			},
+			onMessage: (event) => {
+				// @ts-ignore
+				resolve(event?.parsedJson?.signatures);
+			},
+		});
+	});
+};

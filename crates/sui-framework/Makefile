@@ -1,9 +1,10 @@
 build:
 	cargo build --release
 test:
-	cd .. && pwd && cargo run --release --bin dwallet -- move test dwallet_tests --path ./sui-framework/packages/dwallet-system
+	cd .. && pwd && cargo run --bin dwallet -- move test --path ./packages/dwallet-system/tests
 test-bin:
-	cd ../../ && ./target/release/dwallet move test dwallet_tests --path ./crates/sui-framework/packages/dwallet-system
+	./../../target/debug/dwallet move test dwallet_tests --path ./packages/dwallet-system/tests
+	./../../target/debug/dwallet move test dwallet_ecdsa_k1_tests --path ./packages/dwallet-system/tests
 snapshot:
-	cd .. && cargo run --release --bin sui-framework-snapshot
+	cd .. && cargo run --bin sui-framework-snapshot
 
