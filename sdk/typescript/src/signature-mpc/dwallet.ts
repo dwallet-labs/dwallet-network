@@ -5,7 +5,9 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
+import { Ed25519Keypair } from '../keypairs/ed25519';
 import { SuiObjectRef } from '../types';
+import { generate_keypair_from_bytes } from './dwallet_2pc_mpc_ecdsa_k1_module';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -138,4 +140,8 @@ export const encryptUserShare = async (
 			showEffects: true,
 		},
 	});
+};
+
+export const generatePaillierKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
+	return generate_keypair_from_bytes(new TextEncoder().encode(keypair.export().privateKey));
 };

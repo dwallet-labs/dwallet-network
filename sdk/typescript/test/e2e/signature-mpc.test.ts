@@ -14,7 +14,7 @@ import {
 	encryptUserShare,
 	generate_keypair,
 	generate_keypair_from_bytes,
-	generate_proof,
+	generate_proof, generatePaillierKeyPairFromSuiKeyPair,
 	getEncryptionKeyByObjectId,
 	storeEncryptionKey,
 } from '../../src/signature-mpc';
@@ -148,9 +148,7 @@ describe('Test key share transfer', () => {
 describe('Derive a paillier keypair from a Sui keypair', () => {
 	it('should derive a paillier keypair from a Sui keypair', async () => {
 		let keypair = Ed25519Keypair.generate();
-		const [encryptionKey, decryptionKey] = generate_keypair_from_bytes(
-			new TextEncoder().encode(keypair.export().privateKey),
-		);
+		const [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(keypair);
 		console.log({ encryptionKey, decryptionKey });
 	});
 });
