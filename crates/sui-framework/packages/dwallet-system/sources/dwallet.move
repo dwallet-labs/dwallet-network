@@ -453,7 +453,7 @@ module dwallet_system::dwallet {
     /// An Additively Homomorphic Encryption (AHE) public key
     /// that can be used to encrypt a user share in order to prove to the network that
     /// the recipient can sign with a dWallet when it is transferred or access is granted to it.
-    struct EncryptionKey has key {
+        struct EncryptionKey has key {
         id: UID,
         scheme: u8,
         encryption_key: vector<u8>,
@@ -538,5 +538,35 @@ module dwallet_system::dwallet {
             encryption_key_id,
         };
         transfer::freeze_object(encrypted_user_share);
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_encryption_key(
+        key: vector<u8>,
+        scheme: u8,
+        owner: address,
+        ctx: &mut TxContext
+    ): EncryptionKey {
+        EncryptionKey {
+            id: object::new(ctx),
+            scheme,
+            encryption_key: key,
+            key_owner_address: owner,
+        }
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_active_encryption_keys(ctx: &mut TxContext): ActiveEncryptionKeys {
+        ActiveEncryptionKeys {
+            id: object::new(ctx),
+            encryption_keys: table::new(ctx),
+        }
+    }
+
+    #[test_only]
+    public(friend) fun get_active_encryption_keys_table(
+        encryption_key_holder: &ActiveEncryptionKeys
+    ): &Table<address, ID> {
+        &encryption_key_holder.encryption_keys
     }
 }

@@ -3,13 +3,23 @@ module dwallet_system::dwallet_tests {
     use std::vector;
 
     use dwallet::object::Self;
+    use dwallet::table;
     use dwallet::test_scenario;
     use dwallet::test_scenario::TransactionEffects;
     use dwallet::test_utils;
     use dwallet::tx_context;
 
     use dwallet_system::dwallet;
-    use dwallet_system::dwallet::{create_dwallet_cap, EMesssageApprovalDWalletMismatch, create_active_encryption_keys};
+    use dwallet_system::dwallet::{
+        create_dwallet_cap,
+        EMesssageApprovalDWalletMismatch,
+        EInvalidEncryptionKeyScheme,
+        EInvalidEncryptionKeyOwner,
+        create_mock_active_encryption_keys,
+        create_mock_encryption_key,
+        get_active_encryption_key,
+        get_active_encryption_keys_table
+    };
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{create_mock_sign_data, create_mock_sign_data_event};
 
     fun set_up(): (address, test_scenario::Scenario) {
@@ -23,6 +33,7 @@ module dwallet_system::dwallet_tests {
     const EWrongFrozenObjectsNum: u64 = 1;
     const EWrongCreatedObjectsNum: u64 = 2;
     const EObjectMismatchCreateAndFrozen: u64 = 3;
+    const EObjectNotInTable: u64 = 4;
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
     #[test]
@@ -243,17 +254,140 @@ module dwallet_system::dwallet_tests {
         test_utils::destroy(dwallet_cap);
     }
 
+    const VALID_SCHEME: u8 = 0;
+    const INVALID_SCHEME: u8 = 100;
+
     #[test]
-    public fun test_register_active_encryption_key(){
-        let ctx = &mut tx_context::dummy();
+    public fun test_register_encryption_key_with_valid_input() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let key = vector::empty<u8>();
+            dwallet::register_encryption_key(key, VALID_SCHEME, ctx);
+        };
+        let effects: TransactionEffects = test_scenario::end(scenario);
+        let created_objects = test_scenario::created(&effects);
+        assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+
+        let frozen_objects = test_scenario::frozen(&effects);
+        assert!(vector::length(&frozen_objects) == 1, EWrongFrozenObjectsNum);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidEncryptionKeyScheme)]
+    public fun test_register_active_encryption_key_with_invalid_scheme() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let key = vector::empty<u8>();
+            dwallet::register_encryption_key(key, INVALID_SCHEME, ctx);
+        };
+        let effects: TransactionEffects = test_scenario::end(scenario);
+        let created_objects = test_scenario::created(&effects);
+        assert!(vector::length(&created_objects) == 0, EWrongCreatedObjectsNum);
+
+        let frozen_objects = test_scenario::frozen(&effects);
+        assert!(vector::length(&frozen_objects) == 0, EWrongFrozenObjectsNum);
+    }
+
+    #[test]
+    public fun test_create_active_encryption_keys() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            dwallet::create_active_encryption_keys(ctx);
+        };
+        let effects: TransactionEffects = test_scenario::end(scenario);
+        let created_objects = test_scenario::created(&effects);
+        assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+
+        let shared_objects = test_scenario::shared(&effects);
+        assert!(vector::length(&shared_objects) == 1, EWrongFrozenObjectsNum);
+    }
+
+    #[test]
+    public fun test_set_active_encryption_key() {
+        let (sender, scenario) = set_up();
+        let _ = test_scenario::next_tx(&mut scenario, sender);
+        let ctx = test_scenario::ctx(&mut scenario);
+        let active_encryption_keys = create_mock_active_encryption_keys(ctx);
         let key = vector::empty<u8>();
 
-        create_active_encryption_keys(ctx);
-        let active_encryption_keys_obj_id = tx_context::last_created_object_id(ctx);
+        let first_encryption_key = create_mock_encryption_key(key, VALID_SCHEME, tx_context::sender(ctx), ctx);
+        dwallet::set_active_encryption_key(&mut active_encryption_keys, &first_encryption_key, ctx);
+        assert!(
+            table::contains(get_active_encryption_keys_table(&active_encryption_keys), tx_context::sender(ctx)),
+            EObjectNotInTable
+        );
+        assert!(
+            get_active_encryption_key(&active_encryption_keys, tx_context::sender(ctx)) == &object::id(
+                &first_encryption_key
+            ),
+            EObjectNotInTable
+        );
 
-        dwallet::register_encryption_key(key, 0, ctx);
-        let encryption_key_obj_id = tx_context::last_created_object_id(ctx);
+        let second_encryption_key = create_mock_encryption_key(key, VALID_SCHEME, tx_context::sender(ctx), ctx);
+        dwallet::set_active_encryption_key(&mut active_encryption_keys, &second_encryption_key, ctx);
+        assert!(
+            table::contains(get_active_encryption_keys_table(&active_encryption_keys), tx_context::sender(ctx)),
+            EObjectNotInTable
+        );
+        assert!(
+            get_active_encryption_key(&active_encryption_keys, tx_context::sender(ctx)) == &object::id(
+                &second_encryption_key
+            ),
+            EObjectNotInTable
+        );
 
-        dwallet::set_active_encryption_key(&active_encryption_keys_obj_id, object::id(&encryption_key_obj_id), ctx));
+        test_utils::destroy(active_encryption_keys);
+        test_utils::destroy(first_encryption_key);
+        test_utils::destroy(second_encryption_key);
+
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidEncryptionKeyOwner)]
+    public fun test_set_active_encryption_key_with_invalid_key_owner() {
+        let (sender, scenario) = set_up();
+        let _ = test_scenario::next_tx(&mut scenario, sender);
+        let ctx = test_scenario::ctx(&mut scenario);
+        let active_encryption_keys = create_mock_active_encryption_keys(ctx);
+        let key = vector::empty<u8>();
+        let invalid_sender = @0xD;
+
+        let encryption_key = create_mock_encryption_key(key, VALID_SCHEME, invalid_sender, ctx);
+        dwallet::set_active_encryption_key(&mut active_encryption_keys, &encryption_key, ctx);
+        assert!(
+            !table::contains(get_active_encryption_keys_table(&active_encryption_keys), tx_context::sender(ctx)),
+            EWrongCreatedObjectsNum
+        );
+
+        test_utils::destroy(active_encryption_keys);
+        test_utils::destroy(encryption_key);
+
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    public fun test_get_active_encryption_key() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let key = vector::empty<u8>();
+            let active_encryption_keys = create_mock_active_encryption_keys(ctx);
+            let encryption_key = create_mock_encryption_key(key, VALID_SCHEME, tx_context::sender(ctx), ctx);
+            dwallet::set_active_encryption_key(&mut active_encryption_keys, &encryption_key, ctx);
+            let key_id = dwallet::get_active_encryption_key(&active_encryption_keys, tx_context::sender(ctx));
+            assert!(key_id == &object::id(&encryption_key), EObjectNotInTable);
+
+            test_utils::destroy(active_encryption_keys);
+            test_utils::destroy(encryption_key);
+        };
+        test_scenario::end(scenario);
     }
 }
