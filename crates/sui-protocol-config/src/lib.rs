@@ -1109,7 +1109,9 @@ impl ProtocolConfig {
     }
 
     pub fn signature_mpc_tiresias_public_parameters(&self) -> Option<&str> {
-        self.feature_flags.signature_mpc_tiresias_public_parameters.as_deref()
+        self.feature_flags
+            .signature_mpc_tiresias_public_parameters
+            .as_deref()
     }
 }
 
@@ -1233,7 +1235,9 @@ impl ProtocolConfig {
             max_arguments: Some(512),
             max_type_arguments: Some(16),
             max_type_argument_depth: Some(16),
-            max_pure_argument_size: Some(1024 * 1024), // changed from 16 * 1024 as otherwise we can't submit the state proof for SUI
+            // Note this is necessary for the SUI light client.
+            // Changed from 16 * 1024 as otherwise we can't submit the state proof for SUI
+            max_pure_argument_size: Some(1024 * 1024),
             max_programmable_tx_commands: Some(1024),
             move_binary_format_version: Some(6),
             max_move_object_size: Some(250 * 1024),
@@ -1473,7 +1477,7 @@ impl ProtocolConfig {
             sui_state_proof_verify_link_cap_base: Some(52),
             //sui_state_proof::sui_state_proof_verify_transaction_base
             sui_state_proof_verify_transaction_base: Some(52),
-        
+
 
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,
