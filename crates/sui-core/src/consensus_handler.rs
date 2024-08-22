@@ -1,7 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, ConsensusCertificateResult, ConsensusStats, ConsensusStatsAPI, ExecutionIndicesWithStats};
+use crate::authority::authority_per_epoch_store::{
+    AuthorityPerEpochStore, ConsensusCertificateResult, ConsensusStats, ConsensusStatsAPI,
+    ExecutionIndicesWithStats,
+};
 use crate::authority::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::{AuthorityMetrics, AuthorityState, AuthorityStore};
 use crate::checkpoints::{CheckpointService, CheckpointServiceNotify};
@@ -10,6 +13,7 @@ use crate::consensus_types::committee_api::CommitteeAPI;
 use crate::consensus_types::consensus_output_api::ConsensusOutputAPI;
 use crate::consensus_types::AuthorityIndex;
 use crate::scoring_decision::update_low_scoring_authorities;
+use crate::signature_mpc::{sign, SignatureMPCService, SignatureMPCServiceNotify};
 use crate::transaction_manager::TransactionManager;
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
@@ -33,12 +37,11 @@ use sui_types::executable_transaction::{
 use sui_types::messages_consensus::{
     ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind,
 };
+use sui_types::messages_signature_mpc::{SignatureMPCOutput, SignatureMPCOutputValue};
 use sui_types::storage::ObjectStore;
 use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemStateTrait;
 use sui_types::transaction::{SenderSignedData, VerifiedTransaction};
 use tracing::{debug, error, info, instrument, trace_span};
-use sui_types::messages_signature_mpc::{SignatureMPCOutput, SignatureMPCOutputValue};
-use crate::signature_mpc::{SignatureMPCService, SignatureMPCServiceNotify};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -206,8 +209,11 @@ fn update_index_and_hash(
 }
 
 #[async_trait]
-impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync, S: SignatureMPCServiceNotify + Send + Sync> ExecutionState
-    for ConsensusHandler<T, C, S>
+impl<
+        T: ObjectStore + Send + Sync,
+        C: CheckpointServiceNotify + Send + Sync,
+        S: SignatureMPCServiceNotify + Send + Sync,
+    > ExecutionState for ConsensusHandler<T, C, S>
 {
     /// This function will be called by Narwhal, after Narwhal sequenced this certificate.
     #[instrument(level = "debug", skip_all)]
@@ -222,8 +228,11 @@ impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync, S: 
     }
 }
 
-impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync, S: SignatureMPCServiceNotify + Send + Sync>
-    ConsensusHandler<T, C, S>
+impl<
+        T: ObjectStore + Send + Sync,
+        C: CheckpointServiceNotify + Send + Sync,
+        S: SignatureMPCServiceNotify + Send + Sync,
+    > ConsensusHandler<T, C, S>
 {
     #[instrument(level = "debug", skip_all)]
     async fn handle_consensus_output_internal(
@@ -359,29 +368,68 @@ impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync, S: 
                             .inc_num_user_transactions(authority_index as usize);
                     }
 
-                    if let ConsensusTransactionKind::SignedDKGSignatureMPCOutput(
-                        output,
-                    ) = &transaction.kind
+                    if let ConsensusTransactionKind::SignedDKGSignatureMPCOutput(output) =
+                        &transaction.kind
                     {
-                        let is_sign = if let SignatureMPCOutputValue::Sign(_) = output.value {
+                        let is_sign = if let SignatureMPCOutputValue::Sign { .. } = output.value {
                             true
                         } else {
                             false
                         };
-                        if is_sign || self.epoch_store.try_aggregate_signed_signature_mpc_output(*output.clone()).is_ok() {
-                            debug!("adding ConsensusTransactionKind tx for output {output:?}");
-                            let signature_mpc_output_transaction = self
-                                .signature_mpc_output_transaction(
-                                    output.data().clone()
-                                );
+                        if is_sign
+                            || self
+                                .epoch_store
+                                .try_aggregate_signed_signature_mpc_output(*output.clone())
+                                .is_ok()
+                        {
+                            let sender_id = authority_index + 1;
+                            let aggregator_id = sign::calculate_aggregator_id(
+                                output.session_id,
+                                self.epoch_store.committee().authority_indexes().len(),
+                            );
+                            if is_sign && (aggregator_id == sender_id) {
+                                // Save the aggregator public key in the output, so that it can be
+                                // punished if it is malicious.
+                                // Validate that this is the correct aggregator.
+                                let output = match &output.value {
+                                    SignatureMPCOutputValue::Sign { sigs, .. } => {
+                                        let mut modified_output = output.clone();
+                                        modified_output.value = SignatureMPCOutputValue::Sign {
+                                            sigs: sigs.clone(),
+                                            aggregator_public_key: output
+                                                .auth_sig()
+                                                .authority
+                                                .0
+                                                .to_vec(),
+                                        };
+                                        modified_output
+                                    }
+                                    _ => output.clone(),
+                                };
+                                debug!("Adding ConsensusTransactionKind tx for output {output:?}");
+                                let signature_mpc_output_transaction =
+                                    self.signature_mpc_output_transaction(output.data().clone());
 
-                            transactions.push((
-                                empty_bytes.as_slice(),
-                                SequencedConsensusTransactionKind::System(
-                                    signature_mpc_output_transaction,
-                                ),
-                                consensus_output.leader_author_index(),
-                            ));
+                                transactions.push((
+                                    empty_bytes.as_slice(),
+                                    SequencedConsensusTransactionKind::System(
+                                        signature_mpc_output_transaction,
+                                    ),
+                                    consensus_output.leader_author_index(),
+                                ));
+                            } else if !is_sign {
+                                debug!("adding ConsensusTransactionKind tx for output {output:?}");
+                                let signature_mpc_output_transaction =
+                                    self.signature_mpc_output_transaction(output.data().clone());
+
+                                transactions.push((
+                                    empty_bytes.as_slice(),
+                                    SequencedConsensusTransactionKind::System(
+                                        signature_mpc_output_transaction,
+                                    ),
+                                    consensus_output.leader_author_index(),
+                                ));
+                            }
                         }
                     }
 
@@ -408,7 +456,7 @@ impl<T: ObjectStore + Send + Sync, C: CheckpointServiceNotify + Send + Sync, S: 
                         } else {
                             debug!("ignoring RandomnessStateUpdate tx for commit round {round:?}, randomness round {randomness_round:?}: randomness state is not enabled on this node")
                         }
-                    }  else {
+                    } else {
                         let transaction = SequencedConsensusTransactionKind::External(transaction);
                         transactions.push((serialized_transaction, transaction, authority_index));
                     }
@@ -554,7 +602,11 @@ pub struct MysticetiConsensusHandler {
 
 impl MysticetiConsensusHandler {
     pub fn new(
-        mut consensus_handler: ConsensusHandler<Arc<AuthorityStore>, CheckpointService, SignatureMPCService>,
+        mut consensus_handler: ConsensusHandler<
+            Arc<AuthorityStore>,
+            CheckpointService,
+            SignatureMPCService,
+        >,
         mut receiver: tokio::sync::mpsc::UnboundedReceiver<
             mysticeti_core::consensus::linearizer::CommittedSubDag,
         >,
@@ -653,9 +705,7 @@ impl<T, C, S> ConsensusHandler<T, C, S> {
         output: SignatureMPCOutput,
     ) -> VerifiedExecutableTransaction {
         assert!(self.epoch_store.protocol_config().signature_mpc());
-        let transaction = VerifiedTransaction::new_signature_mpc_output(
-            output
-        );
+        let transaction = VerifiedTransaction::new_signature_mpc_output(output);
         debug!(
             "created signature mpc output transaction: {:?}",
             transaction.digest()
@@ -679,7 +729,9 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         }
         ConsensusTransactionKind::CheckpointSignature(_) => "checkpoint_signature",
         ConsensusTransactionKind::SignatureMPCMessage(_) => "signature_mpc_message",
-        ConsensusTransactionKind::SignedDKGSignatureMPCOutput(_) => "signed_dkg_signature_mpc_output",
+        ConsensusTransactionKind::SignedDKGSignatureMPCOutput(_) => {
+            "signed_dkg_signature_mpc_output"
+        }
         ConsensusTransactionKind::EndOfPublish(_) => "end_of_publish",
         ConsensusTransactionKind::CapabilityNotification(_) => "capability_notification",
         ConsensusTransactionKind::NewJWKFetched(_, _, _) => "new_jwk_fetched",
@@ -871,9 +923,9 @@ mod tests {
     use crate::authority::authority_per_epoch_store::{ConsensusStats, ConsensusStatsAPI};
     use crate::authority::test_authority_builder::TestAuthorityBuilder;
     use crate::checkpoints::CheckpointServiceNoop;
-    use crate::signature_mpc::SignatureMPCServiceNoop;
     use crate::consensus_adapter::consensus_tests::{test_certificates, test_gas_objects};
     use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
+    use crate::signature_mpc::SignatureMPCServiceNoop;
     use narwhal_config::AuthorityIdentifier;
     use narwhal_test_utils::latest_protocol_version;
     use narwhal_types::{

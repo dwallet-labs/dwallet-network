@@ -45,6 +45,11 @@ mod checked {
     use sui_types::gas::SuiGasStatus;
     use sui_types::inner_temporary_store::InnerTemporaryStore;
     use sui_types::messages_checkpoint::CheckpointTimestamp;
+    use sui_types::messages_signature_mpc::SignatureMPCOutputValue;
+    use sui_types::signature_mpc::{
+        SignData, CREATE_PRESIGN_FUNC_NAME, CREATE_PRESIGN_OUTPUT_FUNC_NAME,
+        CREATE_SIGN_OUTPUT_FUNC_NAME, DWALLET_MODULE_NAME,
+    };
     use sui_types::storage::BackingStore;
     #[cfg(msim)]
     use sui_types::sui_system_state::advance_epoch_result_injection::maybe_modify_result;
@@ -56,16 +61,14 @@ mod checked {
     };
     use sui_types::transaction::{CheckedInputObjects, RandomnessStateUpdate};
     use sui_types::{
-        base_types::{ObjectRef, SuiAddress, TransactionDigest, TxContext, ObjectID},
+        base_types::{ObjectID, ObjectRef, SuiAddress, TransactionDigest, TxContext},
+        messages_signature_mpc::SignatureMPCOutput,
         object::Object,
+        signature_mpc::{CREATE_DKG_OUTPUT_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME},
         sui_system_state::{ADVANCE_EPOCH_FUNCTION_NAME, SUI_SYSTEM_MODULE_NAME},
         SUI_AUTHENTICATOR_STATE_OBJECT_ID, SUI_FRAMEWORK_ADDRESS, SUI_FRAMEWORK_PACKAGE_ID,
         SUI_SYSTEM_PACKAGE_ID,
-        messages_signature_mpc::SignatureMPCOutput,
-        signature_mpc::{CREATE_DKG_OUTPUT_FUNC_NAME, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME},
     };
-    use sui_types::messages_signature_mpc::SignatureMPCOutputValue;
-    use sui_types::signature_mpc::{CREATE_PRESIGN_FUNC_NAME, CREATE_PRESIGN_OUTPUT_FUNC_NAME, CREATE_SIGN_OUTPUT_FUNC_NAME, DWALLET_MODULE_NAME, SignData};
 
     #[instrument(name = "tx_execute_to_effects", level = "debug", skip_all)]
     pub fn execute_transaction_to_effects<Mode: ExecutionMode>(
@@ -1110,55 +1113,52 @@ mod checked {
                 SignatureMPCOutputValue::DKG {
                     commitment_to_centralized_party_secret_key_share,
                     secret_key_share_encryption_and_proof,
-                } => {
-                    builder.move_call(
-                        SUI_SYSTEM_PACKAGE_ID.into(),
-                        DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-                        CREATE_DKG_OUTPUT_FUNC_NAME.to_owned(),
-                        vec![],
-                        vec![
-                            CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
-                            CallArg::Pure(bcs::to_bytes(commitment_to_centralized_party_secret_key_share).unwrap()),
-                            CallArg::Pure(bcs::to_bytes(secret_key_share_encryption_and_proof).unwrap()),
-                        ],
-                    )
-                }
-                SignatureMPCOutputValue::PresignOutput(output) => {
-                    builder.move_call(
-                        SUI_SYSTEM_PACKAGE_ID.into(),
-                        DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-                        CREATE_PRESIGN_OUTPUT_FUNC_NAME.to_owned(),
-                        vec![],
-                        vec![
-                            CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
-                            CallArg::Pure(bcs::to_bytes(output).unwrap()),
-                        ],
-                    )
-                }
-                SignatureMPCOutputValue::Presign(presigns) => {
-                    builder.move_call(
-                        SUI_SYSTEM_PACKAGE_ID.into(),
-                        DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-                        CREATE_PRESIGN_FUNC_NAME.to_owned(),
-                        vec![],
-                        vec![
-                            CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
-                            CallArg::Pure(bcs::to_bytes(presigns).unwrap()),
-                        ],
-                    )
-                }
-                SignatureMPCOutputValue::Sign(sigs) => {
-                    builder.move_call(
-                        SUI_SYSTEM_PACKAGE_ID.into(),
-                        DWALLET_MODULE_NAME.to_owned(),
-                        CREATE_SIGN_OUTPUT_FUNC_NAME.to_owned(),
-                        vec![TypeTag::Struct(Box::new(SignData::type_()))],
-                        vec![
-                            CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
-                            CallArg::Pure(bcs::to_bytes(sigs).unwrap()),
-                        ],
-                    )
-                }
+                } => builder.move_call(
+                    SUI_SYSTEM_PACKAGE_ID.into(),
+                    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                    CREATE_DKG_OUTPUT_FUNC_NAME.to_owned(),
+                    vec![],
+                    vec![
+                        CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
+                        CallArg::Pure(
+                            bcs::to_bytes(commitment_to_centralized_party_secret_key_share)
+                                .unwrap(),
+                        ),
+                        CallArg::Pure(
+                            bcs::to_bytes(secret_key_share_encryption_and_proof).unwrap(),
+                        ),
+                    ],
+                ),
+                SignatureMPCOutputValue::PresignOutput(output) => builder.move_call(
+                    SUI_SYSTEM_PACKAGE_ID.into(),
+                    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                    CREATE_PRESIGN_OUTPUT_FUNC_NAME.to_owned(),
+                    vec![],
+                    vec![
+                        CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
+                        CallArg::Pure(bcs::to_bytes(output).unwrap()),
+                    ],
+                ),
+                SignatureMPCOutputValue::Presign(presigns) => builder.move_call(
+                    SUI_SYSTEM_PACKAGE_ID.into(),
+                    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                    CREATE_PRESIGN_FUNC_NAME.to_owned(),
+                    vec![],
+                    vec![
+                        CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
+                        CallArg::Pure(bcs::to_bytes(presigns).unwrap()),
+                    ],
+                ),
+                SignatureMPCOutputValue::Sign { sigs, .. } => builder.move_call(
+                    SUI_SYSTEM_PACKAGE_ID.into(),
+                    DWALLET_MODULE_NAME.to_owned(),
+                    CREATE_SIGN_OUTPUT_FUNC_NAME.to_owned(),
+                    vec![TypeTag::Struct(Box::new(SignData::type_()))],
+                    vec![
+                        CallArg::Object(ObjectArg::ImmOrOwnedObject(data.session_ref)),
+                        CallArg::Pure(bcs::to_bytes(sigs).unwrap()),
+                    ],
+                ),
             };
             assert_invariant!(
                 res.is_ok(),

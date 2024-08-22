@@ -65,8 +65,8 @@ pub enum IntentScope {
     ProofOfPossession = 5, // Used as a signature representing an authority's proof of possession of its authority protocol key.
     HeaderDigest = 6,      // Used for narwhal authority signature on header digest.
     BridgeEventUnused = 7, // for bridge purposes but it's currently not included in messages.
-    SignatureMPCMessage = 8,       // Used for an authority signature on a signature mpc message.
-    SignatureMPCOutput = 9,       // Used for an authority signature on a signature mpc output.
+    SignatureMPCMessage = 8, // Used for an authority signature on a signature mpc message.
+    SignatureMPCOutput = 9, // Used for an authority signature on a signature mpc output.
 }
 
 impl TryFrom<u8> for IntentScope {

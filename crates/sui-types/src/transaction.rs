@@ -18,6 +18,7 @@ use crate::message_envelope::{
 };
 use crate::messages_checkpoint::CheckpointTimestamp;
 use crate::messages_consensus::{ConsensusCommitPrologue, ConsensusCommitPrologueV2};
+use crate::messages_signature_mpc::SignatureMPCOutput;
 use crate::object::{MoveObject, Object, Owner};
 use crate::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use crate::signature::{AuthenticatorTrait, GenericSignature, VerifyParams};
@@ -47,7 +48,6 @@ use strum::IntoStaticStr;
 use sui_protocol_config::{ProtocolConfig, SupportedProtocolVersions};
 use tap::Pipe;
 use tracing::trace;
-use crate::messages_signature_mpc::SignatureMPCOutput;
 
 pub const TEST_ONLY_GAS_UNIT_FOR_TRANSFER: u64 = 10_000;
 pub const TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS: u64 = 50_000;
@@ -2517,9 +2517,7 @@ impl VerifiedTransaction {
         .pipe(Self::new_system_transaction)
     }
 
-    pub fn new_signature_mpc_output(
-        data: SignatureMPCOutput,
-    ) -> Self {
+    pub fn new_signature_mpc_output(data: SignatureMPCOutput) -> Self {
         TransactionKind::SignatureMPCOutput(data).pipe(Self::new_system_transaction)
     }
 

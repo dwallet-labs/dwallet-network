@@ -5,7 +5,9 @@ use crate::authority::test_authority_builder::TestAuthorityBuilder;
 use crate::checkpoints::CheckpointServiceNoop;
 use crate::consensus_handler::ConsensusHandlerInitializer;
 use crate::consensus_manager::mysticeti_manager::MysticetiManager;
-use crate::consensus_manager::narwhal_manager::narwhal_manager_tests::{checkpoint_service_for_testing, signature_mpc_service_for_testing};
+use crate::consensus_manager::narwhal_manager::narwhal_manager_tests::{
+    checkpoint_service_for_testing, signature_mpc_service_for_testing,
+};
 use crate::consensus_manager::ConsensusManagerMetrics;
 use crate::consensus_manager::ConsensusManagerTrait;
 use crate::consensus_validator::{SuiTxValidator, SuiTxValidatorMetrics};
@@ -16,8 +18,8 @@ use prometheus::Registry;
 use std::sync::Arc;
 use std::time::Duration;
 use sui_swarm_config::network_config_builder::ConfigBuilder;
+use sui_types::messages_signature_mpc::PartyID;
 use tokio::time::sleep;
-use sui_types::messages_signature_mpc::{config_signature_mpc_secret_for_network_for_testing, PartyID};
 
 #[tokio::test(flavor = "current_thread", start_paused = true)]
 async fn test_mysticeti_manager() {
@@ -26,7 +28,8 @@ async fn test_mysticeti_manager() {
         .committee_size(1.try_into().unwrap())
         .build();
 
-    let (decryption_key_share_public_parameters, decryption_key_shares) = config_signature_mpc_secret_for_network_for_testing(4 as PartyID);
+    let (decryption_key_share_public_parameters, decryption_key_shares) =
+        config_signature_mpc_secret_for_network_for_testing(4 as PartyID);
 
     for i in 0..3 {
         let config = &configs.validator_configs()[0];
@@ -57,7 +60,11 @@ async fn test_mysticeti_manager() {
         let consensus_handler_initializer = ConsensusHandlerInitializer::new_for_testing(
             state.clone(),
             checkpoint_service_for_testing(state.clone()),
-            signature_mpc_service_for_testing(decryption_key_share_public_parameters.clone(), decryption_key_shares[&((i + 1) as PartyID)], state.clone()),
+            signature_mpc_service_for_testing(
+                decryption_key_share_public_parameters.clone(),
+                decryption_key_shares[&((i + 1) as PartyID)],
+                state.clone(),
+            ),
         );
 
         // WHEN start mysticeti

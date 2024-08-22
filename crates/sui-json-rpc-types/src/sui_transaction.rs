@@ -31,6 +31,7 @@ use sui_types::error::{ExecutionError, SuiError, SuiResult};
 use sui_types::execution_status::ExecutionStatus;
 use sui_types::gas::GasCostSummary;
 use sui_types::messages_checkpoint::CheckpointSequenceNumber;
+use sui_types::messages_signature_mpc::{SignatureMPCOutput, SignatureMPCOutputValue};
 use sui_types::object::{MoveObject, Owner};
 use sui_types::parse_sui_type_tag;
 use sui_types::quorum_driver_types::ExecuteTransactionRequestType;
@@ -51,7 +52,6 @@ use tabled::{
     builder::Builder as TableBuilder,
     settings::{style::HorizontalLine, Panel as TablePanel, Style as TableStyle},
 };
-use sui_types::messages_signature_mpc::{SignatureMPCOutput, SignatureMPCOutputValue};
 
 // similar to EpochId of sui-types but BigInt
 pub type SuiEpochId = BigInt<u64>;
@@ -485,25 +485,34 @@ impl SuiTransactionBlockKind {
                     random_bytes: update.random_bytes,
                 })
             }
-            TransactionKind::SignatureMPCOutput(SignatureMPCOutput { epoch, session_id, session_ref, value }) => {
-                Self::SignatureMPCOutput(SuiDKGSignatureMPCOutput {
-                    epoch,
-                    session_id: session_id.0.to_vec(),
-                    session_ref: session_ref.into(),
-                    value: match value {
-                        SignatureMPCOutputValue::DKG {
-                            commitment_to_centralized_party_secret_key_share,
-                            secret_key_share_encryption_and_proof
-                        } => SuiDKGSignatureMPCOutputValue::DKG {
-                            commitment_to_centralized_party_secret_key_share,
-                            secret_key_share_encryption_and_proof
-                        },
-                        SignatureMPCOutputValue::PresignOutput(o) => SuiDKGSignatureMPCOutputValue::PresignOutput(o),
-                        SignatureMPCOutputValue::Presign(o) => SuiDKGSignatureMPCOutputValue::Presign(o),
-                        SignatureMPCOutputValue::Sign(s) => SuiDKGSignatureMPCOutputValue::Sign(s),
+            TransactionKind::SignatureMPCOutput(SignatureMPCOutput {
+                epoch,
+                session_id,
+                session_ref,
+                value,
+            }) => Self::SignatureMPCOutput(SuiDKGSignatureMPCOutput {
+                epoch,
+                session_id: session_id.0.to_vec(),
+                session_ref: session_ref.into(),
+                value: match value {
+                    SignatureMPCOutputValue::DKG {
+                        commitment_to_centralized_party_secret_key_share,
+                        secret_key_share_encryption_and_proof,
+                    } => SuiDKGSignatureMPCOutputValue::DKG {
+                        commitment_to_centralized_party_secret_key_share,
+                        secret_key_share_encryption_and_proof,
                     },
-                })
-            }
+                    SignatureMPCOutputValue::PresignOutput(o) => {
+                        SuiDKGSignatureMPCOutputValue::PresignOutput(o)
+                    }
+                    SignatureMPCOutputValue::Presign(o) => {
+                        SuiDKGSignatureMPCOutputValue::Presign(o)
+                    }
+                    SignatureMPCOutputValue::Sign { sigs, .. } => {
+                        SuiDKGSignatureMPCOutputValue::Sign(sigs)
+                    }
+                },
+            }),
             TransactionKind::EndOfEpochTransaction(end_of_epoch_tx) => {
                 Self::EndOfEpochTransaction(SuiEndOfEpochTransaction {
                     transactions: end_of_epoch_tx

@@ -61,7 +61,6 @@ impl Client {
     ) -> Result<CertifiedCheckpointSummary> {
         let url = format!("{}/checkpoints/{checkpoint_sequence_number}", self.base_url);
 
-
         let checkpoint = self
             .inner
             .get(url.clone())

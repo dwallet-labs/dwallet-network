@@ -200,7 +200,9 @@ use simulator::*;
 pub use simulator::set_jwk_injector;
 use sui_core::consensus_handler::ConsensusHandlerInitializer;
 use sui_core::mysticeti_adapter::LazyMysticetiClient;
-use sui_core::signature_mpc::{SignatureMPCMetrics, SignatureMPCService, SubmitSignatureMPCToConsensus};
+use sui_core::signature_mpc::{
+    SignatureMPCMetrics, SignatureMPCService, SubmitSignatureMPCToConsensus,
+};
 use sui_types::messages_signature_mpc::InitiateSignatureMPCProtocol;
 
 pub struct SuiNode {
@@ -1079,7 +1081,6 @@ impl SuiNode {
         )
         .await?;
 
-
         Self::start_epoch_specific_validator_components(
             config,
             state.clone(),
@@ -1278,12 +1279,13 @@ impl SuiNode {
             metrics: signature_mpc_metrics.clone(),
         });
 
-        // TODO: replace unwrap
-        let tiresias_public_parameters = epoch_store.protocol_config().signature_mpc_tiresias_public_parameters().unwrap();
-
-        let signature_mpc_tiresias = config.signature_mpc_tiresias().expect("signature_mpc_tiresias should be populated");
-        let (tiresias_public_parameters, tiresias_key_share_decryption_key_share) = signature_mpc_tiresias.signature_mpc_tiresias().expect("signature_mpc_tiresias should be populated");
-
+        let signature_mpc_tiresias = config
+            .signature_mpc_tiresias()
+            .expect("signature_mpc_tiresias should be populated");
+        let (tiresias_public_parameters, tiresias_key_share_decryption_key_share) =
+            signature_mpc_tiresias
+                .signature_mpc_tiresias()
+                .expect("signature_mpc_tiresias should be populated");
 
         SignatureMPCService::spawn(
             tiresias_public_parameters.clone(),
@@ -1516,7 +1518,7 @@ impl SuiNode {
                 checkpoint_metrics,
                 signature_mpc_metrics,
                 sui_tx_validator_metrics,
-              }) = self.validator_components.lock().await.take()
+            }) = self.validator_components.lock().await.take()
             {
                 info!("Reconfiguring the validator.");
                 // Stop the old checkpoint service.

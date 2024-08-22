@@ -8,8 +8,10 @@ use crate::consensus_handler::ConsensusHandlerInitializer;
 use crate::consensus_manager::narwhal_manager::{NarwhalConfiguration, NarwhalManager};
 use crate::consensus_manager::{ConsensusManagerMetrics, ConsensusManagerTrait};
 use crate::consensus_validator::{SuiTxValidator, SuiTxValidatorMetrics};
+use crate::signature_mpc::{SignatureMPCMetrics, SignatureMPCService};
 use crate::state_accumulator::StateAccumulator;
 use bytes::Bytes;
+use either::Either;
 use fastcrypto::bls12381;
 use fastcrypto::traits::KeyPair;
 use mysten_metrics::RegistryService;
@@ -18,17 +20,18 @@ use narwhal_types::{TransactionProto, TransactionsClient};
 use prometheus::Registry;
 use std::sync::Arc;
 use std::time::Duration;
-use either::Either;
 use sui_swarm_config::network_config_builder::ConfigBuilder;
 use sui_types::messages_checkpoint::{
     CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary,
+};
+use sui_types::messages_signature_mpc::{
+    DecryptionPublicParameters, PartyID, SecretKeyShareSizedNumber, SignatureMPCMessageSummary,
+    SignatureMPCOutput,
 };
 use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemStateTrait;
 use sui_types::sui_system_state::SuiSystemStateTrait;
 use tokio::sync::{broadcast, mpsc};
 use tokio::time::{interval, sleep};
-use sui_types::messages_signature_mpc::{config_signature_mpc_secret_for_network_for_testing, DecryptionPublicParameters, PartyID, SecretKeyShareSizedNumber, SignatureMPCMessageSummary, SignatureMPCOutput};
-use crate::signature_mpc::{SignatureMPCService, SignatureMPCMetrics};
 
 async fn send_transactions(
     name: &bls12381::min_sig::BLS12381PublicKey,
@@ -92,8 +95,13 @@ pub fn checkpoint_service_for_testing(state: Arc<AuthorityState>) -> Arc<Checkpo
     checkpoint_service
 }
 
-pub fn signature_mpc_service_for_testing(decryption_key_share_public_parameters: DecryptionPublicParameters, decryption_key_share: SecretKeyShareSizedNumber ,state: Arc<AuthorityState>) -> Arc<SignatureMPCService> {
-    let (submit, _result) = mpsc::channel::<Either<SignatureMPCMessageSummary, SignatureMPCOutput>>(10);
+pub fn signature_mpc_service_for_testing(
+    decryption_key_share_public_parameters: DecryptionPublicParameters,
+    decryption_key_share: SecretKeyShareSizedNumber,
+    state: Arc<AuthorityState>,
+) -> Arc<SignatureMPCService> {
+    let (submit, _result) =
+        mpsc::channel::<Either<SignatureMPCMessageSummary, SignatureMPCOutput>>(10);
 
     let epoch_store = state.epoch_store_for_testing();
 
@@ -116,8 +124,10 @@ async fn test_narwhal_manager() {
     let mut narwhal_managers = Vec::new();
     let mut shutdown_senders = Vec::new();
 
-    let (decryption_key_share_public_parameters, decryption_key_shares) = config_signature_mpc_secret_for_network_for_testing(configs.validator_configs().len() as PartyID);
-
+    let (decryption_key_share_public_parameters, decryption_key_shares) =
+        config_signature_mpc_secret_for_network_for_testing(
+            configs.validator_configs().len() as PartyID
+        );
 
     for (i, config) in configs.validator_configs().iter().enumerate() {
         let consensus_config = config.consensus_config().unwrap();
@@ -156,7 +166,11 @@ async fn test_narwhal_manager() {
         let consensus_handler_initializer = ConsensusHandlerInitializer::new_for_testing(
             state.clone(),
             checkpoint_service_for_testing(state.clone()),
-            signature_mpc_service_for_testing(decryption_key_share_public_parameters.clone(), decryption_key_shares[&((i + 1) as PartyID)], state.clone()),
+            signature_mpc_service_for_testing(
+                decryption_key_share_public_parameters.clone(),
+                decryption_key_shares[&((i + 1) as PartyID)],
+                state.clone(),
+            ),
         );
 
         // start narwhal
@@ -206,7 +220,8 @@ async fn test_narwhal_manager() {
 
     for (i, ((narwhal_manager, state, transactions_addr, name), config)) in narwhal_managers
         .into_iter()
-        .zip(configs.validator_configs()).enumerate()
+        .zip(configs.validator_configs())
+        .enumerate()
     {
         // stop narwhal instance
         narwhal_manager.shutdown().await;
@@ -232,7 +247,11 @@ async fn test_narwhal_manager() {
         let consensus_handler_initializer = ConsensusHandlerInitializer::new_for_testing(
             state.clone(),
             checkpoint_service_for_testing(state.clone()),
-            signature_mpc_service_for_testing(decryption_key_share_public_parameters.clone(), decryption_key_shares[&((i + 1) as PartyID)], state.clone()),
+            signature_mpc_service_for_testing(
+                decryption_key_share_public_parameters.clone(),
+                decryption_key_shares[&((i + 1) as PartyID)],
+                state.clone(),
+            ),
         );
 
         // start narwhal with advanced epoch

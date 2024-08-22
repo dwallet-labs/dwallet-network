@@ -1,25 +1,33 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use anyhow::Error;
 use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::*;
+
+use signature_mpc::twopc_mpc_protocols::CentralizedPartyPresign;
+use signature_mpc::twopc_mpc_protocols::DKGCentralizedPartyOutput;
+use wasm_bindgen::prelude::*;
+
+use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
+    encryption_of_discrete_log_public_parameters, parse_and_verify_secret_share,
+    EncryptedUserShareAndProof,
+};
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_presign;
 use signature_mpc::twopc_mpc_protocols::finalize_centralized_party_sign;
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_presign;
 use signature_mpc::twopc_mpc_protocols::initiate_centralized_party_sign;
 use signature_mpc::twopc_mpc_protocols::message_digest;
-use signature_mpc::twopc_mpc_protocols::CentralizedPartyPresign;
-use signature_mpc::twopc_mpc_protocols::DKGCentralizedPartyOutput;
 use signature_mpc::twopc_mpc_protocols::PresignDecentralizedPartyOutput;
 use signature_mpc::twopc_mpc_protocols::PublicNonceEncryptedPartialSignatureAndProof;
 use signature_mpc::twopc_mpc_protocols::Result as TwoPCMPCResult;
 use signature_mpc::twopc_mpc_protocols::Scalar;
 use signature_mpc::twopc_mpc_protocols::{
-    decommitment_round_centralized_party_dkg, initiate_centralized_party_dkg,
-    DKGDecommitmentRoundState, ProtocolContext, SecretKeyShareEncryptionAndProof,
-    recovery_id, PublicKeyValue, SignatureK256Secp256k1, Hash, affine_point_to_public_key
+    affine_point_to_public_key, decommitment_round_centralized_party_dkg,
+    initiate_centralized_party_dkg, recovery_id, DKGDecommitmentRoundState, Hash, ProtocolContext,
+    PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1,
 };
-use wasm_bindgen::prelude::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct InitiateDKGValue {
@@ -30,6 +38,7 @@ pub struct InitiateDKGValue {
 #[derive(Serialize, Deserialize)]
 pub struct FinalizeDKGValue {
     pub public_key_share_decommitment_and_proof: Vec<u8>,
+    pub secret_key_share: Vec<u8>,
     pub dkg_output: Vec<u8>,
 }
 
@@ -79,6 +88,7 @@ pub fn finalize_dkg(
         public_key_share_decommitment_and_proof: bcs::to_bytes(
             &public_key_share_decommitment_and_proof,
         )?,
+        secret_key_share: bcs::to_bytes(&dkg_output.secret_key_share)?,
         dkg_output: bcs::to_bytes(&dkg_output)?,
     };
     Ok(serde_wasm_bindgen::to_value(&value)?)
@@ -140,11 +150,19 @@ pub fn initiate_sign(
     let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
     let commitment_round_parties = initiate_centralized_party_sign(dkg_output.clone(), presigns)?;
 
-    let (public_nonce_encrypted_partial_signature_and_proofs, _signature_verification_round_parties): (Vec<_>, Vec<_>) = messages.into_iter().zip(commitment_round_parties.into_iter()).map(|(message, party)| {
-        let m = message_digest(&message, &hash.into());
-        party
-            .evaluate_encrypted_partial_signature_prehash(m, &mut OsRng)
-    }).collect::<TwoPCMPCResult<Vec<_>>>()?.into_iter().unzip();
+    let (
+        public_nonce_encrypted_partial_signature_and_proofs,
+        _signature_verification_round_parties,
+    ): (Vec<_>, Vec<_>) = messages
+        .into_iter()
+        .zip(commitment_round_parties.into_iter())
+        .map(|(message, party)| {
+            let m = message_digest(&message, &hash.into());
+            party.evaluate_encrypted_partial_signature_prehash(m, &mut OsRng)
+        })
+        .collect::<TwoPCMPCResult<Vec<_>>>()?
+        .into_iter()
+        .unzip();
 
     let public_nonce_encrypted_partial_signature_and_proofs =
         bcs::to_bytes(&public_nonce_encrypted_partial_signature_and_proofs)?;
@@ -173,14 +191,13 @@ pub fn finalize_sign(
     > = bcs::from_bytes(&public_nonce_encrypted_partial_signature_and_proofs)?;
     let signatures_s: Vec<Scalar> = bcs::from_bytes(&signatures_s)?;
 
-    Ok(finalize_centralized_party_sign(
+    finalize_centralized_party_sign(
         messages,
         dkg_output,
         public_nonce_encrypted_partial_signature_and_proofs,
         signatures_s,
     )
     .map_err(JsErr::from)
-    .and_then(|_| Ok(()))?)
 }
 
 #[wasm_bindgen]
@@ -195,10 +212,14 @@ pub fn recovery_id_keccak256(
     })?;
     let signature: SignatureK256Secp256k1 = bcs::from_bytes(&signature)?;
 
-    Ok(recovery_id(message, public_key, signature, &Hash::KECCAK256).map_err(|_| JsErr {
-        message: "Can't generate RecoveryId".to_string(),
-        display: "Can't generate RecoveryId".to_string(),
-    })?.into())
+    Ok(
+        recovery_id(message, public_key, signature, &Hash::KECCAK256)
+            .map_err(|_| JsErr {
+                message: "Can't generate RecoveryId".to_string(),
+                display: "Can't generate RecoveryId".to_string(),
+            })?
+            .into(),
+    )
 }
 
 #[wasm_bindgen]
@@ -213,10 +234,60 @@ pub fn recovery_id_sha256(
     })?;
     let signature: SignatureK256Secp256k1 = bcs::from_bytes(&signature)?;
 
-    Ok(recovery_id(message, public_key, signature, &Hash::SHA256).map_err(|_| JsErr {
-        message: "Can't generate RecoveryId".to_string(),
-        display: "Can't generate RecoveryId".to_string(),
-    })?.into())
+    Ok(recovery_id(message, public_key, signature, &Hash::SHA256)
+        .map_err(|_| JsErr {
+            message: "Can't generate RecoveryId".to_string(),
+            display: "Can't generate RecoveryId".to_string(),
+        })?
+        .into())
+}
+
+#[wasm_bindgen]
+pub fn generate_keypair() -> Result<JsValue, JsErr> {
+    let (public_key, private_key) =
+        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair()
+            .map_err(to_js_err)?;
+    Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
+}
+
+#[wasm_bindgen]
+pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsValue, JsErr> {
+    let language_public_parameters =
+        encryption_of_discrete_log_public_parameters(public_key.clone()).map_err(to_js_err)?;
+    let proof_public_output =
+        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_proof(
+            public_key,
+            secret_share,
+            language_public_parameters,
+        )
+        .map_err(to_js_err)?;
+    let proof_public_output = bcs::to_bytes(&proof_public_output)?;
+
+    Ok(serde_wasm_bindgen::to_value(&proof_public_output)?)
+}
+
+#[wasm_bindgen]
+pub fn decrypt_user_share(
+    encryption_key: Vec<u8>,
+    decryption_key: Vec<u8>,
+    encrypted_user_share_and_proof: Vec<u8>,
+) -> Result<Vec<u8>, JsErr> {
+    let encrypted_user_share_and_proof: EncryptedUserShareAndProof =
+        bcs::from_bytes(&encrypted_user_share_and_proof)?;
+    let user_share = signature_mpc::twopc_mpc_protocols::encrypt_user_share::decrypt_user_share(
+        encryption_key,
+        decryption_key,
+        encrypted_user_share_and_proof,
+    )
+    .map_err(to_js_err)?;
+    Ok(user_share)
+}
+
+#[wasm_bindgen]
+pub fn verify_user_share(secret_share: Vec<u8>, dkg_output: Vec<u8>) -> Result<JsValue, JsErr> {
+    let is_matching =
+        parse_and_verify_secret_share(&secret_share, &dkg_output).map_err(to_js_err)?;
+    Ok(JsValue::from(is_matching))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -240,5 +311,14 @@ impl<T: std::error::Error> From<T> for JsErr {
 impl From<JsErr> for JsValue {
     fn from(err: JsErr) -> Self {
         serde_wasm_bindgen::to_value(&err).unwrap()
+    }
+}
+
+// There is no way to implement From<anyhow::Error> for JsErr
+// since the current From<Error> is generic, and it results in a conflict.
+fn to_js_err(e: Error) -> JsErr {
+    JsErr {
+        display: format!("{}", e),
+        message: e.to_string(),
     }
 }

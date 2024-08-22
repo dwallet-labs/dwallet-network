@@ -66,6 +66,7 @@ derive_more.workspace = true
 proptest.workspace = true
 proptest-derive.workspace = true
 workspace-hack.workspace = true
+twopc_mpc = { git = "https://github.com/dwallet-labs/2pc-mpc.git", features = ["secp256k1", "bulletproofs", "paillier"] }
 
 [dev-dependencies]
 bincode.workspace = true

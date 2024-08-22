@@ -55,10 +55,10 @@ pub mod inner_temporary_store;
 pub mod message_envelope;
 pub mod messages_checkpoint;
 
-pub mod messages_signature_mpc;
 pub mod messages_consensus;
 pub mod messages_grpc;
 pub mod messages_safe_client;
+pub mod messages_signature_mpc;
 pub mod metrics;
 pub mod mock_checkpoint_builder;
 pub mod move_package;
@@ -339,9 +339,10 @@ mod tests {
 
     #[test]
     fn test_complex_struct_tag_with_short_addr() {
-        let result =
-            parse_sui_struct_tag("0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::dwlt::DWLT>>>")
-                .expect("should not error");
+        let result = parse_sui_struct_tag(
+            "0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::dwlt::DWLT>>>",
+        )
+        .expect("should not error");
 
         let expected = expect!["0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::dwlt::DWLT>>>"];
         expected.assert_eq(&result.to_string());

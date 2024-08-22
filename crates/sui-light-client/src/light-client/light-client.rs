@@ -685,7 +685,15 @@ async fn retrieve_highest_epoch(config: &Config) -> anyhow::Result<u64> {
         .data
         .iter()
         .filter(|event| event.parsed_json.get("epoch").is_some())
-        .filter(|event| event.parsed_json.get("registry_id").unwrap().as_str().unwrap() == config.dwltn_registry_object_id)
+        .filter(|event| {
+            event
+                .parsed_json
+                .get("registry_id")
+                .unwrap()
+                .as_str()
+                .unwrap()
+                == config.dwltn_registry_object_id
+        })
         .map(|event| {
             u64::from_str(event.parsed_json.get("epoch").unwrap().as_str().unwrap()).unwrap()
         })

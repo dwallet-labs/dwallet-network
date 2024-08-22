@@ -11,7 +11,7 @@ publish = false
 rand = { version = "0.8", features = ["std"] }
 rand_core = { version = "0.6", features = ["std"] }
 
-twopc_mpc = { git = "https://github.com/dwallet-labs/2pc-mpc.git", features = ["secp256k1", "bulletproofs", "paillier"], branch = "instantiations" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/2pc-mpc.git", features = ["secp256k1", "bulletproofs", "paillier"] }
 crypto-bigint = { version = "0.5", features = ["rand_core", "serde"], default-features = false }
 group = { git = "https://github.com/dwallet-labs/group.git" }
 proof = { git = "https://github.com/dwallet-labs/proof.git" }
@@ -19,8 +19,9 @@ homomorphic_encryption = { git = "https://github.com/dwallet-labs/homomorphic-en
 commitment = { git = "https://github.com/dwallet-labs/commitment.git" }
 maurer = { git = "https://github.com/dwallet-labs/maurer.git" }
 enhanced_maurer = { git = "https://github.com/dwallet-labs/enhanced-maurer.git" }
-tiresias = { git = "https://github.com/dwallet-labs/tiresias.git", branch = "he", features = ["test_exports"] }
+tiresias = { git = "https://github.com/dwallet-labs/tiresias.git", features = ["test_exports"] }
 ecdsa = { version = "0.16.9", features = ["verifying"] }
+# todo: ?
 k256 = { git = 'https://github.com/ycscaly/elliptic-curves.git', branch = "13.3-fixed", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
 
 serde = { version = "1.0", features = ["derive"] }
@@ -31,3 +32,7 @@ thiserror = "1.0"
 workspace-hack.workspace = true
 bcs.workspace = true
 sha3 = "0.10.8"
+anyhow.workspace = true
+
+[dev-dependencies]
+hex = "0.4.3"
