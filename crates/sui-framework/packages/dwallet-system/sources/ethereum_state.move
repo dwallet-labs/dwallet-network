@@ -43,12 +43,13 @@ module dwallet_system::ethereum_state {
     /// NOTE: this function performs no verification on the `checkpoint`, 
     /// and it serves as an initial "trusted" state which users should verify externally (once) before using.
     public fun init_state(
+        state_bytes: vector<u8>,
         network: vector<u8>,
         eth_smart_contract_address: vector<u8>,
         eth_smart_contract_slot: u64,
         ctx: &mut TxContext
     ) {
-        let (state_data, state_root) = create_initial_eth_state_data(network);
+        let (state_data, state_root) = create_initial_eth_state_data(state_bytes ,network);
         let state = EthereumState {
             id: object::new(ctx),
             data: state_data,
@@ -167,6 +168,7 @@ module dwallet_system::ethereum_state {
     /// Native function.
     /// Creates the initial Ethereum state data with the given checkpoint.
     native fun create_initial_eth_state_data(
+        state_bytes: vector<u8>,
         network: vector<u8>,
     ): (vector<u8>, vector<u8>);
 }

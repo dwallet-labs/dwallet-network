@@ -139,12 +139,10 @@ pub fn verify_message_proof(
 /***************************************************************************************************
  * native fun verify_eth_state
  * Implementation of the Move native function
- * `eth_dwallet::verify_eth_state(proof: vector<vector<u8>>,
- * proof_len: u64,
- * root: vector<u8>,
- * eth_smart_contract_address: vector<u8>,
- * eth_smart_contract_slot: u64,
- * message: vector<u8>): bool;`
+ * `eth_dwallet::verify_eth_state(updates: vector<u8>,
+ * finality_update: vector<u8>,
+ * optimistic_update: vector<u8>,
+ * eth_state: vector<u8>) -> (vector<u8>, u64, vector<u8>, vector<u8>);`
  * gas cost: verify_eth_state_cost_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
 pub(crate) fn verify_eth_state(
@@ -245,31 +243,34 @@ pub(crate) fn create_initial_eth_state_data(
         verify_message_proof_cost_params.create_initial_eth_state_data_cost_base
     );
 
+    // hardcoded hashes for verifying network states
+    const MAINNET_STATE_HASH: &str =
+        "9fb325c6f66a0f98b57f4b8117c193982c622ee4eb0f6373c84cfc46821091de";
+    const HOLESKY_STATE_HASH: &str =
+        "e418e4c236fcb1b13282f23346f8c4b14af29cce5ad843f27ed565fd00d49269";
+
     let cost = context.gas_used();
 
     let network = pop_arg!(args, Vector).to_vec_u8()?;
+    let state_bytes = pop_arg!(args, Vector).to_vec_u8()?;
+    let state_bytes_hash = hex::encode(keccak256(state_bytes.clone()));
+    let is_valid = match network.as_slice() {
+        b"mainnet" => state_bytes_hash == MAINNET_STATE_HASH,
+        b"holesky" => state_bytes_hash == HOLESKY_STATE_HASH,
+        _ => false,
+    };
 
-    let network = String::from_utf8(network)
-        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+    if !is_valid {
+        return Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(vec![])]));
+    }
 
-    let file_path = format!("crates/eth-initial-state/eth_state_{}.bcs", network);
-
-    let mut file = File::open(file_path)
-        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
-    let mut eth_state_bytes = Vec::new();
-    File::read_to_end(&mut file, &mut eth_state_bytes)
-        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
-
-    let eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&eth_state_bytes)
+    let eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&state_bytes)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
 
     let state_root = eth_state.get_finalized_state_root().to_vec();
 
     Ok(NativeResult::ok(
         cost,
-        smallvec![
-            Value::vector_u8(eth_state_bytes),
-            Value::vector_u8(state_root)
-        ],
+        smallvec![Value::vector_u8(state_bytes), Value::vector_u8(state_root)],
     ))
 }
