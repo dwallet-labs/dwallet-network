@@ -251,9 +251,10 @@ pub fn generate_keypair() -> Result<JsValue, JsErr> {
 }
 
 #[wasm_bindgen]
-pub fn generate_keypair_from_bytes(bytes: &[u8]) -> Result<JsValue, JsErr> {
+pub fn generate_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErr> {
+    let fixed_size_seed: [u8; 32] = seed.try_into().expect("seed must be 32 bytes long");
     let (public_key, private_key) =
-        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair_from_bytes(bytes)
+        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair_from_seed(fixed_size_seed)
             .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }

@@ -215,6 +215,6 @@ export const encryptUserShare = async (
 };
 
 export const generatePaillierKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
-	let hashedBytes = keccak256((new TextEncoder()).encode(keypair.export().privateKey));
-	return generate_keypair_from_bytes((new TextEncoder()).encode(hashedBytes));
+	let hashedPrivateKey = (new TextEncoder()).encode(keccak256((new TextEncoder()).encode(keypair.export().privateKey)));
+	return generate_keypair_from_bytes(hashedPrivateKey);
 };
