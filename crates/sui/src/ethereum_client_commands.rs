@@ -150,7 +150,7 @@ pub enum EthClientCommands {
 /// MAINNET Checkpoint: 0x8bfa089414dc5fe78dadc8b160a097fe744f17a80251f08eed0a3cdcc60b42f4
 /// HOLESKY Checkpoint: 0x8f867e31e2c55d9257dcd83effa0b7b74d7566a08bf2aabc5e133e91ffd11e2f
 ///
-/// NOTE: Every other checkpoint would not create the initial state.
+/// NOTE: Any other checkpoint would end up failing to create the initial state.
 pub(crate) async fn init_ethereum_state(
     checkpoint: String,
     network: String,
