@@ -8,6 +8,8 @@ module dwallet_system::dwallet {
 
     use dwallet::event;
     use dwallet::object::{Self, ID, UID};
+    use dwallet::table;
+    use dwallet::table::Table;
     use dwallet::transfer;
     use dwallet::tx_context;
     use dwallet::tx_context::TxContext;
@@ -22,6 +24,8 @@ module dwallet_system::dwallet {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const EMesssageApprovalDWalletMismatch: u64 = 1;
+    const EInvalidEncryptionKeyScheme: u64 = 2;
+    const EInvalidEncryptionKeyOwner: u64 = 3;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -132,7 +136,7 @@ module dwallet_system::dwallet {
     #[test_only]
     /// Creates a sign session.
     public fun create_mock_sign_session<S: store>(
-        messages: vector<vector<u8>>, dwallet_public_key: vector<u8> ,sign_data: S, ctx: &mut TxContext,
+        messages: vector<vector<u8>>, dwallet_public_key: vector<u8>, sign_data: S, ctx: &mut TxContext,
     ) {
         let session = SignSession<S> {
             dwallet_id: object::id_from_address(@0x0),
@@ -146,7 +150,9 @@ module dwallet_system::dwallet {
         transfer::freeze_object(session);
     }
 
-    public(friend) fun get_dwallet_public_key<S: store>(session: &SignSession<S>): vector<u8> { session.dwallet_public_key }
+    public(friend) fun get_dwallet_public_key<S: store>(
+        session: &SignSession<S>
+    ): vector<u8> { session.dwallet_public_key }
 
     public(friend) fun get_sign_data<S: store>(session: &SignSession<S>): &S { &session.sign_data }
 
@@ -437,8 +443,6 @@ module dwallet_system::dwallet {
     }
 
     /// Encrypt DWallet secret share with an AHE public key.
-    const EInvalidEncryptionKeyScheme: u64 = 0x2;
-
     struct EncryptedUserShare has key {
         id: UID,
         dwallet_id: ID,
@@ -461,13 +465,14 @@ module dwallet_system::dwallet {
     }
 
     const Paillier: u8 = 0;
+
     fun is_valid_encryption_key_scheme(scheme: u8): bool {
         scheme == Paillier // || scheme == ...
     }
 
     /// Register an encryption key to encrypt a user share.
     /// The key is saved as an immutable object.
-    public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext): ID {
+    public fun register_encryption_key(key: vector<u8>, scheme: u8, ctx: &mut TxContext) {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         let encryption_key = EncryptionKey {
             id: object::new(ctx),
@@ -475,9 +480,49 @@ module dwallet_system::dwallet {
             encryption_key: key,
             key_owner_address: tx_context::sender(ctx),
         };
-        let encryption_key_id = object::id(&encryption_key);
         transfer::freeze_object(encryption_key);
-        encryption_key_id
+    }
+
+    /// Shared object that holds the active encryption keys per user.
+    /// 'encryption_keys' is a key-value table where the key is the user address
+    /// and the value is the encryption key object ID.
+    struct ActiveEncryptionKeys has key {
+        id: UID,
+        encryption_keys: Table<address, ID>,
+    }
+
+    /// Create a shared object that holds the active encryption keys per user.
+    public fun create_active_encryption_keys(ctx: &mut TxContext) {
+        let holder = ActiveEncryptionKeys {
+            id: object::new(ctx),
+            encryption_keys: table::new(ctx),
+        };
+        transfer::share_object(holder);
+    }
+
+    /// Set the active encryption key for a user (the sender).
+    public fun set_active_encryption_key(
+        encryption_key_holder: &mut ActiveEncryptionKeys,
+        encryption_key: &EncryptionKey,
+        ctx: &mut TxContext
+    ) {
+        assert!(encryption_key.key_owner_address == tx_context::sender(ctx), EInvalidEncryptionKeyOwner);
+        if (table::contains(&encryption_key_holder.encryption_keys, encryption_key.key_owner_address)) {
+            table::remove(&mut encryption_key_holder.encryption_keys, encryption_key.key_owner_address);
+        };
+        table::add(
+            &mut encryption_key_holder.encryption_keys,
+            encryption_key.key_owner_address,
+            object::id(encryption_key)
+        );
+    }
+
+    /// Get the active encryption key ID by user adderss.
+    public fun get_active_encryption_key(
+        encryption_key_holder: &ActiveEncryptionKeys,
+        key_owner: address,
+    ): &ID {
+        table::borrow(&encryption_key_holder.encryption_keys, key_owner)
     }
 
     public(friend) fun create_encrypted_user_share(

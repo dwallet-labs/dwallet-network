@@ -6,6 +6,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	approveAndSign,
+	createActiveEncryptionKeysTable,
 	createDWallet,
 	createPartialUserSignedMessages,
 	decrypt_user_share,
@@ -13,7 +14,9 @@ import {
 	encryptUserShare,
 	generate_keypair,
 	generate_proof,
+	getActiveEncryptionKey,
 	getEncryptionKeyByObjectId,
+	setActiveEncryptionKey,
 	storeEncryptionKey,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
@@ -87,6 +90,24 @@ describe('Create public key', () => {
 			toolbox.client,
 		);
 		console.log({ pubKeyRef });
+
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(toolbox.client, toolbox.keypair);
+
+		await setActiveEncryptionKey(
+			toolbox.client,
+			toolbox.keypair,
+			pubKeyRef?.objectId!,
+			encryptionKeysHolder.objectId,
+		);
+
+		const activeEncryptionKey = await getActiveEncryptionKey(
+			toolbox.client,
+			toolbox.keypair,
+			encryptionKeysHolder.objectId,
+		);
+
+		const activeKeyHex = Buffer.from(new Uint8Array(activeEncryptionKey)).toString('hex');
+		expect(`0x${activeKeyHex}`).toEqual(pubKeyRef?.objectId!);
 	});
 });
 
