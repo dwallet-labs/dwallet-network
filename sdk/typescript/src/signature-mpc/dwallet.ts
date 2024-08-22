@@ -9,6 +9,7 @@ import type { SuiObjectRef } from '../types/index.js';
 import { Ed25519Keypair } from '../keypairs/ed25519';
 import { SuiObjectRef } from '../types';
 import { generate_keypair_from_bytes } from './dwallet_2pc_mpc_ecdsa_k1_module';
+import { keccak256 } from 'ethers';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -104,16 +105,16 @@ export const getEncryptionKeyByObjectId = async (
 	const objectFields =
 		response.data?.content?.dataType === 'moveObject'
 			? (response.data?.content?.fields as unknown as {
-					encryption_key: Uint8Array;
-					key_owner_address: string;
-				})
+				encryption_key: Uint8Array;
+				key_owner_address: string;
+			})
 			: null;
 
 	return objectFields
 		? {
-				encryptionKey: objectFields?.encryption_key,
-				keyOwnerAddress: objectFields?.key_owner_address,
-			}
+			encryptionKey: objectFields?.encryption_key,
+			keyOwnerAddress: objectFields?.key_owner_address,
+		}
 		: null;
 };
 
@@ -214,5 +215,6 @@ export const encryptUserShare = async (
 };
 
 export const generatePaillierKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
-	return generate_keypair_from_bytes(new TextEncoder().encode(keypair.export().privateKey));
+	let hashedBytes = keccak256((new TextEncoder()).encode(keypair.export().privateKey));
+	return generate_keypair_from_bytes((new TextEncoder()).encode(hashedBytes));
 };
