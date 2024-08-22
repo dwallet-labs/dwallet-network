@@ -731,12 +731,8 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
                     func,
                 )
             });
-<<<<<<< HEAD
-    let sui_system_natives: &[(&str, &str, NativeFunction)] = &[(
-=======
     let sui_system_natives: &[(&str, &str, NativeFunction)] = &[
         (
->>>>>>> ts-and-move
             "validator",
             "validate_metadata_bcs",
             make_native!(validator::validate_metadata_bcs),

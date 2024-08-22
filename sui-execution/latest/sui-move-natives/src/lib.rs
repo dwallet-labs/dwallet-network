@@ -33,13 +33,10 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
-<<<<<<< HEAD
-use crate::crypto::{twopc_mpc, zklogin, sui_state_proof};
-=======
-use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
->>>>>>> ts-and-move
+use crate::crypto::sui_state_proof::SuiStateProofCostParams;
+use crate::crypto::twopc_mpc::{TransferDWalletCostParams, TwoPCMPCDKGCostParams};
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
-use crate::crypto::{twopc_mpc, zklogin};
+use crate::crypto::{sui_state_proof, twopc_mpc, zklogin};
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
@@ -61,12 +58,6 @@ use std::sync::Arc;
 use sui_protocol_config::ProtocolConfig;
 use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
-<<<<<<< HEAD
-use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
-use crate::crypto::sui_state_proof::SuiStateProofCostParams;
-
-=======
->>>>>>> ts-and-move
 
 mod address;
 mod crypto;
@@ -162,7 +153,7 @@ pub struct NativesCostTable {
     // TwoPC-MPC.
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
 
-    // sui state proof
+    // Sui State Proof
     pub sui_state_proof_cost_params: SuiStateProofCostParams,
 }
 
@@ -749,12 +740,9 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
                     func,
                 )
             });
-<<<<<<< HEAD
-    let sui_system_natives: &[(&str, &str, NativeFunction)] = &[(
-=======
+
     let sui_system_natives: &[(&str, &str, NativeFunction)] = &[
         (
->>>>>>> ts-and-move
             "validator",
             "validate_metadata_bcs",
             make_native!(validator::validate_metadata_bcs),

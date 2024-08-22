@@ -28,4 +28,3 @@ sui-types.workspace = true
 workspace-hack.workspace = true
 tracing.workspace = true
 sui-json.workspace = true
-signature-mpc.workspace = true

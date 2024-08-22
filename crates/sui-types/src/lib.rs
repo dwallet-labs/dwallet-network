@@ -56,10 +56,10 @@ pub mod inner_temporary_store;
 pub mod message_envelope;
 pub mod messages_checkpoint;
 
-pub mod messages_signature_mpc;
 pub mod messages_consensus;
 pub mod messages_grpc;
 pub mod messages_safe_client;
+pub mod messages_signature_mpc;
 pub mod metrics;
 pub mod mock_checkpoint_builder;
 pub mod move_package;
