@@ -6,11 +6,9 @@ use std::{
     path::PathBuf,
     sync::Arc,
 };
-use std::time::Duration;
 
-use anyhow::{anyhow, bail, ensure};
+use anyhow::{anyhow, ensure};
 use bip32::DerivationPath;
-use bip32::secp256k1::elliptic_curve::rand_core::OsRng;
 use clap::*;
 use colored::Colorize;
 use fastcrypto::{
@@ -19,11 +17,11 @@ use fastcrypto::{
 };
 
 use json_to_table::json_to_table;
-use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::language_storage::TypeTag;
 use move_package::BuildConfig as MoveBuildConfig;
 use prometheus::Registry;
 use serde::Serialize;
-use serde_json::{json, Number, Value};
+use serde_json::{json, Value};
 use sui_move::build::resolve_lock_file_path;
 use sui_protocol_config::ProtocolConfig;
 use sui_source_validation::{BytecodeSourceVerifier, SourceMode};
@@ -31,7 +29,11 @@ use sui_source_validation::{BytecodeSourceVerifier, SourceMode};
 use shared_crypto::intent::Intent;
 use sui_execution::verifier::VerifierOverrides;
 use sui_json::SuiJsonValue;
-use sui_json_rpc_types::{DynamicFieldPage, MoveCallParams, ObjectChange, RPCTransactionRequestParams, SuiData, SuiObjectData, SuiObjectDataFilter, SuiObjectResponse, SuiObjectResponseQuery, SuiParsedData, SuiRawData, SuiTransactionBlockEffects, SuiTransactionBlockEffectsAPI, SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions};
+use sui_json_rpc_types::{
+    DynamicFieldPage, SuiData, SuiObjectData, SuiObjectResponse, SuiObjectResponseQuery,
+    SuiParsedData, SuiRawData, SuiTransactionBlockEffectsAPI, SuiTransactionBlockResponse,
+    SuiTransactionBlockResponseOptions,
+};
 use sui_json_rpc_types::{SuiExecutionStatus, SuiObjectDataOptions};
 use sui_keys::keystore::AccountKeystore;
 use sui_move_build::{
@@ -39,10 +41,23 @@ use sui_move_build::{
     gather_published_ids, BuildConfig, CompiledPackage, PackageDependencies, PublishedAtError,
 };
 use sui_replay::ReplayToolCommand;
-use sui_sdk::sui_client_config::{DWalletSecretShare, SuiClientConfig, SuiEnv};
+use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
 use sui_sdk::wallet_context::WalletContext;
 use sui_sdk::SuiClient;
-use sui_types::{base_types::{ObjectID, SequenceNumber, SuiAddress}, crypto::SignatureScheme, digests::TransactionDigest, dynamic_field::DynamicFieldInfo, error::SuiError, gas_coin::GasCoin, metrics::BytecodeVerifierMetrics, move_package::UpgradeCap, object::Owner, parse_sui_type_tag, signature::GenericSignature, SUI_SYSTEM_PACKAGE_ID, transaction::{SenderSignedData, Transaction, TransactionData, TransactionDataAPI}};
+use sui_types::{
+    base_types::{ObjectID, SequenceNumber, SuiAddress},
+    crypto::SignatureScheme,
+    digests::TransactionDigest,
+    dynamic_field::DynamicFieldInfo,
+    error::SuiError,
+    gas_coin::GasCoin,
+    metrics::BytecodeVerifierMetrics,
+    move_package::UpgradeCap,
+    object::Owner,
+    parse_sui_type_tag,
+    signature::GenericSignature,
+    transaction::{SenderSignedData, Transaction, TransactionData, TransactionDataAPI},
+};
 
 use tabled::{
     builder::Builder as TableBuilder,
@@ -51,21 +66,11 @@ use tabled::{
         Modify as TableModify, Panel as TablePanel, Style as TableStyle,
     },
 };
-use tokio::time::sleep;
 use tracing::info;
-use signature_mpc::twopc_mpc_protocols::{initiate_centralized_party_dkg, SecretKeyShareEncryptionAndProof, EncryptedDecentralizedPartySecretKeyShareValue, initiate_centralized_party_presign, DKGCentralizedPartyOutput, PresignDecentralizedPartyOutput, initiate_centralized_party_sign, message_digest};
-use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::signature_mpc::{APPROVE_MESSAGES_FUNC_NAME, CREATE_DKG_SESSION_FUNC_NAME, CREATE_DWALLET_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, DKG_SESSION_OUTPUT_STRUCT_NAME, DKG_SESSION_STRUCT_NAME, DKGSessionOutput, DWallet, DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME, PRESIGN_SESSION_STRUCT_NAME, PresignSessionOutput, Presign};
-use sui_types::transaction::{Argument, CallArg, ObjectArg, TransactionKind};
-use crate::dwallet_commands::SuiDWalletCommands;
 
 use crate::ethereum_client_commands::{create_eth_dwallet, init_ethereum_state, EthClientCommands};
 use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::sui_commands::SuiCommand;
-<<<<<<< HEAD
-use crate::ethereum_client::EthClientCommands;
-=======
->>>>>>> ts-and-move
 
 #[macro_export]
 macro_rules! serialize_or_execute {
@@ -453,9 +458,6 @@ pub enum SuiClientCommands {
         /// used for subsequent commands.
         #[clap(long)]
         env: Option<String>,
-        /// The dWallet alias to be used for subsequent commands.
-        #[clap(long)]
-        dwallet: Option<String>,
     },
 
     /// Get the effects of executing the given transaction block
@@ -646,12 +648,6 @@ pub enum SuiClientCommands {
         terminate_early: bool,
     },
 
-    /// dWallet subcommands.
-    #[command(name = "dwallet")]
-    DWallet {
-        #[clap(subcommand)]
-        cmd: Option<SuiDWalletCommands>,
-    },
     /// Ethereum light-client subcommands.
     #[command(name = "eth-lc")]
     EthClient {
@@ -1271,7 +1267,7 @@ impl SuiClientCommands {
                     MergeCoin
                 )
             }
-            SuiClientCommands::Switch { address, env , dwallet} => {
+            SuiClientCommands::Switch { address, env } => {
                 let mut addr = None;
 
                 if address.is_none() && env.is_none() {
@@ -1291,10 +1287,6 @@ impl SuiClientCommands {
 
                 if let Some(ref env) = env {
                     Self::switch_env(&mut context.config, env)?;
-                }
-
-                if let Some(ref dwallet) = dwallet {
-                    Self::switch_dwallet(&mut context.config, dwallet)?;
                 }
                 context.config.save()?;
                 SuiClientCommandResult::Switch(SwitchResponse { address: addr, env })
@@ -1395,23 +1387,6 @@ impl SuiClientCommands {
 
                 SuiClientCommandResult::VerifySource
             }
-<<<<<<< HEAD
-            SuiClientCommands::DWallet {
-                cmd,
-            } => {
-                if let Some(cmd) = cmd {
-                    cmd.execute(context).await?
-                } else {
-                    // Print help
-                    let mut app: Command = SuiCommand::command();
-                    app.build();
-                    app.find_subcommand_mut("client").unwrap().find_subcommand_mut("dwallet").unwrap().print_help()?;
-                    bail!(
-                        "Wrong dwallet command."
-                    );
-                }
-            }
-=======
             SuiClientCommands::EthClient { command } => match command {
                 EthClientCommands::EthApproveMessage { .. } => {
                     todo!()
@@ -1457,7 +1432,6 @@ impl SuiClientCommands {
                     .await?
                 }
             },
->>>>>>> ts-and-move
         });
         ret
     }
@@ -1466,13 +1440,6 @@ impl SuiClientCommands {
         let env = Some(env.into());
         ensure!(config.get_env(&env).is_some(), "Environment config not found for [{env:?}], add new environment config using the `sui client new-env` command.");
         config.active_env = env;
-        Ok(())
-    }
-
-    pub fn switch_dwallet(config: &mut SuiClientConfig, dwallet: &str) -> Result<(), anyhow::Error> {
-        let dwallet = Some(dwallet.into());
-        ensure!(config.get_env(&dwallet).is_some(), "dWallet config not found for [{dwallet:?}], create a new dWallet using the `sui client dwallet create` command.");
-        config.active_dwallet = dwallet;
         Ok(())
     }
 }
@@ -1669,57 +1636,6 @@ impl Display for SuiClientCommandResult {
                 table.with(TableStyle::rounded());
                 table.with(TablePanel::header(
                     "Created new keypair and saved it to keystore.",
-                ));
-
-                table.with(
-                    TableModify::new(TableCell::new(0, 0))
-                        .with(TableBorder::default().corner_bottom_right('┬')),
-                );
-                table.with(
-                    TableModify::new(TableCell::new(0, 0))
-                        .with(TableBorder::default().corner_top_right('─')),
-                );
-
-                write!(f, "{}", table)?
-            }
-            SuiClientCommandResult::NewDWallet(new_dwallet) => {
-                let mut builder = TableBuilder::default();
-                builder.push_record(vec!["alias", new_dwallet.alias.as_str()]);
-                builder.push_record(vec!["dwallet_id", new_dwallet.dwallet_id.to_string().as_str()]);
-                builder.push_record(vec!["dwallet_cap_id", new_dwallet.dwallet_cap_id.to_string().as_str()]);
-                builder.push_record(vec!["public_key (base64)", new_dwallet.public_key.as_str()]);
-
-                let mut table = builder.build();
-                table.with(TableStyle::rounded());
-                table.with(TablePanel::header(
-                    "Created new dwallet and saved its secret share.",
-                ));
-
-                table.with(
-                    TableModify::new(TableCell::new(0, 0))
-                        .with(TableBorder::default().corner_bottom_right('┬')),
-                );
-                table.with(
-                    TableModify::new(TableCell::new(0, 0))
-                        .with(TableBorder::default().corner_top_right('─')),
-                );
-
-                write!(f, "{}", table)?
-            }
-            SuiClientCommandResult::NewSignOutput(sign_output) => {
-                let mut builder = TableBuilder::default();
-                builder.push_record(vec!["dwallet_id", sign_output.dwallet_id.to_string().as_str()]);
-                builder.push_record(vec!["sign_output_id", sign_output.sign_output_id.to_string().as_str()]);
-                builder.push_record(vec!["signatures:", ""]);
-
-                for signature in &sign_output.signatures {
-                    builder.push_record(vec!["", signature.as_str()]);
-                }
-
-                let mut table = builder.build();
-                table.with(TableStyle::rounded());
-                table.with(TablePanel::header(
-                    "MPC completed and sign output object was generated (signatures in base64).",
                 ));
 
                 table.with(
@@ -2043,23 +1959,6 @@ pub struct NewAddressOutput {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct NewDWalletOutput {
-    pub alias: String,
-    pub dwallet_id: ObjectID,
-    pub dwallet_cap_id: ObjectID,
-    pub public_key: String,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct NewSignOutput {
-    pub dwallet_id: ObjectID,
-    pub sign_output_id: ObjectID,
-    pub signatures: Vec<String>,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct ObjectOutput {
     pub object_id: ObjectID,
     pub version: SequenceNumber,
@@ -2173,8 +2072,6 @@ pub enum SuiClientCommandResult {
     Gas(Vec<GasCoin>),
     MergeCoin(SuiTransactionBlockResponse),
     NewAddress(NewAddressOutput),
-    NewDWallet(NewDWalletOutput),
-    NewSignOutput(NewSignOutput),
     NewEnv(SuiEnv),
     Object(SuiObjectResponse),
     Objects(Vec<SuiObjectResponse>),

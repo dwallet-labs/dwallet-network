@@ -368,8 +368,6 @@ pub async fn new_wallet_context_from_cluster(
         }],
         active_address: Some(address),
         active_env: Some("localnet".to_string()),
-        dwallets: vec![],
-        active_dwallet: None,
     }
     .persisted(&wallet_config_path)
     .save()

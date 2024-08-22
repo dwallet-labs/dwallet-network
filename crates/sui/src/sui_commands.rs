@@ -578,7 +578,7 @@ async fn prompt_if_no_config(
                     print!("Creating config file [{:?}] with default (devnet) Full node server and ed25519 key scheme.", wallet_conf_path);
                 } else {
                     print!(
-                        "Config file [{:?}] doesn't exist, do you want to connect to a dWallet Full node server [y/N]?",
+                        "Config file [{:?}] doesn't exist, do you want to connect to a Sui Full node server [y/N]?",
                         wallet_conf_path
                     );
                 }
@@ -589,7 +589,7 @@ async fn prompt_if_no_config(
                         String::new()
                     } else {
                         print!(
-                            "dWallet Full node server URL (Defaults to dWallet Testnet if not specified) : "
+                            "Sui Full node server URL (Defaults to Sui Devnet if not specified) : "
                         );
                         read_line()?
                     };
@@ -645,8 +645,6 @@ async fn prompt_if_no_config(
                 envs: vec![env],
                 active_address: Some(new_address),
                 active_env: Some(alias),
-                dwallets: vec![],
-                active_dwallet: None,
             }
             .persisted(wallet_conf_path)
             .save()?;

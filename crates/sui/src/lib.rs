@@ -12,6 +12,5 @@ pub mod key_identity;
 pub mod keytool;
 pub mod shell;
 pub mod sui_commands;
-pub mod dwallet_commands;
 pub mod validator_commands;
 pub mod zklogin_commands_util;

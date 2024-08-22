@@ -10,7 +10,6 @@ use serde_with::serde_as;
 use sui_config::Config;
 use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
-use signature_mpc::twopc_mpc_protocols::{DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput};
 
 use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 
@@ -19,10 +18,8 @@ use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, 
 pub struct SuiClientConfig {
     pub keystore: Keystore,
     pub envs: Vec<SuiEnv>,
-    pub dwallets: Vec<DWalletSecretShare>,
     pub active_env: Option<String>,
     pub active_address: Option<SuiAddress>,
-    pub active_dwallet: Option<String>,
 }
 
 /// Configuration settings for the Ethereum light client.
@@ -38,10 +35,8 @@ impl SuiClientConfig {
         SuiClientConfig {
             keystore,
             envs: vec![],
-            dwallets: vec![],
             active_env: None,
             active_address: None,
-            active_dwallet: None,
         }
     }
 
@@ -101,36 +96,6 @@ impl SuiClientConfig {
             .any(|other_env| other_env.alias == env.alias)
         {
             self.envs.push(env)
-        }
-    }
-
-    pub fn get_dwallet(&self, alias: &Option<String>) -> Option<&DWalletSecretShare> {
-        if let Some(alias) = alias {
-            self.dwallets.iter().find(|dwallet| &dwallet.alias == alias)
-        } else {
-            self.dwallets.first()
-        }
-    }
-
-    pub fn get_active_dwallet(&self) -> Result<&DWalletSecretShare, anyhow::Error> {
-        self.get_dwallet(&self.active_dwallet).ok_or_else(|| {
-            anyhow!(
-                "dWallet configuration not found for dwallet [{}]",
-                self.active_dwallet.as_deref().unwrap_or("None")
-            )
-        })
-    }
-
-    pub fn add_dwallet(&mut self, dwallet: DWalletSecretShare) {
-        if !self
-            .dwallets
-            .iter()
-            .any(|other_dwallet| other_dwallet.alias == dwallet.alias)
-        {
-            if self.active_dwallet.is_none() {
-                self.active_dwallet = Some(dwallet.alias.clone());
-            }
-            self.dwallets.push(dwallet)
         }
     }
 }
@@ -199,25 +164,6 @@ impl Display for SuiEnv {
             writeln!(writer)?;
             write!(writer, "Websocket URL: {ws}")?;
         }
-        write!(f, "{}", writer)
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DWalletSecretShare {
-    pub alias: String,
-    //pub public_key: String,
-    pub dkg_output: DKGCentralizedPartyOutput,
-    pub dwallet_id: ObjectID,
-    pub dwallet_cap_id: ObjectID,
-}
-
-impl Display for DWalletSecretShare {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let mut writer = String::new();
-        writeln!(writer, "Active dWallet : {}", self.alias)?;
-        write!(writer, "dwallet_id: {}", self.dwallet_id)?;
-        write!(writer, "dwallet_cap_id: {}", self.dwallet_cap_id)?;
         write!(f, "{}", writer)
     }
 }
