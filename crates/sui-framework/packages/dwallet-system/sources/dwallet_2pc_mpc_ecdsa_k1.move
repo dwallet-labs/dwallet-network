@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+
 #[allow(unused_const)]
 module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Note: currently in order to start DKG, Presign and Sign, the Valdators are waiting for an Event.
@@ -12,8 +13,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
-    use dwallet_system::dwallet;
 
+    use dwallet_system::dwallet;
     use dwallet_system::dwallet::{
         create_dwallet_cap,
         create_malicious_aggregator_sign_output,

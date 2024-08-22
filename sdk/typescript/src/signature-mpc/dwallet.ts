@@ -5,6 +5,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
+import type { SuiObjectRef } from '../types/index.js';
 import { SuiObjectRef } from '../types';
 
 const packageId = '0x3';
@@ -114,6 +115,76 @@ export const getEncryptionKeyByObjectId = async (
 				keyOwnerAddress: objectFields?.key_owner_address,
 			}
 		: null;
+};
+
+export const getActiveEncryptionKey = async (
+	client: DWalletClient,
+	keypair: Keypair,
+	encryptionKeysHolderID: string,
+) => {
+	const tx = new TransactionBlock();
+	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
+
+	console.log(keypair.toSuiAddress());
+
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
+		arguments: [encryptionKeysHolder, tx.pure(keypair.toSuiAddress())],
+	});
+
+	let res = await client.devInspectTransactionBlock({
+		sender: keypair.toSuiAddress(),
+		transactionBlock: tx,
+	});
+
+	return res.results?.at(0)?.returnValues?.at(0)?.at(0);
+};
+
+export const setActiveEncryptionKey = async (
+	client: DWalletClient,
+	keypair: Keypair,
+	encryptionKeyObjID: string,
+	encryptionKeysHolderID: string,
+) => {
+	const tx = new TransactionBlock();
+	const EncKeyObj = tx.object(encryptionKeyObjID);
+	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
+
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::set_active_encryption_key`,
+		arguments: [encryptionKeysHolder, EncKeyObj],
+	});
+
+	return await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+};
+
+export const createActiveEncryptionKeysTable = async (client: DWalletClient, keypair: Keypair) => {
+	const tx = new TransactionBlock();
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::create_active_encryption_keys`,
+		arguments: [],
+	});
+
+	let result = await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+
+	return result.effects?.created?.filter(
+		(o) =>
+			typeof o.owner === 'object' &&
+			'Shared' in o.owner &&
+			o.owner.Shared.initial_shared_version !== undefined,
+	)[0].reference!;
 };
 
 export const encryptUserShare = async (
