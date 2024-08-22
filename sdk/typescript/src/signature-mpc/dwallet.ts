@@ -50,6 +50,10 @@ export async function approveAndSign(
 	return await waitForSignOutput(client);
 }
 
+export interface SignOutputEventData {
+	signatures: Uint8Array[];
+}
+
 const waitForSignOutput = async (client: DWalletClient) => {
 	return new Promise((resolve) => {
 		client.subscribeEvent({
@@ -57,7 +61,8 @@ const waitForSignOutput = async (client: DWalletClient) => {
 				MoveEventType: `${packageId}::${dWalletModuleName}::SignOutputEvent`,
 			},
 			onMessage: (event) => {
-				resolve(event?.parsedJson?.signatures);
+				let eventData = event?.parsedJson! as SignOutputEventData;
+				resolve(eventData.signatures);
 			},
 		});
 	});
@@ -99,14 +104,14 @@ export const getEncryptionKeyByObjectId = async (
 			? (response.data?.content?.fields as unknown as {
 					encryption_key: Uint8Array;
 					key_owner_address: string;
-			  })
+				})
 			: null;
 
 	return objectFields
 		? {
 				encryptionKey: objectFields?.encryption_key,
 				keyOwnerAddress: objectFields?.key_owner_address,
-		  }
+			}
 		: null;
 };
 

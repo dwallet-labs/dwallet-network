@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { verify_user_share } from '@dwallet-network/signature-mpc-wasm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -35,7 +36,7 @@ describe('Test signature mpc', () => {
 
 		const signMessagesIdSHA256 = await createPartialUserSignedMessages(
 			dkg?.dwalletId!,
-			dkg?.dkgOutput,
+			dkg?.centralizedDKGOutput,
 			[bytes],
 			'SHA256',
 			toolbox.keypair,
@@ -54,7 +55,7 @@ describe('Test signature mpc', () => {
 
 		const signMessagesIdKECCAK256 = await createPartialUserSignedMessages(
 			dkg?.dwalletId!,
-			dkg?.dkgOutput,
+			dkg?.centralizedDKGOutput,
 			[bytes],
 			'KECCAK256',
 			toolbox.keypair,
@@ -140,7 +141,7 @@ describe('Test key share transfer', () => {
 			dwalletID,
 		);
 
-		const decryptedKeyshare = decrypt_user_share(
+		const decryptedKeyShare = decrypt_user_share(
 			encryptionKey,
 			decryptionKey,
 			encryptedUserShareAndProof,
@@ -148,6 +149,17 @@ describe('Test key share transfer', () => {
 
 		let secretUserShare = new Uint8Array(256);
 		secretUserShare.set(secretShare.reverse());
-		expect(decryptedKeyshare).toEqual(secretUserShare);
+		expect(decryptedKeyShare).toEqual(secretUserShare);
+
+		expect(
+			verify_user_share(
+				// Take the first 32 bytes, the only ones that are non-zero, and reverse them to convert them
+				// from little-endian encoding to big-endian.
+				// This is because of BCS and PlaintextSpaceGroupElement serialization.
+				// PlaintextSpaceGroupElement is U2048 and has 32LIMBS of 64 bits each.
+				new Uint8Array(decryptedKeyShare.slice(0, 32).reverse()),
+				new Uint8Array(dwallet?.decentralizedDKGOutput!),
+			),
+		).toBeTruthy();
 	});
 });

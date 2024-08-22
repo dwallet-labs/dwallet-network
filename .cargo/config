@@ -1,7 +1,9 @@
 [alias]
-# Collection of project wide clippy lints. This is done via an alias because
-# clippy doesn't currently allow for specifiying project-wide lints in a
-# configuration file. This is a similar workaround to the ones presented here:
+# Collection of project wide clippy lints.
+# This is done via an alias because
+# clippy doesn't currently allow for specifying project-wide lints in a
+# configuration file.
+# This is a similar workaround to the ones presented here:
 # <https://github.com/EmbarkStudios/rust-ecosystem/issues/59>
 xclippy = [
     "clippy", "--all-targets", "--all-features", "--",
@@ -12,7 +14,7 @@ xlint = "run --package x --bin x -- lint"
 xtest = "run --package x --bin x -- external-crates-tests"
 
 # Configuration specifically for running clippy on `external-crates/move/`.
-# Some of these allows are to avoid code churn; others are filed as issues on the `sui` repo now.
+# Some of these allow to avoid code churn; others are filed as issues on the `sui` repo now.
 move-clippy = [
     "clippy", "--",
     "-Wclippy::all",
