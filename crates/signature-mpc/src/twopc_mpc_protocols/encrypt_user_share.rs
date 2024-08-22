@@ -72,7 +72,8 @@ pub fn generate_keypair() -> Result<(Vec<u8>, Vec<u8>)> {
     Ok((encryption_key, decryption_key))
 }
 
-/// Hash the bytes using Keccak256, and generate a keypair for the Paillier encryption scheme deterministically from that hash.
+/// Hash the `bytes` using Keccak256, and generate a keypair for the
+/// Paillier encryption scheme deterministically from that hash.
 pub fn generate_keypair_from_bytes(bytes: &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
     let mut hasher = sha3::Keccak256::new();
     hasher.update(bytes);
