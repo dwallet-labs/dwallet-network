@@ -106,14 +106,16 @@ export const getEncryptionKeyByObjectId = async (
 			? (response.data?.content?.fields as unknown as {
 					encryption_key: Uint8Array;
 					key_owner_address: string;
-				})
+					signed_encryption_key: Uint8Array;
+			  })
 			: null;
 
 	return objectFields
 		? {
 				encryptionKey: objectFields?.encryption_key,
+				signedEncryptionKey: objectFields?.signed_encryption_key,
 				keyOwnerAddress: objectFields?.key_owner_address,
-			}
+		  }
 		: null;
 };
 

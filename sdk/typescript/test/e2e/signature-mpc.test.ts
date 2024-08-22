@@ -137,6 +137,15 @@ describe('Test key share transfer', () => {
 		const secretShare = dwallet?.secretKeyShare!;
 		const encryptedUserShareAndProof = generate_proof(secretShare, recipientData?.encryptionKey!);
 
+		// Verifies that the encryption key has been signed by the desired destination Sui address.
+		let isValidEncryptionKey = await toolbox.keypair
+			.getPublicKey()
+			.verify(
+				new Uint8Array(recipientData?.encryptionKey!),
+				new Uint8Array(recipientData?.signedEncryptionKey!),
+			);
+		expect(isValidEncryptionKey).toBeTruthy();
+
 		await encryptUserShare(
 			toolbox.client,
 			toolbox.keypair,
