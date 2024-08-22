@@ -1,8 +1,9 @@
-/*
- * ethereum_state module provides functionality for managing and verifying the state of Ethereum within
- * the dwallet_system. It includes structures to represent Ethereum state, functions to initialize and update state,
- * and native functions to verify state updates and create initial state data.
-*/
+//
+// `ethereum_state` module provides functionality for managing and verifying the state of Ethereum within
+// the dwallet_system.
+// It includes structures to represent Ethereum state, functions to initialize and update state,
+// and native functions to verify state updates and create initial state data.
+//
 module dwallet_system::ethereum_state {
     use dwallet::object::{Self, UID, ID};
     use dwallet::transfer;

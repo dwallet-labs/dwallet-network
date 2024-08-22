@@ -331,7 +331,7 @@ pub(crate) async fn eth_approve_message(
 
     let data_slot = latest_eth_state_obj.eth_smart_contract_slot;
     let contract_address = latest_eth_state_obj.eth_smart_contract_address;
-    let contract_address = contract_address.clone().parse::<Address>()?;
+    let contract_address = contract_address.parse::<Address>()?;
 
     let updates_response = eth_state
         .get_updates_since_checkpoint()

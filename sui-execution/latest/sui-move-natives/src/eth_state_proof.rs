@@ -40,25 +40,27 @@ const TRUE_VALUE: u8 = 1;
 
 #[derive(Clone)]
 pub struct EthDWalletCostParams {
-    /// Base cost for invoking the `verify_eth_state` function
+    /// Base cost for invoking the `verify_eth_state` function.
     pub verify_eth_state_cost_base: InternalGas,
-    /// Base cost for invoking the `verify_message_proof` function
+    /// Base cost for invoking the `verify_message_proof` function.
     pub verify_message_proof_cost_base: InternalGas,
-    /// Base cost for invoking the `create_initial_eth_state_data` function
+    /// Base cost for invoking the `create_initial_eth_state_data` function.
     pub create_initial_eth_state_data_cost_base: InternalGas,
 }
 
 /***************************************************************************************************
- * native fun verify_message_proof
- * Implementation of the Move native function `verify_message_proof(p0: &mut NativeContext, p1: Vec<Type>, p2: VecDeque<Value>) -> PartialVMResult<NativeResult>`
- * gas cost: verify_message_proof_cost_base   | base cost for function call and fixed operations.
- **************************************************************************************************/
+* native fun verify_message_proof
+* Implementation of the Move native function
+* `verify_message_proof(p0: &mut NativeContext, p1: Vec<Type>, p2: VecDeque<Value>)
+* -> PartialVMResult<NativeResult>`
+* gas cost: verify_message_proof_cost_base | base cost for function call and fixed operations.
+**************************************************************************************************/
 pub fn verify_message_proof(
     context: &mut NativeContext,
     _ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    // Load the cost parameters from the protocol config
+    // Load the cost parameters from the protocol config.
     let verify_message_proof_cost_params = &context
         .extensions()
         .get::<NativesCostTable>()
@@ -136,7 +138,13 @@ pub fn verify_message_proof(
 
 /***************************************************************************************************
  * native fun verify_eth_state
- * Implementation of the Move native function `eth_dwallet::verify_eth_state(proof: vector<vector<u8>>, proof_len: u64, root: vector<u8>, eth_smart_contract_address: vector<u8>, eth_smart_contract_slot: u64, message: vector<u8>): bool;`
+ * Implementation of the Move native function
+ * `eth_dwallet::verify_eth_state(proof: vector<vector<u8>>,
+ * proof_len: u64,
+ * root: vector<u8>,
+ * eth_smart_contract_address: vector<u8>,
+ * eth_smart_contract_slot: u64,
+ * message: vector<u8>): bool;`
  * gas cost: verify_eth_state_cost_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
 pub(crate) fn verify_eth_state(
@@ -213,10 +221,12 @@ pub(crate) fn verify_eth_state(
 }
 
 /***************************************************************************************************
- * native fun create_initial_eth_state_data
- * Implementation of the Move native function `eth_dwallet::create_initial_eth_state_data(checkpoint: vector<u8>): vector<u8>;`
- * gas cost: create_initial_eth_state_data_cost_base   | base cost for function call and fixed operations.
- **************************************************************************************************/
+* native fun create_initial_eth_state_data
+* Implementation of the Move native function
+* `eth_dwallet::create_initial_eth_state_data(checkpoint: vector<u8>): vector<u8>;`
+* gas cost:
+* create_initial_eth_state_data_cost_base | base cost for function call and fixed operations.
+**************************************************************************************************/
 pub(crate) fn create_initial_eth_state_data(
     context: &mut NativeContext,
     _ty_args: Vec<Type>,

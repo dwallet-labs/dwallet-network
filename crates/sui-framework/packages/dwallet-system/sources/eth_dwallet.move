@@ -1,19 +1,20 @@
-/*
- * eth_dwallet module provides functionality for managing Ethereum dWallets within the dwallet_system.
- * It includes structures to represent dWallet capabilities, functions to create and manage Ethereum dWallets,
- * and native functions to verify message proofs.
-*/
+// 
+// `eth_dwallet` module provides functionality for managing Ethereum dWallets within the dwallet_system.
+// It includes structures to represent dWallet capabilities, functions to create and manage Ethereum dWallets,
+// and native functions to verify message proofs.
+// 
 
 module dwallet_system::eth_dwallet {
-    use dwallet::object::{Self, UID, ID};
+    use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::TxContext;
+
+    use dwallet_system::dwallet;
+    use dwallet_system::dwallet::{DWalletCap, MessageApproval};
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::DWallet;
     use dwallet_system::ethereum_state;
-    use dwallet_system::ethereum_state::{LatestEthereumState, EthereumState};
-    use dwallet_system::dwallet;
-    use dwallet_system::dwallet::{DWalletCap, MessageApproval};
+    use dwallet_system::ethereum_state::{EthereumState, LatestEthereumState};
 
     const EInvalidStateProof: u64 = 1;
     const EStateObjectMismatch: u64 = 2;
