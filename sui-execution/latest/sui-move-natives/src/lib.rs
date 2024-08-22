@@ -152,10 +152,10 @@ pub struct NativesCostTable {
     // Receive object
     pub transfer_receive_object_internal_cost_params: TransferReceiveObjectInternalCostParams,
 
-    // twopc mpc
+    // TwoPC-MPC
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
 
-    // sui state proof
+    // Sui State Proof
     pub sui_state_proof_cost_params: SuiStateProofCostParams,
 }
 
@@ -517,13 +517,13 @@ impl NativesCostTable {
                     .sign_verify_encrypted_signature_parts_prehash_cost_base()
                     .into(),
             },
+            transfer_dwallet_cost_params: TransferDWalletCostParams {
+                transfer_dwallet_gas: protocol_config.transfer_dwallet_cost_base().into(),
+            },
             sui_state_proof_cost_params: SuiStateProofCostParams {
                 sui_state_proof_verify_committee_cost_base: protocol_config.sui_state_proof_verify_committee_cost_base().into(),
                 sui_state_proof_verify_link_cap_base: protocol_config.sui_state_proof_verify_link_cap_base().into(),
                 sui_state_proof_verify_transaction_base: protocol_config.sui_state_proof_verify_transaction_base().into(),
-            },
-            transfer_dwallet_cost_params: TransferDWalletCostParams {
-                transfer_dwallet_gas: protocol_config.transfer_dwallet_cost_base().into(),
             },
         }
     }
