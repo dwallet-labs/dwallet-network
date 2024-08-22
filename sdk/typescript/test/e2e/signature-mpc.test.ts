@@ -7,15 +7,19 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {
 	approveAndSign,
+	createActiveEncryptionKeysTable,
 	createDWallet,
 	createPartialUserSignedMessages,
 	decrypt_user_share,
 	EncryptionKeyScheme,
 	encryptUserShare,
 	generate_keypair,
+	generate_proof,
+	getActiveEncryptionKey,
 	generate_keypair_from_bytes,
-	generate_proof, generatePaillierKeyPairFromSuiKeyPair,
+	generatePaillierKeyPairFromSuiKeyPair,
 	getEncryptionKeyByObjectId,
+	setActiveEncryptionKey,
 	storeEncryptionKey,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
@@ -89,6 +93,24 @@ describe('Create public key', () => {
 			toolbox.client,
 		);
 		console.log({ pubKeyRef });
+
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(toolbox.client, toolbox.keypair);
+
+		await setActiveEncryptionKey(
+			toolbox.client,
+			toolbox.keypair,
+			pubKeyRef?.objectId!,
+			encryptionKeysHolder.objectId,
+		);
+
+		const activeEncryptionKey = await getActiveEncryptionKey(
+			toolbox.client,
+			toolbox.keypair,
+			encryptionKeysHolder.objectId,
+		);
+
+		const activeKeyHex = Buffer.from(new Uint8Array(activeEncryptionKey)).toString('hex');
+		expect(`0x${activeKeyHex}`).toEqual(pubKeyRef?.objectId!);
 	});
 });
 
