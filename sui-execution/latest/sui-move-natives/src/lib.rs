@@ -40,6 +40,7 @@ use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostPar
 use crate::crypto::{sui_state_proof, twopc_mpc, zklogin};
 use crate::eth_state_proof::EthDWalletCostParams;
 use better_any::{Tid, TidAble};
+use light_client::tendermint_lc::TendermintLightClientCostParams;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
     annotated_value as A,
@@ -67,6 +68,7 @@ mod crypto;
 mod dynamic_field;
 mod eth_state_proof;
 mod event;
+mod light_client;
 mod object;
 pub mod object_runtime;
 mod test_scenario;
@@ -165,6 +167,8 @@ pub struct NativesCostTable {
 
     // Authority Binder
     pub authority_binder: AuthorityBinderCostParams,
+    // tendermint light client
+    pub tendermint_light_client_cost_params: TendermintLightClientCostParams,
 }
 
 impl NativesCostTable {
@@ -546,6 +550,12 @@ impl NativesCostTable {
                     .create_authority_ack_transaction_cost_base()
                     .into(),
             },
+            tendermint_light_client_cost_params: TendermintLightClientCostParams {
+                tendermint_state_proof_cost_base: protocol_config.tendermint_state_proof_cost_base().into(),
+                tendermint_init_lc_cost_base: protocol_config.tendermint_init_lc_cost_base().into(),
+                tendermint_update_ls_cost_base: protocol_config.tendermint_update_lc_cost_base().into(),
+                tendermint_verify_lc_cost_base: protocol_config.tendermint_verify_lc_cost_base().into()
+            }
         }
     }
 }
@@ -819,6 +829,26 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "authority_binder",
             "create_authority_ack_transaction",
             make_native!(authority_binder::create_authority_ack_transaction),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_state_proof",
+            make_native!(light_client::tendermint_lc::tendermint_state_proof),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_init_lc",
+            make_native!(light_client::tendermint_lc::tendermint_init_lc),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_verify_lc",
+            make_native!(light_client::tendermint_lc::tendermint_verify_lc),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_update_lc",
+            make_native!(light_client::tendermint_lc::tendermint_update_lc),
         ),
     ];
     sui_system_natives
