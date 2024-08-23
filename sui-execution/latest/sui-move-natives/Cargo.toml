@@ -26,3 +26,4 @@ sui-protocol-config.workspace = true
 sui-types.workspace = true
 workspace-hack.workspace = true
 tracing.workspace = true
+ibc.workspace = true

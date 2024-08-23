@@ -37,6 +37,7 @@ use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
 use crate::crypto::{twopc_mpc, zklogin};
 use better_any::{Tid, TidAble};
+use light_client::tendermint_lc::TendermintLightClientCostParams;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
     annotated_value as A,
@@ -62,6 +63,7 @@ mod address;
 mod crypto;
 mod dynamic_field;
 mod event;
+mod light_client;
 mod object;
 pub mod object_runtime;
 mod test_scenario;
@@ -151,6 +153,9 @@ pub struct NativesCostTable {
 
     // TwoPC-MPC.
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
+
+    // tendermint light client
+    pub tendermint_light_client_cost_params: TendermintLightClientCostParams,
 }
 
 impl NativesCostTable {
@@ -511,6 +516,12 @@ impl NativesCostTable {
                     .sign_verify_encrypted_signature_parts_prehash_cost_base()
                     .into(),
             },
+            tendermint_light_client_cost_params: TendermintLightClientCostParams {
+                tendermint_state_proof_cost_base: protocol_config.tendermint_state_proof_cost_base().into(),
+                tendermint_init_lc_cost_base: protocol_config.tendermint_init_lc_cost_base().into(),
+                tendermint_update_ls_cost_base: protocol_config.tendermint_update_lc_cost_base().into(),
+                tendermint_verify_lc_cost_base: protocol_config.tendermint_verify_lc_cost_base().into()
+            }
         }
     }
 }
@@ -748,6 +759,26 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dwallet_2pc_mpc_ecdsa_k1",
             "sign_verify_encrypted_signature_parts_prehash",
             make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_state_proof",
+            make_native!(light_client::tendermint_lc::tendermint_state_proof),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_init_lc",
+            make_native!(light_client::tendermint_lc::tendermint_init_lc),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_verify_lc",
+            make_native!(light_client::tendermint_lc::tendermint_verify_lc),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_update_lc",
+            make_native!(light_client::tendermint_lc::tendermint_update_lc),
         ),
     ];
     sui_system_natives
