@@ -5,8 +5,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import type { SuiObjectRef } from '../types/index.js';
-import { SuiObjectRef } from '../types';
+import type { SuiObjectRef } from '../types';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -106,16 +105,16 @@ export const getEncryptionKeyByObjectId = async (
 			? (response.data?.content?.fields as unknown as {
 					encryption_key: Uint8Array;
 					key_owner_address: string;
-					signed_encryption_key: Uint8Array;
-			  })
+					encryption_key_signature: Uint8Array;
+				})
 			: null;
 
 	return objectFields
 		? {
 				encryptionKey: objectFields?.encryption_key,
-				signedEncryptionKey: objectFields?.signed_encryption_key,
+				signedEncryptionKey: objectFields?.encryption_key_signature,
 				keyOwnerAddress: objectFields?.key_owner_address,
-		  }
+			}
 		: null;
 };
 
