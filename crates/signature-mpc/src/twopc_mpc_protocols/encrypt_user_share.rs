@@ -72,8 +72,7 @@ pub fn generate_keypair() -> Result<(Vec<u8>, Vec<u8>)> {
     Ok((encryption_key, decryption_key))
 }
 
-/// Hash the `bytes` using Keccak256, and generate a keypair for the
-/// Paillier encryption scheme deterministically from that hash.
+/// Generate a keypair for the Paillier encryption scheme deterministically from a cryptographically secure `seed`.
 pub fn generate_keypair_from_seed(seed: [u8; 32]) -> Result<(Vec<u8>, Vec<u8>)> {
     let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
     let (encryption_key, decryption_key) = DecryptionKey::generate(&mut rng)?;
