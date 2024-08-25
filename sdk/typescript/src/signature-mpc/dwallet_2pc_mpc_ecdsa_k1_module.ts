@@ -19,7 +19,7 @@ export {
 	decrypt_user_share,
 	generate_keypair,
 	generate_proof,
-	generate_keypair_from_bytes
+	generate_keypair_from_seed,
 } from '@dwallet-network/signature-mpc-wasm';
 
 const packageId = '0x3';

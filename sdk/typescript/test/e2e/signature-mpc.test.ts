@@ -4,7 +4,6 @@
 import { verify_user_share } from '@dwallet-network/signature-mpc-wasm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import {
 	approveAndSign,
 	createActiveEncryptionKeysTable,
@@ -16,8 +15,6 @@ import {
 	generate_keypair,
 	generate_proof,
 	getActiveEncryptionKey,
-	generate_keypair_from_bytes,
-	generatePaillierKeyPairFromSuiKeyPair,
 	getEncryptionKeyByObjectId,
 	setActiveEncryptionKey,
 	storeEncryptionKey,
@@ -94,7 +91,10 @@ describe('Create public key', () => {
 		);
 		console.log({ pubKeyRef });
 
-		const encryptionKeysHolder = await createActiveEncryptionKeysTable(toolbox.client, toolbox.keypair);
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
+			toolbox.client,
+			toolbox.keypair,
+		);
 
 		await setActiveEncryptionKey(
 			toolbox.client,
@@ -164,13 +164,5 @@ describe('Test key share transfer', () => {
 				new Uint8Array(dwallet?.decentralizedDKGOutput!),
 			),
 		).toBeTruthy();
-	});
-});
-
-describe('Derive a paillier keypair from a Sui keypair', () => {
-	it('should derive a paillier keypair from a Sui keypair', async () => {
-		let keypair = Ed25519Keypair.generate();
-		const [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(keypair);
-		console.log({ encryptionKey, decryptionKey });
 	});
 });

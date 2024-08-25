@@ -6,10 +6,7 @@ import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
-import { Ed25519Keypair } from '../keypairs/ed25519';
 import { SuiObjectRef } from '../types';
-import { generate_keypair_from_bytes } from './dwallet_2pc_mpc_ecdsa_k1_module';
-import { keccak256 } from 'ethers';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -214,7 +211,3 @@ export const encryptUserShare = async (
 	});
 };
 
-export const generatePaillierKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
-	let hashedPrivateKey = (new TextEncoder()).encode(keccak256((new TextEncoder()).encode(keypair.export().privateKey)));
-	return generate_keypair_from_bytes(hashedPrivateKey);
-};
