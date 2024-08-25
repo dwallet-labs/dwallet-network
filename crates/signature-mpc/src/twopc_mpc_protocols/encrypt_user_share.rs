@@ -4,6 +4,7 @@ use crate::twopc_mpc_protocols::Secp256K1GroupElement;
 use anyhow::Result;
 use commitment::GroupsPublicParametersAccessors;
 use crypto_bigint::{Uint, U256};
+use ecdsa::signature::digest::Digest;
 use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
 use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
 use enhanced_maurer::{
@@ -18,7 +19,8 @@ use maurer::{language, SOUND_PROOFS_REPETITIONS};
 use proof::range;
 use proof::range::bulletproofs;
 use proof::range::bulletproofs::{COMMITMENT_SCHEME_MESSAGE_SPACE_SCALAR_LIMBS, RANGE_CLAIM_BITS};
-use rand_core::OsRng;
+use rand::rngs::StdRng;
+use rand_core::{OsRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tiresias::{
     CiphertextSpaceGroupElement, CiphertextSpaceValue, DecryptionKey, EncryptionKey,
@@ -65,6 +67,15 @@ pub struct EncryptedUserShareAndProof {
 /// Generate a keypair for the Paillier encryption scheme.
 pub fn generate_keypair() -> Result<(Vec<u8>, Vec<u8>)> {
     let (encryption_key, decryption_key) = DecryptionKey::generate(&mut OsRng)?;
+    let decryption_key = bcs::to_bytes(&decryption_key.secret_key)?;
+    let encryption_key = bcs::to_bytes(&encryption_key)?;
+    Ok((encryption_key, decryption_key))
+}
+
+/// Generate a keypair for the Paillier encryption scheme deterministically from a cryptographically secure `seed`.
+pub fn generate_keypair_from_seed(seed: [u8; 32]) -> Result<(Vec<u8>, Vec<u8>)> {
+    let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
+    let (encryption_key, decryption_key) = DecryptionKey::generate(&mut rng)?;
     let decryption_key = bcs::to_bytes(&decryption_key.secret_key)?;
     let encryption_key = bcs::to_bytes(&encryption_key)?;
     Ok((encryption_key, decryption_key))

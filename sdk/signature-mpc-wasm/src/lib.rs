@@ -197,7 +197,7 @@ pub fn finalize_sign(
         public_nonce_encrypted_partial_signature_and_proofs,
         signatures_s,
     )
-    .map_err(JsErr::from)
+        .map_err(JsErr::from)
 }
 
 #[wasm_bindgen]
@@ -251,6 +251,15 @@ pub fn generate_keypair() -> Result<JsValue, JsErr> {
 }
 
 #[wasm_bindgen]
+pub fn generate_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErr> {
+    let fixed_size_seed: [u8; 32] = seed.try_into().expect("seed must be 32 bytes long");
+    let (public_key, private_key) =
+        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair_from_seed(fixed_size_seed)
+            .map_err(to_js_err)?;
+    Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
+}
+
+#[wasm_bindgen]
 pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsValue, JsErr> {
     let language_public_parameters =
         encryption_of_discrete_log_public_parameters(public_key.clone()).map_err(to_js_err)?;
@@ -260,7 +269,7 @@ pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsVa
             secret_share,
             language_public_parameters,
         )
-        .map_err(to_js_err)?;
+            .map_err(to_js_err)?;
     let proof_public_output = bcs::to_bytes(&proof_public_output)?;
 
     Ok(serde_wasm_bindgen::to_value(&proof_public_output)?)
@@ -279,7 +288,7 @@ pub fn decrypt_user_share(
         decryption_key,
         encrypted_user_share_and_proof,
     )
-    .map_err(to_js_err)?;
+        .map_err(to_js_err)?;
     Ok(user_share)
 }
 
