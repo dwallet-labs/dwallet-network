@@ -70,11 +70,11 @@ const waitForSignOutput = async (client: DWalletClient) => {
 
 export const storeEncryptionKey = async (
 	encryptionKey: Uint8Array,
-	signedEncryptionKey: Uint8Array,
 	encryptionKeyScheme: EncryptionKeyScheme,
 	keypair: Keypair,
 	client: DWalletClient,
 ): Promise<SuiObjectRef> => {
+	let signedEncryptionKey = await keypair.sign(new Uint8Array(encryptionKey));
 	const tx = new TransactionBlock();
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey));
 	let pureSignedPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(signedEncryptionKey));

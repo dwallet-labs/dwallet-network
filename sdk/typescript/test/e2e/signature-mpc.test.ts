@@ -83,10 +83,8 @@ describe('Create public key', () => {
 
 	it('the signature mpc create dwallet', async () => {
 		const [encryptionKey, _] = generate_keypair();
-		let signed_encryption_key = await toolbox.keypair.sign(new Uint8Array(encryptionKey));
 		const pubKeyRef = await storeEncryptionKey(
 			encryptionKey,
-			signed_encryption_key,
 			EncryptionKeyScheme.Paillier,
 			toolbox.keypair,
 			toolbox.client,
@@ -122,10 +120,8 @@ describe('Test key share transfer', () => {
 
 	it('should encrypt and transfer a dwallet to a newly generated public key', async () => {
 		const [encryptionKey, decryptionKey] = generate_keypair();
-		let signed_encryption_key = await toolbox.keypair.sign(new Uint8Array(encryptionKey));
 		const pubKeyRef = await storeEncryptionKey(
 			encryptionKey,
-			signed_encryption_key,
 			EncryptionKeyScheme.Paillier,
 			toolbox.keypair,
 			toolbox.client,
