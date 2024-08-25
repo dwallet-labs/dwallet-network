@@ -118,11 +118,11 @@ export const getEncryptionKeyByObjectId = async (
 		: null;
 };
 
-export const getActiveEncryptionKey = async (
+export const getActiveEncryptionKeyObjID = async (
 	client: DWalletClient,
 	keypair: Keypair,
 	encryptionKeysHolderID: string,
-) => {
+): Promise<string> => {
 	const tx = new TransactionBlock();
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
 
@@ -138,7 +138,9 @@ export const getActiveEncryptionKey = async (
 		transactionBlock: tx,
 	});
 
-	return res.results?.at(0)?.returnValues?.at(0)?.at(0);
+	return Buffer.from(
+		new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]),
+	).toString('hex');
 };
 
 export const setActiveEncryptionKey = async (
@@ -188,7 +190,7 @@ export const createActiveEncryptionKeysTable = async (client: DWalletClient, key
 	)[0].reference!;
 };
 
-export const encryptUserShare = async (
+export const transferEncryptedUserShare = async (
 	client: DWalletClient,
 	keypair: Keypair,
 	encryptedUserShareAndProof: Uint8Array,
