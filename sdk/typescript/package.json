@@ -138,6 +138,7 @@
 		"@scure/bip39": "^1.2.1",
 		"@suchipi/femver": "^1.0.0",
 		"axios": "^1.6.8",
+		"ethers": "6.13.2",
 		"superstruct": "^1.0.3",
 		"tweetnacl": "^1.0.3"
 	}
