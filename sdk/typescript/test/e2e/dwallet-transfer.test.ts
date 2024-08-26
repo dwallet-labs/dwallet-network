@@ -15,6 +15,7 @@ import {
 	transferEncryptedUserShare,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
+import {sendUserShareToAddress} from "../../src/signature-mpc/dwallet_transfer";
 
 describe('Secret key share transfer', () => {
 	let toolbox: TestToolbox;
@@ -104,7 +105,7 @@ describe('Secret key share transfer', () => {
 
 		const activeEncryptionKeyAddress = await getActiveEncryptionKeyObjID(
 			toolbox.client,
-			toolbox.keypair,
+			toolbox.keypair.toSuiAddress(),
 			encryptionKeysHolder.objectId,
 		);
 
@@ -112,7 +113,7 @@ describe('Secret key share transfer', () => {
 	});
 
 	it('encrypts a secret share to a given Sui address successfully', async () => {
-		const [encryptionKey, _] = generate_keypair();
+		const [encryptionKey, decryptionKey] = generate_keypair();
 		const pubKeyRef = await storeEncryptionKey(
 			encryptionKey,
 			EncryptionKeyScheme.Paillier,
@@ -120,6 +121,8 @@ describe('Secret key share transfer', () => {
 			toolbox.client,
 		);
 		console.log({ pubKeyRef });
+
+		const dkg = await createDWallet(toolbox.keypair, toolbox.client);
 
 		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
 			toolbox.client,
@@ -132,5 +135,42 @@ describe('Secret key share transfer', () => {
 			pubKeyRef?.objectId!,
 			encryptionKeysHolder.objectId,
 		);
+
+		const publicKeyID = pubKeyRef?.objectId;
+		const recipientData = await getEncryptionKeyByObjectId(toolbox.client, publicKeyID);
+		const secretShare = dkg?.secretKeyShare!;
+		const encryptedUserShareAndProof = generate_proof(
+			new Uint8Array(secretShare),
+			recipientData?.encryptionKey!,
+		);
+
+		await sendUserShareToAddress(
+			toolbox.client,
+			toolbox.keypair,
+			dkg!,
+			toolbox.keypair.getPublicKey(),
+			encryptionKeysHolder.objectId,
+		);
+
+		const decryptedKeyShare = decrypt_user_share(
+			encryptionKey,
+			decryptionKey,
+			encryptedUserShareAndProof,
+		);
+
+		let secretUserShare = new Uint8Array(256);
+		secretUserShare.set(secretShare.reverse());
+		expect(decryptedKeyShare).toEqual(secretUserShare);
+
+		expect(
+			verify_user_share(
+				// Take the first 32 bytes, the only ones that are non-zero, and reverse them to convert them
+				// from little-endian encoding to big-endian.
+				// This is because of BCS and PlaintextSpaceGroupElement serialization.
+				// PlaintextSpaceGroupElement is U2048 and has 32LIMBS of 64 bits each.
+				new Uint8Array(decryptedKeyShare.slice(0, 32).reverse()),
+				new Uint8Array(dkg?.decentralizedDKGOutput!),
+			),
+		).toBeTruthy();
 	});
 });

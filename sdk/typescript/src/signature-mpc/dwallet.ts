@@ -120,21 +120,21 @@ export const getEncryptionKeyByObjectId = async (
 
 export const getActiveEncryptionKeyObjID = async (
 	client: DWalletClient,
-	keypair: Keypair,
+	keyOwnerAddress: string,
 	encryptionKeysHolderID: string,
 ): Promise<string> => {
 	const tx = new TransactionBlock();
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
 
-	console.log(keypair.toSuiAddress());
+	console.log(keyOwnerAddress);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
-		arguments: [encryptionKeysHolder, tx.pure(keypair.toSuiAddress())],
+		arguments: [encryptionKeysHolder, tx.pure(keyOwnerAddress)],
 	});
 
 	let res = await client.devInspectTransactionBlock({
-		sender: keypair.toSuiAddress(),
+		sender: keyOwnerAddress,
 		transactionBlock: tx,
 	});
 

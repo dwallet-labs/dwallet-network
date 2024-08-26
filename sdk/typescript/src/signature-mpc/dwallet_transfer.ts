@@ -1,3 +1,5 @@
+//[object Object]
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
 import {
@@ -16,9 +18,10 @@ export const sendUserShareToAddress = async (
 ) => {
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		client,
-		keypair,
+		destinationPublicKey.toSuiAddress(),
 		activeEncryptionKeysTableID,
 	);
+
 	const recipientData = await getEncryptionKeyByObjectId(client, activeEncryptionKeyObjID);
 	let isValidEncryptionKey = await destinationPublicKey.verify(
 		new Uint8Array(recipientData?.encryptionKey!),
