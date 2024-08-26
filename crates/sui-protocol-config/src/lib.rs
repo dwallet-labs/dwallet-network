@@ -875,11 +875,11 @@ pub struct ProtocolConfig {
     /// protocol.
     random_beacon_reduction_allowed_delta: Option<u16>,
 
-    // eth_dwallet::verify_eth_state_cost_base
+    // eth_dwallet::verify_eth_state_cost_base.
     verify_eth_state_cost_base: Option<u64>,
-    // eth_dwallet::verify_message_proof_cost_base
+    // eth_dwallet::verify_message_proof_cost_base.
     verify_message_proof_cost_base: Option<u64>,
-    // eth_dwallet::create_initial_eth_state_data_cost_base
+    // eth_dwallet::create_initial_eth_state_data_cost_base.
     create_initial_eth_state_data_cost_base: Option<u64>,
 }
 

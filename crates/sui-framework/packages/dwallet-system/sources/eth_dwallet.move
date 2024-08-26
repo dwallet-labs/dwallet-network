@@ -1,8 +1,8 @@
-// 
+//
 // `eth_dwallet` module provides functionality for managing Ethereum dWallets within the dwallet_system.
 // It includes structures to represent dWallet capabilities, functions to create and manage Ethereum dWallets,
 // and native functions to verify message proofs.
-// 
+//
 
 module dwallet_system::eth_dwallet {
     use dwallet::object::{Self, ID, UID};
@@ -56,7 +56,10 @@ module dwallet_system::eth_dwallet {
 
         // Validate that the EthereumState is for the correct network.
         let latest_ethereum_state_id = object::id(latest_ethereum_state);
-        assert!(latest_ethereum_state_id == ethereum_state::get_ethereum_state_latest_state_id(eth_state), EStateObjectMismatch);
+        assert!(
+            latest_ethereum_state_id == ethereum_state::get_ethereum_state_latest_state_id(eth_state),
+            EStateObjectMismatch
+        );
 
         // Validate that the Ethereum dWallet capability is for the correct DWallet.
         let dwallet_cap_id = dwallet_2pc_mpc_ecdsa_k1::get_dwallet_cap_id(dwallet);

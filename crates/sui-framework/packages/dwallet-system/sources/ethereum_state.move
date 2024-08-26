@@ -4,8 +4,9 @@
 // It includes structures to represent Ethereum state, functions to initialize and update state,
 // and native functions to verify state updates and create initial state data.
 //
+
 module dwallet_system::ethereum_state {
-    use dwallet::object::{Self, UID, ID};
+    use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::TxContext;
 
@@ -40,7 +41,7 @@ module dwallet_system::ethereum_state {
     /// Initializes the first Ethereum state with the given checkpoint.
     /// Creates an EthereumState object, shares a LatestEthereumState object pointing to it,
     /// and freezes the EthereumState object.
-    /// NOTE: this function performs no verification on the `checkpoint`, 
+    /// NOTE: this function performs no verification on the `checkpoint`,
     /// and it serves as an initial "trusted" state which users should verify externally (once) before using.
     public fun init_state(
         state_bytes: vector<u8>,
@@ -72,7 +73,8 @@ module dwallet_system::ethereum_state {
         transfer::share_object(latest_ethereum_state);
     }
 
-    /// Verifies the new Ethereum state according to the provided updates, and updates the LatestEthereumState object
+    /// Verifies the new Ethereum state according to the provided updates,
+    /// and updates the LatestEthereumState object
     /// if the new state is valid and has a newer time slot.
     public fun verify_new_state(
         updates_bytes: vector<u8>,
