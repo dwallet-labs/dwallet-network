@@ -5,6 +5,7 @@
 /// This is conceptually the `Dwallet` interface.
 module dwallet_system::dwallet {
     use std::vector;
+    use dwallet::ed25519::ed25519_verify;
 
     use dwallet::event;
     use dwallet::object::{Self, ID, UID};
@@ -13,6 +14,7 @@ module dwallet_system::dwallet {
     use dwallet::transfer;
     use dwallet::tx_context;
     use dwallet::tx_context::TxContext;
+
 
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 
@@ -26,6 +28,8 @@ module dwallet_system::dwallet {
     const EMesssageApprovalDWalletMismatch: u64 = 1;
     const EInvalidEncryptionKeyScheme: u64 = 2;
     const EInvalidEncryptionKeyOwner: u64 = 3;
+    const EInvalidEncryptionKeySignature: u64 = 4;
+    const EPublicKeyNotMatchSenderAddress: u64 = 5;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -473,8 +477,10 @@ module dwallet_system::dwallet {
 
     /// Register an encryption key to encrypt a user share.
     /// The key is saved as an immutable object.
-    public fun register_encryption_key(key: vector<u8>, signature: vector<u8>, scheme: u8, ctx: &mut TxContext) {
+    public fun register_encryption_key(key: vector<u8>, signature: vector<u8>, sender_sui_pubkey: vector<u8>, scheme: u8, ctx: &mut TxContext) {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
+        assert!(ed25519_verify(&signature, &sender_sui_pubkey, &key), EInvalidEncryptionKeySignature);
+        assert!(ed2551_pubkey_to_sui_addr(sender_sui_pubkey) == tx_context::sender(ctx), EPublicKeyNotMatchSenderAddress);
         let encryption_key = EncryptionKey {
             id: object::new(ctx),
             scheme,
@@ -541,4 +547,6 @@ module dwallet_system::dwallet {
         };
         transfer::freeze_object(encrypted_user_share);
     }
+
+    native fun ed2551_pubkey_to_sui_addr(public_key: vector<u8>): address;
 }

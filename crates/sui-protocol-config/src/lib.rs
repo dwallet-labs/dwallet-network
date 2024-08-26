@@ -864,6 +864,7 @@ pub struct ProtocolConfig {
     sign_verify_encrypted_signature_parts_prehash_cost_base: Option<u64>,
 
     transfer_dwallet_cost_base: Option<u64>,
+    ed2551_pubkey_to_sui_addr_cost_base: Option<u64>,
 
     /// === Execution Version ===
     execution_version: Option<u64>,
@@ -1460,6 +1461,7 @@ impl ProtocolConfig {
             // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
             sign_verify_encrypted_signature_parts_prehash_cost_base: Some(52),
             transfer_dwallet_cost_base: Some(52),
+            ed2551_pubkey_to_sui_addr_cost_base: Some(52),
 
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,
