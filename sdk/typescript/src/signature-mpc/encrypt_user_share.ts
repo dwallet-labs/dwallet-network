@@ -9,7 +9,7 @@ import {
 } from './dwallet';
 import { Dwallet, generate_proof } from './dwallet_2pc_mpc_ecdsa_k1_module';
 
-export const sendUserShareToAddress = async (
+export const sendUserShareToSuiPubKey = async (
 	client: DWalletClient,
 	keypair: Keypair,
 	dwallet: Dwallet,

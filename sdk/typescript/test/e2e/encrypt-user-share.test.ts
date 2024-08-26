@@ -15,7 +15,7 @@ import {
 	transferEncryptedUserShare,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
-import {sendUserShareToAddress} from "../../src/signature-mpc/encrypt_user_share";
+import {sendUserShareToSuiPubKey} from "../../src/signature-mpc/encrypt_user_share";
 
 describe('Secret key share transfer', () => {
 	let toolbox: TestToolbox;
@@ -144,7 +144,7 @@ describe('Secret key share transfer', () => {
 			recipientData?.encryptionKey!,
 		);
 
-		await sendUserShareToAddress(
+		await sendUserShareToSuiPubKey(
 			toolbox.client,
 			toolbox.keypair,
 			dkg!,
