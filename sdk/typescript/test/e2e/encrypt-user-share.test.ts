@@ -15,7 +15,7 @@ import {
 	transferEncryptedUserShare,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
-import {sendUserShareToAddress} from "../../src/signature-mpc/dwallet_transfer";
+import {sendUserShareToAddress} from "../../src/signature-mpc/encrypt_user_share";
 
 describe('Secret key share transfer', () => {
 	let toolbox: TestToolbox;
