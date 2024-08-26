@@ -320,6 +320,7 @@ ed25519-consensus = { version = "2.0.1", features = ["serde"] }
 either = "1.8.0"
 petgraph = "0.5.1"
 enum_dispatch = "^0.3"
+ethers = "2.0.14"
 expect-test = "1.4.0"
 eyre = "0.6.8"
 fdlimit = "0.2.1"
