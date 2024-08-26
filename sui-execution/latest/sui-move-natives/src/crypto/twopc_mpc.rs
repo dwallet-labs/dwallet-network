@@ -8,7 +8,9 @@ use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::gas_algebra::InternalGas;
 use move_core_types::vm_status::StatusCode;
-use move_core_types::vm_status::StatusCode::{FAILED_TO_DESERIALIZE_ARGUMENT, INVALID_PARAM_TYPE_FOR_DESERIALIZATION};
+use move_core_types::vm_status::StatusCode::{
+    FAILED_TO_DESERIALIZE_ARGUMENT, INVALID_PARAM_TYPE_FOR_DESERIALIZATION,
+};
 use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeContext};
 use move_vm_types::{
     loaded_data::runtime_types::Type,
@@ -18,6 +20,8 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 
+use crate::object_runtime::ObjectRuntime;
+use crate::NativesCostTable;
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
     encryption_of_discrete_log_public_parameters, verify_proof,
@@ -32,8 +36,6 @@ use signature_mpc::twopc_mpc_protocols::{
 };
 use sui_types::base_types::SuiAddress;
 use sui_types::crypto::{PublicKey, SignatureScheme};
-use crate::object_runtime::ObjectRuntime;
-use crate::NativesCostTable;
 
 pub const INVALID_INPUT: u64 = 0;
 
@@ -264,7 +266,7 @@ pub fn sign_verify_encrypted_signature_parts_prehash(
         presigns,
         hash.into(),
     )
-        .is_ok();
+    .is_ok();
 
     Ok(NativeResult::ok(cost, smallvec![Value::bool(valid),]))
 }
@@ -330,10 +332,12 @@ pub fn ed2551_pubkey_to_sui_addr(
     );
     let cost = context.gas_used();
     let pubkey_bytes = pop_arg!(args, Vec<u8>);
-    let pubkey = PublicKey::try_from_bytes(SignatureScheme::ED25519, &pubkey_bytes).map_err(|_| {
-        PartialVMError::new(FAILED_TO_DESERIALIZE_ARGUMENT)
-    })?;
+    let pubkey = PublicKey::try_from_bytes(SignatureScheme::ED25519, &pubkey_bytes)
+        .map_err(|_| PartialVMError::new(FAILED_TO_DESERIALIZE_ARGUMENT))?;
     let sui_addr = SuiAddress::from(&pubkey).to_vec();
-    let addr = Value::address(AccountAddress::from_bytes(&sui_addr).map_err(|_| PartialVMError::new(FAILED_TO_DESERIALIZE_ARGUMENT))?);
+    let addr = Value::address(
+        AccountAddress::from_bytes(&sui_addr)
+            .map_err(|_| PartialVMError::new(FAILED_TO_DESERIALIZE_ARGUMENT))?,
+    );
     Ok(NativeResult::ok(cost, smallvec![addr]))
 }
