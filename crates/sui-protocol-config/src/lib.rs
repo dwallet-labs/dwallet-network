@@ -863,13 +863,13 @@ pub struct ProtocolConfig {
     // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
     sign_verify_encrypted_signature_parts_prehash_cost_base: Option<u64>,
 
-    //sui_state_proof::sui_state_proof_verify_committee_cost_base
+    // sui_state_proof::sui_state_proof_verify_committee_cost_base.
     sui_state_proof_verify_committee_cost_base: Option<u64>,
 
-    //sui_state_proof::sui_state_proof_verify_link_cap_base
+    // sui_state_proof::sui_state_proof_verify_link_cap_base.
     sui_state_proof_verify_link_cap_base: Option<u64>,
 
-    //sui_state_proof::sui_state_proof_verify_transaction_base
+    // sui_state_proof::sui_state_proof_verify_transaction_base.
     sui_state_proof_verify_transaction_base: Option<u64>,
 
     /// === Execution Version ===
@@ -1234,7 +1234,7 @@ impl ProtocolConfig {
             max_type_arguments: Some(16),
             max_type_argument_depth: Some(16),
             // Note this is necessary for the SUI light client.
-            // Changed from 16 * 1024 as otherwise we can't submit the state proof for SUI
+            // Changed from 16 * 1024 as otherwise we can't submit the state proof for SUI.
             max_pure_argument_size: Some(1024 * 1024),
             max_programmable_tx_commands: Some(1024),
             move_binary_format_version: Some(6),
@@ -1469,13 +1469,12 @@ impl ProtocolConfig {
             // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
             sign_verify_encrypted_signature_parts_prehash_cost_base: Some(52),
 
-            //sui_state_proof::sui_state_proof_verify_committee_cost_base
+            // sui_state_proof::sui_state_proof_verify_committee_cost_base.
             sui_state_proof_verify_committee_cost_base: Some(52),
-            //sui_state_proof::sui_state_proof_verify_link_cap_base
+            // sui_state_proof::sui_state_proof_verify_link_cap_base.
             sui_state_proof_verify_link_cap_base: Some(52),
-            //sui_state_proof::sui_state_proof_verify_transaction_base
+            // sui_state_proof::sui_state_proof_verify_transaction_base.
             sui_state_proof_verify_transaction_base: Some(52),
-
 
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,
