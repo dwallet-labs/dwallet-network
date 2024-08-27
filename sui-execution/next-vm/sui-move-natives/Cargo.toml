@@ -12,6 +12,7 @@ better_any.workspace = true
 bcs.workspace = true
 linked-hash-map = "0.5.6"
 smallvec.workspace = true
+serde_json.workspace = true
 
 fastcrypto-zkp.workspace = true
 fastcrypto.workspace = true
@@ -23,6 +24,8 @@ move-stdlib = { path = "../../../external-crates/move/move-execution/next-vm/cra
 move-vm-runtime = { path = "../../../external-crates/move/move-execution/next-vm/crates/move-vm-runtime", package = "move-vm-runtime-next-vm" }
 
 sui-protocol-config.workspace = true
+sui-json.workspace = true
 sui-types.workspace = true
 workspace-hack.workspace = true
 tracing.workspace = true
+

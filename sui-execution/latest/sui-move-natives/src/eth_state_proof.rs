@@ -267,7 +267,7 @@ pub(crate) fn create_initial_eth_state_data(
     let eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&state_bytes)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
 
-    let state_root = eth_state.get_finalized_state_root().to_vec();
+    let state_root = eth_state.clone().get_finalized_state_root().to_vec();
     let time_slot = eth_state.get_latest_slot();
     Ok(NativeResult::ok(
         cost,

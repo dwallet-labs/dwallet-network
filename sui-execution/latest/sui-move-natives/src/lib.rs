@@ -33,9 +33,10 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
+use crate::crypto::sui_state_proof::SuiStateProofCostParams;
 use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
-use crate::crypto::{twopc_mpc, zklogin};
+use crate::crypto::{sui_state_proof, twopc_mpc, zklogin};
 use crate::eth_state_proof::EthDWalletCostParams;
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
@@ -153,6 +154,9 @@ pub struct NativesCostTable {
 
     // TwoPC-MPC.
     pub twopc_mpc_dkg_cost_params: TwoPCMPCDKGCostParams,
+
+    // Sui State Proof
+    pub sui_state_proof_cost_params: SuiStateProofCostParams,
 
     // eth state proof
     pub eth_state_proof: EthDWalletCostParams,
@@ -527,6 +531,11 @@ impl NativesCostTable {
                     .create_initial_eth_state_data_cost_base()
                     .into(),
             },
+            sui_state_proof_cost_params: SuiStateProofCostParams {
+                sui_state_proof_verify_committee_cost_base: protocol_config.sui_state_proof_verify_committee_cost_base().into(),
+                sui_state_proof_verify_link_cap_base: protocol_config.sui_state_proof_verify_link_cap_base().into(),
+                sui_state_proof_verify_transaction_base: protocol_config.sui_state_proof_verify_transaction_base().into(),
+            },
         }
     }
 }
@@ -747,6 +756,7 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
                     func,
                 )
             });
+
     let sui_system_natives: &[(&str, &str, NativeFunction)] = &[
         (
             "validator",
@@ -759,6 +769,21 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             make_native!(
                 twopc_mpc::dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share
             ),
+        ),
+        (
+            "sui_state_proof",
+            "sui_state_proof_verify_committee",
+            make_native!(sui_state_proof::sui_state_proof_verify_committee),
+        ),
+        (
+            "sui_state_proof",
+            "sui_state_proof_verify_link_cap",
+            make_native!(sui_state_proof::sui_state_proof_verify_link_cap),
+        ),
+        (
+            "sui_state_proof",
+            "sui_state_proof_verify_transaction",
+            make_native!(sui_state_proof::sui_state_proof_verify_transaction),
         ),
         (
             "dwallet_2pc_mpc_ecdsa_k1",
