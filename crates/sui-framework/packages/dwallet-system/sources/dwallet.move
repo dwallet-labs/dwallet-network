@@ -453,7 +453,7 @@ module dwallet_system::dwallet {
     /// An Additively Homomorphic Encryption (AHE) public key
     /// that can be used to encrypt a user share in order to prove to the network that
     /// the recipient can sign with a dWallet when it is transferred or access is granted to it.
-        struct EncryptionKey has key {
+    struct EncryptionKey has key {
         id: UID,
         scheme: u8,
         encryption_key: vector<u8>,

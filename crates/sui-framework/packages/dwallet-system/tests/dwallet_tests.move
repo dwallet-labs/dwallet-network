@@ -28,6 +28,11 @@ module dwallet_system::dwallet_tests {
         (sender, scenario)
     }
 
+
+    const VALID_SCHEME: u8 = 0;
+    const INVALID_SCHEME: u8 = 100;
+
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const EWrongEventNumber: u64 = 0;
     const EWrongFrozenObjectsNum: u64 = 1;
@@ -253,9 +258,6 @@ module dwallet_system::dwallet_tests {
         dwallet::sign(partial_user_signed_messages, message_approvals, ctx);
         test_utils::destroy(dwallet_cap);
     }
-
-    const VALID_SCHEME: u8 = 0;
-    const INVALID_SCHEME: u8 = 100;
 
     #[test]
     public fun test_register_encryption_key_with_valid_input() {
