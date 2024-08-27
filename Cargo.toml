@@ -70,9 +70,9 @@ exclude = [
 members = [
     "consensus/config",
     "consensus/core",
-    "crates/eth-light-client",
     "crates/anemo-benchmark",
     "crates/data-transform",
+    "crates/light-client-helpers",
     "crates/mysten-common",
     "crates/mysten-metrics",
     "crates/mysten-network",
@@ -320,6 +320,7 @@ ed25519-consensus = { version = "2.0.1", features = ["serde"] }
 either = "1.8.0"
 petgraph = "0.5.1"
 enum_dispatch = "^0.3"
+ethers = "2.0.14"
 expect-test = "1.4.0"
 eyre = "0.6.8"
 fdlimit = "0.2.1"
@@ -331,6 +332,7 @@ glob = "0.3.1"
 governor = "0.6.0"
 hashbrown = "0.12"
 hdrhistogram = "7.5.1"
+helios = { git = "https://github.com/dwallet-labs/helios" }
 hex = "0.4.3"
 hex-literal = "0.3.4"
 highlight = "all"
@@ -553,6 +555,7 @@ anemo-tower = { git = "https://github.com/mystenlabs/anemo.git", rev = "1169850e
 
 ### Workspace Members ###
 anemo-benchmark = { path = "crates/anemo-benchmark" }
+light-client-helpers = { path = "crates/light-client-helpers" }
 mysten-common = { path = "crates/mysten-common" }
 mysten-metrics = { path = "crates/mysten-metrics" }
 mysten-network = { path = "crates/mysten-network" }

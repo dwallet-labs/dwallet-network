@@ -23,6 +23,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     #[test_only]
     friend dwallet_system::dwallet_ecdsa_k1_tests;
 
+    friend dwallet_system::eth_dwallet;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
@@ -420,6 +421,10 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             sign_data_event,
             ctx
         )
+    }
+
+    public(friend) fun get_dwallet_cap_id(dwallet: &DWallet): ID {
+        dwallet.dwallet_cap_id
     }
 
     #[test_only]

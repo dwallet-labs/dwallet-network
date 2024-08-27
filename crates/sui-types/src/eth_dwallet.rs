@@ -31,6 +31,7 @@ pub struct LatestEthereumStateObject {
     pub time_slot: u64,
     pub eth_smart_contract_address: String,
     pub eth_smart_contract_slot: u64,
+    pub network: Vec<u8>,
 }
 
 /// Rust version of the Move [`sui_system::ethereum_state::EthereumState`] type.
@@ -39,4 +40,6 @@ pub struct EthereumStateObject {
     pub id: UID,
     pub data: Vec<u8>,
     pub time_slot: u64,
+    pub state_root: Vec<u8>,
+    pub latest_ethereum_state_id: ObjectID,
 }
