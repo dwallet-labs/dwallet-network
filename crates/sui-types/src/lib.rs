@@ -55,11 +55,9 @@ pub mod in_memory_storage;
 pub mod inner_temporary_store;
 pub mod message_envelope;
 pub mod messages_checkpoint;
-
 pub mod messages_consensus;
 pub mod messages_grpc;
 pub mod messages_safe_client;
-pub mod messages_signature_mpc;
 pub mod metrics;
 pub mod mock_checkpoint_builder;
 pub mod move_package;
@@ -79,8 +77,6 @@ pub mod type_resolver;
 pub mod versioned;
 pub mod zk_login_authenticator;
 pub mod zk_login_util;
-
-pub mod signature_mpc;
 
 #[cfg(any(test, feature = "test-utils"))]
 #[path = "./unit_tests/utils.rs"]

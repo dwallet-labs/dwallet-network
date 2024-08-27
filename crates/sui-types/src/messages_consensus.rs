@@ -7,10 +7,6 @@ use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
 };
-use crate::messages_signature_mpc::{
-    SignatureMPCMessage, SignatureMPCMessageKind, SignatureMPCRound, SignatureMPCSessionID,
-    SignedSignatureMPCOutput,
-};
 use crate::transaction::CertifiedTransaction;
 use byteorder::{BigEndian, ReadBytesExt};
 use fastcrypto_zkp::bn254::zk_login::{JwkId, JWK};
@@ -66,17 +62,6 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
-    SignatureMPCMessage(
-        AuthorityName,
-        SignatureMPCSessionID,
-        SignatureMPCMessageKind,
-        SignatureMPCRound,
-    ),
-    SignedDKGSignatureMPCOutput(
-        AuthorityName,
-        SignatureMPCSessionID,
-        SignatureMPCMessageKind,
-    ),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -90,25 +75,6 @@ impl Debug for ConsensusTransactionKey {
             Self::Certificate(digest) => write!(f, "Certificate({:?})", digest),
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
-            }
-            Self::SignatureMPCMessage(name, session_id, message_kind, round) => {
-                write!(
-                    f,
-                    "SignatureMPCMessage({:?}, {:?}, {}, {})",
-                    name.concise(),
-                    session_id,
-                    message_kind,
-                    round
-                )
-            }
-            Self::SignedDKGSignatureMPCOutput(name, session_id, message_kind) => {
-                write!(
-                    f,
-                    "SignedDKGSignatureMPCOutput({:?}, {:?}, {})",
-                    name.concise(),
-                    session_id,
-                    message_kind
-                )
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
             Self::CapabilityNotification(name, generation) => write!(
@@ -195,8 +161,6 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilities),
     NewJWKFetched(AuthorityName, JwkId, JWK),
     RandomnessStateUpdate(u64, Vec<u8>),
-    SignatureMPCMessage(Box<SignatureMPCMessage>),
-    SignedDKGSignatureMPCOutput(Box<SignedSignatureMPCOutput>),
 }
 
 impl ConsensusTransaction {
@@ -222,26 +186,6 @@ impl ConsensusTransaction {
         Self {
             tracking_id,
             kind: ConsensusTransactionKind::CheckpointSignature(Box::new(data)),
-        }
-    }
-
-    pub fn new_signature_mpc_message(data: SignatureMPCMessage) -> Self {
-        let mut hasher = DefaultHasher::new();
-        data.summary.auth_sig().signature.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::SignatureMPCMessage(Box::new(data)),
-        }
-    }
-
-    pub fn new_signature_mpc_dkg_output(data: SignedSignatureMPCOutput) -> Self {
-        let mut hasher = DefaultHasher::new();
-        data.auth_sig().signature.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::SignedDKGSignatureMPCOutput(Box::from(data)),
         }
     }
 
@@ -307,21 +251,6 @@ impl ConsensusTransaction {
                 ConsensusTransactionKey::CheckpointSignature(
                     data.summary.auth_sig().authority,
                     data.summary.sequence_number,
-                )
-            }
-            ConsensusTransactionKind::SignatureMPCMessage(data) => {
-                ConsensusTransactionKey::SignatureMPCMessage(
-                    data.summary.auth_sig().authority,
-                    data.summary.session_id,
-                    data.message_kind(),
-                    data.round(),
-                )
-            }
-            ConsensusTransactionKind::SignedDKGSignatureMPCOutput(data) => {
-                ConsensusTransactionKey::SignedDKGSignatureMPCOutput(
-                    data.auth_sig().authority,
-                    data.session_id,
-                    data.message_kind(),
                 )
             }
             ConsensusTransactionKind::EndOfPublish(authority) => {
