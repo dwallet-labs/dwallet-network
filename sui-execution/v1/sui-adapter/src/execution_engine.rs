@@ -618,9 +618,6 @@ mod checked {
             TransactionKind::RandomnessStateUpdate(_) => {
                 panic!("RandomnessStateUpdate should not exist in v1");
             }
-            TransactionKind::SignatureMPCOutput(_) => {
-                panic!("DKGSignatureMPCOutput should not exist in execution layer v0");
-            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)
