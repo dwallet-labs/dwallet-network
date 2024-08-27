@@ -674,6 +674,57 @@ impl TransactionBuilder {
         ))
     }
 
+    /// Completes the construction of a programmable transaction.
+    ///
+    /// This function finalizes a `ProgrammableTransactionBuilder` into a `TransactionData` object.
+    /// It selects the appropriate gas object and calculates the gas price required for the transaction.
+    ///
+    /// # Arguments
+    /// * `signer`: The `SuiAddress` of the transaction signer.
+    /// * `builder`: A `ProgrammableTransactionBuilder` that contains the transaction commands.
+    /// * `gas`: An optional `ObjectID` representing the gas object to be used.
+    ///     If not provided, a suitable gas object will be selected.
+    /// * `gas_budget`: A `u64` value representing the gas budget for the transaction.
+    ///
+    /// # Returns
+    /// * Returns a `TransactionData` object on success,
+    /// or an error if the transaction could not be completed.
+    ///
+    /// # Errors
+    /// This function will return an error if:
+    /// * The gas budget is not enough.
+    /// * A suitable gas object cannot be found.
+    /// * There is an issue finalizing the transaction builder.
+    pub async fn finish_programmable_transaction(
+        &self,
+        signer: SuiAddress,
+        builder: ProgrammableTransactionBuilder,
+        gas: Option<ObjectID>,
+        gas_budget: u64,
+    ) -> anyhow::Result<TransactionData> {
+        let pt = builder.finish();
+        let all_inputs = pt.input_objects()?;
+        let inputs = all_inputs
+            .iter()
+            .flat_map(|obj| match obj {
+                InputObjectKind::ImmOrOwnedMoveObject((id, _, _)) => Some(*id),
+                _ => None,
+            })
+            .collect();
+        let gas_price = self.0.get_reference_gas_price().await?;
+        let gas = self
+            .select_gas(signer, gas, gas_budget, inputs, gas_price)
+            .await?;
+
+        Ok(TransactionData::new(
+            TransactionKind::programmable(pt),
+            signer,
+            gas,
+            gas_budget,
+            gas_price,
+        ))
+    }
+
     pub async fn request_add_stake(
         &self,
         signer: SuiAddress,

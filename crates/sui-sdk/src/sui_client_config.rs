@@ -58,10 +58,11 @@ impl SuiClientConfig {
     }
 
     fn get_active_env_mut(&mut self) -> Result<&mut SuiEnv, anyhow::Error> {
-        self.get_env_mut(&self.active_env).ok_or_else(|| {
+        let active_env = self.active_env.clone();
+        self.get_env_mut(&active_env).ok_or_else(|| {
             anyhow!(
                 "Environment configuration wasn't found for the environment: [{}]",
-                self.active_env.as_deref().unwrap_or("None")
+                active_env.unwrap_or("None".to_string())
             )
         })
     }
@@ -70,7 +71,6 @@ impl SuiClientConfig {
         alias
             .as_ref()
             .and_then(|alias| self.envs.iter_mut().find(|env| &env.alias == alias))
-            .or_else(|| self.envs.first_mut())
     }
 
     pub fn update_ethereum_state_object_id(

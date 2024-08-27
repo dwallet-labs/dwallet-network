@@ -68,7 +68,9 @@ use tabled::{
 };
 use tracing::info;
 
-use crate::ethereum_client_commands::{create_eth_dwallet, init_ethereum_state, EthClientCommands};
+use crate::ethereum_client_commands::{
+    create_eth_dwallet, eth_approve_message, init_ethereum_state, EthClientCommands,
+};
 use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::sui_commands::SuiCommand;
 
@@ -1388,13 +1390,29 @@ impl SuiClientCommands {
                 SuiClientCommandResult::VerifySource
             }
             SuiClientCommands::EthClient { command } => match command {
-                EthClientCommands::EthApproveMessage { .. } => {
-                    todo!()
+                EthClientCommands::EthApproveMessage {
+                    eth_dwallet_cap_id,
+                    message,
+                    dwallet_id,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                } => {
+                    eth_approve_message(
+                        context,
+                        eth_dwallet_cap_id,
+                        message,
+                        dwallet_id,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    )
+                    .await?
                 }
                 EthClientCommands::CreateEthDwallet {
                     dwallet_cap_id,
-                    contract_address,
-                    contract_approved_tx_slot,
                     gas,
                     gas_budget,
                     serialize_unsigned_transaction,
@@ -1403,8 +1421,6 @@ impl SuiClientCommands {
                     create_eth_dwallet(
                         context,
                         dwallet_cap_id,
-                        contract_address,
-                        contract_approved_tx_slot,
                         gas,
                         gas_budget,
                         serialize_unsigned_transaction,
@@ -1413,16 +1429,20 @@ impl SuiClientCommands {
                     .await?
                 }
                 EthClientCommands::InitEthState {
-                    checkpoint,
                     network,
+                    rpc,
+                    contract_address,
+                    contract_approved_tx_slot,
                     gas,
                     gas_budget,
                     serialize_unsigned_transaction,
                     serialize_signed_transaction,
                 } => {
                     init_ethereum_state(
-                        checkpoint,
                         network,
+                        rpc,
+                        contract_address,
+                        contract_approved_tx_slot,
                         context,
                         gas,
                         gas_budget,
