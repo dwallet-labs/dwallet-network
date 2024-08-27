@@ -6,7 +6,6 @@ import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
-import { SuiObjectRef } from '../types';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';

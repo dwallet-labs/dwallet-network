@@ -863,6 +863,15 @@ pub struct ProtocolConfig {
     // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
     sign_verify_encrypted_signature_parts_prehash_cost_base: Option<u64>,
 
+    // sui_state_proof::sui_state_proof_verify_committee_cost_base.
+    sui_state_proof_verify_committee_cost_base: Option<u64>,
+
+    // sui_state_proof::sui_state_proof_verify_link_cap_base.
+    sui_state_proof_verify_link_cap_base: Option<u64>,
+
+    // sui_state_proof::sui_state_proof_verify_transaction_base.
+    sui_state_proof_verify_transaction_base: Option<u64>,
+
     transfer_dwallet_cost_base: Option<u64>,
 
     /// === Execution Version ===
@@ -1226,7 +1235,9 @@ impl ProtocolConfig {
             max_arguments: Some(512),
             max_type_arguments: Some(16),
             max_type_argument_depth: Some(16),
-            max_pure_argument_size: Some(16 * 1024),
+            // Note this is necessary for the SUI light client.
+            // Changed from 16 * 1024 as otherwise we can't submit the state proof for SUI.
+            max_pure_argument_size: Some(1024 * 1024),
             max_programmable_tx_commands: Some(1024),
             move_binary_format_version: Some(6),
             max_move_object_size: Some(250 * 1024),
@@ -1318,7 +1329,7 @@ impl ProtocolConfig {
             dynamic_field_borrow_child_object_cost_base: Some(100),
             dynamic_field_borrow_child_object_child_ref_cost_per_byte: Some(10),
             dynamic_field_borrow_child_object_type_cost_per_byte: Some(10),
-             // Cost params for the Move native function `remove_child_object<Child: key>(parent: address, id: address): Child`
+            // Cost params for the Move native function `remove_child_object<Child: key>(parent: address, id: address): Child`
             dynamic_field_remove_child_object_cost_base: Some(100),
             dynamic_field_remove_child_object_child_cost_per_byte: Some(2),
             dynamic_field_remove_child_object_type_cost_per_byte: Some(2),
@@ -1334,7 +1345,7 @@ impl ProtocolConfig {
             event_emit_cost_base: Some(52),
             event_emit_value_size_derivation_cost_per_byte: Some(2),
             event_emit_tag_size_derivation_cost_per_byte: Some(5),
-            event_emit_output_cost_per_byte:Some(10),
+            event_emit_output_cost_per_byte: Some(10),
 
             //  `object` module
             // Cost params for the Move native function `borrow_uid<T: key>(obj: &T): &UID`
@@ -1460,6 +1471,13 @@ impl ProtocolConfig {
             // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
             sign_verify_encrypted_signature_parts_prehash_cost_base: Some(52),
             transfer_dwallet_cost_base: Some(52),
+
+            // sui_state_proof::sui_state_proof_verify_committee_cost_base.
+            sui_state_proof_verify_committee_cost_base: Some(52),
+            // sui_state_proof::sui_state_proof_verify_link_cap_base.
+            sui_state_proof_verify_link_cap_base: Some(52),
+            // sui_state_proof::sui_state_proof_verify_transaction_base.
+            sui_state_proof_verify_transaction_base: Some(52),
 
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,
