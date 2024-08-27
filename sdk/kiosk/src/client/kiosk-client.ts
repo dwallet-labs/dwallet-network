@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiClient } from '@mysten/sui.js/client';
+import { type DWalletClient } from '@dwallet-network/dwallet.js/client';
 
 import {
 	FLOOR_PRICE_RULE_ADDRESS,
@@ -34,7 +34,7 @@ import {
  * If you pass packageIds, all functionality will be managed using these packages.
  */
 export class KioskClient {
-	client: SuiClient;
+	client: DWalletClient;
 	network: Network;
 	rules: TransferPolicyRule[];
 	packageIds?: BaseRulePackageIds;
