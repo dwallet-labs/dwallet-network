@@ -15601,6 +15601,7 @@ dependencies = [
  "move-stdlib",
  "move-vm-runtime",
  "move-vm-types 0.1.0",
+ "prost 0.12.6",
  "serde",
  "serde_json",
  "smallvec",
@@ -15608,6 +15609,8 @@ dependencies = [
  "sui-json 0.0.0",
  "sui-protocol-config 0.1.0",
  "sui-types 0.1.0",
+ "tendermint",
+ "tendermint-light-client-verifier",
  "tracing",
  "workspace-hack",
 ]
