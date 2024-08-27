@@ -27,3 +27,6 @@ sui-types.workspace = true
 workspace-hack.workspace = true
 tracing.workspace = true
 ibc.workspace = true
+tendermint.workspace = true
+tendermint-light-client-verifier.workspace = true
+prost.workspace = true

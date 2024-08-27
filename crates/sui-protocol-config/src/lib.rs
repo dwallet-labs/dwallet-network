@@ -877,9 +877,8 @@ pub struct ProtocolConfig {
 
     /// === Tendermint light client ===
     tendermint_state_proof_cost_base: Option<u64>,
-    tendermint_init_lc_cost_base: Option<u64>,
     tendermint_verify_lc_cost_base: Option<u64>,
-    tendermint_update_lc_cost_base: Option<u64>,
+    tendermint_extract_consensus_state_base: Option<u64>,
 }
 
 // feature flags
@@ -1479,9 +1478,8 @@ impl ProtocolConfig {
             // tendermint light client
             // TODO: please check the cost base  
             tendermint_state_proof_cost_base: Some(42),
-            tendermint_init_lc_cost_base: Some(42),
-            tendermint_update_lc_cost_base: Some(42),
-            tendermint_verify_lc_cost_base: Some(42)
+            tendermint_verify_lc_cost_base: Some(42),
+            tendermint_extract_consensus_state_base: Some(42)
         };
         for cur in 2..=version.0 {
             match cur {

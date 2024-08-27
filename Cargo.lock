@@ -2535,7 +2535,7 @@ dependencies = [
 [[package]]
 name = "client"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#4c890e6dfd9cc0668796be28114e54014181ce45"
+source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "common",
  "config",
@@ -2726,7 +2726,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#4c890e6dfd9cc0668796be28114e54014181ce45"
+source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "ethers",
  "eyre",
@@ -2739,7 +2739,7 @@ dependencies = [
 [[package]]
 name = "config"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#4c890e6dfd9cc0668796be28114e54014181ce45"
+source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "anyhow",
  "common",
@@ -2764,7 +2764,7 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#4c890e6dfd9cc0668796be28114e54014181ce45"
+source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3910,7 +3910,7 @@ dependencies = [
 [[package]]
 name = "dwallet"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/helios#4c890e6dfd9cc0668796be28114e54014181ce45"
+source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "anyhow",
  "client",
@@ -4593,7 +4593,7 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 [[package]]
 name = "execution"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#4c890e6dfd9cc0668796be28114e54014181ce45"
+source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "async-trait",
  "bytes",
@@ -5473,9 +5473,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.4.5"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa82e28a107a8cc405f0839610bdc9b15f1e25ec7d696aa5cf173edbcb1486ab"
+checksum = "524e8ac6999421f49a846c2d4411f337e53497d8ec55d67753beffa43c5d9205"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -5646,7 +5646,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 [[package]]
 name = "helios"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#4c890e6dfd9cc0668796be28114e54014181ce45"
+source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "client",
  "common",
@@ -5839,7 +5839,7 @@ dependencies = [
  "bytes",
  "futures-channel",
  "futures-util",
- "h2 0.4.5",
+ "h2 0.4.6",
  "http 1.1.0",
  "http-body 1.0.1",
  "httparse",
@@ -11695,7 +11695,7 @@ dependencies = [
  "encoding_rs",
  "futures-core",
  "futures-util",
- "h2 0.4.5",
+ "h2 0.4.6",
  "http 1.1.0",
  "http-body 1.0.1",
  "http-body-util",
@@ -14808,9 +14808,12 @@ dependencies = [
  "move-stdlib",
  "move-vm-runtime",
  "move-vm-types",
+ "prost 0.12.6",
  "smallvec",
  "sui-protocol-config",
  "sui-types",
+ "tendermint",
+ "tendermint-light-client-verifier",
  "tracing",
  "workspace-hack",
 ]
