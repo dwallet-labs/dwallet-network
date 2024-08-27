@@ -3,6 +3,9 @@
 
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
+import { Ed25519Keypair } from '../keypairs/ed25519';
+import { ethers, keccak256 } from 'ethers';
+import { generate_keypair_from_seed } from './dwallet_2pc_mpc_ecdsa_k1_module';
 
 export async function fetchObjectBySessionId(
 	sessionId: string,
@@ -36,3 +39,9 @@ export async function fetchObjectBySessionId(
 		await new Promise((r) => setTimeout(r, 500));
 	}
 }
+
+export const generatePaillierKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
+	let stringHashedPK = keccak256(ethers.toUtf8Bytes(keypair.export().privateKey));
+	let hashedPrivateKey = ethers.toBeArray(stringHashedPK);
+	return generate_keypair_from_seed(hashedPrivateKey);
+};

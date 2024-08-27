@@ -91,7 +91,10 @@ describe('Create public key', () => {
 		);
 		console.log({ pubKeyRef });
 
-		const encryptionKeysHolder = await createActiveEncryptionKeysTable(toolbox.client, toolbox.keypair);
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
+			toolbox.client,
+			toolbox.keypair,
+		);
 
 		await setActiveEncryptionKey(
 			toolbox.client,

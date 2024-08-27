@@ -101,16 +101,16 @@ export const getEncryptionKeyByObjectId = async (
 	const objectFields =
 		response.data?.content?.dataType === 'moveObject'
 			? (response.data?.content?.fields as unknown as {
-					encryption_key: Uint8Array;
-					key_owner_address: string;
-				})
+				encryption_key: Uint8Array;
+				key_owner_address: string;
+			})
 			: null;
 
 	return objectFields
 		? {
-				encryptionKey: objectFields?.encryption_key,
-				keyOwnerAddress: objectFields?.key_owner_address,
-			}
+			encryptionKey: objectFields?.encryption_key,
+			keyOwnerAddress: objectFields?.key_owner_address,
+		}
 		: null;
 };
 
@@ -209,3 +209,4 @@ export const encryptUserShare = async (
 		},
 	});
 };
+
