@@ -33,9 +33,10 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
+use crate::crypto::sui_state_proof::SuiStateProofCostParams;
 use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
-use crate::crypto::{twopc_mpc, zklogin};
+use crate::crypto::{sui_state_proof, twopc_mpc, zklogin};
 use crate::eth_state_proof::EthDWalletCostParams;
 use better_any::{Tid, TidAble};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
