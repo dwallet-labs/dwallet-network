@@ -75,6 +75,7 @@ export const storeEncryptionKey = async (
 ): Promise<SuiObjectRef> => {
 	let signedEncryptionKey = await keypair.sign(new Uint8Array(encryptionKey));
 	const tx = new TransactionBlock();
+	console.log({ encryptionKey, signedEncryptionKey });
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey));
 	let pureSignedPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(signedEncryptionKey));
 	let pureSuiPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(keypair.getPublicKey().toRawBytes()));

@@ -28,6 +28,11 @@ module dwallet_system::dwallet_tests {
         (sender, scenario)
     }
 
+    fun set_up_with_sender_address(sender: address): test_scenario::Scenario {
+        let scenario = test_scenario::begin(sender);
+        scenario
+    }
+
 
     const VALID_SCHEME: u8 = 0;
     const INVALID_SCHEME: u8 = 100;
@@ -261,12 +266,13 @@ module dwallet_system::dwallet_tests {
 
     #[test]
     public fun test_register_encryption_key_with_valid_input() {
-        let (sender, scenario) = set_up();
-        test_scenario::next_tx(&mut scenario, sender);
+        let scenario = set_up_with_sender_address(@0x92c28a0905643d2b861c12b3dd2aba20619b9748f3e5cb6165f9a4388c515668);
         {
+            let mock_encryption_key = vector[1];
+            let signed_encryption_key = vector[97, 159, 229, 209, 91, 100, 9, 202, 132, 225, 75, 24, 235, 53, 144, 103, 246, 193, 91, 93, 95, 160, 25, 74, 199, 26, 159, 199, 4, 208, 6, 67, 3, 20, 32, 35, 112, 114, 62, 134, 112, 246, 126, 69, 54, 34, 249, 141, 194, 115, 4, 38, 189, 110, 141, 174, 224, 174, 87, 194, 125, 211, 67, 4];
             let ctx = test_scenario::ctx(&mut scenario);
-            let key = vector::empty<u8>();
-            dwallet::register_encryption_key(key, vector::empty(), vector::empty(), VALID_SCHEME, ctx);
+            let mock_sui_pubkey = vector[204, 188, 31, 23, 159, 78, 46, 145, 247, 191, 82, 249, 88, 130, 89, 6, 254, 235, 251, 29, 151, 11, 249, 229, 128, 137, 15, 255, 24, 22, 102, 25];
+            dwallet::register_encryption_key(mock_encryption_key, signed_encryption_key, mock_sui_pubkey, VALID_SCHEME, ctx);
         };
         let effects: TransactionEffects = test_scenario::end(scenario);
         let created_objects = test_scenario::created(&effects);
