@@ -14,6 +14,8 @@ indexmap.workspace = true
 smallvec.workspace = true
 serde_json.workspace = true
 
+helios.workspace = true
+ethers.workspace = true
 fastcrypto-zkp.workspace = true
 fastcrypto.workspace = true
 move-binary-format.workspace = true

@@ -1,0 +1,12 @@
+[package]
+name = "light-client-helpers"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+sui-types.workspace = true
+sui-json.workspace = true
+sui-json-rpc-types.workspace = true
+sui-sdk.workspace = true
+move-core-types.workspace = true
