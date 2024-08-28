@@ -1,6 +1,6 @@
-#[allow(unused_function, unused_field, unused_const)]
+#[allow(unused_function, unused_field)]
 module dwallet_system::tendermint_lc {
-
+  
     use dwallet::object::{UID, Self};
     use dwallet::tx_context::TxContext;
     use dwallet::dynamic_field as field;
@@ -98,5 +98,5 @@ module dwallet_system::tendermint_lc {
     
     public native fun extract_consensus_state(header:vector<u8>): ConsensusState;
     native fun tendermint_verify_lc(timestamp: vector<u8>, next_validators_hash: vector<u8>, commitment_root: vector<u8>, header: vector<u8>): bool; 
-    native fun tendermint_state_proof(): bool; 
+    public native fun tendermint_state_proof(proof: vector<u8>, root: vector<u8>, prefix: vector<u8>, path: vector<u8>, value: vector<u8>): bool; 
 }
