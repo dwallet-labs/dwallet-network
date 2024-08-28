@@ -14,6 +14,7 @@ import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { fetchObjectBySessionId } from './utils.js';
+import {getEncryptionKeyByObjectId} from "./dwallet";
 
 export {
 	decrypt_user_share,
@@ -25,7 +26,11 @@ export {
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export async function createDWallet(keypair: Keypair, client: DWalletClient) {
+export async function createDWallet(
+	keypair: Keypair,
+	client: DWalletClient,
+	encryptionKeyObjId: string,
+) {
 	const resultDKG = initiate_dkg();
 
 	const commitmentToSecretKeyShare = resultDKG['commitment_to_secret_key_share'];
@@ -61,10 +66,12 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 				})
 			: null;
 
+	const encryptionKey = await getEncryptionKeyByObjectId(client, encryptionKeyObjId);
 	if (sessionOutputFields) {
 		const final = finalize_dkg(
 			decommitmentRoundPartyState,
 			Uint8Array.from(sessionOutputFields.secret_key_share_encryption_and_proof),
+			encryptionKey?.encryptionKey!,
 		);
 
 		const txFinal = new TransactionBlock();
@@ -73,6 +80,8 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 			arguments: [
 				txFinal.object(sessionOutputFields.id.id),
 				txFinal.pure(final['public_key_share_decommitment_and_proof']),
+				txFinal.pure(encryptionKeyObjId),
+				txFinal.pure(final['encrypted_user_share_and_proof']),
 			],
 		});
 		const resultFinal = await client.signAndExecuteTransactionBlock({

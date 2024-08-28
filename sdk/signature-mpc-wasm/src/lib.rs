@@ -40,6 +40,7 @@ pub struct FinalizeDKGValue {
     pub public_key_share_decommitment_and_proof: Vec<u8>,
     pub secret_key_share: Vec<u8>,
     pub dkg_output: Vec<u8>,
+    pub encrypted_user_share_and_proof: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -71,6 +72,7 @@ pub fn initiate_dkg() -> Result<JsValue, JsErr> {
 pub fn finalize_dkg(
     decommitment_round_party_state: Vec<u8>,
     secret_key_share_encryption_and_proof: Vec<u8>,
+    secret_share_encryption_key: Vec<u8>,
 ) -> Result<JsValue, JsErr> {
     let decommitment_round_party_state: DKGDecommitmentRoundState<ProtocolContext> =
         bcs::from_bytes(&decommitment_round_party_state)?;
@@ -84,12 +86,26 @@ pub fn finalize_dkg(
     let (public_key_share_decommitment_and_proof, dkg_output) = decommitment_round_party
         .decommit_proof_public_key_share(secret_key_share_encryption_and_proof, &mut OsRng)?;
 
+    let secret_key_share = bcs::to_bytes(&dkg_output.secret_key_share)?;
+
+    let language_public_parameters =
+        encryption_of_discrete_log_public_parameters(secret_share_encryption_key.clone()).map_err(to_js_err)?;
+    let proof_public_output =
+        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_proof(
+            secret_share_encryption_key,
+            secret_key_share.clone(),
+            language_public_parameters,
+        )
+            .map_err(to_js_err)?;
+    let encrypted_user_share_and_proof = bcs::to_bytes(&proof_public_output)?;
+
     let value = FinalizeDKGValue {
         public_key_share_decommitment_and_proof: bcs::to_bytes(
             &public_key_share_decommitment_and_proof,
         )?,
-        secret_key_share: bcs::to_bytes(&dkg_output.secret_key_share)?,
+        secret_key_share,
         dkg_output: bcs::to_bytes(&dkg_output)?,
+        encrypted_user_share_and_proof,
     };
     Ok(serde_wasm_bindgen::to_value(&value)?)
 }

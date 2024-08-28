@@ -221,6 +221,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun create_dwallet(
         output: DKGSessionOutput,
         centralized_party_public_key_share_decommitment_and_proof: vector<u8>,
+        encryption_key: &EncryptionKey,
+        encrypted_user_share_and_proof: vector<u8>,
         ctx: &mut TxContext
     ) {
         let DKGSessionOutput {
@@ -238,10 +240,11 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let (output, public_key) = dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
             commitment_to_centralized_party_secret_key_share,
             secret_key_share_encryption_and_proof,
-            centralized_party_public_key_share_decommitment_and_proof
+            centralized_party_public_key_share_decommitment_and_proof,
         );
 
         let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, public_key, ctx);
+        encrypt_user_share(&dwallet, encryption_key, encrypted_user_share_and_proof, ctx);
         // Create dwallet + make it immutable.
         transfer::public_freeze_object(dwallet);
     }

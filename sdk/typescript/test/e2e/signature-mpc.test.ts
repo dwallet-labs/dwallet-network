@@ -30,7 +30,15 @@ describe('Test signature mpc', () => {
 
 	it('the signature mpc create dwallet', async () => {
 		console.log(toolbox.keypair.toSuiAddress());
-		const dkg = await createDWallet(toolbox.keypair, toolbox.client);
+
+		const [encryptionKey, _] = generate_keypair();
+		const encryptionKeyObj = await storeEncryptionKey(
+			encryptionKey,
+			EncryptionKeyScheme.Paillier,
+			toolbox.keypair,
+			toolbox.client,
+		);
+		const dkg = await createDWallet(toolbox.keypair, toolbox.client, encryptionKeyObj.objectId);
 
 		const bytes: Uint8Array = new TextEncoder().encode('Sign it!!!');
 
@@ -131,7 +139,7 @@ describe('Test key share transfer', () => {
 		);
 		const publicKeyID = pubKeyRef?.objectId;
 		const recipientData = await getEncryptionKeyByObjectId(toolbox.client, publicKeyID);
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
+		const dwallet = await createDWallet(toolbox.keypair, toolbox.client, publicKeyID);
 		const dwalletID = dwallet?.dwalletId!;
 		const secretShare = dwallet?.secretKeyShare!;
 		const encryptedUserShareAndProof = generate_proof(secretShare, recipientData?.encryptionKey!);
