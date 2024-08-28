@@ -5,7 +5,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import type { SuiObjectRef } from '../types';
+import type { SuiObjectRef } from '../types/index.js';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';

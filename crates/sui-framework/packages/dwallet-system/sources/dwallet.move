@@ -4,6 +4,7 @@
 /// Generic dWallet representation.
 /// This is conceptually the `Dwallet` interface.
 module dwallet_system::dwallet {
+    use std::debug;
     use std::vector;
     use dwallet::ed25519::ed25519_verify;
 
@@ -480,6 +481,7 @@ module dwallet_system::dwallet {
     public fun register_encryption_key(key: vector<u8>, signature: vector<u8>, sender_sui_pubkey: vector<u8>, scheme: u8, ctx: &mut TxContext) {
         assert!(is_valid_encryption_key_scheme(scheme), EInvalidEncryptionKeyScheme);
         assert!(ed25519_verify(&signature, &sender_sui_pubkey, &key), EInvalidEncryptionKeySignature);
+        debug::print(&tx_context::sender(ctx));
         assert!(ed2551_pubkey_to_sui_addr(sender_sui_pubkey) == tx_context::sender(ctx), EPublicKeyNotMatchSenderAddress);
         let encryption_key = EncryptionKey {
             id: object::new(ctx),
@@ -549,4 +551,35 @@ module dwallet_system::dwallet {
     }
 
     native fun ed2551_pubkey_to_sui_addr(public_key: vector<u8>): address;
+
+    #[test_only]
+    public(friend) fun create_mock_encryption_key(
+        key: vector<u8>,
+        scheme: u8,
+        owner: address,
+        ctx: &mut TxContext
+    ): EncryptionKey {
+        EncryptionKey {
+            id: object::new(ctx),
+            scheme,
+            encryption_key: key,
+            encryption_key_signature: vector::empty(),
+            key_owner_address: owner,
+        }
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_active_encryption_keys(ctx: &mut TxContext): ActiveEncryptionKeys {
+        ActiveEncryptionKeys {
+            id: object::new(ctx),
+            encryption_keys: table::new(ctx),
+        }
+    }
+
+    #[test_only]
+    public(friend) fun get_active_encryption_keys_table(
+        encryption_key_holder: &ActiveEncryptionKeys
+    ): &Table<address, ID> {
+        &encryption_key_holder.encryption_keys
+    }
 }
