@@ -561,6 +561,7 @@ module dwallet_system::dwallet {
             id: object::new(ctx),
             scheme,
             encryption_key: key,
+            encryption_key_signature: vector::empty(),
             key_owner_address: owner,
         }
     }
