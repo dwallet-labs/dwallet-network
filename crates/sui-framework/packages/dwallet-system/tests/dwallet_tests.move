@@ -266,7 +266,7 @@ module dwallet_system::dwallet_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let key = vector::empty<u8>();
-            dwallet::register_encryption_key(key, VALID_SCHEME, ctx);
+            dwallet::register_encryption_key(key, vector::empty(), vector::empty(), VALID_SCHEME, ctx);
         };
         let effects: TransactionEffects = test_scenario::end(scenario);
         let created_objects = test_scenario::created(&effects);
@@ -284,7 +284,7 @@ module dwallet_system::dwallet_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let key = vector::empty<u8>();
-            dwallet::register_encryption_key(key, INVALID_SCHEME, ctx);
+            dwallet::register_encryption_key(key, vector::empty(), vector::empty(), INVALID_SCHEME, ctx);
         };
         let effects: TransactionEffects = test_scenario::end(scenario);
         let created_objects = test_scenario::created(&effects);
