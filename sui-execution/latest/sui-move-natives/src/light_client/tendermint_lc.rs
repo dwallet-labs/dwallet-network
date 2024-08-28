@@ -8,19 +8,25 @@ use move_vm_types::{
     values::{Struct, Value, Vector},
 };
 
+use std::{collections::VecDeque, str::from_utf8};
+
+use ibc::core::commitment_types::{
+    commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot},
+    merkle::{apply_prefix, MerkleProof},
+    proto::ics23::HostFunctionsManager,
+    specs::ProofSpecs,
+};
+
 use prost::Message;
 
 use ibc::{
     clients::tendermint::types::error::{Error as LcError, IntoResult},
     clients::tendermint::types::{ConsensusState, Header as TmHeader},
-    core::{
-        client::types::error::ClientError, commitment_types::commitment::CommitmentRoot,
-        host::types::identifiers::ChainId,
-    },
+    core::{client::types::error::ClientError, host::types::identifiers::ChainId},
     primitives::{proto::Any, ToVec},
 };
 use smallvec::smallvec;
-use std::{collections::VecDeque, error::Error, str::FromStr, time::Duration};
+use std::{error::Error, str::FromStr, time::Duration};
 use tendermint::crypto::default::Sha256;
 use tendermint::{merkle::MerkleHash, Hash, Time};
 use tendermint_light_client_verifier::{
@@ -46,7 +52,46 @@ pub fn tendermint_state_proof(
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
-    todo!()
+    let value = pop_arg!(args, Vector).to_vec_u8()?;
+    let path = pop_arg!(args, Vector).to_vec_u8()?;
+    let prefix = pop_arg!(args, Vector).to_vec_u8()?;
+    let root = pop_arg!(args, Vector).to_vec_u8()?;
+    let proof = pop_arg!(args, Vector).to_vec_u8()?;
+
+    let Ok(prefix) = CommitmentPrefix::try_from(prefix) else {
+        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+    };
+
+    let Ok(path_str) = from_utf8(path.as_slice()) else {
+        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+    };
+
+    let merkle_path = apply_prefix(&prefix, vec![path_str.to_owned()]);
+
+    let Ok(proof_bytes) = CommitmentProofBytes::try_from(proof) else {
+        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+    };
+
+    let Ok(merkle_proof) = MerkleProof::try_from(&proof_bytes) else {
+        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+    };
+
+    let root = CommitmentRoot::from_bytes(&root);
+
+    let verified = merkle_proof
+        .verify_membership::<HostFunctionsManager>(
+            &ProofSpecs::cosmos(),
+            root.into(),
+            merkle_path,
+            value,
+            0,
+        )
+        .is_ok();
+
+    Ok(NativeResult::ok(
+        context.gas_used(),
+        smallvec![Value::bool(verified)],
+    ))
 }
 
 // TODO: remove trace and add document for this funciton.
