@@ -314,6 +314,7 @@ pub fn convert_signature_to_canonical_form(
     ))
 }
 
+/// Convert an Ed25519 public key to a Sui address.
 pub fn ed2551_pubkey_to_sui_addr(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
