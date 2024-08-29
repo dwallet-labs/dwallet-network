@@ -1,7 +1,7 @@
 #[allow(unused_function, unused_field)]
 module dwallet_system::tendermint_lc {
   
-    use dwallet::object::{UID, Self};
+    use dwallet::object::{UID, Self, ID};
     use dwallet::tx_context::TxContext;
     use dwallet::dynamic_field as field;
 
@@ -12,6 +12,17 @@ module dwallet_system::tendermint_lc {
         latest_height: u64
     }
 
+    public fun client_id(client: &Client): ID {
+        object::id(client)
+    }
+
+    struct StateProof has store, copy, drop {
+        proof: vector<u8>,
+        root: vector<u8>,
+        prefix: vector<u8>,
+        path: vector<u8>,
+        value: vector<u8>
+    }
     // struct Height has store, copy, drop{
     //     height: u64, 
     //     revision_height: u64
@@ -39,11 +50,10 @@ module dwallet_system::tendermint_lc {
         cs.next_validators_hash
     }
 
-    #[test_only]
     public fun commitment_root(cs: &ConsensusState) : vector<u8>{
         cs.commitment_root
     }
-    
+
     public fun consensus_state(height: u64, timestamp: vector<u8>, next_validators_hash: vector<u8>, commitment_root: vector<u8>): ConsensusState {
        let consensus_state =  ConsensusState {
             timestamp, 
@@ -52,6 +62,10 @@ module dwallet_system::tendermint_lc {
             height
         };  
         consensus_state
+    }
+
+    public fun get_consensus_state(client: &Client, height: u64): &ConsensusState {
+        field::borrow(&client.id, height)
     }
 
     public fun latest_height(client: &Client) : u64 {
@@ -95,7 +109,11 @@ module dwallet_system::tendermint_lc {
             abort EUpdateFailed
         }
     }
-    
+
+    public fun state_proof(client: &Client, height: u64, proof: vector<u8>, prefix: vector<u8>, path: vector<u8>, value: vector<u8>): bool {
+        let cs = get_consensus_state(client, height);
+        tendermint_state_proof(proof, cs.commitment_root, prefix, path, value)
+    }
     public native fun extract_consensus_state(header:vector<u8>): ConsensusState;
     native fun tendermint_verify_lc(timestamp: vector<u8>, next_validators_hash: vector<u8>, commitment_root: vector<u8>, header: vector<u8>): bool; 
     public native fun tendermint_state_proof(proof: vector<u8>, root: vector<u8>, prefix: vector<u8>, path: vector<u8>, value: vector<u8>): bool; 
