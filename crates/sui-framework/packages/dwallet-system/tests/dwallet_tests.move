@@ -15,11 +15,16 @@ module dwallet_system::dwallet_tests {
         EMesssageApprovalDWalletMismatch,
         EInvalidEncryptionKeyScheme,
         EInvalidEncryptionKeyOwner,
+        EInvalidParametes,
         create_mock_active_encryption_keys,
         create_mock_encryption_key,
         get_active_encryption_key,
         get_active_encryption_keys_table,
         create_encrypted_user_shares,
+        create_mock_encrypted_user_share,
+        create_mock_encrypted_user_shares,
+        get_encrypted_user_share_dwallet_id,
+        get_encrypted_user_shares_table,
     };
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{create_mock_sign_data, create_mock_sign_data_event};
 
@@ -423,5 +428,65 @@ module dwallet_system::dwallet_tests {
     }
 
     #[test]
-    public fun test_save_encypted_user_share() {}
+    public fun test_save_encypted_user_share() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let encrypted_user_shares = create_mock_encrypted_user_shares(ctx);
+            let encryption_key = create_mock_encryption_key(vector::empty(), VALID_SCHEME, tx_context::sender(ctx), ctx);
+            let encrypted_user_share = create_mock_encrypted_user_share(object::id_from_address(@0xD), vector::empty(), object::id(&encryption_key), ctx);
+            dwallet::save_encrypted_user_share(&mut encrypted_user_shares, &encrypted_user_share, &encryption_key, ctx);
+            assert!(
+                table::contains(get_encrypted_user_shares_table(&encrypted_user_shares), get_encrypted_user_share_dwallet_id(&encrypted_user_share)),
+                EObjectNotInTable
+            );
+            test_utils::destroy(encrypted_user_shares);
+            test_utils::destroy(encryption_key);
+            test_utils::destroy(encrypted_user_share);
+        };
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidParametes)]
+    public fun test_save_encypted_user_share_twice_failuer() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let encrypted_user_shares = create_mock_encrypted_user_shares(ctx);
+            let encryption_key = create_mock_encryption_key(vector::empty(), VALID_SCHEME, tx_context::sender(ctx), ctx);
+            let encrypted_user_share = create_mock_encrypted_user_share(object::id_from_address(@0xD), vector::empty(), object::id(&encryption_key), ctx);
+            dwallet::save_encrypted_user_share(&mut encrypted_user_shares, &encrypted_user_share, &encryption_key, ctx);
+            dwallet::save_encrypted_user_share(&mut encrypted_user_shares, &encrypted_user_share, &encryption_key, ctx);
+
+            test_utils::destroy(encrypted_user_shares);
+            test_utils::destroy(encryption_key);
+            test_utils::destroy(encrypted_user_share);
+        };
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    #[expected_failure(abort_code = EInvalidParametes)]
+    public fun test_save_encypted_user_share_different_encryption_key_failuer() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let encrypted_user_shares = create_mock_encrypted_user_shares(ctx);
+            let encryption_key_real = create_mock_encryption_key(vector::empty(), VALID_SCHEME, tx_context::sender(ctx), ctx);
+            let encryption_key_fake = create_mock_encryption_key(vector::empty(), VALID_SCHEME, tx_context::sender(ctx), ctx);
+            let encrypted_user_share = create_mock_encrypted_user_share(object::id_from_address(@0xD), vector::empty(), object::id(&encryption_key_real), ctx);
+            dwallet::save_encrypted_user_share(&mut encrypted_user_shares, &encrypted_user_share, &encryption_key_fake, ctx);
+
+            test_utils::destroy(encrypted_user_shares);
+            test_utils::destroy(encryption_key_real);
+            test_utils::destroy(encryption_key_fake);
+            test_utils::destroy(encrypted_user_share);
+        };
+        test_scenario::end(scenario);
+    }
+
 }

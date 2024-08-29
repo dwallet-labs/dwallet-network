@@ -472,20 +472,20 @@ module dwallet_system::dwallet {
     }
 
     public fun save_encrypted_user_share(
-        dwallet_to_encrypted_user_share: &mut EncryptedUserShares,
+        encrypted_user_shares: &mut EncryptedUserShares,
         encrypted_user_share: &EncryptedUserShare,
         encryption_key: &EncryptionKey,
         ctx: &mut TxContext
     ) {
         // TODO: add signature verification
-        let validate_parameters = table::contains(&dwallet_to_encrypted_user_share.encrypted_user_shares, encrypted_user_share.dwallet_id)
+        let validate_parameters = !table::contains(&encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id)
             && object::id(encryption_key) == encrypted_user_share.encryption_key_id
             && encryption_key.key_owner_address == tx_context::sender(ctx);
 
         assert!(validate_parameters, EInvalidParametes);
 
         table::add(
-            &mut dwallet_to_encrypted_user_share.encrypted_user_shares,
+            &mut encrypted_user_shares.encrypted_user_shares,
             encrypted_user_share.dwallet_id,
             object::id(encrypted_user_share)
         );
@@ -626,4 +626,40 @@ module dwallet_system::dwallet {
     ): &Table<address, ID> {
         &encryption_key_holder.encryption_keys
     }
+
+    #[test_only]
+    public(friend) fun create_mock_encrypted_user_shares(ctx: &mut TxContext): EncryptedUserShares {
+        EncryptedUserShares {
+            id: object::new(ctx),
+            encrypted_user_shares: table::new(ctx),
+        }
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_encrypted_user_share(
+        dwallet_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_id: ID,
+        ctx: &mut TxContext
+    ): EncryptedUserShare {
+        EncryptedUserShare {
+            id: object::new(ctx),
+            dwallet_id,
+            encrypted_secret_share_and_proof,
+            encryption_key_id,
+        }
+    }
+
+    #[test_only]
+    public(friend) fun get_encrypted_user_share_dwallet_id(encrypted_user_share: &EncryptedUserShare): ID {
+        encrypted_user_share.dwallet_id
+    }
+
+    #[test_only]
+    public(friend) fun get_encrypted_user_shares_table(
+        encrypted_user_shares: &EncryptedUserShares
+    ): &Table<ID, ID> {
+        &encrypted_user_shares.encrypted_user_shares
+    }
+
 }
