@@ -30,6 +30,7 @@ module dwallet_system::dwallet {
     const EInvalidEncryptionKeyOwner: u64 = 3;
     const EInvalidEncryptionKeySignature: u64 = 4;
     const EPublicKeyNotMatchSenderAddress: u64 = 5;
+    const EInvalidParametes: u64 = 6;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -452,6 +453,42 @@ module dwallet_system::dwallet {
         dwallet_id: ID,
         encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
+    }
+
+    /// Owned object that holds all encrypted user shares that were sent to the user,
+    /// and have been verified, re-signed, and re-encrypted by the user.
+    /// `encrypted_user_shares` is a key-value table where the key is the Dwallet ID and the value is the EncryptedUserShare object ID.
+    struct EncryptedUserShares has key {
+        id: UID,
+        encrypted_user_shares: Table<ID, ID>,
+    }
+
+    public fun create_encrypted_user_shares_table(ctx: &mut TxContext) {
+        let holder = EncryptedUserShares {
+            id: object::new(ctx),
+            encrypted_user_shares: table::new(ctx),
+        };
+        transfer::transfer(holder, tx_context::sender(ctx));
+    }
+
+    public fun save_encrypted_user_share(
+        encrypted_user_shares_holder: &mut EncryptedUserShares,
+        encrypted_user_share: &EncryptedUserShare,
+        encryption_key: &EncryptionKey,
+        ctx: &mut TxContext
+    ) {
+        // TODO: add signature verification
+        let validate_parameters = table::contains(&encrypted_user_shares_holder.encrypted_user_shares, encrypted_user_share.dwallet_id)
+            && object::id(encryption_key) == encrypted_user_share.encryption_key_id
+            && encryption_key.key_owner_address == tx_context::sender(ctx);
+
+        assert!(validate_parameters, EInvalidParametes);
+
+        table::add(
+            &mut encrypted_user_shares_holder.encrypted_user_shares,
+            encrypted_user_share.dwallet_id,
+            object::id(encrypted_user_share)
+        );
     }
 
     /// An Additively Homomorphic Encryption (AHE) public key
