@@ -169,6 +169,11 @@ pub struct NativesCostTable {
     pub authority_binder: AuthorityBinderCostParams,
     // tendermint light client
     pub tendermint_light_client_cost_params: TendermintLightClientCostParams,
+    // Sui State Proof
+    pub sui_state_proof_cost_params: SuiStateProofCostParams,
+
+    // eth state proof
+    pub eth_state_proof: EthDWalletCostParams,
 }
 
 impl NativesCostTable {
@@ -554,7 +559,23 @@ impl NativesCostTable {
                 tendermint_state_proof_cost_base: protocol_config.tendermint_state_proof_cost_base().into(),
                 tendermint_verify_lc_cost_base: protocol_config.tendermint_verify_lc_cost_base().into(),
                 tendermint_extract_consensus_state_base: protocol_config.tendermint_extract_consensus_state_base().into()
-            }
+            },
+            eth_state_proof: EthDWalletCostParams {
+                verify_eth_state_cost_base: protocol_config
+                    .verify_eth_state_cost_base()
+                    .into(),
+                verify_message_proof_cost_base: protocol_config
+                    .verify_message_proof_cost_base()
+                    .into(),
+                create_initial_eth_state_data_cost_base: protocol_config
+                    .create_initial_eth_state_data_cost_base()
+                    .into(),
+            },
+            sui_state_proof_cost_params: SuiStateProofCostParams {
+                sui_state_proof_verify_committee_cost_base: protocol_config.sui_state_proof_verify_committee_cost_base().into(),
+                sui_state_proof_verify_link_cap_base: protocol_config.sui_state_proof_verify_link_cap_base().into(),
+                sui_state_proof_verify_transaction_base: protocol_config.sui_state_proof_verify_transaction_base().into(),
+            },
         }
     }
 }
@@ -843,6 +864,21 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "tendermint_lc",
             "extract_consensus_state",
             make_native!(light_client::tendermint_lc::extract_consensus_state),
+        ),
+        (
+            "ethereum_state",
+            "verify_eth_state",
+            make_native!(eth_state_proof::verify_eth_state),
+        ),
+        (
+            "eth_dwallet",
+            "verify_message_proof",
+            make_native!(eth_state_proof::verify_message_proof),
+        ),
+        (
+            "ethereum_state",
+            "create_initial_eth_state_data",
+            make_native!(eth_state_proof::create_initial_eth_state_data),
         ),
     ];
     sui_system_natives
