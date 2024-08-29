@@ -463,7 +463,7 @@ module dwallet_system::dwallet {
         encrypted_user_shares: Table<ID, ID>,
     }
 
-    public fun create_encrypted_user_shares_table(ctx: &mut TxContext) {
+    public fun create_encrypted_user_shares(ctx: &mut TxContext) {
         let holder = EncryptedUserShares {
             id: object::new(ctx),
             encrypted_user_shares: table::new(ctx),
@@ -472,20 +472,20 @@ module dwallet_system::dwallet {
     }
 
     public fun save_encrypted_user_share(
-        encrypted_user_shares_holder: &mut EncryptedUserShares,
+        dwallet_to_encrypted_user_share: &mut EncryptedUserShares,
         encrypted_user_share: &EncryptedUserShare,
         encryption_key: &EncryptionKey,
         ctx: &mut TxContext
     ) {
         // TODO: add signature verification
-        let validate_parameters = table::contains(&encrypted_user_shares_holder.encrypted_user_shares, encrypted_user_share.dwallet_id)
+        let validate_parameters = table::contains(&dwallet_to_encrypted_user_share.encrypted_user_shares, encrypted_user_share.dwallet_id)
             && object::id(encryption_key) == encrypted_user_share.encryption_key_id
             && encryption_key.key_owner_address == tx_context::sender(ctx);
 
         assert!(validate_parameters, EInvalidParametes);
 
         table::add(
-            &mut encrypted_user_shares_holder.encrypted_user_shares,
+            &mut dwallet_to_encrypted_user_share.encrypted_user_shares,
             encrypted_user_share.dwallet_id,
             object::id(encrypted_user_share)
         );

@@ -18,7 +18,8 @@ module dwallet_system::dwallet_tests {
         create_mock_active_encryption_keys,
         create_mock_encryption_key,
         get_active_encryption_key,
-        get_active_encryption_keys_table
+        get_active_encryption_keys_table,
+        create_encrypted_user_shares,
     };
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{create_mock_sign_data, create_mock_sign_data_event};
 
@@ -406,4 +407,21 @@ module dwallet_system::dwallet_tests {
         };
         test_scenario::end(scenario);
     }
+
+    #[test]
+    public fun test_create_encrypted_user_shares() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            create_encrypted_user_shares(ctx);
+        };
+        let effects: TransactionEffects = test_scenario::end(scenario);
+
+        let created_objects = test_scenario::created(&effects);
+        assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+    }
+
+    #[test]
+    public fun test_save_encypted_user_share() {}
 }
