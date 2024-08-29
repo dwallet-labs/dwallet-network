@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
+import { getFullnodeUrl, DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { renderHook } from '@testing-library/react';
 
 import { useSuiClient } from '../../src/index.js';
@@ -14,7 +14,7 @@ describe('useSuiClient', () => {
 	});
 
 	test('returns a SuiClient', () => {
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
+		const suiClient = new DWalletClient({ url: getFullnodeUrl('localnet') });
 		const wrapper = createSuiClientContextWrapper(suiClient);
 		const { result } = renderHook(() => useSuiClient(), { wrapper });
 

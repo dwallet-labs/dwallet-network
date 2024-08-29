@@ -6,7 +6,7 @@ import { fromB64, isSerializedBcs } from '@mysten/bcs';
 import { is, mask } from 'superstruct';
 
 import { bcs } from '../bcs/index.js';
-import type { ProtocolConfig, SuiClient, SuiMoveNormalizedType } from '../client/index.js';
+import type { ProtocolConfig, DWalletClient, SuiMoveNormalizedType } from '../client/index.js';
 import type { Keypair, SignatureWithBytes } from '../cryptography/index.js';
 import type { SuiObjectResponse } from '../types/index.js';
 import {
@@ -107,7 +107,7 @@ function isReceivingType(normalizedType: SuiMoveNormalizedType): boolean {
 	return false;
 }
 
-function expectClient(options: BuildOptions): SuiClient {
+function expectClient(options: BuildOptions): DWalletClient {
 	if (!options.client) {
 		throw new Error(
 			`No provider passed to Transaction#build, but transaction data was not sufficient to build offline.`,
@@ -144,7 +144,7 @@ const chunk = <T>(arr: T[], size: number): T[][] =>
 	);
 
 interface BuildOptions {
-	client?: SuiClient;
+	client?: DWalletClient;
 	onlyTransactionKind?: boolean;
 	/** Define a protocol config to build against, instead of having it fetched from the provider at build time. */
 	protocolConfig?: ProtocolConfig;
@@ -525,7 +525,7 @@ export class TransactionBlock {
 	/** Derive transaction digest */
 	async getDigest(
 		options: {
-			client?: SuiClient;
+			client?: DWalletClient;
 		} = {},
 	): Promise<string> {
 		await this.#prepare(options);

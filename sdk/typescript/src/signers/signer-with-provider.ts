@@ -11,7 +11,7 @@ import type {
 	DevInspectResults,
 	DryRunTransactionBlockResponse,
 	ExecuteTransactionRequestType,
-	SuiClient,
+	DWalletClient,
 	SuiTransactionBlockResponse,
 	SuiTransactionBlockResponseOptions,
 } from '../client/index.js';
@@ -23,7 +23,7 @@ import type { SignedMessage, SignedTransaction } from './types.js';
 ///////////////////////////////
 // Exported Abstracts
 export abstract class SignerWithProvider implements Signer {
-	readonly client: SuiClient;
+	readonly client: DWalletClient;
 
 	///////////////////
 	// Sub-classes MUST implement these
@@ -38,13 +38,13 @@ export abstract class SignerWithProvider implements Signer {
 
 	// Returns a new instance of the Signer, connected to provider.
 	// This MAY throw if changing providers is not supported.
-	abstract connect(client: SuiClient): SignerWithProvider;
+	abstract connect(client: DWalletClient): SignerWithProvider;
 
 	///////////////////
 	// Sub-classes MAY override these
 
-	constructor(client: SuiClient) {
-		this.client = client as SuiClient;
+	constructor(client: DWalletClient) {
+		this.client = client as DWalletClient;
 	}
 
 	/**
@@ -147,7 +147,7 @@ export abstract class SignerWithProvider implements Signer {
 	 * provided, including both the transaction effects and any return values.
 	 */
 	async devInspectTransactionBlock(
-		input: Omit<Parameters<SuiClient['devInspectTransactionBlock']>[0], 'sender'>,
+		input: Omit<Parameters<DWalletClient['devInspectTransactionBlock']>[0], 'sender'>,
 	): Promise<DevInspectResults> {
 		const address = await this.getAddress();
 		return this.client.devInspectTransactionBlock({

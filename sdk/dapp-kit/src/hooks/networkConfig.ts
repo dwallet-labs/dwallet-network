@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClientOptions } from '@mysten/sui.js/client';
+import type { DWalletClientOptions } from '@dwallet-network/dwallet.js/client';
 
 import { useSuiClientContext } from './useSuiClient.js';
 
-export type NetworkConfig<T extends object = object> = SuiClientOptions & {
+export type NetworkConfig<T extends object = object> = DWalletClientOptions & {
 	variables?: T;
 };
 

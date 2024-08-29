@@ -3,12 +3,12 @@
 
 import {
 	PaginationArguments,
-	SuiClient,
+	DWalletClient,
 	SuiObjectData,
 	SuiObjectDataFilter,
 	SuiObjectResponse,
-} from '@mysten/sui.js/client';
-import { isValidSuiAddress } from '@mysten/sui.js/utils';
+} from '@dwallet-network/dwallet.js/client';
+import { isValidSuiAddress } from '@dwallet-network/dwallet.js/utils';
 
 import {
 	FetchKioskOptions,
@@ -29,7 +29,7 @@ import {
 } from '../utils';
 
 export async function fetchKiosk(
-	client: SuiClient,
+	client: DWalletClient,
 	kioskId: string,
 	pagination: PaginationArguments<string>,
 	options: FetchKioskOptions,
@@ -87,7 +87,7 @@ export async function fetchKiosk(
  * Extra options allow pagination.
  */
 export async function getOwnedKiosks(
-	client: SuiClient,
+	client: DWalletClient,
 	address: string,
 	options?: {
 		pagination?: PaginationArguments<string>;
@@ -155,7 +155,7 @@ export async function getOwnedKiosks(
 
 // Get a kiosk extension data for a given kioskId and extensionType.
 export async function fetchKioskExtension(
-	client: SuiClient,
+	client: DWalletClient,
 	kioskId: string,
 	extensionType: string,
 ): Promise<KioskExtension | null> {

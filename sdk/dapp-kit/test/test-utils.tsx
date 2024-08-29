@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
+import { getFullnodeUrl, DWalletClient } from '@dwallet-network/dwallet.js/client';
 import type { IdentifierRecord, ReadonlyWalletAccount } from '@mysten/wallet-standard';
 import { getWallets } from '@mysten/wallet-standard';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -12,7 +12,7 @@ import { SuiClientProvider } from '../src/index.js';
 import { createMockAccount } from './mocks/mockAccount.js';
 import { MockWallet } from './mocks/mockWallet.js';
 
-export function createSuiClientContextWrapper(client: SuiClient) {
+export function createSuiClientContextWrapper(client: DWalletClient) {
 	return function SuiClientContextWrapper({ children }: { children: React.ReactNode }) {
 		return <SuiClientProvider networks={{ test: client }}>{children}</SuiClientProvider>;
 	};
@@ -20,7 +20,7 @@ export function createSuiClientContextWrapper(client: SuiClient) {
 
 export function createWalletProviderContextWrapper(
 	providerProps: Omit<ComponentProps<typeof WalletProvider>, 'children'> = {},
-	suiClient: SuiClient = new SuiClient({ url: getFullnodeUrl('localnet') }),
+	suiClient: DWalletClient = new DWalletClient({ url: getFullnodeUrl('localnet') }),
 ) {
 	const queryClient = new QueryClient();
 	return function WalletProviderContextWrapper({ children }: { children: React.ReactNode }) {

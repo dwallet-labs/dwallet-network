@@ -1429,8 +1429,8 @@ impl SuiClientCommands {
                     .await?
                 }
                 EthClientCommands::InitEthState {
-                    checkpoint,
                     network,
+                    rpc,
                     contract_address,
                     contract_approved_tx_slot,
                     gas,
@@ -1439,8 +1439,8 @@ impl SuiClientCommands {
                     serialize_signed_transaction,
                 } => {
                     init_ethereum_state(
-                        checkpoint,
                         network,
+                        rpc,
                         contract_address,
                         contract_approved_tx_slot,
                         context,

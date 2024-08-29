@@ -855,6 +855,15 @@ pub struct ProtocolConfig {
     // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
     sign_verify_encrypted_signature_parts_prehash_cost_base: Option<u64>,
 
+    // sui_state_proof::sui_state_proof_verify_committee_cost_base.
+    sui_state_proof_verify_committee_cost_base: Option<u64>,
+
+    // sui_state_proof::sui_state_proof_verify_link_cap_base.
+    sui_state_proof_verify_link_cap_base: Option<u64>,
+
+    // sui_state_proof::sui_state_proof_verify_transaction_base.
+    sui_state_proof_verify_transaction_base: Option<u64>,
+
     /// === Execution Version ===
     execution_version: Option<u64>,
 
@@ -879,6 +888,12 @@ pub struct ProtocolConfig {
     tendermint_state_proof_cost_base: Option<u64>,
     tendermint_verify_lc_cost_base: Option<u64>,
     tendermint_extract_consensus_state_base: Option<u64>,
+    // eth_dwallet::verify_eth_state_cost_base.
+    verify_eth_state_cost_base: Option<u64>,
+    // eth_dwallet::verify_message_proof_cost_base.
+    verify_message_proof_cost_base: Option<u64>,
+    // eth_dwallet::create_initial_eth_state_data_cost_base.
+    create_initial_eth_state_data_cost_base: Option<u64>,
 }
 
 // feature flags
@@ -1213,6 +1228,8 @@ impl ProtocolConfig {
             max_arguments: Some(512),
             max_type_arguments: Some(16),
             max_type_argument_depth: Some(16),
+            // Note this is necessary for the SUI light client.
+            // Changed from 16 * 1024 as otherwise we can't submit the state proof for SUI.
             max_pure_argument_size: Some(1024 * 1024),
             max_programmable_tx_commands: Some(1024),
             move_binary_format_version: Some(6),
@@ -1447,6 +1464,13 @@ impl ProtocolConfig {
             // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
             sign_verify_encrypted_signature_parts_prehash_cost_base: Some(52),
 
+            // sui_state_proof::sui_state_proof_verify_committee_cost_base.
+            sui_state_proof_verify_committee_cost_base: Some(52),
+            // sui_state_proof::sui_state_proof_verify_link_cap_base.
+            sui_state_proof_verify_link_cap_base: Some(52),
+            // sui_state_proof::sui_state_proof_verify_transaction_base.
+            sui_state_proof_verify_transaction_base: Some(52),
+
             max_size_written_objects: None,
             max_size_written_objects_system_tx: None,
 
@@ -1471,6 +1495,10 @@ impl ProtocolConfig {
             max_age_of_jwk_in_epochs: None,
 
             random_beacon_reduction_allowed_delta: None,
+
+            verify_eth_state_cost_base: None,
+            verify_message_proof_cost_base: None,
+            create_initial_eth_state_data_cost_base: None,
 
             // When adding a new constant, set it to None in the earliest version, like this:
             // new_constant: None,
@@ -1752,6 +1780,10 @@ impl ProtocolConfig {
                     cfg.feature_flags.enable_jwk_consensus_updates = false;
                     cfg.feature_flags.zklogin_supported_providers = Default::default();
                     cfg.feature_flags.random_beacon = false;
+
+                    cfg.verify_eth_state_cost_base = Some(52);
+                    cfg.verify_message_proof_cost_base = Some(52);
+                    cfg.create_initial_eth_state_data_cost_base = Some(52);
                 }
                 // Use this template when making changes:
                 //

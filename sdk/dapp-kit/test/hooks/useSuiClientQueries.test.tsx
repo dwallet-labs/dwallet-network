@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { getFullnodeUrl, SuiClient } from '@mysten/sui.js/client';
+import { getFullnodeUrl, DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { renderHook, waitFor } from '@testing-library/react';
 
 import { useSuiClientQueries } from '../../src/hooks/useSuiClientQueries.js';
@@ -21,7 +21,7 @@ const MOCK_QUERY_TRANSACTION_BLOCK_RESULT_DATA = {
 };
 
 describe('useSuiClientQueries', () => {
-	const suiClient = new SuiClient({ url: getFullnodeUrl('mainnet') });
+	const suiClient = new DWalletClient({ url: getFullnodeUrl('mainnet') });
 	const wrapper = createWalletProviderContextWrapper({}, suiClient);
 	test('should fetch data', async () => {
 		const getAllBalances = vi.spyOn(suiClient, 'getAllBalances');

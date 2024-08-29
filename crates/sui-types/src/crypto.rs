@@ -1231,7 +1231,6 @@ impl<const STRONG_THRESHOLD: bool> AuthoritySignInfoTrait
         obligation: &mut VerificationObligation<'a>,
         message_index: usize,
     ) -> SuiResult<()> {
-        // Check epoch
         fp_ensure!(
             self.epoch == committee.epoch(),
             SuiError::WrongEpoch {

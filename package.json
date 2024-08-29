@@ -10,7 +10,7 @@
 		"wallet": "turbo --filter ./apps/wallet",
 		"sdk": "turbo --filter ./sdk/typescript",
 		"bcs": "turbo --filter ./sdk/bcs",
-		"changeset-version": "pnpm changeset version && pnpm --filter @mysten/sui.js codegen:version",
+		"changeset-version": "pnpm changeset version && pnpm --filter @dwallet-network/dwallet.js codegen:version",
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
 		"prettier:fix:watch": "onchange '**' -i -f add -f change -j 5 -- prettier -w --ignore-unknown {{file}}",
@@ -58,8 +58,11 @@
 		"eslint-plugin-unused-imports": "^3.0.0",
 		"prettier": "^3.0.0",
 		"prettier-plugin-tailwindcss": "^0.4.1",
-		"tsx": "^3.12.7",
+		"tsx": "^4.17.0",
 		"turbo": "^1.10.8",
 		"typescript": "^5.1.6"
+	},
+	"dependencies": {
+		"@mysten/sui.js": "^0.52.0"
 	}
 }

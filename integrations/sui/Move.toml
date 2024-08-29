@@ -1,0 +1,14 @@
+[package]
+name = "dwallet_network"
+version = "0.0.1"
+#edition = "legacy"
+
+
+[dependencies.Sui]
+git = "https://github.com/MystenLabs/sui.git"
+subdir = "crates/sui-framework/packages/sui-framework"
+rev = "devnet"
+
+[addresses]
+dwallet_network = "0x0"
+

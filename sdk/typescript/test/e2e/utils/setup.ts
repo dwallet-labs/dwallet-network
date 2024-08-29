@@ -10,7 +10,7 @@ import { WebSocket } from 'ws';
 import { TransactionBlock, UpgradePolicy } from '../../../src/builder';
 import {
 	getFullnodeUrl,
-	SuiClient,
+	DWalletClient,
 	SuiHTTPTransport,
 	SuiObjectChangePublished,
 } from '../../../src/client';
@@ -32,9 +32,9 @@ export const DEFAULT_SEND_AMOUNT = 1000;
 
 export class TestToolbox {
 	keypair: Ed25519Keypair;
-	client: SuiClient;
+	client: DWalletClient;
 
-	constructor(keypair: Ed25519Keypair, client: SuiClient) {
+	constructor(keypair: Ed25519Keypair, client: DWalletClient) {
 		this.keypair = keypair;
 		this.client = client;
 	}
@@ -55,8 +55,8 @@ export class TestToolbox {
 	}
 }
 
-export function getClient(): SuiClient {
-	return new SuiClient({
+export function getClient(): DWalletClient {
+	return new DWalletClient({
 		transport: new SuiHTTPTransport({
 			url: DEFAULT_FULLNODE_URL,
 			WebSocketConstructor: WebSocket as never,
@@ -213,7 +213,7 @@ export function getRandomAddresses(n: number): string[] {
 }
 
 export async function paySui(
-	client: SuiClient,
+	client: DWalletClient,
 	signer: Keypair,
 	numRecipients: number = 1,
 	recipients?: string[],
@@ -254,7 +254,7 @@ export async function paySui(
 }
 
 export async function executePaySuiNTimes(
-	client: SuiClient,
+	client: DWalletClient,
 	signer: Keypair,
 	nTimes: number,
 	numRecipientsPerTxn: number = 1,
