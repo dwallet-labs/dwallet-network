@@ -73,11 +73,20 @@ export const storeEncryptionKey = async (
 	keypair: Keypair,
 	client: DWalletClient,
 ): Promise<SuiObjectRef> => {
+	let signedEncryptionKey = await keypair.sign(new Uint8Array(encryptionKey));
 	const tx = new TransactionBlock();
 	let purePubKey = tx.pure(bcs.vector(bcs.u8()).serialize(encryptionKey));
+	let pureSignedPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(signedEncryptionKey));
+	let pureSuiPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(keypair.getPublicKey().toRawBytes()));
+
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::register_encryption_key`,
-		arguments: [purePubKey, tx.pure(bcs.u8().serialize(encryptionKeyScheme))],
+		arguments: [
+			purePubKey,
+			pureSignedPubKey,
+			pureSuiPubKey,
+			tx.pure(bcs.u8().serialize(encryptionKeyScheme)),
+		],
 	});
 	let result = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
@@ -101,16 +110,18 @@ export const getEncryptionKeyByObjectId = async (
 	const objectFields =
 		response.data?.content?.dataType === 'moveObject'
 			? (response.data?.content?.fields as unknown as {
-				encryption_key: Uint8Array;
-				key_owner_address: string;
-			})
+					encryption_key: Uint8Array;
+					key_owner_address: string;
+					encryption_key_signature: Uint8Array;
+				})
 			: null;
 
 	return objectFields
 		? {
-			encryptionKey: objectFields?.encryption_key,
-			keyOwnerAddress: objectFields?.key_owner_address,
-		}
+				encryptionKey: objectFields?.encryption_key,
+				signedEncryptionKey: objectFields?.encryption_key_signature,
+				keyOwnerAddress: objectFields?.key_owner_address,
+			}
 		: null;
 };
 
@@ -209,4 +220,3 @@ export const encryptUserShare = async (
 		},
 	});
 };
-

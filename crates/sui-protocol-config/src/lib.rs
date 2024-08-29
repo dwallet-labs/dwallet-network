@@ -873,6 +873,7 @@ pub struct ProtocolConfig {
     sui_state_proof_verify_transaction_base: Option<u64>,
 
     transfer_dwallet_cost_base: Option<u64>,
+    ed2551_pubkey_to_sui_addr_cost_base: Option<u64>,
 
     /// === Execution Version ===
     execution_version: Option<u64>,
@@ -1471,6 +1472,7 @@ impl ProtocolConfig {
             // twopc_mpc::sign_verify_encrypted_signature_parts_prehash_cost_base
             sign_verify_encrypted_signature_parts_prehash_cost_base: Some(52),
             transfer_dwallet_cost_base: Some(52),
+            ed2551_pubkey_to_sui_addr_cost_base: Some(52),
 
             // sui_state_proof::sui_state_proof_verify_committee_cost_base.
             sui_state_proof_verify_committee_cost_base: Some(52),
