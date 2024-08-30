@@ -7,6 +7,7 @@ module dwallet_system::tendermint_lc {
 
     const EUpdateFailed: u64 = 0;
 
+    // TODO: Make Client shareobject
     struct Client has key, store {
         id: UID,
         latest_height: u64
@@ -16,13 +17,6 @@ module dwallet_system::tendermint_lc {
         object::id(client)
     }
 
-    struct StateProof has store, copy, drop {
-        proof: vector<u8>,
-        root: vector<u8>,
-        prefix: vector<u8>,
-        path: vector<u8>,
-        value: vector<u8>
-    }
     // struct Height has store, copy, drop{
     //     height: u64, 
     //     revision_height: u64

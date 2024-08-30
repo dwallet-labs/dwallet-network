@@ -1,12 +1,10 @@
 // module support api for link and trigger future transaction
-
-
+#[allow(unused_function, unused_field, unused_variable, unused_use)]
 module dwallet_system::native_api {
     use std::vector;
     use dwallet::object::{UID, Self, ID};
     use dwallet::tx_context::TxContext;
     use dwallet_system::dwallet::{Self, DWalletCap};
-    use dwallet_system::tendermint_lc::StateProof;
     use dwallet_system::tendermint_lc::{Client, tendermint_state_proof, get_consensus_state, commitment_root, latest_height, state_proof, client_id};
 
     use dwallet::dynamic_field as field;
@@ -19,17 +17,18 @@ module dwallet_system::native_api {
 
     struct NativeDwalletCap has key, store{
         id: UID,
-        client_id: ID
+        client_id: ID,
+        dwallet_cap: DWalletCap
     }
 
-    fun create_native_dwallet_cap(client: &Client, dwallet: DWalletCap, ctx: &mut TxContext): NativeDwalletCap {
+    fun create_native_dwallet_cap(client: &Client, dwallet_cap: DWalletCap, ctx: &mut TxContext): NativeDwalletCap {
         let native_dwallet_cap = NativeDwalletCap {
             id: object::new(ctx),
+            dwallet_cap,
             client_id: client_id(client)
         };
 
         // Question: Should we transfer dwallet_cap to create native dwallet
-        ofields::add(&mut native_dwallet_cap.id, b"dcap", dwallet);
         native_dwallet_cap
     }
 
@@ -43,5 +42,5 @@ module dwallet_system::native_api {
         return create_native_dwallet_cap(client, dwallet_cap, ctx)
     }
 
-    public fun verify_transaction(dwallet_cap: &DWalletCap, client: &Client, height: u64, state_proof: StateProof){}
+    public fun verify_transaction(dwallet_cap: &DWalletCap, client: &Client, height: u64, state_proof:vector<u8>){}
 }

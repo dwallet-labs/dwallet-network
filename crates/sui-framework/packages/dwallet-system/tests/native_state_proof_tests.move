@@ -1,11 +1,17 @@
+#[test_only]
+#[allow(unused_function, unused_field, unused_use)]
 module dwallet_system::native_state_proof_test {
 
     use dwallet_system::tendermint_lc::{Self, Client, init_lc};
     use dwallet::test_scenario;
 
+    // TODO: rename native_api;
+    use dwallet_system::native_api::{link_dwallet};
+    use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap};
+
+    use dwallet::test_utils;
     const SENDER: address = @0x010;
 
-    #[test_only]
     fun setup(): (vector<u8>, vector<u8>, vector<u8>, vector<u8>, Client, test_scenario::Scenario) {
         let scenario = test_scenario::begin(SENDER);
         let root = vector[64, 219, 231, 75, 96, 63, 254, 86, 135, 18, 53, 189, 169, 80, 121, 135, 38, 184, 204, 224, 178, 186, 3, 136, 93, 78, 47, 139, 75, 231, 7, 12];
@@ -18,13 +24,24 @@ module dwallet_system::native_state_proof_test {
 
         let timestamp = vector[10, 41, 84, 105, 109, 101, 115, 116, 97, 109, 112, 40, 50, 48, 50, 52, 45, 48, 55, 45, 49, 50, 84, 49, 49, 58, 48, 53, 58, 50, 57, 46, 52, 50, 49, 56, 55, 51, 51, 54, 54, 90, 41];
 
-        let height = 10;
+        let height: u64 = 10;
         let ctx = test_scenario::ctx(&mut scenario);
         let client = init_lc(height, timestamp, next_validators_hash, root, ctx);
         (proof, prefix, path, value, client, scenario)
     }
     #[test]
     fun link_dwallet_test() {
+        let (proof, prefix, path, value, client, scenario) = setup();
 
+        let ctx = test_scenario::ctx(&mut scenario);
+
+        let dwallet_cap = create_dwallet_cap(ctx);
+
+        let height = 10;
+       let native_dwallet_cap =  link_dwallet(&client, dwallet_cap, height, proof, prefix, path, value, ctx);
+
+        test_utils::destroy(native_dwallet_cap);
+        test_utils::destroy(client);
+        test_scenario::end(scenario);
     }
 }

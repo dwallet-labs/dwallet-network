@@ -20,6 +20,9 @@ module dwallet_system::dwallet {
     #[test_only]
     friend dwallet_system::dwallet_ecdsa_k1_tests;
 
+    #[test_only]
+    friend dwallet_system::native_state_proof_test;
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
     const EMesssageApprovalDWalletMismatch: u64 = 1;
