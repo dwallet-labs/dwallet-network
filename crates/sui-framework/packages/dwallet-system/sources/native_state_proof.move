@@ -35,8 +35,9 @@ module dwallet_system::native_api {
 
 
     public fun link_dwallet(client: &Client, dwallet_cap: DWalletCap,  height: u64,  proof: vector<u8>, prefix: vector<u8>, path: vector<u8>, value: vector<u8>, ctx: &mut TxContext): NativeDwalletCap {
+        // prefix and path should be a const
         let lh = latest_height(client);
-        assert!(height > lh, EHeightInvalid);
+        assert!(height <= lh, EHeightInvalid);
         let valid = state_proof(client, height, proof, prefix, path, value);
         assert!(valid, EStateInvalid);
         return create_native_dwallet_cap(client, dwallet_cap, ctx)

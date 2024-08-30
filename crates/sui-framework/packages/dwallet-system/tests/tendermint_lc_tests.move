@@ -94,7 +94,7 @@ module dwallet_system::lc_tests {
         test_utils::destroy(client);
     }
 
-        #[test]
+    #[test]
     fun tendermint_state_proof_test() {
         // data from this tx https://www.mintscan.io/cosmos/tx/A0E69441FB46C5797C1193D6EAA7EB5A59A809F0433ECA6CE29D7CD3DEFED679?height=21413592&sector=json
         let root = vector[64, 219, 231, 75, 96, 63, 254, 86, 135, 18, 53, 189, 169, 80, 121, 135, 38, 184, 204, 224, 178, 186, 3, 136, 93, 78, 47, 139, 75, 231, 7, 12];
