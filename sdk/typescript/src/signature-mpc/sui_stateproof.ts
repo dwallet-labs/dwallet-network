@@ -153,7 +153,7 @@ export async function submitTxStateProof(
 		},
 	});
 
-	const signSessionRef = result.effects?.created?.filter((o) => o.owner == 'Immutable')[0]
+	const signSessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
 		.reference!;
 
 	const signOutput = await fetchObjectBySessionId(

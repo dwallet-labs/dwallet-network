@@ -3,7 +3,11 @@
 
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { DWalletClient, SuiObjectChangeCreated, SuiTransactionBlockResponse } from '../../src/client';
+import {
+	DWalletClient,
+	SuiObjectChangeCreated,
+	SuiTransactionBlockResponse,
+} from '../../src/client';
 import type { Keypair } from '../../src/cryptography';
 import { normalizeSuiObjectId, SUI_SYSTEM_STATE_OBJECT_ID } from '../../src/utils';
 import {

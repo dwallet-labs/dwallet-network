@@ -10,8 +10,8 @@ import { TransactionBlockDataBuilder } from '../builder/TransactionBlockData.js'
 import type {
 	DevInspectResults,
 	DryRunTransactionBlockResponse,
-	ExecuteTransactionRequestType,
 	DWalletClient,
+	ExecuteTransactionRequestType,
 	SuiTransactionBlockResponse,
 	SuiTransactionBlockResponseOptions,
 } from '../client/index.js';
