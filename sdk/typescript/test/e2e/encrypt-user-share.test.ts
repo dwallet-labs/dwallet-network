@@ -125,6 +125,7 @@ describe('Secret key share transfer', () => {
 
 	it('full flow - encrypts a secret share to a given Sui public key successfully, and store it on chain from the receiving end', async () => {
 		// ======================= Create Source DWallet =======================
+		// TODO (#202): Create a function that retrieves an encryption key for the given keypair if it exists
 		const [walletCreatorEncryptionKey, walletCreatorDecryptionKey] =
 			generatePaillierKeyPairFromSuiKeyPair(dwalletSenderToolbox.keypair);
 
