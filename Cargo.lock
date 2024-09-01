@@ -12131,7 +12131,7 @@ dependencies = [
  "sha3 0.10.8",
  "thiserror",
  "tiresias",
- "twopc_mpc",
+ "twopc_mpc 0.1.0 (git+https://github.com/dwallet-labs/2pc-mpc.git)",
  "workspace-hack",
 ]
 
@@ -13127,7 +13127,7 @@ dependencies = [
  "tokio-retry",
  "tokio-stream",
  "tracing",
- "twopc_mpc",
+ "twopc_mpc 0.1.0 (git+https://github.com/dwallet-labs/2pc-mpc.git?rev=f08539d32805ee15a825d9650bb2732748db00e9)",
  "typed-store 0.4.0",
  "typed-store-derive 0.3.0",
  "workspace-hack",
@@ -15317,7 +15317,7 @@ dependencies = [
  "thiserror",
  "tonic 0.10.2",
  "tracing",
- "twopc_mpc",
+ "twopc_mpc 0.1.0 (git+https://github.com/dwallet-labs/2pc-mpc.git?rev=f08539d32805ee15a825d9650bb2732748db00e9)",
  "typed-store-error 0.4.0",
  "workspace-hack",
 ]
@@ -16733,6 +16733,26 @@ dependencies = [
 name = "twopc_mpc"
 version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/2pc-mpc.git?rev=f08539d32805ee15a825d9650bb2732748db00e9#f08539d32805ee15a825d9650bb2732748db00e9"
+dependencies = [
+ "commitment",
+ "crypto-bigint 0.5.5",
+ "enhanced_maurer",
+ "getrandom 0.2.15",
+ "group 0.1.0",
+ "homomorphic_encryption",
+ "maurer",
+ "merlin",
+ "proof",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tiresias",
+]
+
+[[package]]
+name = "twopc_mpc"
+version = "0.1.0"
+source = "git+https://github.com/dwallet-labs/2pc-mpc.git#f08539d32805ee15a825d9650bb2732748db00e9"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
