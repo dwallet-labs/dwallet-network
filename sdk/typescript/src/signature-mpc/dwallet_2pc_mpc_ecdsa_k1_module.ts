@@ -7,12 +7,14 @@ import {
 	initiate_dkg,
 	initiate_presign,
 	initiate_sign,
+	serialized_pubkeys_from_centralized_dkg_output,
 } from '@dwallet-network/signature-mpc-wasm';
 
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
+import { getEncryptionKeyByObjectId } from './dwallet';
 import { fetchObjectBySessionId } from './utils.js';
 
 export {
@@ -31,11 +33,14 @@ export type Dwallet = {
 	decentralizedDKGOutput: number[];
 	dwalletCapId: string;
 	secretKeyShare: number[];
+	encryptedSecretShareObjId: string;
 };
 
 export async function createDWallet(
 	keypair: Keypair,
 	client: DWalletClient,
+	encryptionKey: Uint8Array,
+	encryptionKeyObjId: string,
 ): Promise<Dwallet | null> {
 	const resultDKG = initiate_dkg();
 
@@ -76,14 +81,19 @@ export async function createDWallet(
 		const final = finalize_dkg(
 			decommitmentRoundPartyState,
 			Uint8Array.from(sessionOutputFields.secret_key_share_encryption_and_proof),
+			encryptionKey,
 		);
-
+		let serializedPubKeys = serialized_pubkeys_from_centralized_dkg_output(final['dkg_output']);
 		const txFinal = new TransactionBlock();
 		txFinal.moveCall({
 			target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_dwallet`,
 			arguments: [
 				txFinal.object(sessionOutputFields.id.id),
 				txFinal.pure(final['public_key_share_decommitment_and_proof']),
+				txFinal.pure(encryptionKeyObjId),
+				txFinal.pure(final['encrypted_user_share_and_proof']),
+				txFinal.pure([...(await keypair.sign(serializedPubKeys))]),
+				txFinal.pure([...keypair.getPublicKey().toRawBytes()]),
 			],
 		});
 		const resultFinal = await client.signAndExecuteTransactionBlock({
@@ -94,22 +104,40 @@ export async function createDWallet(
 			},
 		});
 
-		const dwalletRef = resultFinal.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
+		let dwalletRef = resultFinal.effects?.created?.filter((o) => {
+			return o.owner === 'Immutable';
+		})[0].reference!;
+		let encryptedShareRef = resultFinal.effects?.created?.filter((o) => o.owner === 'Immutable')[1]
 			.reference!;
 
-		const dwalletObject = await client.getObject({
+		let dwalletObject = await client.getObject({
 			id: dwalletRef.objectId,
 			options: { showContent: true },
 		});
-
-		const dwalletObjectFields =
+		let dwalletObjectFields =
 			dwalletObject.data?.content?.dataType === 'moveObject'
 				? (dwalletObject.data?.content?.fields as {
 						dwallet_cap_id: string;
 						output: number[];
 				  })
 				: null;
-
+		if (!dwalletObjectFields?.dwallet_cap_id) {
+			// This may happen as the order of the created objects is not guaranteed, and we can't know the object type from the reference.
+			let tempRef = dwalletRef;
+			dwalletRef = encryptedShareRef;
+			encryptedShareRef = tempRef;
+			dwalletObject = await client.getObject({
+				id: dwalletRef.objectId,
+				options: { showContent: true },
+			});
+			dwalletObjectFields =
+				dwalletObject.data?.content?.dataType === 'moveObject'
+					? (dwalletObject.data?.content?.fields as {
+							dwallet_cap_id: string;
+							output: number[];
+					  })
+					: null;
+		}
 		return dwalletObjectFields
 			? {
 					dwalletId: dwalletRef?.objectId,
@@ -117,11 +145,35 @@ export async function createDWallet(
 					decentralizedDKGOutput: dwalletObjectFields.output,
 					dwalletCapId: dwalletObjectFields.dwallet_cap_id,
 					secretKeyShare: final['secret_key_share'],
+					encryptedSecretShareObjId: encryptedShareRef.objectId,
 			  }
 			: null;
 	}
 	return null;
 }
+
+export const getDwalletByObjID = async (client: DWalletClient, dwalletObjID: string) => {
+	const dwalletObject = await client.getObject({
+		id: dwalletObjID,
+		options: { showContent: true },
+	});
+
+	const dwalletObjectFields =
+		dwalletObject.data?.content?.dataType === 'moveObject'
+			? (dwalletObject.data?.content?.fields as {
+					dwallet_cap_id: string;
+					output: number[];
+			  })
+			: null;
+
+	return dwalletObjectFields
+		? {
+				dwalletId: dwalletObjID,
+				decentralizedDKGOutput: dwalletObjectFields.output,
+				dwalletCapId: dwalletObjectFields.dwallet_cap_id,
+		  }
+		: null;
+};
 
 function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
 	if (hash === 'KECCAK256') {
