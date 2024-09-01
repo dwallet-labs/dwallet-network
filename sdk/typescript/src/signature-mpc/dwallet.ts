@@ -221,7 +221,7 @@ export const encryptUserShare = async (
 	});
 };
 
-export const createEncryptionKeysHolder = async (client: DWalletClient, keypair: Keypair) => {
+export const createEncryptedUserSharesHolder = async (client: DWalletClient, keypair: Keypair) => {
 	const tx = new TransactionBlock();
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::create_encrypted_user_shares`,
@@ -236,5 +236,53 @@ export const createEncryptionKeysHolder = async (client: DWalletClient, keypair:
 		},
 	});
 
-	return result.effects?.created?.filter;
+	return result.effects?.created?.at(0)?.reference;
 }
+
+export const setEncryptedUserShare = async (
+	client: DWalletClient,
+	keypair: Keypair,
+	encryptionKeyID: string,
+	encryptedUserShareId: string,
+	encrptedUserSharesID: string,
+) => {
+	const tx = new TransactionBlock();
+	const encKey = tx.object(encryptionKeyID);
+	const encryptedUserShare = tx.object(encryptedUserShareId);
+	const encryptedUserShares = tx.object(encrptedUserSharesID);
+
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::save_encrypted_user_share`,
+		arguments: [encryptedUserShares, encryptedUserShare, encKey],
+	});
+
+	return await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+};
+
+export const getEncryptedUserShare = async (
+	client: DWalletClient,
+	keypair: Keypair,
+	encrptedUserSharesObjID: string,
+	dwalletID: string,
+) => {
+	const tx = new TransactionBlock();
+	const encrptedUserSharesObj = tx.object(encrptedUserSharesObjID);
+
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::get_encrypted_user_share_by_dwallet_id`,
+		arguments: [encrptedUserSharesObj, tx.pure(dwalletID)],
+	});
+
+	let res = await client.devInspectTransactionBlock({
+		sender: keypair.toSuiAddress(),
+		transactionBlock: tx,
+	});
+
+	return res.results?.at(0)?.returnValues?.at(0)?.at(0);
+};

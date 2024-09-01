@@ -8,7 +8,6 @@ import {
 	approveAndSign,
 	createActiveEncryptionKeysTable,
 	createDWallet,
-	createEncryptionKeysHolder,
 	createPartialUserSignedMessages,
 	decrypt_user_share,
 	EncryptionKeyScheme,
@@ -31,7 +30,6 @@ describe('Test signature mpc', () => {
 
 	it('the signature mpc create dwallet', async () => {
 		console.log(toolbox.keypair.toSuiAddress());
-		await createEncryptionKeysHolder(toolbox.client, toolbox.keypair);
 		const dkg = await createDWallet(toolbox.keypair, toolbox.client);
 
 		const bytes: Uint8Array = new TextEncoder().encode('Sign it!!!');
