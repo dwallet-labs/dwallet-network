@@ -491,6 +491,13 @@ module dwallet_system::dwallet {
         );
     }
 
+    public fun get_encrypted_user_share_by_dwallet_id(
+        encrypted_user_shares: &EncryptedUserShares,
+        dwallet_id: ID,
+    ): &ID {
+        table::borrow(&encrypted_user_shares.encrypted_user_shares, dwallet_id)
+    }
+
     /// An Additively Homomorphic Encryption (AHE) public key
     /// that can be used to encrypt a user share in order to prove to the network that
     /// the recipient can sign with a dWallet when it is transferred or access is granted to it.
