@@ -220,3 +220,21 @@ export const encryptUserShare = async (
 		},
 	});
 };
+
+export const createEncryptionKeysHolder = async (client: DWalletClient, keypair: Keypair) => {
+	const tx = new TransactionBlock();
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::create_encrypted_user_shares`,
+		arguments: [],
+	});
+
+	let result = await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+
+	return result.effects?.created?.filter;
+}
