@@ -9,6 +9,9 @@ import {
     createActiveEncryptionKeysTable,
     createDWallet,
     createPartialUserSignedMessages,
+    createEncryptedUserSharesHolder,
+    saveEncryptedUserShare,
+    getEncryptedUserShare,
     decrypt_user_share,
     EncryptionKeyScheme,
     encryptUserShare,
@@ -174,7 +177,9 @@ describe('Test key share transfer', () => {
             ),
         ).toBeTruthy();
 
-        const encryptedUserShares = await createEncryptedUserShares(toolbox.client, toolbox.keypair);
-        await saveEncryptedUserShares(toolbox.client, toolbox.keypair, pubKeyRef.objectId, encryptedUserShareObj.objectId, encryptedUserShares.objectId);
+        const encryptedUserShares = await createEncryptedUserSharesHolder(toolbox.client, toolbox.keypair);
+        await saveEncryptedUserShare(toolbox.client, toolbox.keypair, pubKeyRef.objectId, encryptedUserShareObj.objectId, encryptedUserShares.objectId);
+        await getEncryptedUserShare(toolbox.client, toolbox.keypair, encryptedUserShares.objectId, dwalletID);
+
     });
 });
