@@ -32,6 +32,7 @@ export const sendUserShareToSuiPubKey = async (
 	dwallet: DWalletToTransfer,
 	destinationPublicKey: PublicKey,
 	activeEncryptionKeysTableID: string,
+	signedDWalletPubKeys: Uint8Array,
 ) => {
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		client,
@@ -60,6 +61,7 @@ export const sendUserShareToSuiPubKey = async (
 		encryptedUserShareAndProof,
 		activeEncryptionKeyObjID,
 		dwallet,
+		signedDWalletPubKeys,
 	);
 };
 
@@ -102,13 +104,15 @@ export const getEncryptedUserShareByObjID = async (
 		: null;
 };
 
-export const verifyEncryptedSecretShare = async (
+export const acceptUserShare = async (
 	encryptedUserShare: EncryptedUserShare,
 	expectedSourceSuiAddress: string,
 	encryptionKey: Uint8Array,
 	decryptionKey: Uint8Array,
 	dwalletID: string,
+	encryptionKeysHolderObjID: string,
 	client: DWalletClient,
+	keypair: Keypair,
 ): Promise<boolean> => {
 	let dwallet = await getDwalletByObjID(client, dwalletID);
 	let publicKey = new Ed25519PublicKey(encryptedUserShare?.senderPubKey!);
@@ -133,5 +137,21 @@ export const verifyEncryptedSecretShare = async (
 		new Uint8Array(encryptedUserShare?.encryptedUserShareAndProof!),
 	);
 
-	return verify_user_share(decryptedKeyShare, new Uint8Array(dwallet?.decentralizedDKGOutput!));
+	if (!verify_user_share(decryptedKeyShare, new Uint8Array(dwallet?.decentralizedDKGOutput!))) {
+		return false;
+	}
+	let dwalletToSend = {
+		dwalletId: dwalletID,
+		secretKeyShare: Array.from(decryptedKeyShare),
+		decentralizedDKGOutput: dwallet!.decentralizedDKGOutput,
+	};
+
+	await sendUserShareToSuiPubKey(
+		client,
+		keypair,
+		dwalletToSend,
+		keypair.getPublicKey(),
+		encryptionKeysHolderObjID,
+	);
+	return true;
 };
