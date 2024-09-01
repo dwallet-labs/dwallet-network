@@ -478,7 +478,6 @@ module dwallet_system::dwallet {
         encryption_key: &EncryptionKey,
         ctx: &mut TxContext
     ) {
-        // TODO: add signature verification
         let validate_parameters = !table::contains(&encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id)
             && object::id(encryption_key) == encrypted_user_share.encryption_key_id
             && encryption_key.key_owner_address == tx_context::sender(ctx);
