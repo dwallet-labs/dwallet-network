@@ -455,7 +455,8 @@ module dwallet_system::dwallet {
         encryption_key_id: ID,
     }
 
-    /// Owned object that holds all encrypted user shares that were sent to the user,
+    /// Owned object that holds all encrypted user shares for the dWallet the user has access to. 
+    /// These are those that were encrypted after the user created the dWallet or sent to the user,
     /// and have been verified, re-signed, and re-encrypted by the user.
     /// `encrypted_user_shares` is a key-value table where the key is the Dwallet ID and the value is the EncryptedUserShare object ID.
     struct EncryptedUserShares has key {
