@@ -212,13 +212,15 @@ export const encryptUserShare = async (
 		arguments: [dwallet, encryptionKey, tx.pure(encryptedUserShareAndProof)],
 	});
 
-	return await client.signAndExecuteTransactionBlock({
+	const res =  await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx,
 		options: {
 			showEffects: true,
 		},
 	});
+
+	return res.effects?.created?.at(0)?.reference;
 };
 
 export const createEncryptedUserSharesHolder = async (client: DWalletClient, keypair: Keypair) => {
@@ -239,7 +241,7 @@ export const createEncryptedUserSharesHolder = async (client: DWalletClient, key
 	return result.effects?.created?.at(0)?.reference;
 }
 
-export const setEncryptedUserShare = async (
+export const saveEncryptedUserShare = async (
 	client: DWalletClient,
 	keypair: Keypair,
 	encryptionKeyID: string,
