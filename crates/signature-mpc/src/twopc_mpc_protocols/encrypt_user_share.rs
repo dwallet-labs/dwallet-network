@@ -27,7 +27,9 @@ use tiresias::{
     PlaintextSpaceGroupElement, RandomnessSpaceGroupElement,
 };
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
-use twopc_mpc::secp256k1::paillier::bulletproofs::DKGDecentralizedPartyOutput;
+use twopc_mpc::secp256k1::paillier::bulletproofs::{
+    DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput,
+};
 pub use twopc_mpc::secp256k1::{Scalar as Secp256k1Scalar, SCALAR_LIMBS};
 
 type LangPublicParams = language::PublicParameters<SOUND_PROOFS_REPETITIONS, EncDescLogLang>;
@@ -263,7 +265,45 @@ pub fn decrypt_user_share(
     let plaintext = decryption_key
         .decrypt(&ciphertext, &paillier_public_parameters)
         .unwrap();
-    Ok(bcs::to_bytes(&plaintext.value())?)
+    let bytes_serialization = bcs::to_bytes(&plaintext.value())?;
+    // Take the first 32 bytes, the only ones that are non-zero, and reverse them to convert them
+    // from little-endian encoding to big-endian.
+    // This is because of BCS and PlaintextSpaceGroupElement serialization.
+    // PlaintextSpaceGroupElement is U2048 and has 32LIMBS of 64 bits each.
+    let mut bytes_serialization = bytes_serialization[..32].to_vec();
+    bytes_serialization.reverse();
+    Ok(bytes_serialization)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DWalletPublicKeys {
+    pub public_key: group::Value<Secp256K1GroupElement>,
+    pub decentralized_public_key_share: group::Value<Secp256K1GroupElement>,
+    pub centralized_public_key_share: group::Value<Secp256K1GroupElement>,
+}
+
+pub fn serialized_pubkeys_from_centralized_dkg_output(
+    centralized_dkg_output: &Vec<u8>,
+) -> Result<Vec<u8>> {
+    let dkg_output = bcs::from_bytes::<DKGCentralizedPartyOutput>(centralized_dkg_output)?;
+    let dwallet_pubkeys = DWalletPublicKeys {
+        public_key: dkg_output.public_key,
+        decentralized_public_key_share: dkg_output.decentralized_party_public_key_share,
+        centralized_public_key_share: dkg_output.public_key_share,
+    };
+    Ok(bcs::to_bytes(&dwallet_pubkeys)?)
+}
+
+pub fn serialized_pubkeys_from_decentralized_dkg_output(
+    centralized_dkg_output: &Vec<u8>,
+) -> Result<Vec<u8>> {
+    let dkg_output = bcs::from_bytes::<DKGDecentralizedPartyOutput>(centralized_dkg_output)?;
+    let dwallet_pubkeys = DWalletPublicKeys {
+        public_key: dkg_output.public_key,
+        decentralized_public_key_share: dkg_output.public_key_share,
+        centralized_public_key_share: dkg_output.centralized_party_public_key_share,
+    };
+    Ok(bcs::to_bytes(&dwallet_pubkeys)?)
 }
 
 fn secret_key_matches_public_key(

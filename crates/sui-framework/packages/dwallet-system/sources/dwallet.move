@@ -452,6 +452,8 @@ module dwallet_system::dwallet {
         dwallet_id: ID,
         encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
+        signed_dwallet_pubkeys: vector<u8>,
+        sender_pubkey: vector<u8>,
     }
 
     /// An Additively Homomorphic Encryption (AHE) public key
@@ -546,6 +548,8 @@ module dwallet_system::dwallet {
         dwallet_id: ID,
         encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
+        signed_dwallet_pubkeys: vector<u8>,
+        sender_pubkey: vector<u8>,
         ctx: &mut TxContext
     ) {
         let encrypted_user_share = EncryptedUserShare {
@@ -553,11 +557,13 @@ module dwallet_system::dwallet {
             dwallet_id,
             encrypted_secret_share_and_proof,
             encryption_key_id,
+            signed_dwallet_pubkeys,
+            sender_pubkey,
         };
         transfer::freeze_object(encrypted_user_share);
     }
 
-    native fun ed2551_pubkey_to_sui_addr(public_key: vector<u8>): address;
+    public native fun ed2551_pubkey_to_sui_addr(public_key: vector<u8>): address;
 
     #[test_only]
     public(friend) fun create_mock_encryption_key(

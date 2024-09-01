@@ -1,11 +1,15 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { serialized_pubkeys_from_decentralized_dkg_output } from '@dwallet-network/signature-mpc-wasm';
+
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
+import { Dwallet } from './dwallet_2pc_mpc_ecdsa_k1_module';
+import {DWalletToTransfer, EncryptedUserShare} from './encrypt_user_share';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -125,6 +129,37 @@ export const getEncryptionKeyByObjectId = async (
 		: null;
 };
 
+export const getEncryptedUserShareByObjectId = async (
+	client: DWalletClient,
+	objID: string,
+): Promise<EncryptedUserShare | null> => {
+	const response = await client.getObject({
+		id: objID,
+		options: { showContent: true },
+	});
+
+	const objectFields =
+		response.data?.content?.dataType === 'moveObject'
+			? (response.data?.content?.fields as unknown as {
+					dwallet_id: string;
+					encrypted_secret_share_and_proof: number[];
+					encryption_key_id: string;
+					signed_dwallet_pubkeys: number[];
+					sender_pubkey: number[];
+			  })
+			: null;
+
+	return objectFields
+		? {
+				dwalletId: objectFields?.dwallet_id,
+				encryptedUserShareAndProof: objectFields?.encrypted_secret_share_and_proof,
+				encryptionKeyObjID: objectFields?.encryption_key_id,
+				signedDWalletPubkeys: objectFields.signed_dwallet_pubkeys,
+				senderPubKey: objectFields.sender_pubkey,
+		  }
+		: null;
+};
+
 export const getActiveEncryptionKeyObjID = async (
 	client: DWalletClient,
 	keyOwnerAddress: string,
@@ -200,18 +235,30 @@ export const createActiveEncryptionKeysTable = async (client: DWalletClient, key
 export const transferEncryptedUserShare = async (
 	client: DWalletClient,
 	keypair: Keypair,
-	encryptedUserShareAndProof: Uint8Array,
+	encryptedUserShareAndProof: number[],
 	encryptionKeyObjID: string,
-	dwalletID: string,
+	dwallet: DWalletToTransfer,
 ) => {
 	const tx = new TransactionBlock();
 	const encryptionKey = tx.object(encryptionKeyObjID);
-	const dwallet = tx.object(dwalletID);
+	const dwalletObj = tx.object(dwallet.dwalletId);
+	let signedDWalletPubKeys = await keypair.sign(
+		serialized_pubkeys_from_decentralized_dkg_output(
+			new Uint8Array(dwallet.decentralizedDKGOutput!),
+		),
+	);
+	let pureSuiPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(keypair.getPublicKey().toRawBytes()));
 
 	tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::encrypt_user_share`,
 		typeArguments: [],
-		arguments: [dwallet, encryptionKey, tx.pure(encryptedUserShareAndProof)],
+		arguments: [
+			dwalletObj,
+			encryptionKey,
+			tx.pure(encryptedUserShareAndProof),
+			tx.pure([...signedDWalletPubKeys]),
+			pureSuiPubKey,
+		],
 	});
 
 	return await client.signAndExecuteTransactionBlock({
