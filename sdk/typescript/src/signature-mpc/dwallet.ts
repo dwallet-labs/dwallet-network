@@ -113,7 +113,7 @@ export const getEncryptionKeyByObjectId = async (
 					encryption_key: Uint8Array;
 					key_owner_address: string;
 					encryption_key_signature: Uint8Array;
-				})
+			  })
 			: null;
 
 	return objectFields
@@ -121,7 +121,7 @@ export const getEncryptionKeyByObjectId = async (
 				encryptionKey: objectFields?.encryption_key,
 				signedEncryptionKey: objectFields?.encryption_key_signature,
 				keyOwnerAddress: objectFields?.key_owner_address,
-			}
+		  }
 		: null;
 };
 

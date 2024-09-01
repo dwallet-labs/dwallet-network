@@ -1,3 +1,6 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
 import { verify_user_share } from '@dwallet-network/signature-mpc-wasm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -14,8 +17,8 @@ import {
 	storeEncryptionKey,
 	transferEncryptedUserShare,
 } from '../../src/signature-mpc';
+import { sendUserShareToSuiPubKey } from '../../src/signature-mpc/encrypt_user_share';
 import { setup, TestToolbox } from './utils/setup';
-import {sendUserShareToSuiPubKey} from "../../src/signature-mpc/encrypt_user_share";
 
 describe('Secret key share transfer', () => {
 	let toolbox: TestToolbox;

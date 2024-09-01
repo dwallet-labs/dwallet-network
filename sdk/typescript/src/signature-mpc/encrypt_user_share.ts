@@ -1,5 +1,6 @@
-//[object Object]
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
 import {

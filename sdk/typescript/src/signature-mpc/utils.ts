@@ -1,10 +1,11 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { ethers, keccak256 } from 'ethers';
+
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { Ed25519Keypair } from '../keypairs/ed25519';
-import { ethers, keccak256 } from 'ethers';
 import { generate_keypair_from_seed } from './dwallet_2pc_mpc_ecdsa_k1_module';
 
 export async function fetchObjectBySessionId(
@@ -26,7 +27,7 @@ export async function fetchObjectBySessionId(
 			.filter((o) => {
 				return (
 					// @ts-ignore
-					o?.dataType == 'moveObject' && o?.type == type && o.fields['session_id'] == sessionId
+					o?.dataType === 'moveObject' && o?.type === type && o.fields['session_id'] === sessionId
 				);
 			});
 		if (objectsFiltered.length > 0) {

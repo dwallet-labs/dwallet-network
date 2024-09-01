@@ -69,7 +69,7 @@ export async function createDWallet(
 			? (sessionOutput.fields as {
 					id: { id: string };
 					secret_key_share_encryption_and_proof: number[];
-				})
+			  })
 			: null;
 
 	if (sessionOutputFields) {
@@ -107,7 +107,7 @@ export async function createDWallet(
 				? (dwalletObject.data?.content?.fields as {
 						dwallet_cap_id: string;
 						output: number[];
-					})
+				  })
 				: null;
 
 		return dwalletObjectFields
@@ -117,7 +117,7 @@ export async function createDWallet(
 					decentralizedDKGOutput: dwalletObjectFields.output,
 					dwalletCapId: dwalletObjectFields.dwallet_cap_id,
 					secretKeyShare: final['secret_key_share'],
-				}
+			  }
 			: null;
 	}
 	return null;
@@ -166,7 +166,7 @@ export async function createPartialUserSignedMessages(
 		},
 	});
 
-	const sessionRef = result.effects?.created?.filter((o) => o.owner == 'Immutable')[0].reference!;
+	const sessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
 
 	const sessionOutput = await fetchObjectBySessionId(
 		sessionRef.objectId,
@@ -180,7 +180,7 @@ export async function createPartialUserSignedMessages(
 			? (sessionOutput.fields as {
 					id: { id: string };
 					output: number[];
-				})
+			  })
 			: null;
 
 	if (sessionOutputFields) {
@@ -201,7 +201,7 @@ export async function createPartialUserSignedMessages(
 			presignOutput?.dataType === 'moveObject'
 				? (presignOutput.fields as {
 						id: { id: string };
-					})
+				  })
 				: null;
 
 		if (presignOutputFields) {
