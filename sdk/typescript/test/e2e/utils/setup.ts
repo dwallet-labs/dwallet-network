@@ -9,8 +9,8 @@ import { WebSocket } from 'ws';
 
 import { TransactionBlock, UpgradePolicy } from '../../../src/builder';
 import {
-	getFullnodeUrl,
 	DWalletClient,
+	getFullnodeUrl,
 	SuiHTTPTransport,
 	SuiObjectChangePublished,
 } from '../../../src/client';

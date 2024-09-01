@@ -25,7 +25,18 @@ export {
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export async function createDWallet(keypair: Keypair, client: DWalletClient) {
+export type Dwallet = {
+	dwalletId: string;
+	centralizedDKGOutput: number[];
+	decentralizedDKGOutput: number[];
+	dwalletCapId: string;
+	secretKeyShare: number[];
+};
+
+export async function createDWallet(
+	keypair: Keypair,
+	client: DWalletClient,
+): Promise<Dwallet | null> {
 	const resultDKG = initiate_dkg();
 
 	const commitmentToSecretKeyShare = resultDKG['commitment_to_secret_key_share'];
@@ -58,7 +69,7 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 			? (sessionOutput.fields as {
 					id: { id: string };
 					secret_key_share_encryption_and_proof: number[];
-				})
+			  })
 			: null;
 
 	if (sessionOutputFields) {
@@ -96,7 +107,7 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 				? (dwalletObject.data?.content?.fields as {
 						dwallet_cap_id: string;
 						output: number[];
-					})
+				  })
 				: null;
 
 		return dwalletObjectFields
@@ -106,7 +117,7 @@ export async function createDWallet(keypair: Keypair, client: DWalletClient) {
 					decentralizedDKGOutput: dwalletObjectFields.output,
 					dwalletCapId: dwalletObjectFields.dwallet_cap_id,
 					secretKeyShare: final['secret_key_share'],
-				}
+			  }
 			: null;
 	}
 	return null;
@@ -155,7 +166,7 @@ export async function createPartialUserSignedMessages(
 		},
 	});
 
-	const sessionRef = result.effects?.created?.filter((o) => o.owner == 'Immutable')[0].reference!;
+	const sessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
 
 	const sessionOutput = await fetchObjectBySessionId(
 		sessionRef.objectId,
@@ -169,7 +180,7 @@ export async function createPartialUserSignedMessages(
 			? (sessionOutput.fields as {
 					id: { id: string };
 					output: number[];
-				})
+			  })
 			: null;
 
 	if (sessionOutputFields) {
@@ -190,7 +201,7 @@ export async function createPartialUserSignedMessages(
 			presignOutput?.dataType === 'moveObject'
 				? (presignOutput.fields as {
 						id: { id: string };
-					})
+				  })
 				: null;
 
 		if (presignOutputFields) {

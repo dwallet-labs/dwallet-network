@@ -4,7 +4,7 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { TransactionBlock } from '../../src/builder';
-import { OwnedObjectRef, DWalletClient } from '../../src/client';
+import { DWalletClient, OwnedObjectRef } from '../../src/client';
 import type { Keypair } from '../../src/cryptography';
 import { publishPackage, setup, TestToolbox } from './utils/setup';
 

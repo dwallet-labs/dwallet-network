@@ -6,7 +6,7 @@ import { fromB64, isSerializedBcs } from '@mysten/bcs';
 import { is, mask } from 'superstruct';
 
 import { bcs } from '../bcs/index.js';
-import type { ProtocolConfig, DWalletClient, SuiMoveNormalizedType } from '../client/index.js';
+import type { DWalletClient, ProtocolConfig, SuiMoveNormalizedType } from '../client/index.js';
 import type { Keypair, SignatureWithBytes } from '../cryptography/index.js';
 import type { SuiObjectResponse } from '../types/index.js';
 import {

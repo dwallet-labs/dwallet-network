@@ -113,7 +113,7 @@ export const getEncryptionKeyByObjectId = async (
 					encryption_key: Uint8Array;
 					key_owner_address: string;
 					encryption_key_signature: Uint8Array;
-				})
+			  })
 			: null;
 
 	return objectFields
@@ -121,31 +121,33 @@ export const getEncryptionKeyByObjectId = async (
 				encryptionKey: objectFields?.encryption_key,
 				signedEncryptionKey: objectFields?.encryption_key_signature,
 				keyOwnerAddress: objectFields?.key_owner_address,
-			}
+		  }
 		: null;
 };
 
-export const getActiveEncryptionKey = async (
+export const getActiveEncryptionKeyObjID = async (
 	client: DWalletClient,
-	keypair: Keypair,
+	keyOwnerAddress: string,
 	encryptionKeysHolderID: string,
-) => {
+): Promise<string> => {
 	const tx = new TransactionBlock();
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
 
-	console.log(keypair.toSuiAddress());
+	console.log(keyOwnerAddress);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
-		arguments: [encryptionKeysHolder, tx.pure(keypair.toSuiAddress())],
+		arguments: [encryptionKeysHolder, tx.pure(keyOwnerAddress)],
 	});
 
 	let res = await client.devInspectTransactionBlock({
-		sender: keypair.toSuiAddress(),
+		sender: keyOwnerAddress,
 		transactionBlock: tx,
 	});
 
-	return res.results?.at(0)?.returnValues?.at(0)?.at(0);
+	return Buffer.from(
+		new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]),
+	).toString('hex');
 };
 
 export const setActiveEncryptionKey = async (
@@ -195,7 +197,7 @@ export const createActiveEncryptionKeysTable = async (client: DWalletClient, key
 	)[0].reference!;
 };
 
-export const encryptUserShare = async (
+export const transferEncryptedUserShare = async (
 	client: DWalletClient,
 	keypair: Keypair,
 	encryptedUserShareAndProof: Uint8Array,
