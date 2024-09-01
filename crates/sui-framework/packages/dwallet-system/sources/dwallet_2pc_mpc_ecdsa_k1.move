@@ -516,7 +516,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     ): bool;
 
 
-    #[test_only
+    #[test_only]
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {
         SignData {
             presign_session_id,
