@@ -104,25 +104,40 @@ export async function createDWallet(
 			},
 		});
 
-		const dwalletRef = resultFinal.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
+		let dwalletRef = resultFinal.effects?.created?.filter((o) => {
+			return o.owner === 'Immutable';
+		})[0].reference!;
+		let encryptedShareRef = resultFinal.effects?.created?.filter((o) => o.owner === 'Immutable')[1]
 			.reference!;
-		const encryptedShareRef = resultFinal.effects?.created?.filter(
-			(o) => o.owner === 'Immutable',
-		)[1].reference!;
 
-		const dwalletObject = await client.getObject({
+		let dwalletObject = await client.getObject({
 			id: dwalletRef.objectId,
 			options: { showContent: true },
 		});
-
-		const dwalletObjectFields =
+		let dwalletObjectFields =
 			dwalletObject.data?.content?.dataType === 'moveObject'
 				? (dwalletObject.data?.content?.fields as {
 						dwallet_cap_id: string;
 						output: number[];
 				  })
 				: null;
-
+		if (!dwalletObjectFields?.dwallet_cap_id) {
+			// This may happen as the order of the created objects is not guaranteed, and we can't know the object type from the reference.
+			let tempRef = dwalletRef;
+			dwalletRef = encryptedShareRef;
+			encryptedShareRef = tempRef;
+			dwalletObject = await client.getObject({
+				id: dwalletRef.objectId,
+				options: { showContent: true },
+			});
+			dwalletObjectFields =
+				dwalletObject.data?.content?.dataType === 'moveObject'
+					? (dwalletObject.data?.content?.fields as {
+							dwallet_cap_id: string;
+							output: number[];
+					  })
+					: null;
+		}
 		return dwalletObjectFields
 			? {
 					dwalletId: dwalletRef?.objectId,
