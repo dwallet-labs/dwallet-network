@@ -289,18 +289,16 @@ export const createEncryptedUserSharesHolder = async (client: DWalletClient, key
 export const saveEncryptedUserShare = async (
 	client: DWalletClient,
 	keypair: Keypair,
-	encryptionKeyID: string,
 	encryptedUserShareId: string,
 	encrptedUserSharesID: string,
 ) => {
 	const tx = new TransactionBlock();
-	const encKey = tx.object(encryptionKeyID);
 	const encryptedUserShare = tx.object(encryptedUserShareId);
 	const encryptedUserShares = tx.object(encrptedUserSharesID);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::save_encrypted_user_share`,
-		arguments: [encryptedUserShares, encryptedUserShare, encKey],
+		arguments: [encryptedUserShares, encryptedUserShare],
 	});
 
 	return await client.signAndExecuteTransactionBlock({
