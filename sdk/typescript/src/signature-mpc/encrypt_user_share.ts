@@ -8,17 +8,21 @@ import {
 
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
-import { Ed25519PublicKey } from '../keypairs/ed25519/index.js';
+import { Ed25519Keypair, Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import {
 	decrypt_user_share,
 	generate_proof,
 	getDwalletByObjID,
 } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import {
+	EncryptionKeyScheme,
 	getActiveEncryptionKeyObjID,
 	getEncryptionKeyByObjectId,
+	setActiveEncryptionKey,
+	storeEncryptionKey,
 	transferEncryptedUserShare,
 } from './dwallet.js';
+import { generatePaillierKeyPairFromSuiKeyPair } from './utils';
 
 export type DWalletToTransfer = {
 	secretKeyShare: number[];
@@ -155,4 +159,54 @@ export const acceptUserShare = async (
 		await keypair.sign(serializedPubkeys),
 	);
 	return true;
+};
+
+type EncryptionKeyPair = {
+	encryptionKey: Uint8Array;
+	decryptionKey: Uint8Array;
+	objectID: string;
+};
+
+export const getOrCreateEncryptionKey = async (
+	keypair: Ed25519Keypair,
+	client: DWalletClient,
+	activeEncryptionKeysTableID: string,
+): Promise<EncryptionKeyPair> => {
+	let [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(keypair);
+	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
+		client,
+		keypair.toSuiAddress(),
+		activeEncryptionKeysTableID,
+	);
+	if (activeEncryptionKeyObjID) {
+		let encryptionKeyObj = await getEncryptionKeyByObjectId(client, activeEncryptionKeyObjID);
+		if (encryptionKeyObj?.encryptionKey === encryptionKey) {
+			return {
+				encryptionKey,
+				decryptionKey,
+				objectID: activeEncryptionKeyObjID,
+			};
+		} else {
+			throw new Error(
+				'Encryption key derived from Sui secret does not match the one in the active encryption keys table',
+			);
+		}
+	}
+	const encryptionKeyRef = await storeEncryptionKey(
+		encryptionKey,
+		EncryptionKeyScheme.Paillier,
+		keypair,
+		client,
+	);
+	await setActiveEncryptionKey(
+		client,
+		keypair,
+		encryptionKeyRef?.objectId!,
+		activeEncryptionKeysTableID,
+	);
+	return {
+		decryptionKey,
+		encryptionKey,
+		objectID: encryptionKeyRef.objectId,
+	};
 };

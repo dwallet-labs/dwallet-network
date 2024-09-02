@@ -14,18 +14,24 @@ import {
 import {
 	acceptUserShare,
 	getEncryptedUserShareByObjID,
+	getOrCreateEncryptionKey,
 	sendUserShareToSuiPubKey,
 } from '../../src/signature-mpc/encrypt_user_share';
-import { generatePaillierKeyPairFromSuiKeyPair } from '../../src/signature-mpc/utils';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Secret key share transfer', () => {
 	let dwalletSenderToolbox: TestToolbox;
 	let dwalletReceiverToolbox: TestToolbox;
+	let activeEncryptionKeysTableID: string;
 
 	beforeAll(async () => {
 		dwalletSenderToolbox = await setup();
 		dwalletReceiverToolbox = await setup();
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
+			dwalletSenderToolbox.client,
+			dwalletSenderToolbox.keypair,
+		);
+		activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
 	});
 
 	it('creates an encryption key & stores it in the active encryption keys table', async () => {
@@ -36,24 +42,18 @@ describe('Secret key share transfer', () => {
 			dwalletSenderToolbox.keypair,
 			dwalletSenderToolbox.client,
 		);
-		console.log({ pubKeyRef });
-
-		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
-			dwalletSenderToolbox.client,
-			dwalletSenderToolbox.keypair,
-		);
 
 		await setActiveEncryptionKey(
 			dwalletSenderToolbox.client,
 			dwalletSenderToolbox.keypair,
 			pubKeyRef?.objectId!,
-			encryptionKeysHolder.objectId,
+			activeEncryptionKeysTableID,
 		);
 
 		const activeEncryptionKeyAddress = await getActiveEncryptionKeyObjID(
 			dwalletSenderToolbox.client,
 			dwalletSenderToolbox.keypair.toSuiAddress(),
-			encryptionKeysHolder.objectId,
+			activeEncryptionKeysTableID,
 		);
 
 		expect(`0x${activeEncryptionKeyAddress}`).toEqual(pubKeyRef?.objectId!);
@@ -61,45 +61,23 @@ describe('Secret key share transfer', () => {
 
 	it('full flow - encrypts a secret share to a given Sui public key successfully, and store it on chain from the receiving end', async () => {
 		// ======================= Create Source DWallet =======================
-		// TODO (#202): Create a function that retrieves an encryption key for the given keypair if it exists
-		const [walletCreatorEncryptionKey, walletCreatorDecryptionKey] =
-			generatePaillierKeyPairFromSuiKeyPair(dwalletSenderToolbox.keypair);
-
-		const pubKeyRef = await storeEncryptionKey(
-			walletCreatorEncryptionKey,
-			EncryptionKeyScheme.Paillier,
+		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(
 			dwalletSenderToolbox.keypair,
 			dwalletSenderToolbox.client,
+			activeEncryptionKeysTableID,
 		);
-
 		const createdDwallet = await createDWallet(
 			dwalletSenderToolbox.keypair,
 			dwalletSenderToolbox.client,
-			walletCreatorEncryptionKey,
-			pubKeyRef.objectId,
+			senderEncryptionKeyObj.encryptionKey,
+			senderEncryptionKeyObj.objectID,
 		);
 
 		// ======================= Create Destination Paillier Keypair =======================
-		const [walletReceiverEncryptionKey, walletReceiverDecryptionKey] =
-			generatePaillierKeyPairFromSuiKeyPair(dwalletReceiverToolbox.keypair);
-
-		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
-			dwalletReceiverToolbox.client,
-			dwalletReceiverToolbox.keypair,
-		);
-
-		const walletReceiverPubKeyRef = await storeEncryptionKey(
-			walletReceiverEncryptionKey,
-			EncryptionKeyScheme.Paillier,
+		let receiverEncryptionKeyObj = await getOrCreateEncryptionKey(
 			dwalletReceiverToolbox.keypair,
 			dwalletReceiverToolbox.client,
-		);
-
-		await setActiveEncryptionKey(
-			dwalletReceiverToolbox.client,
-			dwalletReceiverToolbox.keypair,
-			walletReceiverPubKeyRef?.objectId!,
-			encryptionKeysHolder.objectId,
+			activeEncryptionKeysTableID,
 		);
 
 		// ======================= Send DWallet Secret Share To Destination Keypair  =======================
@@ -125,24 +103,24 @@ describe('Secret key share transfer', () => {
 			dwalletSenderToolbox.keypair,
 			createdDwallet!,
 			dwalletReceiverToolbox.keypair.getPublicKey(),
-			encryptionKeysHolder.objectId,
+			activeEncryptionKeysTableID,
 			signedDWalletPubKeys,
 		);
 
 		// ======================= Verify Received DWallet is Valid =======================
 		let encryptedUserShareObjID = txResponse.effects?.created![0].reference.objectId;
 		let encryptedUserShare = await getEncryptedUserShareByObjID(
-			dwalletSenderToolbox.client,
+			dwalletReceiverToolbox.client,
 			encryptedUserShareObjID!,
 		);
 		expect(
 			await acceptUserShare(
 				encryptedUserShare!,
 				dwalletSenderToolbox.keypair.toSuiAddress(),
-				walletReceiverEncryptionKey,
-				walletReceiverDecryptionKey,
+				receiverEncryptionKeyObj.encryptionKey,
+				receiverEncryptionKeyObj.decryptionKey,
 				createdDwallet?.dwalletId!,
-				encryptionKeysHolder.objectId,
+				activeEncryptionKeysTableID,
 				dwalletReceiverToolbox.client,
 				dwalletReceiverToolbox.keypair,
 			),
