@@ -152,6 +152,7 @@ export const acceptUserShare = async (
 		dwalletToSend,
 		keypair.getPublicKey(),
 		encryptionKeysHolderObjID,
+		await keypair.sign(serializedPubkeys),
 	);
 	return true;
 };
