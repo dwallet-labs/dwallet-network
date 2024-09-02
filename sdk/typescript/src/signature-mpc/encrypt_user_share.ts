@@ -112,7 +112,6 @@ export const acceptUserShare = async (
 	decryptionKey: Uint8Array,
 	dwalletID: string,
 	encryptionKeysHolderObjID: string,
-	encryptedUserSharesTableID: string,
 	client: DWalletClient,
 	keypair: Keypair,
 ): Promise<boolean> => {
@@ -157,11 +156,17 @@ export const acceptUserShare = async (
 		await keypair.sign(serializedPubkeys),
 	);
 
+	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
+		client,
+		keypair.toSuiAddress(),
+		encryptionKeysHolderObjID,
+	);
+
 	await saveEncryptedUserShare(
 		client,
 		keypair,
-		encryptedUserShareRef.objectId,
-		encryptedUserSharesTableID,
+		activeEncryptionKeyObjID,
+		encryptedUserShareRef?.objectId!,
 	);
 	return true;
 };

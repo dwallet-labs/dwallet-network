@@ -41,6 +41,34 @@ export async function fetchObjectBySessionId(
 	}
 }
 
+export async function fetchOwnedObjectByType(
+	type: string,
+	keypair: Keypair,
+	client: DWalletClient,
+) {
+	let cursor = null;
+	for (;;) {
+		const objects = await client.getOwnedObjects({ owner: keypair.toSuiAddress(), cursor: cursor });
+		const objectsContent = await client.multiGetObjects({
+			ids: objects.data.map((o) => o.data?.objectId!),
+			options: { showContent: true },
+		});
+
+		const objectsFiltered = objectsContent
+			.map((o) => o.data?.content)
+			.filter((o) => {
+				return (
+					// @ts-ignore
+					o?.dataType === 'moveObject' && o?.type === type
+				);
+			});
+		if (objectsFiltered.length > 0) {
+			return objectsFiltered[0];
+		}
+		return null;
+	}
+}
+
 export const generatePaillierKeyPairFromSuiKeyPair = (keypair: Ed25519Keypair): Uint8Array[] => {
 	let stringHashedPK = keccak256(ethers.toUtf8Bytes(keypair.export().privateKey));
 	let hashedPrivateKey = ethers.toBeArray(stringHashedPK);

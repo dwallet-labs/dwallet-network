@@ -135,10 +135,7 @@ describe('Secret key share transfer', () => {
 			dwalletSenderToolbox.client,
 			encryptedUserShareObjID!,
 		);
-		const createEncryptedUserSharesTable = await createEncryptedUserSharesHolder(
-			dwalletReceiverToolbox.client,
-			dwalletReceiverToolbox.keypair,
-		);
+
 		expect(
 			await acceptUserShare(
 				encryptedUserShare!,
@@ -147,7 +144,6 @@ describe('Secret key share transfer', () => {
 				walletReceiverDecryptionKey,
 				createdDwallet?.dwalletId!,
 				encryptionKeysHolder.objectId,
-				createEncryptedUserSharesTable.objectId,
 				dwalletReceiverToolbox.client,
 				dwalletReceiverToolbox.keypair,
 			),

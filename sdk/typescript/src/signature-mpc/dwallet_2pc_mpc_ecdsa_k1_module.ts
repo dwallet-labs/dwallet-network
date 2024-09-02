@@ -14,7 +14,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { getEncryptionKeyByObjectId } from './dwallet';
+import {getEncryptionKeyByObjectId, saveEncryptedUserShare} from './dwallet';
 import { fetchObjectBySessionId } from './utils.js';
 
 export {
@@ -138,6 +138,7 @@ export async function createDWallet(
 					  })
 					: null;
 		}
+		await saveEncryptedUserShare(client, keypair, encryptionKeyObjId, encryptedShareRef.objectId);
 		return dwalletObjectFields
 			? {
 					dwalletId: dwalletRef?.objectId,

@@ -10,6 +10,7 @@ import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
 import { Dwallet } from './dwallet_2pc_mpc_ecdsa_k1_module';
 import {DWalletToTransfer, EncryptedUserShare} from './encrypt_user_share';
+import {fetchOwnedObjectByType} from "./utils";
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -286,19 +287,36 @@ export const createEncryptedUserSharesHolder = async (client: DWalletClient, key
 	return result.effects?.created?.at(0)?.reference;
 }
 
+export const getEncryptedUserSharesObjId = async (client: DWalletClient, keypair: Keypair) => {
+	const table =  await fetchOwnedObjectByType(`${packageId}::${dWalletModuleName}::EncryptedUserShares`, keypair, client);
+	const tableFields =
+		table?.dataType === 'moveObject'
+			? (table.fields as {
+				id: { id: string };
+			})
+			: null;
+
+	if (table === null) {
+		const newTable = await createEncryptedUserSharesHolder(client, keypair);
+		return newTable?.objectId;
+	}
+	return tableFields?.id.id;
+}
+
 export const saveEncryptedUserShare = async (
 	client: DWalletClient,
 	keypair: Keypair,
+	encryptionKeyID: string,
 	encryptedUserShareId: string,
-	encrptedUserSharesID: string,
 ) => {
 	const tx = new TransactionBlock();
+	const encKey = tx.object(encryptionKeyID);
 	const encryptedUserShare = tx.object(encryptedUserShareId);
-	const encryptedUserShares = tx.object(encrptedUserSharesID);
+	const encryptedUserSharesId = await getEncryptedUserSharesObjId(client, keypair);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::save_encrypted_user_share`,
-		arguments: [encryptedUserShares, encryptedUserShare],
+		arguments: [tx.object(encryptedUserSharesId!), encryptedUserShare, encKey],
 	});
 
 	return await client.signAndExecuteTransactionBlock({
