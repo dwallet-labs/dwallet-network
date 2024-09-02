@@ -16,7 +16,7 @@ import {
 } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import {
 	getActiveEncryptionKeyObjID,
-	getEncryptionKeyByObjectId,
+	getEncryptionKeyByObjectId, saveEncryptedUserShare,
 	transferEncryptedUserShare,
 } from './dwallet.js';
 
@@ -111,6 +111,7 @@ export const acceptUserShare = async (
 	decryptionKey: Uint8Array,
 	dwalletID: string,
 	encryptionKeysHolderObjID: string,
+	encryptedUserSharesTableID: string,
 	client: DWalletClient,
 	keypair: Keypair,
 ): Promise<boolean> => {
@@ -146,13 +147,20 @@ export const acceptUserShare = async (
 		decentralizedDKGOutput: dwallet!.decentralizedDKGOutput,
 	};
 
-	await sendUserShareToSuiPubKey(
+	const encryptedUserShareRef = await sendUserShareToSuiPubKey(
 		client,
 		keypair,
 		dwalletToSend,
 		keypair.getPublicKey(),
 		encryptionKeysHolderObjID,
 		await keypair.sign(serializedPubkeys),
+	);
+
+	await saveEncryptedUserShare(
+		client,
+		keypair,
+		encryptedUserShareRef.objectId,
+		encryptedUserSharesTableID,
 	);
 	return true;
 };

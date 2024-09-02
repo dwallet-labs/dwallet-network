@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	createActiveEncryptionKeysTable,
-	createDWallet,
+	createDWallet, createEncryptedUserSharesHolder,
 	EncryptionKeyScheme,
 	generate_keypair,
 	getActiveEncryptionKeyObjID,
@@ -130,10 +130,14 @@ describe('Secret key share transfer', () => {
 		);
 
 		// ======================= Verify Received DWallet is Valid =======================
-		let encryptedUserShareObjID = txResponse.effects?.created![0].reference.objectId;
+		let encryptedUserShareObjID = txResponse.objectId;
 		let encryptedUserShare = await getEncryptedUserShareByObjID(
 			dwalletSenderToolbox.client,
 			encryptedUserShareObjID!,
+		);
+		const createEncryptedUserSharesTable = await createEncryptedUserSharesHolder(
+			dwalletReceiverToolbox.client,
+			dwalletReceiverToolbox.keypair,
 		);
 		expect(
 			await acceptUserShare(
@@ -143,6 +147,7 @@ describe('Secret key share transfer', () => {
 				walletReceiverDecryptionKey,
 				createdDwallet?.dwalletId!,
 				encryptionKeysHolder.objectId,
+				createEncryptedUserSharesTable.objectId,
 				dwalletReceiverToolbox.client,
 				dwalletReceiverToolbox.keypair,
 			),
