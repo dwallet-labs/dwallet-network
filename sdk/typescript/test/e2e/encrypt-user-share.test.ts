@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	createActiveEncryptionKeysTable,
-	createDWallet, createEncryptedUserSharesHolder,
+	createDWallet,
 	EncryptionKeyScheme,
 	generate_keypair,
 	getActiveEncryptionKeyObjID,

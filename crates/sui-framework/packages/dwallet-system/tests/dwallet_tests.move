@@ -451,8 +451,7 @@ module dwallet_system::dwallet_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = EInvalidParametes)]
-    public fun test_save_encypted_user_share_twice_failuer() {
+    public fun test_save_encypted_user_share_twice() {
         let mock_sender_address = @0x92c28a0905643d2b861c12b3dd2aba20619b9748f3e5cb6165f9a4388c515668;
         let scenario = set_up_with_sender_address(mock_sender_address);
         test_scenario::next_tx(&mut scenario, mock_sender_address);

@@ -481,12 +481,15 @@ module dwallet_system::dwallet {
         ctx: &mut TxContext
         ) {
         assert!(
-            !table::contains(&encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id)
-                && ed2551_pubkey_to_sui_addr(encrypted_user_share.sender_pubkey) == tx_context::sender(ctx)
+                ed2551_pubkey_to_sui_addr(encrypted_user_share.sender_pubkey) == tx_context::sender(ctx)
                 && object::id(encryption_key) == encrypted_user_share.encryption_key_id
                 && encryption_key.key_owner_address == tx_context::sender(ctx),
             EInvalidParametes
         );
+
+        if(table::contains(&encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id)) {
+            table::remove(&mut encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id);
+        };
 
         table::add(
             &mut encrypted_user_shares.encrypted_user_shares,
