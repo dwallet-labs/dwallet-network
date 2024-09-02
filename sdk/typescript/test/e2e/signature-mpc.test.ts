@@ -1,13 +1,17 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { generate_keypair } from '@dwallet-network/signature-mpc-wasm';
 import { beforeAll, describe, it } from 'vitest';
 
 import {
 	approveAndSign,
 	createDWallet,
 	createPartialUserSignedMessages,
+	EncryptionKeyScheme,
+	storeEncryptionKey,
 } from '../../src/signature-mpc';
+import { generatePaillierKeyPairFromSuiKeyPair } from '../../src/signature-mpc/utils';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test signature mpc', () => {
@@ -18,16 +22,22 @@ describe('Test signature mpc', () => {
 	});
 
 	it('the signature mpc create dwallet', async () => {
-		console.log(toolbox.keypair.toSuiAddress());
+		const [walletCreatorEncryptionKey, walletCreatorDecryptionKey] =
+			generatePaillierKeyPairFromSuiKeyPair(toolbox.keypair);
 
-		const [encryptionKey, _] = generate_keypair();
-		const encryptionKeyObj = await storeEncryptionKey(
-			encryptionKey,
+		const pubKeyRef = await storeEncryptionKey(
+			walletCreatorEncryptionKey,
 			EncryptionKeyScheme.Paillier,
 			toolbox.keypair,
 			toolbox.client,
 		);
-		const dkg = await createDWallet(toolbox.keypair, toolbox.client, encryptionKeyObj.objectId);
+
+		const dkg = await createDWallet(
+			toolbox.keypair,
+			toolbox.client,
+			walletCreatorEncryptionKey,
+			pubKeyRef.objectId,
+		);
 
 		const bytes: Uint8Array = new TextEncoder().encode('Sign it!!!');
 

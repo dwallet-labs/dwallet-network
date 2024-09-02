@@ -1,28 +1,20 @@
-import {
-	serialized_pubkeys_from_decentralized_dkg_output,
-	verify_user_share,
-} from '@dwallet-network/signature-mpc-wasm';
+import { serialized_pubkeys_from_decentralized_dkg_output } from '@dwallet-network/signature-mpc-wasm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
 	createActiveEncryptionKeysTable,
 	createDWallet,
-	decrypt_user_share,
 	EncryptionKeyScheme,
 	generate_keypair,
-	generate_keypair_from_seed,
-	generate_proof,
 	getActiveEncryptionKeyObjID,
 	getEncryptedUserShareByObjectId,
-	getEncryptionKeyByObjectId,
 	setActiveEncryptionKey,
 	storeEncryptionKey,
-	transferEncryptedUserShare,
 } from '../../src/signature-mpc';
 import {
+	acceptUserShare,
 	getEncryptedUserShareByObjID,
 	sendUserShareToSuiPubKey,
-	acceptUserShare,
 } from '../../src/signature-mpc/encrypt_user_share';
 import { generatePaillierKeyPairFromSuiKeyPair } from '../../src/signature-mpc/utils';
 import { setup, TestToolbox } from './utils/setup';
