@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use crate::twopc_mpc_protocols::Secp256K1GroupElement;
 use anyhow::Result;
 use commitment::GroupsPublicParametersAccessors;
-use crypto_bigint::{Uint, U256};
+use crypto_bigint::{Encoding, Uint, U256};
 use ecdsa::signature::digest::Digest;
 use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
 use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
@@ -265,8 +265,8 @@ pub fn decrypt_user_share(
     let plaintext = decryption_key
         .decrypt(&ciphertext, &paillier_public_parameters)
         .unwrap();
-    U256::from(&plaintext.value()).to_be_bytes()
-    Ok(bytes_serialization)
+    let secret_share_bytes = U256::from(&plaintext.value()).to_be_bytes().to_vec();
+    Ok(secret_share_bytes)
 }
 
 #[derive(Serialize, Deserialize)]

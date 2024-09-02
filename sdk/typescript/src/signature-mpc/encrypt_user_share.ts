@@ -26,6 +26,15 @@ export type DWalletToTransfer = {
 	dwalletId: string;
 };
 
+/**
+ * Encrypts and sends the given secret user share to the given destination public key.
+ *
+ * @param keypair The Sui keypair that was being used to sign the signedDWalletPubKeys.
+ * @param dwallet The DWallet that we want to send the secret user share of.
+ * @param destinationPublicKey The ed2551 public key of the destination Sui address.
+ * @param activeEncryptionKeysTableID The ID of the table that holds the active encryption keys.
+ * @param signedDWalletPubKeys The signed DWallet public keys.
+ */
 export const sendUserShareToSuiPubKey = async (
 	client: DWalletClient,
 	keypair: Keypair,
