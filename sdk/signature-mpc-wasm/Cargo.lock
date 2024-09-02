@@ -1069,7 +1069,7 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/2pc-mpc.git?rev=f08539d32805ee15a825d9650bb2732748db00e9#f08539d32805ee15a825d9650bb2732748db00e9"
+source = "git+https://github.com/dwallet-labs/2pc-mpc.git#f08539d32805ee15a825d9650bb2732748db00e9"
 dependencies = [
  "commitment",
  "crypto-bigint",

@@ -652,6 +652,7 @@ module dwallet_system::dwallet {
         dwallet_id: ID,
         encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
+        pubkey: vector<u8>,
         ctx: &mut TxContext
     ): EncryptedUserShare {
         EncryptedUserShare {
@@ -660,7 +661,7 @@ module dwallet_system::dwallet {
             encrypted_secret_share_and_proof,
             encryption_key_id,
             signed_dwallet_pubkeys: vector::empty(),
-            sender_pubkey: vector::empty(),
+            sender_pubkey: pubkey,
         }
     }
 
