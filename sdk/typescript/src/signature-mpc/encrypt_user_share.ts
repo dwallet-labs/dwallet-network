@@ -16,7 +16,8 @@ import {
 } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import {
 	getActiveEncryptionKeyObjID,
-	getEncryptionKeyByObjectId, saveEncryptedUserShare,
+	getEncryptionKeyByObjectId,
+	saveEncryptedUserShare,
 	transferEncryptedUserShare,
 } from './dwallet.js';
 
