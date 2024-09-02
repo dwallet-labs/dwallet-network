@@ -146,6 +146,7 @@ export const acceptUserShare = async (
 		decentralizedDKGOutput: dwallet!.decentralizedDKGOutput,
 	};
 
+	// Encrypt it to self, so that in the future we'd know that we already verified everything and only need to verify our signature.
 	await sendUserShareToSuiPubKey(
 		client,
 		keypair,
