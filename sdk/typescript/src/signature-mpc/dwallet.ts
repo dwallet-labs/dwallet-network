@@ -238,15 +238,11 @@ export const transferEncryptedUserShare = async (
 	encryptedUserShareAndProof: number[],
 	encryptionKeyObjID: string,
 	dwallet: DWalletToTransfer,
+	signedDWalletPubKeys: Uint8Array,
 ) => {
 	const tx = new TransactionBlock();
 	const encryptionKey = tx.object(encryptionKeyObjID);
 	const dwalletObj = tx.object(dwallet.dwalletId);
-	let signedDWalletPubKeys = await keypair.sign(
-		serialized_pubkeys_from_decentralized_dkg_output(
-			new Uint8Array(dwallet.decentralizedDKGOutput!),
-		),
-	);
 	let pureSuiPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(keypair.getPublicKey().toRawBytes()));
 
 	tx.moveCall({
