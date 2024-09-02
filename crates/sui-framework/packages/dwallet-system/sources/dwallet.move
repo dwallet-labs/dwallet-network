@@ -477,14 +477,13 @@ module dwallet_system::dwallet {
     public fun save_encrypted_user_share(
         encrypted_user_shares: &mut EncryptedUserShares,
         encrypted_user_share: &EncryptedUserShare,
-        encryption_key: &EncryptionKey,
         ctx: &mut TxContext
     ) {
-        let validate_parameters = !table::contains(&encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id)
-            && object::id(encryption_key) == encrypted_user_share.encryption_key_id
-            && encryption_key.key_owner_address == tx_context::sender(ctx);
-
-        assert!(validate_parameters, EInvalidParametes);
+        assert!(
+            !table::contains(&encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id)
+                && ed2551_pubkey_to_sui_addr(encrypted_user_share.sender_pubkey) == tx_context::sender(ctx),
+            EInvalidParametes
+        );
 
         table::add(
             &mut encrypted_user_shares.encrypted_user_shares,
@@ -660,6 +659,8 @@ module dwallet_system::dwallet {
             dwallet_id,
             encrypted_secret_share_and_proof,
             encryption_key_id,
+            signed_dwallet_pubkeys: vector::empty(),
+            sender_pubkey: vector::empty(),
         }
     }
 
@@ -674,5 +675,4 @@ module dwallet_system::dwallet {
     ): &Table<ID, ID> {
         &encrypted_user_shares.encrypted_user_shares
     }
-
 }
