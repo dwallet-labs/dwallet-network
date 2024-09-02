@@ -265,13 +265,7 @@ pub fn decrypt_user_share(
     let plaintext = decryption_key
         .decrypt(&ciphertext, &paillier_public_parameters)
         .unwrap();
-    let bytes_serialization = bcs::to_bytes(&plaintext.value())?;
-    // Take the first 32 bytes, the only ones that are non-zero, and reverse them to convert them
-    // from little-endian encoding to big-endian.
-    // This is because of BCS and PlaintextSpaceGroupElement serialization.
-    // PlaintextSpaceGroupElement is U2048 and has 32LIMBS of 64 bits each.
-    let mut bytes_serialization = bytes_serialization[..32].to_vec();
-    bytes_serialization.reverse();
+    U256::from(&plaintext.value()).to_be_bytes()
     Ok(bytes_serialization)
 }
 
