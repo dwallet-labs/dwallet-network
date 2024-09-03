@@ -14,7 +14,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import {getEncryptionKeyByObjectId, saveEncryptedUserShare} from './dwallet';
+import { getEncryptionKeyByObjectId, saveEncryptedUserShare } from './dwallet';
 import { fetchObjectBySessionId } from './utils.js';
 
 export {
@@ -186,13 +186,18 @@ function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
 
 export async function createPartialUserSignedMessages(
 	dwalletId: string,
-	dkgOutput: number[],
+	decentralizedDKGOutput: number[],
+	secretKeyShare: Uint8Array,
 	messages: Uint8Array[],
 	hash: 'KECCAK256' | 'SHA256',
 	keypair: Keypair,
 	client: DWalletClient,
 ) {
-	const resultPresign = initiate_presign(Uint8Array.of(...dkgOutput), messages.length);
+	const resultPresign = initiate_presign(
+		Uint8Array.of(...decentralizedDKGOutput),
+		secretKeyShare,
+		messages.length,
+	);
 
 	const nonceSharesCommitmentsAndBatchedProof =
 		resultPresign['nonce_shares_commitments_and_batched_proof'];
@@ -238,7 +243,8 @@ export async function createPartialUserSignedMessages(
 
 	if (sessionOutputFields) {
 		const presigns = finalize_presign(
-			Uint8Array.of(...dkgOutput),
+			Uint8Array.of(...decentralizedDKGOutput),
+			secretKeyShare,
 			signatureNonceSharesAndCommitmentRandomnesses,
 			Uint8Array.from(sessionOutputFields.output),
 		);
@@ -261,7 +267,8 @@ export async function createPartialUserSignedMessages(
 			const bcsMessages = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
 
 			const publicNonceEncryptedPartialSignatureAndProofs = initiate_sign(
-				Uint8Array.of(...dkgOutput),
+				Uint8Array.of(...decentralizedDKGOutput),
+				secretKeyShare,
 				presigns,
 				bcsMessages,
 				hashNum,

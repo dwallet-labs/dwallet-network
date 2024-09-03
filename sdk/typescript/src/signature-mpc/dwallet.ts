@@ -1,16 +1,13 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { serialized_pubkeys_from_decentralized_dkg_output } from '@dwallet-network/signature-mpc-wasm';
-
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
-import { Dwallet } from './dwallet_2pc_mpc_ecdsa_k1_module';
-import {DWalletToTransfer, EncryptedUserShare} from './encrypt_user_share';
-import {fetchOwnedObjectByType} from "./utils";
+import { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share';
+import { fetchOwnedObjectByType } from './utils';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -258,7 +255,7 @@ export const transferEncryptedUserShare = async (
 		],
 	});
 
-	const res =  await client.signAndExecuteTransactionBlock({
+	const res = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx,
 		options: {
@@ -285,15 +282,19 @@ export const createEncryptedUserSharesHolder = async (client: DWalletClient, key
 	});
 
 	return result.effects?.created?.at(0)?.reference;
-}
+};
 
 export const getEncryptedUserSharesObjId = async (client: DWalletClient, keypair: Keypair) => {
-	const table =  await fetchOwnedObjectByType(`${packageId}::${dWalletModuleName}::EncryptedUserShares`, keypair, client);
+	const table = await fetchOwnedObjectByType(
+		`${packageId}::${dWalletModuleName}::EncryptedUserShares`,
+		keypair,
+		client,
+	);
 	const tableFields =
 		table?.dataType === 'moveObject'
 			? (table.fields as {
-				id: { id: string };
-			})
+					id: { id: string };
+			  })
 			: null;
 
 	if (table === null) {
@@ -301,7 +302,7 @@ export const getEncryptedUserSharesObjId = async (client: DWalletClient, keypair
 		return newTable?.objectId;
 	}
 	return tableFields?.id.id;
-}
+};
 
 export const saveEncryptedUserShare = async (
 	client: DWalletClient,
@@ -328,14 +329,18 @@ export const saveEncryptedUserShare = async (
 	});
 };
 
+/**
+ * Retrieve the encrypted user share the user encrypted to itself from the dwallet ID.
+ * First fetches the user's EncryptedUserShares table, and from it fetches the encrypted user share.
+ */
 export const getEncryptedUserShare = async (
 	client: DWalletClient,
 	keypair: Keypair,
-	encrptedUserSharesObjID: string,
 	dwalletID: string,
-) => {
+): Promise<string> => {
+	let encryptedUserSharesObjID = await getEncryptedUserSharesObjId(client, keypair);
 	const tx = new TransactionBlock();
-	const encrptedUserSharesObj = tx.object(encrptedUserSharesObjID);
+	const encrptedUserSharesObj = tx.object(encryptedUserSharesObjID!);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_encrypted_user_share_by_dwallet_id`,
@@ -347,5 +352,7 @@ export const getEncryptedUserShare = async (
 		transactionBlock: tx,
 	});
 
-	return res.results?.at(0)?.returnValues?.at(0)?.at(0);
+	return Buffer.from(
+		new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]),
+	).toString('hex');
 };

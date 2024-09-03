@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use signature_mpc::twopc_mpc_protocols::CentralizedPartyPresign;
-use signature_mpc::twopc_mpc_protocols::DKGCentralizedPartyOutput;
+use signature_mpc::twopc_mpc_protocols::{DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput};
 use wasm_bindgen::prelude::*;
 
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
@@ -112,9 +112,9 @@ pub fn finalize_dkg(
 }
 
 #[wasm_bindgen]
-pub fn initiate_presign(dkg_output: Vec<u8>, batch_size: usize) -> Result<JsValue, JsErr> {
-    let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
-    let commitment_round_party = initiate_centralized_party_presign(dkg_output.clone())?;
+pub fn initiate_presign(decentralized_dkg_output: Vec<u8>, secret_share: Vec<u8>, batch_size: usize) -> Result<JsValue, JsErr> {
+    let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&decentralized_dkg_output)?;
+    let commitment_round_party = initiate_centralized_party_presign(dkg_output.clone(), secret_share)?;
 
     let (nonce_shares_commitments_and_batched_proof, proof_verification_round_party) =
         commitment_round_party
@@ -134,17 +134,18 @@ pub fn initiate_presign(dkg_output: Vec<u8>, batch_size: usize) -> Result<JsValu
 
 #[wasm_bindgen]
 pub fn finalize_presign(
-    dkg_output: Vec<u8>,
+    decentralized_dkg_output: Vec<u8>, secret_share: Vec<u8>,
     signature_nonce_shares_and_commitment_randomnesses: Vec<u8>,
     presign_output: Vec<u8>,
 ) -> Result<JsValue, JsErr> {
-    let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
+    let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&decentralized_dkg_output)?;
     let presign_output: PresignDecentralizedPartyOutput<ProtocolContext> =
         bcs::from_bytes(&presign_output)?;
     let signature_nonce_shares_and_commitment_randomnesses: Vec<(Scalar, Scalar)> =
         bcs::from_bytes(&signature_nonce_shares_and_commitment_randomnesses)?;
     let commitment_round_party = finalize_centralized_party_presign(
         dkg_output.clone(),
+        secret_share,
         signature_nonce_shares_and_commitment_randomnesses,
     )?;
 
@@ -157,15 +158,16 @@ pub fn finalize_presign(
 
 #[wasm_bindgen]
 pub fn initiate_sign(
-    dkg_output: Vec<u8>,
+    decentralized_dkg_output: Vec<u8>,
+    secret_share: Vec<u8>,
     presigns: Vec<u8>,
     messages: Vec<u8>,
     hash: u8,
 ) -> Result<JsValue, JsErr> {
     let messages: Vec<Vec<u8>> = bcs::from_bytes(&messages)?;
     let presigns: Vec<CentralizedPartyPresign> = bcs::from_bytes(&presigns)?;
-    let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
-    let commitment_round_parties = initiate_centralized_party_sign(dkg_output.clone(), presigns)?;
+    let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&decentralized_dkg_output)?;
+    let commitment_round_parties = initiate_centralized_party_sign(dkg_output.clone(), secret_share, presigns)?;
 
     let (
         public_nonce_encrypted_partial_signature_and_proofs,
