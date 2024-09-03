@@ -52,9 +52,7 @@ export const presignWithDWalletID = async (
 		new Uint8Array(encryptedUserShareObj?.encryptedUserShareAndProof!),
 	);
 	if (!verify_user_share(decryptedKeyShare, new Uint8Array(dwallet?.decentralizedDKGOutput!))) {
-		throw new Error(
-			"The decrypted key share doesn't match the decentralized DKG output public key share",
-		);
+		throw new Error("The decrypted key share doesn't match the dwallet's public key share");
 	}
 	return await createPartialUserSignedMessages(
 		dwalletID,
