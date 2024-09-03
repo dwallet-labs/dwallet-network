@@ -248,6 +248,8 @@ pub fn verify_proof(
 }
 
 /// Decrypt the user share using the Paillier decryption key.
+/// This function never throws an error.
+/// While using it, remember to always verify the decrypted user share is valid.
 pub fn decrypt_user_share(
     encryption_key: Vec<u8>,
     decryption_key: Vec<u8>,
