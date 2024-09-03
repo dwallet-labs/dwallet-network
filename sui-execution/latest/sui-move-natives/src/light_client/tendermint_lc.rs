@@ -13,7 +13,10 @@ use std::{collections::VecDeque, str::from_utf8};
 use ibc::core::commitment_types::{
     commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot},
     merkle::{apply_prefix, MerkleProof},
-    proto::ics23::HostFunctionsManager,
+    proto::{
+        ics23::{CommitmentProof, HostFunctionsManager},
+        v1::MerklePath,
+    },
     specs::ProofSpecs,
 };
 
@@ -46,52 +49,119 @@ pub struct TendermintLightClientCostParams {
 
 const INVALID_INPUT: u64 = 0;
 
+enum NativeError {
+    PrefixInvalid = 0,
+    PathInvalid,
+    CommitmentProofInvalid,
+    MerkleProofInvalid,
+    HeaderInvalid,
+    TimestampInvalid,
+    NextValidatorsHashInvalid,
+}
+
+fn state_proof_type_check(
+    value: Vec<u8>,
+    path: Vec<u8>,
+    prefix: Vec<u8>,
+    root: Vec<u8>,
+    proof: Vec<u8>,
+) -> Result<(Vec<u8>, MerklePath, MerkleProof, CommitmentRoot), NativeError> {
+    let Ok(prefix) = CommitmentPrefix::try_from(prefix) else {
+        return Err(NativeError::PrefixInvalid);
+    };
+
+    let Ok(path_str) = from_utf8(path.as_slice()) else {
+        return Err(NativeError::PathInvalid);
+    };
+
+    let merkle_path = apply_prefix(&prefix, vec![path_str.to_owned()]);
+
+    let Ok(proof_bytes) = CommitmentProofBytes::try_from(proof) else {
+        return Err(NativeError::CommitmentProofInvalid);
+    };
+
+    let Ok(merkle_proof) = MerkleProof::try_from(&proof_bytes) else {
+        return Err(NativeError::MerkleProofInvalid);
+    };
+
+    let root = CommitmentRoot::from_bytes(&root);
+
+    Ok((value, merkle_path, merkle_proof, root))
+}
+
 #[instrument(level = "trace", skip_all, err)]
 pub fn tendermint_state_proof(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
+    assert!(args.len() == 5);
+    assert!(ty_args.len() == 0);
+
     let value = pop_arg!(args, Vector).to_vec_u8()?;
     let path = pop_arg!(args, Vector).to_vec_u8()?;
     let prefix = pop_arg!(args, Vector).to_vec_u8()?;
     let root = pop_arg!(args, Vector).to_vec_u8()?;
     let proof = pop_arg!(args, Vector).to_vec_u8()?;
 
-    let Ok(prefix) = CommitmentPrefix::try_from(prefix) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+    match state_proof_type_check(value, path, prefix, root, proof) {
+        Ok((value, merkle_path, merkle_proof, root)) => {
+            let verified = merkle_proof
+                .verify_membership::<HostFunctionsManager>(
+                    &ProofSpecs::cosmos(),
+                    root.into(),
+                    merkle_path,
+                    value,
+                    0,
+                )
+                .is_ok();
+
+            Ok(NativeResult::ok(
+                context.gas_used(),
+                smallvec![Value::bool(verified)],
+            ))
+        }
+        Err(err) => Ok(NativeResult::err(context.gas_used(), err as u64)),
+    }
+}
+
+fn tendermint_verify_type_check(
+    header: Vec<u8>,
+    commitment_root: Vec<u8>,
+    next_validators_hash: Vec<u8>,
+    timestamp: Vec<u8>,
+) -> Result<(TmHeader, ConsensusState, Time), NativeError> {
+    let Ok(any) = Any::decode(&mut header.as_slice()) else {
+        return Err(NativeError::HeaderInvalid);
     };
 
-    let Ok(path_str) = from_utf8(path.as_slice()) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+    let Ok(header) = TmHeader::try_from(any) else {
+        return Err(NativeError::HeaderInvalid);
     };
 
-    let merkle_path = apply_prefix(&prefix, vec![path_str.to_owned()]);
-
-    let Ok(proof_bytes) = CommitmentProofBytes::try_from(proof) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+    let Ok(timestamp) = String::from_utf8(timestamp) else {
+        return Err(NativeError::TimestampInvalid);
     };
 
-    let Ok(merkle_proof) = MerkleProof::try_from(&proof_bytes) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+    let Ok(next_validators_hash) =
+        Hash::from_bytes(tendermint::hash::Algorithm::Sha256, &next_validators_hash)
+    else {
+        return Err(NativeError::NextValidatorsHashInvalid);
     };
 
-    let root = CommitmentRoot::from_bytes(&root);
+    let root = CommitmentRoot::from_bytes(&commitment_root);
 
-    let verified = merkle_proof
-        .verify_membership::<HostFunctionsManager>(
-            &ProofSpecs::cosmos(),
-            root.into(),
-            merkle_path,
-            value,
-            0,
-        )
-        .is_ok();
+    let Ok(timestamp) = Time::from_str(&timestamp) else {
+        return Err(NativeError::TimestampInvalid);
+    };
 
-    Ok(NativeResult::ok(
-        context.gas_used(),
-        smallvec![Value::bool(verified)],
-    ))
+    let cs = ConsensusState {
+        next_validators_hash,
+        root,
+        timestamp,
+    };
+
+    Ok((header, cs, timestamp))
 }
 
 // TODO: remove trace and add document for this funciton.
@@ -109,59 +179,34 @@ pub fn tendermint_verify_lc(
     let next_validators_hash = pop_arg!(args, Vector).to_vec_u8()?;
     let timestamp = pop_arg!(args, Vector).to_vec_u8()?;
 
-    let Ok(any) = Any::decode(&mut header.as_slice()) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
-    };
+    match tendermint_verify_type_check(header, commitment_root, next_validators_hash, timestamp) {
+        Ok((header, cs, timestamp)) => {
+            // move those data to init lc method
+            let five_year: u64 = 5 * 365 * 24 * 60 * 60;
+            let options = Options {
+                clock_drift: Duration::new(40, 0),
+                trust_threshold: TrustThreshold::ONE_THIRD,
+                trusting_period: Duration::new(five_year, 0),
+            };
 
-    let Ok(header) = TmHeader::try_from(any) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
-    };
-
-    let Ok(timestamp) = String::from_utf8(timestamp) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
-    };
-
-    let Ok(next_validators_hash) =
-        Hash::from_bytes(tendermint::hash::Algorithm::Sha256, &next_validators_hash)
-    else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
-    };
-
-    let root = CommitmentRoot::from_bytes(&commitment_root);
-
-    let Ok(timestamp) = Time::from_str(&timestamp) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
-    };
-
-    let cs = ConsensusState {
-        next_validators_hash,
-        root,
-        timestamp,
-    };
-
-    // move those data to init lc method
-    let five_year: u64 = 5 * 365 * 24 * 60 * 60;
-    let options = Options {
-        clock_drift: Duration::new(40, 0),
-        trust_threshold: TrustThreshold::ONE_THIRD,
-        trusting_period: Duration::new(five_year, 0),
-    };
-
-    // TODO: Move chain_id to init lc method
-    let chain_id = ChainId::new("ibc-0").unwrap();
-    let result = verify_header_lc::<Sha256>(
-        &chain_id,
-        &cs,
-        &header,
-        &options,
-        ProdVerifier::default(),
-        timestamp,
-    )
-    .is_ok();
-    Ok(NativeResult::ok(
-        context.gas_used(),
-        smallvec![Value::bool(result)],
-    ))
+            // TODO: Move chain_id to init lc method
+            let chain_id = ChainId::new("ibc-0").unwrap();
+            let result = verify_header_lc::<Sha256>(
+                &chain_id,
+                &cs,
+                &header,
+                &options,
+                ProdVerifier::default(),
+                timestamp,
+            )
+            .is_ok();
+            Ok(NativeResult::ok(
+                context.gas_used(),
+                smallvec![Value::bool(result)],
+            ))
+        }
+        Err(err) => Ok(NativeResult::err(context.gas_used(), err as u64)),
+    }
 }
 
 // TODO: should we move this function into tendermint_verify_lc
@@ -176,11 +221,17 @@ pub fn extract_consensus_state(
     let header = pop_arg!(args, Vector).to_vec_u8()?;
 
     let Ok(any) = Any::decode(&mut header.as_slice()) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+        return Ok(NativeResult::err(
+            context.gas_used(),
+            NativeError::HeaderInvalid as u64,
+        ));
     };
 
     let Ok(header) = TmHeader::try_from(any) else {
-        return Ok(NativeResult::err(context.gas_used(), INVALID_INPUT));
+        return Ok(NativeResult::err(
+            context.gas_used(),
+            NativeError::HeaderInvalid as u64,
+        ));
     };
 
     let timestamp = header.timestamp().to_string().to_vec();
