@@ -1,12 +1,21 @@
-#[allow(unused_function, unused_field)]
+#[allow(unused_function, unused_field, unused_const)]
 module dwallet_system::tendermint_lc {
   
     use dwallet::object::{UID, Self};
     use dwallet::tx_context::TxContext;
     use dwallet::dynamic_field as field;
 
-    const EUpdateFailed: u64 = 0;
+    
 
+    const PrefixInvalid: u64 = 0;
+    const PathInvalid: u64 = 1;
+    const CommitmentProofInvalid: u64 = 2;
+    const MerkleProofInvalid: u64 = 3; 
+    const HeaderInvalid: u64 = 4;
+    const TimestampInvalid: u64 = 5; 
+    const NextValidatorsHashInvalid: u64 = 6; 
+    const EUpdateFailed: u64 = 7;
+    
     struct Client has key, store {
         id: UID,
         latest_height: u64
