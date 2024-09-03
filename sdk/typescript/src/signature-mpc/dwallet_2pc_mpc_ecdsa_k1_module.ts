@@ -27,7 +27,7 @@ export {
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export type Dwallet = {
+export type CreatedDwallet = {
 	dwalletId: string;
 	centralizedDKGOutput: number[];
 	decentralizedDKGOutput: number[];
@@ -41,7 +41,7 @@ export async function createDWallet(
 	client: DWalletClient,
 	encryptionKey: Uint8Array,
 	encryptionKeyObjId: string,
-): Promise<Dwallet | null> {
+): Promise<CreatedDwallet | null> {
 	const resultDKG = initiate_dkg();
 
 	const commitmentToSecretKeyShare = resultDKG['commitment_to_secret_key_share'];
@@ -153,7 +153,16 @@ export async function createDWallet(
 	return null;
 }
 
-export const getDwalletByObjID = async (client: DWalletClient, dwalletObjID: string) => {
+export type DWallet = {
+	dwalletId: string;
+	decentralizedDKGOutput: number[];
+	dwalletCapId: string;
+};
+
+export const getDwalletByObjID = async (
+	client: DWalletClient,
+	dwalletObjID: string,
+): Promise<DWallet | null> => {
 	const dwalletObject = await client.getObject({
 		id: dwalletObjID,
 		options: { showContent: true },

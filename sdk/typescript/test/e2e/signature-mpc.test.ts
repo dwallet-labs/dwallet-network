@@ -12,9 +12,9 @@ import {
 	storeEncryptionKey,
 } from '../../src/signature-mpc';
 import { getOrCreateEncryptionKey } from '../../src/signature-mpc/encrypt_user_share';
-import { signWithDWalletID } from '../../src/signature-mpc/sign';
 import { generatePaillierKeyPairFromSuiKeyPair } from '../../src/signature-mpc/utils';
 import { setup, TestToolbox } from './utils/setup';
+import {presignWithDWalletID} from "../../src/signature-mpc/sign";
 
 describe('Test signature mpc', () => {
 	let toolbox: TestToolbox;
@@ -103,11 +103,18 @@ describe('Test signature mpc', () => {
 			encryptionKeyObj.objectID,
 		);
 		const message: Uint8Array = new TextEncoder().encode('Sign it!!!');
-		let signatures = await signWithDWalletID(
+		let presignObjID = await presignWithDWalletID(
 			toolbox.client,
 			toolbox.keypair,
 			dwallet?.dwalletId!,
 			message,
+		);
+		let signatures = await approveAndSign(
+			dwallet?.dwalletCapId!,
+			presignObjID!,
+			[message],
+			toolbox.keypair,
+			toolbox.client,
 		);
 		console.log({ signatures });
 	});
