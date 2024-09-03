@@ -4,14 +4,10 @@ import type { DWalletClient } from '../client/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 import {
 	createPartialUserSignedMessages,
-	decrypt_user_share, DWallet,
+	decrypt_user_share,
 	getDwalletByObjID,
 } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
-import {
-	approveAndSign,
-	getEncryptedUserShare,
-	getEncryptedUserShareByObjectId,
-} from './dwallet.js';
+import { getEncryptedUserShare, getEncryptedUserShareByObjectId } from './dwallet.js';
 import { generatePaillierKeyPairFromSuiKeyPair } from './utils.js';
 
 /**
