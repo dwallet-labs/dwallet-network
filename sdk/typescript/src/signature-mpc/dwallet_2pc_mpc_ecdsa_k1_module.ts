@@ -14,7 +14,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import {getEncryptionKeyByObjectId, saveEncryptedUserShare} from './dwallet';
+import { saveEncryptedUserShare} from './dwallet';
 import { fetchObjectBySessionId } from './utils.js';
 
 export {

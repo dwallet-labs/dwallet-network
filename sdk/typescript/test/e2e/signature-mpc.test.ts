@@ -1,7 +1,6 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { generate_keypair } from '@dwallet-network/signature-mpc-wasm';
 import { beforeAll, describe, it } from 'vitest';
 
 import {
@@ -22,8 +21,7 @@ describe('Test signature mpc', () => {
 	});
 
 	it('the signature mpc create dwallet', async () => {
-		const [walletCreatorEncryptionKey, walletCreatorDecryptionKey] =
-			generatePaillierKeyPairFromSuiKeyPair(toolbox.keypair);
+		const [walletCreatorEncryptionKey, _] = generatePaillierKeyPairFromSuiKeyPair(toolbox.keypair);
 
 		const pubKeyRef = await storeEncryptionKey(
 			walletCreatorEncryptionKey,

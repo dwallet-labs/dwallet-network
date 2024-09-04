@@ -1,16 +1,12 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { serialized_pubkeys_from_decentralized_dkg_output } from '@dwallet-network/signature-mpc-wasm';
-
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
-import { Dwallet } from './dwallet_2pc_mpc_ecdsa_k1_module';
-import {DWalletToTransfer, EncryptedUserShare} from './encrypt_user_share';
-import {fetchOwnedObjectByType} from "./utils";
+import type { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share.js';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -72,6 +68,9 @@ const waitForSignOutput = async (client: DWalletClient) => {
 	});
 };
 
+/**
+ * Store the given Paillier encryption key in the blockchain.
+ */
 export const storeEncryptionKey = async (
 	encryptionKey: Uint8Array,
 	encryptionKeyScheme: EncryptionKeyScheme,
@@ -130,6 +129,9 @@ export const getEncryptionKeyByObjectId = async (
 		: null;
 };
 
+/**
+ * Fetches an EncryptedUserShare object from the blockchain by the given object ID.
+ */
 export const getEncryptedUserShareByObjectId = async (
 	client: DWalletClient,
 	objID: string,
@@ -181,11 +183,16 @@ export const getActiveEncryptionKeyObjID = async (
 		transactionBlock: tx,
 	});
 
-	return Buffer.from(
-		new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]),
-	).toString('hex');
+	const array = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
+	const hexString = Array.from(array)
+		.map((byte) => byte.toString(16).padStart(2, '0'))
+		.join('');
+	return hexString;
 };
 
+/**
+ * Sets the given encryption key as the active encryption key for the given keypair Sui address & encryption keys holder table.
+ */
 export const setActiveEncryptionKey = async (
 	client: DWalletClient,
 	keypair: Keypair,
@@ -210,6 +217,9 @@ export const setActiveEncryptionKey = async (
 	});
 };
 
+/**
+ * Creates the table that maps a Sui address to the Paillier encryption key that is derived from the Sui address secret.
+ */
 export const createActiveEncryptionKeysTable = async (client: DWalletClient, keypair: Keypair) => {
 	const tx = new TransactionBlock();
 	tx.moveCall({

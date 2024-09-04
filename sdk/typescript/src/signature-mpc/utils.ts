@@ -1,12 +1,12 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { generate_keypair_from_seed } from '@dwallet-network/signature-mpc-wasm';
 import { ethers, keccak256 } from 'ethers';
 
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { Ed25519Keypair } from '../keypairs/ed25519';
-import { generate_keypair_from_seed } from './dwallet_2pc_mpc_ecdsa_k1_module';
+import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 
 export async function fetchObjectBySessionId(
 	sessionId: string,
