@@ -300,7 +300,7 @@ export const createEncryptedUserSharesHolder = async (client: DWalletClient, key
 	return result.effects?.created?.at(0)?.reference;
 };
 
-export const getEncryptedUserSharesObjId = async (client: DWalletClient, keypair: Keypair) => {
+export const getEncryptedUserSharesObjID = async (client: DWalletClient, keypair: Keypair) => {
 	const table = await fetchOwnedObjectByType(
 		`${packageId}::${dWalletModuleName}::EncryptedUserShares`,
 		keypair,
@@ -329,7 +329,7 @@ export const saveEncryptedUserShare = async (
 	const tx = new TransactionBlock();
 	const encKey = tx.object(encryptionKeyID);
 	const encryptedUserShare = tx.object(encryptedUserShareId);
-	const encryptedUserSharesId = await getEncryptedUserSharesObjId(client, keypair);
+	const encryptedUserSharesId = await getEncryptedUserSharesObjID(client, keypair);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::save_encrypted_user_share`,
@@ -348,15 +348,15 @@ export const saveEncryptedUserShare = async (
 export const getEncryptedUserShare = async (
 	client: DWalletClient,
 	keypair: Keypair,
-	encrptedUserSharesObjID: string,
+	encryptedUserSharesObjID: string,
 	dwalletID: string,
 ) => {
 	const tx = new TransactionBlock();
-	const encrptedUserSharesObj = tx.object(encrptedUserSharesObjID);
+	const encryptedUserSharesObj = tx.object(encryptedUserSharesObjID);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_encrypted_user_share_by_dwallet_id`,
-		arguments: [encrptedUserSharesObj, tx.pure(dwalletID)],
+		arguments: [encryptedUserSharesObj, tx.pure(dwalletID)],
 	});
 
 	let res = await client.devInspectTransactionBlock({
