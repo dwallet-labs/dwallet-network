@@ -151,7 +151,7 @@ export const acceptUserShare = async (
 		return false;
 	}
 	let dwalletToSend = {
-		dwalletId: dwalletID,
+		dwalletID: dwalletID,
 		secretKeyShare: Array.from(decryptedKeyShare),
 		decentralizedDKGOutput: dwallet!.decentralizedDKGOutput,
 	};
