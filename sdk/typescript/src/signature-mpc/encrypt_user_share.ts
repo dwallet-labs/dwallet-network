@@ -8,7 +8,8 @@ import {
 
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
-import { Ed25519Keypair, Ed25519PublicKey } from '../keypairs/ed25519/index.js';
+import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
+import { Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import {
 	decrypt_user_share,
 	generate_proof,
@@ -22,7 +23,7 @@ import {
 	storeEncryptionKey,
 	transferEncryptedUserShare,
 } from './dwallet.js';
-import { generatePaillierKeyPairFromSuiKeyPair } from './utils';
+import { generatePaillierKeyPairFromSuiKeyPair } from './utils.js';
 
 export type DWalletToTransfer = {
 	secretKeyShare: number[];
