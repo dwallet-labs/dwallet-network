@@ -19,7 +19,6 @@ use maurer::{language, SOUND_PROOFS_REPETITIONS};
 use proof::range;
 use proof::range::bulletproofs;
 use proof::range::bulletproofs::{COMMITMENT_SCHEME_MESSAGE_SPACE_SCALAR_LIMBS, RANGE_CLAIM_BITS};
-use rand::rngs::StdRng;
 use rand_core::{OsRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tiresias::{
@@ -64,6 +63,15 @@ pub struct EncryptedUserShareAndProof {
         { RANGE_CLAIMS_PER_SCALAR },
         bulletproofs::RangeProof,
     >,
+}
+
+/// Structs to hold the public keys of the DWallet.
+/// Used for signing on it while performing the dWallet transfer.
+#[derive(Serialize, Deserialize)]
+pub struct DWalletPublicKeys {
+    pub public_key: group::Value<Secp256K1GroupElement>,
+    pub decentralized_public_key_share: group::Value<Secp256K1GroupElement>,
+    pub centralized_public_key_share: group::Value<Secp256K1GroupElement>,
 }
 
 /// Generate a keypair for the Paillier encryption scheme.
@@ -267,13 +275,6 @@ pub fn decrypt_user_share(
         .unwrap();
     let secret_share_bytes = U256::from(&plaintext.value()).to_be_bytes().to_vec();
     Ok(secret_share_bytes)
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct DWalletPublicKeys {
-    pub public_key: group::Value<Secp256K1GroupElement>,
-    pub decentralized_public_key_share: group::Value<Secp256K1GroupElement>,
-    pub centralized_public_key_share: group::Value<Secp256K1GroupElement>,
 }
 
 pub fn serialized_pubkeys_from_centralized_dkg_output(

@@ -4,7 +4,6 @@
 use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
 use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use std::collections::VecDeque;
-use std::ops::Deref;
 
 use group::GroupElement as g;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
@@ -348,7 +347,7 @@ pub fn ed2551_pubkey_to_sui_addr(
     Ok(NativeResult::ok(cost, smallvec![addr]))
 }
 
-/// Verify that the public keys has been signed by the given ed2551 public key.
+/// Verify that the public keys have been signed by the given ed2551 public key.
 pub fn verify_signed_pubkeys(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
