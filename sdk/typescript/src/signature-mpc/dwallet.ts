@@ -131,9 +131,9 @@ export const getEncryptionKeyByObjectId = async (
 };
 
 /**
- * Fetches an EncryptedUserShare object from the blockchain by the given object ID.
+ * Fetches an {@link EncryptedUserShare} object from the blockchain by the given object ID.
  */
-export const getEncryptedUserShareByObjectId = async (
+export const getEncryptedUserShareByObjectID = async (
 	client: DWalletClient,
 	objID: string,
 ): Promise<EncryptedUserShare | null> => {
@@ -155,10 +155,10 @@ export const getEncryptedUserShareByObjectId = async (
 
 	return objectFields
 		? {
-				dwalletId: objectFields?.dwallet_id,
+				dwalletID: objectFields?.dwallet_id,
 				encryptedUserShareAndProof: objectFields?.encrypted_secret_share_and_proof,
 				encryptionKeyObjID: objectFields?.encryption_key_id,
-				signedDWalletPubkeys: objectFields.signed_dwallet_pubkeys,
+				signedDWalletPubKeys: objectFields.signed_dwallet_pubkeys,
 				senderPubKey: objectFields.sender_pubkey,
 		  }
 		: null;
@@ -192,7 +192,8 @@ export const getActiveEncryptionKeyObjID = async (
 };
 
 /**
- * Sets the given encryption key as the active encryption key for the given keypair Sui address & encryption keys holder table.
+ * Sets the given encryption key as the active encryption key for the given keypair Sui
+ * address & encryption keys holder table.
  */
 export const setActiveEncryptionKey = async (
 	client: DWalletClient,
@@ -219,7 +220,8 @@ export const setActiveEncryptionKey = async (
 };
 
 /**
- * Creates the table that maps a Sui address to the Paillier encryption key that is derived from the Sui address secret.
+ * Creates the table that maps a Sui address to the Paillier encryption
+ * key is derived from the Sui address secret.
  */
 export const createActiveEncryptionKeysTable = async (client: DWalletClient, keypair: Keypair) => {
 	const tx = new TransactionBlock();
@@ -254,7 +256,7 @@ export const transferEncryptedUserShare = async (
 ) => {
 	const tx = new TransactionBlock();
 	const encryptionKey = tx.object(encryptionKeyObjID);
-	const dwalletObj = tx.object(dwallet.dwalletId);
+	const dwalletObj = tx.object(dwallet.dwalletID);
 	let pureSuiPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(keypair.getPublicKey().toRawBytes()));
 
 	tx.moveCall({
