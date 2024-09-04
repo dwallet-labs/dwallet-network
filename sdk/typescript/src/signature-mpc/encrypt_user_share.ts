@@ -2,22 +2,22 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import {
-	serialized_pubkeys_from_decentralized_dkg_output,
-	verify_user_share,
+    serialized_pubkeys_from_decentralized_dkg_output,
+    verify_user_share,
 } from '@dwallet-network/signature-mpc-wasm';
 
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
 import { Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import {
-	decrypt_user_share,
-	generate_proof,
-	getDwalletByObjID,
+    decrypt_user_share,
+    generate_proof,
+    getDwalletByObjID,
 } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import {
-	getActiveEncryptionKeyObjID,
-	getEncryptionKeyByObjectId,
-	transferEncryptedUserShare,
+    getActiveEncryptionKeyObjID,
+    getEncryptionKeyByObjectId,
+    transferEncryptedUserShare,
 } from './dwallet.js';
 
 export type DWalletToTransfer = {
