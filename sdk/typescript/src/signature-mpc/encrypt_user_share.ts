@@ -19,9 +19,9 @@ import {
 	EncryptionKeyScheme,
 	getActiveEncryptionKeyObjID,
 	getEncryptionKeyByObjectId,
+	saveEncryptedUserShare,
 	setActiveEncryptionKey,
 	storeEncryptionKey,
-	saveEncryptedUserShare,
 	transferEncryptedUserShare,
 } from './dwallet.js';
 import { generatePaillierKeyPairFromSuiKeyPair } from './utils.js';
@@ -161,7 +161,7 @@ export const acceptUserShare = async (
 		decentralizedDKGOutput: dwallet!.decentralizedDKGOutput,
 	};
 
-    // Encrypt it to self, so that in the future we'd know that we already verified everything and only need to verify our signature.
+	// Encrypt it to self, so that in the future we'd know that we already verified everything and only need to verify our signature.
 	const encryptedUserShareRef = await sendUserShareToSuiPubKey(
 		client,
 		keypair,
