@@ -100,7 +100,7 @@ describe('Secret key share transfer', () => {
 				),
 		).toBeTruthy();
 
-		let txResponse = await sendUserShareToSuiPubKey(
+		let objRef = await sendUserShareToSuiPubKey(
 			dwalletSenderToolbox.client,
 			dwalletSenderToolbox.keypair,
 			createdDwallet!,
@@ -110,7 +110,7 @@ describe('Secret key share transfer', () => {
 		);
 
 		// ======================= Verify Received DWallet is Valid =======================
-		let encryptedUserShareObjID = txResponse.objectId;
+		let encryptedUserShareObjID = objRef?.objectId;
 		let encryptedUserShare = await getEncryptedUserShareByObjID(
 			dwalletReceiverToolbox.client,
 			encryptedUserShareObjID!,
