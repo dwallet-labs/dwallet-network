@@ -1,3 +1,5 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { serialized_pubkeys_from_decentralized_dkg_output } from '@dwallet-network/signature-mpc-wasm';
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -62,8 +64,9 @@ describe('Secret key share transfer', () => {
 	it('full flow - encrypts a secret share to a given Sui public key successfully, and store it on chain from the receiving end', async () => {
 		// ======================= Create Source DWallet =======================
 		// TODO (#202): Create a function that retrieves an encryption key for the given keypair if it exists
-		const [walletCreatorEncryptionKey, walletCreatorDecryptionKey] =
-			generatePaillierKeyPairFromSuiKeyPair(dwalletSenderToolbox.keypair);
+		const [walletCreatorEncryptionKey, _] = generatePaillierKeyPairFromSuiKeyPair(
+			dwalletSenderToolbox.keypair,
+		);
 
 		const pubKeyRef = await storeEncryptionKey(
 			walletCreatorEncryptionKey,

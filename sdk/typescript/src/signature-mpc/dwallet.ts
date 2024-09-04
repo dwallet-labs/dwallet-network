@@ -1,16 +1,15 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { serialized_pubkeys_from_decentralized_dkg_output } from '@dwallet-network/signature-mpc-wasm';
-
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
-import { Dwallet } from './dwallet_2pc_mpc_ecdsa_k1_module';
-import { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share';
+import type { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share.js';
 
+//[object Object]
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
