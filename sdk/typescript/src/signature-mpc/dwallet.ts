@@ -7,6 +7,7 @@ import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
 import type { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share.js';
+import {fetchOwnedObjectByType} from "./utils";
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -268,7 +269,7 @@ export const transferEncryptedUserShare = async (
 		],
 	});
 
-	const res =  await client.signAndExecuteTransactionBlock({
+	const res = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx,
 		options: {
@@ -295,15 +296,19 @@ export const createEncryptedUserSharesHolder = async (client: DWalletClient, key
 	});
 
 	return result.effects?.created?.at(0)?.reference;
-}
+};
 
 export const getEncryptedUserSharesObjId = async (client: DWalletClient, keypair: Keypair) => {
-	const table =  await fetchOwnedObjectByType(`${packageId}::${dWalletModuleName}::EncryptedUserShares`, keypair, client);
+	const table = await fetchOwnedObjectByType(
+		`${packageId}::${dWalletModuleName}::EncryptedUserShares`,
+		keypair,
+		client,
+	);
 	const tableFields =
 		table?.dataType === 'moveObject'
 			? (table.fields as {
-				id: { id: string };
-			})
+					id: { id: string };
+			  })
 			: null;
 
 	if (table === null) {
@@ -311,7 +316,7 @@ export const getEncryptedUserSharesObjId = async (client: DWalletClient, keypair
 		return newTable?.objectId;
 	}
 	return tableFields?.id.id;
-}
+};
 
 export const saveEncryptedUserShare = async (
 	client: DWalletClient,
