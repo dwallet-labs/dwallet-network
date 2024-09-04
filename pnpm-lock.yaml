@@ -13551,14 +13551,14 @@ snapshots:
     dependencies:
       '@amplitude/types': 1.10.2
       '@amplitude/utils': 1.10.2
-      tslib: 2.6.0
+      tslib: 2.6.2
 
   '@amplitude/node@1.10.2':
     dependencies:
       '@amplitude/identify': 1.10.2
       '@amplitude/types': 1.10.2
       '@amplitude/utils': 1.10.2
-      tslib: 2.6.0
+      tslib: 2.6.2
 
   '@amplitude/plugin-page-view-tracking-browser@0.8.0':
     dependencies:
@@ -15799,7 +15799,7 @@ snapshots:
       debug: 4.3.4(supports-color@8.1.1)
       globby: 11.1.0
       is-wsl: 2.2.0
-      tslib: 2.6.0
+      tslib: 2.6.2
     transitivePeerDependencies:
       - supports-color
 
@@ -15840,7 +15840,7 @@ snapshots:
       '@oclif/errors': 1.3.6
       '@oclif/linewrap': 1.0.0
       chalk: 4.1.2
-      tslib: 2.6.0
+      tslib: 2.6.2
 
   '@oclif/plugin-autocomplete@0.3.0':
     dependencies:
@@ -22585,7 +22585,7 @@ snapshots:
   graphql-tag@2.12.6(graphql@15.8.0):
     dependencies:
       graphql: 15.8.0
-      tslib: 2.6.0
+      tslib: 2.6.2
 
   graphql@15.8.0: {}
 

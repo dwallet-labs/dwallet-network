@@ -30,8 +30,7 @@ describe('Test signature mpc', () => {
 	});
 
 	it('the signature mpc create dwallet', async () => {
-		const [walletCreatorEncryptionKey, walletCreatorDecryptionKey] =
-			generatePaillierKeyPairFromSuiKeyPair(toolbox.keypair);
+		const [walletCreatorEncryptionKey, _] = generatePaillierKeyPairFromSuiKeyPair(toolbox.keypair);
 
 		const pubKeyRef = await storeEncryptionKey(
 			walletCreatorEncryptionKey,

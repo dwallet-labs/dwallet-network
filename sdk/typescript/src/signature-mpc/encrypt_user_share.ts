@@ -9,7 +9,8 @@ import _ from 'lodash';
 
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
-import { Ed25519Keypair, Ed25519PublicKey } from '../keypairs/ed25519/index.js';
+import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
+import { Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import {
 	decrypt_user_share,
 	generate_proof,
@@ -33,6 +34,15 @@ export type DWalletToTransfer = {
 	dwalletId: string;
 };
 
+/**
+ * Encrypts and sends the given secret user share to the given destination public key.
+ *
+ * @param keypair The Sui keypair that was being used to sign the signedDWalletPubKeys.
+ * @param dwallet The DWallet that we want to send the secret user share of.
+ * @param destinationPublicKey The ed2551 public key of the destination Sui address.
+ * @param activeEncryptionKeysTableID The ID of the table that holds the active encryption keys.
+ * @param signedDWalletPubKeys The signed DWallet public keys.
+ */
 export const sendUserShareToSuiPubKey = async (
 	client: DWalletClient,
 	keypair: Keypair,
@@ -137,6 +147,7 @@ export const acceptUserShare = async (
 	let serializedPubkeys = serialized_pubkeys_from_decentralized_dkg_output(
 		new Uint8Array(dwallet?.decentralizedDKGOutput!),
 	);
+    // Encrypt it to self, so that in the future we'd know that we already verified everything and only need to verify our signature.
 	const encryptedUserShareRef = await sendUserShareToSuiPubKey(
 		client,
 		keypair,
