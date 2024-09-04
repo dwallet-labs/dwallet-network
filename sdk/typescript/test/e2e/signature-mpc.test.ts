@@ -12,9 +12,9 @@ import {
 	storeEncryptionKey,
 } from '../../src/signature-mpc';
 import { getOrCreateEncryptionKey } from '../../src/signature-mpc/encrypt_user_share';
+import { presignWithDWalletID } from '../../src/signature-mpc/sign';
 import { generatePaillierKeyPairFromSuiKeyPair } from '../../src/signature-mpc/utils';
 import { setup, TestToolbox } from './utils/setup';
-import {presignWithDWalletID} from "../../src/signature-mpc/sign";
 
 describe('Test signature mpc', () => {
 	let toolbox: TestToolbox;
@@ -62,6 +62,8 @@ describe('Test signature mpc', () => {
 			dkg?.dwalletCapId!,
 			signMessagesIdSHA256!,
 			[bytes],
+			dkg?.dwalletId!,
+			'SHA256',
 			toolbox.keypair,
 			toolbox.client,
 		);
@@ -82,6 +84,8 @@ describe('Test signature mpc', () => {
 			dkg?.dwalletCapId!,
 			signMessagesIdKECCAK256!,
 			[bytes],
+			dkg?.dwalletId!,
+			'KECCAK256',
 			toolbox.keypair,
 			toolbox.client,
 		);
@@ -108,11 +112,15 @@ describe('Test signature mpc', () => {
 			toolbox.keypair,
 			dwallet?.dwalletId!,
 			message,
+			'SHA256',
+			activeEncryptionKeysTableID,
 		);
 		let signatures = await approveAndSign(
 			dwallet?.dwalletCapId!,
 			presignObjID!,
 			[message],
+			dwallet?.dwalletId!,
+			'SHA256',
 			toolbox.keypair,
 			toolbox.client,
 		);

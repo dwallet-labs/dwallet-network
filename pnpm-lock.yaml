@@ -1376,6 +1376,9 @@ importers:
       ethers:
         specifier: 6.13.2
         version: 6.13.2
+      lodash:
+        specifier: 4.17.21
+        version: 4.17.21
       superstruct:
         specifier: ^1.0.3
         version: 1.0.3

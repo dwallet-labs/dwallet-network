@@ -24,6 +24,7 @@ import {
 	transferEncryptedUserShare,
 } from './dwallet.js';
 import { generatePaillierKeyPairFromSuiKeyPair } from './utils';
+import _ from 'lodash';
 
 export type DWalletToTransfer = {
 	secretKeyShare: number[];
@@ -194,7 +195,7 @@ export const getOrCreateEncryptionKey = async (
 	);
 	if (activeEncryptionKeyObjID) {
 		let encryptionKeyObj = await getEncryptionKeyByObjectId(client, activeEncryptionKeyObjID);
-		if (encryptionKeyObj?.encryptionKey === encryptionKey) {
+		if (_.isEqual(encryptionKeyObj?.encryptionKey, encryptionKey)) {
 			return {
 				encryptionKey,
 				decryptionKey,

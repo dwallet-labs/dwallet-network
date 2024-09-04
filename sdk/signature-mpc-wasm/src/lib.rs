@@ -26,7 +26,7 @@ use signature_mpc::twopc_mpc_protocols::Scalar;
 use signature_mpc::twopc_mpc_protocols::{
     affine_point_to_public_key, decommitment_round_centralized_party_dkg,
     initiate_centralized_party_dkg, recovery_id, DKGDecommitmentRoundState, Hash, ProtocolContext,
-    PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1,
+    PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1, verify_signature
 };
 
 #[derive(Serialize, Deserialize)]
@@ -189,6 +189,14 @@ pub fn initiate_sign(
     Ok(serde_wasm_bindgen::to_value(
         &public_nonce_encrypted_partial_signature_and_proofs,
     )?)
+}
+
+#[wasm_bindgen]
+pub fn verify_signatures(messages: Vec<u8>, hash: u8, dkg_output: Vec<u8>, signatures: Vec<u8>) -> Result<JsValue, JsErr> {
+    let messages: Vec<Vec<u8>> = bcs::from_bytes(&messages)?;
+    let signatures: Vec<Vec<u8>> = bcs::from_bytes(&signatures)?;
+    let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
+    Ok(JsValue::from(verify_signature(messages, &Hash::from(hash), dkg_output.public_key, signatures)))
 }
 
 #[wasm_bindgen]

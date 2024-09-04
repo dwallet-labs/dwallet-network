@@ -185,7 +185,7 @@ export const getDwalletByObjID = async (
 		: null;
 };
 
-function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
+export function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
 	if (hash === 'KECCAK256') {
 		return 0;
 	} else {

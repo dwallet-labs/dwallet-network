@@ -13,7 +13,7 @@ import {
 	getDwalletByObjID,
 } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import { getEncryptedUserShare, getEncryptedUserShareByObjectId } from './dwallet.js';
-import { generatePaillierKeyPairFromSuiKeyPair } from './utils.js';
+import { getOrCreateEncryptionKey } from './encrypt_user_share';
 
 /**
  * Pre-signs the given message with the given DWallet ID.
@@ -27,8 +27,14 @@ export const presignWithDWalletID = async (
 	keypair: Ed25519Keypair,
 	dwalletID: string,
 	message: Uint8Array,
+	hash: 'KECCAK256' | 'SHA256',
+	activeEncryptionKeysTableID: string,
 ): Promise<string | null> => {
-	let [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(keypair);
+	let encryptionKeyObj = await getOrCreateEncryptionKey(
+		keypair,
+		client,
+		activeEncryptionKeysTableID,
+	);
 
 	let encryptedUserShareObjId = await getEncryptedUserShare(client, keypair, dwalletID);
 	let encryptedUserShareObj = await getEncryptedUserShareByObjectId(
@@ -47,8 +53,8 @@ export const presignWithDWalletID = async (
 		throw new Error('The DWallet public keys has not been signed by the desired Sui address');
 	}
 	const decryptedKeyShare = decrypt_user_share(
-		encryptionKey,
-		decryptionKey,
+		encryptionKeyObj.encryptionKey,
+		encryptionKeyObj.decryptionKey,
 		new Uint8Array(encryptedUserShareObj?.encryptedUserShareAndProof!),
 	);
 	if (!verify_user_share(decryptedKeyShare, new Uint8Array(dwallet?.decentralizedDKGOutput!))) {
@@ -59,7 +65,7 @@ export const presignWithDWalletID = async (
 		dwallet?.decentralizedDKGOutput!,
 		decryptedKeyShare,
 		[message],
-		'SHA256',
+		hash,
 		keypair,
 		client,
 	);

@@ -1,11 +1,17 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import {
+	serialized_pubkeys_from_decentralized_dkg_output,
+	verify_signatures,
+} from '@dwallet-network/signature-mpc-wasm';
+
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
+import { getDwalletByObjID, hashToNumber } from './dwallet_2pc_mpc_ecdsa_k1_module';
 import { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share';
 import { fetchOwnedObjectByType } from './utils';
 
@@ -21,6 +27,8 @@ export async function approveAndSign(
 	dwalletCapId: string,
 	signMessagesId: string,
 	messages: Uint8Array[],
+	dwalletID: string,
+	hash: 'KECCAK256' | 'SHA256',
 	keypair: Keypair,
 	client: DWalletClient,
 ) {
@@ -48,14 +56,41 @@ export async function approveAndSign(
 			showEffects: true,
 		},
 	});
-	return await waitForSignOutput(client);
+	let signatures = await waitForSignOutput(client);
+	let encryptedUserShareObjId = await getEncryptedUserShare(client, keypair, dwalletID);
+	let encryptedUserShareObj = await getEncryptedUserShareByObjectId(
+		client,
+		encryptedUserShareObjId!,
+	);
+	let dwallet = await getDwalletByObjID(client, dwalletID);
+	let serializedPubkeys = serialized_pubkeys_from_decentralized_dkg_output(
+		new Uint8Array(dwallet?.decentralizedDKGOutput!),
+	);
+	if (
+		!(await keypair
+			.getPublicKey()
+			.verify(serializedPubkeys, new Uint8Array(encryptedUserShareObj?.signedDWalletPubkeys!)))
+	) {
+		throw new Error('The DWallet public keys has not been signed by the desired Sui address');
+	}
+	if (
+		!verify_signatures(
+			bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes(),
+			hashToNumber(hash),
+			new Uint8Array(dwallet?.decentralizedDKGOutput!),
+			bcs.vector(bcs.vector(bcs.u8())).serialize(signatures).toBytes(),
+		)
+	) {
+		throw new Error('Returned signatures are not valid');
+	}
+	return signatures;
 }
 
 export interface SignOutputEventData {
 	signatures: Uint8Array[];
 }
 
-const waitForSignOutput = async (client: DWalletClient) => {
+const waitForSignOutput = async (client: DWalletClient): Promise<Uint8Array[]> => {
 	return new Promise((resolve) => {
 		client.subscribeEvent({
 			filter: {
