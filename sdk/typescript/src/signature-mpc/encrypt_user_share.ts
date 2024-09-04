@@ -199,11 +199,10 @@ export const getOrCreateEncryptionKey = async (
 				decryptionKey,
 				objectID: activeEncryptionKeyObjID,
 			};
-		} else {
-			throw new Error(
-				'Encryption key derived from Sui secret does not match the one in the active encryption keys table',
-			);
 		}
+		throw new Error(
+			'Encryption key derived from Sui secret does not match the one in the active encryption keys table',
+		);
 	}
 	const encryptionKeyRef = await storeEncryptionKey(
 		encryptionKey,
