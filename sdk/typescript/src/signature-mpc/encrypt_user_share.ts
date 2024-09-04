@@ -5,6 +5,7 @@ import {
 	serialized_pubkeys_from_decentralized_dkg_output,
 	verify_user_share,
 } from '@dwallet-network/signature-mpc-wasm';
+import _ from 'lodash';
 
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
@@ -18,13 +19,13 @@ import {
 	EncryptionKeyScheme,
 	getActiveEncryptionKeyObjID,
 	getEncryptionKeyByObjectId,
+	saveEncryptedUserShare,
 	setActiveEncryptionKey,
 	storeEncryptionKey,
-	saveEncryptedUserShare,
 	transferEncryptedUserShare,
 } from './dwallet.js';
+import { decryptAndVerifyUserShare } from './sign';
 import { generatePaillierKeyPairFromSuiKeyPair } from './utils';
-import _ from 'lodash';
 
 export type DWalletToTransfer = {
 	secretKeyShare: number[];
@@ -113,45 +114,29 @@ export const getEncryptedUserShareByObjID = async (
 export const acceptUserShare = async (
 	encryptedUserShare: EncryptedUserShare,
 	expectedSourceSuiAddress: string,
-	encryptionKey: Uint8Array,
-	decryptionKey: Uint8Array,
+	encryptionKeyObj: EncryptionKeyPair,
 	dwalletID: string,
 	encryptionKeysHolderObjID: string,
 	client: DWalletClient,
 	keypair: Keypair,
 ): Promise<boolean> => {
 	let dwallet = await getDwalletByObjID(client, dwalletID);
-	let publicKey = new Ed25519PublicKey(encryptedUserShare?.senderPubKey!);
-	let serializedPubkeys = serialized_pubkeys_from_decentralized_dkg_output(
-		new Uint8Array(dwallet?.decentralizedDKGOutput!),
+	// This function also verifies that the dkg output has been signed by the source public key.
+	const decryptedKeyShare = await decryptAndVerifyUserShare(
+		new Ed25519PublicKey(encryptedUserShare?.senderPubKey!),
+		expectedSourceSuiAddress,
+		dwallet?.decentralizedDKGOutput!,
+		encryptedUserShare,
+		encryptionKeyObj,
 	);
-	if (
-		!(await publicKey.verify(
-			serializedPubkeys,
-			new Uint8Array(encryptedUserShare?.signedDWalletPubkeys!),
-		))
-	) {
-		return false;
-	}
-	if (publicKey.toSuiAddress() !== expectedSourceSuiAddress) {
-		return false;
-	}
-
-	const decryptedKeyShare = decrypt_user_share(
-		encryptionKey,
-		decryptionKey,
-		new Uint8Array(encryptedUserShare?.encryptedUserShareAndProof!),
-	);
-
-	if (!verify_user_share(decryptedKeyShare, new Uint8Array(dwallet?.decentralizedDKGOutput!))) {
-		return false;
-	}
 	let dwalletToSend = {
 		dwalletId: dwalletID,
 		secretKeyShare: Array.from(decryptedKeyShare),
 		decentralizedDKGOutput: dwallet!.decentralizedDKGOutput,
 	};
-
+	let serializedPubkeys = serialized_pubkeys_from_decentralized_dkg_output(
+		new Uint8Array(dwallet?.decentralizedDKGOutput!),
+	);
 	const encryptedUserShareRef = await sendUserShareToSuiPubKey(
 		client,
 		keypair,
@@ -160,13 +145,11 @@ export const acceptUserShare = async (
 		encryptionKeysHolderObjID,
 		await keypair.sign(serializedPubkeys),
 	);
-
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		client,
 		keypair.toSuiAddress(),
 		encryptionKeysHolderObjID,
 	);
-
 	await saveEncryptedUserShare(
 		client,
 		keypair,
@@ -176,7 +159,7 @@ export const acceptUserShare = async (
 	return true;
 };
 
-type EncryptionKeyPair = {
+export type EncryptionKeyPair = {
 	encryptionKey: Uint8Array;
 	decryptionKey: Uint8Array;
 	objectID: string;

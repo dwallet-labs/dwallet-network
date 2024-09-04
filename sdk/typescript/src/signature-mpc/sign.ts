@@ -6,14 +6,50 @@ import {
 } from '@dwallet-network/signature-mpc-wasm';
 
 import type { DWalletClient } from '../client/index.js';
-import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
+import { Ed25519Keypair, Ed25519PublicKey } from '../keypairs/ed25519/index.js';
 import {
 	createPartialUserSignedMessages,
 	decrypt_user_share,
 	getDwalletByObjID,
 } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import { getEncryptedUserShare, getEncryptedUserShareByObjectId } from './dwallet.js';
-import { getOrCreateEncryptionKey } from './encrypt_user_share';
+import {
+	EncryptedUserShare,
+	EncryptionKeyPair,
+	getOrCreateEncryptionKey,
+} from './encrypt_user_share';
+
+export const decryptAndVerifyUserShare = async (
+	sourcePublicKey: Ed25519PublicKey,
+	expectedSourceSuiAddress: string,
+	dkgOutput: number[],
+	encryptedUserShareObj: EncryptedUserShare,
+	encryptionKeyObj: EncryptionKeyPair,
+): Promise<Uint8Array> => {
+	if (sourcePublicKey.toSuiAddress() !== expectedSourceSuiAddress) {
+		throw new Error('The source public key does not match the expected Sui address');
+	}
+	let serializedPubkeys = serialized_pubkeys_from_decentralized_dkg_output(
+		new Uint8Array(dkgOutput),
+	);
+	if (
+		!(await sourcePublicKey.verify(
+			serializedPubkeys,
+			new Uint8Array(encryptedUserShareObj?.signedDWalletPubkeys!),
+		))
+	) {
+		throw new Error('The DWallet public keys has not been signed by the desired Sui address');
+	}
+	const decryptedKeyShare = decrypt_user_share(
+		encryptionKeyObj.encryptionKey,
+		encryptionKeyObj.decryptionKey,
+		new Uint8Array(encryptedUserShareObj?.encryptedUserShareAndProof!),
+	);
+	if (!verify_user_share(decryptedKeyShare, new Uint8Array(dkgOutput!))) {
+		throw new Error("The decrypted key share doesn't match the dwallet's public key share");
+	}
+	return decryptedKeyShare;
+};
 
 /**
  * Pre-signs the given message with the given DWallet ID.
@@ -42,24 +78,13 @@ export const presignWithDWalletID = async (
 		encryptedUserShareObjId!,
 	);
 	let dwallet = await getDwalletByObjID(client, dwalletID);
-	let serializedPubkeys = serialized_pubkeys_from_decentralized_dkg_output(
-		new Uint8Array(dwallet?.decentralizedDKGOutput!),
+	const decryptedKeyShare = await decryptAndVerifyUserShare(
+		keypair.getPublicKey(),
+		keypair.toSuiAddress(),
+		dwallet?.decentralizedDKGOutput!,
+		encryptedUserShareObj!,
+		encryptionKeyObj,
 	);
-	if (
-		!(await keypair
-			.getPublicKey()
-			.verify(serializedPubkeys, new Uint8Array(encryptedUserShareObj?.signedDWalletPubkeys!)))
-	) {
-		throw new Error('The DWallet public keys has not been signed by the desired Sui address');
-	}
-	const decryptedKeyShare = decrypt_user_share(
-		encryptionKeyObj.encryptionKey,
-		encryptionKeyObj.decryptionKey,
-		new Uint8Array(encryptedUserShareObj?.encryptedUserShareAndProof!),
-	);
-	if (!verify_user_share(decryptedKeyShare, new Uint8Array(dwallet?.decentralizedDKGOutput!))) {
-		throw new Error("The decrypted key share doesn't match the dwallet's public key share");
-	}
 	return await createPartialUserSignedMessages(
 		dwalletID,
 		dwallet?.decentralizedDKGOutput!,
