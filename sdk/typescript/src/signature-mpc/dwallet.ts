@@ -11,16 +11,52 @@ import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
-import { getDwalletByObjID, hashToNumber } from './dwallet_2pc_mpc_ecdsa_k1_module';
-import { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share';
-import { fetchOwnedObjectByType } from './utils';
+import type { DWallet } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
+import type { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share.js';
+import { fetchOwnedObjectByType } from './utils.js';
 
+//[object Object]
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
 export enum EncryptionKeyScheme {
 	Paillier = 0,
+}
+
+export const getDwalletByObjID = async (
+	client: DWalletClient,
+	dwalletObjID: string,
+): Promise<DWallet | null> => {
+	const dwalletObject = await client.getObject({
+		id: dwalletObjID,
+		options: { showContent: true },
+	});
+
+	const dwalletObjectFields =
+		dwalletObject.data?.content?.dataType === 'moveObject'
+			? (dwalletObject.data?.content?.fields as {
+					dwallet_cap_id: string;
+					output: number[];
+			  })
+			: null;
+
+	return dwalletObjectFields
+		? {
+				dwalletId: dwalletObjID,
+				decentralizedDKGOutput: dwalletObjectFields.output,
+				dwalletCapId: dwalletObjectFields.dwallet_cap_id,
+		  }
+		: null;
+};
+
+export function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
+	if (hash === 'KECCAK256') {
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 export async function approveAndSign(
@@ -400,8 +436,9 @@ export const getEncryptedUserShare = async (
 		sender: keypair.toSuiAddress(),
 		transactionBlock: tx,
 	});
-
-	return Buffer.from(
-		new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]),
-	).toString('hex');
+	const array = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
+	const hexString = Array.from(array)
+		.map((byte) => byte.toString(16).padStart(2, '0'))
+		.join('');
+	return hexString;
 };

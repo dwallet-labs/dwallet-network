@@ -14,9 +14,11 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { saveEncryptedUserShare } from './dwallet.js';
+import { hashToNumber, saveEncryptedUserShare } from './dwallet.js';
 import { fetchObjectBySessionId } from './utils.js';
 
+//[object Object]
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 export {
 	decrypt_user_share,
 	generate_keypair,
@@ -158,40 +160,6 @@ export type DWallet = {
 	decentralizedDKGOutput: number[];
 	dwalletCapId: string;
 };
-
-export const getDwalletByObjID = async (
-	client: DWalletClient,
-	dwalletObjID: string,
-): Promise<DWallet | null> => {
-	const dwalletObject = await client.getObject({
-		id: dwalletObjID,
-		options: { showContent: true },
-	});
-
-	const dwalletObjectFields =
-		dwalletObject.data?.content?.dataType === 'moveObject'
-			? (dwalletObject.data?.content?.fields as {
-					dwallet_cap_id: string;
-					output: number[];
-			  })
-			: null;
-
-	return dwalletObjectFields
-		? {
-				dwalletId: dwalletObjID,
-				decentralizedDKGOutput: dwalletObjectFields.output,
-				dwalletCapId: dwalletObjectFields.dwallet_cap_id,
-		  }
-		: null;
-};
-
-export function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
-	if (hash === 'KECCAK256') {
-		return 0;
-	} else {
-		return 1;
-	}
-}
 
 export async function createPartialUserSignedMessages(
 	dwalletId: string,

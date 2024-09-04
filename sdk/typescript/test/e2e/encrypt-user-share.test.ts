@@ -14,11 +14,11 @@ import {
 	storeEncryptionKey,
 } from '../../src/signature-mpc';
 import {
-	acceptUserShare,
 	getEncryptedUserShareByObjID,
 	getOrCreateEncryptionKey,
 	sendUserShareToSuiPubKey,
 } from '../../src/signature-mpc/encrypt_user_share';
+import { acceptUserShare } from '../../src/signature-mpc/sign';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Secret key share transfer', () => {
