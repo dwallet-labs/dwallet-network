@@ -145,9 +145,11 @@ export const getActiveEncryptionKeyObjID = async (
 		transactionBlock: tx,
 	});
 
-	return Buffer.from(
-		new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]),
-	).toString('hex');
+	const array = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
+	const hexString = Array.from(array)
+		.map((byte) => byte.toString(16).padStart(2, '0'))
+		.join('');
+	return hexString;
 };
 
 export const setActiveEncryptionKey = async (
