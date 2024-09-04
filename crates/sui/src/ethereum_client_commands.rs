@@ -8,7 +8,7 @@
 use anyhow::{anyhow, Result};
 use clap::Subcommand;
 use helios::consensus::nimbus_rpc::NimbusRpc;
-use helios::consensus::ConsensusStateManager;
+use helios::consensus::{BeaconBlockBody, BeaconBlockType, ConsensusStateManager};
 use helios::dwallet::light_client::{
     EthLightClientConfig, EthLightClientWrapper, ProofRequestParameters,
 };
@@ -31,13 +31,12 @@ use sui_json_rpc_types::SuiData;
 // SuiTransactionBlockEffectsAPI is called in a macro; therefore, the IDE doesn't recognize it.
 use sui_json_rpc_types::{ObjectChange, SuiExecutionStatus, SuiTransactionBlockEffectsAPI};
 use sui_keys::keystore::AccountKeystore;
-use sui_sdk::sui_client_config::SuiEnv;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::eth_dwallet::{
     EthereumDWalletCap, EthereumStateObject, LatestEthereumStateObject, APPROVE_MESSAGE_FUNC_NAME,
     CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME,
-    ETH_STATE_STRUCT_NAME, INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME,
+    INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME,
     VERIFY_ETH_STATE_FUNC_NAME,
 };
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
@@ -61,6 +60,9 @@ pub enum EthClientCommands {
         /// The DWallet ID.
         #[clap(long)]
         dwallet_id: ObjectID,
+        /// The Ethereum network.
+        #[clap(long)]
+        network: String,
         /// Gas object for gas payment.
         #[clap(long)]
         gas: Option<ObjectID>,
@@ -111,7 +113,7 @@ pub enum EthClientCommands {
         network: String,
         /// The RPC to query checkpoint from.
         #[clap(long)]
-        rpc: String,
+        consensus_rpc: String,
         /// The address of the contract.
         #[clap(long)]
         contract_address: String,
@@ -144,7 +146,7 @@ pub enum EthClientCommands {
 /// and the state is updated whenever a new state is successfully verified.
 pub(crate) async fn init_ethereum_state(
     network: String,
-    rpc: String,
+    consensus_rpc: String,
     contract_address: String,
     contract_slot: u64,
     context: &mut WalletContext,
@@ -161,7 +163,7 @@ pub(crate) async fn init_ethereum_state(
     };
 
     let checkpoint = hex::decode(checkpoint.strip_prefix("0x").unwrap())?;
-    let state = ConsensusStateManager::<NimbusRpc>::new_from_checkpoint(checkpoint, network, rpc)
+    let state = ConsensusStateManager::<NimbusRpc>::new_from_checkpoint(checkpoint, network, consensus_rpc)
         .await
         .map_err(|e| anyhow!("error deserializing object: {e}"))?;
 
@@ -316,6 +318,7 @@ pub(crate) async fn eth_approve_message(
     eth_dwallet_cap_id: ObjectID,
     message: String,
     dwallet_id: ObjectID,
+    network: String,
     gas: Option<ObjectID>,
     gas_budget: u64,
     serialize_unsigned_transaction: bool,
@@ -345,7 +348,8 @@ pub(crate) async fn eth_approve_message(
         .deserialize()
         .map_err(|e| anyhow!("error deserializing object: {e}"))?;
 
-    let mut eth_lc_config = get_eth_config(context)?;
+    let mut eth_lc_config = get_eth_rpcs(context)?;
+    eth_lc_config.network = Network::from_str(&network)?;
 
     let mut eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&eth_state_obj.data)
         .map_err(|e| anyhow!("error parsing eth state data: {e}"))?;
@@ -368,6 +372,9 @@ pub(crate) async fn eth_approve_message(
         .get_updates_since_checkpoint()
         .await
         .map_err(|e| anyhow!("could not fetch updates: {e}"))?;
+
+    eth_state.verify_and_apply_updates(&updates_response)
+        .map_err(|e| anyhow!("could not apply updates: {e}"))?;
 
     let gas_owner = context.try_get_object_owner(&gas).await?;
     let sender = gas_owner.unwrap_or(context.active_address()?);
@@ -396,7 +403,7 @@ pub(crate) async fn eth_approve_message(
 
     let eth_state_object_ref = get_object_ref_by_id(context, eth_state_object_id).await?;
     let eth_state_id_arg = pt_builder
-        .pure(ObjectArg::ImmOrOwnedObject(eth_state_object_ref))
+        .obj(ObjectArg::ImmOrOwnedObject(eth_state_object_ref))
         .map_err(|e| anyhow!("could not serialize `eth_state_id`: {e}"))?;
 
     pt_builder.programmable_move_call(
@@ -427,21 +434,18 @@ pub(crate) async fn eth_approve_message(
         Call
     );
 
-    let SuiClientCommandResult::Call(state) = verify_state_session_response else {
+    let SuiClientCommandResult::Call(_state) = verify_state_session_response else {
         return Err(anyhow!("can't get response"));
     };
 
-    let object_changes = state
-        .object_changes
-        .clone()
-        .ok_or_else(|| anyhow!("can't get object changes"))?;
+    let latest_eth_state_data_bcs = get_object_bcs_by_id(context, latest_state_object_id).await?;
+    let latest_eth_state_obj: LatestEthereumStateObject = latest_eth_state_data_bcs
+        .try_as_move()
+        .ok_or_else(|| anyhow!("object is not a Move Object"))?
+        .deserialize()
+        .map_err(|e| anyhow!("error deserializing object: {e}"))?;
 
-    let verified_state_object_id = get_object_from_transaction_changes(
-        object_changes,
-        ETHEREUM_STATE_MODULE_NAME.into(),
-        ETH_STATE_STRUCT_NAME.into(),
-    )?;
-
+    let verified_state_object_id = latest_eth_state_obj.eth_state_id;
     let verified_eth_state_data_bcs =
         get_object_bcs_by_id(context, verified_state_object_id).await?;
     let verified_eth_state_obj: EthereumStateObject = verified_eth_state_data_bcs
@@ -453,6 +457,7 @@ pub(crate) async fn eth_approve_message(
     let mut verified_eth_state =
         bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&verified_eth_state_obj.data)
             .map_err(|e| anyhow!("error parsing eth state data: {e}"))?;
+    let mut verified_eth_state = verified_eth_state.set_rpc(&eth_lc_config.consensus_rpc);
 
     let latest_slot = updates_response
         .finality_update
@@ -465,6 +470,17 @@ pub(crate) async fn eth_approve_message(
         .map_err(|e| anyhow!("could not fetch execution payload: {e}"))?
         .block_number()
         .as_u64();
+
+    let mut beacon_block = verified_eth_state.get_beacon_block(latest_slot).await
+        .map_err(|e| anyhow!("could not fetch beacon block: {e}"))?;
+
+    let beacon_block_body = beacon_block.clone().body;
+    let beacon_block_execution_payload = beacon_block_body.execution_payload();
+    let beacon_block_type = match beacon_block.body {
+        BeaconBlockBody::Bellatrix(_) => BeaconBlockType::Bellatrix,
+        BeaconBlockBody::Capella(_) => BeaconBlockType::Capella,
+        BeaconBlockBody::Deneb(_) => BeaconBlockType::Deneb,
+    };
 
     let proof_params = ProofRequestParameters {
         message: message.clone(),
@@ -484,6 +500,12 @@ pub(crate) async fn eth_approve_message(
 
     let proof_sui_json =
         serialize_object(&proof).map_err(|e| anyhow!("could not serialize proof: {e}"))?;
+    let beacon_block_sui_json = serialize_object(&beacon_block)
+        .map_err(|e| anyhow!("could not serialize beacon block: {e}"))?;
+    let beacon_block_body = serialize_object(&beacon_block_body)
+        .map_err(|e| anyhow!("could not serialize beacon block body: {e}"))?;
+    let beacon_block_execution_payload = serialize_object(&beacon_block_execution_payload)
+        .map_err(|e| anyhow!("could not serialize execution payload: {e}"))?;
 
     let mut pt_builder = ProgrammableTransactionBuilder::new();
     client
@@ -498,9 +520,13 @@ pub(crate) async fn eth_approve_message(
                 SuiJsonValue::from_object_id(eth_dwallet_cap_id),
                 SuiJsonValue::new(Value::String(message))?,
                 SuiJsonValue::from_object_id(dwallet_id),
-                proof_sui_json,
                 SuiJsonValue::from_object_id(latest_eth_state_shared_object.id),
                 SuiJsonValue::from_object_id(verified_state_object_id),
+                proof_sui_json,
+                beacon_block_sui_json,
+                SuiJsonValue::new(Value::String(beacon_block_type.to_string()))?,
+                beacon_block_body,
+                beacon_block_execution_payload,
             ]),
         )
         .await?;
@@ -525,14 +551,14 @@ fn serialize_object<T>(object: &T) -> Result<SuiJsonValue>
 where
     T: ?Sized + Serialize,
 {
-    let object_json = bcs::to_bytes(&object)?
+    let object_json: Value = serde_json::to_vec(&object)?
         .iter()
         .map(|v| Value::Number(Number::from(*v)))
         .collect();
-    SuiJsonValue::new(Value::Array(object_json))
+    SuiJsonValue::new(object_json)
 }
 
-fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig> {
+fn get_eth_rpcs(context: &mut WalletContext) -> Result<EthLightClientConfig> {
     let sui_env_config = context.config.get_active_env()?;
 
     let eth_client_settings = sui_env_config
@@ -550,19 +576,8 @@ fn get_eth_config(context: &mut WalletContext) -> Result<EthLightClientConfig> {
         .ok_or_else(|| anyhow!("ETH consensus RPC configuration not found"))?;
 
     let mut eth_lc_config = EthLightClientConfig::default();
-    eth_lc_config.network = get_network_by_sui_env(sui_env_config)?;
     eth_lc_config.execution_rpc = eth_execution_rpc;
     eth_lc_config.consensus_rpc = eth_consensus_rpc;
 
     Ok(eth_lc_config)
-}
-
-fn get_network_by_sui_env(sui_env_config: &SuiEnv) -> Result<Network> {
-    let network = match sui_env_config.alias.as_str() {
-        "mainnet" => Network::MAINNET,
-        "testnet" => Network::HOLESKY,
-        "localnet" => Network::LOCAL,
-        _ => Network::MAINNET,
-    };
-    Ok(network)
 }
