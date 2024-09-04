@@ -118,8 +118,7 @@ describe('Secret key share transfer', () => {
 			await acceptUserShare(
 				encryptedUserShare!,
 				dwalletSenderToolbox.keypair.toSuiAddress(),
-				receiverEncryptionKeyObj.encryptionKey,
-				receiverEncryptionKeyObj.decryptionKey,
+				receiverEncryptionKeyObj,
 				createdDwallet?.dwalletId!,
 				activeEncryptionKeysTableID,
 				dwalletReceiverToolbox.client,
