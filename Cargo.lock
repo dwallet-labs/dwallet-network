@@ -2558,7 +2558,6 @@ dependencies = [
 [[package]]
 name = "client"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "common",
  "config",
@@ -2761,7 +2760,6 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "ethers",
  "eyre",
@@ -2774,7 +2772,6 @@ dependencies = [
 [[package]]
 name = "config"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "anyhow",
  "common",
@@ -2799,7 +2796,6 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3973,7 +3969,6 @@ dependencies = [
 [[package]]
 name = "dwallet"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "anyhow",
  "client",
@@ -4685,7 +4680,6 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 [[package]]
 name = "execution"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "async-trait",
  "bytes",
@@ -5864,7 +5858,6 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 [[package]]
 name = "helios"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
 dependencies = [
  "client",
  "common",
@@ -15266,6 +15259,7 @@ dependencies = [
  "serde_json",
  "signature-mpc",
  "smallvec",
+ "ssz_rs",
  "sui-json 0.0.0",
  "sui-protocol-config 0.1.0",
  "sui-types 0.1.0",

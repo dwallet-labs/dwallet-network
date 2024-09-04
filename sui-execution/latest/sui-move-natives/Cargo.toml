@@ -31,4 +31,5 @@ workspace-hack.workspace = true
 tracing.workspace = true
 sui-json.workspace = true
 signature-mpc.workspace = true
+ssz-rs = { package = "ssz_rs", version = "0.9.0" }
 group = { git = "https://github.com/dwallet-labs/group.git" }

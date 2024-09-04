@@ -1447,6 +1447,7 @@ impl SuiClientCommands {
                     eth_dwallet_cap_id,
                     message,
                     dwallet_id,
+                    network,
                     gas,
                     gas_budget,
                     serialize_unsigned_transaction,
@@ -1457,6 +1458,7 @@ impl SuiClientCommands {
                         eth_dwallet_cap_id,
                         message,
                         dwallet_id,
+                        network,
                         gas,
                         gas_budget,
                         serialize_unsigned_transaction,
@@ -1483,7 +1485,7 @@ impl SuiClientCommands {
                 }
                 EthClientCommands::InitEthState {
                     network,
-                    rpc,
+                    consensus_rpc,
                     contract_address,
                     contract_approved_tx_slot,
                     gas,
@@ -1493,7 +1495,7 @@ impl SuiClientCommands {
                 } => {
                     init_ethereum_state(
                         network,
-                        rpc,
+                        consensus_rpc,
                         contract_address,
                         contract_approved_tx_slot,
                         context,
