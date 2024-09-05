@@ -4,7 +4,7 @@ module dwallet_system::native_dwallet {
     use std::vector;
     use dwallet::object::{UID, Self, ID};
     use dwallet::tx_context::TxContext;
-    use dwallet_system::dwallet::{Self, DWalletCap};
+    use dwallet_system::dwallet::{Self, DWalletCap, MessageApproval};
     use dwallet_system::tendermint_lc::{Client, tendermint_state_proof, get_consensus_state, commitment_root, latest_height, state_proof, client_id};
 
     use dwallet::dynamic_field as field;
@@ -12,7 +12,8 @@ module dwallet_system::native_dwallet {
 
     const EHeightInvalid: u64 = 0;
     const EStateInvalid: u64 = 1;
-
+    const EClientInvalid: u64 = 2; 
+    const EStateProofNoMessagesToApprove: u64 = 3;
 
     // Wrapper object wrap DWalletCap. DWalletCap owner (user) will transfer ownership to NativeDwallet Cap
     struct NativeDwalletCap has key, store {
@@ -42,6 +43,22 @@ module dwallet_system::native_dwallet {
         return create_native_dwallet_cap(client, dwallet_cap, ctx)
     }
 
-    // TODO: inteface, shoud finish in the next PR
-    public fun verify_transaction(dwallet_cap: &DWalletCap, client: &Client, height: u64, state_proof:vector<u8>){}
+
+    // verify user sign `messages` data on Native network
+    public fun verify_native_transaction(native_dwallet_cap: &NativeDwalletCap, client: &Client, height: u64,  proof: vector<u8>, prefix: vector<u8>, path: vector<u8>, messages: vector<vector<u8>>): vector<MessageApproval> {
+    	assert!(object::id(client) == native_dwallet_cap.client_id, EClientInvalid);
+    	assert!(vector::length(&messages) > 0, EStateProofNoMessagesToApprove);
+
+	    //  check height
+    	let lh = latest_height(client);
+        assert!(height <= lh, EHeightInvalid);
+
+	    // check state proof
+	    let message: vector<u8> = *vector::borrow(&messages, 0);
+	    let valid = state_proof(client, height, proof, prefix, path, message);
+       assert!(valid, EStateInvalid);
+	
+	    // submit message
+        dwallet::approve_messages(&native_dwallet_cap.dwallet_cap, messages)
+    }
 }

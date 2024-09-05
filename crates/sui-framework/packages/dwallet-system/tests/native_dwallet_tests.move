@@ -5,7 +5,7 @@ module dwallet_system::native_dwallet_tests {
     use dwallet_system::tendermint_lc::{Self, Client, init_lc};
     use dwallet::test_scenario;
 
-    use dwallet_system::native_dwallet::{link_dwallet};
+    use dwallet_system::native_dwallet::{link_dwallet, verify_native_transaction};
     use dwallet_system::dwallet::{create_dwallet_cap, DWalletCap};
    
     use dwallet::test_utils;
@@ -35,6 +35,23 @@ module dwallet_system::native_dwallet_tests {
         let dwallet_cap = create_dwallet_cap(ctx);
         let height = 10;
 	let native_dwallet_cap =  link_dwallet(&client, dwallet_cap, height, proof, prefix, path, value, ctx);
+        test_utils::destroy(native_dwallet_cap);
+        test_utils::destroy(client);
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    fun verify_native_transaction_test() {
+           let (proof, prefix, path, value, _root, client, scenario) = setup();
+        let ctx = test_scenario::ctx(&mut scenario);
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let height = 10;
+	    let native_dwallet_cap = link_dwallet(&client, dwallet_cap, height, proof, prefix, path, value, ctx);
+        
+        let messages: vector<vector<u8>> = vector[value];
+        let message_approved = verify_native_transaction(&native_dwallet_cap, &client, height, proof, prefix, path, messages);
+
+        test_utils::destroy(message_approved);
         test_utils::destroy(native_dwallet_cap);
         test_utils::destroy(client);
         test_scenario::end(scenario);
