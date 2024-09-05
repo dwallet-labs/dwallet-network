@@ -9,7 +9,7 @@ import {
 	EncryptionKeyScheme,
 	generate_keypair,
 	getActiveEncryptionKeyObjID,
-	getEncryptedUserShareByObjectId,
+	getEncryptedUserShareByObjectID,
 	setActiveEncryptionKey,
 	storeEncryptionKey,
 } from '../../src/signature-mpc';
@@ -83,12 +83,12 @@ describe('Secret key share transfer', () => {
 		);
 
 		// ======================= Send DWallet Secret Share To Destination Keypair  =======================
-		let encryptedSecretShare = await getEncryptedUserShareByObjectId(
+		let encryptedSecretShare = await getEncryptedUserShareByObjectID(
 			dwalletSenderToolbox.client,
-			createdDwallet?.encryptedSecretShareObjId!,
+			createdDwallet?.encryptedSecretShareObjID!,
 		);
 		// Verify I signed the dkg output public keys before using it to send the user share.
-		let signedDWalletPubKeys = new Uint8Array(encryptedSecretShare?.signedDWalletPubkeys!);
+		let signedDWalletPubKeys = new Uint8Array(encryptedSecretShare?.signedDWalletPubKeys!);
 		expect(
 			await dwalletSenderToolbox.keypair
 				.getPublicKey()
@@ -100,7 +100,7 @@ describe('Secret key share transfer', () => {
 				),
 		).toBeTruthy();
 
-		let txResponse = await sendUserShareToSuiPubKey(
+		let objRef = await sendUserShareToSuiPubKey(
 			dwalletSenderToolbox.client,
 			dwalletSenderToolbox.keypair,
 			createdDwallet!,
@@ -110,7 +110,7 @@ describe('Secret key share transfer', () => {
 		);
 
 		// ======================= Verify Received DWallet is Valid =======================
-		let encryptedUserShareObjID = txResponse.objectId;
+		let encryptedUserShareObjID = objRef?.objectId;
 		let encryptedUserShare = await getEncryptedUserShareByObjID(
 			dwalletReceiverToolbox.client,
 			encryptedUserShareObjID!,
@@ -121,7 +121,7 @@ describe('Secret key share transfer', () => {
 				encryptedUserShare!,
 				dwalletSenderToolbox.keypair.toSuiAddress(),
 				receiverEncryptionKeyObj,
-				createdDwallet?.dwalletId!,
+				createdDwallet?.dwalletID!,
 				activeEncryptionKeysTableID,
 				dwalletReceiverToolbox.client,
 				dwalletReceiverToolbox.keypair,

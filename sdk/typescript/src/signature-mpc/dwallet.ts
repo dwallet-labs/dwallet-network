@@ -15,8 +15,6 @@ import type { DWallet } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import type { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share.js';
 import { fetchOwnedObjectByType } from './utils.js';
 
-//[object Object]
-// SPDX-License-Identifier: BSD-3-Clause-Clear
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
@@ -202,9 +200,9 @@ export const getEncryptionKeyByObjectId = async (
 };
 
 /**
- * Fetches an EncryptedUserShare object from the blockchain by the given object ID.
+ * Fetches an {@link EncryptedUserShare} object from the blockchain by the given object ID.
  */
-export const getEncryptedUserShareByObjectId = async (
+export const getEncryptedUserShareByObjectID = async (
 	client: DWalletClient,
 	objID: string,
 ): Promise<EncryptedUserShare | null> => {
@@ -226,10 +224,10 @@ export const getEncryptedUserShareByObjectId = async (
 
 	return objectFields
 		? {
-				dwalletId: objectFields?.dwallet_id,
+				dwalletID: objectFields?.dwallet_id,
 				encryptedUserShareAndProof: objectFields?.encrypted_secret_share_and_proof,
 				encryptionKeyObjID: objectFields?.encryption_key_id,
-				signedDWalletPubkeys: objectFields.signed_dwallet_pubkeys,
+				signedDWalletPubKeys: objectFields.signed_dwallet_pubkeys,
 				senderPubKey: objectFields.sender_pubkey,
 		  }
 		: null;
@@ -263,7 +261,8 @@ export const getActiveEncryptionKeyObjID = async (
 };
 
 /**
- * Sets the given encryption key as the active encryption key for the given keypair Sui address & encryption keys holder table.
+ * Sets the given encryption key as the active encryption key for the given keypair Sui
+ * address & encryption keys holder table.
  */
 export const setActiveEncryptionKey = async (
 	client: DWalletClient,
@@ -290,7 +289,8 @@ export const setActiveEncryptionKey = async (
 };
 
 /**
- * Creates the table that maps a Sui address to the Paillier encryption key that is derived from the Sui address secret.
+ * Creates the table that maps a Sui address to the Paillier encryption
+ * key is derived from the Sui address secret.
  */
 export const createActiveEncryptionKeysTable = async (client: DWalletClient, keypair: Keypair) => {
 	const tx = new TransactionBlock();
@@ -325,7 +325,7 @@ export const transferEncryptedUserShare = async (
 ) => {
 	const tx = new TransactionBlock();
 	const encryptionKey = tx.object(encryptionKeyObjID);
-	const dwalletObj = tx.object(dwallet.dwalletId);
+	const dwalletObj = tx.object(dwallet.dwalletID);
 	let pureSuiPubKey = tx.pure(bcs.vector(bcs.u8()).serialize(keypair.getPublicKey().toRawBytes()));
 
 	tx.moveCall({
@@ -369,7 +369,7 @@ export const createEncryptedUserSharesHolder = async (client: DWalletClient, key
 	return result.effects?.created?.at(0)?.reference;
 };
 
-export const getEncryptedUserSharesObjId = async (client: DWalletClient, keypair: Keypair) => {
+export const getEncryptedUserSharesObjID = async (client: DWalletClient, keypair: Keypair) => {
 	const table = await fetchOwnedObjectByType(
 		`${packageId}::${dWalletModuleName}::EncryptedUserShares`,
 		keypair,
@@ -398,7 +398,7 @@ export const saveEncryptedUserShare = async (
 	const tx = new TransactionBlock();
 	const encKey = tx.object(encryptionKeyID);
 	const encryptedUserShare = tx.object(encryptedUserShareId);
-	const encryptedUserSharesId = await getEncryptedUserSharesObjId(client, keypair);
+	const encryptedUserSharesId = await getEncryptedUserSharesObjID(client, keypair);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::save_encrypted_user_share`,
@@ -429,7 +429,7 @@ export const getEncryptedUserShare = async (
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_encrypted_user_share_by_dwallet_id`,
-		arguments: [encrptedUserSharesObj, tx.pure(dwalletID)],
+		arguments: [encryptedUserSharesObj, tx.pure(dwalletID)],
 	});
 
 	let res = await client.devInspectTransactionBlock({

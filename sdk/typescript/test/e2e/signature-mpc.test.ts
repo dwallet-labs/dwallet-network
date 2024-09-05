@@ -49,7 +49,7 @@ describe('Test signature mpc', () => {
 		const bytes: Uint8Array = new TextEncoder().encode('Sign it!!!');
 
 		const signMessagesIdSHA256 = await createPartialUserSignedMessages(
-			dkg?.dwalletId!,
+			dkg?.dwalletID!,
 			dkg?.decentralizedDKGOutput!,
 			new Uint8Array(dkg?.secretKeyShare!),
 			[bytes],
@@ -58,7 +58,7 @@ describe('Test signature mpc', () => {
 			toolbox.client,
 		);
 		const sigSHA256 = await approveAndSign(
-			dkg?.dwalletCapId!,
+			dkg?.dwalletCapID!,
 			signMessagesIdSHA256!,
 			[bytes],
 			dkg?.dwalletId!,
@@ -71,7 +71,7 @@ describe('Test signature mpc', () => {
 		console.log(sigSHA256);
 
 		const signMessagesIdKECCAK256 = await createPartialUserSignedMessages(
-			dkg?.dwalletId!,
+			dkg?.dwalletID!,
 			dkg?.decentralizedDKGOutput!,
 			new Uint8Array(dkg?.secretKeyShare!),
 			[bytes],
@@ -80,7 +80,7 @@ describe('Test signature mpc', () => {
 			toolbox.client,
 		);
 		const sigKECCAK256 = await approveAndSign(
-			dkg?.dwalletCapId!,
+			dkg?.dwalletCapID!,
 			signMessagesIdKECCAK256!,
 			[bytes],
 			dkg?.dwalletId!,

@@ -68,7 +68,6 @@ pub fn initiate_dkg() -> Result<JsValue, JsErr> {
     Ok(serde_wasm_bindgen::to_value(&value)?)
 }
 
-
 #[wasm_bindgen]
 pub fn finalize_dkg(
     decommitment_round_party_state: Vec<u8>,
@@ -90,14 +89,15 @@ pub fn finalize_dkg(
     let secret_key_share = bcs::to_bytes(&dkg_output.secret_key_share)?;
 
     let language_public_parameters =
-        encryption_of_discrete_log_public_parameters(secret_share_encryption_key.clone()).map_err(to_js_err)?;
+        encryption_of_discrete_log_public_parameters(secret_share_encryption_key.clone())
+            .map_err(to_js_err)?;
     let proof_public_output =
         signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_proof(
             secret_share_encryption_key,
             secret_key_share.clone(),
             language_public_parameters,
         )
-            .map_err(to_js_err)?;
+        .map_err(to_js_err)?;
     let encrypted_user_share_and_proof = bcs::to_bytes(&proof_public_output)?;
 
     let value = FinalizeDKGValue {
@@ -224,7 +224,7 @@ pub fn finalize_sign(
         public_nonce_encrypted_partial_signature_and_proofs,
         signatures_s,
     )
-        .map_err(JsErr::from)
+    .map_err(JsErr::from)
 }
 
 #[wasm_bindgen]
@@ -281,8 +281,10 @@ pub fn generate_keypair() -> Result<JsValue, JsErr> {
 pub fn generate_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErr> {
     let fixed_size_seed: [u8; 32] = seed.try_into().expect("seed must be 32 bytes long");
     let (public_key, private_key) =
-        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair_from_seed(fixed_size_seed)
-            .map_err(to_js_err)?;
+        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair_from_seed(
+            fixed_size_seed,
+        )
+        .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
 
@@ -296,7 +298,7 @@ pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsVa
             secret_share,
             language_public_parameters,
         )
-            .map_err(to_js_err)?;
+        .map_err(to_js_err)?;
     let proof_public_output = bcs::to_bytes(&proof_public_output)?;
 
     Ok(serde_wasm_bindgen::to_value(&proof_public_output)?)
@@ -315,18 +317,22 @@ pub fn decrypt_user_share(
         decryption_key,
         encrypted_user_share_and_proof,
     )
-        .map_err(to_js_err)?;
+    .map_err(to_js_err)?;
     Ok(user_share)
 }
 
 #[wasm_bindgen]
-pub fn serialized_pubkeys_from_centralized_dkg_output(centralized_dkg_output: Vec<u8>) -> Result<Vec<u8>, JsErr> {
-    Ok(signature_mpc::twopc_mpc_protocols::encrypt_user_share::serialized_pubkeys_from_centralized_dkg_output(&centralized_dkg_output).map_err(to_js_err)?)
+pub fn serialized_pubkeys_from_centralized_dkg_output(
+    centralized_dkg_output: Vec<u8>,
+) -> Result<Vec<u8>, JsErr> {
+    signature_mpc::twopc_mpc_protocols::encrypt_user_share::serialized_pubkeys_from_centralized_dkg_output(&centralized_dkg_output).map_err(to_js_err)
 }
 
 #[wasm_bindgen]
-pub fn serialized_pubkeys_from_decentralized_dkg_output(centralized_dkg_output: Vec<u8>) -> Result<Vec<u8>, JsErr> {
-    Ok(signature_mpc::twopc_mpc_protocols::encrypt_user_share::serialized_pubkeys_from_decentralized_dkg_output(&centralized_dkg_output).map_err(to_js_err)?)
+pub fn serialized_pubkeys_from_decentralized_dkg_output(
+    centralized_dkg_output: Vec<u8>,
+) -> Result<Vec<u8>, JsErr> {
+    signature_mpc::twopc_mpc_protocols::encrypt_user_share::serialized_pubkeys_from_decentralized_dkg_output(&centralized_dkg_output).map_err(to_js_err)
 }
 
 #[wasm_bindgen]

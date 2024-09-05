@@ -457,12 +457,14 @@ module dwallet_system::dwallet {
         sender_pubkey: vector<u8>,
     }
 
-    /// Owned object that holds all encrypted user shares for the dWallet the user has access to. 
-    /// These are those that were encrypted after the user created the dWallet or sent to the user,
+    /// Owned object that holds all encrypted user shares for the dWallets the user has access to.
+    /// These are those that were encrypted after the user created the dWallet or were sent to the user,
     /// and have been verified, re-signed, and re-encrypted by the user.
-    /// `encrypted_user_shares` is a key-value table where the key is the Dwallet ID and the value is the EncryptedUserShare object ID.
+    /// `encrypted_user_shares` is a key-value table where the key is the
+    /// Dwallet ID and the value is the EncryptedUserShare object ID.
     struct EncryptedUserShares has key {
         id: UID,
+        // dWalletID -> EncryptedUserShareID
         encrypted_user_shares: Table<ID, ID>,
     }
 
@@ -479,15 +481,15 @@ module dwallet_system::dwallet {
         encrypted_user_share: &EncryptedUserShare,
         encryption_key: &EncryptionKey,
         ctx: &mut TxContext
-        ) {
+    ) {
         assert!(
-                ed2551_pubkey_to_sui_addr(encrypted_user_share.sender_pubkey) == tx_context::sender(ctx)
+            ed2551_pubkey_to_sui_addr(encrypted_user_share.sender_pubkey) == tx_context::sender(ctx)
                 && object::id(encryption_key) == encrypted_user_share.encryption_key_id
                 && encryption_key.key_owner_address == tx_context::sender(ctx),
             EInvalidParametes
         );
 
-        if(table::contains(&encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id)) {
+        if (table::contains(&encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id)) {
             table::remove(&mut encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id);
         };
 

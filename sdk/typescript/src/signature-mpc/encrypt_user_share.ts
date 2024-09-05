@@ -22,14 +22,23 @@ import { generatePaillierKeyPairFromSuiKeyPair } from './utils.js';
 export type DWalletToTransfer = {
 	secretKeyShare: number[];
 	decentralizedDKGOutput: number[];
-	dwalletId: string;
+	dwalletID: string;
+};
+
+export type EncryptedUserShare = {
+	dwalletID: string;
+	encryptedUserShareAndProof: number[];
+	encryptionKeyObjID: string;
+	signedDWalletPubKeys: number[];
+	senderPubKey: number[];
 };
 
 /**
  * Encrypts and sends the given secret user share to the given destination public key.
  *
- * @param keypair The Sui keypair that was being used to sign the signedDWalletPubKeys.
- * @param dwallet The DWallet that we want to send the secret user share of.
+ * @param client The DWallet client.
+ * @param keypair The Sui keypair that was used to sign the signedDWalletPubKeys.
+ * @param dwallet The dWallet that we want to send the secret user share of.
  * @param destinationPublicKey The ed2551 public key of the destination Sui address.
  * @param activeEncryptionKeysTableID The ID of the table that holds the active encryption keys.
  * @param signedDWalletPubKeys The signed DWallet public keys.
@@ -73,14 +82,6 @@ export const sendUserShareToSuiPubKey = async (
 	);
 };
 
-export type EncryptedUserShare = {
-	dwalletId: string;
-	encryptedUserShareAndProof: number[];
-	encryptionKeyObjID: string;
-	signedDWalletPubkeys: number[];
-	senderPubKey: number[];
-};
-
 export const getEncryptedUserShareByObjID = async (
 	client: DWalletClient,
 	objID: string,
@@ -103,10 +104,10 @@ export const getEncryptedUserShareByObjID = async (
 
 	return objectFields
 		? {
-				dwalletId: objectFields.dwallet_id,
+				dwalletID: objectFields.dwallet_id,
 				encryptedUserShareAndProof: objectFields.encrypted_secret_share_and_proof,
 				encryptionKeyObjID: objectFields.encryption_key_id,
-				signedDWalletPubkeys: objectFields.signed_dwallet_pubkeys,
+				signedDWalletPubKeys: objectFields.signed_dwallet_pubkeys,
 				senderPubKey: objectFields.sender_pubkey,
 		  }
 		: null;
@@ -137,11 +138,10 @@ export const getOrCreateEncryptionKey = async (
 				decryptionKey,
 				objectID: activeEncryptionKeyObjID,
 			};
-		} else {
-			throw new Error(
-				'Encryption key derived from Sui secret does not match the one in the active encryption keys table',
-			);
 		}
+		throw new Error(
+			'Encryption key derived from Sui secret does not match the one in the active encryption keys table',
+		);
 	}
 	const encryptionKeyRef = await storeEncryptionKey(
 		encryptionKey,

@@ -29,13 +29,13 @@ export {
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export type CreatedDwallet = {
-	dwalletId: string;
+export type Dwallet = {
+	dwalletID: string;
 	centralizedDKGOutput: number[];
 	decentralizedDKGOutput: number[];
-	dwalletCapId: string;
+	dwalletCapID: string;
 	secretKeyShare: number[];
-	encryptedSecretShareObjId: string;
+	encryptedSecretShareObjID: string;
 };
 
 export async function createDWallet(
@@ -98,7 +98,7 @@ export async function createDWallet(
 				txFinal.pure([...keypair.getPublicKey().toRawBytes()]),
 			],
 		});
-		const resultFinal = await client.signAndExecuteTransactionBlock({
+		const signResult = await client.signAndExecuteTransactionBlock({
 			signer: keypair,
 			transactionBlock: txFinal,
 			options: {
@@ -106,10 +106,10 @@ export async function createDWallet(
 			},
 		});
 
-		let dwalletRef = resultFinal.effects?.created?.filter((o) => {
+		let dwalletRef = signResult.effects?.created?.filter((o) => {
 			return o.owner === 'Immutable';
 		})[0].reference!;
-		let encryptedShareRef = resultFinal.effects?.created?.filter((o) => o.owner === 'Immutable')[1]
+		let encryptedShareRef = signResult.effects?.created?.filter((o) => o.owner === 'Immutable')[1]
 			.reference!;
 
 		let dwalletObject = await client.getObject({
@@ -124,7 +124,8 @@ export async function createDWallet(
 				  })
 				: null;
 		if (!dwalletObjectFields?.dwallet_cap_id) {
-			// This may happen as the order of the created objects is not guaranteed, and we can't know the object type from the reference.
+			// This may happen as the order of the created objects is not guaranteed,
+			// and we can't know the object type from the reference.
 			let tempRef = dwalletRef;
 			dwalletRef = encryptedShareRef;
 			encryptedShareRef = tempRef;
@@ -143,12 +144,12 @@ export async function createDWallet(
 		await saveEncryptedUserShare(client, keypair, encryptionKeyObjId, encryptedShareRef.objectId);
 		return dwalletObjectFields
 			? {
-					dwalletId: dwalletRef?.objectId,
+					dwalletID: dwalletRef?.objectId,
 					centralizedDKGOutput: final['dkg_output'],
 					decentralizedDKGOutput: dwalletObjectFields.output,
-					dwalletCapId: dwalletObjectFields.dwallet_cap_id,
+					dwalletCapID: dwalletObjectFields.dwallet_cap_id,
 					secretKeyShare: final['secret_key_share'],
-					encryptedSecretShareObjId: encryptedShareRef.objectId,
+					encryptedSecretShareObjID: encryptedShareRef.objectId,
 			  }
 			: null;
 	}
