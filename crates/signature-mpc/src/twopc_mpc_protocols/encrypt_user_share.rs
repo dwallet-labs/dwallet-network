@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use crate::twopc_mpc_protocols::Secp256K1GroupElement;
 use anyhow::Result;
 use commitment::GroupsPublicParametersAccessors;
-use crypto_bigint::{Uint, U256};
+use crypto_bigint::{Encoding, Uint, U256};
 use ecdsa::signature::digest::Digest;
 use enhanced_maurer::encryption_of_discrete_log::StatementAccessors;
 use enhanced_maurer::language::EnhancedLanguageStatementAccessors;
@@ -19,7 +19,6 @@ use maurer::{language, SOUND_PROOFS_REPETITIONS};
 use proof::range;
 use proof::range::bulletproofs;
 use proof::range::bulletproofs::{COMMITMENT_SCHEME_MESSAGE_SPACE_SCALAR_LIMBS, RANGE_CLAIM_BITS};
-use rand::rngs::StdRng;
 use rand_core::{OsRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tiresias::{
@@ -27,7 +26,9 @@ use tiresias::{
     PlaintextSpaceGroupElement, RandomnessSpaceGroupElement,
 };
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
-use twopc_mpc::secp256k1::paillier::bulletproofs::DKGDecentralizedPartyOutput;
+use twopc_mpc::secp256k1::paillier::bulletproofs::{
+    DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput,
+};
 pub use twopc_mpc::secp256k1::{Scalar as Secp256k1Scalar, SCALAR_LIMBS};
 
 type LangPublicParams = language::PublicParameters<SOUND_PROOFS_REPETITIONS, EncDescLogLang>;
@@ -62,6 +63,15 @@ pub struct EncryptedUserShareAndProof {
         { RANGE_CLAIMS_PER_SCALAR },
         bulletproofs::RangeProof,
     >,
+}
+
+/// Structs to hold the public keys of the DWallet.
+/// Used for signing on it while performing the dWallet transfer.
+#[derive(Serialize, Deserialize)]
+pub struct DWalletPublicKeys {
+    pub public_key: group::Value<Secp256K1GroupElement>,
+    pub decentralized_public_key_share: group::Value<Secp256K1GroupElement>,
+    pub centralized_public_key_share: group::Value<Secp256K1GroupElement>,
 }
 
 /// Generate a keypair for the Paillier encryption scheme.
@@ -246,6 +256,8 @@ pub fn verify_proof(
 }
 
 /// Decrypt the user share using the Paillier decryption key.
+/// This function never throws an error.
+/// While using it, remember to always verify the decrypted user share is valid.
 pub fn decrypt_user_share(
     encryption_key: Vec<u8>,
     decryption_key: Vec<u8>,
@@ -263,7 +275,32 @@ pub fn decrypt_user_share(
     let plaintext = decryption_key
         .decrypt(&ciphertext, &paillier_public_parameters)
         .unwrap();
-    Ok(bcs::to_bytes(&plaintext.value())?)
+    let secret_share_bytes = U256::from(&plaintext.value()).to_be_bytes().to_vec();
+    Ok(secret_share_bytes)
+}
+
+pub fn serialized_pubkeys_from_centralized_dkg_output(
+    centralized_dkg_output: &Vec<u8>,
+) -> Result<Vec<u8>> {
+    let dkg_output = bcs::from_bytes::<DKGCentralizedPartyOutput>(centralized_dkg_output)?;
+    let dwallet_pubkeys = DWalletPublicKeys {
+        public_key: dkg_output.public_key,
+        decentralized_public_key_share: dkg_output.decentralized_party_public_key_share,
+        centralized_public_key_share: dkg_output.public_key_share,
+    };
+    Ok(bcs::to_bytes(&dwallet_pubkeys)?)
+}
+
+pub fn serialized_pubkeys_from_decentralized_dkg_output(
+    centralized_dkg_output: &Vec<u8>,
+) -> Result<Vec<u8>> {
+    let dkg_output = bcs::from_bytes::<DKGDecentralizedPartyOutput>(centralized_dkg_output)?;
+    let dwallet_pubkeys = DWalletPublicKeys {
+        public_key: dkg_output.public_key,
+        decentralized_public_key_share: dkg_output.public_key_share,
+        centralized_public_key_share: dkg_output.centralized_party_public_key_share,
+    };
+    Ok(bcs::to_bytes(&dwallet_pubkeys)?)
 }
 
 fn secret_key_matches_public_key(

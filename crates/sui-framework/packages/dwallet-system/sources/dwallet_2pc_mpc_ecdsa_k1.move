@@ -13,21 +13,21 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     use dwallet::object::{Self, ID, UID};
     use dwallet::transfer;
     use dwallet::tx_context::{Self, TxContext};
-
     use dwallet_system::dwallet;
     use dwallet_system::dwallet::{
         create_dwallet_cap,
+        create_encrypted_user_share,
         create_malicious_aggregator_sign_output,
         create_sign_output,
         DWallet,
-        get_dwallet_cap_id,
         DWalletCap,
+        ed2551_pubkey_to_sui_addr,
+        EncryptionKey,
+        get_dwallet_cap_id,
         get_dwallet_public_key,
-        get_messages,
-        get_sign_data,
-        get_output,
-        PartialUserSignedMessages,
-        SignSession, get_public_key, EncryptionKey, create_encrypted_user_share, get_encryption_key,
+        get_encryption_key,
+        get_messages, get_output, get_public_key, get_sign_data, PartialUserSignedMessages,
+        SignSession,
     };
 
     #[test_only]
@@ -45,6 +45,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     const ENotSupported: u64 = 4;
     const EEmptyCommitment: u64 = 5;
     const EEncryptUserShare: u64 = 6;
+    const EInvalidDKGOutputSignature: u64 = 7;
+    const EPublicKeyNotMatchSenderAddress: u64 = 8;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -221,6 +223,10 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun create_dwallet(
         output: DKGSessionOutput,
         centralized_party_public_key_share_decommitment_and_proof: vector<u8>,
+        encryption_key: &EncryptionKey,
+        encrypted_user_share_and_proof: vector<u8>,
+        signed_public_shares: vector<u8>,
+        sender_pubkey: vector<u8>,
         ctx: &mut TxContext
     ) {
         let DKGSessionOutput {
@@ -238,10 +244,18 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         let (output, public_key) = dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
             commitment_to_centralized_party_secret_key_share,
             secret_key_share_encryption_and_proof,
-            centralized_party_public_key_share_decommitment_and_proof
+            centralized_party_public_key_share_decommitment_and_proof,
         );
 
         let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, public_key, ctx);
+        encrypt_user_share(
+            &dwallet,
+            encryption_key,
+            encrypted_user_share_and_proof,
+            signed_public_shares,
+            sender_pubkey,
+            ctx
+        );
         // Create dwallet + make it immutable.
         // Create dwallet +
         transfer::public_freeze_object(dwallet);
@@ -491,20 +505,30 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet: &DWallet<Secp256K1>,
         encryption_key: &EncryptionKey,
         encrypted_secret_share_and_proof: vector<u8>,
+        signed_pubkeys: vector<u8>,
+        sender_ed25519_pubkey: vector<u8>,
         ctx: &mut TxContext,
     ) {
+        assert!(
+            verify_signed_pubkeys(&signed_pubkeys, &sender_ed25519_pubkey, &get_output(dwallet)),
+            EInvalidDKGOutputSignature
+        );
+        assert!(
+            ed2551_pubkey_to_sui_addr(sender_ed25519_pubkey) == tx_context::sender(ctx),
+            EPublicKeyNotMatchSenderAddress
+        );
         let is_valid = verify_encrypted_user_secret_share_secp256k1(
             get_encryption_key(encryption_key),
             encrypted_secret_share_and_proof,
             get_output(dwallet),
         );
-
         assert!(is_valid, EEncryptUserShare);
-
         create_encrypted_user_share(
             object::id(dwallet),
             encrypted_secret_share_and_proof,
             object::id(encryption_key),
+            signed_pubkeys,
+            sender_ed25519_pubkey,
             ctx
         );
     }
@@ -537,4 +561,10 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             presigns: vector::empty<u8>()
         }
     }
+
+    native fun verify_signed_pubkeys(
+        signed_pubkeys: &vector<u8>,
+        public_key: &vector<u8>,
+        decentralized_dkg_output: &vector<u8>,
+    ): bool;
 }

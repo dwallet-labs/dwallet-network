@@ -519,7 +519,8 @@ impl NativesCostTable {
             },
             transfer_dwallet_cost_params: TransferDWalletCostParams {
                 transfer_dwallet_gas: protocol_config.transfer_dwallet_cost_base().into(),
-                ed2551_pubkey_to_sui_addr_gas: protocol_config.transfer_dwallet_cost_base().into()
+                ed2551_pubkey_to_sui_addr_gas: protocol_config.transfer_dwallet_cost_base().into(),
+                verify_signed_pubkeys_gas: protocol_config.transfer_dwallet_cost_base().into()
             },
             sui_state_proof_cost_params: SuiStateProofCostParams {
                 sui_state_proof_verify_committee_cost_base: protocol_config.sui_state_proof_verify_committee_cost_base().into(),
@@ -799,6 +800,11 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "dwallet",
             "ed2551_pubkey_to_sui_addr",
             make_native!(twopc_mpc::ed2551_pubkey_to_sui_addr),
+        ),
+        (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "verify_signed_pubkeys",
+            make_native!(twopc_mpc::verify_signed_pubkeys),
         ),
     ];
     sui_system_natives

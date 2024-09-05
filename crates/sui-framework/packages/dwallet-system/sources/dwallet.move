@@ -29,6 +29,7 @@ module dwallet_system::dwallet {
     const EInvalidEncryptionKeyOwner: u64 = 3;
     const EInvalidEncryptionKeySignature: u64 = 4;
     const EPublicKeyNotMatchSenderAddress: u64 = 5;
+    const EInvalidParametes: u64 = 6;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -452,6 +453,58 @@ module dwallet_system::dwallet {
         dwallet_id: ID,
         encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
+        signed_dwallet_pubkeys: vector<u8>,
+        sender_pubkey: vector<u8>,
+    }
+
+    /// Owned object that holds all encrypted user shares for the dWallets the user has access to.
+    /// These are those that were encrypted after the user created the dWallet or were sent to the user,
+    /// and have been verified, re-signed, and re-encrypted by the user.
+    /// `encrypted_user_shares` is a key-value table where the key is the
+    /// Dwallet ID and the value is the EncryptedUserShare object ID.
+    struct EncryptedUserShares has key {
+        id: UID,
+        // dWalletID -> EncryptedUserShareID
+        encrypted_user_shares: Table<ID, ID>,
+    }
+
+    public fun create_encrypted_user_shares(ctx: &mut TxContext) {
+        let holder = EncryptedUserShares {
+            id: object::new(ctx),
+            encrypted_user_shares: table::new(ctx),
+        };
+        transfer::transfer(holder, tx_context::sender(ctx));
+    }
+
+    public fun save_encrypted_user_share(
+        encrypted_user_shares: &mut EncryptedUserShares,
+        encrypted_user_share: &EncryptedUserShare,
+        encryption_key: &EncryptionKey,
+        ctx: &mut TxContext
+    ) {
+        assert!(
+            ed2551_pubkey_to_sui_addr(encrypted_user_share.sender_pubkey) == tx_context::sender(ctx)
+                && object::id(encryption_key) == encrypted_user_share.encryption_key_id
+                && encryption_key.key_owner_address == tx_context::sender(ctx),
+            EInvalidParametes
+        );
+
+        if (table::contains(&encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id)) {
+            table::remove(&mut encrypted_user_shares.encrypted_user_shares, encrypted_user_share.dwallet_id);
+        };
+
+        table::add(
+            &mut encrypted_user_shares.encrypted_user_shares,
+            encrypted_user_share.dwallet_id,
+            object::id(encrypted_user_share)
+        );
+    }
+
+    public fun get_encrypted_user_share_by_dwallet_id(
+        encrypted_user_shares: &EncryptedUserShares,
+        dwallet_id: ID,
+    ): &ID {
+        table::borrow(&encrypted_user_shares.encrypted_user_shares, dwallet_id)
     }
 
     /// An Additively Homomorphic Encryption (AHE) public key
@@ -546,6 +599,8 @@ module dwallet_system::dwallet {
         dwallet_id: ID,
         encrypted_secret_share_and_proof: vector<u8>,
         encryption_key_id: ID,
+        signed_dwallet_pubkeys: vector<u8>,
+        sender_pubkey: vector<u8>,
         ctx: &mut TxContext
     ) {
         let encrypted_user_share = EncryptedUserShare {
@@ -553,11 +608,13 @@ module dwallet_system::dwallet {
             dwallet_id,
             encrypted_secret_share_and_proof,
             encryption_key_id,
+            signed_dwallet_pubkeys,
+            sender_pubkey,
         };
         transfer::freeze_object(encrypted_user_share);
     }
 
-    native fun ed2551_pubkey_to_sui_addr(public_key: vector<u8>): address;
+    public native fun ed2551_pubkey_to_sui_addr(public_key: vector<u8>): address;
 
     #[test_only]
     public(friend) fun create_mock_encryption_key(
@@ -588,5 +645,43 @@ module dwallet_system::dwallet {
         encryption_key_holder: &ActiveEncryptionKeys
     ): &Table<address, ID> {
         &encryption_key_holder.encryption_keys
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_encrypted_user_shares(ctx: &mut TxContext): EncryptedUserShares {
+        EncryptedUserShares {
+            id: object::new(ctx),
+            encrypted_user_shares: table::new(ctx),
+        }
+    }
+
+    #[test_only]
+    public(friend) fun create_mock_encrypted_user_share(
+        dwallet_id: ID,
+        encrypted_secret_share_and_proof: vector<u8>,
+        encryption_key_id: ID,
+        pubkey: vector<u8>,
+        ctx: &mut TxContext
+    ): EncryptedUserShare {
+        EncryptedUserShare {
+            id: object::new(ctx),
+            dwallet_id,
+            encrypted_secret_share_and_proof,
+            encryption_key_id,
+            signed_dwallet_pubkeys: vector::empty(),
+            sender_pubkey: pubkey,
+        }
+    }
+
+    #[test_only]
+    public(friend) fun get_encrypted_user_share_dwallet_id(encrypted_user_share: &EncryptedUserShare): ID {
+        encrypted_user_share.dwallet_id
+    }
+
+    #[test_only]
+    public(friend) fun get_encrypted_user_shares_table(
+        encrypted_user_shares: &EncryptedUserShares
+    ): &Table<ID, ID> {
+        &encrypted_user_shares.encrypted_user_shares
     }
 }
