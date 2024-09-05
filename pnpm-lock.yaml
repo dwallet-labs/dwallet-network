@@ -1370,12 +1370,18 @@ importers:
       '@suchipi/femver':
         specifier: ^1.0.0
         version: 1.0.0
+      '@types/lodash':
+        specifier: ^4.17.7
+        version: 4.17.7
       axios:
         specifier: ^1.6.8
         version: 1.7.4
       ethers:
         specifier: 6.13.2
         version: 6.13.2
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
       superstruct:
         specifier: ^1.0.3
         version: 1.0.3
@@ -5492,6 +5498,9 @@ packages:
 
   '@types/lodash@4.14.195':
     resolution: {integrity: sha512-Hwx9EUgdwf2GLarOjQp5ZH8ZmblzcbTBC2wtQWNKARBSxM9ezRIAUpeDTgoQRAFB0+8CNWXVA9+MaSOzOF3nPg==}
+
+  '@types/lodash@4.17.7':
+    resolution: {integrity: sha512-8wTvZawATi/lsmNu10/j2hk1KEP0IvjubqPE3cu1Xz7xfXXt5oCq3SNUz4fMIP4XGF9Ky+Ue2tBA3hcS7LSBlA==}
 
   '@types/mdast@3.0.12':
     resolution: {integrity: sha512-DT+iNIRNX884cx0/Q1ja7NyUPpZuv0KPyL5rGNxm1WC1OtHstl7n4Jb7nk+xacNShQMbczJjt8uFzznpp6kYBg==}
@@ -18596,6 +18605,8 @@ snapshots:
       '@types/node': 20.4.2
 
   '@types/lodash@4.14.195': {}
+
+  '@types/lodash@4.17.7': {}
 
   '@types/mdast@3.0.12':
     dependencies:
