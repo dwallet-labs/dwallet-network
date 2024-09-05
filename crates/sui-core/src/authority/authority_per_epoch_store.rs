@@ -2903,6 +2903,7 @@ impl AuthorityPerEpochStore {
         Ok(iter.collect())
     }
 
+    // After collecting all signatures, this code starts the MPC protocol.
     pub fn get_initiate_signature_mpc_protocols(
         &self,
         last: InitSignatureMPCProtocolSequenceNumber,
@@ -2920,10 +2921,12 @@ impl AuthorityPerEpochStore {
         Ok(iter.collect())
     }
 
+    // Initialize the state for the MPC protocol.
     pub fn insert_initiate_signature_mpc_protocols(
         &self,
         messages: &[InitiateSignatureMPCProtocol],
     ) -> SuiResult<()> {
+        // todo: make sure this is correct.
         let last = self
             .tables()?
             .initiate_signature_mpc_protocols
@@ -2933,6 +2936,7 @@ impl AuthorityPerEpochStore {
             .map(|(key, _)| key)
             .unwrap_or_default();
         let mut batch = self.tables()?.initiate_signature_mpc_protocols.batch();
+        // This code collects the MPC protocol messages.
         batch.insert_batch(
             &self.tables()?.initiate_signature_mpc_protocols,
             messages.into_iter().map(|m| (last + 1, m)),

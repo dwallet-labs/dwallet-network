@@ -15,7 +15,6 @@ module dwallet_system::dwallet {
     use dwallet::tx_context;
     use dwallet::tx_context::TxContext;
 
-
     friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 
     #[test_only]
@@ -125,7 +124,8 @@ module dwallet_system::dwallet {
         partial_user_signed_messages: PartialUserSignedMessages<S, E>,
     }
 
-    /// `SignSession` holds the `Sign` session data, created when a `Sign` request is sent to the netowrk.
+    /// `SignSession` holds the `Sign` session data,
+    /// created when a `Sign` request is sent to the netowrk.
     struct SignSession<S: store> has key {
         id: UID,
         dwallet_id: ID,

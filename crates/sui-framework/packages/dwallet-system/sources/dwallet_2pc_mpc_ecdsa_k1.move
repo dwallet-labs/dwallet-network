@@ -243,6 +243,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
         let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, public_key, ctx);
         // Create dwallet + make it immutable.
+        // Create dwallet +
         transfer::public_freeze_object(dwallet);
     }
 
@@ -319,7 +320,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     #[allow(unused_function)]
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
-    /// This is the _SECOND PART of the `PreSign` proccess.
+    /// This is the _SECOND PART_ of the `PreSign` proccess.
     fun create_presign(session: &PresignSession, presigns: vector<u8>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         // The user needs this object and PresignSessionOutput in order to Sign the message.
@@ -361,7 +362,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             EPresignOutputAndPresignMismatch
         );
 
-        let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
+        // Native function to sign the message.let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
             session.messages,
             get_output(dwallet),
             public_nonce_encrypted_partial_signature_and_proofs,

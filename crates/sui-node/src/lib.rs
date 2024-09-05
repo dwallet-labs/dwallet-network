@@ -1127,6 +1127,8 @@ impl SuiNode {
             checkpoint_metrics.clone(),
         );
 
+        // Start MPC service for the current epoch.
+        // This object holds the channel for a validator to validator msgs.
         let (signature_mpc_service, signature_mpc_service_exit) = Self::start_signature_mpc_service(
             config,
             consensus_adapter.clone(),
@@ -1160,6 +1162,7 @@ impl SuiNode {
         let consensus_handler_initializer = ConsensusHandlerInitializer::new(
             state.clone(),
             checkpoint_service.clone(),
+            // Pass the MPC object + channel to the ConsensusHandlerInitializer.
             signature_mpc_service.clone(),
             epoch_store.clone(),
             low_scoring_authorities,
