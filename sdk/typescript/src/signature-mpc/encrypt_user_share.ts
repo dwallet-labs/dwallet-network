@@ -1,24 +1,19 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import {
-	serialized_pubkeys_from_decentralized_dkg_output,
-	verify_user_share,
-} from '@dwallet-network/signature-mpc-wasm';
-
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
-import { Ed25519PublicKey } from '../keypairs/ed25519/index.js';
+import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
+import { generate_proof } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import {
-	decrypt_user_share,
-	generate_proof,
-	getDwalletByObjID,
-} from './dwallet_2pc_mpc_ecdsa_k1_module.js';
-import {
+	EncryptionKeyScheme,
 	getActiveEncryptionKeyObjID,
 	getEncryptionKeyByObjectId,
+	setActiveEncryptionKey,
+	storeEncryptionKey,
 	transferEncryptedUserShare,
 } from './dwallet.js';
+import { generatePaillierKeyPairFromSuiKeyPair } from './utils.js';
 
 export type DWalletToTransfer = {
 	secretKeyShare: number[];
@@ -114,57 +109,59 @@ export const getEncryptedUserShareByObjID = async (
 		: null;
 };
 
-export const acceptUserShare = async (
-	encryptedUserShare: EncryptedUserShare,
-	expectedSourceSuiAddress: string,
-	encryptionKey: Uint8Array,
-	decryptionKey: Uint8Array,
-	dwalletID: string,
-	encryptionKeysHolderObjID: string,
+export type EncryptionKeyPair = {
+	encryptionKey: Uint8Array;
+	decryptionKey: Uint8Array;
+	objectID: string;
+};
+
+function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
+	if (arr1.length !== arr2.length) {
+		return false;
+	}
+
+	return arr1.every((value, index) => value === arr2[index]);
+}
+
+export const getOrCreateEncryptionKey = async (
+	keypair: Ed25519Keypair,
 	client: DWalletClient,
-	keypair: Keypair,
-): Promise<boolean> => {
-	let dwallet = await getDwalletByObjID(client, dwalletID);
-	let publicKey = new Ed25519PublicKey(encryptedUserShare?.senderPubKey!);
-	let serializedPubKeys = serialized_pubkeys_from_decentralized_dkg_output(
-		new Uint8Array(dwallet?.decentralizedDKGOutput!),
+	activeEncryptionKeysTableID: string,
+): Promise<EncryptionKeyPair> => {
+	let [encryptionKey, decryptionKey] = generatePaillierKeyPairFromSuiKeyPair(keypair);
+	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
+		client,
+		keypair.toSuiAddress(),
+		activeEncryptionKeysTableID,
 	);
-	if (
-		!(await publicKey.verify(
-			serializedPubKeys,
-			new Uint8Array(encryptedUserShare?.signedDWalletPubKeys!),
-		))
-	) {
-		return false;
+	if (activeEncryptionKeyObjID) {
+		let encryptionKeyObj = await getEncryptionKeyByObjectId(client, activeEncryptionKeyObjID);
+		if (isEqual(encryptionKeyObj?.encryptionKey!, encryptionKey)) {
+			return {
+				encryptionKey,
+				decryptionKey,
+				objectID: activeEncryptionKeyObjID,
+			};
+		}
+		throw new Error(
+			'Encryption key derived from Sui secret does not match the one in the active encryption keys table',
+		);
 	}
-	if (publicKey.toSuiAddress() !== expectedSourceSuiAddress) {
-		return false;
-	}
-
-	const decryptedKeyShare = decrypt_user_share(
+	const encryptionKeyRef = await storeEncryptionKey(
 		encryptionKey,
-		decryptionKey,
-		new Uint8Array(encryptedUserShare?.encryptedUserShareAndProof!),
+		EncryptionKeyScheme.Paillier,
+		keypair,
+		client,
 	);
-
-	if (!verify_user_share(decryptedKeyShare, new Uint8Array(dwallet?.decentralizedDKGOutput!))) {
-		return false;
-	}
-	let dwalletToSend = {
-		dwalletID: dwalletID,
-		secretKeyShare: Array.from(decryptedKeyShare),
-		decentralizedDKGOutput: dwallet!.decentralizedDKGOutput,
-	};
-
-	// Encrypt it to self, so that in the future we'd know that we already verified everything
-	// and only need to verify our signature.
-	await sendUserShareToSuiPubKey(
+	await setActiveEncryptionKey(
 		client,
 		keypair,
-		dwalletToSend,
-		keypair.getPublicKey(),
-		encryptionKeysHolderObjID,
-		await keypair.sign(serializedPubKeys),
+		encryptionKeyRef?.objectId!,
+		activeEncryptionKeysTableID,
 	);
-	return true;
+	return {
+		decryptionKey,
+		encryptionKey,
+		objectID: encryptionKeyRef.objectId,
+	};
 };
