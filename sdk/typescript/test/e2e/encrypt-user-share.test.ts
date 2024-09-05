@@ -7,7 +7,6 @@ import {
 	createActiveEncryptionKeysTable,
 	createDWallet,
 	EncryptionKeyScheme,
-	generate_keypair,
 	getActiveEncryptionKeyObjID,
 	getEncryptedUserShareByObjectID,
 	setActiveEncryptionKey,
@@ -21,14 +20,12 @@ import {
 import { acceptUserShare } from '../../src/signature-mpc/sign';
 import { setup, TestToolbox } from './utils/setup';
 
-describe('Secret key share transfer', () => {
+describe('store secret key share', () => {
 	let dwalletSenderToolbox: TestToolbox;
-	let dwalletReceiverToolbox: TestToolbox;
 	let activeEncryptionKeysTableID: string;
 
 	beforeAll(async () => {
 		dwalletSenderToolbox = await setup();
-		dwalletReceiverToolbox = await setup();
 		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
 			dwalletSenderToolbox.client,
 			dwalletSenderToolbox.keypair,
@@ -37,9 +34,13 @@ describe('Secret key share transfer', () => {
 	});
 
 	it('creates an encryption key & stores it in the active encryption keys table', async () => {
-		const [encryptionKey, _] = generate_keypair();
+		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(
+			dwalletSenderToolbox.keypair,
+			dwalletSenderToolbox.client,
+			activeEncryptionKeysTableID,
+		);
 		const pubKeyRef = await storeEncryptionKey(
-			encryptionKey,
+			senderEncryptionKeyObj.encryptionKey,
 			EncryptionKeyScheme.Paillier,
 			dwalletSenderToolbox.keypair,
 			dwalletSenderToolbox.client,
@@ -59,6 +60,22 @@ describe('Secret key share transfer', () => {
 		);
 
 		expect(`0x${activeEncryptionKeyAddress}`).toEqual(pubKeyRef?.objectId!);
+	});
+});
+
+describe('Secret key share transfer', () => {
+	let dwalletSenderToolbox: TestToolbox;
+	let dwalletReceiverToolbox: TestToolbox;
+	let activeEncryptionKeysTableID: string;
+
+	beforeAll(async () => {
+		dwalletSenderToolbox = await setup();
+		dwalletReceiverToolbox = await setup();
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
+			dwalletSenderToolbox.client,
+			dwalletSenderToolbox.keypair,
+		);
+		activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
 	});
 
 	it('full flow — encrypts a secret share to a given Sui public key successfully, and stores it on the chain from the receiving end', async () => {
