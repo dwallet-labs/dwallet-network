@@ -14,7 +14,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { saveEncryptedUserShare } from './dwallet.js';
+import { hashToNumber, saveEncryptedUserShare } from './dwallet.js';
 import { fetchObjectBySessionId } from './utils.js';
 
 export {
@@ -27,7 +27,7 @@ export {
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export type Dwallet = {
+export type CreatedDwallet = {
 	dwalletID: string;
 	centralizedDKGOutput: number[];
 	decentralizedDKGOutput: number[];
@@ -41,7 +41,7 @@ export async function createDWallet(
 	client: DWalletClient,
 	encryptionKey: Uint8Array,
 	encryptionKeyObjId: string,
-): Promise<Dwallet | null> {
+): Promise<CreatedDwallet | null> {
 	const resultDKG = initiate_dkg();
 
 	const commitmentToSecretKeyShare = resultDKG['commitment_to_secret_key_share'];
@@ -154,46 +154,26 @@ export async function createDWallet(
 	return null;
 }
 
-export const getDwalletByObjID = async (client: DWalletClient, dwalletObjID: string) => {
-	const dwalletObject = await client.getObject({
-		id: dwalletObjID,
-		options: { showContent: true },
-	});
-
-	const dwalletObjectFields =
-		dwalletObject.data?.content?.dataType === 'moveObject'
-			? (dwalletObject.data?.content?.fields as {
-					dwallet_cap_id: string;
-					output: number[];
-			  })
-			: null;
-
-	return dwalletObjectFields
-		? {
-				dwalletID: dwalletObjID,
-				decentralizedDKGOutput: dwalletObjectFields.output,
-				dwalletCapID: dwalletObjectFields.dwallet_cap_id,
-		  }
-		: null;
+export type DWallet = {
+	dwalletID: string;
+	decentralizedDKGOutput: number[];
+	dwalletCapID: string;
 };
 
-function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
-	if (hash === 'KECCAK256') {
-		return 0;
-	} else {
-		return 1;
-	}
-}
-
 export async function createPartialUserSignedMessages(
-	dwalletId: string,
-	dkgOutput: number[],
+	dwalletID: string,
+	decentralizedDKGOutput: number[],
+	secretKeyShare: Uint8Array,
 	messages: Uint8Array[],
 	hash: 'KECCAK256' | 'SHA256',
 	keypair: Keypair,
 	client: DWalletClient,
 ) {
-	const resultPresign = initiate_presign(Uint8Array.of(...dkgOutput), messages.length);
+	const resultPresign = initiate_presign(
+		Uint8Array.of(...decentralizedDKGOutput),
+		secretKeyShare,
+		messages.length,
+	);
 
 	const nonceSharesCommitmentsAndBatchedProof =
 		resultPresign['nonce_shares_commitments_and_batched_proof'];
@@ -206,7 +186,7 @@ export async function createPartialUserSignedMessages(
 	tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_presign_session`,
 		arguments: [
-			tx.object(dwalletId),
+			tx.object(dwalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 			tx.pure(nonceSharesCommitmentsAndBatchedProof),
 			tx.pure.u8(hashNum),
@@ -239,7 +219,8 @@ export async function createPartialUserSignedMessages(
 
 	if (sessionOutputFields) {
 		const presigns = finalize_presign(
-			Uint8Array.of(...dkgOutput),
+			Uint8Array.of(...decentralizedDKGOutput),
+			secretKeyShare,
 			signatureNonceSharesAndCommitmentRandomnesses,
 			Uint8Array.from(sessionOutputFields.output),
 		);
@@ -262,7 +243,8 @@ export async function createPartialUserSignedMessages(
 			const bcsMessages = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
 
 			const publicNonceEncryptedPartialSignatureAndProofs = initiate_sign(
-				Uint8Array.of(...dkgOutput),
+				Uint8Array.of(...decentralizedDKGOutput),
+				secretKeyShare,
 				presigns,
 				bcsMessages,
 				hashNum,
@@ -272,7 +254,7 @@ export async function createPartialUserSignedMessages(
 			const [signMessagesObject] = txFinal.moveCall({
 				target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_partial_user_signed_messages`,
 				arguments: [
-					txFinal.object(dwalletId),
+					txFinal.object(dwalletID),
 					txFinal.object(sessionRef.objectId),
 					txFinal.object(sessionOutputFields.id.id),
 					txFinal.object(presignOutputFields.id.id),
