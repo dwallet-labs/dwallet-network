@@ -61,7 +61,7 @@ describe('Secret key share transfer', () => {
 		expect(`0x${activeEncryptionKeyAddress}`).toEqual(pubKeyRef?.objectId!);
 	});
 
-	it('full flow - encrypts a secret share to a given Sui public key successfully, and store it on chain from the receiving end', async () => {
+	it('full flow — encrypts a secret share to a given Sui public key successfully, and stores it on the chain from the receiving end', async () => {
 		// ======================= Create Source DWallet =======================
 		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(
 			dwalletSenderToolbox.keypair,
