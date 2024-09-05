@@ -29,7 +29,7 @@ export {
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export type Dwallet = {
+export type CreatedDwallet = {
 	dwalletID: string;
 	centralizedDKGOutput: number[];
 	decentralizedDKGOutput: number[];

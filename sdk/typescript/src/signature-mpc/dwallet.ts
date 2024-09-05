@@ -92,7 +92,7 @@ export async function approveAndSign(
 	});
 	let signatures = await waitForSignOutput(client);
 	let encryptedUserShareObjId = await getEncryptedUserShare(client, keypair, dwalletID);
-	let encryptedUserShareObj = await getEncryptedUserShareByObjectId(
+	let encryptedUserShareObj = await getEncryptedUserShareByObjectID(
 		client,
 		encryptedUserShareObjId!,
 	);
@@ -103,7 +103,7 @@ export async function approveAndSign(
 	if (
 		!(await keypair
 			.getPublicKey()
-			.verify(serializedPubkeys, new Uint8Array(encryptedUserShareObj?.signedDWalletPubkeys!)))
+			.verify(serializedPubkeys, new Uint8Array(encryptedUserShareObj?.signedDWalletPubKeys!)))
 	) {
 		throw new Error('The DWallet public keys has not been signed by the desired Sui address');
 	}
@@ -423,9 +423,9 @@ export const getEncryptedUserShare = async (
 	keypair: Keypair,
 	dwalletID: string,
 ): Promise<string> => {
-	let encryptedUserSharesObjID = await getEncryptedUserSharesObjId(client, keypair);
+	let encryptedUserSharesObjID = await getEncryptedUserSharesObjID(client, keypair);
 	const tx = new TransactionBlock();
-	const encrptedUserSharesObj = tx.object(encryptedUserSharesObjID!);
+	const encryptedUserSharesObj = tx.object(encryptedUserSharesObjID!);
 
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_encrypted_user_share_by_dwallet_id`,
