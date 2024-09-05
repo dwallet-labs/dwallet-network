@@ -2697,9 +2697,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::SignedDKGSignatureMPCOutput(output),
-                                                            ..
-                                                        }) => {
+                kind: ConsensusTransactionKind::SignedDKGSignatureMPCOutput(output),
+                ..
+            }) => {
                 let transaction =
                     VerifiedTransaction::new_signature_mpc_output(output.data().clone());
                 let certificate =
