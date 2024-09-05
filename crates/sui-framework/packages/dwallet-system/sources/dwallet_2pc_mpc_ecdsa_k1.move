@@ -376,7 +376,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             EPresignOutputAndPresignMismatch
         );
 
-        // Native function to sign the message.let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
+        // Native function to sign the message.
+        let valid_signature_parts = sign_verify_encrypted_signature_parts_prehash(
             session.messages,
             get_output(dwallet),
             public_nonce_encrypted_partial_signature_and_proofs,
