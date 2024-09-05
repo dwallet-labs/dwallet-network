@@ -16,8 +16,7 @@ import {
 import {
 	getActiveEncryptionKeyObjID,
 	getDwalletByObjID,
-	getEncryptedUserShare,
-	getEncryptedUserShareByObjectId,
+	getEncryptedUserShare, getEncryptedUserShareByObjectID,
 	saveEncryptedUserShare,
 } from './dwallet.js';
 import type { EncryptedUserShare, EncryptionKeyPair } from './encrypt_user_share.js';
@@ -41,7 +40,7 @@ export const decryptAndVerifyUserShare = async (
 	if (
 		!(await sourcePublicKey.verify(
 			serializedPubkeys,
-			new Uint8Array(encryptedUserShareObj?.signedDWalletPubkeys!),
+			new Uint8Array(encryptedUserShareObj?.signedDWalletPubKeys!),
 		))
 	) {
 		throw new Error('The DWallet public keys has not been signed by the desired Sui address');
@@ -76,7 +75,7 @@ export const acceptUserShare = async (
 		encryptionKeyObj,
 	);
 	let dwalletToSend = {
-		dwalletId: dwalletID,
+		dwalletID,
 		secretKeyShare: Array.from(decryptedKeyShare),
 		decentralizedDKGOutput: dwallet!.decentralizedDKGOutput,
 	};
@@ -127,7 +126,7 @@ export const presignWithDWalletID = async (
 	);
 
 	let encryptedUserShareObjId = await getEncryptedUserShare(client, keypair, dwalletID);
-	let encryptedUserShareObj = await getEncryptedUserShareByObjectId(
+	let encryptedUserShareObj = await getEncryptedUserShareByObjectID(
 		client,
 		encryptedUserShareObjId!,
 	);
