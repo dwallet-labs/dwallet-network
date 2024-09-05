@@ -18,7 +18,7 @@ The dWallet is an innovative Web3 building block that has the following attribut
 * _Massively decentralized_: Beside the user, a 2/3 threshold of a network that can include hundreds or thousands of nodes, is also required to generate a signature.
 * _Multi-Chain_: Using the default authentication method of blockchains - the signature - dWallets can offer universal and native multi-chain interoperability, without the cross-chain risks of wrapping, bridging or messaging.
 * _cryptographically secure_: The security of dWallets is based on cryptography, instead of hardware or trust assumptions.
-
+s
 dWallets are the only way that exists today for Web3 builders to achieve secure, multi-chain interoperability, without the risks of cross-chain and without compromising on the core Web3 values of user ownership and decentralization.
 As dWallet Network moves closer to its Mainnet launch, it will add support to many L1s and L2s, so builders across Web3 can use it as a composable modular signature network, adding powerful access control capabilities to any smart contract.
 

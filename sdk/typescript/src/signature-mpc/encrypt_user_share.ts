@@ -1,8 +1,6 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import _ from 'lodash';
-
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
@@ -117,6 +115,14 @@ export type EncryptionKeyPair = {
 	objectID: string;
 };
 
+function isEqual(arr1: Uint8Array, arr2: Uint8Array): boolean {
+	if (arr1.length !== arr2.length) {
+		return false;
+	}
+
+	return arr1.every((value, index) => value === arr2[index]);
+}
+
 export const getOrCreateEncryptionKey = async (
 	keypair: Ed25519Keypair,
 	client: DWalletClient,
@@ -130,7 +136,7 @@ export const getOrCreateEncryptionKey = async (
 	);
 	if (activeEncryptionKeyObjID) {
 		let encryptionKeyObj = await getEncryptionKeyByObjectId(client, activeEncryptionKeyObjID);
-		if (_.isEqual(encryptionKeyObj?.encryptionKey, encryptionKey)) {
+		if (isEqual(encryptionKeyObj?.encryptionKey!, encryptionKey)) {
 			return {
 				encryptionKey,
 				decryptionKey,
