@@ -17,8 +17,6 @@ import type { Keypair } from '../cryptography/index.js';
 import { hashToNumber, saveEncryptedUserShare } from './dwallet.js';
 import { fetchObjectBySessionId } from './utils.js';
 
-//[object Object]
-// SPDX-License-Identifier: BSD-3-Clause-Clear
 export {
 	decrypt_user_share,
 	generate_keypair,

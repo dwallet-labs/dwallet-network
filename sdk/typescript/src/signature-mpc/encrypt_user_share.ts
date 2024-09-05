@@ -17,8 +17,6 @@ import {
 } from './dwallet.js';
 import { generatePaillierKeyPairFromSuiKeyPair } from './utils.js';
 
-//[object Object]
-// SPDX-License-Identifier: BSD-3-Clause-Clear
 export type DWalletToTransfer = {
 	secretKeyShare: number[];
 	decentralizedDKGOutput: number[];

@@ -170,7 +170,7 @@ pub fn decentralized_party_dkg_verify_decommitment_and_proof_of_centralized_part
     Ok((output, public_key.to_bytes().to_vec()))
 }
 
-pub fn to_centralized_dkg_output(
+fn to_centralized_dkg_output(
     decentralized_dkg_output: DKGDecentralizedPartyOutput,
     secret_share: Vec<u8>,
 ) -> DKGCentralizedPartyOutput {

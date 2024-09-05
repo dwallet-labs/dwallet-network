@@ -23,8 +23,6 @@ import {
 import type { EncryptedUserShare, EncryptionKeyPair } from './encrypt_user_share.js';
 import { getOrCreateEncryptionKey, sendUserShareToSuiPubKey } from './encrypt_user_share.js';
 
-//[object Object]
-// SPDX-License-Identifier: BSD-3-Clause-Clear
 export const decryptAndVerifyUserShare = async (
 	sourcePublicKey: Ed25519PublicKey,
 	expectedSourceSuiAddress: string,
