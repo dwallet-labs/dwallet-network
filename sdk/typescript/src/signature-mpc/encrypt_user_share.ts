@@ -1,6 +1,8 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import _ from 'lodash';
+
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair, PublicKey } from '../cryptography/index.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
@@ -14,7 +16,6 @@ import {
 	transferEncryptedUserShare,
 } from './dwallet.js';
 import { generatePaillierKeyPairFromSuiKeyPair } from './utils.js';
-import _ from 'lodash';
 
 export type DWalletToTransfer = {
 	secretKeyShare: number[];
