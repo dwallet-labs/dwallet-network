@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 use clap::Subcommand;
 
 use helios::consensus::nimbus_rpc::NimbusRpc;
-use helios::consensus::{BeaconBlockBody, BeaconBlockType, ConsensusStateManager};
+use helios::consensus::ConsensusStateManager;
 use helios::dwallet::light_client::{
     EthLightClientConfig, EthLightClientWrapper, ProofRequestParameters,
 };
@@ -23,7 +23,7 @@ use light_client_helpers::{
 };
 use std::str::FromStr;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::{Number, Value};
 use shared_crypto::intent::Intent;
 use sui_json::SuiJsonValue;
@@ -35,7 +35,7 @@ use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::eth_dwallet::{
-    EthereumDWalletCap, EthereumStateObject, LatestEthereumStateObject, APPROVE_MESSAGE_FUNC_NAME,
+    EthereumStateObject, LatestEthereumStateObject, APPROVE_MESSAGE_FUNC_NAME,
     CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME,
     INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME, VERIFY_ETH_STATE_FUNC_NAME,
 };
@@ -354,7 +354,7 @@ pub(crate) async fn eth_approve_message(
 
     let mut eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&eth_state_obj.data)
         .map_err(|e| anyhow!("error parsing eth state data: {e}"))?;
-    let mut eth_state = eth_state.set_rpc(&eth_lc_config.consensus_rpc);
+    let eth_state = eth_state.set_rpc(&eth_lc_config.consensus_rpc);
 
     let latest_eth_state_shared_object =
         get_shared_object_input_by_id(context, latest_state_object_id).await?;
@@ -370,9 +370,13 @@ pub(crate) async fn eth_approve_message(
     let contract_address = contract_address.parse::<Address>()?;
 
     let updates_response = eth_state
-        .get_updates_since_checkpoint()
+        .get_updates_since_finalized()
         .await
         .map_err(|e| anyhow!("could not fetch updates: {e}"))?;
+
+    let is_init_state = eth_state
+        .is_update_relevant(&updates_response)
+        .map_err(|e| anyhow!("could not check if update is relevant: {e}"))?;
 
     let gas_owner = context.try_get_object_owner(&gas).await?;
     let sender = gas_owner.unwrap_or(context.active_address()?);
@@ -399,6 +403,8 @@ pub(crate) async fn eth_approve_message(
         })
         .map_err(|e| anyhow!("could not serialize `latest_eth_state_id`: {e}"))?;
 
+    let is_init_state_arg = pt_builder.pure(is_init_state)?;
+
     let eth_state_object_ref = get_object_ref_by_id(context, eth_state_object_id).await?;
     let eth_state_id_arg = pt_builder
         .obj(ObjectArg::ImmOrOwnedObject(eth_state_object_ref))
@@ -415,6 +421,7 @@ pub(crate) async fn eth_approve_message(
             optimistic_update_arg,
             latest_eth_state_arg,
             eth_state_id_arg,
+            is_init_state_arg,
         ]),
     );
 
@@ -455,7 +462,7 @@ pub(crate) async fn eth_approve_message(
     let mut verified_eth_state =
         bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&verified_eth_state_obj.data)
             .map_err(|e| anyhow!("error parsing eth state data: {e}"))?;
-    let mut verified_eth_state = verified_eth_state.set_rpc(&eth_lc_config.consensus_rpc);
+    let verified_eth_state = verified_eth_state.set_rpc(&eth_lc_config.consensus_rpc);
 
     let latest_slot = updates_response
         .finality_update
@@ -469,18 +476,14 @@ pub(crate) async fn eth_approve_message(
         .block_number()
         .as_u64();
 
-    let mut beacon_block = verified_eth_state
+    let beacon_block = verified_eth_state
         .get_beacon_block(latest_slot)
         .await
         .map_err(|e| anyhow!("could not fetch beacon block: {e}"))?;
 
     let beacon_block_body = beacon_block.clone().body;
     let beacon_block_execution_payload = beacon_block_body.execution_payload();
-    let beacon_block_type = match beacon_block.body {
-        BeaconBlockBody::Bellatrix(_) => BeaconBlockType::Bellatrix,
-        BeaconBlockBody::Capella(_) => BeaconBlockType::Capella,
-        BeaconBlockBody::Deneb(_) => BeaconBlockType::Deneb,
-    };
+    let beacon_block_type = beacon_block.body.get_block_type();
 
     let proof_params = ProofRequestParameters {
         message: message.clone(),

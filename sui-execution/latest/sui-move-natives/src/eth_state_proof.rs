@@ -232,7 +232,8 @@ pub(crate) fn verify_eth_state(
     );
 
     let cost = context.gas_used();
-    let (current_eth_state, optimistic_update, finality_update, updates_vec) = (
+    let (is_init, current_eth_state, optimistic_update, finality_update, updates_vec) = (
+        pop_arg!(args, bool),
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
@@ -259,10 +260,19 @@ pub(crate) fn verify_eth_state(
         optimistic_update,
     };
 
-    eth_state.verify_and_apply_updates(&updates).map_err(|e| {
-        error!("failed to verify updates: {:?}", e);
-        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-    })?;
+    if (is_init) {
+        eth_state
+            .verify_and_apply_initial_updates(&updates)
+            .map_err(|e| {
+                error!("failed to verify updates: {:?}", e);
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+            })?;
+    } else {
+        eth_state.advance_state(updates).map_err(|e| {
+            error!("failed to advance state: {:?}", e);
+            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+        })?;
+    }
 
     let new_state_bcs = bcs::to_bytes(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
