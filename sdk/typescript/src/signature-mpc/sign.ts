@@ -16,7 +16,8 @@ import {
 import {
 	getActiveEncryptionKeyObjID,
 	getDwalletByObjID,
-	getEncryptedUserShare, getEncryptedUserShareByObjectID,
+	getEncryptedUserShare,
+	getEncryptedUserShareByObjectID,
 	saveEncryptedUserShare,
 } from './dwallet.js';
 import type { EncryptedUserShare, EncryptionKeyPair } from './encrypt_user_share.js';
