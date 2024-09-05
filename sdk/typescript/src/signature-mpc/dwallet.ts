@@ -1,12 +1,19 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import {
+	serialized_pubkeys_from_decentralized_dkg_output,
+	verify_signatures,
+} from '@dwallet-network/signature-mpc-wasm';
+
 import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
+import type { DWallet } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import type { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share.js';
+import { fetchOwnedObjectByType } from './utils.js';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -16,10 +23,46 @@ export enum EncryptionKeyScheme {
 	Paillier = 0,
 }
 
+export const getDwalletByObjID = async (
+	client: DWalletClient,
+	dwalletObjID: string,
+): Promise<DWallet | null> => {
+	const dwalletObject = await client.getObject({
+		id: dwalletObjID,
+		options: { showContent: true },
+	});
+
+	const dwalletObjectFields =
+		dwalletObject.data?.content?.dataType === 'moveObject'
+			? (dwalletObject.data?.content?.fields as {
+					dwallet_cap_id: string;
+					output: number[];
+			  })
+			: null;
+
+	return dwalletObjectFields
+		? {
+				dwalletID: dwalletObjID,
+				decentralizedDKGOutput: dwalletObjectFields.output,
+				dwalletCapID: dwalletObjectFields.dwallet_cap_id,
+		  }
+		: null;
+};
+
+export function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
+	if (hash === 'KECCAK256') {
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
 export async function approveAndSign(
 	dwalletCapId: string,
 	signMessagesId: string,
 	messages: Uint8Array[],
+	dwalletID: string,
+	hash: 'KECCAK256' | 'SHA256',
 	keypair: Keypair,
 	client: DWalletClient,
 ) {
@@ -47,14 +90,41 @@ export async function approveAndSign(
 			showEffects: true,
 		},
 	});
-	return await waitForSignOutput(client);
+	let signatures = await waitForSignOutput(client);
+	let encryptedUserShareObjId = await getEncryptedUserShare(client, keypair, dwalletID);
+	let encryptedUserShareObj = await getEncryptedUserShareByObjectID(
+		client,
+		encryptedUserShareObjId!,
+	);
+	let dwallet = await getDwalletByObjID(client, dwalletID);
+	let serializedPubkeys = serialized_pubkeys_from_decentralized_dkg_output(
+		new Uint8Array(dwallet?.decentralizedDKGOutput!),
+	);
+	if (
+		!(await keypair
+			.getPublicKey()
+			.verify(serializedPubkeys, new Uint8Array(encryptedUserShareObj?.signedDWalletPubKeys!)))
+	) {
+		throw new Error('The DWallet public keys has not been signed by the desired Sui address');
+	}
+	if (
+		!verify_signatures(
+			bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes(),
+			hashToNumber(hash),
+			new Uint8Array(dwallet?.decentralizedDKGOutput!),
+			bcs.vector(bcs.vector(bcs.u8())).serialize(signatures).toBytes(),
+		)
+	) {
+		throw new Error('Returned signatures are not valid');
+	}
+	return signatures;
 }
 
 export interface SignOutputEventData {
 	signatures: Uint8Array[];
 }
 
-const waitForSignOutput = async (client: DWalletClient) => {
+const waitForSignOutput = async (client: DWalletClient): Promise<Uint8Array[]> => {
 	return new Promise((resolve) => {
 		client.subscribeEvent({
 			filter: {
@@ -270,6 +340,71 @@ export const transferEncryptedUserShare = async (
 		],
 	});
 
+	const res = await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+
+	return res.effects?.created?.at(0)?.reference;
+};
+
+export const createEncryptedUserSharesHolder = async (client: DWalletClient, keypair: Keypair) => {
+	const tx = new TransactionBlock();
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::create_encrypted_user_shares`,
+		arguments: [],
+	});
+
+	let result = await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+
+	return result.effects?.created?.at(0)?.reference;
+};
+
+export const getEncryptedUserSharesObjID = async (client: DWalletClient, keypair: Keypair) => {
+	const table = await fetchOwnedObjectByType(
+		`${packageId}::${dWalletModuleName}::EncryptedUserShares`,
+		keypair,
+		client,
+	);
+	const tableFields =
+		table?.dataType === 'moveObject'
+			? (table.fields as {
+					id: { id: string };
+			  })
+			: null;
+
+	if (table === null) {
+		const newTable = await createEncryptedUserSharesHolder(client, keypair);
+		return newTable?.objectId;
+	}
+	return tableFields?.id.id;
+};
+
+export const saveEncryptedUserShare = async (
+	client: DWalletClient,
+	keypair: Keypair,
+	encryptionKeyID: string,
+	encryptedUserShareId: string,
+) => {
+	const tx = new TransactionBlock();
+	const encKey = tx.object(encryptionKeyID);
+	const encryptedUserShare = tx.object(encryptedUserShareId);
+	const encryptedUserSharesId = await getEncryptedUserSharesObjID(client, keypair);
+
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::save_encrypted_user_share`,
+		arguments: [tx.object(encryptedUserSharesId!), encryptedUserShare, encKey],
+	});
+
 	return await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx,
@@ -277,4 +412,32 @@ export const transferEncryptedUserShare = async (
 			showEffects: true,
 		},
 	});
+};
+
+/**
+ * Retrieve the encrypted user share that the user encrypted to itself from the dwallet ID.
+ * First fetches the user's `EncryptedUserShares` table, and from it fetches the encrypted user share.
+ */
+export const getEncryptedUserShare = async (
+	client: DWalletClient,
+	keypair: Keypair,
+	dwalletID: string,
+): Promise<string> => {
+	let encryptedUserSharesObjID = await getEncryptedUserSharesObjID(client, keypair);
+	const tx = new TransactionBlock();
+	const encryptedUserSharesObj = tx.object(encryptedUserSharesObjID!);
+
+	tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::get_encrypted_user_share_by_dwallet_id`,
+		arguments: [encryptedUserSharesObj, tx.pure(dwalletID)],
+	});
+
+	let res = await client.devInspectTransactionBlock({
+		sender: keypair.toSuiAddress(),
+		transactionBlock: tx,
+	});
+	const array = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
+	return Array.from(array)
+		.map((byte) => byte.toString(16).padStart(2, '0'))
+		.join('');
 };
