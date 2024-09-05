@@ -103,6 +103,8 @@ pub struct SignatureMPCAggregator {
     sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
 }
 
+/// The important part of the MPC service,
+/// it receives both initiate and messages and decides what to do.
 impl SignatureMPCAggregator {
     fn new(
         epoch: EpochId,
@@ -171,6 +173,7 @@ impl SignatureMPCAggregator {
                     let presign_session_states = self.presign_session_states.clone();
                     let sign_session_rounds = self.sign_session_rounds.clone();
                     let sign_session_states = self.sign_session_states.clone();
+                    // Messages from a validator?
                     spawn_monitored_task!(Self::insert_message(
                         self.epoch,
                         epoch_store,
@@ -433,6 +436,11 @@ impl SignatureMPCAggregator {
                         //     let _ = s.insert_first_round(party_id, m.clone());
                         //     drop(s);
                         // }
+                        // This code is in charge on reliable broadcast.
+                        // Uses the Narwhal protocol to send the message to all parties
+                        // For this message each Validator makes sure they got the message from everyone.
+                        // So each Validator expects N-1 messages from other Validators,
+                        // every message should be different.
                         let _ = submit
                             .sign_and_submit_message(
                                 &SignatureMPCMessageSummary::new(
@@ -444,6 +452,12 @@ impl SignatureMPCAggregator {
                             )
                             .await;
                     }
+                    // Final output of an MPC round.
+                    // This one creates the output to blockchain
+                    // calling the private move functions from dwallet modules.
+                    // In this message, Validators expect to receive the same message from all,
+                    // meaning they reached consensus (2/3rd of committee).
+                    // These are system transactions.
                     DKGRoundCompletion::Output(secret_key_share_encryption_and_proof) => {
                         let _ = submit
                             .sign_and_submit_output(
@@ -823,6 +837,7 @@ impl SignatureMPCService {
     ) -> (Arc<Self>, watch::Sender<()> /* The exit sender */) {
         info!("Starting signature mpc service.");
 
+        // Channel for sending messages during the protocol.
         let (tx_signature_mpc_protocol_message_sender, rx_signature_mpc_protocol_message_sender) =
             mpsc::channel(MAX_MESSAGES_IN_PROGRESS);
 
@@ -837,9 +852,11 @@ impl SignatureMPCService {
 
         let epoch = epoch_store.epoch();
 
+        // Create the channels for the MPC service.
         let rx_initiate_signature_mpc_protocol_sender =
             SignatureMpcSubscriber::new(epoch_store.clone(), exit_rcv.clone());
 
+        // Get all Party IDs.
         let parties = HashSet::from_iter(
             epoch_store
                 .committee()
@@ -848,6 +865,7 @@ impl SignatureMPCService {
                 .map(|p| (p + 1) as PartyID),
         );
 
+        // Aggregate all messages.
         let aggregator = SignatureMPCAggregator::new(
             epoch,
             epoch_store,

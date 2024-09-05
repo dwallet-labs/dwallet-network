@@ -32,6 +32,7 @@ pub struct SignatureMpcSubscriber {
 }
 
 impl SignatureMpcSubscriber {
+    // Create a channel for sending and receiving MPC messages.
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         exit: watch::Receiver<()>,
@@ -39,6 +40,7 @@ impl SignatureMpcSubscriber {
         let (tx_initiate_signature_mpc_protocol_sender, rx_initiate_signature_mpc_protocol_sender) =
             mpsc::channel(MAX_MESSAGES_IN_PROGRESS);
 
+        // Subscribe to MPC msgs.
         let subscriber = Self {
             epoch_store,
             exit,
@@ -51,11 +53,12 @@ impl SignatureMpcSubscriber {
         rx_initiate_signature_mpc_protocol_sender
     }
 
+    // A special subscriber that listens for new MPC sessions.
     async fn run(mut self) {
         info!("Starting SignatureMpcSubscriber");
         loop {
-            // Check whether an exit signal has been received if so we break the loop.
-            // This gives us a chance to exit if checkpoint making keeps failing.
+            // If an exit signal received, break the loop.
+            // This gives a chance to exit, if checkpoint making keeps failing.
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
                     break;
@@ -67,6 +70,8 @@ impl SignatureMpcSubscriber {
                 .get_initiate_signature_mpc_protocols(self.last)
                 .unwrap();
             for (last, message) in messages {
+                // Send MPC messages to channel.
+                // todo: handle error.
                 let _ = self
                     .tx_initiate_signature_mpc_protocol_sender
                     .send(message)

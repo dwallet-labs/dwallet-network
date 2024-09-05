@@ -1271,8 +1271,11 @@ impl AuthorityState {
             effects_sig.as_ref(),
         )?;
 
-        // if the tx is initiate for signature mpc protocol (e.g. dkg, presign, sign...)
-        // intiate the protocol
+        // NOTE: this is a hack, we ignore the output, so it will never kill the blockchain.
+        // While the code is like this, can't notify the user if there is a failure.
+        // todo: find a way to notify the user if there is a failure.
+        // If the tx is an initiate for signature mpc protocol (e.g., dkg, presign, sign...)
+        // Initiate the protocol
         let _ = self.initiate_signature_mpc_protocol(
             certificate,
             &inner_temporary_store,
@@ -1313,17 +1316,19 @@ impl AuthorityState {
         effects: &TransactionEffects,
         epoch_store: &Arc<AuthorityPerEpochStore>,
     ) -> Result<(), anyhow::Error> {
+        // make sure this is a validator node.
         if self.is_validator(epoch_store) {
             let status = match &effects {
                 TransactionEffects::V1(effects) => effects.status(),
                 TransactionEffects::V2(effects) => effects.status(),
             };
-            // TODO: should we do something in case of a faild tx?
+            // TODO: should we do something in case of a failed tx?
             if status.is_err() {
                 return Ok(());
             }
             let mut messages = Vec::new();
             let events = &inner_temporary_store.events.data;
+            // Check events and decide if we need to initiate a signature mpc protocol
             for event in events {
                 if NewDKGSessionEvent::type_() == event.type_ {
                     let event = NewDKGSessionEvent::from_bcs_bytes(&event.contents)?;
@@ -1333,6 +1338,7 @@ impl AuthorityState {
 
                     let obj_ref =
                         Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                    // Start DKG protocol from the Validator side.
                     let message = InitiateSignatureMPCProtocol::DKG {
                         session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
                         session_ref: obj_ref,
