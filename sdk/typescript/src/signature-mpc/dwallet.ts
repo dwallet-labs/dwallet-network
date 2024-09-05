@@ -42,9 +42,9 @@ export const getDwalletByObjID = async (
 
 	return dwalletObjectFields
 		? {
-				dwalletId: dwalletObjID,
+				dwalletID: dwalletObjID,
 				decentralizedDKGOutput: dwalletObjectFields.output,
-				dwalletCapId: dwalletObjectFields.dwallet_cap_id,
+				dwalletCapID: dwalletObjectFields.dwallet_cap_id,
 		  }
 		: null;
 };
@@ -415,8 +415,8 @@ export const saveEncryptedUserShare = async (
 };
 
 /**
- * Retrieve the encrypted user share the user encrypted to itself from the dwallet ID.
- * First fetches the user's EncryptedUserShares table, and from it fetches the encrypted user share.
+ * Retrieve the encrypted user share that the user encrypted to itself from the dwallet ID.
+ * First fetches the user's `EncryptedUserShares` table, and from it fetches the encrypted user share.
  */
 export const getEncryptedUserShare = async (
 	client: DWalletClient,
@@ -437,8 +437,7 @@ export const getEncryptedUserShare = async (
 		transactionBlock: tx,
 	});
 	const array = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
-	const hexString = Array.from(array)
+	return Array.from(array)
 		.map((byte) => byte.toString(16).padStart(2, '0'))
 		.join('');
-	return hexString;
 };

@@ -33,16 +33,16 @@ export const decryptAndVerifyUserShare = async (
 	if (sourcePublicKey.toSuiAddress() !== expectedSourceSuiAddress) {
 		throw new Error('The source public key does not match the expected Sui address');
 	}
-	let serializedPubkeys = serialized_pubkeys_from_decentralized_dkg_output(
+	let serializedPubKeys = serialized_pubkeys_from_decentralized_dkg_output(
 		new Uint8Array(dkgOutput),
 	);
 	if (
 		!(await sourcePublicKey.verify(
-			serializedPubkeys,
+			serializedPubKeys,
 			new Uint8Array(encryptedUserShareObj?.signedDWalletPubKeys!),
 		))
 	) {
-		throw new Error('The DWallet public keys has not been signed by the desired Sui address');
+		throw new Error('the DWallet public keys have not been signed by the desired Sui address');
 	}
 	const decryptedKeyShare = decrypt_user_share(
 		encryptionKeyObj.encryptionKey,
@@ -50,7 +50,7 @@ export const decryptAndVerifyUserShare = async (
 		new Uint8Array(encryptedUserShareObj?.encryptedUserShareAndProof!),
 	);
 	if (!verify_user_share(decryptedKeyShare, new Uint8Array(dkgOutput!))) {
-		throw new Error("The decrypted key share doesn't match the dwallet's public key share");
+		throw new Error("the decrypted key share doesn't match the dwallet's public key share");
 	}
 	return decryptedKeyShare;
 };
@@ -78,17 +78,18 @@ export const acceptUserShare = async (
 		secretKeyShare: Array.from(decryptedKeyShare),
 		decentralizedDKGOutput: dwallet!.decentralizedDKGOutput,
 	};
-	let serializedPubkeys = serialized_pubkeys_from_decentralized_dkg_output(
+	let serializedPubKeys = serialized_pubkeys_from_decentralized_dkg_output(
 		new Uint8Array(dwallet?.decentralizedDKGOutput!),
 	);
-	// Encrypt it to self, so that in the future we'd know that we already verified everything and only need to verify our signature.
+	// Encrypt it to self, so that in the future we'd know that we already
+	// verified everything and only need to verify our signature.
 	const encryptedUserShareRef = await sendUserShareToSuiPubKey(
 		client,
 		keypair,
 		dwalletToSend,
 		keypair.getPublicKey(),
 		encryptionKeysHolderObjID,
-		await keypair.sign(serializedPubkeys),
+		await keypair.sign(serializedPubKeys),
 	);
 	const activeEncryptionKeyObjID = await getActiveEncryptionKeyObjID(
 		client,
@@ -103,12 +104,18 @@ export const acceptUserShare = async (
 	);
 	return true;
 };
+
 /**
  * Pre-signs the given message with the given DWallet ID.
  *
+ * @param client
  * @param keypair The Sui keypair that encrypted the given dwallet to itself in the past. This keypair is
  * either the one who created the dwallet with the {@link createDWallet} function, or the one who accepted
  * it with the {@link acceptUserShare} function.
+ * @param dwalletID
+ * @param message
+ * @param hash
+ * @param activeEncryptionKeysTableID
  */
 export const presignWithDWalletID = async (
 	client: DWalletClient,

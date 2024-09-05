@@ -155,13 +155,13 @@ export async function createDWallet(
 }
 
 export type DWallet = {
-	dwalletId: string;
+	dwalletID: string;
 	decentralizedDKGOutput: number[];
-	dwalletCapId: string;
+	dwalletCapID: string;
 };
 
 export async function createPartialUserSignedMessages(
-	dwalletId: string,
+	dwalletID: string,
 	decentralizedDKGOutput: number[],
 	secretKeyShare: Uint8Array,
 	messages: Uint8Array[],
@@ -186,7 +186,7 @@ export async function createPartialUserSignedMessages(
 	tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_presign_session`,
 		arguments: [
-			tx.object(dwalletId),
+			tx.object(dwalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 			tx.pure(nonceSharesCommitmentsAndBatchedProof),
 			tx.pure.u8(hashNum),
@@ -254,7 +254,7 @@ export async function createPartialUserSignedMessages(
 			const [signMessagesObject] = txFinal.moveCall({
 				target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_partial_user_signed_messages`,
 				arguments: [
-					txFinal.object(dwalletId),
+					txFinal.object(dwalletID),
 					txFinal.object(sessionRef.objectId),
 					txFinal.object(sessionOutputFields.id.id),
 					txFinal.object(presignOutputFields.id.id),

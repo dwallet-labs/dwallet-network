@@ -61,7 +61,7 @@ describe('Test signature mpc', () => {
 			dkg?.dwalletCapID!,
 			signMessagesIdSHA256!,
 			[bytes],
-			dkg?.dwalletId!,
+			dkg?.dwalletID!,
 			'SHA256',
 			toolbox.keypair,
 			toolbox.client,
@@ -83,7 +83,7 @@ describe('Test signature mpc', () => {
 			dkg?.dwalletCapID!,
 			signMessagesIdKECCAK256!,
 			[bytes],
-			dkg?.dwalletId!,
+			dkg?.dwalletID!,
 			'KECCAK256',
 			toolbox.keypair,
 			toolbox.client,
@@ -93,7 +93,7 @@ describe('Test signature mpc', () => {
 		console.log(sigKECCAK256);
 	});
 
-	it('should sign a message with a dwallet by dwallet id', async () => {
+	it('should sign a message with a dwallet by dwallet ID', async () => {
 		let encryptionKeyObj = await getOrCreateEncryptionKey(
 			toolbox.keypair,
 			toolbox.client,
@@ -109,16 +109,16 @@ describe('Test signature mpc', () => {
 		let presignObjID = await presignWithDWalletID(
 			toolbox.client,
 			toolbox.keypair,
-			dwallet?.dwalletId!,
+			dwallet?.dwalletID!,
 			message,
 			'SHA256',
 			activeEncryptionKeysTableID,
 		);
 		let signatures = await approveAndSign(
-			dwallet?.dwalletCapId!,
+			dwallet?.dwalletCapID!,
 			presignObjID!,
 			[message],
-			dwallet?.dwalletId!,
+			dwallet?.dwalletID!,
 			'SHA256',
 			toolbox.keypair,
 			toolbox.client,
