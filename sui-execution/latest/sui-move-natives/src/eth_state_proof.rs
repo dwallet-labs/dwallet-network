@@ -260,11 +260,13 @@ pub(crate) fn verify_eth_state(
         optimistic_update,
     };
 
-    if(is_init) {
-        eth_state.verify_and_apply_initial_updates(&updates).map_err(|e| {
-            error!("failed to verify updates: {:?}", e);
-            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-        })?;
+    if (is_init) {
+        eth_state
+            .verify_and_apply_initial_updates(&updates)
+            .map_err(|e| {
+                error!("failed to verify updates: {:?}", e);
+                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+            })?;
     } else {
         eth_state.advance_state(updates).map_err(|e| {
             error!("failed to advance state: {:?}", e);

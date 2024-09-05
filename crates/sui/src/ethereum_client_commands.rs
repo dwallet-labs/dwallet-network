@@ -8,7 +8,7 @@
 use anyhow::{anyhow, Result};
 use clap::Subcommand;
 use helios::consensus::nimbus_rpc::NimbusRpc;
-use helios::consensus::{ConsensusStateManager};
+use helios::consensus::ConsensusStateManager;
 use helios::dwallet::light_client::{
     EthLightClientConfig, EthLightClientWrapper, ProofRequestParameters,
 };
@@ -22,7 +22,7 @@ use light_client_helpers::{
 };
 use std::str::FromStr;
 
-use serde::{Serialize};
+use serde::Serialize;
 use serde_json::{Number, Value};
 use shared_crypto::intent::Intent;
 use sui_json::SuiJsonValue;
@@ -36,8 +36,7 @@ use sui_types::base_types::ObjectID;
 use sui_types::eth_dwallet::{
     EthereumStateObject, LatestEthereumStateObject, APPROVE_MESSAGE_FUNC_NAME,
     CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME,
-    INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME,
-    VERIFY_ETH_STATE_FUNC_NAME,
+    INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME, VERIFY_ETH_STATE_FUNC_NAME,
 };
 use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use sui_types::transaction::{ObjectArg, SenderSignedData, Transaction, TransactionDataAPI};
@@ -163,9 +162,10 @@ pub(crate) async fn init_ethereum_state(
     };
 
     let checkpoint = hex::decode(checkpoint.strip_prefix("0x").unwrap())?;
-    let state = ConsensusStateManager::<NimbusRpc>::new_from_checkpoint(checkpoint, network, consensus_rpc)
-        .await
-        .map_err(|e| anyhow!("error deserializing object: {e}"))?;
+    let state =
+        ConsensusStateManager::<NimbusRpc>::new_from_checkpoint(checkpoint, network, consensus_rpc)
+            .await
+            .map_err(|e| anyhow!("error deserializing object: {e}"))?;
 
     let state_bytes = bcs::to_bytes(&state)?;
 
@@ -475,7 +475,9 @@ pub(crate) async fn eth_approve_message(
         .block_number()
         .as_u64();
 
-    let beacon_block = verified_eth_state.get_beacon_block(latest_slot).await
+    let beacon_block = verified_eth_state
+        .get_beacon_block(latest_slot)
+        .await
         .map_err(|e| anyhow!("could not fetch beacon block: {e}"))?;
 
     let beacon_block_body = beacon_block.clone().body;
