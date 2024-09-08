@@ -149,20 +149,25 @@ pub fn verify_message_proof(
     let eth_state_data = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&eth_state_data)
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
+    // Get the beacon block hash.
     let beacon_block_hash = beacon_block
         .hash_tree_root()
         .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
 
     let mut verified_block_header = eth_state_data.get_finalized_header();
 
+    // Get the verified beacon header hash.
     let verified_block_hash = verified_block_header
         .hash_tree_root()
         .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
 
+    // Verify the beacon block hash against the verified block hash.
+    // If the hashes match, it means we can trust the beacon block, and use it's state root to verify the proof.
     if beacon_block_hash != verified_block_hash {
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     }
 
+    // Get the Execution layer's state root from the verified beacon block.
     let state_root = beacon_block.body.execution_payload().state_root();
 
     let account_path = keccak256(contract_address.as_bytes()).to_vec();
