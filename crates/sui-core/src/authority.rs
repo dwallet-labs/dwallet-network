@@ -1332,82 +1332,71 @@ impl AuthorityState {
         let events = &inner_temporary_store.events.data;
         // Check events and decide if we need to initiate a signature mpc protocol
         for event in events {
-            let dkgsession_created_event_type = CreatedDKGSessionEvent::type_();
-            let presign_session_created_event_type = CreatedPresignSessionEvent::type_();
-            let sign_session_created_event_type =
-                CreatedSignSessionEvent::<CreatedSignDataEvent>::type_(
-                    CreatedSignDataEvent::type_().into(),
-                );
-            match &event.type_ {
-                event_type if event_type == &dkgsession_created_event_type => {
-                    let event = CreatedDKGSessionEvent::from_bcs_bytes(&event.contents)?;
-                    debug!("event: CreatedDKGSessionEvent {:?}", event);
-                    let commitment_to_centralized_party_secret_key_share =
-                        event.commitment_to_centralized_party_secret_key_share;
+            if CreatedDKGSessionEvent::type_() == event.type_ {
+                let event = CreatedDKGSessionEvent::from_bcs_bytes(&event.contents)?;
+                debug!("event: CreatedDKGSessionEvent {:?}", event);
+                let commitment_to_centralized_party_secret_key_share =
+                    event.commitment_to_centralized_party_secret_key_share;
 
-                    let obj_ref =
-                        Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
-                    // Start DKG protocol from the Validator side.
-                    let message = InitiateSignatureMPCProtocol::DKG {
-                        session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
-                        session_ref: obj_ref,
-                        commitment_to_centralized_party_secret_key_share: bcs::from_bytes(
-                            &*commitment_to_centralized_party_secret_key_share,
-                        )?,
-                    };
+                let obj_ref = Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                // Start DKG protocol from the Validator side.
+                let message = InitiateSignatureMPCProtocol::DKG {
+                    session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
+                    session_ref: obj_ref,
+                    commitment_to_centralized_party_secret_key_share: bcs::from_bytes(
+                        &*commitment_to_centralized_party_secret_key_share,
+                    )?,
+                };
 
-                    messages.push(message);
-                }
-                event_type if event_type == &presign_session_created_event_type => {
-                    let event = CreatedPresignSessionEvent::from_bcs_bytes(&event.contents)?;
-                    debug!("event: CreatedPresignSessionEvent {:?}", event);
+                messages.push(message);
+            } else if CreatedPresignSessionEvent::type_() == event.type_ {
+                let event = CreatedPresignSessionEvent::from_bcs_bytes(&event.contents)?;
+                debug!("event: CreatedPresignSessionEvent {:?}", event);
 
-                    let dkg_output = event.dkg_output;
-                    let commitments_and_proof_to_centralized_party_nonce_shares =
-                        event.commitments_and_proof_to_centralized_party_nonce_shares;
-                    // TODO: validate commitment error
-                    let obj_ref =
-                        Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
-                    let message = InitiateSignatureMPCProtocol::Presign {
-                        session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
-                        session_ref: obj_ref,
-                        dkg_output: bcs::from_bytes(&*dkg_output)?,
-                        commitments_and_proof_to_centralized_party_nonce_shares: bcs::from_bytes(
-                            &*commitments_and_proof_to_centralized_party_nonce_shares,
-                        )?,
-                    };
+                let dkg_output = event.dkg_output;
+                let commitments_and_proof_to_centralized_party_nonce_shares =
+                    event.commitments_and_proof_to_centralized_party_nonce_shares;
+                // TODO: validate commitment error
+                let obj_ref = Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                let message = InitiateSignatureMPCProtocol::Presign {
+                    session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
+                    session_ref: obj_ref,
+                    dkg_output: bcs::from_bytes(&*dkg_output)?,
+                    commitments_and_proof_to_centralized_party_nonce_shares: bcs::from_bytes(
+                        &*commitments_and_proof_to_centralized_party_nonce_shares,
+                    )?,
+                };
 
-                    messages.push(message);
-                }
-                event_type if event_type == &sign_session_created_event_type => {
-                    let event: CreatedSignSessionEvent<CreatedSignDataEvent> =
-                        CreatedSignSessionEvent::from_bcs_bytes(&event.contents)?;
-                    debug!("event: CreatedSignSessionEvent {:?}", event);
+                messages.push(message);
+            } else if CreatedSignSessionEvent::<CreatedSignDataEvent>::type_(
+                CreatedSignDataEvent::type_().into(),
+            ) == event.type_
+            {
+                let event: CreatedSignSessionEvent<CreatedSignDataEvent> =
+                    CreatedSignSessionEvent::from_bcs_bytes(&event.contents)?;
+                debug!("event: CreatedSignSessionEvent {:?}", event);
 
-                    let dkg_output = event.sign_data_event.dkg_output;
-                    let public_nonce_encrypted_partial_signature_and_proofs = event
-                        .sign_data_event
-                        .public_nonce_encrypted_partial_signature_and_proofs;
-                    let presigns = event.sign_data_event.presigns;
-                    let hash = event.sign_data_event.hash;
-                    // TODO: validate commitment error
-                    let obj_ref =
-                        Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
-                    let message = InitiateSignatureMPCProtocol::Sign {
-                        session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
-                        session_ref: obj_ref,
-                        messages: event.messages.clone(),
-                        dkg_output: bcs::from_bytes(&*dkg_output)?,
-                        public_nonce_encrypted_partial_signature_and_proofs: bcs::from_bytes(
-                            &*public_nonce_encrypted_partial_signature_and_proofs,
-                        )?,
-                        presigns: bcs::from_bytes(&*presigns)?,
-                        hash,
-                    };
+                let dkg_output = event.sign_data_event.dkg_output;
+                let public_nonce_encrypted_partial_signature_and_proofs = event
+                    .sign_data_event
+                    .public_nonce_encrypted_partial_signature_and_proofs;
+                let presigns = event.sign_data_event.presigns;
+                let hash = event.sign_data_event.hash;
+                // TODO: validate commitment error
+                let obj_ref = Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                let message = InitiateSignatureMPCProtocol::Sign {
+                    session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
+                    session_ref: obj_ref,
+                    messages: event.messages.clone(),
+                    dkg_output: bcs::from_bytes(&*dkg_output)?,
+                    public_nonce_encrypted_partial_signature_and_proofs: bcs::from_bytes(
+                        &*public_nonce_encrypted_partial_signature_and_proofs,
+                    )?,
+                    presigns: bcs::from_bytes(&*presigns)?,
+                    hash,
+                };
 
-                    messages.push(message);
-                }
-                _ => {}
+                messages.push(message);
             }
         }
         // This code writes the messages to the db.
