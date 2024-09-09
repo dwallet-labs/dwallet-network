@@ -1162,7 +1162,7 @@ impl SuiNode {
         let consensus_handler_initializer = ConsensusHandlerInitializer::new(
             state.clone(),
             checkpoint_service.clone(),
-            // Pass the MPC object + channel to the ConsensusHandlerInitializer.
+            // Pass the MPC Service + channel to the ConsensusHandlerInitializer.
             signature_mpc_service.clone(),
             epoch_store.clone(),
             low_scoring_authorities,

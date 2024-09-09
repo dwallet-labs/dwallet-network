@@ -1322,7 +1322,7 @@ impl AuthorityState {
                 TransactionEffects::V1(effects) => effects.status(),
                 TransactionEffects::V2(effects) => effects.status(),
             };
-            // TODO: should we do something in case of a failed tx?
+            // TODO(mpc-async): should we do something in case of a failed tx?
             if status.is_err() {
                 return Ok(());
             }
@@ -1409,6 +1409,8 @@ impl AuthorityState {
                     _ => {}
                 }
             }
+            // This code writes the messages to the db.
+            // SignatureMpcSubscriber reads the DB and looks for the messages to start the protocol.
             epoch_store.insert_initiate_signature_mpc_protocols(&messages)?;
         }
         Ok(())

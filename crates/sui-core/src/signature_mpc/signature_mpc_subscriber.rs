@@ -54,6 +54,9 @@ impl SignatureMpcSubscriber {
     }
 
     // A special subscriber that listens for new MPC sessions.
+    // todo(mpc-async): SignatureMpcSubscriber should renamed to SignatureInitMpcSubscriber
+    // todo(mpc-async): make sure this does not kill the CPU,
+    // todo(mpc-async): check if there is a delay or sleep needed.
     async fn run(mut self) {
         info!("Starting SignatureMpcSubscriber");
         loop {
@@ -65,18 +68,19 @@ impl SignatureMpcSubscriber {
                 }
                 Ok(false) => (),
             };
+            // todo(mpc-async): remove unwrap().
             let messages = self
                 .epoch_store
                 .get_initiate_signature_mpc_protocols(self.last)
                 .unwrap();
-            for (last, message) in messages {
+            for (last_sequence, message) in messages {
                 // Send MPC messages to channel.
-                // todo: handle error.
+                // todo(mpc-async): handle error.
                 let _ = self
                     .tx_initiate_signature_mpc_protocol_sender
                     .send(message)
                     .await;
-                self.last = last;
+                self.last = last_sequence;
             }
             tokio::task::yield_now().await;
         }
