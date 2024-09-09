@@ -250,7 +250,7 @@ impl SignatureMPCAggregator {
         message: SignatureMPCMessage,
     ) {
         let session_id = message.summary.session_id;
-        // TODO (#134): Remove unwrap.
+        // TODO (mpc-async): Remove unwrap.
         let sender_party_id = (epoch_store
             .committee()
             .authority_index(&message.summary.auth_sig().authority)
@@ -258,6 +258,7 @@ impl SignatureMPCAggregator {
             + 1) as PartyID;
 
         let Some(session_ref) = session_refs.get(&session_id) else {
+            // TODO (mpc-async): Error or some info log.
             return;
         };
         let session_ref = session_ref.clone();
@@ -688,6 +689,7 @@ impl SignatureMPCAggregator {
         sign_session_states: Arc<DashMap<SignatureMPCSessionID, SignState>>,
         initiate_signature_mpc_protocol: InitiateSignatureMPCProtocol,
     ) {
+        // todo(mpc-async): move each branch to a func.
         match initiate_signature_mpc_protocol {
             InitiateSignatureMPCProtocol::DKG {
                 session_id,
@@ -716,7 +718,7 @@ impl SignatureMPCAggregator {
                         SignatureMPCMessageProtocols::DKG(message),
                         session_id,
                     );
-                    // TODO: Handle error
+                    // TODO(mpc-async): Handle error
                     let _ = submit.sign_and_submit_message(&summary, &epoch_store).await;
                 }
             }
@@ -757,7 +759,7 @@ impl SignatureMPCAggregator {
                         SignatureMPCMessageProtocols::PresignFirstRound(message),
                         session_id,
                     );
-                    // TODO: Handle error
+                    // TODO(mpc-async): Handle error
                     let _ = submit.sign_and_submit_message(&summary, &epoch_store).await;
                 }
             }
@@ -807,7 +809,7 @@ impl SignatureMPCAggregator {
                         SignatureMPCMessageProtocols::Sign(SignMessage::DecryptionShares(message)),
                         session_id,
                     );
-                    // TODO: Handle error
+                    // TODO(mpc-async): Handle error
                     let result = submit.sign_and_submit_message(&summary, &epoch_store).await;
                     match result {
                         Ok(_) => {}
@@ -821,7 +823,8 @@ impl SignatureMPCAggregator {
     }
 }
 
-/// This is a service used to communicate with other pieces of sui (for example, Authority)
+/// This is a service used to communicate with
+/// other pieces of sui (for example, Authority)
 pub struct SignatureMPCService {
     tx_signature_mpc_protocol_message_sender: mpsc::Sender<SignatureMPCMessage>,
 }
@@ -834,16 +837,17 @@ impl SignatureMPCService {
         epoch_store: Arc<AuthorityPerEpochStore>,
         submit: Arc<dyn SubmitSignatureMPC>,
         metrics: Arc<SignatureMPCMetrics>,
-    ) -> (Arc<Self>, watch::Sender<()> /* The exit sender */) {
-        info!("Starting signature mpc service.");
+        // watch::Sender<()> is the Exit sender.
+    ) -> (Arc<Self>, watch::Sender<()>) {
+        info!("Starting Signature MPC service.");
 
-        // Channel for sending messages during the protocol.
+        // Channel for sending messages during the MPC protocol.
         let (tx_signature_mpc_protocol_message_sender, rx_signature_mpc_protocol_message_sender) =
             mpsc::channel(MAX_MESSAGES_IN_PROGRESS);
 
         let (exit_snd, exit_rcv) = watch::channel(());
 
-        // TODO: remove unwrap
+        // TODO(async-mpc): remove unwrap
         let party_id = (epoch_store
             .committee()
             .authority_index(&state.name)
@@ -852,7 +856,7 @@ impl SignatureMPCService {
 
         let epoch = epoch_store.epoch();
 
-        // Create the channels for the MPC service.
+        // Create the channel for Init MPC protocols.
         let rx_initiate_signature_mpc_protocol_sender =
             SignatureMpcSubscriber::new(epoch_store.clone(), exit_rcv.clone());
 
@@ -865,7 +869,7 @@ impl SignatureMPCService {
                 .map(|p| (p + 1) as PartyID),
         );
 
-        // Aggregate all messages.
+        // Aggregate all messages (init + regular).
         let aggregator = SignatureMPCAggregator::new(
             epoch,
             epoch_store,
@@ -902,6 +906,7 @@ impl SignatureMPCServiceNotify for SignatureMPCService {
 
         let message = message.clone();
         let sender = self.tx_signature_mpc_protocol_message_sender.clone();
+        // todo(async-mpc): remove spawn, remove except.
         tokio::spawn(async move {
             sender
                 .send(message)
