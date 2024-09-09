@@ -162,10 +162,15 @@ pub(crate) async fn init_ethereum_state(
     };
 
     let checkpoint = hex::decode(checkpoint.strip_prefix("0x").unwrap())?;
-    let state =
+    let mut state =
         ConsensusStateManager::<NimbusRpc>::new_from_checkpoint(checkpoint, network, consensus_rpc)
             .await
             .map_err(|e| anyhow!("error deserializing object: {e}"))?;
+
+    let updates_response = state
+        .get_updates_since_finalized()
+        .await
+        .map_err(|e| anyhow!("could not fetch updates: {e}"))?;
 
     let state_bytes = bcs::to_bytes(&state)?;
 
@@ -173,6 +178,18 @@ pub(crate) async fn init_ethereum_state(
     let state_bytes_vec = pt_builder
         .pure(state_bytes)
         .map_err(|e| anyhow!("could not serialize updates: {e}"))?;
+
+    let updates_vec_arg = pt_builder
+        .pure(serde_json::to_vec(&updates_response.updates)?)
+        .map_err(|e| anyhow!("could not serialize updates: {e}"))?;
+
+    let finality_update_arg = pt_builder
+        .pure(serde_json::to_vec(&updates_response.finality_update)?)
+        .map_err(|e| anyhow!("could not serialize `finality_updates`: {e}"))?;
+
+    let optimistic_update_arg = pt_builder
+        .pure(serde_json::to_vec(&updates_response.optimistic_update)?)
+        .map_err(|e| anyhow!("could not serialize `optimistic_updates`: {e}"))?;
 
     let network_arg = pt_builder.pure(network.to_string())?;
     let contract_address_arg = pt_builder.pure(contract_address.clone())?;
@@ -188,6 +205,9 @@ pub(crate) async fn init_ethereum_state(
             network_arg,
             contract_address_arg,
             contract_slot_arg,
+            updates_vec_arg,
+            finality_update_arg,
+            optimistic_update_arg,
         ]),
     );
 
@@ -374,14 +394,6 @@ pub(crate) async fn eth_approve_message(
         .await
         .map_err(|e| anyhow!("could not fetch updates: {e}"))?;
 
-    // Decide whether to apply finality and optimistic updates first.
-    // If the updates are not relevant, the finality update should be applied first.
-    // Update is not relevant if it is earlier than the current finalized header,
-    // AND does not have a new sync committee
-    let should_apply_finality_update_first = eth_state
-        .should_apply_finality_update_first(&updates_response)
-        .map_err(|e| anyhow!("could not check if update is relevant: {e}"))?;
-
     let gas_owner = context.try_get_object_owner(&gas).await?;
     let sender = gas_owner.unwrap_or(context.active_address()?);
 
@@ -407,9 +419,6 @@ pub(crate) async fn eth_approve_message(
         })
         .map_err(|e| anyhow!("could not serialize `latest_eth_state_id`: {e}"))?;
 
-    let should_apply_finality_update_first_arg =
-        pt_builder.pure(should_apply_finality_update_first)?;
-
     let eth_state_object_ref = get_object_ref_by_id(context, eth_state_object_id).await?;
     let eth_state_id_arg = pt_builder
         .obj(ObjectArg::ImmOrOwnedObject(eth_state_object_ref))
@@ -426,7 +435,6 @@ pub(crate) async fn eth_approve_message(
             optimistic_update_arg,
             latest_eth_state_arg,
             eth_state_id_arg,
-            should_apply_finality_update_first_arg,
         ]),
     );
 

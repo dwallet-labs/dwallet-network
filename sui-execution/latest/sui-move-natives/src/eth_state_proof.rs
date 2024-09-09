@@ -262,14 +262,7 @@ pub(crate) fn verify_eth_state(
     );
 
     let cost = context.gas_used();
-    let (
-        should_apply_finality_update_first,
-        current_eth_state,
-        optimistic_update,
-        finality_update,
-        updates_vec,
-    ) = (
-        pop_arg!(args, bool),
+    let (current_eth_state, optimistic_update, finality_update, updates_vec) = (
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
@@ -296,19 +289,10 @@ pub(crate) fn verify_eth_state(
         optimistic_update,
     };
 
-    if should_apply_finality_update_first {
-        eth_state.advance_state(updates).map_err(|e| {
-            error!("failed to advance state: {:?}", e);
-            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-        })?;
-    } else {
-        eth_state
-            .verify_and_apply_initial_updates(&updates)
-            .map_err(|e| {
-                error!("failed to verify updates: {:?}", e);
-                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-            })?;
-    }
+    eth_state.advance_state(updates).map_err(|e| {
+        error!("failed to advance state: {:?}", e);
+        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+    })?;
 
     let new_state_bcs = bcs::to_bytes(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
@@ -364,8 +348,12 @@ pub(crate) fn create_initial_eth_state_data(
 
     let cost = context.gas_used();
 
+    let optimistic_update = pop_arg!(args, Vector).to_vec_u8()?;
+    let finality_update = pop_arg!(args, Vector).to_vec_u8()?;
+    let updates_vec = pop_arg!(args, Vector).to_vec_u8()?;
     let network = pop_arg!(args, Vector).to_vec_u8()?;
     let state_bytes = pop_arg!(args, Vector).to_vec_u8()?;
+
     let state_bytes_hash = hex::encode(keccak256(state_bytes.clone()));
     let is_valid = match network.as_slice() {
         b"mainnet" => state_bytes_hash == MAINNET_STATE_HASH,
@@ -377,9 +365,34 @@ pub(crate) fn create_initial_eth_state_data(
         return Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(vec![])]));
     }
 
-    let eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&state_bytes)
+    let mut eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&state_bytes)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
 
+    let updates_vec = serde_json::from_slice::<Vec<Update>>(updates_vec.as_slice())
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let finality_update = serde_json::from_slice::<FinalityUpdate>(finality_update.as_slice())
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let optimistic_update =
+        serde_json::from_slice::<OptimisticUpdate>(optimistic_update.as_slice())
+            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let updates = AggregateUpdates {
+        updates: updates_vec,
+        finality_update,
+        optimistic_update,
+    };
+
+    eth_state
+        .verify_and_apply_initial_updates(&updates)
+        .map_err(|e| {
+            error!("failed to verify updates: {:?}", e);
+            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+        })?;
+
+    let state_bytes = bcs::to_bytes(&eth_state)
+        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
     let time_slot = eth_state.get_latest_slot();
     Ok(NativeResult::ok(
         cost,
