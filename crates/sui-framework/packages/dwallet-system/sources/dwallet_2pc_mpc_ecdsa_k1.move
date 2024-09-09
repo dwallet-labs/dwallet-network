@@ -62,7 +62,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
     /// Event to start a `DKG` session, caught by the Validators.
-    struct NewDKGSessionEvent has copy, drop {
+    struct CreatedDKGSessionEvent has copy, drop {
         session_id: ID,
         dwallet_cap_id: ID,
         commitment_to_centralized_party_secret_key_share: vector<u8>,
@@ -70,7 +70,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     /// Event to start a `PreSign` session, caught by the Validators.
-    struct NewPresignSessionEvent has copy, drop {
+    struct CreatedPresignSessionEvent has copy, drop {
         session_id: ID,
         dwallet_id: ID,
         dwallet_cap_id: ID,
@@ -81,9 +81,9 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         sender: address,
     }
 
-    /// `NewSignDataEvent` is embedded inside a `NewSignSessionEvent`.
+    /// `CreatedSignDataEvent` is embedded inside a `CreatedSignSessionEvent`.
     /// This is particular for the Dwallet Type.
-    struct NewSignDataEvent has store, copy, drop {
+    struct CreatedSignDataEvent has store, copy, drop {
         presign_session_id: ID,
         hash: u8,
         dkg_output: vector<u8>,
@@ -167,7 +167,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             commitment_to_centralized_party_secret_key_share,
             sender,
         };
-        event::emit(NewDKGSessionEvent {
+        event::emit(CreatedDKGSessionEvent {
             session_id: object::id(&session),
             dwallet_cap_id: object::id(&cap),
             commitment_to_centralized_party_secret_key_share,
@@ -301,7 +301,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             messages,
             sender,
         };
-        event::emit(NewPresignSessionEvent {
+        event::emit(CreatedPresignSessionEvent {
             session_id: object::id(&session),
             dwallet_id,
             dwallet_cap_id,
@@ -368,7 +368,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         // The user part of the signature.
         public_nonce_encrypted_partial_signature_and_proofs: vector<u8>,
         ctx: &mut TxContext
-    ): PartialUserSignedMessages<SignData, NewSignDataEvent> {
+    ): PartialUserSignedMessages<SignData, CreatedSignDataEvent> {
         assert!(
             object::id(session) == output.session_id && object::id(
                 dwallet
@@ -417,7 +417,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         // This is a "hack" to pass the information.
         // Note: that in this case event is not emmitted!
         // It is passed to `create_partial_user_signed_messages()` func.
-        let sign_data_event = NewSignDataEvent {
+        let sign_data_event = CreatedSignDataEvent {
             presign_session_id: session_id,
             hash: session.hash,
             dkg_output: get_output(dwallet),
@@ -553,8 +553,8 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[test_only]
-    public(friend) fun create_mock_sign_data_event(presign_session_id: ID): NewSignDataEvent {
-        NewSignDataEvent {
+    public(friend) fun create_mock_sign_data_event(presign_session_id: ID): CreatedSignDataEvent {
+        CreatedSignDataEvent {
             presign_session_id,
             hash: 0,
             dkg_output: vector::empty<u8>(),

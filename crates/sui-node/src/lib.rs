@@ -1129,13 +1129,14 @@ impl SuiNode {
 
         // Start MPC service for the current epoch.
         // This object holds the channel for a validator to validator msgs.
-        let (signature_mpc_service, signature_mpc_service_exit) = Self::start_signature_mpc_service(
-            config,
-            consensus_adapter.clone(),
-            epoch_store.clone(),
-            state.clone(),
-            signature_mpc_metrics.clone(),
-        );
+        let (signature_mpc_service, signature_mpc_service_exit) =
+            Self::start_signature_mpc_service(
+                config,
+                consensus_adapter.clone(),
+                epoch_store.clone(),
+                state.clone(),
+                signature_mpc_metrics.clone(),
+            )?;
 
         // create a new map that gets injected into both the consensus handler and the consensus adapter
         // the consensus handler will write values forwarded from consensus, and the consensus adapter
@@ -1260,7 +1261,7 @@ impl SuiNode {
         epoch_store: Arc<AuthorityPerEpochStore>,
         state: Arc<AuthorityState>,
         signature_mpc_metrics: Arc<SignatureMPCMetrics>,
-    ) -> (Arc<SignatureMPCService>, watch::Sender<()>) {
+    ) -> Result<(Arc<SignatureMPCService>, watch::Sender<()>)> {
         let epoch_start_timestamp_ms = epoch_store.epoch_start_state().epoch_start_timestamp_ms();
         let epoch_duration_ms = epoch_store.epoch_start_state().epoch_duration_ms();
 
@@ -1290,14 +1291,16 @@ impl SuiNode {
                 .signature_mpc_tiresias()
                 .expect("signature_mpc_tiresias should be populated");
 
-        SignatureMPCService::spawn(
+        let spawn_result = SignatureMPCService::spawn(
             tiresias_public_parameters.clone(),
             tiresias_key_share_decryption_key_share.clone(),
             state.clone(),
             epoch_store,
             signature_mpc_submit,
             signature_mpc_metrics,
-        )
+            config.max_mpc_protocol_messages_in_progress,
+        )?;
+        Ok(spawn_result)
     }
 
     fn construct_consensus_adapter(

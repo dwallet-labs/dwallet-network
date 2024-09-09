@@ -78,7 +78,7 @@ export async function approveAndSign(
 		target: `${packageId}::${dWalletModuleName}::sign`,
 		typeArguments: [
 			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`,
-			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::NewSignDataEvent`,
+			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedSignDataEvent`,
 		],
 		arguments: [tx.object(signMessagesId), messageApprovals],
 	});

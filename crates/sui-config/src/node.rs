@@ -11,6 +11,7 @@ use fastcrypto::encoding::{Base64, Encoding};
 use narwhal_config::Parameters as ConsensusParameters;
 use once_cell::sync::OnceCell;
 use rand::rngs::OsRng;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use signature_mpc::twopc_mpc_protocols::{DecryptionPublicParameters, SecretKeyShareSizedNumber};
@@ -46,6 +47,8 @@ pub const DEFAULT_COMMISSION_RATE: u64 = 200;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
+    #[serde(default)]
+    pub max_mpc_protocol_messages_in_progress: usize,
     #[serde(default = "default_authority_key_pair")]
     pub protocol_key_pair: AuthorityKeyPairWithPath,
     #[serde(default = "default_key_pair")]
@@ -761,29 +764,49 @@ impl SignatureMPCTiresias {
                 public_parameters_file_location,
                 key_share_decryption_key_share_file_location,
             } => {
-                let public_parameters = self
-                    .public_parameters
-                    .get_or_try_init(|| {
-                        let path = public_parameters_file_location;
-                        trace!("Reading signature_mpc_tiresias -> public_parameters_file_location from {}", path.display());
-                        let contents = fs::read_to_string(path)
-                            .with_context(|| format!("Unable to load signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))?;
-                        let bytes = Base64::decode(contents.as_str().trim()).map_err(|e| anyhow!("Unable to decode base64 signature_mpc_tiresias -> public_parameters_file_location from {}: {e}", path.display()))?;
-                        bcs::from_bytes(&bytes).with_context(|| format!("Unable to parse signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))
-                    })?;
-                let key_share_decryption_key_share = self
-                    .key_share_decryption_key_share
-                    .get_or_try_init(|| {
-                        let path = key_share_decryption_key_share_file_location;
-                        trace!("Reading signature_mpc_tiresias -> public_parameters_file_location from {}", path.display());
-                        let contents = fs::read_to_string(path)
-                            .with_context(|| format!("Unable to load signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))?;
-                        let bytes = Base64::decode(contents.as_str().trim()).map_err(|e| anyhow!("Unable to decode base64 signature_mpc_tiresias -> public_parameters_file_location from {}: {e}", path.display()))?;
-                        bcs::from_bytes(&bytes).with_context(|| format!("Unable to parse signature_mpc_tiresias -> public_parameters_file_location from {}", path.display()))
+                let public_parameters = self.public_parameters.get_or_try_init(|| {
+                    Self::read_obj_from_file::<DecryptionPublicParameters>(
+                        public_parameters_file_location,
+                    )
+                })?;
+                let key_share_decryption_key_share =
+                    self.key_share_decryption_key_share.get_or_try_init(|| {
+                        Self::read_obj_from_file::<SecretKeyShareSizedNumber>(
+                            key_share_decryption_key_share_file_location,
+                        )
                     })?;
                 Ok((public_parameters, key_share_decryption_key_share))
             }
         }
+    }
+
+    fn read_obj_from_file<T: DeserializeOwned>(path: &PathBuf) -> Result<T> {
+        trace!(
+            "Reading {} from path {}",
+            std::any::type_name::<T>(),
+            path.display()
+        );
+        let contents = fs::read_to_string(path).with_context(|| {
+            format!(
+                "Unable to load {} from path {}",
+                std::any::type_name::<T>(),
+                path.display()
+            )
+        })?;
+        let bytes = Base64::decode(contents.as_str().trim()).map_err(|e| {
+            anyhow!(
+                "Unable to decode {} from {}: {e}",
+                std::any::type_name::<T>(),
+                path.display()
+            )
+        })?;
+        Ok(bcs::from_bytes(&bytes).with_context(|| {
+            format!(
+                "Unable to parse {} from {}",
+                std::any::type_name::<T>(),
+                path.display()
+            )
+        })?)
     }
 }
 

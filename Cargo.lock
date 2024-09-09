@@ -13061,6 +13061,7 @@ dependencies = [
  "im",
  "indexmap 2.5.0",
  "itertools 0.10.5",
+ "log",
  "lru 0.10.1",
  "more-asserts",
  "move-binary-format 0.0.3",

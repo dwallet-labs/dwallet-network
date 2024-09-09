@@ -16,16 +16,17 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet");
-pub const NEW_SIGN_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("NewSignSessionEvent");
+pub const SIGN_SESSION_CREATED_EVENT_STRUCT_NAME: &IdentStr = ident_str!("CreatedSignSessionEvent");
 
 pub const MESSAGE_APPROVAL_STRUCT_NAME: &IdentStr = ident_str!("MessageApproval");
 pub const APPROVE_MESSAGES_FUNC_NAME: &IdentStr = ident_str!("approve_messages");
 pub const SIGN_FUNC_NAME: &IdentStr = ident_str!("sign");
 
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
-pub const NEW_DKG_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("NewDKGSessionEvent");
-pub const NEW_PRESIGN_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("NewPresignSessionEvent");
-pub const NEW_SIGN_DATA_EVENT_STRUCT_NAME: &IdentStr = ident_str!("NewSignDataEvent");
+pub const NEW_DKG_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("CreatedDKGSessionEvent");
+pub const PRESIGN_SESSION_CREATED_EVENT_STRUCT_NAME: &IdentStr =
+    ident_str!("CreatedPresignSessionEvent");
+pub const NEW_SIGN_DATA_EVENT_STRUCT_NAME: &IdentStr = ident_str!("CreatedSignDataEvent");
 
 pub const DWALLET_STRUCT_NAME: &IdentStr = ident_str!("DWallet");
 pub const DKG_SESSION_STRUCT_NAME: &IdentStr = ident_str!("DKGSession");
@@ -49,9 +50,9 @@ pub const CREATE_SIGN_OUTPUT_FUNC_NAME: &IdentStr = ident_str!("verify_and_creat
 
 // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
 
-// Rust version of the Move sui_system::dwallet::NewSignSessionEvent type
+// Rust version of the Move sui_system::dwallet::CreatedSignSessionEvent type
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct NewSignSessionEvent<E> {
+pub struct CreatedSignSessionEvent<E> {
     pub session_id: ID,
     pub dwallet_id: ID,
     pub dwallet_cap_id: ID,
@@ -60,18 +61,18 @@ pub struct NewSignSessionEvent<E> {
     pub sign_data_event: E,
 }
 
-impl<E> NewSignSessionEvent<E> {
+impl<E> CreatedSignSessionEvent<E> {
     pub fn type_(type_param: TypeTag) -> StructTag {
         StructTag {
             address: SUI_SYSTEM_ADDRESS,
-            name: NEW_SIGN_SESSION_EVENT_STRUCT_NAME.to_owned(),
+            name: SIGN_SESSION_CREATED_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![type_param],
         }
     }
 }
 
-impl<E: Serialize + DeserializeOwned> NewSignSessionEvent<E> {
+impl<E: Serialize + DeserializeOwned> CreatedSignSessionEvent<E> {
     /// Create from BCS bytes
     pub fn from_bcs_bytes(content: &[u8]) -> Result<Self, bcs::Error> {
         bcs::from_bytes(content)
@@ -82,16 +83,16 @@ impl<E: Serialize + DeserializeOwned> NewSignSessionEvent<E> {
     }
 }
 
-// Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::NewDKGSessionEvent type
+// Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::CreatedDKGSessionEvent type
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct NewDKGSessionEvent {
+pub struct CreatedDKGSessionEvent {
     pub session_id: ID,
     pub dwallet_cap_id: ID,
     pub commitment_to_centralized_party_secret_key_share: Vec<u8>,
     pub sender: SuiAddress,
 }
 
-impl NewDKGSessionEvent {
+impl CreatedDKGSessionEvent {
     pub fn type_() -> StructTag {
         StructTag {
             address: SUI_SYSTEM_ADDRESS,
@@ -111,9 +112,9 @@ impl NewDKGSessionEvent {
     }
 }
 
-// Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::NewPresignSessionEvent type
+// Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::CreatedPresignSessionEvent type
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct NewPresignSessionEvent {
+pub struct CreatedPresignSessionEvent {
     pub session_id: ID,
     pub dwallet_id: ID,
     pub dwallet_cap_id: ID,
@@ -124,11 +125,11 @@ pub struct NewPresignSessionEvent {
     pub sender: SuiAddress,
 }
 
-impl NewPresignSessionEvent {
+impl CreatedPresignSessionEvent {
     pub fn type_() -> StructTag {
         StructTag {
             address: SUI_SYSTEM_ADDRESS,
-            name: NEW_PRESIGN_SESSION_EVENT_STRUCT_NAME.to_owned(),
+            name: PRESIGN_SESSION_CREATED_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
@@ -144,9 +145,9 @@ impl NewPresignSessionEvent {
     }
 }
 
-// Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::NewSignDataEvent type
+// Rust version of the Move sui_system::dwallet_2pc_mpc_ecdsa_k1::CreatedSignDataEvent type
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct NewSignDataEvent {
+pub struct CreatedSignDataEvent {
     pub presign_session_id: ID,
     pub hash: u8,
     pub dkg_output: Vec<u8>,
@@ -154,7 +155,7 @@ pub struct NewSignDataEvent {
     pub presigns: Vec<u8>,
 }
 
-impl NewSignDataEvent {
+impl CreatedSignDataEvent {
     pub fn type_() -> StructTag {
         StructTag {
             address: SUI_SYSTEM_ADDRESS,
