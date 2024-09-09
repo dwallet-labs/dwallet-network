@@ -77,8 +77,6 @@ pub trait SignatureMPCServiceNotify {
     ) -> SuiResult;
 }
 
-pub const MAX_MESSAGES_IN_PROGRESS: usize = 1000;
-
 pub struct SignatureMPCAggregator {
     epoch: EpochId,
     epoch_store: Arc<AuthorityPerEpochStore>,
@@ -834,12 +832,13 @@ impl SignatureMPCService {
         epoch_store: Arc<AuthorityPerEpochStore>,
         submit: Arc<dyn SubmitSignatureMPC>,
         metrics: Arc<SignatureMPCMetrics>,
+        max_mpc_protocol_messages_in_progress: usize,
     ) -> (Arc<Self>, watch::Sender<()> /* The exit sender */) {
         info!("Starting signature mpc service.");
 
         // Channel for sending messages during the protocol.
         let (tx_signature_mpc_protocol_message_sender, rx_signature_mpc_protocol_message_sender) =
-            mpsc::channel(MAX_MESSAGES_IN_PROGRESS);
+            mpsc::channel(max_mpc_protocol_messages_in_progress);
 
         let (exit_snd, exit_rcv) = watch::channel(());
 
@@ -853,8 +852,11 @@ impl SignatureMPCService {
         let epoch = epoch_store.epoch();
 
         // Create the channels for the MPC service.
-        let rx_initiate_signature_mpc_protocol_sender =
-            SignatureMpcSubscriber::new(epoch_store.clone(), exit_rcv.clone());
+        let rx_initiate_signature_mpc_protocol_sender = SignatureMpcSubscriber::new(
+            epoch_store.clone(),
+            exit_rcv.clone(),
+            max_mpc_protocol_messages_in_progress,
+        );
 
         // Get all Party IDs.
         let parties = HashSet::from_iter(

@@ -10,7 +10,6 @@ use std::sync::Arc;
 use tokio::sync::{mpsc, watch};
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::signature_mpc::MAX_MESSAGES_IN_PROGRESS;
 use futures::future::{select, Either};
 use futures::FutureExt;
 use std::str::FromStr;
@@ -36,9 +35,10 @@ impl SignatureMpcSubscriber {
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         exit: watch::Receiver<()>,
+        max_mpc_protocol_messages_in_progress: usize,
     ) -> mpsc::Receiver<InitiateSignatureMPCProtocol> {
         let (tx_initiate_signature_mpc_protocol_sender, rx_initiate_signature_mpc_protocol_sender) =
-            mpsc::channel(MAX_MESSAGES_IN_PROGRESS);
+            mpsc::channel(max_mpc_protocol_messages_in_progress);
 
         // Subscribe to MPC msgs.
         let subscriber = Self {

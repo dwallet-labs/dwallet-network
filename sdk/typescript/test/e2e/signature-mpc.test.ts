@@ -8,12 +8,9 @@ import {
 	createActiveEncryptionKeysTable,
 	createDWallet,
 	createPartialUserSignedMessages,
-	EncryptionKeyScheme,
-	storeEncryptionKey,
 } from '../../src/signature-mpc';
 import { getOrCreateEncryptionKey } from '../../src/signature-mpc/encrypt_user_share';
 import { presignWithDWalletID } from '../../src/signature-mpc/sign';
-import { generatePaillierKeyPairFromSuiKeyPair } from '../../src/signature-mpc/utils';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test signature mpc', () => {
@@ -30,20 +27,17 @@ describe('Test signature mpc', () => {
 	});
 
 	it('the signature mpc create dwallet', async () => {
-		const [walletCreatorEncryptionKey, _] = generatePaillierKeyPairFromSuiKeyPair(toolbox.keypair);
-
-		const pubKeyRef = await storeEncryptionKey(
-			walletCreatorEncryptionKey,
-			EncryptionKeyScheme.Paillier,
+		const encryptionKeyObj = await getOrCreateEncryptionKey(
 			toolbox.keypair,
 			toolbox.client,
+			activeEncryptionKeysTableID,
 		);
 
 		const dkg = await createDWallet(
 			toolbox.keypair,
 			toolbox.client,
-			walletCreatorEncryptionKey,
-			pubKeyRef.objectId,
+			encryptionKeyObj.encryptionKey,
+			encryptionKeyObj.objectID,
 		);
 
 		const bytes: Uint8Array = new TextEncoder().encode('Sign it!!!');

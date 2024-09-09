@@ -15,7 +15,7 @@ use futures::stream::FuturesUnordered;
 use itertools::Itertools;
 use move_binary_format::CompiledModule;
 use move_core_types::annotated_value::MoveStructLayout;
-use move_core_types::language_storage::ModuleId;
+use move_core_types::language_storage::{ModuleId, StructTag};
 use mysten_metrics::{TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX};
 use parking_lot::Mutex;
 use prometheus::{
@@ -146,9 +146,9 @@ use crate::transaction_manager::TransactionManager;
 use sui_types::committee::CommitteeTrait;
 use sui_types::messages_signature_mpc::{InitiateSignatureMPCProtocol, SignatureMPCSessionID};
 use sui_types::signature_mpc::{
-    DKGSession, DWallet, NewDKGSessionEvent, NewPresignSessionEvent, NewSignDataEvent,
-    NewSignSessionEvent, PresignSession, SignData, SignSession, CREATE_DKG_SESSION_FUNC_NAME,
-    CREATE_PRESIGN_SESSION_FUNC_NAME, DKG_SESSION_STRUCT_NAME,
+    CreatedDKGSessionEvent, CreatedPresignSessionEvent, CreatedSignDataEvent,
+    CreatedSignSessionEvent, DKGSession, DWallet, PresignSession, SignData, SignSession,
+    CREATE_DKG_SESSION_FUNC_NAME, CREATE_PRESIGN_SESSION_FUNC_NAME, DKG_SESSION_STRUCT_NAME,
     DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, DWALLET_MODULE_NAME, DWALLET_STRUCT_NAME,
     PRESIGN_SESSION_STRUCT_NAME, SIGN_FUNC_NAME, SIGN_SESSION_STRUCT_NAME,
 };
@@ -301,75 +301,75 @@ impl AuthorityMetrics {
                 "Total number of transaction orders",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             total_certs: register_int_counter_with_registry!(
                 "total_transaction_certificates",
                 "Total number of transaction certificates handled",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             total_cert_attempts: register_int_counter_with_registry!(
                 "total_handle_certificate_attempts",
                 "Number of calls to handle_certificate",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             // total_effects == total transactions finished
             total_effects: register_int_counter_with_registry!(
                 "total_transaction_effects",
                 "Total number of transaction effects produced",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
 
             shared_obj_tx: register_int_counter_with_registry!(
                 "num_shared_obj_tx",
                 "Number of transactions involving shared objects",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
 
             sponsored_tx: register_int_counter_with_registry!(
                 "num_sponsored_tx",
                 "Number of sponsored transactions",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
 
             tx_already_processed: register_int_counter_with_registry!(
                 "num_tx_already_processed",
                 "Number of transaction orders already processed previously",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             num_input_objs: register_histogram_with_registry!(
                 "num_input_objects",
                 "Distribution of number of input TX objects per TX",
                 POSITIVE_INT_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             num_shared_objects: register_histogram_with_registry!(
                 "num_shared_objects",
                 "Number of shared input objects per TX",
                 POSITIVE_INT_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             batch_size: register_histogram_with_registry!(
                 "batch_size",
                 "Distribution of size of transaction batch",
                 POSITIVE_INT_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             authority_state_handle_transaction_latency: register_histogram_with_registry!(
                 "authority_state_handle_transaction_latency",
                 "Latency of handling transactions",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             execute_certificate_latency_single_writer,
             execute_certificate_latency_shared_object,
             execute_certificate_with_effects_latency: register_histogram_with_registry!(
@@ -378,28 +378,28 @@ impl AuthorityMetrics {
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             internal_execution_latency: register_histogram_with_registry!(
                 "authority_state_internal_execution_latency",
                 "Latency of actual certificate executions",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             prepare_certificate_latency: register_histogram_with_registry!(
                 "authority_state_prepare_certificate_latency",
                 "Latency of executing certificates, before committing the results",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             commit_certificate_latency: register_histogram_with_registry!(
                 "authority_state_commit_certificate_latency",
                 "Latency of committing certificate execution results",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             db_checkpoint_latency: register_histogram_with_registry!(
                 "db_checkpoint_latency",
                 "Latency of checkpointing dbs",
@@ -412,134 +412,134 @@ impl AuthorityMetrics {
                 &["result"],
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_num_missing_objects: register_int_gauge_with_registry!(
                 "transaction_manager_num_missing_objects",
                 "Current number of missing objects in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_num_pending_certificates: register_int_gauge_with_registry!(
                 "transaction_manager_num_pending_certificates",
                 "Number of certificates pending in TransactionManager, with at least 1 missing input object",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_num_executing_certificates: register_int_gauge_with_registry!(
                 "transaction_manager_num_executing_certificates",
                 "Number of executing certificates, including queued and actually running certificates",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_num_ready: register_int_gauge_with_registry!(
                 "transaction_manager_num_ready",
                 "Number of ready transactions in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_object_cache_size: register_int_gauge_with_registry!(
                 "transaction_manager_object_cache_size",
                 "Current size of object-availability cache in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_object_cache_hits: register_int_counter_with_registry!(
                 "transaction_manager_object_cache_hits",
                 "Number of object-availability cache hits in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_object_cache_misses: register_int_counter_with_registry!(
                 "transaction_manager_object_cache_misses",
                 "Number of object-availability cache misses in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_object_cache_evictions: register_int_counter_with_registry!(
                 "transaction_manager_object_cache_evictions",
                 "Number of object-availability cache evictions in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_package_cache_size: register_int_gauge_with_registry!(
                 "transaction_manager_package_cache_size",
                 "Current size of package-availability cache in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_package_cache_hits: register_int_counter_with_registry!(
                 "transaction_manager_package_cache_hits",
                 "Number of package-availability cache hits in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_package_cache_misses: register_int_counter_with_registry!(
                 "transaction_manager_package_cache_misses",
                 "Number of package-availability cache misses in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_package_cache_evictions: register_int_counter_with_registry!(
                 "transaction_manager_package_cache_evictions",
                 "Number of package-availability cache evictions in TransactionManager",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             transaction_manager_transaction_queue_age_s: register_histogram_with_registry!(
                 "transaction_manager_transaction_queue_age_s",
                 "Time spent in waiting for transaction in the queue",
                 LATENCY_SEC_BUCKETS.to_vec(),
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             execution_driver_executed_transactions: register_int_counter_with_registry!(
                 "execution_driver_executed_transactions",
                 "Cumulative number of transaction executed by execution driver",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             execution_driver_dispatch_queue: register_int_gauge_with_registry!(
                 "execution_driver_dispatch_queue",
                 "Number of transaction pending in execution driver dispatch queue",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             skipped_consensus_txns: register_int_counter_with_registry!(
                 "skipped_consensus_txns",
                 "Total number of consensus transactions skipped",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             skipped_consensus_txns_cache_hit: register_int_counter_with_registry!(
                 "skipped_consensus_txns_cache_hit",
                 "Total number of consensus transactions skipped because of local cache hit",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             post_processing_total_events_emitted: register_int_counter_with_registry!(
                 "post_processing_total_events_emitted",
                 "Total number of events emitted in post processing",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             post_processing_total_tx_indexed: register_int_counter_with_registry!(
                 "post_processing_total_tx_indexed",
                 "Total number of txes indexed in post processing",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             post_processing_total_tx_had_event_processed: register_int_counter_with_registry!(
                 "post_processing_total_tx_had_event_processed",
                 "Total number of txes finished event processing in post processing",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             post_processing_total_failures: register_int_counter_with_registry!(
                 "post_processing_total_failures",
                 "Total number of failure in post processing",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             consensus_handler_processed_bytes: register_int_counter_with_registry!(
                 "consensus_handler_processed_bytes",
                 "Number of bytes processed by consensus_handler",
@@ -583,19 +583,19 @@ impl AuthorityMetrics {
                 "Number of failed authenticator state updates",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             zklogin_sig_count: register_int_counter_with_registry!(
                 "zklogin_sig_count",
                 "Count of zkLogin signatures",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             multisig_sig_count: register_int_counter_with_registry!(
                 "multisig_sig_count",
                 "Count of zkLogin signatures",
                 registry,
             )
-            .unwrap(),
+                .unwrap(),
             consensus_calculated_throughput: register_int_gauge_with_registry!(
                 "consensus_calculated_throughput",
                 "The calculated throughput from consensus output. Result is calculated based on unique transactions.",
@@ -605,7 +605,7 @@ impl AuthorityMetrics {
                 "consensus_calculated_throughput_profile",
                 "The current active calculated throughput profile",
                 registry
-            ).unwrap()
+            ).unwrap(),
         }
     }
 }
@@ -1330,74 +1330,83 @@ impl AuthorityState {
             let events = &inner_temporary_store.events.data;
             // Check events and decide if we need to initiate a signature mpc protocol
             for event in events {
-                if NewDKGSessionEvent::type_() == event.type_ {
-                    let event = NewDKGSessionEvent::from_bcs_bytes(&event.contents)?;
-                    debug!("event: NewDKGSessionEvent {:?}", event);
-                    let commitment_to_centralized_party_secret_key_share =
-                        event.commitment_to_centralized_party_secret_key_share;
+                let dkgsession_created_event_type = CreatedDKGSessionEvent::type_();
+                let presign_session_created_event_type = CreatedPresignSessionEvent::type_();
+                let sign_session_created_event_type =
+                    CreatedSignSessionEvent::<CreatedSignDataEvent>::type_(
+                        CreatedSignDataEvent::type_().into(),
+                    );
+                match &event.type_ {
+                    event_type if event_type == &dkgsession_created_event_type => {
+                        let event = CreatedDKGSessionEvent::from_bcs_bytes(&event.contents)?;
+                        debug!("event: CreatedDKGSessionEvent {:?}", event);
+                        let commitment_to_centralized_party_secret_key_share =
+                            event.commitment_to_centralized_party_secret_key_share;
 
-                    let obj_ref =
-                        Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
-                    // Start DKG protocol from the Validator side.
-                    let message = InitiateSignatureMPCProtocol::DKG {
-                        session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
-                        session_ref: obj_ref,
-                        commitment_to_centralized_party_secret_key_share: bcs::from_bytes(
-                            &*commitment_to_centralized_party_secret_key_share,
-                        )?,
-                    };
+                        let obj_ref =
+                            Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                        // Start DKG protocol from the Validator side.
+                        let message = InitiateSignatureMPCProtocol::DKG {
+                            session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
+                            session_ref: obj_ref,
+                            commitment_to_centralized_party_secret_key_share: bcs::from_bytes(
+                                &*commitment_to_centralized_party_secret_key_share,
+                            )?,
+                        };
 
-                    messages.push(message);
-                } else if NewPresignSessionEvent::type_() == event.type_ {
-                    let event = NewPresignSessionEvent::from_bcs_bytes(&event.contents)?;
-                    debug!("event: NewPresignSessionEvent {:?}", event);
+                        messages.push(message);
+                    }
+                    event_type if event_type == &presign_session_created_event_type => {
+                        let event = CreatedPresignSessionEvent::from_bcs_bytes(&event.contents)?;
+                        debug!("event: CreatedPresignSessionEvent {:?}", event);
 
-                    let dkg_output = event.dkg_output;
-                    let commitments_and_proof_to_centralized_party_nonce_shares =
-                        event.commitments_and_proof_to_centralized_party_nonce_shares;
-                    // TODO: validate commitment error
-                    let obj_ref =
-                        Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
-                    let message = InitiateSignatureMPCProtocol::Presign {
-                        session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
-                        session_ref: obj_ref,
-                        dkg_output: bcs::from_bytes(&*dkg_output)?,
-                        commitments_and_proof_to_centralized_party_nonce_shares: bcs::from_bytes(
-                            &*commitments_and_proof_to_centralized_party_nonce_shares,
-                        )?,
-                    };
+                        let dkg_output = event.dkg_output;
+                        let commitments_and_proof_to_centralized_party_nonce_shares =
+                            event.commitments_and_proof_to_centralized_party_nonce_shares;
+                        // TODO: validate commitment error
+                        let obj_ref =
+                            Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                        let message = InitiateSignatureMPCProtocol::Presign {
+                            session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
+                            session_ref: obj_ref,
+                            dkg_output: bcs::from_bytes(&*dkg_output)?,
+                            commitments_and_proof_to_centralized_party_nonce_shares:
+                                bcs::from_bytes(
+                                    &*commitments_and_proof_to_centralized_party_nonce_shares,
+                                )?,
+                        };
 
-                    messages.push(message);
-                } else if NewSignSessionEvent::<NewSignDataEvent>::type_(
-                    NewSignDataEvent::type_().into(),
-                ) == event.type_
-                {
-                    let event: NewSignSessionEvent<NewSignDataEvent> =
-                        NewSignSessionEvent::from_bcs_bytes(&event.contents)?;
-                    debug!("event: NewSignSessionEvent {:?}", event);
+                        messages.push(message);
+                    }
+                    event_type if event_type == &sign_session_created_event_type => {
+                        let event: CreatedSignSessionEvent<CreatedSignDataEvent> =
+                            CreatedSignSessionEvent::from_bcs_bytes(&event.contents)?;
+                        debug!("event: CreatedSignSessionEvent {:?}", event);
 
-                    let dkg_output = event.sign_data_event.dkg_output;
-                    let public_nonce_encrypted_partial_signature_and_proofs = event
-                        .sign_data_event
-                        .public_nonce_encrypted_partial_signature_and_proofs;
-                    let presigns = event.sign_data_event.presigns;
-                    let hash = event.sign_data_event.hash;
-                    // TODO: validate commitment error
-                    let obj_ref =
-                        Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
-                    let message = InitiateSignatureMPCProtocol::Sign {
-                        session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
-                        session_ref: obj_ref,
-                        messages: event.messages.clone(),
-                        dkg_output: bcs::from_bytes(&*dkg_output)?,
-                        public_nonce_encrypted_partial_signature_and_proofs: bcs::from_bytes(
-                            &*public_nonce_encrypted_partial_signature_and_proofs,
-                        )?,
-                        presigns: bcs::from_bytes(&*presigns)?,
-                        hash,
-                    };
+                        let dkg_output = event.sign_data_event.dkg_output;
+                        let public_nonce_encrypted_partial_signature_and_proofs = event
+                            .sign_data_event
+                            .public_nonce_encrypted_partial_signature_and_proofs;
+                        let presigns = event.sign_data_event.presigns;
+                        let hash = event.sign_data_event.hash;
+                        // TODO: validate commitment error
+                        let obj_ref =
+                            Self::get_object_ref_by_object_id(effects, &event.session_id.bytes)?;
+                        let message = InitiateSignatureMPCProtocol::Sign {
+                            session_id: SignatureMPCSessionID(event.session_id.bytes.into_bytes()),
+                            session_ref: obj_ref,
+                            messages: event.messages.clone(),
+                            dkg_output: bcs::from_bytes(&*dkg_output)?,
+                            public_nonce_encrypted_partial_signature_and_proofs: bcs::from_bytes(
+                                &*public_nonce_encrypted_partial_signature_and_proofs,
+                            )?,
+                            presigns: bcs::from_bytes(&*presigns)?,
+                            hash,
+                        };
 
-                    messages.push(message);
+                        messages.push(message);
+                    }
+                    _ => {}
                 }
             }
             epoch_store.insert_initiate_signature_mpc_protocols(&messages)?;
@@ -2022,11 +2031,11 @@ impl AuthorityState {
                             error!("try_create_dynamic_field_info should not fail, {}, new_object={:?}", e, new_object);
                             None
                         }
-                    )
-                        else {
-                            // Skip indexing for non dynamic field objects.
-                            continue;
-                        };
+                        )
+                    else {
+                        // Skip indexing for non dynamic field objects.
+                        continue;
+                    };
                     new_dynamic_fields.push(((ObjectID::from(owner), *id), df_info))
                 }
                 _ => {}

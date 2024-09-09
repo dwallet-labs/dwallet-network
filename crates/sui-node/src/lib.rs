@@ -1297,6 +1297,7 @@ impl SuiNode {
             epoch_store,
             signature_mpc_submit,
             signature_mpc_metrics,
+            config.max_mpc_protocol_messages_in_progress,
         )
     }
 

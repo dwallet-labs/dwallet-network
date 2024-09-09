@@ -42,7 +42,7 @@ module dwallet_system::dwallet {
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
     /// Event to start a `Sign` session, caught by the Validators.
     /// This is a glboal event that expects a particular `SignDataEvent` per each `Dwallet` type.
-    struct NewSignSessionEvent<E: store + copy + drop> has copy, drop {
+    struct CreatedSignSessionEvent<E: store + copy + drop> has copy, drop {
         session_id: ID,
         dwallet_id: ID,
         dwallet_cap_id: ID,
@@ -364,7 +364,7 @@ module dwallet_system::dwallet {
         };
 
         // This part actaully starts the `Sign` proccess in the blockchain.
-        event::emit(NewSignSessionEvent {
+        event::emit(CreatedSignSessionEvent {
             session_id: object::id(&sign_session),
             dwallet_id,
             dwallet_cap_id,
