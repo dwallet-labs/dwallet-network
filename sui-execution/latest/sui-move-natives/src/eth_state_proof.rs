@@ -57,8 +57,17 @@ pub struct EthDWalletCostParams {
 /***************************************************************************************************
 * native fun verify_message_proof
 * Implementation of the Move native function
-* `verify_message_proof(p0: &mut NativeContext, p1: Vec<Type>, p2: VecDeque<Value>)
-* -> PartialVMResult<NativeResult>`
+* `verify_message_proof(
+*  proof: vector<u8>,
+*  message: vector<u8>,
+*  dwallet_id: vector<u8>,
+*  data_slot: u64,
+*  beacon_block: vector<u8>,
+*  contract_address: vector<u8>,
+*  eth_state_data: vector<u8>,
+*  beacon_block_type: vector<u8>,
+*  beacon_block_body: vector<u8>,
+*  beacon_block_execution_payload: vector<u8>): bool;`
 * gas cost: verify_message_proof_cost_base | base cost for function call and fixed operations.
 **************************************************************************************************/
 pub fn verify_message_proof(
@@ -140,7 +149,7 @@ pub fn verify_message_proof(
             .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
     let beacon_block_execution_payload: ExecutionPayload = beacon_block_execution_payload.inner();
 
-    let beacon_block_body = BeaconBlockBody::new_from_existing_with_execution_payload(
+    let mut beacon_block_body = BeaconBlockBody::new_from_existing_with_execution_payload(
         beacon_block_body,
         beacon_block_execution_payload,
     );
@@ -149,20 +158,40 @@ pub fn verify_message_proof(
     let eth_state_data = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&eth_state_data)
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
+    // Compute the root hash of the Merkle tree using the unverified (user-specified) beacon block.
     let beacon_block_hash = beacon_block
         .hash_tree_root()
         .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
 
     let mut verified_block_header = eth_state_data.get_finalized_header();
 
+    // Compute the root hash of the Merkle tree using the verified beacon header.
     let verified_block_hash = verified_block_header
         .hash_tree_root()
         .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
 
+    // Verify the beacon block hash against the verified block hash.
+    // If the hashes match, it means we can trust the beacon block, and use its state
+    // root to verify the proof.
+    // More info in [Ethereum Consensus Specs](https://github.com/ethereum/consensus-specs/blob/fa09d896484bbe240334fa21ffaa454bafe5842e/ssz/simple-serialize.md#summaries-and-expansions).
     if beacon_block_hash != verified_block_hash {
         return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
     }
 
+    // Verify that the `body_root` of the verified beacon block matches the actual root hash
+    // of the beacon block body.
+    let beacon_block_body_root = beacon_block
+        .body
+        .hash_tree_root()
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
+    let beacon_block_body_root = Bytes32::try_from(beacon_block_body_root.as_ref())
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
+
+    if verified_block_header.body_root != beacon_block_body_root {
+        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+    }
+
+    // Get the Execution layer's state root from the verified beacon block.
     let state_root = beacon_block.body.execution_payload().state_root();
 
     let account_path = keccak256(contract_address.as_bytes()).to_vec();
@@ -210,7 +239,8 @@ pub fn verify_message_proof(
  * `eth_dwallet::verify_eth_state(updates: vector<u8>,
  * finality_update: vector<u8>,
  * optimistic_update: vector<u8>,
- * eth_state: vector<u8>) -> (vector<u8>, u64, vector<u8>, vector<u8>);`
+ * eth_state: vector<u8>,
+ * should_apply_finality_update_first: bool) -> (vector<u8>, u64, vector<u8>, vector<u8>);`
  * gas cost: verify_eth_state_cost_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
 pub(crate) fn verify_eth_state(
@@ -232,8 +262,7 @@ pub(crate) fn verify_eth_state(
     );
 
     let cost = context.gas_used();
-    let (is_init, current_eth_state, optimistic_update, finality_update, updates_vec) = (
-        pop_arg!(args, bool),
+    let (current_eth_state, optimistic_update, finality_update, updates_vec) = (
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
@@ -260,19 +289,10 @@ pub(crate) fn verify_eth_state(
         optimistic_update,
     };
 
-    if (is_init) {
-        eth_state
-            .verify_and_apply_initial_updates(&updates)
-            .map_err(|e| {
-                error!("failed to verify updates: {:?}", e);
-                PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-            })?;
-    } else {
-        eth_state.advance_state(updates).map_err(|e| {
-            error!("failed to advance state: {:?}", e);
-            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-        })?;
-    }
+    eth_state.advance_state(updates).map_err(|e| {
+        error!("failed to advance state: {:?}", e);
+        PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+    })?;
 
     let new_state_bcs = bcs::to_bytes(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
@@ -297,7 +317,8 @@ pub(crate) fn verify_eth_state(
 /***************************************************************************************************
 * native fun create_initial_eth_state_data
 * Implementation of the Move native function
-* `eth_dwallet::create_initial_eth_state_data(checkpoint: vector<u8>): vector<u8>;`
+* `eth_dwallet::create_initial_eth_state_data(state_bytes: vector<u8>, network: vector<u8>)
+* : (vector<u8>, u64);`
 * gas cost:
 * create_initial_eth_state_data_cost_base | base cost for function call and fixed operations.
 **************************************************************************************************/
@@ -327,8 +348,12 @@ pub(crate) fn create_initial_eth_state_data(
 
     let cost = context.gas_used();
 
+    let optimistic_update = pop_arg!(args, Vector).to_vec_u8()?;
+    let finality_update = pop_arg!(args, Vector).to_vec_u8()?;
+    let updates_vec = pop_arg!(args, Vector).to_vec_u8()?;
     let network = pop_arg!(args, Vector).to_vec_u8()?;
     let state_bytes = pop_arg!(args, Vector).to_vec_u8()?;
+
     let state_bytes_hash = hex::encode(keccak256(state_bytes.clone()));
     let is_valid = match network.as_slice() {
         b"mainnet" => state_bytes_hash == MAINNET_STATE_HASH,
@@ -340,9 +365,34 @@ pub(crate) fn create_initial_eth_state_data(
         return Ok(NativeResult::ok(cost, smallvec![Value::vector_u8(vec![])]));
     }
 
-    let eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&state_bytes)
+    let mut eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&state_bytes)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
 
+    let updates_vec = serde_json::from_slice::<Vec<Update>>(updates_vec.as_slice())
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let finality_update = serde_json::from_slice::<FinalityUpdate>(finality_update.as_slice())
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let optimistic_update =
+        serde_json::from_slice::<OptimisticUpdate>(optimistic_update.as_slice())
+            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let updates = AggregateUpdates {
+        updates: updates_vec,
+        finality_update,
+        optimistic_update,
+    };
+
+    eth_state
+        .verify_and_apply_initial_updates(&updates)
+        .map_err(|e| {
+            error!("failed to verify updates: {:?}", e);
+            PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
+        })?;
+
+    let state_bytes = bcs::to_bytes(&eth_state)
+        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
     let time_slot = eth_state.get_latest_slot();
     Ok(NativeResult::ok(
         cost,

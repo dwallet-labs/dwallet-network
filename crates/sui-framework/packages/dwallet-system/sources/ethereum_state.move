@@ -47,9 +47,12 @@ module dwallet_system::ethereum_state {
         network: vector<u8>,
         eth_smart_contract_address: vector<u8>,
         eth_smart_contract_slot: u64,
+        updates_vec_arg: vector<u8>,
+        finality_update_arg: vector<u8>,
+        optimistic_update_arg: vector<u8>,
         ctx: &mut TxContext
     ) {
-        let (data, time_slot) = create_initial_eth_state_data(state_bytes, network);
+        let (data, time_slot) = create_initial_eth_state_data(state_bytes, network, updates_vec_arg, finality_update_arg, optimistic_update_arg);
         let state = EthereumState {
             id: object::new(ctx),
             data,
@@ -72,15 +75,13 @@ module dwallet_system::ethereum_state {
     }
 
     /// Verifies the new Ethereum state according to the provided updates,
-    /// and updates the LatestEthereumState object
-    /// if the new state is valid and has a newer time slot.
+    /// and updates the LatestEthereumState object if the new state is valid and has a newer time slot.
     public fun verify_new_state(
         updates_bytes: vector<u8>,
         finality_update_bytes: vector<u8>,
         optimistic_update_bytes: vector<u8>,
         latest_ethereum_state: &mut LatestEthereumState,
         eth_state: &EthereumState,
-        is_init_state: bool,
         ctx: &mut TxContext,
     ) {
         // Verify that the state is the latest state
@@ -97,7 +98,6 @@ module dwallet_system::ethereum_state {
             finality_update_bytes,
             optimistic_update_bytes,
             eth_state_bytes,
-            is_init_state,
         );
 
         assert!(network == latest_ethereum_state.network, ENetworkMismatch);
@@ -158,7 +158,6 @@ module dwallet_system::ethereum_state {
         finality_update: vector<u8>,
         optimistic_update: vector<u8>,
         eth_state: vector<u8>,
-        is_init_state: bool,
     ): (vector<u8>, u64, vector<u8>);
 
     /// Native function.
@@ -166,5 +165,8 @@ module dwallet_system::ethereum_state {
     native fun create_initial_eth_state_data(
         state_bytes: vector<u8>,
         network: vector<u8>,
+        updates_vec_arg: vector<u8>,
+        finality_update_arg: vector<u8>,
+        optimistic_update_arg: vector<u8>,
     ): (vector<u8>, u64);
 }
