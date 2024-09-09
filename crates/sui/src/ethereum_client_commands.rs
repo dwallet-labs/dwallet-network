@@ -304,6 +304,7 @@ pub(crate) async fn create_eth_dwallet(
 ///     representing the link between the dWallet and Ethereum.
 /// * `message` – The Ethereum transaction message to be approved.
 /// * `dwallet_id` – The `ObjectID` of the dWallet to which the transaction belongs.
+/// * `network` – The Ethereum network to which the transaction belongs.
 /// # Returns
 /// * `Result<SuiClientCommandResult>` –
 /// Result containing either the transaction execution result or an error.
@@ -373,8 +374,12 @@ pub(crate) async fn eth_approve_message(
         .await
         .map_err(|e| anyhow!("could not fetch updates: {e}"))?;
 
-    let is_init_state = eth_state
-        .is_update_relevant(&updates_response)
+    // Decide whether to apply finality and optimistic updates first.
+    // If the updates are not relevant, the finality update should be applied first.
+    // Update is not relevant if it is earlier than the current finalized header,
+    // AND does not have a new sync committee
+    let should_apply_finality_update_first = eth_state
+        .should_apply_finality_update_first(&updates_response)
         .map_err(|e| anyhow!("could not check if update is relevant: {e}"))?;
 
     let gas_owner = context.try_get_object_owner(&gas).await?;
@@ -402,7 +407,8 @@ pub(crate) async fn eth_approve_message(
         })
         .map_err(|e| anyhow!("could not serialize `latest_eth_state_id`: {e}"))?;
 
-    let is_init_state_arg = pt_builder.pure(is_init_state)?;
+    let should_apply_finality_update_first_arg =
+        pt_builder.pure(should_apply_finality_update_first)?;
 
     let eth_state_object_ref = get_object_ref_by_id(context, eth_state_object_id).await?;
     let eth_state_id_arg = pt_builder
@@ -420,7 +426,7 @@ pub(crate) async fn eth_approve_message(
             optimistic_update_arg,
             latest_eth_state_arg,
             eth_state_id_arg,
-            is_init_state_arg,
+            should_apply_finality_update_first_arg,
         ]),
     );
 
