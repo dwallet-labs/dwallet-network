@@ -23,14 +23,14 @@ use sui_types::SUI_SYSTEM_ADDRESS;
 use tokio_stream::{Stream, StreamExt};
 use tracing::{debug, error, info, instrument, subscriber, trace_span};
 
-pub struct SignatureMpcSubscriber {
+pub struct SignatureInitMpcSubscriber {
     epoch_store: Arc<AuthorityPerEpochStore>,
     exit: watch::Receiver<()>,
     tx_initiate_signature_mpc_protocol_sender: mpsc::Sender<InitiateSignatureMPCProtocol>,
     last: InitSignatureMPCProtocolSequenceNumber,
 }
 
-impl SignatureMpcSubscriber {
+impl SignatureInitMpcSubscriber {
     // Create a channel for sending and receiving MPC messages.
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
@@ -54,12 +54,10 @@ impl SignatureMpcSubscriber {
     }
 
     // A special subscriber that listens for new MPC sessions.
-    // todo(mpc-async): SignatureMpcSubscriber should renamed to SignatureInitMpcSubscriber
-    // todo(mpc-async): make sure this does not kill the CPU,
-    // todo(mpc-async): check if there is a delay or sleep needed.
     async fn run(mut self) {
-        info!("Starting SignatureMpcSubscriber");
+        info!("Starting SignatureInitMpcSubscriber");
         loop {
+            tokio::time::sleep(Duration::from_millis(100)).await;
             // If an exit signal received, break the loop.
             // This gives a chance to exit, if checkpoint making keeps failing.
             match self.exit.has_changed() {
@@ -68,14 +66,19 @@ impl SignatureMpcSubscriber {
                 }
                 Ok(false) => (),
             };
-            // todo(mpc-async): remove unwrap().
-            let messages = self
+            let Ok(messages) = self
                 .epoch_store
                 .get_initiate_signature_mpc_protocols(self.last)
-                .unwrap();
+            else {
+                error!(
+                    "Failed to get initiate signature mpc protocols for epoch {:?}",
+                    self.last
+                );
+                return;
+            };
             for (last_sequence, message) in messages {
                 // Send MPC messages to channel.
-                // todo(mpc-async): handle error.
+                // todo(mpc-async): handle error. Itay - what exactly should be done here upon error?
                 let _ = self
                     .tx_initiate_signature_mpc_protocol_sender
                     .send(message)
@@ -84,7 +87,7 @@ impl SignatureMpcSubscriber {
             }
             tokio::task::yield_now().await;
         }
-        info!("Shutting down SignatureMpcSubscriber");
+        info!("Shutting down SignatureInitMpcSubscriber");
     }
 
     // fn stream(&self) -> impl Stream<Item = sui_json_rpc_types::SuiTransactionBlockEffects> {
