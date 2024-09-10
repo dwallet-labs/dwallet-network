@@ -1,12 +1,6 @@
 use sui_types::{
     base_types::{ObjectID, SuiAddress},
-    id::{ID, UID},
-    SUI_SYSTEM_ADDRESS,
-};
-use move_core_types::{
-    ident_str,
-    identifier::IdentStr,
-    language_storage::{StructTag, TypeTag},
+    id::ID,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -16,4 +10,4 @@ use serde::{Deserialize, Serialize};
 pub struct CreatedProofMPCSessionEvent<E> {
     pub session_id: ID,
     pub sender: SuiAddress,
-    }
+}
