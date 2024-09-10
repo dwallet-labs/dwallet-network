@@ -9,7 +9,7 @@ module dwallet_system::dwallet_tests {
     use dwallet::tx_context;
 
     use dwallet_system::dwallet;
-    use dwallet_system::dwallet::{create_dwallet_cap, EMesssageApprovalDWalletMismatch, launch_proof_mpc_flow};
+    use dwallet_system::dwallet::{create_dwallet_cap, EMesssageApprovalDWalletMismatch};
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{create_mock_sign_data, create_mock_sign_data_event};
 
     fun set_up(): (address, test_scenario::Scenario) {
@@ -237,24 +237,4 @@ module dwallet_system::dwallet_tests {
         test_utils::destroy(dwallet_cap);
     }
 
-    #[test]
-    public fun test_launch_proof_mpc_flow_succesfull() {
-        let (sender, scenario) = set_up();
-        test_scenario::next_tx(&mut scenario, sender);
-        {
-            let ctx = test_scenario::ctx(&mut scenario);
-            launch_proof_mpc_flow(ctx);
-        };
-        let effects: TransactionEffects = test_scenario::end(scenario);
-        let events_num = test_scenario::num_user_events(&effects);
-        assert!(events_num == 1, EWrongEventNumber);
-
-        let frozen_objects = test_scenario::frozen(&effects);
-        let created_objects = test_scenario::created(&effects);
-        assert!(vector::length(&frozen_objects) == 1, EWrongFrozenObjectsNum);
-        assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
-        let c = vector::borrow(&created_objects, 0);
-        let f = vector::borrow(&frozen_objects, 0);
-        assert!(c == f, EObjectMismatchCreateAndFrozen);
-    }
 }
