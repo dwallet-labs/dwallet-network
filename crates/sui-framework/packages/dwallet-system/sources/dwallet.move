@@ -310,4 +310,18 @@ module dwallet_system::dwallet {
         };
         transfer::transfer(sign_output, session.sender);
     }
+
+    /// Event to start a `MockMPCSession`, caught by the Validators.
+    struct CreatedMockMPCSessionEvent<E: store + copy + drop> has copy, drop {
+        session_id: ID,
+        sender: address,
+    }
+
+    /// Function to launch mock MPC flow.
+    fun launch_mock_mpc_flow(ctx: &mut TxContext) {
+        event::emit(CreatedMockMPCSessionEvent {
+            session_id: object::new(ctx),
+            sender: tx_context::sender(ctx),
+        });
+    }
 }
