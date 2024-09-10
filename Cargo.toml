@@ -72,7 +72,7 @@ members = [
     "consensus/core",
     "crates/anemo-benchmark",
     "crates/data-transform",
-    "crates/light-client-helpers",
+    "crates/light-client-helpers", "crates/mpc-protocols",
     "crates/mysten-common",
     "crates/mysten-metrics",
     "crates/mysten-network",

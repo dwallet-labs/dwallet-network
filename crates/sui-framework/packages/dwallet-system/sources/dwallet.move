@@ -317,13 +317,13 @@ module dwallet_system::dwallet {
         sender: address,
     }
 
-    struct ProofSessionDate has key {
+    struct ProofSessionData has key {
         id: UID,
     }
 
     /// Function to launch proof MPC flow.
     public fun launch_proof_mpc_flow(ctx: &mut TxContext) {
-        let session_data = ProofSessionDate {
+        let session_data = ProofSessionData {
             id: object::new(ctx),
         };
         let created_proof_mpc_session = CreatedProofMPCSessionEvent {
