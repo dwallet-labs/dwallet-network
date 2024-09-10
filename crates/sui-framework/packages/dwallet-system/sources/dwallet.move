@@ -312,16 +312,25 @@ module dwallet_system::dwallet {
     }
 
     /// Event to start a `MockMPCSession`, caught by the Validators.
-    struct CreatedMockMPCSessionEvent<E: store + copy + drop> has copy, drop {
+    struct CreatedProofMPCSessionEvent has copy, drop {
         session_id: ID,
         sender: address,
     }
 
-    /// Function to launch mock MPC flow.
-    fun launch_mock_mpc_flow(ctx: &mut TxContext) {
-        event::emit(CreatedMockMPCSessionEvent {
-            session_id: object::new(ctx),
+    struct ProofSessionDate has key {
+        id: UID,
+    }
+
+    /// Function to launch proof MPC flow.
+    public fun launch_proof_mpc_flow(ctx: &mut TxContext) {
+        let session_data = ProofSessionDate {
+            id: object::new(ctx),
+        };
+        let created_proof_mpc_session = CreatedProofMPCSessionEvent {
+            session_id: object::id(&session_data),
             sender: tx_context::sender(ctx),
-        });
+        };
+        event::emit(created_proof_mpc_session);
+        transfer::freeze_object(session_data);
     }
 }
