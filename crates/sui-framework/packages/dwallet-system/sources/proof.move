@@ -1,8 +1,10 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+// TODO (#228): Remove this module.
 /// The proof module
 /// Responsible to start and manage the Proof generation MPC flow
+/// Used only for testing the way we launch & manage an MPC flow.
 module dwallet_system::proof {
     use dwallet::event;
     use dwallet::object::{Self, ID, UID};
