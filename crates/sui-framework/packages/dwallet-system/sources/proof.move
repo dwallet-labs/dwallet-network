@@ -32,6 +32,9 @@ module dwallet_system::proof {
         // When iterating over the transactions in the batch, MPC transactions will get exectuted locally
         // to catch the event with all the needed data to start the MPC flow.
         let created_proof_mpc_session_event = CreatedProofMPCSessionEvent {
+            // The session ID is a random, unique ID of the ProofSessionData object.
+            // It is needed so the user will be able to know, when fetching the generated proof data,
+            // that the proof was generated for this specific session.
             session_id: object::id(&session_data),
             sender: tx_context::sender(ctx),
         };
