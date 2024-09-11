@@ -12,7 +12,6 @@ module dwallet_system::proof_tests {
     const EObjectMismatchCreateAndFrozen: u64 = 3;
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
-
     fun set_up(): (address, test_scenario::Scenario) {
         let sender = @0x1;
         let scenario = test_scenario::begin(sender);

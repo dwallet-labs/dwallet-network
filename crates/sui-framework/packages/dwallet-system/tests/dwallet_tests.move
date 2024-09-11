@@ -236,5 +236,4 @@ module dwallet_system::dwallet_tests {
         dwallet::sign(partial_user_signed_messages, message_approvals, ctx);
         test_utils::destroy(dwallet_cap);
     }
-
 }

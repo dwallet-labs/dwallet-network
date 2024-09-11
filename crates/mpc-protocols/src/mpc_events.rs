@@ -5,7 +5,7 @@ use sui_types::{
     id::ID,
 };
 
-// Rust version of the Move sui_system::dwallet::CreatedProofMPCSessionEvent type
+/// Rust version of the Move sui_system::dwallet::CreatedProofMPCSessionEvent type
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct CreatedProofMPCSessionEvent {
     pub session_id: ID,
