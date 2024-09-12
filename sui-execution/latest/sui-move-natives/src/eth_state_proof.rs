@@ -149,7 +149,7 @@ pub fn verify_message_proof(
             .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
     let beacon_block_execution_payload: ExecutionPayload = beacon_block_execution_payload.inner();
 
-    let mut beacon_block_body = BeaconBlockBody::new_from_existing_with_execution_payload(
+    let beacon_block_body = BeaconBlockBody::new_from_existing_with_execution_payload(
         beacon_block_body,
         beacon_block_execution_payload,
     );

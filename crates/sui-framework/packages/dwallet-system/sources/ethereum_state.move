@@ -52,7 +52,13 @@ module dwallet_system::ethereum_state {
         optimistic_update_arg: vector<u8>,
         ctx: &mut TxContext
     ) {
-        let (data, time_slot) = create_initial_eth_state_data(state_bytes, network, updates_vec_arg, finality_update_arg, optimistic_update_arg);
+        let (data, time_slot) = create_initial_eth_state_data(
+            state_bytes,
+            network,
+            updates_vec_arg,
+            finality_update_arg,
+            optimistic_update_arg
+        );
         let state = EthereumState {
             id: object::new(ctx),
             data,
@@ -75,7 +81,7 @@ module dwallet_system::ethereum_state {
     }
 
     /// Verifies the new Ethereum state according to the provided updates,
-    /// and updates the LatestEthereumState object if the new state is valid and has a newer time slot.
+    /// and updates the `LatestEthereumState` object if the new state is valid and has a newer time slot.
     public fun verify_new_state(
         updates_bytes: vector<u8>,
         finality_update_bytes: vector<u8>,
