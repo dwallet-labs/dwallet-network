@@ -432,9 +432,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.87"
+version = "1.0.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10f00e1f6e58a40e807377c75c6a7f97bf9044fab57816f2414e6f5f4499d7b8"
+checksum = "4e1496f8fb1fbf272686b8d37f523dab3e4a7443300055e74cdaa449f3114356"
 dependencies = [
  "backtrace",
 ]
@@ -2538,7 +2538,7 @@ dependencies = [
 [[package]]
 name = "client"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
+source = "git+https://github.com/dwallet-labs/helios#150ef3afa30100ca9c6bbb427eb2d84eea4c70c5"
 dependencies = [
  "common",
  "config",
@@ -2729,7 +2729,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
+source = "git+https://github.com/dwallet-labs/helios#150ef3afa30100ca9c6bbb427eb2d84eea4c70c5"
 dependencies = [
  "ethers",
  "eyre",
@@ -2742,7 +2742,7 @@ dependencies = [
 [[package]]
 name = "config"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
+source = "git+https://github.com/dwallet-labs/helios#150ef3afa30100ca9c6bbb427eb2d84eea4c70c5"
 dependencies = [
  "anyhow",
  "common",
@@ -2767,7 +2767,7 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
+source = "git+https://github.com/dwallet-labs/helios#150ef3afa30100ca9c6bbb427eb2d84eea4c70c5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3924,7 +3924,7 @@ dependencies = [
 [[package]]
 name = "dwallet"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
+source = "git+https://github.com/dwallet-labs/helios#150ef3afa30100ca9c6bbb427eb2d84eea4c70c5"
 dependencies = [
  "anyhow",
  "client",
@@ -4615,7 +4615,7 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 [[package]]
 name = "execution"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
+source = "git+https://github.com/dwallet-labs/helios#150ef3afa30100ca9c6bbb427eb2d84eea4c70c5"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4937,7 +4937,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef033ed5e9bad94e55838ca0ca906db0e043f517adda0c8b79c7a8c66c93c1b5"
 dependencies = [
  "cfg-if",
- "rustix 0.38.36",
+ "rustix 0.38.37",
  "windows-sys 0.48.0",
 ]
 
@@ -5772,7 +5772,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 [[package]]
 name = "helios"
 version = "0.5.5"
-source = "git+https://github.com/dwallet-labs/helios#af39485654729533ff1320b05b9236539ca4f924"
+source = "git+https://github.com/dwallet-labs/helios#150ef3afa30100ca9c6bbb427eb2d84eea4c70c5"
 dependencies = [
  "client",
  "common",
@@ -7034,7 +7034,7 @@ checksum = "c0ff37bd590ca25063e35af745c343cb7a0271906fb7b37e4813e8f79f00268d"
 dependencies = [
  "bitflags 2.6.0",
  "libc",
- "redox_syscall 0.5.3",
+ "redox_syscall 0.5.4",
 ]
 
 [[package]]
@@ -10237,7 +10237,7 @@ checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall 0.5.3",
+ "redox_syscall 0.5.4",
  "smallvec",
  "windows-targets 0.52.6",
 ]
@@ -11533,9 +11533,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a908a6e00f1fdd0dfd9c0eb08ce85126f6d8bbda50017e74bc4a4b7d4a926a4"
+checksum = "0884ad60e090bf1345b93da0a5de8923c93884cd03f40dfcfddd3b4bee661853"
 dependencies = [
  "bitflags 2.6.0",
 ]
@@ -12215,9 +12215,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.36"
+version = "0.38.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f55e80d50763938498dd5ebb18647174e0c76dc38c5505294bb224624f30f36"
+checksum = "8acb788b847c24f28525660c4d7758620a7210875711f79e7f663cc152726811"
 dependencies = [
  "bitflags 2.6.0",
  "errno 0.3.9",
@@ -14992,6 +14992,7 @@ dependencies = [
  "move-vm-types 0.1.0",
  "serde_json",
  "smallvec",
+ "ssz_rs",
  "sui-json 0.0.0",
  "sui-protocol-config 0.1.0",
  "sui-types 0.1.0",
@@ -16680,7 +16681,7 @@ dependencies = [
  "cfg-if",
  "fastrand 2.1.1",
  "once_cell",
- "rustix 0.38.36",
+ "rustix 0.38.37",
  "windows-sys 0.59.0",
 ]
 
@@ -16720,7 +16721,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21bebf2b7c9e0a515f6e0f8c51dc0f8e4696391e6f1ff30379559f8365fb0df7"
 dependencies = [
- "rustix 0.38.36",
+ "rustix 0.38.37",
  "windows-sys 0.48.0",
 ]
 
@@ -17895,9 +17896,9 @@ checksum = "08f95100a766bf4f8f28f90d77e0a5461bbdb219042e7679bebe79004fed8d75"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.12"
+version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
+checksum = "e91b56cd4cadaeb79bbf1a5645f6b4f8dc5bde8834ad5894a8db35fda9efa1fe"
 
 [[package]]
 name = "unicode-normalization"
@@ -18283,7 +18284,7 @@ dependencies = [
  "either",
  "home",
  "once_cell",
- "rustix 0.38.36",
+ "rustix 0.38.37",
 ]
 
 [[package]]
@@ -18292,7 +18293,7 @@ version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "372d5b87f58ec45c384ba03563b03544dc5fadc3983e434b286913f5b4a9bb6d"
 dependencies = [
- "redox_syscall 0.5.3",
+ "redox_syscall 0.5.4",
  "wasite",
  "web-sys",
 ]
@@ -19393,7 +19394,7 @@ dependencies = [
  "rusticata-macros",
  "rustix 0.36.17",
  "rustix 0.37.27",
- "rustix 0.38.36",
+ "rustix 0.38.37",
  "rustls 0.20.9",
  "rustls 0.21.12",
  "rustls-native-certs",

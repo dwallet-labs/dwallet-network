@@ -22,7 +22,6 @@ module dwallet_system::ethereum_state {
         /// serialised ConsensusStateManager
         data: vector<u8>,
         time_slot: u64,
-        state_root: vector<u8>,
         latest_ethereum_state_id: ID,
     }
 
@@ -48,14 +47,22 @@ module dwallet_system::ethereum_state {
         network: vector<u8>,
         eth_smart_contract_address: vector<u8>,
         eth_smart_contract_slot: u64,
+        updates_vec_arg: vector<u8>,
+        finality_update_arg: vector<u8>,
+        optimistic_update_arg: vector<u8>,
         ctx: &mut TxContext
     ) {
-        let (data, state_root, time_slot) = create_initial_eth_state_data(state_bytes, network);
+        let (data, time_slot) = create_initial_eth_state_data(
+            state_bytes,
+            network,
+            updates_vec_arg,
+            finality_update_arg,
+            optimistic_update_arg
+        );
         let state = EthereumState {
             id: object::new(ctx),
             data,
             time_slot,
-            state_root,
             latest_ethereum_state_id: object::id_from_address(@0x0),
         };
 
@@ -74,8 +81,7 @@ module dwallet_system::ethereum_state {
     }
 
     /// Verifies the new Ethereum state according to the provided updates,
-    /// and updates the LatestEthereumState object
-    /// if the new state is valid and has a newer time slot.
+    /// and updates the `LatestEthereumState` object if the new state is valid and has a newer time slot.
     public fun verify_new_state(
         updates_bytes: vector<u8>,
         finality_update_bytes: vector<u8>,
@@ -93,11 +99,11 @@ module dwallet_system::ethereum_state {
         assert!(latest_ethereum_state_id == object::id(latest_ethereum_state), EStateObjectMismatch);
 
         let eth_state_bytes = get_ethereum_state_data(eth_state);
-        let (data, time_slot, state_root, network) = verify_eth_state(
+        let (data, time_slot, network) = verify_eth_state(
             updates_bytes,
             finality_update_bytes,
             optimistic_update_bytes,
-            eth_state_bytes
+            eth_state_bytes,
         );
 
         assert!(network == latest_ethereum_state.network, ENetworkMismatch);
@@ -107,7 +113,6 @@ module dwallet_system::ethereum_state {
             id: object::new(ctx),
             data,
             time_slot,
-            state_root,
             latest_ethereum_state_id: object::id(latest_ethereum_state),
         };
 
@@ -140,19 +145,13 @@ module dwallet_system::ethereum_state {
         latest_ethereum_state.eth_smart_contract_slot
     }
 
-    public(friend) fun get_ethereum_state_root(
-        state: &EthereumState
-    ): vector<u8> {
-        state.state_root
-    }
-
     public(friend) fun get_ethereum_state_latest_state_id(
         state: &EthereumState
     ): ID {
         state.latest_ethereum_state_id
     }
 
-    fun get_ethereum_state_data(
+    public(friend) fun get_ethereum_state_data(
         state: &EthereumState
     ): vector<u8> {
         state.data
@@ -164,13 +163,16 @@ module dwallet_system::ethereum_state {
         updates: vector<u8>,
         finality_update: vector<u8>,
         optimistic_update: vector<u8>,
-        eth_state: vector<u8>
-    ): (vector<u8>, u64, vector<u8>, vector<u8>);
+        eth_state: vector<u8>,
+    ): (vector<u8>, u64, vector<u8>);
 
     /// Native function.
     /// Creates the initial Ethereum state data with the given checkpoint.
     native fun create_initial_eth_state_data(
         state_bytes: vector<u8>,
         network: vector<u8>,
-    ): (vector<u8>, vector<u8>, u64);
+        updates_vec_arg: vector<u8>,
+        finality_update_arg: vector<u8>,
+        optimistic_update_arg: vector<u8>,
+    ): (vector<u8>, u64);
 }

@@ -29,3 +29,4 @@ sui-types.workspace = true
 workspace-hack.workspace = true
 tracing.workspace = true
 sui-json.workspace = true
+ssz-rs = { package = "ssz_rs", version = "0.9.0" }
