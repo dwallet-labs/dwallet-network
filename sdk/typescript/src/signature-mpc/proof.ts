@@ -1,4 +1,4 @@
-//[object Object]
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
