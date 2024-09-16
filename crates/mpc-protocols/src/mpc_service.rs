@@ -2,7 +2,7 @@ use crate::mpc_events::{CreatedProofMPCEvent, MPCEvent};
 use std::collections::{HashMap, VecDeque};
 use sui_types::base_types::ObjectID;
 use sui_types::event::Event;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{mpsc, Mutex, RwLock};
 
 const MAX_ACTIVE_MPC_INSTANCES: usize = 100;
 
@@ -39,6 +39,7 @@ enum MPCStatus {
 pub struct MPCService {
     mpc_instances: Mutex<HashMap<ObjectID, MPCInstance>>,
     pending: Mutex<VecDeque<ObjectID>>,
+    active_instances_counter: Mutex<usize>,
 }
 
 impl MPCService {
@@ -46,6 +47,7 @@ impl MPCService {
         Self {
             mpc_instances: Mutex::new(HashMap::new()),
             pending: Mutex::new(VecDeque::new()),
+            active_instances_counter: Mutex::new(0),
         }
     }
 
@@ -80,9 +82,9 @@ impl MPCService {
             event.session_id
         );
         let mut locked_mpc_instances = self.mpc_instances.try_lock().unwrap();
-
+        let mut locked_active_instances_counter = self.active_instances_counter.try_lock().unwrap();
         // If the number of active instances exceeds the limit, add to pending
-        if locked_mpc_instances.len() >= MAX_ACTIVE_MPC_INSTANCES {
+        if *locked_active_instances_counter >= MAX_ACTIVE_MPC_INSTANCES {
             locked_mpc_instances.insert(
                 event.session_id.clone().bytes,
                 MPCInstance {
@@ -105,6 +107,7 @@ impl MPCService {
                 messages: vec![],
             },
         );
+        *locked_active_instances_counter += 1;
         println!(
             "Added MPCInstance to service for session_id {:?}",
             event.session_id
