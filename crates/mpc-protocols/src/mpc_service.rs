@@ -17,7 +17,7 @@ struct MPCInstance {
     /// The channel to send messages to active MPC instance
     /// Every new message related to this instance will be forwarded to this channel and will be handled synchronously
     messages_handler_sender: Option<mpsc::Sender<MPCInput>>,
-    messages: Vec<MPCInput>,
+    pending_messages: Vec<MPCInput>,
 }
 
 /// Possible status of an MPC session
@@ -90,7 +90,7 @@ impl MPCService {
                 MPCInstance {
                     status: MPCStatus::Pending,
                     messages_handler_sender: None,
-                    messages: vec![],
+                    pending_messages: vec![],
                 },
             );
             (*self.pending.try_lock().unwrap()).push_back(event.session_id.bytes);
@@ -104,7 +104,7 @@ impl MPCService {
             MPCInstance {
                 status: MPCStatus::Active,
                 messages_handler_sender: Some(messages_handler_sender),
-                messages: vec![],
+                pending_messages: vec![],
             },
         );
         *locked_active_instances_counter += 1;
