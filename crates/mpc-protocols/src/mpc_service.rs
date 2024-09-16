@@ -14,7 +14,9 @@ pub enum MPCInput {
 
 struct MPCInstance {
     status: MPCStatus,
-    sender: Option<mpsc::Sender<MPCInput>>,
+    /// The channel to send messages to active MPC instance
+    /// Every new message related to this instance will be forwarded to this channel and will be handled synchronously
+    messages_handler: Option<mpsc::Sender<MPCInput>>,
     messages: Vec<MPCInput>,
 }
 
@@ -85,7 +87,7 @@ impl MPCService {
                 event.session_id.clone().bytes,
                 MPCInstance {
                     status: MPCStatus::Pending,
-                    sender: None,
+                    messages_handler: None,
                     messages: vec![],
                 },
             );
@@ -99,7 +101,7 @@ impl MPCService {
             event.session_id.clone().bytes,
             MPCInstance {
                 status: MPCStatus::Active,
-                sender: Some(sender),
+                messages_handler: Some(sender),
                 messages: vec![],
             },
         );
