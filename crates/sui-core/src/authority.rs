@@ -29,6 +29,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Write;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use std::{
@@ -140,7 +141,9 @@ use crate::state_accumulator::{StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
-
+use mpc_protocols::mpc_events::CreatedProofMPCEvent;
+use mpc_protocols::mpc_events::MPCEvent;
+use mpc_protocols::mpc_service::{MPCInput, MPCService};
 #[cfg(msim)]
 use sui_types::committee::CommitteeTrait;
 
@@ -655,6 +658,8 @@ pub struct AuthorityState {
 
     /// Config for when we consider the node overloaded.
     overload_threshold_config: OverloadThresholdConfig,
+
+    mpc_state: MPCService,
 }
 
 /// The authority state encapsulates all state, drives execution, and ensures safety.
@@ -1262,6 +1267,10 @@ impl AuthorityState {
             effects_sig.as_ref(),
         )?;
 
+        let _ = self
+            .initiate_signature_mpc_protocol(&inner_temporary_store, effects, epoch_store)
+            .await;
+
         // Allow testing what happens if we crash here.
         fail_point_async!("crash");
 
@@ -1285,6 +1294,27 @@ impl AuthorityState {
 
         self.update_metrics(certificate, input_object_count, shared_object_count);
 
+        Ok(())
+    }
+
+    async fn initiate_signature_mpc_protocol(
+        &self,
+        inner_temporary_store: &InnerTemporaryStore,
+        effects: &TransactionEffects,
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+    ) -> anyhow::Result<()> {
+        if !self.is_validator(epoch_store) {
+            return Ok(());
+        }
+        let status = match &effects {
+            TransactionEffects::V1(effects) => effects.status(),
+            TransactionEffects::V2(effects) => effects.status(),
+        };
+        if status.is_err() {
+            return Ok(());
+        }
+        self.mpc_state
+            .handle_mpc_events(&inner_temporary_store.events.data)?;
         Ok(())
     }
 
@@ -2314,6 +2344,7 @@ impl AuthorityState {
             certificate_deny_config,
             debug_dump_config,
             overload_threshold_config,
+            mpc_state: MPCService::new(),
         });
 
         // Start a task to execute ready certificates.

@@ -557,6 +557,7 @@ anemo-tower = { git = "https://github.com/mystenlabs/anemo.git", rev = "1169850e
 ### Workspace Members ###
 anemo-benchmark = { path = "crates/anemo-benchmark" }
 light-client-helpers = { path = "crates/light-client-helpers" }
+mpc-protocols = { path = "crates/mpc-protocols" }
 mysten-common = { path = "crates/mysten-common" }
 mysten-metrics = { path = "crates/mysten-metrics" }
 mysten-network = { path = "crates/mysten-network" }

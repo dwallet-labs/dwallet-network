@@ -9,12 +9,17 @@ import {
 	createPartialUserSignedMessages,
 } from '../../src/signature-mpc';
 import { setup, TestToolbox } from './utils/setup';
+import {launchProofMPCEvent} from "../../src/signature-mpc/proof";
 
 describe('Test signature mpc', () => {
 	let toolbox: TestToolbox;
 
 	beforeAll(async () => {
 		toolbox = await setup();
+	});
+
+	it('should create proof MPC Event', async () => {
+		await launchProofMPCEvent(toolbox.keypair, toolbox.client);
 	});
 
 	it('the signature mpc create dwallet', async () => {
