@@ -12,3 +12,7 @@ move-core-types.workspace = true
 anyhow.workspace = true
 tokio.workspace = true
 bcs.workspace = true
+proof = { git = "https://github.com/dwallet-labs/proof.git", rev = "a571ca9" }
+maurer = { git = "https://github.com/dwallet-labs/maurer.git", rev = "8215405" }
+group = { git = "https://github.com/dwallet-labs/group.git" }
+rand_core = "0.6.4"

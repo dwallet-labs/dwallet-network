@@ -1,5 +1,9 @@
 use crate::mpc_events::{CreatedProofMPCEvent, MPCEvent};
+use group::{secp256k1, GroupElement};
+use maurer::knowledge_of_discrete_log::PublicParameters;
+use rand_core::OsRng;
 use std::collections::{HashMap, VecDeque};
+use std::marker::PhantomData;
 use sui_types::base_types::ObjectID;
 use sui_types::event::Event;
 use tokio::sync::{mpsc, Mutex};
@@ -39,6 +43,21 @@ pub struct MPCService {
     pending: Mutex<VecDeque<ObjectID>>,
 }
 
+type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
+
+fn language_public_parameters<const REPETITIONS: usize>(
+) -> maurer::language::PublicParameters<REPETITIONS, Lang> {
+    let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
+
+    let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
+
+    PublicParameters::new::<secp256k1::Scalar, secp256k1::GroupElement>(
+        secp256k1_scalar_public_parameters,
+        secp256k1_group_public_parameters.clone(),
+        secp256k1_group_public_parameters.generator,
+    )
+}
+
 impl MPCService {
     pub fn new() -> Self {
         Self {
@@ -51,8 +70,30 @@ impl MPCService {
     /// The [`MPCService`] will forward any message related to that instance to this channel.
     fn spawn_mpc_messages_handler(&self, mut receiver: mpsc::Receiver<MPCInput>) {
         tokio::spawn(async move {
+            let language_public_parameters =
+                language_public_parameters::<{ maurer::SOUND_PROOFS_REPETITIONS }>();
+            let party: proof::aggregation::asynchronous::Party<
+                maurer::Proof<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang, PhantomData<()>>,
+            > = proof::aggregation::asynchronous::Party::new_proof_round_party(
+                language_public_parameters.clone(),
+                PhantomData,
+                3,
+                1,
+                &mut OsRng,
+            )
+            .unwrap();
             while let Some(message) = receiver.recv().await {
-                // TODO (#235): Implement MPC messages handling
+                match message {
+                    MPCInput::InitEvent(_) => {
+                        // No need to do anything here as we already created the party upon creating the channel.
+                    }
+                    MPCInput::Message => {
+                        // TODO (#235): Implement MPC messages handling
+                    }
+                    MPCInput::OutputEvent => {
+                        // TODO (#238): Implement a completed MPC instance message handling
+                    }
+                }
             }
         });
     }
