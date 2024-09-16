@@ -1267,8 +1267,10 @@ impl AuthorityState {
             effects_sig.as_ref(),
         )?;
 
+        // Check if there are any MPC events emitted from this transaction and if so, send them to the MPC service.
+        // Handle the MPC events here because there is access to the event, as the transaction has been just executed.
         let _ = self
-            .initiate_signature_mpc_protocol(&inner_temporary_store, effects, epoch_store)
+            .handle_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await;
 
         // Allow testing what happens if we crash here.
@@ -1297,7 +1299,7 @@ impl AuthorityState {
         Ok(())
     }
 
-    async fn initiate_signature_mpc_protocol(
+    async fn handle_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,

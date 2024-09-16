@@ -6,7 +6,7 @@ use std::collections::{HashMap, VecDeque};
 use std::marker::PhantomData;
 use sui_types::base_types::ObjectID;
 use sui_types::event::Event;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{mpsc, Mutex, RwLock};
 
 const MAX_ACTIVE_MPC_INSTANCES: usize = 100;
 
@@ -18,8 +18,10 @@ pub enum MPCInput {
 
 struct MPCInstance {
     status: MPCStatus,
-    sender: Option<mpsc::Sender<MPCInput>>,
-    messages: Vec<MPCInput>,
+    /// The channel to send messages to active MPC instance
+    /// Every new message related to this instance will be forwarded to this channel and will be handled synchronously
+    messages_handler_sender: Option<mpsc::Sender<MPCInput>>,
+    pending_messages: Vec<MPCInput>,
 }
 
 /// Possible status of an MPC session
@@ -41,6 +43,7 @@ enum MPCStatus {
 pub struct MPCService {
     mpc_instances: Mutex<HashMap<ObjectID, MPCInstance>>,
     pending: Mutex<VecDeque<ObjectID>>,
+    active_instances_counter: Mutex<usize>,
 }
 
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
@@ -63,6 +66,7 @@ impl MPCService {
         Self {
             mpc_instances: Mutex::new(HashMap::new()),
             pending: Mutex::new(VecDeque::new()),
+            active_instances_counter: Mutex::new(0),
         }
     }
 
@@ -119,31 +123,32 @@ impl MPCService {
             event.session_id
         );
         let mut locked_mpc_instances = self.mpc_instances.try_lock().unwrap();
-
+        let mut locked_active_instances_counter = self.active_instances_counter.try_lock().unwrap();
         // If the number of active instances exceeds the limit, add to pending
-        if locked_mpc_instances.len() >= MAX_ACTIVE_MPC_INSTANCES {
+        if *locked_active_instances_counter >= MAX_ACTIVE_MPC_INSTANCES {
             locked_mpc_instances.insert(
                 event.session_id.clone().bytes,
                 MPCInstance {
                     status: MPCStatus::Pending,
-                    sender: None,
-                    messages: vec![],
+                    messages_handler_sender: None,
+                    pending_messages: vec![],
                 },
             );
             (*self.pending.try_lock().unwrap()).push_back(event.session_id.bytes);
             return;
         }
-        let (sender, receiver) = mpsc::channel(100);
-        self.spawn_mpc_messages_handler(receiver);
-        let _ = sender.send(MPCInput::InitEvent(event.clone()));
+        let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
+        self.spawn_mpc_messages_handler(messages_handler_receiver);
+        let _ = messages_handler_sender.send(MPCInput::InitEvent(event.clone()));
         locked_mpc_instances.insert(
             event.session_id.clone().bytes,
             MPCInstance {
                 status: MPCStatus::Active,
-                sender: Some(sender),
-                messages: vec![],
+                messages_handler_sender: Some(messages_handler_sender),
+                pending_messages: vec![],
             },
         );
+        *locked_active_instances_counter += 1;
         println!(
             "Added MPCInstance to service for session_id {:?}",
             event.session_id
