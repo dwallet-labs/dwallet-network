@@ -187,7 +187,7 @@ pub fn sui_state_proof_verify_link_cap(
 
     let tx_events = &transaction.events.as_ref().unwrap().data;
 
-    let result = tx_events
+    let (sui_cap_ids, dwallet_cap_ids): (Vec<SuiAddress>, Vec<SuiAddress>) = tx_events
         .into_iter()
         .filter_map(|event| {
             if event.type_.address.to_hex() == package_id_target.to_hex()
@@ -205,40 +205,35 @@ pub fn sui_state_proof_verify_link_cap(
                         .map(|s| s.to_owned()),
                     _ => None,
                 };
-
-                let sui_cap_id = sui_cap_id_str
-                    .and_then(|s| SuiAddress::from_str(&s).ok())
-                    .unwrap();
+    
+                let sui_cap_id = sui_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
                 let dwallet_cap_id_str = match json_val.clone() {
-                    JsonValue::Object(map) => map
-                        .get("dwallet_network_cap_id")
-                        .and_then(|s| s.as_str())
-                        .map(|s| s.to_owned()),
+                    JsonValue::Object(map) => map.get("dwallet_network_cap_id").and_then(|s| s.as_str()).map(|s| s.to_owned()),
                     _ => None,
-                };
-                let dwallet_cap_id = dwallet_cap_id_str
-                    .and_then(|s| SuiAddress::from_str(&s).ok())
-                    .unwrap();
-
-                Some((sui_cap_id, dwallet_cap_id))
+            };    
+            let dwallet_cap_id = dwallet_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
+                    Some((sui_cap_id, dwallet_cap_id))
             } else {
                 None
             }
         })
-        .next();
+        .collect::<Vec<_>>()  // First collect into a vector of tuples
+        .into_iter()
+        .unzip();  // Then unzip into two vectors
+    
 
-    match result {
-        Some((sui_cap_id, dwallet_cap_id)) => {
+    // match result {
+    //     Some((sui_cap_ids, dwallet_cap_ids)) => {
             return Ok(NativeResult::ok(
                 cost,
                 smallvec![
-                    Value::vector_u8(bcs::to_bytes(&sui_cap_id).unwrap()),
-                    Value::vector_u8(bcs::to_bytes(&dwallet_cap_id).unwrap())
+                    Value::vector_u8(bcs::to_bytes(&sui_cap_ids).unwrap()),
+                    Value::vector_u8(bcs::to_bytes(&dwallet_cap_ids).unwrap())
                 ],
             ));
-        }
-        _ => return Ok(NativeResult::err(cost, INVALID_TX)),
-    }
+    //     }
+    //     _ => return Ok(NativeResult::err(cost, INVALID_TX)),
+    // }
 }
 
 /***************************************************************************************************
@@ -318,7 +313,7 @@ pub fn sui_state_proof_verify_transaction(
 
     let tx_events = &transaction.events.as_ref().unwrap().data;
 
-    let results: Vec<(SuiAddress, Vec<u8>)> = tx_events
+    let results: Vec<(SuiAddress, Vec<Vec<u8>>)> = tx_events
         .into_iter()
         .filter_map(|event| {
             if event.type_.address.to_hex() == package_id_target.to_hex()
@@ -332,16 +327,17 @@ pub fn sui_state_proof_verify_transaction(
                 let cap_id_str = json_val.get("cap_id").and_then(JsonValue::as_str);
                 let cap_id = cap_id_str.and_then(|s| SuiAddress::from_str(s).ok());
 
-                let approve_message = json_val.get("message").and_then(JsonValue::as_array);
-                let approve_msg_vec: Option<Vec<u8>> = approve_message.map(|msg_array| {
-                    msg_array
-                        .iter()
-                        .map(|msg| msg.as_u64().unwrap() as u8)
-                        .collect()
+                let approve_messages = json_val.get("messages").and_then(JsonValue::as_array);
+                let approve_msgs_vec: Option<Vec<Vec<u8>>> = approve_messages.map(|msgs_array| {
+                    msgs_array.iter().filter_map(|msg| {
+                        msg.as_array().map(|inner| {
+                            inner.iter().filter_map(|byte| byte.as_u64().map(|b| b as u8)).collect()
+                        })
+                    }).collect()
                 });
 
-                if let (Some(cap_id), Some(approve_msg_vec)) = (cap_id, approve_msg_vec) {
-                    Some((cap_id, approve_msg_vec))
+                if let (Some(cap_id), Some(approve_msgs_vec)) = (cap_id, approve_msgs_vec) {
+                    Some((cap_id, approve_msgs_vec))
                 } else {
                     None
                 }
@@ -351,11 +347,18 @@ pub fn sui_state_proof_verify_transaction(
         })
         .collect();
 
-    let (cap_ids, messages): (Vec<_>, Vec<_>) = results.into_iter().unzip();
+    // let (cap_ids, messages): (Vec<_>, Vec<_>) = results.into_iter().unzip();
 
-    if cap_ids.len() != messages.len() {
-        return Ok(NativeResult::err(cost, INVALID_TX));
-    }
+    let (cap_ids_nested, messages_nested): (Vec<SuiAddress>, Vec<Vec<Vec<u8>>>) = results.into_iter().unzip();
+
+    // Flatten the messages and associate with cap_ids
+    let (cap_ids, messages): (Vec<SuiAddress>, Vec<Vec<u8>>) = cap_ids_nested
+        .into_iter()
+        .zip(messages_nested.into_iter())
+        .flat_map(|(cap_id, msgs_vec)| {
+            msgs_vec.into_iter().map(move |msg| (cap_id.clone(), msg))
+        })
+        .unzip();
 
     Ok(NativeResult::ok(
         cost,

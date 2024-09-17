@@ -19,7 +19,7 @@ module dwallet_network::dwallet_cap {
 
     struct DWalletNetworkApproveRequest has copy, drop {
         cap_id: ID,
-        message: vector<u8>,
+        messages: vector<vector<u8>>,
     }
     
 
@@ -38,10 +38,10 @@ module dwallet_network::dwallet_cap {
     }
 
 
-    public fun approve_message(cap: &DWalletCap, message: vector<u8>){
+    public fun approve_message(cap: &DWalletCap, messages: vector<vector<u8>>){
         event::emit(DWalletNetworkApproveRequest{
             cap_id: object::id(cap),
-            message: message,
+            messages: messages,
         });
     }
 }
