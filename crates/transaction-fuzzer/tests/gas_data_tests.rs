@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use proptest::arbitrary::*;
-use proptest::test_runner::TestCaseError;
 use pera_types::base_types::dbg_addr;
 use pera_types::crypto::KeypairTraits;
 use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::transaction::TransactionData;
 use pera_types::transaction::TransactionKind;
 use pera_types::utils::to_sender_signed_transaction;
+use proptest::arbitrary::*;
+use proptest::test_runner::TestCaseError;
 use tracing::debug;
 use transaction_fuzzer::executor::Executor;
 use transaction_fuzzer::run_proptest;

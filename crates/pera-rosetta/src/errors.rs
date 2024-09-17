@@ -16,7 +16,7 @@ use strum_macros::EnumIter;
 
 use pera_types::error::PeraError;
 
-use crate::types::{BlockHash, OperationType, PublicKey, PeraEnv};
+use crate::types::{BlockHash, OperationType, PeraEnv, PublicKey};
 use strum::EnumProperty;
 use strum_macros::Display;
 use strum_macros::EnumDiscriminants;

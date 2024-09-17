@@ -9,9 +9,9 @@ use config::{AuthorityIdentifier, Committee, WorkerCache, WorkerId};
 use fastcrypto::hash::Hash;
 use itertools::Itertools;
 use network::{client::NetworkClient, WorkerToPrimaryClient};
+use pera_protocol_config::ProtocolConfig;
 use std::{collections::HashSet, time::Duration};
 use store::{rocks::DBMap, Map};
-use pera_protocol_config::ProtocolConfig;
 use tracing::{debug, trace};
 use types::{
     now, validate_batch_version, Batch, BatchAPI, BatchDigest, FetchBatchesRequest,

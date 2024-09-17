@@ -5,14 +5,6 @@ use futures::Future;
 use futures::{future::join_all, StreamExt};
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
-use rand::{distributions::*, rngs::OsRng, seq::SliceRandom};
-use std::collections::BTreeMap;
-use std::collections::HashMap;
-use std::net::SocketAddr;
-use std::num::NonZeroUsize;
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
 use pera_bridge::crypto::{BridgeAuthorityKeyPair, BridgeAuthoritySignInfo};
 use pera_bridge::pera_transaction_builder::build_add_tokens_on_pera_transaction;
 use pera_bridge::pera_transaction_builder::build_committee_register_transaction;
@@ -75,6 +67,14 @@ use pera_types::transaction::{
     TransactionKind,
 };
 use pera_types::PERA_BRIDGE_OBJECT_ID;
+use rand::{distributions::*, rngs::OsRng, seq::SliceRandom};
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+use std::net::SocketAddr;
+use std::num::NonZeroUsize;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tokio::time::{timeout, Instant};
 use tokio::{task::JoinHandle, time::sleep};
 use tracing::{error, info};
@@ -567,26 +567,30 @@ impl TestCluster {
     pub async fn wait_for_authenticator_state_update(&self) {
         timeout(
             Duration::from_secs(60),
-            self.fullnode_handle.pera_node.with_async(|node| async move {
-                let mut txns = node.state().subscription_handler.subscribe_transactions(
-                    TransactionFilter::ChangedObject(ObjectID::from_hex_literal("0x7").unwrap()),
-                );
-                let state = node.state();
+            self.fullnode_handle
+                .pera_node
+                .with_async(|node| async move {
+                    let mut txns = node.state().subscription_handler.subscribe_transactions(
+                        TransactionFilter::ChangedObject(
+                            ObjectID::from_hex_literal("0x7").unwrap(),
+                        ),
+                    );
+                    let state = node.state();
 
-                while let Some(tx) = txns.next().await {
-                    let digest = *tx.transaction_digest();
-                    let tx = state
-                        .get_transaction_cache_reader()
-                        .get_transaction_block(&digest)
-                        .unwrap()
-                        .unwrap();
-                    match &tx.data().intent_message().value.kind() {
-                        TransactionKind::EndOfEpochTransaction(_) => (),
-                        TransactionKind::AuthenticatorStateUpdate(_) => break,
-                        _ => panic!("{:?}", tx),
+                    while let Some(tx) = txns.next().await {
+                        let digest = *tx.transaction_digest();
+                        let tx = state
+                            .get_transaction_cache_reader()
+                            .get_transaction_block(&digest)
+                            .unwrap()
+                            .unwrap();
+                        match &tx.data().intent_message().value.kind() {
+                            TransactionKind::EndOfEpochTransaction(_) => (),
+                            TransactionKind::AuthenticatorStateUpdate(_) => break,
+                            _ => panic!("{:?}", tx),
+                        }
                     }
-                }
-            }),
+                }),
         )
         .await
         .expect("Timed out waiting for authenticator state update");

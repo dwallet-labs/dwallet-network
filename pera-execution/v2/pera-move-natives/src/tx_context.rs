@@ -7,9 +7,9 @@ use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeCont
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
+use pera_types::base_types::{ObjectID, TransactionDigest};
 use smallvec::smallvec;
 use std::{collections::VecDeque, convert::TryFrom};
-use pera_types::base_types::{ObjectID, TransactionDigest};
 
 use crate::{object_runtime::ObjectRuntime, NativesCostTable};
 

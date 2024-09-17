@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_core_types::language_storage::StructTag;
+use pera_types::base_types::ObjectType;
+use pera_types::parse_pera_struct_tag;
+use pera_types::pera_serde::PeraStructTag;
 use serde::Serialize;
 use serde_json::Value;
 use serde_with::serde_as;
 use std::str::FromStr;
-use pera_types::base_types::ObjectType;
-use pera_types::parse_pera_struct_tag;
-use pera_types::pera_serde::PeraStructTag;
 
 #[test]
 fn test_struct_tag_serde() {

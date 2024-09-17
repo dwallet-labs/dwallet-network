@@ -20,6 +20,7 @@ use crate::{
 use bincode::Options;
 use collectable::TryExtend;
 use itertools::Itertools;
+use pera_macros::{fail_point, nondeterministic};
 use prometheus::{Histogram, HistogramTimer};
 use rocksdb::{
     checkpoint::Checkpoint, BlockBasedOptions, BottommostLevelCompaction, Cache, CompactOptions,
@@ -43,7 +44,6 @@ use std::{
     time::Duration,
 };
 use std::{collections::HashSet, ffi::CStr};
-use pera_macros::{fail_point, nondeterministic};
 use tap::TapFallible;
 use tokio::sync::oneshot;
 use tracing::{debug, error, info, instrument, warn};

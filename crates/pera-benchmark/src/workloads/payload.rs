@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::ExecutionEffects;
-use std::fmt::Display;
 use pera_types::transaction::Transaction;
+use std::fmt::Display;
 
 /// A Payload is a transaction wrapper of a particular type (transfer object, shared counter, etc).
 /// Calling `make_transaction()` on a payload produces the transaction it is wrapping. Once that

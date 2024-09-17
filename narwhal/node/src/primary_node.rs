@@ -10,6 +10,7 @@ use fastcrypto::traits::{KeyPair as _, VerifyingKey};
 use mysten_metrics::metered_channel;
 use mysten_metrics::{RegistryID, RegistryService};
 use network::client::NetworkClient;
+use pera_protocol_config::ProtocolConfig;
 use primary::consensus::{
     Bullshark, ChannelMetrics, Consensus, ConsensusMetrics, ConsensusRound, LeaderSchedule,
 };
@@ -18,7 +19,6 @@ use prometheus::{IntGauge, Registry};
 use std::sync::Arc;
 use std::time::Instant;
 use storage::NodeStorage;
-use pera_protocol_config::ProtocolConfig;
 use tokio::sync::{watch, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{info, instrument};

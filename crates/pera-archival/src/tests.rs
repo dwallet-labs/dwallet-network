@@ -7,6 +7,13 @@ use crate::{read_manifest, verify_archive_with_local_store, write_manifest, Mani
 use anyhow::{anyhow, Context, Result};
 use more_asserts as ma;
 use object_store::DynObjectStore;
+use pera_config::node::ArchiveReaderConfig;
+use pera_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
+use pera_storage::object_store::util::path_to_filesystem;
+use pera_storage::{FileCompression, StorageFormat};
+use pera_swarm_config::test_utils::{empty_contents, CommitteeFixture};
+use pera_types::messages_checkpoint::{VerifiedCheckpoint, VerifiedCheckpointContents};
+use pera_types::storage::{ReadStore, SharedInMemoryStore, SingleCheckpointSharedInMemoryStore};
 use prometheus::Registry;
 use std::fs;
 use std::fs::File;
@@ -16,13 +23,6 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use std::time::Duration;
-use pera_config::node::ArchiveReaderConfig;
-use pera_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
-use pera_storage::object_store::util::path_to_filesystem;
-use pera_storage::{FileCompression, StorageFormat};
-use pera_swarm_config::test_utils::{empty_contents, CommitteeFixture};
-use pera_types::messages_checkpoint::{VerifiedCheckpoint, VerifiedCheckpointContents};
-use pera_types::storage::{ReadStore, SharedInMemoryStore, SingleCheckpointSharedInMemoryStore};
 use tempfile::tempdir;
 
 struct TestState {

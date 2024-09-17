@@ -5,9 +5,6 @@ use crate::authority::authority_per_epoch_store::CancelConsensusCertificateReaso
 use crate::authority::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::AuthorityPerEpochStore;
 use crate::execution_cache::ObjectCacheRead;
-use std::collections::BTreeMap;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use pera_types::base_types::TransactionDigest;
 use pera_types::crypto::RandomnessRound;
 use pera_types::effects::{TransactionEffects, TransactionEffectsAPI};
@@ -23,6 +20,9 @@ use pera_types::{
     error::PeraResult,
     PERA_RANDOMNESS_STATE_OBJECT_ID,
 };
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+use std::collections::HashSet;
 use tracing::{debug, trace};
 
 pub struct SharedObjVerManager {}
@@ -277,9 +277,8 @@ mod tests {
         ConsensusSharedObjVerAssignment, SharedObjVerManager,
     };
     use crate::authority::test_authority_builder::TestAuthorityBuilder;
-    use std::collections::{BTreeMap, HashMap};
     use pera_test_transaction_builder::TestTransactionBuilder;
-    use pera_types::base_types::{ObjectID, SequenceNumber, PeraAddress};
+    use pera_types::base_types::{ObjectID, PeraAddress, SequenceNumber};
     use pera_types::crypto::RandomnessRound;
     use pera_types::digests::ObjectDigest;
     use pera_types::effects::TestEffectsBuilder;
@@ -290,6 +289,7 @@ mod tests {
     use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
     use pera_types::transaction::{ObjectArg, SenderSignedData, TransactionKey};
     use pera_types::PERA_RANDOMNESS_STATE_OBJECT_ID;
+    use std::collections::{BTreeMap, HashMap};
 
     #[tokio::test]
     async fn test_assign_versions_from_consensus_basic() {

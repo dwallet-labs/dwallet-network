@@ -17,15 +17,6 @@ use indicatif::{ProgressBar, ProgressStyle};
 use num_enum::IntoPrimitive;
 use num_enum::TryFromPrimitive;
 use object_store::path::Path;
-use prometheus::Registry;
-use serde::{Deserialize, Serialize};
-use std::fs;
-use std::io::{BufWriter, Cursor, Read, Seek, SeekFrom, Write};
-use std::num::NonZeroUsize;
-use std::ops::Range;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
 use pera_config::genesis::Genesis;
 use pera_config::node::ArchiveReaderConfig;
 use pera_config::object_storage_config::ObjectStoreConfig;
@@ -36,6 +27,15 @@ use pera_storage::{compute_sha3_checksum, compute_sha3_checksum_for_bytes, SHA3_
 use pera_types::base_types::ExecutionData;
 use pera_types::messages_checkpoint::{FullCheckpointContents, VerifiedCheckpointContents};
 use pera_types::storage::{SingleCheckpointSharedInMemoryStore, WriteStore};
+use prometheus::Registry;
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::io::{BufWriter, Cursor, Read, Seek, SeekFrom, Write};
+use std::num::NonZeroUsize;
+use std::ops::Range;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tracing::{error, info};
 
 #[allow(rustdoc::invalid_html_tags)]

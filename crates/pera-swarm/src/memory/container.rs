@@ -3,12 +3,12 @@
 
 use super::node::RuntimeType;
 use futures::FutureExt;
-use std::sync::{Arc, Weak};
-use std::thread;
 use pera_config::NodeConfig;
 use pera_node::{PeraNode, PeraNodeHandle};
 use pera_types::base_types::ConciseableName;
 use pera_types::crypto::{AuthorityPublicKeyBytes, KeypairTraits};
+use std::sync::{Arc, Weak};
+use std::thread;
 use telemetry_subscribers::get_global_telemetry_config;
 use tracing::{info, trace};
 

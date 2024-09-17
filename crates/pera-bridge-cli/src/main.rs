@@ -5,13 +5,6 @@ use clap::*;
 use ethers::providers::Middleware;
 use ethers::types::Address as EthAddress;
 use fastcrypto::encoding::{Encoding, Hex};
-use shared_crypto::intent::Intent;
-use shared_crypto::intent::IntentMessage;
-use std::collections::HashMap;
-use std::str::from_utf8;
-use std::str::FromStr;
-use std::sync::Arc;
-use std::time::Duration;
 use pera_bridge::client::bridge_authority_aggregator::BridgeAuthorityAggregator;
 use pera_bridge::crypto::{BridgeAuthorityPublicKey, BridgeAuthorityPublicKeyBytes};
 use pera_bridge::eth_transaction_builder::build_eth_transaction;
@@ -38,6 +31,13 @@ use pera_types::crypto::AuthorityPublicKeyBytes;
 use pera_types::crypto::Signature;
 use pera_types::crypto::ToFromBytes;
 use pera_types::transaction::Transaction;
+use shared_crypto::intent::Intent;
+use shared_crypto::intent::IntentMessage;
+use std::collections::HashMap;
+use std::str::from_utf8;
+use std::str::FromStr;
+use std::sync::Arc;
+use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -5,7 +5,6 @@ use anyhow::Result;
 use camino::Utf8PathBuf;
 use clap::Parser;
 use fastcrypto::encoding::{Encoding, Hex};
-use std::path::PathBuf;
 use pera_config::{genesis::UnsignedGenesis, PERA_GENESIS_FILENAME};
 use pera_genesis_builder::Builder;
 use pera_types::multiaddr::Multiaddr;
@@ -17,6 +16,7 @@ use pera_types::{
     },
     message_envelope::Message,
 };
+use std::path::PathBuf;
 
 use pera_keys::keypair_file::{
     read_authority_keypair_from_file, read_keypair_from_file, read_network_keypair_from_file,
@@ -266,7 +266,9 @@ mod test {
     use pera_genesis_builder::validator_info::ValidatorInfo;
     use pera_keys::keypair_file::{write_authority_keypair_to_file, write_keypair_to_file};
     use pera_macros::nondeterministic;
-    use pera_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, PeraKeyPair};
+    use pera_types::crypto::{
+        get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, PeraKeyPair,
+    };
 
     #[test]
     #[cfg_attr(msim, ignore)]

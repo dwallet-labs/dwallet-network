@@ -13,6 +13,11 @@ use futures::StreamExt;
 pub use indexes::{IndexStore, IndexStoreTables};
 use itertools::Itertools;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use pera_types::committee::Committee;
+use pera_types::messages_checkpoint::{
+    CertifiedCheckpointSummary, CheckpointSequenceNumber, VerifiedCheckpoint,
+};
+use pera_types::storage::WriteStore;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -22,11 +27,6 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::{fs, io};
-use pera_types::committee::Committee;
-use pera_types::messages_checkpoint::{
-    CertifiedCheckpointSummary, CheckpointSequenceNumber, VerifiedCheckpoint,
-};
-use pera_types::storage::WriteStore;
 use tracing::debug;
 
 pub mod blob;

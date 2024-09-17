@@ -13,14 +13,14 @@ use crate::action_executor::{
 use crate::error::BridgeError;
 use crate::events::PeraBridgeEvent;
 use crate::metrics::BridgeMetrics;
-use crate::storage::BridgeOrchestratorTables;
 use crate::pera_client::{PeraClient, PeraClientInner};
+use crate::storage::BridgeOrchestratorTables;
 use crate::types::EthLog;
 use ethers::types::Address as EthAddress;
 use mysten_metrics::spawn_logged_monitored_task;
-use std::sync::Arc;
 use pera_json_rpc_types::PeraEvent;
 use pera_types::Identifier;
+use std::sync::Arc;
 use tokio::task::JoinHandle;
 use tracing::{error, info};
 
@@ -161,7 +161,11 @@ where
             }
 
             if !actions.is_empty() {
-                info!("Received {} actions from Pera: {:?}", actions.len(), actions);
+                info!(
+                    "Received {} actions from Pera: {:?}",
+                    actions.len(),
+                    actions
+                );
                 metrics
                     .pera_watcher_received_actions
                     .inc_by(actions.len() as u64);

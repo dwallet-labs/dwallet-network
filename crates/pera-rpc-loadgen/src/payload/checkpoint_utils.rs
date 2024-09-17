@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use futures::future::join_all;
-use std::fmt;
-use std::fmt::Display;
 use pera_sdk::PeraClient;
 use pera_types::messages_checkpoint::CheckpointSequenceNumber;
+use std::fmt;
+use std::fmt::Display;
 
 pub(crate) struct CheckpointStats {
     pub latest_checkpoints: Vec<CheckpointSequenceNumber>,

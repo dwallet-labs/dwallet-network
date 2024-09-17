@@ -9,12 +9,12 @@ use fastcrypto_tbls::dkg;
 use mysten_metrics::monitored_scope;
 use narwhal_types::{validate_batch_version, BatchAPI};
 use narwhal_worker::TransactionValidator;
-use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
 use pera_protocol_config::ProtocolConfig;
 use pera_types::{
     error::PeraError,
     messages_consensus::{ConsensusTransaction, ConsensusTransactionKind},
 };
+use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
 use tap::TapFallible;
 use tracing::{info, warn};
 
@@ -284,10 +284,11 @@ mod tests {
             .into_iter()
             .map(|mut cert| {
                 // set it to an all-zero user signature
-                cert.tx_signatures_mut_for_testing()[0] =
-                    GenericSignature::Signature(pera_types::crypto::Signature::Ed25519PeraSignature(
+                cert.tx_signatures_mut_for_testing()[0] = GenericSignature::Signature(
+                    pera_types::crypto::Signature::Ed25519PeraSignature(
                         Ed25519PeraSignature::default(),
-                    ));
+                    ),
+                );
                 bcs::to_bytes(&ConsensusTransaction::new_certificate_message(&name1, cert)).unwrap()
             })
             .collect();

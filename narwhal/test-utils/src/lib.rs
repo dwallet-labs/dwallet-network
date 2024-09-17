@@ -18,6 +18,7 @@ use fastcrypto::{
 use indexmap::IndexMap;
 use mysten_network::Multiaddr;
 use once_cell::sync::OnceCell;
+use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use rand::distributions::Bernoulli;
 use rand::distributions::Distribution;
 use rand::{
@@ -32,7 +33,6 @@ use std::{
 use store::rocks::DBMap;
 use store::rocks::MetricConf;
 use store::rocks::ReadWriteOptions;
-use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tracing::info;
 use types::{

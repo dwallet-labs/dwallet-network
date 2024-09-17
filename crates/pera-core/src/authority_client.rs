@@ -5,9 +5,6 @@
 use anyhow::anyhow;
 use async_trait::async_trait;
 use mysten_network::config::Config;
-use std::collections::BTreeMap;
-use std::net::SocketAddr;
-use std::time::Duration;
 use pera_network::{api::ValidatorClient, tonic};
 use pera_types::base_types::AuthorityName;
 use pera_types::committee::CommitteeWithNetworkMetadata;
@@ -20,6 +17,9 @@ use pera_types::{
     error::{PeraError, PeraResult},
     transaction::*,
 };
+use std::collections::BTreeMap;
+use std::net::SocketAddr;
+use std::time::Duration;
 
 use crate::authority_client::tonic::IntoRequest;
 use pera_network::tonic::metadata::KeyAndValueRef;

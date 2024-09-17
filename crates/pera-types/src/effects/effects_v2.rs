@@ -4,7 +4,7 @@
 use super::object_change::{ObjectIn, ObjectOut};
 use super::{EffectsObjectChange, IDOperation, ObjectChange};
 use crate::base_types::{
-    EpochId, ObjectDigest, ObjectID, ObjectRef, SequenceNumber, PeraAddress, TransactionDigest,
+    EpochId, ObjectDigest, ObjectID, ObjectRef, PeraAddress, SequenceNumber, TransactionDigest,
     VersionDigest,
 };
 use crate::digests::{EffectsAuxDataDigest, TransactionEventsDigest};

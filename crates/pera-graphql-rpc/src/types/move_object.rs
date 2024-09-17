@@ -13,9 +13,11 @@ use super::move_type::MoveType;
 use super::move_value::MoveValue;
 use super::object::{self, ObjectFilter, ObjectImpl, ObjectLookup, ObjectOwner, ObjectStatus};
 use super::owner::OwnerImpl;
-use super::stake::StakedPeraDowncastError;
 use super::pera_address::PeraAddress;
-use super::perans_registration::{DomainFormat, PeransRegistration, PeransRegistrationDowncastError};
+use super::perans_registration::{
+    DomainFormat, PeransRegistration, PeransRegistrationDowncastError,
+};
+use super::stake::StakedPeraDowncastError;
 use super::transaction_block::{self, TransactionBlock, TransactionBlockFilter};
 use super::type_filter::ExactTypeFilter;
 use super::uint53::UInt53;
@@ -409,7 +411,10 @@ impl MoveObject {
     }
 
     /// Attempts to convert the Move object into a `PeransRegistration` object.
-    async fn as_perans_registration(&self, ctx: &Context<'_>) -> Result<Option<PeransRegistration>> {
+    async fn as_perans_registration(
+        &self,
+        ctx: &Context<'_>,
+    ) -> Result<Option<PeransRegistration>> {
         let cfg: &NameServiceConfig = ctx.data_unchecked();
         let tag = PeransRegistration::type_(cfg.package_address.into());
 

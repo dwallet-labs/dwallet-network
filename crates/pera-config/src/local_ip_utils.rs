@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use pera_types::multiaddr::Multiaddr;
 use std::net::SocketAddr;
 #[cfg(msim)]
 use std::sync::{atomic::AtomicI16, Arc};
-use pera_types::multiaddr::Multiaddr;
 
 /// A singleton struct to manage IP addresses and ports for simtest.
 /// This allows us to generate unique IP addresses and ports for each node in simtest.

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::Result;
-use std::collections::BTreeMap;
-use std::path::Path;
 use pera_data_ingestion_core::Worker;
 use pera_types::SYSTEM_PACKAGE_ADDRESSES;
+use std::collections::BTreeMap;
+use std::path::Path;
 use tokio::sync::Mutex;
 
 use pera_package_resolver::Resolver;

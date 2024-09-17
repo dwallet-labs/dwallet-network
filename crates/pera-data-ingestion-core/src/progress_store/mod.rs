@@ -3,8 +3,8 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
-use std::collections::HashMap;
 use pera_types::messages_checkpoint::CheckpointSequenceNumber;
+use std::collections::HashMap;
 mod file;
 pub use file::FileProgressStore;
 

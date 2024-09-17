@@ -44,12 +44,12 @@ mod tests {
     use axum::routing::post;
     use axum::Router;
     use multiaddr::Multiaddr;
+    use pera_tls::{ClientCertVerifier, TlsAcceptor};
     use prometheus::Encoder;
     use prometheus::PROTOBUF_FORMAT;
     use protobuf::RepeatedField;
     use std::net::TcpListener;
     use std::time::Duration;
-    use pera_tls::{ClientCertVerifier, TlsAcceptor};
 
     async fn run_dummy_remote_write(listener: TcpListener) {
         /// i accept everything, send me the trash
@@ -73,7 +73,8 @@ mod tests {
     #[tokio::test]
     async fn axum_acceptor() {
         // generate self-signed certificates
-        let CertKeyPair(client_priv_cert, client_pub_key) = admin::generate_self_cert("pera".into());
+        let CertKeyPair(client_priv_cert, client_pub_key) =
+            admin::generate_self_cert("pera".into());
         let CertKeyPair(server_priv_cert, _) = admin::generate_self_cert("localhost".into());
 
         // create a fake rpc server

@@ -6,14 +6,6 @@ use embedded_reconfig_observer::EmbeddedReconfigObserver;
 use fullnode_reconfig_observer::FullNodeReconfigObserver;
 use futures::{stream::FuturesUnordered, StreamExt};
 use mysten_metrics::GaugeGuard;
-use prometheus::Registry;
-use rand::Rng;
-use roaring::RoaringBitmap;
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex},
-    time::Duration,
-};
 use pera_config::genesis::Genesis;
 use pera_core::{
     authority_aggregator::{AuthorityAggregator, AuthorityAggregatorBuilder},
@@ -23,15 +15,16 @@ use pera_core::{
     },
 };
 use pera_json_rpc_types::{
-    PeraObjectDataOptions, PeraObjectResponse, PeraObjectResponseQuery, PeraTransactionBlockEffects,
-    PeraTransactionBlockEffectsAPI, PeraTransactionBlockResponseOptions,
+    PeraObjectDataOptions, PeraObjectResponse, PeraObjectResponseQuery,
+    PeraTransactionBlockEffects, PeraTransactionBlockEffectsAPI,
+    PeraTransactionBlockResponseOptions,
 };
 use pera_sdk::{PeraClient, PeraClientBuilder};
 use pera_types::base_types::ConciseableName;
 use pera_types::committee::CommitteeTrait;
 use pera_types::effects::{CertifiedTransactionEffects, TransactionEffectsAPI, TransactionEvents};
-use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::pera_system_state::pera_system_state_summary::PeraSystemStateSummary;
+use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::transaction::Argument;
 use pera_types::transaction::CallArg;
 use pera_types::transaction::ObjectArg;
@@ -53,6 +46,14 @@ use pera_types::{
     pera_system_state::PeraSystemStateTrait,
 };
 use pera_types::{error::PeraError, gas::GasCostSummary};
+use prometheus::Registry;
+use rand::Rng;
+use roaring::RoaringBitmap;
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 use tokio::{
     task::JoinSet,
     time::{sleep, timeout},
@@ -220,7 +221,8 @@ pub trait ValidatorProxy {
         account_address: PeraAddress,
     ) -> Result<Vec<(u64, Object)>, anyhow::Error>;
 
-    async fn get_latest_system_state_object(&self) -> Result<PeraSystemStateSummary, anyhow::Error>;
+    async fn get_latest_system_state_object(&self)
+        -> Result<PeraSystemStateSummary, anyhow::Error>;
 
     async fn execute_transaction_block(&self, tx: Transaction) -> anyhow::Result<ExecutionEffects>;
 
@@ -337,7 +339,9 @@ impl ValidatorProxy for LocalValidatorAggregatorProxy {
         unimplemented!("Not available for local proxy");
     }
 
-    async fn get_latest_system_state_object(&self) -> Result<PeraSystemStateSummary, anyhow::Error> {
+    async fn get_latest_system_state_object(
+        &self,
+    ) -> Result<PeraSystemStateSummary, anyhow::Error> {
         let auth_agg = self.qd.authority_aggregator().load();
         Ok(auth_agg
             .get_latest_system_state_object_for_testing()
@@ -717,7 +721,9 @@ impl ValidatorProxy for FullNodeProxy {
         Ok(values_objects)
     }
 
-    async fn get_latest_system_state_object(&self) -> Result<PeraSystemStateSummary, anyhow::Error> {
+    async fn get_latest_system_state_object(
+        &self,
+    ) -> Result<PeraSystemStateSummary, anyhow::Error> {
         Ok(self
             .pera_client
             .governance_api()

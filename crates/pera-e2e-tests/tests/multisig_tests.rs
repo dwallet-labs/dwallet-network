@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use fastcrypto::traits::EncodeDecodeBase64;
-use shared_crypto::intent::{Intent, IntentMessage};
-use std::net::SocketAddr;
 use pera_core::authority_client::AuthorityAPI;
 use pera_macros::sim_test;
 use pera_protocol_config::ProtocolConfig;
@@ -13,7 +11,7 @@ use pera_types::multisig_legacy::MultiSigLegacy;
 use pera_types::{
     base_types::PeraAddress,
     crypto::{
-        get_key_pair, CompressedSignature, PublicKey, Signature, PeraKeyPair,
+        get_key_pair, CompressedSignature, PeraKeyPair, PublicKey, Signature,
         ZkLoginAuthenticatorAsBytes, ZkLoginPublicIdentifier,
     },
     error::{PeraError, PeraResult},
@@ -24,6 +22,8 @@ use pera_types::{
     utils::{keys, load_test_vectors, make_upgraded_multisig_tx},
     zk_login_authenticator::ZkLoginAuthenticator,
 };
+use shared_crypto::intent::{Intent, IntentMessage};
+use std::net::SocketAddr;
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 async fn do_upgraded_multisig_test() -> PeraResult {

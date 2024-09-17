@@ -4,10 +4,10 @@
 use crate::functional_group::FunctionalGroup;
 use async_graphql::*;
 use fastcrypto_zkp::bn254::zk_login_api::ZkLoginEnv;
-use serde::{Deserialize, Serialize};
-use std::{collections::BTreeSet, fmt::Display, time::Duration};
 use pera_graphql_config::GraphQLConfig;
 use pera_json_rpc::name_service::NameServiceConfig;
+use serde::{Deserialize, Serialize};
+use std::{collections::BTreeSet, fmt::Display, time::Duration};
 
 pub(crate) const RPC_TIMEOUT_ERR_SLEEP_RETRY_PERIOD: Duration = Duration::from_millis(10_000);
 pub(crate) const MAX_CONCURRENT_REQUESTS: usize = 1_000;

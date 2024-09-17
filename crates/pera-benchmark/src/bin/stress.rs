@@ -4,19 +4,19 @@
 use anyhow::{anyhow, Context, Result};
 use clap::*;
 
+use pera_protocol_config::Chain;
 use prometheus::Registry;
 use rand::seq::SliceRandom;
 use rand::Rng;
-use pera_protocol_config::Chain;
 use tokio::time::sleep;
 
-use std::sync::Arc;
-use std::time::Duration;
 use pera_benchmark::drivers::bench_driver::BenchDriver;
 use pera_benchmark::drivers::driver::Driver;
 use pera_benchmark::drivers::BenchmarkCmp;
 use pera_benchmark::drivers::BenchmarkStats;
 use pera_protocol_config::{ProtocolConfig, ProtocolVersion};
+use std::sync::Arc;
+use std::time::Duration;
 
 use pera_benchmark::benchmark_setup::Env;
 use pera_benchmark::options::Opts;

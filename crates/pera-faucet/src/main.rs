@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use clap::Parser;
-use std::env;
-use std::sync::Arc;
 use pera_config::pera_config_dir;
 use pera_faucet::{create_wallet_context, start_faucet, AppState};
 use pera_faucet::{FaucetConfig, SimpleFaucet};
+use std::env;
+use std::sync::Arc;
 use tracing::info;
 
 const CONCURRENCY_LIMIT: usize = 30;

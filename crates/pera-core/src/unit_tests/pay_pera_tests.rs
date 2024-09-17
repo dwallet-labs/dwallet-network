@@ -5,8 +5,6 @@ use crate::authority::authority_tests::{init_state_with_committee, send_and_conf
 use crate::authority::test_authority_builder::TestAuthorityBuilder;
 use crate::authority::AuthorityState;
 use futures::future::join_all;
-use std::collections::HashMap;
-use std::sync::Arc;
 use pera_types::base_types::{ObjectID, ObjectRef, PeraAddress};
 use pera_types::crypto::AccountKeyPair;
 use pera_types::effects::{SignedTransactionEffects, TransactionEffectsAPI};
@@ -18,6 +16,8 @@ use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder
 use pera_types::transaction::TransactionData;
 use pera_types::utils::to_sender_signed_transaction;
 use pera_types::{base_types::dbg_addr, crypto::get_key_pair, error::PeraError};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 #[tokio::test]
 async fn test_pay_pera_failure_empty_recipients() {

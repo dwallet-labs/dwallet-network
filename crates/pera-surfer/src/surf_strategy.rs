@@ -5,11 +5,11 @@ use std::time::Duration;
 
 use move_binary_format::normalized::Type;
 use move_core_types::language_storage::StructTag;
-use rand::{seq::SliceRandom, Rng};
 use pera_types::{
     base_types::ObjectRef,
     transaction::{CallArg, ObjectArg},
 };
+use rand::{seq::SliceRandom, Rng};
 use tokio::time::Instant;
 use tracing::debug;
 

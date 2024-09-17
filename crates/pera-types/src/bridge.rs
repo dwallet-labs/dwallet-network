@@ -15,9 +15,9 @@ use crate::collection_types::LinkedTableNode;
 use crate::dynamic_field::{get_dynamic_field_from_store, Field};
 use crate::error::PeraResult;
 use crate::object::Owner;
-use crate::storage::ObjectStore;
 use crate::pera_serde::BigInt;
 use crate::pera_serde::Readable;
+use crate::storage::ObjectStore;
 use crate::versioned::Versioned;
 use crate::PERA_BRIDGE_OBJECT_ID;
 use crate::{
@@ -173,7 +173,9 @@ pub fn get_bridge_wrapper(object_store: &dyn ObjectStore) -> Result<BridgeWrappe
     let wrapper = object_store
         .get_object(&PERA_BRIDGE_OBJECT_ID)?
         // Don't panic here on None because object_store is a generic store.
-        .ok_or_else(|| PeraError::PeraBridgeReadError("BridgeWrapper object not found".to_owned()))?;
+        .ok_or_else(|| {
+            PeraError::PeraBridgeReadError("BridgeWrapper object not found".to_owned())
+        })?;
     let move_object = wrapper.data.try_as_move().ok_or_else(|| {
         PeraError::PeraBridgeReadError("BridgeWrapper object must be a Move object".to_owned())
     })?;

@@ -11,8 +11,6 @@ use futures::{future::BoxFuture, stream::FuturesUnordered, StreamExt};
 use mysten_metrics::histogram::Histogram;
 use mysten_metrics::{monitored_future, spawn_monitored_task, GaugeGuard, MonitorCancellation};
 use mysten_network::config::Config;
-use std::convert::AsRef;
-use std::net::SocketAddr;
 use pera_authority_aggregation::ReduceOutput;
 use pera_authority_aggregation::{quorum_map_then_reduce_with_timeout, AsyncResult};
 use pera_config::genesis::Genesis;
@@ -25,28 +23,22 @@ use pera_types::error::UserInputError;
 use pera_types::fp_ensure;
 use pera_types::message_envelope::Message;
 use pera_types::object::Object;
-use pera_types::quorum_driver_types::{GroupedErrors, QuorumDriverResponse};
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
 use pera_types::pera_system_state::{PeraSystemState, PeraSystemStateTrait};
+use pera_types::quorum_driver_types::{GroupedErrors, QuorumDriverResponse};
 use pera_types::{
     base_types::*,
     committee::Committee,
     error::{PeraError, PeraResult},
     transaction::*,
 };
+use std::convert::AsRef;
+use std::net::SocketAddr;
 use thiserror::Error;
 use tracing::{debug, error, info, instrument, trace, trace_span, warn, Instrument};
 
 use crate::epoch::committee_store::CommitteeStore;
 use crate::stake_aggregator::{InsertResult, MultiStakeAggregator, StakeAggregator};
-use prometheus::{
-    register_int_counter_vec_with_registry, register_int_counter_with_registry,
-    register_int_gauge_with_registry, IntCounter, IntCounterVec, IntGauge, Registry,
-};
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::string::ToString;
-use std::sync::Arc;
-use std::time::Duration;
 use pera_types::committee::{CommitteeTrait, CommitteeWithNetworkMetadata, StakeUnit};
 use pera_types::effects::{
     CertifiedTransactionEffects, SignedTransactionEffects, TransactionEffects, TransactionEvents,
@@ -58,6 +50,14 @@ use pera_types::messages_grpc::{
 };
 use pera_types::messages_safe_client::PlainTransactionInfoResponse;
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemState;
+use prometheus::{
+    register_int_counter_vec_with_registry, register_int_counter_with_registry,
+    register_int_gauge_with_registry, IntCounter, IntCounterVec, IntGauge, Registry,
+};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::string::ToString;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::time::{sleep, timeout};
 
 pub const DEFAULT_RETRIES: usize = 4;

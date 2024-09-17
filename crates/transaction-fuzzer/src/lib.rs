@@ -9,9 +9,6 @@ pub mod transaction_data_gen;
 pub mod type_arg_fuzzer;
 
 use executor::Executor;
-use proptest::collection::vec;
-use proptest::test_runner::TestRunner;
-use std::fmt::Debug;
 use pera_protocol_config::ProtocolConfig;
 use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::crypto::get_key_pair;
@@ -19,6 +16,9 @@ use pera_types::crypto::AccountKeyPair;
 use pera_types::digests::TransactionDigest;
 use pera_types::object::{MoveObject, Object, Owner, OBJECT_START_VERSION};
 use pera_types::{gas_coin::TOTAL_SUPPLY_NPERA, transaction::GasData};
+use proptest::collection::vec;
+use proptest::test_runner::TestRunner;
+use std::fmt::Debug;
 
 use proptest::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};

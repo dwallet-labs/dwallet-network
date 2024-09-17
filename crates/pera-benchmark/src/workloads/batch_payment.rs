@@ -10,8 +10,6 @@ use crate::workloads::workload::{WorkloadBuilder, ESTIMATED_COMPUTATION_COST};
 use crate::workloads::{Gas, GasCoinConfig, WorkloadBuilderInfo, WorkloadParams};
 use crate::{ExecutionEffects, ValidatorProxy};
 use async_trait::async_trait;
-use std::collections::HashMap;
-use std::sync::Arc;
 use pera_core::test_utils::make_pay_pera_transaction;
 use pera_types::base_types::{ObjectID, SequenceNumber};
 use pera_types::digests::ObjectDigest;
@@ -22,6 +20,8 @@ use pera_types::{
     crypto::get_key_pair,
     transaction::Transaction,
 };
+use std::collections::HashMap;
+use std::sync::Arc;
 use tracing::{debug, error};
 
 /// Value of each address's "primary coin" in npera. The first transaction gives
@@ -72,7 +72,11 @@ impl Payload for BatchPaymentTestPayload {
     }
 
     fn make_transaction(&mut self) -> Transaction {
-        let addrs = self.state.addresses().cloned().collect::<Vec<PeraAddress>>();
+        let addrs = self
+            .state
+            .addresses()
+            .cloned()
+            .collect::<Vec<PeraAddress>>();
         let num_recipients = addrs.len();
         let sender = if self.num_payments == 0 {
             // first tx--use the address that has gas

@@ -4,10 +4,10 @@
 use std::{fmt::Display, str::FromStr};
 
 use anyhow::Error;
-use serde::Serialize;
 use pera_keys::keystore::{AccountKeystore, Keystore};
 use pera_sdk::wallet_context::WalletContext;
 use pera_types::base_types::PeraAddress;
+use serde::Serialize;
 
 /// An address or an alias associated with a key in the wallet
 /// This is used to distinguish between an address or an alias,

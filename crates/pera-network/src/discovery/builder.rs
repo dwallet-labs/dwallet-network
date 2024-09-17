@@ -7,11 +7,11 @@ use super::{
 use crate::discovery::TrustedPeerChangeEvent;
 use anemo::codegen::InboundRequestLayer;
 use anemo_tower::rate_limit;
+use pera_config::p2p::P2pConfig;
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
 };
-use pera_config::p2p::P2pConfig;
 use tap::Pipe;
 use tokio::{
     sync::{oneshot, watch},

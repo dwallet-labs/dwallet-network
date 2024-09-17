@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 use move_core_types::language_storage::TypeTag;
+use pera_types::object::Owner;
+use pera_types::pera_serde::PeraTypeTag;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use serde_with::DisplayFromStr;
 use std::fmt::{Display, Formatter, Result};
-use pera_types::object::Owner;
-use pera_types::pera_serde::PeraTypeTag;
 
 #[serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema, PartialEq, Eq)]

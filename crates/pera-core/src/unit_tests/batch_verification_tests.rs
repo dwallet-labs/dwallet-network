@@ -5,9 +5,6 @@ use crate::signature_verifier::*;
 use crate::test_utils::{make_cert_with_large_committee, make_dummy_tx};
 use fastcrypto::traits::KeyPair;
 use futures::future::join_all;
-use prometheus::Registry;
-use rand::{thread_rng, Rng};
-use std::sync::Arc;
 use pera_macros::sim_test;
 use pera_protocol_config::ProtocolConfig;
 use pera_types::committee::Committee;
@@ -18,6 +15,9 @@ use pera_types::messages_checkpoint::{
 };
 use pera_types::signature_verification::VerifiedDigestCache;
 use pera_types::transaction::CertifiedTransaction;
+use prometheus::Registry;
+use rand::{thread_rng, Rng};
+use std::sync::Arc;
 
 // TODO consolidate with `gen_certs` in batch_verification_bench.rs
 fn gen_certs(

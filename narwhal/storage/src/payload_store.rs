@@ -4,11 +4,11 @@
 use crate::{NodeStorage, PayloadToken};
 use config::WorkerId;
 use mysten_common::sync::notify_read::NotifyRead;
+use pera_macros::fail_point;
 use std::sync::Arc;
 use store::reopen;
 use store::rocks::{open_cf, MetricConf, ReadWriteOptions};
 use store::{rocks::DBMap, Map, TypedStoreError};
-use pera_macros::fail_point;
 use types::BatchDigest;
 
 /// Store of the batch digests for the primary node for the own created batches.

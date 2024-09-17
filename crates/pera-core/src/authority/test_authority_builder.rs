@@ -15,9 +15,6 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::rest_index::RestIndexStore;
 use crate::signature_verifier::SignatureVerifierMetrics;
 use fastcrypto::traits::KeyPair;
-use prometheus::Registry;
-use std::path::PathBuf;
-use std::sync::Arc;
 use pera_archival::reader::ArchiveReaderBalancer;
 use pera_config::certificate_deny_config::CertificateDenyConfig;
 use pera_config::genesis::Genesis;
@@ -41,6 +38,9 @@ use pera_types::object::Object;
 use pera_types::pera_system_state::PeraSystemStateTrait;
 use pera_types::supported_protocol_versions::SupportedProtocolVersions;
 use pera_types::transaction::VerifiedTransaction;
+use prometheus::Registry;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 use super::epoch_start_configuration::EpochFlag;
 

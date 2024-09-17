@@ -8,6 +8,7 @@ use crate::error::{PeraError, PeraResult};
 use crate::multiaddr::Multiaddr;
 use fastcrypto::traits::KeyPair;
 use once_cell::sync::OnceCell;
+pub use pera_protocol_config::ProtocolVersion;
 use rand::rngs::{StdRng, ThreadRng};
 use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
@@ -16,7 +17,6 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::Write;
 use std::fmt::{Display, Formatter};
 use std::hash::{Hash, Hasher};
-pub use pera_protocol_config::ProtocolVersion;
 
 pub type EpochId = u64;
 

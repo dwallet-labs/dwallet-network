@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use clap::*;
-use std::str::FromStr;
-use std::sync::Arc;
 use pera_storage::http_key_value_store::*;
 use pera_storage::key_value_store::TransactionKeyValueStore;
 use pera_storage::key_value_store_metrics::KeyValueStoreMetrics;
@@ -12,6 +10,8 @@ use pera_types::digests::{
     CheckpointContentsDigest, CheckpointDigest, TransactionDigest, TransactionEventsDigest,
 };
 use pera_types::messages_checkpoint::CheckpointSequenceNumber;
+use std::str::FromStr;
+use std::sync::Arc;
 
 // Command line options are:
 // --base-url <url> - the base URL of the HTTP server

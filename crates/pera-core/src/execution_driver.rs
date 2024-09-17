@@ -7,11 +7,11 @@ use std::{
 };
 
 use mysten_metrics::{monitored_scope, spawn_monitored_task};
+use pera_macros::fail_point_async;
 use rand::{
     rngs::{OsRng, StdRng},
     Rng, SeedableRng,
 };
-use pera_macros::fail_point_async;
 use tokio::{
     sync::{mpsc::UnboundedReceiver, oneshot, Semaphore},
     time::sleep,

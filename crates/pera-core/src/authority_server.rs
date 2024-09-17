@@ -7,16 +7,6 @@ use async_trait::async_trait;
 use mysten_metrics::histogram::Histogram as MystenHistogram;
 use mysten_metrics::spawn_monitored_task;
 use narwhal_worker::LazyNarwhalClient;
-use prometheus::{
-    register_int_counter_vec_with_registry, register_int_counter_with_registry, IntCounter,
-    IntCounterVec, Registry,
-};
-use std::{
-    io,
-    net::{IpAddr, SocketAddr},
-    sync::Arc,
-    time::SystemTime,
-};
 use pera_network::{
     api::{Validator, ValidatorServer},
     tonic,
@@ -40,6 +30,16 @@ use pera_types::{
     messages_checkpoint::{
         CheckpointRequest, CheckpointRequestV2, CheckpointResponse, CheckpointResponseV2,
     },
+};
+use prometheus::{
+    register_int_counter_vec_with_registry, register_int_counter_with_registry, IntCounter,
+    IntCounterVec, Registry,
+};
+use std::{
+    io,
+    net::{IpAddr, SocketAddr},
+    sync::Arc,
+    time::SystemTime,
 };
 use tap::TapFallible;
 use tokio::task::JoinHandle;

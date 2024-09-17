@@ -3,12 +3,12 @@
 use fastcrypto::hash::Hash;
 use lru::LruCache;
 use parking_lot::Mutex;
+use pera_macros::fail_point;
 use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 use std::{cmp::Ordering, collections::BTreeMap, iter};
-use pera_macros::fail_point;
 use tap::Tap;
 
 use crate::StoreResult;

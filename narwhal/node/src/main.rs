@@ -28,15 +28,6 @@ use node::{
     execution_state::SimpleExecutionState,
     metrics::{primary_metrics_registry, worker_metrics_registry},
 };
-use prometheus::Registry;
-use rand::{rngs::StdRng, SeedableRng};
-use std::sync::Arc;
-use std::{
-    collections::BTreeMap,
-    fs,
-    path::{Path, PathBuf},
-};
-use storage::{CertificateStoreCacheMetrics, NodeStorage};
 use pera_keys::keypair_file::{
     read_authority_keypair_from_file, read_network_keypair_from_file,
     write_authority_keypair_to_file, write_keypair_to_file,
@@ -48,6 +39,15 @@ use pera_types::{
     },
     multiaddr::Multiaddr,
 };
+use prometheus::Registry;
+use rand::{rngs::StdRng, SeedableRng};
+use std::sync::Arc;
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::{Path, PathBuf},
+};
+use storage::{CertificateStoreCacheMetrics, NodeStorage};
 use telemetry_subscribers::TelemetryGuards;
 use tokio::sync::mpsc::channel;
 use tokio::time::Duration;

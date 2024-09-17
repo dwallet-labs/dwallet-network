@@ -3,7 +3,6 @@
 
 use fastcrypto::traits::ToFromBytes;
 use move_core_types::ident_str;
-use std::{collections::HashMap, str::FromStr};
 use pera_types::bridge::{
     BRIDGE_CREATE_ADD_TOKEN_ON_PERA_MESSAGE_FUNCTION_NAME,
     BRIDGE_EXECUTE_SYSTEM_MESSAGE_FUNCTION_NAME, BRIDGE_MESSAGE_MODULE_NAME, BRIDGE_MODULE_NAME,
@@ -16,6 +15,7 @@ use pera_types::{
     TypeTag,
 };
 use pera_types::{Identifier, BRIDGE_PACKAGE_ID};
+use std::{collections::HashMap, str::FromStr};
 
 use crate::{
     error::{BridgeError, BridgeResult},
@@ -625,16 +625,16 @@ mod tests {
     use crate::{
         crypto::BridgeAuthorityPublicKeyBytes,
         test_utils::{
-            approve_action_with_validator_secrets, bridge_token, get_test_eth_to_pera_bridge_action,
-            get_test_pera_to_eth_bridge_action,
+            approve_action_with_validator_secrets, bridge_token,
+            get_test_eth_to_pera_bridge_action, get_test_pera_to_eth_bridge_action,
         },
         BRIDGE_ENABLE_PROTOCOL_VERSION,
     };
     use ethers::types::Address as EthAddress;
-    use std::collections::HashMap;
     use pera_types::bridge::{BridgeChainId, TOKEN_ID_BTC, TOKEN_ID_USDC};
     use pera_types::crypto::get_key_pair;
     use pera_types::crypto::ToFromBytes;
+    use std::collections::HashMap;
     use test_cluster::TestClusterBuilder;
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 8)]
@@ -669,7 +669,8 @@ mod tests {
         let id_token_map = pera_client.get_token_id_map().await.unwrap();
 
         // 1. Test Eth -> Pera Transfer approval
-        let action = get_test_eth_to_pera_bridge_action(None, Some(usdc_amount), Some(sender), None);
+        let action =
+            get_test_eth_to_pera_bridge_action(None, Some(usdc_amount), Some(sender), None);
         // `approve_action_with_validator_secrets` covers transaction building
         let usdc_object_ref = approve_action_with_validator_secrets(
             context,

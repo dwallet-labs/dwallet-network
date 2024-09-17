@@ -8,10 +8,6 @@ use futures::future::join_all;
 use lru::LruCache;
 use move_core_types::parser::parse_struct_tag;
 use parking_lot::RwLock;
-use rand::Rng;
-use std::collections::BTreeMap;
-use std::num::NonZeroUsize;
-use std::str::FromStr;
 use pera_core::authority::NodeStateDump;
 use pera_json_rpc_api::QUERY_MAX_RESULT_LIMIT;
 use pera_json_rpc_types::EventFilter;
@@ -30,6 +26,10 @@ use pera_types::object::Object;
 use pera_types::transaction::SenderSignedData;
 use pera_types::transaction::TransactionDataAPI;
 use pera_types::transaction::{EndOfEpochTransactionKind, TransactionKind};
+use rand::Rng;
+use std::collections::BTreeMap;
+use std::num::NonZeroUsize;
+use std::str::FromStr;
 
 /// This trait defines the interfaces for fetching data from some local or remote store
 #[async_trait]
@@ -615,7 +615,9 @@ fn convert_past_obj_response(resp: PeraPastObjectResponse) -> Result<Object, Rep
             version: r.version,
             digest: r.digest,
         }),
-        PeraPastObjectResponse::ObjectNotExists(id) => Err(ReplayEngineError::ObjectNotExist { id }),
+        PeraPastObjectResponse::ObjectNotExists(id) => {
+            Err(ReplayEngineError::ObjectNotExist { id })
+        }
         PeraPastObjectResponse::VersionNotFound(id, version) => {
             Err(ReplayEngineError::ObjectVersionNotFound { id, version })
         }

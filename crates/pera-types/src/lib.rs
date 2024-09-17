@@ -7,7 +7,7 @@
     rust_2021_compatibility
 )]
 
-use base_types::{SequenceNumber, PeraAddress};
+use base_types::{PeraAddress, SequenceNumber};
 use move_binary_format::file_format::{AbilitySet, SignatureToken};
 use move_binary_format::CompiledModule;
 use move_bytecode_utils::resolve_struct;
@@ -70,15 +70,15 @@ pub mod multisig;
 pub mod multisig_legacy;
 pub mod object;
 pub mod passkey_authenticator;
+pub mod pera_sdk2_conversions;
+pub mod pera_serde;
+pub mod pera_system_state;
 pub mod programmable_transaction_builder;
 pub mod quorum_driver_types;
 pub mod randomness_state;
 pub mod signature;
 pub mod signature_verification;
 pub mod storage;
-pub mod pera_sdk2_conversions;
-pub mod pera_serde;
-pub mod pera_system_state;
 pub mod supported_protocol_versions;
 pub mod traffic_control;
 pub mod transaction;
@@ -375,8 +375,9 @@ mod tests {
         let expected = expect!["0x2::pera::PERA"];
         expected.assert_eq(&result.to_string());
 
-        let expected =
-            expect!["0x0000000000000000000000000000000000000000000000000000000000000002::pera::PERA"];
+        let expected = expect![
+            "0x0000000000000000000000000000000000000000000000000000000000000002::pera::PERA"
+        ];
         expected.assert_eq(&result.to_canonical_string(/* with_prefix */ true));
     }
 
@@ -390,8 +391,9 @@ mod tests {
         let expected = expect!["0x2::pera::PERA"];
         expected.assert_eq(&result.to_string());
 
-        let expected =
-            expect!["0x0000000000000000000000000000000000000000000000000000000000000002::pera::PERA"];
+        let expected = expect![
+            "0x0000000000000000000000000000000000000000000000000000000000000002::pera::PERA"
+        ];
         expected.assert_eq(&result.to_canonical_string(/* with_prefix */ true));
     }
 
@@ -421,9 +423,10 @@ mod tests {
 
     #[test]
     fn test_complex_struct_tag_with_short_addr() {
-        let result =
-            parse_pera_struct_tag("0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::pera::PERA>>>")
-                .expect("should not error");
+        let result = parse_pera_struct_tag(
+            "0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::pera::PERA>>>",
+        )
+        .expect("should not error");
 
         let expected = expect!["0xe7::vec_coin::VecCoin<vector<0x2::coin::Coin<0x2::pera::PERA>>>"];
         expected.assert_eq(&result.to_string());

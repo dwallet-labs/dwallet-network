@@ -22,13 +22,9 @@ use move_vm_types::{
     values::{GlobalValue, Value},
 };
 use object_store::ChildObjectStore;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-};
 use pera_protocol_config::{check_limit_by_meter, LimitThresholdCrossed, ProtocolConfig};
 use pera_types::{
-    base_types::{MoveObjectType, ObjectID, SequenceNumber, PeraAddress},
+    base_types::{MoveObjectType, ObjectID, PeraAddress, SequenceNumber},
     committee::EpochId,
     error::{ExecutionError, ExecutionErrorKind, VMMemoryLimitExceededSubStatusCode},
     execution::DynamicallyLoadedObjectMetadata,
@@ -38,6 +34,10 @@ use pera_types::{
     storage::ChildObjectResolver,
     PERA_AUTHENTICATOR_STATE_OBJECT_ID, PERA_CLOCK_OBJECT_ID, PERA_DENY_LIST_OBJECT_ID,
     PERA_RANDOMNESS_STATE_OBJECT_ID, PERA_SYSTEM_STATE_OBJECT_ID,
+};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
 };
 
 pub enum ObjectEvent {

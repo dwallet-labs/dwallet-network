@@ -6,8 +6,6 @@
 use crate::error::{BridgeError, BridgeResult};
 use crate::test_utils::DUMMY_MUTALBE_BRIDGE_OBJECT_ARG;
 use async_trait::async_trait;
-use std::collections::{HashMap, VecDeque};
-use std::sync::{Arc, Mutex};
 use pera_json_rpc_types::PeraTransactionBlockResponse;
 use pera_json_rpc_types::{EventFilter, EventPage, PeraEvent};
 use pera_types::base_types::ObjectID;
@@ -22,6 +20,8 @@ use pera_types::object::Owner;
 use pera_types::transaction::ObjectArg;
 use pera_types::transaction::Transaction;
 use pera_types::Identifier;
+use std::collections::{HashMap, VecDeque};
+use std::sync::{Arc, Mutex};
 
 use crate::pera_client::PeraClientInner;
 use crate::types::{BridgeAction, BridgeActionStatus, IsBridgePaused};

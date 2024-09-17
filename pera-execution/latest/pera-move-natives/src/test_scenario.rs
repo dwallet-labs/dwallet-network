@@ -22,14 +22,8 @@ use move_vm_types::{
     pop_arg,
     values::{self, StructRef, Value},
 };
-use smallvec::smallvec;
-use std::{
-    borrow::Borrow,
-    collections::{BTreeMap, BTreeSet, VecDeque},
-    sync::RwLock,
-};
 use pera_types::{
-    base_types::{ObjectID, SequenceNumber, PeraAddress},
+    base_types::{ObjectID, PeraAddress, SequenceNumber},
     config,
     digests::{ObjectDigest, TransactionDigest},
     dynamic_field::DynamicFieldInfo,
@@ -39,6 +33,12 @@ use pera_types::{
     object::{MoveObject, Object, Owner},
     storage::ChildObjectResolver,
     TypeTag,
+};
+use smallvec::smallvec;
+use std::{
+    borrow::Borrow,
+    collections::{BTreeMap, BTreeSet, VecDeque},
+    sync::RwLock,
 };
 
 const E_COULD_NOT_GENERATE_EFFECTS: u64 = 0;

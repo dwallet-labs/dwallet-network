@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use pera_config::{genesis, Config, NodeConfig};
 use pera_types::committee::CommitteeWithNetworkMetadata;
 use pera_types::crypto::AccountKeyPair;
 use pera_types::multiaddr::Multiaddr;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 /// This is a config that is used for testing or local use as it contains the config and keys for
 /// all validators

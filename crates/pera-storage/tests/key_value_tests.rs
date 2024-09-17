@@ -3,8 +3,6 @@
 
 use async_trait::async_trait;
 use futures::FutureExt;
-use std::collections::HashMap;
-use std::sync::Arc;
 use pera_protocol_config::ProtocolConfig;
 use pera_test_transaction_builder::TestTransactionBuilder;
 use pera_types::base_types::{random_object_ref, ExecutionDigests, ObjectID, VersionNumber};
@@ -24,6 +22,8 @@ use pera_types::messages_checkpoint::{
     SignedCheckpointSummary,
 };
 use pera_types::transaction::Transaction;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use pera_storage::key_value_store::*;
 use pera_storage::key_value_store_metrics::KeyValueStoreMetrics;
@@ -431,12 +431,12 @@ mod simtests {
     use super::*;
     use axum::routing::get;
     use axum::{body::Body, extract::Request, extract::State, response::Response};
-    use std::net::SocketAddr;
-    use std::sync::Mutex;
-    use std::time::{Duration, Instant};
     use pera_macros::sim_test;
     use pera_simulator::configs::constant_latency_ms;
     use pera_storage::http_key_value_store::*;
+    use std::net::SocketAddr;
+    use std::sync::Mutex;
+    use std::time::{Duration, Instant};
     use tracing::info;
 
     async fn svc(

@@ -10,10 +10,10 @@ use move_core_types::{
     language_storage::StructTag,
 };
 
+use pera_json_rpc_types::PeraMoveStruct;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::json;
-use pera_json_rpc_types::PeraMoveStruct;
 
 use pera_types::base_types::ObjectID;
 use pera_types::gas_coin::GasCoin;

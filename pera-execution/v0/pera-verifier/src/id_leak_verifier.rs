@@ -27,7 +27,6 @@ use move_bytecode_verifier_meter::{Meter, Scope};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, vm_status::StatusCode,
 };
-use std::{collections::BTreeMap, error::Error, num::NonZeroU64};
 use pera_types::{
     clock::CLOCK_MODULE_NAME,
     error::{ExecutionError, VMMVerifierErrorSubStatusCode},
@@ -35,6 +34,7 @@ use pera_types::{
     pera_system_state::PERA_SYSTEM_MODULE_NAME,
     PERA_FRAMEWORK_ADDRESS, PERA_SYSTEM_ADDRESS,
 };
+use std::{collections::BTreeMap, error::Error, num::NonZeroU64};
 
 #[cfg(msim)]
 use pera_types::{

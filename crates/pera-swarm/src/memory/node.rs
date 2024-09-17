@@ -3,12 +3,12 @@
 
 use anyhow::anyhow;
 use anyhow::Result;
-use std::sync::Mutex;
-use std::sync::MutexGuard;
 use pera_config::NodeConfig;
 use pera_node::PeraNodeHandle;
 use pera_types::base_types::AuthorityName;
 use pera_types::base_types::ConciseableName;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
 use tap::TapFallible;
 use tracing::{error, info};
 

@@ -4,6 +4,7 @@
 use super::Node;
 use anyhow::Result;
 use futures::future::try_join_all;
+use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
 use rand::rngs::OsRng;
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -13,7 +14,6 @@ use std::{
     ops,
     path::{Path, PathBuf},
 };
-use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
 
 use pera_config::node::{AuthorityOverloadConfig, DBCheckpointConfig, RunWithRange};
 use pera_config::NodeConfig;

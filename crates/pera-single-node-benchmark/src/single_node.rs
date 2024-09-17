@@ -3,8 +3,6 @@
 
 use crate::command::Component;
 use crate::mock_storage::InMemoryObjectStore;
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::Arc;
 use pera_core::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use pera_core::authority::authority_store_tables::LiveObject;
 use pera_core::authority::test_authority_builder::TestAuthorityBuilder;
@@ -30,6 +28,8 @@ use pera_types::transaction::{
     CertifiedTransaction, Transaction, TransactionDataAPI, VerifiedCertificate,
     VerifiedTransaction, DEFAULT_VALIDATOR_GAS_PRICE,
 };
+use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::Arc;
 use tokio::sync::broadcast;
 
 #[derive(Clone)]

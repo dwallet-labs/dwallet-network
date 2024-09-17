@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::sync::Arc;
-use std::time::Duration;
 use pera_json_rpc_types::PeraTransactionBlockResponseOptions;
 use pera_json_rpc_types::PeraTransactionBlockResponseQuery;
 use pera_json_rpc_types::TransactionFilter;
 use pera_sdk::PeraClient;
 use pera_types::digests::TransactionDigest;
 use pera_types::PERA_BRIDGE_OBJECT_ID;
+use std::sync::Arc;
+use std::time::Duration;
 
 use pera_bridge::{metrics::BridgeMetrics, retry_with_max_elapsed_time};
 use tracing::{error, info};

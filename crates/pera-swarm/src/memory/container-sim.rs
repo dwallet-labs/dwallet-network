@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use prometheus::Registry;
-use std::net::{IpAddr, SocketAddr};
-use std::sync::{Arc, Weak};
 use pera_config::NodeConfig;
 use pera_node::{PeraNode, PeraNodeHandle};
 use pera_types::base_types::ConciseableName;
+use prometheus::Registry;
+use std::net::{IpAddr, SocketAddr};
+use std::sync::{Arc, Weak};
 use tokio::sync::watch;
 use tracing::{info, trace};
 

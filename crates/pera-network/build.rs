@@ -160,7 +160,9 @@ fn build_anemo_services(out_dir: &Path) {
                 .name("get_checkpoint_summary")
                 .route_name("GetCheckpointSummary")
                 .request_type("crate::state_sync::GetCheckpointSummaryRequest")
-                .response_type("Option<pera_types::messages_checkpoint::CertifiedCheckpointSummary>")
+                .response_type(
+                    "Option<pera_types::messages_checkpoint::CertifiedCheckpointSummary>",
+                )
                 .codec_path(codec_path)
                 .build(),
         )

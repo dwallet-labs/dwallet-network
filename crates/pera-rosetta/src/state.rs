@@ -7,11 +7,11 @@ use crate::types::{
 };
 use crate::Error;
 use async_trait::async_trait;
-use std::sync::Arc;
 use pera_json_rpc_types::PeraTransactionBlockResponseOptions;
 use pera_sdk::rpc_types::Checkpoint;
 use pera_sdk::PeraClient;
 use pera_types::messages_checkpoint::CheckpointSequenceNumber;
+use std::sync::Arc;
 
 #[cfg(test)]
 #[path = "unit_tests/balance_changing_tx_tests.rs"]

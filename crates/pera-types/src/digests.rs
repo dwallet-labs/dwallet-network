@@ -6,10 +6,10 @@ use std::{env, fmt};
 use crate::{error::PeraError, pera_serde::Readable};
 use fastcrypto::encoding::{Base58, Encoding};
 use once_cell::sync::{Lazy, OnceCell};
+use pera_protocol_config::Chain;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, Bytes};
-use pera_protocol_config::Chain;
 use tracing::info;
 
 /// A representation of a 32 byte digest
@@ -162,7 +162,8 @@ pub static TESTNET_CHAIN_IDENTIFIER: OnceCell<ChainIdentifier> = OnceCell::new()
 
 /// For testing purposes or bootstrapping regenesis chain configuration, you can set
 /// this environment variable to force protocol config to use a specific Chain.
-const PERA_PROTOCOL_CONFIG_CHAIN_OVERRIDE_ENV_VAR_NAME: &str = "PERA_PROTOCOL_CONFIG_CHAIN_OVERRIDE";
+const PERA_PROTOCOL_CONFIG_CHAIN_OVERRIDE_ENV_VAR_NAME: &str =
+    "PERA_PROTOCOL_CONFIG_CHAIN_OVERRIDE";
 
 static PERA_PROTOCOL_CONFIG_CHAIN_OVERRIDE: Lazy<Option<Chain>> = Lazy::new(|| {
     if let Ok(s) = env::var(PERA_PROTOCOL_CONFIG_CHAIN_OVERRIDE_ENV_VAR_NAME) {

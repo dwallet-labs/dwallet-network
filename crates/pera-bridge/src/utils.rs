@@ -24,9 +24,6 @@ use fastcrypto::secp256k1::Secp256k1KeyPair;
 use fastcrypto::traits::EncodeDecodeBase64;
 use fastcrypto::traits::KeyPair;
 use futures::future::join_all;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::Arc;
 use pera_config::Config;
 use pera_json_rpc_types::PeraExecutionStatus;
 use pera_json_rpc_types::PeraTransactionBlockEffectsAPI;
@@ -43,6 +40,9 @@ use pera_types::crypto::ToFromBytes;
 use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::transaction::{ObjectArg, TransactionData};
 use pera_types::BRIDGE_PACKAGE_ID;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::Arc;
 
 pub type EthSigner = SignerMiddleware<Provider<Http>, Wallet<SigningKey>>;
 
@@ -279,7 +279,8 @@ pub async fn publish_and_register_coins_return_add_coins_on_pera_action(
         let mut uc = None;
         let mut metadata = None;
         for object_change in &object_changes {
-            if let o @ pera_json_rpc_types::ObjectChange::Created { object_type, .. } = object_change
+            if let o @ pera_json_rpc_types::ObjectChange::Created { object_type, .. } =
+                object_change
             {
                 if object_type.name.as_str().starts_with("TreasuryCap") {
                     assert!(tc.is_none() && type_.is_none());

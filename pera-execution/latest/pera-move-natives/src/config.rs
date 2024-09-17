@@ -15,9 +15,9 @@ use move_vm_types::{
     pop_arg,
     values::{Struct, Value, Vector},
 };
+use pera_types::{base_types::MoveObjectType, TypeTag};
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use pera_types::{base_types::MoveObjectType, TypeTag};
 use tracing::{error, instrument};
 
 const E_BCS_SERIALIZATION_FAILURE: u64 = 2;

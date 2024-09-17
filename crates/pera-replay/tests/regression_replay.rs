@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::path::PathBuf;
 use pera_replay::execute_replay_command;
 use pera_replay::ReplayToolCommand;
+use std::path::PathBuf;
 
 #[tokio::test]
 async fn replay_sandboxes() {

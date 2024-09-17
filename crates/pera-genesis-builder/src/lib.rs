@@ -7,11 +7,6 @@ use fastcrypto::hash::HashFunction;
 use fastcrypto::traits::KeyPair;
 use move_binary_format::CompiledModule;
 use move_core_types::ident_str;
-use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
-use std::collections::{BTreeMap, HashSet};
-use std::fs;
-use std::path::Path;
-use std::sync::Arc;
 use pera_config::genesis::{
     Genesis, GenesisCeremonyParameters, GenesisChainParameters, TokenDistributionSchedule,
     UnsignedGenesis,
@@ -20,7 +15,7 @@ use pera_execution::{self, Executor};
 use pera_framework::{BuiltInFramework, SystemPackage};
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_types::base_types::{
-    ExecutionDigests, ObjectID, SequenceNumber, PeraAddress, TransactionDigest, TxContext,
+    ExecutionDigests, ObjectID, PeraAddress, SequenceNumber, TransactionDigest, TxContext,
 };
 use pera_types::bridge::{BridgeChainId, BRIDGE_CREATE_FUNCTION_NAME, BRIDGE_MODULE_NAME};
 use pera_types::committee::Committee;
@@ -46,12 +41,19 @@ use pera_types::messages_checkpoint::{
 };
 use pera_types::metrics::LimitsMetrics;
 use pera_types::object::{Object, Owner};
-use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::pera_system_state::{get_pera_system_state, PeraSystemState, PeraSystemStateTrait};
+use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::transaction::{
     CallArg, CheckedInputObjects, Command, InputObjectKind, ObjectReadResult, Transaction,
 };
-use pera_types::{BRIDGE_ADDRESS, PERA_BRIDGE_OBJECT_ID, PERA_FRAMEWORK_ADDRESS, PERA_SYSTEM_ADDRESS};
+use pera_types::{
+    BRIDGE_ADDRESS, PERA_BRIDGE_OBJECT_ID, PERA_FRAMEWORK_ADDRESS, PERA_SYSTEM_ADDRESS,
+};
+use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
+use std::collections::{BTreeMap, HashSet};
+use std::fs;
+use std::path::Path;
+use std::sync::Arc;
 use tracing::trace;
 use validator_info::{GenesisValidatorInfo, GenesisValidatorMetadata, ValidatorInfo};
 
@@ -487,7 +489,8 @@ impl Builder {
                     })
                     .map(|(k, _)| *k)
                     .expect("all allocations should be present");
-                let staked_pera_object = staked_pera_objects.remove(&staked_pera_object_id).unwrap();
+                let staked_pera_object =
+                    staked_pera_objects.remove(&staked_pera_object_id).unwrap();
                 assert_eq!(
                     staked_pera_object.0.owner,
                     Owner::AddressOwner(allocation.recipient_address)
@@ -1146,7 +1149,9 @@ pub fn generate_genesis_system_object(
 
         if protocol_config.enable_bridge() {
             let bridge_uid = builder
-                .input(CallArg::Pure(UID::new(PERA_BRIDGE_OBJECT_ID).to_bcs_bytes()))
+                .input(CallArg::Pure(
+                    UID::new(PERA_BRIDGE_OBJECT_ID).to_bcs_bytes(),
+                ))
                 .unwrap();
             // TODO(bridge): this needs to be passed in as a parameter for next testnet regenesis
             // Hardcoding chain id to PeraCustom

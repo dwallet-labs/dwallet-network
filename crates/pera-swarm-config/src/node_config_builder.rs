@@ -6,9 +6,6 @@ use crate::network_config::NetworkConfig;
 use fastcrypto::encoding::{Encoding, Hex};
 use fastcrypto::traits::KeyPair;
 use narwhal_config::{NetworkAdminServerParameters, PrometheusMetricsParameters};
-use std::net::SocketAddr;
-use std::path::PathBuf;
-use std::time::Duration;
 use pera_config::node::{
     default_enable_index_processing, default_end_of_epoch_broadcast_channel_capacity,
     AuthorityKeyPairWithPath, AuthorityOverloadConfig, AuthorityStorePruningConfig,
@@ -26,6 +23,9 @@ use pera_types::crypto::{AuthorityKeyPair, AuthorityPublicKeyBytes, NetworkKeyPa
 use pera_types::multiaddr::Multiaddr;
 use pera_types::supported_protocol_versions::SupportedProtocolVersions;
 use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
+use std::net::SocketAddr;
+use std::path::PathBuf;
+use std::time::Duration;
 
 /// This builder contains information that's not included in ValidatorGenesisConfig for building
 /// a validator NodeConfig. It can be used to build either a genesis validator or a new validator.
@@ -186,7 +186,9 @@ impl ValidatorConfigBuilder {
 
         NodeConfig {
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator.key_pair),
-            network_key_pair: KeyPairWithPath::new(PeraKeyPair::Ed25519(validator.network_key_pair)),
+            network_key_pair: KeyPairWithPath::new(PeraKeyPair::Ed25519(
+                validator.network_key_pair,
+            )),
             account_key_pair: KeyPairWithPath::new(validator.account_key_pair),
             worker_key_pair: KeyPairWithPath::new(PeraKeyPair::Ed25519(validator.worker_key_pair)),
             db_path,

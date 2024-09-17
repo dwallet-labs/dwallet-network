@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use pera_types::{committee::EpochId, crypto::RandomnessRound};
 use prometheus::{
     register_histogram_with_registry, register_int_gauge_with_registry, Histogram, IntGauge,
     Registry,
 };
 use std::sync::Arc;
-use pera_types::{committee::EpochId, crypto::RandomnessRound};
 use tap::Pipe;
 
 #[derive(Clone)]

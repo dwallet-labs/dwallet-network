@@ -14,15 +14,15 @@ use anyhow::Result;
 use axum::{extract::DefaultBodyLimit, middleware, routing::post, Extension, Router};
 use fastcrypto::ed25519::{Ed25519KeyPair, Ed25519PublicKey};
 use fastcrypto::traits::{KeyPair, ToFromBytes};
+use pera_tls::PERA_VALIDATOR_SERVER_NAME;
+use pera_tls::{
+    rustls::ServerConfig, AllowAll, ClientCertVerifier, SelfSignedCertificate, TlsAcceptor,
+};
 use std::fs;
 use std::io::BufReader;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
-use pera_tls::PERA_VALIDATOR_SERVER_NAME;
-use pera_tls::{
-    rustls::ServerConfig, AllowAll, ClientCertVerifier, SelfSignedCertificate, TlsAcceptor,
-};
 use tokio::signal;
 use tower::ServiceBuilder;
 use tower_http::{

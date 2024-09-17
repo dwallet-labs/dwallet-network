@@ -85,10 +85,11 @@ pub fn update_pera_progress_store(
 
 pub fn read_pera_progress_store(pool: &PgPool) -> anyhow::Result<Option<TransactionDigest>> {
     let mut conn = pool.get()?;
-    let val: Option<PeraProgressStore> = crate::schema::pera_progress_store::dsl::pera_progress_store
-        .select(PeraProgressStore::as_select())
-        .first(&mut conn)
-        .optional()?;
+    let val: Option<PeraProgressStore> =
+        crate::schema::pera_progress_store::dsl::pera_progress_store
+            .select(PeraProgressStore::as_select())
+            .first(&mut conn)
+            .optional()?;
     match val {
         Some(val) => Ok(Some(TransactionDigest::try_from(
             val.txn_digest.as_slice(),

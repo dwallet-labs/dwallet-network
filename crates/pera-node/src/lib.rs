@@ -12,16 +12,6 @@ use arc_swap::ArcSwap;
 use fastcrypto_zkp::bn254::zk_login::JwkId;
 use fastcrypto_zkp::bn254::zk_login::OIDCProvider;
 use futures::TryFutureExt;
-use prometheus::Registry;
-use std::collections::{BTreeSet, HashMap, HashSet};
-use std::fmt;
-use std::net::SocketAddr;
-use std::path::PathBuf;
-use std::str::FromStr;
-#[cfg(msim)]
-use std::sync::atomic::Ordering;
-use std::sync::{Arc, Weak};
-use std::time::Duration;
 use pera_core::authority::epoch_start_configuration::EpochFlag;
 use pera_core::authority::RandomnessRoundReceiver;
 use pera_core::authority::CHAIN_IDENTIFIER;
@@ -41,6 +31,16 @@ use pera_types::crypto::RandomnessRound;
 use pera_types::digests::ChainIdentifier;
 use pera_types::messages_consensus::AuthorityCapabilitiesV2;
 use pera_types::pera_system_state::PeraSystemState;
+use prometheus::Registry;
+use std::collections::{BTreeSet, HashMap, HashSet};
+use std::fmt;
+use std::net::SocketAddr;
+use std::path::PathBuf;
+use std::str::FromStr;
+#[cfg(msim)]
+use std::sync::atomic::Ordering;
+use std::sync::{Arc, Weak};
+use std::time::Duration;
 use tap::tap::TapFallible;
 use tokio::runtime::Handle;
 use tokio::sync::broadcast;
@@ -129,10 +129,10 @@ use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, ConsensusTransaction,
 };
-use pera_types::quorum_driver_types::QuorumDriverEffectsQueueResult;
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemState;
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
 use pera_types::pera_system_state::PeraSystemStateTrait;
+use pera_types::quorum_driver_types::QuorumDriverEffectsQueueResult;
 use pera_types::supported_protocol_versions::SupportedProtocolVersions;
 use typed_store::rocks::default_db_options;
 use typed_store::DBMetrics;
@@ -211,12 +211,12 @@ mod simulator {
 #[cfg(msim)]
 use simulator::*;
 
-#[cfg(msim)]
-pub use simulator::set_jwk_injector;
 use pera_core::consensus_handler::ConsensusHandlerInitializer;
 use pera_core::safe_client::SafeClientMetricsBase;
 use pera_core::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::execution_config_utils::to_binary_config;
+#[cfg(msim)]
+pub use simulator::set_jwk_injector;
 
 pub struct PeraNode {
     config: NodeConfig,
@@ -783,7 +783,8 @@ impl PeraNode {
         };
 
         let connection_monitor_status = Arc::new(connection_monitor_status);
-        let pera_node_metrics = Arc::new(PeraNodeMetrics::new(&registry_service.default_registry()));
+        let pera_node_metrics =
+            Arc::new(PeraNodeMetrics::new(&registry_service.default_registry()));
 
         let validator_components = if state.is_validator(&epoch_store) {
             let components = Self::construct_validator_components(

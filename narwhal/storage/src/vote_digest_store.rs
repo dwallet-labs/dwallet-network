@@ -3,10 +3,10 @@
 
 use crate::NodeStorage;
 use config::AuthorityIdentifier;
+use pera_macros::fail_point;
 use store::reopen;
 use store::rocks::{open_cf, MetricConf, ReadWriteOptions};
 use store::{rocks::DBMap, Map, TypedStoreError};
-use pera_macros::fail_point;
 use types::{Vote, VoteAPI, VoteInfo};
 
 /// The storage for the last votes digests per authority

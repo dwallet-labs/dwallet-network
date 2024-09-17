@@ -9,9 +9,9 @@ use std::{
 
 use config::{Authority, AuthorityIdentifier, Committee, Stake};
 use parking_lot::RwLock;
+use pera_protocol_config::ProtocolConfig;
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use storage::ConsensusStore;
-use pera_protocol_config::ProtocolConfig;
 use tracing::{debug, trace};
 use types::{Certificate, ReputationScores, Round};
 

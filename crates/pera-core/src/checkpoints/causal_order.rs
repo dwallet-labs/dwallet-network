@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
 use pera_types::base_types::TransactionDigest;
 use pera_types::effects::TransactionEffectsAPI;
 use pera_types::effects::{InputSharedObject, TransactionEffects};
 use pera_types::storage::ObjectKey;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use tracing::trace;
 
 pub struct CausalOrder {

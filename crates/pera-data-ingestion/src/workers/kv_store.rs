@@ -11,15 +11,15 @@ use aws_sdk_s3 as s3;
 use aws_sdk_s3::config::{Credentials, Region};
 use backoff::backoff::Backoff;
 use backoff::ExponentialBackoff;
+use pera_data_ingestion_core::Worker;
+use pera_storage::http_key_value_store::TaggedKey;
+use pera_types::full_checkpoint_content::CheckpointData;
+use pera_types::storage::ObjectKey;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::iter::repeat;
 use std::time::{Duration, Instant};
-use pera_data_ingestion_core::Worker;
-use pera_storage::http_key_value_store::TaggedKey;
-use pera_types::full_checkpoint_content::CheckpointData;
-use pera_types::storage::ObjectKey;
 
 const TIMEOUT: Duration = Duration::from_secs(60);
 

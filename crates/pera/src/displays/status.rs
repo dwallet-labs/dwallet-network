@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::displays::Pretty;
-use std::fmt::{Display, Formatter};
 use pera_json_rpc_types::PeraExecutionStatus::{self, Failure, Success};
+use std::fmt::{Display, Formatter};
 
 impl<'a> Display for Pretty<'a, PeraExecutionStatus> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

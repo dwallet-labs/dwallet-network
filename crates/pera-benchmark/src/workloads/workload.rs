@@ -6,8 +6,8 @@ use crate::workloads::payload::Payload;
 use crate::workloads::{Gas, GasCoinConfig};
 use crate::ValidatorProxy;
 use async_trait::async_trait;
-use std::sync::Arc;
 use pera_types::gas_coin::NPERA_PER_PERA;
+use std::sync::Arc;
 
 // This is the maximum gas we will transfer from primary coin into any gas coin
 // for running the benchmark

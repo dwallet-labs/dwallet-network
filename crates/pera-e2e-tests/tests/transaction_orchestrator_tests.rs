@@ -1,8 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::sync::Arc;
-use std::time::Duration;
 use pera_core::authority_client::NetworkAuthorityClient;
 use pera_core::transaction_orchestrator::TransactiondOrchestrator;
 use pera_macros::sim_test;
@@ -17,6 +15,8 @@ use pera_types::quorum_driver_types::{
     FinalizedEffects, IsTransactionExecutedLocally, QuorumDriverError,
 };
 use pera_types::transaction::Transaction;
+use std::sync::Arc;
+use std::time::Duration;
 use test_cluster::TestClusterBuilder;
 use tokio::time::timeout;
 use tracing::info;

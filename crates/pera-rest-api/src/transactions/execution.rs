@@ -5,13 +5,13 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use axum::extract::{Query, State};
-use schemars::JsonSchema;
 use pera_sdk2::types::framework::Coin;
 use pera_sdk2::types::{
     Address, BalanceChange, CheckpointSequenceNumber, Object, Owner, SignedTransaction,
     TransactionEffects, TransactionEvents, ValidatorAggregatedSignature,
 };
 use pera_types::transaction_executor::TransactionExecutor;
+use schemars::JsonSchema;
 use tap::Pipe;
 
 use crate::openapi::{
@@ -278,7 +278,9 @@ enum ReadableEffectsFinality {
         signature: ValidatorAggregatedSignature,
     },
     Checkpointed {
-        #[serde_as(as = "pera_types::pera_serde::Readable<pera_types::pera_serde::BigInt<u64>, _>")]
+        #[serde_as(
+            as = "pera_types::pera_serde::Readable<pera_types::pera_serde::BigInt<u64>, _>"
+        )]
         #[schemars(with = "crate::_schemars::U64")]
         checkpoint: CheckpointSequenceNumber,
     },

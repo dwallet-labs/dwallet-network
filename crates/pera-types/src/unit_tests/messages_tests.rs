@@ -6,10 +6,10 @@ use super::*;
 use crate::base_types::random_object_ref;
 use crate::committee::Committee;
 use crate::crypto::bcs_signable_test::{get_obligation_input, Foo};
-use crate::crypto::Secp256k1PeraSignature;
 use crate::crypto::PeraKeyPair;
 use crate::crypto::PeraSignature;
 use crate::crypto::PeraSignatureInner;
+use crate::crypto::Secp256k1PeraSignature;
 use crate::crypto::VerificationObligation;
 use crate::crypto::{
     get_key_pair, AccountKeyPair, AuthorityKeyPair, AuthorityPublicKeyBytes,

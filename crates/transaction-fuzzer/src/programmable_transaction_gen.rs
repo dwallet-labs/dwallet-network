@@ -5,12 +5,12 @@ use std::{cmp, str::FromStr};
 
 use move_core_types::identifier::Identifier;
 use once_cell::sync::Lazy;
-use proptest::collection::vec;
-use proptest::prelude::*;
 use pera_protocol_config::ProtocolConfig;
 use pera_types::base_types::{ObjectID, ObjectRef, PeraAddress};
 use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::transaction::{Argument, CallArg, Command, ProgrammableTransaction};
+use proptest::collection::vec;
+use proptest::prelude::*;
 
 static PROTOCOL_CONFIG: Lazy<ProtocolConfig> =
     Lazy::new(ProtocolConfig::get_for_max_version_UNSAFE);

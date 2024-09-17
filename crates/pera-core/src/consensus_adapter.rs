@@ -12,6 +12,9 @@ use itertools::Itertools;
 use narwhal_types::{TransactionProto, TransactionsClient};
 use narwhal_worker::LazyNarwhalClient;
 use parking_lot::RwLockReadGuard;
+use pera_types::base_types::TransactionDigest;
+use pera_types::committee::Committee;
+use pera_types::error::{PeraError, PeraResult};
 use prometheus::Histogram;
 use prometheus::HistogramVec;
 use prometheus::IntCounterVec;
@@ -30,9 +33,6 @@ use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
-use pera_types::base_types::TransactionDigest;
-use pera_types::committee::Committee;
-use pera_types::error::{PeraError, PeraResult};
 
 use tap::prelude::*;
 use tokio::sync::{Semaphore, SemaphorePermit};
@@ -1136,15 +1136,15 @@ mod adapter_tests {
         LazyNarwhalClient,
     };
     use fastcrypto::traits::KeyPair;
-    use rand::Rng;
-    use rand::{rngs::StdRng, SeedableRng};
-    use std::sync::Arc;
-    use std::time::Duration;
     use pera_types::{
         base_types::TransactionDigest,
         committee::Committee,
         crypto::{get_key_pair_from_rng, AuthorityKeyPair, AuthorityPublicKeyBytes},
     };
+    use rand::Rng;
+    use rand::{rngs::StdRng, SeedableRng};
+    use std::sync::Arc;
+    use std::time::Duration;
 
     fn test_committee(rng: &mut StdRng, size: usize) -> Committee {
         let authorities = (0..size)

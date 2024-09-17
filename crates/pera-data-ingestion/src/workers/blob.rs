@@ -6,10 +6,10 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use object_store::path::Path;
 use object_store::ObjectStore;
-use serde::{Deserialize, Serialize};
 use pera_data_ingestion_core::{create_remote_store_client, Worker};
 use pera_storage::blob::{Blob, BlobEncoding};
 use pera_types::full_checkpoint_content::CheckpointData;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct BlobTaskConfig {

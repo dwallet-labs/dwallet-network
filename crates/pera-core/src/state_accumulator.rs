@@ -3,14 +3,14 @@
 
 use itertools::Itertools;
 use mysten_metrics::monitored_scope;
-use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
-use serde::Serialize;
 use pera_protocol_config::ProtocolConfig;
 use pera_types::base_types::{ObjectID, ObjectRef, SequenceNumber, VersionNumber};
 use pera_types::committee::EpochId;
 use pera_types::digests::{ObjectDigest, TransactionDigest};
 use pera_types::in_memory_storage::InMemoryStorage;
 use pera_types::storage::{ObjectKey, ObjectStore};
+use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
+use serde::Serialize;
 use tracing::debug;
 
 use std::collections::{HashMap, HashSet};

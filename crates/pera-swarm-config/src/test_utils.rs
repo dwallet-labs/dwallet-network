@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::network_config::NetworkConfig;
-use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
-use std::collections::HashMap;
 use pera_types::{
     base_types::AuthorityName,
     committee::{Committee, EpochId, StakeUnit},
@@ -17,6 +15,8 @@ use pera_types::{
         VerifiedCheckpointContents,
     },
 };
+use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
+use std::collections::HashMap;
 
 pub struct CommitteeFixture {
     epoch: EpochId,

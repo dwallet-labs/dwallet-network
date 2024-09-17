@@ -6,8 +6,8 @@ use std::str::FromStr;
 use crate::error::Error;
 use async_graphql::*;
 use move_core_types::account_address::AccountAddress;
-use serde::{Deserialize, Serialize};
 use pera_types::base_types::{ObjectID, PeraAddress as NativePeraAddress};
+use serde::{Deserialize, Serialize};
 
 const PERA_ADDRESS_LENGTH: usize = 32;
 
@@ -32,7 +32,10 @@ pub(crate) enum FromStrError {
 
 #[derive(thiserror::Error, Debug, Eq, PartialEq)]
 pub(crate) enum FromVecError {
-    #[error("Expected PeraAddress with {} bytes, received {0}", PERA_ADDRESS_LENGTH)]
+    #[error(
+        "Expected PeraAddress with {} bytes, received {0}",
+        PERA_ADDRESS_LENGTH
+    )]
     WrongLength(usize),
 }
 

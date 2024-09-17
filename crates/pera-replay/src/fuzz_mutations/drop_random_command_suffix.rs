@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::fuzz::TransactionKindMutator;
-use rand::Rng;
 use pera_types::transaction::TransactionKind;
+use rand::Rng;
 use tracing::info;
 
 pub struct DropCommandSuffix {

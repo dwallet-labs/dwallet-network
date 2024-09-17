@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::ValidatorProxy;
+use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use std::sync::Arc;
 use std::time::Duration;
-use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use tokio::sync::oneshot::Sender;
 use tokio::sync::watch;
 use tokio::sync::watch::Receiver;

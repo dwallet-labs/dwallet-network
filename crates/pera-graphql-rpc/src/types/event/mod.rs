@@ -21,7 +21,8 @@ use pera_indexer::schema::{checkpoints, events};
 use pera_types::base_types::ObjectID;
 use pera_types::Identifier;
 use pera_types::{
-    base_types::PeraAddress as NativePeraAddress, event::Event as NativeEvent, parse_pera_struct_tag,
+    base_types::PeraAddress as NativePeraAddress, event::Event as NativeEvent,
+    parse_pera_struct_tag,
 };
 
 mod cursor;
@@ -265,8 +266,8 @@ impl Event {
             .map_err(|e| Error::Internal(e.to_string()))?;
         let package_id =
             ObjectID::from_bytes(&stored.package).map_err(|e| Error::Internal(e.to_string()))?;
-        let type_ =
-            parse_pera_struct_tag(&stored.event_type).map_err(|e| Error::Internal(e.to_string()))?;
+        let type_ = parse_pera_struct_tag(&stored.event_type)
+            .map_err(|e| Error::Internal(e.to_string()))?;
         let transaction_module =
             Identifier::from_str(&stored.module).map_err(|e| Error::Internal(e.to_string()))?;
         let contents = stored.bcs.clone();

@@ -40,7 +40,7 @@ mod checked {
     use pera_types::storage::PackageObject;
     use pera_types::{
         balance::Balance,
-        base_types::{MoveObjectType, ObjectID, SequenceNumber, PeraAddress, TxContext},
+        base_types::{MoveObjectType, ObjectID, PeraAddress, SequenceNumber, TxContext},
         coin::Coin,
         error::{command_argument_error, ExecutionError, ExecutionErrorKind},
         event::Event,

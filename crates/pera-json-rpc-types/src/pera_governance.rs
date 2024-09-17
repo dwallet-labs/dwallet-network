@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID, PeraAddress};
 use pera_types::committee::{Committee, StakeUnit};
 use pera_types::pera_serde::BigInt;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 /// RPC representation of the [Committee] type.
 #[serde_as]

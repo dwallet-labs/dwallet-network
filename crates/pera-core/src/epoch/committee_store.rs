@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use pera_types::base_types::ObjectID;
 use pera_types::committee::{Committee, EpochId};
 use pera_types::error::{PeraError, PeraResult};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use typed_store::rocks::{default_db_options, DBMap, DBOptions, MetricConf};
 use typed_store::rocksdb::Options;
 use typed_store::traits::{TableSummary, TypedStoreDebug};

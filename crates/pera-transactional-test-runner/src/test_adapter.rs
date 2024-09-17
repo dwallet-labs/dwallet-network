@@ -38,17 +38,6 @@ use move_transactional_test_runner::{
 };
 use move_vm_runtime::session::SerializedReturnValues;
 use once_cell::sync::Lazy;
-use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::fmt::{self, Write};
-use std::hash::Hash;
-use std::hash::Hasher;
-use std::path::PathBuf;
-use std::time::Duration;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-    sync::Arc,
-};
 use pera_core::authority::test_authority_builder::TestAuthorityBuilder;
 use pera_core::authority::AuthorityState;
 use pera_framework::DEFAULT_FRAMEWORK_PATH;
@@ -97,6 +86,17 @@ use pera_types::{utils::to_sender_signed_transaction, PERA_SYSTEM_PACKAGE_ID};
 use pera_types::{BRIDGE_ADDRESS, MOVE_STDLIB_PACKAGE_ID};
 use pera_types::{DEEPBOOK_ADDRESS, PERA_DENY_LIST_OBJECT_ID};
 use pera_types::{DEEPBOOK_PACKAGE_ID, PERA_RANDOMNESS_STATE_OBJECT_ID};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use std::fmt::{self, Write};
+use std::hash::Hash;
+use std::hash::Hasher;
+use std::path::PathBuf;
+use std::time::Duration;
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+    sync::Arc,
+};
 use tempfile::{tempdir, NamedTempFile};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
@@ -1377,7 +1377,10 @@ impl<'a> PeraTestAdapter {
     fn sign_txn(
         &self,
         sender: Option<String>,
-        txn_data: impl FnOnce(/* sender */ PeraAddress, /* gas */ ObjectRef) -> TransactionData,
+        txn_data: impl FnOnce(
+            /* sender */ PeraAddress,
+            /* gas */ ObjectRef,
+        ) -> TransactionData,
     ) -> Transaction {
         let test_account = self.get_sender(sender);
         let gas_payment = self

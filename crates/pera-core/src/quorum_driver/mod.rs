@@ -7,11 +7,6 @@ pub use metrics::*;
 pub mod reconfig_observer;
 
 use arc_swap::ArcSwap;
-use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::{Debug, Formatter};
-use std::net::SocketAddr;
-use std::sync::Arc;
-use std::time::Duration;
 use pera_types::base_types::{AuthorityName, ObjectRef, TransactionDigest};
 use pera_types::committee::{Committee, EpochId, StakeUnit};
 use pera_types::messages_grpc::HandleCertificateRequestV3;
@@ -19,6 +14,11 @@ use pera_types::quorum_driver_types::{
     ExecuteTransactionRequestV3, QuorumDriverEffectsQueueResult, QuorumDriverError,
     QuorumDriverResponse, QuorumDriverResult,
 };
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::{Debug, Formatter};
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::Duration;
 use tap::TapFallible;
 use tokio::sync::Semaphore;
 use tokio::time::{sleep_until, Instant};
@@ -36,11 +36,11 @@ use mysten_common::sync::notify_read::{NotifyRead, Registration};
 use mysten_metrics::{
     spawn_monitored_task, GaugeGuard, TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX,
 };
-use std::fmt::Write;
 use pera_macros::fail_point;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_safe_client::PlainTransactionInfoResponse;
 use pera_types::transaction::{CertifiedTransaction, Transaction};
+use std::fmt::Write;
 
 use self::reconfig_observer::ReconfigObserver;
 

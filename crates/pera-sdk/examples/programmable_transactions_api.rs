@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 mod utils;
-use shared_crypto::intent::Intent;
 use pera_config::{pera_config_dir, PERA_KEYSTORE_FILENAME};
 use pera_keys::keystore::{AccountKeystore, FileBasedKeystore};
 use pera_sdk::{
@@ -13,6 +12,7 @@ use pera_sdk::{
         transaction::{Argument, Command, Transaction, TransactionData},
     },
 };
+use shared_crypto::intent::Intent;
 use utils::setup_for_write;
 
 // This example shows how to use programmable transactions to chain multiple

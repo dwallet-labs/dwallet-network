@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use pera_config::NodeConfig;
 use std::env;
 use std::str::FromStr;
-use pera_config::NodeConfig;
 use tap::TapFallible;
 use tokio::runtime::Runtime;
 use tracing::warn;

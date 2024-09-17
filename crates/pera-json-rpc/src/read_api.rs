@@ -26,10 +26,10 @@ use pera_json_rpc_api::{
 };
 use pera_json_rpc_types::{
     BalanceChange, Checkpoint, CheckpointId, CheckpointPage, DisplayFieldsResponse, EventFilter,
-    ObjectChange, ProtocolConfigResponse, PeraEvent, PeraGetPastObjectRequest, PeraMoveStruct,
-    PeraMoveValue, PeraMoveVariant, PeraObjectDataOptions, PeraObjectResponse, PeraPastObjectResponse,
+    ObjectChange, PeraEvent, PeraGetPastObjectRequest, PeraMoveStruct, PeraMoveValue,
+    PeraMoveVariant, PeraObjectDataOptions, PeraObjectResponse, PeraPastObjectResponse,
     PeraTransactionBlock, PeraTransactionBlockEvents, PeraTransactionBlockResponse,
-    PeraTransactionBlockResponseOptions,
+    PeraTransactionBlockResponseOptions, ProtocolConfigResponse,
 };
 use pera_open_rpc::Module;
 use pera_protocol_config::{ProtocolConfig, ProtocolVersion};
@@ -51,7 +51,7 @@ use pera_types::transaction::Transaction;
 use pera_types::transaction::TransactionDataAPI;
 
 use crate::authority_state::{StateRead, StateReadError, StateReadResult};
-use crate::error::{Error, RpcInterimResult, PeraRpcInputError};
+use crate::error::{Error, PeraRpcInputError, RpcInterimResult};
 use crate::{
     get_balance_changes_from_effect, get_object_changes, ObjectProviderCache, PeraRpcModule,
 };

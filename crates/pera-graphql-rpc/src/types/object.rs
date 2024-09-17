@@ -16,9 +16,9 @@ use super::dynamic_field::{DynamicField, DynamicFieldName};
 use super::move_object::MoveObject;
 use super::move_package::MovePackage;
 use super::owner::OwnerImpl;
-use super::stake::StakedPera;
 use super::pera_address::addr;
 use super::perans_registration::{DomainFormat, PeransRegistration};
+use super::stake::StakedPera;
 use super::transaction_block;
 use super::transaction_block::TransactionBlockFilter;
 use super::type_filter::{ExactTypeFilter, TypeFilter};
@@ -39,7 +39,6 @@ use async_graphql::{connection::Connection, *};
 use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
 use move_core_types::annotated_value::{MoveStruct, MoveTypeLayout};
 use move_core_types::language_storage::StructTag;
-use serde::{Deserialize, Serialize};
 use pera_indexer::models::objects::{StoredDeletedHistoryObject, StoredHistoryObject};
 use pera_indexer::schema::{objects_history, objects_version};
 use pera_indexer::types::ObjectStatus as NativeObjectStatus;
@@ -49,6 +48,7 @@ use pera_types::object::{
     MoveObject as NativeMoveObject, Object as NativeObject, Owner as NativeOwner,
 };
 use pera_types::TypeTag;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
 pub(crate) struct Object {

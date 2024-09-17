@@ -19,10 +19,10 @@ pub mod checked {
     };
     use enum_dispatch::enum_dispatch;
     use itertools::MultiUnzip;
+    use pera_protocol_config::ProtocolConfig;
     use schemars::JsonSchema;
     use serde::{Deserialize, Serialize};
     use serde_with::serde_as;
-    use pera_protocol_config::ProtocolConfig;
 
     #[enum_dispatch]
     pub trait PeraGasStatusAPI {

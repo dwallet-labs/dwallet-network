@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::{Context, Result};
-use std::process::Command;
 use peraoplib::cli::service::init;
+use std::process::Command;
 use tracing::debug;
 
 #[cfg(test)]
@@ -49,7 +49,8 @@ members = []
   "#,
     )?;
     // Create a dummy Dockerfile at the tempdir/pera/docker/pera-services level
-    let pera_services_dockerfile_path = temp_dir.path().join("pera/docker/pera-services/Dockerfile");
+    let pera_services_dockerfile_path =
+        temp_dir.path().join("pera/docker/pera-services/Dockerfile");
     std::fs::create_dir_all(pera_services_dockerfile_path.parent().unwrap())?;
     std::fs::write(
         &pera_services_dockerfile_path,

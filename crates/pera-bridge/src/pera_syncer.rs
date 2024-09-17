@@ -6,14 +6,14 @@
 
 use crate::{
     error::BridgeResult,
-    retry_with_max_elapsed_time,
     pera_client::{PeraClient, PeraClientInner},
+    retry_with_max_elapsed_time,
 };
 use mysten_metrics::spawn_logged_monitored_task;
-use std::{collections::HashMap, sync::Arc};
 use pera_json_rpc_types::PeraEvent;
 use pera_types::BRIDGE_PACKAGE_ID;
 use pera_types::{event::EventID, Identifier};
+use std::{collections::HashMap, sync::Arc};
 use tokio::{
     task::JoinHandle,
     time::{self, Duration},
@@ -119,9 +119,9 @@ mod tests {
     use super::*;
 
     use crate::{pera_client::PeraClient, pera_mock_client::PeraMockClient};
-    use prometheus::Registry;
     use pera_json_rpc_types::EventPage;
     use pera_types::{digests::TransactionDigest, event::EventID, Identifier};
+    use prometheus::Registry;
     use tokio::time::timeout;
 
     #[tokio::test]

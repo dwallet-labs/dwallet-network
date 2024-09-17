@@ -7,8 +7,6 @@ pub use checked::*;
 
 #[pera_macros::with_checked_arithmetic]
 mod checked {
-    use std::collections::{BTreeMap, HashSet};
-    use std::sync::Arc;
     use pera_protocol_config::ProtocolConfig;
     use pera_types::base_types::{ObjectID, ObjectRef};
     use pera_types::error::{UserInputError, UserInputResult};
@@ -20,7 +18,7 @@ mod checked {
         TransactionKind,
     };
     use pera_types::{
-        base_types::{SequenceNumber, PeraAddress},
+        base_types::{PeraAddress, SequenceNumber},
         error::{PeraError, PeraResult},
         fp_bail, fp_ensure,
         gas::PeraGasStatus,
@@ -30,6 +28,8 @@ mod checked {
         PERA_AUTHENTICATOR_STATE_OBJECT_ID, PERA_CLOCK_OBJECT_ID, PERA_CLOCK_OBJECT_SHARED_VERSION,
         PERA_RANDOMNESS_STATE_OBJECT_ID,
     };
+    use std::collections::{BTreeMap, HashSet};
+    use std::sync::Arc;
     use tracing::error;
     use tracing::instrument;
 

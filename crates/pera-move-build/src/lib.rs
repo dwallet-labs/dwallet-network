@@ -40,7 +40,6 @@ use move_package::{
     source_package::parsed_manifest::SourceManifest,
 };
 use move_symbol_pool::Symbol;
-use serde_reflection::Registry;
 use pera_package_management::{resolve_published_id, PublishedAtError};
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_types::{
@@ -52,6 +51,7 @@ use pera_types::{
     PERA_SYSTEM_ADDRESS,
 };
 use pera_verifier::verifier as pera_bytecode_verifier;
+use serde_reflection::Registry;
 
 #[cfg(test)]
 #[path = "unit_tests/build_tests.rs"]

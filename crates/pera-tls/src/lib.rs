@@ -101,7 +101,8 @@ mod tests {
         let disallowed = Ed25519KeyPair::generate(&mut rng);
 
         let allowed_public_key = allowed.public().to_owned();
-        let allowed_cert = SelfSignedCertificate::new(allowed.private(), PERA_VALIDATOR_SERVER_NAME);
+        let allowed_cert =
+            SelfSignedCertificate::new(allowed.private(), PERA_VALIDATOR_SERVER_NAME);
 
         let disallowed_cert =
             SelfSignedCertificate::new(disallowed.private(), PERA_VALIDATOR_SERVER_NAME);

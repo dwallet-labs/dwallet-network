@@ -4,11 +4,6 @@
 // Copyright 2020 Parity Technologies
 //
 
-
-
-
-
-
 //! Crate for parity memory management related utilities.
 //! It includes global allocator choice, heap measurement and
 //! memory erasure.

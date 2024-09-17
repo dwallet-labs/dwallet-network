@@ -5,10 +5,6 @@ use anyhow::anyhow;
 use async_trait::async_trait;
 use core::panic;
 use fastcrypto::traits::ToFromBytes;
-use serde::de::DeserializeOwned;
-use std::collections::HashMap;
-use std::str::from_utf8;
-use std::time::Duration;
 use pera_json_rpc_api::BridgeReadApiClient;
 use pera_json_rpc_types::DevInspectResults;
 use pera_json_rpc_types::{EventFilter, Page, PeraEvent};
@@ -43,6 +39,10 @@ use pera_types::{
     event::EventID,
     Identifier,
 };
+use serde::de::DeserializeOwned;
+use std::collections::HashMap;
+use std::str::from_utf8;
+use std::time::Duration;
 use tokio::sync::OnceCell;
 use tracing::{error, warn};
 
@@ -627,17 +627,17 @@ mod tests {
         events::{EmittedPeraToEthTokenBridgeV1, MoveTokenDepositedEvent},
         pera_mock_client::PeraMockClient,
         test_utils::{
-            approve_action_with_validator_secrets, bridge_token, get_test_eth_to_pera_bridge_action,
-            get_test_pera_to_eth_bridge_action,
+            approve_action_with_validator_secrets, bridge_token,
+            get_test_eth_to_pera_bridge_action, get_test_pera_to_eth_bridge_action,
         },
         types::PeraToEthBridgeAction,
     };
     use ethers::types::Address as EthAddress;
     use move_core_types::account_address::AccountAddress;
-    use serde::{Deserialize, Serialize};
-    use std::str::FromStr;
     use pera_types::bridge::{BridgeChainId, TOKEN_ID_PERA, TOKEN_ID_USDC};
     use pera_types::crypto::get_key_pair;
+    use serde::{Deserialize, Serialize};
+    use std::str::FromStr;
     use test_cluster::TestClusterBuilder;
 
     use super::*;
@@ -791,7 +791,8 @@ mod tests {
         let id_token_map = pera_client.get_token_id_map().await.unwrap();
 
         // 1. Create a Eth -> Pera Transfer (recipient is sender address), approve with validator secrets and assert its status to be Claimed
-        let action = get_test_eth_to_pera_bridge_action(None, Some(usdc_amount), Some(sender), None);
+        let action =
+            get_test_eth_to_pera_bridge_action(None, Some(usdc_amount), Some(sender), None);
         let usdc_object_ref = approve_action_with_validator_secrets(
             context,
             bridge_object_arg,

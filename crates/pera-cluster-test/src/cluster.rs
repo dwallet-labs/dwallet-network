@@ -3,8 +3,6 @@
 
 use super::config::{ClusterTestOpt, Env};
 use async_trait::async_trait;
-use std::net::SocketAddr;
-use std::path::Path;
 use pera_config::Config;
 use pera_config::{PersistedConfig, PERA_KEYSTORE_FILENAME, PERA_NETWORK_CONFIG};
 use pera_graphql_rpc::config::ConnectionConfig;
@@ -20,6 +18,8 @@ use pera_types::base_types::PeraAddress;
 use pera_types::crypto::KeypairTraits;
 use pera_types::crypto::PeraKeyPair;
 use pera_types::crypto::{get_key_pair, AccountKeyPair};
+use std::net::SocketAddr;
+use std::path::Path;
 use tempfile::tempdir;
 use test_cluster::{TestCluster, TestClusterBuilder};
 use tracing::info;

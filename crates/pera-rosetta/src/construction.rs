@@ -10,10 +10,9 @@ use fastcrypto::encoding::{Encoding, Hex};
 use fastcrypto::hash::HashFunction;
 use futures::StreamExt;
 
-use shared_crypto::intent::{Intent, IntentMessage};
 use pera_json_rpc_types::{
-    StakeStatus, PeraObjectDataOptions, PeraTransactionBlockEffectsAPI,
-    PeraTransactionBlockResponseOptions,
+    PeraObjectDataOptions, PeraTransactionBlockEffectsAPI, PeraTransactionBlockResponseOptions,
+    StakeStatus,
 };
 use pera_sdk::rpc_types::PeraExecutionStatus;
 use pera_types::base_types::PeraAddress;
@@ -24,6 +23,7 @@ use pera_types::signature_verification::{
     verify_sender_signed_data_message_signatures, VerifiedDigestCache,
 };
 use pera_types::transaction::{Transaction, TransactionData, TransactionDataAPI};
+use shared_crypto::intent::{Intent, IntentMessage};
 
 use crate::errors::Error;
 use crate::types::{

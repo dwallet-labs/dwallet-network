@@ -25,7 +25,6 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use anyhow::anyhow;
-use std::sync::Arc;
 use pera_json_rpc_types::{
     PeraExecutionStatus, PeraTransactionBlockEffectsAPI, PeraTransactionBlockResponse,
 };
@@ -36,6 +35,7 @@ use pera_types::bridge::{BridgeChainId, BridgeTokenMetadata, BRIDGE_MODULE_NAME,
 use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::transaction::{ObjectArg, TransactionData};
 use pera_types::{TypeTag, BRIDGE_PACKAGE_ID};
+use std::sync::Arc;
 use tap::TapFallible;
 use tracing::info;
 
@@ -138,7 +138,8 @@ async fn test_bridge_from_eth_to_pera_to_eth() {
     assert_eq!(parsed_msg.parsed_payload.amount, pera_amount);
 
     let message = eth_pera_bridge::Message::from(pera_to_eth_bridge_action);
-    let signatures = get_signatures(bridge_test_cluster.bridge_client(), nonce, pera_chain_id).await;
+    let signatures =
+        get_signatures(bridge_test_cluster.bridge_client(), nonce, pera_chain_id).await;
 
     let eth_pera_bridge = EthPeraBridge::new(
         bridge_test_cluster.contracts().pera_bridge,

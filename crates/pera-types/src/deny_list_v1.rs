@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::base_types::{SequenceNumber, PeraAddress};
+use crate::base_types::{PeraAddress, SequenceNumber};
 use crate::collection_types::{Bag, Table, VecSet};
 use crate::dynamic_field::get_dynamic_field_from_store;
 use crate::error::{UserInputError, UserInputResult};

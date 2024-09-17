@@ -5,8 +5,8 @@ use std::ops::RangeInclusive;
 
 use crate::{crypto::DefaultHash, digests::Digest};
 use fastcrypto::hash::HashFunction;
-use serde::{Deserialize, Serialize};
 pub use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
+use serde::{Deserialize, Serialize};
 
 /// Models the set of protocol versions supported by a validator.
 /// The `pera-node` binary will always use the SYSTEM_DEFAULT constant, but for testing we need

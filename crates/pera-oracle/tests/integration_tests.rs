@@ -4,7 +4,6 @@
 use std::path::Path;
 use std::str::FromStr;
 
-use shared_crypto::intent::Intent;
 use pera_json_rpc_types::PeraTransactionBlockEffectsAPI;
 use pera_json_rpc_types::{ObjectChange, PeraExecutionStatus};
 use pera_keys::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
@@ -18,6 +17,7 @@ use pera_sdk::types::Identifier;
 use pera_sdk::{PeraClient, PeraClientBuilder};
 use pera_types::base_types::{ObjectRef, SequenceNumber};
 use pera_types::{parse_pera_type_tag, TypeTag};
+use shared_crypto::intent::Intent;
 
 // Integration tests for PERA Oracle, these test can be run manually on local or remote testnet.
 #[ignore]

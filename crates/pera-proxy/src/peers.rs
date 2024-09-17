@@ -5,6 +5,8 @@ use fastcrypto::ed25519::Ed25519PublicKey;
 use fastcrypto::traits::ToFromBytes;
 use multiaddr::Multiaddr;
 use once_cell::sync::Lazy;
+use pera_tls::Allower;
+use pera_types::pera_system_state::pera_system_state_summary::PeraSystemStateSummary;
 use prometheus::{register_counter_vec, register_histogram_vec};
 use prometheus::{CounterVec, HistogramVec};
 use serde::Deserialize;
@@ -13,8 +15,6 @@ use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
 };
-use pera_tls::Allower;
-use pera_types::pera_system_state::pera_system_state_summary::PeraSystemStateSummary;
 use tracing::{debug, error, info};
 
 static JSON_RPC_STATE: Lazy<CounterVec> = Lazy::new(|| {
@@ -260,10 +260,10 @@ fn extract(summary: PeraSystemStateSummary) -> impl Iterator<Item = (Ed25519Publ
 mod tests {
     use super::*;
     use crate::admin::{generate_self_cert, CertKeyPair};
-    use serde::Serialize;
     use pera_types::pera_system_state::pera_system_state_summary::{
         PeraSystemStateSummary, PeraValidatorSummary,
     };
+    use serde::Serialize;
 
     /// creates a test that binds our proxy use case to the structure in pera_getLatestPeraSystemState
     /// most of the fields are garbage, but we will send the results of the serde process to a private decode

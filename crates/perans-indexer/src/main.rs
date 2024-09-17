@@ -5,12 +5,12 @@ use anyhow::Result;
 use async_trait::async_trait;
 use diesel::{dsl::sql, BoolExpressionMethods, Connection, ExpressionMethods, RunQueryDsl};
 use mysten_service::metrics::start_basic_prometheus_server;
-use prometheus::Registry;
-use std::path::PathBuf;
 use pera_data_ingestion_core::{
     DataIngestionMetrics, FileProgressStore, IndexerExecutor, ReaderOptions, Worker, WorkerPool,
 };
 use pera_types::full_checkpoint_content::CheckpointData;
+use prometheus::Registry;
+use std::path::PathBuf;
 use tracing::info;
 
 use perans_indexer::{
@@ -152,7 +152,7 @@ async fn main() -> Result<()> {
             indexer: indexer_setup,
         },
         "perans_indexing".to_string(), /* task name used as a key in the progress store */
-        100,                          /* concurrency */
+        100,                           /* concurrency */
     );
     executor.register(worker_pool).await?;
 

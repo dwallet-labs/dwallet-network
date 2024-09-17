@@ -6,14 +6,14 @@ use crate::mock_account::Account;
 use crate::tx_generator::TxGenerator;
 use move_package::source_package::manifest_parser::parse_move_manifest_from_file;
 use move_symbol_pool::Symbol;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use std::fs;
-use std::path::PathBuf;
 use pera_move_build::{BuildConfig, CompiledPackage};
 use pera_test_transaction_builder::{PublishData, TestTransactionBuilder};
 use pera_types::base_types::ObjectID;
 use pera_types::transaction::{Transaction, DEFAULT_VALIDATOR_GAS_PRICE};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::fs;
+use std::path::PathBuf;
 use tracing::info;
 
 pub struct PackagePublishTxGenerator {

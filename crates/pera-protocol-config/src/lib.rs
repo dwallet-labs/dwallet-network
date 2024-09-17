@@ -9,9 +9,9 @@ use std::{
 
 use clap::*;
 use move_vm_config::verifier::{MeterConfig, VerifierConfig};
+use pera_protocol_config_macros::{ProtocolConfigAccessors, ProtocolConfigFeatureFlagsGetters};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-use pera_protocol_config_macros::{ProtocolConfigAccessors, ProtocolConfigFeatureFlagsGetters};
 use tracing::{info, warn};
 
 /// The minimum and maximum protocol versions supported by this build.

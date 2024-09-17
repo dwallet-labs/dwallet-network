@@ -28,12 +28,12 @@ use pera_types::id::ID;
 use pera_types::object::ObjectRead;
 use pera_types::pera_serde::BigInt;
 use pera_types::pera_system_state::pera_system_state_summary::PeraSystemStateSummary;
-use pera_types::pera_system_state::PoolTokenExchangeRate;
 use pera_types::pera_system_state::PeraSystemStateTrait;
+use pera_types::pera_system_state::PoolTokenExchangeRate;
 use pera_types::pera_system_state::{get_validator_from_table, PeraSystemState};
 
 use crate::authority_state::StateRead;
-use crate::error::{Error, RpcInterimResult, PeraRpcInputError};
+use crate::error::{Error, PeraRpcInputError, RpcInterimResult};
 use crate::{with_tracing, ObjectProvider, PeraRpcModule};
 
 #[derive(Clone)]
@@ -369,7 +369,8 @@ async fn exchange_rates(
     _current_epoch: EpochId,
 ) -> RpcInterimResult<Vec<ValidatorExchangeRates>> {
     let system_state = state.get_system_state()?;
-    let system_state_summary: PeraSystemStateSummary = system_state.into_pera_system_state_summary();
+    let system_state_summary: PeraSystemStateSummary =
+        system_state.into_pera_system_state_summary();
 
     // Get validator rate tables
     let mut tables = vec![];

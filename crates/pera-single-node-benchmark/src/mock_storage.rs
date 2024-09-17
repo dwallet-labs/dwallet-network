@@ -5,9 +5,6 @@ use move_binary_format::CompiledModule;
 use move_bytecode_utils::module_cache::GetModule;
 use move_core_types::language_storage::ModuleId;
 use once_cell::unsync::OnceCell;
-use prometheus::core::{Atomic, AtomicU64};
-use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
 use pera_storage::package_object_cache::PackageObjectCache;
 use pera_types::base_types::{EpochId, ObjectID, ObjectRef, SequenceNumber, VersionNumber};
 use pera_types::error::{PeraError, PeraResult};
@@ -18,6 +15,9 @@ use pera_types::storage::{
     PackageObject, ParentSync,
 };
 use pera_types::transaction::{InputObjectKind, InputObjects, ObjectReadResult, TransactionKey};
+use prometheus::core::{Atomic, AtomicU64};
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
 pub(crate) struct InMemoryObjectStore {

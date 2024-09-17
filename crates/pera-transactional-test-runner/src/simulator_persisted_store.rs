@@ -7,15 +7,13 @@ use move_binary_format::CompiledModule;
 use move_bytecode_utils::module_cache::GetModule;
 use move_core_types::language_storage::StructTag;
 use move_core_types::{language_storage::ModuleId, resolver::ModuleResolver};
-use simulacrum::Simulacrum;
-use std::num::NonZeroUsize;
 use pera_config::genesis;
 use pera_protocol_config::ProtocolVersion;
 use pera_swarm_config::genesis_config::AccountConfig;
 use pera_swarm_config::network_config_builder::ConfigBuilder;
 use pera_types::storage::{ReadStore, RestStateReader};
 use pera_types::{
-    base_types::{ObjectID, SequenceNumber, PeraAddress, VersionNumber},
+    base_types::{ObjectID, PeraAddress, SequenceNumber, VersionNumber},
     committee::{Committee, EpochId},
     crypto::AccountKeyPair,
     digests::{ObjectDigest, TransactionDigest, TransactionEventsDigest},
@@ -32,6 +30,8 @@ use pera_types::{
     },
     transaction::VerifiedTransaction,
 };
+use simulacrum::Simulacrum;
+use std::num::NonZeroUsize;
 use tempfile::tempdir;
 use typed_store::traits::TableSummary;
 use typed_store::traits::TypedStoreDebug;
@@ -57,7 +57,8 @@ pub struct PersistedStoreInnerReadOnlyWrapper {
 #[derive(Debug, DBMapUtils)]
 pub struct PersistedStoreInner {
     // Checkpoint data
-    checkpoints: DBMap<CheckpointSequenceNumber, pera_types::messages_checkpoint::TrustedCheckpoint>,
+    checkpoints:
+        DBMap<CheckpointSequenceNumber, pera_types::messages_checkpoint::TrustedCheckpoint>,
     checkpoint_digest_to_sequence_number: DBMap<CheckpointDigest, CheckpointSequenceNumber>,
     checkpoint_contents: DBMap<CheckpointContentsDigest, CheckpointContents>,
 

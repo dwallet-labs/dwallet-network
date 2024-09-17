@@ -9,7 +9,7 @@ use crate::coin::COIN_MODULE_NAME;
 use crate::coin::COIN_STRUCT_NAME;
 pub use crate::committee::EpochId;
 use crate::crypto::{
-    AuthorityPublicKeyBytes, DefaultHash, PublicKey, SignatureScheme, PeraPublicKey, PeraSignature,
+    AuthorityPublicKeyBytes, DefaultHash, PeraPublicKey, PeraSignature, PublicKey, SignatureScheme,
 };
 pub use crate::digests::{ObjectDigest, TransactionDigest, TransactionEffectsDigest};
 use crate::dynamic_field::DynamicFieldInfo;
@@ -30,9 +30,9 @@ use crate::messages_checkpoint::CheckpointTimestamp;
 use crate::multisig::MultiSigPublicKey;
 use crate::object::{Object, Owner};
 use crate::parse_pera_struct_tag;
-use crate::signature::GenericSignature;
 use crate::pera_serde::Readable;
 use crate::pera_serde::{to_pera_struct_tag_string, HexAccountAddress};
+use crate::signature::GenericSignature;
 use crate::transaction::Transaction;
 use crate::transaction::VerifiedTransaction;
 use crate::zk_login_authenticator::ZkLoginAuthenticator;

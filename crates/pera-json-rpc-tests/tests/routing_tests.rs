@@ -9,13 +9,13 @@ use jsonrpsee::http_client::{HeaderMap, HeaderValue};
 use jsonrpsee::proc_macros::rpc;
 use jsonrpsee::rpc_params;
 use jsonrpsee::RpcModule;
-use prometheus::Registry;
-use std::env;
 use pera_config::local_ip_utils;
-use pera_json_rpc::{JsonRpcServerBuilder, ServerType, PeraRpcModule};
+use pera_json_rpc::{JsonRpcServerBuilder, PeraRpcModule, ServerType};
 use pera_json_rpc_api::CLIENT_TARGET_API_VERSION_HEADER;
 use pera_open_rpc::Module;
 use pera_open_rpc_macros::open_rpc;
+use prometheus::Registry;
+use std::env;
 
 #[tokio::test]
 async fn test_rpc_backward_compatibility() {

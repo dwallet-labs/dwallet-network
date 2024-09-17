@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::indexer_test_utils::{InMemoryPersistent, NoopDataMapper, TestDatasource};
-use prometheus::Registry;
 use pera_indexer_builder::indexer_builder::{
     BackfillStrategy, IndexerBuilder, IndexerProgressStore,
 };
 use pera_indexer_builder::Task;
+use prometheus::Registry;
 
 mod indexer_test_utils;
 

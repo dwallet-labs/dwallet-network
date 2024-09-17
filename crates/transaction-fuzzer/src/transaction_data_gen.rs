@@ -6,8 +6,8 @@ use proptest::arbitrary::*;
 use proptest::prelude::*;
 
 use crate::type_arg_fuzzer::{gen_type_tag, pt_for_tags};
+use pera_types::base_types::{ObjectID, ObjectRef, PeraAddress, SequenceNumber};
 use proptest::collection::vec;
-use pera_types::base_types::{ObjectID, ObjectRef, SequenceNumber, PeraAddress};
 
 use pera_types::digests::ObjectDigest;
 use pera_types::transaction::{

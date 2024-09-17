@@ -9,12 +9,6 @@ mod simulator_persisted_store;
 pub mod test_adapter;
 
 pub use move_transactional_test_runner::framework::run_test_impl;
-use rand::rngs::StdRng;
-use simulacrum::Simulacrum;
-use simulacrum::SimulatorStore;
-use simulator_persisted_store::PersistedStore;
-use std::path::Path;
-use std::sync::Arc;
 use pera_core::authority::authority_test_utils::send_and_confirm_transaction_with_execution_error;
 use pera_core::authority::AuthorityState;
 use pera_json_rpc::authority_state::StateRead;
@@ -37,14 +31,20 @@ use pera_types::executable_transaction::{ExecutableTransaction, VerifiedExecutab
 use pera_types::messages_checkpoint::CheckpointContentsDigest;
 use pera_types::messages_checkpoint::VerifiedCheckpoint;
 use pera_types::object::Object;
-use pera_types::storage::ObjectStore;
-use pera_types::storage::ReadStore;
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
 use pera_types::pera_system_state::PeraSystemStateTrait;
+use pera_types::storage::ObjectStore;
+use pera_types::storage::ReadStore;
 use pera_types::transaction::InputObjects;
 use pera_types::transaction::Transaction;
 use pera_types::transaction::TransactionDataAPI;
 use pera_types::transaction::TransactionKind;
+use rand::rngs::StdRng;
+use simulacrum::Simulacrum;
+use simulacrum::SimulatorStore;
+use simulator_persisted_store::PersistedStore;
+use std::path::Path;
+use std::sync::Arc;
 use test_adapter::{PeraTestAdapter, PRE_COMPILED};
 
 #[cfg_attr(not(msim), tokio::main)]
@@ -308,8 +308,9 @@ impl ReadStore for ValidatorWithFullnode {
     fn get_checkpoint_contents_by_digest(
         &self,
         digest: &CheckpointContentsDigest,
-    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
-    {
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::CheckpointContents>,
+    > {
         self.validator
             .get_checkpoint_store()
             .get_checkpoint_contents(digest)
@@ -319,8 +320,9 @@ impl ReadStore for ValidatorWithFullnode {
     fn get_checkpoint_contents_by_sequence_number(
         &self,
         _sequence_number: pera_types::messages_checkpoint::CheckpointSequenceNumber,
-    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
-    {
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::CheckpointContents>,
+    > {
         todo!()
     }
 

@@ -3,9 +3,6 @@
 
 use expect_test::expect;
 use move_core_types::account_address::AccountAddress;
-use std::collections::HashMap;
-use std::{fs, io, path::Path};
-use std::{path::PathBuf, str};
 use pera_json_rpc_types::{
     get_new_package_obj_from_response, get_new_package_upgrade_cap_from_response,
 };
@@ -19,6 +16,9 @@ use pera_types::{
     base_types::{ObjectRef, PeraAddress, TransactionDigest},
     PERA_SYSTEM_STATE_OBJECT_ID,
 };
+use std::collections::HashMap;
+use std::{fs, io, path::Path};
+use std::{path::PathBuf, str};
 use test_cluster::TestClusterBuilder;
 
 use crate::toolchain::CURRENT_COMPILER_VERSION;

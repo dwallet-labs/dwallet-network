@@ -5,10 +5,10 @@ use crate::{
     data_fetcher::{DataFetcher, RemoteFetcher},
     types::{ReplayEngineError, MAX_CONCURRENT_REQUESTS, RPC_TIMEOUT_ERR_SLEEP_RETRY_PERIOD},
 };
-use std::{collections::VecDeque, fmt::Formatter};
-use std::{fmt::Debug, str::FromStr};
 use pera_sdk::PeraClientBuilder;
 use pera_types::digests::TransactionDigest;
+use std::{collections::VecDeque, fmt::Formatter};
+use std::{fmt::Debug, str::FromStr};
 use tracing::info;
 
 const VALID_CHECKPOINT_START: u64 = 1;

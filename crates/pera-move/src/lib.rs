@@ -5,8 +5,8 @@ use clap::Parser;
 #[cfg(feature = "unit_test")]
 use move_cli::base::test::UnitTestResult;
 use move_package::BuildConfig;
-use std::path::Path;
 use pera_move_build::set_pera_flavor;
+use std::path::Path;
 
 #[cfg(feature = "build")]
 pub mod build;

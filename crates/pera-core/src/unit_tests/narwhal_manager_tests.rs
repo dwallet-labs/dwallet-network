@@ -15,15 +15,15 @@ use fastcrypto::traits::KeyPair;
 use mysten_metrics::RegistryService;
 use narwhal_config::{Epoch, WorkerCache};
 use narwhal_types::{TransactionProto, TransactionsClient};
-use prometheus::Registry;
-use std::sync::Arc;
-use std::time::Duration;
 use pera_swarm_config::network_config_builder::ConfigBuilder;
 use pera_types::messages_checkpoint::{
     CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary,
 };
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
 use pera_types::pera_system_state::PeraSystemStateTrait;
+use prometheus::Registry;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::{broadcast, mpsc};
 use tokio::time::{interval, sleep};
 

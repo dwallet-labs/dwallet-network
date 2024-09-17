@@ -4,7 +4,7 @@ use tempfile::TempDir;
 
 use pera_keys::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
 use pera_types::crypto::Ed25519PeraSignature;
-use pera_types::crypto::{SignatureScheme, PeraSignatureInner};
+use pera_types::crypto::{PeraSignatureInner, SignatureScheme};
 #[test]
 fn mnemonic_test() {
     let temp_dir = TempDir::new().unwrap();

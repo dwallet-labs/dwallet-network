@@ -22,7 +22,7 @@ use crate::mutex_table::MutexTable;
 use crate::sharded_lru::ShardedLruCache;
 use pera_json_rpc_types::{PeraObjectDataFilter, TransactionFilter};
 use pera_types::base_types::{
-    ObjectDigest, ObjectID, SequenceNumber, PeraAddress, TransactionDigest, TxSequenceNumber,
+    ObjectDigest, ObjectID, PeraAddress, SequenceNumber, TransactionDigest, TxSequenceNumber,
 };
 use pera_types::base_types::{ObjectInfo, ObjectRef};
 use pera_types::digests::TransactionEventsDigest;
@@ -1424,7 +1424,10 @@ impl IndexStore {
                 .await
                 .unwrap()
                 .map_err(|e| {
-                    PeraError::ExecutionError(format!("Failed to read all balance from DB: {:?}", e))
+                    PeraError::ExecutionError(format!(
+                        "Failed to read all balance from DB: {:?}",
+                        e
+                    ))
                 })
             })
             .await
@@ -1469,13 +1472,14 @@ impl IndexStore {
                 total_balance += coin_info.balance as i128;
                 coin_object_count += 1;
             }
-            let coin_type =
-                TypeTag::Struct(Box::new(parse_pera_struct_tag(&coin_type).map_err(|e| {
+            let coin_type = TypeTag::Struct(Box::new(parse_pera_struct_tag(&coin_type).map_err(
+                |e| {
                     PeraError::ExecutionError(format!(
                         "Failed to parse event sender address: {:?}",
                         e
                     ))
-                })?));
+                },
+            )?));
             balances.insert(
                 coin_type,
                 TotalBalance {
@@ -1582,15 +1586,15 @@ mod tests {
     use crate::indexes::ObjectIndexChanges;
     use crate::IndexStore;
     use move_core_types::account_address::AccountAddress;
-    use prometheus::Registry;
-    use std::collections::BTreeMap;
-    use std::env::temp_dir;
     use pera_types::base_types::{ObjectInfo, ObjectType, PeraAddress};
     use pera_types::digests::TransactionDigest;
     use pera_types::effects::TransactionEvents;
     use pera_types::gas_coin::GAS;
     use pera_types::object;
     use pera_types::object::Owner;
+    use prometheus::Registry;
+    use std::collections::BTreeMap;
+    use std::env::temp_dir;
 
     #[tokio::test]
     async fn test_index_cache() -> anyhow::Result<()> {

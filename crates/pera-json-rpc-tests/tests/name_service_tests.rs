@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::str::FromStr;
 use pera_json_rpc::name_service::{self, Domain};
 use pera_types::{
     base_types::{ObjectID, PeraAddress},
     collection_types::VecMap,
 };
+use std::str::FromStr;
 
 #[test]
 fn test_parent_extraction() {

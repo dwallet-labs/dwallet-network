@@ -12,12 +12,6 @@ use futures::stream::FuturesUnordered;
 use futures::StreamExt;
 use narwhal_types::{Round, TimestampMs};
 use parking_lot::Mutex;
-use rand::rngs::{OsRng, StdRng};
-use rand::SeedableRng;
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
-use std::sync::{Arc, Weak};
-use std::time::Instant;
 use pera_macros::fail_point_if;
 use pera_network::randomness;
 use pera_types::base_types::AuthorityName;
@@ -27,6 +21,12 @@ use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::VersionedDkgMessage;
 use pera_types::messages_consensus::{ConsensusTransaction, VersionedDkgConfirmation};
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
+use rand::rngs::{OsRng, StdRng};
+use rand::SeedableRng;
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, HashMap};
+use std::sync::{Arc, Weak};
+use std::time::Instant;
 use tokio::sync::OnceCell;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info, warn};
@@ -809,10 +809,10 @@ mod tests {
         },
         epoch::randomness::*,
     };
-    use std::num::NonZeroUsize;
     use pera_protocol_config::ProtocolConfig;
     use pera_protocol_config::{Chain, ProtocolVersion};
     use pera_types::messages_consensus::ConsensusTransactionKind;
+    use std::num::NonZeroUsize;
     use tokio::sync::mpsc;
 
     #[tokio::test]

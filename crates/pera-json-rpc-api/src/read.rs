@@ -7,8 +7,8 @@ use jsonrpsee::proc_macros::rpc;
 use pera_json_rpc_types::ProtocolConfigResponse;
 use pera_json_rpc_types::{
     Checkpoint, CheckpointId, CheckpointPage, PeraEvent, PeraGetPastObjectRequest,
-    PeraObjectDataOptions, PeraObjectResponse, PeraPastObjectResponse, PeraTransactionBlockResponse,
-    PeraTransactionBlockResponseOptions,
+    PeraObjectDataOptions, PeraObjectResponse, PeraPastObjectResponse,
+    PeraTransactionBlockResponse, PeraTransactionBlockResponseOptions,
 };
 use pera_open_rpc_macros::open_rpc;
 use pera_types::base_types::{ObjectID, SequenceNumber, TransactionDigest};

@@ -3,14 +3,14 @@
 
 use clap::Parser;
 use mysten_metrics::start_prometheus_server;
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    path::PathBuf,
-};
 use pera_bridge::config::BridgeNodeConfig;
 use pera_bridge::node::run_bridge_node;
 use pera_bridge::server::BridgeNodePublicMetadata;
 use pera_config::Config;
+use std::{
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    path::PathBuf,
+};
 use tracing::info;
 
 // Define the `GIT_REVISION` and `VERSION` consts

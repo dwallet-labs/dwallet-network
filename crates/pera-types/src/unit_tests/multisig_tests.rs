@@ -5,8 +5,8 @@ use super::{MultiSigPublicKey, ThresholdUnit, WeightUnit};
 use crate::{
     base_types::PeraAddress,
     crypto::{
-        get_key_pair, get_key_pair_from_rng, Ed25519PeraSignature, PublicKey, Signature, PeraKeyPair,
-        PeraSignatureInner, ZkLoginPublicIdentifier,
+        get_key_pair, get_key_pair_from_rng, Ed25519PeraSignature, PeraKeyPair, PeraSignatureInner,
+        PublicKey, Signature, ZkLoginPublicIdentifier,
     },
     multisig::{as_indices, MultiSig, MAX_SIGNER_IN_MULTISIG},
     multisig_legacy::bitmap_to_u16,

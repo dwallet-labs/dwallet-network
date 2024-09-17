@@ -7,10 +7,10 @@ use crate::data::{DataLoader, Db};
 use crate::types::cursor::{JsonCursor, Page};
 use async_graphql::connection::{Connection, CursorType, Edge};
 use async_graphql::dataloader::Loader;
-use std::collections::{BTreeMap, HashMap};
 use pera_indexer::apis::GovernanceReadApi;
 use pera_types::committee::EpochId;
 use pera_types::pera_system_state::PoolTokenExchangeRate;
+use std::collections::{BTreeMap, HashMap};
 
 use pera_types::base_types::PeraAddress as NativePeraAddress;
 

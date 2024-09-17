@@ -3,7 +3,6 @@
 
 mod utils;
 use anyhow::anyhow;
-use shared_crypto::intent::Intent;
 use pera_config::{pera_config_dir, PERA_KEYSTORE_FILENAME};
 use pera_keys::keystore::{AccountKeystore, FileBasedKeystore};
 use pera_sdk::{
@@ -18,6 +17,7 @@ use pera_sdk::{
         Identifier,
     },
 };
+use shared_crypto::intent::Intent;
 use utils::setup_for_write;
 
 // This example shows how to use programmable transactions to chain multiple

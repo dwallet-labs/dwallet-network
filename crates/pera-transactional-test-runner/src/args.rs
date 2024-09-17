@@ -13,7 +13,7 @@ use move_core_types::runtime_value::{MoveStruct, MoveValue};
 use move_core_types::u256::U256;
 use move_symbol_pool::Symbol;
 use move_transactional_test_runner::tasks::{RunCommand, SyntaxChoice};
-use pera_types::base_types::{SequenceNumber, PeraAddress};
+use pera_types::base_types::{PeraAddress, SequenceNumber};
 use pera_types::move_package::UpgradePolicy;
 use pera_types::object::{Object, Owner};
 use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
@@ -227,9 +227,11 @@ impl<ExtraValueArgs: ParsableValue, ExtraRunArgs: Parser> clap::FromArgMatches
             Some(("transfer-object", matches)) => {
                 PeraSubcommand::TransferObject(TransferObjectCommand::from_arg_matches(matches)?)
             }
-            Some(("consensus-commit-prologue", matches)) => PeraSubcommand::ConsensusCommitPrologue(
-                ConsensusCommitPrologueCommand::from_arg_matches(matches)?,
-            ),
+            Some(("consensus-commit-prologue", matches)) => {
+                PeraSubcommand::ConsensusCommitPrologue(
+                    ConsensusCommitPrologueCommand::from_arg_matches(matches)?,
+                )
+            }
             Some(("programmable", matches)) => PeraSubcommand::ProgrammableTransaction(
                 ProgrammableTransactionCommand::from_arg_matches(matches)?,
             ),
@@ -242,9 +244,9 @@ impl<ExtraValueArgs: ParsableValue, ExtraRunArgs: Parser> clap::FromArgMatches
             Some(("set-address", matches)) => {
                 PeraSubcommand::SetAddress(SetAddressCommand::from_arg_matches(matches)?)
             }
-            Some(("create-checkpoint", matches)) => {
-                PeraSubcommand::CreateCheckpoint(CreateCheckpointCommand::from_arg_matches(matches)?)
-            }
+            Some(("create-checkpoint", matches)) => PeraSubcommand::CreateCheckpoint(
+                CreateCheckpointCommand::from_arg_matches(matches)?,
+            ),
             Some(("advance-epoch", matches)) => {
                 PeraSubcommand::AdvanceEpoch(AdvanceEpochCommand::from_arg_matches(matches)?)
             }
@@ -567,7 +569,10 @@ impl ParsableValue for PeraExtraValueArgs {
             ))
         } else {
             Ok(PeraValue::MoveValue(MoveValue::Vector(
-                elems.into_iter().map(PeraValue::assert_move_value).collect(),
+                elems
+                    .into_iter()
+                    .map(PeraValue::assert_move_value)
+                    .collect(),
             )))
         }
     }

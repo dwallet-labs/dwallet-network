@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::env;
-use std::fs;
-use std::path::PathBuf;
 use pera_framework::{BuiltInFramework, SystemPackage};
 use pera_framework_snapshot::update_bytecode_snapshot_manifest;
 use pera_protocol_config::ProtocolVersion;
+use std::env;
+use std::fs;
+use std::path::PathBuf;
 
 // Define the `GIT_REVISION` const
 bin_version::git_revision!();

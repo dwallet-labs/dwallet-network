@@ -15,9 +15,9 @@ use axum_extra::typed_header::TypedHeader;
 use bytes::Buf;
 use hyper::header::CONTENT_ENCODING;
 use once_cell::sync::Lazy;
+use pera_tls::TlsConnectionInfo;
 use prometheus::{proto::MetricFamily, register_counter_vec, CounterVec};
 use std::sync::Arc;
-use pera_tls::TlsConnectionInfo;
 use tracing::error;
 
 static MIDDLEWARE_OPS: Lazy<CounterVec> = Lazy::new(|| {

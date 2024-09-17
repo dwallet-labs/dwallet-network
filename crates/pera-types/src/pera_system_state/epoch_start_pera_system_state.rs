@@ -14,8 +14,8 @@ use consensus_config::{
     ProtocolPublicKey,
 };
 use narwhal_config::{Committee as NarwhalCommittee, CommitteeBuilder, WorkerCache, WorkerIndex};
-use serde::{Deserialize, Serialize};
 use pera_protocol_config::ProtocolVersion;
+use serde::{Deserialize, Serialize};
 use tracing::{error, warn};
 
 #[enum_dispatch]
@@ -341,8 +341,8 @@ mod test {
     use fastcrypto::traits::KeyPair;
     use mysten_network::Multiaddr;
     use narwhal_crypto::NetworkKeyPair;
-    use rand::thread_rng;
     use pera_protocol_config::ProtocolVersion;
+    use rand::thread_rng;
 
     #[test]
     fn test_pera_and_mysticeti_committee_are_same() {

@@ -9,6 +9,16 @@ use fastcrypto::traits::{EncodeDecodeBase64, KeyPair};
 use fastcrypto_zkp::bn254::utils::get_proof;
 use fastcrypto_zkp::bn254::utils::{gen_address_seed, get_salt};
 use fastcrypto_zkp::bn254::zk_login::ZkLoginInputs;
+use pera_json_rpc_types::PeraTransactionBlockResponseOptions;
+use pera_keys::keystore::{AccountKeystore, Keystore};
+use pera_sdk::PeraClientBuilder;
+use pera_types::base_types::PeraAddress;
+use pera_types::committee::EpochId;
+use pera_types::crypto::{PeraKeyPair, PublicKey};
+use pera_types::multisig::{MultiSig, MultiSigPublicKey};
+use pera_types::signature::GenericSignature;
+use pera_types::transaction::Transaction;
+use pera_types::zk_login_authenticator::ZkLoginAuthenticator;
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use regex::Regex;
@@ -19,16 +29,6 @@ use std::io;
 use std::io::Write;
 use std::thread::sleep;
 use std::time::Duration;
-use pera_json_rpc_types::PeraTransactionBlockResponseOptions;
-use pera_keys::keystore::{AccountKeystore, Keystore};
-use pera_sdk::PeraClientBuilder;
-use pera_types::base_types::PeraAddress;
-use pera_types::committee::EpochId;
-use pera_types::crypto::{PublicKey, PeraKeyPair};
-use pera_types::multisig::{MultiSig, MultiSigPublicKey};
-use pera_types::signature::GenericSignature;
-use pera_types::transaction::Transaction;
-use pera_types::zk_login_authenticator::ZkLoginAuthenticator;
 
 /// Read a line from stdin, parse the id_token field and return.
 pub fn read_cli_line() -> Result<String, anyhow::Error> {

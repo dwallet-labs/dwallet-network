@@ -21,16 +21,16 @@ use move_vm_types::{
     pop_arg,
     values::{self, StructRef, Value},
 };
+use pera_types::{
+    base_types::{ObjectID, PeraAddress, SequenceNumber},
+    id::UID,
+    object::Owner,
+    storage::WriteKind,
+};
 use smallvec::smallvec;
 use std::{
     borrow::Borrow,
     collections::{BTreeMap, BTreeSet, VecDeque},
-};
-use pera_types::{
-    base_types::{ObjectID, SequenceNumber, PeraAddress},
-    id::UID,
-    object::Owner,
-    storage::WriteKind,
 };
 
 const E_COULD_NOT_GENERATE_EFFECTS: u64 = 0;

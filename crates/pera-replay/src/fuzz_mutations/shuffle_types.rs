@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::fuzz::TransactionKindMutator;
-use rand::seq::SliceRandom;
 use pera_types::transaction::{Command, TransactionKind};
+use rand::seq::SliceRandom;
 use tracing::info;
 
 pub struct ShuffleTypes {

@@ -4,7 +4,7 @@
 use std::{collections::HashSet, sync::Arc};
 
 use pera_types::{
-    base_types::{ObjectID, ObjectRef, SequenceNumber, PeraAddress},
+    base_types::{ObjectID, ObjectRef, PeraAddress, SequenceNumber},
     crypto::{get_key_pair, AccountKeyPair},
     digests::ObjectDigest,
     effects::{TransactionEffects, TransactionEffectsAPI},

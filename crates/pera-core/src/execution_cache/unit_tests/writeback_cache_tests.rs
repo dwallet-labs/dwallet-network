@@ -1,16 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use prometheus::default_registry;
-use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::{
-    collections::BTreeMap,
-    future::Future,
-    path::PathBuf,
-    sync::atomic::Ordering,
-    sync::{atomic::AtomicU32, Arc},
-    time::{Duration, Instant},
-};
 use pera_framework::BuiltInFramework;
 use pera_macros::{register_fail_point_async, sim_test};
 use pera_test_transaction_builder::TestTransactionBuilder;
@@ -23,6 +13,16 @@ use pera_types::{
 use pera_types::{
     effects::{TestEffectsBuilder, TransactionEffectsAPI},
     event::Event,
+};
+use prometheus::default_registry;
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use std::{
+    collections::BTreeMap,
+    future::Future,
+    path::PathBuf,
+    sync::atomic::Ordering,
+    sync::{atomic::AtomicU32, Arc},
+    time::{Duration, Instant},
 };
 
 use super::*;

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::displays::Pretty;
-use std::fmt::{Display, Formatter};
 use pera_types::gas::GasCostSummary;
+use std::fmt::{Display, Formatter};
 
 impl<'a> Display for Pretty<'a, GasCostSummary> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {

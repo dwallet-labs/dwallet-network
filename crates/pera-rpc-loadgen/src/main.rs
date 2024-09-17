@@ -8,11 +8,11 @@ use anyhow::Result;
 use clap::Parser;
 use payload::AddressQueryType;
 
+use pera_keys::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use pera_types::crypto::{EncodeDecodeBase64, PeraKeyPair};
 use std::error::Error;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use pera_keys::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
-use pera_types::crypto::{EncodeDecodeBase64, PeraKeyPair};
 use tracing::info;
 
 use crate::load_test::{LoadTest, LoadTestConfig};

@@ -11,12 +11,12 @@ use move_command_line_common::display::RenderResult;
 use move_command_line_common::{display::try_render_constant, error_bitset::ErrorBitset};
 use move_core_types::annotated_value::MoveEnumLayout;
 use move_core_types::language_storage::ModuleId;
+use pera_types::base_types::is_primitive_type_tag;
+use pera_types::transaction::{Argument, CallArg, Command, ProgrammableTransaction};
 use std::collections::BTreeSet;
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 use std::{borrow::Cow, collections::BTreeMap};
-use pera_types::base_types::is_primitive_type_tag;
-use pera_types::transaction::{Argument, CallArg, Command, ProgrammableTransaction};
 
 use crate::error::Error;
 use move_binary_format::errors::Location;
@@ -1686,10 +1686,10 @@ mod tests {
     use async_trait::async_trait;
     use move_binary_format::file_format::Ability;
     use move_core_types::ident_str;
-    use std::sync::Arc;
-    use std::{path::PathBuf, str::FromStr, sync::RwLock};
     use pera_types::base_types::random_object_ref;
     use pera_types::transaction::{ObjectArg, ProgrammableMoveCall};
+    use std::sync::Arc;
+    use std::{path::PathBuf, str::FromStr, sync::RwLock};
 
     use move_compiler::compiled_unit::NamedCompiledModule;
     use pera_move_build::{BuildConfig, CompiledPackage};

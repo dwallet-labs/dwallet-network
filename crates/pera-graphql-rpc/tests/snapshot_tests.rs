@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use insta::assert_snapshot;
+use pera_graphql_rpc::server::builder::export_schema;
 use std::fs;
 use std::path::PathBuf;
-use pera_graphql_rpc::server::builder::export_schema;
 
 #[test]
 fn test_schema_sdl_export() {

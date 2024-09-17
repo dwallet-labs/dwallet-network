@@ -7,9 +7,6 @@ use crate::FileCompression;
 use fastcrypto::hash::MultisetHash;
 use futures::future::AbortHandle;
 use indicatif::MultiProgress;
-use std::collections::HashSet;
-use std::num::NonZeroUsize;
-use std::sync::Arc;
 use pera_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use pera_core::authority::authority_store_tables::AuthorityPerpetualTables;
 use pera_core::state_accumulator::StateAccumulator;
@@ -18,6 +15,9 @@ use pera_types::accumulator::Accumulator;
 use pera_types::base_types::ObjectID;
 use pera_types::messages_checkpoint::ECMHLiveObjectSetDigest;
 use pera_types::object::Object;
+use std::collections::HashSet;
+use std::num::NonZeroUsize;
+use std::sync::Arc;
 use tempfile::tempdir;
 
 fn temp_dir() -> std::path::PathBuf {

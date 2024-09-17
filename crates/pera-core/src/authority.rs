@@ -21,6 +21,14 @@ use move_core_types::annotated_value::MoveStructLayout;
 use move_core_types::language_storage::ModuleId;
 use mysten_metrics::{TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX};
 use parking_lot::Mutex;
+use pera_config::node::{AuthorityOverloadConfig, StateDebugDumpConfig};
+use pera_config::NodeConfig;
+use pera_types::crypto::RandomnessRound;
+use pera_types::execution_status::ExecutionStatus;
+use pera_types::inner_temporary_store::PackageStoreWithFallback;
+use pera_types::layout_resolver::into_struct_layout;
+use pera_types::layout_resolver::LayoutResolver;
+use pera_types::messages_consensus::{AuthorityCapabilitiesV1, AuthorityCapabilitiesV2};
 use prometheus::{
     register_histogram_vec_with_registry, register_histogram_with_registry,
     register_int_counter_vec_with_registry, register_int_counter_with_registry,
@@ -42,14 +50,6 @@ use std::{
     sync::Arc,
     vec,
 };
-use pera_config::node::{AuthorityOverloadConfig, StateDebugDumpConfig};
-use pera_config::NodeConfig;
-use pera_types::crypto::RandomnessRound;
-use pera_types::execution_status::ExecutionStatus;
-use pera_types::inner_temporary_store::PackageStoreWithFallback;
-use pera_types::layout_resolver::into_struct_layout;
-use pera_types::layout_resolver::LayoutResolver;
-use pera_types::messages_consensus::{AuthorityCapabilitiesV1, AuthorityCapabilitiesV2};
 use tap::{TapFallible, TapOptional};
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::{mpsc, oneshot, RwLock};
@@ -62,7 +62,6 @@ pub use authority_store::{AuthorityStore, ResolverWrapper, UpdateType};
 use mysten_metrics::{monitored_scope, spawn_monitored_task};
 
 use once_cell::sync::OnceCell;
-use shared_crypto::intent::{AppId, Intent, IntentMessage, IntentScope, IntentVersion};
 use pera_archival::reader::ArchiveReaderBalancer;
 use pera_config::genesis::Genesis;
 use pera_config::node::{DBCheckpointConfig, ExpensiveSafetyCheckConfig};
@@ -108,12 +107,12 @@ use pera_types::messages_grpc::{
 };
 use pera_types::metrics::{BytecodeVerifierMetrics, LimitsMetrics};
 use pera_types::object::{MoveObject, Owner, PastObjectRead, OBJECT_START_VERSION};
-use pera_types::storage::{
-    BackingPackageStore, BackingStore, ObjectKey, ObjectOrTombstone, ObjectStore, WriteKind,
-};
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
 use pera_types::pera_system_state::PeraSystemStateTrait;
 use pera_types::pera_system_state::{get_pera_system_state, PeraSystemState};
+use pera_types::storage::{
+    BackingPackageStore, BackingStore, ObjectKey, ObjectOrTombstone, ObjectStore, WriteKind,
+};
 use pera_types::supported_protocol_versions::{ProtocolConfig, SupportedProtocolVersions};
 use pera_types::{
     base_types::*,
@@ -126,6 +125,7 @@ use pera_types::{
     PERA_SYSTEM_ADDRESS,
 };
 use pera_types::{is_system_package, TypeTag};
+use shared_crypto::intent::{AppId, Intent, IntentMessage, IntentScope, IntentVersion};
 use typed_store::TypedStoreError;
 
 use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, CertTxGuard};
@@ -872,14 +872,15 @@ impl AuthorityState {
             epoch_store.epoch(),
         )?;
 
-        let (_gas_status, checked_input_objects) = pera_transaction_checks::check_transaction_input(
-            epoch_store.protocol_config(),
-            epoch_store.reference_gas_price(),
-            tx_data,
-            input_objects,
-            &receiving_objects,
-            &self.metrics.bytecode_verifier_metrics,
-        )?;
+        let (_gas_status, checked_input_objects) =
+            pera_transaction_checks::check_transaction_input(
+                epoch_store.protocol_config(),
+                epoch_store.reference_gas_price(),
+                tx_data,
+                input_objects,
+                &receiving_objects,
+                &self.metrics.bytecode_verifier_metrics,
+            )?;
 
         if epoch_store.coin_deny_list_v1_enabled() {
             check_coin_deny_list_v1(
@@ -3676,7 +3677,9 @@ impl AuthorityState {
     }
 
     #[cfg(msim)]
-    pub fn get_highest_pruned_checkpoint_for_testing(&self) -> PeraResult<CheckpointSequenceNumber> {
+    pub fn get_highest_pruned_checkpoint_for_testing(
+        &self,
+    ) -> PeraResult<CheckpointSequenceNumber> {
         self.database_for_testing()
             .perpetual_tables
             .get_highest_pruned_checkpoint()
@@ -5203,11 +5206,11 @@ impl TransactionKeyValueStoreTrait for AuthorityState {
 #[cfg(msim)]
 pub mod framework_injection {
     use move_binary_format::CompiledModule;
-    use std::collections::BTreeMap;
-    use std::{cell::RefCell, collections::BTreeSet};
     use pera_framework::{BuiltInFramework, SystemPackage};
     use pera_types::base_types::{AuthorityName, ObjectID};
     use pera_types::is_system_package;
+    use std::collections::BTreeMap;
+    use std::{cell::RefCell, collections::BTreeSet};
 
     type FrameworkOverrideConfig = BTreeMap<ObjectID, PackageOverrideConfig>;
 

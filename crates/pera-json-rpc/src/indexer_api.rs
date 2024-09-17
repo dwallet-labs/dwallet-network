@@ -14,7 +14,6 @@ use jsonrpsee::{
 use move_bytecode_utils::layout::TypeLayoutBuilder;
 use move_core_types::language_storage::TypeTag;
 use mysten_metrics::spawn_monitored_task;
-use serde::Serialize;
 use pera_core::authority::AuthorityState;
 use pera_json::PeraJsonValue;
 use pera_json_rpc_api::{
@@ -35,6 +34,7 @@ use pera_types::{
     error::PeraObjectResponseError,
     event::EventID,
 };
+use serde::Serialize;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 use tracing::{debug, instrument, warn};
 

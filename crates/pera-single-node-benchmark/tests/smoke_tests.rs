@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::path::PathBuf;
-use strum::IntoEnumIterator;
 use pera_macros::sim_test;
 use pera_single_node_benchmark::command::{Component, WorkloadKind};
 use pera_single_node_benchmark::run_benchmark;
 use pera_single_node_benchmark::workload::Workload;
+use std::path::PathBuf;
+use strum::IntoEnumIterator;
 
 #[sim_test]
 async fn benchmark_non_move_transactions_smoke_test() {

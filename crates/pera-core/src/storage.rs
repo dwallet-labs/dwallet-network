@@ -3,7 +3,6 @@
 
 use move_core_types::language_storage::StructTag;
 use parking_lot::Mutex;
-use std::sync::Arc;
 use pera_types::base_types::ObjectID;
 use pera_types::base_types::PeraAddress;
 use pera_types::base_types::TransactionDigest;
@@ -31,6 +30,7 @@ use pera_types::storage::RestStateReader;
 use pera_types::storage::WriteStore;
 use pera_types::storage::{ObjectKey, ReadStore};
 use pera_types::transaction::VerifiedTransaction;
+use std::sync::Arc;
 use tap::Pipe;
 
 use crate::authority::AuthorityState;
@@ -249,8 +249,9 @@ impl ReadStore for RocksDbStore {
     fn get_checkpoint_contents_by_digest(
         &self,
         digest: &CheckpointContentsDigest,
-    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
-    {
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::CheckpointContents>,
+    > {
         self.checkpoint_store
             .get_checkpoint_contents(digest)
             .map_err(pera_types::storage::error::Error::custom)
@@ -259,8 +260,9 @@ impl ReadStore for RocksDbStore {
     fn get_checkpoint_contents_by_sequence_number(
         &self,
         sequence_number: CheckpointSequenceNumber,
-    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
-    {
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::CheckpointContents>,
+    > {
         match self.get_checkpoint_by_sequence_number(sequence_number) {
             Ok(Some(checkpoint)) => {
                 self.get_checkpoint_contents_by_digest(&checkpoint.content_digest)
@@ -377,10 +379,9 @@ impl RestReadStore {
     }
 
     fn index(&self) -> pera_types::storage::error::Result<&RestIndexStore> {
-        self.state
-            .rest_index
-            .as_deref()
-            .ok_or_else(|| pera_types::storage::error::Error::custom("rest index store is disabled"))
+        self.state.rest_index.as_deref().ok_or_else(|| {
+            pera_types::storage::error::Error::custom("rest index store is disabled")
+        })
     }
 }
 
@@ -449,16 +450,18 @@ impl ReadStore for RestReadStore {
     fn get_checkpoint_contents_by_digest(
         &self,
         digest: &CheckpointContentsDigest,
-    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
-    {
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::CheckpointContents>,
+    > {
         self.rocks.get_checkpoint_contents_by_digest(digest)
     }
 
     fn get_checkpoint_contents_by_sequence_number(
         &self,
         sequence_number: CheckpointSequenceNumber,
-    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
-    {
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::CheckpointContents>,
+    > {
         self.rocks
             .get_checkpoint_contents_by_sequence_number(sequence_number)
     }

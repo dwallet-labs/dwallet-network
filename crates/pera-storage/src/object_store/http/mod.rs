@@ -127,8 +127,8 @@ fn header_meta(location: &Path, headers: &HeaderMap) -> Result<ObjectMeta> {
 mod tests {
     use crate::object_store::http::HttpDownloaderBuilder;
     use object_store::path::Path;
-    use std::fs;
     use pera_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
+    use std::fs;
     use tempfile::TempDir;
 
     #[tokio::test]

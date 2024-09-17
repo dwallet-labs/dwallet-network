@@ -8,10 +8,10 @@ use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 use diesel::r2d2::R2D2Connection;
+use pera_json_rpc_types::PeraTransactionBlockResponse;
 use std::env;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use pera_json_rpc_types::PeraTransactionBlockResponse;
 use tracing::info;
 
 use crate::db::{new_connection_pool_with_config, ConnectionPoolConfig};

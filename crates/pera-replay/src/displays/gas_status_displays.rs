@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::displays::Pretty;
-use std::fmt::{Display, Formatter};
 use pera_types::gas::PeraGasStatus;
 use pera_types::gas_model::gas_v2::PeraGasStatus as GasStatusV2;
+use std::fmt::{Display, Formatter};
 use tabled::{
     builder::Builder as TableBuilder,
     settings::{style::HorizontalLine, Style as TableStyle},

@@ -6,9 +6,9 @@ use crate::crypto::DefaultHash;
 use crate::error::{PeraError, PeraResult};
 use crate::id::UID;
 use crate::object::Object;
-use crate::storage::ObjectStore;
-use crate::pera_serde::Readable;
 use crate::pera_serde::PeraTypeTag;
+use crate::pera_serde::Readable;
+use crate::storage::ObjectStore;
 use crate::{MoveTypeTagTrait, ObjectID, SequenceNumber, PERA_FRAMEWORK_ADDRESS};
 use fastcrypto::encoding::Base58;
 use fastcrypto::hash::HashFunction;
@@ -140,7 +140,10 @@ impl DynamicFieldInfo {
         }
     }
 
-    pub fn try_extract_field_name(tag: &StructTag, type_: &DynamicFieldType) -> PeraResult<TypeTag> {
+    pub fn try_extract_field_name(
+        tag: &StructTag,
+        type_: &DynamicFieldType,
+    ) -> PeraResult<TypeTag> {
         match (type_, tag.type_params.first()) {
             (DynamicFieldType::DynamicField, Some(name_type)) => Ok(name_type.clone()),
             (DynamicFieldType::DynamicObject, Some(TypeTag::Struct(s))) => Ok(s

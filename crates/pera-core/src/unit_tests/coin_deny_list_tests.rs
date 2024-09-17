@@ -7,7 +7,6 @@ use crate::authority::test_authority_builder::TestAuthorityBuilder;
 use crate::authority::AuthorityState;
 use move_core_types::ident_str;
 use move_core_types::language_storage::{StructTag, TypeTag};
-use std::sync::Arc;
 use pera_test_transaction_builder::TestTransactionBuilder;
 use pera_types::base_types::{dbg_addr, ObjectID, ObjectRef, PeraAddress};
 use pera_types::crypto::{get_account_key_pair, AccountKeyPair};
@@ -19,6 +18,7 @@ use pera_types::effects::{TransactionEffects, TransactionEffectsAPI};
 use pera_types::object::Object;
 use pera_types::transaction::{CallArg, ObjectArg, TEST_ONLY_GAS_UNIT_FOR_PUBLISH};
 use pera_types::{PERA_DENY_LIST_OBJECT_ID, PERA_FRAMEWORK_PACKAGE_ID};
+use std::sync::Arc;
 
 // Test that a regulated coin can be created and all the necessary objects are created with the right types.
 // Make sure that these types can be converted to Rust types.
@@ -125,7 +125,8 @@ async fn test_regulated_coin_v2_types() {
     );
 
     // Step 2: Deny an address and check the denylist types.
-    let deny_list_object_init_version = env.get_latest_object_ref(&PERA_DENY_LIST_OBJECT_ID).await.1;
+    let deny_list_object_init_version =
+        env.get_latest_object_ref(&PERA_DENY_LIST_OBJECT_ID).await.1;
     let regulated_coin_type = TypeTag::Struct(Box::new(StructTag {
         address: package_id.into(),
         module: ident_str!("regulated_coin").to_owned(),

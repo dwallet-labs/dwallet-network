@@ -5,11 +5,11 @@ use futures::Future;
 use futures::{future::BoxFuture, stream::FuturesUnordered, StreamExt};
 use mysten_metrics::monitored_future;
 
+use pera_types::base_types::ConciseableName;
+use pera_types::committee::{CommitteeTrait, StakeUnit};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use std::time::Duration;
-use pera_types::base_types::ConciseableName;
-use pera_types::committee::{CommitteeTrait, StakeUnit};
 
 use tokio::time::timeout;
 

@@ -7,8 +7,8 @@ mod subscriber;
 mod metrics;
 
 pub use errors::{SubscriberError, SubscriberResult};
-pub use state::ExecutionIndices;
 use pera_protocol_config::ProtocolConfig;
+pub use state::ExecutionIndices;
 
 use crate::metrics::ExecutorMetrics;
 use crate::subscriber::spawn_subscriber;

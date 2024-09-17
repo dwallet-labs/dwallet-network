@@ -21,6 +21,7 @@ use fastcrypto::{
 use indexmap::IndexMap;
 use mysten_util_mem::MallocSizeOf;
 use once_cell::sync::OnceCell;
+use pera_protocol_config::ProtocolConfig;
 use proptest_derive::Arbitrary;
 use roaring::RoaringBitmap;
 use serde::{Deserialize, Serialize};
@@ -33,7 +34,6 @@ use std::{
     collections::{HashMap, HashSet},
     time::{Duration, SystemTime},
 };
-use pera_protocol_config::ProtocolConfig;
 use tracing::warn;
 
 /// The round number.

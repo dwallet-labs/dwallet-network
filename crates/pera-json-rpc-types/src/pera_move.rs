@@ -11,6 +11,7 @@ use move_binary_format::normalized::{
 use move_core_types::annotated_value::{MoveStruct, MoveValue, MoveVariant};
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::StructTag;
+use pera_macros::EnumVariantOrder;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -18,7 +19,6 @@ use serde_with::serde_as;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::fmt::{Display, Formatter, Write};
-use pera_macros::EnumVariantOrder;
 use tracing::warn;
 
 use pera_types::base_types::{ObjectID, PeraAddress};
@@ -260,9 +260,9 @@ impl From<NormalizedType> for PeraMoveNormalizedType {
             NormalizedType::Reference(r) => {
                 PeraMoveNormalizedType::Reference(Box::new(PeraMoveNormalizedType::from(*r)))
             }
-            NormalizedType::MutableReference(mr) => {
-                PeraMoveNormalizedType::MutableReference(Box::new(PeraMoveNormalizedType::from(*mr)))
-            }
+            NormalizedType::MutableReference(mr) => PeraMoveNormalizedType::MutableReference(
+                Box::new(PeraMoveNormalizedType::from(*mr)),
+            ),
         }
     }
 }
@@ -546,7 +546,10 @@ fn indent<T: Display>(d: &T, indent: usize) -> String {
         .join("\n")
 }
 
-fn try_convert_type(type_: &StructTag, fields: &[(Identifier, MoveValue)]) -> Option<PeraMoveValue> {
+fn try_convert_type(
+    type_: &StructTag,
+    fields: &[(Identifier, MoveValue)],
+) -> Option<PeraMoveValue> {
     let struct_name = format!(
         "0x{}::{}::{}",
         type_.address.short_str_lossless(),

@@ -193,10 +193,10 @@ impl TransactionHandler {
 mod tests {
     use crate::handlers::transaction_handler::TransactionHandler;
     use fastcrypto::encoding::{Base64, Encoding};
-    use simulacrum::Simulacrum;
     use pera_data_ingestion_core::Worker;
     use pera_types::base_types::PeraAddress;
     use pera_types::storage::ReadStore;
+    use simulacrum::Simulacrum;
 
     #[tokio::test]
     pub async fn test_transaction_handler() -> anyhow::Result<()> {

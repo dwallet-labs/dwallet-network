@@ -10,18 +10,18 @@ use crate::tx_generator::{RootObjectCreateTxGenerator, TxGenerator};
 use crate::workload::Workload;
 use futures::stream::FuturesUnordered;
 use futures::StreamExt;
-use std::collections::{BTreeMap, HashMap};
-use std::ops::Deref;
-use std::sync::Arc;
 use pera_config::node::RunWithRange;
 use pera_test_transaction_builder::PublishData;
-use pera_types::base_types::{ObjectID, ObjectRef, SequenceNumber, PeraAddress};
+use pera_types::base_types::{ObjectID, ObjectRef, PeraAddress, SequenceNumber};
 use pera_types::effects::{TransactionEffects, TransactionEffectsAPI};
 use pera_types::messages_grpc::HandleTransactionResponse;
 use pera_types::mock_checkpoint_builder::ValidatorKeypairProvider;
 use pera_types::transaction::{
     CertifiedTransaction, SignedTransaction, Transaction, VerifiedTransaction,
 };
+use std::collections::{BTreeMap, HashMap};
+use std::ops::Deref;
+use std::sync::Arc;
 use tracing::info;
 
 pub struct BenchmarkContext {

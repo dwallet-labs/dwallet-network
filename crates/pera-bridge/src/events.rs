@@ -18,8 +18,6 @@ use fastcrypto::encoding::Encoding;
 use fastcrypto::encoding::Hex;
 use move_core_types::language_storage::StructTag;
 use once_cell::sync::OnceCell;
-use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use pera_json_rpc_types::PeraEvent;
 use pera_types::base_types::PeraAddress;
 use pera_types::bridge::BridgeChainId;
@@ -32,6 +30,8 @@ use pera_types::digests::TransactionDigest;
 use pera_types::parse_pera_type_tag;
 use pera_types::TypeTag;
 use pera_types::BRIDGE_PACKAGE_ID;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 // `TokendDepositedEvent` emitted in bridge.move
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -523,7 +523,10 @@ pub mod tests {
             .await;
         let mut mask = 0u8;
         for event in events.iter() {
-            match PeraBridgeEvent::try_from_pera_event(event).unwrap().unwrap() {
+            match PeraBridgeEvent::try_from_pera_event(event)
+                .unwrap()
+                .unwrap()
+            {
                 PeraBridgeEvent::CommitteeMemberRegistration(_event) => mask |= 0x1,
                 PeraBridgeEvent::CommitteeUpdateEvent(_event) => mask |= 0x2,
                 PeraBridgeEvent::TokenRegistrationEvent(_event) => mask |= 0x4,

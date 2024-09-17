@@ -7,7 +7,7 @@ use sdk::Result;
 pub use reqwest;
 
 use crate::transactions::ExecuteTransactionQueryParameters;
-use pera_types::base_types::{ObjectID, SequenceNumber, PeraAddress};
+use pera_types::base_types::{ObjectID, PeraAddress, SequenceNumber};
 use pera_types::crypto::AuthorityStrongQuorumSignInfo;
 use pera_types::effects::{TransactionEffects, TransactionEvents};
 use pera_types::full_checkpoint_content::CheckpointData;

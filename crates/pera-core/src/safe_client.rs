@@ -5,11 +5,6 @@
 use crate::authority_client::AuthorityAPI;
 use crate::epoch::committee_store::CommitteeStore;
 use mysten_metrics::histogram::{Histogram, HistogramVec};
-use prometheus::core::GenericCounter;
-use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
-use std::collections::HashMap;
-use std::net::SocketAddr;
-use std::sync::Arc;
 use pera_types::crypto::AuthorityPublicKeyBytes;
 use pera_types::effects::{SignedTransactionEffects, TransactionEffectsAPI};
 use pera_types::messages_checkpoint::{
@@ -27,6 +22,11 @@ use pera_types::{
     error::{PeraError, PeraResult},
     transaction::*,
 };
+use prometheus::core::GenericCounter;
+use prometheus::{register_int_counter_vec_with_registry, IntCounterVec, Registry};
+use std::collections::HashMap;
+use std::net::SocketAddr;
+use std::sync::Arc;
 use tap::TapFallible;
 use tracing::{debug, error, instrument};
 

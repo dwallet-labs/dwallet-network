@@ -5,9 +5,9 @@ use crate::manage_package::resolve_lock_file_path;
 use clap::Parser;
 use move_cli::base;
 use move_package::BuildConfig as MoveBuildConfig;
+use pera_move_build::{check_invalid_dependencies, check_unpublished_dependencies, BuildConfig};
 use serde_json::json;
 use std::{fs, path::Path};
-use pera_move_build::{check_invalid_dependencies, check_unpublished_dependencies, BuildConfig};
 
 const LAYOUTS_DIR: &str = "layouts";
 const STRUCT_LAYOUTS_FILENAME: &str = "struct_layouts.yaml";

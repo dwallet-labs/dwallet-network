@@ -4,11 +4,11 @@ use crate::authority::AuthorityMetrics;
 use arc_swap::ArcSwap;
 use narwhal_types::TimestampMs;
 use parking_lot::Mutex;
+use pera_protocol_config::Chain;
+use pera_types::digests::ChainIdentifier;
 use std::collections::{BTreeMap, VecDeque};
 use std::num::NonZeroU64;
 use std::sync::Arc;
-use pera_protocol_config::Chain;
-use pera_types::digests::ChainIdentifier;
 use tracing::{debug, warn};
 
 const DEFAULT_OBSERVATIONS_WINDOW: u64 = 120; // number of observations to use to calculate the past throughput

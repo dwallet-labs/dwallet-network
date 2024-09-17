@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use pera_macros::register_fail_point;
+use pera_macros::register_fail_point_if;
+use pera_macros::sim_test;
+use pera_test_transaction_builder::make_transfer_pera_transaction;
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
-use pera_macros::register_fail_point;
-use pera_macros::register_fail_point_if;
-use pera_macros::sim_test;
-use pera_test_transaction_builder::make_transfer_pera_transaction;
 use test_cluster::TestClusterBuilder;
 
 #[sim_test]

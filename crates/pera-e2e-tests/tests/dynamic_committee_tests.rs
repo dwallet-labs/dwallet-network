@@ -4,11 +4,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use move_core_types::ident_str;
-use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-};
 use pera_core::authority::AuthorityState;
 use pera_macros::*;
 use pera_swarm_config::genesis_config::{AccountConfig, DEFAULT_GAS_AMOUNT};
@@ -17,14 +12,19 @@ use pera_types::effects::{TransactionEffects, TransactionEffectsAPI};
 use pera_types::{
     base_types::{ObjectID, ObjectRef, PeraAddress},
     object::{Object, Owner},
-    programmable_transaction_builder::ProgrammableTransactionBuilder,
-    storage::ObjectStore,
     pera_system_state::{
         pera_system_state_summary::{PeraSystemStateSummary, PeraValidatorSummary},
         PeraSystemStateTrait,
     },
+    programmable_transaction_builder::ProgrammableTransactionBuilder,
+    storage::ObjectStore,
     transaction::{Argument, Command, ObjectArg, ProgrammableTransaction},
     PERA_SYSTEM_PACKAGE_ID,
+};
+use rand::{rngs::StdRng, Rng, SeedableRng};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
 };
 use test_cluster::{TestCluster, TestClusterBuilder};
 use tracing::info;
@@ -128,7 +128,11 @@ impl StressTestRunner {
             .clone()
     }
 
-    pub async fn run(&self, sender: PeraAddress, pt: ProgrammableTransaction) -> TransactionEffects {
+    pub async fn run(
+        &self,
+        sender: PeraAddress,
+        pt: ProgrammableTransaction,
+    ) -> TransactionEffects {
         let rgp = self.test_cluster.get_reference_gas_price().await;
         let gas_object = self
             .test_cluster

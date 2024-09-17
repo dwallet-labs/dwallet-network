@@ -8,10 +8,6 @@ use crate::test_authority_clients::LocalAuthorityClientFaultConfig;
 use crate::test_utils::make_transfer_pera_transaction;
 use crate::{quorum_driver::QuorumDriverMetrics, test_utils::init_local_authorities};
 use mysten_common::sync::notify_read::{NotifyRead, Registration};
-use std::net::SocketAddr;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
 use pera_macros::{register_fail_point, sim_test};
 use pera_types::base_types::PeraAddress;
 use pera_types::base_types::TransactionDigest;
@@ -22,6 +18,10 @@ use pera_types::quorum_driver_types::{
     ExecuteTransactionRequestV3, QuorumDriverError, QuorumDriverResponse, QuorumDriverResult,
 };
 use pera_types::transaction::Transaction;
+use std::net::SocketAddr;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::time::timeout;
 
 async fn setup() -> (AuthorityAggregator<LocalAuthorityClient>, Transaction) {

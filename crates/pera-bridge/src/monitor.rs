@@ -7,13 +7,13 @@ use crate::client::bridge_authority_aggregator::BridgeAuthorityAggregator;
 use crate::crypto::BridgeAuthorityPublicKeyBytes;
 use crate::events::{BlocklistValidatorEvent, CommitteeMemberUrlUpdateEvent};
 use crate::events::{EmergencyOpEvent, PeraBridgeEvent};
-use crate::retry_with_max_elapsed_time;
 use crate::pera_client::{PeraClient, PeraClientInner};
+use crate::retry_with_max_elapsed_time;
 use crate::types::{BridgeCommittee, IsBridgePaused};
 use arc_swap::ArcSwap;
+use pera_types::TypeTag;
 use std::collections::HashMap;
 use std::sync::Arc;
-use pera_types::TypeTag;
 use tokio::time::Duration;
 use tracing::{error, info, warn};
 
@@ -239,9 +239,10 @@ async fn get_latest_bridge_pause_status_with_emergency_event<C: PeraClientInner>
 ) -> IsBridgePaused {
     let mut remaining_retry_times = REFRESH_BRIDGE_RETRY_TIMES;
     loop {
-        let Ok(Ok(summary)) =
-            retry_with_max_elapsed_time!(pera_client.get_bridge_summary(), Duration::from_secs(600))
-        else {
+        let Ok(Ok(summary)) = retry_with_max_elapsed_time!(
+            pera_client.get_bridge_summary(),
+            Duration::from_secs(600)
+        ) else {
             error!("Failed to get bridge summary after retry");
             continue;
         };
@@ -275,11 +276,11 @@ mod tests {
     };
     use crate::types::{BridgeAuthority, BRIDGE_PAUSED, BRIDGE_UNPAUSED};
     use fastcrypto::traits::KeyPair;
-    use prometheus::Registry;
     use pera_types::base_types::PeraAddress;
     use pera_types::bridge::BridgeCommitteeSummary;
     use pera_types::bridge::MoveTypeCommitteeMember;
     use pera_types::crypto::get_key_pair;
+    use prometheus::Registry;
 
     use crate::{pera_mock_client::PeraMockClient, types::BridgeCommittee};
     use pera_types::crypto::ToFromBytes;

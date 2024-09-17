@@ -5,7 +5,7 @@ use crate::crypto::PublicKey;
 use crate::signature_verification::VerifiedDigestCache;
 use crate::{
     base_types::{EpochId, PeraAddress},
-    crypto::{DefaultHash, Signature, SignatureScheme, PeraSignature},
+    crypto::{DefaultHash, PeraSignature, Signature, SignatureScheme},
     digests::ZKLoginInputsDigest,
     error::{PeraError, PeraResult},
     signature::{AuthenticatorTrait, VerifyParams},

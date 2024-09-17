@@ -6,12 +6,12 @@
 
 use std::sync::Arc;
 
-use proptest::prelude::*;
 use pera_types::{
     base_types::{ObjectID, PeraAddress},
     crypto::{get_key_pair, AccountKeyPair},
     object::Object,
 };
+use proptest::prelude::*;
 
 use crate::executor::Executor;
 

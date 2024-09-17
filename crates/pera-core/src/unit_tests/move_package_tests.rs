@@ -3,7 +3,6 @@
 
 use move_binary_format::{file_format::CompiledModule, file_format_common::VERSION_MAX};
 
-use std::{collections::BTreeMap, path::PathBuf};
 use pera_move_build::{BuildConfig, CompiledPackage};
 use pera_protocol_config::{Chain, ProtocolConfig};
 use pera_types::{
@@ -14,6 +13,7 @@ use pera_types::{
     move_package::{MovePackage, TypeOrigin, UpgradeInfo},
     object::{Data, Object, OBJECT_START_VERSION},
 };
+use std::{collections::BTreeMap, path::PathBuf};
 
 macro_rules! type_origin_table {
     {} => { Vec::new() };

@@ -3,11 +3,11 @@
 
 #![allow(unused_imports)]
 #![allow(unused_variables)]
-use std::{path::Path, sync::Arc};
 use pera_transactional_test_runner::{
     run_test_impl,
     test_adapter::{PeraTestAdapter, PRE_COMPILED},
 };
+use std::{path::Path, sync::Arc};
 pub const TEST_DIR: &str = "tests";
 
 datatest_stable::harness!(run_test, TEST_DIR, r".*\.(mvir|move)$");

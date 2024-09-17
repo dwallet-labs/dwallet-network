@@ -7,8 +7,8 @@ use anemo::types::PeerAffinity;
 use anemo::Result;
 use fastcrypto::ed25519::Ed25519PublicKey;
 use futures::stream::FuturesUnordered;
-use std::collections::HashSet;
 use pera_config::p2p::AllowlistedPeer;
+use std::collections::HashSet;
 use tokio::time::timeout;
 
 #[tokio::test]

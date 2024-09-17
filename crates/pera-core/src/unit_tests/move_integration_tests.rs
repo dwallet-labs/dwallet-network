@@ -30,10 +30,10 @@ use pera_types::{
     error::PeraError,
 };
 
-use std::{collections::HashSet, path::PathBuf};
-use std::{env, str::FromStr};
 use pera_types::execution_status::{CommandArgumentError, ExecutionFailureStatus, ExecutionStatus};
 use pera_types::move_package::UpgradeCap;
+use std::{collections::HashSet, path::PathBuf};
+use std::{env, str::FromStr};
 
 #[tokio::test]
 #[cfg_attr(msim, ignore)]

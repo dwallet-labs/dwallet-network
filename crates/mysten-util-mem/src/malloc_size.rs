@@ -6,11 +6,6 @@
 // http://rust-lang.org/COPYRIGHT.
 //
 
-
-
-
-
-
 //! A crate for measuring the heap usage of data structures in a way that
 //! integrates with Firefox's memory reporting, particularly the use of
 //! mozjemalloc and DMD. In particular, it has the following features.
