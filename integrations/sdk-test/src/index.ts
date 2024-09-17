@@ -5,8 +5,10 @@ import { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { requestSuiFromFaucetV0 as requestDwltFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import {
+	createActiveEncryptionKeysTable,
 	createDWallet,
-	createSignMessages,
+	createPartialUserSignedMessages,
+	getOrCreateEncryptionKey,
 	submitDWalletCreationProof,
 	submitTxStateProof,
 } from '@dwallet-network/dwallet.js/signature-mpc';
@@ -17,11 +19,10 @@ import { TransactionBlock as TransactionBlockSUI } from '@mysten/sui.js/transact
 async function main() {
 	try {
 		// const serviceUrl = 'http://sui-devnet-light-client.devnet.dwallet.cloud/gettxdata';
-		const serviceUrl = 'http://localhost:6920/gettxdata';
+		const serviceUrl = 'http://sui-testnet-light-client.testnet.dwallet.cloud/gettxdata';
 
 		const dWalletNodeUrl = 'http://127.0.0.1:9000';
 
-		// const suiDevnetURL = 'https://fullnode.devnet.sui.io:443';
 		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
 
 		const configObjectId = '0xd3fc444d4d546eb6f1617294a1b4fc814a7f868558b1cb86954a1a7e13d7b92e'; // should take this from the light_client.yaml
@@ -34,10 +35,14 @@ async function main() {
 		const keyPair = Ed25519Keypair.deriveKeypairFromSeed(
 			'witch collapse practice feed shame open despair creek road again ice least',
 		);
+		const address = keyPair.getPublicKey().toSuiAddress();
+
+		console.log('address', address);
+
 		console.log('SUI address', keyPair.toSuiAddress());
 
 		const dWalletCapPackageSUI =
-			'0xda072e51bf74040f2f99909595ef1db40fdc75071b92438bb9864f6c744c6736';
+			'0x07c99ee5b1db2083c604b7f7d349e99e834656b4a84527f1d199e8460c3ed953';
 
 		await requestDwltFromFaucetV0({
 			host: 'http://127.0.0.1:9123/gas',
@@ -53,12 +58,29 @@ async function main() {
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 
 		console.log('creating dwallet');
-		const dkg = await createDWallet(keyPair, dwallet_client);
 
-		if (dkg == null) {
+		let activeEncryptionKeysTableID: string;
+
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(dwallet_client, keyPair);
+
+		activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
+		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(
+			keyPair,
+			dwallet_client,
+			activeEncryptionKeysTableID,
+		);
+
+		const createdDwallet = await createDWallet(
+			keyPair,
+			dwallet_client,
+			senderEncryptionKeyObj.encryptionKey,
+			senderEncryptionKeyObj.objectID,
+		);
+
+		if (createdDwallet == null) {
 			throw new Error('createDWallet returned null');
 		}
-		let { dwalletCapId } = dkg;
+		let dwalletCapId = createdDwallet?.dwalletCapID;
 
 		console.log('initialising dwallet cap with id: ', dwalletCapId);
 		let txb = new TransactionBlockSUI();
@@ -89,7 +111,8 @@ async function main() {
 		});
 
 		const createCapTxId = res.digest;
-		const approveMsgTxId = res.digest;
+		const signTxId = res.digest;
+		// const approveMsgTxId = res.digest;
 
 		let first = res.effects?.created?.[0];
 		let ref;
@@ -117,11 +140,12 @@ async function main() {
 
 		console.log('creation done', resultFinal);
 
-		const bytes: Uint8Array = new TextEncoder().encode(messageSign);
+		const bytes: Uint8Array = new TextEncoder().encode('dWallets are coming... to Sui');
 
-		const signMessagesIdSHA256 = await createSignMessages(
-			dkg?.dwalletId!,
-			dkg?.dkgOutput,
+		const signMessagesIdSHA256 = await createPartialUserSignedMessages(
+			createdDwallet?.dwalletID!,
+			createdDwallet?.decentralizedDKGOutput!,
+			new Uint8Array(createdDwallet?.secretKeyShare!),
 			[bytes],
 			'SHA256',
 			keyPair,
@@ -139,13 +163,16 @@ async function main() {
 			'reference' in resultFinal.effects?.created?.[0]
 		) {
 			const capWrapperRef = resultFinal.effects?.created?.[0].reference;
+
+			console.log('A');
+
 			let res = await submitTxStateProof(
 				dwallet_client,
 				sui_client,
 				configObjectId,
 				capWrapperRef,
 				signMessagesIdSHA256,
-				approveMsgTxId,
+				signTxId,
 				serviceUrl,
 				keyPair,
 			);
