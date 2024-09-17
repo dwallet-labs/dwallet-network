@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::utils::{loc_end_to_lsp_position_opt, loc_start_to_lsp_position_opt};
 use codespan_reporting::diagnostic::Severity;

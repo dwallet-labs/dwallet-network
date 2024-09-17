@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::NodeStorage;
 use config::AuthorityIdentifier;
 use store::reopen;
 use store::rocks::{open_cf, MetricConf, ReadWriteOptions};
 use store::{rocks::DBMap, Map, TypedStoreError};
-use sui_macros::fail_point;
+use pera_macros::fail_point;
 use types::{Vote, VoteAPI, VoteInfo};
 
 /// The storage for the last votes digests per authority

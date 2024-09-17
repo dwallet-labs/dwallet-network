@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-import { DisplayFieldsResponse, SuiObjectResponse } from '@mysten/sui/client';
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+import { DisplayFieldsResponse, PeraObjectResponse } from '@pera-io/pera/client';
 
 import { hasDisplayData } from '../hasDisplayData';
 
-export function getObjectDisplayLookup(objects: SuiObjectResponse[] = []) {
+export function getObjectDisplayLookup(objects: PeraObjectResponse[] = []) {
 	const lookup: Map<string, DisplayFieldsResponse> = new Map();
 	return objects?.filter(hasDisplayData).reduce((acc, curr) => {
 		if (curr.data?.objectId) {

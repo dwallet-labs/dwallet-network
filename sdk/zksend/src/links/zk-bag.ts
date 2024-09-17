@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { Argument, Transaction, TransactionObjectArgument } from '@mysten/sui/transactions';
+import type { Argument, Transaction, TransactionObjectArgument } from '@pera-io/pera/transactions';
 
 export interface ZkBagContractOptions {
 	packageId: string;

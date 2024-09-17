@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
@@ -18,7 +18,7 @@ use mysten_metrics::{
 use parking_lot::{Mutex, RwLock};
 #[cfg(not(test))]
 use rand::{prelude::SliceRandom, rngs::ThreadRng};
-use sui_macros::fail_point_async;
+use pera_macros::fail_point_async;
 use tap::TapFallible;
 use tokio::{
     sync::{mpsc::error::TrySendError, oneshot},

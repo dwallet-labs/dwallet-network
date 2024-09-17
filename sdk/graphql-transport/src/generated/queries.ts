@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 /* eslint-disable */
 
 import { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
@@ -29,9 +29,9 @@ export type Scalars = {
    * The contents of a Move Value, corresponding to the following recursive type:
    *
    * type MoveData =
-   *     { Address: SuiAddress }
-   *   | { UID:     SuiAddress }
-   *   | { ID:      SuiAddress }
+   *     { Address: PeraAddress }
+   *   | { UID:     PeraAddress }
+   *   | { ID:      PeraAddress }
    *   | { Bool:    bool }
    *   | { Number:  BigInt }
    *   | { String:  string }
@@ -98,8 +98,8 @@ export type Scalars = {
    *   | { typeParameter: number }
    */
   OpenMoveTypeSignature: { input: any; output: any; }
-  /** String containing 32B hex-encoded address, with a leading "0x". Leading zeroes can be omitted on input but will always appear in outputs (SuiAddress in output is guaranteed to be 66 characters long). */
-  SuiAddress: { input: any; output: any; }
+  /** String containing 32B hex-encoded address, with a leading "0x". Leading zeroes can be omitted on input but will always appear in outputs (PeraAddress in output is guaranteed to be 66 characters long). */
+  PeraAddress: { input: any; output: any; }
 };
 
 export type ActiveJwk = {
@@ -110,7 +110,7 @@ export type ActiveJwk = {
   e: Scalars['String']['output'];
   /** The most recent epoch in which the JWK was validated. */
   epoch?: Maybe<Epoch>;
-  /** The string (Issuing Authority) that identifies the OIDC provider. */
+  /** The string (Isperang Authority) that identifies the OIDC provider. */
   iss: Scalars['String']['output'];
   /** The string (Key ID) that identifies the JWK among a set of JWKs, (RFC 7517, Section 4.5). */
   kid: Scalars['String']['output'];
@@ -142,10 +142,10 @@ export type ActiveJwkEdge = {
 /** The 32-byte address that is an account address (corresponding to a public key). */
 export type Address = IOwner & {
   __typename?: 'Address';
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /**
    * Total balance of all coins with marker type owned by this address. If type is not supplied,
-   * it defaults to `0x2::sui::SUI`.
+   * it defaults to `0x2::pera::PERA`.
    */
   balance?: Maybe<Balance>;
   /** The balances of all coin types owned by this address. */
@@ -153,20 +153,20 @@ export type Address = IOwner & {
   /**
    * The coin objects for this address.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /** The domain explicitly configured as the default domain pointing to this address. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /** Objects owned by this address, optionally `filter`-ed. */
   objects: MoveObjectConnection;
-  /** The `0x3::staking_pool::StakedSui` objects owned by this address. */
-  stakedSuis: StakedSuiConnection;
+  /** The `0x3::staking_pool::StakedPera` objects owned by this address. */
+  stakedPeras: StakedPeraConnection;
   /**
-   * The SuinsRegistration NFTs owned by this address. These grant the owner the capability to
+   * The PeransRegistration NFTs owned by this address. These grant the owner the capability to
    * manage the associated domain.
    */
-  suinsRegistrations: SuinsRegistrationConnection;
+  peransRegistrations: PeransRegistrationConnection;
   /**
    * Similar behavior to the `transactionBlocks` in Query but supporting the additional
    * `AddressTransactionBlockRelationship` filter, which defaults to `SIGN`.
@@ -201,7 +201,7 @@ export type AddressCoinsArgs = {
 
 
 /** The 32-byte address that is an account address (corresponding to a public key). */
-export type AddressDefaultSuinsNameArgs = {
+export type AddressDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
@@ -217,7 +217,7 @@ export type AddressObjectsArgs = {
 
 
 /** The 32-byte address that is an account address (corresponding to a public key). */
-export type AddressStakedSuisArgs = {
+export type AddressStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -226,7 +226,7 @@ export type AddressStakedSuisArgs = {
 
 
 /** The 32-byte address that is an account address (corresponding to a public key). */
-export type AddressSuinsRegistrationsArgs = {
+export type AddressPeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -330,7 +330,7 @@ export type Balance = {
   __typename?: 'Balance';
   /** How many coins of this type constitute the balance */
   coinObjectCount?: Maybe<Scalars['Int']['output']>;
-  /** Coin type for the balance, such as 0x2::sui::SUI */
+  /** Coin type for the balance, such as 0x2::pera::PERA */
   coinType: MoveType;
   /** Total balance across all coin objects of the coin type */
   totalBalance?: Maybe<Scalars['BigInt']['output']>;
@@ -341,7 +341,7 @@ export type BalanceChange = {
   __typename?: 'BalanceChange';
   /** The signed balance change. */
   amount?: Maybe<Scalars['BigInt']['output']>;
-  /** The inner type of the coin whose balance has changed (e.g. `0x2::sui::SUI`). */
+  /** The inner type of the coin whose balance has changed (e.g. `0x2::pera::PERA`). */
   coinType?: Maybe<MoveType>;
   /** The address or object whose balance has changed. */
   owner?: Maybe<Owner>;
@@ -394,22 +394,22 @@ export type BalanceEdge = {
  */
 export type ChangeEpochTransaction = {
   __typename?: 'ChangeEpochTransaction';
-  /** The total amount of gas charged for computation during the previous epoch (in MIST). */
+  /** The total amount of gas charged for computation during the previous epoch (in NPERA). */
   computationCharge: Scalars['BigInt']['output'];
   /** The next (to become) epoch. */
   epoch?: Maybe<Epoch>;
   /**
    * The total gas retained from storage fees, that will not be returned by storage rebates when
-   * the relevant objects are cleaned up (in MIST).
+   * the relevant objects are cleaned up (in NPERA).
    */
   nonRefundableStorageFee: Scalars['BigInt']['output'];
   /** The protocol version in effect in the new epoch. */
   protocolVersion: Scalars['Int']['output'];
   /** Time at which the next epoch will start. */
   startTimestamp: Scalars['DateTime']['output'];
-  /** The total amount of gas charged for storage during the previous epoch (in MIST). */
+  /** The total amount of gas charged for storage during the previous epoch (in NPERA). */
   storageCharge: Scalars['BigInt']['output'];
-  /** The SUI returned to transaction senders for cleaning up objects (in MIST). */
+  /** The PERA returned to transaction senders for cleaning up objects (in NPERA). */
   storageRebate: Scalars['BigInt']['output'];
   /**
    * System packages (specifically framework and move stdlib) that are written before the new
@@ -518,10 +518,10 @@ export type CheckpointId = {
 /** Some 0x2::coin::Coin Move object. */
 export type Coin = IMoveObject & IObject & IOwner & {
   __typename?: 'Coin';
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /**
    * Total balance of all coins with marker type owned by this object. If type is not supplied,
-   * it defaults to `0x2::sui::SUI`.
+   * it defaults to `0x2::pera::PERA`.
    */
   balance?: Maybe<Balance>;
   /** The balances of all coin types owned by this object. */
@@ -533,7 +533,7 @@ export type Coin = IMoveObject & IObject & IOwner & {
   /**
    * The coin objects for this object.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /**
@@ -543,7 +543,7 @@ export type Coin = IMoveObject & IObject & IOwner & {
    */
   contents?: Maybe<MoveValue>;
   /** The domain explicitly configured as the default domain pointing to this object. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /** 32-byte hash that identifies the object's contents, encoded as a Base58 string. */
   digest?: Maybe<Scalars['String']['output']>;
   /**
@@ -580,7 +580,7 @@ export type Coin = IMoveObject & IObject & IOwner & {
   dynamicObjectField?: Maybe<DynamicField>;
   /**
    * Determines whether a transaction can transfer this object, using the TransferObjects
-   * transaction command or `sui::transfer::public_transfer`, both of which require the object to
+   * transaction command or `pera::transfer::public_transfer`, both of which require the object to
    * have the `key` and `store` abilities.
    */
   hasPublicTransfer: Scalars['Boolean']['output'];
@@ -592,8 +592,8 @@ export type Coin = IMoveObject & IObject & IOwner & {
   previousTransactionBlock?: Maybe<TransactionBlock>;
   /** The transaction blocks that sent objects to this object. */
   receivedTransactionBlocks: TransactionBlockConnection;
-  /** The `0x3::staking_pool::StakedSui` objects owned by this object. */
-  stakedSuis: StakedSuiConnection;
+  /** The `0x3::staking_pool::StakedPera` objects owned by this object. */
+  stakedPeras: StakedPeraConnection;
   /**
    * The current status of the object as read from the off-chain store. The possible states are:
    * NOT_INDEXED, the object is loaded from serialized data, such as the contents of a genesis or
@@ -605,15 +605,15 @@ export type Coin = IMoveObject & IObject & IOwner & {
    */
   status: ObjectKind;
   /**
-   * The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+   * The amount of PERA we would rebate if this object gets deleted or mutated. This number is
    * recalculated based on the present storage gas price.
    */
   storageRebate?: Maybe<Scalars['BigInt']['output']>;
   /**
-   * The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+   * The PeransRegistration NFTs owned by this object. These grant the owner the capability to
    * manage the associated domain.
    */
-  suinsRegistrations: SuinsRegistrationConnection;
+  peransRegistrations: PeransRegistrationConnection;
   version: Scalars['Int']['output'];
 };
 
@@ -644,7 +644,7 @@ export type CoinCoinsArgs = {
 
 
 /** Some 0x2::coin::Coin Move object. */
-export type CoinDefaultSuinsNameArgs = {
+export type CoinDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
@@ -691,7 +691,7 @@ export type CoinReceivedTransactionBlocksArgs = {
 
 
 /** Some 0x2::coin::Coin Move object. */
-export type CoinStakedSuisArgs = {
+export type CoinStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -700,7 +700,7 @@ export type CoinStakedSuisArgs = {
 
 
 /** Some 0x2::coin::Coin Move object. */
-export type CoinSuinsRegistrationsArgs = {
+export type CoinPeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -735,10 +735,10 @@ export type CoinEdge = {
 /** The metadata for a coin type. */
 export type CoinMetadata = IMoveObject & IObject & IOwner & {
   __typename?: 'CoinMetadata';
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /**
    * Total balance of all coins with marker type owned by this object. If type is not supplied,
-   * it defaults to `0x2::sui::SUI`.
+   * it defaults to `0x2::pera::PERA`.
    */
   balance?: Maybe<Balance>;
   /** The balances of all coin types owned by this object. */
@@ -748,7 +748,7 @@ export type CoinMetadata = IMoveObject & IObject & IOwner & {
   /**
    * The coin objects for this object.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /**
@@ -760,7 +760,7 @@ export type CoinMetadata = IMoveObject & IObject & IOwner & {
   /** The number of decimal places used to represent the token. */
   decimals?: Maybe<Scalars['Int']['output']>;
   /** The domain explicitly configured as the default domain pointing to this object. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /** Optional description of the token, provided by the creator of the token. */
   description?: Maybe<Scalars['String']['output']>;
   /** 32-byte hash that identifies the object's contents, encoded as a Base58 string. */
@@ -799,7 +799,7 @@ export type CoinMetadata = IMoveObject & IObject & IOwner & {
   dynamicObjectField?: Maybe<DynamicField>;
   /**
    * Determines whether a transaction can transfer this object, using the TransferObjects
-   * transaction command or `sui::transfer::public_transfer`, both of which require the object to
+   * transaction command or `pera::transfer::public_transfer`, both of which require the object to
    * have the `key` and `store` abilities.
    */
   hasPublicTransfer: Scalars['Boolean']['output'];
@@ -814,8 +814,8 @@ export type CoinMetadata = IMoveObject & IObject & IOwner & {
   previousTransactionBlock?: Maybe<TransactionBlock>;
   /** The transaction blocks that sent objects to this object. */
   receivedTransactionBlocks: TransactionBlockConnection;
-  /** The `0x3::staking_pool::StakedSui` objects owned by this object. */
-  stakedSuis: StakedSuiConnection;
+  /** The `0x3::staking_pool::StakedPera` objects owned by this object. */
+  stakedPeras: StakedPeraConnection;
   /**
    * The current status of the object as read from the off-chain store. The possible states are:
    * NOT_INDEXED, the object is loaded from serialized data, such as the contents of a genesis or
@@ -827,15 +827,15 @@ export type CoinMetadata = IMoveObject & IObject & IOwner & {
    */
   status: ObjectKind;
   /**
-   * The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+   * The amount of PERA we would rebate if this object gets deleted or mutated. This number is
    * recalculated based on the present storage gas price.
    */
   storageRebate?: Maybe<Scalars['BigInt']['output']>;
   /**
-   * The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+   * The PeransRegistration NFTs owned by this object. These grant the owner the capability to
    * manage the associated domain.
    */
-  suinsRegistrations: SuinsRegistrationConnection;
+  peransRegistrations: PeransRegistrationConnection;
   /** The overall quantity of tokens that will be issued. */
   supply?: Maybe<Scalars['BigInt']['output']>;
   /** The token's identifying abbreviation. */
@@ -870,7 +870,7 @@ export type CoinMetadataCoinsArgs = {
 
 
 /** The metadata for a coin type. */
-export type CoinMetadataDefaultSuinsNameArgs = {
+export type CoinMetadataDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
@@ -917,7 +917,7 @@ export type CoinMetadataReceivedTransactionBlocksArgs = {
 
 
 /** The metadata for a coin type. */
-export type CoinMetadataStakedSuisArgs = {
+export type CoinMetadataStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -926,7 +926,7 @@ export type CoinMetadataStakedSuisArgs = {
 
 
 /** The metadata for a coin type. */
-export type CoinMetadataSuinsRegistrationsArgs = {
+export type CoinMetadataPeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -1033,7 +1033,7 @@ export type DryRunReturn = {
  * 1) Dynamic Fields can store any value that has the `store` ability, however an object
  * stored in this kind of field will be considered wrapped and will not be accessible
  * directly via its ID by external tools (explorers, wallets, etc) accessing storage.
- * 2) Dynamic Object Fields values must be Sui objects (have the `key` and `store`
+ * 2) Dynamic Object Fields values must be Pera objects (have the `key` and `store`
  * abilities, and id: UID as the first field), but will still be directly accessible off-chain
  * via their object ID after being attached.
  */
@@ -1129,7 +1129,7 @@ export type EndOfEpochTransactionKindEdge = {
 };
 
 /**
- * Operation of the Sui network is temporally partitioned into non-overlapping epochs,
+ * Operation of the Pera network is temporally partitioned into non-overlapping epochs,
  * and the network aims to keep epochs roughly the same duration as each other.
  * During a particular epoch the following data is fixed:
  *
@@ -1183,7 +1183,7 @@ export type Epoch = {
   /** The epoch's starting timestamp. */
   startTimestamp: Scalars['DateTime']['output'];
   /**
-   * SUI set aside to account for objects stored on-chain, at the start of the epoch.
+   * PERA set aside to account for objects stored on-chain, at the start of the epoch.
    * This is also used for storage rebates.
    */
   storageFund?: Maybe<StorageFund>;
@@ -1192,16 +1192,16 @@ export type Epoch = {
   /** Parameters related to the subsidy that supplements staking rewards */
   systemStakeSubsidy?: Maybe<StakeSubsidy>;
   /**
-   * The value of the `version` field of `0x5`, the `0x3::sui::SuiSystemState` object.  This
+   * The value of the `version` field of `0x5`, the `0x3::pera::PeraSystemState` object.  This
    * version changes whenever the fields contained in the system state object (held in a dynamic
    * field attached to `0x5`) change.
    */
   systemStateVersion?: Maybe<Scalars['Int']['output']>;
   /** The total number of checkpoints in this epoch. */
   totalCheckpoints?: Maybe<Scalars['BigInt']['output']>;
-  /** The total amount of gas fees (in MIST) that were paid in this epoch. */
+  /** The total amount of gas fees (in NPERA) that were paid in this epoch. */
   totalGasFees?: Maybe<Scalars['BigInt']['output']>;
-  /** The total MIST rewarded as stake. */
+  /** The total NPERA rewarded as stake. */
   totalStakeRewards?: Maybe<Scalars['BigInt']['output']>;
   /** The amount added to total gas fees to make up the total stake rewards. */
   totalStakeSubsidies?: Maybe<Scalars['BigInt']['output']>;
@@ -1215,7 +1215,7 @@ export type Epoch = {
 
 
 /**
- * Operation of the Sui network is temporally partitioned into non-overlapping epochs,
+ * Operation of the Pera network is temporally partitioned into non-overlapping epochs,
  * and the network aims to keep epochs roughly the same duration as each other.
  * During a particular epoch the following data is fixed:
  *
@@ -1232,7 +1232,7 @@ export type EpochCheckpointsArgs = {
 
 
 /**
- * Operation of the Sui network is temporally partitioned into non-overlapping epochs,
+ * Operation of the Pera network is temporally partitioned into non-overlapping epochs,
  * and the network aims to keep epochs roughly the same duration as each other.
  * During a particular epoch the following data is fixed:
  *
@@ -1321,10 +1321,10 @@ export type EventFilter = {
    *
    * Generic types can be queried by either the generic type name, e.g.
    * `0x2::coin::Coin`, or by the full type name, such as
-   * `0x2::coin::Coin<0x2::sui::SUI>`.
+   * `0x2::coin::Coin<0x2::pera::PERA>`.
    */
   eventType?: InputMaybe<Scalars['String']['input']>;
-  sender?: InputMaybe<Scalars['SuiAddress']['input']>;
+  sender?: InputMaybe<Scalars['PeraAddress']['input']>;
   transactionDigest?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -1360,7 +1360,7 @@ export enum Feature {
   Coins = 'COINS',
   /** Querying an object's dynamic fields. */
   DynamicFields = 'DYNAMIC_FIELDS',
-  /** SuiNS name and reverse name look-up. */
+  /** PeraNS name and reverse name look-up. */
   NameService = 'NAME_SERVICE',
   /** Transaction and Event subscriptions. */
   Subscriptions = 'SUBSCRIPTIONS',
@@ -1384,19 +1384,19 @@ export type GasCoin = {
 /** Breakdown of gas costs in effects. */
 export type GasCostSummary = {
   __typename?: 'GasCostSummary';
-  /** Gas paid for executing this transaction (in MIST). */
+  /** Gas paid for executing this transaction (in NPERA). */
   computationCost?: Maybe<Scalars['BigInt']['output']>;
   /**
    * Part of storage cost that is not reclaimed when data created by this transaction is cleaned
-   * up (in MIST).
+   * up (in NPERA).
    */
   nonRefundableStorageFee?: Maybe<Scalars['BigInt']['output']>;
-  /** Gas paid for the data stored on-chain by this transaction (in MIST). */
+  /** Gas paid for the data stored on-chain by this transaction (in NPERA). */
   storageCost?: Maybe<Scalars['BigInt']['output']>;
   /**
    * Part of storage cost that can be reclaimed by cleaning up data created by this transaction
    * (when objects are deleted or an object is modified, which is treated as a deletion followed
-   * by a creation) (in MIST).
+   * by a creation) (in NPERA).
    */
   storageRebate?: Maybe<Scalars['BigInt']['output']>;
 };
@@ -1417,7 +1417,7 @@ export type GasInput = {
   gasPayment: ObjectConnection;
   /**
    * An unsigned integer specifying the number of native tokens per gas unit this transaction
-   * will pay (in MIST).
+   * will pay (in NPERA).
    */
   gasPrice?: Maybe<Scalars['BigInt']['output']>;
   /** Address of the owner of the gas object(s) used */
@@ -1476,7 +1476,7 @@ export type IMoveObject = {
    * Dynamic fields on wrapped objects can be accessed by using the same API under the Owner type.
    */
   dynamicObjectField?: Maybe<DynamicField>;
-  /** Determines whether a transaction can transfer this object, using the TransferObjects transaction command or `sui::transfer::public_transfer`, both of which require the object to have the `key` and `store` abilities. */
+  /** Determines whether a transaction can transfer this object, using the TransferObjects transaction command or `pera::transfer::public_transfer`, both of which require the object to have the `key` and `store` abilities. */
   hasPublicTransfer: Scalars['Boolean']['output'];
 };
 
@@ -1554,25 +1554,25 @@ export type IObjectReceivedTransactionBlocksArgs = {
  * possible to know which up-front.
  */
 export type IOwner = {
-  address: Scalars['SuiAddress']['output'];
-  /** Total balance of all coins with marker type owned by this object or address. If type is not supplied, it defaults to `0x2::sui::SUI`. */
+  address: Scalars['PeraAddress']['output'];
+  /** Total balance of all coins with marker type owned by this object or address. If type is not supplied, it defaults to `0x2::pera::PERA`. */
   balance?: Maybe<Balance>;
   /** The balances of all coin types owned by this object or address. */
   balances: BalanceConnection;
   /**
    * The coin objects for this object or address.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /** The domain explicitly configured as the default domain pointing to this object or address. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /** Objects owned by this object or address, optionally `filter`-ed. */
   objects: MoveObjectConnection;
-  /** The `0x3::staking_pool::StakedSui` objects owned by this object or address. */
-  stakedSuis: StakedSuiConnection;
-  /** The SuinsRegistration NFTs owned by this object or address. These grant the owner the capability to manage the associated domain. */
-  suinsRegistrations: SuinsRegistrationConnection;
+  /** The `0x3::staking_pool::StakedPera` objects owned by this object or address. */
+  stakedPeras: StakedPeraConnection;
+  /** The PeransRegistration NFTs owned by this object or address. These grant the owner the capability to manage the associated domain. */
+  peransRegistrations: PeransRegistrationConnection;
 };
 
 
@@ -1622,7 +1622,7 @@ export type IOwnerCoinsArgs = {
  * object. The same address can only refer to an account or an object, never both, but it is not
  * possible to know which up-front.
  */
-export type IOwnerDefaultSuinsNameArgs = {
+export type IOwnerDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
@@ -1648,7 +1648,7 @@ export type IOwnerObjectsArgs = {
  * object. The same address can only refer to an account or an object, never both, but it is not
  * possible to know which up-front.
  */
-export type IOwnerStakedSuisArgs = {
+export type IOwnerStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -1662,7 +1662,7 @@ export type IOwnerStakedSuisArgs = {
  * object. The same address can only refer to an account or an object, never both, but it is not
  * possible to know which up-front.
  */
-export type IOwnerSuinsRegistrationsArgs = {
+export type IOwnerPeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -1689,9 +1689,9 @@ export type Input = {
 export type Linkage = {
   __typename?: 'Linkage';
   /** The ID on-chain of the first version of the dependency. */
-  originalId: Scalars['SuiAddress']['output'];
+  originalId: Scalars['PeraAddress']['output'];
   /** The ID on-chain of the version of the dependency that this package depends on. */
-  upgradedId: Scalars['SuiAddress']['output'];
+  upgradedId: Scalars['PeraAddress']['output'];
   /** The version of the dependency that this package depends on. */
   version: Scalars['Int']['output'];
 };
@@ -1714,7 +1714,7 @@ export type MergeCoinsTransaction = {
   coins: Array<TransactionArgument>;
 };
 
-/** Abilities are keywords in Sui Move that define how types behave at the compiler level. */
+/** Abilities are keywords in Pera Move that define how types behave at the compiler level. */
 export enum MoveAbility {
   /** Enables values to be copied. */
   Copy = 'COPY',
@@ -1738,7 +1738,7 @@ export type MoveCallTransaction = {
   /** The name of the module the function being called is defined in. */
   module: Scalars['String']['output'];
   /** The storage ID of the package the function being called is defined in. */
-  package: Scalars['SuiAddress']['output'];
+  package: Scalars['PeraAddress']['output'];
   /** The actual type parameters passed in for this move call. */
   typeArguments: Array<MoveType>;
 };
@@ -1914,18 +1914,18 @@ export type MoveModuleEdge = {
  */
 export type MoveObject = IMoveObject & IObject & IOwner & {
   __typename?: 'MoveObject';
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /** Attempts to convert the Move object into a `0x2::coin::Coin`. */
   asCoin?: Maybe<Coin>;
   /** Attempts to convert the Move object into a `0x2::coin::CoinMetadata`. */
   asCoinMetadata?: Maybe<CoinMetadata>;
-  /** Attempts to convert the Move object into a `0x3::staking_pool::StakedSui`. */
-  asStakedSui?: Maybe<StakedSui>;
-  /** Attempts to convert the Move object into a `SuinsRegistration` object. */
-  asSuinsRegistration?: Maybe<SuinsRegistration>;
+  /** Attempts to convert the Move object into a `0x3::staking_pool::StakedPera`. */
+  asStakedPera?: Maybe<StakedPera>;
+  /** Attempts to convert the Move object into a `PeransRegistration` object. */
+  asPeransRegistration?: Maybe<PeransRegistration>;
   /**
    * Total balance of all coins with marker type owned by this object. If type is not supplied,
-   * it defaults to `0x2::sui::SUI`.
+   * it defaults to `0x2::pera::PERA`.
    */
   balance?: Maybe<Balance>;
   /** The balances of all coin types owned by this object. */
@@ -1935,7 +1935,7 @@ export type MoveObject = IMoveObject & IObject & IOwner & {
   /**
    * The coin objects for this object.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /**
@@ -1945,7 +1945,7 @@ export type MoveObject = IMoveObject & IObject & IOwner & {
    */
   contents?: Maybe<MoveValue>;
   /** The domain explicitly configured as the default domain pointing to this object. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /** 32-byte hash that identifies the object's contents, encoded as a Base58 string. */
   digest?: Maybe<Scalars['String']['output']>;
   /**
@@ -1982,7 +1982,7 @@ export type MoveObject = IMoveObject & IObject & IOwner & {
   dynamicObjectField?: Maybe<DynamicField>;
   /**
    * Determines whether a transaction can transfer this object, using the TransferObjects
-   * transaction command or `sui::transfer::public_transfer`, both of which require the object to
+   * transaction command or `pera::transfer::public_transfer`, both of which require the object to
    * have the `key` and `store` abilities.
    */
   hasPublicTransfer: Scalars['Boolean']['output'];
@@ -1994,8 +1994,8 @@ export type MoveObject = IMoveObject & IObject & IOwner & {
   previousTransactionBlock?: Maybe<TransactionBlock>;
   /** The transaction blocks that sent objects to this object. */
   receivedTransactionBlocks: TransactionBlockConnection;
-  /** The `0x3::staking_pool::StakedSui` objects owned by this object. */
-  stakedSuis: StakedSuiConnection;
+  /** The `0x3::staking_pool::StakedPera` objects owned by this object. */
+  stakedPeras: StakedPeraConnection;
   /**
    * The current status of the object as read from the off-chain store. The possible states are:
    * NOT_INDEXED, the object is loaded from serialized data, such as the contents of a genesis or
@@ -2007,15 +2007,15 @@ export type MoveObject = IMoveObject & IObject & IOwner & {
    */
   status: ObjectKind;
   /**
-   * The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+   * The amount of PERA we would rebate if this object gets deleted or mutated. This number is
    * recalculated based on the present storage gas price.
    */
   storageRebate?: Maybe<Scalars['BigInt']['output']>;
   /**
-   * The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+   * The PeransRegistration NFTs owned by this object. These grant the owner the capability to
    * manage the associated domain.
    */
-  suinsRegistrations: SuinsRegistrationConnection;
+  peransRegistrations: PeransRegistrationConnection;
   version: Scalars['Int']['output'];
 };
 
@@ -2058,7 +2058,7 @@ export type MoveObjectCoinsArgs = {
  * The representation of an object as a Move Object, which exposes additional information
  * (content, module that governs it, version, is transferrable, etc.) about this object.
  */
-export type MoveObjectDefaultSuinsNameArgs = {
+export type MoveObjectDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
@@ -2123,7 +2123,7 @@ export type MoveObjectReceivedTransactionBlocksArgs = {
  * The representation of an object as a Move Object, which exposes additional information
  * (content, module that governs it, version, is transferrable, etc.) about this object.
  */
-export type MoveObjectStakedSuisArgs = {
+export type MoveObjectStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -2135,7 +2135,7 @@ export type MoveObjectStakedSuisArgs = {
  * The representation of an object as a Move Object, which exposes additional information
  * (content, module that governs it, version, is transferrable, etc.) about this object.
  */
-export type MoveObjectSuinsRegistrationsArgs = {
+export type MoveObjectPeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -2167,10 +2167,10 @@ export type MoveObjectEdge = {
  */
 export type MovePackage = IObject & IOwner & {
   __typename?: 'MovePackage';
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /**
    * Total balance of all coins with marker type owned by this package. If type is not supplied,
-   * it defaults to `0x2::sui::SUI`.
+   * it defaults to `0x2::pera::PERA`.
    *
    * Note that coins owned by a package are inaccessible, because packages are immutable and
    * cannot be owned by an address.
@@ -2188,14 +2188,14 @@ export type MovePackage = IObject & IOwner & {
   /**
    * The coin objects owned by this package.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    *
    * Note that coins owned by a package are inaccessible, because packages are immutable and
    * cannot be owned by an address.
    */
   coins: CoinConnection;
   /** The domain explicitly configured as the default domain pointing to this object. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /** 32-byte hash that identifies the package's contents, encoded as a Base58 string. */
   digest?: Maybe<Scalars['String']['output']>;
   /** The transitive dependencies of this package. */
@@ -2233,12 +2233,12 @@ export type MovePackage = IObject & IOwner & {
    */
   receivedTransactionBlocks: TransactionBlockConnection;
   /**
-   * The `0x3::staking_pool::StakedSui` objects owned by this package.
+   * The `0x3::staking_pool::StakedPera` objects owned by this package.
    *
    * Note that objects owned by a package are inaccessible, because packages are immutable and
    * cannot be owned by an address.
    */
-  stakedSuis: StakedSuiConnection;
+  stakedPeras: StakedPeraConnection;
   /**
    * The current status of the object as read from the off-chain store. The possible states are:
    * NOT_INDEXED, the object is loaded from serialized data, such as the contents of a genesis or
@@ -2250,7 +2250,7 @@ export type MovePackage = IObject & IOwner & {
    */
   status: ObjectKind;
   /**
-   * The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+   * The amount of PERA we would rebate if this object gets deleted or mutated. This number is
    * recalculated based on the present storage gas price.
    *
    * Note that packages cannot be deleted or mutated, so this number is provided purely for
@@ -2258,13 +2258,13 @@ export type MovePackage = IObject & IOwner & {
    */
   storageRebate?: Maybe<Scalars['BigInt']['output']>;
   /**
-   * The SuinsRegistration NFTs owned by this package. These grant the owner the capability to
+   * The PeransRegistration NFTs owned by this package. These grant the owner the capability to
    * manage the associated domain.
    *
    * Note that objects owned by a package are inaccessible, because packages are immutable and
    * cannot be owned by an address.
    */
-  suinsRegistrations: SuinsRegistrationConnection;
+  peransRegistrations: PeransRegistrationConnection;
   /** The (previous) versions of this package that introduced its types. */
   typeOrigins?: Maybe<Array<TypeOrigin>>;
   version: Scalars['Int']['output'];
@@ -2309,7 +2309,7 @@ export type MovePackageCoinsArgs = {
  * A MovePackage is a kind of Move object that represents code that has been published on chain.
  * It exposes information about its modules, type definitions, functions, and dependencies.
  */
-export type MovePackageDefaultSuinsNameArgs = {
+export type MovePackageDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
@@ -2365,7 +2365,7 @@ export type MovePackageReceivedTransactionBlocksArgs = {
  * A MovePackage is a kind of Move object that represents code that has been published on chain.
  * It exposes information about its modules, type definitions, functions, and dependencies.
  */
-export type MovePackageStakedSuisArgs = {
+export type MovePackageStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -2377,7 +2377,7 @@ export type MovePackageStakedSuisArgs = {
  * A MovePackage is a kind of Move object that represents code that has been published on chain.
  * It exposes information about its modules, type definitions, functions, and dependencies.
  */
-export type MovePackageSuinsRegistrationsArgs = {
+export type MovePackagePeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -2504,7 +2504,7 @@ export enum MoveVisibility {
   Public = 'PUBLIC'
 }
 
-/** Mutations are used to write to the Sui network. */
+/** Mutations are used to write to the Pera network. */
 export type Mutation = {
   __typename?: 'Mutation';
   /**
@@ -2527,27 +2527,27 @@ export type Mutation = {
 };
 
 
-/** Mutations are used to write to the Sui network. */
+/** Mutations are used to write to the Pera network. */
 export type MutationExecuteTransactionBlockArgs = {
   signatures: Array<Scalars['String']['input']>;
   txBytes: Scalars['String']['input'];
 };
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
 export type Object = IObject & IOwner & {
   __typename?: 'Object';
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /** Attempts to convert the object into a MoveObject */
   asMoveObject?: Maybe<MoveObject>;
   /** Attempts to convert the object into a MovePackage */
   asMovePackage?: Maybe<MovePackage>;
   /**
    * Total balance of all coins with marker type owned by this object. If type is not supplied,
-   * it defaults to `0x2::sui::SUI`.
+   * it defaults to `0x2::pera::PERA`.
    */
   balance?: Maybe<Balance>;
   /** The balances of all coin types owned by this object. */
@@ -2557,11 +2557,11 @@ export type Object = IObject & IOwner & {
   /**
    * The coin objects for this object.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /** The domain explicitly configured as the default domain pointing to this object. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /** 32-byte hash that identifies the object's current contents, encoded as a Base58 string. */
   digest?: Maybe<Scalars['String']['output']>;
   /**
@@ -2607,8 +2607,8 @@ export type Object = IObject & IOwner & {
   previousTransactionBlock?: Maybe<TransactionBlock>;
   /** The transaction blocks that sent objects to this object. */
   receivedTransactionBlocks: TransactionBlockConnection;
-  /** The `0x3::staking_pool::StakedSui` objects owned by this object. */
-  stakedSuis: StakedSuiConnection;
+  /** The `0x3::staking_pool::StakedPera` objects owned by this object. */
+  stakedPeras: StakedPeraConnection;
   /**
    * The current status of the object as read from the off-chain store. The possible states are:
    * NOT_INDEXED, the object is loaded from serialized data, such as the contents of a genesis or
@@ -2620,21 +2620,21 @@ export type Object = IObject & IOwner & {
    */
   status: ObjectKind;
   /**
-   * The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+   * The amount of PERA we would rebate if this object gets deleted or mutated. This number is
    * recalculated based on the present storage gas price.
    */
   storageRebate?: Maybe<Scalars['BigInt']['output']>;
   /**
-   * The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+   * The PeransRegistration NFTs owned by this object. These grant the owner the capability to
    * manage the associated domain.
    */
-  suinsRegistrations: SuinsRegistrationConnection;
+  peransRegistrations: PeransRegistrationConnection;
   version: Scalars['Int']['output'];
 };
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
@@ -2644,7 +2644,7 @@ export type ObjectBalanceArgs = {
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
@@ -2657,7 +2657,7 @@ export type ObjectBalancesArgs = {
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
@@ -2671,17 +2671,17 @@ export type ObjectCoinsArgs = {
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
-export type ObjectDefaultSuinsNameArgs = {
+export type ObjectDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
@@ -2691,7 +2691,7 @@ export type ObjectDynamicFieldArgs = {
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
@@ -2704,7 +2704,7 @@ export type ObjectDynamicFieldsArgs = {
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
@@ -2714,7 +2714,7 @@ export type ObjectDynamicObjectFieldArgs = {
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
@@ -2728,7 +2728,7 @@ export type ObjectObjectsArgs = {
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
@@ -2742,11 +2742,11 @@ export type ObjectReceivedTransactionBlocksArgs = {
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
-export type ObjectStakedSuisArgs = {
+export type ObjectStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -2755,11 +2755,11 @@ export type ObjectStakedSuisArgs = {
 
 
 /**
- * An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+ * An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
  * with fields) with additional metadata detailing its id, version, transaction digest, owner
  * field indicating how this object can be accessed.
  */
-export type ObjectSuinsRegistrationsArgs = {
+export type ObjectPeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -2770,7 +2770,7 @@ export type ObjectSuinsRegistrationsArgs = {
 export type ObjectChange = {
   __typename?: 'ObjectChange';
   /** The address of the object that has changed. */
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /** Whether the ID was created in this transaction. */
   idCreated?: Maybe<Scalars['Boolean']['output']>;
   /** Whether the ID was deleted in this transaction. */
@@ -2829,11 +2829,11 @@ export type ObjectEdge = {
  */
 export type ObjectFilter = {
   /** Filter for live objects by their IDs. */
-  objectIds?: InputMaybe<Array<Scalars['SuiAddress']['input']>>;
+  objectIds?: InputMaybe<Array<Scalars['PeraAddress']['input']>>;
   /** Filter for live or potentially historical objects by their ID and version. */
   objectKeys?: InputMaybe<Array<ObjectKey>>;
   /** Filter for live objects by their current owners. */
-  owner?: InputMaybe<Scalars['SuiAddress']['input']>;
+  owner?: InputMaybe<Scalars['PeraAddress']['input']>;
   /**
    * This field is used to specify the type of objects that should be included in the query
    * results.
@@ -2842,13 +2842,13 @@ export type ObjectFilter = {
    * type name.
    *
    * Generic types can be queried by either the generic type name, e.g. `0x2::coin::Coin`, or by
-   * the full type name, such as `0x2::coin::Coin<0x2::sui::SUI>`.
+   * the full type name, such as `0x2::coin::Coin<0x2::pera::PERA>`.
    */
   type?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type ObjectKey = {
-  objectId: Scalars['SuiAddress']['input'];
+  objectId: Scalars['PeraAddress']['input'];
   version: Scalars['Int']['input'];
 };
 
@@ -2872,7 +2872,7 @@ export type ObjectOwner = AddressOwner | Immutable | Parent | Shared;
 
 export type ObjectRef = {
   /** ID of the object. */
-  address: Scalars['SuiAddress']['input'];
+  address: Scalars['PeraAddress']['input'];
   /** Digest of the object. */
   digest: Scalars['String']['input'];
   /** Version or sequence number of the object. */
@@ -2895,7 +2895,7 @@ export type OpenMoveType = {
 export type OwnedOrImmutable = {
   __typename?: 'OwnedOrImmutable';
   /** ID of the object being read. */
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /**
    * 32-byte hash that identifies the object's contents at this version, encoded as a Base58
    * string.
@@ -2908,18 +2908,18 @@ export type OwnedOrImmutable = {
 };
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
 export type Owner = IOwner & {
   __typename?: 'Owner';
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   asAddress?: Maybe<Address>;
   asObject?: Maybe<Object>;
   /**
    * Total balance of all coins with marker type owned by this object or address. If type is not
-   * supplied, it defaults to `0x2::sui::SUI`.
+   * supplied, it defaults to `0x2::pera::PERA`.
    */
   balance?: Maybe<Balance>;
   /** The balances of all coin types owned by this object or address. */
@@ -2927,11 +2927,11 @@ export type Owner = IOwner & {
   /**
    * The coin objects for this object or address.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /** The domain explicitly configured as the default domain pointing to this object or address. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /**
    * Access a dynamic field on an object using its name. Names are arbitrary Move values whose
    * type have `copy`, `drop`, and `store`, and are specified using their type, and their BCS
@@ -2957,18 +2957,18 @@ export type Owner = IOwner & {
   dynamicObjectField?: Maybe<DynamicField>;
   /** Objects owned by this object or address, optionally `filter`-ed. */
   objects: MoveObjectConnection;
-  /** The `0x3::staking_pool::StakedSui` objects owned by this object or address. */
-  stakedSuis: StakedSuiConnection;
+  /** The `0x3::staking_pool::StakedPera` objects owned by this object or address. */
+  stakedPeras: StakedPeraConnection;
   /**
-   * The SuinsRegistration NFTs owned by this object or address. These grant the owner the
+   * The PeransRegistration NFTs owned by this object or address. These grant the owner the
    * capability to manage the associated domain.
    */
-  suinsRegistrations: SuinsRegistrationConnection;
+  peransRegistrations: PeransRegistrationConnection;
 };
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
@@ -2978,7 +2978,7 @@ export type OwnerBalanceArgs = {
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
@@ -2991,7 +2991,7 @@ export type OwnerBalancesArgs = {
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
@@ -3005,17 +3005,17 @@ export type OwnerCoinsArgs = {
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
-export type OwnerDefaultSuinsNameArgs = {
+export type OwnerDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
@@ -3025,7 +3025,7 @@ export type OwnerDynamicFieldArgs = {
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
@@ -3038,7 +3038,7 @@ export type OwnerDynamicFieldsArgs = {
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
@@ -3048,7 +3048,7 @@ export type OwnerDynamicObjectFieldArgs = {
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
@@ -3062,11 +3062,11 @@ export type OwnerObjectsArgs = {
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
-export type OwnerStakedSuisArgs = {
+export type OwnerStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -3075,11 +3075,11 @@ export type OwnerStakedSuisArgs = {
 
 
 /**
- * An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+ * An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
  * represents either an Address (corresponding to a public key of an account) or an Object, but
  * never both (it is not known up-front whether a given Owner is an Address or an Object).
  */
-export type OwnerSuinsRegistrationsArgs = {
+export type OwnerPeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -3234,7 +3234,7 @@ export type ProtocolConfigsFeatureFlagArgs = {
 export type PublishTransaction = {
   __typename?: 'PublishTransaction';
   /** IDs of the transitive dependencies of the package to be published. */
-  dependencies: Array<Scalars['SuiAddress']['output']>;
+  dependencies: Array<Scalars['PeraAddress']['output']>;
   /** Bytecode for the modules to be published, BCS serialized and Base64 encoded. */
   modules: Array<Scalars['Base64']['output']>;
 };
@@ -3248,7 +3248,7 @@ export type Pure = {
 
 export type Query = {
   __typename?: 'Query';
-  /** Look-up an Account by its SuiAddress. */
+  /** Look-up an Account by its PeraAddress. */
   address?: Maybe<Address>;
   /**
    * Range of checkpoints that the RPC has data available for (for data
@@ -3273,7 +3273,7 @@ export type Query = {
    * The coin objects that exist in the network.
    *
    * The type field is a string of the inner type of the coin by which to filter (e.g.
-   * `0x2::sui::SUI`). If no type is provided, it will default to `0x2::sui::SUI`.
+   * `0x2::pera::PERA`). If no type is provided, it will default to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /**
@@ -3313,8 +3313,8 @@ export type Query = {
    * version known to the GraphQL service).
    */
   protocolConfig: ProtocolConfigs;
-  /** Resolves a SuiNS `domain` name to an address, if it has been bound. */
-  resolveSuinsAddress?: Maybe<Address>;
+  /** Resolves a PeraNS `domain` name to an address, if it has been bound. */
+  resolvePeransAddress?: Maybe<Address>;
   /** Configuration for this RPC service */
   serviceConfig: ServiceConfig;
   /** Fetch a transaction block by its transaction digest. */
@@ -3344,7 +3344,7 @@ export type Query = {
 
 
 export type QueryAddressArgs = {
-  address: Scalars['SuiAddress']['input'];
+  address: Scalars['PeraAddress']['input'];
 };
 
 
@@ -3397,7 +3397,7 @@ export type QueryEventsArgs = {
 
 
 export type QueryObjectArgs = {
-  address: Scalars['SuiAddress']['input'];
+  address: Scalars['PeraAddress']['input'];
   version?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -3412,7 +3412,7 @@ export type QueryObjectsArgs = {
 
 
 export type QueryOwnerArgs = {
-  address: Scalars['SuiAddress']['input'];
+  address: Scalars['PeraAddress']['input'];
 };
 
 
@@ -3421,7 +3421,7 @@ export type QueryProtocolConfigArgs = {
 };
 
 
-export type QueryResolveSuinsAddressArgs = {
+export type QueryResolvePeransAddressArgs = {
   domain: Scalars['String']['input'];
 };
 
@@ -3446,7 +3446,7 @@ export type QueryTypeArgs = {
 
 
 export type QueryVerifyZkloginSignatureArgs = {
-  author: Scalars['SuiAddress']['input'];
+  author: Scalars['PeraAddress']['input'];
   bytes: Scalars['Base64']['input'];
   intentScope: ZkLoginIntentScope;
   signature: Scalars['Base64']['input'];
@@ -3475,7 +3475,7 @@ export type RandomnessStateUpdateTransaction = {
 export type Receiving = {
   __typename?: 'Receiving';
   /** ID of the object being read. */
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /**
    * 32-byte hash that identifies the object's contents at this version, encoded as a Base58
    * string.
@@ -3585,7 +3585,7 @@ export type Shared = {
 /** A Move object that's shared. */
 export type SharedInput = {
   __typename?: 'SharedInput';
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /** The version that this this object was shared at. */
   initialSharedVersion: Scalars['Int']['output'];
   /**
@@ -3605,7 +3605,7 @@ export type SharedInput = {
 export type SharedObjectDelete = {
   __typename?: 'SharedObjectDelete';
   /** ID of the shared object. */
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /**
    * Whether this transaction intended to use this shared object mutably or not. See
    * `SharedInput.mutable` for further details.
@@ -3622,7 +3622,7 @@ export type SharedObjectDelete = {
 export type SharedObjectRead = {
   __typename?: 'SharedObjectRead';
   /** ID of the object being read. */
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /**
    * 32-byte hash that identifies the object's contents at this version, encoded as a Base58
    * string.
@@ -3660,7 +3660,7 @@ export enum StakeStatus {
 export type StakeSubsidy = {
   __typename?: 'StakeSubsidy';
   /**
-   * SUI set aside for stake subsidies -- reduces over time as stake subsidies are paid out over
+   * PERA set aside for stake subsidies -- reduces over time as stake subsidies are paid out over
    * time.
    */
   balance?: Maybe<Scalars['BigInt']['output']>;
@@ -3683,15 +3683,15 @@ export type StakeSubsidy = {
   periodLength?: Maybe<Scalars['Int']['output']>;
 };
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSui = IMoveObject & IObject & IOwner & {
-  __typename?: 'StakedSui';
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPera = IMoveObject & IObject & IOwner & {
+  __typename?: 'StakedPera';
   /** The epoch at which this stake became active. */
   activatedEpoch?: Maybe<Epoch>;
-  address: Scalars['SuiAddress']['output'];
+  address: Scalars['PeraAddress']['output'];
   /**
    * Total balance of all coins with marker type owned by this object. If type is not supplied,
-   * it defaults to `0x2::sui::SUI`.
+   * it defaults to `0x2::pera::PERA`.
    */
   balance?: Maybe<Balance>;
   /** The balances of all coin types owned by this object. */
@@ -3701,7 +3701,7 @@ export type StakedSui = IMoveObject & IObject & IOwner & {
   /**
    * The coin objects for this object.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /**
@@ -3711,7 +3711,7 @@ export type StakedSui = IMoveObject & IObject & IOwner & {
    */
   contents?: Maybe<MoveValue>;
   /** The domain explicitly configured as the default domain pointing to this object. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /** 32-byte hash that identifies the object's contents, encoded as a Base58 string. */
   digest?: Maybe<Scalars['String']['output']>;
   /**
@@ -3761,7 +3761,7 @@ export type StakedSui = IMoveObject & IObject & IOwner & {
   estimatedReward?: Maybe<Scalars['BigInt']['output']>;
   /**
    * Determines whether a transaction can transfer this object, using the TransferObjects
-   * transaction command or `sui::transfer::public_transfer`, both of which require the object to
+   * transaction command or `pera::transfer::public_transfer`, both of which require the object to
    * have the `key` and `store` abilities.
    */
   hasPublicTransfer: Scalars['Boolean']['output'];
@@ -3770,10 +3770,10 @@ export type StakedSui = IMoveObject & IObject & IOwner & {
   /** The owner type of this object: Immutable, Shared, Parent, Address */
   owner?: Maybe<ObjectOwner>;
   /** The object id of the validator staking pool this stake belongs to. */
-  poolId?: Maybe<Scalars['SuiAddress']['output']>;
+  poolId?: Maybe<Scalars['PeraAddress']['output']>;
   /** The transaction block that created this version of the object. */
   previousTransactionBlock?: Maybe<TransactionBlock>;
-  /** The SUI that was initially staked. */
+  /** The PERA that was initially staked. */
   principal?: Maybe<Scalars['BigInt']['output']>;
   /** The transaction blocks that sent objects to this object. */
   receivedTransactionBlocks: TransactionBlockConnection;
@@ -3781,8 +3781,8 @@ export type StakedSui = IMoveObject & IObject & IOwner & {
   requestedEpoch?: Maybe<Epoch>;
   /** A stake can be pending, active, or unstaked */
   stakeStatus: StakeStatus;
-  /** The `0x3::staking_pool::StakedSui` objects owned by this object. */
-  stakedSuis: StakedSuiConnection;
+  /** The `0x3::staking_pool::StakedPera` objects owned by this object. */
+  stakedPeras: StakedPeraConnection;
   /**
    * The current status of the object as read from the off-chain store. The possible states are:
    * NOT_INDEXED, the object is loaded from serialized data, such as the contents of a genesis or
@@ -3794,27 +3794,27 @@ export type StakedSui = IMoveObject & IObject & IOwner & {
    */
   status: ObjectKind;
   /**
-   * The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+   * The amount of PERA we would rebate if this object gets deleted or mutated. This number is
    * recalculated based on the present storage gas price.
    */
   storageRebate?: Maybe<Scalars['BigInt']['output']>;
   /**
-   * The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+   * The PeransRegistration NFTs owned by this object. These grant the owner the capability to
    * manage the associated domain.
    */
-  suinsRegistrations: SuinsRegistrationConnection;
+  peransRegistrations: PeransRegistrationConnection;
   version: Scalars['Int']['output'];
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiBalanceArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraBalanceArgs = {
   type?: InputMaybe<Scalars['String']['input']>;
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiBalancesArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraBalancesArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -3822,8 +3822,8 @@ export type StakedSuiBalancesArgs = {
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiCoinsArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraCoinsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -3832,20 +3832,20 @@ export type StakedSuiCoinsArgs = {
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiDefaultSuinsNameArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiDynamicFieldArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraDynamicFieldArgs = {
   name: DynamicFieldName;
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiDynamicFieldsArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraDynamicFieldsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -3853,14 +3853,14 @@ export type StakedSuiDynamicFieldsArgs = {
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiDynamicObjectFieldArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraDynamicObjectFieldArgs = {
   name: DynamicFieldName;
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiObjectsArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraObjectsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<ObjectFilter>;
@@ -3869,8 +3869,8 @@ export type StakedSuiObjectsArgs = {
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiReceivedTransactionBlocksArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraReceivedTransactionBlocksArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<TransactionBlockFilter>;
@@ -3879,8 +3879,8 @@ export type StakedSuiReceivedTransactionBlocksArgs = {
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiStakedSuisArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -3888,34 +3888,34 @@ export type StakedSuiStakedSuisArgs = {
 };
 
 
-/** Represents a `0x3::staking_pool::StakedSui` Move object on-chain. */
-export type StakedSuiSuinsRegistrationsArgs = {
+/** Represents a `0x3::staking_pool::StakedPera` Move object on-chain. */
+export type StakedPeraPeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-export type StakedSuiConnection = {
-  __typename?: 'StakedSuiConnection';
+export type StakedPeraConnection = {
+  __typename?: 'StakedPeraConnection';
   /** A list of edges. */
-  edges: Array<StakedSuiEdge>;
+  edges: Array<StakedPeraEdge>;
   /** A list of nodes. */
-  nodes: Array<StakedSui>;
+  nodes: Array<StakedPera>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
 };
 
 /** An edge in a connection. */
-export type StakedSuiEdge = {
-  __typename?: 'StakedSuiEdge';
+export type StakedPeraEdge = {
+  __typename?: 'StakedPeraEdge';
   /** A cursor for use in pagination */
   cursor: Scalars['String']['output'];
   /** The item at the end of the edge */
-  node: StakedSui;
+  node: StakedPera;
 };
 
-/** SUI set aside to account for objects stored on-chain. */
+/** PERA set aside to account for objects stored on-chain. */
 export type StorageFund = {
   __typename?: 'StorageFund';
   /**
@@ -3930,12 +3930,12 @@ export type StorageFund = {
   totalObjectStorageRebates?: Maybe<Scalars['BigInt']['output']>;
 };
 
-export type SuinsRegistration = IMoveObject & IObject & IOwner & {
-  __typename?: 'SuinsRegistration';
-  address: Scalars['SuiAddress']['output'];
+export type PeransRegistration = IMoveObject & IObject & IOwner & {
+  __typename?: 'PeransRegistration';
+  address: Scalars['PeraAddress']['output'];
   /**
    * Total balance of all coins with marker type owned by this object. If type is not supplied,
-   * it defaults to `0x2::sui::SUI`.
+   * it defaults to `0x2::pera::PERA`.
    */
   balance?: Maybe<Balance>;
   /** The balances of all coin types owned by this object. */
@@ -3945,7 +3945,7 @@ export type SuinsRegistration = IMoveObject & IObject & IOwner & {
   /**
    * The coin objects for this object.
    *
-   * `type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+   * `type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
    */
   coins: CoinConnection;
   /**
@@ -3955,7 +3955,7 @@ export type SuinsRegistration = IMoveObject & IObject & IOwner & {
    */
   contents?: Maybe<MoveValue>;
   /** The domain explicitly configured as the default domain pointing to this object. */
-  defaultSuinsName?: Maybe<Scalars['String']['output']>;
+  defaultPeransName?: Maybe<Scalars['String']['output']>;
   /** 32-byte hash that identifies the object's contents, encoded as a Base58 string. */
   digest?: Maybe<Scalars['String']['output']>;
   /**
@@ -3964,7 +3964,7 @@ export type SuinsRegistration = IMoveObject & IObject & IOwner & {
    * display string per template.
    */
   display?: Maybe<Array<DisplayEntry>>;
-  /** Domain name of the SuinsRegistration object */
+  /** Domain name of the PeransRegistration object */
   domain: Scalars['String']['output'];
   /**
    * Access a dynamic field on an object using its name. Names are arbitrary Move values whose
@@ -3994,7 +3994,7 @@ export type SuinsRegistration = IMoveObject & IObject & IOwner & {
   dynamicObjectField?: Maybe<DynamicField>;
   /**
    * Determines whether a transaction can transfer this object, using the TransferObjects
-   * transaction command or `sui::transfer::public_transfer`, both of which require the object to
+   * transaction command or `pera::transfer::public_transfer`, both of which require the object to
    * have the `key` and `store` abilities.
    */
   hasPublicTransfer: Scalars['Boolean']['output'];
@@ -4006,8 +4006,8 @@ export type SuinsRegistration = IMoveObject & IObject & IOwner & {
   previousTransactionBlock?: Maybe<TransactionBlock>;
   /** The transaction blocks that sent objects to this object. */
   receivedTransactionBlocks: TransactionBlockConnection;
-  /** The `0x3::staking_pool::StakedSui` objects owned by this object. */
-  stakedSuis: StakedSuiConnection;
+  /** The `0x3::staking_pool::StakedPera` objects owned by this object. */
+  stakedPeras: StakedPeraConnection;
   /**
    * The current status of the object as read from the off-chain store. The possible states are:
    * NOT_INDEXED, the object is loaded from serialized data, such as the contents of a genesis or
@@ -4019,25 +4019,25 @@ export type SuinsRegistration = IMoveObject & IObject & IOwner & {
    */
   status: ObjectKind;
   /**
-   * The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+   * The amount of PERA we would rebate if this object gets deleted or mutated. This number is
    * recalculated based on the present storage gas price.
    */
   storageRebate?: Maybe<Scalars['BigInt']['output']>;
   /**
-   * The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+   * The PeransRegistration NFTs owned by this object. These grant the owner the capability to
    * manage the associated domain.
    */
-  suinsRegistrations: SuinsRegistrationConnection;
+  peransRegistrations: PeransRegistrationConnection;
   version: Scalars['Int']['output'];
 };
 
 
-export type SuinsRegistrationBalanceArgs = {
+export type PeransRegistrationBalanceArgs = {
   type?: InputMaybe<Scalars['String']['input']>;
 };
 
 
-export type SuinsRegistrationBalancesArgs = {
+export type PeransRegistrationBalancesArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -4045,7 +4045,7 @@ export type SuinsRegistrationBalancesArgs = {
 };
 
 
-export type SuinsRegistrationCoinsArgs = {
+export type PeransRegistrationCoinsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -4054,17 +4054,17 @@ export type SuinsRegistrationCoinsArgs = {
 };
 
 
-export type SuinsRegistrationDefaultSuinsNameArgs = {
+export type PeransRegistrationDefaultPeransNameArgs = {
   format?: InputMaybe<DomainFormat>;
 };
 
 
-export type SuinsRegistrationDynamicFieldArgs = {
+export type PeransRegistrationDynamicFieldArgs = {
   name: DynamicFieldName;
 };
 
 
-export type SuinsRegistrationDynamicFieldsArgs = {
+export type PeransRegistrationDynamicFieldsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -4072,12 +4072,12 @@ export type SuinsRegistrationDynamicFieldsArgs = {
 };
 
 
-export type SuinsRegistrationDynamicObjectFieldArgs = {
+export type PeransRegistrationDynamicObjectFieldArgs = {
   name: DynamicFieldName;
 };
 
 
-export type SuinsRegistrationObjectsArgs = {
+export type PeransRegistrationObjectsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<ObjectFilter>;
@@ -4086,7 +4086,7 @@ export type SuinsRegistrationObjectsArgs = {
 };
 
 
-export type SuinsRegistrationReceivedTransactionBlocksArgs = {
+export type PeransRegistrationReceivedTransactionBlocksArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   filter?: InputMaybe<TransactionBlockFilter>;
@@ -4095,7 +4095,7 @@ export type SuinsRegistrationReceivedTransactionBlocksArgs = {
 };
 
 
-export type SuinsRegistrationStakedSuisArgs = {
+export type PeransRegistrationStakedPerasArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -4103,30 +4103,30 @@ export type SuinsRegistrationStakedSuisArgs = {
 };
 
 
-export type SuinsRegistrationSuinsRegistrationsArgs = {
+export type PeransRegistrationPeransRegistrationsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-export type SuinsRegistrationConnection = {
-  __typename?: 'SuinsRegistrationConnection';
+export type PeransRegistrationConnection = {
+  __typename?: 'PeransRegistrationConnection';
   /** A list of edges. */
-  edges: Array<SuinsRegistrationEdge>;
+  edges: Array<PeransRegistrationEdge>;
   /** A list of nodes. */
-  nodes: Array<SuinsRegistration>;
+  nodes: Array<PeransRegistration>;
   /** Information to aid in pagination. */
   pageInfo: PageInfo;
 };
 
 /** An edge in a connection. */
-export type SuinsRegistrationEdge = {
-  __typename?: 'SuinsRegistrationEdge';
+export type PeransRegistrationEdge = {
+  __typename?: 'PeransRegistrationEdge';
   /** A cursor for use in pagination */
   cursor: Scalars['String']['output'];
   /** The item at the end of the edge */
-  node: SuinsRegistration;
+  node: PeransRegistration;
 };
 
 /** Details of the system that are decided during genesis. */
@@ -4311,13 +4311,13 @@ export type TransactionBlockFilter = {
   afterCheckpoint?: InputMaybe<Scalars['Int']['input']>;
   atCheckpoint?: InputMaybe<Scalars['Int']['input']>;
   beforeCheckpoint?: InputMaybe<Scalars['Int']['input']>;
-  changedObject?: InputMaybe<Scalars['SuiAddress']['input']>;
+  changedObject?: InputMaybe<Scalars['PeraAddress']['input']>;
   function?: InputMaybe<Scalars['String']['input']>;
-  inputObject?: InputMaybe<Scalars['SuiAddress']['input']>;
+  inputObject?: InputMaybe<Scalars['PeraAddress']['input']>;
   /** An input filter selecting for either system or programmable transactions. */
   kind?: InputMaybe<TransactionBlockKindInput>;
-  recvAddress?: InputMaybe<Scalars['SuiAddress']['input']>;
-  signAddress?: InputMaybe<Scalars['SuiAddress']['input']>;
+  recvAddress?: InputMaybe<Scalars['PeraAddress']['input']>;
+  signAddress?: InputMaybe<Scalars['PeraAddress']['input']>;
   transactionIds?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
@@ -4367,8 +4367,8 @@ export type TransactionMetadata = {
   gasBudget?: InputMaybe<Scalars['Int']['input']>;
   gasObjects?: InputMaybe<Array<ObjectRef>>;
   gasPrice?: InputMaybe<Scalars['Int']['input']>;
-  gasSponsor?: InputMaybe<Scalars['SuiAddress']['input']>;
-  sender?: InputMaybe<Scalars['SuiAddress']['input']>;
+  gasSponsor?: InputMaybe<Scalars['PeraAddress']['input']>;
+  sender?: InputMaybe<Scalars['PeraAddress']['input']>;
 };
 
 /**
@@ -4387,7 +4387,7 @@ export type TransferObjectsTransaction = {
 export type TypeOrigin = {
   __typename?: 'TypeOrigin';
   /** The storage ID of the package that first defined this type. */
-  definingId: Scalars['SuiAddress']['output'];
+  definingId: Scalars['PeraAddress']['output'];
   /** Module defining the type. */
   module: Scalars['String']['output'];
   /** Name of the struct. */
@@ -4425,9 +4425,9 @@ export type UnchangedSharedObjectEdge = {
 export type UpgradeTransaction = {
   __typename?: 'UpgradeTransaction';
   /** ID of the package being upgraded. */
-  currentPackage: Scalars['SuiAddress']['output'];
+  currentPackage: Scalars['PeraAddress']['output'];
   /** IDs of the transitive dependencies of the package to be published. */
-  dependencies: Array<Scalars['SuiAddress']['output']>;
+  dependencies: Array<Scalars['PeraAddress']['output']>;
   /** Bytecode for the modules to be published, BCS serialized and Base64 encoded. */
   modules: Array<Scalars['Base64']['output']>;
   /** The `UpgradeTicket` authorizing the upgrade. */
@@ -4456,7 +4456,7 @@ export type Validator = {
   description?: Maybe<Scalars['String']['output']>;
   /**
    * The validator's current exchange object. The exchange rate is used to determine
-   * the amount of SUI tokens that each past SUI staker can withdraw in the future.
+   * the amount of PERA tokens that each past PERA staker can withdraw in the future.
    * @deprecated The exchange object is a wrapped object. Access its dynamic fields through the `exchangeRatesTable` query.
    */
   exchangeRates?: Maybe<MoveObject>;
@@ -4465,7 +4465,7 @@ export type Validator = {
   /**
    * A wrapped object containing the validator's exchange rates. This is a table from epoch
    * number to `PoolTokenExchangeRate` value. The exchange rate is used to determine the amount
-   * of SUI tokens that each past SUI staker can withdraw in the future.
+   * of PERA tokens that each past PERA staker can withdraw in the future.
    */
   exchangeRatesTable?: Maybe<Owner>;
   /** The reference gas price for this epoch. */
@@ -4481,7 +4481,7 @@ export type Validator = {
   /** The validator's gas price quote for the next epoch. */
   nextEpochGasPrice?: Maybe<Scalars['BigInt']['output']>;
   /**
-   * The total number of SUI tokens in this pool plus
+   * The total number of PERA tokens in this pool plus
    * the pending stake amount for this epoch.
    */
   nextEpochStake?: Maybe<Scalars['BigInt']['output']>;
@@ -4496,7 +4496,7 @@ export type Validator = {
   /** Pending stake amount for this epoch. */
   pendingStake?: Maybe<Scalars['BigInt']['output']>;
   /** Pending stake withdrawn during the current epoch, emptied at epoch boundaries. */
-  pendingTotalSuiWithdraw?: Maybe<Scalars['BigInt']['output']>;
+  pendingTotalPeraWithdraw?: Maybe<Scalars['BigInt']['output']>;
   /** Total number of pool tokens issued by the pool. */
   poolTokenBalance?: Maybe<Scalars['BigInt']['output']>;
   /** Validator's homepage URL. */
@@ -4514,9 +4514,9 @@ export type Validator = {
   /** The epoch at which this pool became active. */
   stakingPoolActivationEpoch?: Maybe<Scalars['Int']['output']>;
   /** The ID of this validator's `0x3::staking_pool::StakingPool`. */
-  stakingPoolId: Scalars['SuiAddress']['output'];
-  /** The total number of SUI tokens in this pool. */
-  stakingPoolSuiBalance?: Maybe<Scalars['BigInt']['output']>;
+  stakingPoolId: Scalars['PeraAddress']['output'];
+  /** The total number of PERA tokens in this pool. */
+  stakingPoolPeraBalance?: Maybe<Scalars['BigInt']['output']>;
   /** The voting power of this validator in basis points (e.g., 100 = 1% voting power). */
   votingPower?: Maybe<Scalars['Int']['output']>;
 };
@@ -4567,11 +4567,11 @@ export type ValidatorSet = {
   /** The current set of active validators. */
   activeValidators: ValidatorConnection;
   /** Object ID of the `Table` storing the inactive staking pools. */
-  inactivePoolsId?: Maybe<Scalars['SuiAddress']['output']>;
+  inactivePoolsId?: Maybe<Scalars['PeraAddress']['output']>;
   /** Size of the inactive pools `Table`. */
   inactivePoolsSize?: Maybe<Scalars['Int']['output']>;
   /** Object ID of the wrapped object `TableVec` storing the pending active validators. */
-  pendingActiveValidatorsId?: Maybe<Scalars['SuiAddress']['output']>;
+  pendingActiveValidatorsId?: Maybe<Scalars['PeraAddress']['output']>;
   /** Size of the pending active validators table. */
   pendingActiveValidatorsSize?: Maybe<Scalars['Int']['output']>;
   /**
@@ -4584,13 +4584,13 @@ export type ValidatorSet = {
    * of the corresponding validators. This is needed because a validator's address
    * can potentially change but the object ID of its pool will not.
    */
-  stakingPoolMappingsId?: Maybe<Scalars['SuiAddress']['output']>;
+  stakingPoolMappingsId?: Maybe<Scalars['PeraAddress']['output']>;
   /** Size of the stake pool mappings `Table`. */
   stakingPoolMappingsSize?: Maybe<Scalars['Int']['output']>;
   /** Total amount of stake for all active validators at the beginning of the epoch. */
   totalStake?: Maybe<Scalars['BigInt']['output']>;
   /** Object ID of the `Table` storing the validator candidates. */
-  validatorCandidatesId?: Maybe<Scalars['SuiAddress']['output']>;
+  validatorCandidatesId?: Maybe<Scalars['PeraAddress']['output']>;
   /** Size of the validator candidates `Table`. */
   validatorCandidatesSize?: Maybe<Scalars['Int']['output']>;
 };
@@ -4696,7 +4696,7 @@ export type ExecuteTransactionBlockMutationVariables = Exact<{
 export type ExecuteTransactionBlockMutation = { __typename?: 'Mutation', executeTransactionBlock: { __typename?: 'ExecutionResult', errors?: Array<string> | null, effects: { __typename?: 'TransactionBlockEffects', transactionBlock?: { __typename?: 'TransactionBlock', digest?: string | null, signatures?: Array<any> | null, rawTransaction?: any | null, sender?: { __typename?: 'Address', address: any } | null, effects?: { __typename?: 'TransactionBlockEffects', bcs?: any, timestamp?: any | null, events?: { __typename?: 'EventConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Event', json: any, bcs: any, timestamp?: any | null, sendingModule?: { __typename?: 'MoveModule', name: string, package: { __typename?: 'MovePackage', address: any } } | null, sender?: { __typename?: 'Address', address: any } | null, type: { __typename?: 'MoveType', repr: string } }> }, checkpoint?: { __typename?: 'Checkpoint', sequenceNumber: number } | null, balanceChanges?: { __typename?: 'BalanceChangeConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'BalanceChange', amount?: any | null, coinType?: { __typename?: 'MoveType', repr: string } | null, owner?: { __typename?: 'Owner', asObject?: { __typename?: 'Object', address: any } | null, asAddress?: { __typename?: 'Address', address: any } | null } | null }> }, objectChanges?: { __typename?: 'ObjectChangeConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'ObjectChange', address: any, inputState?: { __typename?: 'Object', version: number, asMoveObject?: { __typename?: 'MoveObject', contents?: { __typename?: 'MoveValue', type: { __typename?: 'MoveType', repr: string } } | null } | null } | null, outputState?: { __typename?: 'Object', asMoveObject?: { __typename?: 'MoveObject', contents?: { __typename?: 'MoveValue', type: { __typename?: 'MoveType', repr: string } } | null } | null, asMovePackage?: { __typename?: 'MovePackage', modules?: { __typename?: 'MoveModuleConnection', nodes: Array<{ __typename?: 'MoveModule', name: string }> } | null } | null } | null }> } } | null } | null } } };
 
 export type GetAllBalancesQueryVariables = Exact<{
-  owner: Scalars['SuiAddress']['input'];
+  owner: Scalars['PeraAddress']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
   cursor?: InputMaybe<Scalars['String']['input']>;
 }>;
@@ -4705,7 +4705,7 @@ export type GetAllBalancesQueryVariables = Exact<{
 export type GetAllBalancesQuery = { __typename?: 'Query', address?: { __typename?: 'Address', balances: { __typename?: 'BalanceConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Balance', coinObjectCount?: number | null, totalBalance?: any | null, coinType: { __typename?: 'MoveType', repr: string } }> } } | null };
 
 export type GetBalanceQueryVariables = Exact<{
-  owner: Scalars['SuiAddress']['input'];
+  owner: Scalars['PeraAddress']['input'];
   type?: InputMaybe<Scalars['String']['input']>;
 }>;
 
@@ -4725,7 +4725,7 @@ export type GetCoinMetadataQueryVariables = Exact<{
 export type GetCoinMetadataQuery = { __typename?: 'Query', coinMetadata?: { __typename?: 'CoinMetadata', decimals?: number | null, name?: string | null, symbol?: string | null, description?: string | null, iconUrl?: string | null, address: any } | null };
 
 export type GetCoinsQueryVariables = Exact<{
-  owner: Scalars['SuiAddress']['input'];
+  owner: Scalars['PeraAddress']['input'];
   first?: InputMaybe<Scalars['Int']['input']>;
   cursor?: InputMaybe<Scalars['String']['input']>;
   type?: InputMaybe<Scalars['String']['input']>;
@@ -4745,7 +4745,7 @@ export type GetCommitteeInfoQuery = { __typename?: 'Query', epoch?: { __typename
 export type GetCurrentEpochQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetCurrentEpochQuery = { __typename?: 'Query', epoch?: { __typename?: 'Epoch', epochId: number, totalTransactions?: number | null, startTimestamp: any, endTimestamp?: any | null, referenceGasPrice?: any | null, validatorSet?: { __typename?: 'ValidatorSet', activeValidators: { __typename?: 'ValidatorConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Validator', atRisk?: number | null, commissionRate?: number | null, exchangeRatesSize?: number | null, description?: string | null, gasPrice?: any | null, imageUrl?: string | null, name?: string | null, nextEpochCommissionRate?: number | null, nextEpochGasPrice?: any | null, nextEpochStake?: any | null, pendingPoolTokenWithdraw?: any | null, pendingStake?: any | null, pendingTotalSuiWithdraw?: any | null, poolTokenBalance?: any | null, projectUrl?: string | null, rewardsPool?: any | null, stakingPoolActivationEpoch?: number | null, stakingPoolSuiBalance?: any | null, votingPower?: number | null, exchangeRates?: { __typename?: 'MoveObject', address: any, contents?: { __typename?: 'MoveValue', json: any } | null } | null, credentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, nextEpochCredentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, operationCap?: { __typename?: 'MoveObject', address: any } | null, stakingPool?: { __typename?: 'MoveObject', address: any } | null, address: { __typename?: 'Address', address: any } }> } } | null, firstCheckpoint: { __typename?: 'CheckpointConnection', nodes: Array<{ __typename?: 'Checkpoint', sequenceNumber: number }> } } | null };
+export type GetCurrentEpochQuery = { __typename?: 'Query', epoch?: { __typename?: 'Epoch', epochId: number, totalTransactions?: number | null, startTimestamp: any, endTimestamp?: any | null, referenceGasPrice?: any | null, validatorSet?: { __typename?: 'ValidatorSet', activeValidators: { __typename?: 'ValidatorConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Validator', atRisk?: number | null, commissionRate?: number | null, exchangeRatesSize?: number | null, description?: string | null, gasPrice?: any | null, imageUrl?: string | null, name?: string | null, nextEpochCommissionRate?: number | null, nextEpochGasPrice?: any | null, nextEpochStake?: any | null, pendingPoolTokenWithdraw?: any | null, pendingStake?: any | null, pendingTotalPeraWithdraw?: any | null, poolTokenBalance?: any | null, projectUrl?: string | null, rewardsPool?: any | null, stakingPoolActivationEpoch?: number | null, stakingPoolPeraBalance?: any | null, votingPower?: number | null, exchangeRates?: { __typename?: 'MoveObject', address: any, contents?: { __typename?: 'MoveValue', json: any } | null } | null, credentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, nextEpochCredentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, operationCap?: { __typename?: 'MoveObject', address: any } | null, stakingPool?: { __typename?: 'MoveObject', address: any } | null, address: { __typename?: 'Address', address: any } }> } } | null, firstCheckpoint: { __typename?: 'CheckpointConnection', nodes: Array<{ __typename?: 'Checkpoint', sequenceNumber: number }> } } | null };
 
 export type PaginateEpochValidatorsQueryVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -4753,9 +4753,9 @@ export type PaginateEpochValidatorsQueryVariables = Exact<{
 }>;
 
 
-export type PaginateEpochValidatorsQuery = { __typename?: 'Query', epoch?: { __typename?: 'Epoch', validatorSet?: { __typename?: 'ValidatorSet', activeValidators: { __typename?: 'ValidatorConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Validator', atRisk?: number | null, commissionRate?: number | null, exchangeRatesSize?: number | null, description?: string | null, gasPrice?: any | null, imageUrl?: string | null, name?: string | null, nextEpochCommissionRate?: number | null, nextEpochGasPrice?: any | null, nextEpochStake?: any | null, pendingPoolTokenWithdraw?: any | null, pendingStake?: any | null, pendingTotalSuiWithdraw?: any | null, poolTokenBalance?: any | null, projectUrl?: string | null, rewardsPool?: any | null, stakingPoolActivationEpoch?: number | null, stakingPoolSuiBalance?: any | null, votingPower?: number | null, exchangeRates?: { __typename?: 'MoveObject', address: any, contents?: { __typename?: 'MoveValue', json: any } | null } | null, credentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, nextEpochCredentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, operationCap?: { __typename?: 'MoveObject', address: any } | null, stakingPool?: { __typename?: 'MoveObject', address: any } | null, address: { __typename?: 'Address', address: any } }> } } | null } | null };
+export type PaginateEpochValidatorsQuery = { __typename?: 'Query', epoch?: { __typename?: 'Epoch', validatorSet?: { __typename?: 'ValidatorSet', activeValidators: { __typename?: 'ValidatorConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Validator', atRisk?: number | null, commissionRate?: number | null, exchangeRatesSize?: number | null, description?: string | null, gasPrice?: any | null, imageUrl?: string | null, name?: string | null, nextEpochCommissionRate?: number | null, nextEpochGasPrice?: any | null, nextEpochStake?: any | null, pendingPoolTokenWithdraw?: any | null, pendingStake?: any | null, pendingTotalPeraWithdraw?: any | null, poolTokenBalance?: any | null, projectUrl?: string | null, rewardsPool?: any | null, stakingPoolActivationEpoch?: number | null, stakingPoolPeraBalance?: any | null, votingPower?: number | null, exchangeRates?: { __typename?: 'MoveObject', address: any, contents?: { __typename?: 'MoveValue', json: any } | null } | null, credentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, nextEpochCredentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, operationCap?: { __typename?: 'MoveObject', address: any } | null, stakingPool?: { __typename?: 'MoveObject', address: any } | null, address: { __typename?: 'Address', address: any } }> } } | null } | null };
 
-export type Rpc_Validator_FieldsFragment = { __typename?: 'Validator', atRisk?: number | null, commissionRate?: number | null, exchangeRatesSize?: number | null, description?: string | null, gasPrice?: any | null, imageUrl?: string | null, name?: string | null, nextEpochCommissionRate?: number | null, nextEpochGasPrice?: any | null, nextEpochStake?: any | null, pendingPoolTokenWithdraw?: any | null, pendingStake?: any | null, pendingTotalSuiWithdraw?: any | null, poolTokenBalance?: any | null, projectUrl?: string | null, rewardsPool?: any | null, stakingPoolActivationEpoch?: number | null, stakingPoolSuiBalance?: any | null, votingPower?: number | null, exchangeRates?: { __typename?: 'MoveObject', address: any, contents?: { __typename?: 'MoveValue', json: any } | null } | null, credentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, nextEpochCredentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, operationCap?: { __typename?: 'MoveObject', address: any } | null, stakingPool?: { __typename?: 'MoveObject', address: any } | null, address: { __typename?: 'Address', address: any } };
+export type Rpc_Validator_FieldsFragment = { __typename?: 'Validator', atRisk?: number | null, commissionRate?: number | null, exchangeRatesSize?: number | null, description?: string | null, gasPrice?: any | null, imageUrl?: string | null, name?: string | null, nextEpochCommissionRate?: number | null, nextEpochGasPrice?: any | null, nextEpochStake?: any | null, pendingPoolTokenWithdraw?: any | null, pendingStake?: any | null, pendingTotalPeraWithdraw?: any | null, poolTokenBalance?: any | null, projectUrl?: string | null, rewardsPool?: any | null, stakingPoolActivationEpoch?: number | null, stakingPoolPeraBalance?: any | null, votingPower?: number | null, exchangeRates?: { __typename?: 'MoveObject', address: any, contents?: { __typename?: 'MoveValue', json: any } | null } | null, credentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, nextEpochCredentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, operationCap?: { __typename?: 'MoveObject', address: any } | null, stakingPool?: { __typename?: 'MoveObject', address: any } | null, address: { __typename?: 'Address', address: any } };
 
 export type Rpc_Credential_FieldsFragment = { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null };
 
@@ -4767,7 +4767,7 @@ export type GetTypeLayoutQueryVariables = Exact<{
 export type GetTypeLayoutQuery = { __typename?: 'Query', type: { __typename?: 'MoveType', layout: any } };
 
 export type GetDynamicFieldObjectQueryVariables = Exact<{
-  parentId: Scalars['SuiAddress']['input'];
+  parentId: Scalars['PeraAddress']['input'];
   name: DynamicFieldName;
 }>;
 
@@ -4775,7 +4775,7 @@ export type GetDynamicFieldObjectQueryVariables = Exact<{
 export type GetDynamicFieldObjectQuery = { __typename?: 'Query', owner?: { __typename?: 'Owner', dynamicObjectField?: { __typename?: 'DynamicField', value?: { __typename: 'MoveObject', owner?: { __typename: 'AddressOwner' } | { __typename: 'Immutable' } | { __typename: 'Parent', parent?: { __typename?: 'Object', address: any, digest?: string | null, version: number, storageRebate?: any | null, owner?: { __typename: 'AddressOwner' } | { __typename: 'Immutable' } | { __typename: 'Parent', parent?: { __typename?: 'Object', address: any } | null } | { __typename: 'Shared' } | null, previousTransactionBlock?: { __typename?: 'TransactionBlock', digest?: string | null } | null, asMoveObject?: { __typename?: 'MoveObject', hasPublicTransfer: boolean, contents?: { __typename?: 'MoveValue', data: any, type: { __typename?: 'MoveType', repr: string, layout: any } } | null } | null } | null } | { __typename: 'Shared' } | null } | { __typename: 'MoveValue' } | null } | null } | null };
 
 export type GetDynamicFieldsQueryVariables = Exact<{
-  parentId: Scalars['SuiAddress']['input'];
+  parentId: Scalars['PeraAddress']['input'];
   first?: InputMaybe<Scalars['Int']['input']>;
   cursor?: InputMaybe<Scalars['String']['input']>;
 }>;
@@ -4788,13 +4788,13 @@ export type GetLatestCheckpointSequenceNumberQueryVariables = Exact<{ [key: stri
 
 export type GetLatestCheckpointSequenceNumberQuery = { __typename?: 'Query', checkpoint?: { __typename?: 'Checkpoint', sequenceNumber: number } | null };
 
-export type GetLatestSuiSystemStateQueryVariables = Exact<{ [key: string]: never; }>;
+export type GetLatestPeraSystemStateQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetLatestSuiSystemStateQuery = { __typename?: 'Query', epoch?: { __typename?: 'Epoch', epochId: number, startTimestamp: any, endTimestamp?: any | null, referenceGasPrice?: any | null, systemStateVersion?: number | null, safeMode?: { __typename?: 'SafeMode', enabled?: boolean | null, gasSummary?: { __typename?: 'GasCostSummary', computationCost?: any | null, nonRefundableStorageFee?: any | null, storageCost?: any | null, storageRebate?: any | null } | null } | null, systemStakeSubsidy?: { __typename?: 'StakeSubsidy', balance?: any | null, currentDistributionAmount?: any | null, decreaseRate?: number | null, distributionCounter?: number | null, periodLength?: number | null } | null, storageFund?: { __typename?: 'StorageFund', nonRefundableBalance?: any | null, totalObjectStorageRebates?: any | null } | null, systemParameters?: { __typename?: 'SystemParameters', minValidatorCount?: number | null, maxValidatorCount?: number | null, minValidatorJoiningStake?: any | null, durationMs?: any | null, validatorLowStakeThreshold?: any | null, validatorLowStakeGracePeriod?: any | null, validatorVeryLowStakeThreshold?: any | null, stakeSubsidyStartEpoch?: number | null } | null, protocolConfigs: { __typename?: 'ProtocolConfigs', protocolVersion: number }, validatorSet?: { __typename?: 'ValidatorSet', inactivePoolsSize?: number | null, pendingActiveValidatorsSize?: number | null, stakingPoolMappingsSize?: number | null, validatorCandidatesSize?: number | null, pendingRemovals?: Array<number> | null, totalStake?: any | null, stakingPoolMappingsId?: any | null, pendingActiveValidatorsId?: any | null, validatorCandidatesId?: any | null, inactivePoolsId?: any | null, activeValidators: { __typename?: 'ValidatorConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Validator', atRisk?: number | null, commissionRate?: number | null, exchangeRatesSize?: number | null, description?: string | null, gasPrice?: any | null, imageUrl?: string | null, name?: string | null, nextEpochCommissionRate?: number | null, nextEpochGasPrice?: any | null, nextEpochStake?: any | null, pendingPoolTokenWithdraw?: any | null, pendingStake?: any | null, pendingTotalSuiWithdraw?: any | null, poolTokenBalance?: any | null, projectUrl?: string | null, rewardsPool?: any | null, stakingPoolActivationEpoch?: number | null, stakingPoolSuiBalance?: any | null, votingPower?: number | null, exchangeRates?: { __typename?: 'MoveObject', address: any, contents?: { __typename?: 'MoveValue', json: any } | null } | null, credentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, nextEpochCredentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, operationCap?: { __typename?: 'MoveObject', address: any } | null, stakingPool?: { __typename?: 'MoveObject', address: any } | null, address: { __typename?: 'Address', address: any } }> } } | null } | null };
+export type GetLatestPeraSystemStateQuery = { __typename?: 'Query', epoch?: { __typename?: 'Epoch', epochId: number, startTimestamp: any, endTimestamp?: any | null, referenceGasPrice?: any | null, systemStateVersion?: number | null, safeMode?: { __typename?: 'SafeMode', enabled?: boolean | null, gasSummary?: { __typename?: 'GasCostSummary', computationCost?: any | null, nonRefundableStorageFee?: any | null, storageCost?: any | null, storageRebate?: any | null } | null } | null, systemStakeSubsidy?: { __typename?: 'StakeSubsidy', balance?: any | null, currentDistributionAmount?: any | null, decreaseRate?: number | null, distributionCounter?: number | null, periodLength?: number | null } | null, storageFund?: { __typename?: 'StorageFund', nonRefundableBalance?: any | null, totalObjectStorageRebates?: any | null } | null, systemParameters?: { __typename?: 'SystemParameters', minValidatorCount?: number | null, maxValidatorCount?: number | null, minValidatorJoiningStake?: any | null, durationMs?: any | null, validatorLowStakeThreshold?: any | null, validatorLowStakeGracePeriod?: any | null, validatorVeryLowStakeThreshold?: any | null, stakeSubsidyStartEpoch?: number | null } | null, protocolConfigs: { __typename?: 'ProtocolConfigs', protocolVersion: number }, validatorSet?: { __typename?: 'ValidatorSet', inactivePoolsSize?: number | null, pendingActiveValidatorsSize?: number | null, stakingPoolMappingsSize?: number | null, validatorCandidatesSize?: number | null, pendingRemovals?: Array<number> | null, totalStake?: any | null, stakingPoolMappingsId?: any | null, pendingActiveValidatorsId?: any | null, validatorCandidatesId?: any | null, inactivePoolsId?: any | null, activeValidators: { __typename?: 'ValidatorConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Validator', atRisk?: number | null, commissionRate?: number | null, exchangeRatesSize?: number | null, description?: string | null, gasPrice?: any | null, imageUrl?: string | null, name?: string | null, nextEpochCommissionRate?: number | null, nextEpochGasPrice?: any | null, nextEpochStake?: any | null, pendingPoolTokenWithdraw?: any | null, pendingStake?: any | null, pendingTotalPeraWithdraw?: any | null, poolTokenBalance?: any | null, projectUrl?: string | null, rewardsPool?: any | null, stakingPoolActivationEpoch?: number | null, stakingPoolPeraBalance?: any | null, votingPower?: number | null, exchangeRates?: { __typename?: 'MoveObject', address: any, contents?: { __typename?: 'MoveValue', json: any } | null } | null, credentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, nextEpochCredentials?: { __typename?: 'ValidatorCredentials', netAddress?: string | null, networkPubKey?: any | null, p2PAddress?: string | null, primaryAddress?: string | null, workerPubKey?: any | null, workerAddress?: string | null, proofOfPossession?: any | null, protocolPubKey?: any | null } | null, operationCap?: { __typename?: 'MoveObject', address: any } | null, stakingPool?: { __typename?: 'MoveObject', address: any } | null, address: { __typename?: 'Address', address: any } }> } } | null } | null };
 
 export type GetMoveFunctionArgTypesQueryVariables = Exact<{
-  packageId: Scalars['SuiAddress']['input'];
+  packageId: Scalars['PeraAddress']['input'];
   module: Scalars['String']['input'];
   function: Scalars['String']['input'];
 }>;
@@ -4803,7 +4803,7 @@ export type GetMoveFunctionArgTypesQueryVariables = Exact<{
 export type GetMoveFunctionArgTypesQuery = { __typename?: 'Query', object?: { __typename?: 'Object', asMovePackage?: { __typename?: 'MovePackage', module?: { __typename?: 'MoveModule', fileFormatVersion: number, function?: { __typename?: 'MoveFunction', parameters?: Array<{ __typename?: 'OpenMoveType', signature: any }> | null } | null } | null } | null } | null };
 
 export type GetNormalizedMoveFunctionQueryVariables = Exact<{
-  packageId: Scalars['SuiAddress']['input'];
+  packageId: Scalars['PeraAddress']['input'];
   module: Scalars['String']['input'];
   function: Scalars['String']['input'];
 }>;
@@ -4814,7 +4814,7 @@ export type GetNormalizedMoveFunctionQuery = { __typename?: 'Query', object?: { 
 export type Rpc_Move_Function_FieldsFragment = { __typename?: 'MoveFunction', name: string, visibility?: MoveVisibility | null, isEntry?: boolean | null, parameters?: Array<{ __typename?: 'OpenMoveType', signature: any }> | null, typeParameters?: Array<{ __typename?: 'MoveFunctionTypeParameter', constraints: Array<MoveAbility> }> | null, return?: Array<{ __typename?: 'OpenMoveType', repr: string, signature: any }> | null };
 
 export type GetNormalizedMoveModuleQueryVariables = Exact<{
-  packageId: Scalars['SuiAddress']['input'];
+  packageId: Scalars['PeraAddress']['input'];
   module: Scalars['String']['input'];
 }>;
 
@@ -4822,7 +4822,7 @@ export type GetNormalizedMoveModuleQueryVariables = Exact<{
 export type GetNormalizedMoveModuleQuery = { __typename?: 'Query', object?: { __typename?: 'Object', asMovePackage?: { __typename?: 'MovePackage', module?: { __typename?: 'MoveModule', name: string, fileFormatVersion: number, friends: { __typename?: 'MoveModuleConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveModule', name: string, package: { __typename?: 'MovePackage', address: any } }> }, structs?: { __typename?: 'MoveStructConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveStruct', name: string, abilities?: Array<MoveAbility> | null, fields?: Array<{ __typename?: 'MoveField', name: string, type?: { __typename?: 'OpenMoveType', signature: any } | null }> | null, typeParameters?: Array<{ __typename?: 'MoveStructTypeParameter', isPhantom: boolean, constraints: Array<MoveAbility> }> | null }> } | null, functions?: { __typename?: 'MoveFunctionConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveFunction', name: string, visibility?: MoveVisibility | null, isEntry?: boolean | null, parameters?: Array<{ __typename?: 'OpenMoveType', signature: any }> | null, typeParameters?: Array<{ __typename?: 'MoveFunctionTypeParameter', constraints: Array<MoveAbility> }> | null, return?: Array<{ __typename?: 'OpenMoveType', repr: string, signature: any }> | null }> } | null } | null } | null } | null };
 
 export type PaginateMoveModuleListsQueryVariables = Exact<{
-  packageId: Scalars['SuiAddress']['input'];
+  packageId: Scalars['PeraAddress']['input'];
   module: Scalars['String']['input'];
   hasMoreFriends: Scalars['Boolean']['input'];
   hasMoreStructs: Scalars['Boolean']['input'];
@@ -4838,7 +4838,7 @@ export type PaginateMoveModuleListsQuery = { __typename?: 'Query', object?: { __
 export type Rpc_Move_Module_FieldsFragment = { __typename?: 'MoveModule', name: string, fileFormatVersion: number, friends: { __typename?: 'MoveModuleConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveModule', name: string, package: { __typename?: 'MovePackage', address: any } }> }, structs?: { __typename?: 'MoveStructConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveStruct', name: string, abilities?: Array<MoveAbility> | null, fields?: Array<{ __typename?: 'MoveField', name: string, type?: { __typename?: 'OpenMoveType', signature: any } | null }> | null, typeParameters?: Array<{ __typename?: 'MoveStructTypeParameter', isPhantom: boolean, constraints: Array<MoveAbility> }> | null }> } | null, functions?: { __typename?: 'MoveFunctionConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveFunction', name: string, visibility?: MoveVisibility | null, isEntry?: boolean | null, parameters?: Array<{ __typename?: 'OpenMoveType', signature: any }> | null, typeParameters?: Array<{ __typename?: 'MoveFunctionTypeParameter', constraints: Array<MoveAbility> }> | null, return?: Array<{ __typename?: 'OpenMoveType', repr: string, signature: any }> | null }> } | null };
 
 export type GetNormalizedMoveModulesByPackageQueryVariables = Exact<{
-  packageId: Scalars['SuiAddress']['input'];
+  packageId: Scalars['PeraAddress']['input'];
   cursor?: InputMaybe<Scalars['String']['input']>;
 }>;
 
@@ -4846,7 +4846,7 @@ export type GetNormalizedMoveModulesByPackageQueryVariables = Exact<{
 export type GetNormalizedMoveModulesByPackageQuery = { __typename?: 'Query', object?: { __typename?: 'Object', asMovePackage?: { __typename?: 'MovePackage', address: any, modules?: { __typename?: 'MoveModuleConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveModule', name: string, fileFormatVersion: number, friends: { __typename?: 'MoveModuleConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveModule', name: string, package: { __typename?: 'MovePackage', address: any } }> }, structs?: { __typename?: 'MoveStructConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveStruct', name: string, abilities?: Array<MoveAbility> | null, fields?: Array<{ __typename?: 'MoveField', name: string, type?: { __typename?: 'OpenMoveType', signature: any } | null }> | null, typeParameters?: Array<{ __typename?: 'MoveStructTypeParameter', isPhantom: boolean, constraints: Array<MoveAbility> }> | null }> } | null, functions?: { __typename?: 'MoveFunctionConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveFunction', name: string, visibility?: MoveVisibility | null, isEntry?: boolean | null, parameters?: Array<{ __typename?: 'OpenMoveType', signature: any }> | null, typeParameters?: Array<{ __typename?: 'MoveFunctionTypeParameter', constraints: Array<MoveAbility> }> | null, return?: Array<{ __typename?: 'OpenMoveType', repr: string, signature: any }> | null }> } | null }> } | null } | null } | null };
 
 export type GetNormalizedMoveStructQueryVariables = Exact<{
-  packageId: Scalars['SuiAddress']['input'];
+  packageId: Scalars['PeraAddress']['input'];
   module: Scalars['String']['input'];
   struct: Scalars['String']['input'];
 }>;
@@ -4890,19 +4890,19 @@ export type ResolveNameServiceAddressQueryVariables = Exact<{
 }>;
 
 
-export type ResolveNameServiceAddressQuery = { __typename?: 'Query', resolveSuinsAddress?: { __typename?: 'Address', address: any } | null };
+export type ResolveNameServiceAddressQuery = { __typename?: 'Query', resolvePeransAddress?: { __typename?: 'Address', address: any } | null };
 
 export type ResolveNameServiceNamesQueryVariables = Exact<{
-  address: Scalars['SuiAddress']['input'];
+  address: Scalars['PeraAddress']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
   cursor?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type ResolveNameServiceNamesQuery = { __typename?: 'Query', address?: { __typename?: 'Address', suinsRegistrations: { __typename?: 'SuinsRegistrationConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'SuinsRegistration', domain: string }> } } | null };
+export type ResolveNameServiceNamesQuery = { __typename?: 'Query', address?: { __typename?: 'Address', peransRegistrations: { __typename?: 'PeransRegistrationConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'PeransRegistration', domain: string }> } } | null };
 
 export type GetOwnedObjectsQueryVariables = Exact<{
-  owner: Scalars['SuiAddress']['input'];
+  owner: Scalars['PeraAddress']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
   cursor?: InputMaybe<Scalars['String']['input']>;
   showBcs?: InputMaybe<Scalars['Boolean']['input']>;
@@ -4919,7 +4919,7 @@ export type GetOwnedObjectsQueryVariables = Exact<{
 export type GetOwnedObjectsQuery = { __typename?: 'Query', address?: { __typename?: 'Address', objects: { __typename?: 'MoveObjectConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'MoveObject', bcs?: any | null, hasPublicTransfer?: boolean, storageRebate?: any | null, digest?: string | null, version: number, objectId: any, contents?: { __typename?: 'MoveValue', data: any, bcs: any, type: { __typename?: 'MoveType', repr: string, layout: any, signature: any } } | null, owner?: { __typename: 'AddressOwner', owner?: { __typename?: 'Owner', asObject?: { __typename?: 'Object', address: any } | null, asAddress?: { __typename?: 'Address', address: any } | null } | null } | { __typename: 'Immutable' } | { __typename: 'Parent', parent?: { __typename?: 'Object', address: any } | null } | { __typename: 'Shared', initialSharedVersion: number } | null, previousTransactionBlock?: { __typename?: 'TransactionBlock', digest?: string | null } | null, display?: Array<{ __typename?: 'DisplayEntry', key: string, value?: string | null, error?: string | null }> | null }> } } | null };
 
 export type GetObjectQueryVariables = Exact<{
-  id: Scalars['SuiAddress']['input'];
+  id: Scalars['PeraAddress']['input'];
   showBcs?: InputMaybe<Scalars['Boolean']['input']>;
   showOwner?: InputMaybe<Scalars['Boolean']['input']>;
   showPreviousTransaction?: InputMaybe<Scalars['Boolean']['input']>;
@@ -4933,7 +4933,7 @@ export type GetObjectQueryVariables = Exact<{
 export type GetObjectQuery = { __typename?: 'Query', object?: { __typename?: 'Object', version: number, storageRebate?: any | null, digest?: string | null, objectId: any, asMoveObject?: { __typename?: 'MoveObject', hasPublicTransfer: boolean, contents?: { __typename?: 'MoveValue', data: any, bcs: any, type: { __typename?: 'MoveType', repr: string, layout: any, signature: any } } | null } | null, owner?: { __typename: 'AddressOwner', owner?: { __typename?: 'Owner', asObject?: { __typename?: 'Object', address: any } | null, asAddress?: { __typename?: 'Address', address: any } | null } | null } | { __typename: 'Immutable' } | { __typename: 'Parent', parent?: { __typename?: 'Object', address: any } | null } | { __typename: 'Shared', initialSharedVersion: number } | null, previousTransactionBlock?: { __typename?: 'TransactionBlock', digest?: string | null } | null, display?: Array<{ __typename?: 'DisplayEntry', key: string, value?: string | null, error?: string | null }> | null } | null };
 
 export type TryGetPastObjectQueryVariables = Exact<{
-  id: Scalars['SuiAddress']['input'];
+  id: Scalars['PeraAddress']['input'];
   version?: InputMaybe<Scalars['Int']['input']>;
   showBcs?: InputMaybe<Scalars['Boolean']['input']>;
   showOwner?: InputMaybe<Scalars['Boolean']['input']>;
@@ -4948,7 +4948,7 @@ export type TryGetPastObjectQueryVariables = Exact<{
 export type TryGetPastObjectQuery = { __typename?: 'Query', current?: { __typename?: 'Object', address: any, version: number } | null, object?: { __typename?: 'Object', version: number, storageRebate?: any | null, digest?: string | null, objectId: any, asMoveObject?: { __typename?: 'MoveObject', hasPublicTransfer: boolean, contents?: { __typename?: 'MoveValue', data: any, bcs: any, type: { __typename?: 'MoveType', repr: string, layout: any, signature: any } } | null } | null, owner?: { __typename: 'AddressOwner', owner?: { __typename?: 'Owner', asObject?: { __typename?: 'Object', address: any } | null, asAddress?: { __typename?: 'Address', address: any } | null } | null } | { __typename: 'Immutable' } | { __typename: 'Parent', parent?: { __typename?: 'Object', address: any } | null } | { __typename: 'Shared', initialSharedVersion: number } | null, previousTransactionBlock?: { __typename?: 'TransactionBlock', digest?: string | null } | null, display?: Array<{ __typename?: 'DisplayEntry', key: string, value?: string | null, error?: string | null }> | null } | null };
 
 export type MultiGetObjectsQueryVariables = Exact<{
-  ids: Array<Scalars['SuiAddress']['input']> | Scalars['SuiAddress']['input'];
+  ids: Array<Scalars['PeraAddress']['input']> | Scalars['PeraAddress']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
   cursor?: InputMaybe<Scalars['String']['input']>;
   showBcs?: InputMaybe<Scalars['Boolean']['input']>;
@@ -4991,24 +4991,24 @@ export type QueryEventsQuery = { __typename?: 'Query', events: { __typename?: 'E
 export type Rpc_Events_FieldsFragment = { __typename?: 'Event', json: any, bcs: any, timestamp?: any | null, sendingModule?: { __typename?: 'MoveModule', name: string, package: { __typename?: 'MovePackage', address: any } } | null, sender?: { __typename?: 'Address', address: any } | null, type: { __typename?: 'MoveType', repr: string } };
 
 export type GetStakesQueryVariables = Exact<{
-  owner: Scalars['SuiAddress']['input'];
+  owner: Scalars['PeraAddress']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
   cursor?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type GetStakesQuery = { __typename?: 'Query', address?: { __typename?: 'Address', stakedSuis: { __typename?: 'StakedSuiConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'StakedSui', principal?: any | null, stakeStatus: StakeStatus, address: any, estimatedReward?: any | null, activatedEpoch?: { __typename?: 'Epoch', epochId: number, referenceGasPrice?: any | null } | null, requestedEpoch?: { __typename?: 'Epoch', epochId: number } | null, contents?: { __typename?: 'MoveValue', json: any } | null }> } } | null };
+export type GetStakesQuery = { __typename?: 'Query', address?: { __typename?: 'Address', stakedPeras: { __typename?: 'StakedPeraConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'StakedPera', principal?: any | null, stakeStatus: StakeStatus, address: any, estimatedReward?: any | null, activatedEpoch?: { __typename?: 'Epoch', epochId: number, referenceGasPrice?: any | null } | null, requestedEpoch?: { __typename?: 'Epoch', epochId: number } | null, contents?: { __typename?: 'MoveValue', json: any } | null }> } } | null };
 
 export type GetStakesByIdsQueryVariables = Exact<{
-  ids: Array<Scalars['SuiAddress']['input']> | Scalars['SuiAddress']['input'];
+  ids: Array<Scalars['PeraAddress']['input']> | Scalars['PeraAddress']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
   cursor?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type GetStakesByIdsQuery = { __typename?: 'Query', objects: { __typename?: 'ObjectConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Object', asMoveObject?: { __typename?: 'MoveObject', asStakedSui?: { __typename?: 'StakedSui', principal?: any | null, stakeStatus: StakeStatus, address: any, estimatedReward?: any | null, activatedEpoch?: { __typename?: 'Epoch', epochId: number, referenceGasPrice?: any | null } | null, requestedEpoch?: { __typename?: 'Epoch', epochId: number } | null, contents?: { __typename?: 'MoveValue', json: any } | null } | null } | null }> } };
+export type GetStakesByIdsQuery = { __typename?: 'Query', objects: { __typename?: 'ObjectConnection', pageInfo: { __typename?: 'PageInfo', hasNextPage: boolean, endCursor?: string | null }, nodes: Array<{ __typename?: 'Object', asMoveObject?: { __typename?: 'MoveObject', asStakedPera?: { __typename?: 'StakedPera', principal?: any | null, stakeStatus: StakeStatus, address: any, estimatedReward?: any | null, activatedEpoch?: { __typename?: 'Epoch', epochId: number, referenceGasPrice?: any | null } | null, requestedEpoch?: { __typename?: 'Epoch', epochId: number } | null, contents?: { __typename?: 'MoveValue', json: any } | null } | null } | null }> } };
 
-export type Rpc_Stake_FieldsFragment = { __typename?: 'StakedSui', principal?: any | null, stakeStatus: StakeStatus, address: any, estimatedReward?: any | null, activatedEpoch?: { __typename?: 'Epoch', epochId: number, referenceGasPrice?: any | null } | null, requestedEpoch?: { __typename?: 'Epoch', epochId: number } | null, contents?: { __typename?: 'MoveValue', json: any } | null };
+export type Rpc_Stake_FieldsFragment = { __typename?: 'StakedPera', principal?: any | null, stakeStatus: StakeStatus, address: any, estimatedReward?: any | null, activatedEpoch?: { __typename?: 'Epoch', epochId: number, referenceGasPrice?: any | null } | null, requestedEpoch?: { __typename?: 'Epoch', epochId: number } | null, contents?: { __typename?: 'MoveValue', json: any } | null };
 
 export type QueryTransactionBlocksQueryVariables = Exact<{
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -5195,7 +5195,7 @@ export const Rpc_Validator_FieldsFragmentDoc = new TypedDocumentString(`
   }
   pendingPoolTokenWithdraw
   pendingStake
-  pendingTotalSuiWithdraw
+  pendingTotalPeraWithdraw
   poolTokenBalance
   projectUrl
   rewardsPool
@@ -5203,7 +5203,7 @@ export const Rpc_Validator_FieldsFragmentDoc = new TypedDocumentString(`
     address
   }
   stakingPoolActivationEpoch
-  stakingPoolSuiBalance
+  stakingPoolPeraBalance
   address {
     address
   }
@@ -5468,7 +5468,7 @@ export const Rpc_Move_Object_FieldsFragmentDoc = new TypedDocumentString(`
   }
 }`, {"fragmentName":"RPC_MOVE_OBJECT_FIELDS"}) as unknown as TypedDocumentString<Rpc_Move_Object_FieldsFragment, unknown>;
 export const Rpc_Stake_FieldsFragmentDoc = new TypedDocumentString(`
-    fragment RPC_STAKE_FIELDS on StakedSui {
+    fragment RPC_STAKE_FIELDS on StakedPera {
   principal
   activatedEpoch {
     epochId
@@ -6203,7 +6203,7 @@ fragment RPC_TRANSACTION_FIELDS on TransactionBlock {
   }
 }`) as unknown as TypedDocumentString<ExecuteTransactionBlockMutation, ExecuteTransactionBlockMutationVariables>;
 export const GetAllBalancesDocument = new TypedDocumentString(`
-    query getAllBalances($owner: SuiAddress!, $limit: Int, $cursor: String) {
+    query getAllBalances($owner: PeraAddress!, $limit: Int, $cursor: String) {
   address(address: $owner) {
     balances(first: $limit, after: $cursor) {
       pageInfo {
@@ -6222,7 +6222,7 @@ export const GetAllBalancesDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GetAllBalancesQuery, GetAllBalancesQueryVariables>;
 export const GetBalanceDocument = new TypedDocumentString(`
-    query getBalance($owner: SuiAddress!, $type: String = "0x2::sui::SUI") {
+    query getBalance($owner: PeraAddress!, $type: String = "0x2::pera::PERA") {
   address(address: $owner) {
     balance(type: $type) {
       coinType {
@@ -6252,7 +6252,7 @@ export const GetCoinMetadataDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GetCoinMetadataQuery, GetCoinMetadataQueryVariables>;
 export const GetCoinsDocument = new TypedDocumentString(`
-    query getCoins($owner: SuiAddress!, $first: Int, $cursor: String, $type: String = "0x2::sui::SUI") {
+    query getCoins($owner: PeraAddress!, $first: Int, $cursor: String, $type: String = "0x2::pera::PERA") {
   address(address: $owner) {
     address
     coins(first: $first, after: $cursor, type: $type) {
@@ -6354,7 +6354,7 @@ export const GetCurrentEpochDocument = new TypedDocumentString(`
   }
   pendingPoolTokenWithdraw
   pendingStake
-  pendingTotalSuiWithdraw
+  pendingTotalPeraWithdraw
   poolTokenBalance
   projectUrl
   rewardsPool
@@ -6362,7 +6362,7 @@ export const GetCurrentEpochDocument = new TypedDocumentString(`
     address
   }
   stakingPoolActivationEpoch
-  stakingPoolSuiBalance
+  stakingPoolPeraBalance
   address {
     address
   }
@@ -6423,7 +6423,7 @@ export const PaginateEpochValidatorsDocument = new TypedDocumentString(`
   }
   pendingPoolTokenWithdraw
   pendingStake
-  pendingTotalSuiWithdraw
+  pendingTotalPeraWithdraw
   poolTokenBalance
   projectUrl
   rewardsPool
@@ -6431,7 +6431,7 @@ export const PaginateEpochValidatorsDocument = new TypedDocumentString(`
     address
   }
   stakingPoolActivationEpoch
-  stakingPoolSuiBalance
+  stakingPoolPeraBalance
   address {
     address
   }
@@ -6455,7 +6455,7 @@ export const GetTypeLayoutDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GetTypeLayoutQuery, GetTypeLayoutQueryVariables>;
 export const GetDynamicFieldObjectDocument = new TypedDocumentString(`
-    query getDynamicFieldObject($parentId: SuiAddress!, $name: DynamicFieldName!) {
+    query getDynamicFieldObject($parentId: PeraAddress!, $name: DynamicFieldName!) {
   owner(address: $parentId) {
     dynamicObjectField(name: $name) {
       value {
@@ -6500,7 +6500,7 @@ export const GetDynamicFieldObjectDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GetDynamicFieldObjectQuery, GetDynamicFieldObjectQueryVariables>;
 export const GetDynamicFieldsDocument = new TypedDocumentString(`
-    query getDynamicFields($parentId: SuiAddress!, $first: Int, $cursor: String) {
+    query getDynamicFields($parentId: PeraAddress!, $first: Int, $cursor: String) {
   owner(address: $parentId) {
     dynamicFields(first: $first, after: $cursor) {
       pageInfo {
@@ -6548,8 +6548,8 @@ export const GetLatestCheckpointSequenceNumberDocument = new TypedDocumentString
   }
 }
     `) as unknown as TypedDocumentString<GetLatestCheckpointSequenceNumberQuery, GetLatestCheckpointSequenceNumberQueryVariables>;
-export const GetLatestSuiSystemStateDocument = new TypedDocumentString(`
-    query getLatestSuiSystemState {
+export const GetLatestPeraSystemStateDocument = new TypedDocumentString(`
+    query getLatestPeraSystemState {
   epoch {
     epochId
     startTimestamp
@@ -6641,7 +6641,7 @@ export const GetLatestSuiSystemStateDocument = new TypedDocumentString(`
   }
   pendingPoolTokenWithdraw
   pendingStake
-  pendingTotalSuiWithdraw
+  pendingTotalPeraWithdraw
   poolTokenBalance
   projectUrl
   rewardsPool
@@ -6649,7 +6649,7 @@ export const GetLatestSuiSystemStateDocument = new TypedDocumentString(`
     address
   }
   stakingPoolActivationEpoch
-  stakingPoolSuiBalance
+  stakingPoolPeraBalance
   address {
     address
   }
@@ -6664,9 +6664,9 @@ fragment RPC_CREDENTIAL_FIELDS on ValidatorCredentials {
   workerAddress
   proofOfPossession
   protocolPubKey
-}`) as unknown as TypedDocumentString<GetLatestSuiSystemStateQuery, GetLatestSuiSystemStateQueryVariables>;
+}`) as unknown as TypedDocumentString<GetLatestPeraSystemStateQuery, GetLatestPeraSystemStateQueryVariables>;
 export const GetMoveFunctionArgTypesDocument = new TypedDocumentString(`
-    query getMoveFunctionArgTypes($packageId: SuiAddress!, $module: String!, $function: String!) {
+    query getMoveFunctionArgTypes($packageId: PeraAddress!, $module: String!, $function: String!) {
   object(address: $packageId) {
     asMovePackage {
       module(name: $module) {
@@ -6682,7 +6682,7 @@ export const GetMoveFunctionArgTypesDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GetMoveFunctionArgTypesQuery, GetMoveFunctionArgTypesQueryVariables>;
 export const GetNormalizedMoveFunctionDocument = new TypedDocumentString(`
-    query getNormalizedMoveFunction($packageId: SuiAddress!, $module: String!, $function: String!) {
+    query getNormalizedMoveFunction($packageId: PeraAddress!, $module: String!, $function: String!) {
   object(address: $packageId) {
     address
     asMovePackage {
@@ -6711,7 +6711,7 @@ export const GetNormalizedMoveFunctionDocument = new TypedDocumentString(`
   }
 }`) as unknown as TypedDocumentString<GetNormalizedMoveFunctionQuery, GetNormalizedMoveFunctionQueryVariables>;
 export const GetNormalizedMoveModuleDocument = new TypedDocumentString(`
-    query getNormalizedMoveModule($packageId: SuiAddress!, $module: String!) {
+    query getNormalizedMoveModule($packageId: PeraAddress!, $module: String!) {
   object(address: $packageId) {
     asMovePackage {
       module(name: $module) {
@@ -6784,7 +6784,7 @@ fragment RPC_MOVE_STRUCT_FIELDS on MoveStruct {
   }
 }`) as unknown as TypedDocumentString<GetNormalizedMoveModuleQuery, GetNormalizedMoveModuleQueryVariables>;
 export const PaginateMoveModuleListsDocument = new TypedDocumentString(`
-    query paginateMoveModuleLists($packageId: SuiAddress!, $module: String!, $hasMoreFriends: Boolean!, $hasMoreStructs: Boolean!, $hasMoreFunctions: Boolean!, $afterFriends: String, $afterStructs: String, $afterFunctions: String) {
+    query paginateMoveModuleLists($packageId: PeraAddress!, $module: String!, $hasMoreFriends: Boolean!, $hasMoreStructs: Boolean!, $hasMoreFunctions: Boolean!, $afterFriends: String, $afterStructs: String, $afterFunctions: String) {
   object(address: $packageId) {
     asMovePackage {
       module(name: $module) {
@@ -6852,7 +6852,7 @@ fragment RPC_MOVE_STRUCT_FIELDS on MoveStruct {
   }
 }`) as unknown as TypedDocumentString<PaginateMoveModuleListsQuery, PaginateMoveModuleListsQueryVariables>;
 export const GetNormalizedMoveModulesByPackageDocument = new TypedDocumentString(`
-    query getNormalizedMoveModulesByPackage($packageId: SuiAddress!, $cursor: String) {
+    query getNormalizedMoveModulesByPackage($packageId: PeraAddress!, $cursor: String) {
   object(address: $packageId) {
     asMovePackage {
       address
@@ -6932,7 +6932,7 @@ fragment RPC_MOVE_STRUCT_FIELDS on MoveStruct {
   }
 }`) as unknown as TypedDocumentString<GetNormalizedMoveModulesByPackageQuery, GetNormalizedMoveModulesByPackageQueryVariables>;
 export const GetNormalizedMoveStructDocument = new TypedDocumentString(`
-    query getNormalizedMoveStruct($packageId: SuiAddress!, $module: String!, $struct: String!) {
+    query getNormalizedMoveStruct($packageId: PeraAddress!, $module: String!, $struct: String!) {
   object(address: $packageId) {
     asMovePackage {
       address
@@ -7019,15 +7019,15 @@ export const GetValidatorsApyDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<GetValidatorsApyQuery, GetValidatorsApyQueryVariables>;
 export const ResolveNameServiceAddressDocument = new TypedDocumentString(`
     query resolveNameServiceAddress($domain: String!) {
-  resolveSuinsAddress(domain: $domain) {
+  resolvePeransAddress(domain: $domain) {
     address
   }
 }
     `) as unknown as TypedDocumentString<ResolveNameServiceAddressQuery, ResolveNameServiceAddressQueryVariables>;
 export const ResolveNameServiceNamesDocument = new TypedDocumentString(`
-    query resolveNameServiceNames($address: SuiAddress!, $limit: Int, $cursor: String) {
+    query resolveNameServiceNames($address: PeraAddress!, $limit: Int, $cursor: String) {
   address(address: $address) {
-    suinsRegistrations(first: $limit, after: $cursor) {
+    peransRegistrations(first: $limit, after: $cursor) {
       pageInfo {
         hasNextPage
         endCursor
@@ -7040,7 +7040,7 @@ export const ResolveNameServiceNamesDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<ResolveNameServiceNamesQuery, ResolveNameServiceNamesQueryVariables>;
 export const GetOwnedObjectsDocument = new TypedDocumentString(`
-    query getOwnedObjects($owner: SuiAddress!, $limit: Int, $cursor: String, $showBcs: Boolean = false, $showContent: Boolean = false, $showDisplay: Boolean = false, $showType: Boolean = false, $showOwner: Boolean = false, $showPreviousTransaction: Boolean = false, $showStorageRebate: Boolean = false, $filter: ObjectFilter) {
+    query getOwnedObjects($owner: PeraAddress!, $limit: Int, $cursor: String, $showBcs: Boolean = false, $showContent: Boolean = false, $showDisplay: Boolean = false, $showType: Boolean = false, $showOwner: Boolean = false, $showPreviousTransaction: Boolean = false, $showStorageRebate: Boolean = false, $filter: ObjectFilter) {
   address(address: $owner) {
     objects(first: $limit, after: $cursor, filter: $filter) {
       pageInfo {
@@ -7114,7 +7114,7 @@ fragment RPC_OBJECT_OWNER_FIELDS on ObjectOwner {
   }
 }`) as unknown as TypedDocumentString<GetOwnedObjectsQuery, GetOwnedObjectsQueryVariables>;
 export const GetObjectDocument = new TypedDocumentString(`
-    query getObject($id: SuiAddress!, $showBcs: Boolean = false, $showOwner: Boolean = false, $showPreviousTransaction: Boolean = false, $showContent: Boolean = false, $showDisplay: Boolean = false, $showType: Boolean = false, $showStorageRebate: Boolean = false) {
+    query getObject($id: PeraAddress!, $showBcs: Boolean = false, $showOwner: Boolean = false, $showPreviousTransaction: Boolean = false, $showContent: Boolean = false, $showDisplay: Boolean = false, $showType: Boolean = false, $showStorageRebate: Boolean = false) {
   object(address: $id) {
     ...RPC_OBJECT_FIELDS
   }
@@ -7186,7 +7186,7 @@ fragment RPC_OBJECT_OWNER_FIELDS on ObjectOwner {
   }
 }`) as unknown as TypedDocumentString<GetObjectQuery, GetObjectQueryVariables>;
 export const TryGetPastObjectDocument = new TypedDocumentString(`
-    query tryGetPastObject($id: SuiAddress!, $version: Int, $showBcs: Boolean = false, $showOwner: Boolean = false, $showPreviousTransaction: Boolean = false, $showContent: Boolean = false, $showDisplay: Boolean = false, $showType: Boolean = false, $showStorageRebate: Boolean = false) {
+    query tryGetPastObject($id: PeraAddress!, $version: Int, $showBcs: Boolean = false, $showOwner: Boolean = false, $showPreviousTransaction: Boolean = false, $showContent: Boolean = false, $showDisplay: Boolean = false, $showType: Boolean = false, $showStorageRebate: Boolean = false) {
   current: object(address: $id) {
     address
     version
@@ -7262,7 +7262,7 @@ fragment RPC_OBJECT_OWNER_FIELDS on ObjectOwner {
   }
 }`) as unknown as TypedDocumentString<TryGetPastObjectQuery, TryGetPastObjectQueryVariables>;
 export const MultiGetObjectsDocument = new TypedDocumentString(`
-    query multiGetObjects($ids: [SuiAddress!]!, $limit: Int, $cursor: String, $showBcs: Boolean = false, $showContent: Boolean = false, $showDisplay: Boolean = false, $showType: Boolean = false, $showOwner: Boolean = false, $showPreviousTransaction: Boolean = false, $showStorageRebate: Boolean = false) {
+    query multiGetObjects($ids: [PeraAddress!]!, $limit: Int, $cursor: String, $showBcs: Boolean = false, $showContent: Boolean = false, $showDisplay: Boolean = false, $showType: Boolean = false, $showOwner: Boolean = false, $showPreviousTransaction: Boolean = false, $showStorageRebate: Boolean = false) {
   objects(first: $limit, after: $cursor, filter: {objectIds: $ids}) {
     pageInfo {
       hasNextPage
@@ -7377,9 +7377,9 @@ export const QueryEventsDocument = new TypedDocumentString(`
   timestamp
 }`) as unknown as TypedDocumentString<QueryEventsQuery, QueryEventsQueryVariables>;
 export const GetStakesDocument = new TypedDocumentString(`
-    query getStakes($owner: SuiAddress!, $limit: Int, $cursor: String) {
+    query getStakes($owner: PeraAddress!, $limit: Int, $cursor: String) {
   address(address: $owner) {
-    stakedSuis(first: $limit, after: $cursor) {
+    stakedPeras(first: $limit, after: $cursor) {
       pageInfo {
         hasNextPage
         endCursor
@@ -7390,7 +7390,7 @@ export const GetStakesDocument = new TypedDocumentString(`
     }
   }
 }
-    fragment RPC_STAKE_FIELDS on StakedSui {
+    fragment RPC_STAKE_FIELDS on StakedPera {
   principal
   activatedEpoch {
     epochId
@@ -7410,7 +7410,7 @@ export const GetStakesDocument = new TypedDocumentString(`
   estimatedReward
 }`) as unknown as TypedDocumentString<GetStakesQuery, GetStakesQueryVariables>;
 export const GetStakesByIdsDocument = new TypedDocumentString(`
-    query getStakesByIds($ids: [SuiAddress!]!, $limit: Int, $cursor: String) {
+    query getStakesByIds($ids: [PeraAddress!]!, $limit: Int, $cursor: String) {
   objects(first: $limit, after: $cursor, filter: {objectIds: $ids}) {
     pageInfo {
       hasNextPage
@@ -7418,14 +7418,14 @@ export const GetStakesByIdsDocument = new TypedDocumentString(`
     }
     nodes {
       asMoveObject {
-        asStakedSui {
+        asStakedPera {
           ...RPC_STAKE_FIELDS
         }
       }
     }
   }
 }
-    fragment RPC_STAKE_FIELDS on StakedSui {
+    fragment RPC_STAKE_FIELDS on StakedPera {
   principal
   activatedEpoch {
     epochId

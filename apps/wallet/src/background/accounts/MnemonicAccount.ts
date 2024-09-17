@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromExportedKeypair } from '_src/shared/utils/from-exported-keypair';
-import { type Keypair } from '@mysten/sui/cryptography';
+import { type Keypair } from '@pera-io/pera/cryptography';
 
 import { MnemonicAccountSource } from '../account-sources/MnemonicAccountSource';
 import {
@@ -60,7 +60,7 @@ export class MnemonicAccount
 		return {
 			type: 'mnemonic-derived',
 			sourceID,
-			address: keyPair.getPublicKey().toSuiAddress(),
+			address: keyPair.getPublicKey().toPeraAddress(),
 			derivationPath,
 			publicKey: keyPair.getPublicKey().toBase64(),
 			lastUnlockedOn: null,

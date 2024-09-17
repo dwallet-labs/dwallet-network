@@ -1,20 +1,20 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::collections::BTreeMap;
-use sui_config::genesis;
-use sui_types::base_types::ObjectRef;
-use sui_types::error::UserInputError;
-use sui_types::transaction::InputObjects;
-use sui_types::transaction::ObjectReadResult;
-use sui_types::transaction::ReceivingObjectReadResult;
-use sui_types::transaction::ReceivingObjects;
-use sui_types::{
-    base_types::{ObjectID, SequenceNumber, SuiAddress},
+use pera_config::genesis;
+use pera_types::base_types::ObjectRef;
+use pera_types::error::UserInputError;
+use pera_types::transaction::InputObjects;
+use pera_types::transaction::ObjectReadResult;
+use pera_types::transaction::ReceivingObjectReadResult;
+use pera_types::transaction::ReceivingObjects;
+use pera_types::{
+    base_types::{ObjectID, SequenceNumber, PeraAddress},
     committee::{Committee, EpochId},
     digests::{ObjectDigest, TransactionDigest, TransactionEventsDigest},
     effects::{TransactionEffects, TransactionEffectsAPI, TransactionEvents},
-    error::SuiResult,
+    error::PeraResult,
     messages_checkpoint::{
         CheckpointContents, CheckpointContentsDigest, CheckpointDigest, CheckpointSequenceNumber,
         VerifiedCheckpoint,
@@ -26,8 +26,8 @@ use sui_types::{
 pub mod in_mem_store;
 
 pub trait SimulatorStore:
-    sui_types::storage::BackingPackageStore
-    + sui_types::storage::ObjectStore
+    pera_types::storage::BackingPackageStore
+    + pera_types::storage::ObjectStore
     + ParentSync
     + ChildObjectResolver
 {
@@ -86,11 +86,11 @@ pub trait SimulatorStore:
 
     fn get_object_at_version(&self, id: &ObjectID, version: SequenceNumber) -> Option<Object>;
 
-    fn get_system_state(&self) -> sui_types::sui_system_state::SuiSystemState;
+    fn get_system_state(&self) -> pera_types::pera_system_state::PeraSystemState;
 
-    fn get_clock(&self) -> sui_types::clock::Clock;
+    fn get_clock(&self) -> pera_types::clock::Clock;
 
-    fn owned_objects(&self, owner: SuiAddress) -> Box<dyn Iterator<Item = Object> + '_>;
+    fn owned_objects(&self, owner: PeraAddress) -> Box<dyn Iterator<Item = Object> + '_>;
 
     fn insert_checkpoint(&mut self, checkpoint: VerifiedCheckpoint);
 
@@ -129,7 +129,7 @@ pub trait SimulatorStore:
         _tx_digest: &TransactionDigest,
         input_object_kinds: &[InputObjectKind],
         receiving_object_refs: &[ObjectRef],
-    ) -> SuiResult<(InputObjects, ReceivingObjects)> {
+    ) -> PeraResult<(InputObjects, ReceivingObjects)> {
         let mut input_objects = Vec::new();
         for kind in input_object_kinds {
             let obj = match kind {

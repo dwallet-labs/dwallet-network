@@ -9,14 +9,14 @@
 - Updated dependencies [4019dd7]
 - Updated dependencies [4019dd7]
 - Updated dependencies [00a974d]
-  - @mysten/sui@1.7.0
+  - @pera-io/pera@1.7.0
 
 ## 0.8.15
 
 ### Patch Changes
 
 - Updated dependencies [a3e32fe]
-  - @mysten/sui@1.6.0
+  - @pera-io/pera@1.6.0
 
 ## 0.8.14
 
@@ -24,21 +24,21 @@
 
 - Updated dependencies [0851b31]
 - Updated dependencies [f37b3c2]
-  - @mysten/sui@1.5.0
+  - @pera-io/pera@1.5.0
 
 ## 0.8.13
 
 ### Patch Changes
 
 - Updated dependencies [4419234]
-  - @mysten/sui@1.4.0
+  - @pera-io/pera@1.4.0
 
 ## 0.8.12
 
 ### Patch Changes
 
 - Updated dependencies [a45f461]
-  - @mysten/sui@1.3.1
+  - @pera-io/pera@1.3.1
 
 ## 0.8.11
 
@@ -51,7 +51,7 @@
 - Updated dependencies [cdedf69]
 - Updated dependencies [0f27a97]
 - Updated dependencies [beed646]
-  - @mysten/sui@1.3.0
+  - @pera-io/pera@1.3.0
 
 ## 0.8.10
 
@@ -60,92 +60,92 @@
 - Updated dependencies [06a900c1ab]
 - Updated dependencies [45877014d1]
 - Updated dependencies [87d6f75403]
-  - @mysten/sui@1.2.1
+  - @pera-io/pera@1.2.1
 
 ## 0.8.9
 
 ### Patch Changes
 
 - Updated dependencies [fef99d377f]
-  - @mysten/sui@1.2.0
+  - @pera-io/pera@1.2.0
 
 ## 0.8.8
 
 ### Patch Changes
 
 - Updated dependencies [0dfff33b95]
-  - @mysten/sui@1.1.2
+  - @pera-io/pera@1.1.2
 
 ## 0.8.7
 
 ### Patch Changes
 
 - Updated dependencies [101f1ff4b8]
-  - @mysten/sui@1.1.1
+  - @pera-io/pera@1.1.1
 
 ## 0.8.6
 
 ### Patch Changes
 
 - Updated dependencies [bae8f9683c]
-  - @mysten/sui@1.1.0
+  - @pera-io/pera@1.1.0
 
 ## 0.8.5
 
 ### Patch Changes
 
 - Updated dependencies [369b924343]
-  - @mysten/sui@1.0.5
+  - @pera-io/pera@1.0.5
 
 ## 0.8.4
 
 ### Patch Changes
 
 - Updated dependencies [f1e828f557]
-  - @mysten/sui@1.0.4
+  - @pera-io/pera@1.0.4
 
 ## 0.8.3
 
 ### Patch Changes
 
 - Updated dependencies [1f20580841]
-  - @mysten/sui@1.0.3
+  - @pera-io/pera@1.0.3
 
 ## 0.8.2
 
 ### Patch Changes
 
 - Updated dependencies [f0a839f874]
-  - @mysten/sui@1.0.2
+  - @pera-io/pera@1.0.2
 
 ## 0.8.1
 
 ### Patch Changes
 
 - Updated dependencies [6fc6235984]
-  - @mysten/sui@1.0.1
+  - @pera-io/pera@1.0.1
 
 ## 0.8.0
 
 ### Minor Changes
 
-- a92b03de42: The Typescript SDK has been renamed to `@mysten/sui` and includes many new features
+- a92b03de42: The Typescript SDK has been renamed to `@pera-io/pera` and includes many new features
   and breaking changes. See the
-  [full migration guide](https://sdk.mystenlabs.com/typescript/migrations/sui-1.0) for details on
+  [full migration guide](https://sdk.mystenlabs.com/typescript/migrations/pera-1.0) for details on
   how to upgrade.
 
 ### Patch Changes
 
 - Updated dependencies [ebdfe7cf21]
 - Updated dependencies [a92b03de42]
-  - @mysten/sui@1.0.0
+  - @pera-io/pera@1.0.0
 
 ## 0.7.8
 
 ### Patch Changes
 
 - Updated dependencies [99b112178c]
-  - @mysten/sui.js@0.54.1
+  - @pera-io/pera.js@0.54.1
 
 ## 0.7.7
 
@@ -153,42 +153,42 @@
 
 - Updated dependencies [b7f673dbd9]
 - Updated dependencies [123b42c75c]
-  - @mysten/sui.js@0.54.0
+  - @pera-io/pera.js@0.54.0
 
 ## 0.7.6
 
 ### Patch Changes
 
 - Updated dependencies [774bfb41a8]
-  - @mysten/sui.js@0.53.0
+  - @pera-io/pera.js@0.53.0
 
 ## 0.7.5
 
 ### Patch Changes
 
 - Updated dependencies [929db4976a]
-  - @mysten/sui.js@0.52.0
+  - @pera-io/pera.js@0.52.0
 
 ## 0.7.4
 
 ### Patch Changes
 
 - Updated dependencies [b4ecdb5860]
-  - @mysten/sui.js@0.51.2
+  - @pera-io/pera.js@0.51.2
 
 ## 0.7.3
 
 ### Patch Changes
 
 - Updated dependencies [6984dd1e38]
-  - @mysten/sui.js@0.51.1
+  - @pera-io/pera.js@0.51.1
 
 ## 0.7.2
 
 ### Patch Changes
 
 - Updated dependencies [0cafa94027]
-  - @mysten/sui.js@0.51.0
+  - @pera-io/pera.js@0.51.0
 
 ## 0.7.1
 
@@ -196,7 +196,7 @@
 
 - 4830361fa4: Updated typescript version
 - Updated dependencies [4830361fa4]
-  - @mysten/sui.js@0.50.1
+  - @pera-io/pera.js@0.50.1
 
 ## 0.7.0
 
@@ -213,7 +213,7 @@
 - Updated dependencies [13e922d9b1]
 - Updated dependencies [a34f1cb67d]
 - Updated dependencies [220a766d86]
-  - @mysten/sui.js@0.50.0
+  - @pera-io/pera.js@0.50.0
 
 ## 0.6.1
 
@@ -221,7 +221,7 @@
 
 - 9ac0a4ec01: Add extensions to all sdk import paths
 - Updated dependencies [9ac0a4ec01]
-  - @mysten/sui.js@0.49.1
+  - @pera-io/pera.js@0.49.1
 
 ## 0.6.0
 
@@ -233,21 +233,21 @@
 ### Patch Changes
 
 - Updated dependencies [e5f9e3ba21]
-  - @mysten/sui.js@0.49.0
+  - @pera-io/pera.js@0.49.0
 
 ## 0.5.12
 
 ### Patch Changes
 
 - Updated dependencies [dd362ec1d6]
-  - @mysten/sui.js@0.48.1
+  - @pera-io/pera.js@0.48.1
 
 ## 0.5.11
 
 ### Patch Changes
 
 - Updated dependencies [cdcfa76c43]
-  - @mysten/sui.js@0.48.0
+  - @pera-io/pera.js@0.48.0
 
 ## 0.5.10
 
@@ -257,14 +257,14 @@
 - Updated dependencies [9ac7e2f3d]
 - Updated dependencies [0259aec82]
 - Updated dependencies [64d45ba27]
-  - @mysten/sui.js@0.47.0
+  - @pera-io/pera.js@0.47.0
 
 ## 0.5.9
 
 ### Patch Changes
 
 - Updated dependencies [652bcdd92]
-  - @mysten/sui.js@0.46.1
+  - @pera-io/pera.js@0.46.1
 
 ## 0.5.8
 
@@ -277,21 +277,21 @@
 - Updated dependencies [8d1e74e52]
 - Updated dependencies [093554a0d]
 - Updated dependencies [3718a230b]
-  - @mysten/sui.js@0.46.0
+  - @pera-io/pera.js@0.46.0
 
 ## 0.5.7
 
 ### Patch Changes
 
 - Updated dependencies [30b47b758]
-  - @mysten/sui.js@0.45.1
+  - @pera-io/pera.js@0.45.1
 
 ## 0.5.6
 
 ### Patch Changes
 
 - Updated dependencies [b9afb5567]
-  - @mysten/sui.js@0.45.0
+  - @pera-io/pera.js@0.45.0
 
 ## 0.5.5
 
@@ -299,21 +299,21 @@
 
 - Updated dependencies [b48289346]
 - Updated dependencies [11cf4e68b]
-  - @mysten/sui.js@0.44.0
+  - @pera-io/pera.js@0.44.0
 
 ## 0.5.4
 
 ### Patch Changes
 
 - Updated dependencies [004fb1991]
-  - @mysten/sui.js@0.43.3
+  - @pera-io/pera.js@0.43.3
 
 ## 0.5.3
 
 ### Patch Changes
 
 - Updated dependencies [9b052166d]
-  - @mysten/sui.js@0.43.2
+  - @pera-io/pera.js@0.43.2
 
 ## 0.5.2
 
@@ -321,7 +321,7 @@
 
 - Updated dependencies [faa13ded9]
 - Updated dependencies [c5684bb52]
-  - @mysten/sui.js@0.43.1
+  - @pera-io/pera.js@0.43.1
 
 ## 0.5.1
 
@@ -332,31 +332,31 @@
 - Updated dependencies [e4484852b]
 - Updated dependencies [71e0a3197]
 - Updated dependencies [1bc430161]
-  - @mysten/sui.js@0.43.0
+  - @pera-io/pera.js@0.43.0
 
 ## 0.5.0
 
 ### Minor Changes
 
-- fd8589806: Remove uses of deprecated imports from @mysten/sui.js
+- fd8589806: Remove uses of deprecated imports from @pera-io/pera.js
 
 ### Patch Changes
 
 - Updated dependencies [fd8589806]
-  - @mysten/sui.js@0.42.0
+  - @pera-io/pera.js@0.42.0
 
 ## 0.4.2
 
 ### Patch Changes
 
-- @mysten/sui.js@0.41.2
+- @pera-io/pera.js@0.41.2
 
 ## 0.4.1
 
 ### Patch Changes
 
 - Updated dependencies [24c21e1f0]
-  - @mysten/sui.js@0.41.1
+  - @pera-io/pera.js@0.41.1
 
 ## 0.4.0
 
@@ -370,7 +370,7 @@
 
 - Updated dependencies [ba8e3b857]
 - Updated dependencies [f4b7b3474]
-  - @mysten/sui.js@0.41.0
+  - @pera-io/pera.js@0.41.0
 
 ## 0.3.2
 
@@ -378,22 +378,22 @@
 
 - Updated dependencies [a503cad34]
 - Updated dependencies [8281e3d25]
-  - @mysten/sui.js@0.40.0
+  - @pera-io/pera.js@0.40.0
 
 ## 0.3.1
 
 ### Patch Changes
 
 - Updated dependencies [47ea5ec7c]
-  - @mysten/sui.js@0.39.0
+  - @pera-io/pera.js@0.39.0
 
 ## 0.3.0
 
 ### Minor Changes
 
-- 6d41059c7: Update to use modular imports from @mysten/sui.js
+- 6d41059c7: Update to use modular imports from @pera-io/pera.js
 
-  Some methods now accept a `SuiClient` imported from `@mysten/sui.js/client` rather than a
+  Some methods now accept a `PeraClient` imported from `@pera-io/pera.js/client` rather than a
   `JsonRpcProvider`
 
 ### Patch Changes
@@ -409,14 +409,14 @@
 - Updated dependencies [6d41059c7]
 - Updated dependencies [cc6441f46]
 - Updated dependencies [001148443]
-  - @mysten/sui.js@0.38.0
+  - @pera-io/pera.js@0.38.0
 
 ## 0.2.2
 
 ### Patch Changes
 
 - Updated dependencies [34cc7d610]
-  - @mysten/sui.js@0.37.1
+  - @pera-io/pera.js@0.37.1
 
 ## 0.2.1
 
@@ -429,7 +429,7 @@
 - Updated dependencies [a17d3678a]
 - Updated dependencies [2f37537d5]
 - Updated dependencies [00484bcc3]
-  - @mysten/sui.js@0.37.0
+  - @pera-io/pera.js@0.37.0
 
 ## 0.2.0
 
@@ -443,4 +443,4 @@
 - Updated dependencies [1cfb1c9da3]
 - Updated dependencies [1cfb1c9da3]
 - Updated dependencies [fb3bb9118a]
-  - @mysten/sui.js@0.36.0
+  - @pera-io/pera.js@0.36.0

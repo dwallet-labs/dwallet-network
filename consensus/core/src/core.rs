@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{collections::BTreeSet, iter, sync::Arc, time::Duration, vec};
 
@@ -11,7 +11,7 @@ use itertools::Itertools as _;
 use mysten_metrics::monitored_mpsc::{unbounded_channel, UnboundedReceiver};
 use mysten_metrics::monitored_scope;
 use parking_lot::RwLock;
-use sui_macros::fail_point;
+use pera_macros::fail_point;
 use tokio::{
     sync::{broadcast, watch},
     time::Instant,
@@ -907,7 +907,7 @@ mod test {
 
     use consensus_config::{AuthorityIndex, Parameters};
     use mysten_metrics::monitored_mpsc::unbounded_channel;
-    use sui_protocol_config::ProtocolConfig;
+    use pera_protocol_config::ProtocolConfig;
     use tokio::time::sleep;
 
     use super::*;

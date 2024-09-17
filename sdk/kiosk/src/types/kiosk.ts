@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
 	PaginatedObjectsResponse,
-	SuiObjectData,
-	SuiObjectDataOptions,
-} from '@mysten/sui/client';
-import type { TransactionArgument } from '@mysten/sui/transactions';
+	PeraObjectData,
+	PeraObjectDataOptions,
+} from '@pera-io/pera/client';
+import type { TransactionArgument } from '@pera-io/pera/transactions';
 
 import type { ObjectArgument } from './index.js';
 
@@ -106,7 +106,7 @@ export type KioskItem = {
 	/** The ID of the kiosk the item is placed in */
 	kioskId: string;
 	/** Optional Kiosk Data */
-	data?: SuiObjectData;
+	data?: PeraObjectData;
 };
 
 /** The overview type returned from `getKiosk` */
@@ -152,7 +152,7 @@ export type FetchKioskOptions = {
 	/** Include the objects for the Items in the kiosk. Defaults to `display` only. */
 	withObjects?: boolean;
 	/** Pass the data options for the objects, when fetching, in case you want to query other details. */
-	objectOptions?: SuiObjectDataOptions;
+	objectOptions?: PeraObjectDataOptions;
 };
 
 export type OwnedKiosks = {

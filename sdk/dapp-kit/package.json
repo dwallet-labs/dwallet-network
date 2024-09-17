@@ -1,10 +1,10 @@
 {
 	"name": "@mysten/dapp-kit",
 	"author": "Mysten Labs <build@mystenlabs.com>",
-	"description": "A collection of React hooks and components for interacting with the Sui blockchain and wallets.",
+	"description": "A collection of React hooks and components for interacting with the Pera blockchain and wallets.",
 	"homepage": "https://sdk.mystenlabs.com/typescript",
 	"version": "0.14.17",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"files": [
 		"CHANGELOG.md",
 		"LICENSE",
@@ -77,7 +77,7 @@
 		"vitest": "^2.0.1"
 	},
 	"dependencies": {
-		"@mysten/sui": "workspace:*",
+		"@pera-io/pera": "workspace:*",
 		"@mysten/wallet-standard": "workspace:*",
 		"@mysten/zksend": "workspace:*",
 		"@radix-ui/react-dialog": "^1.1.1",

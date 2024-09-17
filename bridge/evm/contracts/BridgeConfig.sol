@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -6,8 +6,8 @@ import "./utils/CommitteeUpgradeable.sol";
 import "./interfaces/IBridgeConfig.sol";
 
 /// @title BridgeConfig
-/// @notice This contract manages a registry of supported tokens and supported chain IDs for the SuiBridge.
-/// It also provides functions to convert token amounts to Sui decimal adjusted amounts and vice versa.
+/// @notice This contract manages a registry of supported tokens and supported chain IDs for the PeraBridge.
+/// It also provides functions to convert token amounts to Pera decimal adjusted amounts and vice versa.
 contract BridgeConfig is IBridgeConfig, CommitteeUpgradeable {
     /* ========== STATE VARIABLES ========== */
 
@@ -32,21 +32,21 @@ contract BridgeConfig is IBridgeConfig, CommitteeUpgradeable {
         uint8[] memory _supportedChains
     ) external initializer {
         __CommitteeUpgradeable_init(_committee);
-        require(_supportedTokens[0] == address(0), "BridgeConfig: Must reserve first token for SUI");
+        require(_supportedTokens[0] == address(0), "BridgeConfig: Must reserve first token for PERA");
         require(_supportedTokens.length == 5, "BridgeConfig: Invalid supported token addresses");
         require(
             _supportedTokens.length == _tokenPrices.length, "BridgeConfig: Invalid token prices"
         );
 
-        uint8[] memory _suiDecimals = new uint8[](5);
-        _suiDecimals[0] = 9; // SUI
-        _suiDecimals[1] = 8; // wBTC
-        _suiDecimals[2] = 8; // wETH
-        _suiDecimals[3] = 6; // USDC
-        _suiDecimals[4] = 6; // USDT
+        uint8[] memory _peraDecimals = new uint8[](5);
+        _peraDecimals[0] = 9; // PERA
+        _peraDecimals[1] = 8; // wBTC
+        _peraDecimals[2] = 8; // wETH
+        _peraDecimals[3] = 6; // USDC
+        _peraDecimals[4] = 6; // USDT
 
         for (uint8 i; i < _supportedTokens.length; i++) {
-            supportedTokens[i] = Token(_supportedTokens[i], _suiDecimals[i], true);
+            supportedTokens[i] = Token(_supportedTokens[i], _peraDecimals[i], true);
         }
 
         for (uint8 i; i < _supportedChains.length; i++) {
@@ -70,11 +70,11 @@ contract BridgeConfig is IBridgeConfig, CommitteeUpgradeable {
         return supportedTokens[tokenID].tokenAddress;
     }
 
-    /// @notice Returns the sui decimal places of the token with the given ID.
+    /// @notice Returns the pera decimal places of the token with the given ID.
     /// @param tokenID The ID of the token.
-    /// @return amount of sui decimal places of the provided token.
-    function tokenSuiDecimalOf(uint8 tokenID) public view override returns (uint8) {
-        return supportedTokens[tokenID].suiDecimal;
+    /// @return amount of pera decimal places of the provided token.
+    function tokenPeraDecimalOf(uint8 tokenID) public view override returns (uint8) {
+        return supportedTokens[tokenID].peraDecimal;
     }
 
     /// @notice Returns the price of the token with the given ID.
@@ -84,14 +84,14 @@ contract BridgeConfig is IBridgeConfig, CommitteeUpgradeable {
         return tokenPrices[tokenID];
     }
 
-    /// @notice Returns whether a token is supported in SuiBridge with the given ID.
+    /// @notice Returns whether a token is supported in PeraBridge with the given ID.
     /// @param tokenID The ID of the token.
     /// @return true if the token is supported, false otherwise.
     function isTokenSupported(uint8 tokenID) public view override returns (bool) {
         return supportedTokens[tokenID].tokenAddress != address(0);
     }
 
-    /// @notice Returns whether a chain is supported in SuiBridge with the given ID.
+    /// @notice Returns whether a chain is supported in PeraBridge with the given ID.
     /// @param chainId The ID of the chain.
     /// @return true if the chain is supported, false otherwise.
     function isChainSupported(uint8 chainId) public view override returns (bool) {
@@ -127,13 +127,13 @@ contract BridgeConfig is IBridgeConfig, CommitteeUpgradeable {
             bool native,
             uint8[] memory tokenIDs,
             address[] memory tokenAddresses,
-            uint8[] memory suiDecimals,
+            uint8[] memory peraDecimals,
             uint64[] memory _tokenPrices
         ) = BridgeUtils.decodeAddTokensPayload(message.payload);
 
         // update the token
         for (uint8 i; i < tokenIDs.length; i++) {
-            _addToken(tokenIDs[i], tokenAddresses[i], suiDecimals[i], _tokenPrices[i], native);
+            _addToken(tokenIDs[i], tokenAddresses[i], peraDecimals[i], _tokenPrices[i], native);
         }
     }
 
@@ -154,27 +154,27 @@ contract BridgeConfig is IBridgeConfig, CommitteeUpgradeable {
     /// @notice Updates the token with the provided ID.
     /// @param tokenID The ID of the token to update.
     /// @param tokenAddress The address of the token.
-    /// @param suiDecimal The decimal places of the token.
+    /// @param peraDecimal The decimal places of the token.
     /// @param tokenPrice The price of the token.
     /// @param native Whether the token is native to the chain.
     function _addToken(
         uint8 tokenID,
         address tokenAddress,
-        uint8 suiDecimal,
+        uint8 peraDecimal,
         uint64 tokenPrice,
         bool native
     ) private {
         require(tokenAddress != address(0), "BridgeConfig: Invalid token address");
-        require(suiDecimal > 0, "BridgeConfig: Invalid Sui decimal");
+        require(peraDecimal > 0, "BridgeConfig: Invalid Pera decimal");
         require(tokenPrice > 0, "BridgeConfig: Invalid token price");
 
         uint8 erc20Decimals = IERC20Metadata(tokenAddress).decimals();
-        require(erc20Decimals >= suiDecimal, "BridgeConfig: Invalid Sui decimal");
+        require(erc20Decimals >= peraDecimal, "BridgeConfig: Invalid Pera decimal");
 
-        supportedTokens[tokenID] = Token(tokenAddress, suiDecimal, native);
+        supportedTokens[tokenID] = Token(tokenAddress, peraDecimal, native);
         tokenPrices[tokenID] = tokenPrice;
 
-        emit TokenAdded(tokenID, tokenAddress, suiDecimal, tokenPrice);
+        emit TokenAdded(tokenID, tokenAddress, peraDecimal, tokenPrice);
     }
 
     /* ========== MODIFIERS ========== */

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import type { TadaDocumentNode } from 'gql.tada';
@@ -40,17 +40,17 @@ export type GraphQLResponseErrors = Array<{
 	path?: (string | number)[];
 }>;
 
-export interface SuiGraphQLClientOptions<Queries extends Record<string, GraphQLDocument>> {
+export interface PeraGraphQLClientOptions<Queries extends Record<string, GraphQLDocument>> {
 	url: string;
 	fetch?: typeof fetch;
 	headers?: Record<string, string>;
 	queries?: Queries;
 }
 
-export class SuiGraphQLRequestError extends Error {}
+export class PeraGraphQLRequestError extends Error {}
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-export class SuiGraphQLClient<Queries extends Record<string, GraphQLDocument> = {}> {
+export class PeraGraphQLClient<Queries extends Record<string, GraphQLDocument> = {}> {
 	#url: string;
 	#queries: Queries;
 	#headers: Record<string, string>;
@@ -61,7 +61,7 @@ export class SuiGraphQLClient<Queries extends Record<string, GraphQLDocument> = 
 		fetch: fetchFn = fetch,
 		headers = {},
 		queries = {} as Queries,
-	}: SuiGraphQLClientOptions<Queries>) {
+	}: PeraGraphQLClientOptions<Queries>) {
 		this.#url = url;
 		this.#queries = queries;
 		this.#headers = headers;
@@ -86,7 +86,7 @@ export class SuiGraphQLClient<Queries extends Record<string, GraphQLDocument> = 
 		});
 
 		if (!res.ok) {
-			throw new SuiGraphQLRequestError(`GraphQL request failed: ${res.statusText} (${res.status})`);
+			throw new PeraGraphQLRequestError(`GraphQL request failed: ${res.statusText} (${res.status})`);
 		}
 
 		return await res.json();

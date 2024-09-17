@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { createMessage } from '_messages';
 import type { Message } from '_messages';
@@ -57,7 +57,7 @@ import {
 import { Connection } from './Connection';
 
 export class UiConnection extends Connection {
-	public static readonly CHANNEL: PortChannelName = 'sui_ui<->background';
+	public static readonly CHANNEL: PortChannelName = 'pera_ui<->background';
 	private uiAppInitialized: BehaviorSubject<boolean> = new BehaviorSubject(false);
 
 	constructor(port: Runtime.Port) {

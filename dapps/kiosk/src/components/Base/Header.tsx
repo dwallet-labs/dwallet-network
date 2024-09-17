@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useSuiClientContext } from '@mysten/dapp-kit';
+import { usePeraClientContext } from '@mysten/dapp-kit';
 import classNames from 'clsx';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import FindKiosk from '../Kiosk/FindKiosk';
 import { Button } from './Button';
-import { SuiConnectButton } from './SuiConnectButton';
+import { PeraConnectButton } from './PeraConnectButton';
 
 export function Header() {
 	const navigate = useNavigate();
 
-	const { network, networks, selectNetwork } = useSuiClientContext();
+	const { network, networks, selectNetwork } = usePeraClientContext();
 
 	const location = useLocation();
 	const isHome = location.pathname === '/';
@@ -62,7 +62,7 @@ export function Header() {
 							</option>
 						))}
 					</select>
-					<SuiConnectButton></SuiConnectButton>
+					<PeraConnectButton></PeraConnectButton>
 				</div>
 			</div>
 		</div>

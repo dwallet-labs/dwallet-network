@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This module contains the public APIs supported by the bytecode verifier.
 
 use move_binary_format::file_format::CompiledModule;
 use move_vm_config::verifier::VerifierConfig;
-use sui_types::{error::ExecutionError, move_package::FnInfoMap};
+use pera_types::{error::ExecutionError, move_package::FnInfoMap};
 
 use crate::{
     entry_points_verifier, global_storage_access_verifier, id_leak_verifier,
@@ -15,7 +15,7 @@ use move_bytecode_verifier_meter::dummy::DummyMeter;
 use move_bytecode_verifier_meter::Meter;
 
 /// Helper for a "canonical" verification of a module.
-pub fn sui_verify_module_metered(
+pub fn pera_verify_module_metered(
     module: &CompiledModule,
     fn_info_map: &FnInfoMap,
     meter: &mut (impl Meter + ?Sized),
@@ -29,20 +29,20 @@ pub fn sui_verify_module_metered(
     one_time_witness_verifier::verify_module(module, fn_info_map)
 }
 
-/// Runs the Sui verifier and checks if the error counts as a Sui verifier timeout
+/// Runs the Pera verifier and checks if the error counts as a Pera verifier timeout
 /// NOTE: this function only check if the verifier error is a timeout
 /// All other errors are ignored
-pub fn sui_verify_module_metered_check_timeout_only(
+pub fn pera_verify_module_metered_check_timeout_only(
     module: &CompiledModule,
     fn_info_map: &FnInfoMap,
     meter: &mut (impl Meter + ?Sized),
     verifier_config: &VerifierConfig,
 ) -> Result<(), ExecutionError> {
-    // Checks if the error counts as a Sui verifier timeout
-    if let Err(error) = sui_verify_module_metered(module, fn_info_map, meter, verifier_config) {
+    // Checks if the error counts as a Pera verifier timeout
+    if let Err(error) = pera_verify_module_metered(module, fn_info_map, meter, verifier_config) {
         if matches!(
             error.kind(),
-            sui_types::execution_status::ExecutionFailureStatus::SuiMoveVerificationTimedout
+            pera_types::execution_status::ExecutionFailureStatus::PeraMoveVerificationTimedout
         ) {
             return Err(error);
         }
@@ -51,18 +51,18 @@ pub fn sui_verify_module_metered_check_timeout_only(
     Ok(())
 }
 
-pub fn sui_verify_module_unmetered(
+pub fn pera_verify_module_unmetered(
     module: &CompiledModule,
     fn_info_map: &FnInfoMap,
     verifier_config: &VerifierConfig,
 ) -> Result<(), ExecutionError> {
-    sui_verify_module_metered(module, fn_info_map, &mut DummyMeter, verifier_config).map_err(
+    pera_verify_module_metered(module, fn_info_map, &mut DummyMeter, verifier_config).map_err(
         |err| {
             // We must never see timeout error in execution
             debug_assert!(
                 !matches!(
                 err.kind(),
-                sui_types::execution_status::ExecutionFailureStatus::SuiMoveVerificationTimedout
+                pera_types::execution_status::ExecutionFailureStatus::PeraMoveVerificationTimedout
             ),
                 "Unexpected timeout error in execution"
             );

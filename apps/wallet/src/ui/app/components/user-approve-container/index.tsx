@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type PermissionType } from '_src/shared/messaging/messages/payloads/permissions';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@pera-io/pera/transactions';
 import cn from 'clsx';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::{
@@ -22,7 +22,7 @@ pub(crate) fn is_otw_struct(struct_layout: &MoveStructLayout, type_tag: &TypeTag
     // If a struct type has the same name as the module that defines it but capitalized, and it has
     // a single field of type bool, it means that it's a one-time witness type. The remaining
     // properties of a one-time witness type are checked in the one_time_witness_verifier pass in
-    // the Sui bytecode verifier (a type with this name and with a single bool field that does not
+    // the Pera bytecode verifier (a type with this name and with a single bool field that does not
     // have all the remaining properties of a one-time witness type will cause a verifier error).
     matches!(
         type_tag,

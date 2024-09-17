@@ -1,10 +1,10 @@
-# Paying for Sui Transactions with Gas Coins
+# Paying for Pera Transactions with Gas Coins
 
 With Programmable Transactions, you can use the gas payment coin to construct coins with a set
-balance using `splitCoin`. This is useful for Sui payments, and avoids the need for up-front coin
+balance using `splitCoin`. This is useful for Pera payments, and avoids the need for up-front coin
 selection. You can use `tx.gas` to access the gas coin in a transaction, and it is valid as input
 for any arguments, as long as it is used
-[by-reference](https://docs.sui.io/guides/developer/sui-101/simulating-refs). Practically speaking,
+[by-reference](https://docs.pera.io/guides/developer/pera-101/simulating-refs). Practically speaking,
 this means you can also add to the gas coin with `mergeCoins` and borrow it for Move functions with
 `moveCall`.
 
@@ -33,7 +33,7 @@ beforehand. The dry run gas consumption is then used to determine a balance for 
 can override this behavior by explicitly setting a gas budget for the transaction, by calling
 `setGasBudget` on the transaction builder.
 
-**Note:** The gas budget is represented in Sui, and should take the gas price of the transaction
+**Note:** The gas budget is represented in Pera, and should take the gas price of the transaction
 into account.
 
 ```tsx

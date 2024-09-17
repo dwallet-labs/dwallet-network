@@ -1,7 +1,7 @@
 [package]
 name = "narwhal-network"
 version = "0.1.0"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 edition = "2021"
 publish = false
@@ -16,7 +16,7 @@ parking_lot.workspace = true
 quinn-proto.workspace = true
 prometheus.workspace = true
 rand = { workspace = true, features = ["small_rng"] }
-sui-macros.workspace = true
+pera-macros.workspace = true
 tokio = { workspace = true, features = ["rt", "net", "sync", "macros", "time"] }
 tracing.workspace = true
 types = { path = "../types", package = "narwhal-types" }

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
 	CreateSponsoredTransactionApiInput,
@@ -93,7 +93,7 @@ export class EnokiClient {
 			method: 'POST',
 			body: JSON.stringify({
 				network: input.network,
-				ephemeralPublicKey: input.ephemeralPublicKey.toSuiPublicKey(),
+				ephemeralPublicKey: input.ephemeralPublicKey.toPeraPublicKey(),
 				additionalEpochs: input.additionalEpochs,
 			}),
 		});
@@ -107,7 +107,7 @@ export class EnokiClient {
 			},
 			body: JSON.stringify({
 				network: input.network,
-				ephemeralPublicKey: input.ephemeralPublicKey.toSuiPublicKey(),
+				ephemeralPublicKey: input.ephemeralPublicKey.toPeraPublicKey(),
 				maxEpoch: input.maxEpoch,
 				randomness: input.randomness,
 			}),

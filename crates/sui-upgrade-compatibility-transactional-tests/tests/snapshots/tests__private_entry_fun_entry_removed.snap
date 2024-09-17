@@ -1,5 +1,5 @@
 ---
-source: crates/sui-upgrade-compatibility-transactional-tests/tests/tests.rs
+source: crates/pera-upgrade-compatibility-transactional-tests/tests/tests.rs
 expression: results
 ---
 ====

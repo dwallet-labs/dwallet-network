@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::metrics::WorkerMetrics;
 use config::WorkerId;
@@ -13,7 +13,7 @@ use mysten_metrics::{monitored_scope, spawn_logged_monitored_task};
 use network::{client::NetworkClient, WorkerToPrimaryClient};
 use std::sync::Arc;
 use store::{rocks::DBMap, Map};
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use tokio::{
     task::JoinHandle,
     time::{sleep, Duration, Instant},

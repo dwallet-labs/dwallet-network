@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { PaginationArguments, SuiClient } from '@mysten/sui/client';
+import type { PaginationArguments, PeraClient } from '@pera-io/pera/client';
 
 import {
 	FLOOR_PRICE_RULE_ADDRESS,
@@ -33,7 +33,7 @@ import type {
  * If you pass packageIds, all functionality will be managed using these packages.
  */
 export class KioskClient {
-	client: SuiClient;
+	client: PeraClient;
 	network: Network;
 	rules: TransferPolicyRule[];
 	packageIds?: BaseRulePackageIds;

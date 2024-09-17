@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 echo "Running simulator tests at commit $(git rev-parse HEAD)"
 
@@ -51,9 +51,9 @@ MSIM_WATCHDOG_TIMEOUT_MS=60000 \
 scripts/simtest/cargo-simtest simtest \
   --color always \
   --test-threads "$NUM_CPUS" \
-  --package sui-core \
-  --package sui-archival \
-  --package sui-e2e-tests \
+  --package pera-core \
+  --package pera-archival \
+  --package pera-e2e-tests \
   --profile simtestnightly \
   -E "$TEST_FILTER" 2>&1 | tee "$LOG_FILE"
 
@@ -75,7 +75,7 @@ for SUB_SEED in `seq 1 $NUM_CPUS`; do
   SIM_STRESS_TEST_DURATION_SECS=300 \
   scripts/simtest/cargo-simtest simtest \
     --color always \
-    --package sui-benchmark \
+    --package pera-benchmark \
     --test-threads 1 \
     --profile simtestnightly \
     > "$LOG_FILE" 2>&1 &
@@ -102,7 +102,7 @@ MSIM_TEST_CHECK_DETERMINISM=1
 scripts/simtest/cargo-simtest simtest \
   --color always \
   --test-threads "$NUM_CPUS" \
-  --package sui-benchmark \
+  --package pera-benchmark \
   --profile simtestnightly \
   -E "$TEST_FILTER" 2>&1 | tee "$LOG_FILE"
 

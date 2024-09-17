@@ -2,10 +2,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-args: ["--db-url", "$(DB_URL)", "--rpc-client-url", "https://public-rpc.mainnet.sui.io", "--remote-store-url", "https://checkpoints.mainnet.sui.io", "--rpc-server-worker"]
+args: ["--db-url", "$(DB_URL)", "--rpc-client-url", "https://public-rpc.mainnet.pera.io", "--remote-store-url", "https://checkpoints.mainnet.pera.io", "--rpc-server-worker"]
 
 podAnnotations:
-    app: sui-indexer-reader
+    app: pera-indexer-reader
 
 env:
   DB_URL:

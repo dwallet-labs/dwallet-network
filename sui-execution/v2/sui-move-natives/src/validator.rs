@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::NativesCostTable;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
@@ -10,7 +10,7 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use sui_types::sui_system_state::sui_system_state_inner_v1::ValidatorMetadataV1;
+use pera_types::pera_system_state::pera_system_state_inner_v1::ValidatorMetadataV1;
 
 #[derive(Clone, Debug)]
 pub struct ValidatorValidateMetadataBcsCostParams {

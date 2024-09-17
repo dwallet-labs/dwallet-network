@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { DEFAULT_API_ENV } from '_app/ApiProvider';
 import { getUrlWithDeviceId } from '_src/shared/analytics/amplitude';
@@ -13,7 +13,7 @@ const API_ENV_TO_EXPLORER_ENV: Record<API_ENV, string | undefined> = {
 	[API_ENV.customRPC]: '',
 };
 
-const EXPLORER_LINK = 'https://suiexplorer.com/';
+const EXPLORER_LINK = 'https://peraexplorer.com/';
 
 //TODO - this is a temporary solution, we should have a better way to get the explorer url
 function getExplorerUrl(path: string, apiEnv: API_ENV = DEFAULT_API_ENV, customRPC: string) {

@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This module controls feature gating and breaking changes in new editions of the source language
 
@@ -58,7 +58,7 @@ pub enum FeatureGate {
 pub enum Flavor {
     #[default]
     Core,
-    Sui,
+    Pera,
 }
 
 pub const UPGRADE_NOTE: &str =
@@ -255,8 +255,8 @@ impl Edition {
 
 impl Flavor {
     pub const CORE: &'static str = "core";
-    pub const SUI: &'static str = "sui";
-    pub const ALL: &'static [Self] = &[Self::Core, Self::Sui];
+    pub const PERA: &'static str = "pera";
+    pub const ALL: &'static [Self] = &[Self::Core, Self::Pera];
 }
 
 impl FeatureGate {
@@ -318,7 +318,7 @@ impl FromStr for Flavor {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             Self::CORE => Self::Core,
-            Self::SUI => Self::Sui,
+            Self::PERA => Self::Pera,
             _ => anyhow::bail!(
                 "Unknown flavor \"{s}\". Expected one of: {}",
                 Self::ALL
@@ -368,7 +368,7 @@ impl Display for Flavor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Flavor::Core => write!(f, "{}", Self::CORE),
-            Flavor::Sui => write!(f, "{}", Self::SUI),
+            Flavor::Pera => write!(f, "{}", Self::PERA),
         }
     }
 }

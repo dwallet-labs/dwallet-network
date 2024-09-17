@@ -1,27 +1,27 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_binary_format::file_format::AbilitySet;
 use move_core_types::{identifier::IdentStr, resolver::ResourceResolver};
 use move_vm_types::loaded_data::runtime_types::Type;
 use serde::Deserialize;
-use sui_types::{
-    base_types::{ObjectID, SequenceNumber, SuiAddress},
+use pera_types::{
+    base_types::{ObjectID, SequenceNumber, PeraAddress},
     coin::Coin,
-    error::{ExecutionError, ExecutionErrorKind, SuiError},
+    error::{ExecutionError, ExecutionErrorKind, PeraError},
     execution_status::CommandArgumentError,
     object::Owner,
     storage::{BackingPackageStore, ChildObjectResolver, StorageView},
     transfer::Receiving,
 };
 
-pub trait SuiResolver: ResourceResolver<Error = SuiError> + BackingPackageStore {
+pub trait PeraResolver: ResourceResolver<Error = PeraError> + BackingPackageStore {
     fn as_backing_package_store(&self) -> &dyn BackingPackageStore;
 }
 
-impl<T> SuiResolver for T
+impl<T> PeraResolver for T
 where
-    T: ResourceResolver<Error = SuiError>,
+    T: ResourceResolver<Error = PeraError>,
     T: BackingPackageStore,
 {
     fn as_backing_package_store(&self) -> &dyn BackingPackageStore {
@@ -30,17 +30,17 @@ where
 }
 
 /// Interface with the store necessary to execute a programmable transaction
-pub trait ExecutionState: StorageView + SuiResolver {
-    fn as_sui_resolver(&self) -> &dyn SuiResolver;
+pub trait ExecutionState: StorageView + PeraResolver {
+    fn as_pera_resolver(&self) -> &dyn PeraResolver;
     fn as_child_resolver(&self) -> &dyn ChildObjectResolver;
 }
 
 impl<T> ExecutionState for T
 where
     T: StorageView,
-    T: SuiResolver,
+    T: PeraResolver,
 {
-    fn as_sui_resolver(&self) -> &dyn SuiResolver {
+    fn as_pera_resolver(&self) -> &dyn PeraResolver {
         self
     }
 
@@ -271,7 +271,7 @@ impl TryFromValue for ObjectValue {
     }
 }
 
-impl TryFromValue for SuiAddress {
+impl TryFromValue for PeraAddress {
     fn try_from_value(value: Value) -> Result<Self, CommandArgumentError> {
         try_from_value_prim(&value, Type::Address)
     }

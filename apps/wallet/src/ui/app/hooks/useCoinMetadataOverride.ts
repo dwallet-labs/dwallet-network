@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { FEATURES } from '_shared/experimentation/features';
 import { useFeature } from '@growthbook/growthbook-react';

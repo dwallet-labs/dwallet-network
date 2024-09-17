@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { resolve } from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -23,6 +23,6 @@ describe('Test Coin Metadata', () => {
 		expect(coinMetadata.decimals).to.equal(2);
 		expect(coinMetadata.name).to.equal('Test Coin');
 		expect(coinMetadata.description).to.equal('Test coin metadata');
-		expect(coinMetadata.iconUrl).to.equal('http://sui.io');
+		expect(coinMetadata.iconUrl).to.equal('http://pera.io');
 	});
 });

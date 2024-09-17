@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { createSuiAddressValidation } from '_components/address-input/validation';
+import { createPeraAddressValidation } from '_components/address-input/validation';
 import { createTokenValidation } from '_src/shared/validation';
-import { type SuiClient } from '@mysten/sui/client';
+import { type PeraClient } from '@pera-io/pera/client';
 import * as Yup from 'yup';
 
 export function createValidationSchemaStepOne(
-	client: SuiClient,
-	suiNSEnabled: boolean,
+	client: PeraClient,
+	peraNSEnabled: boolean,
 	...args: Parameters<typeof createTokenValidation>
 ) {
 	return Yup.object({
-		to: createSuiAddressValidation(client, suiNSEnabled),
+		to: createPeraAddressValidation(client, peraNSEnabled),
 		amount: createTokenValidation(...args),
 	});
 }

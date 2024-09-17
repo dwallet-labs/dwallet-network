@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { getKioskIdFromOwnerCap, hasDisplayData, useGetKioskContents } from '@mysten/core';
-import { type SuiObjectResponse } from '@mysten/sui/client';
+import { type PeraObjectResponse } from '@pera-io/pera/client';
 import cl from 'clsx';
 
 import { useActiveAddress } from '../../hooks';
@@ -9,7 +9,7 @@ import { Text } from '../../shared/text';
 import { NftImage, type NftImageProps } from './NftImage';
 
 type KioskProps = {
-	object: SuiObjectResponse;
+	object: PeraObjectResponse;
 	orientation?: 'vertical' | 'horizontal' | null;
 } & Partial<NftImageProps>;
 
@@ -25,7 +25,7 @@ const cardStyles = [
 	`scale-[0.90] group-hover:rotate-6 group-hover:translate-x-5 group-hover:-translate-y-2 z-10 -translate-y-2 group-hover:shadow-xl`,
 ];
 
-function getLabel(item?: SuiObjectResponse) {
+function getLabel(item?: PeraObjectResponse) {
 	if (!item) return;
 	const display = item.data?.display?.data;
 	return display?.name ?? display?.description ?? item.data?.objectId;

@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 #![warn(
     future_incompatible,
     nonstandard_style,
@@ -33,7 +33,7 @@ pub mod utils;
 pub type Epoch = u64;
 
 // Opaque bytes uniquely identifying the current chain. Analogue of the
-// type in `sui-types` crate.
+// type in `pera-types` crate.
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ChainIdentifier([u8; 32]);
 

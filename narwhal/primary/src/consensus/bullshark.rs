@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::consensus::{
     metrics::ConsensusMetrics, utils, ConsensusError, ConsensusState, Dag, LeaderSchedule,
     LeaderSwapTable, Outcome,
@@ -10,7 +10,7 @@ use fastcrypto::hash::Hash;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use storage::ConsensusStore;
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use tokio::time::Instant;
 use tracing::{debug, error_span};
 use types::{Certificate, CertificateAPI, CommittedSubDag, HeaderAPI, ReputationScores, Round};

@@ -2,7 +2,7 @@
 name = "narwhal-executor"
 version = "0.1.0"
 edition = "2021"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 publish = false
 
@@ -22,7 +22,7 @@ tonic.workspace = true
 tracing.workspace = true
 prometheus.workspace = true
 storage = { path = "../storage", package = "narwhal-storage" }
-sui-protocol-config.workspace = true
+pera-protocol-config.workspace = true
 
 types = { path = "../types", package = "narwhal-types" }
 network = { path = "../network", package = "narwhal-network" }

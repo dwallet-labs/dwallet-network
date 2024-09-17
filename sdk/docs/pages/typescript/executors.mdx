@@ -13,7 +13,7 @@ The `SerialTransactionExecutor` is designed for use in wallet implementations, a
 objects owned by the address executing transactions are unlikely to be changed by transactions not
 executed through the executor.
 
-To fund transactions, the `SerialTransactionExecutor` will select all of the senders SUI coins for
+To fund transactions, the `SerialTransactionExecutor` will select all of the senders PERA coins for
 the first transaction, which will result in a single coin that will then be used as the gas payment
 on all subsequent transactions. This allows executing multiple transactions, without needing to
 re-query for gas coins, or wait for the RPC node to index the previous transactions.
@@ -27,16 +27,16 @@ transactions to finish before sending the next one.
 
 `SerialTransactionExecutor` can be configured with a number of options:
 
-- `client`: An instance of `SuiClient` used to execute transactions.
+- `client`: An instance of `PeraClient` used to execute transactions.
 - `signer`: The signer/keypair used for signed transactions.
 - `defaultBudget`: The default budget for transactions, which will be used if the transaction does
   not specify a budget (default `50_000_000n`),
 
 ```ts
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { SerialTransactionExecutor } from '@mysten/sui/transactions';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
+import { SerialTransactionExecutor } from '@pera-io/pera/transactions';
 
-const client = new SuiClient({ url: getFullnodeUrl('devnet') });
+const client = new PeraClient({ url: getFullnodeUrl('devnet') });
 
 const executor = new SerialTransactionExecutor({
 	client,
@@ -68,7 +68,7 @@ will maintain a pool of gas coins, and automatically execute additional transact
 gas pool as needed.
 
 <Callout type="warning">
-	Using SuiClient or wallets to execute additional transactions while `ParallelTransactionExecutor`
+	Using PeraClient or wallets to execute additional transactions while `ParallelTransactionExecutor`
 	is in use may consume/combine gas coins in the gasPool, causing transactions to fail. This may
 	also result in the coins becoming locked for the remainder of the current epoch, preventing them
 	from being used in future transactions.
@@ -84,11 +84,11 @@ way that avoids conflicts between transactions using the same object ids.
 
 `ParallelTransactionExecutor` can be configured with a number of options:
 
-- `client`: An instance of `SuiClient` used to execute transactions.
+- `client`: An instance of `PeraClient` used to execute transactions.
 - `signer`: The signer/keypair used for signed transactions.
 - `coinBatchSize`: The maximum number of new coins to create when refilling the gas pool
   (default 20)
-- `initialCoinBalance`: The balance of new coins created for the gas pool in MIST (default
+- `initialCoinBalance`: The balance of new coins created for the gas pool in NPERA (default
   `200_000_000n`),
 - `minimumCoinBalance`: After executing a transaction, the gasCoin will be reused unless it's
   balance is below this value (default `50_000_000n`),
@@ -103,10 +103,10 @@ way that avoids conflicts between transactions using the same object ids.
   each epoch boundary to ensure the gas price is up-to-date for the next epoch. (default `1000`)
 
 ```ts
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { ParallelTransactionExecutor } from '@mysten/sui/transactions';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
+import { ParallelTransactionExecutor } from '@pera-io/pera/transactions';
 
-const client = new SuiClient({ url: getFullnodeUrl('devnet') });
+const client = new PeraClient({ url: getFullnodeUrl('devnet') });
 
 const executor = new ParallelTransactionExecutor({
 	client,

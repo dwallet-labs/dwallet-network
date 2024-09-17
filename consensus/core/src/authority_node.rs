@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{sync::Arc, time::Instant};
 
 use consensus_config::{AuthorityIndex, Committee, NetworkKeyPair, Parameters, ProtocolKeyPair};
 use parking_lot::RwLock;
 use prometheus::Registry;
-use sui_protocol_config::{ConsensusNetwork, ProtocolConfig};
+use pera_protocol_config::{ConsensusNetwork, ProtocolConfig};
 use tracing::{info, warn};
 
 use crate::{
@@ -35,7 +35,7 @@ use crate::{
     CommitConsumer,
 };
 
-/// ConsensusAuthority is used by Sui to manage the lifetime of AuthorityNode.
+/// ConsensusAuthority is used by Pera to manage the lifetime of AuthorityNode.
 /// It hides the details of the implementation from the caller, MysticetiManager.
 #[allow(private_interfaces)]
 pub enum ConsensusAuthority {
@@ -390,7 +390,7 @@ mod tests {
     use mysten_metrics::monitored_mpsc::{unbounded_channel, UnboundedReceiver};
     use prometheus::Registry;
     use rstest::rstest;
-    use sui_protocol_config::ProtocolConfig;
+    use pera_protocol_config::ProtocolConfig;
     use tempfile::TempDir;
     use tokio::time::{sleep, timeout};
     use typed_store::DBMetrics;

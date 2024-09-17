@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[macro_use]
-extern crate sui_types;
+extern crate pera_types;
 
 pub mod adapter;
 pub mod error;

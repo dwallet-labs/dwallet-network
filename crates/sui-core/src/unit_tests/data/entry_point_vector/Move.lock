@@ -6,16 +6,16 @@ manifest_digest = "78784529799C8284788E91AB0A8668CA7759418A3D6133C3ADE575F648524
 deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
 
 dependencies = [
-  { name = "Sui" },
+  { name = "Pera" },
 ]
 
 [[move.package]]
 name = "MoveStdlib"
-source = { local = "../../../../../sui-framework/packages/move-stdlib" }
+source = { local = "../../../../../pera-framework/packages/move-stdlib" }
 
 [[move.package]]
-name = "Sui"
-source = { local = "../../../../../sui-framework/packages/sui-framework" }
+name = "Pera"
+source = { local = "../../../../../pera-framework/packages/pera-framework" }
 
 dependencies = [
   { name = "MoveStdlib" },
@@ -24,4 +24,4 @@ dependencies = [
 [move.toolchain-version]
 compiler-version = "1.30.0"
 edition = "2024.beta"
-flavor = "sui"
+flavor = "pera"

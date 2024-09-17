@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui/bcs';
-import type { SuiClient } from '@mysten/sui/client';
-import { SuiGraphQLClient } from '@mysten/sui/graphql';
-import { graphql } from '@mysten/sui/graphql/schemas/2024.4';
-import { fromB64, normalizeSuiAddress } from '@mysten/sui/utils';
+import { bcs } from '@pera-io/pera/bcs';
+import type { PeraClient } from '@pera-io/pera/client';
+import { PeraGraphQLClient } from '@pera-io/pera/graphql';
+import { graphql } from '@pera-io/pera/graphql/schemas/2024.4';
+import { fromB64, normalizePeraAddress } from '@pera-io/pera/utils';
 
 import { ZkSendLink } from './claim.js';
 import type { ZkBagContractOptions } from './zk-bag.js';
 import { MAINNET_CONTRACT_IDS } from './zk-bag.js';
 
 const ListCreatedLinksQuery = graphql(`
-	query listCreatedLinks($address: SuiAddress!, $function: String!, $cursor: String) {
+	query listCreatedLinks($address: PeraAddress!, $function: String!, $cursor: String) {
 		transactionBlocks(
 			last: 10
 			before: $cursor
@@ -50,18 +50,18 @@ export async function listCreatedLinks({
 	host?: string;
 	path?: string;
 	claimApi?: string;
-	client?: SuiClient;
+	client?: PeraClient;
 	fetch?: typeof fetch;
 }) {
-	const gqlClient = new SuiGraphQLClient({
+	const gqlClient = new PeraGraphQLClient({
 		url:
 			network === 'testnet'
-				? 'https://sui-testnet.mystenlabs.com/graphql'
-				: 'https://sui-mainnet.mystenlabs.com/graphql',
+				? 'https://pera-testnet.mystenlabs.com/graphql'
+				: 'https://pera-mainnet.mystenlabs.com/graphql',
 		fetch: fetchFn,
 	});
 
-	const packageId = normalizeSuiAddress(contract.packageId);
+	const packageId = normalizePeraAddress(contract.packageId);
 
 	const page = await gqlClient.query({
 		query: ListCreatedLinksQuery,

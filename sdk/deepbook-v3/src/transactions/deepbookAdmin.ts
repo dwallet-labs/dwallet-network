@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { coinWithBalance } from '@mysten/sui/transactions';
-import type { Transaction } from '@mysten/sui/transactions';
+import { coinWithBalance } from '@pera-io/pera/transactions';
+import type { Transaction } from '@pera-io/pera/transactions';
 
 import type { CreatePoolAdminParams } from '../types/index.js';
 import type { DeepBookConfig } from '../utils/config.js';
@@ -61,7 +61,7 @@ export class DeepBookAdminContract {
 				tx.pure.u64(adjustedTickSize), // adjusted tick_size
 				tx.pure.u64(adjustedLotSize), // adjusted lot_size
 				tx.pure.u64(adjustedMinSize), // adjusted min_size
-				creationFee, // 0x2::balance::Balance<0x2::sui::SUI>
+				creationFee, // 0x2::balance::Balance<0x2::pera::PERA>
 				tx.pure.bool(whitelisted),
 				tx.pure.bool(stablePool),
 				tx.object(this.#adminCap()),

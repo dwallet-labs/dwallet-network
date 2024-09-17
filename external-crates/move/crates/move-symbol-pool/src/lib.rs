@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! A global, uniqued cache of strings that is never purged. Inspired by
 //! [servo/string-cache].
@@ -51,14 +51,14 @@ static_symbols!(
     "legacy",
     "2024",
     "alpha",
-    "sui",
+    "pera",
     "object",
     "new",
     "new_uid_from_hash",
     "test_scenario",
     "new_object",
     "UID",
-    "sui_system",
+    "pera_system",
     "create",
     "clock",
     "option",
@@ -70,7 +70,7 @@ static_symbols!(
     "tx_context",
     "TxContext",
     "ID",
-    "SUI",
+    "PERA",
     "authenticator_state",
     "AuthenticatorState",
     "random",

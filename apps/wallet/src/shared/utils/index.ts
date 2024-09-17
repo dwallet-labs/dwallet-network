@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useAppSelector } from '_hooks';
 import { setAttributes } from '_src/shared/experimentation/features';
 import { useGrowthBook } from '@growthbook/growthbook-react';
-import { fromB64, toB64 } from '@mysten/sui/utils';
+import { fromB64, toB64 } from '@pera-io/pera/utils';
 import * as Sentry from '@sentry/browser';
 import { useEffect } from 'react';
 import Browser from 'webextension-polyfill';
@@ -13,7 +13,7 @@ import { getUrlWithDeviceId } from '../analytics/amplitude';
 
 export const MAIN_UI_URL = Browser.runtime.getURL('ui.html');
 
-const MYSTEN_LABS_DAPPS = ['suifrens.com', 'suins.io'];
+const MYSTEN_LABS_DAPPS = ['perafrens.com', 'perans.io'];
 
 export function openInNewTab() {
 	return Browser.tabs.create({ url: MAIN_UI_URL });

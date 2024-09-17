@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useResolveSuiNSName } from '_app/hooks/useAppResolveSuinsName';
+import { useResolvePeraNSName } from '_app/hooks/useAppResolvePeransName';
 import { Text } from '_src/ui/app/shared/text';
 import { ArrowUpRight12, Copy12 } from '@mysten/icons';
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@pera-io/pera/utils';
 import cn from 'clsx';
 import { forwardRef, type ReactNode } from 'react';
 
@@ -51,7 +51,7 @@ export const AccountItem = forwardRef<HTMLDivElement, AccountItemProps>(
 	) => {
 		const { data: accounts } = useAccounts();
 		const account = accounts?.find((account) => account.id === accountID);
-		const domainName = useResolveSuiNSName(account?.address);
+		const domainName = useResolvePeraNSName(account?.address);
 		const accountName = account?.nickname ?? domainName ?? formatAddress(account?.address || '');
 		const copyAddress = useCopyToClipboard(account?.address || '', {
 			copySuccessMessage: 'Address copied',

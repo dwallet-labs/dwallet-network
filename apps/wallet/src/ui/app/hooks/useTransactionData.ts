@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useFormatCoin } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { Transaction } from '@mysten/sui/transactions';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { usePeraClient } from '@mysten/dapp-kit';
+import { Transaction } from '@pera-io/pera/transactions';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import { useQuery } from '@tanstack/react-query';
 
 export function useTransactionData(sender?: string | null, transaction?: Transaction | null) {
-	const client = useSuiClient();
+	const client = usePeraClient();
 	return useQuery({
 		// eslint-disable-next-line @tanstack/query/exhaustive-deps
 		queryKey: ['transaction-data', transaction?.serialize()],
@@ -28,7 +28,7 @@ export function useTransactionData(sender?: string | null, transaction?: Transac
 export function useTransactionGasBudget(sender?: string | null, transaction?: Transaction | null) {
 	const { data, ...rest } = useTransactionData(sender, transaction);
 
-	const [formattedGas] = useFormatCoin(data?.gasData.budget, SUI_TYPE_ARG);
+	const [formattedGas] = useFormatCoin(data?.gasData.budget, PERA_TYPE_ARG);
 
 	return {
 		data: formattedGas,

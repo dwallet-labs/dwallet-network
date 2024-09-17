@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::metrics::PrimaryMetrics;
 use config::{AuthorityIdentifier, Committee, Stake};
@@ -11,7 +11,7 @@ use crypto::{
 use fastcrypto::hash::{Digest, Hash};
 use std::collections::HashSet;
 use std::sync::Arc;
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use tracing::warn;
 use types::{
     ensure,

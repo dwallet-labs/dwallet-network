@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { decrypt } from '_shared/cryptography/keystore';
 import {
@@ -12,7 +12,7 @@ import {
 	fromExportedKeypair,
 	type LegacyExportedKeyPair,
 } from '_shared/utils/from-exported-keypair';
-import { mnemonicToSeedHex, type Keypair } from '@mysten/sui/cryptography';
+import { mnemonicToSeedHex, type Keypair } from '@pera-io/pera/cryptography';
 
 import { getFromLocalStorage } from '../storage-utils';
 

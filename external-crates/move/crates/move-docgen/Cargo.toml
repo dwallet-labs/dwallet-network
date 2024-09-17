@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Diem Association <opensource@diem.com>"]
 publish = false
 edition = "2021"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 
 [dependencies]
 # diem dependencies
@@ -29,5 +29,5 @@ tempfile.workspace = true
 move-prover-test-utils.workspace = true
 
 [[test]]
-name = "testsuite"
+name = "testperate"
 harness = false

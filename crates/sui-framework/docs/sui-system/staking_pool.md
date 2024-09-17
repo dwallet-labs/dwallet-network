@@ -6,13 +6,13 @@ title: Module `0x3::staking_pool`
 
 -  [Resource `StakingPool`](#0x3_staking_pool_StakingPool)
 -  [Struct `PoolTokenExchangeRate`](#0x3_staking_pool_PoolTokenExchangeRate)
--  [Resource `StakedSui`](#0x3_staking_pool_StakedSui)
+-  [Resource `StakedPera`](#0x3_staking_pool_StakedPera)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x3_staking_pool_new)
 -  [Function `request_add_stake`](#0x3_staking_pool_request_add_stake)
 -  [Function `request_withdraw_stake`](#0x3_staking_pool_request_withdraw_stake)
 -  [Function `withdraw_from_principal`](#0x3_staking_pool_withdraw_from_principal)
--  [Function `unwrap_staked_sui`](#0x3_staking_pool_unwrap_staked_sui)
+-  [Function `unwrap_staked_pera`](#0x3_staking_pool_unwrap_staked_pera)
 -  [Function `deposit_rewards`](#0x3_staking_pool_deposit_rewards)
 -  [Function `process_pending_stakes_and_withdraws`](#0x3_staking_pool_process_pending_stakes_and_withdraws)
 -  [Function `process_pending_stake_withdraw`](#0x3_staking_pool_process_pending_stake_withdraw)
@@ -20,24 +20,24 @@ title: Module `0x3::staking_pool`
 -  [Function `withdraw_rewards`](#0x3_staking_pool_withdraw_rewards)
 -  [Function `activate_staking_pool`](#0x3_staking_pool_activate_staking_pool)
 -  [Function `deactivate_staking_pool`](#0x3_staking_pool_deactivate_staking_pool)
--  [Function `sui_balance`](#0x3_staking_pool_sui_balance)
+-  [Function `pera_balance`](#0x3_staking_pool_pera_balance)
 -  [Function `pool_id`](#0x3_staking_pool_pool_id)
--  [Function `staked_sui_amount`](#0x3_staking_pool_staked_sui_amount)
+-  [Function `staked_pera_amount`](#0x3_staking_pool_staked_pera_amount)
 -  [Function `stake_activation_epoch`](#0x3_staking_pool_stake_activation_epoch)
 -  [Function `is_preactive`](#0x3_staking_pool_is_preactive)
 -  [Function `is_inactive`](#0x3_staking_pool_is_inactive)
 -  [Function `split`](#0x3_staking_pool_split)
--  [Function `split_staked_sui`](#0x3_staking_pool_split_staked_sui)
--  [Function `join_staked_sui`](#0x3_staking_pool_join_staked_sui)
+-  [Function `split_staked_pera`](#0x3_staking_pool_split_staked_pera)
+-  [Function `join_staked_pera`](#0x3_staking_pool_join_staked_pera)
 -  [Function `is_equal_staking_metadata`](#0x3_staking_pool_is_equal_staking_metadata)
 -  [Function `pool_token_exchange_rate_at_epoch`](#0x3_staking_pool_pool_token_exchange_rate_at_epoch)
 -  [Function `pending_stake_amount`](#0x3_staking_pool_pending_stake_amount)
 -  [Function `pending_stake_withdraw_amount`](#0x3_staking_pool_pending_stake_withdraw_amount)
 -  [Function `exchange_rates`](#0x3_staking_pool_exchange_rates)
--  [Function `sui_amount`](#0x3_staking_pool_sui_amount)
+-  [Function `pera_amount`](#0x3_staking_pool_pera_amount)
 -  [Function `pool_token_amount`](#0x3_staking_pool_pool_token_amount)
 -  [Function `is_preactive_at_epoch`](#0x3_staking_pool_is_preactive_at_epoch)
--  [Function `get_sui_amount`](#0x3_staking_pool_get_sui_amount)
+-  [Function `get_pera_amount`](#0x3_staking_pool_get_pera_amount)
 -  [Function `get_token_amount`](#0x3_staking_pool_get_token_amount)
 -  [Function `initial_exchange_rate`](#0x3_staking_pool_initial_exchange_rate)
 -  [Function `check_balance_invariants`](#0x3_staking_pool_check_balance_invariants)
@@ -45,13 +45,13 @@ title: Module `0x3::staking_pool`
 
 <pre><code><b>use</b> <a href="../move-stdlib/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="../move-stdlib/u64.md#0x1_u64">0x1::u64</a>;
-<b>use</b> <a href="../sui-framework/bag.md#0x2_bag">0x2::bag</a>;
-<b>use</b> <a href="../sui-framework/balance.md#0x2_balance">0x2::balance</a>;
-<b>use</b> <a href="../sui-framework/object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="../sui-framework/sui.md#0x2_sui">0x2::sui</a>;
-<b>use</b> <a href="../sui-framework/table.md#0x2_table">0x2::table</a>;
-<b>use</b> <a href="../sui-framework/transfer.md#0x2_transfer">0x2::transfer</a>;
-<b>use</b> <a href="../sui-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
+<b>use</b> <a href="../pera-framework/bag.md#0x2_bag">0x2::bag</a>;
+<b>use</b> <a href="../pera-framework/balance.md#0x2_balance">0x2::balance</a>;
+<b>use</b> <a href="../pera-framework/object.md#0x2_object">0x2::object</a>;
+<b>use</b> <a href="../pera-framework/pera.md#0x2_pera">0x2::pera</a>;
+<b>use</b> <a href="../pera-framework/table.md#0x2_table">0x2::table</a>;
+<b>use</b> <a href="../pera-framework/transfer.md#0x2_transfer">0x2::transfer</a>;
+<b>use</b> <a href="../pera-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
 
@@ -74,7 +74,7 @@ A staking pool embedded in each validator struct in the system state object.
 
 <dl>
 <dt>
-<code>id: <a href="../sui-framework/object.md#0x2_object_UID">object::UID</a></code>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
 </dt>
 <dd>
 
@@ -94,14 +94,14 @@ A staking pool embedded in each validator struct in the system state object.
  <code>Some(&lt;epoch_number&gt;)</code> if in-active, and it was de-activated at epoch <code>&lt;epoch_number&gt;</code>.
 </dd>
 <dt>
-<code>sui_balance: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
+<code>pera_balance: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
 </dt>
 <dd>
- The total number of SUI tokens in this pool, including the SUI in the rewards_pool, as well as in all the principal
- in the <code><a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a></code> object, updated at epoch boundaries.
+ The total number of PERA tokens in this pool, including the PERA in the rewards_pool, as well as in all the principal
+ in the <code><a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a></code> object, updated at epoch boundaries.
 </dd>
 <dt>
-<code>rewards_pool: <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;</code>
+<code>rewards_pool: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;</code>
 </dt>
 <dd>
  The epoch stake rewards will be added here at the end of each epoch.
@@ -113,7 +113,7 @@ A staking pool embedded in each validator struct in the system state object.
  Total number of pool tokens issued by the pool.
 </dd>
 <dt>
-<code>exchange_rates: <a href="../sui-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>&gt;</code>
+<code>exchange_rates: <a href="../pera-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>&gt;</code>
 </dt>
 <dd>
  Exchange rate history of previous epochs. Key is the epoch number.
@@ -127,11 +127,11 @@ A staking pool embedded in each validator struct in the system state object.
  Pending stake amount for this epoch, emptied at epoch boundaries.
 </dd>
 <dt>
-<code>pending_total_sui_withdraw: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
+<code>pending_total_pera_withdraw: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
 </dt>
 <dd>
  Pending stake withdrawn during the current epoch, emptied at epoch boundaries.
- This includes both the principal and rewards SUI withdrawn.
+ This includes both the principal and rewards PERA withdrawn.
 </dd>
 <dt>
 <code>pending_pool_token_withdraw: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
@@ -140,7 +140,7 @@ A staking pool embedded in each validator struct in the system state object.
  Pending pool token withdrawn during the current epoch, emptied at epoch boundaries.
 </dd>
 <dt>
-<code>extra_fields: <a href="../sui-framework/bag.md#0x2_bag_Bag">bag::Bag</a></code>
+<code>extra_fields: <a href="../pera-framework/bag.md#0x2_bag_Bag">bag::Bag</a></code>
 </dt>
 <dd>
  Any extra fields that's not defined statically.
@@ -154,7 +154,7 @@ A staking pool embedded in each validator struct in the system state object.
 
 ## Struct `PoolTokenExchangeRate`
 
-Struct representing the exchange rate of the stake pool token to SUI.
+Struct representing the exchange rate of the stake pool token to PERA.
 
 
 <pre><code><b>struct</b> <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a> <b>has</b> <b>copy</b>, drop, store
@@ -168,7 +168,7 @@ Struct representing the exchange rate of the stake pool token to SUI.
 
 <dl>
 <dt>
-<code>sui_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
+<code>pera_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
 </dt>
 <dd>
 
@@ -184,14 +184,14 @@ Struct representing the exchange rate of the stake pool token to SUI.
 
 </details>
 
-<a name="0x3_staking_pool_StakedSui"></a>
+<a name="0x3_staking_pool_StakedPera"></a>
 
-## Resource `StakedSui`
+## Resource `StakedPera`
 
-A self-custodial object holding the staked SUI tokens.
+A self-custodial object holding the staked PERA tokens.
 
 
-<pre><code><b>struct</b> <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a> <b>has</b> store, key
+<pre><code><b>struct</b> <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a> <b>has</b> store, key
 </code></pre>
 
 
@@ -202,13 +202,13 @@ A self-custodial object holding the staked SUI tokens.
 
 <dl>
 <dt>
-<code>id: <a href="../sui-framework/object.md#0x2_object_UID">object::UID</a></code>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>pool_id: <a href="../sui-framework/object.md#0x2_object_ID">object::ID</a></code>
+<code>pool_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
  ID of the staking pool we are staking with.
@@ -220,10 +220,10 @@ A self-custodial object holding the staked SUI tokens.
  The epoch at which the stake becomes active.
 </dd>
 <dt>
-<code>principal: <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;</code>
+<code>principal: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;</code>
 </dt>
 <dd>
- The staked SUI tokens.
+ The staked PERA tokens.
 </dd>
 </dl>
 
@@ -253,11 +253,11 @@ A self-custodial object holding the staked SUI tokens.
 
 
 
-<a name="0x3_staking_pool_EDelegationOfZeroSui"></a>
+<a name="0x3_staking_pool_EDelegationOfZeroPera"></a>
 
 
 
-<pre><code><b>const</b> <a href="staking_pool.md#0x3_staking_pool_EDelegationOfZeroSui">EDelegationOfZeroSui</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 17;
+<pre><code><b>const</b> <a href="staking_pool.md#0x3_staking_pool_EDelegationOfZeroPera">EDelegationOfZeroPera</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 17;
 </code></pre>
 
 
@@ -280,11 +280,11 @@ A self-custodial object holding the staked SUI tokens.
 
 
 
-<a name="0x3_staking_pool_EIncompatibleStakedSui"></a>
+<a name="0x3_staking_pool_EIncompatibleStakedPera"></a>
 
 
 
-<pre><code><b>const</b> <a href="staking_pool.md#0x3_staking_pool_EIncompatibleStakedSui">EIncompatibleStakedSui</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 12;
+<pre><code><b>const</b> <a href="staking_pool.md#0x3_staking_pool_EIncompatibleStakedPera">EIncompatibleStakedPera</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 12;
 </code></pre>
 
 
@@ -307,11 +307,11 @@ A self-custodial object holding the staked SUI tokens.
 
 
 
-<a name="0x3_staking_pool_EInsufficientSuiTokenBalance"></a>
+<a name="0x3_staking_pool_EInsufficientPeraTokenBalance"></a>
 
 
 
-<pre><code><b>const</b> <a href="staking_pool.md#0x3_staking_pool_EInsufficientSuiTokenBalance">EInsufficientSuiTokenBalance</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 3;
+<pre><code><b>const</b> <a href="staking_pool.md#0x3_staking_pool_EInsufficientPeraTokenBalance">EInsufficientPeraTokenBalance</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 3;
 </code></pre>
 
 
@@ -343,11 +343,11 @@ A self-custodial object holding the staked SUI tokens.
 
 
 
-<a name="0x3_staking_pool_EStakedSuiBelowThreshold"></a>
+<a name="0x3_staking_pool_EStakedPeraBelowThreshold"></a>
 
 
 
-<pre><code><b>const</b> <a href="staking_pool.md#0x3_staking_pool_EStakedSuiBelowThreshold">EStakedSuiBelowThreshold</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 18;
+<pre><code><b>const</b> <a href="staking_pool.md#0x3_staking_pool_EStakedPeraBelowThreshold">EStakedPeraBelowThreshold</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 18;
 </code></pre>
 
 
@@ -408,7 +408,7 @@ A self-custodial object holding the staked SUI tokens.
 
 <a name="0x3_staking_pool_MIN_STAKING_THRESHOLD"></a>
 
-StakedSui objects cannot be split to below this amount.
+StakedPera objects cannot be split to below this amount.
 
 
 <pre><code><b>const</b> <a href="staking_pool.md#0x3_staking_pool_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 1000000000;
@@ -423,7 +423,7 @@ StakedSui objects cannot be split to below this amount.
 Create a new, empty staking pool.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_new">new</a>(ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_new">new</a>(ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>
 </code></pre>
 
 
@@ -433,19 +433,19 @@ Create a new, empty staking pool.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_new">new</a>(ctx: &<b>mut</b> TxContext) : <a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a> {
-    <b>let</b> exchange_rates = <a href="../sui-framework/table.md#0x2_table_new">table::new</a>(ctx);
+    <b>let</b> exchange_rates = <a href="../pera-framework/table.md#0x2_table_new">table::new</a>(ctx);
     <a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a> {
-        id: <a href="../sui-framework/object.md#0x2_object_new">object::new</a>(ctx),
+        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         activation_epoch: <a href="../move-stdlib/option.md#0x1_option_none">option::none</a>(),
         deactivation_epoch: <a href="../move-stdlib/option.md#0x1_option_none">option::none</a>(),
-        sui_balance: 0,
-        rewards_pool: <a href="../sui-framework/balance.md#0x2_balance_zero">balance::zero</a>(),
+        pera_balance: 0,
+        rewards_pool: <a href="../pera-framework/balance.md#0x2_balance_zero">balance::zero</a>(),
         pool_token_balance: 0,
         exchange_rates,
         pending_stake: 0,
-        pending_total_sui_withdraw: 0,
+        pending_total_pera_withdraw: 0,
         pending_pool_token_withdraw: 0,
-        extra_fields: <a href="../sui-framework/bag.md#0x2_bag_new">bag::new</a>(ctx),
+        extra_fields: <a href="../pera-framework/bag.md#0x2_bag_new">bag::new</a>(ctx),
     }
 }
 </code></pre>
@@ -461,7 +461,7 @@ Create a new, empty staking pool.
 Request to stake to a staking pool. The stake starts counting at the beginning of the next epoch,
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_request_add_stake">request_add_stake</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, stake: <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;, stake_activation_epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_request_add_stake">request_add_stake</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, stake: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, stake_activation_epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>
 </code></pre>
 
 
@@ -472,21 +472,21 @@ Request to stake to a staking pool. The stake starts counting at the beginning o
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_request_add_stake">request_add_stake</a>(
     pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>,
-    stake: Balance&lt;SUI&gt;,
+    stake: Balance&lt;PERA&gt;,
     stake_activation_epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     ctx: &<b>mut</b> TxContext
-) : <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a> {
-    <b>let</b> sui_amount = stake.value();
+) : <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a> {
+    <b>let</b> pera_amount = stake.value();
     <b>assert</b>!(!<a href="staking_pool.md#0x3_staking_pool_is_inactive">is_inactive</a>(pool), <a href="staking_pool.md#0x3_staking_pool_EDelegationToInactivePool">EDelegationToInactivePool</a>);
-    <b>assert</b>!(sui_amount &gt; 0, <a href="staking_pool.md#0x3_staking_pool_EDelegationOfZeroSui">EDelegationOfZeroSui</a>);
-    <b>let</b> staked_sui = <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a> {
-        id: <a href="../sui-framework/object.md#0x2_object_new">object::new</a>(ctx),
-        pool_id: <a href="../sui-framework/object.md#0x2_object_id">object::id</a>(pool),
+    <b>assert</b>!(pera_amount &gt; 0, <a href="staking_pool.md#0x3_staking_pool_EDelegationOfZeroPera">EDelegationOfZeroPera</a>);
+    <b>let</b> staked_pera = <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a> {
+        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+        pool_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(pool),
         stake_activation_epoch,
         principal: stake,
     };
-    pool.pending_stake = pool.pending_stake + sui_amount;
-    staked_sui
+    pool.pending_stake = pool.pending_stake + pera_amount;
+    staked_pera
 }
 </code></pre>
 
@@ -499,11 +499,11 @@ Request to stake to a staking pool. The stake starts counting at the beginning o
 ## Function `request_withdraw_stake`
 
 Request to withdraw the given stake plus rewards from a staking pool.
-Both the principal and corresponding rewards in SUI are withdrawn.
+Both the principal and corresponding rewards in PERA are withdrawn.
 A proportional amount of pool token withdraw is recorded and processed at epoch change time.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_request_withdraw_stake">request_withdraw_stake</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, staked_sui: <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_request_withdraw_stake">request_withdraw_stake</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, staked_pera: <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;
 </code></pre>
 
 
@@ -514,27 +514,27 @@ A proportional amount of pool token withdraw is recorded and processed at epoch 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_request_withdraw_stake">request_withdraw_stake</a>(
     pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>,
-    staked_sui: <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>,
+    staked_pera: <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>,
     ctx: &TxContext
-) : Balance&lt;SUI&gt; {
+) : Balance&lt;PERA&gt; {
     // stake is inactive
-    <b>if</b> (staked_sui.stake_activation_epoch &gt; ctx.epoch()) {
-        <b>let</b> principal = <a href="staking_pool.md#0x3_staking_pool_unwrap_staked_sui">unwrap_staked_sui</a>(staked_sui);
+    <b>if</b> (staked_pera.stake_activation_epoch &gt; ctx.epoch()) {
+        <b>let</b> principal = <a href="staking_pool.md#0x3_staking_pool_unwrap_staked_pera">unwrap_staked_pera</a>(staked_pera);
         pool.pending_stake = pool.pending_stake - principal.value();
 
         <b>return</b> principal
     };
 
     <b>let</b> (pool_token_withdraw_amount, <b>mut</b> principal_withdraw) =
-        <a href="staking_pool.md#0x3_staking_pool_withdraw_from_principal">withdraw_from_principal</a>(pool, staked_sui);
+        <a href="staking_pool.md#0x3_staking_pool_withdraw_from_principal">withdraw_from_principal</a>(pool, staked_pera);
     <b>let</b> principal_withdraw_amount = principal_withdraw.value();
 
     <b>let</b> rewards_withdraw = <a href="staking_pool.md#0x3_staking_pool_withdraw_rewards">withdraw_rewards</a>(
         pool, principal_withdraw_amount, pool_token_withdraw_amount, ctx.epoch()
     );
-    <b>let</b> total_sui_withdraw_amount = principal_withdraw_amount + rewards_withdraw.value();
+    <b>let</b> total_pera_withdraw_amount = principal_withdraw_amount + rewards_withdraw.value();
 
-    pool.pending_total_sui_withdraw = pool.pending_total_sui_withdraw + total_sui_withdraw_amount;
+    pool.pending_total_pera_withdraw = pool.pending_total_pera_withdraw + total_pera_withdraw_amount;
     pool.pending_pool_token_withdraw = pool.pending_pool_token_withdraw + pool_token_withdraw_amount;
 
     // If the pool is inactive, we immediately process the withdrawal.
@@ -554,12 +554,12 @@ A proportional amount of pool token withdraw is recorded and processed at epoch 
 
 ## Function `withdraw_from_principal`
 
-Withdraw the principal SUI stored in the StakedSui object, and calculate the corresponding amount of pool
+Withdraw the principal PERA stored in the StakedPera object, and calculate the corresponding amount of pool
 tokens using exchange rate at staking epoch.
-Returns values are amount of pool tokens withdrawn and withdrawn principal portion of SUI.
+Returns values are amount of pool tokens withdrawn and withdrawn principal portion of PERA.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_withdraw_from_principal">withdraw_from_principal</a>(pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, staked_sui: <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>): (<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_withdraw_from_principal">withdraw_from_principal</a>(pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, staked_pera: <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>): (<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;)
 </code></pre>
 
 
@@ -570,14 +570,14 @@ Returns values are amount of pool tokens withdrawn and withdrawn principal porti
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_withdraw_from_principal">withdraw_from_principal</a>(
     pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>,
-    staked_sui: <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>,
-) : (<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, Balance&lt;SUI&gt;) {
+    staked_pera: <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>,
+) : (<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, Balance&lt;PERA&gt;) {
 
     // Check that the stake information matches the pool.
-    <b>assert</b>!(staked_sui.pool_id == <a href="../sui-framework/object.md#0x2_object_id">object::id</a>(pool), <a href="staking_pool.md#0x3_staking_pool_EWrongPool">EWrongPool</a>);
+    <b>assert</b>!(staked_pera.pool_id == <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(pool), <a href="staking_pool.md#0x3_staking_pool_EWrongPool">EWrongPool</a>);
 
-    <b>let</b> exchange_rate_at_staking_epoch = <a href="staking_pool.md#0x3_staking_pool_pool_token_exchange_rate_at_epoch">pool_token_exchange_rate_at_epoch</a>(pool, staked_sui.stake_activation_epoch);
-    <b>let</b> principal_withdraw = <a href="staking_pool.md#0x3_staking_pool_unwrap_staked_sui">unwrap_staked_sui</a>(staked_sui);
+    <b>let</b> exchange_rate_at_staking_epoch = <a href="staking_pool.md#0x3_staking_pool_pool_token_exchange_rate_at_epoch">pool_token_exchange_rate_at_epoch</a>(pool, staked_pera.stake_activation_epoch);
+    <b>let</b> principal_withdraw = <a href="staking_pool.md#0x3_staking_pool_unwrap_staked_pera">unwrap_staked_pera</a>(staked_pera);
     <b>let</b> pool_token_withdraw_amount = <a href="staking_pool.md#0x3_staking_pool_get_token_amount">get_token_amount</a>(
 		&exchange_rate_at_staking_epoch,
 		principal_withdraw.value()
@@ -594,13 +594,13 @@ Returns values are amount of pool tokens withdrawn and withdrawn principal porti
 
 </details>
 
-<a name="0x3_staking_pool_unwrap_staked_sui"></a>
+<a name="0x3_staking_pool_unwrap_staked_pera"></a>
 
-## Function `unwrap_staked_sui`
+## Function `unwrap_staked_pera`
 
 
 
-<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_unwrap_staked_sui">unwrap_staked_sui</a>(staked_sui: <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>): <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;
+<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_unwrap_staked_pera">unwrap_staked_pera</a>(staked_pera: <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>): <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;
 </code></pre>
 
 
@@ -609,14 +609,14 @@ Returns values are amount of pool tokens withdrawn and withdrawn principal porti
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_unwrap_staked_sui">unwrap_staked_sui</a>(staked_sui: <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>): Balance&lt;SUI&gt; {
-    <b>let</b> <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a> {
+<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_unwrap_staked_pera">unwrap_staked_pera</a>(staked_pera: <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>): Balance&lt;PERA&gt; {
+    <b>let</b> <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a> {
         id,
         pool_id: _,
         stake_activation_epoch: _,
         principal,
-    } = staked_sui;
-    <a href="../sui-framework/object.md#0x2_object_delete">object::delete</a>(id);
+    } = staked_pera;
+    <a href="../pera-framework/object.md#0x2_object_delete">object::delete</a>(id);
     principal
 }
 </code></pre>
@@ -629,10 +629,10 @@ Returns values are amount of pool tokens withdrawn and withdrawn principal porti
 
 ## Function `deposit_rewards`
 
-Called at epoch advancement times to add rewards (in SUI) to the staking pool.
+Called at epoch advancement times to add rewards (in PERA) to the staking pool.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_deposit_rewards">deposit_rewards</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, rewards: <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_deposit_rewards">deposit_rewards</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, rewards: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;)
 </code></pre>
 
 
@@ -641,8 +641,8 @@ Called at epoch advancement times to add rewards (in SUI) to the staking pool.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_deposit_rewards">deposit_rewards</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>, rewards: Balance&lt;SUI&gt;) {
-    pool.sui_balance = pool.sui_balance + rewards.value();
+<pre><code><b>public</b>(package) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_deposit_rewards">deposit_rewards</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>, rewards: Balance&lt;PERA&gt;) {
+    pool.pera_balance = pool.pera_balance + rewards.value();
     pool.rewards_pool.join(rewards);
 }
 </code></pre>
@@ -657,7 +657,7 @@ Called at epoch advancement times to add rewards (in SUI) to the staking pool.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_process_pending_stakes_and_withdraws">process_pending_stakes_and_withdraws</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_process_pending_stakes_and_withdraws">process_pending_stakes_and_withdraws</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -672,7 +672,7 @@ Called at epoch advancement times to add rewards (in SUI) to the staking pool.
     <a href="staking_pool.md#0x3_staking_pool_process_pending_stake">process_pending_stake</a>(pool);
     pool.exchange_rates.add(
         new_epoch,
-        <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a> { sui_amount: pool.sui_balance, pool_token_amount: pool.pool_token_balance },
+        <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a> { pera_amount: pool.pera_balance, pool_token_amount: pool.pool_token_balance },
     );
     <a href="staking_pool.md#0x3_staking_pool_check_balance_invariants">check_balance_invariants</a>(pool, new_epoch);
 }
@@ -700,9 +700,9 @@ Also called immediately upon withdrawal if the pool is inactive.
 
 
 <pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_process_pending_stake_withdraw">process_pending_stake_withdraw</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>) {
-    pool.sui_balance = pool.sui_balance - pool.pending_total_sui_withdraw;
+    pool.pera_balance = pool.pera_balance - pool.pending_total_pera_withdraw;
     pool.pool_token_balance = pool.pool_token_balance - pool.pending_pool_token_withdraw;
-    pool.pending_total_sui_withdraw = 0;
+    pool.pending_total_pera_withdraw = 0;
     pool.pending_pool_token_withdraw = 0;
 }
 </code></pre>
@@ -730,9 +730,9 @@ Called at epoch boundaries to process the pending stake.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_process_pending_stake">process_pending_stake</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>) {
     // Use the most up <b>to</b> date exchange rate <b>with</b> the rewards deposited and withdraws effectuated.
     <b>let</b> latest_exchange_rate =
-        <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a> { sui_amount: pool.sui_balance, pool_token_amount: pool.pool_token_balance };
-    pool.sui_balance = pool.sui_balance + pool.pending_stake;
-    pool.pool_token_balance = <a href="staking_pool.md#0x3_staking_pool_get_token_amount">get_token_amount</a>(&latest_exchange_rate, pool.sui_balance);
+        <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a> { pera_amount: pool.pera_balance, pool_token_amount: pool.pool_token_balance };
+    pool.pera_balance = pool.pera_balance + pool.pending_stake;
+    pool.pool_token_balance = <a href="staking_pool.md#0x3_staking_pool_get_token_amount">get_token_amount</a>(&latest_exchange_rate, pool.pera_balance);
     pool.pending_stake = 0;
 }
 </code></pre>
@@ -746,15 +746,15 @@ Called at epoch boundaries to process the pending stake.
 ## Function `withdraw_rewards`
 
 This function does the following:
-1. Calculates the total amount of SUI (including principal and rewards) that the provided pool tokens represent
+1. Calculates the total amount of PERA (including principal and rewards) that the provided pool tokens represent
 at the current exchange rate.
 2. Using the above number and the given <code>principal_withdraw_amount</code>, calculates the rewards portion of the
 stake we should withdraw.
 3. Withdraws the rewards portion from the rewards pool at the current exchange rate. We only withdraw the rewards
-portion because the principal portion was already taken out of the staker's self custodied StakedSui.
+portion because the principal portion was already taken out of the staker's self custodied StakedPera.
 
 
-<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_withdraw_rewards">withdraw_rewards</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, principal_withdraw_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, pool_token_withdraw_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;
+<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_withdraw_rewards">withdraw_rewards</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>, principal_withdraw_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, pool_token_withdraw_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;
 </code></pre>
 
 
@@ -768,15 +768,15 @@ portion because the principal portion was already taken out of the staker's self
     principal_withdraw_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     pool_token_withdraw_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
-) : Balance&lt;SUI&gt; {
+) : Balance&lt;PERA&gt; {
     <b>let</b> exchange_rate = <a href="staking_pool.md#0x3_staking_pool_pool_token_exchange_rate_at_epoch">pool_token_exchange_rate_at_epoch</a>(pool, epoch);
-    <b>let</b> total_sui_withdraw_amount = <a href="staking_pool.md#0x3_staking_pool_get_sui_amount">get_sui_amount</a>(&exchange_rate, pool_token_withdraw_amount);
+    <b>let</b> total_pera_withdraw_amount = <a href="staking_pool.md#0x3_staking_pool_get_pera_amount">get_pera_amount</a>(&exchange_rate, pool_token_withdraw_amount);
     <b>let</b> <b>mut</b> reward_withdraw_amount =
-        <b>if</b> (total_sui_withdraw_amount &gt;= principal_withdraw_amount)
-            total_sui_withdraw_amount - principal_withdraw_amount
+        <b>if</b> (total_pera_withdraw_amount &gt;= principal_withdraw_amount)
+            total_pera_withdraw_amount - principal_withdraw_amount
         <b>else</b> 0;
     // This may happen when we are withdrawing everything from the pool and
-    // the rewards pool <a href="../sui-framework/balance.md#0x2_balance">balance</a> may be less than reward_withdraw_amount.
+    // the rewards pool <a href="../pera-framework/balance.md#0x2_balance">balance</a> may be less than reward_withdraw_amount.
     // TODO: FIGURE OUT EXACTLY WHY THIS CAN HAPPEN.
     reward_withdraw_amount = reward_withdraw_amount.<b>min</b>(pool.rewards_pool.value());
     pool.rewards_pool.<a href="staking_pool.md#0x3_staking_pool_split">split</a>(reward_withdraw_amount)
@@ -804,7 +804,7 @@ Called by <code><a href="validator.md#0x3_validator">validator</a></code> module
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_activate_staking_pool">activate_staking_pool</a>(pool: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>, activation_epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>) {
-    // Add the initial exchange rate <b>to</b> the <a href="../sui-framework/table.md#0x2_table">table</a>.
+    // Add the initial exchange rate <b>to</b> the <a href="../pera-framework/table.md#0x2_table">table</a>.
     pool.exchange_rates.add(
         activation_epoch,
         <a href="staking_pool.md#0x3_staking_pool_initial_exchange_rate">initial_exchange_rate</a>()
@@ -850,13 +850,13 @@ withdraws can be made to the pool.
 
 </details>
 
-<a name="0x3_staking_pool_sui_balance"></a>
+<a name="0x3_staking_pool_pera_balance"></a>
 
-## Function `sui_balance`
+## Function `pera_balance`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_sui_balance">sui_balance</a>(pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_pera_balance">pera_balance</a>(pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
 </code></pre>
 
 
@@ -865,7 +865,7 @@ withdraws can be made to the pool.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_sui_balance">sui_balance</a>(pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> { pool.sui_balance }
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_pera_balance">pera_balance</a>(pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> { pool.pera_balance }
 </code></pre>
 
 
@@ -878,7 +878,7 @@ withdraws can be made to the pool.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_pool_id">pool_id</a>(staked_sui: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>): <a href="../sui-framework/object.md#0x2_object_ID">object::ID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_pool_id">pool_id</a>(staked_pera: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>): <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>
 </code></pre>
 
 
@@ -887,20 +887,20 @@ withdraws can be made to the pool.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_pool_id">pool_id</a>(staked_sui: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>): ID { staked_sui.pool_id }
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_pool_id">pool_id</a>(staked_pera: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>): ID { staked_pera.pool_id }
 </code></pre>
 
 
 
 </details>
 
-<a name="0x3_staking_pool_staked_sui_amount"></a>
+<a name="0x3_staking_pool_staked_pera_amount"></a>
 
-## Function `staked_sui_amount`
+## Function `staked_pera_amount`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_staked_sui_amount">staked_sui_amount</a>(staked_sui: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_staked_pera_amount">staked_pera_amount</a>(staked_pera: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
 </code></pre>
 
 
@@ -909,7 +909,7 @@ withdraws can be made to the pool.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_staked_sui_amount">staked_sui_amount</a>(staked_sui: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> { staked_sui.principal.value() }
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_staked_pera_amount">staked_pera_amount</a>(staked_pera: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> { staked_pera.principal.value() }
 </code></pre>
 
 
@@ -922,7 +922,7 @@ withdraws can be made to the pool.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_stake_activation_epoch">stake_activation_epoch</a>(staked_sui: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_stake_activation_epoch">stake_activation_epoch</a>(staked_pera: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
 </code></pre>
 
 
@@ -931,8 +931,8 @@ withdraws can be made to the pool.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_stake_activation_epoch">stake_activation_epoch</a>(staked_sui: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
-    staked_sui.stake_activation_epoch
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_stake_activation_epoch">stake_activation_epoch</a>(staked_pera: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
+    staked_pera.stake_activation_epoch
 }
 </code></pre>
 
@@ -994,12 +994,12 @@ Returns true if the input staking pool is inactive.
 
 ## Function `split`
 
-Split StakedSui <code>self</code> to two parts, one with principal <code>split_amount</code>,
+Split StakedPera <code>self</code> to two parts, one with principal <code>split_amount</code>,
 and the remaining principal is left in <code>self</code>.
-All the other parameters of the StakedSui like <code>stake_activation_epoch</code> or <code>pool_id</code> remain the same.
+All the other parameters of the StakedPera like <code>stake_activation_epoch</code> or <code>pool_id</code> remain the same.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_split">split</a>(self: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>, split_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_split">split</a>(self: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>, split_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>
 </code></pre>
 
 
@@ -1008,15 +1008,15 @@ All the other parameters of the StakedSui like <code>stake_activation_epoch</cod
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_split">split</a>(self: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>, split_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> TxContext): <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_split">split</a>(self: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>, split_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> TxContext): <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a> {
     <b>let</b> original_amount = self.principal.value();
-    <b>assert</b>!(split_amount &lt;= original_amount, <a href="staking_pool.md#0x3_staking_pool_EInsufficientSuiTokenBalance">EInsufficientSuiTokenBalance</a>);
+    <b>assert</b>!(split_amount &lt;= original_amount, <a href="staking_pool.md#0x3_staking_pool_EInsufficientPeraTokenBalance">EInsufficientPeraTokenBalance</a>);
     <b>let</b> remaining_amount = original_amount - split_amount;
     // Both resulting parts should have at least <a href="staking_pool.md#0x3_staking_pool_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>.
-    <b>assert</b>!(remaining_amount &gt;= <a href="staking_pool.md#0x3_staking_pool_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>, <a href="staking_pool.md#0x3_staking_pool_EStakedSuiBelowThreshold">EStakedSuiBelowThreshold</a>);
-    <b>assert</b>!(split_amount &gt;= <a href="staking_pool.md#0x3_staking_pool_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>, <a href="staking_pool.md#0x3_staking_pool_EStakedSuiBelowThreshold">EStakedSuiBelowThreshold</a>);
-    <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a> {
-        id: <a href="../sui-framework/object.md#0x2_object_new">object::new</a>(ctx),
+    <b>assert</b>!(remaining_amount &gt;= <a href="staking_pool.md#0x3_staking_pool_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>, <a href="staking_pool.md#0x3_staking_pool_EStakedPeraBelowThreshold">EStakedPeraBelowThreshold</a>);
+    <b>assert</b>!(split_amount &gt;= <a href="staking_pool.md#0x3_staking_pool_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>, <a href="staking_pool.md#0x3_staking_pool_EStakedPeraBelowThreshold">EStakedPeraBelowThreshold</a>);
+    <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a> {
+        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         pool_id: self.pool_id,
         stake_activation_epoch: self.stake_activation_epoch,
         principal: self.principal.<a href="staking_pool.md#0x3_staking_pool_split">split</a>(split_amount),
@@ -1028,15 +1028,15 @@ All the other parameters of the StakedSui like <code>stake_activation_epoch</cod
 
 </details>
 
-<a name="0x3_staking_pool_split_staked_sui"></a>
+<a name="0x3_staking_pool_split_staked_pera"></a>
 
-## Function `split_staked_sui`
+## Function `split_staked_pera`
 
-Split the given StakedSui to the two parts, one with principal <code>split_amount</code>,
+Split the given StakedPera to the two parts, one with principal <code>split_amount</code>,
 transfer the newly split part to the sender address.
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_split_staked_sui">split_staked_sui</a>(stake: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>, split_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_split_staked_pera">split_staked_pera</a>(stake: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>, split_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1045,8 +1045,8 @@ transfer the newly split part to the sender address.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_split_staked_sui">split_staked_sui</a>(stake: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>, split_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> TxContext) {
-    <a href="../sui-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(<a href="staking_pool.md#0x3_staking_pool_split">split</a>(stake, split_amount, ctx), ctx.sender());
+<pre><code><b>public</b> entry <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_split_staked_pera">split_staked_pera</a>(stake: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>, split_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> TxContext) {
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(<a href="staking_pool.md#0x3_staking_pool_split">split</a>(stake, split_amount, ctx), ctx.sender());
 }
 </code></pre>
 
@@ -1054,15 +1054,15 @@ transfer the newly split part to the sender address.
 
 </details>
 
-<a name="0x3_staking_pool_join_staked_sui"></a>
+<a name="0x3_staking_pool_join_staked_pera"></a>
 
-## Function `join_staked_sui`
+## Function `join_staked_pera`
 
-Consume the staked sui <code>other</code> and add its value to <code>self</code>.
+Consume the staked pera <code>other</code> and add its value to <code>self</code>.
 Aborts if some of the staking parameters are incompatible (pool id, stake activation epoch, etc.)
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_join_staked_sui">join_staked_sui</a>(self: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>, other: <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>)
+<pre><code><b>public</b> entry <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_join_staked_pera">join_staked_pera</a>(self: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>, other: <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>)
 </code></pre>
 
 
@@ -1071,9 +1071,9 @@ Aborts if some of the staking parameters are incompatible (pool id, stake activa
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> entry <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_join_staked_sui">join_staked_sui</a>(self: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>, other: <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>) {
-    <b>assert</b>!(<a href="staking_pool.md#0x3_staking_pool_is_equal_staking_metadata">is_equal_staking_metadata</a>(self, &other), <a href="staking_pool.md#0x3_staking_pool_EIncompatibleStakedSui">EIncompatibleStakedSui</a>);
-    <b>let</b> <a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a> {
+<pre><code><b>public</b> entry <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_join_staked_pera">join_staked_pera</a>(self: &<b>mut</b> <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>, other: <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>) {
+    <b>assert</b>!(<a href="staking_pool.md#0x3_staking_pool_is_equal_staking_metadata">is_equal_staking_metadata</a>(self, &other), <a href="staking_pool.md#0x3_staking_pool_EIncompatibleStakedPera">EIncompatibleStakedPera</a>);
+    <b>let</b> <a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a> {
         id,
         pool_id: _,
         stake_activation_epoch: _,
@@ -1093,10 +1093,10 @@ Aborts if some of the staking parameters are incompatible (pool id, stake activa
 
 ## Function `is_equal_staking_metadata`
 
-Returns true if all the staking parameters of the staked sui except the principal are identical
+Returns true if all the staking parameters of the staked pera except the principal are identical
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_is_equal_staking_metadata">is_equal_staking_metadata</a>(self: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>, other: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_is_equal_staking_metadata">is_equal_staking_metadata</a>(self: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>, other: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>): bool
 </code></pre>
 
 
@@ -1105,7 +1105,7 @@ Returns true if all the staking parameters of the staked sui except the principa
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_is_equal_staking_metadata">is_equal_staking_metadata</a>(self: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>, other: &<a href="staking_pool.md#0x3_staking_pool_StakedSui">StakedSui</a>): bool {
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_is_equal_staking_metadata">is_equal_staking_metadata</a>(self: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>, other: &<a href="staking_pool.md#0x3_staking_pool_StakedPera">StakedPera</a>): bool {
     (self.pool_id == other.pool_id) &&
     (self.stake_activation_epoch == other.stake_activation_epoch)
 }
@@ -1139,7 +1139,7 @@ Returns true if all the staking parameters of the staked sui except the principa
     <b>let</b> <b>mut</b> epoch = clamped_epoch.<b>min</b>(epoch);
     <b>let</b> activation_epoch = *pool.activation_epoch.borrow();
 
-    // Find the latest epoch that's earlier than the given epoch <b>with</b> an entry in the <a href="../sui-framework/table.md#0x2_table">table</a>
+    // Find the latest epoch that's earlier than the given epoch <b>with</b> an entry in the <a href="../pera-framework/table.md#0x2_table">table</a>
     <b>while</b> (epoch &gt;= activation_epoch) {
         <b>if</b> (pool.exchange_rates.contains(epoch)) {
             <b>return</b> pool.exchange_rates[epoch]
@@ -1197,7 +1197,7 @@ Returns the total withdrawal from the staking pool this epoch.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_pending_stake_withdraw_amount">pending_stake_withdraw_amount</a>(<a href="staking_pool.md#0x3_staking_pool">staking_pool</a>: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
-    <a href="staking_pool.md#0x3_staking_pool">staking_pool</a>.pending_total_sui_withdraw
+    <a href="staking_pool.md#0x3_staking_pool">staking_pool</a>.pending_total_pera_withdraw
 }
 </code></pre>
 
@@ -1211,7 +1211,7 @@ Returns the total withdrawal from the staking pool this epoch.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_exchange_rates">exchange_rates</a>(pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>): &<a href="../sui-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_exchange_rates">exchange_rates</a>(pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">staking_pool::StakingPool</a>): &<a href="../pera-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>&gt;
 </code></pre>
 
 
@@ -1229,13 +1229,13 @@ Returns the total withdrawal from the staking pool this epoch.
 
 </details>
 
-<a name="0x3_staking_pool_sui_amount"></a>
+<a name="0x3_staking_pool_pera_amount"></a>
 
-## Function `sui_amount`
+## Function `pera_amount`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_sui_amount">sui_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_pera_amount">pera_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
 </code></pre>
 
 
@@ -1244,8 +1244,8 @@ Returns the total withdrawal from the staking pool this epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_sui_amount">sui_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
-    exchange_rate.sui_amount
+<pre><code><b>public</b> <b>fun</b> <a href="staking_pool.md#0x3_staking_pool_pera_amount">pera_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
+    exchange_rate.pera_amount
 }
 </code></pre>
 
@@ -1303,13 +1303,13 @@ Returns true if the provided staking pool is preactive at the provided epoch.
 
 </details>
 
-<a name="0x3_staking_pool_get_sui_amount"></a>
+<a name="0x3_staking_pool_get_pera_amount"></a>
 
-## Function `get_sui_amount`
+## Function `get_pera_amount`
 
 
 
-<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_get_sui_amount">get_sui_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>, token_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
+<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_get_pera_amount">get_pera_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>, token_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
 </code></pre>
 
 
@@ -1318,13 +1318,13 @@ Returns true if the provided staking pool is preactive at the provided epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_get_sui_amount">get_sui_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a>, token_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
+<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_get_pera_amount">get_pera_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a>, token_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
     // When either amount is 0, that means we have no stakes <b>with</b> this pool.
     // The other amount might be non-zero when there's dust left in the pool.
-    <b>if</b> (exchange_rate.sui_amount == 0 || exchange_rate.pool_token_amount == 0) {
+    <b>if</b> (exchange_rate.pera_amount == 0 || exchange_rate.pool_token_amount == 0) {
         <b>return</b> token_amount
     };
-    <b>let</b> res = exchange_rate.sui_amount <b>as</b> u128
+    <b>let</b> res = exchange_rate.pera_amount <b>as</b> u128
             * (token_amount <b>as</b> u128)
             / (exchange_rate.pool_token_amount <b>as</b> u128);
     res <b>as</b> <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
@@ -1341,7 +1341,7 @@ Returns true if the provided staking pool is preactive at the provided epoch.
 
 
 
-<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_get_token_amount">get_token_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>, sui_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
+<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_get_token_amount">get_token_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>, pera_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
 </code></pre>
 
 
@@ -1350,15 +1350,15 @@ Returns true if the provided staking pool is preactive at the provided epoch.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_get_token_amount">get_token_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a>, sui_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
+<pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_get_token_amount">get_token_amount</a>(exchange_rate: &<a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a>, pera_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a> {
     // When either amount is 0, that means we have no stakes <b>with</b> this pool.
     // The other amount might be non-zero when there's dust left in the pool.
-    <b>if</b> (exchange_rate.sui_amount == 0 || exchange_rate.pool_token_amount == 0) {
-        <b>return</b> sui_amount
+    <b>if</b> (exchange_rate.pera_amount == 0 || exchange_rate.pool_token_amount == 0) {
+        <b>return</b> pera_amount
     };
     <b>let</b> res = exchange_rate.pool_token_amount <b>as</b> u128
-            * (sui_amount <b>as</b> u128)
-            / (exchange_rate.sui_amount <b>as</b> u128);
+            * (pera_amount <b>as</b> u128)
+            / (exchange_rate.pera_amount <b>as</b> u128);
     res <b>as</b> <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
 }
 </code></pre>
@@ -1383,7 +1383,7 @@ Returns true if the provided staking pool is preactive at the provided epoch.
 
 
 <pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_initial_exchange_rate">initial_exchange_rate</a>(): <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a> {
-    <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a> { sui_amount: 0, pool_token_amount: 0 }
+    <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">PoolTokenExchangeRate</a> { pera_amount: 0, pool_token_amount: 0 }
 }
 </code></pre>
 
@@ -1408,8 +1408,8 @@ Returns true if the provided staking pool is preactive at the provided epoch.
 
 <pre><code><b>fun</b> <a href="staking_pool.md#0x3_staking_pool_check_balance_invariants">check_balance_invariants</a>(pool: &<a href="staking_pool.md#0x3_staking_pool_StakingPool">StakingPool</a>, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>) {
     <b>let</b> exchange_rate = <a href="staking_pool.md#0x3_staking_pool_pool_token_exchange_rate_at_epoch">pool_token_exchange_rate_at_epoch</a>(pool, epoch);
-    // check that the pool token <a href="../sui-framework/balance.md#0x2_balance">balance</a> and <a href="../sui-framework/sui.md#0x2_sui">sui</a> <a href="../sui-framework/balance.md#0x2_balance">balance</a> ratio matches the exchange rate stored.
-    <b>let</b> expected = <a href="staking_pool.md#0x3_staking_pool_get_token_amount">get_token_amount</a>(&exchange_rate, pool.sui_balance);
+    // check that the pool token <a href="../pera-framework/balance.md#0x2_balance">balance</a> and <a href="../pera-framework/pera.md#0x2_pera">pera</a> <a href="../pera-framework/balance.md#0x2_balance">balance</a> ratio matches the exchange rate stored.
+    <b>let</b> expected = <a href="staking_pool.md#0x3_staking_pool_get_token_amount">get_token_amount</a>(&exchange_rate, pool.pera_balance);
     <b>let</b> actual = pool.pool_token_balance;
     <b>assert</b>!(expected == actual, <a href="staking_pool.md#0x3_staking_pool_ETokenBalancesDoNotMatchExchangeRate">ETokenBalancesDoNotMatchExchangeRate</a>)
 }

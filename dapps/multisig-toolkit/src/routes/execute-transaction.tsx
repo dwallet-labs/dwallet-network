@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { parseSerializedSignature } from '@mysten/sui/cryptography';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
+import { parseSerializedSignature } from '@pera-io/pera/cryptography';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -23,10 +23,10 @@ export default function ExecuteTransaction() {
 	const [signature, setSignature] = useState('');
 
 	const rpcUrl = getFullnodeUrl(network);
-	const client = new SuiClient({
+	const client = new PeraClient({
 		url: rpcUrl,
 	});
-	//const client = useSuiClient();
+	//const client = usePeraClient();
 
 	const {
 		mutate,
@@ -118,11 +118,11 @@ export default function ExecuteTransaction() {
 				<TabsContent value="digest">
 					<Card key={digest}>
 						<CardHeader>
-							<CardTitle>Sui Transaction Digest</CardTitle>
+							<CardTitle>Pera Transaction Digest</CardTitle>
 							<CardDescription>
 								View TX Digest on{' '}
-								<a className="text-blue-500" href={`https://suiexplorer.com/txblock/${digest}`}>
-									Sui Explorer
+								<a className="text-blue-500" href={`https://peraexplorer.com/txblock/${digest}`}>
+									Pera Explorer
 								</a>
 							</CardDescription>
 						</CardHeader>

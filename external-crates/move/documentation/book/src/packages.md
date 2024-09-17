@@ -64,7 +64,7 @@ edition* = <string>      # e.g., "2024.alpha" to use the Move 2024 edition,
 license* = <string>              # e.g., "MIT", "GPL", "Apache 2.0"
 authors* = [<string>,+]  # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
-# Additional fields may be added to this section by external tools. E.g., on Sui the following sections are added:
+# Additional fields may be added to this section by external tools. E.g., on Pera the following sections are added:
 published-at* = "<hex-address>" # The address that the package is published at. Should be set after the first publication.
 
 [dependencies] # (Optional section) Paths to dependencies 
@@ -151,7 +151,7 @@ specified_address = "0xB0B"
 # Local dependency
 LocalDep = { local = "projects/move-awesomeness", addr_subst = { "std" = "0x1" } }
 # Git dependency
-MoveStdlib = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/move-stdlib", rev = "framework/mainnet" }
+MoveStdlib = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/pera-framework/packages/move-stdlib", rev = "framework/mainnet" }
 
 [dev-addresses] # For use when developing this module
 address_to_be_filled_in = "0x101010101"
@@ -232,7 +232,7 @@ source = { local = "../local-dep" }
 ### The `[move.toolchain-version]` Section
 
 As mentioned above, additional fields may be added to the lock file by external
-tools. For example, the Sui package manager adds toolchain version information
+tools. For example, the Pera package manager adds toolchain version information
 to the lock file that can then be used for on-chain source verification:
 
 ```
@@ -241,7 +241,7 @@ to the lock file that can then be used for on-chain source verification:
 [move.toolchain-version]
 compiler-version = <string> # The version of the Move compiler used to build the package, e.g. "1.21.0"
 edition = <string> # The edition of the Move language used to build the package, e.g. "2024.alpha"
-flavor = <string> # The flavor of the Move compiler used to build the package, e.g. "sui"
+flavor = <string> # The flavor of the Move compiler used to build the package, e.g. "pera"
 ```
 
 With that, let's now turn to the compilation process and how named addresses are
@@ -382,9 +382,9 @@ named_addr = "0xC0FFEE"
 ## Usage and Artifacts
 
 The Move package system comes with a command line option as part of the CLI:
-`sui move <command> <command_flags>`. Unless a particular path is provided, all
+`pera move <command> <command_flags>`. Unless a particular path is provided, all
 package commands will run in the current working directory. The full list of
-commands and flags for the Move CLI can be found by running `sui move --help`.
+commands and flags for the Move CLI can be found by running `pera move --help`.
 
 ### Artifacts
 

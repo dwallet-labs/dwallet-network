@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use bytes::Bytes;
 use fastcrypto::hash::Hash;
 use narwhal_executor::get_restored_consensus_output;
@@ -143,7 +143,7 @@ async fn test_recovery() {
         .await
         .unwrap();
 
-        // we expect to have recovered all the certificates from the last commit. The Sui executor engine
+        // we expect to have recovered all the certificates from the last commit. The Pera executor engine
         // will not execute twice the same certificate.
         assert_eq!(consensus_output.len(), 1);
         assert!(

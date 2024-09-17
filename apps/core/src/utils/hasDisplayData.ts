@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiObjectResponse } from '@mysten/sui/client';
+import { PeraObjectResponse } from '@pera-io/pera/client';
 
-export const hasDisplayData = (obj: SuiObjectResponse) => !!obj.data?.display?.data;
+export const hasDisplayData = (obj: PeraObjectResponse) => !!obj.data?.display?.data;

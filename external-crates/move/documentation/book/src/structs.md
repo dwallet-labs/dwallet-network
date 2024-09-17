@@ -476,4 +476,4 @@ module a::m {
 
 Structs can be used to define storage schemas, but the details are different per deployment of Move.
 See the documentation for the [`key` ability](./abilities.md#key) and
-[Sui objects](./abilities/object.md) for more details.
+[Pera objects](./abilities/object.md) for more details.

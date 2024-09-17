@@ -1,18 +1,18 @@
-# Sui Wallet
+# Pera Wallet
 
-A Chrome extension wallet for [Sui](https://sui.io).
+A Chrome extension wallet for [Pera](https://pera.io).
 
 # Set Up
 
 **Requirements**: 18.0.0 or later.
 
-Dependencies are managed using [`pnpm`](https://pnpm.io/). You can start by installing dependencies in the root of the Sui repository:
+Dependencies are managed using [`pnpm`](https://pnpm.io/). You can start by installing dependencies in the root of the Pera repository:
 
 ```
 $ pnpm install
 ```
 
-> All `pnpm` commands below are intended to be run in the root of the Sui repo.
+> All `pnpm` commands below are intended to be run in the root of the Pera repo.
 
 ## Build in watch mode (dev)
 

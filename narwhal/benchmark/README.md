@@ -171,12 +171,12 @@ The file [settings.json](https://github.com/MystenLabs/sui/blob/main/narwhal/ben
 ```json
 {
   "key": {
-    "name": "aws-sui",
-    "path": "/Users/username/.ssh/aws-sui.pem"
+    "name": "aws-pera",
+    "path": "/Users/username/.ssh/aws-pera.pem"
   },
   "port": 5000,
   "repo": {
-    "name": "sui",
+    "name": "pera",
     "url": "https://github.com/mystenlabs/sui",
     "branch": "main"
   },
@@ -216,7 +216,7 @@ The third block (`repo`) contains the information regarding the repository's nam
 
 ```json
 "repo": {
-    "name": "sui",
+    "name": "pera",
     "url": "https://github.com/mystenlabs/sui",
     "branch": "main"
 },

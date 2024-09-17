@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useResolveSuiNSName } from '_app/hooks/useAppResolveSuinsName';
+import { useResolvePeraNSName } from '_app/hooks/useAppResolvePeransName';
 import { useIsWalletDefiEnabled } from '_app/hooks/useIsWalletDefiEnabled';
 import { LargeButton } from '_app/shared/LargeButton';
 import { Text } from '_app/shared/text';
@@ -39,10 +39,10 @@ import {
 	useFormatCoin,
 	useGetDelegatedStake,
 } from '@mysten/core';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
 import { Info12, Pin16, Unpin16 } from '@mysten/icons';
-import { type CoinBalance as CoinBalanceType } from '@mysten/sui/client';
-import { formatAddress, parseStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { type CoinBalance as CoinBalanceType } from '@pera-io/pera/client';
+import { formatAddress, parseStructTag, PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -125,7 +125,7 @@ export function TokenRow({
 	return (
 		<Tag
 			className={clsx(
-				'group flex py-3 pl-1.5 pr-2 rounded hover:bg-sui/10 items-center bg-transparent border-transparent',
+				'group flex py-3 pl-1.5 pr-2 rounded hover:bg-pera/10 items-center bg-transparent border-transparent',
 				onClick && 'hover:cursor-pointer',
 			)}
 			onClick={onClick}
@@ -312,10 +312,10 @@ function getFallbackSymbol(coinType: string) {
 function TokenDetails({ coinType }: TokenDetailsProps) {
 	const isDefiWalletEnabled = useIsWalletDefiEnabled();
 	const [interstitialDismissed, setInterstitialDismissed] = useState<boolean>(false);
-	const activeCoinType = coinType || SUI_TYPE_ARG;
+	const activeCoinType = coinType || PERA_TYPE_ARG;
 	const activeAccount = useActiveAccount();
 	const activeAccountAddress = activeAccount?.address;
-	const domainName = useResolveSuiNSName(activeAccountAddress);
+	const domainName = useResolvePeraNSName(activeAccountAddress);
 
 	const { staleTime, refetchInterval } = useCoinsReFetchingConfig();
 	const {
@@ -323,7 +323,7 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 		isError,
 		isPending,
 		isFetched,
-	} = useSuiClientQuery(
+	} = usePeraClientQuery(
 		'getBalance',
 		{ coinType: activeCoinType, owner: activeAccountAddress! },
 		{ enabled: !!activeAccountAddress, refetchInterval, staleTime },
@@ -348,7 +348,7 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 		data: coinBalances,
 		isPending: coinBalancesLoading,
 		isFetched: coinBalancesFetched,
-	} = useSuiClientQuery(
+	} = usePeraClientQuery(
 		'getAllBalances',
 		{ owner: activeAccountAddress! },
 		{
@@ -401,7 +401,7 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 			/>
 		);
 	}
-	const accountHasSui = coinBalances?.some(({ coinType }) => coinType === SUI_TYPE_ARG);
+	const accountHasPera = coinBalances?.some(({ coinType }) => coinType === PERA_TYPE_ARG);
 
 	if (!activeAccountAddress) {
 		return null;
@@ -446,13 +446,13 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 										<CoinBalance amount={tokenBalance} type={activeCoinType} />
 									</div>
 
-									{!accountHasSui ? (
+									{!accountHasPera ? (
 										<div className="flex flex-col gap-5">
 											<div className="flex flex-col flex-nowrap justify-center items-center text-center px-2.5">
 												<Text variant="pBodySmall" color="gray-80" weight="normal">
 													{isMainnet
-														? 'Buy SUI to get started'
-														: 'To send transactions on the Sui network, you need SUI in your wallet.'}
+														? 'Buy PERA to get started'
+														: 'To send transactions on the Pera network, you need PERA in your wallet.'}
 												</Text>
 											</div>
 											<FaucetRequestButton />
@@ -470,14 +470,14 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 											<LargeButton
 												spacing="sm"
 												className={
-													!accountHasSui && isMainnet
-														? 'col-span-3 !bg-sui-primaryBlue2023 !text-white'
+													!accountHasPera && isMainnet
+														? 'col-span-3 !bg-pera-primaryBlue2023 !text-white'
 														: ''
 												}
-												primary={!accountHasSui}
+												primary={!accountHasPera}
 												center
 												to="/onramp"
-												disabled={(coinType && coinType !== SUI_TYPE_ARG) || !providers?.length}
+												disabled={(coinType && coinType !== PERA_TYPE_ARG) || !providers?.length}
 											>
 												Buy
 											</LargeButton>
@@ -522,7 +522,7 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 										>
 											Swap
 										</LargeButton>
-										{!accountHasSui && (
+										{!accountHasPera && (
 											<LargeButton disabled to="/stake" center>
 												Stake
 											</LargeButton>
@@ -530,7 +530,7 @@ function TokenDetails({ coinType }: TokenDetailsProps) {
 									</div>
 
 									<div className="w-full">
-										{accountHasSui || delegatedStake?.length ? (
+										{accountHasPera || delegatedStake?.length ? (
 											<TokenIconLink
 												disabled={!tokenBalance}
 												accountAddress={activeAccountAddress}

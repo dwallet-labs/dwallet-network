@@ -12,15 +12,15 @@ import {
 	ConnectButton,
 	useCurrentAccount,
 	useReportTransactionEffects,
-	useSuiClient,
+	usePeraClient,
 } from '@mysten/dapp-kit';
-import { toB64 } from '@mysten/sui/utils';
+import { toB64 } from '@pera-io/pera/utils';
 import { useState } from 'react';
 
 function MyComponent() {
 	const { mutateAsync: reportTransactionEffects } = useReportTransactionEffects();
 	const [signature, setSignature] = useState('');
-	const client = useSuiClient();
+	const client = usePeraClient();
 	const currentAccount = useCurrentAccount();
 
 	return (

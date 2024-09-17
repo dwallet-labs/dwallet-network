@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 /* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable no-restricted-globals */
 
@@ -45,7 +45,7 @@ async function main() {
 
 				name: 'dAppName',
 				message: 'What is the name of your dApp? (this will be used as the directory name)',
-				initial: 'my-first-sui-dapp',
+				initial: 'my-first-pera-dapp',
 			},
 		].filter((question) => !args[question.name as 'template']),
 	);
@@ -96,7 +96,7 @@ async function collectFiles(template: string, dAppName: string) {
 				if (entry === 'package.json') {
 					const json = JSON.parse(content.toString());
 					json.name = dAppName;
-					json.dependencies['@mysten/sui'] = dependencies['@mysten/sui'];
+					json.dependencies['@pera-io/pera'] = dependencies['@pera-io/pera'];
 					json.dependencies['@mysten/dapp-kit'] = dependencies['@mysten/dapp-kit'];
 
 					content = Buffer.from(JSON.stringify(json, null, 2));

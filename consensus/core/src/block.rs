@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{
     fmt,
@@ -30,7 +30,7 @@ pub(crate) const GENESIS_ROUND: Round = 0;
 /// Block proposal timestamp in milliseconds.
 pub type BlockTimestampMs = u64;
 
-/// Sui transaction in serialised bytes
+/// Pera transaction in serialised bytes
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, Default, Debug)]
 pub struct Transaction {
     data: Bytes,

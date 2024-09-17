@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Image32, LockLocked16, MediaPlay16 } from '@mysten/icons';
 import { cva } from 'class-variance-authority';

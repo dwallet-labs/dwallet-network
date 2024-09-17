@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useCallback } from 'react';
 
 const backendUrl =
-	process.env.NODE_ENV === 'development' ? 'http://localhost:3003' : 'https://apps-backend.sui.io';
+	process.env.NODE_ENV === 'development' ? 'http://localhost:3003' : 'https://apps-backend.pera.io';
 
 export function useAppsBackend() {
 	const request = useCallback(

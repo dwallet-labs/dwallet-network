@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromB64 } from '@mysten/bcs';
 import { blake2b } from '@noble/hashes/blake2b';
@@ -20,7 +20,7 @@ import {
 	MultiSigStruct,
 	parsePartialSignatures,
 } from '../../../src/multisig/publickey';
-import { normalizeSuiAddress } from '../../../src/utils/sui-types.js';
+import { normalizePeraAddress } from '../../../src/utils/pera-types.js';
 
 describe('Publickey', () => {
 	let k1: Ed25519Keypair,
@@ -236,7 +236,7 @@ describe('Publickey', () => {
 		]);
 	});
 
-	it('`toSuiAddress()` should return correct sui address associated with multisig publickey', async () => {
+	it('`toPeraAddress()` should return correct pera address associated with multisig publickey', async () => {
 		const multiSigPublicKey = MultiSigPublicKey.fromPublicKeys({
 			threshold: 3,
 			publicKeys: [
@@ -252,17 +252,17 @@ describe('Publickey', () => {
 		tmp.set(bcs.U16.serialize(3).toBytes(), 1);
 		let i = 3;
 		for (const { publicKey, weight } of multiSigPublicKey.getPublicKeys()) {
-			const bytes = publicKey.toSuiBytes();
+			const bytes = publicKey.toPeraBytes();
 			tmp.set(bytes, i);
 			i += bytes.length;
 			tmp.set([weight], i++);
 		}
-		const multisigSuiAddress = normalizeSuiAddress(
+		const multisigPeraAddress = normalizePeraAddress(
 			bytesToHex(blake2b(tmp.slice(0, i), { dkLen: 32 })),
 		);
 
-		expect(multiSigPublicKey.toSuiAddress()).toEqual(multisigSuiAddress);
-		expect(multiSigPublicKey.toSuiAddress()).toEqual(
+		expect(multiSigPublicKey.toPeraAddress()).toEqual(multisigPeraAddress);
+		expect(multiSigPublicKey.toPeraAddress()).toEqual(
 			'0x8ee027fe556a3f6c0a23df64f090d2429fec0bb21f55594783476e81de2dec27',
 		);
 	});

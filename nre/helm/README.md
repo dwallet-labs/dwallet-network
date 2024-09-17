@@ -1,5 +1,5 @@
 # Helm Charts
-This directory contains helm charts to deploy Sui RPC2.0 infra. These charts are intended to be starting points for RPC2.0 providers. Not everything here will necessarily work out of the box to fit each provider's need. Some of this infra has some scope/setup needed outside of these charts. It's encouraged to clone these files and tweak to your infra needs.
+This directory contains helm charts to deploy Pera RPC2.0 infra. These charts are intended to be starting points for RPC2.0 providers. Not everything here will necessarily work out of the box to fit each provider's need. Some of this infra has some scope/setup needed outside of these charts. It's encouraged to clone these files and tweak to your infra needs.
 
 (Currently) Out of Scope of these Helm charts:
 - ingress setup
@@ -35,7 +35,7 @@ More Documentation on this coming soon! The storage amount recommendations will 
 
 # GraphQL
 ### Containers
-**graphql** - container running sui-graphql rpc endpoint. Requires a Database updated by the indexer-writer.
+**graphql** - container running pera-graphql rpc endpoint. Requires a Database updated by the indexer-writer.
 
 ### Resource Recommendations
 
@@ -45,7 +45,7 @@ More Documentation on this coming soon! The storage amount recommendations will 
 
 # Indexer-Reader
 ### Containers
-**indexer-reader** - sui-indexer-reader jsonrpc endpoint. This offers backwards compatibility with current sui-node json rpc. This deployment is only needed as we transition to the graphql service. This is not needed if you do not want to support the jsonrpc.
+**indexer-reader** - pera-indexer-reader jsonrpc endpoint. This offers backwards compatibility with current pera-node json rpc. This deployment is only needed as we transition to the graphql service. This is not needed if you do not want to support the jsonrpc.
 
 ### Resource Recommendations
 **Cpu:** 4 cores / 8 vCPU
@@ -54,7 +54,7 @@ More Documentation on this coming soon! The storage amount recommendations will 
 
 # Indexer-Writer
 ### Containers
-**sui-indexer-writer** - Indexer writer syncs and indexes sui checkpoint data into a Postgres database. Checkpoint data can be pulled from a fullnode or a cloud provider hosted bucket. More info and available buckets can be found in sui [doc site](https://docs.sui.io/guides/developer/advanced/custom-indexer#remote-reader).
+**pera-indexer-writer** - Indexer writer syncs and indexes pera checkpoint data into a Postgres database. Checkpoint data can be pulled from a fullnode or a cloud provider hosted bucket. More info and available buckets can be found in pera [doc site](https://docs.pera.io/guides/developer/advanced/custom-indexer#remote-reader).
 
 ### Resource Recommendations
 **Cpu:** 16 cores / 32 vCPU
@@ -65,7 +65,7 @@ More Documentation on this coming soon! The storage amount recommendations will 
 # How to run Helm for Deployments
 
 - [Install Helm](https://helm.sh/docs/intro/install/) version 3+
-- Clone sui repo
+- Clone pera repo
 - Navigate to nre/helm
 - Modify values.yaml files for the service you want to deploy with helm
 - Ensure changes still render. Note that successful render does not mean a successful deploy but its step 1 regardless. `helm template <chart-name> --debug`

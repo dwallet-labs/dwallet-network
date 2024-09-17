@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type BalanceChange } from '@mysten/sui/client';
+import { type BalanceChange } from '@pera-io/pera/client';
 import { useQuery } from '@tanstack/react-query';
 
 import { useDryRunContext } from '../DryRunContext';

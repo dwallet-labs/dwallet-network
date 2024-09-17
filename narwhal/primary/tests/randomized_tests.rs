@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use config::{Authority, AuthorityIdentifier, Committee, Stake};
 use fastcrypto::hash::Hash;
 use fastcrypto::hash::HashFunction;
@@ -21,7 +21,7 @@ use std::num::NonZeroUsize;
 use std::ops::RangeInclusive;
 use std::sync::Arc;
 use storage::ConsensusStore;
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use test_utils::latest_protocol_version;
 use test_utils::mock_certificate_with_rand;
 use test_utils::CommitteeFixture;

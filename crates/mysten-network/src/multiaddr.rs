@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use eyre::{eyre, Result};
 use std::{
@@ -374,7 +374,7 @@ mod test {
 
     #[test]
     fn test_to_socket_addr_unsupported_protocol() {
-        let multi_addr_dns = Multiaddr(multiaddr!(Dnsaddr("mysten.sui"), Tcp(10500u16)));
+        let multi_addr_dns = Multiaddr(multiaddr!(Dnsaddr("mysten.pera"), Tcp(10500u16)));
         let _ = multi_addr_dns
             .to_socket_addr()
             .expect_err("DNS is unsupported");
@@ -386,14 +386,14 @@ mod test {
         assert!(multi_addr_ipv4.is_loosely_valid_tcp_addr());
         let multi_addr_ipv6 = Multiaddr(multiaddr!(Ip6([172, 0, 0, 1, 1, 1, 1, 1]), Tcp(10500u16)));
         assert!(multi_addr_ipv6.is_loosely_valid_tcp_addr());
-        let multi_addr_dns = Multiaddr(multiaddr!(Dnsaddr("mysten.sui"), Tcp(10500u16)));
+        let multi_addr_dns = Multiaddr(multiaddr!(Dnsaddr("mysten.pera"), Tcp(10500u16)));
         assert!(multi_addr_dns.is_loosely_valid_tcp_addr());
 
         let multi_addr_ipv4 = Multiaddr(multiaddr!(Ip4([127, 0, 0, 1]), Udp(10500u16)));
         assert!(!multi_addr_ipv4.is_loosely_valid_tcp_addr());
         let multi_addr_ipv6 = Multiaddr(multiaddr!(Ip6([172, 0, 0, 1, 1, 1, 1, 1]), Udp(10500u16)));
         assert!(!multi_addr_ipv6.is_loosely_valid_tcp_addr());
-        let multi_addr_dns = Multiaddr(multiaddr!(Dnsaddr("mysten.sui"), Udp(10500u16)));
+        let multi_addr_dns = Multiaddr(multiaddr!(Dnsaddr("mysten.pera"), Udp(10500u16)));
         assert!(!multi_addr_dns.is_loosely_valid_tcp_addr());
 
         let invalid_multi_addr_ipv4 = Multiaddr(multiaddr!(Ip4([127, 0, 0, 1])));
@@ -406,8 +406,8 @@ mod test {
         assert_eq!(Some("127.0.0.1".to_string()), multi_addr_ip4.hostname());
         assert_eq!(Some(10500u16), multi_addr_ip4.port());
 
-        let multi_addr_dns = Multiaddr(multiaddr!(Dns("mysten.sui"), Tcp(10501u16)));
-        assert_eq!(Some("mysten.sui".to_string()), multi_addr_dns.hostname());
+        let multi_addr_dns = Multiaddr(multiaddr!(Dns("mysten.pera"), Tcp(10501u16)));
+        assert_eq!(Some("mysten.pera".to_string()), multi_addr_dns.hostname());
         assert_eq!(Some(10501u16), multi_addr_dns.port());
     }
 
@@ -426,13 +426,13 @@ mod test {
         .unwrap();
         assert_eq!("[f:f:f:f:f:f:f:1]:10500".to_string(), addr_ip6.to_string());
 
-        let addr_dns = Multiaddr(multiaddr!(Dns("mysten.sui"), Udp(10501u16)))
+        let addr_dns = Multiaddr(multiaddr!(Dns("mysten.pera"), Udp(10501u16)))
             .to_anemo_address()
             .unwrap();
-        assert_eq!("mysten.sui:10501".to_string(), addr_dns.to_string());
+        assert_eq!("mysten.pera:10501".to_string(), addr_dns.to_string());
 
         let addr_invalid =
-            Multiaddr(multiaddr!(Dns("mysten.sui"), Tcp(10501u16))).to_anemo_address();
+            Multiaddr(multiaddr!(Dns("mysten.pera"), Tcp(10501u16))).to_anemo_address();
         assert!(addr_invalid.is_err());
     }
 
@@ -451,7 +451,7 @@ mod test {
         assert_eq!(Some("::".to_string()), multi_addr_ip6.hostname());
         assert_eq!(Some(10500u16), multi_addr_ip4.port());
 
-        let multi_addr_dns = Multiaddr(multiaddr!(Dns("mysten.sui"), Tcp(10501u16))).with_zero_ip();
+        let multi_addr_dns = Multiaddr(multiaddr!(Dns("mysten.pera"), Tcp(10501u16))).with_zero_ip();
         assert_eq!(Some("0.0.0.0".to_string()), multi_addr_dns.hostname());
         assert_eq!(Some(10501u16), multi_addr_dns.port());
     }
@@ -472,7 +472,7 @@ mod test {
         assert_eq!(Some(10500u16), multi_addr_ip4.port());
 
         let multi_addr_dns =
-            Multiaddr(multiaddr!(Dns("mysten.sui"), Tcp(10501u16))).with_localhost_ip();
+            Multiaddr(multiaddr!(Dns("mysten.pera"), Tcp(10501u16))).with_localhost_ip();
         assert_eq!(Some("127.0.0.1".to_string()), multi_addr_dns.hostname());
         assert_eq!(Some(10501u16), multi_addr_dns.port());
     }

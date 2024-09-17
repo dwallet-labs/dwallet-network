@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { describe, expect, it } from 'vitest';
 
 import {
-	isValidSuiAddress,
+	isValidPeraAddress,
 	isValidTransactionDigest,
-	normalizeSuiAddress,
+	normalizePeraAddress,
 } from '../../../src/utils';
 
 describe('String type guards', () => {
@@ -28,14 +28,14 @@ describe('String type guards', () => {
 		});
 	});
 
-	describe('isValidSuiAddress() / isValidObjectID()', () => {
+	describe('isValidPeraAddress() / isValidObjectID()', () => {
 		it('rejects non-hex strings', () => {
 			expectAll(
 				[
 					'MDpQc 1IIzkie1dJdj nfm85XmRCJmk KHVUU05Abg==',
 					'X09wJFxwQDdTU1tzMy5NJXdSTnknPCh9J0tNUCdmIw  ',
 				],
-				isValidSuiAddress,
+				isValidPeraAddress,
 				false,
 			);
 		});
@@ -48,7 +48,7 @@ describe('String type guards', () => {
 					'0X5f713bef531629b47dd1bdbb382acec5224fc9abc16133e3',
 					'0x503ff67d9291215ffccafddbd08d86e86b3425c6356c9679',
 				],
-				isValidSuiAddress,
+				isValidPeraAddress,
 				false,
 			);
 		});
@@ -61,7 +61,7 @@ describe('String type guards', () => {
 					'0X000000000000000000000000dce47e3e523b5e52a36d74295c0d83d91f80b47c',
 					'0x0000000000000000000000004288ba9932cc115784794fcfb709213f30d40a54',
 				],
-				isValidSuiAddress,
+				isValidPeraAddress,
 				true,
 			);
 		});
@@ -76,7 +76,7 @@ describe('String type guards', () => {
 					'0x0000000000000000000000000000000000000000000000000000000000000002',
 					'0X000000000000000000000000000000000000000000000000000000000000002',
 				],
-				normalizeSuiAddress,
+				normalizePeraAddress,
 				'0x0000000000000000000000000000000000000000000000000000000000000002',
 			);
 		});

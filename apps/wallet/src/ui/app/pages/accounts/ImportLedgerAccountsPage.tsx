@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Button } from '_src/ui/app/shared/ButtonUI';
 import { Link } from '_src/ui/app/shared/Link';
@@ -23,7 +23,7 @@ import {
 	type DerivedLedgerAccount,
 } from '../../components/ledger/useDeriveLedgerAccounts';
 import Overlay from '../../components/overlay';
-import { getSuiApplicationErrorMessage } from '../../helpers/errorMessages';
+import { getPeraApplicationErrorMessage } from '../../helpers/errorMessages';
 import { useAccounts } from '../../hooks/useAccounts';
 
 const numLedgerAccountsToDeriveByDefault = 10;
@@ -50,7 +50,7 @@ export function ImportLedgerAccountsPage() {
 
 	useEffect(() => {
 		if (ledgerError) {
-			toast.error(getSuiApplicationErrorMessage(ledgerError) || 'Something went wrong.');
+			toast.error(getPeraApplicationErrorMessage(ledgerError) || 'Something went wrong.');
 			navigate(-1);
 		}
 	}, [ledgerError, navigate]);

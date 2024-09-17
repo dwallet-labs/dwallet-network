@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module sui_system::genesis {
+module pera_system::genesis {
     use std::vector;
-    use sui::balance::{Self, Balance};
-    use sui::object::UID;
-    use sui::sui::SUI;
-    use sui::tx_context::{Self, TxContext};
+    use pera::balance::{Self, Balance};
+    use pera::object::UID;
+    use pera::pera::PERA;
+    use pera::tx_context::{Self, TxContext};
     use std::option::Option;
 
-    use sui_system::sui_system;
-    use sui_system::validator;
+    use pera_system::pera_system;
+    use pera_system::validator;
 
     public struct GenesisValidatorMetadata has drop, copy {
         name: vector<u8>,
@@ -18,7 +18,7 @@ module sui_system::genesis {
         image_url: vector<u8>,
         project_url: vector<u8>,
 
-        sui_address: address,
+        pera_address: address,
 
         gas_price: u64,
         commission_rate: u64,
@@ -53,19 +53,19 @@ module sui_system::genesis {
     }
 
     public struct TokenDistributionSchedule has drop {
-        stake_subsidy_fund_mist: u64,
+        stake_subsidy_fund_npera: u64,
         allocations: vector<TokenAllocation>,
     }
 
     public struct TokenAllocation has drop {
         recipient_address: address,
-        amount_mist: u64,
+        amount_npera: u64,
         staked_with_validator: Option<address>,
     }
 
     fun create(
-        sui_system_state_id: UID,
-        mut sui_supply: Balance<SUI>,
+        pera_system_state_id: UID,
+        mut pera_supply: Balance<PERA>,
         genesis_chain_parameters: GenesisChainParameters,
         genesis_validators: vector<GenesisValidatorMetadata>,
         _token_distribution_schedule: TokenDistributionSchedule,
@@ -82,7 +82,7 @@ module sui_system::genesis {
                 description: _,
                 image_url: _,
                 project_url: _,
-                sui_address,
+                pera_address,
                 gas_price: _,
                 commission_rate: _,
                 protocol_public_key,
@@ -96,7 +96,7 @@ module sui_system::genesis {
             } = *vector::borrow(&genesis_validators, i);
 
             let validator = validator::new(
-                sui_address,
+                pera_address,
                 protocol_public_key,
                 network_public_key,
                 worker_public_key,
@@ -104,7 +104,7 @@ module sui_system::genesis {
                 p2p_address,
                 primary_address,
                 worker_address,
-                balance::split(&mut sui_supply, 2500),
+                balance::split(&mut pera_supply, 2500),
                 ctx
             );
 
@@ -113,10 +113,10 @@ module sui_system::genesis {
             i = i + 1;
         };
 
-        sui_system::create(
-            sui_system_state_id,
+        pera_system::create(
+            pera_system_state_id,
             validators,
-            sui_supply,     // storage_fund
+            pera_supply,     // storage_fund
             genesis_chain_parameters.protocol_version,
             genesis_chain_parameters.chain_start_timestamp_ms,
             genesis_chain_parameters.epoch_duration_ms,

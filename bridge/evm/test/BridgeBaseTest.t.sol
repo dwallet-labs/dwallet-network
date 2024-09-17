@@ -1,11 +1,11 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "../contracts/BridgeCommittee.sol";
 import "../contracts/BridgeVault.sol";
 import "../contracts/BridgeLimiter.sol";
-import "../contracts/SuiBridge.sol";
+import "../contracts/PeraBridge.sol";
 import "../contracts/BridgeConfig.sol";
 
 contract BridgeBaseTest is Test {
@@ -39,7 +39,7 @@ contract BridgeBaseTest is Test {
 
     uint64 USD_VALUE_MULTIPLIER = 100000000; // 8 DP accuracy
 
-    uint64 SUI_PRICE = 1_28000000;
+    uint64 PERA_PRICE = 1_28000000;
     uint64 BTC_PRICE = 43251_89000000;
     uint64 ETH_PRICE = 2596_96000000;
     uint64 USDC_PRICE = 1_00000000;
@@ -52,7 +52,7 @@ contract BridgeBaseTest is Test {
     uint16 minStakeRequired = 10000;
 
     BridgeCommittee public committee;
-    SuiBridge public bridge;
+    PeraBridge public bridge;
     BridgeVault public vault;
     BridgeLimiter public limiter;
     BridgeConfig public config;
@@ -107,7 +107,7 @@ contract BridgeBaseTest is Test {
         supportedChains = new uint8[](1);
         supportedChains[0] = 0;
         tokenPrices = new uint64[](5);
-        tokenPrices[0] = SUI_PRICE;
+        tokenPrices[0] = PERA_PRICE;
         tokenPrices[1] = BTC_PRICE;
         tokenPrices[2] = ETH_PRICE;
         tokenPrices[3] = USDC_PRICE;
@@ -133,7 +133,7 @@ contract BridgeBaseTest is Test {
 
         // deploy bridge =====================================================================
 
-        bridge = new SuiBridge();
+        bridge = new PeraBridge();
         bridge.initialize(address(committee), address(vault), address(limiter));
         vault.transferOwnership(address(bridge));
         limiter.transferOwnership(address(bridge));

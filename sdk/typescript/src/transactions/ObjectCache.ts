@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { bcs } from '../bcs/index.js';
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import { normalizePeraAddress } from '../utils/pera-types.js';
 import type { OpenMoveTypeSignature } from './data/internal.js';
 import type { TransactionPlugin } from './json-rpc-resolver.js';
 
@@ -76,12 +76,12 @@ export abstract class AsyncCache {
 	}
 
 	async getMoveFunctionDefinition(ref: { package: string; module: string; function: string }) {
-		const functionName = `${normalizeSuiAddress(ref.package)}::${ref.module}::${ref.function}`;
+		const functionName = `${normalizePeraAddress(ref.package)}::${ref.module}::${ref.function}`;
 		return this.get('MoveFunction', functionName);
 	}
 
 	async addMoveFunctionDefinition(functionEntry: MoveFunctionCacheEntry) {
-		const pkg = normalizeSuiAddress(functionEntry.package);
+		const pkg = normalizePeraAddress(functionEntry.package);
 		const functionName = `${pkg}::${functionEntry.module}::${functionEntry.function}`;
 		const entry = {
 			...functionEntry,
@@ -94,7 +94,7 @@ export abstract class AsyncCache {
 	}
 
 	async deleteMoveFunctionDefinition(ref: { package: string; module: string; function: string }) {
-		const functionName = `${normalizeSuiAddress(ref.package)}::${ref.module}::${ref.function}`;
+		const functionName = `${normalizePeraAddress(ref.package)}::${ref.module}::${ref.function}`;
 		await this.delete('MoveFunction', functionName);
 	}
 

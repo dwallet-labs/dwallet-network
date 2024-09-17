@@ -4,7 +4,7 @@ version = "0.0.1"
 edition = "2024.beta"
 
 [dependencies]
-MoveStdlib = { local = "../../../../sui-framework/packages/move-stdlib" }
+MoveStdlib = { local = "../../../../pera-framework/packages/move-stdlib" }
 
 [addresses]
 base =  "0x0"

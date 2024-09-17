@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import BottomMenuLayout, { Content, Menu } from '_app/shared/bottom-menu-layout';
 import { Button } from '_app/shared/ButtonUI';
@@ -8,20 +8,20 @@ import { Text } from '_app/shared/text';
 import Loading from '_components/loading';
 import { parseAmount } from '_helpers';
 import { useCoinsReFetchingConfig } from '_hooks';
-import { Coin } from '_redux/slices/sui-objects/Coin';
+import { Coin } from '_redux/slices/pera-objects/Coin';
 import { ampli } from '_src/shared/analytics/ampli';
 import {
 	DELEGATED_STAKES_QUERY_REFETCH_INTERVAL,
 	DELEGATED_STAKES_QUERY_STALE_TIME,
-	MIN_NUMBER_SUI_TO_STAKE,
+	MIN_NUMBER_PERA_TO_STAKE,
 } from '_src/shared/constants';
 import { FEATURES } from '_src/shared/experimentation/features';
 import { useFeatureIsOn } from '@growthbook/growthbook-react';
 import { useCoinMetadata, useGetDelegatedStake } from '@mysten/core';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
 import { ArrowLeft16 } from '@mysten/icons';
-import type { StakeObject } from '@mysten/sui/client';
-import { MIST_PER_SUI, SUI_TYPE_ARG } from '@mysten/sui/utils';
+import type { StakeObject } from '@pera-io/pera/client';
+import { NPERA_PER_PERA, PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import * as Sentry from '@sentry/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Formik } from 'formik';
@@ -37,7 +37,7 @@ import { useQredoTransaction } from '../../hooks/useQredoTransaction';
 import { useSigner } from '../../hooks/useSigner';
 import { QredoActionIgnoredByUser } from '../../QredoSigner';
 import { getDelegationDataByStakeId } from '../getDelegationByStakeId';
-import { getStakeSuiBySuiId } from '../getStakeSuiBySuiId';
+import { getStakePeraByPeraId } from '../getStakePeraByPeraId';
 import StakeForm from './StakeForm';
 import { UnStakeForm } from './UnstakeForm';
 import { createStakeTransaction, createUnstakeTransaction } from './utils/transaction';
@@ -51,19 +51,19 @@ const initialValues = {
 export type FormValues = typeof initialValues;
 
 function StakingCard() {
-	const coinType = SUI_TYPE_ARG;
+	const coinType = PERA_TYPE_ARG;
 	const activeAccount = useActiveAccount();
 	const accountAddress = activeAccount?.address;
 	const { staleTime, refetchInterval } = useCoinsReFetchingConfig();
-	const { data: suiBalance, isPending: loadingSuiBalances } = useSuiClientQuery(
+	const { data: peraBalance, isPending: loadingPeraBalances } = usePeraClientQuery(
 		'getBalance',
-		{ coinType: SUI_TYPE_ARG, owner: accountAddress! },
+		{ coinType: PERA_TYPE_ARG, owner: accountAddress! },
 		{ refetchInterval, staleTime, enabled: !!accountAddress },
 	);
-	const coinBalance = BigInt(suiBalance?.totalBalance || 0);
+	const coinBalance = BigInt(peraBalance?.totalBalance || 0);
 	const [searchParams] = useSearchParams();
 	const validatorAddress = searchParams.get('address');
-	const stakeSuiIdParams = searchParams.get('staked');
+	const stakePeraIdParams = searchParams.get('staked');
 	const unstake = searchParams.get('unstake') === 'true';
 	const { data: allDelegation, isPending } = useGetDelegatedStake({
 		address: accountAddress || '',
@@ -75,29 +75,29 @@ function StakingCard() {
 	);
 
 	const { data: system, isPending: validatorsisPending } =
-		useSuiClientQuery('getLatestSuiSystemState');
+		usePeraClientQuery('getLatestPeraSystemState');
 
 	const totalTokenBalance = useMemo(() => {
 		if (!allDelegation) return 0n;
 		// return only the total amount of tokens staked for a specific stakeId
-		return getStakeSuiBySuiId(allDelegation, stakeSuiIdParams);
-	}, [allDelegation, stakeSuiIdParams]);
+		return getStakePeraByPeraId(allDelegation, stakePeraIdParams);
+	}, [allDelegation, stakePeraIdParams]);
 
 	const stakeData = useMemo(() => {
-		if (!allDelegation || !stakeSuiIdParams) return null;
+		if (!allDelegation || !stakePeraIdParams) return null;
 		// return delegation data for a specific stakeId
-		return getDelegationDataByStakeId(allDelegation, stakeSuiIdParams);
-	}, [allDelegation, stakeSuiIdParams]);
+		return getDelegationDataByStakeId(allDelegation, stakePeraIdParams);
+	}, [allDelegation, stakePeraIdParams]);
 
 	const coinSymbol = useMemo(() => (coinType && Coin.getCoinSymbol(coinType)) || '', [coinType]);
 
-	const suiEarned =
+	const peraEarned =
 		(stakeData as Extract<StakeObject, { estimatedReward: string }>)?.estimatedReward || '0';
 
 	const { data: metadata } = useCoinMetadata(coinType);
 	const coinDecimals = metadata?.decimals ?? 0;
-	// set minimum stake amount to 1 SUI
-	const minimumStake = parseAmount(MIN_NUMBER_SUI_TO_STAKE.toString(), coinDecimals);
+	// set minimum stake amount to 1 PERA
+	const minimumStake = parseAmount(MIN_NUMBER_PERA_TO_STAKE.toString(), coinDecimals);
 
 	const validationSchema = useMemo(
 		() => createValidationSchema(coinBalance, coinSymbol, coinDecimals, unstake, minimumStake),
@@ -107,7 +107,7 @@ function StakingCard() {
 	const queryClient = useQueryClient();
 	const delegationId = useMemo(() => {
 		if (!stakeData || stakeData.status === 'Pending') return null;
-		return stakeData.stakedSuiId;
+		return stakeData.stakedPeraId;
 	}, [stakeData]);
 
 	const navigate = useNavigate();
@@ -152,16 +152,16 @@ function StakingCard() {
 			}
 		},
 		onSuccess: (_, { amount, validatorAddress }) => {
-			ampli.stakedSui({
-				stakedAmount: Number(amount / MIST_PER_SUI),
+			ampli.stakedPera({
+				stakedAmount: Number(amount / NPERA_PER_PERA),
 				validatorAddress: validatorAddress,
 			});
 		},
 	});
 
 	const unStakeToken = useMutation({
-		mutationFn: async ({ stakedSuiId }: { stakedSuiId: string }) => {
-			if (!stakedSuiId || !signer) {
+		mutationFn: async ({ stakedPeraId }: { stakedPeraId: string }) => {
+			if (!stakedPeraId || !signer) {
 				throw new Error('Failed, missing required field.');
 			}
 
@@ -169,7 +169,7 @@ function StakingCard() {
 				name: 'stake',
 			});
 			try {
-				const transactionBlock = createUnstakeTransaction(stakedSuiId);
+				const transactionBlock = createUnstakeTransaction(stakedPeraId);
 				return await signer.signAndExecuteTransactionBlock(
 					{
 						transactionBlock,
@@ -189,7 +189,7 @@ function StakingCard() {
 			}
 		},
 		onSuccess: () => {
-			ampli.unstakedSui({
+			ampli.unstakedPera({
 				validatorAddress: validatorAddress!,
 			});
 		},
@@ -206,11 +206,11 @@ function StakingCard() {
 				let txDigest;
 				if (unstake) {
 					// check for delegation data
-					if (!stakeData || !stakeSuiIdParams || stakeData.status === 'Pending') {
+					if (!stakeData || !stakePeraIdParams || stakeData.status === 'Pending') {
 						return;
 					}
 					response = await unStakeToken.mutateAsync({
-						stakedSuiId: stakeSuiIdParams,
+						stakedPeraId: stakePeraIdParams,
 					});
 
 					txDigest = response.digest;
@@ -270,7 +270,7 @@ function StakingCard() {
 			queryClient,
 			navigate,
 			stakeData,
-			stakeSuiIdParams,
+			stakePeraIdParams,
 			unStakeToken,
 			stakeToken,
 		],
@@ -281,7 +281,7 @@ function StakingCard() {
 	}
 	return (
 		<div className="flex flex-col flex-nowrap flex-grow w-full">
-			<Loading loading={isPending || validatorsisPending || loadingSuiBalances}>
+			<Loading loading={isPending || validatorsisPending || loadingPeraBalances}>
 				<Formik
 					initialValues={initialValues}
 					validationSchema={validationSchema}
@@ -297,10 +297,10 @@ function StakingCard() {
 
 								{unstake ? (
 									<UnStakeForm
-										stakedSuiId={stakeSuiIdParams!}
+										stakedPeraId={stakePeraIdParams!}
 										coinBalance={totalTokenBalance}
 										coinType={coinType}
-										stakingReward={suiEarned}
+										stakingReward={peraEarned}
 										epoch={Number(system?.epoch || 0)}
 									/>
 								) : (
@@ -322,7 +322,7 @@ function StakingCard() {
 									<div className="flex-1 mt-7.5">
 										<Collapsible title="Staking Rewards" defaultOpen>
 											<Text variant="pSubtitle" color="steel-dark" weight="normal">
-												Staked SUI starts counting as validator’s stake at the end of the Epoch in
+												Staked PERA starts counting as validator’s stake at the end of the Epoch in
 												which it was staked. Rewards are earned separately for each Epoch and become
 												available at the end of each Epoch.
 											</Text>

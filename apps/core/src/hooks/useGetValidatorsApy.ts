@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useSuiClient, useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClient, usePeraClientQuery } from '@mysten/dapp-kit';
 import { useQuery } from '@tanstack/react-query';
 
 import { roundFloat } from '../utils/roundFloat';
@@ -23,8 +23,8 @@ export interface ApyByValidator {
 const MINIMUM_THRESHOLD = 0.001;
 
 export function useGetValidatorsApy() {
-	const client = useSuiClient();
-	const { data: systemStateResponse, isFetched } = useSuiClientQuery('getLatestSuiSystemState');
+	const client = usePeraClient();
+	const { data: systemStateResponse, isFetched } = usePeraClientQuery('getLatestPeraSystemState');
 	return useQuery({
 		queryKey: ['get-rolling-average-apys'],
 		queryFn: () => client.getValidatorsApy(),

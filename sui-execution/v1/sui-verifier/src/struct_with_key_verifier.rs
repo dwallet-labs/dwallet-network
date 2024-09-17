@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This pass verifies necessary properties for Move Objects, i.e. structs with the `key` ability.
 //! The properties checked are
 //! - The first field is named "id"
-//! - The first field has type `sui::object::UID`
+//! - The first field has type `pera::object::UID`
 
 use crate::verification_failure;
 use move_binary_format::file_format::{CompiledModule, SignatureToken};
-use sui_types::{
+use pera_types::{
     error::ExecutionError,
     fp_ensure,
     id::{OBJECT_MODULE_NAME, UID_STRUCT_NAME},
-    SUI_FRAMEWORK_ADDRESS,
+    PERA_FRAMEWORK_ADDRESS,
 };
 
 pub fn verify_module(module: &CompiledModule) -> Result<(), ExecutionError> {
@@ -53,11 +53,11 @@ fn verify_key_structs(module: &CompiledModule) -> Result<(), ExecutionError> {
                 return Err(verification_failure(format!(
                     "First field of struct {} must be of type {}::object::UID, \
                     {:?} type found",
-                    name, SUI_FRAMEWORK_ADDRESS, uid_field_type
+                    name, PERA_FRAMEWORK_ADDRESS, uid_field_type
                 )))
             }
         };
-        // check that the struct type for "id" field must be SUI_FRAMEWORK_ADDRESS::object::UID.
+        // check that the struct type for "id" field must be PERA_FRAMEWORK_ADDRESS::object::UID.
         let uid_type_struct = module.datatype_handle_at(*uid_field_type);
         let uid_type_struct_name = module.identifier_at(uid_type_struct.name);
         let uid_type_module = module.module_handle_at(uid_type_struct.module);
@@ -65,13 +65,13 @@ fn verify_key_structs(module: &CompiledModule) -> Result<(), ExecutionError> {
         let uid_type_module_name = module.identifier_at(uid_type_module.name);
         fp_ensure!(
             uid_type_struct_name == UID_STRUCT_NAME
-                && uid_type_module_address == &SUI_FRAMEWORK_ADDRESS
+                && uid_type_module_address == &PERA_FRAMEWORK_ADDRESS
                 && uid_type_module_name == OBJECT_MODULE_NAME,
             verification_failure(format!(
                 "First field of struct {} must be of type {}::object::UID, \
                 {}::{}::{} type found",
                 name,
-                SUI_FRAMEWORK_ADDRESS,
+                PERA_FRAMEWORK_ADDRESS,
                 uid_type_module_address,
                 uid_type_module_name,
                 uid_type_struct_name

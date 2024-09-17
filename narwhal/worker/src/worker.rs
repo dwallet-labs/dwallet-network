@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::{
     batch_fetcher::BatchFetcher,
     batch_maker::BatchMaker,
@@ -31,7 +31,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 use std::{net::Ipv4Addr, sync::Arc, thread::sleep};
 use store::rocks::DBMap;
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use tap::TapFallible;
 use tokio::task::JoinHandle;
 use tower::ServiceBuilder;

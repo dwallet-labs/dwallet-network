@@ -1,8 +1,8 @@
 {
   "openrpc": "1.2.6",
   "info": {
-    "title": "Sui JSON-RPC",
-    "description": "Sui JSON-RPC API for interaction with Sui Full node. Make RPC calls using https://fullnode.NETWORK.sui.io:443, where NETWORK is the network you want to use (testnet, devnet, mainnet). By default, local networks use port 9000.",
+    "title": "Pera JSON-RPC",
+    "description": "Pera JSON-RPC API for interaction with Pera Full node. Make RPC calls using https://fullnode.NETWORK.pera.io:443, where NETWORK is the network you want to use (testnet, devnet, mainnet). By default, local networks use port 9000.",
     "contact": {
       "name": "Mysten Labs",
       "url": "https://mystenlabs.com",
@@ -16,7 +16,7 @@
   },
   "methods": [
     {
-      "name": "sui_devInspectTransactionBlock",
+      "name": "pera_devInspectTransactionBlock",
       "tags": [
         {
           "name": "Write API"
@@ -28,7 +28,7 @@
           "name": "sender_address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -150,7 +150,7 @@
       ]
     },
     {
-      "name": "sui_dryRunTransactionBlock",
+      "name": "pera_dryRunTransactionBlock",
       "tags": [
         {
           "name": "Write API"
@@ -305,7 +305,7 @@
       ]
     },
     {
-      "name": "sui_executeTransactionBlock",
+      "name": "pera_executeTransactionBlock",
       "tags": [
         {
           "name": "Write API"
@@ -341,14 +341,14 @@
         },
         {
           "name": "request_type",
-          "description": "The request type, derived from `SuiTransactionBlockResponseOptions` if None",
+          "description": "The request type, derived from `PeraTransactionBlockResponseOptions` if None",
           "schema": {
             "$ref": "#/components/schemas/ExecuteTransactionRequestType"
           }
         }
       ],
       "result": {
-        "name": "SuiTransactionBlockResponse",
+        "name": "PeraTransactionBlockResponse",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/TransactionBlockResponse"
@@ -508,7 +508,7 @@
       ]
     },
     {
-      "name": "sui_getChainIdentifier",
+      "name": "pera_getChainIdentifier",
       "tags": [
         {
           "name": "Read API"
@@ -535,7 +535,7 @@
       ]
     },
     {
-      "name": "sui_getCheckpoint",
+      "name": "pera_getCheckpoint",
       "tags": [
         {
           "name": "Read API"
@@ -594,7 +594,7 @@
       ]
     },
     {
-      "name": "sui_getCheckpoints",
+      "name": "pera_getCheckpoints",
       "tags": [
         {
           "name": "Read API"
@@ -740,7 +740,7 @@
       ]
     },
     {
-      "name": "sui_getEvents",
+      "name": "pera_getEvents",
       "tags": [
         {
           "name": "Read API"
@@ -758,7 +758,7 @@
         }
       ],
       "result": {
-        "name": "Vec<SuiEvent>",
+        "name": "Vec<PeraEvent>",
         "required": true,
         "schema": {
           "type": "array",
@@ -806,7 +806,7 @@
       ]
     },
     {
-      "name": "sui_getLatestCheckpointSequenceNumber",
+      "name": "pera_getLatestCheckpointSequenceNumber",
       "tags": [
         {
           "name": "Read API"
@@ -833,7 +833,7 @@
       ]
     },
     {
-      "name": "sui_getMoveFunctionArgTypes",
+      "name": "pera_getMoveFunctionArgTypes",
       "tags": [
         {
           "name": "Move Utils"
@@ -883,7 +883,7 @@
             },
             {
               "name": "module",
-              "value": "suifrens"
+              "value": "perafrens"
             },
             {
               "name": "function",
@@ -916,7 +916,7 @@
       ]
     },
     {
-      "name": "sui_getNormalizedMoveFunction",
+      "name": "pera_getNormalizedMoveFunction",
       "tags": [
         {
           "name": "Move Utils"
@@ -947,10 +947,10 @@
         }
       ],
       "result": {
-        "name": "SuiMoveNormalizedFunction",
+        "name": "PeraMoveNormalizedFunction",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/SuiMoveNormalizedFunction"
+          "$ref": "#/components/schemas/PeraMoveNormalizedFunction"
         }
       },
       "examples": [
@@ -995,7 +995,7 @@
       ]
     },
     {
-      "name": "sui_getNormalizedMoveModule",
+      "name": "pera_getNormalizedMoveModule",
       "tags": [
         {
           "name": "Move Utils"
@@ -1019,10 +1019,10 @@
         }
       ],
       "result": {
-        "name": "SuiMoveNormalizedModule",
+        "name": "PeraMoveNormalizedModule",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/SuiMoveNormalizedModule"
+          "$ref": "#/components/schemas/PeraMoveNormalizedModule"
         }
       },
       "examples": [
@@ -1053,7 +1053,7 @@
       ]
     },
     {
-      "name": "sui_getNormalizedMoveModulesByPackage",
+      "name": "pera_getNormalizedMoveModulesByPackage",
       "tags": [
         {
           "name": "Move Utils"
@@ -1070,12 +1070,12 @@
         }
       ],
       "result": {
-        "name": "BTreeMap<String,SuiMoveNormalizedModule>",
+        "name": "BTreeMap<String,PeraMoveNormalizedModule>",
         "required": true,
         "schema": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/components/schemas/SuiMoveNormalizedModule"
+            "$ref": "#/components/schemas/PeraMoveNormalizedModule"
           }
         }
       },
@@ -1103,7 +1103,7 @@
       ]
     },
     {
-      "name": "sui_getNormalizedMoveStruct",
+      "name": "pera_getNormalizedMoveStruct",
       "tags": [
         {
           "name": "Move Utils"
@@ -1134,10 +1134,10 @@
         }
       ],
       "result": {
-        "name": "SuiMoveNormalizedStruct",
+        "name": "PeraMoveNormalizedStruct",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/SuiMoveNormalizedStruct"
+          "$ref": "#/components/schemas/PeraMoveNormalizedStruct"
         }
       },
       "examples": [
@@ -1174,7 +1174,7 @@
       ]
     },
     {
-      "name": "sui_getObject",
+      "name": "pera_getObject",
       "tags": [
         {
           "name": "Read API"
@@ -1199,10 +1199,10 @@
         }
       ],
       "result": {
-        "name": "SuiObjectResponse",
+        "name": "PeraObjectResponse",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/SuiObjectResponse"
+          "$ref": "#/components/schemas/PeraObjectResponse"
         }
       },
       "examples": [
@@ -1233,7 +1233,7 @@
                 "objectId": "0x53e4567ccafa5f36ce84c80aa8bc9be64e0d5ae796884274aef3005ae6733809",
                 "version": "1",
                 "digest": "33K5ZXJ3RyubvYaHuEnQ1QXmmbhgtrFwp199dnEbL4n7",
-                "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                "type": "0x2::coin::Coin<0x2::pera::PERA>",
                 "owner": {
                   "AddressOwner": "0xc8ec1d5b84dd6289e193b9f88de4a994358c9f856135236c3e75a925e1c77ac3"
                 },
@@ -1241,7 +1241,7 @@
                 "storageRebate": "100",
                 "content": {
                   "dataType": "moveObject",
-                  "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                  "type": "0x2::coin::Coin<0x2::pera::PERA>",
                   "hasPublicTransfer": true,
                   "fields": {
                     "balance": "100000000",
@@ -1257,7 +1257,7 @@
       ]
     },
     {
-      "name": "sui_getProtocolConfig",
+      "name": "pera_getProtocolConfig",
       "tags": [
         {
           "name": "Read API"
@@ -1943,7 +1943,7 @@
       ]
     },
     {
-      "name": "sui_getTotalTransactionBlocks",
+      "name": "pera_getTotalTransactionBlocks",
       "tags": [
         {
           "name": "Read API"
@@ -1970,7 +1970,7 @@
       ]
     },
     {
-      "name": "sui_getTransactionBlock",
+      "name": "pera_getTransactionBlock",
       "tags": [
         {
           "name": "Read API"
@@ -1995,7 +1995,7 @@
         }
       ],
       "result": {
-        "name": "SuiTransactionBlockResponse",
+        "name": "PeraTransactionBlockResponse",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/TransactionBlockResponse"
@@ -2145,7 +2145,7 @@
       ]
     },
     {
-      "name": "sui_multiGetObjects",
+      "name": "pera_multiGetObjects",
       "tags": [
         {
           "name": "Read API"
@@ -2173,12 +2173,12 @@
         }
       ],
       "result": {
-        "name": "Vec<SuiObjectResponse>",
+        "name": "Vec<PeraObjectResponse>",
         "required": true,
         "schema": {
           "type": "array",
           "items": {
-            "$ref": "#/components/schemas/SuiObjectResponse"
+            "$ref": "#/components/schemas/PeraObjectResponse"
           }
         }
       },
@@ -2217,7 +2217,7 @@
                   "objectId": "0x504d411325e3c7f89d412044fe99007efb0f94f1e64d2e8090c619a39299d87e",
                   "version": "1",
                   "digest": "AibMqH69gKT5t7rVTsDZFy2X5iHtoNDobKaZ62mg3FCU",
-                  "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                  "type": "0x2::coin::Coin<0x2::pera::PERA>",
                   "owner": {
                     "AddressOwner": "0xe8070b5f56bb10bafa0e2261d819b2582f82ab308bf9c96dfb22ec7345db1b5f"
                   },
@@ -2225,7 +2225,7 @@
                   "storageRebate": "100",
                   "content": {
                     "dataType": "moveObject",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "hasPublicTransfer": true,
                     "fields": {
                       "balance": "100000000",
@@ -2241,7 +2241,7 @@
                   "objectId": "0x23618df6438d21a48040e6bb568cafc13246bd847c60448160e0358cac4a1134",
                   "version": "1",
                   "digest": "D5W76mT1A3tqCmE1Z5MdV5obNzesMXLfLKpRDHSp1fyz",
-                  "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                  "type": "0x2::coin::Coin<0x2::pera::PERA>",
                   "owner": {
                     "AddressOwner": "0x5594d02890c986dbf328d28d21acece356d10d89e75f565b0934851ba8d5bc59"
                   },
@@ -2249,7 +2249,7 @@
                   "storageRebate": "100",
                   "content": {
                     "dataType": "moveObject",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "hasPublicTransfer": true,
                     "fields": {
                       "balance": "100000000",
@@ -2265,7 +2265,7 @@
                   "objectId": "0x8b95b4eaa9fd3b22b43f6b2c8e92090bd6d16522a6fd4fa83ec70a5f197ad656",
                   "version": "1",
                   "digest": "H2o2pWgceQgTtYrMacR4xnCi4vqGiuozDA6k2rBc4m3q",
-                  "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                  "type": "0x2::coin::Coin<0x2::pera::PERA>",
                   "owner": {
                     "AddressOwner": "0xda104dde1de9880be827a1a753e502ebcdfec53f33e745e3f021366b7bc47c2b"
                   },
@@ -2273,7 +2273,7 @@
                   "storageRebate": "100",
                   "content": {
                     "dataType": "moveObject",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "hasPublicTransfer": true,
                     "fields": {
                       "balance": "100000000",
@@ -2289,7 +2289,7 @@
                   "objectId": "0x3fbbd3ebef7dbcc7b02346cdf05674452cc61f316af5d5d7c02b94b023242685",
                   "version": "1",
                   "digest": "3ovR1s3bZt6AN1AQ7QhGUfX9BSwgjJPvL6XaczgeSKXU",
-                  "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                  "type": "0x2::coin::Coin<0x2::pera::PERA>",
                   "owner": {
                     "AddressOwner": "0x00a65bf5fdccb50582333b61721e6963a25f25ac8ead5916a83f49a7b372eae7"
                   },
@@ -2297,7 +2297,7 @@
                   "storageRebate": "100",
                   "content": {
                     "dataType": "moveObject",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "hasPublicTransfer": true,
                     "fields": {
                       "balance": "100000000",
@@ -2313,7 +2313,7 @@
                   "objectId": "0x9b5cd5df0df2a168259b7115a41ccc0a372b6fd0026e0c63043492ce4d0c19a6",
                   "version": "1",
                   "digest": "25QdFqrh9FgxhGQyAxZsNEakYmHezqmU3FMPud7JGRB5",
-                  "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                  "type": "0x2::coin::Coin<0x2::pera::PERA>",
                   "owner": {
                     "AddressOwner": "0x3e7f360c51d035a6470f09c8d23716e4085025b89d176840d61dde92a452a72f"
                   },
@@ -2321,7 +2321,7 @@
                   "storageRebate": "100",
                   "content": {
                     "dataType": "moveObject",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "hasPublicTransfer": true,
                     "fields": {
                       "balance": "100000000",
@@ -2338,7 +2338,7 @@
       ]
     },
     {
-      "name": "sui_multiGetTransactionBlocks",
+      "name": "pera_multiGetTransactionBlocks",
       "tags": [
         {
           "name": "Read API"
@@ -2366,7 +2366,7 @@
         }
       ],
       "result": {
-        "name": "Vec<SuiTransactionBlockResponse>",
+        "name": "Vec<PeraTransactionBlockResponse>",
         "required": true,
         "schema": {
           "type": "array",
@@ -2757,7 +2757,7 @@
       ]
     },
     {
-      "name": "sui_tryGetPastObject",
+      "name": "pera_tryGetPastObject",
       "tags": [
         {
           "name": "Read API"
@@ -2790,7 +2790,7 @@
         }
       ],
       "result": {
-        "name": "SuiPastObjectResponse",
+        "name": "PeraPastObjectResponse",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/ObjectRead"
@@ -2829,7 +2829,7 @@
                 "objectId": "0x11af4b844ff94b3fbef6e36b518da3ad4c5856fa686464524a876b463d129760",
                 "version": "4",
                 "digest": "5VPAwDXy3BL72ehFc7gSJoz27ahMd6spUg5YwYc4ibcv",
-                "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                "type": "0x2::coin::Coin<0x2::pera::PERA>",
                 "owner": {
                   "AddressOwner": "0x3568c40e814d9d5396d23087a0fd641e91e0e00df6c012cded9ef9ba5e5bf042"
                 },
@@ -2837,7 +2837,7 @@
                 "storageRebate": "100",
                 "content": {
                   "dataType": "moveObject",
-                  "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                  "type": "0x2::coin::Coin<0x2::pera::PERA>",
                   "hasPublicTransfer": true,
                   "fields": {
                     "balance": "10000",
@@ -2853,7 +2853,7 @@
       ]
     },
     {
-      "name": "sui_tryMultiGetPastObjects",
+      "name": "pera_tryMultiGetPastObjects",
       "tags": [
         {
           "name": "Read API"
@@ -2881,7 +2881,7 @@
         }
       ],
       "result": {
-        "name": "Vec<SuiPastObjectResponse>",
+        "name": "Vec<PeraPastObjectResponse>",
         "required": true,
         "schema": {
           "type": "array",
@@ -2929,7 +2929,7 @@
                   "objectId": "0xceaf9ee4582d3a233101e322a22cb2a5bea2e681ea5af4e59bd1abb0bb4fcb27",
                   "version": "4",
                   "digest": "CE9bNT96Sa2BxQQH2id4PRxTgW5TW7zm6VVhDeRNBegW",
-                  "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                  "type": "0x2::coin::Coin<0x2::pera::PERA>",
                   "owner": {
                     "AddressOwner": "0x54b3c61936f77fcfdaa213c2f7b4fb1b51ef9f3ed66000c0e45697dbee095479"
                   },
@@ -2937,7 +2937,7 @@
                   "storageRebate": "100",
                   "content": {
                     "dataType": "moveObject",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "hasPublicTransfer": true,
                     "fields": {
                       "balance": "10000",
@@ -2954,7 +2954,7 @@
                   "objectId": "0x47866ff92885a3c21a7703f564721c198308aa0c71b771ada6b96c16fc9c0fa7",
                   "version": "12",
                   "digest": "3pRSYsCdrDkfMDwecvKZ1zgSEpwUo52VcLE95iK9ap1N",
-                  "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                  "type": "0x2::coin::Coin<0x2::pera::PERA>",
                   "owner": {
                     "AddressOwner": "0x998aaf3d11da24c49e014d4ccb1d7d0cd09d3cc1679290f1df2803b32b76ba03"
                   },
@@ -2962,7 +2962,7 @@
                   "storageRebate": "100",
                   "content": {
                     "dataType": "moveObject",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "hasPublicTransfer": true,
                     "fields": {
                       "balance": "20000",
@@ -2979,7 +2979,7 @@
       ]
     },
     {
-      "name": "suix_getAllBalances",
+      "name": "perax_getAllBalances",
       "tags": [
         {
           "name": "Coin Query API"
@@ -2989,10 +2989,10 @@
       "params": [
         {
           "name": "owner",
-          "description": "the owner's Sui address",
+          "description": "the owner's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         }
       ],
@@ -3019,7 +3019,7 @@
             "name": "Result",
             "value": [
               {
-                "coinType": "0x2::sui::SUI",
+                "coinType": "0x2::pera::PERA",
                 "coinObjectCount": 15,
                 "totalBalance": "3000000000",
                 "lockedBalance": {}
@@ -3030,7 +3030,7 @@
       ]
     },
     {
-      "name": "suix_getAllCoins",
+      "name": "perax_getAllCoins",
       "tags": [
         {
           "name": "Coin Query API"
@@ -3040,10 +3040,10 @@
       "params": [
         {
           "name": "owner",
-          "description": "the owner's Sui address",
+          "description": "the owner's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -3092,7 +3092,7 @@
             "value": {
               "data": [
                 {
-                  "coinType": "0x2::sui::SUI",
+                  "coinType": "0x2::pera::PERA",
                   "coinObjectId": "0x91825debff541cf4e08b5c5f7296ff9840e6f0b185af93984cde8cf3870302c0",
                   "version": "103626",
                   "digest": "7dp5WtTmtGp83EXYYFMzjBJRFeSgR67AzqMETLrfgeFx",
@@ -3100,7 +3100,7 @@
                   "previousTransaction": "9WfFUVhjbbh4tWkyUse1QxzbKX952cyXScH7xJNPB2vQ"
                 },
                 {
-                  "coinType": "0x2::sui::SUI",
+                  "coinType": "0x2::pera::PERA",
                   "coinObjectId": "0x48a53f22e2e901ea2a5bf44fdd5bb94a1d83b6efc4dd779f0890ca3b1f6ba997",
                   "version": "103626",
                   "digest": "9xLdMXezY8d1yRA2TtN6pYjapyy2EVKHWNriGPFGCFvd",
@@ -3108,7 +3108,7 @@
                   "previousTransaction": "Byq9SyV7x6fvzaf88YRA9JM8vLbVLJAqUX8pESDmKcgw"
                 },
                 {
-                  "coinType": "0x2::sui::SUI",
+                  "coinType": "0x2::pera::PERA",
                   "coinObjectId": "0x6867fcc63161269c5c0c73b02229486bbaff319209dfb8299ced3b8609037997",
                   "version": "103626",
                   "digest": "5xexWFq6QpGHBQyC9P2cbAJXq9qm2EjzfuRM9NwS1uyG",
@@ -3124,7 +3124,7 @@
       ]
     },
     {
-      "name": "suix_getBalance",
+      "name": "perax_getBalance",
       "tags": [
         {
           "name": "Coin Query API"
@@ -3134,15 +3134,15 @@
       "params": [
         {
           "name": "owner",
-          "description": "the owner's Sui address",
+          "description": "the owner's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
           "name": "coin_type",
-          "description": "optional type names for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC), default to 0x2::sui::SUI if not specified.",
+          "description": "optional type names for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC), default to 0x2::pera::PERA if not specified.",
           "schema": {
             "type": "string"
           }
@@ -3181,7 +3181,7 @@
       ]
     },
     {
-      "name": "suix_getCoinMetadata",
+      "name": "perax_getCoinMetadata",
       "tags": [
         {
           "name": "Coin Query API"
@@ -3199,9 +3199,9 @@
         }
       ],
       "result": {
-        "name": "SuiCoinMetadata",
+        "name": "PeraCoinMetadata",
         "schema": {
-          "$ref": "#/components/schemas/SuiCoinMetadata"
+          "$ref": "#/components/schemas/PeraCoinMetadata"
         }
       },
       "examples": [
@@ -3228,7 +3228,7 @@
       ]
     },
     {
-      "name": "suix_getCoins",
+      "name": "perax_getCoins",
       "tags": [
         {
           "name": "Coin Query API"
@@ -3238,15 +3238,15 @@
       "params": [
         {
           "name": "owner",
-          "description": "the owner's Sui address",
+          "description": "the owner's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
           "name": "coin_type",
-          "description": "optional type name for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC), default to 0x2::sui::SUI if not specified.",
+          "description": "optional type name for the coin (e.g., 0x168da5bf1f48dafc111b0a488fa454aca95e0b5e::usdc::USDC), default to 0x2::pera::PERA if not specified.",
           "schema": {
             "type": "string"
           }
@@ -3277,7 +3277,7 @@
       },
       "examples": [
         {
-          "name": "Gets all SUI coins owned by the address provided. Return a paginated list of `limit` results per page. Similar to `suix_getAllCoins`, but provides a way to filter by coin type.",
+          "name": "Gets all PERA coins owned by the address provided. Return a paginated list of `limit` results per page. Similar to `perax_getAllCoins`, but provides a way to filter by coin type.",
           "params": [
             {
               "name": "owner",
@@ -3285,7 +3285,7 @@
             },
             {
               "name": "coin_type",
-              "value": "0x2::sui::SUI"
+              "value": "0x2::pera::PERA"
             },
             {
               "name": "cursor",
@@ -3301,7 +3301,7 @@
             "value": {
               "data": [
                 {
-                  "coinType": "0x2::sui::SUI",
+                  "coinType": "0x2::pera::PERA",
                   "coinObjectId": "0xa5a8e30db5a798a7354340b6ea78a66f50921841ab5359ec7a3dc01f282420ae",
                   "version": "103626",
                   "digest": "tw5DzJTfdxTn4f3rekFrhN7dQTUezBgsEhycDobTBLb",
@@ -3309,7 +3309,7 @@
                   "previousTransaction": "HSein75AFXgdsnbABWLQ5mvjFmPFWrBFi9CMVsNn7gJr"
                 },
                 {
-                  "coinType": "0x2::sui::SUI",
+                  "coinType": "0x2::pera::PERA",
                   "coinObjectId": "0x47dfa99496428c65b2054ad7db1872b87ff05b1047bb5e3adf5257cceb08ecb4",
                   "version": "103626",
                   "digest": "AfgFe7ZfjJ5dWV6VAy2LbtvBFhcABkvdvwEjLrRcFqtr",
@@ -3317,7 +3317,7 @@
                   "previousTransaction": "5WHnm9jUZEtDvSvsj7HBrP5BoxA3UY6R57qqumXJXboV"
                 },
                 {
-                  "coinType": "0x2::sui::SUI",
+                  "coinType": "0x2::pera::PERA",
                   "coinObjectId": "0xd4f062dbcfc3bf73f5861945592222ff7b090ac21c8a3cf840abdc5b743da778",
                   "version": "103626",
                   "digest": "9er6jxigfuQEKsn9gtPV2oW1zGQRcFtKNijHVe88GUJD",
@@ -3333,7 +3333,7 @@
       ]
     },
     {
-      "name": "suix_getCommitteeInfo",
+      "name": "perax_getCommitteeInfo",
       "tags": [
         {
           "name": "Governance Read API"
@@ -3350,7 +3350,7 @@
         }
       ],
       "result": {
-        "name": "SuiCommittee",
+        "name": "PeraCommittee",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/CommitteeInfo"
@@ -3393,7 +3393,7 @@
       ]
     },
     {
-      "name": "suix_getDynamicFieldObject",
+      "name": "perax_getDynamicFieldObject",
       "tags": [
         {
           "name": "Extended API"
@@ -3419,10 +3419,10 @@
         }
       ],
       "result": {
-        "name": "SuiObjectResponse",
+        "name": "PeraObjectResponse",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/SuiObjectResponse"
+          "$ref": "#/components/schemas/PeraObjectResponse"
         }
       },
       "examples": [
@@ -3467,7 +3467,7 @@
       ]
     },
     {
-      "name": "suix_getDynamicFields",
+      "name": "perax_getDynamicFields",
       "tags": [
         {
           "name": "Extended API"
@@ -3573,19 +3573,19 @@
       ]
     },
     {
-      "name": "suix_getLatestSuiSystemState",
+      "name": "perax_getLatestPeraSystemState",
       "tags": [
         {
           "name": "Governance Read API"
         }
       ],
-      "description": "Return the latest SUI system state object on-chain.",
+      "description": "Return the latest PERA system state object on-chain.",
       "params": [],
       "result": {
-        "name": "SuiSystemStateSummary",
+        "name": "PeraSystemStateSummary",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/SuiSystemStateSummary"
+          "$ref": "#/components/schemas/PeraSystemStateSummary"
         }
       },
       "examples": [
@@ -3600,20 +3600,20 @@
       ]
     },
     {
-      "name": "suix_getOwnedObjects",
+      "name": "perax_getOwnedObjects",
       "tags": [
         {
           "name": "Extended API"
         }
       ],
-      "description": "Return the list of objects owned by an address. Note that if the address owns more than `QUERY_MAX_RESULT_LIMIT` objects, the pagination is not accurate, because previous page may have been updated when the next page is fetched. Please use suix_queryObjects if this is a concern.",
+      "description": "Return the list of objects owned by an address. Note that if the address owns more than `QUERY_MAX_RESULT_LIMIT` objects, the pagination is not accurate, because previous page may have been updated when the next page is fetched. Please use perax_queryObjects if this is a concern.",
       "params": [
         {
           "name": "address",
-          "description": "the owner's Sui address",
+          "description": "the owner's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -3644,7 +3644,7 @@
         "name": "ObjectsPage",
         "required": true,
         "schema": {
-          "$ref": "#/components/schemas/Page_for_SuiObjectResponse_and_ObjectID"
+          "$ref": "#/components/schemas/Page_for_PeraObjectResponse_and_ObjectID"
         }
       },
       "examples": [
@@ -3661,7 +3661,7 @@
                 "filter": {
                   "MatchAll": [
                     {
-                      "StructType": "0x2::coin::Coin<0x2::sui::SUI>"
+                      "StructType": "0x2::coin::Coin<0x2::pera::PERA>"
                     },
                     {
                       "AddressOwner": "0x0cd4bb4d4f520fe9bbf0cf1cebe3f2549412826c3c9261bff9786c240123749f"
@@ -3700,7 +3700,7 @@
                     "objectId": "0xd87765d1aadec2db8cc24c312542c8359b6b5e3bfeab524e5edaad3a204b4053",
                     "version": "13488",
                     "digest": "8qCvxDHh5LtDfF95Ci9G7vvQN2P6y4v55S9xoKBYp7FM",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "owner": {
                       "AddressOwner": "0x0cd4bb4d4f520fe9bbf0cf1cebe3f2549412826c3c9261bff9786c240123749f"
                     },
@@ -3713,7 +3713,7 @@
                     "objectId": "0x26ed170e0427f9416a614d23284116375c16bd317738fd2c7a885362e04923f5",
                     "version": "13488",
                     "digest": "5Ka3vDaDy9h5UYk3Maz3vssWHrhbcGXQgwg8fL2ygyTi",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "owner": {
                       "AddressOwner": "0x0cd4bb4d4f520fe9bbf0cf1cebe3f2549412826c3c9261bff9786c240123749f"
                     },
@@ -3726,7 +3726,7 @@
                     "objectId": "0x2aea16d6fb49b7d1ae51f33b01ed8e1ac66916858610c124bb6fd73bb13e141c",
                     "version": "13488",
                     "digest": "D3hfhfecVcmRcqNEkxkoFMzbuXvBqWj1JkCNU9zbnYMo",
-                    "type": "0x2::coin::Coin<0x2::sui::SUI>",
+                    "type": "0x2::coin::Coin<0x2::pera::PERA>",
                     "owner": {
                       "AddressOwner": "0x0cd4bb4d4f520fe9bbf0cf1cebe3f2549412826c3c9261bff9786c240123749f"
                     },
@@ -3743,7 +3743,7 @@
       ]
     },
     {
-      "name": "suix_getReferenceGasPrice",
+      "name": "perax_getReferenceGasPrice",
       "tags": [
         {
           "name": "Governance Read API"
@@ -3770,7 +3770,7 @@
       ]
     },
     {
-      "name": "suix_getStakes",
+      "name": "perax_getStakes",
       "tags": [
         {
           "name": "Governance Read API"
@@ -3782,7 +3782,7 @@
           "name": "owner",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         }
       ],
@@ -3813,7 +3813,7 @@
                 "stakingPool": "0xb4eeb46b70f0bebcae832aeef9f7c5db76052ab656e5f81853d0cf701cdbc8eb",
                 "stakes": [
                   {
-                    "stakedSuiId": "0xf27ab513fc6ef8c344406c78da3d5ad3a5fcc295dc8803c15989a62d33ee8590",
+                    "stakedPeraId": "0xf27ab513fc6ef8c344406c78da3d5ad3a5fcc295dc8803c15989a62d33ee8590",
                     "stakeRequestEpoch": "62",
                     "stakeActiveEpoch": "63",
                     "principal": "200000000000",
@@ -3821,7 +3821,7 @@
                     "estimatedReward": "520000000"
                   },
                   {
-                    "stakedSuiId": "0x14cfd5e91c13a481370240e392464c329a203fb9f0a8158aaab9b2a90044b26e",
+                    "stakedPeraId": "0x14cfd5e91c13a481370240e392464c329a203fb9f0a8158aaab9b2a90044b26e",
                     "stakeRequestEpoch": "142",
                     "stakeActiveEpoch": "143",
                     "principal": "200000000000",
@@ -3834,7 +3834,7 @@
                 "stakingPool": "0xbaa75ac72e548aeecf2ce8b4e88530651d6e8f93e0fb79b4bc65a512beb5b9f3",
                 "stakes": [
                   {
-                    "stakedSuiId": "0x378423de90ed03b694cecf443c72b5387b29a731d26d98108d7abc4902107d7d",
+                    "stakedPeraId": "0x378423de90ed03b694cecf443c72b5387b29a731d26d98108d7abc4902107d7d",
                     "stakeRequestEpoch": "244",
                     "stakeActiveEpoch": "245",
                     "principal": "200000000000",
@@ -3848,7 +3848,7 @@
       ]
     },
     {
-      "name": "suix_getStakesByIds",
+      "name": "perax_getStakesByIds",
       "tags": [
         {
           "name": "Governance Read API"
@@ -3857,7 +3857,7 @@
       "description": "Return one or more [DelegatedStake]. If a Stake was withdrawn its status will be Unstaked.",
       "params": [
         {
-          "name": "staked_sui_ids",
+          "name": "staked_pera_ids",
           "required": true,
           "schema": {
             "type": "array",
@@ -3882,7 +3882,7 @@
           "name": "Returns the staking information for the address the request provides.",
           "params": [
             {
-              "name": "staked_sui_ids",
+              "name": "staked_pera_ids",
               "value": [
                 "0x6a8e0f8fea6fda5488462e58724c034462b6064a08845e2ae2942fe7c4ee816d",
                 "0x754eb2eed23e6c6bb32c89fe1f21ab588374445e72e0402aea014b2956105799"
@@ -3896,7 +3896,7 @@
               "stakingPool": "0x6710024f81dd33ab6833482ee8034e779a48e6ef635c7f856df4905022458bfb",
               "stakes": [
                 {
-                  "stakedSuiId": "0x6a8e0f8fea6fda5488462e58724c034462b6064a08845e2ae2942fe7c4ee816d",
+                  "stakedPeraId": "0x6a8e0f8fea6fda5488462e58724c034462b6064a08845e2ae2942fe7c4ee816d",
                   "stakeRequestEpoch": "62",
                   "stakeActiveEpoch": "63",
                   "principal": "200000000000",
@@ -3904,7 +3904,7 @@
                   "estimatedReward": "520000000"
                 },
                 {
-                  "stakedSuiId": "0x754eb2eed23e6c6bb32c89fe1f21ab588374445e72e0402aea014b2956105799",
+                  "stakedPeraId": "0x754eb2eed23e6c6bb32c89fe1f21ab588374445e72e0402aea014b2956105799",
                   "stakeRequestEpoch": "244",
                   "stakeActiveEpoch": "245",
                   "principal": "200000000000",
@@ -3917,7 +3917,7 @@
       ]
     },
     {
-      "name": "suix_getTotalSupply",
+      "name": "perax_getTotalSupply",
       "tags": [
         {
           "name": "Coin Query API"
@@ -3960,7 +3960,7 @@
       ]
     },
     {
-      "name": "suix_getValidatorsApy",
+      "name": "perax_getValidatorsApy",
       "tags": [
         {
           "name": "Governance Read API"
@@ -4003,7 +4003,7 @@
       ]
     },
     {
-      "name": "suix_queryEvents",
+      "name": "perax_queryEvents",
       "tags": [
         {
           "name": "Extended API"
@@ -4013,7 +4013,7 @@
       "params": [
         {
           "name": "query",
-          "description": "The event query criteria. See [Event filter](https://docs.sui.io/build/event_api#event-filters) documentation for examples.",
+          "description": "The event query criteria. See [Event filter](https://docs.pera.io/build/event_api#event-filters) documentation for examples.",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/EventFilter"
@@ -4143,7 +4143,7 @@
       ]
     },
     {
-      "name": "suix_queryTransactionBlocks",
+      "name": "perax_queryTransactionBlocks",
       "tags": [
         {
           "name": "Extended API"
@@ -4241,7 +4241,7 @@
       ]
     },
     {
-      "name": "suix_resolveNameServiceAddress",
+      "name": "perax_resolveNameServiceAddress",
       "tags": [
         {
           "name": "Extended API"
@@ -4259,9 +4259,9 @@
         }
       ],
       "result": {
-        "name": "SuiAddress",
+        "name": "PeraAddress",
         "schema": {
-          "$ref": "#/components/schemas/SuiAddress"
+          "$ref": "#/components/schemas/PeraAddress"
         }
       },
       "examples": [
@@ -4270,7 +4270,7 @@
           "params": [
             {
               "name": "name",
-              "value": "example.sui"
+              "value": "example.pera"
             }
           ],
           "result": {
@@ -4281,7 +4281,7 @@
       ]
     },
     {
-      "name": "suix_resolveNameServiceNames",
+      "name": "perax_resolveNameServiceNames",
       "tags": [
         {
           "name": "Extended API"
@@ -4294,7 +4294,7 @@
           "description": "The address to resolve",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -4321,7 +4321,7 @@
       },
       "examples": [
         {
-          "name": "Returns the SuiNS name for the address the request provides. Currently, the API returns only the first name in cases where there are multiple. Future support will use the cursor ID and limit values in the request to control pagination of the response for addresses with multiple names.",
+          "name": "Returns the PeraNS name for the address the request provides. Currently, the API returns only the first name in cases where there are multiple. Future support will use the cursor ID and limit values in the request to control pagination of the response for addresses with multiple names.",
           "params": [
             {
               "name": "address",
@@ -4340,7 +4340,7 @@
             "name": "Result",
             "value": {
               "data": [
-                "example.sui"
+                "example.pera"
               ],
               "nextCursor": "0x5cd6fa76ed1d18f05f15e35075252ddec4fb83621d55952d9172fcfcb72feae2",
               "hasNextPage": false
@@ -4350,7 +4350,7 @@
       ]
     },
     {
-      "name": "suix_subscribeEvent",
+      "name": "perax_subscribeEvent",
       "tags": [
         {
           "name": "Extended API"
@@ -4362,11 +4362,11 @@
           "name": "PubSub"
         }
       ],
-      "description": "Subscribe to a stream of Sui event",
+      "description": "Subscribe to a stream of Pera event",
       "params": [
         {
           "name": "filter",
-          "description": "The filter criteria of the event stream. See [Event filter](https://docs.sui.io/build/event_api#event-filters) documentation for examples.",
+          "description": "The filter criteria of the event stream. See [Event filter](https://docs.pera.io/build/event_api#event-filters) documentation for examples.",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/EventFilter"
@@ -4374,7 +4374,7 @@
         }
       ],
       "result": {
-        "name": "SuiEvent",
+        "name": "PeraEvent",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/Event"
@@ -4382,7 +4382,7 @@
       }
     },
     {
-      "name": "suix_subscribeTransaction",
+      "name": "perax_subscribeTransaction",
       "tags": [
         {
           "name": "Extended API"
@@ -4394,7 +4394,7 @@
           "name": "PubSub"
         }
       ],
-      "description": "Subscribe to a stream of Sui transaction effects",
+      "description": "Subscribe to a stream of Pera transaction effects",
       "params": [
         {
           "name": "filter",
@@ -4405,7 +4405,7 @@
         }
       ],
       "result": {
-        "name": "SuiTransactionBlockEffects",
+        "name": "PeraTransactionBlockEffects",
         "required": true,
         "schema": {
           "$ref": "#/components/schemas/TransactionBlockEffects"
@@ -4423,10 +4423,10 @@
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -4459,7 +4459,7 @@
           "name": "txn_builder_mode",
           "description": "Whether this is a regular transaction or a Dev Inspect Transaction",
           "schema": {
-            "$ref": "#/components/schemas/SuiTransactionBlockBuilderMode"
+            "$ref": "#/components/schemas/PeraTransactionBlockBuilderMode"
           }
         }
       ],
@@ -4482,10 +4482,10 @@
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -4539,10 +4539,10 @@
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -4582,12 +4582,12 @@
         },
         {
           "name": "arguments",
-          "description": "the arguments to be passed into the Move function, in [SuiJson](https://docs.sui.io/build/sui-json) format",
+          "description": "the arguments to be passed into the Move function, in [PeraJson](https://docs.pera.io/build/pera-json) format",
           "required": true,
           "schema": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiJsonValue"
+              "$ref": "#/components/schemas/PeraJsonValue"
             }
           }
         },
@@ -4608,9 +4608,9 @@
         },
         {
           "name": "execution_mode",
-          "description": "Whether this is a Normal transaction or a Dev Inspect Transaction. Default to be `SuiTransactionBlockBuilderMode::Commit` when it's None.",
+          "description": "Whether this is a Normal transaction or a Dev Inspect Transaction. Default to be `PeraTransactionBlockBuilderMode::Commit` when it's None.",
           "schema": {
-            "$ref": "#/components/schemas/SuiTransactionBlockBuilderMode"
+            "$ref": "#/components/schemas/PeraTransactionBlockBuilderMode"
           }
         }
       ],
@@ -4633,15 +4633,15 @@
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
           "name": "input_coins",
-          "description": "the Sui coins to be used in this transaction",
+          "description": "the Pera coins to be used in this transaction",
           "required": true,
           "schema": {
             "type": "array",
@@ -4657,7 +4657,7 @@
           "schema": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiAddress"
+              "$ref": "#/components/schemas/PeraAddress"
             }
           }
         },
@@ -4697,25 +4697,25 @@
       }
     },
     {
-      "name": "unsafe_payAllSui",
+      "name": "unsafe_payAllPera",
       "tags": [
         {
           "name": "Transaction Builder API"
         }
       ],
-      "description": "Send all SUI coins to one recipient. This is for SUI coin only and does not require a separate gas coin object. Specifically, what pay_all_sui does are: 1. accumulate all SUI from input coins and deposit all SUI to the first input coin 2. transfer the updated first coin to the recipient and also use this first coin as gas coin object. 3. the balance of the first input coin after tx is sum(input_coins) - actual_gas_cost. 4. all other input coins other than the first are deleted.",
+      "description": "Send all PERA coins to one recipient. This is for PERA coin only and does not require a separate gas coin object. Specifically, what pay_all_pera does are: 1. accumulate all PERA from input coins and deposit all PERA to the first input coin 2. transfer the updated first coin to the recipient and also use this first coin as gas coin object. 3. the balance of the first input coin after tx is sum(input_coins) - actual_gas_cost. 4. all other input coins other than the first are deleted.",
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
           "name": "input_coins",
-          "description": "the Sui coins to be used in this transaction, including the coin for gas payment.",
+          "description": "the Pera coins to be used in this transaction, including the coin for gas payment.",
           "required": true,
           "schema": {
             "type": "array",
@@ -4729,7 +4729,7 @@
           "description": "the recipient address,",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -4750,25 +4750,25 @@
       }
     },
     {
-      "name": "unsafe_paySui",
+      "name": "unsafe_payPera",
       "tags": [
         {
           "name": "Transaction Builder API"
         }
       ],
-      "description": "Send SUI coins to a list of addresses, following a list of amounts. This is for SUI coin only and does not require a separate gas coin object. Specifically, what pay_sui does are: 1. debit each input_coin to create new coin following the order of amounts and assign it to the corresponding recipient. 2. accumulate all residual SUI from input coins left and deposit all SUI to the first input coin, then use the first input coin as the gas coin object. 3. the balance of the first input coin after tx is sum(input_coins) - sum(amounts) - actual_gas_cost 4. all other input coints other than the first one are deleted.",
+      "description": "Send PERA coins to a list of addresses, following a list of amounts. This is for PERA coin only and does not require a separate gas coin object. Specifically, what pay_pera does are: 1. debit each input_coin to create new coin following the order of amounts and assign it to the corresponding recipient. 2. accumulate all residual PERA from input coins left and deposit all PERA to the first input coin, then use the first input coin as the gas coin object. 3. the balance of the first input coin after tx is sum(input_coins) - sum(amounts) - actual_gas_cost 4. all other input coints other than the first one are deleted.",
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
           "name": "input_coins",
-          "description": "the Sui coins to be used in this transaction, including the coin for gas payment.",
+          "description": "the Pera coins to be used in this transaction, including the coin for gas payment.",
           "required": true,
           "schema": {
             "type": "array",
@@ -4784,7 +4784,7 @@
           "schema": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiAddress"
+              "$ref": "#/components/schemas/PeraAddress"
             }
           }
         },
@@ -4827,10 +4827,10 @@
       "params": [
         {
           "name": "sender",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -4890,15 +4890,15 @@
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
           "name": "coins",
-          "description": "Coin<SUI> object to stake",
+          "description": "Coin<PERA> object to stake",
           "required": true,
           "schema": {
             "type": "array",
@@ -4916,10 +4916,10 @@
         },
         {
           "name": "validator",
-          "description": "the validator's Sui address",
+          "description": "the validator's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -4957,15 +4957,15 @@
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
-          "name": "staked_sui",
-          "description": "StakedSui object ID",
+          "name": "staked_pera",
+          "description": "StakedPera object ID",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
@@ -5006,10 +5006,10 @@
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -5066,10 +5066,10 @@
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -5123,10 +5123,10 @@
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -5154,10 +5154,10 @@
         },
         {
           "name": "recipient",
-          "description": "the recipient's Sui address",
+          "description": "the recipient's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         }
       ],
@@ -5170,25 +5170,25 @@
       }
     },
     {
-      "name": "unsafe_transferSui",
+      "name": "unsafe_transferPera",
       "tags": [
         {
           "name": "Transaction Builder API"
         }
       ],
-      "description": "Create an unsigned transaction to send SUI coin object to a Sui address. The SUI object is also used as the gas object.",
+      "description": "Create an unsigned transaction to send PERA coin object to a Pera address. The PERA object is also used as the gas object.",
       "params": [
         {
           "name": "signer",
-          "description": "the transaction signer's Sui address",
+          "description": "the transaction signer's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
-          "name": "sui_object_id",
-          "description": "the Sui coin object to be used in this transaction",
+          "name": "pera_object_id",
+          "description": "the Pera coin object to be used in this transaction",
           "required": true,
           "schema": {
             "$ref": "#/components/schemas/ObjectID"
@@ -5204,10 +5204,10 @@
         },
         {
           "name": "recipient",
-          "description": "the recipient's Sui address",
+          "description": "the recipient's Pera address",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         },
         {
@@ -5230,7 +5230,7 @@
   "components": {
     "schemas": {
       "AuthorityPublicKeyBytes": {
-        "description": "Defines the compressed version of the public key that we pass around in Sui",
+        "description": "Defines the compressed version of the public key that we pass around in Pera",
         "allOf": [
           {
             "$ref": "#/components/schemas/Base64"
@@ -5711,7 +5711,7 @@
             "description": "Validator's Address.",
             "allOf": [
               {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               }
             ]
           }
@@ -5759,7 +5759,7 @@
             "description": "The sponsor of the gas for the transaction, might be different from the sender.",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               },
               {
                 "type": "null"
@@ -5837,7 +5837,7 @@
               "null"
             ],
             "items": {
-              "$ref": "#/components/schemas/SuiExecutionResult"
+              "$ref": "#/components/schemas/PeraExecutionResult"
             }
           }
         }
@@ -5984,7 +5984,7 @@
           }
         }
       },
-      "Ed25519SuiSignature": {
+      "Ed25519PeraSignature": {
         "$ref": "#/components/schemas/Base64"
       },
       "EndOfEpochData": {
@@ -6069,10 +6069,10 @@
             "description": "Parsed json value of the event"
           },
           "sender": {
-            "description": "Sender's Sui address.",
+            "description": "Sender's Pera address.",
             "allOf": [
               {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               }
             ]
           },
@@ -6107,7 +6107,7 @@
             ],
             "properties": {
               "Sender": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               }
             },
             "additionalProperties": false
@@ -6347,7 +6347,7 @@
         ]
       },
       "EventID": {
-        "description": "Unique ID of a Sui Event, the ID is a combination of tx seq number and event seq number, the ID is local to this particular fullnode and will be different from other fullnode.",
+        "description": "Unique ID of a Pera Event, the ID is a combination of tx seq number and event seq number, the ID is local to this particular fullnode and will be different from other fullnode.",
         "type": "object",
         "required": [
           "eventSeq",
@@ -6462,7 +6462,7 @@
             "$ref": "#/components/schemas/BigInt_for_uint64"
           },
           "owner": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           },
           "payment": {
             "type": "array",
@@ -6637,7 +6637,7 @@
           "arguments": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiJsonValue"
+              "$ref": "#/components/schemas/PeraJsonValue"
             }
           },
           "function": {
@@ -6725,7 +6725,7 @@
             "type": "boolean"
           },
           {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           },
           {
             "type": "array",
@@ -6986,7 +6986,7 @@
                 "$ref": "#/components/schemas/Owner"
               },
               "sender": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               },
               "type": {
                 "type": "string",
@@ -7029,7 +7029,7 @@
                 "$ref": "#/components/schemas/SequenceNumber"
               },
               "sender": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               },
               "type": {
                 "type": "string",
@@ -7060,7 +7060,7 @@
                 "type": "string"
               },
               "sender": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               },
               "type": {
                 "type": "string",
@@ -7091,7 +7091,7 @@
                 "type": "string"
               },
               "sender": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               },
               "type": {
                 "type": "string",
@@ -7130,7 +7130,7 @@
                 "$ref": "#/components/schemas/Owner"
               },
               "sender": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               },
               "type": {
                 "type": "string",
@@ -7154,7 +7154,7 @@
         ],
         "properties": {
           "bcs": {
-            "description": "Move object content or package content in BCS, default to be None unless SuiObjectDataOptions.showBcs is set to true",
+            "description": "Move object content or package content in BCS, default to be None unless PeraObjectDataOptions.showBcs is set to true",
             "anyOf": [
               {
                 "$ref": "#/components/schemas/RawData"
@@ -7165,7 +7165,7 @@
             ]
           },
           "content": {
-            "description": "Move object content or package content, default to be None unless SuiObjectDataOptions.showContent is set to true",
+            "description": "Move object content or package content, default to be None unless PeraObjectDataOptions.showContent is set to true",
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Data"
@@ -7184,7 +7184,7 @@
             ]
           },
           "display": {
-            "description": "The Display metadata for frontend UI rendering, default to be None unless SuiObjectDataOptions.showContent is set to true This can also be None if the struct type does not have Display defined See more details in <https://forums.sui.io/t/nft-object-display-proposal/4872>",
+            "description": "The Display metadata for frontend UI rendering, default to be None unless PeraObjectDataOptions.showContent is set to true This can also be None if the struct type does not have Display defined See more details in <https://forums.pera.io/t/nft-object-display-proposal/4872>",
             "anyOf": [
               {
                 "$ref": "#/components/schemas/DisplayFieldsResponse"
@@ -7198,7 +7198,7 @@
             "$ref": "#/components/schemas/ObjectID"
           },
           "owner": {
-            "description": "The owner of this object. Default to be None unless SuiObjectDataOptions.showOwner is set to true",
+            "description": "The owner of this object. Default to be None unless PeraObjectDataOptions.showOwner is set to true",
             "anyOf": [
               {
                 "$ref": "#/components/schemas/Owner"
@@ -7209,7 +7209,7 @@
             ]
           },
           "previousTransaction": {
-            "description": "The digest of the transaction that created or last mutated this object. Default to be None unless SuiObjectDataOptions.showPreviousTransaction is set to true",
+            "description": "The digest of the transaction that created or last mutated this object. Default to be None unless PeraObjectDataOptions.showPreviousTransaction is set to true",
             "anyOf": [
               {
                 "$ref": "#/components/schemas/TransactionDigest"
@@ -7220,7 +7220,7 @@
             ]
           },
           "storageRebate": {
-            "description": "The amount of SUI we would rebate if this object gets deleted. This number is re-calculated each time the object is mutated based on the present storage gas price.",
+            "description": "The amount of PERA we would rebate if this object gets deleted. This number is re-calculated each time the object is mutated based on the present storage gas price.",
             "anyOf": [
               {
                 "$ref": "#/components/schemas/BigInt_for_uint64"
@@ -7231,7 +7231,7 @@
             ]
           },
           "type": {
-            "description": "The type of the object. Default to be None unless SuiObjectDataOptions.showType is set to true",
+            "description": "The type of the object. Default to be None unless PeraObjectDataOptions.showType is set to true",
             "type": [
               "string",
               "null"
@@ -7568,7 +7568,7 @@
             "default": null,
             "anyOf": [
               {
-                "$ref": "#/components/schemas/SuiObjectDataFilter"
+                "$ref": "#/components/schemas/PeraObjectDataFilter"
               },
               {
                 "type": "null"
@@ -7622,20 +7622,20 @@
             ],
             "properties": {
               "AddressOwner": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               }
             },
             "additionalProperties": false
           },
           {
-            "description": "Object is exclusively owned by a single object, and is mutable. The object ID is converted to SuiAddress as SuiAddress is universal.",
+            "description": "Object is exclusively owned by a single object, and is mutable. The object ID is converted to PeraAddress as PeraAddress is universal.",
             "type": "object",
             "required": [
               "ObjectOwner"
             ],
             "properties": {
               "ObjectOwner": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               }
             },
             "additionalProperties": false
@@ -7820,7 +7820,7 @@
           }
         }
       },
-      "Page_for_SuiObjectResponse_and_ObjectID": {
+      "Page_for_PeraObjectResponse_and_ObjectID": {
         "description": "`next_cursor` points to the last item in the page; Reading with `next_cursor` will start from the next item after `next_cursor` if `next_cursor` is `Some`, otherwise it will start from the first item.",
         "type": "object",
         "required": [
@@ -7831,7 +7831,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiObjectResponse"
+              "$ref": "#/components/schemas/PeraObjectResponse"
             }
           },
           "hasNextPage": {
@@ -8177,10 +8177,10 @@
           }
         ]
       },
-      "Secp256k1SuiSignature": {
+      "Secp256k1PeraSignature": {
         "$ref": "#/components/schemas/Base64"
       },
-      "Secp256r1SuiSignature": {
+      "Secp256r1PeraSignature": {
         "$ref": "#/components/schemas/Base64"
       },
       "SequenceNumber": {
@@ -8196,11 +8196,11 @@
           {
             "type": "object",
             "required": [
-              "Ed25519SuiSignature"
+              "Ed25519PeraSignature"
             ],
             "properties": {
-              "Ed25519SuiSignature": {
-                "$ref": "#/components/schemas/Ed25519SuiSignature"
+              "Ed25519PeraSignature": {
+                "$ref": "#/components/schemas/Ed25519PeraSignature"
               }
             },
             "additionalProperties": false
@@ -8208,11 +8208,11 @@
           {
             "type": "object",
             "required": [
-              "Secp256k1SuiSignature"
+              "Secp256k1PeraSignature"
             ],
             "properties": {
-              "Secp256k1SuiSignature": {
-                "$ref": "#/components/schemas/Secp256k1SuiSignature"
+              "Secp256k1PeraSignature": {
+                "$ref": "#/components/schemas/Secp256k1PeraSignature"
               }
             },
             "additionalProperties": false
@@ -8220,11 +8220,11 @@
           {
             "type": "object",
             "required": [
-              "Secp256r1SuiSignature"
+              "Secp256r1PeraSignature"
             ],
             "properties": {
-              "Secp256r1SuiSignature": {
-                "$ref": "#/components/schemas/Secp256r1SuiSignature"
+              "Secp256r1PeraSignature": {
+                "$ref": "#/components/schemas/Secp256r1PeraSignature"
               }
             },
             "additionalProperties": false
@@ -8285,7 +8285,7 @@
           "principal",
           "stakeActiveEpoch",
           "stakeRequestEpoch",
-          "stakedSuiId"
+          "stakedPeraId"
         ],
         "properties": {
           "principal": {
@@ -8297,8 +8297,8 @@
           "stakeRequestEpoch": {
             "$ref": "#/components/schemas/BigInt_for_uint64"
           },
-          "stakedSuiId": {
-            "description": "ID of the StakedSui receipt object.",
+          "stakedPeraId": {
+            "description": "ID of the StakedPera receipt object.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ObjectID"
@@ -8307,7 +8307,7 @@
           }
         }
       },
-      "SuiActiveJwk": {
+      "PeraActiveJwk": {
         "type": "object",
         "required": [
           "epoch",
@@ -8319,17 +8319,17 @@
             "$ref": "#/components/schemas/BigInt_for_uint64"
           },
           "jwk": {
-            "$ref": "#/components/schemas/SuiJWK"
+            "$ref": "#/components/schemas/PeraJWK"
           },
           "jwk_id": {
-            "$ref": "#/components/schemas/SuiJwkId"
+            "$ref": "#/components/schemas/PeraJwkId"
           }
         }
       },
-      "SuiAddress": {
+      "PeraAddress": {
         "$ref": "#/components/schemas/Hex"
       },
-      "SuiArgument": {
+      "PeraArgument": {
         "description": "An argument to a transaction in a programmable transaction block",
         "oneOf": [
           {
@@ -8398,7 +8398,7 @@
           }
         ]
       },
-      "SuiAuthenticatorStateExpire": {
+      "PeraAuthenticatorStateExpire": {
         "type": "object",
         "required": [
           "min_epoch"
@@ -8409,7 +8409,7 @@
           }
         }
       },
-      "SuiCallArg": {
+      "PeraCallArg": {
         "oneOf": [
           {
             "type": "object",
@@ -8519,7 +8519,7 @@
                 ]
               },
               "value": {
-                "$ref": "#/components/schemas/SuiJsonValue"
+                "$ref": "#/components/schemas/PeraJsonValue"
               },
               "valueType": {
                 "default": null,
@@ -8532,7 +8532,7 @@
           }
         ]
       },
-      "SuiChangeEpoch": {
+      "PeraChangeEpoch": {
         "type": "object",
         "required": [
           "computation_charge",
@@ -8559,7 +8559,7 @@
           }
         }
       },
-      "SuiCoinMetadata": {
+      "PeraCoinMetadata": {
         "type": "object",
         "required": [
           "decimals",
@@ -8606,7 +8606,7 @@
           }
         }
       },
-      "SuiEndOfEpochTransactionKind": {
+      "PeraEndOfEpochTransactionKind": {
         "oneOf": [
           {
             "type": "string",
@@ -8623,7 +8623,7 @@
             ],
             "properties": {
               "ChangeEpoch": {
-                "$ref": "#/components/schemas/SuiChangeEpoch"
+                "$ref": "#/components/schemas/PeraChangeEpoch"
               }
             },
             "additionalProperties": false
@@ -8635,7 +8635,7 @@
             ],
             "properties": {
               "AuthenticatorStateExpire": {
-                "$ref": "#/components/schemas/SuiAuthenticatorStateExpire"
+                "$ref": "#/components/schemas/PeraAuthenticatorStateExpire"
               }
             },
             "additionalProperties": false
@@ -8666,7 +8666,7 @@
           }
         ]
       },
-      "SuiExecutionResult": {
+      "PeraExecutionResult": {
         "type": "object",
         "properties": {
           "mutableReferenceOutputs": {
@@ -8676,7 +8676,7 @@
               "type": "array",
               "items": [
                 {
-                  "$ref": "#/components/schemas/SuiArgument"
+                  "$ref": "#/components/schemas/PeraArgument"
                 },
                 {
                   "type": "array",
@@ -8718,7 +8718,7 @@
           }
         }
       },
-      "SuiJWK": {
+      "PeraJWK": {
         "type": "object",
         "required": [
           "alg",
@@ -8741,8 +8741,8 @@
           }
         }
       },
-      "SuiJsonValue": {},
-      "SuiJwkId": {
+      "PeraJsonValue": {},
+      "PeraJwkId": {
         "type": "object",
         "required": [
           "iss",
@@ -8757,7 +8757,7 @@
           }
         }
       },
-      "SuiMoveAbility": {
+      "PeraMoveAbility": {
         "type": "string",
         "enum": [
           "Copy",
@@ -8766,7 +8766,7 @@
           "Key"
         ]
       },
-      "SuiMoveAbilitySet": {
+      "PeraMoveAbilitySet": {
         "type": "object",
         "required": [
           "abilities"
@@ -8775,12 +8775,12 @@
           "abilities": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiMoveAbility"
+              "$ref": "#/components/schemas/PeraMoveAbility"
             }
           }
         }
       },
-      "SuiMoveModuleId": {
+      "PeraMoveModuleId": {
         "type": "object",
         "required": [
           "address",
@@ -8795,7 +8795,7 @@
           }
         }
       },
-      "SuiMoveNormalizedField": {
+      "PeraMoveNormalizedField": {
         "type": "object",
         "required": [
           "name",
@@ -8806,11 +8806,11 @@
             "type": "string"
           },
           "type": {
-            "$ref": "#/components/schemas/SuiMoveNormalizedType"
+            "$ref": "#/components/schemas/PeraMoveNormalizedType"
           }
         }
       },
-      "SuiMoveNormalizedFunction": {
+      "PeraMoveNormalizedFunction": {
         "type": "object",
         "required": [
           "isEntry",
@@ -8826,27 +8826,27 @@
           "parameters": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiMoveNormalizedType"
+              "$ref": "#/components/schemas/PeraMoveNormalizedType"
             }
           },
           "return": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiMoveNormalizedType"
+              "$ref": "#/components/schemas/PeraMoveNormalizedType"
             }
           },
           "typeParameters": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiMoveAbilitySet"
+              "$ref": "#/components/schemas/PeraMoveAbilitySet"
             }
           },
           "visibility": {
-            "$ref": "#/components/schemas/SuiMoveVisibility"
+            "$ref": "#/components/schemas/PeraMoveVisibility"
           }
         }
       },
-      "SuiMoveNormalizedModule": {
+      "PeraMoveNormalizedModule": {
         "type": "object",
         "required": [
           "address",
@@ -8863,7 +8863,7 @@
           "exposedFunctions": {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/SuiMoveNormalizedFunction"
+              "$ref": "#/components/schemas/PeraMoveNormalizedFunction"
             }
           },
           "fileFormatVersion": {
@@ -8874,7 +8874,7 @@
           "friends": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiMoveModuleId"
+              "$ref": "#/components/schemas/PeraMoveModuleId"
             }
           },
           "name": {
@@ -8883,12 +8883,12 @@
           "structs": {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/SuiMoveNormalizedStruct"
+              "$ref": "#/components/schemas/PeraMoveNormalizedStruct"
             }
           }
         }
       },
-      "SuiMoveNormalizedStruct": {
+      "PeraMoveNormalizedStruct": {
         "type": "object",
         "required": [
           "abilities",
@@ -8897,23 +8897,23 @@
         ],
         "properties": {
           "abilities": {
-            "$ref": "#/components/schemas/SuiMoveAbilitySet"
+            "$ref": "#/components/schemas/PeraMoveAbilitySet"
           },
           "fields": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiMoveNormalizedField"
+              "$ref": "#/components/schemas/PeraMoveNormalizedField"
             }
           },
           "typeParameters": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiMoveStructTypeParameter"
+              "$ref": "#/components/schemas/PeraMoveStructTypeParameter"
             }
           }
         }
       },
-      "SuiMoveNormalizedType": {
+      "PeraMoveNormalizedType": {
         "oneOf": [
           {
             "type": "string",
@@ -8956,7 +8956,7 @@
                   "typeArguments": {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/SuiMoveNormalizedType"
+                      "$ref": "#/components/schemas/PeraMoveNormalizedType"
                     }
                   }
                 }
@@ -8971,7 +8971,7 @@
             ],
             "properties": {
               "Vector": {
-                "$ref": "#/components/schemas/SuiMoveNormalizedType"
+                "$ref": "#/components/schemas/PeraMoveNormalizedType"
               }
             },
             "additionalProperties": false
@@ -8997,7 +8997,7 @@
             ],
             "properties": {
               "Reference": {
-                "$ref": "#/components/schemas/SuiMoveNormalizedType"
+                "$ref": "#/components/schemas/PeraMoveNormalizedType"
               }
             },
             "additionalProperties": false
@@ -9009,14 +9009,14 @@
             ],
             "properties": {
               "MutableReference": {
-                "$ref": "#/components/schemas/SuiMoveNormalizedType"
+                "$ref": "#/components/schemas/PeraMoveNormalizedType"
               }
             },
             "additionalProperties": false
           }
         ]
       },
-      "SuiMoveStructTypeParameter": {
+      "PeraMoveStructTypeParameter": {
         "type": "object",
         "required": [
           "constraints",
@@ -9024,14 +9024,14 @@
         ],
         "properties": {
           "constraints": {
-            "$ref": "#/components/schemas/SuiMoveAbilitySet"
+            "$ref": "#/components/schemas/PeraMoveAbilitySet"
           },
           "isPhantom": {
             "type": "boolean"
           }
         }
       },
-      "SuiMoveVisibility": {
+      "PeraMoveVisibility": {
         "type": "string",
         "enum": [
           "Private",
@@ -9039,7 +9039,7 @@
           "Friend"
         ]
       },
-      "SuiObjectDataFilter": {
+      "PeraObjectDataFilter": {
         "oneOf": [
           {
             "type": "object",
@@ -9050,7 +9050,7 @@
               "MatchAll": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/SuiObjectDataFilter"
+                  "$ref": "#/components/schemas/PeraObjectDataFilter"
                 }
               }
             },
@@ -9065,7 +9065,7 @@
               "MatchAny": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/SuiObjectDataFilter"
+                  "$ref": "#/components/schemas/PeraObjectDataFilter"
                 }
               }
             },
@@ -9080,7 +9080,7 @@
               "MatchNone": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/SuiObjectDataFilter"
+                  "$ref": "#/components/schemas/PeraObjectDataFilter"
                 }
               }
             },
@@ -9150,7 +9150,7 @@
             ],
             "properties": {
               "AddressOwner": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               }
             },
             "additionalProperties": false
@@ -9208,7 +9208,7 @@
           }
         ]
       },
-      "SuiObjectResponse": {
+      "PeraObjectResponse": {
         "type": "object",
         "properties": {
           "data": {
@@ -9233,7 +9233,7 @@
           }
         }
       },
-      "SuiProgrammableMoveCall": {
+      "PeraProgrammableMoveCall": {
         "description": "The transaction for calling a Move function, either an entry function or a public function (which cannot return references).",
         "type": "object",
         "required": [
@@ -9246,7 +9246,7 @@
             "description": "The arguments to the function.",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiArgument"
+              "$ref": "#/components/schemas/PeraArgument"
             }
           },
           "function": {
@@ -9274,8 +9274,8 @@
           }
         }
       },
-      "SuiSystemStateSummary": {
-        "description": "This is the JSON-RPC type for the SUI system state object. It flattens all fields to make them top-level fields such that it as minimum dependencies to the internal data structures of the SUI system state type.",
+      "PeraSystemStateSummary": {
+        "description": "This is the JSON-RPC type for the PERA system state object. It flattens all fields to make them top-level fields such that it as minimum dependencies to the internal data structures of the PERA system state type.",
         "type": "object",
         "required": [
           "activeValidators",
@@ -9321,7 +9321,7 @@
             "description": "The list of active validators in the current epoch.",
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SuiValidatorSummary"
+              "$ref": "#/components/schemas/PeraValidatorSummary"
             }
           },
           "atRiskValidators": {
@@ -9331,7 +9331,7 @@
               "type": "array",
               "items": [
                 {
-                  "$ref": "#/components/schemas/SuiAddress"
+                  "$ref": "#/components/schemas/PeraAddress"
                 },
                 {
                   "$ref": "#/components/schemas/BigInt_for_uint64"
@@ -9473,7 +9473,7 @@
             ]
           },
           "stakeSubsidyBalance": {
-            "description": "Balance of SUI set aside for stake subsidies that will be drawn down over time.",
+            "description": "Balance of PERA set aside for stake subsidies that will be drawn down over time.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/BigInt_for_uint64"
@@ -9519,7 +9519,7 @@
             ]
           },
           "stakingPoolMappingsId": {
-            "description": "ID of the object that maps from staking pool's ID to the sui address of a validator.",
+            "description": "ID of the object that maps from staking pool's ID to the pera address of a validator.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ObjectID"
@@ -9605,12 +9605,12 @@
               "type": "array",
               "items": [
                 {
-                  "$ref": "#/components/schemas/SuiAddress"
+                  "$ref": "#/components/schemas/PeraAddress"
                 },
                 {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/SuiAddress"
+                    "$ref": "#/components/schemas/PeraAddress"
                   }
                 }
               ],
@@ -9628,7 +9628,7 @@
           }
         }
       },
-      "SuiTransaction": {
+      "PeraTransaction": {
         "description": "A single transaction in a programmable transaction block.",
         "oneOf": [
           {
@@ -9639,7 +9639,7 @@
             ],
             "properties": {
               "MoveCall": {
-                "$ref": "#/components/schemas/SuiProgrammableMoveCall"
+                "$ref": "#/components/schemas/PeraProgrammableMoveCall"
               }
             },
             "additionalProperties": false
@@ -9657,11 +9657,11 @@
                   {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/SuiArgument"
+                      "$ref": "#/components/schemas/PeraArgument"
                     }
                   },
                   {
-                    "$ref": "#/components/schemas/SuiArgument"
+                    "$ref": "#/components/schemas/PeraArgument"
                   }
                 ],
                 "maxItems": 2,
@@ -9681,12 +9681,12 @@
                 "type": "array",
                 "items": [
                   {
-                    "$ref": "#/components/schemas/SuiArgument"
+                    "$ref": "#/components/schemas/PeraArgument"
                   },
                   {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/SuiArgument"
+                      "$ref": "#/components/schemas/PeraArgument"
                     }
                   }
                 ],
@@ -9707,12 +9707,12 @@
                 "type": "array",
                 "items": [
                   {
-                    "$ref": "#/components/schemas/SuiArgument"
+                    "$ref": "#/components/schemas/PeraArgument"
                   },
                   {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/SuiArgument"
+                      "$ref": "#/components/schemas/PeraArgument"
                     }
                   }
                 ],
@@ -9758,7 +9758,7 @@
                     "$ref": "#/components/schemas/ObjectID"
                   },
                   {
-                    "$ref": "#/components/schemas/SuiArgument"
+                    "$ref": "#/components/schemas/PeraArgument"
                   }
                 ],
                 "maxItems": 3,
@@ -9786,7 +9786,7 @@
                   {
                     "type": "array",
                     "items": {
-                      "$ref": "#/components/schemas/SuiArgument"
+                      "$ref": "#/components/schemas/PeraArgument"
                     }
                   }
                 ],
@@ -9798,10 +9798,10 @@
           }
         ]
       },
-      "SuiTransactionBlockBuilderMode": {
+      "PeraTransactionBlockBuilderMode": {
         "oneOf": [
           {
-            "description": "Regular Sui Transactions that are committed on chain",
+            "description": "Regular Pera Transactions that are committed on chain",
             "type": "string",
             "enum": [
               "Commit"
@@ -9816,8 +9816,8 @@
           }
         ]
       },
-      "SuiValidatorSummary": {
-        "description": "This is the JSON-RPC type for the SUI validator. It flattens all inner structures to top-level fields so that they are decoupled from the internal definitions.",
+      "PeraValidatorSummary": {
+        "description": "This is the JSON-RPC type for the PERA validator. It flattens all inner structures to top-level fields so that they are decoupled from the internal definitions.",
         "type": "object",
         "required": [
           "commissionRate",
@@ -9836,7 +9836,7 @@
           "p2pAddress",
           "pendingPoolTokenWithdraw",
           "pendingStake",
-          "pendingTotalSuiWithdraw",
+          "pendingTotalPeraWithdraw",
           "poolTokenBalance",
           "primaryAddress",
           "projectUrl",
@@ -9844,8 +9844,8 @@
           "protocolPubkeyBytes",
           "rewardsPool",
           "stakingPoolId",
-          "stakingPoolSuiBalance",
-          "suiAddress",
+          "stakingPoolPeraBalance",
+          "peraAddress",
           "votingPower",
           "workerAddress",
           "workerPubkeyBytes"
@@ -9987,7 +9987,7 @@
               }
             ]
           },
-          "pendingTotalSuiWithdraw": {
+          "pendingTotalPeraWithdraw": {
             "description": "Pending stake withdrawn during the current epoch, emptied at epoch boundaries.",
             "allOf": [
               {
@@ -10055,16 +10055,16 @@
               }
             ]
           },
-          "stakingPoolSuiBalance": {
-            "description": "The total number of SUI tokens in this pool.",
+          "stakingPoolPeraBalance": {
+            "description": "The total number of PERA tokens in this pool.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/BigInt_for_uint64"
               }
             ]
           },
-          "suiAddress": {
-            "$ref": "#/components/schemas/SuiAddress"
+          "peraAddress": {
+            "$ref": "#/components/schemas/PeraAddress"
           },
           "votingPower": {
             "$ref": "#/components/schemas/BigInt_for_uint64"
@@ -10159,7 +10159,7 @@
                 ]
               },
               "sender": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               },
               "transaction": {
                 "$ref": "#/components/schemas/TransactionBlockKind"
@@ -10415,7 +10415,7 @@
                 "description": "Input objects or primitive values",
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/SuiCallArg"
+                  "$ref": "#/components/schemas/PeraCallArg"
                 }
               },
               "kind": {
@@ -10428,7 +10428,7 @@
                 "description": "The transactions to be executed sequentially. A failure in any transaction will result in the failure of the entire programmable transaction block.",
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/SuiTransaction"
+                  "$ref": "#/components/schemas/PeraTransaction"
                 }
               }
             }
@@ -10455,7 +10455,7 @@
               "new_active_jwks": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/SuiActiveJwk"
+                  "$ref": "#/components/schemas/PeraActiveJwk"
                 }
               },
               "round": {
@@ -10512,7 +10512,7 @@
               "transactions": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/components/schemas/SuiEndOfEpochTransactionKind"
+                  "$ref": "#/components/schemas/PeraEndOfEpochTransactionKind"
                 }
               }
             }
@@ -10864,7 +10864,7 @@
             ],
             "properties": {
               "FromAddress": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               }
             },
             "additionalProperties": false
@@ -10877,7 +10877,7 @@
             ],
             "properties": {
               "ToAddress": {
-                "$ref": "#/components/schemas/SuiAddress"
+                "$ref": "#/components/schemas/PeraAddress"
               }
             },
             "additionalProperties": false
@@ -10897,10 +10897,10 @@
                 ],
                 "properties": {
                   "from": {
-                    "$ref": "#/components/schemas/SuiAddress"
+                    "$ref": "#/components/schemas/PeraAddress"
                   },
                   "to": {
-                    "$ref": "#/components/schemas/SuiAddress"
+                    "$ref": "#/components/schemas/PeraAddress"
                   }
                 }
               }
@@ -10921,7 +10921,7 @@
                 ],
                 "properties": {
                   "addr": {
-                    "$ref": "#/components/schemas/SuiAddress"
+                    "$ref": "#/components/schemas/PeraAddress"
                   }
                 }
               }
@@ -10970,7 +10970,7 @@
             "$ref": "#/components/schemas/ObjectID"
           },
           "recipient": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           }
         }
       },
@@ -11031,7 +11031,7 @@
         ],
         "properties": {
           "address": {
-            "$ref": "#/components/schemas/SuiAddress"
+            "$ref": "#/components/schemas/PeraAddress"
           },
           "apy": {
             "type": "number",

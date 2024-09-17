@@ -1,8 +1,8 @@
-# Sui dApp Kit
+# Pera dApp Kit
 
-The Sui dApp Kit is a set of React components, hooks, and utilities to help you build a dApp for the
-Sui ecosystem. Its hooks and components provide an interface for querying data from the Sui
-blockchain and connecting to Sui wallets.
+The Pera dApp Kit is a set of React components, hooks, and utilities to help you build a dApp for the
+Pera ecosystem. Its hooks and components provide an interface for querying data from the Pera
+blockchain and connecting to Pera wallets.
 
 ### Core Features
 
@@ -10,16 +10,16 @@ Some of the core features of the dApp Kit include:
 
 - Query hooks to get the information your dApp needs
 - Automatic wallet state management
-- Support for all Sui wallets
+- Support for all Pera wallets
 - Pre-built React components
 - Lower level hooks for custom components
 
 ## Install
 
-To use the Sui dApp Kit in your project, run the following command in your project root:
+To use the Pera dApp Kit in your project, run the following command in your project root:
 
 ```sh npm2yarn
-npm i --save @mysten/dapp-kit @mysten/sui @tanstack/react-query
+npm i --save @mysten/dapp-kit @pera-io/pera @tanstack/react-query
 ```
 
 ## Setting up providers
@@ -29,8 +29,8 @@ following example. The props available on the providers are covered in more deta
 respective pages.
 
 ```tsx
-import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui/client';
+import { createNetworkConfig, PeraClientProvider, WalletProvider } from '@mysten/dapp-kit';
+import { getFullnodeUrl } from '@pera-io/pera/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Config options for the networks you want to connect to
@@ -43,11 +43,11 @@ const queryClient = new QueryClient();
 function App() {
 	return (
 		<QueryClientProvider client={queryClient}>
-			<SuiClientProvider networks={networkConfig} defaultNetwork="localnet">
+			<PeraClientProvider networks={networkConfig} defaultNetwork="localnet">
 				<WalletProvider>
 					<YourApp />
 				</WalletProvider>
-			</SuiClientProvider>
+			</PeraClientProvider>
 		</QueryClientProvider>
 	);
 }
@@ -69,16 +69,16 @@ import '@mysten/dapp-kit/dist/index.css';
 
 ## Using hooks to make RPC calls
 
-The dApp Kit provides a set of hooks for making RPC calls to the Sui blockchain. The hooks are thin
+The dApp Kit provides a set of hooks for making RPC calls to the Pera blockchain. The hooks are thin
 wrappers around `useQuery` from `@tanstack/react-query`. For more comprehensive documentation on how
 to use these query hooks, check out the
 [react-query documentation](https://tanstack.com/query/latest/docs/react/overview).
 
 ```tsx
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
 
 function MyComponent() {
-	const { data, isPending, error, refetch } = useSuiClientQuery('getOwnedObjects', {
+	const { data, isPending, error, refetch } = usePeraClientQuery('getOwnedObjects', {
 		owner: '0x123',
 	});
 

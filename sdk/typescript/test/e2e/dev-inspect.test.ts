@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { resolve } from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { SuiClient } from '../../src/client';
+import { PeraClient } from '../../src/client';
 import { Keypair } from '../../src/cryptography';
 import { Transaction } from '../../src/transactions';
 import { setup, TestToolbox } from './utils/setup';
@@ -46,7 +46,7 @@ describe('Test dev inspect', () => {
 		const coin_0 = coins.data[0];
 		const obj = tx.moveCall({
 			target: `${packageId}::serializer_tests::return_struct`,
-			typeArguments: ['0x2::coin::Coin<0x2::sui::SUI>'],
+			typeArguments: ['0x2::coin::Coin<0x2::pera::PERA>'],
 			arguments: [tx.object(coin_0.coinObjectId)],
 		});
 
@@ -69,7 +69,7 @@ describe('Test dev inspect', () => {
 });
 
 async function validateDevInspectTransaction(
-	client: SuiClient,
+	client: PeraClient,
 	signer: Keypair,
 	transactionBlock: Transaction,
 	status: 'success' | 'failure',
@@ -77,7 +77,7 @@ async function validateDevInspectTransaction(
 ) {
 	const result = await client.devInspectTransactionBlock({
 		transactionBlock,
-		sender: signer.getPublicKey().toSuiAddress(),
+		sender: signer.getPublicKey().toPeraAddress(),
 		gasPrice,
 	});
 	expect(result.effects.status.status).toEqual(status);

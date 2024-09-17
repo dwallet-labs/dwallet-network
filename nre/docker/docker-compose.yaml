@@ -4,10 +4,10 @@ version: "3"
 services:
   validator:
     container_name: validator
-    image: mysten/sui-node:${SUI_SHA} # UPDATE HERE
+    image: pera-io/pera-node:${PERA_SHA} # UPDATE HERE
     environment:
       - RUST_BACKTRACE=1
-      - RUST_LOG=info,sui_core=debug,narwhal=debug,consensus=debug,jsonrpsee=error
+      - RUST_LOG=info,pera_core=debug,narwhal=debug,consensus=debug,jsonrpsee=error
     labels:
       org.label-schema.name: "validator"
     ports:
@@ -19,15 +19,15 @@ services:
       - "9184:9184"
     network_mode: "host"
     volumes:
-      - ./validator.yaml:/opt/sui/config/validator.yaml:ro
-      - ./genesis.blob:/opt/sui/config/genesis.blob:ro
-      - ../genesis/key-pairs:/opt/sui/key-pairs/:ro
-      - /opt/sui/db:/opt/sui/db:rw
+      - ./validator.yaml:/opt/pera/config/validator.yaml:ro
+      - ./genesis.blob:/opt/pera/config/genesis.blob:ro
+      - ../genesis/key-pairs:/opt/pera/key-pairs/:ro
+      - /opt/pera/db:/opt/pera/db:rw
     command:
       [
-        "/opt/sui/bin/sui-node",
+        "/opt/pera/bin/pera-node",
         "--config-path",
-        "/opt/sui/config/validator.yaml",
+        "/opt/pera/config/validator.yaml",
       ]
     restart: on-failure
     logging:

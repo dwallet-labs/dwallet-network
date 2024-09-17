@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module.exports = {
 	plugins: ['@tanstack/query', 'unused-imports', 'prettier', 'header', 'require-extensions'],
@@ -59,7 +59,7 @@ module.exports = {
 		'header/header': [
 			2,
 			'line',
-			[' Copyright (c) Mysten Labs, Inc.', ' SPDX-License-Identifier: Apache-2.0'],
+			[' Copyright (c) Mysten Labs, Inc.', ' SPDX-License-Identifier: BSD-3-Clause-Clear'],
 		],
 		'@typescript-eslint/no-unused-vars': [
 			'error',
@@ -127,9 +127,9 @@ module.exports = {
 			},
 		},
 		{
-			files: ['sdk/ledgerjs-hw-app-sui/**/*', 'apps/wallet/**/*'],
+			files: ['sdk/ledgerjs-hw-app-pera/**/*', 'apps/wallet/**/*'],
 			rules: {
-				// ledgerjs-hw-app-sui and wallet use Buffer
+				// ledgerjs-hw-app-pera and wallet use Buffer
 				'no-restricted-globals': ['off'],
 				'@typescript-eslint/ban-types': ['off'],
 			},

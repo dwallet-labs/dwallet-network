@@ -2,7 +2,7 @@
 	"name": "@mysten/enoki",
 	"version": "0.4.0",
 	"description": "TODO: Description",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"author": "Mysten Labs <build@mystenlabs.com>",
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",
@@ -55,7 +55,7 @@
 		"vite": "^5.3.3"
 	},
 	"dependencies": {
-		"@mysten/sui": "workspace:*",
+		"@pera-io/pera": "workspace:*",
 		"@mysten/zklogin": "workspace:*",
 		"@nanostores/react": "^0.7.2",
 		"jose": "^5.6.3",

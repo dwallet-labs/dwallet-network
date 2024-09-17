@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { toHEX } from '@mysten/bcs';
-import type { PublicKey } from '@mysten/sui/cryptography';
-import { toPaddedBigEndianBytes } from '@mysten/sui/zklogin';
+import type { PublicKey } from '@pera-io/pera/cryptography';
+import { toPaddedBigEndianBytes } from '@pera-io/pera/zklogin';
 import { randomBytes } from '@noble/hashes/utils';
 import { base64url } from 'jose';
 
@@ -25,7 +25,7 @@ export function generateRandomness() {
 }
 
 export function generateNonce(publicKey: PublicKey, maxEpoch: number, randomness: bigint | string) {
-	const publicKeyBytes = toBigIntBE(publicKey.toSuiBytes());
+	const publicKeyBytes = toBigIntBE(publicKey.toPeraBytes());
 	const eph_public_key_0 = publicKeyBytes / 2n ** 128n;
 	const eph_public_key_1 = publicKeyBytes % 2n ** 128n;
 	const bigNum = poseidonHash([eph_public_key_0, eph_public_key_1, maxEpoch, BigInt(randomness)]);

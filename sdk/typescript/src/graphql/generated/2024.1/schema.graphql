@@ -1,6 +1,6 @@
 type ActiveJwk {
 	"""
-	The string (Issuing Authority) that identifies the OIDC provider.
+	The string (Isperang Authority) that identifies the OIDC provider.
 	"""
 	iss: String!
 	"""
@@ -62,14 +62,14 @@ type ActiveJwkEdge {
 The 32-byte address that is an account address (corresponding to a public key).
 """
 type Address implements IOwner {
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Objects owned by this address, optionally `filter`-ed.
 	"""
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
 	Total balance of all coins with marker type owned by this address. If type is not supplied,
-	it defaults to `0x2::sui::SUI`.
+	it defaults to `0x2::pera::PERA`.
 	"""
 	balance(type: String): Balance
 	"""
@@ -79,22 +79,22 @@ type Address implements IOwner {
 	"""
 	The coin objects for this address.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this address.
+	The `0x3::staking_pool::StakedPera` objects owned by this address.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this address.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this address. These grant the owner the capability to
+	The PeransRegistration NFTs owned by this address. These grant the owner the capability to
 	manage the associated domain.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 	"""
 	Similar behavior to the `transactionBlocks` in Query but supporting the additional
 	`AddressTransactionBlockRelationship` filter, which defaults to `SIGN`.
@@ -210,7 +210,7 @@ The total balance for a particular coin type.
 """
 type Balance {
 	"""
-	Coin type for the balance, such as 0x2::sui::SUI
+	Coin type for the balance, such as 0x2::pera::PERA
 	"""
 	coinType: MoveType!
 	"""
@@ -232,7 +232,7 @@ type BalanceChange {
 	"""
 	owner: Owner
 	"""
-	The inner type of the coin whose balance has changed (e.g. `0x2::sui::SUI`).
+	The inner type of the coin whose balance has changed (e.g. `0x2::pera::PERA`).
 	"""
 	coinType: MoveType
 	"""
@@ -327,20 +327,20 @@ type ChangeEpochTransaction {
 	"""
 	protocolVersion: Int!
 	"""
-	The total amount of gas charged for storage during the previous epoch (in MIST).
+	The total amount of gas charged for storage during the previous epoch (in NPERA).
 	"""
 	storageCharge: BigInt!
 	"""
-	The total amount of gas charged for computation during the previous epoch (in MIST).
+	The total amount of gas charged for computation during the previous epoch (in NPERA).
 	"""
 	computationCharge: BigInt!
 	"""
-	The SUI returned to transaction senders for cleaning up objects (in MIST).
+	The PERA returned to transaction senders for cleaning up objects (in NPERA).
 	"""
 	storageRebate: BigInt!
 	"""
 	The total gas retained from storage fees, that will not be returned by storage rebates when
-	the relevant objects are cleaned up (in MIST).
+	the relevant objects are cleaned up (in NPERA).
 	"""
 	nonRefundableStorageFee: BigInt!
 	"""
@@ -446,14 +446,14 @@ input CheckpointId {
 Some 0x2::coin::Coin Move object.
 """
 type Coin implements IMoveObject & IObject & IOwner {
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Objects owned by this object, optionally `filter`-ed.
 	"""
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
 	Total balance of all coins with marker type owned by this object. If type is not supplied,
-	it defaults to `0x2::sui::SUI`.
+	it defaults to `0x2::pera::PERA`.
 	"""
 	balance(type: String): Balance
 	"""
@@ -463,22 +463,22 @@ type Coin implements IMoveObject & IObject & IOwner {
 	"""
 	The coin objects for this object.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this object.
+	The `0x3::staking_pool::StakedPera` objects owned by this object.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this object.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+	The PeransRegistration NFTs owned by this object. These grant the owner the capability to
 	manage the associated domain.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 	version: Int!
 	"""
 	The current status of the object as read from the off-chain store. The possible states are:
@@ -503,7 +503,7 @@ type Coin implements IMoveObject & IObject & IOwner {
 	"""
 	previousTransactionBlock: TransactionBlock
 	"""
-	The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+	The amount of PERA we would rebate if this object gets deleted or mutated. This number is
 	recalculated based on the present storage gas price.
 	"""
 	storageRebate: BigInt
@@ -523,7 +523,7 @@ type Coin implements IMoveObject & IObject & IOwner {
 	contents: MoveValue
 	"""
 	Determines whether a transaction can transfer this object, using the TransferObjects
-	transaction command or `sui::transfer::public_transfer`, both of which require the object to
+	transaction command or `pera::transfer::public_transfer`, both of which require the object to
 	have the `key` and `store` abilities.
 	"""
 	hasPublicTransfer: Boolean!
@@ -605,14 +605,14 @@ type CoinEdge {
 The metadata for a coin type.
 """
 type CoinMetadata implements IMoveObject & IObject & IOwner {
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Objects owned by this object, optionally `filter`-ed.
 	"""
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
 	Total balance of all coins with marker type owned by this object. If type is not supplied,
-	it defaults to `0x2::sui::SUI`.
+	it defaults to `0x2::pera::PERA`.
 	"""
 	balance(type: String): Balance
 	"""
@@ -622,22 +622,22 @@ type CoinMetadata implements IMoveObject & IObject & IOwner {
 	"""
 	The coin objects for this object.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this object.
+	The `0x3::staking_pool::StakedPera` objects owned by this object.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this object.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+	The PeransRegistration NFTs owned by this object. These grant the owner the capability to
 	manage the associated domain.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 	version: Int!
 	"""
 	The current status of the object as read from the off-chain store. The possible states are:
@@ -662,7 +662,7 @@ type CoinMetadata implements IMoveObject & IObject & IOwner {
 	"""
 	previousTransactionBlock: TransactionBlock
 	"""
-	The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+	The amount of PERA we would rebate if this object gets deleted or mutated. This number is
 	recalculated based on the present storage gas price.
 	"""
 	storageRebate: BigInt
@@ -682,7 +682,7 @@ type CoinMetadata implements IMoveObject & IObject & IOwner {
 	contents: MoveValue
 	"""
 	Determines whether a transaction can transfer this object, using the TransferObjects
-	transaction command or `sui::transfer::public_transfer`, both of which require the object to
+	transaction command or `pera::transfer::public_transfer`, both of which require the object to
 	have the `key` and `store` abilities.
 	"""
 	hasPublicTransfer: Boolean!
@@ -865,7 +865,7 @@ fields:
 1) Dynamic Fields can store any value that has the `store` ability, however an object
 stored in this kind of field will be considered wrapped and will not be accessible
 directly via its ID by external tools (explorers, wallets, etc) accessing storage.
-2) Dynamic Object Fields values must be Sui objects (have the `key` and `store`
+2) Dynamic Object Fields values must be Pera objects (have the `key` and `store`
 abilities, and id: UID as the first field), but will still be directly accessible off-chain
 via their object ID after being attached.
 """
@@ -970,7 +970,7 @@ type EndOfEpochTransactionKindEdge {
 }
 
 """
-Operation of the Sui network is temporally partitioned into non-overlapping epochs,
+Operation of the Pera network is temporally partitioned into non-overlapping epochs,
 and the network aims to keep epochs roughly the same duration as each other.
 During a particular epoch the following data is fixed:
 
@@ -1008,11 +1008,11 @@ type Epoch {
 	"""
 	totalTransactions: Int
 	"""
-	The total amount of gas fees (in MIST) that were paid in this epoch.
+	The total amount of gas fees (in NPERA) that were paid in this epoch.
 	"""
 	totalGasFees: BigInt
 	"""
-	The total MIST rewarded as stake.
+	The total NPERA rewarded as stake.
 	"""
 	totalStakeRewards: BigInt
 	"""
@@ -1045,7 +1045,7 @@ type Epoch {
 	"""
 	protocolConfigs: ProtocolConfigs!
 	"""
-	SUI set aside to account for objects stored on-chain, at the start of the epoch.
+	PERA set aside to account for objects stored on-chain, at the start of the epoch.
 	This is also used for storage rebates.
 	"""
 	storageFund: StorageFund
@@ -1055,7 +1055,7 @@ type Epoch {
 	"""
 	safeMode: SafeMode
 	"""
-	The value of the `version` field of `0x5`, the `0x3::sui::SuiSystemState` object.  This
+	The value of the `version` field of `0x5`, the `0x3::pera::PeraSystemState` object.  This
 	version changes whenever the fields contained in the system state object (held in a dynamic
 	field attached to `0x5`) change.
 	"""
@@ -1159,7 +1159,7 @@ type EventEdge {
 }
 
 input EventFilter {
-	sender: SuiAddress
+	sender: PeraAddress
 	transactionDigest: String
 	"""
 	Events emitted by a particular module. An event is emitted by a
@@ -1177,7 +1177,7 @@ input EventFilter {
 	
 	Generic types can be queried by either the generic type name, e.g.
 	`0x2::coin::Coin`, or by the full type name, such as
-	`0x2::coin::Coin<0x2::sui::SUI>`.
+	`0x2::coin::Coin<0x2::pera::PERA>`.
 	"""
 	eventType: String
 }
@@ -1230,7 +1230,7 @@ enum Feature {
 	"""
 	DYNAMIC_FIELDS
 	"""
-	SuiNS name and reverse name look-up.
+	PeraNS name and reverse name look-up.
 	"""
 	NAME_SERVICE
 	"""
@@ -1261,22 +1261,22 @@ Breakdown of gas costs in effects.
 """
 type GasCostSummary {
 	"""
-	Gas paid for executing this transaction (in MIST).
+	Gas paid for executing this transaction (in NPERA).
 	"""
 	computationCost: BigInt
 	"""
-	Gas paid for the data stored on-chain by this transaction (in MIST).
+	Gas paid for the data stored on-chain by this transaction (in NPERA).
 	"""
 	storageCost: BigInt
 	"""
 	Part of storage cost that can be reclaimed by cleaning up data created by this transaction
 	(when objects are deleted or an object is modified, which is treated as a deletion followed
-	by a creation) (in MIST).
+	by a creation) (in NPERA).
 	"""
 	storageRebate: BigInt
 	"""
 	Part of storage cost that is not reclaimed when data created by this transaction is cleaned
-	up (in MIST).
+	up (in NPERA).
 	"""
 	nonRefundableStorageFee: BigInt
 }
@@ -1303,7 +1303,7 @@ type GasInput {
 	gasPayment(first: Int, after: String, last: Int, before: String): ObjectConnection!
 	"""
 	An unsigned integer specifying the number of native tokens per gas unit this transaction
-	will pay (in MIST).
+	will pay (in NPERA).
 	"""
 	gasPrice: BigInt
 	"""
@@ -1333,7 +1333,7 @@ interface IMoveObject {
 	"""
 	contents: MoveValue
 	"""
-	Determines whether a transaction can transfer this object, using the TransferObjects transaction command or `sui::transfer::public_transfer`, both of which require the object to have the `key` and `store` abilities.
+	Determines whether a transaction can transfer this object, using the TransferObjects transaction command or `pera::transfer::public_transfer`, both of which require the object to have the `key` and `store` abilities.
 	"""
 	hasPublicTransfer: Boolean!
 	"""
@@ -1404,13 +1404,13 @@ object. The same address can only refer to an account or an object, never both, 
 possible to know which up-front.
 """
 interface IOwner {
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Objects owned by this object or address, optionally `filter`-ed.
 	"""
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
-	Total balance of all coins with marker type owned by this object or address. If type is not supplied, it defaults to `0x2::sui::SUI`.
+	Total balance of all coins with marker type owned by this object or address. If type is not supplied, it defaults to `0x2::pera::PERA`.
 	"""
 	balance(type: String): Balance
 	"""
@@ -1420,21 +1420,21 @@ interface IOwner {
 	"""
 	The coin objects for this object or address.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this object or address.
+	The `0x3::staking_pool::StakedPera` objects owned by this object or address.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this object or address.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this object or address. These grant the owner the capability to manage the associated domain.
+	The PeransRegistration NFTs owned by this object or address. These grant the owner the capability to manage the associated domain.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 }
 
 """
@@ -1468,11 +1468,11 @@ type Linkage {
 	"""
 	The ID on-chain of the first version of the dependency.
 	"""
-	originalId: SuiAddress!
+	originalId: PeraAddress!
 	"""
 	The ID on-chain of the version of the dependency that this package depends on.
 	"""
-	upgradedId: SuiAddress!
+	upgradedId: PeraAddress!
 	"""
 	The version of the dependency that this package depends on.
 	"""
@@ -1508,7 +1508,7 @@ type MergeCoinsTransaction {
 }
 
 """
-Abilities are keywords in Sui Move that define how types behave at the compiler level.
+Abilities are keywords in Pera Move that define how types behave at the compiler level.
 """
 enum MoveAbility {
 	"""
@@ -1536,7 +1536,7 @@ type MoveCallTransaction {
 	"""
 	The storage ID of the package the function being called is defined in.
 	"""
-	package: SuiAddress!
+	package: PeraAddress!
 	"""
 	The name of the module the function being called is defined in.
 	"""
@@ -1563,9 +1563,9 @@ type MoveCallTransaction {
 The contents of a Move Value, corresponding to the following recursive type:
 
 type MoveData =
-    { Address: SuiAddress }
-  | { UID:     SuiAddress }
-  | { ID:      SuiAddress }
+    { Address: PeraAddress }
+  | { UID:     PeraAddress }
+  | { ID:      PeraAddress }
   | { Bool:    bool }
   | { Number:  BigInt }
   | { String:  string }
@@ -1737,14 +1737,14 @@ The representation of an object as a Move Object, which exposes additional infor
 (content, module that governs it, version, is transferrable, etc.) about this object.
 """
 type MoveObject implements IMoveObject & IObject & IOwner {
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Objects owned by this object, optionally `filter`-ed.
 	"""
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
 	Total balance of all coins with marker type owned by this object. If type is not supplied,
-	it defaults to `0x2::sui::SUI`.
+	it defaults to `0x2::pera::PERA`.
 	"""
 	balance(type: String): Balance
 	"""
@@ -1754,22 +1754,22 @@ type MoveObject implements IMoveObject & IObject & IOwner {
 	"""
 	The coin objects for this object.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this object.
+	The `0x3::staking_pool::StakedPera` objects owned by this object.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this object.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+	The PeransRegistration NFTs owned by this object. These grant the owner the capability to
 	manage the associated domain.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 	version: Int!
 	"""
 	The current status of the object as read from the off-chain store. The possible states are:
@@ -1794,7 +1794,7 @@ type MoveObject implements IMoveObject & IObject & IOwner {
 	"""
 	previousTransactionBlock: TransactionBlock
 	"""
-	The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+	The amount of PERA we would rebate if this object gets deleted or mutated. This number is
 	recalculated based on the present storage gas price.
 	"""
 	storageRebate: BigInt
@@ -1814,7 +1814,7 @@ type MoveObject implements IMoveObject & IObject & IOwner {
 	contents: MoveValue
 	"""
 	Determines whether a transaction can transfer this object, using the TransferObjects
-	transaction command or `sui::transfer::public_transfer`, both of which require the object to
+	transaction command or `pera::transfer::public_transfer`, both of which require the object to
 	have the `key` and `store` abilities.
 	"""
 	hasPublicTransfer: Boolean!
@@ -1855,17 +1855,17 @@ type MoveObject implements IMoveObject & IObject & IOwner {
 	"""
 	asCoin: Coin
 	"""
-	Attempts to convert the Move object into a `0x3::staking_pool::StakedSui`.
+	Attempts to convert the Move object into a `0x3::staking_pool::StakedPera`.
 	"""
-	asStakedSui: StakedSui
+	asStakedPera: StakedPera
 	"""
 	Attempts to convert the Move object into a `0x2::coin::CoinMetadata`.
 	"""
 	asCoinMetadata: CoinMetadata
 	"""
-	Attempts to convert the Move object into a `SuinsRegistration` object.
+	Attempts to convert the Move object into a `PeransRegistration` object.
 	"""
-	asSuinsRegistration: SuinsRegistration
+	asPeransRegistration: PeransRegistration
 }
 
 type MoveObjectConnection {
@@ -1902,7 +1902,7 @@ A MovePackage is a kind of Move object that represents code that has been publis
 It exposes information about its modules, type definitions, functions, and dependencies.
 """
 type MovePackage implements IObject & IOwner {
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Objects owned by this package, optionally `filter`-ed.
 	
@@ -1912,7 +1912,7 @@ type MovePackage implements IObject & IOwner {
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
 	Total balance of all coins with marker type owned by this package. If type is not supplied,
-	it defaults to `0x2::sui::SUI`.
+	it defaults to `0x2::pera::PERA`.
 	
 	Note that coins owned by a package are inaccessible, because packages are immutable and
 	cannot be owned by an address.
@@ -1928,31 +1928,31 @@ type MovePackage implements IObject & IOwner {
 	"""
 	The coin objects owned by this package.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	
 	Note that coins owned by a package are inaccessible, because packages are immutable and
 	cannot be owned by an address.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this package.
+	The `0x3::staking_pool::StakedPera` objects owned by this package.
 	
 	Note that objects owned by a package are inaccessible, because packages are immutable and
 	cannot be owned by an address.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this object.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this package. These grant the owner the capability to
+	The PeransRegistration NFTs owned by this package. These grant the owner the capability to
 	manage the associated domain.
 	
 	Note that objects owned by a package are inaccessible, because packages are immutable and
 	cannot be owned by an address.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 	version: Int!
 	"""
 	The current status of the object as read from the off-chain store. The possible states are:
@@ -1978,7 +1978,7 @@ type MovePackage implements IObject & IOwner {
 	"""
 	previousTransactionBlock: TransactionBlock
 	"""
-	The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+	The amount of PERA we would rebate if this object gets deleted or mutated. This number is
 	recalculated based on the present storage gas price.
 	
 	Note that packages cannot be deleted or mutated, so this number is provided purely for
@@ -2220,7 +2220,7 @@ enum MoveVisibility {
 }
 
 """
-Mutations are used to write to the Sui network.
+Mutations are used to write to the Pera network.
 """
 type Mutation {
 	"""
@@ -2239,19 +2239,19 @@ type Mutation {
 }
 
 """
-An object in Sui is a package (set of Move bytecode modules) or object (typed data structure
+An object in Pera is a package (set of Move bytecode modules) or object (typed data structure
 with fields) with additional metadata detailing its id, version, transaction digest, owner
 field indicating how this object can be accessed.
 """
 type Object implements IObject & IOwner {
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Objects owned by this object, optionally `filter`-ed.
 	"""
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
 	Total balance of all coins with marker type owned by this object. If type is not supplied,
-	it defaults to `0x2::sui::SUI`.
+	it defaults to `0x2::pera::PERA`.
 	"""
 	balance(type: String): Balance
 	"""
@@ -2261,22 +2261,22 @@ type Object implements IObject & IOwner {
 	"""
 	The coin objects for this object.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this object.
+	The `0x3::staking_pool::StakedPera` objects owned by this object.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this object.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+	The PeransRegistration NFTs owned by this object. These grant the owner the capability to
 	manage the associated domain.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 	version: Int!
 	"""
 	The current status of the object as read from the off-chain store. The possible states are:
@@ -2302,7 +2302,7 @@ type Object implements IObject & IOwner {
 	"""
 	previousTransactionBlock: TransactionBlock
 	"""
-	The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+	The amount of PERA we would rebate if this object gets deleted or mutated. This number is
 	recalculated based on the present storage gas price.
 	"""
 	storageRebate: BigInt
@@ -2363,7 +2363,7 @@ type ObjectChange {
 	"""
 	The address of the object that has changed.
 	"""
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	The contents of the object immediately before the transaction.
 	"""
@@ -2457,17 +2457,17 @@ input ObjectFilter {
 	type name.
 	
 	Generic types can be queried by either the generic type name, e.g. `0x2::coin::Coin`, or by
-	the full type name, such as `0x2::coin::Coin<0x2::sui::SUI>`.
+	the full type name, such as `0x2::coin::Coin<0x2::pera::PERA>`.
 	"""
 	type: String
 	"""
 	Filter for live objects by their current owners.
 	"""
-	owner: SuiAddress
+	owner: PeraAddress
 	"""
 	Filter for live objects by their IDs.
 	"""
-	objectIds: [SuiAddress!]
+	objectIds: [PeraAddress!]
 	"""
 	Filter for live or potentially historical objects by their ID and version.
 	"""
@@ -2475,7 +2475,7 @@ input ObjectFilter {
 }
 
 input ObjectKey {
-	objectId: SuiAddress!
+	objectId: PeraAddress!
 	version: Int!
 }
 
@@ -2509,7 +2509,7 @@ input ObjectRef {
 	"""
 	ID of the object.
 	"""
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Version or sequence number of the object.
 	"""
@@ -2567,7 +2567,7 @@ type OwnedOrImmutable {
 	"""
 	ID of the object being read.
 	"""
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Version of the object being read.
 	"""
@@ -2584,19 +2584,19 @@ type OwnedOrImmutable {
 }
 
 """
-An Owner is an entity that can own an object. Each Owner is identified by a SuiAddress which
+An Owner is an entity that can own an object. Each Owner is identified by a PeraAddress which
 represents either an Address (corresponding to a public key of an account) or an Object, but
 never both (it is not known up-front whether a given Owner is an Address or an Object).
 """
 type Owner implements IOwner {
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Objects owned by this object or address, optionally `filter`-ed.
 	"""
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
 	Total balance of all coins with marker type owned by this object or address. If type is not
-	supplied, it defaults to `0x2::sui::SUI`.
+	supplied, it defaults to `0x2::pera::PERA`.
 	"""
 	balance(type: String): Balance
 	"""
@@ -2606,22 +2606,22 @@ type Owner implements IOwner {
 	"""
 	The coin objects for this object or address.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this object or address.
+	The `0x3::staking_pool::StakedPera` objects owned by this object or address.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this object or address.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this object or address. These grant the owner the
+	The PeransRegistration NFTs owned by this object or address. These grant the owner the
 	capability to manage the associated domain.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 	asAddress: Address
 	asObject: Object
 	"""
@@ -2788,7 +2788,7 @@ type PublishTransaction {
 	"""
 	IDs of the transitive dependencies of the package to be published.
 	"""
-	dependencies: [SuiAddress!]!
+	dependencies: [PeraAddress!]!
 }
 
 """
@@ -2836,16 +2836,16 @@ type Query {
 	non-entry functions, and some other checks.  Defaults to false.
 	"""
 	dryRunTransactionBlock(txBytes: String!, txMeta: TransactionMetadata, skipChecks: Boolean): DryRunResult!
-	owner(address: SuiAddress!): Owner
+	owner(address: PeraAddress!): Owner
 	"""
 	The object corresponding to the given address at the (optionally) given version.
 	When no version is given, the latest version is returned.
 	"""
-	object(address: SuiAddress!, version: Int): Object
+	object(address: PeraAddress!, version: Int): Object
 	"""
-	Look-up an Account by its SuiAddress.
+	Look-up an Account by its PeraAddress.
 	"""
-	address(address: SuiAddress!): Address
+	address(address: PeraAddress!): Address
 	"""
 	Fetch a structured representation of a concrete type, including its layout information.
 	Fails if the type is malformed.
@@ -2868,7 +2868,7 @@ type Query {
 	The coin objects that exist in the network.
 	
 	The type field is a string of the inner type of the coin by which to filter (e.g.
-	`0x2::sui::SUI`). If no type is provided, it will default to `0x2::sui::SUI`.
+	`0x2::pera::PERA`). If no type is provided, it will default to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
@@ -2893,9 +2893,9 @@ type Query {
 	"""
 	protocolConfig(protocolVersion: Int): ProtocolConfigs!
 	"""
-	Resolves a SuiNS `domain` name to an address, if it has been bound.
+	Resolves a PeraNS `domain` name to an address, if it has been bound.
 	"""
-	resolveSuinsAddress(domain: String!): Address
+	resolvePeransAddress(domain: String!): Address
 	"""
 	The coin metadata associated with the given coin type.
 	"""
@@ -2913,7 +2913,7 @@ type Query {
 	- `intentScope` is an enum that specifies the intent scope to be used to parse bytes.
 	- `author` is the address of the signer of the transaction or personal msg.
 	"""
-	verifyZkloginSignature(bytes: Base64!, signature: Base64!, intentScope: ZkLoginIntentScope!, author: SuiAddress!): ZkLoginVerifyResult!
+	verifyZkloginSignature(bytes: Base64!, signature: Base64!, intentScope: ZkLoginIntentScope!, author: PeraAddress!): ZkLoginVerifyResult!
 }
 
 type RandomnessStateCreateTransaction {
@@ -2952,7 +2952,7 @@ type Receiving {
 	"""
 	ID of the object being read.
 	"""
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Version of the object being read.
 	"""
@@ -3085,7 +3085,7 @@ type Shared {
 A Move object that's shared.
 """
 type SharedInput {
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	The version that this this object was shared at.
 	"""
@@ -3108,7 +3108,7 @@ type SharedObjectDelete {
 	"""
 	ID of the shared object.
 	"""
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	The version of the shared object that was assigned to this transaction during by consensus,
 	during sequencing.
@@ -3128,7 +3128,7 @@ type SharedObjectRead {
 	"""
 	ID of the object being read.
 	"""
-	address: SuiAddress!
+	address: PeraAddress!
 	"""
 	Version of the object being read.
 	"""
@@ -3182,7 +3182,7 @@ Parameters that control the distribution of the stake subsidy.
 """
 type StakeSubsidy {
 	"""
-	SUI set aside for stake subsidies -- reduces over time as stake subsidies are paid out over
+	PERA set aside for stake subsidies -- reduces over time as stake subsidies are paid out over
 	time.
 	"""
 	balance: BigInt
@@ -3208,17 +3208,17 @@ type StakeSubsidy {
 }
 
 """
-Represents a `0x3::staking_pool::StakedSui` Move object on-chain.
+Represents a `0x3::staking_pool::StakedPera` Move object on-chain.
 """
-type StakedSui implements IMoveObject & IObject & IOwner {
-	address: SuiAddress!
+type StakedPera implements IMoveObject & IObject & IOwner {
+	address: PeraAddress!
 	"""
 	Objects owned by this object, optionally `filter`-ed.
 	"""
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
 	Total balance of all coins with marker type owned by this object. If type is not supplied,
-	it defaults to `0x2::sui::SUI`.
+	it defaults to `0x2::pera::PERA`.
 	"""
 	balance(type: String): Balance
 	"""
@@ -3228,22 +3228,22 @@ type StakedSui implements IMoveObject & IObject & IOwner {
 	"""
 	The coin objects for this object.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this object.
+	The `0x3::staking_pool::StakedPera` objects owned by this object.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this object.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+	The PeransRegistration NFTs owned by this object. These grant the owner the capability to
 	manage the associated domain.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 	version: Int!
 	"""
 	The current status of the object as read from the off-chain store. The possible states are:
@@ -3268,7 +3268,7 @@ type StakedSui implements IMoveObject & IObject & IOwner {
 	"""
 	previousTransactionBlock: TransactionBlock
 	"""
-	The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+	The amount of PERA we would rebate if this object gets deleted or mutated. This number is
 	recalculated based on the present storage gas price.
 	"""
 	storageRebate: BigInt
@@ -3288,7 +3288,7 @@ type StakedSui implements IMoveObject & IObject & IOwner {
 	contents: MoveValue
 	"""
 	Determines whether a transaction can transfer this object, using the TransferObjects
-	transaction command or `sui::transfer::public_transfer`, both of which require the object to
+	transaction command or `pera::transfer::public_transfer`, both of which require the object to
 	have the `key` and `store` abilities.
 	"""
 	hasPublicTransfer: Boolean!
@@ -3339,9 +3339,9 @@ type StakedSui implements IMoveObject & IObject & IOwner {
 	"""
 	The object id of the validator staking pool this stake belongs to.
 	"""
-	poolId: SuiAddress
+	poolId: PeraAddress
 	"""
-	The SUI that was initially staked.
+	The PERA that was initially staked.
 	"""
 	principal: BigInt
 	"""
@@ -3359,7 +3359,7 @@ type StakedSui implements IMoveObject & IObject & IOwner {
 	estimatedReward: BigInt
 }
 
-type StakedSuiConnection {
+type StakedPeraConnection {
 	"""
 	Information to aid in pagination.
 	"""
@@ -3367,21 +3367,21 @@ type StakedSuiConnection {
 	"""
 	A list of edges.
 	"""
-	edges: [StakedSuiEdge!]!
+	edges: [StakedPeraEdge!]!
 	"""
 	A list of nodes.
 	"""
-	nodes: [StakedSui!]!
+	nodes: [StakedPera!]!
 }
 
 """
 An edge in a connection.
 """
-type StakedSuiEdge {
+type StakedPeraEdge {
 	"""
 	The item at the end of the edge
 	"""
-	node: StakedSui!
+	node: StakedPera!
 	"""
 	A cursor for use in pagination
 	"""
@@ -3389,7 +3389,7 @@ type StakedSuiEdge {
 }
 
 """
-SUI set aside to account for objects stored on-chain.
+PERA set aside to account for objects stored on-chain.
 """
 type StorageFund {
 	"""
@@ -3408,19 +3408,19 @@ type StorageFund {
 
 
 """
-String containing 32B hex-encoded address, with a leading "0x". Leading zeroes can be omitted on input but will always appear in outputs (SuiAddress in output is guaranteed to be 66 characters long).
+String containing 32B hex-encoded address, with a leading "0x". Leading zeroes can be omitted on input but will always appear in outputs (PeraAddress in output is guaranteed to be 66 characters long).
 """
-scalar SuiAddress
+scalar PeraAddress
 
-type SuinsRegistration implements IMoveObject & IObject & IOwner {
-	address: SuiAddress!
+type PeransRegistration implements IMoveObject & IObject & IOwner {
+	address: PeraAddress!
 	"""
 	Objects owned by this object, optionally `filter`-ed.
 	"""
 	objects(first: Int, after: String, last: Int, before: String, filter: ObjectFilter): MoveObjectConnection!
 	"""
 	Total balance of all coins with marker type owned by this object. If type is not supplied,
-	it defaults to `0x2::sui::SUI`.
+	it defaults to `0x2::pera::PERA`.
 	"""
 	balance(type: String): Balance
 	"""
@@ -3430,22 +3430,22 @@ type SuinsRegistration implements IMoveObject & IObject & IOwner {
 	"""
 	The coin objects for this object.
 	
-	`type` is a filter on the coin's type parameter, defaulting to `0x2::sui::SUI`.
+	`type` is a filter on the coin's type parameter, defaulting to `0x2::pera::PERA`.
 	"""
 	coins(first: Int, after: String, last: Int, before: String, type: String): CoinConnection!
 	"""
-	The `0x3::staking_pool::StakedSui` objects owned by this object.
+	The `0x3::staking_pool::StakedPera` objects owned by this object.
 	"""
-	stakedSuis(first: Int, after: String, last: Int, before: String): StakedSuiConnection!
+	stakedPeras(first: Int, after: String, last: Int, before: String): StakedPeraConnection!
 	"""
 	The domain explicitly configured as the default domain pointing to this object.
 	"""
-	defaultSuinsName: String
+	defaultPeransName: String
 	"""
-	The SuinsRegistration NFTs owned by this object. These grant the owner the capability to
+	The PeransRegistration NFTs owned by this object. These grant the owner the capability to
 	manage the associated domain.
 	"""
-	suinsRegistrations(first: Int, after: String, last: Int, before: String): SuinsRegistrationConnection!
+	peransRegistrations(first: Int, after: String, last: Int, before: String): PeransRegistrationConnection!
 	version: Int!
 	"""
 	The current status of the object as read from the off-chain store. The possible states are:
@@ -3470,7 +3470,7 @@ type SuinsRegistration implements IMoveObject & IObject & IOwner {
 	"""
 	previousTransactionBlock: TransactionBlock
 	"""
-	The amount of SUI we would rebate if this object gets deleted or mutated. This number is
+	The amount of PERA we would rebate if this object gets deleted or mutated. This number is
 	recalculated based on the present storage gas price.
 	"""
 	storageRebate: BigInt
@@ -3490,7 +3490,7 @@ type SuinsRegistration implements IMoveObject & IObject & IOwner {
 	contents: MoveValue
 	"""
 	Determines whether a transaction can transfer this object, using the TransferObjects
-	transaction command or `sui::transfer::public_transfer`, both of which require the object to
+	transaction command or `pera::transfer::public_transfer`, both of which require the object to
 	have the `key` and `store` abilities.
 	"""
 	hasPublicTransfer: Boolean!
@@ -3527,12 +3527,12 @@ type SuinsRegistration implements IMoveObject & IObject & IOwner {
 	"""
 	dynamicFields(first: Int, after: String, last: Int, before: String): DynamicFieldConnection!
 	"""
-	Domain name of the SuinsRegistration object
+	Domain name of the PeransRegistration object
 	"""
 	domain: String!
 }
 
-type SuinsRegistrationConnection {
+type PeransRegistrationConnection {
 	"""
 	Information to aid in pagination.
 	"""
@@ -3540,21 +3540,21 @@ type SuinsRegistrationConnection {
 	"""
 	A list of edges.
 	"""
-	edges: [SuinsRegistrationEdge!]!
+	edges: [PeransRegistrationEdge!]!
 	"""
 	A list of nodes.
 	"""
-	nodes: [SuinsRegistration!]!
+	nodes: [PeransRegistration!]!
 }
 
 """
 An edge in a connection.
 """
-type SuinsRegistrationEdge {
+type PeransRegistrationEdge {
 	"""
 	The item at the end of the edge
 	"""
-	node: SuinsRegistration!
+	node: PeransRegistration!
 	"""
 	A cursor for use in pagination
 	"""
@@ -3754,10 +3754,10 @@ input TransactionBlockFilter {
 	afterCheckpoint: Int
 	atCheckpoint: Int
 	beforeCheckpoint: Int
-	signAddress: SuiAddress
-	recvAddress: SuiAddress
-	inputObject: SuiAddress
-	changedObject: SuiAddress
+	signAddress: PeraAddress
+	recvAddress: PeraAddress
+	inputObject: PeraAddress
+	changedObject: PeraAddress
 	transactionIds: [String!]
 }
 
@@ -3820,11 +3820,11 @@ gas price, `gasBudget` defaults to the max gas budget and `gasSponsor` defaults
 to the sender.
 """
 input TransactionMetadata {
-	sender: SuiAddress
+	sender: PeraAddress
 	gasPrice: Int
 	gasObjects: [ObjectRef!]
 	gasBudget: Int
-	gasSponsor: SuiAddress
+	gasSponsor: PeraAddress
 }
 
 """
@@ -3857,7 +3857,7 @@ type TypeOrigin {
 	"""
 	The storage ID of the package that first defined this type.
 	"""
-	definingId: SuiAddress!
+	definingId: PeraAddress!
 }
 
 """
@@ -3908,11 +3908,11 @@ type UpgradeTransaction {
 	"""
 	IDs of the transitive dependencies of the package to be published.
 	"""
-	dependencies: [SuiAddress!]!
+	dependencies: [PeraAddress!]!
 	"""
 	ID of the package being upgraded.
 	"""
-	currentPackage: SuiAddress!
+	currentPackage: PeraAddress!
 	"""
 	The `UpgradeTicket` authorizing the upgrade.
 	"""
@@ -3961,7 +3961,7 @@ type Validator {
 	stakingPool: MoveObject
 	"""
 	The validator's current exchange object. The exchange rate is used to determine
-	the amount of SUI tokens that each past SUI staker can withdraw in the future.
+	the amount of PERA tokens that each past PERA staker can withdraw in the future.
 	"""
 	exchangeRates: MoveObject
 	"""
@@ -3973,9 +3973,9 @@ type Validator {
 	"""
 	stakingPoolActivationEpoch: Int
 	"""
-	The total number of SUI tokens in this pool.
+	The total number of PERA tokens in this pool.
 	"""
-	stakingPoolSuiBalance: BigInt
+	stakingPoolPeraBalance: BigInt
 	"""
 	The epoch stake rewards will be added here at the end of each epoch.
 	"""
@@ -3991,7 +3991,7 @@ type Validator {
 	"""
 	Pending stake withdrawn during the current epoch, emptied at epoch boundaries.
 	"""
-	pendingTotalSuiWithdraw: BigInt
+	pendingTotalPeraWithdraw: BigInt
 	"""
 	Pending pool token withdrawn during the current epoch, emptied at epoch boundaries.
 	"""
@@ -4009,7 +4009,7 @@ type Validator {
 	"""
 	commissionRate: Int
 	"""
-	The total number of SUI tokens in this pool plus
+	The total number of PERA tokens in this pool plus
 	the pending stake amount for this epoch.
 	"""
 	nextEpochStake: BigInt
@@ -4096,7 +4096,7 @@ type ValidatorSet {
 	"""
 	Object ID of the wrapped object `TableVec` storing the pending active validators.
 	"""
-	pendingActiveValidatorsId: SuiAddress
+	pendingActiveValidatorsId: PeraAddress
 	"""
 	Size of the pending active validators table.
 	"""
@@ -4106,7 +4106,7 @@ type ValidatorSet {
 	of the corresponding validators. This is needed because a validator's address
 	can potentially change but the object ID of its pool will not.
 	"""
-	stakingPoolMappingsId: SuiAddress
+	stakingPoolMappingsId: PeraAddress
 	"""
 	Size of the stake pool mappings `Table`.
 	"""
@@ -4114,7 +4114,7 @@ type ValidatorSet {
 	"""
 	Object ID of the `Table` storing the inactive staking pools.
 	"""
-	inactivePoolsId: SuiAddress
+	inactivePoolsId: PeraAddress
 	"""
 	Size of the inactive pools `Table`.
 	"""
@@ -4122,7 +4122,7 @@ type ValidatorSet {
 	"""
 	Object ID of the `Table` storing the validator candidates.
 	"""
-	validatorCandidatesId: SuiAddress
+	validatorCandidatesId: PeraAddress
 	"""
 	Size of the validator candidates `Table`.
 	"""

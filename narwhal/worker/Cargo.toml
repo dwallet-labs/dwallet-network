@@ -1,7 +1,7 @@
 [package]
 name = "narwhal-worker"
 version = "0.1.0"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 edition = "2021"
 publish = false
@@ -34,7 +34,7 @@ prometheus.workspace = true
 store = { path = "../../crates/typed-store", package = "typed-store" }
 mysten-network = { path = "../../crates/mysten-network"}
 mysten-metrics = { path = "../../crates/mysten-metrics" }
-sui-protocol-config = { path = "../../crates/sui-protocol-config" }
+pera-protocol-config = { path = "../../crates/pera-protocol-config" }
 
 anemo.workspace = true
 anemo-tower.workspace = true

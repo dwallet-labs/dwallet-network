@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui/bcs';
+import { bcs } from '@pera-io/pera/bcs';
 
 import {
 	KIOSK_PURCHASE_CAP,

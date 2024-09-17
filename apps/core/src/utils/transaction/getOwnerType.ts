@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiObjectChange } from '@mysten/sui/client';
+import type { PeraObjectChange } from '@pera-io/pera/client';
 
-export const getOwnerType = (change: SuiObjectChange) => {
+export const getOwnerType = (change: PeraObjectChange) => {
 	if (!('owner' in change)) return '';
 	if (typeof change.owner === 'object') {
 		if ('AddressOwner' in change.owner) return 'AddressOwner';

@@ -1,6 +1,6 @@
 #!/bin/zsh
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # This script is meant to be executed on MacOS (hence zsh use - to get associative arrays otherwise
 # unavailable in the bundled bash version).
@@ -46,7 +46,7 @@ done
 NETWORK="testnet"
 VERSION="1.13.0"
 
-# a map from os version identifiers in Sui's binary distribution to os version identifiers
+# a map from os version identifiers in Pera's binary distribution to os version identifiers
 # representing VSCode's target platforms used for creating platform-specific plugin distributions
 declare -A SUPPORTED_OS
 SUPPORTED_OS[macos-arm64]=darwin-arm64
@@ -63,19 +63,19 @@ rm -rf $LANG_SERVER_DIR
 mkdir $LANG_SERVER_DIR
 
 for DIST_OS VSCODE_OS in "${(@kv)SUPPORTED_OS}"; do
-    # Sui distribution identifier
-    SUI_DISTRO=$NETWORK"-v"$VERSION
-    # name of the Sui distribution archive file, for example sui-testnet-v1.13.0-macos-arm64.tgz
-    SUI_ARCHIVE="sui-"$SUI_DISTRO"-"$DIST_OS".tgz"
-    # a path to downloaded Sui archive
-    SUI_ARCHIVE_PATH=$TMP_DIR"/"$SUI_ARCHIVE
+    # Pera distribution identifier
+    PERA_DISTRO=$NETWORK"-v"$VERSION
+    # name of the Pera distribution archive file, for example pera-testnet-v1.13.0-macos-arm64.tgz
+    PERA_ARCHIVE="pera-"$PERA_DISTRO"-"$DIST_OS".tgz"
+    # a path to downloaded Pera archive
+    PERA_ARCHIVE_PATH=$TMP_DIR"/"$PERA_ARCHIVE
 
-    # download Sui archive file to a given location and uncompress it
-    curl https://github.com/MystenLabs/sui/releases/download/"$SUI_DISTRO"/"$SUI_ARCHIVE" -L -o $SUI_ARCHIVE_PATH
-    tar -xf $SUI_ARCHIVE_PATH --directory $TMP_DIR
+    # download Pera archive file to a given location and uncompress it
+    curl https://github.com/MystenLabs/sui/releases/download/"$PERA_DISTRO"/"$PERA_ARCHIVE" -L -o $PERA_ARCHIVE_PATH
+    tar -xf $PERA_ARCHIVE_PATH --directory $TMP_DIR
 
     # names of the move-analyzer binary, both the one becoming part of the extension ($SERVER_BIN)
-    # and the one in the Sui archive ($ARCHIVE_SERVER_BIN)
+    # and the one in the Pera archive ($ARCHIVE_SERVER_BIN)
     SERVER_BIN="move-analyzer"
     ARCHIVE_SERVER_BIN=$SERVER_BIN"-"$DIST_OS
     if [[ "$DIST_OS" == *"windows"* ]]; then

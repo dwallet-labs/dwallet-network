@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromB64 } from '@mysten/bcs';
 import { secp256k1 } from '@noble/curves/secp256k1';
@@ -56,7 +56,7 @@ export class Secp256k1PublicKey extends PublicKey {
 	}
 
 	/**
-	 * Return the Sui address associated with this Secp256k1 public key
+	 * Return the Pera address associated with this Secp256k1 public key
 	 */
 	flag(): number {
 		return SIGNATURE_SCHEME_TO_FLAG['Secp256k1'];

@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useCurrentAccount } from '@mysten/dapp-kit';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { normalizePeraAddress } from '@pera-io/pera/utils';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -26,7 +26,7 @@ export function KioskItems({ kioskId }: { kioskId?: string }) {
 	// using endsWith because we support it with both 0x prefix and without.
 	const isOwnedKiosk = () => {
 		return walletKiosk?.caps?.find(
-			(x) => kioskId && normalizeSuiAddress(x.kioskId).endsWith(kioskId),
+			(x) => kioskId && normalizePeraAddress(x.kioskId).endsWith(kioskId),
 		);
 	};
 

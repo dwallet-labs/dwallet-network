@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use core::fmt;
 use std::{
@@ -111,7 +111,7 @@ pub trait FunctionTargetProcessor {
         Some(self.process(targets, func_env, data, scc_opt))
     }
 
-    /// Returns a name for this processor. This should be suitable as a file suffix.
+    /// Returns a name for this processor. This should be peratable as a file suffix.
     fn name(&self) -> String;
 
     /// A function which is called once before any `process` call is issued.

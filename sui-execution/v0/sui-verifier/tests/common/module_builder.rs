@@ -1,10 +1,10 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_binary_format::file_format::*;
 use move_core_types::{account_address::AccountAddress, identifier::Identifier};
-use sui_types::SUI_FRAMEWORK_ADDRESS;
+use pera_types::PERA_FRAMEWORK_ADDRESS;
 
 pub struct ModuleBuilder {
     module: CompiledModule,
@@ -58,7 +58,7 @@ impl ModuleBuilder {
     /// Creates the "object" module in framework address, along with the "Info" struct.
     /// Both the module and the Info struct information are returned.
     pub fn default() -> (Self, StructInfo) {
-        let mut module = Self::new(SUI_FRAMEWORK_ADDRESS, OBJECT_MODULE_NAME);
+        let mut module = Self::new(PERA_FRAMEWORK_ADDRESS, OBJECT_MODULE_NAME);
         let id = module.add_struct(
             module.get_self_index(),
             INFO_STRUCT_NAME,

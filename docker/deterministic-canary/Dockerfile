@@ -40,7 +40,7 @@ COPY --from=stagex/llvm . /
 COPY --from=stagex/make . /
 COPY --from=stagex/musl . /
 
-# Sui build deps
+# Pera build deps
 
 COPY --from=stagex/clang . /
 COPY --from=stagex/linux-headers . /

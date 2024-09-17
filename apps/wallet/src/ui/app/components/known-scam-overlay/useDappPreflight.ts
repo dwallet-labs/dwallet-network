@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useAppsBackend } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { type Transaction } from '@mysten/sui/transactions';
-import { toB64 } from '@mysten/sui/utils';
+import { usePeraClient } from '@mysten/dapp-kit';
+import { type Transaction } from '@pera-io/pera/transactions';
+import { toB64 } from '@pera-io/pera/utils';
 import { useQuery } from '@tanstack/react-query';
 
 import {
@@ -27,7 +27,7 @@ export function useDappPreflight({
 	network: Network;
 }) {
 	const { request } = useAppsBackend();
-	const client = useSuiClient();
+	const client = usePeraClient();
 
 	return useQuery({
 		// eslint-disable-next-line @tanstack/query/exhaustive-deps

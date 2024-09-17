@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import Loading from '_components/loading';
 import Overlay from '_components/overlay';
@@ -12,7 +12,7 @@ import {
 } from '_hooks';
 import { TokenRow } from '_pages/home/tokens/TokensDetails';
 import { DeepBookContextProvider } from '_shared/deepBook/context';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
 import { Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,7 +21,7 @@ function FromAssetsComponent() {
 	const selectedAddress = useActiveAddress();
 	const { staleTime, refetchInterval } = useCoinsReFetchingConfig();
 
-	const { data: coins, isPending } = useSuiClientQuery(
+	const { data: coins, isPending } = usePeraClientQuery(
 		'getAllBalances',
 		{ owner: selectedAddress! },
 		{

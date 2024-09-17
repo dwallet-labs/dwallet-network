@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useSuiNSEnabled } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { type SuiClient } from '@mysten/sui/client';
-import { isValidSuiAddress, isValidSuiNSName } from '@mysten/sui/utils';
+import { usePeraNSEnabled } from '@mysten/core';
+import { usePeraClient } from '@mysten/dapp-kit';
+import { type PeraClient } from '@pera-io/pera/client';
+import { isValidPeraAddress, isValidPeraNSName } from '@pera-io/pera/utils';
 import { useMemo } from 'react';
 import * as Yup from 'yup';
 
 const CACHE_EXPIRY_TIME = 60 * 1000; // 1 minute in milliseconds
 
-export function createSuiAddressValidation(client: SuiClient, suiNSEnabled: boolean) {
+export function createPeraAddressValidation(client: PeraClient, peraNSEnabled: boolean) {
 	const resolveCache = new Map<string, { valid: boolean; expiry: number }>();
 
 	const currentTime = Date.now();
@@ -18,8 +18,8 @@ export function createSuiAddressValidation(client: SuiClient, suiNSEnabled: bool
 		.ensure()
 		.trim()
 		.required()
-		.test('is-sui-address', 'Invalid address. Please check again.', async (value) => {
-			if (suiNSEnabled && isValidSuiNSName(value)) {
+		.test('is-pera-address', 'Invalid address. Please check again.', async (value) => {
+			if (peraNSEnabled && isValidPeraNSName(value)) {
 				if (resolveCache.has(value)) {
 					const cachedEntry = resolveCache.get(value)!;
 					if (currentTime < cachedEntry.expiry) {
@@ -41,16 +41,16 @@ export function createSuiAddressValidation(client: SuiClient, suiNSEnabled: bool
 				return !!address;
 			}
 
-			return isValidSuiAddress(value);
+			return isValidPeraAddress(value);
 		})
 		.label("Recipient's address");
 }
 
-export function useSuiAddressValidation() {
-	const client = useSuiClient();
-	const suiNSEnabled = useSuiNSEnabled();
+export function usePeraAddressValidation() {
+	const client = usePeraClient();
+	const peraNSEnabled = usePeraNSEnabled();
 
 	return useMemo(() => {
-		return createSuiAddressValidation(client, suiNSEnabled);
-	}, [client, suiNSEnabled]);
+		return createPeraAddressValidation(client, peraNSEnabled);
+	}, [client, peraNSEnabled]);
 }

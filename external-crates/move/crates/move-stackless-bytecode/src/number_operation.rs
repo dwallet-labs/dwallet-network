@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This file defines types, data structures and corresponding functions to
 //! mark the operation (arithmetic or bitwise) that a variable or a field involves,

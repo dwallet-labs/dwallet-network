@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import Dexie, { type Table } from 'dexie';
 import { exportDB, importDB } from 'dexie-export-import';
@@ -9,7 +9,7 @@ import { type AccountType, type SerializedAccount } from './accounts/Account';
 import { captureException } from './sentry';
 import { getFromLocalStorage, setToLocalStorage } from './storage-utils';
 
-const dbName = 'SuiWallet DB';
+const dbName = 'PeraWallet DB';
 const dbLocalStorageBackupKey = 'indexed-db-backup';
 
 export const settingsKeys = {

@@ -1,9 +1,9 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # shellcheck disable=SC2181
-# This script attempts to update the Narwhal pointer in Sui
+# This script attempts to update the Narwhal pointer in Pera
 # It is expected to fail in cases 
 set -e
 set -eo pipefail
@@ -53,7 +53,7 @@ function current_nw_revision() {
 	    fi
 	done
 
-	[[ -n "$not_equal" ]] && echo "Different values found for the current NW revision in Sui, aborting" && exit 1
+	[[ -n "$not_equal" ]] && echo "Different values found for the current NW revision in Pera, aborting" && exit 1
 	echo "$watermark"
 }
 
@@ -64,7 +64,7 @@ check_gnu_grep
 CURRENT_NW=$(current_nw_revision)
 LATEST_NW=$(latest_nw_revision)
 if [[ "$CURRENT_NW" != "$LATEST_NW" ]]; then
-	echo "About to replace $CURRENT_NW with $LATEST_NW as the Narwhal pointer in Sui"
+	echo "About to replace $CURRENT_NW with $LATEST_NW as the Narwhal pointer in Pera"
 else
 	exit 0
 fi

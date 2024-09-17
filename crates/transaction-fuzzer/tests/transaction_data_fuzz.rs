@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use proptest::prelude::*;
-use sui_types::utils::to_sender_signed_transaction;
+use pera_types::utils::to_sender_signed_transaction;
 
 use proptest::strategy::ValueTree;
 use transaction_fuzzer::account_universe::AccountCurrent;

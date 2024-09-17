@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { NUM_OF_EPOCH_BEFORE_STAKING_REWARDS_REDEEMABLE } from '_src/shared/constants';
 import { CountDownTimer } from '_src/ui/app/shared/countdown-timer';
 import { Text } from '_src/ui/app/shared/text';
 import { IconTooltip } from '_src/ui/app/shared/tooltip';
 import { useFormatCoin, useGetTimeBeforeEpochNumber } from '@mysten/core';
-import { type StakeObject } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { type StakeObject } from '@pera-io/pera/client';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import { cva, cx, type VariantProps } from 'class-variance-authority';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
@@ -50,9 +50,9 @@ const cardStyle = cva(
 		variants: {
 			variant: {
 				warmUp:
-					'bg-white border border-gray-45 text-steel-dark hover:bg-sui/10 hover:border-sui/30',
+					'bg-white border border-gray-45 text-steel-dark hover:bg-pera/10 hover:border-pera/30',
 				earning:
-					'bg-white border border-gray-45 text-steel-dark hover:bg-sui/10 hover:border-sui/30',
+					'bg-white border border-gray-45 text-steel-dark hover:bg-pera/10 hover:border-pera/30',
 				coolDown: 'bg-warning-light border-transparent text-steel-darker hover:border-warning',
 				withDraw: 'bg-success-light border-transparent text-success-dark hover:border-success',
 				inActive: 'bg-issue-light border-transparent text-issue hover:border-issue',
@@ -108,7 +108,7 @@ export function StakeCard({
 	currentEpoch,
 	inactiveValidator = false,
 }: StakeCardProps) {
-	const { stakedSuiId, principal, stakeRequestEpoch, estimatedReward, validatorAddress } =
+	const { stakedPeraId, principal, stakeRequestEpoch, estimatedReward, validatorAddress } =
 		delegationObject;
 
 	// TODO: Once two step withdraw is available, add cool down and withdraw now logic
@@ -128,9 +128,9 @@ export function StakeCard({
 	// For inactive validator, show principal + rewards
 	const [principalStaked, symbol] = useFormatCoin(
 		inactiveValidator ? principal + rewards : principal,
-		SUI_TYPE_ARG,
+		PERA_TYPE_ARG,
 	);
-	const [rewardsStaked] = useFormatCoin(rewards, SUI_TYPE_ARG);
+	const [rewardsStaked] = useFormatCoin(rewards, PERA_TYPE_ARG);
 	const isEarning = delegationState === StakeState.EARNING && rewards > 0n;
 
 	// Applicable only for warm up
@@ -151,7 +151,7 @@ export function StakeCard({
 			data-testid="stake-card"
 			to={`/stake/delegation-detail?${new URLSearchParams({
 				validator: validatorAddress,
-				staked: stakedSuiId,
+				staked: stakedPeraId,
 			}).toString()}`}
 			className="no-underline"
 		>
@@ -173,7 +173,7 @@ export function StakeCard({
 
 					<div className="text-steel text-pBody opacity-0 group-hover:opacity-100">
 						<IconTooltip
-							tip="Object containing the delegated staked SUI tokens, owned by each delegator"
+							tip="Object containing the delegated staked PERA tokens, owned by each delegator"
 							placement="top"
 						/>
 					</div>

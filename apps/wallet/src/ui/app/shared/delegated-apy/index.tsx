@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Text } from '_app/shared/text';
 import { IconTooltip } from '_app/shared/tooltip';
 import LoadingIndicator from '_components/loading/LoadingIndicator';
 import { roundFloat, useGetValidatorsApy } from '@mysten/core';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
 import { useMemo } from 'react';
 
 const APY_DECIMALS = 3;
@@ -15,7 +15,7 @@ type DelegatedAPYProps = {
 };
 
 export function DelegatedAPY({ stakedValidators }: DelegatedAPYProps) {
-	const { data, isPending } = useSuiClientQuery('getLatestSuiSystemState');
+	const { data, isPending } = usePeraClientQuery('getLatestPeraSystemState');
 	const { data: rollingAverageApys } = useGetValidatorsApy();
 
 	const averageNetworkAPY = useMemo(() => {
@@ -54,7 +54,7 @@ export function DelegatedAPY({ stakedValidators }: DelegatedAPYProps) {
 					</Text>
 					<div className="text-steel items-baseline text-body flex">
 						<IconTooltip
-							tip="The average APY of all validators you are currently staking your SUI on."
+							tip="The average APY of all validators you are currently staking your PERA on."
 							placement="top"
 						/>
 					</div>

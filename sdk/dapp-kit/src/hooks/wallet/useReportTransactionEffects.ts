@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { toB64 } from '@mysten/sui/utils';
-import type { SuiReportTransactionEffectsInput } from '@mysten/wallet-standard';
+import { toB64 } from '@pera-io/pera/utils';
+import type { PeraReportTransactionEffectsInput } from '@mysten/wallet-standard';
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
 
@@ -17,7 +17,7 @@ import { useCurrentAccount } from './useCurrentAccount.js';
 import { useCurrentWallet } from './useCurrentWallet.js';
 
 type UseReportTransactionEffectsArgs = Omit<
-	PartialBy<SuiReportTransactionEffectsInput, 'account' | 'chain'>,
+	PartialBy<PeraReportTransactionEffectsInput, 'account' | 'chain'>,
 	'effects'
 > & {
 	effects: string | number[];
@@ -67,7 +67,7 @@ export function useReportTransactionEffects({
 			}
 
 			const reportTransactionEffectsFeature =
-				currentWallet.features['sui:reportTransactionEffects'];
+				currentWallet.features['pera:reportTransactionEffects'];
 
 			if (reportTransactionEffectsFeature) {
 				return await reportTransactionEffectsFeature.reportTransactionEffects({

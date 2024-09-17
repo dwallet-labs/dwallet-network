@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 module coiner::coin_factory {
     use std::option;
-    use sui::coin::{Self, Coin, TreasuryCap};
-    use sui::transfer;
+    use pera::coin::{Self, Coin, TreasuryCap};
+    use pera::transfer;
     use std::vector;
-    use sui::tx_context::{Self, TxContext};
+    use pera::tx_context::{Self, TxContext};
 
     public struct COIN_FACTORY has drop {}
 

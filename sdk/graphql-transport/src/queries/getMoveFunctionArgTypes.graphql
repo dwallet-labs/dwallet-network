@@ -1,7 +1,7 @@
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
-query getMoveFunctionArgTypes($packageId: SuiAddress!, $module: String!, $function: String!) {
+query getMoveFunctionArgTypes($packageId: PeraAddress!, $module: String!, $function: String!) {
 	object(address: $packageId) {
 		asMovePackage {
 			module(name: $module) {

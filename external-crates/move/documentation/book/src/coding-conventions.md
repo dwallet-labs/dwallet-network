@@ -1,1 +1,1 @@
-See [Sui's Coding Conventions for Move](https://docs.sui.io/concepts/sui-move-concepts/conventions)
+See [Pera's Coding Conventions for Move](https://docs.pera.io/concepts/pera-move-concepts/conventions)

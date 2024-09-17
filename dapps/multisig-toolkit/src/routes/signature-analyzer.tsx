@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { parseSerializedSignature, PublicKey, SignatureScheme } from '@mysten/sui/cryptography';
-import { parsePartialSignatures } from '@mysten/sui/multisig';
-import { toB64 } from '@mysten/sui/utils';
-import { publicKeyFromRawBytes } from '@mysten/sui/verify';
+import { parseSerializedSignature, PublicKey, SignatureScheme } from '@pera-io/pera/cryptography';
+import { parsePartialSignatures } from '@pera-io/pera/multisig';
+import { toB64 } from '@pera-io/pera/utils';
+import { publicKeyFromRawBytes } from '@pera-io/pera/verify';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 
@@ -36,17 +36,17 @@ AIYbCXAhPmILpWq6xsEY/Nu310Kednlb60Qcd/nD+u2WCXE/FvSXNRUQW9OQKGqt2CeskPyv2SEhaKMZ
 */
 
 function Signature({ signature, index }: { signature: SignaturePubkeyPair; index: number }) {
-	const suiAddress = signature.publicKey.toSuiAddress();
+	const peraAddress = signature.publicKey.toPeraAddress();
 
-	const pubkey_base64_sui_format = signature.publicKey.toSuiPublicKey();
+	const pubkey_base64_pera_format = signature.publicKey.toPeraPublicKey();
 
 	const pubkey = signature.publicKey.toBase64();
 	const scheme = signature.signatureScheme.toString();
 
 	const details = [
 		{ label: 'Signature Public Key', value: pubkey },
-		{ label: 'Sui Format Public Key ( flag | pk )', value: pubkey_base64_sui_format },
-		{ label: 'Sui Address', value: suiAddress },
+		{ label: 'Pera Format Public Key ( flag | pk )', value: pubkey_base64_pera_format },
+		{ label: 'Pera Address', value: peraAddress },
 		{ label: 'Signature', value: toB64(signature.signature) },
 	];
 

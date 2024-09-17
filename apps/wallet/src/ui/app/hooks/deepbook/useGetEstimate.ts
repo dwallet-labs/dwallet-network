@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useLotSize } from '_app/hooks/deepbook/useLotSize';
 import { useActiveAccount } from '_app/hooks/useActiveAccount';
 import { type WalletSigner } from '_app/WalletSigner';
 import { DEEPBOOK_KEY, WALLET_FEES_PERCENTAGE } from '_pages/swap/constants';
 import { useDeepBookContext } from '_shared/deepBook/context';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { usePeraClient } from '@mysten/dapp-kit';
 import { type DeepBookClient } from '@mysten/deepbook';
-import { type CoinStruct, type SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { type CoinStruct, type PeraClient } from '@pera-io/pera/client';
+import { Transaction } from '@pera-io/pera/transactions';
 import * as Sentry from '@sentry/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import BigNumber from 'bignumber.js';
@@ -20,12 +20,12 @@ const NUMBER_EXPECTED_BALANCE_CHANGES = 3;
 async function getCoinsByBalance({
 	coinType,
 	balance,
-	suiClient,
+	peraClient,
 	address,
 }: {
 	coinType: string;
 	balance: string;
-	suiClient: SuiClient;
+	peraClient: PeraClient;
 	address: string;
 }) {
 	let cursor: string | undefined | null = null;
@@ -36,7 +36,7 @@ async function getCoinsByBalance({
 	const bigIntBalance = BigInt(new BigNumber(balance).integerValue(BigNumber.ROUND_UP).toString());
 
 	while (currentBalance < bigIntBalance && hasNextPage) {
-		const { data, nextCursor } = await suiClient.getCoins({
+		const { data, nextCursor } = await peraClient.getCoins({
 			owner: address,
 			coinType,
 			cursor,
@@ -246,7 +246,7 @@ export function useGetEstimate({
 }) {
 	const walletFeeAddress = useDeepBookContext().walletFeeAddress;
 	const queryClient = useQueryClient();
-	const suiClient = useSuiClient();
+	const peraClient = usePeraClient();
 	const activeAccount = useActiveAccount();
 	const activeAddress = activeAccount?.address;
 	const deepBookClient = useDeepBookContext().client;
@@ -288,13 +288,13 @@ export function useGetEstimate({
 					getCoinsByBalance({
 						coinType,
 						balance: baseBalance,
-						suiClient,
+						peraClient,
 						address: activeAddress!,
 					}),
 					getCoinsByBalance({
 						coinType,
 						balance: quoteBalance,
-						suiClient,
+						peraClient,
 						address: activeAddress!,
 					}),
 				]);

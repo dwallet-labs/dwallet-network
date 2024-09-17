@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
 	MinimallyRequiredFeatures,
@@ -16,7 +16,7 @@ export function getRegisteredWallets<AdditionalFeatures extends Wallet['features
 	const walletsApi = getWallets();
 	const wallets = walletsApi.get();
 
-	const suiWallets = wallets.filter(
+	const peraWallets = wallets.filter(
 		(wallet): wallet is WalletWithFeatures<MinimallyRequiredFeatures & AdditionalFeatures> =>
 			isWalletWithRequiredFeatureSet(wallet) && (!walletFilter || walletFilter(wallet)),
 	);
@@ -24,11 +24,11 @@ export function getRegisteredWallets<AdditionalFeatures extends Wallet['features
 	return [
 		// Preferred wallets, in order:
 		...(preferredWallets
-			.map((name) => suiWallets.find((wallet) => wallet.name === name))
+			.map((name) => peraWallets.find((wallet) => wallet.name === name))
 			.filter(Boolean) as WalletWithFeatures<MinimallyRequiredFeatures & AdditionalFeatures>[]),
 
 		// Wallets in default order:
-		...suiWallets.filter((wallet) => !preferredWallets.includes(wallet.name)),
+		...peraWallets.filter((wallet) => !preferredWallets.includes(wallet.name)),
 	];
 }
 

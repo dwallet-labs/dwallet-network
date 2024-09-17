@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { FEATURES } from '_src/shared/experimentation/features';
 import { useFeatureValue } from '@growthbook/growthbook-react';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { type SuiTransactionBlockResponse } from '@mysten/sui/client';
+import { usePeraClient } from '@mysten/dapp-kit';
+import { type PeraTransactionBlockResponse } from '@pera-io/pera/client';
 import { useQuery } from '@tanstack/react-query';
 
 export function useQueryTransactionsByAddress(address: string | null) {
-	const rpc = useSuiClient();
+	const rpc = usePeraClient();
 	const refetchInterval = useFeatureValue(FEATURES.WALLET_ACTIVITY_REFETCH_INTERVAL, 20_000);
 
 	return useQuery({
@@ -39,7 +39,7 @@ export function useQueryTransactionsByAddress(address: string | null) {
 			]);
 
 			const inserted = new Map();
-			const uniqueList: SuiTransactionBlockResponse[] = [];
+			const uniqueList: PeraTransactionBlockResponse[] = [];
 
 			[...txnIds.data, ...fromTxnIds.data]
 				.sort((a, b) => Number(b.timestampMs ?? 0) - Number(a.timestampMs ?? 0))

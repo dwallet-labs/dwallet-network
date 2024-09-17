@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! Constants for the binary format.
 //!
@@ -26,7 +26,7 @@ const _: () = {
     // It should always be `0x05XX_XXXX` where `XX_XXXX` is the version digits.
     assert!(x == 0x0500_0000u32);
     // Make sure that the flavoring is extracted correctly.
-    assert!(BinaryFlavor::mask_and_shift_to_unflavor(x) == BinaryFlavor::SUI_FLAVOR);
+    assert!(BinaryFlavor::mask_and_shift_to_unflavor(x) == BinaryFlavor::PERA_FLAVOR);
 };
 
 /// Encoding of a the flavor into the version of the binary format for versions >= 7.
@@ -34,8 +34,8 @@ pub struct BinaryFlavor;
 impl BinaryFlavor {
     pub const FLAVOR_MASK: u32 = 0xFF00_0000;
     pub const VERSION_MASK: u32 = 0x00FF_FFFF;
-    // The Sui flavor is 0x05
-    pub const SUI_FLAVOR: u8 = 0x05;
+    // The Pera flavor is 0x05
+    pub const PERA_FLAVOR: u8 = 0x05;
     const SHIFT_AMOUNT: u8 = 24;
 
     pub fn encode_version(unflavored_version: u32) -> u32 {
@@ -66,7 +66,7 @@ impl BinaryFlavor {
     }
 
     const fn shift_and_flavor(unflavored: u32) -> u32 {
-        (Self::SUI_FLAVOR as u32) << Self::SHIFT_AMOUNT | unflavored
+        (Self::PERA_FLAVOR as u32) << Self::SHIFT_AMOUNT | unflavored
     }
 }
 

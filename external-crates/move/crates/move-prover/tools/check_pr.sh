@@ -1,7 +1,7 @@
 #!/bin/bash
 # Copyright (c) The Diem Core Contributors
 # Copyright (c) The Move Contributors
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # A script to check whether a local commit related to Move repo is ready for a PR.
 
@@ -89,7 +89,7 @@ if [ ! -z "$CHECKMORE" ]; then
     $BASE/language/move-prover/move-abigen\
     $BASE/language/move-prover/move-docgen\
     $BASE/language/move-prover/interpreter\
-    $BASE/language/move-prover/interpreter-testsuite\
+    $BASE/language/move-prover/interpreter-testperate\
     $BASE/language/move-prover/lab\
     $BASE/language/move-prover/test-utils\
     $BASE/language/tools/move-package\

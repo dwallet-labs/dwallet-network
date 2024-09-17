@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Heading } from '_app/shared/heading';
 import { Text } from '_app/shared/text';
 import { useFormatCoin } from '@mysten/core';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 
 //TODO unify StakeAmount and CoinBalance
 interface StakeAmountProps {
@@ -14,7 +14,7 @@ interface StakeAmountProps {
 }
 
 export function StakeAmount({ balance, variant, isEarnedRewards }: StakeAmountProps) {
-	const [formatted, symbol] = useFormatCoin(balance, SUI_TYPE_ARG);
+	const [formatted, symbol] = useFormatCoin(balance, PERA_TYPE_ARG);
 	// Handle case of 0 balance
 	const zeroBalanceColor = !!balance;
 	const earnRewardColor = isEarnedRewards && (zeroBalanceColor ? 'success-dark' : 'gray-60');

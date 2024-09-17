@@ -1,26 +1,26 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Copyright (c) The Diem Core Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{fmt::Debug, path::PathBuf, sync::Arc};
 
-use sui_core::authority::test_authority_builder::TestAuthorityBuilder;
-use sui_core::{authority::AuthorityState, test_utils::send_and_confirm_transaction};
-use sui_move_build::BuildConfig;
-use sui_types::base_types::ObjectID;
-use sui_types::effects::{TransactionEffects, TransactionEffectsAPI};
-use sui_types::error::SuiError;
-use sui_types::execution_status::{ExecutionFailureStatus, ExecutionStatus};
-use sui_types::object::Object;
-use sui_types::transaction::{Transaction, TransactionData};
-use sui_types::utils::to_sender_signed_transaction;
+use pera_core::authority::test_authority_builder::TestAuthorityBuilder;
+use pera_core::{authority::AuthorityState, test_utils::send_and_confirm_transaction};
+use pera_move_build::BuildConfig;
+use pera_types::base_types::ObjectID;
+use pera_types::effects::{TransactionEffects, TransactionEffectsAPI};
+use pera_types::error::PeraError;
+use pera_types::execution_status::{ExecutionFailureStatus, ExecutionStatus};
+use pera_types::object::Object;
+use pera_types::transaction::{Transaction, TransactionData};
+use pera_types::utils::to_sender_signed_transaction;
 use tokio::runtime::Runtime;
 
 use crate::account_universe::{AccountCurrent, PUBLISH_BUDGET};
 
-pub type ExecutionResult = Result<ExecutionStatus, SuiError>;
+pub type ExecutionResult = Result<ExecutionStatus, PeraError>;
 
 fn build_test_modules(test_dir: &str) -> (Vec<u8>, Vec<Vec<u8>>) {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

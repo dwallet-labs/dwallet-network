@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Text } from '_app/shared/text';
 import Alert from '_src/ui/app/components/alert';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { usePeraClient } from '@mysten/dapp-kit';
 import { QrCode, X12 } from '@mysten/icons';
-import { isValidSuiAddress } from '@mysten/sui/utils';
+import { isValidPeraAddress } from '@pera-io/pera/utils';
 import { useQuery } from '@tanstack/react-query';
 import { cx } from 'class-variance-authority';
 import { useField, useFormikContext } from 'formik';
@@ -13,7 +13,7 @@ import { useCallback, useMemo } from 'react';
 import type { ChangeEventHandler } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 
-import { useSuiAddressValidation } from './validation';
+import { usePeraAddressValidation } from './validation';
 
 export interface AddressInputProps {
 	disabled?: boolean;
@@ -33,12 +33,12 @@ export function AddressInput({
 }: AddressInputProps) {
 	const [field, meta] = useField(name);
 
-	const client = useSuiClient();
+	const client = usePeraClient();
 	const { data: warningData } = useQuery({
 		queryKey: ['address-input-warning', field.value],
 		queryFn: async () => {
 			// We assume this validation will happen elsewhere:
-			if (!isValidSuiAddress(field.value)) {
+			if (!isValidPeraAddress(field.value)) {
 				return null;
 			}
 
@@ -73,19 +73,19 @@ export function AddressInput({
 	});
 
 	const { isSubmitting, setFieldValue, isValidating } = useFormikContext();
-	const suiAddressValidation = useSuiAddressValidation();
+	const peraAddressValidation = usePeraAddressValidation();
 
 	const disabled = forcedDisabled !== undefined ? forcedDisabled : isSubmitting;
 	const handleOnChange = useCallback<ChangeEventHandler<HTMLTextAreaElement>>(
 		(e) => {
 			const address = e.currentTarget.value;
-			setFieldValue(name, suiAddressValidation.cast(address));
+			setFieldValue(name, peraAddressValidation.cast(address));
 		},
-		[setFieldValue, name, suiAddressValidation],
+		[setFieldValue, name, peraAddressValidation],
 	);
 	const formattedValue = useMemo(
-		() => suiAddressValidation.cast(field?.value),
-		[field?.value, suiAddressValidation],
+		() => peraAddressValidation.cast(field?.value),
+		[field?.value, peraAddressValidation],
 	);
 
 	const clearAddress = useCallback(() => {

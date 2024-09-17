@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{collections::HashSet, sync::Arc};
 
@@ -156,7 +156,7 @@ impl Linearizer {
             committed_sub_dags.push(sub_dag);
         }
 
-        // Committed blocks must be persisted to storage before sending them to Sui and executing
+        // Committed blocks must be persisted to storage before sending them to Pera and executing
         // their transactions.
         // Commit metadata can be persisted more lazily because they are recoverable. Uncommitted
         // blocks can wait to persist too.

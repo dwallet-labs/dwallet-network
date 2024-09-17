@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
+import type { PeraTransactionBlockResponse } from '@pera-io/pera/client';
 
 // TODO: Support programmable transactions:
-export function checkStakingTxn(_txn: SuiTransactionBlockResponse) {
+export function checkStakingTxn(_txn: PeraTransactionBlockResponse) {
 	return false;
 }

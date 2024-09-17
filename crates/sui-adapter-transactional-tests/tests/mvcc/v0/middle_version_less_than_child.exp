@@ -22,16 +22,16 @@ task 3, line 59:
 //# view-object 2,0
 Owner: Object ID: ( _ )
 Version: 2
-Contents: sui::dynamic_field::Field<u64, test::m::Obj> {
-    id: sui::object::UID {
-        id: sui::object::ID {
+Contents: pera::dynamic_field::Field<u64, test::m::Obj> {
+    id: pera::object::UID {
+        id: pera::object::ID {
             bytes: fake(2,0),
         },
     },
     name: 0u64,
     value: test::m::Obj {
-        id: sui::object::UID {
-            id: sui::object::ID {
+        id: pera::object::UID {
+            id: pera::object::ID {
                 bytes: _,
             },
         },
@@ -43,16 +43,16 @@ task 4, line 61:
 //# view-object 2,1
 Owner: Object ID: ( fake(2,2) )
 Version: 2
-Contents: sui::dynamic_field::Field<u64, test::m::Obj> {
-    id: sui::object::UID {
-        id: sui::object::ID {
+Contents: pera::dynamic_field::Field<u64, test::m::Obj> {
+    id: pera::object::UID {
+        id: pera::object::ID {
             bytes: fake(2,1),
         },
     },
     name: 0u64,
     value: test::m::Obj {
-        id: sui::object::UID {
-            id: sui::object::ID {
+        id: pera::object::UID {
+            id: pera::object::ID {
                 bytes: _,
             },
         },
@@ -65,8 +65,8 @@ task 5, line 63:
 Owner: Account Address ( A )
 Version: 2
 Contents: test::m::Obj {
-    id: sui::object::UID {
-        id: sui::object::ID {
+    id: pera::object::UID {
+        id: pera::object::ID {
             bytes: fake(2,2),
         },
     },
@@ -84,16 +84,16 @@ task 7, line 70:
 //# view-object 2,0
 Owner: Object ID: ( _ )
 Version: 3
-Contents: sui::dynamic_field::Field<u64, test::m::Obj> {
-    id: sui::object::UID {
-        id: sui::object::ID {
+Contents: pera::dynamic_field::Field<u64, test::m::Obj> {
+    id: pera::object::UID {
+        id: pera::object::ID {
             bytes: fake(2,0),
         },
     },
     name: 0u64,
     value: test::m::Obj {
-        id: sui::object::UID {
-            id: sui::object::ID {
+        id: pera::object::UID {
+            id: pera::object::ID {
                 bytes: _,
             },
         },
@@ -105,16 +105,16 @@ task 8, line 72:
 //# view-object 2,1
 Owner: Object ID: ( fake(2,2) )
 Version: 2
-Contents: sui::dynamic_field::Field<u64, test::m::Obj> {
-    id: sui::object::UID {
-        id: sui::object::ID {
+Contents: pera::dynamic_field::Field<u64, test::m::Obj> {
+    id: pera::object::UID {
+        id: pera::object::ID {
             bytes: fake(2,1),
         },
     },
     name: 0u64,
     value: test::m::Obj {
-        id: sui::object::UID {
-            id: sui::object::ID {
+        id: pera::object::UID {
+            id: pera::object::ID {
                 bytes: _,
             },
         },
@@ -127,8 +127,8 @@ task 9, lines 74-77:
 Owner: Account Address ( A )
 Version: 3
 Contents: test::m::Obj {
-    id: sui::object::UID {
-        id: sui::object::ID {
+    id: pera::object::UID {
+        id: pera::object::ID {
             bytes: fake(2,2),
         },
     },

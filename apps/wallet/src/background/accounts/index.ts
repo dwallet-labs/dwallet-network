@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { createMessage, type Message } from '_src/shared/messaging/messages';
 import {
@@ -7,7 +7,7 @@ import {
 	type MethodPayload,
 } from '_src/shared/messaging/messages/payloads/MethodPayload';
 import { type WalletStatusChange } from '_src/shared/messaging/messages/payloads/wallet-status-change';
-import { fromB64 } from '@mysten/sui/utils';
+import { fromB64 } from '@pera-io/pera/utils';
 import Dexie from 'dexie';
 
 import { getAccountSourceByID } from '../account-sources';

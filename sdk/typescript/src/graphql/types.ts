@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export type MoveData =
 	| { Address: string }
@@ -82,5 +82,5 @@ export interface CustomScalars {
 	MoveTypeLayout: MoveTypeLayout;
 	MoveTypeSignature: MoveTypeSignature;
 	OpenMoveTypeSignature: OpenMoveTypeSignature;
-	SuiAddress: string;
+	PeraAddress: string;
 }

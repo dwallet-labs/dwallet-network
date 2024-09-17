@@ -18,7 +18,7 @@ the current transaction (note though that this guarantee must be upheld by the a
 specific deployment of Move). There is no mechanism for "catching" or otherwise handling an `abort`.
 
 Luckily, in Move transactions are all or nothing, meaning any changes to storage are made all at
-once only if the transaction succeeds. For Sui, this means no objects are modified.
+once only if the transaction succeeds. For Pera, this means no objects are modified.
 
 Because of this transactional commitment of changes, after an abort there is no need to worry about
 backing out changes. While this approach is lacking in flexibility, it is incredibly simple and

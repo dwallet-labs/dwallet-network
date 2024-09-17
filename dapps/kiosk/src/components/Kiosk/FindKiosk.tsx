@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { normalizePeraAddress } from '@pera-io/pera/utils';
 import classnames from 'clsx';
 import { FormEvent, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -16,7 +16,7 @@ export default function FindKiosk() {
 		if (!searchKiosk || viewingSearchKiosk) return;
 		e?.preventDefault();
 
-		const id = normalizeSuiAddress(searchKiosk);
+		const id = normalizePeraAddress(searchKiosk);
 		navigate(`/kiosk/${id}`);
 		setSearchKioskId(id);
 	};
@@ -43,7 +43,7 @@ export default function FindKiosk() {
 						className="bg-gray-100 border lg:min-w-[600px] text-gray-900 placeholder:text-gray-500 text-sm rounded rounded-r-none
              focus:ring-transparent
             focus:border-primary block w-full p-2.5 outline-primary"
-						placeholder="Enter an address or a Sui Kiosk ID to search for a kiosk..."
+						placeholder="Enter an address or a Pera Kiosk ID to search for a kiosk..."
 						required
 					/>
 				</div>

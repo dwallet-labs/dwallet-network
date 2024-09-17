@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # check if API_USER and API_KEY env vars are set
 if [ -z "$API_USER" ] || [ -z "$API_KEY" ]; then
@@ -21,13 +21,13 @@ fi
 
 case "$NETWORK" in
   devnet)
-    URL="https://$API_USER:$API_KEY@gateway.mimir.sui.io/prometheus/api/v1/query"
+    URL="https://$API_USER:$API_KEY@gateway.mimir.pera.io/prometheus/api/v1/query"
     ;;
   testnet)
-    URL="http://$API_USER:$API_KEY@metrics-gw-2.testnet.sui.io/prometheus/api/v1/query"
+    URL="http://$API_USER:$API_KEY@metrics-gw-2.testnet.pera.io/prometheus/api/v1/query"
     ;;
   mainnet)
-    URL="https://$API_USER:$API_KEY@metrics-gw-2.mainnet.sui.io/prometheus/api/v1/query"
+    URL="https://$API_USER:$API_KEY@metrics-gw-2.mainnet.pera.io/prometheus/api/v1/query"
     ;;
 esac
 
@@ -64,9 +64,9 @@ function check_git_clean {
 
 check_git_clean "Please commit or stash your changes before running this script" "*"
 
-# check out all files in crates/sui-protocol-config/src/snapshots at origin commit
+# check out all files in crates/pera-protocol-config/src/snapshots at origin commit
 echo "Checking out $NETWORK snapshot files"
-git checkout $ORIGIN_COMMIT -- crates/sui-protocol-config/src/snapshots || exit 1
+git checkout $ORIGIN_COMMIT -- crates/pera-protocol-config/src/snapshots || exit 1
 
 if [ "$NETWORK" != "testnet" ] && [ "$NETWORK" != "mainnet" ]; then
   NETWORK_PATTERN="*__version_*"
@@ -85,7 +85,7 @@ if [ -z "$SED" ]; then
   SED=$(which sed)
 fi
 
-grep -lE 'scoring_decision_mad_divisor|scoring_decision_cutoff_value' crates/sui-protocol-config/src/snapshots/$NETWORK_PATTERN | xargs $SED -Ei '/(scoring_decision_mad_divisor|scoring_decision_cutoff_value)/d'
+grep -lE 'scoring_decision_mad_divisor|scoring_decision_cutoff_value' crates/pera-protocol-config/src/snapshots/$NETWORK_PATTERN | xargs $SED -Ei '/(scoring_decision_mad_divisor|scoring_decision_cutoff_value)/d'
 git add .
 
 check_git_clean "Detected changes to snapshot files since $ORIGIN_COMMIT - not safe to release" "$NETWORK_PATTERN"
@@ -94,6 +94,6 @@ check_git_clean "Detected changes to snapshot files since $ORIGIN_COMMIT - not s
 git reset --hard HEAD
 
 echo "Running snapshot tests..."
-cargo test --package sui-protocol-config snapshot_tests || exit 1
+cargo test --package pera-protocol-config snapshot_tests || exit 1
 
 exit 0

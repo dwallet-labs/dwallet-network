@@ -22,7 +22,7 @@ StakingPool
 PoolTokenExchangeRate
 	public struct
 	0x3::staking_pool
-StakedSui
+StakedPera
 	public struct
 	0x3::staking_pool
 new
@@ -37,7 +37,7 @@ request_withdraw_stake
 withdraw_from_principal
 	public(package) fun
 	0x3::staking_pool
-unwrap_staked_sui
+unwrap_staked_pera
 	fun
 	0x3::staking_pool
 deposit_rewards
@@ -61,13 +61,13 @@ activate_staking_pool
 deactivate_staking_pool
 	public(package) fun
 	0x3::staking_pool
-sui_balance
+pera_balance
 	public fun
 	0x3::staking_pool
 pool_id
 	public fun
 	0x3::staking_pool
-staked_sui_amount
+staked_pera_amount
 	public fun
 	0x3::staking_pool
 stake_activation_epoch
@@ -82,10 +82,10 @@ is_inactive
 split
 	public fun
 	0x3::staking_pool
-split_staked_sui
+split_staked_pera
 	public entry fun
 	0x3::staking_pool
-join_staked_sui
+join_staked_pera
 	public entry fun
 	0x3::staking_pool
 is_equal_staking_metadata
@@ -103,7 +103,7 @@ pending_stake_withdraw_amount
 exchange_rates
 	public(package) fun
 	0x3::staking_pool
-sui_amount
+pera_amount
 	public fun
 	0x3::staking_pool
 pool_token_amount
@@ -112,7 +112,7 @@ pool_token_amount
 is_preactive_at_epoch
 	fun
 	0x3::staking_pool
-get_sui_amount
+get_pera_amount
 	fun
 	0x3::staking_pool
 get_token_amount
@@ -184,7 +184,7 @@ is_preactive
 metadata
 	public fun
 	0x3::validator
-sui_address
+pera_address
 	public fun
 	0x3::validator
 name
@@ -496,7 +496,7 @@ pool_exchange_rates
 next_epoch_validator_count
 	public(package) fun
 	0x3::validator_set
-is_active_validator_by_sui_address
+is_active_validator_by_pera_address
 	public(package) fun
 	0x3::validator_set
 is_duplicate_with_active_validator
@@ -642,307 +642,307 @@ current_epoch_subsidy_amount
 	0x3::stake_subsidy
 SystemParameters
 	public struct
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 SystemParametersV2
 	public struct
-	0x3::sui_system_state_inner
-SuiSystemStateInner
+	0x3::pera_system_state_inner
+PeraSystemStateInner
 	public struct
-	0x3::sui_system_state_inner
-SuiSystemStateInnerV2
+	0x3::pera_system_state_inner
+PeraSystemStateInnerV2
 	public struct
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 SystemEpochInfoEvent
 	public struct
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 create
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 create_system_parameters
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 v1_to_v2
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 request_add_validator_candidate
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 request_remove_validator_candidate
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 request_add_validator
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 request_remove_validator
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 request_set_gas_price
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 set_candidate_validator_gas_price
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 request_set_commission_rate
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 set_candidate_validator_commission_rate
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 request_add_stake
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 request_add_stake_mul_coin
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 request_withdraw_stake
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 report_validator
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 undo_report_validator
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 report_validator_impl
 	fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 undo_report_validator_impl
 	fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 rotate_operation_cap
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_name
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_description
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_image_url
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_project_url
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_next_epoch_network_address
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_candidate_validator_network_address
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_next_epoch_p2p_address
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_candidate_validator_p2p_address
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_next_epoch_primary_address
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_candidate_validator_primary_address
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_next_epoch_worker_address
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_candidate_validator_worker_address
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_next_epoch_protocol_pubkey
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_candidate_validator_protocol_pubkey
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_next_epoch_worker_pubkey
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_candidate_validator_worker_pubkey
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_validator_next_epoch_network_pubkey
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 update_candidate_validator_network_pubkey
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 advance_epoch
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 epoch
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 protocol_version
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 system_state_version
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 genesis_system_state_version
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 epoch_start_timestamp_ms
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 validator_stake_amount
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 active_validator_voting_powers
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 validator_staking_pool_id
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 validator_staking_pool_mappings
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 get_reporters_of
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 get_storage_fund_total_balance
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 get_storage_fund_object_rebates
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 pool_exchange_rates
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 active_validator_addresses
 	public(package) fun
-	0x3::sui_system_state_inner
+	0x3::pera_system_state_inner
 extract_coin_balance
 	fun
-	0x3::sui_system_state_inner
-SuiSystemState
+	0x3::pera_system_state_inner
+PeraSystemState
 	public struct
-	0x3::sui_system
+	0x3::pera_system
 create
 	public(package) fun
-	0x3::sui_system
+	0x3::pera_system
 request_add_validator_candidate
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 request_remove_validator_candidate
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 request_add_validator
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 request_remove_validator
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 request_set_gas_price
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 set_candidate_validator_gas_price
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 request_set_commission_rate
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 set_candidate_validator_commission_rate
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 request_add_stake
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 request_add_stake_non_entry
 	public fun
-	0x3::sui_system
+	0x3::pera_system
 request_add_stake_mul_coin
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 request_withdraw_stake
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 request_withdraw_stake_non_entry
 	public fun
-	0x3::sui_system
+	0x3::pera_system
 report_validator
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 undo_report_validator
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 rotate_operation_cap
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_name
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_description
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_image_url
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_project_url
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_next_epoch_network_address
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_candidate_validator_network_address
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_next_epoch_p2p_address
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_candidate_validator_p2p_address
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_next_epoch_primary_address
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_candidate_validator_primary_address
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_next_epoch_worker_address
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_candidate_validator_worker_address
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_next_epoch_protocol_pubkey
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_candidate_validator_protocol_pubkey
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_next_epoch_worker_pubkey
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_candidate_validator_worker_pubkey
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_validator_next_epoch_network_pubkey
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 update_candidate_validator_network_pubkey
 	public entry fun
-	0x3::sui_system
+	0x3::pera_system
 pool_exchange_rates
 	public fun
-	0x3::sui_system
+	0x3::pera_system
 active_validator_addresses
 	public fun
-	0x3::sui_system
+	0x3::pera_system
 advance_epoch
 	fun
-	0x3::sui_system
+	0x3::pera_system
 load_system_state
 	fun
-	0x3::sui_system
+	0x3::pera_system
 load_system_state_mut
 	fun
-	0x3::sui_system
+	0x3::pera_system
 load_inner_maybe_upgrade
 	fun
-	0x3::sui_system
+	0x3::pera_system
 validator_voting_powers
 	fun
-	0x3::sui_system
+	0x3::pera_system
 GenesisValidatorMetadata
 	public struct
 	0x3::genesis
@@ -1126,7 +1126,7 @@ id_from_bytes
 id_from_address
 	public fun
 	0x2::object
-sui_system_state
+pera_system_state
 	fun
 	0x2::object
 clock
@@ -1138,7 +1138,7 @@ authenticator_state
 randomness_state
 	public(package) fun
 	0x2::object
-sui_deny_list_object_id
+pera_deny_list_object_id
 	public(package) fun
 	0x2::object
 bridge
@@ -2332,15 +2332,15 @@ create_internal
 add_internal
 	fun
 	0x2::display
-SUI
+PERA
 	public struct
-	0x2::sui
+	0x2::pera
 new
 	fun
-	0x2::sui
+	0x2::pera
 transfer
 	public entry fun
-	0x2::sui
+	0x2::pera
 TransferRequest
 	public struct
 	0x2::transfer_policy
@@ -3814,19 +3814,19 @@ update_bridge_limit
 update_asset_price
 	public fun
 	0xb::message_types
-add_tokens_on_sui
+add_tokens_on_pera
 	public fun
 	0xb::message_types
 BridgeRoute
 	public struct
 	0xb::chain_ids
-sui_mainnet
+pera_mainnet
 	public fun
 	0xb::chain_ids
-sui_testnet
+pera_testnet
 	public fun
 	0xb::chain_ids
-sui_custom
+pera_custom
 	public fun
 	0xb::chain_ids
 eth_mainnet
@@ -3877,7 +3877,7 @@ UpdateBridgeLimit
 UpdateAssetPrice
 	public struct
 	0xb::message
-AddTokenOnSui
+AddTokenOnPera
 	public struct
 	0xb::message
 ParsedTokenTransferMessage
@@ -3898,7 +3898,7 @@ extract_update_bridge_limit
 extract_update_asset_price
 	public fun
 	0xb::message
-extract_add_tokens_on_sui
+extract_add_tokens_on_pera
 	public fun
 	0xb::message
 serialize_message
@@ -3919,7 +3919,7 @@ create_update_bridge_limit_message
 create_update_asset_price_message
 	public fun
 	0xb::message
-create_add_tokens_on_sui_message
+create_add_tokens_on_pera_message
 	public fun
 	0xb::message
 create_key
@@ -4168,7 +4168,7 @@ execute_update_bridge_limit
 execute_update_asset_price
 	fun
 	0xb::bridge
-execute_add_tokens_on_sui
+execute_add_tokens_on_pera
 	fun
 	0xb::bridge
 get_current_seq_num_and_increment

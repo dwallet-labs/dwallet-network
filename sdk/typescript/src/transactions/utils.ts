@@ -1,29 +1,29 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiMoveNormalizedType } from '../client/index.js';
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import type { PeraMoveNormalizedType } from '../client/index.js';
+import { normalizePeraAddress } from '../utils/pera-types.js';
 import type { CallArg } from './data/internal.js';
 
 export function extractMutableReference(
-	normalizedType: SuiMoveNormalizedType,
-): SuiMoveNormalizedType | undefined {
+	normalizedType: PeraMoveNormalizedType,
+): PeraMoveNormalizedType | undefined {
 	return typeof normalizedType === 'object' && 'MutableReference' in normalizedType
 		? normalizedType.MutableReference
 		: undefined;
 }
 
 export function extractReference(
-	normalizedType: SuiMoveNormalizedType,
-): SuiMoveNormalizedType | undefined {
+	normalizedType: PeraMoveNormalizedType,
+): PeraMoveNormalizedType | undefined {
 	return typeof normalizedType === 'object' && 'Reference' in normalizedType
 		? normalizedType.Reference
 		: undefined;
 }
 
 export function extractStructTag(
-	normalizedType: SuiMoveNormalizedType,
-): Extract<SuiMoveNormalizedType, { Struct: unknown }> | undefined {
+	normalizedType: PeraMoveNormalizedType,
+): Extract<PeraMoveNormalizedType, { Struct: unknown }> | undefined {
 	if (typeof normalizedType === 'object' && 'Struct' in normalizedType) {
 		return normalizedType;
 	}
@@ -43,23 +43,23 @@ export function extractStructTag(
 
 export function getIdFromCallArg(arg: string | CallArg) {
 	if (typeof arg === 'string') {
-		return normalizeSuiAddress(arg);
+		return normalizePeraAddress(arg);
 	}
 
 	if (arg.Object) {
 		if (arg.Object.ImmOrOwnedObject) {
-			return normalizeSuiAddress(arg.Object.ImmOrOwnedObject.objectId);
+			return normalizePeraAddress(arg.Object.ImmOrOwnedObject.objectId);
 		}
 
 		if (arg.Object.Receiving) {
-			return normalizeSuiAddress(arg.Object.Receiving.objectId);
+			return normalizePeraAddress(arg.Object.Receiving.objectId);
 		}
 
-		return normalizeSuiAddress(arg.Object.SharedObject.objectId);
+		return normalizePeraAddress(arg.Object.SharedObject.objectId);
 	}
 
 	if (arg.UnresolvedObject) {
-		return normalizeSuiAddress(arg.UnresolvedObject.objectId);
+		return normalizePeraAddress(arg.UnresolvedObject.objectId);
 	}
 
 	return undefined;

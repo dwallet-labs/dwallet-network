@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -19,13 +19,13 @@ import type {
 const packageRoot = path.resolve(import.meta.url.slice(5), '../..');
 const openRpcSpec: OpenRpcSpec = JSON.parse(
 	await fs.readFile(
-		path.resolve(packageRoot, '../../crates/sui-open-rpc/spec/openrpc.json'),
+		path.resolve(packageRoot, '../../crates/pera-open-rpc/spec/openrpc.json'),
 		'utf-8',
 	),
 );
 export const LICENSE_HEADER = `
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /**
  *  ######################################
@@ -33,7 +33,7 @@ export const LICENSE_HEADER = `
  *  ######################################
  *
  * This file is generated from:
- * /crates/sui-open-rpc/spec/openrpc.json
+ * /crates/pera-open-rpc/spec/openrpc.json
  */
 `.trim();
 
@@ -63,30 +63,30 @@ const options: {
 } = {
 	types: {
 		Coin: { alias: 'CoinStruct' },
-		Data: { alias: 'SuiParsedData' },
-		Event: { alias: 'SuiEvent' },
-		EventFilter: { alias: 'SuiEventFilter' },
+		Data: { alias: 'PeraParsedData' },
+		Event: { alias: 'PeraEvent' },
+		EventFilter: { alias: 'PeraEventFilter' },
 		EventID: { alias: 'EventId' },
-		GasData: { alias: 'SuiGasData' },
-		MoveFunctionArgType: { alias: 'SuiMoveFunctionArgType' },
-		ObjectChange: { alias: 'SuiObjectChange' },
-		ObjectData: { alias: 'SuiObjectData' },
-		ObjectDataOptions: { alias: 'SuiObjectDataOptions' },
-		ObjectRef: { alias: 'SuiObjectRef' },
-		ObjectResponseQuery: { alias: 'SuiObjectResponseQuery' },
+		GasData: { alias: 'PeraGasData' },
+		MoveFunctionArgType: { alias: 'PeraMoveFunctionArgType' },
+		ObjectChange: { alias: 'PeraObjectChange' },
+		ObjectData: { alias: 'PeraObjectData' },
+		ObjectDataOptions: { alias: 'PeraObjectDataOptions' },
+		ObjectRef: { alias: 'PeraObjectRef' },
+		ObjectResponseQuery: { alias: 'PeraObjectResponseQuery' },
 		Owner: { alias: 'ObjectOwner' },
-		PaginatedSuiObjectResponse: { alias: 'PaginatedObjectsResponse' },
+		PaginatedPeraObjectResponse: { alias: 'PaginatedObjectsResponse' },
 		PaginatedTransactionBlockResponse: { alias: 'PaginatedTransactionResponse' },
 		Stake: { alias: 'StakeObject' },
-		SuiCoinMetadata: { alias: 'CoinMetadata' },
-		SuiProgrammableMoveCall: { alias: 'MoveCallSuiTransaction' },
+		PeraCoinMetadata: { alias: 'CoinMetadata' },
+		PeraProgrammableMoveCall: { alias: 'MoveCallPeraTransaction' },
 		Supply: { alias: 'CoinSupply' },
-		TransactionBlock: { alias: 'SuiTransactionBlock' },
+		TransactionBlock: { alias: 'PeraTransactionBlock' },
 		TransactionBlockEffects: { alias: 'TransactionEffects' },
-		TransactionBlockKind: { alias: 'SuiTransactionBlockKind' },
-		TransactionBlockResponse: { alias: 'SuiTransactionBlockResponse' },
-		TransactionBlockResponseOptions: { alias: 'SuiTransactionBlockResponseOptions' },
-		TransactionBlockResponseQuery: { alias: 'SuiTransactionBlockResponseQuery' },
+		TransactionBlockKind: { alias: 'PeraTransactionBlockKind' },
+		TransactionBlockResponse: { alias: 'PeraTransactionBlockResponse' },
+		TransactionBlockResponseOptions: { alias: 'PeraTransactionBlockResponseOptions' },
+		TransactionBlockResponseQuery: { alias: 'PeraTransactionBlockResponseQuery' },
 		ValidatorApys: { alias: 'ValidatorsApy' },
 		GenericSignature: {
 			typeAlias: 'string',
@@ -96,14 +96,14 @@ const options: {
 		},
 	},
 	methods: {
-		sui_getNormalizedMoveModule: {
+		pera_getNormalizedMoveModule: {
 			params: {
 				module_name: {
 					alias: 'module',
 				},
 			},
 		},
-		sui_getNormalizedMoveFunction: {
+		pera_getNormalizedMoveFunction: {
 			params: {
 				module_name: {
 					alias: 'module',
@@ -113,7 +113,7 @@ const options: {
 				},
 			},
 		},
-		sui_getNormalizedMoveStruct: {
+		pera_getNormalizedMoveStruct: {
 			params: {
 				module_name: {
 					alias: 'module',
@@ -123,7 +123,7 @@ const options: {
 				},
 			},
 		},
-		suix_getOwnedObjects: {
+		perax_getOwnedObjects: {
 			flattenParams: ['query'],
 			params: {
 				address: {
@@ -131,14 +131,14 @@ const options: {
 				},
 			},
 		},
-		sui_getObject: {
+		pera_getObject: {
 			params: {
 				object_id: {
 					alias: 'id',
 				},
 			},
 		},
-		sui_tryGetPastObject: {
+		pera_tryGetPastObject: {
 			params: {
 				object_id: {
 					alias: 'id',
@@ -148,14 +148,14 @@ const options: {
 				},
 			},
 		},
-		sui_multiGetObjects: {
+		pera_multiGetObjects: {
 			params: {
 				object_ids: {
 					alias: 'ids',
 				},
 			},
 		},
-		suix_queryTransactionBlocks: {
+		perax_queryTransactionBlocks: {
 			flattenParams: ['query'],
 			params: {
 				descending_order: {
@@ -164,7 +164,7 @@ const options: {
 				},
 			},
 		},
-		sui_executeTransactionBlock: {
+		pera_executeTransactionBlock: {
 			params: {
 				tx_bytes: {
 					alias: 'transactionBlock',
@@ -179,7 +179,7 @@ const options: {
 				},
 			},
 		},
-		suix_queryEvents: {
+		perax_queryEvents: {
 			params: {
 				descending_order: {
 					alias: 'order',
@@ -187,7 +187,7 @@ const options: {
 				},
 			},
 		},
-		sui_devInspectTransactionBlock: {
+		pera_devInspectTransactionBlock: {
 			params: {
 				sender_address: {
 					alias: 'sender',
@@ -201,7 +201,7 @@ const options: {
 				},
 			},
 		},
-		sui_dryRunTransactionBlock: {
+		pera_dryRunTransactionBlock: {
 			params: {
 				tx_bytes: {
 					alias: 'transactionBlock',
@@ -209,14 +209,14 @@ const options: {
 				},
 			},
 		},
-		suix_getDynamicFields: {
+		perax_getDynamicFields: {
 			params: {
 				parent_object_id: {
 					alias: 'parentId',
 				},
 			},
 		},
-		suix_getDynamicFieldObject: {
+		perax_getDynamicFieldObject: {
 			params: {
 				parent_object_id: {
 					alias: 'parentId',
@@ -771,11 +771,11 @@ function normalizeName(name: string) {
 }
 
 export function normalizeMethodName(name: string): string {
-	if (name.startsWith('sui_')) {
+	if (name.startsWith('pera_')) {
 		return normalizeMethodName(name.slice(4));
 	}
 
-	if (name.startsWith('suix_')) {
+	if (name.startsWith('perax_')) {
 		return normalizeMethodName(name.slice(5));
 	}
 

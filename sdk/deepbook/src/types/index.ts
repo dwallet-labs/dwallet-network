@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { EventId } from '@mysten/sui/client';
+import type { EventId } from '@pera-io/pera/client';
 
 export * from './bcs.js';
 

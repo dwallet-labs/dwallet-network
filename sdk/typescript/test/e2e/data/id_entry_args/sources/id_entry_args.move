@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module id_entry_args::test {
     public entry fun test_id(id: ID, _ctx: &mut TxContext) {

@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Heading } from '_app/shared/heading';
 import { ImageIcon } from '_app/shared/image-icon';
 import { Text } from '_app/shared/text';
 import { Badge } from '_src/ui/app/shared/Badge';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
-import { formatAddress } from '@mysten/sui/utils';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
+import { formatAddress } from '@pera-io/pera/utils';
 import cl from 'clsx';
 import { useMemo } from 'react';
 
@@ -30,13 +30,13 @@ export function ValidatorLogo({
 	showActiveStatus = false,
 	activeEpoch,
 }: ValidatorLogoProps) {
-	const { data, isPending } = useSuiClientQuery('getLatestSuiSystemState');
+	const { data, isPending } = usePeraClientQuery('getLatestPeraSystemState');
 
 	const validatorMeta = useMemo(() => {
 		if (!data) return null;
 
 		return (
-			data.activeValidators.find((validator) => validator.suiAddress === validatorAddress) || null
+			data.activeValidators.find((validator) => validator.peraAddress === validatorAddress) || null
 		);
 	}, [validatorAddress, data]);
 

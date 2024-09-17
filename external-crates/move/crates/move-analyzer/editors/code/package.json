@@ -1,10 +1,10 @@
 {
   "name": "move",
   "displayName": "Move",
-  "description": "A Move language integrated development environment for Sui.",
+  "description": "A Move language integrated development environment for Pera.",
   "publisher": "mysten",
   "icon": "images/move.png",
-  "license": "Apache-2.0",
+  "license": "BSD-3-Clause-Clear",
   "version": "1.0.11",
   "preview": true,
   "repository": {
@@ -22,7 +22,7 @@
   ],
   "keywords": [
     "move",
-    "Sui",
+    "Pera",
     "Mysten"
   ],
   "main": "./out/src/main.js",
@@ -79,16 +79,16 @@
           ],
           "scope": "machine-overridable",
           "default": null,
-          "markdownDescription": "Path to rust-analyzer executable (points to `~/.sui/bin/move-analyzer` by default)."
+          "markdownDescription": "Path to rust-analyzer executable (points to `~/.pera/bin/move-analyzer` by default)."
         },
-        "move.sui.path": {
+        "move.pera.path": {
           "type": [
             "null",
             "string"
           ],
           "scope": "machine-overridable",
           "default": null,
-          "markdownDescription": "Path to Sui executable (by default assumes that `sui` is on the systems path)."
+          "markdownDescription": "Path to Pera executable (by default assumes that `pera` is on the systems path)."
         },
         "move.trace.server": {
           "type": "string",
@@ -124,13 +124,13 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "sui.serverVersion"
+          "command": "pera.serverVersion"
         },
         {
-          "command": "sui.build"
+          "command": "pera.build"
         },
         {
-          "command": "sui.test"
+          "command": "pera.test"
         }
       ]
     }

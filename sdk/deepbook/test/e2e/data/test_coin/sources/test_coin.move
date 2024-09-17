@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module test_coin::test {
     use std::option;
-    use sui::coin;
-    use sui::transfer;
-    use sui::url;
-    use sui::tx_context::{Self, TxContext};
+    use pera::coin;
+    use pera::transfer;
+    use pera::url;
+    use pera::tx_context::{Self, TxContext};
 
     public struct TEST has drop {}
 
@@ -17,7 +17,7 @@ module test_coin::test {
             b"TEST",
             b"Test Coin",
             b"Test coin metadata",
-            option::some(url::new_unsafe_from_bytes(b"http://sui.io")),
+            option::some(url::new_unsafe_from_bytes(b"http://pera.io")),
             ctx
         );
 

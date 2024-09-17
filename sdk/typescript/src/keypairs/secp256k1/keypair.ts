@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { secp256k1 } from '@noble/curves/secp256k1';
 import { blake2b } from '@noble/hashes/blake2b';
@@ -7,7 +7,7 @@ import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex } from '@noble/hashes/utils';
 import { HDKey } from '@scure/bip32';
 
-import { encodeSuiPrivateKey, Keypair } from '../../cryptography/keypair.js';
+import { encodePeraPrivateKey, Keypair } from '../../cryptography/keypair.js';
 import { isValidBIP32Path, mnemonicToSeed } from '../../cryptography/mnemonics.js';
 import type { PublicKey } from '../../cryptography/publickey.js';
 import type { SignatureScheme } from '../../cryptography/signature-scheme.js';
@@ -81,7 +81,7 @@ export class Secp256k1Keypair extends Keypair {
 		const publicKey: Uint8Array = secp256k1.getPublicKey(secretKey, true);
 		if (!options || !options.skipValidation) {
 			const encoder = new TextEncoder();
-			const signData = encoder.encode('sui validation');
+			const signData = encoder.encode('pera validation');
 			const msgHash = bytesToHex(blake2b(signData, { dkLen: 32 }));
 			const signature = secp256k1.sign(msgHash, secretKey);
 			if (!secp256k1.verify(signature, msgHash, publicKey, { lowS: true })) {
@@ -111,7 +111,7 @@ export class Secp256k1Keypair extends Keypair {
 	 * The Bech32 secret key string for this Secp256k1 keypair
 	 */
 	getSecretKey(): string {
-		return encodeSuiPrivateKey(this.keypair.secretKey, this.getKeyScheme());
+		return encodePeraPrivateKey(this.keypair.secretKey, this.getKeyScheme());
 	}
 
 	/**

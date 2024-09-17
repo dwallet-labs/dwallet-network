@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useActiveAccount } from '_src/ui/app/hooks/useActiveAccount';
 import { useSigner } from '_src/ui/app/hooks/useSigner';
@@ -12,9 +12,9 @@ import {
 	useGetObject,
 } from '@mysten/core';
 import { useKioskClient } from '@mysten/core/src/hooks/useKioskClient';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { usePeraClient } from '@mysten/dapp-kit';
 import { KioskTransaction } from '@mysten/kiosk';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@pera-io/pera/transactions';
 import { useMutation } from '@tanstack/react-query';
 
 const ORIGINBYTE_PACKAGE_ID = '0x083b02db943238dcea0ff0938a54a17d7575f5b48034506446e501e963391480';
@@ -26,7 +26,7 @@ export function useTransferKioskItem({
 	objectId: string;
 	objectType?: string | null;
 }) {
-	const client = useSuiClient();
+	const client = usePeraClient();
 	const activeAccount = useActiveAccount();
 	const signer = useSigner(activeAccount);
 	const address = activeAccount?.address;
@@ -48,7 +48,7 @@ export function useTransferKioskItem({
 				throw new Error('Failed to find object in a kiosk');
 			}
 
-			if (kiosk.type === KioskTypes.SUI && objectData?.data?.data?.type && kiosk?.ownerCap) {
+			if (kiosk.type === KioskTypes.PERA && objectData?.data?.data?.type && kiosk?.ownerCap) {
 				const txb = new Transaction();
 
 				new KioskTransaction({ transaction: txb, kioskClient, cap: kiosk.ownerCap })

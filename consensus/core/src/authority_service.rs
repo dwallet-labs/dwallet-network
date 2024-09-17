@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{pin::Pin, sync::Arc, time::Duration};
 
@@ -8,7 +8,7 @@ use bytes::Bytes;
 use consensus_config::AuthorityIndex;
 use futures::{ready, stream, task, Stream, StreamExt};
 use parking_lot::RwLock;
-use sui_macros::fail_point_async;
+use pera_macros::fail_point_async;
 use tokio::{sync::broadcast, time::sleep};
 use tokio_util::sync::ReusableBoxFuture;
 use tracing::{debug, info, trace, warn};

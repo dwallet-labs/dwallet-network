@@ -5,7 +5,7 @@ authors = ["Diem Association <opensource@diem.com>"]
 description = "CLI frontend for the Move compiler and VM"
 repository = "https://github.com/diem/diem"
 homepage = "https://diem.com"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2021"
 
@@ -51,11 +51,11 @@ name = "move"
 path = "src/main.rs"
 
 [[test]]
-name = "sandbox_testsuite"
+name = "sandbox_testperate"
 harness = false
 
 [[test]]
-name = "build_testsuite"
+name = "build_testperate"
 harness = false
 
 [features]

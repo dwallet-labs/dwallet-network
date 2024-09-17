@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { splitGenericParameters } from '@mysten/bcs';
 
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import { normalizePeraAddress } from '../utils/pera-types.js';
 import type { TypeTag } from './types.js';
 
 const VECTOR_REGEX = /^vector<(.+)>$/;
@@ -40,7 +40,7 @@ export class TypeTagSerializer {
 
 		const structMatch = str.match(STRUCT_REGEX);
 		if (structMatch) {
-			const address = normalizeAddress ? normalizeSuiAddress(structMatch[1]) : structMatch[1];
+			const address = normalizeAddress ? normalizePeraAddress(structMatch[1]) : structMatch[1];
 			return {
 				struct: {
 					address,

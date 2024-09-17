@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.20;
 
 import "./BridgeBaseTest.t.sol";
@@ -14,12 +14,12 @@ contract BridgeConfigTest is BridgeBaseTest {
         assertTrue(config.tokenAddressOf(2) == wETH);
         assertTrue(config.tokenAddressOf(3) == USDC);
         assertTrue(config.tokenAddressOf(4) == USDT);
-        assertEq(config.tokenSuiDecimalOf(0), 9);
-        assertEq(config.tokenSuiDecimalOf(1), 8);
-        assertEq(config.tokenSuiDecimalOf(2), 8);
-        assertEq(config.tokenSuiDecimalOf(3), 6);
-        assertEq(config.tokenSuiDecimalOf(4), 6);
-        assertEq(config.tokenPriceOf(0), SUI_PRICE);
+        assertEq(config.tokenPeraDecimalOf(0), 9);
+        assertEq(config.tokenPeraDecimalOf(1), 8);
+        assertEq(config.tokenPeraDecimalOf(2), 8);
+        assertEq(config.tokenPeraDecimalOf(3), 6);
+        assertEq(config.tokenPeraDecimalOf(4), 6);
+        assertEq(config.tokenPriceOf(0), PERA_PRICE);
         assertEq(config.tokenPriceOf(1), BTC_PRICE);
         assertEq(config.tokenPriceOf(2), ETH_PRICE);
         assertEq(config.tokenPriceOf(3), USDC_PRICE);
@@ -37,8 +37,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         assertTrue(!config.isTokenSupported(0));
     }
 
-    function testTokenSuiDecimalOf() public {
-        assertEq(config.tokenSuiDecimalOf(1), 8);
+    function testTokenPeraDecimalOf() public {
+        assertEq(config.tokenPeraDecimalOf(1), 8);
     }
 
     function testAddTokensWithSignatures() public {
@@ -50,8 +50,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         uint8 tokenID1 = 10;
         uint8 _numAddresses = 1;
         address address1 = address(_newToken);
-        uint8 _numSuiDecimals = 1;
-        uint8 suiDecimal1 = 6;
+        uint8 _numPeraDecimals = 1;
+        uint8 peraDecimal1 = 6;
         uint8 _numPrices = 1;
         uint64 price1 = 100_000 * USD_VALUE_MULTIPLIER;
 
@@ -61,8 +61,8 @@ contract BridgeConfigTest is BridgeBaseTest {
             tokenID1,
             _numAddresses,
             address1,
-            _numSuiDecimals,
-            suiDecimal1,
+            _numPeraDecimals,
+            peraDecimal1,
             _numPrices,
             price1
         );
@@ -92,7 +92,7 @@ contract BridgeConfigTest is BridgeBaseTest {
         config.addTokensWithSignatures(signatures, message);
         assertTrue(config.isTokenSupported(10));
         assertEq(config.tokenAddressOf(10), address1);
-        assertEq(config.tokenSuiDecimalOf(10), 6);
+        assertEq(config.tokenPeraDecimalOf(10), 6);
         assertEq(config.tokenPriceOf(10), 100_000 * USD_VALUE_MULTIPLIER);
     }
 
@@ -105,8 +105,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         uint8 tokenID1 = 10;
         uint8 _numAddresses = 1;
         address address1 = address(0);
-        uint8 _numSuiDecimals = 1;
-        uint8 suiDecimal1 = 6;
+        uint8 _numPeraDecimals = 1;
+        uint8 peraDecimal1 = 6;
         uint8 _numPrices = 1;
         uint64 price1 = 100_000 * USD_VALUE_MULTIPLIER;
 
@@ -116,8 +116,8 @@ contract BridgeConfigTest is BridgeBaseTest {
             tokenID1,
             _numAddresses,
             address1,
-            _numSuiDecimals,
-            suiDecimal1,
+            _numPeraDecimals,
+            peraDecimal1,
             _numPrices,
             price1
         );
@@ -147,7 +147,7 @@ contract BridgeConfigTest is BridgeBaseTest {
         config.addTokensWithSignatures(signatures, message);
     }
 
-    function testAddTokensSuiDecimalFailure() public {
+    function testAddTokensPeraDecimalFailure() public {
         MockUSDC _newToken = new MockUSDC();
 
         // Create add tokens payload
@@ -156,8 +156,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         uint8 tokenID1 = 10;
         uint8 _numAddresses = 1;
         address address1 = address(_newToken);
-        uint8 _numSuiDecimals = 1;
-        uint8 suiDecimal1 = 10;
+        uint8 _numPeraDecimals = 1;
+        uint8 peraDecimal1 = 10;
         uint8 _numPrices = 1;
         uint64 price1 = 100_000 * USD_VALUE_MULTIPLIER;
 
@@ -167,8 +167,8 @@ contract BridgeConfigTest is BridgeBaseTest {
             tokenID1,
             _numAddresses,
             address1,
-            _numSuiDecimals,
-            suiDecimal1,
+            _numPeraDecimals,
+            peraDecimal1,
             _numPrices,
             price1
         );
@@ -193,8 +193,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         signatures[2] = getSignature(messageHash, committeeMemberPkC);
         signatures[3] = getSignature(messageHash, committeeMemberPkD);
 
-        // add token shoudl fail because the sui decimal is greater than the eth decimal
-        vm.expectRevert(bytes("BridgeConfig: Invalid Sui decimal"));
+        // add token shoudl fail because the pera decimal is greater than the eth decimal
+        vm.expectRevert(bytes("BridgeConfig: Invalid Pera decimal"));
         config.addTokensWithSignatures(signatures, message);
     }
 
@@ -207,8 +207,8 @@ contract BridgeConfigTest is BridgeBaseTest {
         uint8 tokenID1 = 10;
         uint8 _numAddresses = 1;
         address address1 = address(_newToken);
-        uint8 _numSuiDecimals = 1;
-        uint8 suiDecimal1 = 10;
+        uint8 _numPeraDecimals = 1;
+        uint8 peraDecimal1 = 10;
         uint8 _numPrices = 1;
         uint64 price1 = 0;
 
@@ -218,8 +218,8 @@ contract BridgeConfigTest is BridgeBaseTest {
             tokenID1,
             _numAddresses,
             address1,
-            _numSuiDecimals,
-            suiDecimal1,
+            _numPeraDecimals,
+            peraDecimal1,
             _numPrices,
             price1
         );
@@ -305,7 +305,7 @@ contract BridgeConfigTest is BridgeBaseTest {
         skip(2 days);
         limiter = new BridgeLimiter();
         limiter.initialize(address(committee), _supportedDestinationChains, totalLimits);
-        bridge = new SuiBridge();
+        bridge = new PeraBridge();
         bridge.initialize(address(committee), address(vault), address(limiter));
         vault.transferOwnership(address(bridge));
         limiter.transferOwnership(address(bridge));
@@ -363,7 +363,7 @@ contract BridgeConfigTest is BridgeBaseTest {
 
         limiter = new BridgeLimiter();
         limiter.initialize(address(committee), _supportedDestinationChains, totalLimits);
-        bridge = new SuiBridge();
+        bridge = new PeraBridge();
         bridge.initialize(address(committee), address(vault), address(limiter));
         vault.transferOwnership(address(bridge));
         limiter.transferOwnership(address(bridge));
@@ -428,7 +428,7 @@ contract BridgeConfigTest is BridgeBaseTest {
         skip(2 days);
         limiter = new BridgeLimiter();
         limiter.initialize(address(committee), _supportedDestinationChains, totalLimits);
-        bridge = new SuiBridge();
+        bridge = new PeraBridge();
         bridge.initialize(address(committee), address(vault), address(limiter));
         vault.transferOwnership(address(bridge));
         limiter.transferOwnership(address(bridge));
@@ -440,7 +440,7 @@ contract BridgeConfigTest is BridgeBaseTest {
             bool native,
             uint8[] memory tokenIDs,
             address[] memory tokenAddresses,
-            uint8[] memory suiDecimals,
+            uint8[] memory peraDecimals,
             uint64[] memory tokenPrices
         ) = BridgeUtils.decodeAddTokensPayload(payload);
 
@@ -455,10 +455,10 @@ contract BridgeConfigTest is BridgeBaseTest {
         assertEq(tokenAddresses[1], 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84); // lido
         assertEq(tokenAddresses[2], 0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72); // ENS
 
-        assertEq(suiDecimals.length, 3);
-        assertEq(suiDecimals[0], 5);
-        assertEq(suiDecimals[1], 6);
-        assertEq(suiDecimals[2], 7);
+        assertEq(peraDecimals.length, 3);
+        assertEq(peraDecimals[0], 5);
+        assertEq(peraDecimals[1], 6);
+        assertEq(peraDecimals[2], 7);
 
         assertEq(tokenPrices.length, 3);
         assertEq(tokenPrices[0], 1_000_000_000);
@@ -492,9 +492,9 @@ contract BridgeConfigTest is BridgeBaseTest {
         assertEq(config.tokenPriceOf(99), 1_000_000_000);
         assertEq(config.tokenPriceOf(100), 2_000_000_000);
         assertEq(config.tokenPriceOf(101), 3_000_000_000);
-        assertEq(config.tokenSuiDecimalOf(99), 5);
-        assertEq(config.tokenSuiDecimalOf(100), 6);
-        assertEq(config.tokenSuiDecimalOf(101), 7);
+        assertEq(config.tokenPeraDecimalOf(99), 5);
+        assertEq(config.tokenPeraDecimalOf(100), 6);
+        assertEq(config.tokenPeraDecimalOf(101), 7);
         assertEq(config.tokenAddressOf(99), 0x6B175474E89094C44Da98b954EedeAC495271d0F);
         assertEq(config.tokenAddressOf(100), 0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84);
         assertEq(config.tokenAddressOf(101), 0xC18360217D8F7Ab5e7c516566761Ea12Ce7F9D72);

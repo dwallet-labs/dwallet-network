@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiEvent, SuiTransactionBlockKind, TransactionEffects } from '@mysten/sui/client';
+import type { PeraEvent, PeraTransactionBlockKind, TransactionEffects } from '@pera-io/pera/client';
 
 type FormattedBalance = {
 	amount?: number | null;
@@ -10,9 +10,9 @@ type FormattedBalance = {
 }[];
 
 export function getAmount(
-	_txnData: SuiTransactionBlockKind,
+	_txnData: PeraTransactionBlockKind,
 	_txnEffect: TransactionEffects,
-	_events: SuiEvent[],
+	_events: PeraEvent[],
 ): FormattedBalance | null {
 	// TODO: Support programmable transactions:
 	return null;

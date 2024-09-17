@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use lsp_types::Position;
 use move_command_line_common::files::FileHash;

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import argparse
 from collections import defaultdict
@@ -45,7 +45,7 @@ INTERESTING_DIRECTORIES = [
     "kiosk",
     "narwhal",
     "nre",
-    "sui-execution",
+    "pera-execution",
 ]
 
 # Start release notes with these sections, if they contain relevant
@@ -199,9 +199,9 @@ def extract_notes(commit, seen):
 def extract_protocol_version(commit):
     """Find the max protocol version at this commit.
 
-    Assumes that it is being called from the root of the sui repository."""
+    Assumes that it is being called from the root of the pera repository."""
     for line in git(
-        "show", f"{commit}:crates/sui-protocol-config/src/lib.rs"
+        "show", f"{commit}:crates/pera-protocol-config/src/lib.rs"
     ).splitlines():
         if "const MAX_PROTOCOL_VERSION" not in line:
             continue
@@ -304,7 +304,7 @@ def do_generate(from_, to):
         print(f"## {impacted}")
 
         if impacted == "Protocol":
-            print(f"#### Sui Protocol Version in this release: `{protocol_version}`")
+            print(f"#### Pera Protocol Version in this release: `{protocol_version}`")
         print()
 
         for pr, note in reversed(notes):

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use arc_swap::{ArcSwap, ArcSwapOption};
 use mysten_metrics::metered_channel::Sender;
@@ -86,7 +86,7 @@ impl LazyNarwhalClient {
 
     pub async fn get(&self) -> Arc<ArcSwap<LocalNarwhalClient>> {
         // Narwhal may not have started and created LocalNarwhalClient, so retry in a loop.
-        // Retries should only happen on Sui process start.
+        // Retries should only happen on Pera process start.
         const NARWHAL_WORKER_START_TIMEOUT: Duration = Duration::from_secs(30);
         if let Ok(client) = timeout(NARWHAL_WORKER_START_TIMEOUT, async {
             loop {

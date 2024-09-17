@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { Kiosk, KioskTransaction } from '@mysten/kiosk';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@pera-io/pera/transactions';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 

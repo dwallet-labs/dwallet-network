@@ -1,7 +1,7 @@
 module a::m {
 
     use std::vector;
-    use sui::table;
+    use pera::table;
 
     struct ID has store, copy, drop {
         bytes: address,
@@ -61,7 +61,7 @@ module std::vector {
     native public fun pop_back<Element>(v: &mut vector<Element>): Element;
 }
 
-module sui::table {
+module pera::table {
     struct Table<phantom K: copy + drop + store, phantom V: store> {
         size: u64,
     }

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::env;
 use std::net::SocketAddr;
@@ -12,9 +12,9 @@ use hyper::Method;
 use hyper::Request;
 use jsonrpsee::RpcModule;
 use prometheus::Registry;
-use sui_core::traffic_controller::metrics::TrafficControllerMetrics;
-use sui_types::traffic_control::PolicyConfig;
-use sui_types::traffic_control::RemoteFirewallConfig;
+use pera_core::traffic_controller::metrics::TrafficControllerMetrics;
+use pera_types::traffic_control::PolicyConfig;
+use pera_types::traffic_control::RemoteFirewallConfig;
 use tokio::runtime::Handle;
 use tokio_util::sync::CancellationToken;
 use tower_http::cors::{AllowOrigin, CorsLayer};
@@ -23,11 +23,11 @@ use tracing::info;
 
 pub use balance_changes::*;
 pub use object_changes::*;
-pub use sui_config::node::ServerType;
-use sui_json_rpc_api::{
+pub use pera_config::node::ServerType;
+use pera_json_rpc_api::{
     CLIENT_SDK_TYPE_HEADER, CLIENT_SDK_VERSION_HEADER, CLIENT_TARGET_API_VERSION_HEADER,
 };
-use sui_open_rpc::{Module, Project};
+use pera_open_rpc::{Module, Project};
 
 use crate::error::Error;
 use crate::metrics::MetricsLogger;
@@ -63,11 +63,11 @@ pub struct JsonRpcServerBuilder {
     firewall_config: Option<RemoteFirewallConfig>,
 }
 
-pub fn sui_rpc_doc(version: &str) -> Project {
+pub fn pera_rpc_doc(version: &str) -> Project {
     Project::new(
         version,
-        "Sui JSON-RPC",
-        "Sui JSON-RPC API for interaction with Sui Full node. Make RPC calls using https://fullnode.NETWORK.sui.io:443, where NETWORK is the network you want to use (testnet, devnet, mainnet). By default, local networks use port 9000.",
+        "Pera JSON-RPC",
+        "Pera JSON-RPC API for interaction with Pera Full node. Make RPC calls using https://fullnode.NETWORK.pera.io:443, where NETWORK is the network you want to use (testnet, devnet, mainnet). By default, local networks use port 9000.",
         "Mysten Labs",
         "https://mystenlabs.com",
         "build@mystenlabs.com",
@@ -85,14 +85,14 @@ impl JsonRpcServerBuilder {
     ) -> Self {
         Self {
             module: RpcModule::new(()),
-            rpc_doc: sui_rpc_doc(version),
+            rpc_doc: pera_rpc_doc(version),
             registry: prometheus_registry.clone(),
             policy_config,
             firewall_config,
         }
     }
 
-    pub fn register_module<T: SuiRpcModule>(&mut self, module: T) -> Result<(), Error> {
+    pub fn register_module<T: PeraRpcModule>(&mut self, module: T) -> Result<(), Error> {
         self.rpc_doc.add_module(T::rpc_doc_module());
         Ok(self.module.merge(module.rpc())?)
     }
@@ -280,7 +280,7 @@ impl JsonRpcServerBuilder {
         let handle = ServerHandle {
             handle: ServerHandleInner::Axum(handle),
         };
-        info!(local_addr =? addr, "Sui JSON-RPC server listening on {addr}");
+        info!(local_addr =? addr, "Pera JSON-RPC server listening on {addr}");
         Ok(handle)
     }
 }
@@ -301,7 +301,7 @@ enum ServerHandleInner {
     Axum(tokio::task::JoinHandle<()>),
 }
 
-pub trait SuiRpcModule
+pub trait PeraRpcModule
 where
     Self: Sized,
 {

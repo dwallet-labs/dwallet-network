@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import {
 	ConnectButton,
-	SuiClientProvider,
+	PeraClientProvider,
 	useAccounts,
 	useAutoConnectWallet,
 	useConnectWallet,
@@ -17,8 +17,8 @@ import {
 	useWallets,
 	WalletProvider,
 } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { getFullnodeUrl } from '@pera-io/pera/client';
+import { Transaction } from '@pera-io/pera/transactions';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
@@ -242,7 +242,7 @@ export const UseSignTransactionExample = withProviders(() => {
 								signTransaction(
 									{
 										transaction: new Transaction(),
-										chain: 'sui:devnet',
+										chain: 'pera:devnet',
 									},
 									{
 										onSuccess: (result) => {
@@ -279,7 +279,7 @@ export const UseSignAndExecuteTransactionExample = withProviders(() => {
 								signAndExecuteTransaction(
 									{
 										transaction: new Transaction(),
-										chain: 'sui:devnet',
+										chain: 'pera:devnet',
 									},
 									{
 										onSuccess: (result) => {
@@ -322,11 +322,11 @@ function withProviders(
 
 		return (
 			<QueryClientProvider client={queryClient}>
-				<SuiClientProvider networks={networks}>
+				<PeraClientProvider networks={networks}>
 					<WalletProvider {...walletProviderProps}>
 						<Component />
 					</WalletProvider>
-				</SuiClientProvider>
+				</PeraClientProvider>
 			</QueryClientProvider>
 		);
 	};

@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
     account_address::AccountAddress,
@@ -67,7 +67,7 @@ impl TypeTag {
     /// `0000000000000000000000000000000a::module_name1::type_name1<0000000000000000000000000000000a::module_name2::type_name2<u64>>`
     /// With or without the prefix 0x depending on the `with_prefix` flag.
     /// Addresses are hex-encoded lowercase values of length ADDRESS_LENGTH (16, 20, or 32 depending on the Move platform)
-    /// Note: this function is guaranteed to be stable, and this is suitable for use inside
+    /// Note: this function is guaranteed to be stable, and this is peratable for use inside
     /// Move native functions or the VM. By contrast, the `Display` implementation is subject
     /// to change and should not be used inside stable code.
     pub fn to_canonical_string(&self, with_prefix: bool) -> String {
@@ -180,7 +180,7 @@ impl StructTag {
     /// or `0000000000000000000000000000000a::module_name2::type_name2<bool,u64,u128>.
     /// With or without the prefix 0x depending on the `with_prefix` flag.
     /// Addresses are hex-encoded lowercase values of length ADDRESS_LENGTH (16, 20, or 32 depending on the Move platform)
-    /// Note: this function is guaranteed to be stable, and this is suitable for use inside
+    /// Note: this function is guaranteed to be stable, and this is peratable for use inside
     /// Move native functions or the VM. By contrast, the `Display` implementation is subject
     /// to change and should not be used inside stable code.
     pub fn to_canonical_string(&self, with_prefix: bool) -> String {

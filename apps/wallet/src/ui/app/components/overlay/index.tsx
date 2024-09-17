@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { X32 } from '@mysten/icons';
 import cl from 'clsx';
@@ -18,7 +18,7 @@ type OverlayProps = {
 	closeOverlay?: () => void;
 	closeIcon?: ReactNode | null;
 	setShowModal?: (showModal: boolean) => void;
-	background?: 'bg-sui-lightest';
+	background?: 'bg-pera-lightest';
 };
 
 function Overlay({
@@ -27,7 +27,7 @@ function Overlay({
 	showModal,
 	closeOverlay,
 	setShowModal,
-	closeIcon = <X32 fill="currentColor" className="text-sui-light w-8 h-8" />,
+	closeIcon = <X32 fill="currentColor" className="text-pera-light w-8 h-8" />,
 	background,
 }: OverlayProps) {
 	const closeModal = useCallback(

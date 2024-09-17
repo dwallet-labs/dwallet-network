@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-import { useSuiClientContext } from '@mysten/dapp-kit';
-import { ObjectOwner, SuiObjectChange } from '@mysten/sui/client';
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+import { usePeraClientContext } from '@mysten/dapp-kit';
+import { ObjectOwner, PeraObjectChange } from '@pera-io/pera/client';
 import { CheckIcon, CopyIcon } from 'lucide-react';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
@@ -27,12 +27,12 @@ export function ObjectLink({
 	inputObject?: string;
 	type?: string;
 	owner?: ObjectOwner;
-	object?: SuiObjectChange;
+	object?: PeraObjectChange;
 } & React.HTMLAttributes<HTMLAnchorElement> &
 	React.ComponentPropsWithoutRef<'a'>) {
 	const [copied, setCopied] = useState(false);
 
-	const { network } = useSuiClientContext();
+	const { network } = usePeraClientContext();
 
 	let objectId: string | undefined;
 	let display: string | undefined;
@@ -70,7 +70,7 @@ export function ObjectLink({
 	}
 
 	const link = objectId
-		? `https://suiexplorer.com/${ownerDisplay ? 'address' : 'object'}/${objectId}?network=${
+		? `https://peraexplorer.com/${ownerDisplay ? 'address' : 'object'}/${objectId}?network=${
 				network.split(':')[1]
 			}`
 		: undefined;

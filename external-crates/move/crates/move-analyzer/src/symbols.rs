@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This module is responsible for building symbolication information on top of compiler's parsed
 //! and typed ASTs, in particular identifier definitions to be used for implementing go-to-def,
@@ -1543,7 +1543,7 @@ pub fn get_symbols(
     let build_config = move_package::BuildConfig {
         test_mode: true,
         install_dir: Some(tempdir().unwrap().path().to_path_buf()),
-        default_flavor: Some(Flavor::Sui),
+        default_flavor: Some(Flavor::Pera),
         lint_flag: lint.into(),
         skip_fetch_latest_git_deps: has_precompiled_deps(pkg_path, pkg_dependencies.clone()),
         ..Default::default()

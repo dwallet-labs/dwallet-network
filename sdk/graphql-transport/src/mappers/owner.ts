@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { ObjectOwner } from '@mysten/sui/client';
+import type { ObjectOwner } from '@pera-io/pera/client';
 
 import type { Rpc_Object_FieldsFragment } from '../generated/queries.js';
 

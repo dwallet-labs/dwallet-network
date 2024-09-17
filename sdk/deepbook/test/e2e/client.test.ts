@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { beforeAll, describe, expect, it } from 'vitest';
 
@@ -11,7 +11,7 @@ import {
 	executeTransaction,
 	setupDeepbookAccount,
 	setupPool,
-	setupSuiClient,
+	setupPeraClient,
 	TestToolbox,
 } from './setup';
 
@@ -26,7 +26,7 @@ describe('Interacting with the pool', () => {
 	let accountCapId2: string;
 
 	beforeAll(async () => {
-		toolbox = await setupSuiClient();
+		toolbox = await setupPeraClient();
 	});
 
 	it('test creating a pool', async () => {
@@ -188,10 +188,10 @@ describe('Interacting with the pool', () => {
 		expect(openOrdersAfter.length).toBe(0);
 	});
 
-	it('Test parsing sui coin id', async () => {
+	it('Test parsing pera coin id', async () => {
 		const deepbook = new DeepBookClient(toolbox.client, accountCapId);
 		const resp = await toolbox.client.getCoins({
-			owner: toolbox.keypair.getPublicKey().toSuiAddress(),
+			owner: toolbox.keypair.getPublicKey().toPeraAddress(),
 			coinType: pool.baseAsset,
 		});
 		const baseCoin = resp.data[0].coinObjectId;

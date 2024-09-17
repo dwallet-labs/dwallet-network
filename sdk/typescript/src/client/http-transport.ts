@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { PACKAGE_VERSION, TARGETED_RPC_VERSION } from '../version.js';
-import { JsonRpcError, SuiHTTPStatusError } from './errors.js';
+import { JsonRpcError, PeraHTTPStatusError } from './errors.js';
 import type { WebsocketClientOptions } from './rpc-websocket-client.js';
 import { WebsocketClient } from './rpc-websocket-client.js';
 
@@ -11,7 +11,7 @@ import { WebsocketClient } from './rpc-websocket-client.js';
  */
 export type HttpHeaders = { [header: string]: string };
 
-export interface SuiHTTPTransportOptions {
+export interface PeraHTTPTransportOptions {
 	fetch?: typeof fetch;
 	WebSocketConstructor?: typeof WebSocket;
 	url: string;
@@ -24,31 +24,31 @@ export interface SuiHTTPTransportOptions {
 	};
 }
 
-export interface SuiTransportRequestOptions {
+export interface PeraTransportRequestOptions {
 	method: string;
 	params: unknown[];
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 
-export interface SuiTransportSubscribeOptions<T> {
+export interface PeraTransportSubscribeOptions<T> {
 	method: string;
 	unsubscribe: string;
 	params: unknown[];
 	onMessage: (event: T) => void;
 }
 
-export interface SuiTransport {
-	request<T = unknown>(input: SuiTransportRequestOptions): Promise<T>;
-	subscribe<T = unknown>(input: SuiTransportSubscribeOptions<T>): Promise<() => Promise<boolean>>;
+export interface PeraTransport {
+	request<T = unknown>(input: PeraTransportRequestOptions): Promise<T>;
+	subscribe<T = unknown>(input: PeraTransportSubscribeOptions<T>): Promise<() => Promise<boolean>>;
 }
 
-export class SuiHTTPTransport implements SuiTransport {
+export class PeraHTTPTransport implements PeraTransport {
 	#requestId = 0;
-	#options: SuiHTTPTransportOptions;
+	#options: PeraHTTPTransportOptions;
 	#websocketClient?: WebsocketClient;
 
-	constructor(options: SuiHTTPTransportOptions) {
+	constructor(options: PeraHTTPTransportOptions) {
 		this.#options = options;
 	}
 
@@ -57,7 +57,7 @@ export class SuiHTTPTransport implements SuiTransport {
 
 		if (!fetchFn) {
 			throw new Error(
-				'The current environment does not support fetch, you can provide a fetch implementation in the options for SuiHTTPTransport.',
+				'The current environment does not support fetch, you can provide a fetch implementation in the options for PeraHTTPTransport.',
 			);
 		}
 
@@ -69,7 +69,7 @@ export class SuiHTTPTransport implements SuiTransport {
 			const WebSocketConstructor = this.#options.WebSocketConstructor ?? WebSocket;
 			if (!WebSocketConstructor) {
 				throw new Error(
-					'The current environment does not support WebSocket, you can provide a WebSocketConstructor in the options for SuiHTTPTransport.',
+					'The current environment does not support WebSocket, you can provide a WebSocketConstructor in the options for PeraHTTPTransport.',
 				);
 			}
 
@@ -85,7 +85,7 @@ export class SuiHTTPTransport implements SuiTransport {
 		return this.#websocketClient;
 	}
 
-	async request<T>(input: SuiTransportRequestOptions): Promise<T> {
+	async request<T>(input: PeraTransportRequestOptions): Promise<T> {
 		this.#requestId += 1;
 
 		const res = await this.fetch(this.#options.rpc?.url ?? this.#options.url, {
@@ -106,7 +106,7 @@ export class SuiHTTPTransport implements SuiTransport {
 		});
 
 		if (!res.ok) {
-			throw new SuiHTTPStatusError(
+			throw new PeraHTTPStatusError(
 				`Unexpected status code: ${res.status}`,
 				res.status,
 				res.statusText,
@@ -122,7 +122,7 @@ export class SuiHTTPTransport implements SuiTransport {
 		return data.result;
 	}
 
-	async subscribe<T>(input: SuiTransportSubscribeOptions<T>): Promise<() => Promise<boolean>> {
+	async subscribe<T>(input: PeraTransportSubscribeOptions<T>): Promise<() => Promise<boolean>> {
 		const unsubscribe = await this.#getWebsocketClient().subscribe(input);
 
 		return async () => !!(await unsubscribe());

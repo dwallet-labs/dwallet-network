@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use bytes::Bytes;
 use std::time::Duration;
 use test_utils::cluster::{setup_tracing, Cluster};

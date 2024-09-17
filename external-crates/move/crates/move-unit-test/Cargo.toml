@@ -5,7 +5,7 @@ authors = ["Diem Association <opensource@diem.com>"]
 description = "Unit testing framework for Move code"
 repository = "https://github.com/diem/diem"
 homepage = "https://diem.com"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 edition = "2021"
 
@@ -46,7 +46,7 @@ name = "move-unit-test"
 path = "src/main.rs"
 
 [[test]]
-name = "move_unit_test_testsuite"
+name = "move_unit_test_testperate"
 harness = false
 
 [features]

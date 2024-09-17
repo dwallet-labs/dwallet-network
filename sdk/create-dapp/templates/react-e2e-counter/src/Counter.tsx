@@ -1,21 +1,21 @@
 import {
   useCurrentAccount,
   useSignAndExecuteTransaction,
-  useSuiClient,
-  useSuiClientQuery,
+  usePeraClient,
+  usePeraClientQuery,
 } from "@mysten/dapp-kit";
-import type { SuiObjectData } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import type { PeraObjectData } from "@pera-io/pera/client";
+import { Transaction } from "@pera-io/pera/transactions";
 import { Button, Flex, Heading, Text } from "@radix-ui/themes";
 import { useNetworkVariable } from "./networkConfig";
 
 export function Counter({ id }: { id: string }) {
   const counterPackageId = useNetworkVariable("counterPackageId");
-  const suiClient = useSuiClient();
+  const peraClient = usePeraClient();
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction({
     execute: async ({ bytes, signature }) =>
-      await suiClient.executeTransactionBlock({
+      await peraClient.executeTransactionBlock({
         transactionBlock: bytes,
         signature,
         options: {
@@ -25,7 +25,7 @@ export function Counter({ id }: { id: string }) {
         },
       }),
   });
-  const { data, isPending, error, refetch } = useSuiClientQuery("getObject", {
+  const { data, isPending, error, refetch } = usePeraClientQuery("getObject", {
     id,
     options: {
       showContent: true,
@@ -87,7 +87,7 @@ export function Counter({ id }: { id: string }) {
     </>
   );
 }
-function getCounterFields(data: SuiObjectData) {
+function getCounterFields(data: PeraObjectData) {
   if (data.content?.dataType !== "moveObject") {
     return null;
   }

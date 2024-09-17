@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { describe, expect, it } from 'vitest';
 
-import { SuiGraphQLClient } from '../../src/graphql';
+import { PeraGraphQLClient } from '../../src/graphql';
 import { graphql } from '../../src/graphql/schemas/2024.4';
 
 const queries = {
@@ -30,7 +30,7 @@ const queries = {
 	`),
 };
 
-const client = new SuiGraphQLClient({
+const client = new PeraGraphQLClient({
 	url: 'http://127.0.0.1:9125',
 	queries,
 });

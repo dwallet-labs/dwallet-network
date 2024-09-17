@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import * as os from 'os';
 import * as vscode from 'vscode';
@@ -10,7 +10,7 @@ export const MOVE_CONF_NAME = 'move';
 export const LINT_OPT = 'lint';
 export const TYPE_HINTS_OPT = 'inlay-hints.type';
 export const PARAM_HINTS_OPT = 'inlay-hints.param';
-export const SUI_PATH_OPT = 'sui.path';
+export const PERA_PATH_OPT = 'pera.path';
 export const SERVER_PATH_OPT = 'server.path';
 
 /**
@@ -33,7 +33,7 @@ export class Configuration {
 
     constructor() {
         this.configuration = vscode.workspace.getConfiguration(MOVE_CONF_NAME);
-        this.defaultServerDir = vscode.Uri.joinPath(vscode.Uri.file(os.homedir()), '.sui', 'bin');
+        this.defaultServerDir = vscode.Uri.joinPath(vscode.Uri.file(os.homedir()), '.pera', 'bin');
         if (process.platform === 'win32') {
             this.serverName = 'move-analyzer.exe';
         } else {
@@ -56,18 +56,18 @@ export class Configuration {
         return path.resolve(serverPath);
     }
 
-    /** The path to the Sui binary. */
-    get suiPath(): string {
-        const suiBin = process.platform === 'win32' ? 'sui.exe' : 'sui';
-        const suiPath = this.configuration.get<string | null >(SUI_PATH_OPT) ?? suiBin;
+    /** The path to the Pera binary. */
+    get peraPath(): string {
+        const peraBin = process.platform === 'win32' ? 'pera.exe' : 'pera';
+        const peraPath = this.configuration.get<string | null >(PERA_PATH_OPT) ?? peraBin;
 
-        if (suiPath === suiBin) {
-            return suiPath;
+        if (peraPath === peraBin) {
+            return peraPath;
         }
-        if (suiPath.startsWith('~/')) {
-            return os.homedir() + suiPath.slice('~'.length);
+        if (peraPath.startsWith('~/')) {
+            return os.homedir() + peraPath.slice('~'.length);
         }
-        return path.resolve(suiPath);
+        return path.resolve(peraPath);
     }
 
     get lint(): string {

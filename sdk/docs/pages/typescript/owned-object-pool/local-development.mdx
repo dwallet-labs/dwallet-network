@@ -3,11 +3,11 @@
 import { Callout } from 'nextra/components';
 
 <Callout type="warning">
-	Sui Owned Object Pools (SuiOOP) will likely be replaced by
+	Pera Owned Object Pools (PeraOOP) will likely be replaced by
 	[`ParallelTransactionExecutor`](../executors#paralleltransactionexecutor) from
-	`@mysten/sui/transactions`
+	`@pera-io/pera/transactions`
 
-    Sui Owned Object Pools (SuiOOP) is a beta library. Enhancements and changes are likely during
+    Pera Owned Object Pools (PeraOOP) is a beta library. Enhancements and changes are likely during
     development.
 
 </Callout>
@@ -18,7 +18,7 @@ If you would like to extend the library by developing on your local machine, fir
 the repository.
 
 ```sh
-git clone https://github.com/MystenLabs/Sui_Owned_Object_Pools.git
+git clone https://github.com/MystenLabs/Pera_Owned_Object_Pools.git
 ```
 
 Use a package manager to install dependencies from the root of the project.
@@ -46,12 +46,12 @@ manually.
 Before proceeding make sure that you are using the `testnet` environment:
 
 ```sh
-sui client switch --env testnet && sui client envs
+pera client switch --env testnet && pera client envs
 ```
 
-Also, make sure that your admin account (the account `sui client active-address` identifies) owns
-enough SUI. You can get SUI for a test network from the
-[Sui faucet](https://docs.sui.io/guides/developer/getting-started/get-coins).
+Also, make sure that your admin account (the account `pera client active-address` identifies) owns
+enough PERA. You can get PERA for a test network from the
+[Pera faucet](https://docs.pera.io/guides/developer/getting-started/get-coins).
 
 Next, run the setup script:
 
@@ -64,7 +64,7 @@ The script creates a `.test.env` file in the `test/` folder. When the script is 
 to add an `ADMIN_SECRET_KEY` and a `TEST_USER_SECRET` to the `.env`.
 
 The Testnet network is typically used for testing. Switch to Testnet with:
-`sui client switch --env testnet`
+`pera client switch --env testnet`
 
 At the end of the setup, your `.env` should look like the template
 [`.test.env.example.`](https://github.com/MystenLabs/coin_management_system/blob/main/test/.env.example):
@@ -82,15 +82,15 @@ TEST_USER_SECRET= ...
 NFT_APP_PACKAGE_ID= ...
 NFT_APP_ADMIN_CAP= ...
 
-# Example: "https://fullnode.testnet.sui.io:443"
-SUI_NODE= ...
+# Example: "https://fullnode.testnet.pera.io:443"
+PERA_NODE= ...
 
 GET_WORKER_TIMEOUT_MS=1000
 ```
 
 <Callout type="default">
-	You can run `cat ~/.sui/sui_config/sui.keystore` to see your addresses' secret keys. Each secret's
-	corresponding address is in the same row line that appears in `sui client addresses`.
+	You can run `cat ~/.pera/pera_config/pera.keystore` to see your addresses' secret keys. Each secret's
+	corresponding address is in the same row line that appears in `pera client addresses`.
 </Callout>
 
 The [jest framework](https://jestjs.io/) is recommended for testing. Having installed the project's

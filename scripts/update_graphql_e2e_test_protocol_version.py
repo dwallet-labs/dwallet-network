@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import os
 import re
@@ -49,13 +49,13 @@ def replace_protocol_version_in_file(file_path, old_version, new_version, yes_to
 def replace_protocol_version_in_repo(repo_path, old_version, new_version, yes_to_all, dry_run):
     for root, dirs, files in os.walk(repo_path):
         for file in files:
-            if "sui-graphql-e2e-tests" in root.split(os.sep):
+            if "pera-graphql-e2e-tests" in root.split(os.sep):
                 if file.endswith('.move'):
                     file_path = os.path.join(root, file)
                     replace_protocol_version_in_file(file_path, old_version, new_version, yes_to_all, dry_run)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Replace protocol version in sui-graphql-e2e-tests tests.')
+    parser = argparse.ArgumentParser(description='Replace protocol version in pera-graphql-e2e-tests tests.')
     parser.add_argument('--yes-to-all', action='store_true', help='Automatically say "yes to all" for all changes')
     parser.add_argument('--dry-run', action='store_true', help='List all files that will be updated without making any changes')
     args = parser.parse_args()
@@ -65,4 +65,4 @@ if __name__ == "__main__":
     new_version = input("Enter the new protocol version (YY): ")
     replace_protocol_version_in_repo(repo_path, old_version, new_version, args.yes_to_all, args.dry_run)
     if not args.dry_run:
-        print(f"Next step. Running `env UB=1 cargo nextest run --features pg_integration` in `crates/sui-graphql-e2e-tests` to update all the snapshots.")
+        print(f"Next step. Running `env UB=1 cargo nextest run --features pg_integration` in `crates/pera-graphql-e2e-tests` to update all the snapshots.")

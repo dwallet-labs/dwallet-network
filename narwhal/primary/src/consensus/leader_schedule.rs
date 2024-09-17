@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{
     collections::HashMap,
@@ -11,7 +11,7 @@ use config::{Authority, AuthorityIdentifier, Committee, Stake};
 use parking_lot::RwLock;
 use rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 use storage::ConsensusStore;
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use tracing::{debug, trace};
 use types::{Certificate, ReputationScores, Round};
 

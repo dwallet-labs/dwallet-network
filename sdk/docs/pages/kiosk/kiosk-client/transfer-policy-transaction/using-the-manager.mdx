@@ -15,7 +15,7 @@ After setting up the manager, you can withdraw profits from the specified transf
 
 ```typescript
 // ... tp transaction is initialized and policy is set.
-// Withdraw 10 SUI from the policy. Leave last parameter empty to withdraw all profits.
+// Withdraw 10 PERA from the policy. Leave last parameter empty to withdraw all profits.
 tpTx.withdraw('address_to_transfer_coin', 10_000_000_000);
 ```
 
@@ -89,7 +89,7 @@ You can add the floor price rule like the following example:
 
 ```typescript
 // ... tp transaction is initialized and policy is set.
-tpTx.addFloorPriceRule(10_000_000_000); // sets 10 SUI as the floor price.
+tpTx.addFloorPriceRule(10_000_000_000); // sets 10 PERA as the floor price.
 ```
 
 You can remove the rule by calling:

@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::{sandbox::utils::OnDiskStateView, DEFAULT_BUILD_DIR};
 use anyhow::Result;
 use move_package::{compilation::compiled_package::CompiledPackage, BuildConfig};

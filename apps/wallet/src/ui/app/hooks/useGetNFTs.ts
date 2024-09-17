@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { hasDisplayData, isKioskOwnerToken, useGetOwnedObjects } from '@mysten/core';
 import { useKioskClient } from '@mysten/core/src/hooks/useKioskClient';
-import { type SuiObjectData } from '@mysten/sui/client';
+import { type PeraObjectData } from '@pera-io/pera/client';
 import { useMemo } from 'react';
 
 import { useBuyNLargeAssets } from '../components/buynlarge/useBuyNLargeAssets';
 import { useHiddenAssets } from '../pages/home/hidden-assets/HiddenAssetsProvider';
 
 type OwnedAssets = {
-	visual: SuiObjectData[];
-	other: SuiObjectData[];
-	hidden: SuiObjectData[];
+	visual: PeraObjectData[];
+	other: PeraObjectData[];
+	hidden: PeraObjectData[];
 };
 
 export enum AssetFilterTypes {
@@ -58,10 +58,10 @@ export function useGetNFTs(address?: string | null) {
 			.filter((asset) => !hiddenAssetIds.includes(asset.data?.objectId!))
 			.reduce((acc, curr) => {
 				if (hasDisplayData(curr) || isKioskOwnerToken(kioskClient.network, curr))
-					acc.visual.push(curr.data as SuiObjectData);
-				if (!hasDisplayData(curr)) acc.other.push(curr.data as SuiObjectData);
+					acc.visual.push(curr.data as PeraObjectData);
+				if (!hasDisplayData(curr)) acc.other.push(curr.data as PeraObjectData);
 				if (hiddenAssetIds.includes(curr.data?.objectId!))
-					acc.hidden.push(curr.data as SuiObjectData);
+					acc.hidden.push(curr.data as PeraObjectData);
 				return acc;
 			}, ownedAssets);
 

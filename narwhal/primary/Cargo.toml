@@ -1,7 +1,7 @@
 [package]
 name = "narwhal-primary"
 version = "0.1.0"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 publish = false
 edition = "2021"
@@ -34,9 +34,9 @@ network = { path = "../network", package = "narwhal-network" }
 types = { path = "../types", package = "narwhal-types" }
 storage = { path = "../storage", package = "narwhal-storage" }
 store = { path = "../../crates/typed-store", package = "typed-store" }
-sui-macros.workspace = true
+pera-macros.workspace = true
 mysten-network.workspace = true
-sui-protocol-config.workspace = true
+pera-protocol-config.workspace = true
 
 mysten-common.workspace = true
 mysten-metrics.workspace = true

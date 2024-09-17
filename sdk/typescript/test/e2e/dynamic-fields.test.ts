@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { resolve } from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { SuiObjectData } from '../../src/client';
+import { PeraObjectData } from '../../src/client';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Dynamic Fields Reading API', () => {
@@ -23,7 +23,7 @@ describe('Dynamic Fields Reading API', () => {
 				filter: { StructType: `${packageId}::dynamic_fields_test::Test` },
 			})
 			.then(function (objects) {
-				const data = objects.data[0].data as SuiObjectData;
+				const data = objects.data[0].data as PeraObjectData;
 				parentObjectId = data.objectId;
 			});
 	});

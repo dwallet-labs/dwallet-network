@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { resolve } from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -19,10 +19,10 @@ describe('CoinRead API', () => {
 	});
 
 	it('Get coins with/without type', async () => {
-		const suiCoins = await toolbox.client.getCoins({
+		const peraCoins = await toolbox.client.getCoins({
 			owner: toolbox.address(),
 		});
-		expect(suiCoins.data.length).toEqual(5);
+		expect(peraCoins.data.length).toEqual(5);
 
 		const testCoins = await toolbox.client.getCoins({
 			owner: publishToolbox.address(),
@@ -43,21 +43,21 @@ describe('CoinRead API', () => {
 		expect(publisherAllCoins.hasNextPage).toEqual(false);
 
 		//test paging with limit
-		const someSuiCoins = await toolbox.client.getCoins({
+		const somePeraCoins = await toolbox.client.getCoins({
 			owner: toolbox.address(),
 			limit: 3,
 		});
-		expect(someSuiCoins.data.length).toEqual(3);
-		expect(someSuiCoins.nextCursor).toBeTruthy();
+		expect(somePeraCoins.data.length).toEqual(3);
+		expect(somePeraCoins.nextCursor).toBeTruthy();
 	});
 
 	it('Get balance with/without type', async () => {
-		const suiBalance = await toolbox.client.getBalance({
+		const peraBalance = await toolbox.client.getBalance({
 			owner: toolbox.address(),
 		});
-		expect(suiBalance.coinType).toEqual('0x2::sui::SUI');
-		expect(suiBalance.coinObjectCount).toEqual(5);
-		expect(Number(suiBalance.totalBalance)).toBeGreaterThan(0);
+		expect(peraBalance.coinType).toEqual('0x2::pera::PERA');
+		expect(peraBalance.coinObjectCount).toEqual(5);
+		expect(Number(peraBalance.totalBalance)).toBeGreaterThan(0);
 
 		const testBalance = await toolbox.client.getBalance({
 			owner: publishToolbox.address(),

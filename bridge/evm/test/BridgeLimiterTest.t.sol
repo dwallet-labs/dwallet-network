@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -145,7 +145,7 @@ contract BridgeLimiterTest is BridgeBaseTest {
         committee.initialize(_committee, _stake, minStakeRequired);
         // deploy new config contract with 2 supported chains
         address[] memory _supportedTokens = new address[](5);
-        _supportedTokens[0] = address(0); // SUI
+        _supportedTokens[0] = address(0); // PERA
         _supportedTokens[1] = wBTC;
         _supportedTokens[2] = wETH;
         _supportedTokens[3] = USDC;
@@ -234,7 +234,7 @@ contract BridgeLimiterTest is BridgeBaseTest {
 
         // deploy config
         tokenPrices = new uint64[](5);
-        tokenPrices[0] = 10000; // SUI PRICE
+        tokenPrices[0] = 10000; // PERA PRICE
         tokenPrices[1] = 10000; // BTC PRICE
         tokenPrices[2] = 10000; // ETH PRICE
         tokenPrices[3] = 10000; // USDC PRICE
@@ -255,7 +255,7 @@ contract BridgeLimiterTest is BridgeBaseTest {
 
         limiter = new BridgeLimiter();
         limiter.initialize(address(committee), _supportedDestinationChains, totalLimits);
-        bridge = new SuiBridge();
+        bridge = new PeraBridge();
         bridge.initialize(address(committee), address(vault), address(limiter));
         vault.transferOwnership(address(bridge));
         limiter.transferOwnership(address(bridge));
@@ -300,7 +300,7 @@ contract BridgeLimiterTest is BridgeBaseTest {
 
         // deploy config
         tokenPrices = new uint64[](5);
-        tokenPrices[0] = 10000; // SUI PRICE
+        tokenPrices[0] = 10000; // PERA PRICE
         tokenPrices[1] = 10000; // BTC PRICE
         tokenPrices[2] = 10000; // ETH PRICE
         tokenPrices[3] = 10000; // USDC PRICE
@@ -322,7 +322,7 @@ contract BridgeLimiterTest is BridgeBaseTest {
 
         limiter = new BridgeLimiter();
         limiter.initialize(address(committee), _supportedDestinationChains, totalLimits);
-        bridge = new SuiBridge();
+        bridge = new PeraBridge();
         bridge.initialize(address(committee), address(vault), address(limiter));
 
         vault.transferOwnership(address(bridge));

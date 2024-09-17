@@ -1,4 +1,4 @@
-import { getFullnodeUrl } from "@mysten/sui/client";
+import { getFullnodeUrl } from "@pera-io/pera/client";
 import {
   DEVNET_COUNTER_PACKAGE_ID,
   TESTNET_COUNTER_PACKAGE_ID,

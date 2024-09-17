@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useBlockedObjectList } from '_app/hooks/useBlockedObjectList';
 import Alert from '_components/alert';
@@ -13,7 +13,7 @@ import PageTitle from '_src/ui/app/shared/PageTitle';
 import { getKioskIdFromOwnerCap, isKioskOwnerToken, useMultiGetObjects } from '@mysten/core';
 import { useKioskClient } from '@mysten/core/src/hooks/useKioskClient';
 import { EyeClose16 } from '@mysten/icons';
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { normalizeStructTag } from '@pera-io/pera/utils';
 import { keepPreviousData } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -115,7 +115,7 @@ function HiddenNftsPage() {
 									</Link>
 									<div className="h-8 w-8">
 										<Button
-											variant="secondarySui"
+											variant="secondaryPera"
 											size="icon"
 											onClick={() => {
 												showAsset(objectId);

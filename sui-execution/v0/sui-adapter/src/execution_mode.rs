@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::execution_value::{RawValueType, Value};
 use crate::type_resolver::TypeTagResolver;
 use move_core_types::language_storage::TypeTag;
-use sui_types::{
+use pera_types::{
     error::ExecutionError, execution::ExecutionResult, transaction::Argument, transfer::Receiving,
 };
 

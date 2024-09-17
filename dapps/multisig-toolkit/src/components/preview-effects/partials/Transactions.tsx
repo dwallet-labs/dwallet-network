@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiArgument, SuiCallArg, SuiTransaction, TransactionBlockData } from '@mysten/sui/client';
+import { PeraArgument, PeraCallArg, PeraTransaction, TransactionBlockData } from '@pera-io/pera/client';
 import { ReactNode } from 'react';
 
 import { ObjectLink } from '../ObjectLink';
@@ -19,7 +19,7 @@ export function Transactions({ inputs }: { inputs: TransactionBlockData }) {
 	);
 }
 
-const getCallArgDisplay = (argument: SuiCallArg | undefined) => {
+const getCallArgDisplay = (argument: PeraCallArg | undefined) => {
 	if (!argument) return null;
 	if (typeof argument === 'string') return argument;
 
@@ -45,7 +45,7 @@ const getCallArgDisplay = (argument: SuiCallArg | undefined) => {
 	);
 };
 
-const getSuiArgumentDisplay = (argument: SuiArgument, inputs: SuiCallArg[]) => {
+const getPeraArgumentDisplay = (argument: PeraArgument, inputs: PeraCallArg[]) => {
 	if (typeof argument === 'string') return argument;
 
 	if ('Input' in argument) {
@@ -59,12 +59,12 @@ const getSuiArgumentDisplay = (argument: SuiArgument, inputs: SuiCallArg[]) => {
 	);
 };
 
-const renderArguments = (callArgs: SuiArgument[], inputs: SuiCallArg[]) => {
+const renderArguments = (callArgs: PeraArgument[], inputs: PeraCallArg[]) => {
 	return (
 		<div className="flex overflow-x-auto gap-3 my-3">
 			{callArgs.map((arg, index) => (
 				<div key={index} className="flex-shrink-0">
-					{getSuiArgumentDisplay(arg, inputs)}
+					{getPeraArgumentDisplay(arg, inputs)}
 				</div>
 			))}
 		</div>
@@ -96,7 +96,7 @@ function Transaction({
 	inputs,
 	index,
 }: {
-	transaction: SuiTransaction;
+	transaction: PeraTransaction;
 	inputs: TransactionBlockData;
 	index: number;
 }) {

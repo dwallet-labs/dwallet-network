@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export type SharedObjectRef = {
 	/** Hex code as string representing the object id */
@@ -12,7 +12,7 @@ export type SharedObjectRef = {
 	mutable: boolean;
 };
 
-export type SuiObjectRef = {
+export type PeraObjectRef = {
 	/** Base64 string representing the object digest */
 	objectId: string;
 	/** Object version */
@@ -25,9 +25,9 @@ export type SuiObjectRef = {
  * An object argument.
  */
 export type ObjectArg =
-	| { ImmOrOwnedObject: SuiObjectRef }
+	| { ImmOrOwnedObject: PeraObjectRef }
 	| { SharedObject: SharedObjectRef }
-	| { Receiving: SuiObjectRef };
+	| { Receiving: PeraObjectRef };
 
 export type ObjectCallArg = {
 	Object: ObjectArg;
@@ -78,7 +78,7 @@ export type StructTag = {
 };
 
 /**
- * Sui TypeTag object. A decoupled `0x...::module::Type<???>` parameter.
+ * Pera TypeTag object. A decoupled `0x...::module::Type<???>` parameter.
  */
 export type TypeTag =
 	| { bool: null | true }
@@ -99,7 +99,7 @@ export type TypeTag =
  * The GasData to be used in the transaction.
  */
 export type GasData = {
-	payment: SuiObjectRef[];
+	payment: PeraObjectRef[];
 	owner: string; // Gas Object's owner
 	price: number;
 	budget: number;

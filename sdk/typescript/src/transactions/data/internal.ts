@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { EnumInputShape, EnumOutputShape } from '@mysten/bcs';
 import type { GenericSchema, InferInput, InferOutput } from 'valibot';
@@ -24,7 +24,7 @@ import {
 	unknown,
 } from 'valibot';
 
-import { isValidSuiAddress, normalizeSuiAddress } from '../../utils/sui-types.js';
+import { isValidPeraAddress, normalizePeraAddress } from '../../utils/pera-types.js';
 
 type Merge<T> = T extends object ? { [K in keyof T]: T[K] } : never;
 
@@ -53,12 +53,12 @@ export function safeEnum<T extends Record<string, GenericSchema<any>>>(options: 
 	) as EnumSchema<T>;
 }
 
-export const SuiAddress = pipe(
+export const PeraAddress = pipe(
 	string(),
-	transform((value) => normalizeSuiAddress(value)),
-	check(isValidSuiAddress),
+	transform((value) => normalizePeraAddress(value)),
+	check(isValidPeraAddress),
 );
-export const ObjectID = SuiAddress;
+export const ObjectID = PeraAddress;
 export const BCSBytes = string();
 export const JsonU64 = pipe(
 	union([string(), pipe(number(), integer())]),
@@ -72,16 +72,16 @@ export const JsonU64 = pipe(
 		}
 	}, 'Invalid u64'),
 );
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/base_types.rs#L138
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/pera-types/src/base_types.rs#L138
 // Implemented as a tuple in rust
 export const ObjectRef = object({
-	objectId: SuiAddress,
+	objectId: PeraAddress,
 	version: JsonU64,
 	digest: string(),
 });
 export type ObjectRef = InferOutput<typeof ObjectRef>;
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L690-L702
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/pera-types/src/transaction.rs#L690-L702
 export const Argument = pipe(
 	union([
 		object({ GasCoin: literal(true) }),
@@ -111,11 +111,11 @@ export const Argument = pipe(
 
 export type Argument = InferOutput<typeof Argument>;
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L1387-L1392
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/pera-types/src/transaction.rs#L1387-L1392
 export const GasData = object({
 	budget: nullable(JsonU64),
 	price: nullable(JsonU64),
-	owner: nullable(SuiAddress),
+	owner: nullable(PeraAddress),
 	payment: nullable(array(ObjectRef)),
 });
 export type GasData = InferOutput<typeof GasData>;
@@ -130,7 +130,7 @@ export const StructTag = object({
 });
 export type StructTag = InferOutput<typeof StructTag>;
 
-// https://github.com/MystenLabs/sui/blob/cea8742e810142a8145fd83c4c142d61e561004a/crates/sui-graphql-rpc/schema/current_progress_schema.graphql#L1614-L1627
+// https://github.com/MystenLabs/sui/blob/cea8742e810142a8145fd83c4c142d61e561004a/crates/pera-graphql-rpc/schema/current_progress_schema.graphql#L1614-L1627
 export type OpenMoveTypeSignatureBody =
 	| 'address'
 	| 'bool'
@@ -172,14 +172,14 @@ export const OpenMoveTypeSignatureBody: GenericSchema<OpenMoveTypeSignatureBody>
 	object({ typeParameter: pipe(number(), integer()) }),
 ]);
 
-// https://github.com/MystenLabs/sui/blob/cea8742e810142a8145fd83c4c142d61e561004a/crates/sui-graphql-rpc/schema/current_progress_schema.graphql#L1609-L1612
+// https://github.com/MystenLabs/sui/blob/cea8742e810142a8145fd83c4c142d61e561004a/crates/pera-graphql-rpc/schema/current_progress_schema.graphql#L1609-L1612
 export const OpenMoveTypeSignature = object({
 	ref: nullable(union([literal('&'), literal('&mut')])),
 	body: OpenMoveTypeSignatureBody,
 });
 export type OpenMoveTypeSignature = InferOutput<typeof OpenMoveTypeSignature>;
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L707-L718
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/pera-types/src/transaction.rs#L707-L718
 const ProgrammableMoveCall = object({
 	package: ObjectID,
 	module: string(),
@@ -197,7 +197,7 @@ export const $Intent = object({
 	data: record(string(), unknown()),
 });
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L657-L685
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/pera-types/src/transaction.rs#L657-L685
 export const Command = safeEnum({
 	MoveCall: ProgrammableMoveCall,
 	TransferObjects: object({
@@ -271,7 +271,7 @@ export type Command<Arg = Argument> = EnumOutputShape<{
 	};
 }>;
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L102-L114
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/pera-types/src/transaction.rs#L102-L114
 export const ObjectArg = safeEnum({
 	ImmOrOwnedObject: ObjectRef,
 	SharedObject: object({
@@ -283,7 +283,7 @@ export const ObjectArg = safeEnum({
 	Receiving: ObjectRef,
 });
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L75-L80
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/pera-types/src/transaction.rs#L75-L80
 const CallArg = safeEnum({
 	Object: ObjectArg,
 	Pure: object({
@@ -317,7 +317,7 @@ export type TransactionExpiration = InferOutput<typeof TransactionExpiration>;
 
 export const TransactionData = object({
 	version: literal(2),
-	sender: nullish(SuiAddress),
+	sender: nullish(PeraAddress),
 	expiration: nullish(TransactionExpiration),
 	gasData: GasData,
 	inputs: array(CallArg),

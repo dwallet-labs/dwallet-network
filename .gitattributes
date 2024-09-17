@@ -3,9 +3,9 @@
 
 # These files are used in "porcelain" file comparison,
 # we don't want an equality to fail because of line endings.
-crates/sui-core/tests/staged/sui.yaml text eol=lf
-crates/sui-open-rpc/spec/openrpc.json text eol=lf
-sui_core/tests/staged/sui.yaml text eol=lf
+crates/pera-core/tests/staged/pera.yaml text eol=lf
+crates/pera-open-rpc/spec/openrpc.json text eol=lf
+pera_core/tests/staged/pera.yaml text eol=lf
 
 # These files are auto generated
 sdk/graphql-transport/src/queries/generated.ts linguist-generated=true

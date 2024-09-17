@@ -1,59 +1,59 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import {
 	DisplayFieldsResponse,
-	SuiObjectChange,
-	SuiObjectChangeCreated,
-	SuiObjectChangeDeleted,
-	SuiObjectChangeMutated,
-	SuiObjectChangePublished,
-	SuiObjectChangeTransferred,
-	SuiObjectChangeWrapped,
-} from '@mysten/sui/client';
+	PeraObjectChange,
+	PeraObjectChangeCreated,
+	PeraObjectChangeDeleted,
+	PeraObjectChangeMutated,
+	PeraObjectChangePublished,
+	PeraObjectChangeTransferred,
+	PeraObjectChangeWrapped,
+} from '@pera-io/pera/client';
 
 import { groupByOwner } from './groupByOwner';
-import { SuiObjectChangeTypes } from './types';
+import { PeraObjectChangeTypes } from './types';
 
 export type WithDisplayFields<T> = T & { display?: DisplayFieldsResponse };
-export type SuiObjectChangeWithDisplay = WithDisplayFields<SuiObjectChange>;
+export type PeraObjectChangeWithDisplay = WithDisplayFields<PeraObjectChange>;
 
 export type ObjectChanges = {
-	changesWithDisplay: SuiObjectChangeWithDisplay[];
-	changes: SuiObjectChange[];
+	changesWithDisplay: PeraObjectChangeWithDisplay[];
+	changes: PeraObjectChange[];
 	ownerType: string;
 };
 export type ObjectChangesByOwner = Record<string, ObjectChanges>;
 
 export type ObjectChangeSummary = {
-	[K in SuiObjectChangeTypes]: ObjectChangesByOwner;
+	[K in PeraObjectChangeTypes]: ObjectChangesByOwner;
 };
 
-export const getObjectChangeSummary = (objectChanges: SuiObjectChangeWithDisplay[]) => {
+export const getObjectChangeSummary = (objectChanges: PeraObjectChangeWithDisplay[]) => {
 	if (!objectChanges) return null;
 
 	const mutated = objectChanges.filter(
 		(change) => change.type === 'mutated',
-	) as SuiObjectChangeMutated[];
+	) as PeraObjectChangeMutated[];
 
 	const created = objectChanges.filter(
 		(change) => change.type === 'created',
-	) as SuiObjectChangeCreated[];
+	) as PeraObjectChangeCreated[];
 
 	const transferred = objectChanges.filter(
 		(change) => change.type === 'transferred',
-	) as SuiObjectChangeTransferred[];
+	) as PeraObjectChangeTransferred[];
 
 	const published = objectChanges.filter(
 		(change) => change.type === 'published',
-	) as SuiObjectChangePublished[];
+	) as PeraObjectChangePublished[];
 
 	const wrapped = objectChanges.filter(
 		(change) => change.type === 'wrapped',
-	) as SuiObjectChangeWrapped[];
+	) as PeraObjectChangeWrapped[];
 
 	const deleted = objectChanges.filter(
 		(change) => change.type === 'deleted',
-	) as SuiObjectChangeDeleted[];
+	) as PeraObjectChangeDeleted[];
 
 	return {
 		transferred: groupByOwner(transferred),

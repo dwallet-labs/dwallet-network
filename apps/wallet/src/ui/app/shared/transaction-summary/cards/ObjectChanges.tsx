@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import ExplorerLink from '_src/ui/app/components/explorer-link';
 import { ExplorerLinkType } from '_src/ui/app/components/explorer-link/ExplorerLinkType';
 import { Text } from '_src/ui/app/shared/text';
@@ -8,11 +8,11 @@ import {
 	getObjectChangeLabel,
 	type ObjectChangesByOwner,
 	type ObjectChangeSummary,
-	type SuiObjectChangeTypes,
-	type SuiObjectChangeWithDisplay,
+	type PeraObjectChangeTypes,
+	type PeraObjectChangeWithDisplay,
 } from '@mysten/core';
 import { ChevronDown12, ChevronRight12 } from '@mysten/icons';
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@pera-io/pera/utils';
 import cx from 'clsx';
 
 import { ExpandableList } from '../../ExpandableList';
@@ -32,7 +32,7 @@ export function ObjectDetail({
 	change,
 	display,
 }: {
-	change: SuiObjectChangeWithDisplay;
+	change: PeraObjectChangeWithDisplay;
 	ownerKey: string;
 	display?: boolean;
 }) {
@@ -132,7 +132,7 @@ export function ObjectDetail({
 }
 
 interface ObjectChangeEntryProps {
-	type: SuiObjectChangeTypes;
+	type: PeraObjectChangeTypes;
 	changes: ObjectChangesByOwner;
 }
 

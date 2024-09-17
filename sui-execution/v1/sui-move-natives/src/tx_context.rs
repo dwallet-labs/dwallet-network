@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::{account_address::AccountAddress, gas_algebra::InternalGas};
@@ -9,7 +9,7 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::{collections::VecDeque, convert::TryFrom};
-use sui_types::base_types::{ObjectID, TransactionDigest};
+use pera_types::base_types::{ObjectID, TransactionDigest};
 
 use crate::{object_runtime::ObjectRuntime, NativesCostTable};
 

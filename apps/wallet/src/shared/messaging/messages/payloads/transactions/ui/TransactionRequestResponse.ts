@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { isBasePayload } from '_payloads';
 import type { BasePayload, Payload } from '_payloads';
 import { type SignedTransaction } from '_src/ui/app/WalletSigner';
-import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
-import { type SuiSignMessageOutput } from '@mysten/wallet-standard';
+import type { PeraTransactionBlockResponse } from '@pera-io/pera/client';
+import { type PeraSignMessageOutput } from '@mysten/wallet-standard';
 
 export interface TransactionRequestResponse extends BasePayload {
 	type: 'transaction-request-response';
 	txID: string;
 	approved: boolean;
-	txResult?: SuiTransactionBlockResponse | SuiSignMessageOutput;
+	txResult?: PeraTransactionBlockResponse | PeraSignMessageOutput;
 	txResultError?: string;
 	txSigned?: SignedTransaction;
 }

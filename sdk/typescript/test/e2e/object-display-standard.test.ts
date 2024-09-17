@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { resolve } from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { SuiObjectData } from '../../src/client';
+import { PeraObjectData } from '../../src/client';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test Object Display Standard', () => {
@@ -24,7 +24,7 @@ describe('Test Object Display Standard', () => {
 				filter: { StructType: `${packageId}::boars::Boar` },
 			})
 		).data;
-		const data = resp[0].data as SuiObjectData;
+		const data = resp[0].data as PeraObjectData;
 		const boarId = data.objectId;
 		const display = (
 			await toolbox.client.getObject({

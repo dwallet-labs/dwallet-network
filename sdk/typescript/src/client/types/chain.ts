@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
 	Checkpoint,
 	DynamicFieldInfo,
-	SuiCallArg,
-	SuiMoveNormalizedModule,
-	SuiParsedData,
-	SuiTransaction,
-	SuiValidatorSummary,
+	PeraCallArg,
+	PeraMoveNormalizedModule,
+	PeraParsedData,
+	PeraTransaction,
+	PeraValidatorSummary,
 } from './generated.js';
 
 export type ResolvedNameServiceNames = {
@@ -19,7 +19,7 @@ export type ResolvedNameServiceNames = {
 
 export type EpochInfo = {
 	epoch: string;
-	validators: SuiValidatorSummary[];
+	validators: PeraValidatorSummary[];
 	epochTotalTransactions: string;
 	firstCheckpointId: string;
 	epochStartTimestamp: string;
@@ -111,12 +111,12 @@ export type DynamicFieldPage = {
 	hasNextPage: boolean;
 };
 
-export type SuiMoveNormalizedModules = Record<string, SuiMoveNormalizedModule>;
+export type PeraMoveNormalizedModules = Record<string, PeraMoveNormalizedModule>;
 
-export type SuiMoveObject = Extract<SuiParsedData, { dataType: 'moveObject' }>;
-export type SuiMovePackage = Extract<SuiParsedData, { dataType: 'package' }>;
+export type PeraMoveObject = Extract<PeraParsedData, { dataType: 'moveObject' }>;
+export type PeraMovePackage = Extract<PeraParsedData, { dataType: 'package' }>;
 
 export type ProgrammableTransaction = {
-	transactions: SuiTransaction[];
-	inputs: SuiCallArg[];
+	transactions: PeraTransaction[];
+	inputs: PeraCallArg[];
 };

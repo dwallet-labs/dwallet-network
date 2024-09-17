@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 if ! cosign version &> /dev/null
 then
@@ -11,8 +11,8 @@ fi
 
 commit_sha=$1
 binary_name=$2
-pub_key=https://sui-private.s3.us-west-2.amazonaws.com/sui_security_release.pem
-url=https://sui-releases.s3-accelerate.amazonaws.com/$commit_sha
+pub_key=https://pera-private.s3.us-west-2.amazonaws.com/pera_security_release.pem
+url=https://pera-releases.s3-accelerate.amazonaws.com/$commit_sha
 
 echo "[+] Downloading binary '$binary_name' for $commit_sha ..."
 curl $url/$binary_name -o $binary_name

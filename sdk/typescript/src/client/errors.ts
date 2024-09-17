@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 const CODE_TO_ERROR_TYPE: Record<number, string> = {
 	'-32700': 'ParseError',
@@ -20,9 +20,9 @@ const CODE_TO_ERROR_TYPE: Record<number, string> = {
 	'-32002': 'TransactionExecutionClientError',
 };
 
-export class SuiHTTPTransportError extends Error {}
+export class PeraHTTPTransportError extends Error {}
 
-export class JsonRpcError extends SuiHTTPTransportError {
+export class JsonRpcError extends PeraHTTPTransportError {
 	code: number;
 	type: string;
 
@@ -33,7 +33,7 @@ export class JsonRpcError extends SuiHTTPTransportError {
 	}
 }
 
-export class SuiHTTPStatusError extends SuiHTTPTransportError {
+export class PeraHTTPStatusError extends PeraHTTPTransportError {
 	status: number;
 	statusText: string;
 

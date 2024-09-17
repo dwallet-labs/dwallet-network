@@ -109,7 +109,7 @@ importers:
       '@mysten/kiosk':
         specifier: workspace:*
         version: link:../../sdk/kiosk
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@sentry/react':
@@ -139,13 +139,13 @@ importers:
     devDependencies:
       '@headlessui/tailwindcss':
         specifier: ^0.1.3
-        version: 0.1.3(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))
+        version: 0.1.3(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))
       '@tailwindcss/aspect-ratio':
         specifier: ^0.4.2
-        version: 0.4.2(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))
+        version: 0.4.2(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))
       '@tailwindcss/forms':
         specifier: ^0.5.7
-        version: 0.5.7(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))
+        version: 0.5.7(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))
       '@types/react':
         specifier: ^18.3.3
         version: 18.3.3
@@ -242,12 +242,9 @@ importers:
       '@mysten/kiosk':
         specifier: workspace:*
         version: link:../../sdk/kiosk
-      '@mysten/ledgerjs-hw-app-sui':
+      '@mysten/ledgerjs-hw-app-pera':
         specifier: workspace:*
         version: link:../../sdk/ledgerjs-hw-app-sui
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
       '@mysten/wallet-standard':
         specifier: workspace:*
         version: link:../../sdk/wallet-standard
@@ -257,6 +254,9 @@ importers:
       '@noble/hashes':
         specifier: ^1.4.0
         version: 1.4.0
+      '@pera-io/pera':
+        specifier: workspace:*
+        version: link:../../sdk/typescript
       '@radix-ui/react-checkbox':
         specifier: ^1.0.4
         version: 1.1.1(@types/react-dom@18.3.0)(@types/react@18.3.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -542,7 +542,7 @@ importers:
         version: 3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3))
       tailwindcss-animate:
         specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))
+        version: 1.0.7(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))
       ts-loader:
         specifier: ^9.4.4
         version: 9.5.1(typescript@5.5.3)(webpack@5.92.1(@swc/core@1.6.13(@swc/helpers@0.5.5))(webpack-cli@5.1.4(webpack@5.92.1)))
@@ -588,7 +588,7 @@ importers:
       '@mysten/kiosk':
         specifier: workspace:*
         version: link:../../sdk/kiosk
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@tanstack/react-query':
@@ -612,7 +612,7 @@ importers:
     devDependencies:
       '@headlessui/tailwindcss':
         specifier: ^0.1.3
-        version: 0.1.3(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))
+        version: 0.1.3(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))
       '@types/react':
         specifier: ^18.3.3
         version: 18.3.3
@@ -643,7 +643,7 @@ importers:
       '@mysten/kiosk':
         specifier: workspace:*
         version: link:../../sdk/kiosk
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../../sdk/typescript
       commander:
@@ -664,7 +664,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../sdk/dapp-kit
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@radix-ui/react-dialog':
@@ -724,7 +724,7 @@ importers:
     devDependencies:
       '@tailwindcss/forms':
         specifier: ^0.5.7
-        version: 0.5.7(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))
+        version: 0.5.7(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))
       '@tsconfig/docusaurus':
         specifier: ^2.0.3
         version: 2.0.3
@@ -748,7 +748,7 @@ importers:
         version: 3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3))
       tailwindcss-animate:
         specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))
+        version: 1.0.7(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))
       typescript:
         specifier: ^5.5.3
         version: 5.5.3
@@ -774,7 +774,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../sdk/dapp-kit
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../../sdk/typescript
       '@types/react':
@@ -792,208 +792,6 @@ importers:
       postcss:
         specifier: ^8.4.39
         version: 8.4.39
-      tailwindcss:
-        specifier: ^3.4.4
-        version: 3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3))
-      typescript:
-        specifier: ^5.5.3
-        version: 5.5.3
-      vite:
-        specifier: ^5.3.3
-        version: 5.3.3(@types/node@20.14.10)(sass@1.77.6)(terser@5.31.1)
-
-  examples/mev_bot:
-    dependencies:
-      '@mysten/bcs':
-        specifier: workspace:*
-        version: link:../../sdk/bcs
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../../sdk/typescript
-      p-limit:
-        specifier: ^6.1.0
-        version: 6.1.0
-    devDependencies:
-      ts-node:
-        specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.6.13)(@types/node@20.14.10)(typescript@5.5.3)
-      typescript:
-        specifier: ^5.5.3
-        version: 5.5.3
-
-  examples/tic-tac-toe/ui:
-    dependencies:
-      '@mysten/dapp-kit':
-        specifier: workspace:*
-        version: link:../../../sdk/dapp-kit
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../../../sdk/typescript
-      '@radix-ui/colors':
-        specifier: ^3.0.0
-        version: 3.0.0
-      '@radix-ui/react-icons':
-        specifier: ^1.3.0
-        version: 1.3.0(react@18.3.1)
-      '@radix-ui/themes':
-        specifier: ^3.1.1
-        version: 3.1.1(@types/react-dom@18.3.0)(@types/react@18.3.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@tanstack/react-query':
-        specifier: ^5.50.1
-        version: 5.50.1(react@18.3.1)
-      react:
-        specifier: ^18.3.1
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.3.1
-        version: 18.3.1(react@18.3.1)
-      react-hot-toast:
-        specifier: ^2.4.1
-        version: 2.4.1(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-    devDependencies:
-      '@tanstack/react-query-devtools':
-        specifier: ^5.0.0
-        version: 5.51.1(@tanstack/react-query@5.50.1(react@18.3.1))(react@18.3.1)
-      '@types/react':
-        specifier: ^18.3.3
-        version: 18.3.3
-      '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.0
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^6.1.0
-        version: 6.1.0(@typescript-eslint/parser@6.1.0(eslint@8.45.0)(typescript@5.5.3))(eslint@8.45.0)(typescript@5.5.3)
-      '@typescript-eslint/parser':
-        specifier: ^6.1.0
-        version: 6.1.0(eslint@8.45.0)(typescript@5.5.3)
-      '@vitejs/plugin-react-swc':
-        specifier: ^3.7.0
-        version: 3.7.0(@swc/helpers@0.5.5)(vite@5.3.3(@types/node@20.14.10)(sass@1.77.6)(terser@5.31.1))
-      eslint:
-        specifier: ^8.45.0
-        version: 8.45.0
-      eslint-plugin-react-hooks:
-        specifier: ^4.6.2
-        version: 4.6.2(eslint@8.45.0)
-      eslint-plugin-react-refresh:
-        specifier: ^0.4.7
-        version: 0.4.7(eslint@8.45.0)
-      prettier:
-        specifier: ^3.3.2
-        version: 3.3.2
-      typescript:
-        specifier: ^5.5.3
-        version: 5.5.3
-      vite:
-        specifier: ^5.3.3
-        version: 5.3.3(@types/node@20.14.10)(sass@1.77.6)(terser@5.31.1)
-      vite-tsconfig-paths:
-        specifier: ^4.3.2
-        version: 4.3.2(typescript@5.5.3)(vite@5.3.3(@types/node@20.14.10)(sass@1.77.6)(terser@5.31.1))
-
-  examples/trading/api:
-    dependencies:
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../../../sdk/typescript
-      '@prisma/client':
-        specifier: ^5.16.2
-        version: 5.16.2(prisma@5.16.2)
-      cors:
-        specifier: ^2.8.5
-        version: 2.8.5
-      express:
-        specifier: ^4.19.2
-        version: 4.19.2
-    devDependencies:
-      '@types/cors':
-        specifier: ^2.8.17
-        version: 2.8.17
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.21
-      '@types/node':
-        specifier: ^20.14.10
-        version: 20.14.10
-      concurrently:
-        specifier: ^8.2.2
-        version: 8.2.2
-      prisma:
-        specifier: ^5.16.2
-        version: 5.16.2
-      ts-node:
-        specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.6.13)(@types/node@20.14.10)(typescript@5.5.3)
-      typescript:
-        specifier: ^5.5.3
-        version: 5.5.3
-
-  examples/trading/frontend:
-    dependencies:
-      '@mysten/dapp-kit':
-        specifier: workspace:*
-        version: link:../../../sdk/dapp-kit
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../../../sdk/typescript
-      '@radix-ui/colors':
-        specifier: ^3.0.0
-        version: 3.0.0
-      '@radix-ui/react-icons':
-        specifier: ^1.3.0
-        version: 1.3.0(react@18.3.1)
-      '@radix-ui/themes':
-        specifier: ^3.1.1
-        version: 3.1.1(@types/react-dom@18.3.0)(@types/react@18.3.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@tanstack/react-query':
-        specifier: ^5.50.1
-        version: 5.50.1(react@18.3.1)
-      react:
-        specifier: ^18.3.1
-        version: 18.3.1
-      react-dom:
-        specifier: ^18.3.1
-        version: 18.3.1(react@18.3.1)
-      react-hot-toast:
-        specifier: ^2.4.1
-        version: 2.4.1(csstype@3.1.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      react-router-dom:
-        specifier: ^6.24.1
-        version: 6.24.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.3.3
-        version: 18.3.3
-      '@types/react-dom':
-        specifier: ^18.3.0
-        version: 18.3.0
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^6.1.0
-        version: 6.1.0(@typescript-eslint/parser@6.1.0(eslint@8.45.0)(typescript@5.5.3))(eslint@8.45.0)(typescript@5.5.3)
-      '@typescript-eslint/parser':
-        specifier: ^6.1.0
-        version: 6.1.0(eslint@8.45.0)(typescript@5.5.3)
-      '@vitejs/plugin-react-swc':
-        specifier: ^3.7.0
-        version: 3.7.0(@swc/helpers@0.5.5)(vite@5.3.3(@types/node@20.14.10)(sass@1.77.6)(terser@5.31.1))
-      autoprefixer:
-        specifier: ^10.4.19
-        version: 10.4.19(postcss@8.4.39)
-      eslint:
-        specifier: ^8.45.0
-        version: 8.45.0
-      eslint-plugin-react-hooks:
-        specifier: ^4.6.2
-        version: 4.6.2(eslint@8.45.0)
-      eslint-plugin-react-refresh:
-        specifier: ^0.4.7
-        version: 0.4.7(eslint@8.45.0)
-      postcss:
-        specifier: ^8.4.39
-        version: 8.4.39
-      prettier:
-        specifier: ^3.3.2
-        version: 3.3.2
       tailwindcss:
         specifier: ^3.4.4
         version: 3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3))
@@ -1059,7 +857,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../dapp-kit
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../typescript
       '@types/node':
@@ -1081,7 +879,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../../dapp-kit
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../../../typescript
       '@radix-ui/colors':
@@ -1142,7 +940,7 @@ importers:
       '@mysten/dapp-kit':
         specifier: workspace:*
         version: link:../../../dapp-kit
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../../../typescript
       '@radix-ui/colors':
@@ -1200,15 +998,15 @@ importers:
 
   sdk/dapp-kit:
     dependencies:
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../typescript
       '@mysten/wallet-standard':
         specifier: workspace:*
         version: link:../wallet-standard
       '@mysten/zksend':
         specifier: workspace:*
         version: link:../zksend
+      '@pera-io/pera':
+        specifier: workspace:*
+        version: link:../typescript
       '@radix-ui/react-dialog':
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@18.3.0)(@types/react@18.3.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1288,7 +1086,7 @@ importers:
 
   sdk/deepbook:
     dependencies:
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1303,7 +1101,7 @@ importers:
         version: 0.2.3
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.6.13)(@types/node@20.14.10)(typescript@5.5.3)
+        version: 10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)
       ts-retry-promise:
         specifier: ^0.8.1
         version: 0.8.1
@@ -1322,7 +1120,7 @@ importers:
 
   sdk/deepbook-v3:
     dependencies:
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1340,7 +1138,7 @@ importers:
         version: 0.2.3
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.6.13)(@types/node@20.14.10)(typescript@5.5.3)
+        version: 10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)
       ts-retry-promise:
         specifier: ^0.8.1
         version: 0.8.1
@@ -1377,9 +1175,6 @@ importers:
       '@mysten/kiosk':
         specifier: workspace:*
         version: link:../kiosk
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../typescript
       '@mysten/wallet-standard':
         specifier: workspace:*
         version: link:../wallet-standard
@@ -1389,6 +1184,9 @@ importers:
       '@mysten/zksend':
         specifier: workspace:*
         version: link:../zksend
+      '@pera-io/pera':
+        specifier: workspace:*
+        version: link:../typescript
       '@tanstack/react-query':
         specifier: ^5.50.1
         version: 5.50.1(react@18.3.1)
@@ -1420,15 +1218,15 @@ importers:
 
   sdk/enoki:
     dependencies:
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../typescript
       '@mysten/zklogin':
         specifier: workspace:*
         version: link:../zklogin
       '@nanostores/react':
         specifier: ^0.7.2
         version: 0.7.2(nanostores@0.10.3)(react@18.3.1)
+      '@pera-io/pera':
+        specifier: workspace:*
+        version: link:../typescript
       jose:
         specifier: ^5.6.3
         version: 5.6.3
@@ -1472,7 +1270,7 @@ importers:
       '@mysten/bcs':
         specifier: workspace:*
         version: link:../bcs
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../typescript
       graphql:
@@ -1521,7 +1319,7 @@ importers:
 
   sdk/kiosk:
     dependencies:
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1549,6 +1347,37 @@ importers:
       wait-on:
         specifier: ^7.2.0
         version: 7.2.0
+
+  sdk/ledgerjs-hw-app-pera:
+    dependencies:
+      '@ledgerhq/hw-transport':
+        specifier: ^6.31.0
+        version: 6.31.0
+      fast-sha256:
+        specifier: ^1.3.0
+        version: 1.3.0
+    devDependencies:
+      '@ledgerhq/hw-transport-mocker':
+        specifier: ^6.29.0
+        version: 6.29.0
+      '@mysten/build-scripts':
+        specifier: workspace:*
+        version: link:../build-scripts
+      '@size-limit/preset-small-lib':
+        specifier: ^11.1.4
+        version: 11.1.4(size-limit@11.1.4)
+      '@types/node':
+        specifier: ^20.14.10
+        version: 20.14.10
+      size-limit:
+        specifier: ^11.1.4
+        version: 11.1.4
+      typescript:
+        specifier: ^5.5.3
+        version: 5.5.3
+      vitest:
+        specifier: ^2.0.1
+        version: 2.0.1(@types/node@20.14.10)(happy-dom@14.12.3)(jsdom@24.1.0)(sass@1.77.6)(terser@5.31.1)
 
   sdk/ledgerjs-hw-app-sui:
     dependencies:
@@ -1599,9 +1428,9 @@ importers:
         specifier: ^0.13.0
         version: 0.13.0
 
-  sdk/suins-toolkit:
+  sdk/perans-toolkit:
     dependencies:
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../typescript
     devDependencies:
@@ -1613,7 +1442,29 @@ importers:
         version: link:../build-scripts
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@swc/core@1.6.13)(@types/node@20.14.10)(typescript@5.5.3)
+        version: 10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)
+      typescript:
+        specifier: ^5.5.3
+        version: 5.5.3
+      vitest:
+        specifier: ^2.0.1
+        version: 2.0.1(@types/node@20.14.10)(happy-dom@14.12.3)(jsdom@24.1.0)(sass@1.77.6)(terser@5.31.1)
+
+  sdk/suins-toolkit:
+    dependencies:
+      '@pera-io/pera':
+        specifier: workspace:*
+        version: link:../typescript
+    devDependencies:
+      '@faker-js/faker':
+        specifier: ^8.4.1
+        version: 8.4.1
+      '@mysten/build-scripts':
+        specifier: workspace:*
+        version: link:../build-scripts
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)
       typescript:
         specifier: ^5.5.3
         version: 5.5.3
@@ -1726,7 +1577,7 @@ importers:
 
   sdk/wallet-standard:
     dependencies:
-      '@mysten/sui':
+      '@pera-io/pera':
         specifier: workspace:*
         version: link:../typescript
       '@wallet-standard/core':
@@ -1741,19 +1592,19 @@ importers:
         version: 5.5.3
       typescript-json-schema:
         specifier: ^0.64.0
-        version: 0.64.0(@swc/core@1.6.13)
+        version: 0.64.0(@swc/core@1.6.13(@swc/helpers@0.5.5))
 
   sdk/zklogin:
     dependencies:
       '@mysten/bcs':
         specifier: workspace:*
         version: link:../bcs
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../typescript
       '@noble/hashes':
         specifier: ^1.4.0
         version: 1.4.0
+      '@pera-io/pera':
+        specifier: workspace:*
+        version: link:../typescript
       jose:
         specifier: ^5.6.3
         version: 5.6.3
@@ -1776,12 +1627,12 @@ importers:
 
   sdk/zksend:
     dependencies:
-      '@mysten/sui':
-        specifier: workspace:*
-        version: link:../typescript
       '@mysten/wallet-standard':
         specifier: workspace:*
         version: link:../wallet-standard
+      '@pera-io/pera':
+        specifier: workspace:*
+        version: link:../typescript
       mitt:
         specifier: ^3.0.1
         version: 3.0.1
@@ -4555,30 +4406,6 @@ packages:
   '@popperjs/core@2.11.8':
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
 
-  '@prisma/client@5.16.2':
-    resolution: {integrity: sha512-+1lmkhR9gHWcTC5oghm2ZKpWljyWdzfazCVlLKUWXVmwHSf52g81aZ8qb6Km5Bs025yBi7puLp3qSLEvktoUtw==}
-    engines: {node: '>=16.13'}
-    peerDependencies:
-      prisma: '*'
-    peerDependenciesMeta:
-      prisma:
-        optional: true
-
-  '@prisma/debug@5.16.2':
-    resolution: {integrity: sha512-ItzB4nR4O8eLzuJiuP3WwUJfoIvewMHqpGCad+64gvThcKEVOtaUza9AEJo2DPqAOa/AWkFyK54oM4WwHeew+A==}
-
-  '@prisma/engines-version@5.16.0-24.34ace0eb2704183d2c05b60b52fba5c43c13f303':
-    resolution: {integrity: sha512-HkT2WbfmFZ9WUPyuJHhkiADxazHg8Y4gByrTSVeb3OikP6tjQ7txtSUGu9OBOBH0C13dPKN2qqH12xKtHu/Hiw==}
-
-  '@prisma/engines@5.16.2':
-    resolution: {integrity: sha512-qUxwMtrwoG3byd4PbX6T7EjHJ8AUhzTuwniOGkh/hIznBfcE2QQnGakyEq4VnwNuttMqvh/GgPFapHQ3lCuRHg==}
-
-  '@prisma/fetch-engine@5.16.2':
-    resolution: {integrity: sha512-sq51lfHKfH2jjYSjBtMjP+AznFqOJzXpqmq6B9auWrlTJrMgZ7lPyhWUW7VU7LsQU48/TJ+DZeIz8s9bMYvcHg==}
-
-  '@prisma/get-platform@5.16.2':
-    resolution: {integrity: sha512-cXiHPgNLNyj22vLouPVNegklpRL/iX2jxTeap5GRO3DmCoVyIHmJAV1CgUMUJhHlcol9yYy7EHvsnXTDJ/PKEA==}
-
   '@radix-ui/colors@3.0.0':
     resolution: {integrity: sha512-FUOsGBkHrYJwCSEtWRCIfQbZG7q1e6DgxCIOe1SUQzDe/7rXXeA47s8yCn6fuTNQAj1Zq4oTFi9Yjp3wzElcxg==}
 
@@ -6227,17 +6054,8 @@ packages:
   '@tanstack/query-core@5.50.1':
     resolution: {integrity: sha512-lpfhKPrJlyV2DSVcQb/HuozH3Av3kws4ge22agx+lNGpFkS4vLZ7St0l3GLwlAD+bqB+qXGex3JdRKUNtMviEQ==}
 
-  '@tanstack/query-devtools@5.51.1':
-    resolution: {integrity: sha512-rehG0WmL3EXER6MAI2uHQia/n0b5c3ZROohpYm7u3G7yg4q+HsfQy6nuAo6uy40NzHUe3FmnfWCZQ0Vb/3lE6g==}
-
   '@tanstack/query-persist-client-core@4.29.25':
     resolution: {integrity: sha512-jC1JlZxUaO4bJdeN0GcLwnNIbtsdzkL54hZP1rjTbp2tzfEHNQFkMjaIMZtnsxgdrU9LclXz8loOd1ufQ6C44w==}
-
-  '@tanstack/react-query-devtools@5.51.1':
-    resolution: {integrity: sha512-bRShIVKGpUOHpwziGKT8Aq1Ty0lIlGmNI7E0KbGYtmyOaImErpdElTdxfES1bRaI7i/j+mf2hLy+E6q7SrCwPg==}
-    peerDependencies:
-      '@tanstack/react-query': ^5.51.1
-      react: ^18 || ^19
 
   '@tanstack/react-query-persist-client@4.29.25':
     resolution: {integrity: sha512-Vm4E+iPZ7rPGfN0jhsK35vZ5EUFvKyE3Kg0uthlqmqmy2rzm43f1EIFpA1++j0dWST/swIOj3pfiSBxJ/6s5zA==}
@@ -6357,9 +6175,6 @@ packages:
 
   '@types/cookie@0.6.0':
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
-
-  '@types/cors@2.8.17':
-    resolution: {integrity: sha512-8CGDvrBj1zgo2qE+oS3pOCyYNqCPryMWY2bGfwA0dcfopWGgxs+78df0Rs3rc9THP4JkOhLsAa+15VdpAqkcUA==}
 
   '@types/cross-spawn@6.0.2':
     resolution: {integrity: sha512-KuwNhp3eza+Rhu8IFI5HUXRP0LIhqH5cAjubUvGXXthh4YYBuP2ntwEX+Cz8GJoZUHlKo247wPWOfA9LYEq4cw==}
@@ -8084,10 +7899,6 @@ packages:
 
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
-
-  cors@2.8.5:
-    resolution: {integrity: sha512-KIHbLJqu73RGr/hnbrO9uBeixNGuvSQjul/jdFvS/KFSIH1hWVd1ng7zOHx+YrEfInLG7q4n6GHQ9cDtxv/P6g==}
-    engines: {node: '>= 0.10'}
 
   cose-base@1.0.3:
     resolution: {integrity: sha512-s9whTXInMSgAp/NVXVNuVxVKzGH2qck3aQlVHxDCdAEPgtMKwc4Wq6/QKhgdEdgbLSi9rBTAcPoRa6JpiG4ksg==}
@@ -11691,10 +11502,6 @@ packages:
     resolution: {integrity: sha512-5b0R4txpzjPWVw/cXXUResoD4hb6U/x9BH08L7nw+GN1sezDzPdxeRvpc9c433fZhBan/wusjbCsqwqm4EIBIQ==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
-  p-limit@6.1.0:
-    resolution: {integrity: sha512-H0jc0q1vOzlEk0TqAKXKZxdl7kX3OFUzCnNVUnq5Pc3DGo0kpeaMuPqxQn235HibwBEb0/pm9dgKTjXy66fBkg==}
-    engines: {node: '>=18'}
-
   p-locate@3.0.0:
     resolution: {integrity: sha512-x+12w/To+4GFfgJhBEpiDcLozRJGegY+Ei7/z0tSLkMmxGZNybVMSfWj9aJn8Z5Fc7dBUNJOOVgPv2H7IwulSQ==}
     engines: {node: '>=6'}
@@ -12316,11 +12123,6 @@ packages:
   pretty-hrtime@1.0.3:
     resolution: {integrity: sha512-66hKPCr+72mlfiSjlEB1+45IjXSqvVAIy6mocupoww4tBFE9R9IhwwUGoI4G++Tc9Aq+2rxOt0RFU6gPcrte0A==}
     engines: {node: '>= 0.8'}
-
-  prisma@5.16.2:
-    resolution: {integrity: sha512-rFV/xoBR2hBGGlu4LPLQd4U8WVA+tSAmYyFWGPRVfj+xg7N4kiZV4lSk38htSpF+/IuHKzlrbh4SFk8Z18cI8A==}
-    engines: {node: '>=16.13'}
-    hasBin: true
 
   process-nextick-args@2.0.1:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
@@ -17399,7 +17201,7 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@headlessui/tailwindcss@0.1.3(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))':
+  '@headlessui/tailwindcss@0.1.3(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))':
     dependencies:
       tailwindcss: 3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3))
 
@@ -18094,31 +17896,6 @@ snapshots:
       config-chain: 1.1.13
 
   '@popperjs/core@2.11.8': {}
-
-  '@prisma/client@5.16.2(prisma@5.16.2)':
-    optionalDependencies:
-      prisma: 5.16.2
-
-  '@prisma/debug@5.16.2': {}
-
-  '@prisma/engines-version@5.16.0-24.34ace0eb2704183d2c05b60b52fba5c43c13f303': {}
-
-  '@prisma/engines@5.16.2':
-    dependencies:
-      '@prisma/debug': 5.16.2
-      '@prisma/engines-version': 5.16.0-24.34ace0eb2704183d2c05b60b52fba5c43c13f303
-      '@prisma/fetch-engine': 5.16.2
-      '@prisma/get-platform': 5.16.2
-
-  '@prisma/fetch-engine@5.16.2':
-    dependencies:
-      '@prisma/debug': 5.16.2
-      '@prisma/engines-version': 5.16.0-24.34ace0eb2704183d2c05b60b52fba5c43c13f303
-      '@prisma/get-platform': 5.16.2
-
-  '@prisma/get-platform@5.16.2':
-    dependencies:
-      '@prisma/debug': 5.16.2
 
   '@radix-ui/colors@3.0.0': {}
 
@@ -20404,11 +20181,11 @@ snapshots:
     dependencies:
       defer-to-connect: 2.0.1
 
-  '@tailwindcss/aspect-ratio@0.4.2(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))':
+  '@tailwindcss/aspect-ratio@0.4.2(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))':
     dependencies:
       tailwindcss: 3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3))
 
-  '@tailwindcss/forms@0.5.7(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3)))':
+  '@tailwindcss/forms@0.5.7(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3)))':
     dependencies:
       mini-svg-data-uri: 1.4.4
       tailwindcss: 3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3))
@@ -20425,17 +20202,9 @@ snapshots:
 
   '@tanstack/query-core@5.50.1': {}
 
-  '@tanstack/query-devtools@5.51.1': {}
-
   '@tanstack/query-persist-client-core@4.29.25':
     dependencies:
       '@tanstack/query-core': 4.29.25
-
-  '@tanstack/react-query-devtools@5.51.1(@tanstack/react-query@5.50.1(react@18.3.1))(react@18.3.1)':
-    dependencies:
-      '@tanstack/query-devtools': 5.51.1
-      '@tanstack/react-query': 5.50.1(react@18.3.1)
-      react: 18.3.1
 
   '@tanstack/react-query-persist-client@4.29.25(@tanstack/react-query@5.50.1(react@18.3.1))':
     dependencies:
@@ -20555,10 +20324,6 @@ snapshots:
       '@types/node': 20.14.10
 
   '@types/cookie@0.6.0': {}
-
-  '@types/cors@2.8.17':
-    dependencies:
-      '@types/node': 20.14.10
 
   '@types/cross-spawn@6.0.2':
     dependencies:
@@ -22698,11 +22463,6 @@ snapshots:
   core-util-is@1.0.2: {}
 
   core-util-is@1.0.3: {}
-
-  cors@2.8.5:
-    dependencies:
-      object-assign: 4.1.1
-      vary: 1.1.2
 
   cose-base@1.0.3:
     dependencies:
@@ -27226,10 +26986,6 @@ snapshots:
     dependencies:
       yocto-queue: 1.1.1
 
-  p-limit@6.1.0:
-    dependencies:
-      yocto-queue: 1.1.1
-
   p-locate@3.0.0:
     dependencies:
       p-limit: 2.3.0
@@ -27856,10 +27612,6 @@ snapshots:
       react-is: 18.3.1
 
   pretty-hrtime@1.0.3: {}
-
-  prisma@5.16.2:
-    dependencies:
-      '@prisma/engines': 5.16.2
 
   process-nextick-args@2.0.1: {}
 
@@ -29208,7 +28960,7 @@ snapshots:
 
   tailwind-merge@2.4.0: {}
 
-  tailwindcss-animate@1.0.7(tailwindcss@3.4.4(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.3))):
+  tailwindcss-animate@1.0.7(tailwindcss@3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3))):
     dependencies:
       tailwindcss: 3.4.4(ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3))
 
@@ -29446,27 +29198,7 @@ snapshots:
 
   ts-log@2.2.5: {}
 
-  ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.11
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 20.14.10
-      acorn: 8.12.1
-      acorn-walk: 8.3.3
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 5.5.3
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    optionalDependencies:
-      '@swc/core': 1.6.13(@swc/helpers@0.5.5)
-
-  ts-node@10.9.2(@swc/core@1.6.13)(@types/node@16.18.101)(typescript@5.1.6):
+  ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@16.18.101)(typescript@5.1.6):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -29486,7 +29218,7 @@ snapshots:
     optionalDependencies:
       '@swc/core': 1.6.13(@swc/helpers@0.5.5)
 
-  ts-node@10.9.2(@swc/core@1.6.13)(@types/node@20.14.10)(typescript@5.5.3):
+  ts-node@10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@20.14.10)(typescript@5.5.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -29662,14 +29394,14 @@ snapshots:
       typescript: 5.5.3
       yaml: 2.4.5
 
-  typescript-json-schema@0.64.0(@swc/core@1.6.13):
+  typescript-json-schema@0.64.0(@swc/core@1.6.13(@swc/helpers@0.5.5)):
     dependencies:
       '@types/json-schema': 7.0.15
       '@types/node': 16.18.101
       glob: 7.2.3
       path-equal: 1.2.5
       safe-stable-stringify: 2.4.3
-      ts-node: 10.9.2(@swc/core@1.6.13)(@types/node@16.18.101)(typescript@5.1.6)
+      ts-node: 10.9.2(@swc/core@1.6.13(@swc/helpers@0.5.5))(@types/node@16.18.101)(typescript@5.1.6)
       typescript: 5.1.6
       yargs: 17.7.2
     transitivePeerDependencies:

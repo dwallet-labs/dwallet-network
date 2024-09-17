@@ -1,6 +1,6 @@
 # Copyright (c) The Diem Core Contributors
 # Copyright (c) The Move Contributors
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 alias coverage_update="pkill cargo; cargo run --release --bin move-trace-conversion -- -f $HOME/trace -u trace.mvcov -o trace.mvcov; rm -rf $HOME/trace"
 alias coverage_summary="pkill cargo; cargo run --release --bin coverage-summaries -- -t trace.mvcov -s ../../../diem-move/diem-framework/DPN/releases/artifacts/current/modules"

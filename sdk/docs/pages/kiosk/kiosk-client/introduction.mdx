@@ -15,11 +15,11 @@ require constantly changing the package IDs)._
 
 ```typescript
 import { KioskClient, Network } from '@mysten/kiosk';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
 
-// We need a Sui Client. You can re-use the SuiClient of your project
+// We need a Pera Client. You can re-use the PeraClient of your project
 // (it's not recommended to create a new one).
-const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+const client = new PeraClient({ url: getFullnodeUrl('testnet') });
 
 // Now we can use it to create a kiosk Client.
 const kioskClient = new KioskClient({

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { Coin, Pool } from '../types/index.js';
 
@@ -29,9 +29,9 @@ export const testnetCoins: CoinMap = {
 		type: `0x36dbef866a1d62bf7328989a10fb2f07d769f4ee587c0de4a0a256e57e0a58a8::deep::DEEP`,
 		scalar: 1000000,
 	},
-	SUI: {
+	PERA: {
 		address: `0x0000000000000000000000000000000000000000000000000000000000000002`,
-		type: `0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI`,
+		type: `0x0000000000000000000000000000000000000000000000000000000000000002::pera::PERA`,
 		scalar: 1000000000,
 	},
 	DBUSDC: {
@@ -52,9 +52,9 @@ export const mainnetCoins: CoinMap = {
 		type: `0xdeeb7a4662eec9f2f3def03fb937a663dddaa2e215b8078a284d026b7946c270::deep::DEEP`,
 		scalar: 1000000,
 	},
-	SUI: {
+	PERA: {
 		address: `0x0000000000000000000000000000000000000000000000000000000000000002`,
-		type: `0x0000000000000000000000000000000000000000000000000000000000000002::sui::SUI`,
+		type: `0x0000000000000000000000000000000000000000000000000000000000000002::pera::PERA`,
 		scalar: 1000000000,
 	},
 	USDC: {
@@ -75,14 +75,14 @@ export const mainnetCoins: CoinMap = {
 };
 
 export const testnetPools: PoolMap = {
-	DEEP_SUI: {
+	DEEP_PERA: {
 		address: `0x2decc59a6f05c5800e5c8a1135f9d133d1746f562bf56673e6e81ef4f7ccd3b7`,
 		baseCoin: 'DEEP',
-		quoteCoin: 'SUI',
+		quoteCoin: 'PERA',
 	},
-	SUI_DBUSDC: {
+	PERA_DBUSDC: {
 		address: `0xace543e8239f0c19783e57bacb02c581fd38d52899bdce117e49c91b494c8b10`,
-		baseCoin: 'SUI',
+		baseCoin: 'PERA',
 		quoteCoin: 'DBUSDC',
 	},
 	DEEP_DBUSDC: {
@@ -98,9 +98,9 @@ export const testnetPools: PoolMap = {
 };
 
 export const mainnetPools: PoolMap = {
-	DEEP_SUI: {
+	DEEP_PERA: {
 		address: ``,
 		baseCoin: 'DEEP',
-		quoteCoin: 'SUI',
+		quoteCoin: 'PERA',
 	},
 };

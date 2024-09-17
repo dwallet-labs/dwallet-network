@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{sync::Arc, time::Duration};
 
@@ -135,7 +135,7 @@ impl CommitObserver {
 
             // On recovery leader schedule will be updated with the current scores
             // and the scores will be passed along with the last commit sent to
-            // sui so that the current scores are available for submission.
+            // pera so that the current scores are available for submission.
             let reputation_scores = if index == num_unsent_commits - 1 {
                 self.leader_schedule
                     .leader_swap_table

@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import {
 	ConnectButton,
 	ConnectModal,
-	SuiClientProvider,
+	PeraClientProvider,
 	useCurrentAccount,
 	WalletProvider,
 } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui/client';
+import { getFullnodeUrl } from '@pera-io/pera/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
@@ -64,7 +64,7 @@ function withProviders(Component: React.FunctionComponent<object>) {
 
 		return (
 			<QueryClientProvider client={queryClient}>
-				<SuiClientProvider networks={networks}>
+				<PeraClientProvider networks={networks}>
 					<WalletProvider
 						stashedWallet={{
 							name: 'dApp Kit Docs',
@@ -72,7 +72,7 @@ function withProviders(Component: React.FunctionComponent<object>) {
 					>
 						<Component />
 					</WalletProvider>
-				</SuiClientProvider>
+				</PeraClientProvider>
 			</QueryClientProvider>
 		);
 	};

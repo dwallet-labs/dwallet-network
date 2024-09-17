@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { IdentifierRecord, SuiFeatures, SuiSignMessageFeature } from '@mysten/wallet-standard';
+import type { IdentifierRecord, PeraFeatures, PeraSignMessageFeature } from '@mysten/wallet-standard';
 
-export const signMessageFeature: SuiSignMessageFeature = {
-	'sui:signMessage': {
+export const signMessageFeature: PeraSignMessageFeature = {
+	'pera:signMessage': {
 		version: '1.0.0',
 		signMessage: vi.fn(),
 	},
@@ -17,29 +17,29 @@ export const superCoolFeature: IdentifierRecord<unknown> = {
 	},
 };
 
-export const suiFeatures: SuiFeatures = {
+export const peraFeatures: PeraFeatures = {
 	...signMessageFeature,
-	'sui:signPersonalMessage': {
+	'pera:signPersonalMessage': {
 		version: '1.0.0',
 		signPersonalMessage: vi.fn(),
 	},
-	'sui:signTransactionBlock': {
+	'pera:signTransactionBlock': {
 		version: '1.0.0',
 		signTransactionBlock: vi.fn(),
 	},
-	'sui:signTransaction': {
+	'pera:signTransaction': {
 		version: '2.0.0',
 		signTransaction: vi.fn(),
 	},
-	'sui:signAndExecuteTransactionBlock': {
+	'pera:signAndExecuteTransactionBlock': {
 		version: '1.0.0',
 		signAndExecuteTransactionBlock: vi.fn(),
 	},
-	'sui:signAndExecuteTransaction': {
+	'pera:signAndExecuteTransaction': {
 		version: '2.0.0',
 		signAndExecuteTransaction: vi.fn(),
 	},
-	'sui:reportTransactionEffects': {
+	'pera:reportTransactionEffects': {
 		version: '1.0.0',
 		reportTransactionEffects: vi.fn(),
 	},

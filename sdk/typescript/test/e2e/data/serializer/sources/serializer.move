@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module serializer::serializer_tests {
-    use sui::clock::Clock;
+    use pera::clock::Clock;
     use std::option::Option;
-    use sui::object::ID;
+    use pera::object::ID;
     use std::string::String;
     use std::ascii;
 

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::NativesCostTable;
 use move_binary_format::errors::PartialVMResult;
 use move_core_types::gas_algebra::InternalGas;
@@ -17,7 +17,7 @@ pub const INVALID_VERIFYING_KEY: u64 = 0;
 pub const INVALID_CURVE: u64 = 1;
 pub const TOO_MANY_PUBLIC_INPUTS: u64 = 2;
 
-// These must match the corresponding values in sui::groth16::Curve.
+// These must match the corresponding values in pera::groth16::Curve.
 pub const BLS12381: u8 = 0;
 pub const BN254: u8 = 1;
 

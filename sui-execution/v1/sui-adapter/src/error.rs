@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_binary_format::{
     errors::{Location, VMError},
@@ -10,10 +10,10 @@ use move_core_types::{
     vm_status::{StatusCode, StatusType},
 };
 use move_vm_runtime::move_vm::MoveVM;
-use sui_types::error::{ExecutionError, SuiError};
-use sui_types::execution_status::{ExecutionFailureStatus, MoveLocation, MoveLocationOpt};
+use pera_types::error::{ExecutionError, PeraError};
+use pera_types::execution_status::{ExecutionFailureStatus, MoveLocation, MoveLocationOpt};
 
-pub(crate) fn convert_vm_error<S: MoveResolver<Err = SuiError>>(
+pub(crate) fn convert_vm_error<S: MoveResolver<Err = PeraError>>(
     error: VMError,
     vm: &MoveVM,
     state_view: &S,

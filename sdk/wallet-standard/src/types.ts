@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /** Contains data related to the gas payment for a Transaction */
 export interface GasData {
@@ -9,7 +9,7 @@ export interface GasData {
 	price: string | number | null;
 	/** The owner of the gas coins used to fund the transactions, this is either the sender or the gas sponsor */
 	owner: string | null;
-	/** The list of SUI coins to fund the transaction */
+	/** The list of PERA coins to fund the transaction */
 	payment: { objectId: string; version: string; digest: string }[] | null;
 }
 

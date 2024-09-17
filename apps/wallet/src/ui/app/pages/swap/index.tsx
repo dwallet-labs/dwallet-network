@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useActiveAccount } from '_app/hooks/useActiveAccount';
 import { useRecognizedPackages } from '_app/hooks/useRecognizedPackages';
@@ -23,8 +23,8 @@ import { AverageSection } from '_pages/swap/AverageSection';
 import {
 	Coins,
 	initialValues,
-	SUI_CONVERSION_RATE,
-	SUI_USDC_AVERAGE_CONVERSION_RATE,
+	PERA_CONVERSION_RATE,
+	PERA_USDC_AVERAGE_CONVERSION_RATE,
 	USDC_CONVERSION_RATE,
 	type FormValues,
 } from '_pages/swap/constants';
@@ -38,10 +38,10 @@ import {
 import { ampli } from '_shared/analytics/ampli';
 import { DeepBookContextProvider, useDeepBookContext } from '_shared/deepBook/context';
 import { useTransactionSummary, useZodForm } from '@mysten/core';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
 import { ArrowDown12, ArrowRight16 } from '@mysten/icons';
-import { type DryRunTransactionBlockResponse } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { type DryRunTransactionBlockResponse } from '@pera-io/pera/client';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import BigNumber from 'bignumber.js';
 import clsx from 'clsx';
@@ -68,8 +68,8 @@ function getSwapPageAtcText(
 	coinsMap: Record<string, string>,
 ) {
 	const toSymbol =
-		toAssetType === SUI_TYPE_ARG
-			? Coins.SUI
+		toAssetType === PERA_TYPE_ARG
+			? Coins.PERA
 			: Object.entries(coinsMap).find(([key, value]) => value === toAssetType)?.[0] || '';
 
 	return `Swap ${fromSymbol} to ${toSymbol}`;
@@ -92,12 +92,12 @@ export function SwapPageContent() {
 	const allowedSwapCoinsList = useAllowedSwapCoinsList();
 
 	const activeCoinType = searchParams.get('type');
-	const isAsk = activeCoinType === SUI_TYPE_ARG;
+	const isAsk = activeCoinType === PERA_TYPE_ARG;
 
-	const baseCoinType = SUI_TYPE_ARG;
+	const baseCoinType = PERA_TYPE_ARG;
 	const quoteCoinType = coinsMap.USDC;
 
-	const poolId = mainnetPools.SUI_USDC[0];
+	const poolId = mainnetPools.PERA_USDC[0];
 
 	const {
 		baseCoinBalanceData,
@@ -117,7 +117,7 @@ export function SwapPageContent() {
 	const rawBaseBalance = baseCoinBalanceData?.totalBalance;
 	const rawQuoteBalance = quoteCoinBalanceData?.totalBalance;
 
-	const { data: coinBalances } = useSuiClientQuery(
+	const { data: coinBalances } = usePeraClientQuery(
 		'getAllBalances',
 		{ owner: activeAccountAddress! },
 		{
@@ -244,7 +244,7 @@ export function SwapPageContent() {
 	});
 
 	const baseBalance = amount && new BigNumber(amount).shiftedBy(USDC_CONVERSION_RATE).toString();
-	const quoteBalance = amount && new BigNumber(amount).shiftedBy(SUI_CONVERSION_RATE).toString();
+	const quoteBalance = amount && new BigNumber(amount).shiftedBy(PERA_CONVERSION_RATE).toString();
 
 	const isPayAll = amount === (isAsk ? formattedBaseTokenBalance : formattedQuoteTokenBalance);
 
@@ -273,7 +273,7 @@ export function SwapPageContent() {
 		totalBaseBalance: formattedBaseTokenBalance,
 		totalQuoteBalance: formattedQuoteTokenBalance,
 		baseConversionRate: USDC_CONVERSION_RATE,
-		quoteConversionRate: SUI_CONVERSION_RATE,
+		quoteConversionRate: PERA_CONVERSION_RATE,
 		enabled: isValid,
 		amount,
 	});
@@ -295,7 +295,7 @@ export function SwapPageContent() {
 		quoteCoinType,
 		isAsk,
 		baseConversionRate: USDC_CONVERSION_RATE,
-		quoteConversionRate: SUI_CONVERSION_RATE,
+		quoteConversionRate: PERA_CONVERSION_RATE,
 	});
 
 	const balance = getBalanceConversion({
@@ -305,7 +305,7 @@ export function SwapPageContent() {
 	});
 
 	const formattedBalance = new BigNumber(balance)
-		.shiftedBy(isAsk ? SUI_USDC_AVERAGE_CONVERSION_RATE : -SUI_USDC_AVERAGE_CONVERSION_RATE)
+		.shiftedBy(isAsk ? PERA_USDC_AVERAGE_CONVERSION_RATE : -PERA_USDC_AVERAGE_CONVERSION_RATE)
 		.toNumber();
 
 	const { mutate: handleSwap, isPending: isSwapLoading } = useMutation({
@@ -416,7 +416,7 @@ export function SwapPageContent() {
 											onActionClicked={() => {
 												setValue(
 													'amount',
-													activeCoinType === SUI_TYPE_ARG
+													activeCoinType === PERA_TYPE_ARG
 														? formattedBaseTokenBalance
 														: formattedQuoteTokenBalance,
 													{ shouldValidate: true },
@@ -431,7 +431,7 @@ export function SwapPageContent() {
 									onClick={() => {
 										navigate(
 											`/swap?${new URLSearchParams({
-												type: activeCoinType === SUI_TYPE_ARG ? coinsMap.USDC : SUI_TYPE_ARG,
+												type: activeCoinType === PERA_TYPE_ARG ? coinsMap.USDC : PERA_TYPE_ARG,
 											}).toString()}`,
 										);
 										reset();

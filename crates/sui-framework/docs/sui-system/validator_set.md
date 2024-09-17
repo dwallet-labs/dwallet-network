@@ -31,7 +31,7 @@ title: Module `0x3::validator_set`
 -  [Function `staking_pool_mappings`](#0x3_validator_set_staking_pool_mappings)
 -  [Function `pool_exchange_rates`](#0x3_validator_set_pool_exchange_rates)
 -  [Function `next_epoch_validator_count`](#0x3_validator_set_next_epoch_validator_count)
--  [Function `is_active_validator_by_sui_address`](#0x3_validator_set_is_active_validator_by_sui_address)
+-  [Function `is_active_validator_by_pera_address`](#0x3_validator_set_is_active_validator_by_pera_address)
 -  [Function `is_duplicate_with_active_validator`](#0x3_validator_set_is_duplicate_with_active_validator)
 -  [Function `is_duplicate_validator`](#0x3_validator_set_is_duplicate_validator)
 -  [Function `count_duplicates_vec`](#0x3_validator_set_count_duplicates_vec)
@@ -74,18 +74,18 @@ title: Module `0x3::validator_set`
 
 <pre><code><b>use</b> <a href="../move-stdlib/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="../move-stdlib/vector.md#0x1_vector">0x1::vector</a>;
-<b>use</b> <a href="../sui-framework/bag.md#0x2_bag">0x2::bag</a>;
-<b>use</b> <a href="../sui-framework/balance.md#0x2_balance">0x2::balance</a>;
-<b>use</b> <a href="../sui-framework/event.md#0x2_event">0x2::event</a>;
-<b>use</b> <a href="../sui-framework/object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="../sui-framework/priority_queue.md#0x2_priority_queue">0x2::priority_queue</a>;
-<b>use</b> <a href="../sui-framework/sui.md#0x2_sui">0x2::sui</a>;
-<b>use</b> <a href="../sui-framework/table.md#0x2_table">0x2::table</a>;
-<b>use</b> <a href="../sui-framework/table_vec.md#0x2_table_vec">0x2::table_vec</a>;
-<b>use</b> <a href="../sui-framework/transfer.md#0x2_transfer">0x2::transfer</a>;
-<b>use</b> <a href="../sui-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
-<b>use</b> <a href="../sui-framework/vec_map.md#0x2_vec_map">0x2::vec_map</a>;
-<b>use</b> <a href="../sui-framework/vec_set.md#0x2_vec_set">0x2::vec_set</a>;
+<b>use</b> <a href="../pera-framework/bag.md#0x2_bag">0x2::bag</a>;
+<b>use</b> <a href="../pera-framework/balance.md#0x2_balance">0x2::balance</a>;
+<b>use</b> <a href="../pera-framework/event.md#0x2_event">0x2::event</a>;
+<b>use</b> <a href="../pera-framework/object.md#0x2_object">0x2::object</a>;
+<b>use</b> <a href="../pera-framework/priority_queue.md#0x2_priority_queue">0x2::priority_queue</a>;
+<b>use</b> <a href="../pera-framework/pera.md#0x2_pera">0x2::pera</a>;
+<b>use</b> <a href="../pera-framework/table.md#0x2_table">0x2::table</a>;
+<b>use</b> <a href="../pera-framework/table_vec.md#0x2_table_vec">0x2::table_vec</a>;
+<b>use</b> <a href="../pera-framework/transfer.md#0x2_transfer">0x2::transfer</a>;
+<b>use</b> <a href="../pera-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
+<b>use</b> <a href="../pera-framework/vec_map.md#0x2_vec_map">0x2::vec_map</a>;
+<b>use</b> <a href="../pera-framework/vec_set.md#0x2_vec_set">0x2::vec_set</a>;
 <b>use</b> <a href="staking_pool.md#0x3_staking_pool">0x3::staking_pool</a>;
 <b>use</b> <a href="validator.md#0x3_validator">0x3::validator</a>;
 <b>use</b> <a href="validator_cap.md#0x3_validator_cap">0x3::validator_cap</a>;
@@ -124,7 +124,7 @@ title: Module `0x3::validator_set`
  The current list of active validators.
 </dd>
 <dt>
-<code>pending_active_validators: <a href="../sui-framework/table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;</code>
+<code>pending_active_validators: <a href="../pera-framework/table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;</code>
 </dt>
 <dd>
  List of new validator candidates added during the current epoch.
@@ -138,13 +138,13 @@ title: Module `0x3::validator_set`
  pointing to <code>active_validators</code>.
 </dd>
 <dt>
-<code>staking_pool_mappings: <a href="../sui-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../sui-framework/object.md#0x2_object_ID">object::ID</a>, <b>address</b>&gt;</code>
+<code>staking_pool_mappings: <a href="../pera-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, <b>address</b>&gt;</code>
 </dt>
 <dd>
- Mappings from staking pool's ID to the sui address of a validator.
+ Mappings from staking pool's ID to the pera address of a validator.
 </dd>
 <dt>
-<code>inactive_validators: <a href="../sui-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../sui-framework/object.md#0x2_object_ID">object::ID</a>, <a href="validator_wrapper.md#0x3_validator_wrapper_ValidatorWrapper">validator_wrapper::ValidatorWrapper</a>&gt;</code>
+<code>inactive_validators: <a href="../pera-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, <a href="validator_wrapper.md#0x3_validator_wrapper_ValidatorWrapper">validator_wrapper::ValidatorWrapper</a>&gt;</code>
 </dt>
 <dd>
  Mapping from a staking pool ID to the inactive validator that has that pool as its staking pool.
@@ -152,7 +152,7 @@ title: Module `0x3::validator_set`
  is added to this table so that stakers can continue to withdraw their stake from it.
 </dd>
 <dt>
-<code>validator_candidates: <a href="../sui-framework/table.md#0x2_table_Table">table::Table</a>&lt;<b>address</b>, <a href="validator_wrapper.md#0x3_validator_wrapper_ValidatorWrapper">validator_wrapper::ValidatorWrapper</a>&gt;</code>
+<code>validator_candidates: <a href="../pera-framework/table.md#0x2_table_Table">table::Table</a>&lt;<b>address</b>, <a href="validator_wrapper.md#0x3_validator_wrapper_ValidatorWrapper">validator_wrapper::ValidatorWrapper</a>&gt;</code>
 </dt>
 <dd>
  Table storing preactive/candidate validators, mapping their addresses to their <code>Validator </code> structs.
@@ -162,13 +162,13 @@ title: Module `0x3::validator_set`
  officially add them to the active validator set <code>active_validators</code> next epoch.
 </dd>
 <dt>
-<code>at_risk_validators: <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;</code>
+<code>at_risk_validators: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;</code>
 </dt>
 <dd>
  Table storing the number of epochs during which a validator's stake has been below the low stake threshold.
 </dd>
 <dt>
-<code>extra_fields: <a href="../sui-framework/bag.md#0x2_bag_Bag">bag::Bag</a></code>
+<code>extra_fields: <a href="../pera-framework/bag.md#0x2_bag_Bag">bag::Bag</a></code>
 </dt>
 <dd>
  Any extra fields that's not defined statically.
@@ -380,7 +380,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 </dd>
 <dt>
-<code>staking_pool_id: <a href="../sui-framework/object.md#0x2_object_ID">object::ID</a></code>
+<code>staking_pool_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
 
@@ -421,7 +421,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 </dd>
 <dt>
-<code>staking_pool_id: <a href="../sui-framework/object.md#0x2_object_ID">object::ID</a></code>
+<code>staking_pool_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
 
@@ -628,7 +628,7 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_new">new</a>(init_active_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_new">new</a>(init_active_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>
 </code></pre>
 
 
@@ -639,24 +639,24 @@ The epoch value corresponds to the first epoch this change takes place.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_new">new</a>(init_active_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;Validator&gt;, ctx: &<b>mut</b> TxContext): <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a> {
     <b>let</b> total_stake = <a href="validator_set.md#0x3_validator_set_calculate_total_stakes">calculate_total_stakes</a>(&init_active_validators);
-    <b>let</b> <b>mut</b> staking_pool_mappings = <a href="../sui-framework/table.md#0x2_table_new">table::new</a>(ctx);
+    <b>let</b> <b>mut</b> staking_pool_mappings = <a href="../pera-framework/table.md#0x2_table_new">table::new</a>(ctx);
     <b>let</b> num_validators = init_active_validators.length();
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; num_validators) {
         <b>let</b> <a href="validator.md#0x3_validator">validator</a> = &init_active_validators[i];
-        staking_pool_mappings.add(staking_pool_id(<a href="validator.md#0x3_validator">validator</a>), sui_address(<a href="validator.md#0x3_validator">validator</a>));
+        staking_pool_mappings.add(staking_pool_id(<a href="validator.md#0x3_validator">validator</a>), pera_address(<a href="validator.md#0x3_validator">validator</a>));
         i = i + 1;
     };
     <b>let</b> <b>mut</b> validators = <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a> {
         total_stake,
         active_validators: init_active_validators,
-        pending_active_validators: <a href="../sui-framework/table_vec.md#0x2_table_vec_empty">table_vec::empty</a>(ctx),
+        pending_active_validators: <a href="../pera-framework/table_vec.md#0x2_table_vec_empty">table_vec::empty</a>(ctx),
         pending_removals: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[],
         staking_pool_mappings,
-        inactive_validators: <a href="../sui-framework/table.md#0x2_table_new">table::new</a>(ctx),
-        validator_candidates: <a href="../sui-framework/table.md#0x2_table_new">table::new</a>(ctx),
-        at_risk_validators: <a href="../sui-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>(),
-        extra_fields: <a href="../sui-framework/bag.md#0x2_bag_new">bag::new</a>(ctx),
+        inactive_validators: <a href="../pera-framework/table.md#0x2_table_new">table::new</a>(ctx),
+        validator_candidates: <a href="../pera-framework/table.md#0x2_table_new">table::new</a>(ctx),
+        at_risk_validators: <a href="../pera-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>(),
+        extra_fields: <a href="../pera-framework/bag.md#0x2_bag_new">bag::new</a>(ctx),
     };
     <a href="voting_power.md#0x3_voting_power_set_voting_power">voting_power::set_voting_power</a>(&<b>mut</b> validators.active_validators);
     validators
@@ -671,10 +671,10 @@ The epoch value corresponds to the first epoch this change takes place.
 
 ## Function `request_add_validator_candidate`
 
-Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code> to add a new validator candidate.
+Called by <code><a href="pera_system.md#0x3_pera_system">pera_system</a></code> to add a new validator candidate.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_add_validator_candidate">request_add_validator_candidate</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, <a href="validator.md#0x3_validator">validator</a>: <a href="validator.md#0x3_validator_Validator">validator::Validator</a>, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_add_validator_candidate">request_add_validator_candidate</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, <a href="validator.md#0x3_validator">validator</a>: <a href="validator.md#0x3_validator_Validator">validator::Validator</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -694,7 +694,7 @@ Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code> to 
             && !<a href="validator_set.md#0x3_validator_set_is_duplicate_with_pending_validator">is_duplicate_with_pending_validator</a>(self, &<a href="validator.md#0x3_validator">validator</a>),
         <a href="validator_set.md#0x3_validator_set_EDuplicateValidator">EDuplicateValidator</a>
     );
-    <b>let</b> validator_address = sui_address(&<a href="validator.md#0x3_validator">validator</a>);
+    <b>let</b> validator_address = pera_address(&<a href="validator.md#0x3_validator">validator</a>);
     <b>assert</b>!(
         !self.validator_candidates.contains(validator_address),
         <a href="validator_set.md#0x3_validator_set_EAlreadyValidatorCandidate">EAlreadyValidatorCandidate</a>
@@ -705,7 +705,7 @@ Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code> to 
     // staking <b>with</b> this candidate.
     self.staking_pool_mappings.add(staking_pool_id(&<a href="validator.md#0x3_validator">validator</a>), validator_address);
     self.validator_candidates.add(
-        sui_address(&<a href="validator.md#0x3_validator">validator</a>),
+        pera_address(&<a href="validator.md#0x3_validator">validator</a>),
         <a href="validator_wrapper.md#0x3_validator_wrapper_create_v1">validator_wrapper::create_v1</a>(<a href="validator.md#0x3_validator">validator</a>, ctx),
     );
 }
@@ -719,10 +719,10 @@ Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code> to 
 
 ## Function `request_remove_validator_candidate`
 
-Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code> to remove a validator candidate, and move them to <code>inactive_validators</code>.
+Called by <code><a href="pera_system.md#0x3_pera_system">pera_system</a></code> to remove a validator candidate, and move them to <code>inactive_validators</code>.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_remove_validator_candidate">request_remove_validator_candidate</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_remove_validator_candidate">request_remove_validator_candidate</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -765,11 +765,11 @@ Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code> to 
 
 ## Function `request_add_validator`
 
-Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code> to add a new validator to <code>pending_active_validators</code>, which will be
+Called by <code><a href="pera_system.md#0x3_pera_system">pera_system</a></code> to add a new validator to <code>pending_active_validators</code>, which will be
 processed at the end of epoch.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_add_validator">request_add_validator</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, min_joining_stake_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_add_validator">request_add_validator</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, min_joining_stake_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -835,13 +835,13 @@ processed at the end of epoch.
 
 ## Function `request_remove_validator`
 
-Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code>, to remove a validator.
+Called by <code><a href="pera_system.md#0x3_pera_system">pera_system</a></code>, to remove a validator.
 The index of the validator is added to <code>pending_removals</code> and
 will be processed at the end of epoch.
 Only an active validator can request to be removed.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_remove_validator">request_remove_validator</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_remove_validator">request_remove_validator</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -874,13 +874,13 @@ Only an active validator can request to be removed.
 
 ## Function `request_add_stake`
 
-Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code>, to add a new stake to the validator.
+Called by <code><a href="pera_system.md#0x3_pera_system">pera_system</a></code>, to add a new stake to the validator.
 This request is added to the validator's staking pool's pending stake entries, processed at the end
 of the epoch.
 Aborts in case the staking amount is smaller than MIN_STAKING_THRESHOLD
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_add_stake">request_add_stake</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_address: <b>address</b>, stake: <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_add_stake">request_add_stake</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_address: <b>address</b>, stake: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>
 </code></pre>
 
 
@@ -892,11 +892,11 @@ Aborts in case the staking amount is smaller than MIN_STAKING_THRESHOLD
 <pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_add_stake">request_add_stake</a>(
     self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a>,
     validator_address: <b>address</b>,
-    stake: Balance&lt;SUI&gt;,
+    stake: Balance&lt;PERA&gt;,
     ctx: &<b>mut</b> TxContext,
-) : StakedSui {
-    <b>let</b> sui_amount = stake.value();
-    <b>assert</b>!(sui_amount &gt;= <a href="validator_set.md#0x3_validator_set_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>, <a href="validator_set.md#0x3_validator_set_EStakingBelowThreshold">EStakingBelowThreshold</a>);
+) : StakedPera {
+    <b>let</b> pera_amount = stake.value();
+    <b>assert</b>!(pera_amount &gt;= <a href="validator_set.md#0x3_validator_set_MIN_STAKING_THRESHOLD">MIN_STAKING_THRESHOLD</a>, <a href="validator_set.md#0x3_validator_set_EStakingBelowThreshold">EStakingBelowThreshold</a>);
     <b>let</b> <a href="validator.md#0x3_validator">validator</a> = <a href="validator_set.md#0x3_validator_set_get_candidate_or_active_validator_mut">get_candidate_or_active_validator_mut</a>(self, validator_address);
     <a href="validator.md#0x3_validator">validator</a>.<a href="validator_set.md#0x3_validator_set_request_add_stake">request_add_stake</a>(stake, ctx.sender(), ctx)
 }
@@ -910,15 +910,15 @@ Aborts in case the staking amount is smaller than MIN_STAKING_THRESHOLD
 
 ## Function `request_withdraw_stake`
 
-Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code>, to withdraw some share of a stake from the validator. The share to withdraw
+Called by <code><a href="pera_system.md#0x3_pera_system">pera_system</a></code>, to withdraw some share of a stake from the validator. The share to withdraw
 is denoted by <code>principal_withdraw_amount</code>. One of two things occurs in this function:
-1. If the <code>staked_sui</code> is staked with an active validator, the request is added to the validator's
+1. If the <code>staked_pera</code> is staked with an active validator, the request is added to the validator's
 staking pool's pending stake withdraw entries, processed at the end of the epoch.
-2. If the <code>staked_sui</code> was staked with a validator that is no longer active,
+2. If the <code>staked_pera</code> was staked with a validator that is no longer active,
 the stake and any rewards corresponding to it will be immediately processed.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_withdraw_stake">request_withdraw_stake</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, staked_sui: <a href="staking_pool.md#0x3_staking_pool_StakedSui">staking_pool::StakedSui</a>, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_withdraw_stake">request_withdraw_stake</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, staked_pera: <a href="staking_pool.md#0x3_staking_pool_StakedPera">staking_pool::StakedPera</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;
 </code></pre>
 
 
@@ -929,20 +929,20 @@ the stake and any rewards corresponding to it will be immediately processed.
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_withdraw_stake">request_withdraw_stake</a>(
     self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a>,
-    staked_sui: StakedSui,
+    staked_pera: StakedPera,
     ctx: &TxContext,
-) : Balance&lt;SUI&gt; {
-    <b>let</b> staking_pool_id = pool_id(&staked_sui);
+) : Balance&lt;PERA&gt; {
+    <b>let</b> staking_pool_id = pool_id(&staked_pera);
     <b>let</b> <a href="validator.md#0x3_validator">validator</a> =
         <b>if</b> (self.staking_pool_mappings.contains(staking_pool_id)) { // This is an active <a href="validator.md#0x3_validator">validator</a>.
-            <b>let</b> validator_address = self.staking_pool_mappings[pool_id(&staked_sui)];
+            <b>let</b> validator_address = self.staking_pool_mappings[pool_id(&staked_pera)];
             <a href="validator_set.md#0x3_validator_set_get_candidate_or_active_validator_mut">get_candidate_or_active_validator_mut</a>(self, validator_address)
         } <b>else</b> { // This is an inactive pool.
             <b>assert</b>!(self.inactive_validators.contains(staking_pool_id), <a href="validator_set.md#0x3_validator_set_ENoPoolFound">ENoPoolFound</a>);
             <b>let</b> wrapper = &<b>mut</b> self.inactive_validators[staking_pool_id];
             wrapper.load_validator_maybe_upgrade()
         };
-    <a href="validator.md#0x3_validator">validator</a>.<a href="validator_set.md#0x3_validator_set_request_withdraw_stake">request_withdraw_stake</a>(staked_sui, ctx)
+    <a href="validator.md#0x3_validator">validator</a>.<a href="validator_set.md#0x3_validator_set_request_withdraw_stake">request_withdraw_stake</a>(staked_pera, ctx)
 }
 </code></pre>
 
@@ -956,7 +956,7 @@ the stake and any rewards corresponding to it will be immediately processed.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_set_commission_rate">request_set_commission_rate</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_commission_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_set_commission_rate">request_set_commission_rate</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_commission_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -993,7 +993,7 @@ It does the following things:
 5. At the end, we calculate the total stake for the new epoch.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_advance_epoch">advance_epoch</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, computation_reward: &<b>mut</b> <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;, storage_fund_reward: &<b>mut</b> <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;, validator_report_records: &<b>mut</b> <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../sui-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, reward_slashing_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, low_stake_threshold: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, very_low_stake_threshold: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, low_stake_grace_period: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_advance_epoch">advance_epoch</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, computation_reward: &<b>mut</b> <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, storage_fund_reward: &<b>mut</b> <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, validator_report_records: &<b>mut</b> <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../pera-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, reward_slashing_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, low_stake_threshold: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, very_low_stake_threshold: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, low_stake_grace_period: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1004,8 +1004,8 @@ It does the following things:
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_advance_epoch">advance_epoch</a>(
     self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a>,
-    computation_reward: &<b>mut</b> Balance&lt;SUI&gt;,
-    storage_fund_reward: &<b>mut</b> Balance&lt;SUI&gt;,
+    computation_reward: &<b>mut</b> Balance&lt;PERA&gt;,
+    storage_fund_reward: &<b>mut</b> Balance&lt;PERA&gt;,
     validator_report_records: &<b>mut</b> VecMap&lt;<b>address</b>, VecSet&lt;<b>address</b>&gt;&gt;,
     reward_slashing_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     low_stake_threshold: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
@@ -1112,7 +1112,7 @@ It does the following things:
 
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_update_and_process_low_stake_departures">update_and_process_low_stake_departures</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, low_stake_threshold: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, very_low_stake_threshold: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, low_stake_grace_period: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, validator_report_records: &<b>mut</b> <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../sui-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_update_and_process_low_stake_departures">update_and_process_low_stake_departures</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, low_stake_threshold: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, very_low_stake_threshold: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, low_stake_grace_period: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, validator_report_records: &<b>mut</b> <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../pera-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1134,7 +1134,7 @@ It does the following things:
     <b>while</b> (i &gt; 0) {
         i = i - 1;
         <b>let</b> validator_ref = &self.active_validators[i];
-        <b>let</b> validator_address = validator_ref.sui_address();
+        <b>let</b> validator_address = validator_ref.pera_address();
         <b>let</b> stake = validator_ref.total_stake_amount();
         <b>if</b> (stake &gt;= low_stake_threshold) {
             // The <a href="validator.md#0x3_validator">validator</a> is safe. We remove their entry from the at_risk map <b>if</b> there exists one.
@@ -1208,7 +1208,7 @@ Effectutate pending next epoch metadata if they are staged.
 
 ## Function `derive_reference_gas_price`
 
-Called by <code><a href="sui_system.md#0x3_sui_system">sui_system</a></code> to derive reference gas price for the new epoch.
+Called by <code><a href="pera_system.md#0x3_pera_system">pera_system</a></code> to derive reference gas price for the new epoch.
 Derive the reference gas price based on the gas price quote submitted by each validator.
 The returned gas price should be greater than or equal to 2/3 of the validators submitted
 gas price, weighted by stake.
@@ -1358,7 +1358,7 @@ gas price, weighted by stake.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="validator_set.md#0x3_validator_set_validator_staking_pool_id">validator_staking_pool_id</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_address: <b>address</b>): <a href="../sui-framework/object.md#0x2_object_ID">object::ID</a>
+<pre><code><b>public</b> <b>fun</b> <a href="validator_set.md#0x3_validator_set_validator_staking_pool_id">validator_staking_pool_id</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_address: <b>address</b>): <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>
 </code></pre>
 
 
@@ -1383,7 +1383,7 @@ gas price, weighted by stake.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="validator_set.md#0x3_validator_set_staking_pool_mappings">staking_pool_mappings</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>): &<a href="../sui-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../sui-framework/object.md#0x2_object_ID">object::ID</a>, <b>address</b>&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="validator_set.md#0x3_validator_set_staking_pool_mappings">staking_pool_mappings</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>): &<a href="../pera-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, <b>address</b>&gt;
 </code></pre>
 
 
@@ -1407,7 +1407,7 @@ gas price, weighted by stake.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_pool_exchange_rates">pool_exchange_rates</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, pool_id: &<a href="../sui-framework/object.md#0x2_object_ID">object::ID</a>): &<a href="../sui-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_pool_exchange_rates">pool_exchange_rates</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, pool_id: &<a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>): &<a href="../pera-framework/table.md#0x2_table_Table">table::Table</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="staking_pool.md#0x3_staking_pool_PoolTokenExchangeRate">staking_pool::PoolTokenExchangeRate</a>&gt;
 </code></pre>
 
 
@@ -1461,14 +1461,14 @@ Get the total number of validators in the next epoch.
 
 </details>
 
-<a name="0x3_validator_set_is_active_validator_by_sui_address"></a>
+<a name="0x3_validator_set_is_active_validator_by_pera_address"></a>
 
-## Function `is_active_validator_by_sui_address`
+## Function `is_active_validator_by_pera_address`
 
 Returns true iff the address exists in active validators.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_is_active_validator_by_sui_address">is_active_validator_by_sui_address</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_address: <b>address</b>): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_is_active_validator_by_pera_address">is_active_validator_by_pera_address</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_address: <b>address</b>): bool
 </code></pre>
 
 
@@ -1477,7 +1477,7 @@ Returns true iff the address exists in active validators.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_is_active_validator_by_sui_address">is_active_validator_by_sui_address</a>(
+<pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_is_active_validator_by_pera_address">is_active_validator_by_pera_address</a>(
     self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a>,
     validator_address: <b>address</b>,
 ): bool {
@@ -1494,8 +1494,8 @@ Returns true iff the address exists in active validators.
 ## Function `is_duplicate_with_active_validator`
 
 Checks whether <code>new_validator</code> is duplicate with any currently active validators.
-It differs from <code>is_active_validator_by_sui_address</code> in that the former checks
-only the sui address but this function looks at more metadata.
+It differs from <code>is_active_validator_by_pera_address</code> in that the former checks
+only the pera address but this function looks at more metadata.
 
 
 <pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_is_duplicate_with_active_validator">is_duplicate_with_active_validator</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, new_validator: &<a href="validator.md#0x3_validator_Validator">validator::Validator</a>): bool
@@ -1605,7 +1605,7 @@ Checks whether <code>new_validator</code> is duplicate with any currently pendin
 
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_count_duplicates_tablevec">count_duplicates_tablevec</a>(validators: &<a href="../sui-framework/table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, <a href="validator.md#0x3_validator">validator</a>: &<a href="validator.md#0x3_validator_Validator">validator::Validator</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_count_duplicates_tablevec">count_duplicates_tablevec</a>(validators: &<a href="../pera-framework/table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, <a href="validator.md#0x3_validator">validator</a>: &<a href="validator.md#0x3_validator_Validator">validator::Validator</a>): <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
 </code></pre>
 
 
@@ -1685,7 +1685,7 @@ If not found, returns (false, 0).
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; length) {
         <b>let</b> v = &validators[i];
-        <b>if</b> (v.sui_address() == validator_address) {
+        <b>if</b> (v.pera_address() == validator_address) {
             <b>return</b> <a href="../move-stdlib/option.md#0x1_option_some">option::some</a>(i)
         };
         i = i + 1;
@@ -1707,7 +1707,7 @@ Returns (true, index) if the validator is found, and the index is its index in t
 If not found, returns (false, 0).
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_find_validator_from_table_vec">find_validator_from_table_vec</a>(validators: &<a href="../sui-framework/table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, validator_address: <b>address</b>): <a href="../move-stdlib/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_find_validator_from_table_vec">find_validator_from_table_vec</a>(validators: &<a href="../pera-framework/table_vec.md#0x2_table_vec_TableVec">table_vec::TableVec</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, validator_address: <b>address</b>): <a href="../move-stdlib/option.md#0x1_option_Option">option::Option</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;
 </code></pre>
 
 
@@ -1721,7 +1721,7 @@ If not found, returns (false, 0).
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; length) {
         <b>let</b> v = &validators[i];
-        <b>if</b> (v.sui_address() == validator_address) {
+        <b>if</b> (v.pera_address() == validator_address) {
             <b>return</b> <a href="../move-stdlib/option.md#0x1_option_some">option::some</a>(i)
         };
         i = i + 1;
@@ -1879,7 +1879,7 @@ sender has the ability to modify the <code>Validator</code>.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_get_validator_mut_with_ctx">get_validator_mut_with_ctx</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): &<b>mut</b> <a href="validator.md#0x3_validator_Validator">validator::Validator</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_get_validator_mut_with_ctx">get_validator_mut_with_ctx</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): &<b>mut</b> <a href="validator.md#0x3_validator_Validator">validator::Validator</a>
 </code></pre>
 
 
@@ -1907,7 +1907,7 @@ sender has the ability to modify the <code>Validator</code>.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_get_validator_mut_with_ctx_including_candidates">get_validator_mut_with_ctx_including_candidates</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): &<b>mut</b> <a href="validator.md#0x3_validator_Validator">validator::Validator</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_get_validator_mut_with_ctx_including_candidates">get_validator_mut_with_ctx_including_candidates</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): &<b>mut</b> <a href="validator.md#0x3_validator_Validator">validator::Validator</a>
 </code></pre>
 
 
@@ -2086,7 +2086,7 @@ Otherwise, verify the Cap for au either active or pending validator.
             <a href="validator_set.md#0x3_validator_set_get_active_validator_ref">get_active_validator_ref</a>(self, cap_address)
         <b>else</b>
             <a href="validator_set.md#0x3_validator_set_get_active_or_pending_or_candidate_validator_ref">get_active_or_pending_or_candidate_validator_ref</a>(self, cap_address, which_validator);
-    <b>assert</b>!(<a href="validator.md#0x3_validator">validator</a>.operation_cap_id() == &<a href="../sui-framework/object.md#0x2_object_id">object::id</a>(cap), <a href="validator_set.md#0x3_validator_set_EInvalidCap">EInvalidCap</a>);
+    <b>assert</b>!(<a href="validator.md#0x3_validator">validator</a>.operation_cap_id() == &<a href="../pera-framework/object.md#0x2_object_id">object::id</a>(cap), <a href="validator_set.md#0x3_validator_set_EInvalidCap">EInvalidCap</a>);
     <a href="validator_cap.md#0x3_validator_cap_new_from_unverified">validator_cap::new_from_unverified</a>(cap)
 }
 </code></pre>
@@ -2103,7 +2103,7 @@ Process the pending withdraw requests. For each pending request, the validator
 is removed from <code>validators</code> and its staking pool is put into the <code>inactive_validators</code> table.
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_process_pending_removals">process_pending_removals</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_report_records: &<b>mut</b> <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../sui-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_process_pending_removals">process_pending_removals</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_report_records: &<b>mut</b> <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../pera-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2136,7 +2136,7 @@ is removed from <code>validators</code> and its staking pool is put into the <co
 
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_process_validator_departure">process_validator_departure</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, <a href="validator.md#0x3_validator">validator</a>: <a href="validator.md#0x3_validator_Validator">validator::Validator</a>, validator_report_records: &<b>mut</b> <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../sui-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, is_voluntary: bool, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_process_validator_departure">process_validator_departure</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, <a href="validator.md#0x3_validator">validator</a>: <a href="validator.md#0x3_validator_Validator">validator::Validator</a>, validator_report_records: &<b>mut</b> <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../pera-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, is_voluntary: bool, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2153,7 +2153,7 @@ is removed from <code>validators</code> and its staking pool is put into the <co
     ctx: &<b>mut</b> TxContext,
 ) {
     <b>let</b> new_epoch = ctx.epoch() + 1;
-    <b>let</b> validator_address = <a href="validator.md#0x3_validator">validator</a>.sui_address();
+    <b>let</b> validator_address = <a href="validator.md#0x3_validator">validator</a>.pera_address();
     <b>let</b> validator_pool_id = staking_pool_id(&<a href="validator.md#0x3_validator">validator</a>);
 
     // Remove the <a href="validator.md#0x3_validator">validator</a> from our tables.
@@ -2166,7 +2166,7 @@ is removed from <code>validators</code> and its staking pool is put into the <co
 
     <a href="validator_set.md#0x3_validator_set_clean_report_records_leaving_validator">clean_report_records_leaving_validator</a>(validator_report_records, validator_address);
 
-    <a href="../sui-framework/event.md#0x2_event_emit">event::emit</a>(
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(
         <a href="validator_set.md#0x3_validator_set_ValidatorLeaveEvent">ValidatorLeaveEvent</a> {
             epoch: new_epoch,
             validator_address,
@@ -2194,7 +2194,7 @@ is removed from <code>validators</code> and its staking pool is put into the <co
 
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_clean_report_records_leaving_validator">clean_report_records_leaving_validator</a>(validator_report_records: &<b>mut</b> <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../sui-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, leaving_validator_addr: <b>address</b>)
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_clean_report_records_leaving_validator">clean_report_records_leaving_validator</a>(validator_report_records: &<b>mut</b> <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../pera-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, leaving_validator_addr: <b>address</b>)
 </code></pre>
 
 
@@ -2256,10 +2256,10 @@ Process the pending new validators. They are activated and inserted into <code>v
     <b>while</b> (!self.pending_active_validators.is_empty()) {
         <b>let</b> <b>mut</b> <a href="validator.md#0x3_validator">validator</a> = self.pending_active_validators.pop_back();
         <a href="validator.md#0x3_validator">validator</a>.activate(new_epoch);
-        <a href="../sui-framework/event.md#0x2_event_emit">event::emit</a>(
+        <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(
             <a href="validator_set.md#0x3_validator_set_ValidatorJoinEvent">ValidatorJoinEvent</a> {
                 epoch: new_epoch,
-                validator_address: <a href="validator.md#0x3_validator">validator</a>.sui_address(),
+                validator_address: <a href="validator.md#0x3_validator">validator</a>.pera_address(),
                 staking_pool_id: staking_pool_id(&<a href="validator.md#0x3_validator">validator</a>),
             }
         );
@@ -2318,7 +2318,7 @@ Sort all the pending removal indexes.
 Process all active validators' pending stake deposits and withdraws.
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_process_pending_stakes_and_withdraws">process_pending_stakes_and_withdraws</a>(validators: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_process_pending_stakes_and_withdraws">process_pending_stakes_and_withdraws</a>(validators: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2416,7 +2416,7 @@ Compute both the individual reward adjustments and total reward adjustment for s
 as well as storage fund rewards.
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_compute_reward_adjustments">compute_reward_adjustments</a>(slashed_validator_indices: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, reward_slashing_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, unadjusted_staking_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, unadjusted_storage_fund_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;): (<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;)
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_compute_reward_adjustments">compute_reward_adjustments</a>(slashed_validator_indices: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, reward_slashing_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, unadjusted_staking_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, unadjusted_storage_fund_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;): (<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;)
 </code></pre>
 
 
@@ -2437,9 +2437,9 @@ as well as storage fund rewards.
     VecMap&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, // mapping of individual <a href="validator.md#0x3_validator">validator</a>'s storage fund reward adjustment from index -&gt; amount
 ) {
     <b>let</b> <b>mut</b> total_staking_reward_adjustment = 0;
-    <b>let</b> <b>mut</b> individual_staking_reward_adjustments = <a href="../sui-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>();
+    <b>let</b> <b>mut</b> individual_staking_reward_adjustments = <a href="../pera-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>();
     <b>let</b> <b>mut</b> total_storage_fund_reward_adjustment = 0;
-    <b>let</b> <b>mut</b> individual_storage_fund_reward_adjustments = <a href="../sui-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>();
+    <b>let</b> <b>mut</b> individual_storage_fund_reward_adjustments = <a href="../pera-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>();
 
     <b>while</b> (!slashed_validator_indices.is_empty()) {
         <b>let</b> validator_index = slashed_validator_indices.pop_back();
@@ -2482,7 +2482,7 @@ Process the validator report records of the epoch and return the addresses of th
 non-performant validators according to the input threshold.
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_compute_slashed_validators">compute_slashed_validators</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_report_records: <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../sui-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_compute_slashed_validators">compute_slashed_validators</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, validator_report_records: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../pera-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;
 </code></pre>
 
 
@@ -2499,7 +2499,7 @@ non-performant validators according to the input threshold.
     <b>while</b> (!validator_report_records.is_empty()) {
         <b>let</b> (validator_address, reporters) = validator_report_records.pop();
         <b>assert</b>!(
-            <a href="validator_set.md#0x3_validator_set_is_active_validator_by_sui_address">is_active_validator_by_sui_address</a>(self, validator_address),
+            <a href="validator_set.md#0x3_validator_set_is_active_validator_by_pera_address">is_active_validator_by_pera_address</a>(self, validator_address),
             <a href="validator_set.md#0x3_validator_set_ENonValidatorInReportRecords">ENonValidatorInReportRecords</a>,
         );
         // Sum up the voting power of validators that have reported this <a href="validator.md#0x3_validator">validator</a> and check <b>if</b> it <b>has</b>
@@ -2576,7 +2576,7 @@ Returns the staking rewards each validator gets and the storage fund rewards eac
 The staking rewards are shared with the stakers while the storage fund ones are not.
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_compute_adjusted_reward_distribution">compute_adjusted_reward_distribution</a>(validators: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, total_voting_power: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, total_slashed_validator_voting_power: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, unadjusted_staking_reward_amounts: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, unadjusted_storage_fund_reward_amounts: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, total_staking_reward_adjustment: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, individual_staking_reward_adjustments: <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, total_storage_fund_reward_adjustment: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, individual_storage_fund_reward_adjustments: <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;): (<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;)
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_compute_adjusted_reward_distribution">compute_adjusted_reward_distribution</a>(validators: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, total_voting_power: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, total_slashed_validator_voting_power: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, unadjusted_staking_reward_amounts: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, unadjusted_storage_fund_reward_amounts: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, total_staking_reward_adjustment: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, individual_staking_reward_adjustments: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, total_storage_fund_reward_adjustment: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, individual_storage_fund_reward_adjustments: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;): (<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;)
 </code></pre>
 
 
@@ -2658,7 +2658,7 @@ The staking rewards are shared with the stakers while the storage fund ones are 
 
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_distribute_reward">distribute_reward</a>(validators: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, adjusted_staking_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, adjusted_storage_fund_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, staking_rewards: &<b>mut</b> <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;, storage_fund_reward: &<b>mut</b> <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_distribute_reward">distribute_reward</a>(validators: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, adjusted_staking_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, adjusted_storage_fund_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, staking_rewards: &<b>mut</b> <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, storage_fund_reward: &<b>mut</b> <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -2671,8 +2671,8 @@ The staking rewards are shared with the stakers while the storage fund ones are 
     validators: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;Validator&gt;,
     adjusted_staking_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;,
     adjusted_storage_fund_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;,
-    staking_rewards: &<b>mut</b> Balance&lt;SUI&gt;,
-    storage_fund_reward: &<b>mut</b> Balance&lt;SUI&gt;,
+    staking_rewards: &<b>mut</b> Balance&lt;PERA&gt;,
+    storage_fund_reward: &<b>mut</b> Balance&lt;PERA&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
     <b>let</b> length = validators.length();
@@ -2696,9 +2696,9 @@ The staking rewards are shared with the stakers while the storage fund ones are 
 
         // Add rewards <b>to</b> the <a href="validator.md#0x3_validator">validator</a>. Don't try and distribute rewards though <b>if</b> the payout is zero.
         <b>if</b> (validator_reward.value() &gt; 0) {
-            <b>let</b> validator_address = <a href="validator.md#0x3_validator">validator</a>.sui_address();
+            <b>let</b> validator_address = <a href="validator.md#0x3_validator">validator</a>.pera_address();
             <b>let</b> rewards_stake = <a href="validator.md#0x3_validator">validator</a>.<a href="validator_set.md#0x3_validator_set_request_add_stake">request_add_stake</a>(validator_reward, validator_address, ctx);
-            <a href="../sui-framework/transfer.md#0x2_transfer_public_transfer">transfer::public_transfer</a>(rewards_stake, validator_address);
+            <a href="../pera-framework/transfer.md#0x2_transfer_public_transfer">transfer::public_transfer</a>(rewards_stake, validator_address);
         } <b>else</b> {
             validator_reward.destroy_zero();
         };
@@ -2722,7 +2722,7 @@ Emit events containing information of each validator for the epoch,
 including stakes, rewards, performance, etc.
 
 
-<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_emit_validator_epoch_events">emit_validator_epoch_events</a>(new_epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, vs: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, pool_staking_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, storage_fund_staking_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, report_records: &<a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../sui-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, slashed_validators: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;)
+<pre><code><b>fun</b> <a href="validator_set.md#0x3_validator_set_emit_validator_epoch_events">emit_validator_epoch_events</a>(new_epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, vs: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, pool_staking_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, storage_fund_staking_reward_amounts: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, report_records: &<a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../pera-framework/vec_set.md#0x2_vec_set_VecSet">vec_set::VecSet</a>&lt;<b>address</b>&gt;&gt;, slashed_validators: &<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<b>address</b>&gt;)
 </code></pre>
 
 
@@ -2743,7 +2743,7 @@ including stakes, rewards, performance, etc.
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; num_validators) {
         <b>let</b> v = &vs[i];
-        <b>let</b> validator_address = v.sui_address();
+        <b>let</b> validator_address = v.pera_address();
         <b>let</b> tallying_rule_reporters =
             <b>if</b> (report_records.contains(&validator_address)) {
                 report_records[&validator_address].into_keys()
@@ -2753,7 +2753,7 @@ including stakes, rewards, performance, etc.
         <b>let</b> tallying_rule_global_score =
             <b>if</b> (slashed_validators.contains(&validator_address)) 0
             <b>else</b> 1;
-        <a href="../sui-framework/event.md#0x2_event_emit">event::emit</a>(
+        <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(
             <a href="validator_set.md#0x3_validator_set_ValidatorEpochInfoEventV2">ValidatorEpochInfoEventV2</a> {
                 epoch: new_epoch,
                 validator_address,
@@ -2867,7 +2867,7 @@ Returns true if the <code>addr</code> is a validator candidate.
 Returns true if the staking pool identified by <code>staking_pool_id</code> is of an inactive validator.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="validator_set.md#0x3_validator_set_is_inactive_validator">is_inactive_validator</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, staking_pool_id: <a href="../sui-framework/object.md#0x2_object_ID">object::ID</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="validator_set.md#0x3_validator_set_is_inactive_validator">is_inactive_validator</a>(self: &<a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>, staking_pool_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>): bool
 </code></pre>
 
 
@@ -2906,7 +2906,7 @@ Returns true if the staking pool identified by <code>staking_pool_id</code> is o
     <b>let</b> <b>mut</b> i = 0;
     <b>let</b> length = vs.length();
     <b>while</b> (i &lt; length) {
-        <b>let</b> validator_address = vs[i].sui_address();
+        <b>let</b> validator_address = vs[i].pera_address();
         res.push_back(validator_address);
         i = i + 1;
     };

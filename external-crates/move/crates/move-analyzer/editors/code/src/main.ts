@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Context } from './context';
 import { Extension } from './extension';
@@ -65,25 +65,25 @@ async function findPkgRoot(): Promise<string | undefined> {
     return undefined;
 }
 
-async function suiMoveCmd(context: Readonly<Context>, cmd: string): Promise<void> {
+async function peraMoveCmd(context: Readonly<Context>, cmd: string): Promise<void> {
     const version = childProcess.spawnSync(
-        context.configuration.suiPath, ['--version'], { encoding: 'utf8' },
+        context.configuration.peraPath, ['--version'], { encoding: 'utf8' },
     );
     if (version.stdout) {
         const pkgRoot = await findPkgRoot();
         if (pkgRoot !== undefined) {
-            const terminalName = 'sui move';
+            const terminalName = 'pera move';
             let terminal = vscode.window.terminals.find(t => t.name === terminalName);
             if (!terminal) {
                 terminal = vscode.window.createTerminal(terminalName);
             }
             terminal.show(true);
             terminal.sendText('cd ' + pkgRoot, true);
-            terminal.sendText(`sui move ${cmd}`, true);
+            terminal.sendText(`pera move ${cmd}`, true);
         }
     } else {
         await vscode.window.showErrorMessage(
-            `A problem occurred when executing the Sui command: '${context.configuration.suiPath}'`,
+            `A problem occurred when executing the Pera command: '${context.configuration.peraPath}'`,
         );
     }
 }
@@ -92,14 +92,14 @@ async function suiMoveCmd(context: Readonly<Context>, cmd: string): Promise<void
  * An extension command that that builds the current Move project.
  */
 async function buildProject(context: Readonly<Context>): Promise<void> {
-    return suiMoveCmd(context, 'build');
+    return peraMoveCmd(context, 'build');
 }
 
 /**
  * An extension command that that builds the current Move project.
  */
 async function testProject(context: Readonly<Context>): Promise<void> {
-    return suiMoveCmd(context, 'test');
+    return peraMoveCmd(context, 'test');
 }
 
 /**

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{
     collections::{BTreeSet, HashMap},
@@ -9,7 +9,7 @@ use std::{
 
 use config::AuthorityIdentifier;
 use storage::ConsensusStore;
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use test_utils::{latest_protocol_version, mock_certificate, CommitteeFixture};
 use types::{Certificate, CommittedSubDag, ReputationScores, Round};
 

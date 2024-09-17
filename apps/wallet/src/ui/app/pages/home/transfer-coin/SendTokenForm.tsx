@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useActiveAddress } from '_app/hooks/useActiveAddress';
 import BottomMenuLayout, { Content, Menu } from '_app/shared/bottom-menu-layout';
@@ -10,13 +10,13 @@ import Alert from '_components/alert';
 import Loading from '_components/loading';
 import { parseAmount } from '_helpers';
 import { useGetAllCoins } from '_hooks';
-import { GAS_SYMBOL } from '_src/ui/app/redux/slices/sui-objects/Coin';
+import { GAS_SYMBOL } from '_src/ui/app/redux/slices/pera-objects/Coin';
 import { InputWithAction } from '_src/ui/app/shared/InputWithAction';
-import { CoinFormat, useCoinMetadata, useFormatCoin, useSuiNSEnabled } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { CoinFormat, useCoinMetadata, useFormatCoin, usePeraNSEnabled } from '@mysten/core';
+import { usePeraClient } from '@mysten/dapp-kit';
 import { ArrowRight16 } from '@mysten/icons';
-import { type CoinStruct } from '@mysten/sui/client';
-import { isValidSuiNSName, SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { type CoinStruct } from '@pera-io/pera/client';
+import { isValidPeraNSName, PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import { useQuery } from '@tanstack/react-query';
 import { Field, Form, Formik, useFormikContext } from 'formik';
 import { useEffect, useMemo } from 'react';
@@ -27,7 +27,7 @@ import { createValidationSchemaStepOne } from './validation';
 const initialValues = {
 	to: '',
 	amount: '',
-	isPayAllSui: false,
+	isPayAllPera: false,
 	gasBudgetEst: '',
 };
 
@@ -36,7 +36,7 @@ export type FormValues = typeof initialValues;
 export type SubmitProps = {
 	to: string;
 	amount: string;
-	isPayAllSui: boolean;
+	isPayAllPera: boolean;
 	coinIds: string[];
 	coins: CoinStruct[];
 	gasBudgetEst: string;
@@ -65,9 +65,9 @@ function GasBudgetEstimation({
 }) {
 	const activeAddress = useActiveAddress();
 	const { values, setFieldValue } = useFormikContext<FormValues>();
-	const suiNSEnabled = useSuiNSEnabled();
+	const peraNSEnabled = usePeraNSEnabled();
 
-	const client = useSuiClient();
+	const client = usePeraClient();
 	const { data: gasBudget } = useQuery({
 		// eslint-disable-next-line @tanstack/query/exhaustive-deps
 		queryKey: [
@@ -86,12 +86,12 @@ function GasBudgetEstimation({
 			}
 
 			let to = values.to;
-			if (suiNSEnabled && isValidSuiNSName(values.to)) {
+			if (peraNSEnabled && isValidPeraNSName(values.to)) {
 				const address = await client.resolveNameServiceAddress({
 					name: values.to,
 				});
 				if (!address) {
-					throw new Error('SuiNS name not found.');
+					throw new Error('PeraNS name not found.');
 				}
 				to = address;
 			}
@@ -99,9 +99,9 @@ function GasBudgetEstimation({
 			const tx = createTokenTransferTransaction({
 				to,
 				amount: values.amount,
-				coinType: SUI_TYPE_ARG,
+				coinType: PERA_TYPE_ARG,
 				coinDecimals,
-				isPayAllSui: values.isPayAllSui,
+				isPayAllPera: values.isPayAllPera,
 				coins,
 			});
 
@@ -111,7 +111,7 @@ function GasBudgetEstimation({
 		},
 	});
 
-	const [formattedGas] = useFormatCoin(gasBudget, SUI_TYPE_ARG);
+	const [formattedGas] = useFormatCoin(gasBudget, PERA_TYPE_ARG);
 
 	// gasBudgetEstimation should change when the amount above changes
 	useEffect(() => {
@@ -141,30 +141,30 @@ export function SendTokenForm({
 	initialAmount = '',
 	initialTo = '',
 }: SendTokenFormProps) {
-	const client = useSuiClient();
+	const client = usePeraClient();
 	const activeAddress = useActiveAddress();
 	// Get all coins of the type
 	const { data: coinsData, isPending: coinsIsPending } = useGetAllCoins(coinType, activeAddress!);
 
-	const { data: suiCoinsData, isPending: suiCoinsIsPending } = useGetAllCoins(
-		SUI_TYPE_ARG,
+	const { data: peraCoinsData, isPending: peraCoinsIsPending } = useGetAllCoins(
+		PERA_TYPE_ARG,
 		activeAddress!,
 	);
 
-	const suiCoins = suiCoinsData;
+	const peraCoins = peraCoinsData;
 	const coins = coinsData;
 	const coinBalance = totalBalance(coins || []);
-	const suiBalance = totalBalance(suiCoins || []);
+	const peraBalance = totalBalance(peraCoins || []);
 
 	const coinMetadata = useCoinMetadata(coinType);
 	const coinDecimals = coinMetadata.data?.decimals ?? 0;
 
 	const [tokenBalance, symbol, queryResult] = useFormatCoin(coinBalance, coinType, CoinFormat.FULL);
-	const suiNSEnabled = useSuiNSEnabled();
+	const peraNSEnabled = usePeraNSEnabled();
 
 	const validationSchemaStepOne = useMemo(
-		() => createValidationSchemaStepOne(client, suiNSEnabled, coinBalance, symbol, coinDecimals),
-		[client, coinBalance, symbol, coinDecimals, suiNSEnabled],
+		() => createValidationSchemaStepOne(client, peraNSEnabled, coinBalance, symbol, coinDecimals),
+		[client, coinBalance, symbol, coinDecimals, peraNSEnabled],
 	);
 
 	// remove the comma from the token balance
@@ -174,33 +174,33 @@ export function SendTokenForm({
 	return (
 		<Loading
 			loading={
-				queryResult.isPending || coinMetadata.isPending || suiCoinsIsPending || coinsIsPending
+				queryResult.isPending || coinMetadata.isPending || peraCoinsIsPending || coinsIsPending
 			}
 		>
 			<Formik
 				initialValues={{
 					amount: initialAmount,
 					to: initialTo,
-					isPayAllSui:
-						!!initAmountBig && initAmountBig === coinBalance && coinType === SUI_TYPE_ARG,
+					isPayAllPera:
+						!!initAmountBig && initAmountBig === coinBalance && coinType === PERA_TYPE_ARG,
 					gasBudgetEst: '',
 				}}
 				validationSchema={validationSchemaStepOne}
 				enableReinitialize
 				validateOnMount
 				validateOnChange
-				onSubmit={async ({ to, amount, isPayAllSui, gasBudgetEst }: FormValues) => {
-					if (!coins || !suiCoins) return;
+				onSubmit={async ({ to, amount, isPayAllPera, gasBudgetEst }: FormValues) => {
+					if (!coins || !peraCoins) return;
 					const coinsIDs = [...coins]
 						.sort((a, b) => Number(b.balance) - Number(a.balance))
 						.map(({ coinObjectId }) => coinObjectId);
 
-					if (suiNSEnabled && isValidSuiNSName(to)) {
+					if (peraNSEnabled && isValidPeraNSName(to)) {
 						const address = await client.resolveNameServiceAddress({
 							name: to,
 						});
 						if (!address) {
-							throw new Error('SuiNS name not found.');
+							throw new Error('PeraNS name not found.');
 						}
 						to = address;
 					}
@@ -208,7 +208,7 @@ export function SendTokenForm({
 					const data = {
 						to,
 						amount,
-						isPayAllSui,
+						isPayAllPera,
 						coins,
 						coinIds: coinsIDs,
 						gasBudgetEst,
@@ -217,17 +217,17 @@ export function SendTokenForm({
 				}}
 			>
 				{({ isValid, isSubmitting, setFieldValue, values, submitForm, validateField }) => {
-					const newPaySuiAll =
-						parseAmount(values.amount, coinDecimals) === coinBalance && coinType === SUI_TYPE_ARG;
-					if (values.isPayAllSui !== newPaySuiAll) {
-						setFieldValue('isPayAllSui', newPaySuiAll);
+					const newPayPeraAll =
+						parseAmount(values.amount, coinDecimals) === coinBalance && coinType === PERA_TYPE_ARG;
+					if (values.isPayAllPera !== newPayPeraAll) {
+						setFieldValue('isPayAllPera', newPayPeraAll);
 					}
 
 					const hasEnoughBalance =
-						values.isPayAllSui ||
-						suiBalance >
+						values.isPayAllPera ||
+						peraBalance >
 							parseAmount(values.gasBudgetEst, coinDecimals) +
-								parseAmount(coinType === SUI_TYPE_ARG ? values.amount : '0', coinDecimals);
+								parseAmount(coinType === PERA_TYPE_ARG ? values.amount : '0', coinDecimals);
 
 					return (
 						<BottomMenuLayout>
@@ -245,7 +245,7 @@ export function SendTokenForm({
 											type="numberInput"
 											name="amount"
 											placeholder="0.00"
-											prefix={values.isPayAllSui ? '~ ' : ''}
+											prefix={values.isPayAllPera ? '~ ' : ''}
 											actionText="Max"
 											suffix={` ${symbol}`}
 											actionType="button"
@@ -267,7 +267,7 @@ export function SendTokenForm({
 									</div>
 									{!hasEnoughBalance && isValid ? (
 										<div className="mt-3">
-											<Alert>Insufficient SUI to cover transaction</Alert>
+											<Alert>Insufficient PERA to cover transaction</Alert>
 										</div>
 									) : null}
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 if ! cosign version &> /dev/null
 then
@@ -10,17 +10,17 @@ then
 fi
 
 commit_sha=$1
-pub_key=https://sui-private.s3.us-west-2.amazonaws.com/sui_security_release.pem
-url=https://sui-releases.s3-accelerate.amazonaws.com/$commit_sha
+pub_key=https://pera-private.s3.us-west-2.amazonaws.com/pera_security_release.pem
+url=https://pera-releases.s3-accelerate.amazonaws.com/$commit_sha
 
-echo "[+] Downloading sui binaries for $commit_sha ..."
-curl $url/sui -o sui
-curl $url/sui-indexer -o sui-indexer
-curl $url/sui-node -o sui-node
-curl $url/sui-tool -o sui-tool
+echo "[+] Downloading pera binaries for $commit_sha ..."
+curl $url/pera -o pera
+curl $url/pera-indexer -o pera-indexer
+curl $url/pera-node -o pera-node
+curl $url/pera-tool -o pera-tool
 
-echo "[+] Verifying sui binaries for $commit_sha ..."
-cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/sui.sig sui
-cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/sui-indexer.sig sui-indexer
-cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/sui-node.sig sui-node
-cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/sui-tool.sig sui-tool
+echo "[+] Verifying pera binaries for $commit_sha ..."
+cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/pera.sig pera
+cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/pera-indexer.sig pera-indexer
+cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/pera-node.sig pera-node
+cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/pera-tool.sig pera-tool

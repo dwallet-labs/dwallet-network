@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { expect, test } from './fixtures';
 
@@ -33,13 +33,13 @@ test('do storage migration', async ({ page, extensionUrl }) => {
 							address: '0x3268a405e608624af7c07c34044aee2f8b20da054f4e961192805d93f55f0f30',
 							chainID: '',
 							labels: [],
-							network: 'sui',
+							network: 'pera',
 							publicKey: '1byqnxoDcH/MVbLH8g9HP+9qsybgmm7uYgSBXBkg6y8=',
 							ready: true,
 							walletID: 'HSXrpMuDWiHmJdQjHMFcBBYRWi1Pyjkxh5EWsnpMY45d',
 						},
 					],
-					apiUrl: 'https://7ba211-api.qredo.net/connect/sui',
+					apiUrl: 'https://7ba211-api.qredo.net/connect/pera',
 					id: '7ed77b5e-963d-4104-a9d8-11e5133a76a1',
 					organization: '2VsyH0ml1s6o7AthXYb80gNMAMr',
 					origin: 'https://7ba211-test.qredo.net',
@@ -47,8 +47,8 @@ test('do storage migration', async ({ page, extensionUrl }) => {
 					service: 'qredo-testing',
 				},
 			],
-			sui_Env: null,
-			sui_Env_RPC: null,
+			pera_Env: null,
+			pera_Env_RPC: null,
 			v: -1,
 			vault: {
 				data: '{"data":"/y+fvdpw6ps/lJkczX6B5jTC1/LyOGVFjFO06b1wHL6m1HQMk/EnTiFbwiE1MlaTtxN2NdrWouPfnCaMxfEGmg8TPrgreK5d8929JipdITYRNxlZDY7pW6wRB10LQrRkFawXUhg8vnMYeaL/V6G0NKAdsGyW5MyrzYfdADPzUhF3fLw4Gt90MhIdX/QNLRJJAjENY/RuuQHeCi2hC6qEyFXFFot9aBymDVysln9Ti6pfhctcdjdqbfY/PARLz6Uec6df6u+hehkDoBDwhcTysox4la8/WXzPrqs8rbw2d07g/NRZQFXE6Ancd3pE5Hgh7JrDSplCHaswXe1S/rWwismignzwtpDwzEQZT9VSCvfTka0eA+0vI0/lvsNusscgb81GKWuXV49feSBE6CJ7fvQFAji2DybveFj3udYKy3rC4EpdJFwJU+ze2ZO5hlqXcKToPc/x+z/fPXNSfU9rppw0N6T4Fx++IP6q94tvtAz3ZPZGN+ArgjFFYUQhzyuwCtC6TqJ6XdRq3ZlgYb0UNHviThrmpIBCJH/xPeMdeaYD3XFCHetnwTpfkl+xnv8=","iv":"xe674n8dsybLdtK7121KDw==","salt":"f7v0/BRTLtoI+kS3R832pioFR6qtwB6nZgACkco/H5Q="}',

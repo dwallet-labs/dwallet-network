@@ -1,21 +1,21 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export {
-	type SuiTransport,
-	type SuiTransportRequestOptions,
-	type SuiTransportSubscribeOptions,
+	type PeraTransport,
+	type PeraTransportRequestOptions,
+	type PeraTransportSubscribeOptions,
 	type HttpHeaders,
-	type SuiHTTPTransportOptions,
-	SuiHTTPTransport,
+	type PeraHTTPTransportOptions,
+	PeraHTTPTransport,
 } from './http-transport.js';
 export { getFullnodeUrl } from './network.js';
 export * from './types/index.js';
 export {
-	type SuiClientOptions,
+	type PeraClientOptions,
 	type PaginationArguments,
 	type OrderArguments,
-	isSuiClient,
-	SuiClient,
+	isPeraClient,
+	PeraClient,
 } from './client.js';
-export { SuiHTTPStatusError, SuiHTTPTransportError, JsonRpcError } from './errors.js';
+export { PeraHTTPStatusError, PeraHTTPTransportError, JsonRpcError } from './errors.js';

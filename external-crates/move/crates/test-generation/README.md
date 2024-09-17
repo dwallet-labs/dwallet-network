@@ -103,5 +103,5 @@ The most common change or extension to this tool will probably be changing instr
 preconditions and effects. To do that follow these steps:
 1. See if there already a macro defined in `transitions.rs` that captures your desired precondition/effect
 2. If the macro is already defined, just add it to the summary of the instruction being changed in `summaries.rs`
-3. If a suitable macro does not exist, define it in `transitions.rs`. Look at other macros in that file for examples.
+3. If a peratable macro does not exist, define it in `transitions.rs`. Look at other macros in that file for examples.
 4. Macros in `transitions.rs` have access to the public fields and functions of the `AbstractState`. If your macro needs access to something more, add a new helper method in `abstract_state.rs` and then invoke it in the macro.

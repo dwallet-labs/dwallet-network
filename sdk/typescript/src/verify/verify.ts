@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromB64 } from '@mysten/bcs';
 
 import type { PublicKey, SignatureFlag, SignatureScheme } from '../cryptography/index.js';
 import { parseSerializedSignature, SIGNATURE_FLAG_TO_SCHEME } from '../cryptography/index.js';
-import type { SuiGraphQLClient } from '../graphql/client.js';
+import type { PeraGraphQLClient } from '../graphql/client.js';
 import { Ed25519PublicKey } from '../keypairs/ed25519/publickey.js';
 import { Secp256k1PublicKey } from '../keypairs/secp256k1/publickey.js';
 import { Secp256r1PublicKey } from '../keypairs/secp256r1/publickey.js';
@@ -26,7 +26,7 @@ export async function verifySignature(bytes: Uint8Array, signature: string): Pro
 export async function verifyPersonalMessageSignature(
 	message: Uint8Array,
 	signature: string,
-	options: { client?: SuiGraphQLClient } = {},
+	options: { client?: PeraGraphQLClient } = {},
 ): Promise<PublicKey> {
 	const parsedSignature = parseSignature(signature, options);
 
@@ -45,7 +45,7 @@ export async function verifyPersonalMessageSignature(
 export async function verifyTransactionSignature(
 	transaction: Uint8Array,
 	signature: string,
-	options: { client?: SuiGraphQLClient } = {},
+	options: { client?: PeraGraphQLClient } = {},
 ): Promise<PublicKey> {
 	const parsedSignature = parseSignature(signature, options);
 
@@ -61,7 +61,7 @@ export async function verifyTransactionSignature(
 	return parsedSignature.publicKey;
 }
 
-function parseSignature(signature: string, options: { client?: SuiGraphQLClient } = {}) {
+function parseSignature(signature: string, options: { client?: PeraGraphQLClient } = {}) {
 	const parsedSignature = parseSerializedSignature(signature);
 
 	if (parsedSignature.signatureScheme === 'MultiSig') {
@@ -85,7 +85,7 @@ function parseSignature(signature: string, options: { client?: SuiGraphQLClient 
 export function publicKeyFromRawBytes(
 	signatureScheme: SignatureScheme,
 	bytes: Uint8Array,
-	options: { client?: SuiGraphQLClient } = {},
+	options: { client?: PeraGraphQLClient } = {},
 ): PublicKey {
 	switch (signatureScheme) {
 		case 'ED25519':
@@ -103,9 +103,9 @@ export function publicKeyFromRawBytes(
 	}
 }
 
-export function publicKeyFromSuiBytes(
+export function publicKeyFromPeraBytes(
 	publicKey: string | Uint8Array,
-	options: { client?: SuiGraphQLClient } = {},
+	options: { client?: PeraGraphQLClient } = {},
 ) {
 	const bytes = typeof publicKey === 'string' ? fromB64(publicKey) : publicKey;
 

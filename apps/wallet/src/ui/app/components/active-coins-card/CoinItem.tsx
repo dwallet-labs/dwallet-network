@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Text } from '_app/shared/text';
 import { CoinIcon } from '_components/coin-icon';
@@ -26,7 +26,7 @@ export function CoinItem({
 	const [formatted, symbol, { data: coinMeta }] = useFormatCoin(balance, coinType);
 
 	return (
-		<div className="flex gap-2.5 w-full py-3 pl-1.5 pr-2 justify-center items-center rounded hover:bg-sui/10">
+		<div className="flex gap-2.5 w-full py-3 pl-1.5 pr-2 justify-center items-center rounded hover:bg-pera/10">
 			<CoinIcon coinType={coinType} size={isActive ? 'sm' : 'md'} />
 			<div className="flex flex-1 gap-1.5 justify-between items-center">
 				<div className="max-w-token-width">

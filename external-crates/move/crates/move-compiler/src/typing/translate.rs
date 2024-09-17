@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
     diag,
@@ -28,7 +28,7 @@ use crate::{
         unique_map::UniqueMap,
         *,
     },
-    sui_mode,
+    pera_mode,
     typing::{
         ast::{self as T},
         core::{
@@ -4613,7 +4613,7 @@ fn unused_module_members(context: &mut Context, mident: &ModuleIdent_, mdef: &T:
         return;
     }
 
-    let is_sui_mode = context.env.package_config(mdef.package_name).flavor == Flavor::Sui;
+    let is_pera_mode = context.env.package_config(mdef.package_name).flavor == Flavor::Pera;
     context
         .env
         .add_warning_filter_scope(mdef.warning_filter.clone());
@@ -4643,8 +4643,8 @@ fn unused_module_members(context: &mut Context, mident: &ModuleIdent_, mdef: &T:
             // functions with #[test] or R[random_test] attribute are implicitly used
             continue;
         }
-        if is_sui_mode && *name == sui_mode::INIT_FUNCTION_NAME {
-            // a Sui-specific filter to avoid signaling that the init function is unused
+        if is_pera_mode && *name == pera_mode::INIT_FUNCTION_NAME {
+            // a Pera-specific filter to avoid signaling that the init function is unused
             continue;
         }
         context

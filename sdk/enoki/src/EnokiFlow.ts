@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@mysten/sui/client';
-import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import type { Transaction } from '@mysten/sui/transactions';
-import { fromB64, toB64 } from '@mysten/sui/utils';
-import type { ZkLoginSignatureInputs } from '@mysten/sui/zklogin';
+import type { PeraClient } from '@pera-io/pera/client';
+import { decodePeraPrivateKey } from '@pera-io/pera/cryptography';
+import { Ed25519Keypair } from '@pera-io/pera/keypairs/ed25519';
+import type { Transaction } from '@pera-io/pera/transactions';
+import { fromB64, toB64 } from '@pera-io/pera/utils';
+import type { ZkLoginSignatureInputs } from '@pera-io/pera/zklogin';
 import { decodeJwt } from 'jose';
 import type { WritableAtom } from 'nanostores';
 import { atom, onMount, onSet } from 'nanostores';
@@ -163,7 +163,7 @@ export class EnokiFlow {
 			expiresAt: estimatedExpiration,
 			maxEpoch,
 			randomness,
-			ephemeralKeyPair: toB64(decodeSuiPrivateKey(ephemeralKeyPair.getSecretKey()).secretKey),
+			ephemeralKeyPair: toB64(decodePeraPrivateKey(ephemeralKeyPair.getSecretKey()).secretKey),
 		});
 
 		return oauthUrl;
@@ -322,7 +322,7 @@ export class EnokiFlow {
 	}: {
 		network?: 'mainnet' | 'testnet';
 		transaction: Transaction;
-		client: SuiClient;
+		client: PeraClient;
 	}) {
 		const session = await this.getSession();
 
@@ -351,7 +351,7 @@ export class EnokiFlow {
 		network?: 'mainnet' | 'testnet';
 		bytes: string;
 		digest: string;
-		client: SuiClient;
+		client: PeraClient;
 	}) {
 		const keypair = await this.getKeypair({ network });
 		const userSignature = await keypair.signTransaction(fromB64(bytes));
@@ -374,7 +374,7 @@ export class EnokiFlow {
 	}: {
 		network?: 'mainnet' | 'testnet';
 		transaction: Transaction;
-		client: SuiClient;
+		client: PeraClient;
 	}) {
 		const { bytes, digest } = await this.sponsorTransaction({
 			network,

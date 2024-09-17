@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { toB64 } from '@mysten/bcs';
 import type { SerializedBcs } from '@mysten/bcs';
 
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import { normalizePeraAddress } from '../utils/pera-types.js';
 import type { CallArg, ObjectRef } from './data/internal.js';
 
 function Pure(data: Uint8Array | SerializedBcs<any>): Extract<CallArg, { Pure: unknown }> {
@@ -26,7 +26,7 @@ export const Inputs = {
 				ImmOrOwnedObject: {
 					digest,
 					version,
-					objectId: normalizeSuiAddress(objectId),
+					objectId: normalizePeraAddress(objectId),
 				},
 			},
 		};
@@ -47,7 +47,7 @@ export const Inputs = {
 				SharedObject: {
 					mutable,
 					initialSharedVersion,
-					objectId: normalizeSuiAddress(objectId),
+					objectId: normalizePeraAddress(objectId),
 				},
 			},
 		};
@@ -60,7 +60,7 @@ export const Inputs = {
 				Receiving: {
 					digest,
 					version,
-					objectId: normalizeSuiAddress(objectId),
+					objectId: normalizePeraAddress(objectId),
 				},
 			},
 		};

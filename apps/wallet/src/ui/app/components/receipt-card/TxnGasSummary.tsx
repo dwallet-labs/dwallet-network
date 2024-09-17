@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { GAS_TYPE_ARG } from '_redux/slices/sui-objects/Coin';
+import { GAS_TYPE_ARG } from '_redux/slices/pera-objects/Coin';
 import { Text } from '_src/ui/app/shared/text';
 import { useFormatCoin } from '@mysten/core';
-import type { GasCostSummary } from '@mysten/sui/client';
+import type { GasCostSummary } from '@pera-io/pera/client';
 
 type TxnGasSummaryProps = {
 	gasSummary?: GasCostSummary;

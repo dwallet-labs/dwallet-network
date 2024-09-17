@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::worker::batch_serde::Token::NewtypeVariant;
 use crate::{Batch, BatchV1, Metadata};

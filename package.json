@@ -1,7 +1,7 @@
 {
-	"name": "sui-monorepo",
+	"name": "pera-monorepo",
 	"private": true,
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"scripts": {
 		"test": "turbo run test",
 		"test:dev": "turbo run test -- --run",
@@ -9,7 +9,7 @@
 		"wallet": "turbo --filter ./apps/wallet",
 		"sdk": "turbo --filter ./sdk/typescript",
 		"bcs": "turbo --filter ./sdk/bcs",
-		"changeset-version": "pnpm changeset version && pnpm --filter @mysten/sui codegen:version",
+		"changeset-version": "pnpm changeset version && pnpm --filter @pera-io/pera codegen:version",
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
 		"prettier:fix:watch": "onchange '**' -i -f add -f change -j 5 -- prettier -w --ignore-unknown {{file}}",

@@ -1,5 +1,5 @@
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 query getCurrentEpoch {
 	epoch {
@@ -72,7 +72,7 @@ fragment RPC_VALIDATOR_FIELDS on Validator {
 	}
 	pendingPoolTokenWithdraw
 	pendingStake
-	pendingTotalSuiWithdraw
+	pendingTotalPeraWithdraw
 	poolTokenBalance
 	projectUrl
 	rewardsPool
@@ -80,7 +80,7 @@ fragment RPC_VALIDATOR_FIELDS on Validator {
 		address
 	}
 	stakingPoolActivationEpoch
-	stakingPoolSuiBalance
+	stakingPoolPeraBalance
 	address {
 		address
 	}

@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import 'tsconfig-paths/register';
 
-import { requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { requestPeraFromFaucetV0 } from '@pera-io/pera/faucet';
+import { Ed25519Keypair } from '@pera-io/pera/keypairs/ed25519';
 import * as bip39 from '@scure/bip39';
 import { wordlist } from '@scure/bip39/wordlists/english';
 
@@ -20,6 +20,6 @@ export async function generateKeypair() {
 
 const FAUCET_HOST = 'http://127.0.0.1:9123';
 
-export async function requestSuiFromFaucet(recipient: string) {
-	await requestSuiFromFaucetV0({ host: FAUCET_HOST, recipient });
+export async function requestPeraFromFaucet(recipient: string) {
+	await requestPeraFromFaucetV0({ host: FAUCET_HOST, recipient });
 }

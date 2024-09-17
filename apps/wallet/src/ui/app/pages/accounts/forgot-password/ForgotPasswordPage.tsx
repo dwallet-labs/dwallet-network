@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type PasswordRecoveryData } from '_src/shared/messaging/messages/payloads/MethodPayload';
 import { createContext, useCallback, useContext, useState } from 'react';
@@ -31,7 +31,7 @@ export function ForgotPasswordPage() {
 		setRecoveryData([]);
 	}, []);
 	return (
-		<div className="rounded-20 bg-sui-lightest shadow-wallet-content flex flex-col flex-nowrap items-center px-6 py-10 h-full w-full overflow-auto gap-6">
+		<div className="rounded-20 bg-pera-lightest shadow-wallet-content flex flex-col flex-nowrap items-center px-6 py-10 h-full w-full overflow-auto gap-6">
 			<forgotPasswordContext.Provider value={{ value: recoveryData, add, clear }}>
 				<Outlet />
 			</forgotPasswordContext.Provider>

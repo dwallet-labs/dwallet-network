@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Content } from '_app/shared/bottom-menu-layout';
 import FiltersPortal from '_components/filters-tags';
-import AppsPlayGround, { ConnectedAppsCard } from '_components/sui-apps';
+import AppsPlayGround, { ConnectedAppsCard } from '_components/pera-apps';
 import { getFromSessionStorage, setToSessionStorage } from '_src/background/storage-utils';
 import { FEATURES } from '_src/shared/experimentation/features';
-import type { DAppEntry } from '_src/ui/app/components/sui-apps/SuiApp';
+import type { DAppEntry } from '_src/ui/app/components/pera-apps/PeraApp';
 import { useUnlockedGuard } from '_src/ui/app/hooks/useUnlockedGuard';
 import { useFeature } from '@growthbook/growthbook-react';
 import { useEffect } from 'react';

@@ -20,7 +20,7 @@
 		"@fontsource-variable/red-hat-mono": "^5.0.19",
 		"@hookform/resolvers": "^3.9.0",
 		"@mysten/dapp-kit": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@pera-io/pera": "workspace:*",
 		"@radix-ui/react-dialog": "^1.1.1",
 		"@radix-ui/react-label": "^2.1.0",
 		"@radix-ui/react-navigation-menu": "^1.2.0",

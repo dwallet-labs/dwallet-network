@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! Storage Atomicity Layer Library (aka Sally) is a wrapper around pluggable storage backends
 //! which implement a common key value interface. It enables users to switch storage backends

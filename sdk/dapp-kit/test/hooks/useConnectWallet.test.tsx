@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { Mock } from 'vitest';
@@ -72,7 +72,7 @@ describe('useConnectWallet', () => {
 		});
 	});
 
-	test('only Sui accounts from multi-chain wallets are connected', async () => {
+	test('only Pera accounts from multi-chain wallets are connected', async () => {
 		const { unregister, mockWallet } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
 			accounts: [createMockAccount(), createMockAccount({ chains: ['solana:mainnet'] })],

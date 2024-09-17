@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { toB64 } from '@mysten/bcs';
 
 import { bcs } from '../../bcs/index.js';
-import type { SuiClient, SuiTransactionBlockResponseOptions } from '../../client/index.js';
+import type { PeraClient, PeraTransactionBlockResponseOptions } from '../../client/index.js';
 import type { Signer } from '../../cryptography/keypair.js';
 import type { ObjectCacheOptions } from '../ObjectCache.js';
 import { isTransaction, Transaction } from '../Transaction.js';
@@ -22,7 +22,7 @@ export class SerialTransactionExecutor {
 		defaultGasBudget = 50_000_000n,
 		...options
 	}: Omit<ObjectCacheOptions, 'address'> & {
-		client: SuiClient;
+		client: PeraClient;
 		signer: Signer;
 		/** The gasBudget to use if the transaction has not defined it's own gasBudget, defaults to `50_000_000n` */
 		defaultGasBudget?: bigint;
@@ -69,7 +69,7 @@ export class SerialTransactionExecutor {
 		}
 
 		copy.setGasBudgetIfNotSet(this.#defaultGasBudget);
-		copy.setSenderIfNotSet(this.#signer.toSuiAddress());
+		copy.setSenderIfNotSet(this.#signer.toPeraAddress());
 
 		return this.#cache.buildTransaction({ transaction: copy });
 	};
@@ -84,7 +84,7 @@ export class SerialTransactionExecutor {
 
 	executeTransaction(
 		transaction: Transaction | Uint8Array,
-		options?: SuiTransactionBlockResponseOptions,
+		options?: PeraTransactionBlockResponseOptions,
 	) {
 		return this.#queue.runTask(async () => {
 			const bytes = isTransaction(transaction)

@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { ObjectChangesByOwner, SuiObjectChangeWithDisplay } from './getObjectChangeSummary';
+import { ObjectChangesByOwner, PeraObjectChangeWithDisplay } from './getObjectChangeSummary';
 import { getOwnerType } from './getOwnerType';
 
-const getOwner = (change: SuiObjectChangeWithDisplay) => {
+const getOwner = (change: PeraObjectChangeWithDisplay) => {
 	// published changes don't have an owner
 	if ('owner' in change && typeof change.owner === 'object') {
 		if ('AddressOwner' in change.owner) return change.owner.AddressOwner;
@@ -14,7 +14,7 @@ const getOwner = (change: SuiObjectChangeWithDisplay) => {
 	return '';
 };
 
-export const groupByOwner = (changes: SuiObjectChangeWithDisplay[]) =>
+export const groupByOwner = (changes: PeraObjectChangeWithDisplay[]) =>
 	changes.reduce((acc, change) => {
 		const owner = getOwner(change);
 		if (!acc[owner])

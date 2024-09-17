@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromB64, toB58 } from '@mysten/bcs';
 import type {
 	MoveValue,
 	ProtocolConfigValue,
-	SuiArgument,
-	SuiClient,
-	SuiMoveNormalizedModule,
-} from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
-import { normalizeStructTag, normalizeSuiAddress, parseStructTag } from '@mysten/sui/utils';
+	PeraArgument,
+	PeraClient,
+	PeraMoveNormalizedModule,
+} from '@pera-io/pera/client';
+import { Transaction } from '@pera-io/pera/transactions';
+import { normalizeStructTag, normalizePeraAddress, parseStructTag } from '@pera-io/pera/utils';
 
 import type {
 	ObjectFilter,
@@ -34,7 +34,7 @@ import {
 	GetDynamicFieldObjectDocument,
 	GetDynamicFieldsDocument,
 	GetLatestCheckpointSequenceNumberDocument,
-	GetLatestSuiSystemStateDocument,
+	GetLatestPeraSystemStateDocument,
 	GetMoveFunctionArgTypesDocument,
 	GetNormalizedMoveFunctionDocument,
 	GetNormalizedMoveModuleDocument,
@@ -77,7 +77,7 @@ import { mapGraphQLStakeToRpcStake } from './mappers/stakes.js';
 import { mapGraphQLTransactionBlockToRpcTransactionBlock } from './mappers/transaction-block.js';
 import { isNumericString, toShortTypeString } from './mappers/util.js';
 import { mapGraphQlValidatorToRpcValidator } from './mappers/validator.js';
-import type { SuiClientGraphQLTransport } from './transport.js';
+import type { PeraClientGraphQLTransport } from './transport.js';
 
 interface ResponseTypes {
 	getRpcApiVersion: {
@@ -86,11 +86,11 @@ interface ResponseTypes {
 }
 
 export const RPC_METHODS: {
-	[K in keyof SuiClient as SuiClient[K] extends (...args: any[]) => Promise<any>
+	[K in keyof PeraClient as PeraClient[K] extends (...args: any[]) => Promise<any>
 		? K
-		: never]?: SuiClient[K] extends (...args: any[]) => infer R
+		: never]?: PeraClient[K] extends (...args: any[]) => infer R
 		? (
-				transport: SuiClientGraphQLTransport,
+				transport: PeraClientGraphQLTransport,
 				inputs: any[],
 			) => K extends keyof ResponseTypes ? Promise<ResponseTypes[K]> : R
 		: never;
@@ -107,7 +107,7 @@ export const RPC_METHODS: {
 
 		return {
 			info: {
-				version: res.headers.get('x-sui-rpc-version') ?? undefined,
+				version: res.headers.get('x-pera-rpc-version') ?? undefined,
 			},
 		};
 	},
@@ -318,7 +318,7 @@ export const RPC_METHODS: {
 		}
 
 		const address = toShortTypeString(movePackage.address);
-		const modules: Record<string, SuiMoveNormalizedModule> = {};
+		const modules: Record<string, PeraMoveNormalizedModule> = {};
 
 		for (const moveModule of movePackage.modules?.nodes ?? []) {
 			let hasMoreFriends = moveModule.friends?.pageInfo.hasNextPage ?? false;
@@ -412,7 +412,7 @@ export const RPC_METHODS: {
 			afterStructs = page.structs?.pageInfo.endCursor;
 		}
 
-		return mapNormalizedMoveModule(moveModule, normalizeSuiAddress(pkg));
+		return mapNormalizedMoveModule(moveModule, normalizePeraAddress(pkg));
 	},
 	async getNormalizedMoveStruct(transport, [pkg, module, struct]) {
 		const moveStruct = await transport.graphqlQuery(
@@ -727,28 +727,28 @@ export const RPC_METHODS: {
 					owner,
 				},
 			},
-			(data) => data.address?.stakedSuis?.nodes,
+			(data) => data.address?.stakedPeras?.nodes,
 		);
 
 		return mapGraphQLStakeToRpcStake(stakes);
 	},
-	async getStakesByIds(transport, [stakedSuiIds]) {
+	async getStakesByIds(transport, [stakedPeraIds]) {
 		const stakes = await transport.graphqlQuery(
 			{
 				query: GetStakesByIdsDocument,
 				variables: {
-					ids: stakedSuiIds,
+					ids: stakedPeraIds,
 				},
 			},
-			(data) => data.objects?.nodes.map((node) => node?.asMoveObject?.asStakedSui!).filter(Boolean),
+			(data) => data.objects?.nodes.map((node) => node?.asMoveObject?.asStakedPera!).filter(Boolean),
 		);
 
 		return mapGraphQLStakeToRpcStake(stakes);
 	},
-	async getLatestSuiSystemState(transport) {
+	async getLatestPeraSystemState(transport) {
 		const systemState = await transport.graphqlQuery(
 			{
-				query: GetLatestSuiSystemStateDocument,
+				query: GetLatestPeraSystemStateDocument,
 			},
 			(data) => data.epoch,
 		);
@@ -933,7 +933,7 @@ export const RPC_METHODS: {
 			events: result.events!,
 			results: results?.map((result) => ({
 				mutableReferenceOutputs: result.mutatedReferences?.map(
-					(ref): [SuiArgument, number[], string] => [
+					(ref): [PeraArgument, number[], string] => [
 						ref.input.__typename === 'GasCoin'
 							? 'GasCoin'
 							: ref.input.__typename === 'Input'
@@ -1393,10 +1393,10 @@ export const RPC_METHODS: {
 			},
 		});
 
-		return data.resolveSuinsAddress?.address ?? null;
+		return data.resolvePeransAddress?.address ?? null;
 	},
 	async resolveNameServiceNames(transport, [address, cursor, limit]) {
-		const suinsRegistrations = await transport.graphqlQuery(
+		const peransRegistrations = await transport.graphqlQuery(
 			{
 				query: ResolveNameServiceNamesDocument,
 				variables: {
@@ -1405,13 +1405,13 @@ export const RPC_METHODS: {
 					limit,
 				},
 			},
-			(data) => data.address?.suinsRegistrations,
+			(data) => data.address?.peransRegistrations,
 		);
 
 		return {
-			hasNextPage: suinsRegistrations.pageInfo.hasNextPage,
-			nextCursor: suinsRegistrations.pageInfo.endCursor ?? null,
-			data: suinsRegistrations?.nodes.map((node) => node.domain) ?? [],
+			hasNextPage: peransRegistrations.pageInfo.hasNextPage,
+			nextCursor: peransRegistrations.pageInfo.endCursor ?? null,
+			data: peransRegistrations?.nodes.map((node) => node.domain) ?? [],
 		};
 	},
 };
@@ -1429,7 +1429,7 @@ export class UnsupportedMethodError extends Error {
 }
 
 async function paginateTransactionBlockLists(
-	transport: SuiClientGraphQLTransport,
+	transport: PeraClientGraphQLTransport,
 	transactionBlock: Rpc_Transaction_FieldsFragment,
 ) {
 	let hasMoreEvents = transactionBlock.effects?.events?.pageInfo.hasNextPage ?? false;
@@ -1470,7 +1470,7 @@ async function paginateTransactionBlockLists(
 }
 
 async function paginateCheckpointLists(
-	transport: SuiClientGraphQLTransport,
+	transport: PeraClientGraphQLTransport,
 	checkpoint: Rpc_Checkpoint_FieldsFragment,
 ) {
 	let hasNextPage = checkpoint.transactionBlocks.pageInfo.hasNextPage;

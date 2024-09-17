@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 interface LedgerTransportStatusError extends Error {
 	name: 'TransportStatusError';
@@ -36,7 +36,7 @@ export function convertErrorToLedgerConnectionFailedError(error: unknown) {
 	);
 }
 
-// When something goes wrong in the Sui application itself, a TransportStatusError is
+// When something goes wrong in the Pera application itself, a TransportStatusError is
 // thrown. Unfortunately, @ledgerhq/errors doesn't expose this error in the form of a
 // custom Error class. This makes identification of what went wrong less straightforward
 export function isLedgerTransportStatusError(error: unknown): error is LedgerTransportStatusError {

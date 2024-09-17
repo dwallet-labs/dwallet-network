@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_symbol_pool::Symbol;
 
@@ -28,7 +28,7 @@ pub enum LinterDiagnosticCategory {
     Suspicious,
     Deprecated,
     Style,
-    Sui = 99,
+    Pera = 99,
 }
 
 pub const ALLOW_ATTR_CATEGORY: &str = "lint";

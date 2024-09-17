@@ -1,29 +1,29 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export { formatAddress, formatDigest } from './format.js';
 export {
-	isValidSuiAddress,
-	isValidSuiObjectId,
+	isValidPeraAddress,
+	isValidPeraObjectId,
 	isValidTransactionDigest,
 	normalizeStructTag,
-	normalizeSuiAddress,
-	normalizeSuiObjectId,
+	normalizePeraAddress,
+	normalizePeraObjectId,
 	parseStructTag,
-	SUI_ADDRESS_LENGTH,
-} from './sui-types.js';
+	PERA_ADDRESS_LENGTH,
+} from './pera-types.js';
 
 export { fromB64, toB64, fromHEX, toHEX } from '@mysten/bcs';
-export { isValidSuiNSName, normalizeSuiNSName } from './suins.js';
+export { isValidPeraNSName, normalizePeraNSName } from './perans.js';
 
 export {
-	SUI_DECIMALS,
-	MIST_PER_SUI,
+	PERA_DECIMALS,
+	NPERA_PER_PERA,
 	MOVE_STDLIB_ADDRESS,
-	SUI_FRAMEWORK_ADDRESS,
-	SUI_SYSTEM_ADDRESS,
-	SUI_CLOCK_OBJECT_ID,
-	SUI_SYSTEM_MODULE_NAME,
-	SUI_TYPE_ARG,
-	SUI_SYSTEM_STATE_OBJECT_ID,
+	PERA_FRAMEWORK_ADDRESS,
+	PERA_SYSTEM_ADDRESS,
+	PERA_CLOCK_OBJECT_ID,
+	PERA_SYSTEM_MODULE_NAME,
+	PERA_TYPE_ARG,
+	PERA_SYSTEM_STATE_OBJECT_ID,
 } from './constants.js';

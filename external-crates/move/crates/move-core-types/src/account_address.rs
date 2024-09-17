@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use hex::FromHex;
 use rand::{rngs::OsRng, Rng};
@@ -53,7 +53,7 @@ impl AccountAddress {
     /// Return a canonical string representation of the address
     /// Addresses are hex-encoded lowercase values of length ADDRESS_LENGTH (16, 20, or 32 depending on the Move platform)
     /// e.g., 0000000000000000000000000000000a, *not* 0x0000000000000000000000000000000a, 0xa, or 0xA
-    /// Note: this function is guaranteed to be stable, and this is suitable for use inside
+    /// Note: this function is guaranteed to be stable, and this is peratable for use inside
     /// Move native functions or the VM.
     /// However, one can pass with_prefix=true to get its representation with the 0x prefix.
     pub fn to_canonical_string(&self, with_prefix: bool) -> String {

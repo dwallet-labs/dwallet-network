@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClientOptions } from '@mysten/sui/client';
+import type { PeraClientOptions } from '@pera-io/pera/client';
 
-import { useSuiClientContext } from './useSuiClient.js';
+import { usePeraClientContext } from './usePeraClient.js';
 
-export type NetworkConfig<T extends object = object> = SuiClientOptions & {
+export type NetworkConfig<T extends object = object> = PeraClientOptions & {
 	variables?: T;
 };
 
@@ -15,7 +15,7 @@ export function createNetworkConfig<
 	Variables extends object = NonNullable<Config['variables']>,
 >(networkConfig: T) {
 	function useNetworkConfig(): Config {
-		const { config } = useSuiClientContext();
+		const { config } = usePeraClientContext();
 
 		if (!config) {
 			throw new Error('No network config found');

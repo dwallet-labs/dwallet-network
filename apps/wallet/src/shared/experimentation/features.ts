@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { API_ENV } from '_src/shared/api-env';
 import { GrowthBook } from '@growthbook/growthbook';
@@ -8,7 +8,7 @@ import Browser from 'webextension-polyfill';
 export const growthbook = new GrowthBook({
 	// If you want to develop locally, you can set the API host to this:
 	// apiHost: 'http://localhost:3003',
-	apiHost: 'https://apps-backend.sui.io',
+	apiHost: 'https://apps-backend.pera.io',
 	clientKey: process.env.NODE_ENV === 'development' ? 'development' : 'production',
 	enableDevMode: process.env.NODE_ENV === 'development',
 });

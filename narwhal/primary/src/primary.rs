@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
     certificate_fetcher::CertificateFetcher,
@@ -55,7 +55,7 @@ use std::{
     time::Duration,
 };
 use storage::{CertificateStore, PayloadStore, ProposerStore, VoteDigestStore};
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use tokio::{sync::oneshot, time::Instant};
 use tokio::{sync::watch, task::JoinHandle};
 use tower::ServiceBuilder;

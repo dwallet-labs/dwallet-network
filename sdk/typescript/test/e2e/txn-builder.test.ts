@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { bcs } from '../../src/bcs';
-import { SuiClient, SuiObjectChangeCreated, SuiTransactionBlockResponse } from '../../src/client';
+import { PeraClient, PeraObjectChangeCreated, PeraTransactionBlockResponse } from '../../src/client';
 import type { Keypair } from '../../src/cryptography';
 import { Transaction } from '../../src/transactions';
-import { normalizeSuiObjectId, SUI_SYSTEM_STATE_OBJECT_ID } from '../../src/utils';
+import { normalizePeraObjectId, PERA_SYSTEM_STATE_OBJECT_ID } from '../../src/utils';
 import {
 	DEFAULT_GAS_BUDGET,
 	DEFAULT_RECIPIENT,
@@ -17,12 +17,12 @@ import {
 	upgradePackage,
 } from './utils/setup';
 
-export const SUI_CLOCK_OBJECT_ID = normalizeSuiObjectId('0x6');
+export const PERA_CLOCK_OBJECT_ID = normalizePeraObjectId('0x6');
 
 describe('Transaction Builders', () => {
 	let toolbox: TestToolbox;
 	let packageId: string;
-	let publishTxn: SuiTransactionBlockResponse;
+	let publishTxn: PeraTransactionBlockResponse;
 	let sharedObjectId: string;
 
 	beforeAll(async () => {
@@ -67,7 +67,7 @@ describe('Transaction Builders', () => {
 		const tx = new Transaction();
 		tx.moveCall({
 			target: '0x2::pay::split',
-			typeArguments: ['0x2::sui::SUI'],
+			typeArguments: ['0x2::pera::PERA'],
 			arguments: [tx.object(coin_0.coinObjectId), tx.pure.u64(DEFAULT_GAS_BUDGET * 2)],
 		});
 		await validateTransaction(toolbox.client, toolbox.keypair, tx);
@@ -79,13 +79,13 @@ describe('Transaction Builders', () => {
 			const coins = await toolbox.getGasObjectsOwnedByAddress();
 			const coin_2 = coins.data[2];
 
-			const [{ suiAddress: validatorAddress }] = await toolbox.getActiveValidators();
+			const [{ peraAddress: validatorAddress }] = await toolbox.getActiveValidators();
 
 			const tx = new Transaction();
 			tx.moveCall({
-				target: '0x3::sui_system::request_add_stake',
+				target: '0x3::pera_system::request_add_stake',
 				arguments: [
-					tx.object(SUI_SYSTEM_STATE_OBJECT_ID),
+					tx.object(PERA_SYSTEM_STATE_OBJECT_ID),
 					tx.object(coin_2.coinObjectId),
 					tx.pure.address(validatorAddress),
 				],
@@ -151,7 +151,7 @@ describe('Transaction Builders', () => {
 		const tx = new Transaction();
 		tx.moveCall({
 			target: `${packageId}::serializer_tests::use_clock`,
-			arguments: [tx.object(SUI_CLOCK_OBJECT_ID)],
+			arguments: [tx.object(PERA_CLOCK_OBJECT_ID)],
 		});
 		await validateTransaction(toolbox.client, toolbox.keypair, tx);
 	});
@@ -171,7 +171,7 @@ describe('Transaction Builders', () => {
 						'Immutable' !== a.owner &&
 						'AddressOwner' in a.owner &&
 						a.owner.AddressOwner === toolbox.address(),
-				) as SuiObjectChangeCreated
+				) as PeraObjectChangeCreated
 			)?.objectId;
 
 			expect(capId).toBeTruthy();
@@ -210,8 +210,8 @@ describe('Transaction Builders', () => {
 	);
 });
 
-async function validateTransaction(client: SuiClient, signer: Keypair, tx: Transaction) {
-	tx.setSenderIfNotSet(signer.getPublicKey().toSuiAddress());
+async function validateTransaction(client: PeraClient, signer: Keypair, tx: Transaction) {
+	tx.setSenderIfNotSet(signer.getPublicKey().toPeraAddress());
 	const localDigest = await tx.getDigest({ client });
 	const result = await client.signAndExecuteTransaction({
 		signer,

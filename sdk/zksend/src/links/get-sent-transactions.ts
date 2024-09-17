@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
+import { normalizePeraAddress } from '@pera-io/pera/utils';
 
 import { ZkSendLink } from './claim.js';
 import type { ZkBagContractOptions } from './zk-bag.js';
@@ -14,7 +14,7 @@ export async function getSentTransactionsWithLinks({
 	limit = 10,
 	network = 'mainnet',
 	contract = MAINNET_CONTRACT_IDS,
-	client = new SuiClient({ url: getFullnodeUrl(network) }),
+	client = new PeraClient({ url: getFullnodeUrl(network) }),
 	loadClaimedAssets = false,
 	...linkOptions
 }: {
@@ -29,9 +29,9 @@ export async function getSentTransactionsWithLinks({
 	host?: string;
 	path?: string;
 	claimApi?: string;
-	client?: SuiClient;
+	client?: PeraClient;
 }) {
-	const packageId = normalizeSuiAddress(contract.packageId);
+	const packageId = normalizePeraAddress(contract.packageId);
 
 	const page = await client.queryTransactionBlocks({
 		filter: {
@@ -80,7 +80,7 @@ export async function getSentTransactionsWithLinks({
 							throw new Error('Expected Address input to be a Pure value');
 						}
 
-						const address = normalizeSuiAddress(input.value as string);
+						const address = normalizePeraAddress(input.value as string);
 
 						const link = new ZkSendLink({
 							network,
@@ -125,7 +125,7 @@ export async function getSentTransactionsWithLinks({
 							throw new Error('Expected Address input to be a Pure value');
 						}
 
-						const address = normalizeSuiAddress(input.value as string);
+						const address = normalizePeraAddress(input.value as string);
 
 						const link = new ZkSendLink({
 							network,

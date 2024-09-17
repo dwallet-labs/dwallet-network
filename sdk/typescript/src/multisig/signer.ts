@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { toB64 } from '@mysten/bcs';
 
 import type { SignatureScheme } from '../cryptography/index.js';
@@ -20,11 +20,11 @@ export class MultiSigSigner extends Signer {
 
 		const weights = pubkey.getPublicKeys().map(({ weight, publicKey }) => ({
 			weight,
-			address: publicKey.toSuiAddress(),
+			address: publicKey.toPeraAddress(),
 		}));
 
 		for (let signer of signers) {
-			const address = signer.toSuiAddress();
+			const address = signer.toPeraAddress();
 			if (uniqueKeys.has(address)) {
 				throw new Error(`Can't create MultiSigSigner with duplicate signers`);
 			}

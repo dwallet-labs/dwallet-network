@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import ExplorerLink from '_src/ui/app/components/explorer-link';
 import { ExplorerLinkType } from '_src/ui/app/components/explorer-link/ExplorerLinkType';
 import { Text } from '_src/ui/app/shared/text';
-import { type TransactionInput } from '@mysten/sui/transactions';
-import { formatAddress } from '@mysten/sui/utils';
+import { type TransactionInput } from '@pera-io/pera/transactions';
+import { formatAddress } from '@pera-io/pera/utils';
 
 interface InputProps {
 	input: TransactionInput;

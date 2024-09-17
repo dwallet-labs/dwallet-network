@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { cva, type VariantProps } from 'class-variance-authority';
 
@@ -11,7 +11,7 @@ const badgeStyle = cva(
 		variants: {
 			variant: {
 				warning: 'bg-issue-light text-issue-dark',
-				success: 'bg-sui/30 text-hero-dark',
+				success: 'bg-pera/30 text-hero-dark',
 			},
 		},
 	},

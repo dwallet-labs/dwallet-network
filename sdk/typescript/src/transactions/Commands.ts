@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { toB64 } from '@mysten/bcs';
 import type { InferInput } from 'valibot';
 import { parse } from 'valibot';
 
-import { normalizeSuiObjectId } from '../utils/sui-types.js';
+import { normalizePeraObjectId } from '../utils/pera-types.js';
 import { Argument } from './data/internal.js';
 import type { CallArg, Command } from './data/internal.js';
 import type { Transaction } from './Transaction.js';
@@ -16,7 +16,7 @@ export type TransactionArgument =
 export type TransactionInput = CallArg;
 
 // Keep in sync with constants in
-// crates/sui-framework/packages/sui-framework/sources/package.move
+// crates/pera-framework/packages/pera-framework/sources/package.move
 export enum UpgradePolicy {
 	COMPATIBLE = 0,
 	ADDITIVE = 128,
@@ -110,7 +110,7 @@ export const Commands = {
 				modules: modules.map((module) =>
 					typeof module === 'string' ? module : toB64(new Uint8Array(module)),
 				),
-				dependencies: dependencies.map((dep) => normalizeSuiObjectId(dep)),
+				dependencies: dependencies.map((dep) => normalizePeraObjectId(dep)),
 			},
 		};
 	},
@@ -131,7 +131,7 @@ export const Commands = {
 				modules: modules.map((module) =>
 					typeof module === 'string' ? module : toB64(new Uint8Array(module)),
 				),
-				dependencies: dependencies.map((dep) => normalizeSuiObjectId(dep)),
+				dependencies: dependencies.map((dep) => normalizePeraObjectId(dep)),
 				package: packageId,
 				ticket: parse(Argument, ticket),
 			},

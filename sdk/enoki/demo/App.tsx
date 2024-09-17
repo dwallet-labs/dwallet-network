@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
+import { Transaction } from '@pera-io/pera/transactions';
 import { useState } from 'react';
 
 import { useAuthCallback, useEnokiFlow, useZkLogin } from '../src/react.tsx';
@@ -48,7 +48,7 @@ export function App() {
 							const result = await flow.sponsorAndExecuteTransaction({
 								network: 'testnet',
 								// @ts-expect-error: Type references not quite doing their thing:
-								client: new SuiClient({ url: getFullnodeUrl('testnet') }),
+								client: new PeraClient({ url: getFullnodeUrl('testnet') }),
 								// @ts-expect-error: Type references not quite doing their thing:
 								transaction,
 							});

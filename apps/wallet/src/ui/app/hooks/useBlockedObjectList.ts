@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-import { normalizeStructTag } from '@mysten/sui/utils';
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+import { normalizeStructTag } from '@pera-io/pera/utils';
 import { useQuery } from '@tanstack/react-query';
 
 import { useAppsBackend } from '../../../../../core';

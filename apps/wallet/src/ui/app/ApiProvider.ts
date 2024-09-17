@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type AccountType, type SerializedUIAccount } from '_src/background/accounts/Account';
 import { API_ENV } from '_src/shared/api-env';
-import { getSuiClient } from '_src/shared/sui-client';
-import { type SuiClient } from '@mysten/sui/client';
+import { getPeraClient } from '_src/shared/pera-client';
+import { type PeraClient } from '@pera-io/pera/client';
 
 import type { BackgroundClient } from './background-client';
 import { BackgroundServiceSigner } from './background-client/BackgroundServiceSigner';
@@ -43,13 +43,13 @@ export const generateActiveNetworkList = (): NetworkTypes[] => {
 const accountTypesWithBackgroundSigner: AccountType[] = ['mnemonic-derived', 'imported', 'zkLogin'];
 
 export default class ApiProvider {
-	private _apiFullNodeProvider?: SuiClient;
+	private _apiFullNodeProvider?: PeraClient;
 	private _signerByAddress: Map<string, WalletSigner> = new Map();
 	apiEnv: API_ENV = DEFAULT_API_ENV;
 
 	public setNewJsonRpcProvider(apiEnv: API_ENV = DEFAULT_API_ENV, customRPC?: string | null) {
 		this.apiEnv = apiEnv;
-		this._apiFullNodeProvider = getSuiClient(
+		this._apiFullNodeProvider = getPeraClient(
 			apiEnv === API_ENV.customRPC
 				? { env: apiEnv, customRpcUrl: customRPC || '' }
 				: { env: apiEnv, customRpcUrl: null },

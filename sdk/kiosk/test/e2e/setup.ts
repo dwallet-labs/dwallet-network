@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { execSync } from 'child_process';
 import { mkdtemp } from 'fs/promises';
@@ -7,13 +7,13 @@ import { tmpdir } from 'os';
 import path from 'path';
 import type {
 	DevInspectResults,
-	SuiObjectChangePublished,
-	SuiTransactionBlockResponse,
-} from '@mysten/sui/client';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { FaucetRateLimitError, getFaucetHost, requestSuiFromFaucetV0 } from '@mysten/sui/faucet';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { Transaction } from '@mysten/sui/transactions';
+	PeraObjectChangePublished,
+	PeraTransactionBlockResponse,
+} from '@pera-io/pera/client';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
+import { FaucetRateLimitError, getFaucetHost, requestPeraFromFaucetV0 } from '@pera-io/pera/faucet';
+import { Ed25519Keypair } from '@pera-io/pera/keypairs/ed25519';
+import { Transaction } from '@pera-io/pera/transactions';
 import tmp from 'tmp';
 import { retry } from 'ts-retry-promise';
 import { expect } from 'vitest';
@@ -26,40 +26,40 @@ const DEFAULT_FAUCET_URL = import.meta.env.VITE_FAUCET_URL ?? getFaucetHost('loc
 //@ts-ignore-next-line
 const DEFAULT_FULLNODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getFullnodeUrl('localnet');
 //@ts-ignore-next-line
-const SUI_BIN = import.meta.env.VITE_SUI_BIN ?? 'cargo run --bin sui';
+const PERA_BIN = import.meta.env.VITE_PERA_BIN ?? 'cargo run --bin pera';
 
 export class TestToolbox {
 	keypair: Ed25519Keypair;
-	client: SuiClient;
+	client: PeraClient;
 	configPath: string;
 
-	constructor(keypair: Ed25519Keypair, client: SuiClient, configPath: string) {
+	constructor(keypair: Ed25519Keypair, client: PeraClient, configPath: string) {
 		this.keypair = keypair;
 		this.client = client;
 		this.configPath = configPath;
 	}
 
 	address() {
-		return this.keypair.getPublicKey().toSuiAddress();
+		return this.keypair.getPublicKey().toPeraAddress();
 	}
 
 	public async getActiveValidators() {
-		return (await this.client.getLatestSuiSystemState()).activeValidators;
+		return (await this.client.getLatestPeraSystemState()).activeValidators;
 	}
 }
 
-export function getClient(): SuiClient {
-	return new SuiClient({
+export function getClient(): PeraClient {
+	return new PeraClient({
 		url: DEFAULT_FULLNODE_URL,
 	});
 }
 
-// TODO: expose these testing utils from @mysten/sui
-export async function setupSuiClient() {
+// TODO: expose these testing utils from @pera-io/pera
+export async function setupPeraClient() {
 	const keypair = Ed25519Keypair.generate();
-	const address = keypair.getPublicKey().toSuiAddress();
+	const address = keypair.getPublicKey().toPeraAddress();
 	const client = getClient();
-	await retry(() => requestSuiFromFaucetV0({ host: DEFAULT_FAUCET_URL, recipient: address }), {
+	await retry(() => requestPeraFromFaucetV0({ host: DEFAULT_FAUCET_URL, recipient: address }), {
 		backoff: 'EXPONENTIAL',
 		// overall timeout in 60 seconds
 		timeout: 1000 * 60,
@@ -71,15 +71,15 @@ export async function setupSuiClient() {
 	const tmpDirPath = path.join(tmpdir(), 'config-');
 	const tmpDir = await mkdtemp(tmpDirPath);
 	const configPath = path.join(tmpDir, 'client.yaml');
-	execSync(`${SUI_BIN} client --yes --client.config ${configPath}`, { encoding: 'utf-8' });
+	execSync(`${PERA_BIN} client --yes --client.config ${configPath}`, { encoding: 'utf-8' });
 	return new TestToolbox(keypair, client, configPath);
 }
 
-// TODO: expose these testing utils from @mysten/sui
+// TODO: expose these testing utils from @pera-io/pera
 export async function publishPackage(packagePath: string, toolbox?: TestToolbox) {
 	// TODO: We create a unique publish address per publish, but we really could share one for all publishes.
 	if (!toolbox) {
-		toolbox = await setupSuiClient();
+		toolbox = await setupPeraClient();
 	}
 
 	// remove all controlled temporary objects on process exit
@@ -89,7 +89,7 @@ export async function publishPackage(packagePath: string, toolbox?: TestToolbox)
 
 	const { modules, dependencies } = JSON.parse(
 		execSync(
-			`${SUI_BIN} move --client.config ${toolbox.configPath} build --dump-bytecode-as-base64 --path ${packagePath} --install-dir ${tmpobj.name}`,
+			`${PERA_BIN} move --client.config ${toolbox.configPath} build --dump-bytecode-as-base64 --path ${packagePath} --install-dir ${tmpobj.name}`,
 			{ encoding: 'utf-8' },
 		),
 	);
@@ -116,7 +116,7 @@ export async function publishPackage(packagePath: string, toolbox?: TestToolbox)
 
 	const packageId = ((publishTxn.objectChanges?.filter(
 		(a) => a.type === 'published',
-	) as SuiObjectChangePublished[]) ?? [])[0]?.packageId.replace(/^(0x)(0+)/, '0x') as string;
+	) as PeraObjectChangePublished[]) ?? [])[0]?.packageId.replace(/^(0x)(0+)/, '0x') as string;
 
 	expect(packageId).toBeTypeOf('string');
 
@@ -184,7 +184,7 @@ export async function createPersonalKiosk(toolbox: TestToolbox, kioskClient: Kio
 	await executeTransaction(toolbox, tx);
 }
 
-function getCreatedObjectIdByType(res: SuiTransactionBlockResponse, type: string): string {
+function getCreatedObjectIdByType(res: PeraTransactionBlockResponse, type: string): string {
 	return res.objectChanges?.filter(
 		(x) => x.type === 'created' && x.objectType.endsWith(type),
 		//@ts-ignore-next-line
@@ -208,7 +208,7 @@ export async function getPublisherObject(toolbox: TestToolbox): Promise<string> 
 export async function executeTransaction(
 	toolbox: TestToolbox,
 	tx: Transaction,
-): Promise<SuiTransactionBlockResponse> {
+): Promise<PeraTransactionBlockResponse> {
 	const resp = await toolbox.client.signAndExecuteTransaction({
 		signer: toolbox.keypair,
 		transaction: tx,

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { bcs } from '@mysten/bcs';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -34,7 +34,7 @@ describe('Test Move call with strings', () => {
 	beforeAll(async () => {
 		toolbox = await setup();
 		const packagePath =
-			__dirname + '/../../../../crates/sui-core/src/unit_tests/data/entry_point_types';
+			__dirname + '/../../../../crates/pera-core/src/unit_tests/data/entry_point_types';
 		({ packageId } = await publishPackage(packagePath));
 	});
 

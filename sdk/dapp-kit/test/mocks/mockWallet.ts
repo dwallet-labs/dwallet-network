@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
 	IdentifierRecord,
@@ -9,13 +9,13 @@ import type {
 	Wallet,
 	WalletWithRequiredFeatures,
 } from '@mysten/wallet-standard';
-import { SUI_CHAINS } from '@mysten/wallet-standard';
+import { PERA_CHAINS } from '@mysten/wallet-standard';
 import type { Mock } from 'vitest';
 
 export class MockWallet implements Wallet {
 	version = '1.0.0' as const;
 	icon = `data:image/png;base64,` as const;
-	chains = SUI_CHAINS;
+	chains = PERA_CHAINS;
 
 	mocks: {
 		connect: Mock;

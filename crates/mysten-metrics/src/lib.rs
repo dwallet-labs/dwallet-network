@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use axum::{extract::Extension, http::StatusCode, routing::get, Router};
 use dashmap::DashMap;
@@ -601,7 +601,7 @@ mod tests {
         assert_eq!(metric_1.get_help(), "counter_1_desc");
 
         // AND add a second registry with a metric
-        let registry_2 = Registry::new_custom(Some("sui".to_string()), None).unwrap();
+        let registry_2 = Registry::new_custom(Some("pera".to_string()), None).unwrap();
         registry_2
             .register(Box::new(
                 IntCounter::new("counter_2", "counter_2_desc").unwrap(),
@@ -624,7 +624,7 @@ mod tests {
         assert_eq!(metric_1.get_help(), "counter_1_desc");
 
         let metric_2 = metrics.remove(0);
-        assert_eq!(metric_2.get_name(), "sui_counter_2");
+        assert_eq!(metric_2.get_name(), "pera_counter_2");
         assert_eq!(metric_2.get_help(), "counter_2_desc");
 
         // AND remove first registry
@@ -641,7 +641,7 @@ mod tests {
         assert_eq!(metric_default.get_help(), "counter_desc");
 
         let metric_1 = metrics.remove(0);
-        assert_eq!(metric_1.get_name(), "sui_counter_2");
+        assert_eq!(metric_1.get_name(), "pera_counter_2");
         assert_eq!(metric_1.get_help(), "counter_2_desc");
     }
 }

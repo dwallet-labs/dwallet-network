@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@pera-io/pera/transactions';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { Mock } from 'vitest';
 
@@ -10,7 +10,7 @@ import {
 	WalletNotConnectedError,
 } from '../../src/errors/walletErrors.js';
 import { useConnectWallet, useSignTransaction } from '../../src/index.js';
-import { suiFeatures } from '../mocks/mockFeatures.js';
+import { peraFeatures } from '../mocks/mockFeatures.js';
 import { createWalletProviderContextWrapper, registerMockWallet } from '../test-utils.js';
 
 describe('useSignTransaction', () => {
@@ -18,7 +18,7 @@ describe('useSignTransaction', () => {
 		const wrapper = createWalletProviderContextWrapper();
 		const { result } = renderHook(() => useSignTransaction(), { wrapper });
 
-		result.current.mutate({ transaction: new Transaction(), chain: 'sui:testnet' });
+		result.current.mutate({ transaction: new Transaction(), chain: 'pera:testnet' });
 
 		await waitFor(() => expect(result.current.error).toBeInstanceOf(WalletNotConnectedError));
 	});
@@ -42,7 +42,7 @@ describe('useSignTransaction', () => {
 
 		result.current.signTransaction.mutate({
 			transaction: new Transaction(),
-			chain: 'sui:testnet',
+			chain: 'pera:testnet',
 		});
 		await waitFor(() =>
 			expect(result.current.signTransaction.error).toBeInstanceOf(WalletFeatureNotSupportedError),
@@ -54,7 +54,7 @@ describe('useSignTransaction', () => {
 	test('signing a transaction from the currently connected account works successfully', async () => {
 		const { unregister, mockWallet } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 
 		const wrapper = createWalletProviderContextWrapper();
@@ -70,7 +70,7 @@ describe('useSignTransaction', () => {
 
 		await waitFor(() => expect(result.current.connectWallet.isSuccess).toBe(true));
 
-		const signTransactionFeature = mockWallet.features['sui:signTransaction'];
+		const signTransactionFeature = mockWallet.features['pera:signTransaction'];
 		const signTransactionMock = signTransactionFeature!.signTransaction as Mock;
 
 		signTransactionMock.mockReturnValueOnce({
@@ -80,7 +80,7 @@ describe('useSignTransaction', () => {
 
 		result.current.signTransaction.mutate({
 			transaction: new Transaction(),
-			chain: 'sui:testnet',
+			chain: 'pera:testnet',
 		});
 
 		await waitFor(() => expect(result.current.signTransaction.isSuccess).toBe(true));

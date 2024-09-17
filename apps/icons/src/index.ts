@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 export { default as Svg3D32 } from './3D32';
 export { default as Nft16 } from './Nft16';
 export { default as Nft132 } from './Nft132';
@@ -144,14 +144,14 @@ export { default as Stake24 } from './Stake24';
 export { default as StakeAdd16 } from './StakeAdd16';
 export { default as StakeRemove16 } from './StakeRemove16';
 export { default as Staking32 } from './Staking32';
-export { default as SuiLogoTxt } from './SuiLogoTxt';
-export { default as Sui } from './Sui';
-export { default as SuiCustomRpc } from './SuiCustomRpc';
-export { default as SuiDevnet } from './SuiDevnet';
-export { default as SuiLocal } from './SuiLocal';
-export { default as SuiMainnet } from './SuiMainnet';
-export { default as SuiTestnet } from './SuiTestnet';
-export { default as SuiTokensStack } from './SuiTokensStack';
+export { default as PeraLogoTxt } from './PeraLogoTxt';
+export { default as Pera } from './Pera';
+export { default as PeraCustomRpc } from './PeraCustomRpc';
+export { default as PeraDevnet } from './PeraDevnet';
+export { default as PeraLocal } from './PeraLocal';
+export { default as PeraMainnet } from './PeraMainnet';
+export { default as PeraTestnet } from './PeraTestnet';
+export { default as PeraTokensStack } from './PeraTokensStack';
 export { default as Support24 } from './Support24';
 export { default as Swap16 } from './Swap16';
 export { default as Tag16 } from './Tag16';
@@ -168,7 +168,7 @@ export { default as ThumbUpStroke32 } from './ThumbUpStroke32';
 export { default as ThumbnailsOnly16 } from './ThumbnailsOnly16';
 export { default as Tokens32 } from './Tokens32';
 export { default as TransferObject16 } from './TransferObject16';
-export { default as TransferSui16 } from './TransferSui16';
+export { default as TransferPera16 } from './TransferPera16';
 export { default as Unpin16 } from './Unpin16';
 export { default as Unstaked } from './Unstaked';
 export { default as Version24 } from './Version24';

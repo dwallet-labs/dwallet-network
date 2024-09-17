@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module dynamic_fields::dynamic_fields_test {
-    use sui::dynamic_field as dfield;
-    use sui::dynamic_object_field as dof;
-    use sui::transfer;
+    use pera::dynamic_field as dfield;
+    use pera::dynamic_object_field as dof;
+    use pera::transfer;
 
     public struct Test has key {
         id: UID,

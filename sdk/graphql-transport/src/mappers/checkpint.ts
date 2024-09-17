@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { Checkpoint, EndOfEpochData } from '@mysten/sui/client';
+import type { Checkpoint, EndOfEpochData } from '@pera-io/pera/client';
 
 import type { Rpc_Checkpoint_FieldsFragment } from '../generated/queries.js';
 

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { DEFAULT_API_ENV } from '_app/ApiProvider';
 import { API_ENV, type NetworkEnvType } from '_src/shared/api-env';
@@ -11,12 +11,12 @@ class NetworkEnv {
 	#events = mitt<{ changed: NetworkEnvType }>();
 
 	async getActiveNetwork(): Promise<NetworkEnvType> {
-		const { sui_Env, sui_Env_RPC } = await Browser.storage.local.get({
-			sui_Env: DEFAULT_API_ENV,
-			sui_Env_RPC: null,
+		const { pera_Env, pera_Env_RPC } = await Browser.storage.local.get({
+			pera_Env: DEFAULT_API_ENV,
+			pera_Env_RPC: null,
 		});
-		const adjCustomUrl = sui_Env === API_ENV.customRPC ? sui_Env_RPC : null;
-		return { env: sui_Env, customRpcUrl: adjCustomUrl };
+		const adjCustomUrl = pera_Env === API_ENV.customRPC ? pera_Env_RPC : null;
+		return { env: pera_Env, customRpcUrl: adjCustomUrl };
 	}
 
 	async setActiveNetwork(network: NetworkEnvType) {
@@ -25,8 +25,8 @@ class NetworkEnv {
 			throw new Error(`Invalid custom RPC url ${customRpcUrl}`);
 		}
 		await Browser.storage.local.set({
-			sui_Env: env,
-			sui_Env_RPC: customRpcUrl,
+			pera_Env: env,
+			pera_Env_RPC: customRpcUrl,
 		});
 		this.#events.emit('changed', network);
 	}

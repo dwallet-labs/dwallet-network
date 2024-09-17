@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { KeyRound, MenuIcon, XIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -16,7 +16,7 @@ export function Header() {
 				<div className="flex items-center gap-2">
 					<KeyRound strokeWidth={2} size={18} className="text-primary/80" />
 					<h1 className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60">
-						Sui MultiSig Toolkit
+						Pera MultiSig Toolkit
 					</h1>
 				</div>
 			</NavLink>

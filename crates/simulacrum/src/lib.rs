@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-//! A `Simulacrum` of Sui.
+//! A `Simulacrum` of Pera.
 //!
 //! The word simulacrum is latin for "likeness, semblance", it is also a spell in D&D which creates
 //! a copy of a creature which then follows the player's commands and wishes. As such this crate
-//! provides the [`Simulacrum`] type which is a implementation or instantiation of a sui
+//! provides the [`Simulacrum`] type which is a implementation or instantiation of a pera
 //! blockchain, one which doesn't do anything unless acted upon.
 //!
 //! [`Simulacrum`]: crate::Simulacrum
@@ -18,25 +18,25 @@ use anyhow::{anyhow, Result};
 use fastcrypto::traits::Signer;
 use move_core_types::language_storage::StructTag;
 use rand::rngs::OsRng;
-use sui_config::{genesis, transaction_deny_config::TransactionDenyConfig};
-use sui_protocol_config::ProtocolVersion;
-use sui_storage::blob::{Blob, BlobEncoding};
-use sui_swarm_config::genesis_config::AccountConfig;
-use sui_swarm_config::network_config::NetworkConfig;
-use sui_swarm_config::network_config_builder::ConfigBuilder;
-use sui_types::base_types::{AuthorityName, ObjectID, VersionNumber};
-use sui_types::crypto::AuthoritySignature;
-use sui_types::digests::ConsensusCommitDigest;
-use sui_types::object::Object;
-use sui_types::storage::{ObjectStore, ReadStore, RestStateReader};
-use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemState;
-use sui_types::transaction::EndOfEpochTransactionKind;
-use sui_types::{
-    base_types::SuiAddress,
+use pera_config::{genesis, transaction_deny_config::TransactionDenyConfig};
+use pera_protocol_config::ProtocolVersion;
+use pera_storage::blob::{Blob, BlobEncoding};
+use pera_swarm_config::genesis_config::AccountConfig;
+use pera_swarm_config::network_config::NetworkConfig;
+use pera_swarm_config::network_config_builder::ConfigBuilder;
+use pera_types::base_types::{AuthorityName, ObjectID, VersionNumber};
+use pera_types::crypto::AuthoritySignature;
+use pera_types::digests::ConsensusCommitDigest;
+use pera_types::object::Object;
+use pera_types::storage::{ObjectStore, ReadStore, RestStateReader};
+use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemState;
+use pera_types::transaction::EndOfEpochTransactionKind;
+use pera_types::{
+    base_types::PeraAddress,
     committee::Committee,
     effects::TransactionEffects,
     error::ExecutionError,
-    gas_coin::MIST_PER_SUI,
+    gas_coin::NPERA_PER_PERA,
     inner_temporary_store::InnerTemporaryStore,
     messages_checkpoint::{EndOfEpochData, VerifiedCheckpoint},
     signature::VerifyParams,
@@ -47,9 +47,9 @@ use self::epoch_state::EpochState;
 pub use self::store::in_mem_store::InMemoryStore;
 use self::store::in_mem_store::KeyStore;
 pub use self::store::SimulatorStore;
-use sui_types::messages_checkpoint::{CheckpointContents, CheckpointSequenceNumber};
-use sui_types::mock_checkpoint_builder::{MockCheckpointBuilder, ValidatorKeypairProvider};
-use sui_types::{
+use pera_types::messages_checkpoint::{CheckpointContents, CheckpointSequenceNumber};
+use pera_types::mock_checkpoint_builder::{MockCheckpointBuilder, ValidatorKeypairProvider};
+use pera_types::{
     gas_coin::GasCoin,
     programmable_transaction_builder::ProgrammableTransactionBuilder,
     transaction::{GasData, TransactionData, TransactionKind},
@@ -58,9 +58,9 @@ use sui_types::{
 mod epoch_state;
 pub mod store;
 
-/// A `Simulacrum` of Sui.
+/// A `Simulacrum` of Pera.
 ///
-/// This type represents a simulated instantiation of a Sui blockchain that needs to be driven
+/// This type represents a simulated instantiation of a Pera blockchain that needs to be driven
 /// manually, that is time doesn't advance and checkpoints are not formed unless explicitly
 /// requested.
 ///
@@ -146,7 +146,7 @@ impl<R, S: store::SimulatorStore> Simulacrum<R, S> {
         let checkpoint_builder = MockCheckpointBuilder::new(config.genesis.checkpoint());
 
         let genesis = &config.genesis;
-        let epoch_state = EpochState::new(genesis.sui_system_object());
+        let epoch_state = EpochState::new(genesis.pera_system_object());
 
         Self {
             rng,
@@ -322,23 +322,23 @@ impl<R, S: store::SimulatorStore> Simulacrum<R, S> {
         self.epoch_state.reference_gas_price()
     }
 
-    /// Request that `amount` Mist be sent to `address` from a faucet account.
+    /// Request that `amount` NPera be sent to `address` from a faucet account.
     ///
     /// ```
     /// use simulacrum::Simulacrum;
-    /// use sui_types::base_types::SuiAddress;
-    /// use sui_types::gas_coin::MIST_PER_SUI;
+    /// use pera_types::base_types::PeraAddress;
+    /// use pera_types::gas_coin::NPERA_PER_PERA;
     ///
     /// # fn main() {
     /// let mut simulacrum = Simulacrum::new();
-    /// let address = SuiAddress::generate(simulacrum.rng());
-    /// simulacrum.request_gas(address, MIST_PER_SUI).unwrap();
+    /// let address = PeraAddress::generate(simulacrum.rng());
+    /// simulacrum.request_gas(address, NPERA_PER_PERA).unwrap();
     ///
-    /// // `account` now has a Coin<SUI> object with single SUI in it.
+    /// // `account` now has a Coin<PERA> object with single PERA in it.
     /// // ...
     /// # }
     /// ```
-    pub fn request_gas(&mut self, address: SuiAddress, amount: u64) -> Result<TransactionEffects> {
+    pub fn request_gas(&mut self, address: PeraAddress, amount: u64) -> Result<TransactionEffects> {
         // For right now we'll just use the first account as the `faucet` account. We may want to
         // explicitly cordon off the faucet account from the rest of the accounts though.
         let (sender, key) = self.keystore().accounts().next().unwrap();
@@ -346,29 +346,29 @@ impl<R, S: store::SimulatorStore> Simulacrum<R, S> {
             .store()
             .owned_objects(*sender)
             .find(|object| {
-                object.is_gas_coin() && object.get_coin_value_unsafe() > amount + MIST_PER_SUI
+                object.is_gas_coin() && object.get_coin_value_unsafe() > amount + NPERA_PER_PERA
             })
             .ok_or_else(|| {
-                anyhow!("unable to find a coin with enough to satisfy request for {amount} Mist")
+                anyhow!("unable to find a coin with enough to satisfy request for {amount} NPera")
             })?;
 
-        let gas_data = sui_types::transaction::GasData {
+        let gas_data = pera_types::transaction::GasData {
             payment: vec![object.compute_object_reference()],
             owner: *sender,
             price: self.reference_gas_price(),
-            budget: MIST_PER_SUI,
+            budget: NPERA_PER_PERA,
         };
 
         let pt = {
             let mut builder =
-                sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder::new();
-            builder.transfer_sui(address, Some(amount));
+                pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder::new();
+            builder.transfer_pera(address, Some(amount));
             builder.finish()
         };
 
-        let kind = sui_types::transaction::TransactionKind::ProgrammableTransaction(pt);
+        let kind = pera_types::transaction::TransactionKind::ProgrammableTransaction(pt);
         let tx_data =
-            sui_types::transaction::TransactionData::new_with_gas_data(kind, *sender, gas_data);
+            pera_types::transaction::TransactionData::new_with_gas_data(kind, *sender, gas_data);
         let tx = Transaction::from_data_and_signer(tx_data, vec![key]);
 
         self.execute_transaction(tx).map(|x| x.0)
@@ -432,7 +432,7 @@ impl<T, V: store::SimulatorStore> ObjectStore for Simulacrum<T, V> {
     fn get_object(
         &self,
         object_id: &ObjectID,
-    ) -> Result<Option<Object>, sui_types::storage::error::Error> {
+    ) -> Result<Option<Object>, pera_types::storage::error::Error> {
         Ok(store::SimulatorStore::get_object(&self.store, object_id))
     }
 
@@ -440,7 +440,7 @@ impl<T, V: store::SimulatorStore> ObjectStore for Simulacrum<T, V> {
         &self,
         object_id: &ObjectID,
         version: VersionNumber,
-    ) -> Result<Option<Object>, sui_types::storage::error::Error> {
+    ) -> Result<Option<Object>, pera_types::storage::error::Error> {
         self.store.get_object_by_key(object_id, version)
     }
 }
@@ -448,30 +448,30 @@ impl<T, V: store::SimulatorStore> ObjectStore for Simulacrum<T, V> {
 impl<T, V: store::SimulatorStore> ReadStore for Simulacrum<T, V> {
     fn get_committee(
         &self,
-        _epoch: sui_types::committee::EpochId,
-    ) -> sui_types::storage::error::Result<Option<std::sync::Arc<Committee>>> {
+        _epoch: pera_types::committee::EpochId,
+    ) -> pera_types::storage::error::Result<Option<std::sync::Arc<Committee>>> {
         todo!()
     }
 
-    fn get_latest_checkpoint(&self) -> sui_types::storage::error::Result<VerifiedCheckpoint> {
+    fn get_latest_checkpoint(&self) -> pera_types::storage::error::Result<VerifiedCheckpoint> {
         Ok(self.store().get_highest_checkpint().unwrap())
     }
 
     fn get_highest_verified_checkpoint(
         &self,
-    ) -> sui_types::storage::error::Result<VerifiedCheckpoint> {
+    ) -> pera_types::storage::error::Result<VerifiedCheckpoint> {
         todo!()
     }
 
     fn get_highest_synced_checkpoint(
         &self,
-    ) -> sui_types::storage::error::Result<VerifiedCheckpoint> {
+    ) -> pera_types::storage::error::Result<VerifiedCheckpoint> {
         todo!()
     }
 
     fn get_lowest_available_checkpoint(
         &self,
-    ) -> sui_types::storage::error::Result<sui_types::messages_checkpoint::CheckpointSequenceNumber>
+    ) -> pera_types::storage::error::Result<pera_types::messages_checkpoint::CheckpointSequenceNumber>
     {
         // TODO wire this up to the underlying sim store, for now this will work since we never
         // prune the sim store
@@ -480,15 +480,15 @@ impl<T, V: store::SimulatorStore> ReadStore for Simulacrum<T, V> {
 
     fn get_checkpoint_by_digest(
         &self,
-        digest: &sui_types::messages_checkpoint::CheckpointDigest,
-    ) -> sui_types::storage::error::Result<Option<VerifiedCheckpoint>> {
+        digest: &pera_types::messages_checkpoint::CheckpointDigest,
+    ) -> pera_types::storage::error::Result<Option<VerifiedCheckpoint>> {
         Ok(self.store().get_checkpoint_by_digest(digest))
     }
 
     fn get_checkpoint_by_sequence_number(
         &self,
-        sequence_number: sui_types::messages_checkpoint::CheckpointSequenceNumber,
-    ) -> sui_types::storage::error::Result<Option<VerifiedCheckpoint>> {
+        sequence_number: pera_types::messages_checkpoint::CheckpointSequenceNumber,
+    ) -> pera_types::storage::error::Result<Option<VerifiedCheckpoint>> {
         Ok(self
             .store()
             .get_checkpoint_by_sequence_number(sequence_number))
@@ -496,55 +496,55 @@ impl<T, V: store::SimulatorStore> ReadStore for Simulacrum<T, V> {
 
     fn get_checkpoint_contents_by_digest(
         &self,
-        digest: &sui_types::messages_checkpoint::CheckpointContentsDigest,
-    ) -> sui_types::storage::error::Result<Option<sui_types::messages_checkpoint::CheckpointContents>>
+        digest: &pera_types::messages_checkpoint::CheckpointContentsDigest,
+    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
     {
         Ok(self.store().get_checkpoint_contents(digest))
     }
 
     fn get_checkpoint_contents_by_sequence_number(
         &self,
-        _sequence_number: sui_types::messages_checkpoint::CheckpointSequenceNumber,
-    ) -> sui_types::storage::error::Result<Option<sui_types::messages_checkpoint::CheckpointContents>>
+        _sequence_number: pera_types::messages_checkpoint::CheckpointSequenceNumber,
+    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
     {
         todo!()
     }
 
     fn get_transaction(
         &self,
-        tx_digest: &sui_types::digests::TransactionDigest,
-    ) -> sui_types::storage::error::Result<Option<Arc<VerifiedTransaction>>> {
+        tx_digest: &pera_types::digests::TransactionDigest,
+    ) -> pera_types::storage::error::Result<Option<Arc<VerifiedTransaction>>> {
         Ok(self.store().get_transaction(tx_digest).map(Arc::new))
     }
 
     fn get_transaction_effects(
         &self,
-        tx_digest: &sui_types::digests::TransactionDigest,
-    ) -> sui_types::storage::error::Result<Option<TransactionEffects>> {
+        tx_digest: &pera_types::digests::TransactionDigest,
+    ) -> pera_types::storage::error::Result<Option<TransactionEffects>> {
         Ok(self.store().get_transaction_effects(tx_digest))
     }
 
     fn get_events(
         &self,
-        event_digest: &sui_types::digests::TransactionEventsDigest,
-    ) -> sui_types::storage::error::Result<Option<sui_types::effects::TransactionEvents>> {
+        event_digest: &pera_types::digests::TransactionEventsDigest,
+    ) -> pera_types::storage::error::Result<Option<pera_types::effects::TransactionEvents>> {
         Ok(self.store().get_transaction_events(event_digest))
     }
 
     fn get_full_checkpoint_contents_by_sequence_number(
         &self,
-        _sequence_number: sui_types::messages_checkpoint::CheckpointSequenceNumber,
-    ) -> sui_types::storage::error::Result<
-        Option<sui_types::messages_checkpoint::FullCheckpointContents>,
+        _sequence_number: pera_types::messages_checkpoint::CheckpointSequenceNumber,
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::FullCheckpointContents>,
     > {
         todo!()
     }
 
     fn get_full_checkpoint_contents(
         &self,
-        _digest: &sui_types::messages_checkpoint::CheckpointContentsDigest,
-    ) -> sui_types::storage::error::Result<
-        Option<sui_types::messages_checkpoint::FullCheckpointContents>,
+        _digest: &pera_types::messages_checkpoint::CheckpointContentsDigest,
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::FullCheckpointContents>,
     > {
         todo!()
     }
@@ -553,22 +553,22 @@ impl<T, V: store::SimulatorStore> ReadStore for Simulacrum<T, V> {
 impl<T: Send + Sync, V: store::SimulatorStore + Send + Sync> RestStateReader for Simulacrum<T, V> {
     fn get_transaction_checkpoint(
         &self,
-        _digest: &sui_types::digests::TransactionDigest,
-    ) -> sui_types::storage::error::Result<
-        Option<sui_types::messages_checkpoint::CheckpointSequenceNumber>,
+        _digest: &pera_types::digests::TransactionDigest,
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::CheckpointSequenceNumber>,
     > {
         todo!()
     }
 
     fn get_lowest_available_checkpoint_objects(
         &self,
-    ) -> sui_types::storage::error::Result<CheckpointSequenceNumber> {
+    ) -> pera_types::storage::error::Result<CheckpointSequenceNumber> {
         Ok(0)
     }
 
     fn get_chain_identifier(
         &self,
-    ) -> sui_types::storage::error::Result<sui_types::digests::ChainIdentifier> {
+    ) -> pera_types::storage::error::Result<pera_types::digests::ChainIdentifier> {
         Ok(self
             .store()
             .get_checkpoint_by_sequence_number(0)
@@ -580,10 +580,10 @@ impl<T: Send + Sync, V: store::SimulatorStore + Send + Sync> RestStateReader for
 
     fn account_owned_objects_info_iter(
         &self,
-        _owner: SuiAddress,
+        _owner: PeraAddress,
         _cursor: Option<ObjectID>,
-    ) -> sui_types::storage::error::Result<
-        Box<dyn Iterator<Item = sui_types::storage::AccountOwnedObjectInfo> + '_>,
+    ) -> pera_types::storage::error::Result<
+        Box<dyn Iterator<Item = pera_types::storage::AccountOwnedObjectInfo> + '_>,
     > {
         todo!()
     }
@@ -592,12 +592,12 @@ impl<T: Send + Sync, V: store::SimulatorStore + Send + Sync> RestStateReader for
         &self,
         _parent: ObjectID,
         _cursor: Option<ObjectID>,
-    ) -> sui_types::storage::error::Result<
+    ) -> pera_types::storage::error::Result<
         Box<
             dyn Iterator<
                     Item = (
-                        sui_types::storage::DynamicFieldKey,
-                        sui_types::storage::DynamicFieldIndexInfo,
+                        pera_types::storage::DynamicFieldKey,
+                        pera_types::storage::DynamicFieldIndexInfo,
                     ),
                 > + '_,
         >,
@@ -608,7 +608,7 @@ impl<T: Send + Sync, V: store::SimulatorStore + Send + Sync> RestStateReader for
     fn get_coin_info(
         &self,
         _coin_type: &StructTag,
-    ) -> sui_types::storage::error::Result<Option<sui_types::storage::CoinInfo>> {
+    ) -> pera_types::storage::error::Result<Option<pera_types::storage::CoinInfo>> {
         todo!()
     }
 }
@@ -616,9 +616,9 @@ impl<T: Send + Sync, V: store::SimulatorStore + Send + Sync> RestStateReader for
 impl Simulacrum {
     /// Generate a random transfer transaction.
     /// TODO: This is here today to make it easier to write tests. But we should utilize all the
-    /// existing code for generating transactions in sui-test-transaction-builder by defining a trait
+    /// existing code for generating transactions in pera-test-transaction-builder by defining a trait
     /// that both WalletContext and Simulacrum implement. Then we can remove this function.
-    pub fn transfer_txn(&mut self, recipient: SuiAddress) -> (Transaction, u64) {
+    pub fn transfer_txn(&mut self, recipient: PeraAddress) -> (Transaction, u64) {
         let (sender, key) = self.keystore().accounts().next().unwrap();
         let sender = *sender;
 
@@ -632,7 +632,7 @@ impl Simulacrum {
 
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
-            builder.transfer_sui(recipient, Some(transfer_amount));
+            builder.transfer_pera(recipient, Some(transfer_amount));
             builder.finish()
         };
 
@@ -654,8 +654,8 @@ mod tests {
     use std::time::Duration;
 
     use rand::{rngs::StdRng, SeedableRng};
-    use sui_types::{
-        base_types::SuiAddress, effects::TransactionEffectsAPI, gas_coin::GasCoin,
+    use pera_types::{
+        base_types::PeraAddress, effects::TransactionEffectsAPI, gas_coin::GasCoin,
         transaction::TransactionDataAPI,
     };
 
@@ -730,7 +730,7 @@ mod tests {
     #[test]
     fn transfer() {
         let mut sim = Simulacrum::new();
-        let recipient = SuiAddress::random_for_testing_only();
+        let recipient = PeraAddress::random_for_testing_only();
         let (tx, transfer_amount) = sim.transfer_txn(recipient);
 
         let gas_id = tx.data().transaction_data().gas_data().payment[0].0;

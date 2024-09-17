@@ -3,8 +3,8 @@
 @use '_values/colors' as c-val;
 
 $values: (
-	c-var.$background: c-val.$sui-alice-blue,
-	c-var.$background-color: c-val.$sui-alice-blue,
+	c-var.$background: c-val.$pera-alice-blue,
+	c-var.$background-color: c-val.$pera-alice-blue,
 	c-var.$text-on-background: c-val.$gray-95,
 	c-var.$main-content-background: c-val.$white,
 	c-var.$text-on-main-content-background: c-val.$gray-100,
@@ -12,8 +12,8 @@ $values: (
 	shadows.$message-content: 0 5px 30px rgba(86 104 115 / 20%),
 	c-var.$nav-background-color: rgb(240 249 255 / 69%),
 	c-var.$nav-background-filter: blur(20px),
-	c-var.$nav-item-color: c-val.$sui-blue-steel-dark,
-	c-var.$nav-item-highlighted-color: c-val.$sui-steel-darker,
+	c-var.$nav-item-color: c-val.$pera-blue-steel-dark,
+	c-var.$nav-item-highlighted-color: c-val.$pera-steel-darker,
 	c-var.$nav-item-active-color: c-val.$hero-dark,
 	c-var.$nav-item-active-highlighted-color: c-val.$hero,
 	c-var.$menu-btn-color: c-val.$gray-100,

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{
     cell::RefCell,
@@ -7,17 +7,17 @@ use std::{
     str::FromStr,
 };
 
-use crate::execution_value::SuiResolver;
+use crate::execution_value::PeraResolver;
 use move_core_types::{
     account_address::AccountAddress,
     identifier::{IdentStr, Identifier},
     language_storage::{ModuleId, StructTag},
     resolver::{LinkageResolver, ModuleResolver, ResourceResolver},
 };
-use sui_types::storage::{get_module, PackageObject};
-use sui_types::{
+use pera_types::storage::{get_module, PackageObject};
+use pera_types::{
     base_types::ObjectID,
-    error::{ExecutionError, SuiError, SuiResult},
+    error::{ExecutionError, PeraError, PeraResult},
     move_package::{MovePackage, TypeOrigin, UpgradeInfo},
     storage::BackingPackageStore,
 };
@@ -26,7 +26,7 @@ use sui_types::{
 /// `resolver` and the second via linkage information that is loaded from a move package.
 pub struct LinkageView<'state> {
     /// Interface to resolve packages, modules and resources directly from the store.
-    resolver: Box<dyn SuiResolver + 'state>,
+    resolver: Box<dyn PeraResolver + 'state>,
     /// Information used to change module and type identities during linkage.
     linkage_info: Option<LinkageInfo>,
     /// Cache containing the type origin information from every package that has been set as the
@@ -52,7 +52,7 @@ pub struct LinkageInfo {
 pub struct SavedLinkage(LinkageInfo);
 
 impl<'state> LinkageView<'state> {
-    pub fn new(resolver: Box<dyn SuiResolver + 'state>) -> Self {
+    pub fn new(resolver: Box<dyn PeraResolver + 'state>) -> Self {
         Self {
             resolver,
             linkage_info: None,
@@ -194,7 +194,7 @@ impl<'state> LinkageView<'state> {
             .map_or(AccountAddress::ZERO, |l| l.storage_id)
     }
 
-    pub(crate) fn relocate(&self, module_id: &ModuleId) -> Result<ModuleId, SuiError> {
+    pub(crate) fn relocate(&self, module_id: &ModuleId) -> Result<ModuleId, PeraError> {
         let Some(linkage) = &self.linkage_info else {
             invariant_violation!("No linkage context set while relocating {module_id}.")
         };
@@ -227,7 +227,7 @@ impl<'state> LinkageView<'state> {
         &self,
         runtime_id: &ModuleId,
         struct_: &IdentStr,
-    ) -> Result<ModuleId, SuiError> {
+    ) -> Result<ModuleId, PeraError> {
         if self.linkage_info.is_none() {
             invariant_violation!(
                 "No linkage context set for defining module query on {runtime_id}::{struct_}."
@@ -273,7 +273,7 @@ impl From<&MovePackage> for LinkageInfo {
 }
 
 impl<'state> LinkageResolver for LinkageView<'state> {
-    type Error = SuiError;
+    type Error = PeraError;
 
     fn link_context(&self) -> AccountAddress {
         LinkageView::link_context(self)
@@ -295,7 +295,7 @@ impl<'state> LinkageResolver for LinkageView<'state> {
 /** Remaining implementations delegated to state_view *************************/
 
 impl<'state> ResourceResolver for LinkageView<'state> {
-    type Error = SuiError;
+    type Error = PeraError;
 
     fn get_resource(
         &self,
@@ -307,7 +307,7 @@ impl<'state> ResourceResolver for LinkageView<'state> {
 }
 
 impl<'state> ModuleResolver for LinkageView<'state> {
-    type Error = SuiError;
+    type Error = PeraError;
 
     fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
         get_module(self, id)
@@ -315,7 +315,7 @@ impl<'state> ModuleResolver for LinkageView<'state> {
 }
 
 impl<'state> BackingPackageStore for LinkageView<'state> {
-    fn get_package_object(&self, package_id: &ObjectID) -> SuiResult<Option<PackageObject>> {
+    fn get_package_object(&self, package_id: &ObjectID) -> PeraResult<Option<PackageObject>> {
         self.resolver.get_package_object(package_id)
     }
 }

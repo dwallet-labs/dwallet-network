@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-import type { Transaction, TransactionObjectArgument } from '@mysten/sui/transactions';
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+import type { Transaction, TransactionObjectArgument } from '@pera-io/pera/transactions';
 
 import type { DeepBookConfig } from '../utils/config.js';
 

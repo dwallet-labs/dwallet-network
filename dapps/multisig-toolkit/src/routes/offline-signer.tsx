@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useCurrentAccount, useSignTransaction, useSuiClientContext } from '@mysten/dapp-kit';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { useCurrentAccount, useSignTransaction, usePeraClientContext } from '@mysten/dapp-kit';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
+import { Transaction } from '@pera-io/pera/transactions';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle, Terminal } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -21,7 +21,7 @@ export default function OfflineSigner() {
 
 	const [dryRunNetwork, setDryRunNetwork] = useState<Network>('mainnet');
 
-	const { selectNetwork } = useSuiClientContext();
+	const { selectNetwork } = usePeraClientContext();
 
 	const { mutateAsync: signTransaction } = useSignTransaction();
 	const [tab, setTab] = useState<'transaction' | 'signature'>('transaction');
@@ -58,7 +58,7 @@ export default function OfflineSigner() {
 	} = useMutation({
 		mutationKey: [dryRunNetwork, 'dry-run'],
 		mutationFn: async () => {
-			const dryRunClient = new SuiClient({
+			const dryRunClient = new PeraClient({
 				url: getFullnodeUrl(dryRunNetwork),
 			});
 			const transaction = Transaction.from(bytes);

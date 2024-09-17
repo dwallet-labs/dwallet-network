@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { ALL_PERMISSION_TYPES, isValidPermissionTypes } from '_payloads/permissions';
 import type { Permission, PermissionResponse, PermissionType } from '_payloads/permissions';

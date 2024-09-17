@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
 
 // Get time between current epoch and specified epoch
 // Get the period between the current epoch and next epoch
 export function useGetTimeBeforeEpochNumber(epoch: number) {
-	const data = useSuiClientQuery('getLatestSuiSystemState');
+	const data = usePeraClientQuery('getLatestPeraSystemState');
 	// Current epoch
 	const currentEpoch = Number(data.data?.epoch || 0);
 	const currentEpochStartTime = Number(data.data?.epochStartTimestampMs || 0);

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 set -e
 
 # number of primary instances to start.

@@ -1,17 +1,17 @@
 ---
 protocol-key-pair:
-  path: /opt/sui/key-pairs/protocol.key
+  path: /opt/pera/key-pairs/protocol.key
 worker-key-pair:
-  path: /opt/sui/key-pairs/worker.key
+  path: /opt/pera/key-pairs/worker.key
 network-key-pair:
-  path: /opt/sui/key-pairs/network.key
-db-path: /opt/sui/db/authorities_db
+  path: /opt/pera/key-pairs/network.key
+db-path: /opt/pera/db/authorities_db
 network-address: /ip4/0.0.0.0/tcp/8080/http
 metrics-address: 0.0.0.0:9184
 admin-interface-port: 1337
 consensus-config:
   address: /ip4/127.0.0.1/tcp/8083/http
-  db-path: /opt/sui/db/consensus_db
+  db-path: /opt/pera/db/consensus_db
   internal-worker-address: null
   narwhal-config:
     header_num_of_batches_threshold: 32
@@ -35,7 +35,7 @@ p2p-config:
   anemo-config:
     max-concurrent-connections: 0
 genesis:
-  genesis-file-location: /opt/sui/config/genesis.blob
+  genesis-file-location: /opt/pera/config/genesis.blob
 authority-store-pruning-config:
   num-latest-epoch-dbs-to-retain: 3
   epoch-db-pruning-period-secs: 3600
@@ -51,5 +51,5 @@ db-checkpoint-config:
 indirect-objects-threshold: 18446744073709551615
 metrics:
   push-interval-seconds: 60
-  # push-url: https://metrics-proxy.testnet.sui.io:8443/publish/metrics
-  # push-url: https://metrics-proxy.mainnet.sui.io:8443/publish/metrics
+  # push-url: https://metrics-proxy.testnet.pera.io:8443/publish/metrics
+  # push-url: https://metrics-proxy.mainnet.pera.io:8443/publish/metrics

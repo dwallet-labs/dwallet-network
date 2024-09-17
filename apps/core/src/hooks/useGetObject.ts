@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { usePeraClient } from '@mysten/dapp-kit';
+import { normalizePeraAddress } from '@pera-io/pera/utils';
 import { useQuery } from '@tanstack/react-query';
 
 const defaultOptions = {
@@ -15,8 +15,8 @@ const defaultOptions = {
 };
 
 export function useGetObject(objectId?: string | null) {
-	const client = useSuiClient();
-	const normalizedObjId = objectId && normalizeSuiAddress(objectId);
+	const client = usePeraClient();
+	const normalizedObjId = objectId && normalizePeraAddress(objectId);
 	return useQuery({
 		queryKey: ['object', normalizedObjId],
 		queryFn: () =>

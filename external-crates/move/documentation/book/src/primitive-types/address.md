@@ -6,8 +6,8 @@ differentiate packages of [modules](../modules.md), where each package has its o
 modules. Specific deployments of Move might also use the `address` value for
 [storage](../abilities.md#key) operations.
 
-> For Sui, `address` is used to represent "accounts", and also objects via strong type wrappers
-> (with `sui::object::UID` and `sui::object::ID`).
+> For Pera, `address` is used to represent "accounts", and also objects via strong type wrappers
+> (with `pera::object::UID` and `pera::object::ID`).
 
 Although an `address` is a 256 bit integer under the hood, Move addresses are intentionally
 opaque---they cannot be created from integers, they do not support arithmetic operations, and they

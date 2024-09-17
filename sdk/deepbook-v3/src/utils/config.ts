@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+import { normalizePeraAddress } from '@pera-io/pera/utils';
 
 import { BalanceManagerContract } from '../transactions/balanceManager.js';
 import type { BalanceManager, Environment } from '../types/index.js';
@@ -48,7 +48,7 @@ export class DeepBookConfig {
 		coins?: CoinMap;
 		pools?: PoolMap;
 	}) {
-		this.address = normalizeSuiAddress(address);
+		this.address = normalizePeraAddress(address);
 		this.adminCap = adminCap;
 		this.balanceManagers = balanceManagers || {};
 

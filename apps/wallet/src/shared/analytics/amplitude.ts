@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import * as amplitude from '@amplitude/analytics-browser';
 import { LogLevel, TransportType, type UserSession } from '@amplitude/analytics-types';

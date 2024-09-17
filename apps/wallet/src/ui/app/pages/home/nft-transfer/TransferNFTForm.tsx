@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import BottomMenuLayout, { Content, Menu } from '_app/shared/bottom-menu-layout';
 import { Button } from '_app/shared/ButtonUI';
@@ -12,11 +12,11 @@ import { useActiveAccount } from '_src/ui/app/hooks/useActiveAccount';
 import { useQredoTransaction } from '_src/ui/app/hooks/useQredoTransaction';
 import { useSigner } from '_src/ui/app/hooks/useSigner';
 import { QredoActionIgnoredByUser } from '_src/ui/app/QredoSigner';
-import { useGetKioskContents, useSuiNSEnabled } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { useGetKioskContents, usePeraNSEnabled } from '@mysten/core';
+import { usePeraClient } from '@mysten/dapp-kit';
 import { ArrowRight16 } from '@mysten/icons';
-import { Transaction } from '@mysten/sui/transactions';
-import { isValidSuiNSName } from '@mysten/sui/utils';
+import { Transaction } from '@pera-io/pera/transactions';
+import { isValidPeraNSName } from '@pera-io/pera/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Field, Form, Formik } from 'formik';
 import { toast } from 'react-hot-toast';
@@ -33,9 +33,9 @@ export function TransferNFTForm({
 	objectType?: string | null;
 }) {
 	const activeAddress = useActiveAddress();
-	const rpc = useSuiClient();
-	const suiNSEnabled = useSuiNSEnabled();
-	const validationSchema = createValidationSchema(rpc, suiNSEnabled, activeAddress || '', objectId);
+	const rpc = usePeraClient();
+	const peraNSEnabled = usePeraNSEnabled();
+	const validationSchema = createValidationSchema(rpc, peraNSEnabled, activeAddress || '', objectId);
 	const activeAccount = useActiveAccount();
 	const signer = useSigner(activeAccount);
 	const queryClient = useQueryClient();
@@ -51,12 +51,12 @@ export function TransferNFTForm({
 				throw new Error('Missing data');
 			}
 
-			if (suiNSEnabled && isValidSuiNSName(to)) {
+			if (peraNSEnabled && isValidPeraNSName(to)) {
 				const address = await rpc.resolveNameServiceAddress({
 					name: to,
 				});
 				if (!address) {
-					throw new Error('SuiNS name not found.');
+					throw new Error('PeraNS name not found.');
 				}
 				to = address;
 			}

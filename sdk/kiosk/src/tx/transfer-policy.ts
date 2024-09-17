@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui/bcs';
+import { bcs } from '@pera-io/pera/bcs';
 import type {
 	Transaction,
 	TransactionArgument,
 	TransactionObjectArgument,
-} from '@mysten/sui/transactions';
+} from '@pera-io/pera/transactions';
 
 import type { ObjectArgument } from '../types/index.js';
 import { TRANSFER_POLICY_MODULE, TRANSFER_POLICY_TYPE } from '../types/index.js';

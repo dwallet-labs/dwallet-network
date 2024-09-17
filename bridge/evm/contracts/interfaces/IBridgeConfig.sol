@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.20;
 
 /// @title IBridgeConfig
@@ -9,7 +9,7 @@ interface IBridgeConfig {
     /// @notice The data struct for the supported bridge tokens.
     struct Token {
         address tokenAddress;
-        uint8 suiDecimal;
+        uint8 peraDecimal;
         bool native;
     }
 
@@ -20,10 +20,10 @@ interface IBridgeConfig {
     /// @return address of the provided token.
     function tokenAddressOf(uint8 tokenID) external view returns (address);
 
-    /// @notice Returns the sui decimal places of the token with the given ID.
+    /// @notice Returns the pera decimal places of the token with the given ID.
     /// @param tokenID The ID of the token.
-    /// @return amount of sui decimal places of the provided token.
-    function tokenSuiDecimalOf(uint8 tokenID) external view returns (uint8);
+    /// @return amount of pera decimal places of the provided token.
+    function tokenPeraDecimalOf(uint8 tokenID) external view returns (uint8);
 
     /// @notice Returns the price of the token with the given ID.
     /// @param tokenID The ID of the token.
@@ -35,7 +35,7 @@ interface IBridgeConfig {
     /// @return true if the token is supported, false otherwise.
     function isTokenSupported(uint8 tokenID) external view returns (bool);
 
-    /// @notice Returns whether a chain is supported in SuiBridge with the given ID.
+    /// @notice Returns whether a chain is supported in PeraBridge with the given ID.
     /// @param chainId The ID of the chain.
     /// @return true if the chain is supported, false otherwise.
     function isChainSupported(uint8 chainId) external view returns (bool);
@@ -43,6 +43,6 @@ interface IBridgeConfig {
     /// @notice Returns the chain ID of the bridge.
     function chainID() external view returns (uint8);
 
-    event TokenAdded(uint8 tokenID, address tokenAddress, uint8 suiDecimal, uint64 tokenPrice);
+    event TokenAdded(uint8 tokenID, address tokenAddress, uint8 peraDecimal, uint64 tokenPrice);
     event TokenPriceUpdated(uint8 tokenID, uint64 tokenPrice);
 }

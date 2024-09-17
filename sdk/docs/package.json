@@ -21,7 +21,7 @@
 	},
 	"keywords": [],
 	"author": "Mysten Labs <build@mystenlabs.com>",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"dependencies": {
 		"@mysten/bcs": "workspace:*",
 		"@mysten/dapp-kit": "workspace:*",
@@ -29,7 +29,7 @@
 		"@mysten/enoki": "workspace:*",
 		"@mysten/graphql-transport": "workspace:*",
 		"@mysten/kiosk": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@pera-io/pera": "workspace:*",
 		"@mysten/wallet-standard": "workspace:*",
 		"@mysten/zklogin": "workspace:*",
 		"@mysten/zksend": "workspace:*",

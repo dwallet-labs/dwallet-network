@@ -1,17 +1,17 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 pragma solidity ^0.8.20;
 
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import "openzeppelin-foundry-upgrades/Options.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
-import "./mocks/MockSuiBridgeV2.sol";
+import "./mocks/MockPeraBridgeV2.sol";
 import "../contracts/BridgeCommittee.sol";
-import "../contracts/SuiBridge.sol";
+import "../contracts/PeraBridge.sol";
 import "./BridgeBaseTest.t.sol";
 import "forge-std/Test.sol";
 
 contract CommitteeUpgradeableTest is BridgeBaseTest {
-    MockSuiBridgeV2 bridgeV2;
+    MockPeraBridgeV2 bridgeV2;
     uint8 _chainID = 12;
 
     // This function is called before each unit test
@@ -59,19 +59,19 @@ contract CommitteeUpgradeableTest is BridgeBaseTest {
 
         committee.initializeConfig(_config);
 
-        // deploy sui bridge
+        // deploy pera bridge
         address _bridge = Upgrades.deployUUPSProxy(
-            "SuiBridge.sol",
-            abi.encodeCall(SuiBridge.initialize, (_committee, address(0), address(0))),
+            "PeraBridge.sol",
+            abi.encodeCall(PeraBridge.initialize, (_committee, address(0), address(0))),
             opts
         );
 
-        bridge = SuiBridge(_bridge);
-        bridgeV2 = new MockSuiBridgeV2();
+        bridge = PeraBridge(_bridge);
+        bridgeV2 = new MockPeraBridgeV2();
     }
 
     function testUpgradeWithSignaturesSuccess() public {
-        bytes memory initializer = abi.encodeCall(MockSuiBridgeV2.initializeV2, ());
+        bytes memory initializer = abi.encodeCall(MockPeraBridgeV2.initializeV2, ());
         bytes memory payload = abi.encode(address(bridge), address(bridgeV2), initializer);
 
         // Create upgrade message
@@ -97,7 +97,7 @@ contract CommitteeUpgradeableTest is BridgeBaseTest {
 
     function testUpgradeWithSignaturesInsufficientStakeAmount() public {
         // Create message
-        bytes memory initializer = abi.encodeCall(MockSuiBridgeV2.initializeV2, ());
+        bytes memory initializer = abi.encodeCall(MockPeraBridgeV2.initializeV2, ());
         bytes memory payload = abi.encode(address(bridge), address(bridgeV2), initializer);
 
         // Create upgrade message
@@ -156,7 +156,7 @@ contract CommitteeUpgradeableTest is BridgeBaseTest {
     }
 
     function testUpgradeWithSignaturesERC1967UpgradeNewImplementationIsNotUUPS() public {
-        bytes memory initializer = abi.encodeCall(MockSuiBridgeV2.initializeV2, ());
+        bytes memory initializer = abi.encodeCall(MockPeraBridgeV2.initializeV2, ());
         bytes memory payload = abi.encode(address(bridge), address(this), initializer);
 
         BridgeUtils.Message memory message = BridgeUtils.Message({
@@ -183,7 +183,7 @@ contract CommitteeUpgradeableTest is BridgeBaseTest {
     }
 
     function testUpgradeWithSignaturesInvalidProxyAddress() public {
-        bytes memory initializer = abi.encodeCall(MockSuiBridgeV2.initializeV2, ());
+        bytes memory initializer = abi.encodeCall(MockPeraBridgeV2.initializeV2, ());
         bytes memory payload = abi.encode(address(this), address(bridgeV2), initializer);
 
         BridgeUtils.Message memory message = BridgeUtils.Message({
@@ -271,7 +271,7 @@ contract CommitteeUpgradeableTest is BridgeBaseTest {
 
         bridge.upgradeWithSignatures(signatures, message);
 
-        MockSuiBridgeV2 newBridgeV2 = MockSuiBridgeV2(address(bridge));
+        MockPeraBridgeV2 newBridgeV2 = MockPeraBridgeV2(address(bridge));
         assertTrue(newBridgeV2.isPausing());
         assertEq(Upgrades.getImplementationAddress(address(bridge)), address(bridgeV2));
     }
@@ -307,7 +307,7 @@ contract CommitteeUpgradeableTest is BridgeBaseTest {
 
         bridge.upgradeWithSignatures(signatures, message);
 
-        MockSuiBridgeV2 newBridgeV2 = MockSuiBridgeV2(address(bridge));
+        MockPeraBridgeV2 newBridgeV2 = MockPeraBridgeV2(address(bridge));
         assertTrue(newBridgeV2.isPausing());
         assertEq(newBridgeV2.mock(), 42);
         assertEq(Upgrades.getImplementationAddress(address(bridge)), address(bridgeV2));
@@ -344,7 +344,7 @@ contract CommitteeUpgradeableTest is BridgeBaseTest {
 
         bridge.upgradeWithSignatures(signatures, message);
 
-        MockSuiBridgeV2(address(bridge));
+        MockPeraBridgeV2(address(bridge));
         assertEq(Upgrades.getImplementationAddress(address(bridge)), address(bridgeV2));
     }
 }

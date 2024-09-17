@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export * from './api/SentryHttpTransport';
 export * from './hooks/useFormatCoin';
@@ -32,7 +32,7 @@ export * from './hooks/useGetKioskContents';
 export * from './hooks/useZodForm';
 export * from './utils/kiosk';
 export * from './hooks/useElementDimensions';
-export * from './hooks/useSuiCoinData';
+export * from './hooks/usePeraCoinData';
 export * from './hooks/useLocalStorage';
 export * from './hooks/useGetDelegatedStake';
 export * from './hooks/useTokenPrice';

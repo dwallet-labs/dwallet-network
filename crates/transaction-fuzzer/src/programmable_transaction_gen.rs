@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{cmp, str::FromStr};
 
@@ -7,10 +7,10 @@ use move_core_types::identifier::Identifier;
 use once_cell::sync::Lazy;
 use proptest::collection::vec;
 use proptest::prelude::*;
-use sui_protocol_config::ProtocolConfig;
-use sui_types::base_types::{ObjectID, ObjectRef, SuiAddress};
-use sui_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
-use sui_types::transaction::{Argument, CallArg, Command, ProgrammableTransaction};
+use pera_protocol_config::ProtocolConfig;
+use pera_types::base_types::{ObjectID, ObjectRef, PeraAddress};
+use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
+use pera_types::transaction::{Argument, CallArg, Command, ProgrammableTransaction};
 
 static PROTOCOL_CONFIG: Lazy<ProtocolConfig> =
     Lazy::new(ProtocolConfig::get_for_max_version_UNSAFE);
@@ -182,7 +182,7 @@ pub fn arg_len_strategy_input_match() -> impl Strategy<Value = usize> {
 }
 
 prop_compose! {
-    pub fn gen_many_input_match(recipient: SuiAddress, package: ObjectID, cap: ObjectRef)
+    pub fn gen_many_input_match(recipient: PeraAddress, package: ObjectID, cap: ObjectRef)
         (mut command_sketches in vec(gen_command_input_match(), 1..=MAX_COMMANDS_INPUT_MATCH)) -> ProgrammableTransaction {
             let mut builder = ProgrammableTransactionBuilder::new();
             let mut prev_cmd_num = -1;
@@ -207,7 +207,7 @@ fn gen_input(
     prev_command: Option<&CommandSketch>,
     cmd: &CommandSketch,
     prev_cmd_num: i64,
-    recipient: SuiAddress,
+    recipient: PeraAddress,
     package: ObjectID,
     cap: ObjectRef,
 ) -> (Command, i64) {
@@ -238,7 +238,7 @@ pub fn gen_transfer_input(
     prev_command: Option<&CommandSketch>,
     cmd: &CommandSketch,
     prev_cmd_num: i64,
-    recipient: SuiAddress,
+    recipient: PeraAddress,
     package: ObjectID,
     cap: ObjectRef,
 ) -> (Command, i64) {

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{
     collections::{HashMap, HashSet, VecDeque},
@@ -18,7 +18,7 @@ use network::WorkerRpc;
 use prometheus::IntGauge;
 use rand::{rngs::ThreadRng, seq::SliceRandom};
 use store::{rocks::DBMap, Map};
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use tokio::{
     select,
     time::{sleep, sleep_until, Instant},

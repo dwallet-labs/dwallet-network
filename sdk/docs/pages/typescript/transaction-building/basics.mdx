@@ -1,10 +1,10 @@
-# Sui Programmable Transaction Basics
+# Pera Programmable Transaction Basics
 
-This example starts by constructing a transaction to send SUI. To construct transactions, import the
+This example starts by constructing a transaction to send PERA. To construct transactions, import the
 `Transaction` class and construct it:
 
 ```tsx
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@pera-io/pera/transactions';
 
 const tx = new Transaction();
 ```
@@ -17,7 +17,7 @@ You can then add transactions to the transaction .
 const [coin] = tx.splitCoins(tx.gas, [100]);
 
 // transfer the split coin to a specific address
-tx.transferObjects([coin], '0xSomeSuiAddress');
+tx.transferObjects([coin], '0xSomePeraAddress');
 ```
 
 You can attach multiple transactions of the same type to a transaction, as well. For example, to get
@@ -29,7 +29,7 @@ interface Transfer {
 	amount: number;
 }
 
-// procure a list of some Sui transfers to make
+// procure a list of some Pera transfers to make
 const transfers: Transfer[] = getTransfers();
 
 const tx = new Transaction();
@@ -62,7 +62,7 @@ may not be immediately observable.
 There are 2 ways to observe the results of a transaction. Methods like
 `client.signAndExecuteTransaction` accept an `options` object with options like `showObjectChanges`
 and `showBalanceChanges` (see
-[the SuiClient docs for more details](/typescript/sui-client#arguments)). These options will cause
+[the PeraClient docs for more details](/typescript/pera-client#arguments)). These options will cause
 the request to contain additional details about the effects of the transaction that can be
 immediately displayed to the user, or used for further processing in your application.
 
@@ -86,7 +86,7 @@ Programmable Transactions have two key concepts: inputs and transactions.
 
 Transactions are steps of execution in the transaction. Each Transaction in a Transaction takes a
 set of inputs, and produces results. The inputs for a transaction depend on the kind of transaction.
-Sui supports following transactions:
+Pera supports following transactions:
 
 - `tx.splitCoins(coin, amounts)` - Creates new coins with the defined amounts, split from the
   provided coin. Returns the coins so that it can be used in subsequent transactions.
@@ -96,7 +96,7 @@ Sui supports following transactions:
 - `tx.transferObjects(objects, address)` - Transfers a list of objects to the specified address.
   - Example: `tx.transferObjects([tx.object(thing1), tx.object(thing2)], myAddress)`
 - `tx.moveCall({ target, arguments, typeArguments  })` - Executes a Move call. Returns whatever the
-  Sui Move call returns.
+  Pera Move call returns.
   - Example:
     `tx.moveCall({ target: '0x2::devnet_nft::mint', arguments: [tx.pure.string(name), tx.pure.string(description), tx.pure.string(image)] })`
 - `tx.makeMoveVec({ type, elements })` - Constructs a vector of objects that can be passed into a
@@ -120,7 +120,7 @@ calling the transaction method. appropriate Move type automatically.
 // the amount to split off the gas coin is provided as a pure javascript number
 const [coin] = tx.splitCoins(tx.gas, [100]);
 // the address for the transfer is provided as a pure javascript string
-tx.transferObjects([coin], '0xSomeSuiAddress');
+tx.transferObjects([coin], '0xSomePeraAddress');
 ```
 
 #### Pure values
@@ -136,8 +136,8 @@ contains functions for each of the supported types.
 ```ts
 const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(100)]);
 const [coin] = tx.splitCoins(tx.gas, [tx.pure(bcs.U64.serialize(100))]);
-tx.transferObjects([coin], tx.pure.address('0xSomeSuiAddress'));
-tx.transferObjects([coin], tx.pure(bcs.Address.serialize('0xSomeSuiAddress')));
+tx.transferObjects([coin], tx.pure.address('0xSomePeraAddress'));
+tx.transferObjects([coin], tx.pure(bcs.Address.serialize('0xSomePeraAddress')));
 ```
 
 To pass `vector` or `option` types, you you can pass use the corresponding methods on `tx.pure`, use
@@ -145,7 +145,7 @@ tx.pure as a function with a type argument, or serialize the value before passin
 using the bcs sdk:
 
 ```ts
-import { bcs } from '@mysten/sui/bcs';
+import { bcs } from '@pera-io/pera/bcs';
 
 tx.moveCall({
 	target: '0x2::foo::bar',
@@ -199,7 +199,7 @@ tx.moveCall({
 });
 ```
 
-When building a transaction, Sui expects all objects to be fully resolved, including the object
+When building a transaction, Pera expects all objects to be fully resolved, including the object
 version. The SDK automatically looks up the current version of objects for any provided object
 reference when building a transaction. If the object reference is used as a receiving argument to a
 `moveCall`, the object reference is automatically converted to a receiving transaction argument.
@@ -259,7 +259,7 @@ const tx = new Transaction();
 await tx.build({ client });
 ```
 
-In most cases, building requires your SuiClient to fully resolve input values.
+In most cases, building requires your PeraClient to fully resolve input values.
 
 If you have transaction bytes, you can also convert them back into a `Transaction` class:
 

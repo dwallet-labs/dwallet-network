@@ -28,7 +28,7 @@ ignore = [
     "RUSTSEC-2022-0071",
     # `tui` is unmaintained; use `ratatui` instead
     "RUSTSEC-2023-0049",
-    # we don't do RSA signing on Sui (only verifying for zklogin)
+    # we don't do RSA signing on Pera (only verifying for zklogin)
     "RUSTSEC-2023-0071",
     # A few dependencies use unpatched rustls.
     "RUSTSEC-2024-0336",

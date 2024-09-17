@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { SerializedBcs } from '@mysten/bcs';
 import { fromB64, isSerializedBcs } from '@mysten/bcs';
 import type { InferInput } from 'valibot';
 import { is, parse } from 'valibot';
 
-import type { SuiClient } from '../client/index.js';
+import type { PeraClient } from '../client/index.js';
 import type { SignatureWithBytes, Signer } from '../cryptography/index.js';
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import { normalizePeraAddress } from '../utils/pera-types.js';
 import type { TransactionArgument } from './Commands.js';
 import { Commands } from './Commands.js';
 import type { CallArg, Command } from './data/internal.js';
@@ -320,7 +320,7 @@ export class Transaction {
 						typeof value === 'string'
 							? {
 									$kind: 'UnresolvedObject',
-									UnresolvedObject: { objectId: normalizeSuiAddress(value) },
+									UnresolvedObject: { objectId: normalizePeraAddress(value) },
 								}
 							: value,
 					);
@@ -521,7 +521,7 @@ export class Transaction {
 	/** Derive transaction digest */
 	async getDigest(
 		options: {
-			client?: SuiClient;
+			client?: PeraClient;
 		} = {},
 	): Promise<string> {
 		await this.#prepareBuild(options);

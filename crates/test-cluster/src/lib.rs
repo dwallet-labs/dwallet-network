@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use futures::Future;
 use futures::{future::join_all, StreamExt};
@@ -13,68 +13,68 @@ use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use sui_bridge::crypto::{BridgeAuthorityKeyPair, BridgeAuthoritySignInfo};
-use sui_bridge::sui_transaction_builder::build_add_tokens_on_sui_transaction;
-use sui_bridge::sui_transaction_builder::build_committee_register_transaction;
-use sui_bridge::types::BridgeCommitteeValiditySignInfo;
-use sui_bridge::types::CertifiedBridgeAction;
-use sui_bridge::types::VerifiedCertifiedBridgeAction;
-use sui_bridge::utils::publish_and_register_coins_return_add_coins_on_sui_action;
-use sui_bridge::utils::wait_for_server_to_be_up;
-use sui_config::genesis::Genesis;
-use sui_config::local_ip_utils::get_available_port;
-use sui_config::node::{AuthorityOverloadConfig, DBCheckpointConfig, RunWithRange};
-use sui_config::{Config, SUI_CLIENT_CONFIG, SUI_NETWORK_CONFIG};
-use sui_config::{NodeConfig, PersistedConfig, SUI_KEYSTORE_FILENAME};
-use sui_core::authority_aggregator::AuthorityAggregator;
-use sui_core::authority_client::NetworkAuthorityClient;
-use sui_json_rpc_api::BridgeReadApiClient;
-use sui_json_rpc_types::SuiTransactionBlockResponseOptions;
-use sui_json_rpc_types::{
-    SuiExecutionStatus, SuiTransactionBlockEffectsAPI, SuiTransactionBlockResponse,
+use pera_bridge::crypto::{BridgeAuthorityKeyPair, BridgeAuthoritySignInfo};
+use pera_bridge::pera_transaction_builder::build_add_tokens_on_pera_transaction;
+use pera_bridge::pera_transaction_builder::build_committee_register_transaction;
+use pera_bridge::types::BridgeCommitteeValiditySignInfo;
+use pera_bridge::types::CertifiedBridgeAction;
+use pera_bridge::types::VerifiedCertifiedBridgeAction;
+use pera_bridge::utils::publish_and_register_coins_return_add_coins_on_pera_action;
+use pera_bridge::utils::wait_for_server_to_be_up;
+use pera_config::genesis::Genesis;
+use pera_config::local_ip_utils::get_available_port;
+use pera_config::node::{AuthorityOverloadConfig, DBCheckpointConfig, RunWithRange};
+use pera_config::{Config, PERA_CLIENT_CONFIG, PERA_NETWORK_CONFIG};
+use pera_config::{NodeConfig, PersistedConfig, PERA_KEYSTORE_FILENAME};
+use pera_core::authority_aggregator::AuthorityAggregator;
+use pera_core::authority_client::NetworkAuthorityClient;
+use pera_json_rpc_api::BridgeReadApiClient;
+use pera_json_rpc_types::PeraTransactionBlockResponseOptions;
+use pera_json_rpc_types::{
+    PeraExecutionStatus, PeraTransactionBlockEffectsAPI, PeraTransactionBlockResponse,
     TransactionFilter,
 };
-use sui_keys::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
-use sui_node::SuiNodeHandle;
-use sui_protocol_config::ProtocolVersion;
-use sui_sdk::apis::QuorumDriverApi;
-use sui_sdk::sui_client_config::{SuiClientConfig, SuiEnv};
-use sui_sdk::wallet_context::WalletContext;
-use sui_sdk::{SuiClient, SuiClientBuilder};
-use sui_swarm::memory::{Swarm, SwarmBuilder};
-use sui_swarm_config::genesis_config::{
+use pera_keys::keystore::{AccountKeystore, FileBasedKeystore, Keystore};
+use pera_node::PeraNodeHandle;
+use pera_protocol_config::ProtocolVersion;
+use pera_sdk::apis::QuorumDriverApi;
+use pera_sdk::pera_client_config::{PeraClientConfig, PeraEnv};
+use pera_sdk::wallet_context::WalletContext;
+use pera_sdk::{PeraClient, PeraClientBuilder};
+use pera_swarm::memory::{Swarm, SwarmBuilder};
+use pera_swarm_config::genesis_config::{
     AccountConfig, GenesisConfig, ValidatorGenesisConfig, DEFAULT_GAS_AMOUNT,
 };
-use sui_swarm_config::network_config::NetworkConfig;
-use sui_swarm_config::network_config_builder::{
+use pera_swarm_config::network_config::NetworkConfig;
+use pera_swarm_config::network_config_builder::{
     ProtocolVersionsConfig, StateAccumulatorV2EnabledCallback, StateAccumulatorV2EnabledConfig,
     SupportedProtocolVersionsCallback,
 };
-use sui_swarm_config::node_config_builder::{FullnodeConfigBuilder, ValidatorConfigBuilder};
-use sui_test_transaction_builder::TestTransactionBuilder;
-use sui_types::base_types::ConciseableName;
-use sui_types::base_types::{AuthorityName, ObjectID, ObjectRef, SuiAddress};
-use sui_types::bridge::{get_bridge, TOKEN_ID_BTC, TOKEN_ID_ETH, TOKEN_ID_USDC, TOKEN_ID_USDT};
-use sui_types::bridge::{get_bridge_obj_initial_shared_version, BridgeSummary, BridgeTrait};
-use sui_types::committee::CommitteeTrait;
-use sui_types::committee::{Committee, EpochId};
-use sui_types::crypto::SuiKeyPair;
-use sui_types::crypto::{KeypairTraits, ToFromBytes};
-use sui_types::effects::{TransactionEffects, TransactionEvents};
-use sui_types::error::SuiResult;
-use sui_types::governance::MIN_VALIDATOR_JOINING_STAKE_MIST;
-use sui_types::message_envelope::Message;
-use sui_types::object::Object;
-use sui_types::sui_system_state::epoch_start_sui_system_state::EpochStartSystemStateTrait;
-use sui_types::sui_system_state::SuiSystemState;
-use sui_types::sui_system_state::SuiSystemStateTrait;
-use sui_types::supported_protocol_versions::SupportedProtocolVersions;
-use sui_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
-use sui_types::transaction::{
+use pera_swarm_config::node_config_builder::{FullnodeConfigBuilder, ValidatorConfigBuilder};
+use pera_test_transaction_builder::TestTransactionBuilder;
+use pera_types::base_types::ConciseableName;
+use pera_types::base_types::{AuthorityName, ObjectID, ObjectRef, PeraAddress};
+use pera_types::bridge::{get_bridge, TOKEN_ID_BTC, TOKEN_ID_ETH, TOKEN_ID_USDC, TOKEN_ID_USDT};
+use pera_types::bridge::{get_bridge_obj_initial_shared_version, BridgeSummary, BridgeTrait};
+use pera_types::committee::CommitteeTrait;
+use pera_types::committee::{Committee, EpochId};
+use pera_types::crypto::PeraKeyPair;
+use pera_types::crypto::{KeypairTraits, ToFromBytes};
+use pera_types::effects::{TransactionEffects, TransactionEvents};
+use pera_types::error::PeraResult;
+use pera_types::governance::MIN_VALIDATOR_JOINING_STAKE_NPERA;
+use pera_types::message_envelope::Message;
+use pera_types::object::Object;
+use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
+use pera_types::pera_system_state::PeraSystemState;
+use pera_types::pera_system_state::PeraSystemStateTrait;
+use pera_types::supported_protocol_versions::SupportedProtocolVersions;
+use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
+use pera_types::transaction::{
     CertifiedTransaction, ObjectArg, Transaction, TransactionData, TransactionDataAPI,
     TransactionKind,
 };
-use sui_types::SUI_BRIDGE_OBJECT_ID;
+use pera_types::PERA_BRIDGE_OBJECT_ID;
 use tokio::time::{timeout, Instant};
 use tokio::{task::JoinHandle, time::sleep};
 use tracing::{error, info};
@@ -82,22 +82,22 @@ use tracing::{error, info};
 const NUM_VALIDATOR: usize = 4;
 
 pub struct FullNodeHandle {
-    pub sui_node: SuiNodeHandle,
-    pub sui_client: SuiClient,
+    pub pera_node: PeraNodeHandle,
+    pub pera_client: PeraClient,
     pub rpc_client: HttpClient,
     pub rpc_url: String,
 }
 
 impl FullNodeHandle {
-    pub async fn new(sui_node: SuiNodeHandle, json_rpc_address: SocketAddr) -> Self {
+    pub async fn new(pera_node: PeraNodeHandle, json_rpc_address: SocketAddr) -> Self {
         let rpc_url = format!("http://{}", json_rpc_address);
         let rpc_client = HttpClientBuilder::default().build(&rpc_url).unwrap();
 
-        let sui_client = SuiClientBuilder::default().build(&rpc_url).await.unwrap();
+        let pera_client = PeraClientBuilder::default().build(&rpc_url).await.unwrap();
 
         Self {
-            sui_node,
-            sui_client,
+            pera_node,
+            pera_client,
             rpc_client,
             rpc_url,
         }
@@ -118,12 +118,12 @@ impl TestCluster {
         &self.fullnode_handle.rpc_client
     }
 
-    pub fn sui_client(&self) -> &SuiClient {
-        &self.fullnode_handle.sui_client
+    pub fn pera_client(&self) -> &PeraClient {
+        &self.fullnode_handle.pera_client
     }
 
     pub fn quorum_driver_api(&self) -> &QuorumDriverApi {
-        self.sui_client().quorum_driver_api()
+        self.pera_client().quorum_driver_api()
     }
 
     pub fn rpc_url(&self) -> &str {
@@ -138,22 +138,22 @@ impl TestCluster {
         &mut self.wallet
     }
 
-    pub fn get_addresses(&self) -> Vec<SuiAddress> {
+    pub fn get_addresses(&self) -> Vec<PeraAddress> {
         self.wallet.get_addresses()
     }
 
     // Helper function to get the 0th address in WalletContext
-    pub fn get_address_0(&self) -> SuiAddress {
+    pub fn get_address_0(&self) -> PeraAddress {
         self.get_addresses()[0]
     }
 
     // Helper function to get the 1st address in WalletContext
-    pub fn get_address_1(&self) -> SuiAddress {
+    pub fn get_address_1(&self) -> PeraAddress {
         self.get_addresses()[1]
     }
 
     // Helper function to get the 2nd address in WalletContext
-    pub fn get_address_2(&self) -> SuiAddress {
+    pub fn get_address_2(&self) -> PeraAddress {
         self.get_addresses()[2]
     }
 
@@ -163,7 +163,7 @@ impl TestCluster {
 
     pub fn committee(&self) -> Arc<Committee> {
         self.fullnode_handle
-            .sui_node
+            .pera_node
             .with(|node| node.state().epoch_store_for_testing().committee().clone())
     }
 
@@ -182,14 +182,14 @@ impl TestCluster {
         FullNodeHandle::new(node, json_rpc_address).await
     }
 
-    pub fn all_node_handles(&self) -> Vec<SuiNodeHandle> {
+    pub fn all_node_handles(&self) -> Vec<PeraNodeHandle> {
         self.swarm
             .all_nodes()
             .flat_map(|n| n.get_node_handle())
             .collect()
     }
 
-    pub fn all_validator_handles(&self) -> Vec<SuiNodeHandle> {
+    pub fn all_validator_handles(&self) -> Vec<PeraNodeHandle> {
         self.swarm
             .validator_nodes()
             .map(|n| n.get_node_handle().unwrap())
@@ -236,7 +236,7 @@ impl TestCluster {
     pub async fn spawn_new_validator(
         &mut self,
         genesis_config: ValidatorGenesisConfig,
-    ) -> SuiNodeHandle {
+    ) -> PeraNodeHandle {
         let node_config = ValidatorConfigBuilder::new()
             .build(genesis_config, self.swarm.config().genesis.clone());
         self.swarm.spawn_new_node(node_config).await
@@ -247,7 +247,7 @@ impl TestCluster {
     }
 
     pub async fn get_reference_gas_price(&self) -> u64 {
-        self.sui_client()
+        self.pera_client()
             .governance_api()
             .get_reference_gas_price()
             .await
@@ -256,7 +256,7 @@ impl TestCluster {
 
     pub async fn get_object_from_fullnode_store(&self, object_id: &ObjectID) -> Option<Object> {
         self.fullnode_handle
-            .sui_node
+            .pera_node
             .with_async(|node| async { node.state().get_object(object_id).await.unwrap() })
             .await
     }
@@ -269,7 +269,7 @@ impl TestCluster {
     }
 
     pub async fn get_bridge_summary(&self) -> RpcResult<BridgeSummary> {
-        self.sui_client().http().get_latest_bridge().await
+        self.pera_client().http().get_latest_bridge().await
     }
 
     pub async fn get_object_or_tombstone_from_fullnode_store(
@@ -277,7 +277,7 @@ impl TestCluster {
         object_id: ObjectID,
     ) -> ObjectRef {
         self.fullnode_handle
-            .sui_node
+            .pera_node
             .state()
             .get_object_cache_reader()
             .get_latest_object_ref_or_tombstone(object_id)
@@ -296,7 +296,7 @@ impl TestCluster {
     ) -> Option<RunWithRange> {
         let mut shutdown_channel_rx = self
             .fullnode_handle
-            .sui_node
+            .pera_node
             .with(|node| node.subscribe_to_shutdown_channel());
 
         timeout(timeout_dur, async move {
@@ -307,7 +307,7 @@ impl TestCluster {
                         Ok(Some(run_with_range)) => Some(run_with_range),
                         Ok(None) => None,
                         Err(e) => {
-                            error!("failed recv from sui-node shutdown channel: {}", e);
+                            error!("failed recv from pera-node shutdown channel: {}", e);
                             None
                         },
                     }
@@ -315,13 +315,13 @@ impl TestCluster {
             }
         })
         .await
-        .expect("Timed out waiting for cluster to hit target epoch and recv shutdown signal from sui-node")
+        .expect("Timed out waiting for cluster to hit target epoch and recv shutdown signal from pera-node")
     }
 
     pub async fn wait_for_protocol_version(
         &self,
         target_protocol_version: ProtocolVersion,
-    ) -> SuiSystemState {
+    ) -> PeraSystemState {
         self.wait_for_protocol_version_with_timeout(
             target_protocol_version,
             Duration::from_secs(60),
@@ -333,7 +333,7 @@ impl TestCluster {
         &self,
         target_protocol_version: ProtocolVersion,
         timeout_dur: Duration,
-    ) -> SuiSystemState {
+    ) -> PeraSystemState {
         timeout(timeout_dur, async move {
             loop {
                 let system_state = self.wait_for_epoch(None).await;
@@ -355,7 +355,7 @@ impl TestCluster {
         // Close epoch on 2f+1 validators.
         let cur_committee = self
             .fullnode_handle
-            .sui_node
+            .pera_node
             .with(|node| node.state().clone_committee_for_testing());
         let mut cur_stake = 0;
         for node in self.swarm.active_validators() {
@@ -384,24 +384,24 @@ impl TestCluster {
     /// If target_epoch is specified, wait until the cluster reaches that epoch.
     /// If target_epoch is None, wait until the cluster reaches the next epoch.
     /// Note that this function does not guarantee that every node is at the target epoch.
-    pub async fn wait_for_epoch(&self, target_epoch: Option<EpochId>) -> SuiSystemState {
+    pub async fn wait_for_epoch(&self, target_epoch: Option<EpochId>) -> PeraSystemState {
         self.wait_for_epoch_with_timeout(target_epoch, Duration::from_secs(60))
             .await
     }
 
     pub async fn wait_for_epoch_on_node(
         &self,
-        handle: &SuiNodeHandle,
+        handle: &PeraNodeHandle,
         target_epoch: Option<EpochId>,
         timeout_dur: Duration,
-    ) -> SuiSystemState {
+    ) -> PeraSystemState {
         let mut epoch_rx = handle.with(|node| node.subscribe_to_epoch_change());
 
         let mut state = None;
         timeout(timeout_dur, async {
             let epoch = handle.with(|node| node.state().epoch_store_for_testing().epoch());
             if Some(epoch) == target_epoch {
-                return handle.with(|node| node.state().get_sui_system_state_object_for_testing().unwrap());
+                return handle.with(|node| node.state().get_pera_system_state_object_for_testing().unwrap());
             }
             while let Ok(system_state) = epoch_rx.recv().await {
                 info!("received epoch {}", system_state.epoch());
@@ -432,8 +432,8 @@ impl TestCluster {
         &self,
         target_epoch: Option<EpochId>,
         timeout_dur: Duration,
-    ) -> SuiSystemState {
-        self.wait_for_epoch_on_node(&self.fullnode_handle.sui_node, target_epoch, timeout_dur)
+    ) -> PeraSystemState {
+        self.wait_for_epoch_on_node(&self.fullnode_handle.pera_node, target_epoch, timeout_dur)
             .await
     }
 
@@ -518,7 +518,7 @@ impl TestCluster {
 
     pub async fn trigger_reconfiguration_if_not_yet_and_assert_bridge_committee_initialized(&self) {
         let mut bridge =
-            get_bridge(self.fullnode_handle.sui_node.state().get_object_store()).unwrap();
+            get_bridge(self.fullnode_handle.pera_node.state().get_object_store()).unwrap();
         if !bridge.committee().members.contents.is_empty() {
             assert_eq!(
                 self.swarm.active_validators().count(),
@@ -528,7 +528,7 @@ impl TestCluster {
         }
         // wait for next epoch
         self.trigger_reconfiguration().await;
-        bridge = get_bridge(self.fullnode_handle.sui_node.state().get_object_store()).unwrap();
+        bridge = get_bridge(self.fullnode_handle.pera_node.state().get_object_store()).unwrap();
         // Committee should be initiated
         assert!(bridge.committee().member_registrations.contents.is_empty());
         assert_eq!(
@@ -554,11 +554,11 @@ impl TestCluster {
 
     pub async fn get_mut_bridge_arg(&self) -> Option<ObjectArg> {
         get_bridge_obj_initial_shared_version(
-            self.fullnode_handle.sui_node.state().get_object_store(),
+            self.fullnode_handle.pera_node.state().get_object_store(),
         )
         .unwrap()
         .map(|seq| ObjectArg::SharedObject {
-            id: SUI_BRIDGE_OBJECT_ID,
+            id: PERA_BRIDGE_OBJECT_ID,
             initial_shared_version: seq,
             mutable: true,
         })
@@ -567,7 +567,7 @@ impl TestCluster {
     pub async fn wait_for_authenticator_state_update(&self) {
         timeout(
             Duration::from_secs(60),
-            self.fullnode_handle.sui_node.with_async(|node| async move {
+            self.fullnode_handle.pera_node.with_async(|node| async move {
                 let mut txns = node.state().subscription_handler.subscribe_transactions(
                     TransactionFilter::ChangedObject(ObjectID::from_hex_literal("0x7").unwrap()),
                 );
@@ -616,7 +616,7 @@ impl TestCluster {
 
     pub async fn test_transaction_builder_with_sender(
         &self,
-        sender: SuiAddress,
+        sender: PeraAddress,
     ) -> TestTransactionBuilder {
         let gas = self
             .wallet
@@ -630,7 +630,7 @@ impl TestCluster {
 
     pub async fn test_transaction_builder_with_gas_object(
         &self,
-        sender: SuiAddress,
+        sender: PeraAddress,
         gas: ObjectRef,
     ) -> TestTransactionBuilder {
         let rgp = self.get_reference_gas_price().await;
@@ -644,7 +644,7 @@ impl TestCluster {
     pub async fn sign_and_execute_transaction(
         &self,
         tx_data: &TransactionData,
-    ) -> SuiTransactionBlockResponse {
+    ) -> PeraTransactionBlockResponse {
         let tx = self.wallet.sign_transaction(tx_data);
         self.execute_transaction(tx).await
     }
@@ -653,7 +653,7 @@ impl TestCluster {
     /// Also expects the effects status to be ExecutionStatus::Success.
     /// This function is recommended for transaction execution since it most resembles the
     /// production path.
-    pub async fn execute_transaction(&self, tx: Transaction) -> SuiTransactionBlockResponse {
+    pub async fn execute_transaction(&self, tx: Transaction) -> PeraTransactionBlockResponse {
         self.wallet.execute_transaction_must_succeed(tx).await
     }
 
@@ -678,7 +678,7 @@ impl TestCluster {
 
     pub fn authority_aggregator(&self) -> Arc<AuthorityAggregator<NetworkAuthorityClient>> {
         self.fullnode_handle
-            .sui_node
+            .pera_node
             .with(|node| node.clone_authority_aggregator().unwrap())
     }
 
@@ -739,7 +739,7 @@ impl TestCluster {
                 break replies;
             }
         };
-        let replies: SuiResult<Vec<_>> = replies.into_iter().collect();
+        let replies: PeraResult<Vec<_>> = replies.into_iter().collect();
         let replies = replies?;
         let mut all_effects = HashMap::new();
         let mut all_events = HashMap::new();
@@ -764,13 +764,13 @@ impl TestCluster {
         &self,
         rgp: u64,
         amount: Option<u64>,
-        funding_address: SuiAddress,
+        funding_address: PeraAddress,
     ) -> ObjectRef {
         let context = &self.wallet;
         let (sender, gas) = context.get_one_gas_object().await.unwrap().unwrap();
         let tx = context.sign_transaction(
             &TestTransactionBuilder::new(sender, gas, rgp)
-                .transfer_sui(amount, funding_address)
+                .transfer_pera(amount, funding_address)
                 .build(),
         );
         context.execute_transaction_must_succeed(tx).await;
@@ -782,23 +782,23 @@ impl TestCluster {
             .unwrap()
     }
 
-    pub async fn transfer_sui_must_exceed(
+    pub async fn transfer_pera_must_exceed(
         &self,
-        sender: SuiAddress,
-        receiver: SuiAddress,
+        sender: PeraAddress,
+        receiver: PeraAddress,
         amount: u64,
     ) -> ObjectID {
         let tx = self
             .test_transaction_builder_with_sender(sender)
             .await
-            .transfer_sui(Some(amount), receiver)
+            .transfer_pera(Some(amount), receiver)
             .build();
         let effects = self
             .sign_and_execute_transaction(&tx)
             .await
             .effects
             .unwrap();
-        assert_eq!(&SuiExecutionStatus::Success, effects.status());
+        assert_eq!(&PeraExecutionStatus::Success, effects.status());
         effects.created().first().unwrap().object_id()
     }
 
@@ -1063,13 +1063,13 @@ impl TestClusterBuilder {
 
     pub fn with_validator_candidates(
         mut self,
-        addresses: impl IntoIterator<Item = SuiAddress>,
+        addresses: impl IntoIterator<Item = PeraAddress>,
     ) -> Self {
         self.get_or_init_genesis_config()
             .accounts
             .extend(addresses.into_iter().map(|address| AccountConfig {
                 address: Some(address),
-                gas_amounts: vec![DEFAULT_GAS_AMOUNT, MIN_VALIDATOR_JOINING_STAKE_MIST],
+                gas_amounts: vec![DEFAULT_GAS_AMOUNT, MIN_VALIDATOR_JOINING_STAKE_NPERA],
             }));
         self
     }
@@ -1129,7 +1129,7 @@ impl TestClusterBuilder {
         // valid JWKs as well.
         #[cfg(msim)]
         if !self.default_jwks {
-            sui_node::set_jwk_injector(Arc::new(|_authority, provider| {
+            pera_node::set_jwk_injector(Arc::new(|_authority, provider| {
                 use fastcrypto_zkp::bn254::zk_login::{JwkId, JWK};
                 use rand::Rng;
 
@@ -1156,15 +1156,15 @@ impl TestClusterBuilder {
         let swarm = self.start_swarm().await.unwrap();
         let working_dir = swarm.dir();
 
-        let mut wallet_conf: SuiClientConfig =
-            PersistedConfig::read(&working_dir.join(SUI_CLIENT_CONFIG)).unwrap();
+        let mut wallet_conf: PeraClientConfig =
+            PersistedConfig::read(&working_dir.join(PERA_CLIENT_CONFIG)).unwrap();
 
         let fullnode = swarm.fullnodes().next().unwrap();
         let json_rpc_address = fullnode.config().json_rpc_address;
         let fullnode_handle =
             FullNodeHandle::new(fullnode.get_node_handle().unwrap(), json_rpc_address).await;
 
-        wallet_conf.envs.push(SuiEnv {
+        wallet_conf.envs.push(PeraEnv {
             alias: "localnet".to_string(),
             rpc: fullnode_handle.rpc_url.clone(),
             ws: None,
@@ -1173,11 +1173,11 @@ impl TestClusterBuilder {
         wallet_conf.active_env = Some("localnet".to_string());
 
         wallet_conf
-            .persisted(&working_dir.join(SUI_CLIENT_CONFIG))
+            .persisted(&working_dir.join(PERA_CLIENT_CONFIG))
             .save()
             .unwrap();
 
-        let wallet_conf = swarm.dir().join(SUI_CLIENT_CONFIG);
+        let wallet_conf = swarm.dir().join(PERA_CLIENT_CONFIG);
         let wallet = WalletContext::new(&wallet_conf, None, None).unwrap();
 
         TestCluster {
@@ -1198,7 +1198,7 @@ impl TestClusterBuilder {
         let gas_objects_for_authority_keys = bridge_authority_keys
             .iter()
             .map(|k| {
-                let address = SuiAddress::from(k.public());
+                let address = PeraAddress::from(k.public());
                 Object::with_id_owner_for_testing(ObjectID::random(), address)
             })
             .collect::<Vec<_>>();
@@ -1226,7 +1226,7 @@ impl TestClusterBuilder {
             .active_validators()
             .zip(bridge_authority_keys.iter())
         {
-            let validator_address = node.config().sui_address();
+            let validator_address = node.config().pera_address();
             // create committee registration tx
             let gas = test_cluster
                 .wallet
@@ -1258,7 +1258,7 @@ impl TestClusterBuilder {
                 api_clone
                     .execute_transaction_block(
                         tx,
-                        SuiTransactionBlockResponseOptions::new().with_effects(),
+                        PeraTransactionBlockResponseOptions::new().with_effects(),
                         None,
                     )
                     .await
@@ -1269,7 +1269,7 @@ impl TestClusterBuilder {
             let timer = Instant::now();
             let token_ids = vec![TOKEN_ID_BTC, TOKEN_ID_ETH, TOKEN_ID_USDC, TOKEN_ID_USDT];
             let token_prices = vec![500_000_000u64, 30_000_000u64, 1_000u64, 1_000u64];
-            let action = publish_and_register_coins_return_add_coins_on_sui_action(
+            let action = publish_and_register_coins_return_add_coins_on_pera_action(
                 test_cluster.wallet(),
                 bridge_arg,
                 vec![
@@ -1310,7 +1310,7 @@ impl TestClusterBuilder {
                 .trigger_reconfiguration_if_not_yet_and_assert_bridge_committee_initialized()
                 .await;
 
-            let tx = build_add_tokens_on_sui_transaction(
+            let tx = build_add_tokens_on_pera_transaction(
                 sender_address,
                 &test_cluster
                     .wallet
@@ -1327,7 +1327,7 @@ impl TestClusterBuilder {
             let response = test_cluster.sign_and_execute_transaction(&tx).await;
             assert_eq!(
                 response.effects.unwrap().status(),
-                &SuiExecutionStatus::Success
+                &PeraExecutionStatus::Success
             );
             info!("Deploy tokens took {:?} secs", timer.elapsed().as_secs());
         } else {
@@ -1337,7 +1337,7 @@ impl TestClusterBuilder {
         async fn await_committee_register_tasks(
             test_cluster: &TestCluster,
             tasks: Vec<
-                impl Future<Output = Result<SuiTransactionBlockResponse, sui_sdk::error::Error>>,
+                impl Future<Output = Result<PeraTransactionBlockResponse, pera_sdk::error::Error>>,
             >,
         ) {
             // The tx may fail if a member tries to register when the committee is already finalized.
@@ -1346,7 +1346,7 @@ impl TestClusterBuilder {
             let responses = join_all(tasks).await;
             let mut has_failure = false;
             for response in responses {
-                if response.unwrap().effects.unwrap().status() != &SuiExecutionStatus::Success {
+                if response.unwrap().effects.unwrap().status() != &PeraExecutionStatus::Success {
                     has_failure = true;
                 }
             }
@@ -1435,20 +1435,20 @@ impl TestClusterBuilder {
 
         let dir = swarm.dir();
 
-        let network_path = dir.join(SUI_NETWORK_CONFIG);
-        let wallet_path = dir.join(SUI_CLIENT_CONFIG);
-        let keystore_path = dir.join(SUI_KEYSTORE_FILENAME);
+        let network_path = dir.join(PERA_NETWORK_CONFIG);
+        let wallet_path = dir.join(PERA_CLIENT_CONFIG);
+        let keystore_path = dir.join(PERA_KEYSTORE_FILENAME);
 
         swarm.config().save(network_path)?;
         let mut keystore = Keystore::from(FileBasedKeystore::new(&keystore_path)?);
         for key in &swarm.config().account_keys {
-            keystore.add_key(None, SuiKeyPair::Ed25519(key.copy()))?;
+            keystore.add_key(None, PeraKeyPair::Ed25519(key.copy()))?;
         }
 
         let active_address = keystore.addresses().first().cloned();
 
         // Create wallet config with stated authorities port
-        SuiClientConfig {
+        PeraClientConfig {
             keystore: Keystore::from(FileBasedKeystore::new(&keystore_path)?),
             envs: Default::default(),
             active_address,

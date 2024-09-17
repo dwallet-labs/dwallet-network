@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module demo::demo_bear {
     use std::string::{String, utf8};
 
-    use sui::package;
-    use sui::display;
+    use pera::package;
+    use pera::display;
 
     /// our demo struct.
     public struct DemoBear has key, store {
@@ -45,8 +45,8 @@ module demo::demo_bear {
         // Commit first version of `Display` to apply changes.
         display::update_version(&mut display);
 
-        sui::transfer::public_transfer(display, ctx.sender());
-        sui::transfer::public_transfer(publisher, ctx.sender())
+        pera::transfer::public_transfer(display, ctx.sender());
+        pera::transfer::public_transfer(publisher, ctx.sender())
     }
 
     public fun new(name: String, ctx: &mut TxContext): DemoBear {

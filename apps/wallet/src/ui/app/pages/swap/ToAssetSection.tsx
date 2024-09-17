@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useRecognizedCoins } from '_app/hooks/deepbook';
 import { Button } from '_app/shared/ButtonUI';
 import { InputWithActionButton } from '_app/shared/InputWithAction';
@@ -8,7 +8,7 @@ import Alert from '_components/alert';
 import { AssetData } from '_pages/swap/AssetData';
 import {
 	Coins,
-	SUI_CONVERSION_RATE,
+	PERA_CONVERSION_RATE,
 	USDC_CONVERSION_RATE,
 	type FormValues,
 } from '_pages/swap/constants';
@@ -16,8 +16,8 @@ import { MaxSlippage, MaxSlippageModal } from '_pages/swap/MaxSlippage';
 import { ToAssets } from '_pages/swap/ToAssets';
 import { getUSDCurrency, useSwapData } from '_pages/swap/utils';
 import { useDeepBookContext } from '_shared/deepBook/context';
-import { type BalanceChange } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { type BalanceChange } from '@pera-io/pera/client';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import BigNumber from 'bignumber.js';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
@@ -46,7 +46,7 @@ export function ToAssetSection({
 	const recognizedCoins = useRecognizedCoins();
 	const [isToAssetOpen, setToAssetOpen] = useState(false);
 	const [isSlippageModalOpen, setSlippageModalOpen] = useState(false);
-	const isAsk = activeCoinType === SUI_TYPE_ARG;
+	const isAsk = activeCoinType === PERA_TYPE_ARG;
 
 	const { formattedBaseBalance, formattedQuoteBalance, baseCoinMetadata, quoteCoinMetadata } =
 		useSwapData({
@@ -69,11 +69,11 @@ export function ToAssetSection({
 	)?.amount;
 
 	const toAssetAmountAsNum = new BigNumber(rawToAssetAmount || '0')
-		.shiftedBy(isAsk ? -SUI_CONVERSION_RATE : -USDC_CONVERSION_RATE)
+		.shiftedBy(isAsk ? -PERA_CONVERSION_RATE : -USDC_CONVERSION_RATE)
 		.toNumber();
 
 	useEffect(() => {
-		const newToAsset = isAsk ? coinsMap[Coins.USDC] : SUI_TYPE_ARG;
+		const newToAsset = isAsk ? coinsMap[Coins.USDC] : PERA_TYPE_ARG;
 		setValue('toAssetType', newToAsset);
 	}, [coinsMap, isAsk, setValue]);
 
@@ -88,7 +88,7 @@ export function ToAssetSection({
 		<div
 			className={clsx(
 				'flex flex-col border border-hero-darkest/20 rounded-xl p-5 gap-4 border-solid',
-				{ 'bg-sui-primaryBlue2023/10': isValid },
+				{ 'bg-pera-primaryBlue2023/10': isValid },
 			)}
 		>
 			<ToAssets

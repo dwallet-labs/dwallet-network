@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
     debug_display, debug_display_verbose, diag,
@@ -24,7 +24,7 @@ use crate::{
         unique_map::UniqueMap,
         *,
     },
-    sui_mode::ID_FIELD_NAME,
+    pera_mode::ID_FIELD_NAME,
     typing::ast as T,
     FullyCompiledProgram,
 };
@@ -2911,7 +2911,7 @@ fn gen_unused_warnings(
         // cannot be analyzed in this pass
         return;
     }
-    let is_sui_mode = context.env.package_config(context.current_package).flavor == Flavor::Sui;
+    let is_pera_mode = context.env.package_config(context.current_package).flavor == Flavor::Pera;
 
     for (_, sname, sdef) in structs {
         context
@@ -2922,8 +2922,8 @@ fn gen_unused_warnings(
 
         if let H::StructFields::Defined(fields) = &sdef.fields {
             for (f, _) in fields {
-                // skip for Sui ID fields
-                if is_sui_mode && has_key && f.value() == ID_FIELD_NAME {
+                // skip for Pera ID fields
+                if is_pera_mode && has_key && f.value() == ID_FIELD_NAME {
                     continue;
                 }
                 if !context

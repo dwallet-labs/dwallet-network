@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import { SuiObjectDataOptions, SuiObjectResponse } from '@mysten/sui/client';
+import { usePeraClient } from '@mysten/dapp-kit';
+import { PeraObjectDataOptions, PeraObjectResponse } from '@pera-io/pera/client';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 
 import { chunkArray } from '../utils/chunkArray';
 
 export function useMultiGetObjects(
 	ids: string[],
-	options: SuiObjectDataOptions,
-	queryOptions?: Omit<UseQueryOptions<SuiObjectResponse[]>, 'queryKey' | 'queryFn'>,
+	options: PeraObjectDataOptions,
+	queryOptions?: Omit<UseQueryOptions<PeraObjectResponse[]>, 'queryKey' | 'queryFn'>,
 ) {
-	const client = useSuiClient();
+	const client = usePeraClient();
 	return useQuery({
 		...queryOptions,
 		queryKey: ['multiGetObjects', ids],

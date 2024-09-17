@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { BcsType, BcsTypeOptions } from '@mysten/bcs';
 import { bcs, fromB58, fromB64, fromHEX, toB58, toB64, toHEX } from '@mysten/bcs';
 
-import { isValidSuiAddress, normalizeSuiAddress, SUI_ADDRESS_LENGTH } from '../utils/sui-types.js';
+import { isValidPeraAddress, normalizePeraAddress, PERA_ADDRESS_LENGTH } from '../utils/pera-types.js';
 import { TypeTagSerializer } from './type-tag-serializer.js';
 import type { TypeTag as TypeTagType } from './types.js';
 
@@ -27,16 +27,16 @@ function optionEnum<T extends BcsType<any, any>>(type: T) {
 	});
 }
 
-export const Address = bcs.bytes(SUI_ADDRESS_LENGTH).transform({
+export const Address = bcs.bytes(PERA_ADDRESS_LENGTH).transform({
 	validate: (val) => {
 		const address = typeof val === 'string' ? val : toHEX(val);
-		if (!address || !isValidSuiAddress(normalizeSuiAddress(address))) {
-			throw new Error(`Invalid Sui address ${address}`);
+		if (!address || !isValidPeraAddress(normalizePeraAddress(address))) {
+			throw new Error(`Invalid Pera address ${address}`);
 		}
 	},
 	input: (val: string | Uint8Array) =>
-		typeof val === 'string' ? fromHEX(normalizeSuiAddress(val)) : val,
-	output: (val) => normalizeSuiAddress(toHEX(val)),
+		typeof val === 'string' ? fromHEX(normalizePeraAddress(val)) : val,
+	output: (val) => normalizePeraAddress(toHEX(val)),
 });
 
 export const ObjectDigest = bcs.vector(bcs.u8()).transform({
@@ -50,7 +50,7 @@ export const ObjectDigest = bcs.vector(bcs.u8()).transform({
 	},
 });
 
-export const SuiObjectRef = bcs.struct('SuiObjectRef', {
+export const PeraObjectRef = bcs.struct('PeraObjectRef', {
 	objectId: Address,
 	version: bcs.u64(),
 	digest: ObjectDigest,
@@ -63,9 +63,9 @@ export const SharedObjectRef = bcs.struct('SharedObjectRef', {
 });
 
 export const ObjectArg = bcs.enum('ObjectArg', {
-	ImmOrOwnedObject: SuiObjectRef,
+	ImmOrOwnedObject: PeraObjectRef,
 	SharedObject: SharedObjectRef,
-	Receiving: SuiObjectRef,
+	Receiving: PeraObjectRef,
 });
 
 export const CallArg = bcs.enum('CallArg', {
@@ -210,7 +210,7 @@ export const StructTag = bcs.struct('StructTag', {
 });
 
 export const GasData = bcs.struct('GasData', {
-	payment: bcs.vector(SuiObjectRef),
+	payment: bcs.vector(PeraObjectRef),
 	owner: Address,
 	price: bcs.u64(),
 	budget: bcs.u64(),
@@ -239,7 +239,7 @@ export const IntentVersion = bcs.enum('IntentVersion', {
 });
 
 export const AppId = bcs.enum('AppId', {
-	Sui: null,
+	Pera: null,
 });
 
 export const Intent = bcs.struct('Intent', {

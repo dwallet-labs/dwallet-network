@@ -5,7 +5,7 @@ version = "0.1.0"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 edition = "2021"
 repository = "https://github.com/mystenlabs/sui.git"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 
 [dependencies]

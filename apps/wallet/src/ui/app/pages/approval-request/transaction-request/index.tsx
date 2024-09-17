@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-// import { Transaction } from '@mysten/sui';
+// import { Transaction } from '@pera-io/pera';
 import { UserApproveContainer } from '_components/user-approve-container';
 import { useAppDispatch, useTransactionData, useTransactionDryRun } from '_hooks';
 import { type TransactionApprovalRequest } from '_payloads/transactions/ApprovalRequest';
@@ -14,7 +14,7 @@ import { useSigner } from '_src/ui/app/hooks/useSigner';
 import { PageMainLayoutTitle } from '_src/ui/app/shared/page-main-layout/PageMainLayoutTitle';
 import { TransactionSummary } from '_src/ui/app/shared/transaction-summary';
 import { useTransactionSummary } from '@mysten/core';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@pera-io/pera/transactions';
 import { useMemo, useState } from 'react';
 
 import { ConfirmationModal } from '../../../shared/ConfirmationModal';
@@ -29,7 +29,7 @@ export type TransactionRequestProps = {
 // eats up our analytics event quota. As a short-term solution so we don't have
 // to stop tracking this event entirely, we'll just manually exclude application
 // origins with this list
-const appOriginsToExcludeFromAnalytics = ['https://sui8192.ethoswallet.xyz'];
+const appOriginsToExcludeFromAnalytics = ['https://pera8192.ethoswallet.xyz'];
 
 export function TransactionRequest({ txRequest }: TransactionRequestProps) {
 	const addressForTransaction = txRequest.tx.account;

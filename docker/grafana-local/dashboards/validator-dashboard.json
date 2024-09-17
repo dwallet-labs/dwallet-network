@@ -96,7 +96,7 @@
         "type": "prometheus",
         "uid": "${Environment}"
       },
-      "description": "Prev epoch gas rewards (SUI)",
+      "description": "Prev epoch gas rewards (PERA)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2298,7 +2298,7 @@
             "uid": "${Environment}"
           },
           "editorMode": "code",
-          "expr": "sum by (statefulset_kubernetes_io_pod_name) (rate(total_transaction_orders{job=~\".*suival.*\", network=\"$network\"}[5m]))",
+          "expr": "sum by (statefulset_kubernetes_io_pod_name) (rate(total_transaction_orders{job=~\".*peraval.*\", network=\"$network\"}[5m]))",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -2310,7 +2310,7 @@
             "uid": "${Environment}"
           },
           "editorMode": "code",
-          "expr": "sum by (host) (rate(total_transaction_orders{host!=\"\", host!~\".*suifn.*\", network=\"$network\"}[5m]))",
+          "expr": "sum by (host) (rate(total_transaction_orders{host!=\"\", host!~\".*perafn.*\", network=\"$network\"}[5m]))",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -2414,7 +2414,7 @@
             "uid": "${Environment}"
           },
           "editorMode": "code",
-          "expr": "sum by (statefulset_kubernetes_io_pod_name) (rate(total_transaction_certificates{job=~\".*suival.*\", network=\"$network\"}[5m])) - sum by (statefulset_kubernetes_io_pod_name) (rate(num_shared_obj_tx{job=~\".*suival.*\", network=\"$network\"}[5m]))",
+          "expr": "sum by (statefulset_kubernetes_io_pod_name) (rate(total_transaction_certificates{job=~\".*peraval.*\", network=\"$network\"}[5m])) - sum by (statefulset_kubernetes_io_pod_name) (rate(num_shared_obj_tx{job=~\".*peraval.*\", network=\"$network\"}[5m]))",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -2530,7 +2530,7 @@
             "uid": "${Environment}"
           },
           "editorMode": "code",
-          "expr": "sum by (statefulset_kubernetes_io_pod_name) (rate(num_shared_obj_tx{job=~\".*suival.*\", network=\"$network\"}[5m]))",
+          "expr": "sum by (statefulset_kubernetes_io_pod_name) (rate(num_shared_obj_tx{job=~\".*peraval.*\", network=\"$network\"}[5m]))",
           "hide": false,
           "legendFormat": "__auto",
           "range": true,
@@ -3534,7 +3534,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Sui Validators - low level metrics",
+  "title": "Pera Validators - low level metrics",
   "uid": "BpwTlGCnx",
   "version": 4,
   "weekStart": ""

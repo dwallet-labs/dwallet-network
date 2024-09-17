@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { API_ENV, type NetworkEnvType } from '_src/shared/api-env';
 import { fetchWithSentry } from '_src/shared/utils';
-import { type PublicKey } from '@mysten/sui/cryptography';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { type PublicKey } from '@pera-io/pera/cryptography';
+import { Ed25519Keypair } from '@pera-io/pera/keypairs/ed25519';
 import {
 	generateNonce,
 	generateRandomness,

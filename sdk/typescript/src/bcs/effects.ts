@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { bcs } from '@mysten/bcs';
 
-import { Address, ObjectDigest, SuiObjectRef } from './bcs.js';
+import { Address, ObjectDigest, PeraObjectRef } from './bcs.js';
 
 const PackageUpgradeError = bcs.enum('PackageUpgradeError', {
 	UnableToFetchPackage: bcs.struct('UnableToFetchPackage', { packageId: Address }),
@@ -68,7 +68,7 @@ const ExecutionFailureStatus = bcs.enum('ExecutionFailureStatus', {
 	InsufficientCoinBalance: null,
 	CoinBalanceOverflow: null,
 	PublishErrorNonZeroAddress: null,
-	SuiMoveVerificationError: null,
+	PeraMoveVerificationError: null,
 	MovePrimitiveRuntimeError: bcs.option(MoveLocation),
 	MoveAbort: bcs.tuple([MoveLocation, bcs.u64()]),
 	VMVerificationOrDeserializationError: null,
@@ -102,7 +102,7 @@ const ExecutionFailureStatus = bcs.enum('ExecutionFailureStatus', {
 		maxSize: bcs.u64(),
 	}),
 	CertificateDenied: null,
-	SuiMoveVerificationTimedout: null,
+	PeraMoveVerificationTimedout: null,
 	SharedObjectOperationNotAllowed: null,
 	InputObjectDeleted: null,
 });
@@ -136,15 +136,15 @@ const TransactionEffectsV1 = bcs.struct('TransactionEffectsV1', {
 	executedEpoch: bcs.u64(),
 	gasUsed: GasCostSummary,
 	modifiedAtVersions: bcs.vector(bcs.tuple([Address, bcs.u64()])),
-	sharedObjects: bcs.vector(SuiObjectRef),
+	sharedObjects: bcs.vector(PeraObjectRef),
 	transactionDigest: ObjectDigest,
-	created: bcs.vector(bcs.tuple([SuiObjectRef, Owner])),
-	mutated: bcs.vector(bcs.tuple([SuiObjectRef, Owner])),
-	unwrapped: bcs.vector(bcs.tuple([SuiObjectRef, Owner])),
-	deleted: bcs.vector(SuiObjectRef),
-	unwrappedThenDeleted: bcs.vector(SuiObjectRef),
-	wrapped: bcs.vector(SuiObjectRef),
-	gasObject: bcs.tuple([SuiObjectRef, Owner]),
+	created: bcs.vector(bcs.tuple([PeraObjectRef, Owner])),
+	mutated: bcs.vector(bcs.tuple([PeraObjectRef, Owner])),
+	unwrapped: bcs.vector(bcs.tuple([PeraObjectRef, Owner])),
+	deleted: bcs.vector(PeraObjectRef),
+	unwrappedThenDeleted: bcs.vector(PeraObjectRef),
+	wrapped: bcs.vector(PeraObjectRef),
+	gasObject: bcs.tuple([PeraObjectRef, Owner]),
 	eventsDigest: bcs.option(ObjectDigest),
 	dependencies: bcs.vector(ObjectDigest),
 });

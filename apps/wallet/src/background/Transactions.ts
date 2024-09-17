@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import {
 	type ApprovalRequest,
 	type TransactionDataType,
 } from '_payloads/transactions/ApprovalRequest';
-import type { SuiSignTransactionSerialized } from '_payloads/transactions/ExecuteTransactionRequest';
+import type { PeraSignTransactionSerialized } from '_payloads/transactions/ExecuteTransactionRequest';
 import { type SignMessageRequest } from '_payloads/transactions/SignMessage';
 import type { TransactionRequestResponse } from '_payloads/transactions/ui/TransactionRequestResponse';
 import type { ContentScriptConnection } from '_src/background/connections/ContentScriptConnection';
 import { type SignedTransaction } from '_src/ui/app/WalletSigner';
-import { type SuiTransactionBlockResponse } from '@mysten/sui/client';
-import { type SuiSignMessageOutput } from '@mysten/wallet-standard';
+import { type PeraTransactionBlockResponse } from '@pera-io/pera/client';
+import { type PeraSignMessageOutput } from '@mysten/wallet-standard';
 import { filter, lastValueFrom, map, race, Subject, take } from 'rxjs';
 import { v4 as uuidV4 } from 'uuid';
 import Browser from 'webextension-polyfill';
@@ -38,10 +38,10 @@ class Transactions {
 			| { tx: TransactionDataType; sign?: undefined }
 			| {
 					tx?: undefined;
-					sign: SuiSignTransactionSerialized;
+					sign: PeraSignTransactionSerialized;
 			  },
 		connection: ContentScriptConnection,
-	): Promise<SuiTransactionBlockResponse | SignedTransaction> {
+	): Promise<PeraTransactionBlockResponse | SignedTransaction> {
 		const { txResultError, txResult, txSigned } = await this.requestApproval(
 			tx ?? {
 				type: 'transaction',
@@ -70,7 +70,7 @@ class Transactions {
 	public async signMessage(
 		{ accountAddress, message }: Required<Pick<SignMessageRequest, 'args'>>['args'],
 		connection: ContentScriptConnection,
-	): Promise<SuiSignMessageOutput> {
+	): Promise<PeraSignMessageOutput> {
 		const { txResult, txResultError } = await this.requestApproval(
 			{ type: 'sign-message', accountAddress, message },
 			connection.origin,

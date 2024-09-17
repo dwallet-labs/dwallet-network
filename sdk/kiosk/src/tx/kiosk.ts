@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui/bcs';
+import { bcs } from '@pera-io/pera/bcs';
 import type {
 	Transaction,
 	TransactionArgument,
 	TransactionObjectArgument,
-} from '@mysten/sui/transactions';
+} from '@pera-io/pera/transactions';
 
 import type { ObjectArgument } from '../types/index.js';
 import { KIOSK_MODULE, KIOSK_TYPE } from '../types/index.js';
@@ -163,7 +163,7 @@ export function placeAndList(
 }
 
 /**
- * Call the `kiosk::purchase<T>(Kiosk, ID, Coin<SUI>)` function and receive an Item and
+ * Call the `kiosk::purchase<T>(Kiosk, ID, Coin<PERA>)` function and receive an Item and
  * a TransferRequest which needs to be dealt with (via a matching TransferPolicy).
  */
 export function purchase(
@@ -183,7 +183,7 @@ export function purchase(
 }
 
 /**
- * Call the `kiosk::withdraw(Kiosk, KioskOwnerCap, Option<u64>)` function and receive a Coin<SUI>.
+ * Call the `kiosk::withdraw(Kiosk, KioskOwnerCap, Option<u64>)` function and receive a Coin<PERA>.
  * If the amount is null, then the entire balance will be withdrawn.
  */
 export function withdrawFromKiosk(

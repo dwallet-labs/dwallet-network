@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { createMessage } from '_messages';
 import type { Message } from '_messages';
@@ -30,8 +30,8 @@ import {
 } from '_src/shared/messaging/messages/payloads/QredoConnect';
 import { type SignedMessage, type SignedTransaction } from '_src/ui/app/WalletSigner';
 import type { AppDispatch } from '_store';
-import { type SuiTransactionBlockResponse } from '@mysten/sui/client';
-import { toB64 } from '@mysten/sui/utils';
+import { type PeraTransactionBlockResponse } from '@pera-io/pera/client';
+import { toB64 } from '@pera-io/pera/utils';
 import { type QueryKey } from '@tanstack/react-query';
 import { lastValueFrom, map, take } from 'rxjs';
 
@@ -95,7 +95,7 @@ export class BackgroundClient {
 	public sendTransactionRequestResponse(
 		txID: string,
 		approved: boolean,
-		txResult?: SuiTransactionBlockResponse | SignedMessage,
+		txResult?: PeraTransactionBlockResponse | SignedMessage,
 		txResultError?: string,
 		txSigned?: SignedTransaction,
 	) {
@@ -619,7 +619,7 @@ export class BackgroundClient {
 	}
 
 	private createPortStream() {
-		this._portStream = PortStream.connectToBackgroundService('sui_ui<->background');
+		this._portStream = PortStream.connectToBackgroundService('pera_ui<->background');
 		this._portStream.onDisconnect.subscribe(() => {
 			this.createPortStream();
 		});

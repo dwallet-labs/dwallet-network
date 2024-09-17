@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type SignedTransaction } from '_src/ui/app/WalletSigner';
-import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
+import type { PeraTransactionBlockResponse } from '@pera-io/pera/client';
 import {
-	type SuiSignAndExecuteTransactionBlockInput,
-	type SuiSignMessageOutput,
+	type PeraSignAndExecuteTransactionBlockInput,
+	type PeraSignMessageOutput,
 } from '@mysten/wallet-standard';
 
 export type TransactionDataType = {
@@ -13,8 +13,8 @@ export type TransactionDataType = {
 	data: string;
 	account: string;
 	justSign?: boolean;
-	requestType?: SuiSignAndExecuteTransactionBlockInput['requestType'];
-	options?: SuiSignAndExecuteTransactionBlockInput['options'];
+	requestType?: PeraSignAndExecuteTransactionBlockInput['requestType'];
+	options?: PeraSignAndExecuteTransactionBlockInput['options'];
 };
 
 export type SignMessageDataType = {
@@ -28,7 +28,7 @@ export type ApprovalRequest = {
 	approved: boolean | null;
 	origin: string;
 	originFavIcon?: string;
-	txResult?: SuiTransactionBlockResponse | SuiSignMessageOutput;
+	txResult?: PeraTransactionBlockResponse | PeraSignMessageOutput;
 	txResultError?: string;
 	txSigned?: SignedTransaction;
 	createdDate: string;
@@ -37,12 +37,12 @@ export type ApprovalRequest = {
 
 export interface SignMessageApprovalRequest extends Omit<ApprovalRequest, 'txResult' | 'tx'> {
 	tx: SignMessageDataType;
-	txResult?: SuiSignMessageOutput;
+	txResult?: PeraSignMessageOutput;
 }
 
 export interface TransactionApprovalRequest extends Omit<ApprovalRequest, 'txResult' | 'tx'> {
 	tx: TransactionDataType;
-	txResult?: SuiTransactionBlockResponse;
+	txResult?: PeraTransactionBlockResponse;
 }
 
 export function isSignMessageApprovalRequest(

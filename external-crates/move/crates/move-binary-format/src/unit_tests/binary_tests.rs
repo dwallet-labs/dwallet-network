@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{file_format::Bytecode, file_format_common::*};
 use proptest::prelude::*;
@@ -78,7 +78,7 @@ fn test_flavor() {
         assert_eq!(BinaryFlavor::decode_version(flavored), i);
         assert_eq!(
             BinaryFlavor::decode_flavor(flavored),
-            Some(BinaryFlavor::SUI_FLAVOR)
+            Some(BinaryFlavor::PERA_FLAVOR)
         );
     }
 }

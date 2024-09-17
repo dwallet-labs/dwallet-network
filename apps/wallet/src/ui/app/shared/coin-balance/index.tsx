@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Text } from '_app/shared/text';
 import { useFormatCoin } from '@mysten/core';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 
 //TODO create variant for different use cases like heading4, subtitle, bodySmall and different symbols color
 interface CoinBalanceProps {
@@ -12,7 +12,7 @@ interface CoinBalanceProps {
 }
 
 export function CoinBalance({ amount, coinType }: CoinBalanceProps) {
-	const [formatted, symbol] = useFormatCoin(amount, coinType || SUI_TYPE_ARG);
+	const [formatted, symbol] = useFormatCoin(amount, coinType || PERA_TYPE_ARG);
 
 	return Math.abs(Number(amount)) > 0 ? (
 		<div className="flex gap-0.5 align-baseline flex-nowrap items-baseline">

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Copyright (c) The Move Contributors
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 ROOT="$(git rev-parse --show-toplevel)"
 TYPE="$(echo "$1" | sed s/^--resolve-move-//)"

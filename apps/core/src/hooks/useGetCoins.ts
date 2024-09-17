@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import { PaginatedCoins } from '@mysten/sui/client';
+import { usePeraClient } from '@mysten/dapp-kit';
+import { PaginatedCoins } from '@pera-io/pera/client';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const MAX_COINS_PER_REQUEST = 10;
@@ -12,7 +12,7 @@ export function useGetCoins(
 	address?: string | null,
 	maxCoinsPerRequest = MAX_COINS_PER_REQUEST,
 ) {
-	const client = useSuiClient();
+	const client = usePeraClient();
 	return useInfiniteQuery<PaginatedCoins>({
 		queryKey: ['get-coins', address, coinType, maxCoinsPerRequest],
 		initialPageParam: null,

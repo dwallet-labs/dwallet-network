@@ -2,7 +2,7 @@
 name = "bin-version"
 edition = "2021"
 version.workspace = true
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 
 [dependencies]

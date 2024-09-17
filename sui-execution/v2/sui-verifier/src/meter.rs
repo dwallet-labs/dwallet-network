@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_bytecode_verifier_meter::{Meter, Scope};
 use move_core_types::vm_status::StatusCode;
 use move_vm_config::verifier::MeterConfig;
 
-struct SuiVerifierMeterBounds {
+struct PeraVerifierMeterBounds {
     name: String,
     ticks: u128,
     max_ticks: Option<u128>,
 }
 
-impl SuiVerifierMeterBounds {
+impl PeraVerifierMeterBounds {
     fn add(&mut self, ticks: u128) -> PartialVMResult<()> {
         let max_ticks = self.max_ticks.unwrap_or(u128::MAX);
 
@@ -29,34 +29,34 @@ impl SuiVerifierMeterBounds {
     }
 }
 
-pub struct SuiVerifierMeter {
-    transaction_bounds: SuiVerifierMeterBounds,
-    package_bounds: SuiVerifierMeterBounds,
-    module_bounds: SuiVerifierMeterBounds,
-    function_bounds: SuiVerifierMeterBounds,
+pub struct PeraVerifierMeter {
+    transaction_bounds: PeraVerifierMeterBounds,
+    package_bounds: PeraVerifierMeterBounds,
+    module_bounds: PeraVerifierMeterBounds,
+    function_bounds: PeraVerifierMeterBounds,
 }
 
-impl SuiVerifierMeter {
+impl PeraVerifierMeter {
     pub fn new(config: MeterConfig) -> Self {
         Self {
-            transaction_bounds: SuiVerifierMeterBounds {
+            transaction_bounds: PeraVerifierMeterBounds {
                 name: "<unknown>".to_string(),
                 ticks: 0,
                 max_ticks: None,
             },
 
             // Not used for now to keep backward compat
-            package_bounds: SuiVerifierMeterBounds {
+            package_bounds: PeraVerifierMeterBounds {
                 name: "<unknown>".to_string(),
                 ticks: 0,
                 max_ticks: None,
             },
-            module_bounds: SuiVerifierMeterBounds {
+            module_bounds: PeraVerifierMeterBounds {
                 name: "<unknown>".to_string(),
                 ticks: 0,
                 max_ticks: config.max_per_mod_meter_units,
             },
-            function_bounds: SuiVerifierMeterBounds {
+            function_bounds: PeraVerifierMeterBounds {
                 name: "<unknown>".to_string(),
                 ticks: 0,
                 max_ticks: config.max_per_fun_meter_units,
@@ -64,7 +64,7 @@ impl SuiVerifierMeter {
         }
     }
 
-    fn get_bounds_mut(&mut self, scope: Scope) -> &mut SuiVerifierMeterBounds {
+    fn get_bounds_mut(&mut self, scope: Scope) -> &mut PeraVerifierMeterBounds {
         match scope {
             Scope::Transaction => &mut self.transaction_bounds,
             Scope::Package => &mut self.package_bounds,
@@ -73,7 +73,7 @@ impl SuiVerifierMeter {
         }
     }
 
-    fn get_bounds(&self, scope: Scope) -> &SuiVerifierMeterBounds {
+    fn get_bounds(&self, scope: Scope) -> &PeraVerifierMeterBounds {
         match scope {
             Scope::Transaction => &self.transaction_bounds,
             Scope::Package => &self.package_bounds,
@@ -91,7 +91,7 @@ impl SuiVerifierMeter {
     }
 }
 
-impl Meter for SuiVerifierMeter {
+impl Meter for PeraVerifierMeter {
     fn enter_scope(&mut self, name: &str, scope: Scope) {
         let bounds = self.get_bounds_mut(scope);
         bounds.name = name.into();

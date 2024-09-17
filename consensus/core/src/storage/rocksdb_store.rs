@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{collections::VecDeque, ops::Bound::Included, time::Duration};
 
 use bytes::Bytes;
 use consensus_config::AuthorityIndex;
-use sui_macros::fail_point;
+use pera_macros::fail_point;
 use typed_store::{
     metrics::SamplingInterval,
     reopen,

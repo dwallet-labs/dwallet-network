@@ -2,7 +2,7 @@
 
 # Copyright (c) The Diem Core Contributors
 # Copyright (c) The Move Contributors
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 TRACE_PATH=$HOME/trace
 
@@ -18,14 +18,14 @@ popd || exit 1
 # TODO: add coverage for transactional tests
 
 echo "---------------------------------------------------------------------------"
-echo "Running e2e testsuite..."
+echo "Running e2e testperate..."
 echo "---------------------------------------------------------------------------"
-pushd ../../e2e-testsuite || exit 1
+pushd ../../e2e-testperate || exit 1
 cargo test -- --skip account_universe --skip fuzz_scripts
 popd || exit 1
 
 echo "---------------------------------------------------------------------------"
-echo "Running Move testsuite..."
+echo "Running Move testperate..."
 echo "---------------------------------------------------------------------------"
 pushd ../../move-compiler/functional-tests/tests || exit 1
 cargo test

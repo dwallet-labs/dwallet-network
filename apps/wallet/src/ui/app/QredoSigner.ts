@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type QredoSerializedUiAccount } from '_src/background/accounts/QredoAccount';
 import { API_ENV, networkNames } from '_src/shared/api-env';
@@ -8,9 +8,9 @@ import {
 	type QredoAPI,
 	type TransactionInfoResponse,
 } from '_src/shared/qredo-api';
-import { type SuiClient } from '@mysten/sui/client';
-import { messageWithIntent } from '@mysten/sui/cryptography';
-import { toB64 } from '@mysten/sui/utils';
+import { type PeraClient } from '@pera-io/pera/client';
+import { messageWithIntent } from '@pera-io/pera/cryptography';
+import { toB64 } from '@pera-io/pera/utils';
 import mitt from 'mitt';
 
 import { WalletSigner } from './WalletSigner';
@@ -35,7 +35,7 @@ export class QredoSigner extends WalletSigner {
 	#apiEnv: API_ENV;
 
 	constructor(
-		client: SuiClient,
+		client: PeraClient,
 		account: QredoSerializedUiAccount,
 		qredoAPI: QredoAPI,
 		apiEnv: API_ENV,
@@ -148,7 +148,7 @@ export class QredoSigner extends WalletSigner {
 		});
 	};
 
-	connect(client: SuiClient): WalletSigner {
+	connect(client: PeraClient): WalletSigner {
 		return new QredoSigner(client, this.#qredoAccount, this.#qredoAPI, this.#apiEnv);
 	}
 

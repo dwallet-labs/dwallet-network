@@ -2,7 +2,6 @@
 resolver = "2"
 
 exclude = [
-    "examples/tic-tac-toe/cli",
     "external-crates/move/crates/bytecode-interpreter-crypto",
     "external-crates/move/crates/bytecode-verifier-libfuzzer",
     "external-crates/move/crates/bytecode-verifier-tests",
@@ -82,89 +81,89 @@ members = [
     "crates/prometheus-closure-metric",
     "crates/shared-crypto",
     "crates/simulacrum",
-    "crates/sui",
-    "crates/sui-adapter-transactional-tests",
-    "crates/sui-analytics-indexer",
-    "crates/sui-analytics-indexer-derive",
-    "crates/sui-archival",
-    "crates/sui-authority-aggregation",
-    "crates/sui-aws-orchestrator",
-    "crates/sui-benchmark",
-    "crates/sui-bridge",
-    "crates/sui-bridge-cli",
-    "crates/sui-bridge-indexer",
-    "crates/sui-cluster-test",
-    "crates/sui-config",
-    "crates/sui-core",
-    "crates/sui-cost",
-    "crates/sui-data-ingestion",
-    "crates/sui-data-ingestion-core",
-    "crates/sui-e2e-tests",
-    "crates/sui-enum-compat-util",
-    "crates/sui-faucet",
-    "crates/sui-framework",
-    "crates/sui-framework-snapshot",
-    "crates/sui-framework-tests",
-    "crates/sui-genesis-builder",
-    "crates/sui-graphql-config",
-    "crates/sui-graphql-e2e-tests",
-    "crates/sui-graphql-rpc",
-    "crates/sui-graphql-rpc-client",
-    "crates/sui-graphql-rpc-headers",
-    "crates/sui-indexer",
-    "crates/sui-indexer-builder",
-    "crates/sui-json",
-    "crates/sui-json-rpc",
-    "crates/sui-json-rpc-api",
-    "crates/sui-json-rpc-tests",
-    "crates/sui-json-rpc-types",
-    "crates/sui-keys",
-    "crates/sui-light-client",
-    "crates/sui-macros",
-    "crates/sui-metric-checker",
-    "crates/sui-move",
-    "crates/sui-move-build",
-    "crates/sui-move-lsp",
-    "crates/sui-network",
-    "crates/sui-node",
-    "crates/sui-open-rpc",
-    "crates/sui-open-rpc-macros",
-    "crates/sui-oracle",
-    "crates/sui-package-dump",
-    "crates/sui-package-management",
-    "crates/sui-package-resolver",
-    "crates/sui-proc-macros",
-    "crates/sui-protocol-config",
-    "crates/sui-protocol-config-macros",
-    "crates/sui-proxy",
-    "crates/sui-replay",
-    "crates/sui-rest-api",
-    "crates/sui-rosetta",
-    "crates/sui-rpc-loadgen",
-    "crates/sui-sdk",
-    "crates/sui-security-watchdog",
-    "crates/sui-simulator",
-    "crates/sui-single-node-benchmark",
-    "crates/sui-snapshot",
-    "crates/sui-source-validation",
-    "crates/sui-source-validation-service",
-    "crates/sui-storage",
-    "crates/sui-surfer",
-    "crates/sui-swarm",
-    "crates/sui-swarm-config",
-    "crates/sui-telemetry",
-    "crates/sui-test-transaction-builder",
-    "crates/sui-test-validator",
-    "crates/sui-tls",
-    "crates/sui-tool",
-    "crates/sui-transaction-builder",
-    "crates/sui-transaction-checks",
-    "crates/sui-transactional-test-runner",
-    "crates/sui-types",
-    "crates/sui-upgrade-compatibility-transactional-tests",
-    "crates/sui-verifier-transactional-tests",
-    "crates/suins-indexer",
-    "crates/suiop-cli",
+    "crates/pera",
+    "crates/pera-adapter-transactional-tests",
+    "crates/pera-analytics-indexer",
+    "crates/pera-analytics-indexer-derive",
+    "crates/pera-archival",
+    "crates/pera-authority-aggregation",
+    "crates/pera-aws-orchestrator",
+    "crates/pera-benchmark",
+    "crates/pera-bridge",
+    "crates/pera-bridge-cli",
+    "crates/pera-bridge-indexer",
+    "crates/pera-cluster-test",
+    "crates/pera-config",
+    "crates/pera-core",
+    "crates/pera-cost",
+    "crates/pera-data-ingestion",
+    "crates/pera-data-ingestion-core",
+    "crates/pera-e2e-tests",
+    "crates/pera-enum-compat-util",
+    "crates/pera-faucet",
+    "crates/pera-framework",
+    "crates/pera-framework-snapshot",
+    "crates/pera-framework-tests",
+    "crates/pera-genesis-builder",
+    "crates/pera-graphql-config",
+    "crates/pera-graphql-e2e-tests",
+    "crates/pera-graphql-rpc",
+    "crates/pera-graphql-rpc-client",
+    "crates/pera-graphql-rpc-headers",
+    "crates/pera-indexer",
+    "crates/pera-indexer-builder",
+    "crates/pera-json",
+    "crates/pera-json-rpc",
+    "crates/pera-json-rpc-api",
+    "crates/pera-json-rpc-tests",
+    "crates/pera-json-rpc-types",
+    "crates/pera-keys",
+    "crates/pera-light-client",
+    "crates/pera-macros",
+    "crates/pera-metric-checker",
+    "crates/pera-move",
+    "crates/pera-move-build",
+    "crates/pera-move-lsp",
+    "crates/pera-network",
+    "crates/pera-node",
+    "crates/pera-open-rpc",
+    "crates/pera-open-rpc-macros",
+    "crates/pera-oracle",
+    "crates/pera-package-dump",
+    "crates/pera-package-management",
+    "crates/pera-package-resolver",
+    "crates/pera-proc-macros",
+    "crates/pera-protocol-config",
+    "crates/pera-protocol-config-macros",
+    "crates/pera-proxy",
+    "crates/pera-replay",
+    "crates/pera-rest-api",
+    "crates/pera-rosetta",
+    "crates/pera-rpc-loadgen",
+    "crates/pera-sdk",
+    "crates/pera-security-watchdog",
+    "crates/pera-simulator",
+    "crates/pera-single-node-benchmark",
+    "crates/pera-snapshot",
+    "crates/pera-source-validation",
+    "crates/pera-source-validation-service",
+    "crates/pera-storage",
+    "crates/pera-surfer",
+    "crates/pera-swarm",
+    "crates/pera-swarm-config",
+    "crates/pera-telemetry",
+    "crates/pera-test-transaction-builder",
+    "crates/pera-test-validator",
+    "crates/pera-tls",
+    "crates/pera-tool",
+    "crates/pera-transaction-builder",
+    "crates/pera-transaction-checks",
+    "crates/pera-transactional-test-runner",
+    "crates/pera-types",
+    "crates/pera-upgrade-compatibility-transactional-tests",
+    "crates/pera-verifier-transactional-tests",
+    "crates/perans-indexer",
+    "crates/peraop-cli",
     "crates/telemetry-subscribers",
     "crates/test-cluster",
     "crates/transaction-fuzzer",
@@ -183,24 +182,24 @@ members = [
     "narwhal/test-utils",
     "narwhal/types",
     "narwhal/worker",
-    "sui-execution",
-    "sui-execution/cut",
-    "sui-execution/latest/sui-adapter",
-    "sui-execution/latest/sui-move-natives",
-    "sui-execution/latest/sui-verifier",
-    "sui-execution/v0/sui-adapter",
-    "sui-execution/v0/sui-move-natives",
-    "sui-execution/v0/sui-verifier",
-    "sui-execution/v1/sui-adapter",
-    "sui-execution/v1/sui-move-natives",
-    "sui-execution/v1/sui-verifier",
-    "sui-execution/v2/sui-adapter",
-    "sui-execution/v2/sui-move-natives",
-    "sui-execution/v2/sui-verifier",
+    "pera-execution",
+    "pera-execution/cut",
+    "pera-execution/latest/pera-adapter",
+    "pera-execution/latest/pera-move-natives",
+    "pera-execution/latest/pera-verifier",
+    "pera-execution/v0/pera-adapter",
+    "pera-execution/v0/pera-move-natives",
+    "pera-execution/v0/pera-verifier",
+    "pera-execution/v1/pera-adapter",
+    "pera-execution/v1/pera-move-natives",
+    "pera-execution/v1/pera-verifier",
+    "pera-execution/v2/pera-adapter",
+    "pera-execution/v2/pera-move-natives",
+    "pera-execution/v2/pera-verifier",
 ]
 
 [workspace.package]
-# This version string will be inherited by sui-core, sui-faucet, sui-node, sui-tools, sui-sdk, sui-move-build, and sui crates.
+# This version string will be inherited by pera-core, pera-faucet, pera-node, pera-tools, pera-sdk, pera-move-build, and pera crates.
 version = "1.32.2"
 
 [profile.release]
@@ -208,7 +207,7 @@ version = "1.32.2"
 debug = 1
 # Write debug info into a separate file.
 split-debuginfo = 'packed'
-# Without stripping, sui binary size would be > 1GB.
+# Without stripping, pera binary size would be > 1GB.
 strip = 'debuginfo'
 # Exit process with SIGABRT when any thread panics
 panic = 'abort'
@@ -579,7 +578,7 @@ anemo-cli = { git = "https://github.com/mystenlabs/anemo.git", rev = "dbb5a074c2
 anemo-tower = { git = "https://github.com/mystenlabs/anemo.git", rev = "dbb5a074c2d25660525ab5d36d65ff0cb8051949" }
 
 # core-types with json format for REST api
-sui-sdk2 = { package = "sui-sdk", git = "https://github.com/mystenlabs/sui-rust-sdk.git", rev = "bd233b6879b917fb95e17f21927c198e7a60c924", features = ["hash", "serde", "schemars"] }
+pera-sdk2 = { package = "sui-sdk", git = "https://github.com/mystenlabs/sui-rust-sdk.git", rev = "bd233b6879b917fb95e17f21927c198e7a60c924", features = ["hash", "serde", "schemars"] }
 
 ### Workspace Members ###
 anemo-benchmark = { path = "crates/anemo-benchmark" }
@@ -593,78 +592,78 @@ mysten-util-mem-derive = { path = "crates/mysten-util-mem-derive" }
 prometheus-closure-metric = { path = "crates/prometheus-closure-metric" }
 shared-crypto = { path = "crates/shared-crypto" }
 simulacrum = { path = "crates/simulacrum" }
-sui = { path = "crates/sui" }
-sui-adapter-transactional-tests = { path = "crates/sui-adapter-transactional-tests" }
-sui-analytics-indexer = { path = "crates/sui-analytics-indexer" }
-sui-analytics-indexer-derive = { path = "crates/sui-analytics-indexer-derive" }
-sui-archival = { path = "crates/sui-archival" }
-sui-authority-aggregation = { path = "crates/sui-authority-aggregation" }
-sui-benchmark = { path = "crates/sui-benchmark" }
-sui-bridge = { path = "crates/sui-bridge" }
-sui-cluster-test = { path = "crates/sui-cluster-test" }
-sui-config = { path = "crates/sui-config" }
-sui-core = { path = "crates/sui-core" }
-sui-cost = { path = "crates/sui-cost" }
-sui-data-ingestion = { path = "crates/sui-data-ingestion" }
-sui-data-ingestion-core = { path = "crates/sui-data-ingestion-core" }
-sui-e2e-tests = { path = "crates/sui-e2e-tests" }
-sui-enum-compat-util = { path = "crates/sui-enum-compat-util" }
-sui-faucet = { path = "crates/sui-faucet" }
-sui-framework = { path = "crates/sui-framework" }
-sui-framework-snapshot = { path = "crates/sui-framework-snapshot" }
-sui-framework-tests = { path = "crates/sui-framework-tests" }
-sui-graphql-config = { path = "crates/sui-graphql-config" }
-sui-graphql-rpc = { path = "crates/sui-graphql-rpc" }
-sui-graphql-rpc-client = { path = "crates/sui-graphql-rpc-client" }
-sui-graphql-rpc-headers = { path = "crates/sui-graphql-rpc-headers" }
-sui-genesis-builder = { path = "crates/sui-genesis-builder" }
-sui-indexer = { path = "crates/sui-indexer" }
-sui-indexer-builder = { path = "crates/sui-indexer-builder" }
-sui-json = { path = "crates/sui-json" }
-sui-json-rpc = { path = "crates/sui-json-rpc" }
-sui-json-rpc-api = { path = "crates/sui-json-rpc-api" }
-sui-json-rpc-types = { path = "crates/sui-json-rpc-types" }
-sui-keys = { path = "crates/sui-keys" }
-sui-macros = { path = "crates/sui-macros" }
-sui-metric-checker = { path = "crates/sui-metric-checker" }
-sui-move = { path = "crates/sui-move" }
-sui-move-build = { path = "crates/sui-move-build" }
-sui-move-lsp = { path = "crates/sui-move-lsp" }
-sui-network = { path = "crates/sui-network" }
-sui-node = { path = "crates/sui-node" }
-sui-open-rpc = { path = "crates/sui-open-rpc" }
-sui-open-rpc-macros = { path = "crates/sui-open-rpc-macros" }
-sui-package-dump = { path = "crates/sui-package-dump" }
-sui-package-management = { path = "crates/sui-package-management" }
-sui-package-resolver = { path = "crates/sui-package-resolver" }
-sui-proc-macros = { path = "crates/sui-proc-macros" }
-sui-protocol-config = { path = "crates/sui-protocol-config" }
-sui-protocol-config-macros = { path = "crates/sui-protocol-config-macros" }
-sui-proxy = { path = "crates/sui-proxy" }
-sui-replay = { path = "crates/sui-replay" }
-sui-rosetta = { path = "crates/sui-rosetta" }
-sui-rpc-loadgen = { path = "crates/sui-rpc-loadgen" }
-sui-sdk = { path = "crates/sui-sdk" }
-sui-simulator = { path = "crates/sui-simulator" }
-sui-snapshot = { path = "crates/sui-snapshot" }
-sui-source-validation = { path = "crates/sui-source-validation" }
-sui-source-validation-service = { path = "crates/sui-source-validation-service" }
-sui-storage = { path = "crates/sui-storage" }
-sui-surfer = { path = "crates/sui-surfer" }
-sui-swarm = { path = "crates/sui-swarm" }
-sui-swarm-config = { path = "crates/sui-swarm-config" }
-sui-telemetry = { path = "crates/sui-telemetry" }
-sui-test-transaction-builder = { path = "crates/sui-test-transaction-builder" }
-sui-test-validator = { path = "crates/sui-test-validator" }
-sui-tls = { path = "crates/sui-tls" }
-sui-rest-api = { path = "crates/sui-rest-api" }
-sui-tool = { path = "crates/sui-tool" }
-sui-transaction-builder = { path = "crates/sui-transaction-builder" }
-sui-transaction-checks = { path = "crates/sui-transaction-checks" }
-sui-transactional-test-runner = { path = "crates/sui-transactional-test-runner" }
-sui-types = { path = "crates/sui-types" }
-sui-upgrade-compatibility-transactional-tests = { path = "crates/sui-upgrade-compatibility-transactional-tests" }
-sui-verifier-transactional-tests = { path = "crates/sui-verifier-transactional-tests" }
+pera = { path = "crates/pera" }
+pera-adapter-transactional-tests = { path = "crates/pera-adapter-transactional-tests" }
+pera-analytics-indexer = { path = "crates/pera-analytics-indexer" }
+pera-analytics-indexer-derive = { path = "crates/pera-analytics-indexer-derive" }
+pera-archival = { path = "crates/pera-archival" }
+pera-authority-aggregation = { path = "crates/pera-authority-aggregation" }
+pera-benchmark = { path = "crates/pera-benchmark" }
+pera-bridge = { path = "crates/pera-bridge" }
+pera-cluster-test = { path = "crates/pera-cluster-test" }
+pera-config = { path = "crates/pera-config" }
+pera-core = { path = "crates/pera-core" }
+pera-cost = { path = "crates/pera-cost" }
+pera-data-ingestion = { path = "crates/pera-data-ingestion" }
+pera-data-ingestion-core = { path = "crates/pera-data-ingestion-core" }
+pera-e2e-tests = { path = "crates/pera-e2e-tests" }
+pera-enum-compat-util = { path = "crates/pera-enum-compat-util" }
+pera-faucet = { path = "crates/pera-faucet" }
+pera-framework = { path = "crates/pera-framework" }
+pera-framework-snapshot = { path = "crates/pera-framework-snapshot" }
+pera-framework-tests = { path = "crates/pera-framework-tests" }
+pera-graphql-config = { path = "crates/pera-graphql-config" }
+pera-graphql-rpc = { path = "crates/pera-graphql-rpc" }
+pera-graphql-rpc-client = { path = "crates/pera-graphql-rpc-client" }
+pera-graphql-rpc-headers = { path = "crates/pera-graphql-rpc-headers" }
+pera-genesis-builder = { path = "crates/pera-genesis-builder" }
+pera-indexer = { path = "crates/pera-indexer" }
+pera-indexer-builder = { path = "crates/pera-indexer-builder" }
+pera-json = { path = "crates/pera-json" }
+pera-json-rpc = { path = "crates/pera-json-rpc" }
+pera-json-rpc-api = { path = "crates/pera-json-rpc-api" }
+pera-json-rpc-types = { path = "crates/pera-json-rpc-types" }
+pera-keys = { path = "crates/pera-keys" }
+pera-macros = { path = "crates/pera-macros" }
+pera-metric-checker = { path = "crates/pera-metric-checker" }
+pera-move = { path = "crates/pera-move" }
+pera-move-build = { path = "crates/pera-move-build" }
+pera-move-lsp = { path = "crates/pera-move-lsp" }
+pera-network = { path = "crates/pera-network" }
+pera-node = { path = "crates/pera-node" }
+pera-open-rpc = { path = "crates/pera-open-rpc" }
+pera-open-rpc-macros = { path = "crates/pera-open-rpc-macros" }
+pera-package-dump = { path = "crates/pera-package-dump" }
+pera-package-management = { path = "crates/pera-package-management" }
+pera-package-resolver = { path = "crates/pera-package-resolver" }
+pera-proc-macros = { path = "crates/pera-proc-macros" }
+pera-protocol-config = { path = "crates/pera-protocol-config" }
+pera-protocol-config-macros = { path = "crates/pera-protocol-config-macros" }
+pera-proxy = { path = "crates/pera-proxy" }
+pera-replay = { path = "crates/pera-replay" }
+pera-rosetta = { path = "crates/pera-rosetta" }
+pera-rpc-loadgen = { path = "crates/pera-rpc-loadgen" }
+pera-sdk = { path = "crates/pera-sdk" }
+pera-simulator = { path = "crates/pera-simulator" }
+pera-snapshot = { path = "crates/pera-snapshot" }
+pera-source-validation = { path = "crates/pera-source-validation" }
+pera-source-validation-service = { path = "crates/pera-source-validation-service" }
+pera-storage = { path = "crates/pera-storage" }
+pera-surfer = { path = "crates/pera-surfer" }
+pera-swarm = { path = "crates/pera-swarm" }
+pera-swarm-config = { path = "crates/pera-swarm-config" }
+pera-telemetry = { path = "crates/pera-telemetry" }
+pera-test-transaction-builder = { path = "crates/pera-test-transaction-builder" }
+pera-test-validator = { path = "crates/pera-test-validator" }
+pera-tls = { path = "crates/pera-tls" }
+pera-rest-api = { path = "crates/pera-rest-api" }
+pera-tool = { path = "crates/pera-tool" }
+pera-transaction-builder = { path = "crates/pera-transaction-builder" }
+pera-transaction-checks = { path = "crates/pera-transaction-checks" }
+pera-transactional-test-runner = { path = "crates/pera-transactional-test-runner" }
+pera-types = { path = "crates/pera-types" }
+pera-upgrade-compatibility-transactional-tests = { path = "crates/pera-upgrade-compatibility-transactional-tests" }
+pera-verifier-transactional-tests = { path = "crates/pera-verifier-transactional-tests" }
 telemetry-subscribers = { path = "crates/telemetry-subscribers" }
 test-cluster = { path = "crates/test-cluster" }
 transaction-fuzzer = { path = "crates/transaction-fuzzer" }
@@ -686,15 +685,15 @@ narwhal-test-utils = { path = "narwhal/test-utils" }
 narwhal-types = { path = "narwhal/types" }
 narwhal-worker = { path = "narwhal/worker" }
 
-sui-execution = { path = "sui-execution" }
-# sui-move-natives = { path = "sui-execution/latest/sui-move-natives", package = "sui-move-natives-latest" }
-# sui-adapter = { path = "sui-execution/latest/sui-adapter", package = "sui-adapter-latest" }
-# sui-verifier = { path = "sui-execution/latest/sui-verifier", package = "sui-verifier-latest" }
+pera-execution = { path = "pera-execution" }
+# pera-move-natives = { path = "pera-execution/latest/pera-move-natives", package = "pera-move-natives-latest" }
+# pera-adapter = { path = "pera-execution/latest/pera-adapter", package = "pera-adapter-latest" }
+# pera-verifier = { path = "pera-execution/latest/pera-verifier", package = "pera-verifier-latest" }
 # move-stdlib = { path = "external-crates/move/move-stdlib" }
 # move-vm-runtime = { path = "external-crates/move/move-vm/runtime" }
 # move-bytecode-verifier = { path = "external-crates/move/move-bytecode-verifier" }
 
-# suiop dependencies
+# peraop dependencies
 docker-api = "0.12.2"
 field_names = "0.2.0"
 semver = "1.0.16"

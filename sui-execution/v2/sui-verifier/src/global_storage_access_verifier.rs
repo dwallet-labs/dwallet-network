@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::verification_failure;
 use move_binary_format::file_format::{Bytecode, CompiledModule};
-use sui_types::error::ExecutionError;
+use pera_types::error::ExecutionError;
 
 pub fn verify_module(module: &CompiledModule) -> Result<(), ExecutionError> {
     verify_global_storage_access(module)
 }
 
-/// Global storage in sui is handled by sui instead of within Move.
+/// Global storage in pera is handled by pera instead of within Move.
 /// Hence we want to forbid any global storage access in Move.
 fn verify_global_storage_access(module: &CompiledModule) -> Result<(), ExecutionError> {
     for func_def in &module.function_defs {

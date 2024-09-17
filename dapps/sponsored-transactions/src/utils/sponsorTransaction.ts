@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiObjectRef } from '@mysten/sui/client';
-import { getFaucetHost, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { Transaction } from '@mysten/sui/transactions';
+import { PeraObjectRef } from '@pera-io/pera/client';
+import { getFaucetHost, requestPeraFromFaucetV1 } from '@pera-io/pera/faucet';
+import { Ed25519Keypair } from '@pera-io/pera/keypairs/ed25519';
+import { Transaction } from '@pera-io/pera/transactions';
 
 import { client } from './rpc';
 
@@ -12,12 +12,12 @@ import { client } from './rpc';
 export async function sponsorTransaction(sender: string, transactionKindBytes: Uint8Array) {
 	// Rather than do gas pool management, we just spin out a new keypair to sponsor the transaction with:
 	const keypair = new Ed25519Keypair();
-	const address = keypair.getPublicKey().toSuiAddress();
+	const address = keypair.getPublicKey().toPeraAddress();
 	console.log(`Sponsor address: ${address}`);
 
-	await requestSuiFromFaucetV1({ recipient: address, host: getFaucetHost('testnet') });
+	await requestPeraFromFaucetV1({ recipient: address, host: getFaucetHost('testnet') });
 
-	let payment: SuiObjectRef[] = [];
+	let payment: PeraObjectRef[] = [];
 	let retires = 50;
 	while (retires !== 0) {
 		const coins = await client.getCoins({ owner: address, limit: 1 });

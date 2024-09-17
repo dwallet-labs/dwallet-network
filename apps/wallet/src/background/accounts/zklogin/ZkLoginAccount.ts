@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import networkEnv from '_src/background/NetworkEnv';
 import { type NetworkEnvType } from '_src/shared/api-env';
 import { deobfuscate, obfuscate } from '_src/shared/cryptography/keystore';
 import { fromExportedKeypair } from '_src/shared/utils/from-exported-keypair';
-import { toSerializedSignature, type PublicKey } from '@mysten/sui/cryptography';
+import { toSerializedSignature, type PublicKey } from '@pera-io/pera/cryptography';
 import { computeZkLoginAddress, genAddressSeed, getZkLoginSignature } from '@mysten/zklogin';
 import { blake2b } from '@noble/hashes/blake2b';
 import { decodeJwt } from 'jose';

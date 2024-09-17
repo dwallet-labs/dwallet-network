@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { toB58 } from '@mysten/bcs';
 import { expect, it } from 'vitest';
 
 import { bcs } from '../../bcs/index.js';
-import { normalizeStructTag, normalizeSuiAddress } from '../../utils/sui-types.js';
+import { normalizeStructTag, normalizePeraAddress } from '../../utils/pera-types.js';
 
 // Oooh-weeee we nailed it!
 it('can serialize simplified programmable call struct', () => {
@@ -43,13 +43,13 @@ it('can serialize simplified programmable call struct', () => {
 	expect(result.arguments).toEqual(moveCall.arguments);
 	expect(result.function).toEqual(moveCall.function);
 	expect(result.module).toEqual(moveCall.module);
-	expect(normalizeSuiAddress(result.package)).toEqual(normalizeSuiAddress(moveCall.package));
+	expect(normalizePeraAddress(result.package)).toEqual(normalizePeraAddress(moveCall.package));
 	expect(result.typeArguments[0]).toMatchObject(moveCall.typeArguments[0]);
 });
 
 function ref(): { objectId: string; version: string; digest: string } {
 	return {
-		objectId: normalizeSuiAddress((Math.random() * 100000).toFixed(0).padEnd(64, '0')),
+		objectId: normalizePeraAddress((Math.random() * 100000).toFixed(0).padEnd(64, '0')),
 		version: String((Math.random() * 10000).toFixed(0)),
 		digest: toB58(
 			new Uint8Array([
@@ -61,15 +61,15 @@ function ref(): { objectId: string; version: string; digest: string } {
 }
 
 it('can serialize transaction data with a programmable transaction', () => {
-	let sui = normalizeSuiAddress('0x2');
+	let pera = normalizePeraAddress('0x2');
 	let txData = {
 		$kind: 'V1',
 		V1: {
-			sender: normalizeSuiAddress('0xBAD'),
+			sender: normalizePeraAddress('0xBAD'),
 			expiration: { $kind: 'None', None: true },
 			gasData: {
 				payment: [ref()],
-				owner: sui,
+				owner: pera,
 				price: '1',
 				budget: '1000000',
 			},
@@ -121,10 +121,10 @@ it('can serialize transaction data with a programmable transaction', () => {
 						{
 							$kind: 'MoveCall',
 							MoveCall: {
-								package: sui,
+								package: pera,
 								module: 'display',
 								function: 'new',
-								typeArguments: [`${sui}::capy::Capy`],
+								typeArguments: [`${pera}::capy::Capy`],
 								arguments: [
 									// publisher object
 									{
@@ -137,10 +137,10 @@ it('can serialize transaction data with a programmable transaction', () => {
 						{
 							$kind: 'MoveCall',
 							MoveCall: {
-								package: sui,
+								package: pera,
 								module: 'display',
 								function: 'add_multiple',
-								typeArguments: [`${sui}::capy::Capy`],
+								typeArguments: [`${pera}::capy::Capy`],
 								arguments: [
 									// result of the first transaction
 									{
@@ -163,10 +163,10 @@ it('can serialize transaction data with a programmable transaction', () => {
 						{
 							$kind: 'MoveCall',
 							MoveCall: {
-								package: sui,
+								package: pera,
 								module: 'display',
 								function: 'update_version',
-								typeArguments: [`${sui}::capy::Capy`],
+								typeArguments: [`${pera}::capy::Capy`],
 								arguments: [
 									// result of the first transaction again
 									{

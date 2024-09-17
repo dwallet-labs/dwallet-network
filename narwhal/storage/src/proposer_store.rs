@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::StoreResult;
 use store::rocks::{open_cf, MetricConf};
 use store::{reopen, rocks::DBMap, rocks::ReadWriteOptions, Map};
-use sui_macros::fail_point;
+use pera_macros::fail_point;
 use types::Header;
 
 pub type ProposerKey = u32;

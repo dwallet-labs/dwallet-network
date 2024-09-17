@@ -8,4 +8,4 @@ deps_digest = "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
 [move.toolchain-version]
 compiler-version = "$COMPILER_VERSION"
 edition = "legacy"
-flavor = "sui"
+flavor = "pera"

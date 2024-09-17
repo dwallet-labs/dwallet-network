@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Text } from '_src/ui/app/shared/text';
 import { ChevronDown12, ChevronRight12 } from '@mysten/icons';
-import { type Argument, type Commands, type TransactionData } from '@mysten/sui/transactions';
-import { toB64 } from '@mysten/sui/utils';
+import { type Argument, type Commands, type TransactionData } from '@pera-io/pera/transactions';
+import { toB64 } from '@pera-io/pera/utils';
 import { useState } from 'react';
 
 type TransactionType = TransactionData['commands'][0];

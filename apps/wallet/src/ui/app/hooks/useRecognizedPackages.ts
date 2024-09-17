@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { API_ENV } from '_src/shared/api-env';
 import { useFeatureValue } from '@growthbook/growthbook-react';
-import { SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS } from '@mysten/sui/utils';
+import { PERA_FRAMEWORK_ADDRESS, PERA_SYSTEM_ADDRESS } from '@pera-io/pera/utils';
 
 import useAppSelector from './useAppSelector';
 
-const DEFAULT_RECOGNIZED_PACKAGES = [SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS];
+const DEFAULT_RECOGNIZED_PACKAGES = [PERA_FRAMEWORK_ADDRESS, PERA_SYSTEM_ADDRESS];
 
 export function useRecognizedPackages() {
 	const apiEnv = useAppSelector((app) => app.app.apiEnv);

@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export * from './components/connect-modal/ConnectModal.js';
 export * from './components/ConnectButton.js';
-export * from './components/SuiClientProvider.js';
+export * from './components/PeraClientProvider.js';
 export * from './components/WalletProvider.js';
 export * from './hooks/networkConfig.js';
-export * from './hooks/useResolveSuiNSNames.js';
-export * from './hooks/useSuiClient.js';
-export * from './hooks/useSuiClientInfiniteQuery.js';
-export * from './hooks/useSuiClientMutation.js';
-export * from './hooks/useSuiClientQuery.js';
-export * from './hooks/useSuiClientQueries.js';
+export * from './hooks/useResolvePeraNSNames.js';
+export * from './hooks/usePeraClient.js';
+export * from './hooks/usePeraClientInfiniteQuery.js';
+export * from './hooks/usePeraClientMutation.js';
+export * from './hooks/usePeraClientQuery.js';
+export * from './hooks/usePeraClientQueries.js';
 export * from './hooks/wallet/useAccounts.js';
 export * from './hooks/wallet/useAutoConnectWallet.js';
 export * from './hooks/wallet/useConnectWallet.js';

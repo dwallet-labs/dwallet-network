@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
     binary_config::{BinaryConfig, TableConfig},
@@ -2139,8 +2139,8 @@ impl<'a, 'b> VersionedBinary<'a, 'b> {
             return Err(PartialVMError::new(StatusCode::UNKNOWN_VERSION));
         }
 
-        // Bad flavor to the version: for version 7 and above, only SUI_FLAVOR is supported
-        if version >= VERSION_7 && flavor != Some(BinaryFlavor::SUI_FLAVOR) {
+        // Bad flavor to the version: for version 7 and above, only PERA_FLAVOR is supported
+        if version >= VERSION_7 && flavor != Some(BinaryFlavor::PERA_FLAVOR) {
             return Err(PartialVMError::new(StatusCode::UNKNOWN_VERSION));
         }
 

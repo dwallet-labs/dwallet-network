@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useResolveSuiNSName } from '_app/hooks/useAppResolveSuinsName';
+import { useResolvePeraNSName } from '_app/hooks/useAppResolvePeransName';
 import { Text } from '_src/ui/app/shared/text';
 import { useFormatCoin } from '@mysten/core';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
 import { CheckFill16 } from '@mysten/icons';
-import { formatAddress, SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { formatAddress, PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import cl from 'clsx';
 
 import { useCoinsReFetchingConfig } from '../../hooks';
@@ -19,10 +19,10 @@ type LedgerAccountRowProps = {
 export function LedgerAccountRow({ isSelected, address }: LedgerAccountRowProps) {
 	const { staleTime, refetchInterval } = useCoinsReFetchingConfig();
 
-	const { data: coinBalance } = useSuiClientQuery(
+	const { data: coinBalance } = usePeraClientQuery(
 		'getBalance',
 		{
-			coinType: SUI_TYPE_ARG,
+			coinType: PERA_TYPE_ARG,
 			owner: address,
 		},
 		{
@@ -30,11 +30,11 @@ export function LedgerAccountRow({ isSelected, address }: LedgerAccountRowProps)
 			staleTime,
 		},
 	);
-	const domainName = useResolveSuiNSName(address);
+	const domainName = useResolvePeraNSName(address);
 
 	const [totalAmount, totalAmountSymbol] = useFormatCoin(
 		coinBalance?.totalBalance ?? 0,
-		SUI_TYPE_ARG,
+		PERA_TYPE_ARG,
 	);
 
 	return (

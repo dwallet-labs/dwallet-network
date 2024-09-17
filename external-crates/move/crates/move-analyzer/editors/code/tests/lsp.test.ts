@@ -22,7 +22,7 @@ const isKeywordInCompletionItems = (label: string, items: vscode.CompletionItem[
 
 const PRIMITIVE_TYPES = ['u8', 'u16', 'u32', 'u64', 'u128', 'u256', 'bool', 'vector'];
 
-Mocha.suite('LSP', () => {
+Mocha.perate('LSP', () => {
     Mocha.test('textDocument/documentSymbol', async () => {
         const ext = vscode.extensions.getExtension('move.move-analyzer');
         assert.ok(ext);

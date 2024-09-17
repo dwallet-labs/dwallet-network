@@ -1,14 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import {
 	ConnectButton,
 	useCurrentAccount,
 	useSignTransaction,
-	useSuiClient,
+	usePeraClient,
 } from '@mysten/dapp-kit';
-import { SuiTransactionBlockResponse } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { PeraTransactionBlockResponse } from '@pera-io/pera/client';
+import { Transaction } from '@pera-io/pera/transactions';
 import { ComponentProps, ReactNode, useMemo, useState } from 'react';
 
 import { sponsorTransaction } from './utils/sponsorTransaction';
@@ -39,7 +39,7 @@ const CodePanel = ({
 );
 
 export function App() {
-	const client = useSuiClient();
+	const client = usePeraClient();
 	const currentAccount = useCurrentAccount();
 	const { mutateAsync: signTransaction } = useSignTransaction();
 	const [loading, setLoading] = useState(false);
@@ -49,7 +49,7 @@ export function App() {
 	const [signedTx, setSignedTx] = useState<Awaited<ReturnType<typeof signTransaction>> | null>(
 		null,
 	);
-	const [executedTx, setExecutedTx] = useState<SuiTransactionBlockResponse | null>(null);
+	const [executedTx, setExecutedTx] = useState<PeraTransactionBlockResponse | null>(null);
 
 	const tx = useMemo(() => {
 		if (!currentAccount) return null;

@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui/bcs';
+import { bcs } from '@pera-io/pera/bcs';
 import {
 	type DryRunTransactionBlockResponse,
 	type ExecuteTransactionRequestType,
-	type SuiClient,
-	type SuiTransactionBlockResponse,
-	type SuiTransactionBlockResponseOptions,
-} from '@mysten/sui/client';
-import { messageWithIntent } from '@mysten/sui/cryptography';
-import { isTransaction, type Transaction } from '@mysten/sui/transactions';
-import { fromB64, toB64 } from '@mysten/sui/utils';
+	type PeraClient,
+	type PeraTransactionBlockResponse,
+	type PeraTransactionBlockResponseOptions,
+} from '@pera-io/pera/client';
+import { messageWithIntent } from '@pera-io/pera/cryptography';
+import { isTransaction, type Transaction } from '@pera-io/pera/transactions';
+import { fromB64, toB64 } from '@pera-io/pera/utils';
 
 export type SignedTransaction = {
 	transactionBlockBytes: string;
@@ -24,9 +24,9 @@ export type SignedMessage = {
 };
 
 export abstract class WalletSigner {
-	client: SuiClient;
+	client: PeraClient;
 
-	constructor(client: SuiClient) {
+	constructor(client: PeraClient) {
 		this.client = client;
 	}
 
@@ -86,11 +86,11 @@ export abstract class WalletSigner {
 	async signAndExecuteTransactionBlock(
 		input: {
 			transactionBlock: Uint8Array | Transaction;
-			options?: SuiTransactionBlockResponseOptions;
+			options?: PeraTransactionBlockResponseOptions;
 			requestType?: ExecuteTransactionRequestType;
 		},
 		clientIdentifier?: string,
-	): Promise<SuiTransactionBlockResponse> {
+	): Promise<PeraTransactionBlockResponse> {
 		const bytes = await this.prepareTransactionBlock(input.transactionBlock);
 		const signed = await this.signTransactionBlock({
 			transactionBlock: bytes,

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { act, renderHook, waitFor } from '@testing-library/react';
 
@@ -12,7 +12,7 @@ import {
 	useWallets,
 } from '../../src/index.js';
 import { createMockAccount } from '../mocks/mockAccount.js';
-import { suiFeatures, superCoolFeature } from '../mocks/mockFeatures.js';
+import { peraFeatures, superCoolFeature } from '../mocks/mockFeatures.js';
 import { createWalletProviderContextWrapper, registerMockWallet } from '../test-utils.js';
 
 describe('WalletProvider', () => {
@@ -35,15 +35,15 @@ describe('WalletProvider', () => {
 	test('the list of wallets is ordered correctly by preference', () => {
 		const { unregister: unregister1 } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 		const { unregister: unregister2 } = registerMockWallet({
 			walletName: 'Mock Wallet 2',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 		const { unregister: unregister3 } = registerMockWallet({
 			walletName: 'Mock Wallet 3',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 
 		const wrapper = createWalletProviderContextWrapper({
@@ -74,15 +74,15 @@ describe('WalletProvider', () => {
 	test('unregistered wallets are removed from the list of wallets', async () => {
 		const { unregister: unregister1 } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 		const { unregister: unregister2 } = registerMockWallet({
 			walletName: 'Mock Wallet 2',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 		const { unregister: unregister3 } = registerMockWallet({
 			walletName: 'Mock Wallet 3',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 
 		const wrapper = createWalletProviderContextWrapper();
@@ -160,7 +160,7 @@ describe('WalletProvider', () => {
 			const { unregister, mockWallet } = registerMockWallet({
 				walletName: 'Mock Wallet 1',
 				accounts: [createMockAccount(), createMockAccount()],
-				features: suiFeatures,
+				features: peraFeatures,
 			});
 
 			const wrapper = createWalletProviderContextWrapper({
@@ -205,13 +205,13 @@ describe('WalletProvider', () => {
 			const wallet1 = registerMockWallet({
 				id: '1',
 				walletName: 'Mock Wallet',
-				features: suiFeatures,
+				features: peraFeatures,
 			});
 
 			const wallet2 = registerMockWallet({
 				id: '2',
 				walletName: 'Mock Wallet',
-				features: suiFeatures,
+				features: peraFeatures,
 			});
 
 			const wrapper = createWalletProviderContextWrapper({

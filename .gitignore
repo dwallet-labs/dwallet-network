@@ -12,19 +12,19 @@
 
 # Move build directory
 build
-!crates/sui-single-node-benchmark/tests/data/package_publish_from_bytecode/package_a/build
-!crates/sui-single-node-benchmark/tests/data/package_publish_from_bytecode/package_b/build
+!crates/pera-single-node-benchmark/tests/data/package_publish_from_bytecode/package_a/build
+!crates/pera-single-node-benchmark/tests/data/package_publish_from_bytecode/package_b/build
 storage
 !consensus/core/src/storage
-!crates/sui-types/src/storage
+!crates/pera-types/src/storage
 !narwhal/storage
 
 # Move-related files
 Move.lock
-!crates/sui-framework/packages/move-stdlib/Move.lock
-!crates/sui-framework/packages/sui-framework/Move.lock
-!crates/sui-framework/packages/sui-system/Move.lock
-!crates/sui-framework/packages/deepbook/Move.lock
+!crates/pera-framework/packages/move-stdlib/Move.lock
+!crates/pera-framework/packages/pera-framework/Move.lock
+!crates/pera-framework/packages/pera-system/Move.lock
+!crates/pera-framework/packages/deepbook/Move.lock
 .trace
 .coverage_map.mvcov
 
@@ -59,7 +59,7 @@ playwright/.cache/
 
 # logs
 wallet.log.*
-sui.log.*
+pera.log.*
 .vercel
 npm-debug.log*
 yarn-debug.log*
@@ -70,7 +70,7 @@ yarn-error.log*
 .env
 checkpoints_dir/*
 light_client.yaml
-docs/content/references/sui-api/sui-graphql/*
+docs/content/references/pera-api/pera-graphql/*
 docs/content/references/framework/**
 
 lcov.info

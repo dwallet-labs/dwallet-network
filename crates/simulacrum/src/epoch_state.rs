@@ -1,22 +1,22 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{collections::HashSet, sync::Arc};
 
 use anyhow::Result;
-use sui_config::transaction_deny_config::TransactionDenyConfig;
-use sui_execution::Executor;
-use sui_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
-use sui_types::{
+use pera_config::transaction_deny_config::TransactionDenyConfig;
+use pera_execution::Executor;
+use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
+use pera_types::{
     committee::{Committee, EpochId},
     effects::TransactionEffects,
-    gas::SuiGasStatus,
+    gas::PeraGasStatus,
     inner_temporary_store::InnerTemporaryStore,
     metrics::BytecodeVerifierMetrics,
     metrics::LimitsMetrics,
-    sui_system_state::{
-        epoch_start_sui_system_state::{EpochStartSystemState, EpochStartSystemStateTrait},
-        SuiSystemState, SuiSystemStateTrait,
+    pera_system_state::{
+        epoch_start_pera_system_state::{EpochStartSystemState, EpochStartSystemStateTrait},
+        PeraSystemState, PeraSystemStateTrait,
     },
     transaction::{TransactionDataAPI, VerifiedTransaction},
 };
@@ -36,15 +36,15 @@ pub struct EpochState {
 }
 
 impl EpochState {
-    pub fn new(system_state: SuiSystemState) -> Self {
+    pub fn new(system_state: PeraSystemState) -> Self {
         let epoch_start_state = system_state.into_epoch_start_state();
-        let committee = epoch_start_state.get_sui_committee();
+        let committee = epoch_start_state.get_pera_committee();
         let protocol_config =
             ProtocolConfig::get_for_version(epoch_start_state.protocol_version(), Chain::Unknown);
         let registry = prometheus::Registry::new();
         let limits_metrics = Arc::new(LimitsMetrics::new(&registry));
         let bytecode_verifier_metrics = Arc::new(BytecodeVerifierMetrics::new(&registry));
-        let executor = sui_execution::executor(&protocol_config, true, None).unwrap();
+        let executor = pera_execution::executor(&protocol_config, true, None).unwrap();
 
         Self {
             epoch_start_state,
@@ -94,16 +94,16 @@ impl EpochState {
         transaction: &VerifiedTransaction,
     ) -> Result<(
         InnerTemporaryStore,
-        SuiGasStatus,
+        PeraGasStatus,
         TransactionEffects,
-        Result<(), sui_types::error::ExecutionError>,
+        Result<(), pera_types::error::ExecutionError>,
     )> {
         let tx_digest = *transaction.digest();
         let tx_data = &transaction.data().intent_message().value;
         let input_object_kinds = tx_data.input_objects()?;
         let receiving_object_refs = tx_data.receiving_objects();
 
-        sui_transaction_checks::deny::check_transaction_for_signing(
+        pera_transaction_checks::deny::check_transaction_for_signing(
             tx_data,
             transaction.tx_signatures(),
             &input_object_kinds,
@@ -120,7 +120,7 @@ impl EpochState {
 
         // Run the transaction input checks that would run when submitting the txn to a validator
         // for signing
-        let (gas_status, checked_input_objects) = sui_transaction_checks::check_transaction_input(
+        let (gas_status, checked_input_objects) = pera_transaction_checks::check_transaction_input(
             &self.protocol_config,
             self.epoch_start_state.reference_gas_price(),
             transaction.data().transaction_data(),

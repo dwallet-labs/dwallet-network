@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
 	Transaction,
 	TransactionArgument,
 	TransactionObjectArgument,
-} from '@mysten/sui/transactions';
+} from '@pera-io/pera/transactions';
 
 import * as kioskTx from '../tx/kiosk.js';
 import { convertToPersonalTx, transferPersonalCapTx } from '../tx/personal-kiosk.js';
@@ -225,7 +225,7 @@ export class KioskTransaction {
 	 * A function to place an item in the kiosk and list it for sale in one transaction.
 	 * @param itemType The type `T` of the item
 	 * @param item The ID or Transaction Argument of the item
-	 * @param price The price in MIST
+	 * @param price The price in NPERA
 	 */
 	placeAndList({ itemType, item, price }: ItemReference & Price) {
 		this.#validateKioskIsSet();
@@ -237,7 +237,7 @@ export class KioskTransaction {
 	 * A function to list an item in the kiosk.
 	 * @param itemType The type `T` of the item
 	 * @param itemId The ID of the item
-	 * @param price The price in MIST
+	 * @param price The price in NPERA
 	 */
 	list({ itemType, itemId, price }: ItemId & { price: string | bigint }) {
 		this.#validateKioskIsSet();
@@ -306,7 +306,7 @@ export class KioskTransaction {
 	 * Can be called like: `const [item, transferRequest] = kioskTx.purchase({...})`
 	 * @param itemType The type `T` of the item
 	 * @param itemId The ID of the item
-	 * @param price The price in MIST
+	 * @param price The price in NPERA
 	 * @param sellerKiosk The kiosk which is selling the item. Can be an id or an object argument.
 	 */
 	purchase({

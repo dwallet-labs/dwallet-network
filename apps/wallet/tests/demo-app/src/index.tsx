@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiWallet } from '_src/dapp-interface/WalletStandardInterface';
-import { Transaction } from '@mysten/sui/transactions';
+import { type PeraWallet } from '_src/dapp-interface/WalletStandardInterface';
+import { Transaction } from '@pera-io/pera/transactions';
 import { getWallets, ReadonlyWalletAccount, type Wallet } from '@mysten/wallet-standard';
 import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
@@ -29,25 +29,25 @@ function getAccount(account: ReadonlyWalletAccount, useWrongAccount: boolean) {
 	return account;
 }
 
-function findSuiWallet(wallets: readonly Wallet[]) {
-	return (wallets.find((aWallet) => aWallet.name.includes('Sui Wallet')) ||
-		null) as SuiWallet | null;
+function findPeraWallet(wallets: readonly Wallet[]) {
+	return (wallets.find((aWallet) => aWallet.name.includes('Pera Wallet')) ||
+		null) as PeraWallet | null;
 }
 
 function App() {
-	const [suiWallet, setSuiWallet] = useState<SuiWallet | null>(() =>
-		findSuiWallet(getWallets().get()),
+	const [peraWallet, setPeraWallet] = useState<PeraWallet | null>(() =>
+		findPeraWallet(getWallets().get()),
 	);
 	const [error, setError] = useState<string | null>(null);
 	const [accounts, setAccounts] = useState<ReadonlyWalletAccount[]>(
-		() => suiWallet?.accounts || [],
+		() => peraWallet?.accounts || [],
 	);
 	const [useWrongAccounts, setUseWrongAccounts] = useState(false);
 
 	useEffect(() => {
 		const walletsApi = getWallets();
 		function updateWallets() {
-			setSuiWallet(findSuiWallet(walletsApi.get()));
+			setPeraWallet(findPeraWallet(walletsApi.get()));
 		}
 		const unregister1 = walletsApi.on('register', updateWallets);
 		const unregister2 = walletsApi.on('unregister', updateWallets);
@@ -57,20 +57,20 @@ function App() {
 		};
 	}, []);
 	useEffect(() => {
-		if (suiWallet) {
-			return suiWallet.features['standard:events'].on('change', ({ accounts }) => {
+		if (peraWallet) {
+			return peraWallet.features['standard:events'].on('change', ({ accounts }) => {
 				if (accounts) {
-					setAccounts(suiWallet.accounts);
+					setAccounts(peraWallet.accounts);
 				}
 			});
 		}
-	}, [suiWallet]);
-	if (!suiWallet) {
-		return <h1>Sui Wallet not found</h1>;
+	}, [peraWallet]);
+	if (!peraWallet) {
+		return <h1>Pera Wallet not found</h1>;
 	}
 	return (
 		<>
-			<h1>Sui Wallet is installed. ({suiWallet.name})</h1>
+			<h1>Pera Wallet is installed. ({peraWallet.name})</h1>
 			{accounts.length ? (
 				<ul data-testid="accounts-list">
 					{accounts.map((anAccount) => (
@@ -78,7 +78,7 @@ function App() {
 					))}
 				</ul>
 			) : (
-				<button onClick={async () => suiWallet.features['standard:connect'].connect()}>
+				<button onClick={async () => peraWallet.features['standard:connect'].connect()}>
 					Connect
 				</button>
 			)}
@@ -95,12 +95,12 @@ function App() {
 					setError(null);
 					const txb = getDemoTransaction(accounts[0]?.address || '0x01');
 					try {
-						await suiWallet.features[
-							'sui:signAndExecuteTransactionBlock'
+						await peraWallet.features[
+							'pera:signAndExecuteTransactionBlock'
 						]!.signAndExecuteTransactionBlock({
 							transactionBlock: txb,
 							account: getAccount(accounts[0], useWrongAccounts),
-							chain: 'sui:unknown',
+							chain: 'pera:unknown',
 						});
 					} catch (e) {
 						setError((e as Error).message);
@@ -114,10 +114,10 @@ function App() {
 					setError(null);
 					const txb = getDemoTransaction(accounts[0]?.address || '0x01');
 					try {
-						await suiWallet.features['sui:signTransactionBlock']!.signTransactionBlock({
+						await peraWallet.features['pera:signTransactionBlock']!.signTransactionBlock({
 							transactionBlock: txb,
 							account: getAccount(accounts[0], useWrongAccounts),
-							chain: 'sui:unknown',
+							chain: 'pera:unknown',
 						});
 					} catch (e) {
 						setError((e as Error).message);
@@ -130,7 +130,7 @@ function App() {
 				onClick={async () => {
 					setError(null);
 					try {
-						await suiWallet.features['sui:signMessage']?.signMessage({
+						await peraWallet.features['pera:signMessage']?.signMessage({
 							account: getAccount(accounts[0], useWrongAccounts),
 							message: new TextEncoder().encode('Test message'),
 						});

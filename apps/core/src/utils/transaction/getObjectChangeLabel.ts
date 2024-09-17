@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiObjectChangeTypes } from './types';
+import { PeraObjectChangeTypes } from './types';
 
 export const ObjectChangeLabels = {
 	created: 'Created',
@@ -12,6 +12,6 @@ export const ObjectChangeLabels = {
 	wrapped: 'Wrap',
 };
 
-export function getObjectChangeLabel(type: SuiObjectChangeTypes) {
+export function getObjectChangeLabel(type: PeraObjectChangeTypes) {
 	return ObjectChangeLabels[type];
 }

@@ -1,28 +1,28 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { getAmount } from '_helpers';
-import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import type { PeraTransactionBlockResponse } from '@pera-io/pera/client';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import { useMemo } from 'react';
 
 export function useGetTransferAmount({
 	txn,
 	activeAddress,
 }: {
-	txn: SuiTransactionBlockResponse;
+	txn: PeraTransactionBlockResponse;
 	activeAddress: string;
 }) {
 	const { effects, events } = txn;
 	// const { coins } = getEventsSummary(events!, activeAddress);
 
-	const suiTransfer = useMemo(() => {
+	const peraTransfer = useMemo(() => {
 		const txdetails = txn.transaction?.data.transaction!;
 		return getAmount(txdetails, effects!, events!)?.map(
 			({ amount, coinType, recipientAddress }) => {
 				return {
 					amount: amount || 0,
-					coinType: coinType || SUI_TYPE_ARG,
+					coinType: coinType || PERA_TYPE_ARG,
 					receiverAddress: recipientAddress,
 				};
 			},
@@ -31,13 +31,13 @@ export function useGetTransferAmount({
 
 	// MUSTFIX(chris)
 	// const transferAmount = useMemo(() => {
-	//     return suiTransfer?.length
-	//         ? suiTransfer
+	//     return peraTransfer?.length
+	//         ? peraTransfer
 	//         : coins.filter(
 	//               ({ receiverAddress }) => receiverAddress === activeAddress
 	//           );
-	// }, [suiTransfer, coins, activeAddress]);
+	// }, [peraTransfer, coins, activeAddress]);
 
-	// return suiTransfer ?? transferAmount;
-	return suiTransfer;
+	// return peraTransfer ?? transferAmount;
+	return peraTransfer;
 }

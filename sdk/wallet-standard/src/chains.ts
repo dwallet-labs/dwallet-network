@@ -1,37 +1,37 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { IdentifierString } from '@wallet-standard/core';
 
-/** Sui Devnet */
-export const SUI_DEVNET_CHAIN = 'sui:devnet';
+/** Pera Devnet */
+export const PERA_DEVNET_CHAIN = 'pera:devnet';
 
-/** Sui Testnet */
-export const SUI_TESTNET_CHAIN = 'sui:testnet';
+/** Pera Testnet */
+export const PERA_TESTNET_CHAIN = 'pera:testnet';
 
-/** Sui Localnet */
-export const SUI_LOCALNET_CHAIN = 'sui:localnet';
+/** Pera Localnet */
+export const PERA_LOCALNET_CHAIN = 'pera:localnet';
 
-/** Sui Mainnet */
-export const SUI_MAINNET_CHAIN = 'sui:mainnet';
+/** Pera Mainnet */
+export const PERA_MAINNET_CHAIN = 'pera:mainnet';
 
-export const SUI_CHAINS = [
-	SUI_DEVNET_CHAIN,
-	SUI_TESTNET_CHAIN,
-	SUI_LOCALNET_CHAIN,
-	SUI_MAINNET_CHAIN,
+export const PERA_CHAINS = [
+	PERA_DEVNET_CHAIN,
+	PERA_TESTNET_CHAIN,
+	PERA_LOCALNET_CHAIN,
+	PERA_MAINNET_CHAIN,
 ] as const;
 
-export type SuiChain =
-	| typeof SUI_DEVNET_CHAIN
-	| typeof SUI_TESTNET_CHAIN
-	| typeof SUI_LOCALNET_CHAIN
-	| typeof SUI_MAINNET_CHAIN;
+export type PeraChain =
+	| typeof PERA_DEVNET_CHAIN
+	| typeof PERA_TESTNET_CHAIN
+	| typeof PERA_LOCALNET_CHAIN
+	| typeof PERA_MAINNET_CHAIN;
 
 /**
- * Utility that returns whether or not a chain identifier is a valid Sui chain.
+ * Utility that returns whether or not a chain identifier is a valid Pera chain.
  * @param chain a chain identifier in the form of `${string}:{$string}`
  */
-export function isSuiChain(chain: IdentifierString): chain is SuiChain {
-	return SUI_CHAINS.includes(chain as SuiChain);
+export function isPeraChain(chain: IdentifierString): chain is PeraChain {
+	return PERA_CHAINS.includes(chain as PeraChain);
 }

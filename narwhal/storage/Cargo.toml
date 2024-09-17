@@ -2,7 +2,7 @@
 name = "narwhal-storage"
 version = "0.1.0"
 edition = "2021"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 publish = false
 
@@ -18,7 +18,7 @@ tokio = { workspace = true, features = ["sync", "rt", "macros"] }
 tracing.workspace = true
 types = { path = "../types", package = "narwhal-types" }
 store = { path = "../../crates/typed-store", package = "typed-store" }
-sui-macros.workspace = true
+pera-macros.workspace = true
 config = { path = "../config", package = "narwhal-config" }
 prometheus.workspace = true
 lru.workspace = true

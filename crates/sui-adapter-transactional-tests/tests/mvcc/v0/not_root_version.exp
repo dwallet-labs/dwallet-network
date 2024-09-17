@@ -34,8 +34,8 @@ task 5, lines 65-68:
 Owner: Account Address ( P1 )
 Version: 4
 Contents: test::m::A {
-    id: sui::object::UID {
-        id: sui::object::ID {
+    id: pera::object::UID {
+        id: pera::object::ID {
             bytes: fake(2,0),
         },
     },
@@ -53,9 +53,9 @@ task 7, line 74:
 //# view-object 6,0
 Owner: Object ID: ( fake(6,1) )
 Version: 2
-Contents: sui::dynamic_field::Field<u64, u64> {
-    id: sui::object::UID {
-        id: sui::object::ID {
+Contents: pera::dynamic_field::Field<u64, u64> {
+    id: pera::object::UID {
+        id: pera::object::ID {
             bytes: fake(6,0),
         },
     },
@@ -73,9 +73,9 @@ task 9, lines 79-83:
 //# view-object 6,0
 Owner: Object ID: ( fake(6,1) )
 Version: 3
-Contents: sui::dynamic_field::Field<u64, u64> {
-    id: sui::object::UID {
-        id: sui::object::ID {
+Contents: pera::dynamic_field::Field<u64, u64> {
+    id: pera::object::UID {
+        id: pera::object::ID {
             bytes: fake(6,0),
         },
     },

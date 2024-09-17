@@ -1,7 +1,7 @@
 {
-	"index": "Sui dApp Kit Quick Start",
+	"index": "Pera dApp Kit Quick Start",
 	"create-dapp": "@mysten/create-dapp",
-	"sui-client-provider": "SuiClientProvider",
+	"pera-client-provider": "PeraClientProvider",
 	"rpc-hooks": "RPC Hooks",
 	"wallet-provider": "WalletProvider",
 	"wallet-components": "Wallet Components",

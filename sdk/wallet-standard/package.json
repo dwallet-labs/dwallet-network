@@ -1,8 +1,8 @@
 {
 	"name": "@mysten/wallet-standard",
 	"version": "0.13.2",
-	"description": "A suite of standard utilities for implementing wallets based on the Wallet Standard.",
-	"license": "Apache-2.0",
+	"description": "A perate of standard utilities for implementing wallets based on the Wallet Standard.",
+	"license": "BSD-3-Clause-Clear",
 	"author": "Mysten Labs <build@mystenlabs.com>",
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",
@@ -33,7 +33,7 @@
 		"json-schema": "typescript-json-schema src/types.ts SerializedTransactionDataV2 --required --strictNullChecks > serialized-transaction-data-v2.schema.json && prettier -w serialized-transaction-data-v2.schema.json"
 	},
 	"dependencies": {
-		"@mysten/sui": "workspace:*",
+		"@pera-io/pera": "workspace:*",
 		"@wallet-standard/core": "1.0.3"
 	},
 	"devDependencies": {

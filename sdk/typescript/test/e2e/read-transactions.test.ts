@@ -1,20 +1,20 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { SuiTransactionBlockResponse } from '../../src/client';
+import { PeraTransactionBlockResponse } from '../../src/client';
 import { Transaction } from '../../src/transactions';
-import { executePaySuiNTimes, setup, TestToolbox } from './utils/setup';
+import { executePayPeraNTimes, setup, TestToolbox } from './utils/setup';
 
 describe('Transaction Reading API', () => {
 	let toolbox: TestToolbox;
-	let transactions: SuiTransactionBlockResponse[];
+	let transactions: PeraTransactionBlockResponse[];
 	const NUM_TRANSACTIONS = 10;
 
 	beforeAll(async () => {
 		toolbox = await setup();
-		transactions = await executePaySuiNTimes(toolbox.client, toolbox.keypair, NUM_TRANSACTIONS);
+		transactions = await executePayPeraNTimes(toolbox.client, toolbox.keypair, NUM_TRANSACTIONS);
 	});
 
 	it('Get Total Transactions', async () => {

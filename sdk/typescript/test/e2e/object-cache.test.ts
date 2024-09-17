@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { resolve } from 'path';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,7 +7,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { OwnedObjectRef } from '../../src/client';
 import { Transaction } from '../../src/transactions';
 import { CachingTransactionExecutor } from '../../src/transactions/executor/caching';
-import { normalizeSuiAddress } from '../../src/utils';
+import { normalizePeraAddress } from '../../src/utils';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('CachingTransactionExecutor', { retry: 3 }, async () => {
@@ -21,7 +21,7 @@ describe('CachingTransactionExecutor', { retry: 3 }, async () => {
 	beforeAll(async () => {
 		toolbox = await setup();
 		rawPackageId = packageId = await toolbox.getPackage(resolve(__dirname, './data/tto'));
-		packageId = normalizeSuiAddress(rawPackageId);
+		packageId = normalizePeraAddress(rawPackageId);
 	});
 
 	beforeEach(async () => {
@@ -89,13 +89,13 @@ describe('CachingTransactionExecutor', { retry: 3 }, async () => {
 		expect(result.effects?.status.status).toBe('success');
 		expect(toolbox.client.getNormalizedMoveFunction).toHaveBeenCalledOnce();
 		expect(toolbox.client.getNormalizedMoveFunction).toHaveBeenCalledWith({
-			package: normalizeSuiAddress(packageId),
+			package: normalizePeraAddress(packageId),
 			module: 'tto',
 			function: 'receiver',
 		});
 
 		const receiver = await executor.cache.getMoveFunctionDefinition({
-			package: normalizeSuiAddress(packageId),
+			package: normalizePeraAddress(packageId),
 			module: 'tto',
 			function: 'receiver',
 		});
@@ -105,7 +105,7 @@ describe('CachingTransactionExecutor', { retry: 3 }, async () => {
 		expect(receiver).toEqual({
 			module: 'tto',
 			function: 'receiver',
-			package: normalizeSuiAddress(packageId),
+			package: normalizePeraAddress(packageId),
 			parameters: [
 				{
 					body: {

@@ -7,8 +7,8 @@
 		"isolatedModules": true,
 		"rootDir": "src",
 		"paths": {
-			"@mysten/sui/client": ["../../typescrupt/src/client"],
-			"@mysten/sui/transactions": ["../../typescript/src/transactions"]
+			"@pera-io/pera/client": ["../../typescrupt/src/client"],
+			"@pera-io/pera/transactions": ["../../typescript/src/transactions"]
 		}
 	},
 	"references": [{ "path": "../wallet-standard" }, { "path": "../typescript" }]

@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { ValidatorLogo } from '_app/staking/validators/ValidatorLogo';
 import { TxnAmount } from '_components/receipt-card/TxnAmount';
 import { Text } from '_src/ui/app/shared/text';
 import { useFormatCoin } from '@mysten/core';
-import type { SuiEvent } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import type { PeraEvent } from '@pera-io/pera/client';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 
 import { Card } from '../../shared/transaction-summary/Card';
 
 type UnStakeTxnCardProps = {
-	event: SuiEvent;
+	event: PeraEvent;
 };
 
 export function UnStakeTxnCard({ event }: UnStakeTxnCardProps) {
@@ -24,8 +24,8 @@ export function UnStakeTxnCard({ event }: UnStakeTxnCardProps) {
 	const rewardAmount = json?.reward_amount || 0;
 	const validatorAddress = json?.validator_address;
 	const totalAmount = Number(principalAmount) + Number(rewardAmount);
-	const [formatPrinciple, symbol] = useFormatCoin(principalAmount, SUI_TYPE_ARG);
-	const [formatRewards] = useFormatCoin(rewardAmount || 0, SUI_TYPE_ARG);
+	const [formatPrinciple, symbol] = useFormatCoin(principalAmount, PERA_TYPE_ARG);
+	const [formatRewards] = useFormatCoin(rewardAmount || 0, PERA_TYPE_ARG);
 
 	return (
 		<Card>
@@ -40,12 +40,12 @@ export function UnStakeTxnCard({ event }: UnStakeTxnCardProps) {
 						/>
 					</div>
 				)}
-				{totalAmount && <TxnAmount amount={totalAmount} coinType={SUI_TYPE_ARG} label="Total" />}
+				{totalAmount && <TxnAmount amount={totalAmount} coinType={PERA_TYPE_ARG} label="Total" />}
 
 				<div className="flex justify-between w-full py-3.5">
 					<div className="flex gap-1 items-baseline text-steel">
 						<Text variant="body" weight="medium" color="steel-darker">
-							Your SUI Stake
+							Your PERA Stake
 						</Text>
 					</div>
 

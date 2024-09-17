@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /**
  * This file contains what VS Code's documentation refers to as "the test script," which downloads,
@@ -33,7 +33,7 @@ async function runVSCodeTest(vscodeVersion: string): Promise<void> {
         const extensionDevelopmentPath = path.resolve(__dirname, '..', '..');
 
         // The `--extensionTestsPath` argument passed to VS Code. This should point to a JavaScript
-        // program that is considered to be the "test suite" for the extension.
+        // program that is considered to be the "test perate" for the extension.
         const extensionTestsPath = path.resolve(__dirname, 'index.js');
 
         // The workspace
@@ -59,7 +59,7 @@ async function runVSCodeTest(vscodeVersion: string): Promise<void> {
             fse.mkdirsSync(userDataDir);
         }
 
-        // Download VS Code, unzip it, and run the "test suite" program.
+        // Download VS Code, unzip it, and run the "test perate" program.
         await runTests({
             vscodeExecutablePath: vscodeExecutablePath,
             extensionDevelopmentPath,

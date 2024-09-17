@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #![no_std]
 // https://github.com/aya-rs/aya/blob/79c1d8495e49acea45a952170acbbd41a8cb6485/aya/src/bpf.rs#L265C1-L267C67

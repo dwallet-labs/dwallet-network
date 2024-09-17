@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 mod errors;
 mod state;
 mod subscriber;
@@ -8,7 +8,7 @@ mod metrics;
 
 pub use errors::{SubscriberError, SubscriberResult};
 pub use state::ExecutionIndices;
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 
 use crate::metrics::ExecutorMetrics;
 use crate::subscriber::spawn_subscriber;

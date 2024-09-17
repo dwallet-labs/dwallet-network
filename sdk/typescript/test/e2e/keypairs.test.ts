@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { blake2b } from '@noble/hashes/blake2b';
 import { describe, expect, it } from 'vitest';
@@ -78,7 +78,7 @@ describe('Keypairs', () => {
 		for (const t of TEST_CASES) {
 			const keypair = Ed25519Keypair.deriveKeypair(t[0], DERIVATION_PATH);
 			expect(keypair.getPublicKey().toBase64()).toEqual(t[1]);
-			expect(keypair.getPublicKey().toSuiAddress()).toEqual(t[2]);
+			expect(keypair.getPublicKey().toPeraAddress()).toEqual(t[2]);
 
 			const { signature: serializedSignature } = await keypair.signTransaction(tx_bytes);
 			const { signature } = parseSerializedSignature(serializedSignature);
@@ -119,7 +119,7 @@ describe('Keypairs', () => {
 		for (const t of TEST_CASES_SECP256K1) {
 			const keypair = Secp256k1Keypair.deriveKeypair(t[0], DERIVATION_PATH_SECP256K1);
 			expect(keypair.getPublicKey().toBase64()).toEqual(t[1]);
-			expect(keypair.getPublicKey().toSuiAddress()).toEqual(t[2]);
+			expect(keypair.getPublicKey().toPeraAddress()).toEqual(t[2]);
 
 			const { signature: serializedSignature } = await keypair.signTransaction(tx_bytes);
 			const { signature } = parseSerializedSignature(serializedSignature);

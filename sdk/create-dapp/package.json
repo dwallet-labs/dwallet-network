@@ -1,10 +1,10 @@
 {
 	"name": "@mysten/create-dapp",
 	"author": "Mysten Labs <build@mystenlabs.com>",
-	"description": "A CLI for creating new Sui dApps",
+	"description": "A CLI for creating new Pera dApps",
 	"homepage": "https://sdk.mystenlabs.com",
 	"version": "0.3.17",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"files": [
 		"CHANGELOG.md",
 		"LICENSE",
@@ -40,7 +40,7 @@
 	},
 	"dependencies": {
 		"@mysten/dapp-kit": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@pera-io/pera": "workspace:*",
 		"@types/node": "^20.14.10",
 		"enquirer": "^2.4.1"
 	},

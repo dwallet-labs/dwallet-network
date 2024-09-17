@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import ExplorerLink from '_src/ui/app/components/explorer-link';
 import { ExplorerLinkType } from '_src/ui/app/components/explorer-link/ExplorerLinkType';
 import { Text } from '_src/ui/app/shared/text';
-import { type SuiObjectData } from '@mysten/sui/client';
-import { formatAddress, parseStructTag } from '@mysten/sui/utils';
+import { type PeraObjectData } from '@pera-io/pera/client';
+import { formatAddress, parseStructTag } from '@pera-io/pera/utils';
 
-export default function NonVisualAssets({ items }: { items: SuiObjectData[] }) {
+export default function NonVisualAssets({ items }: { items: PeraObjectData[] }) {
 	return (
 		<div className="flex flex-col items-center gap-4 w-full flex-1">
 			{items?.length ? (

@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import type { CoinStruct, PaginatedCoins } from '@mysten/sui/client';
+import { usePeraClient } from '@mysten/dapp-kit';
+import type { CoinStruct, PaginatedCoins } from '@pera-io/pera/client';
 import { useQuery } from '@tanstack/react-query';
 
 const MAX_COINS_PER_REQUEST = 100;
 
 // Fetch all coins for an address, this will keep calling the API until all coins are fetched
 export function useGetAllCoins(coinType: string, address?: string | null) {
-	const rpc = useSuiClient();
+	const rpc = usePeraClient();
 	return useQuery({
 		queryKey: ['get-all-coins', address, coinType],
 		queryFn: async () => {

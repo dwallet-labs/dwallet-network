@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
-	SuiSignPersonalMessageInput,
-	SuiSignPersonalMessageOutput,
+	PeraSignPersonalMessageInput,
+	PeraSignPersonalMessageOutput,
 } from '@mysten/wallet-standard';
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query';
 import { useMutation } from '@tanstack/react-query';
@@ -18,9 +18,9 @@ import type { PartialBy } from '../../types/utilityTypes.js';
 import { useCurrentAccount } from './useCurrentAccount.js';
 import { useCurrentWallet } from './useCurrentWallet.js';
 
-type UseSignPersonalMessageArgs = PartialBy<SuiSignPersonalMessageInput, 'account'>;
+type UseSignPersonalMessageArgs = PartialBy<PeraSignPersonalMessageInput, 'account'>;
 
-type UseSignPersonalMessageResult = SuiSignPersonalMessageOutput;
+type UseSignPersonalMessageResult = PeraSignPersonalMessageOutput;
 
 type UseSignPersonalMessageError =
 	| WalletFeatureNotSupportedError
@@ -66,7 +66,7 @@ export function useSignPersonalMessage({
 				);
 			}
 
-			const signPersonalMessageFeature = currentWallet.features['sui:signPersonalMessage'];
+			const signPersonalMessageFeature = currentWallet.features['pera:signPersonalMessage'];
 			if (signPersonalMessageFeature) {
 				return await signPersonalMessageFeature.signPersonalMessage({
 					...signPersonalMessageArgs,
@@ -74,8 +74,8 @@ export function useSignPersonalMessage({
 				});
 			}
 
-			// TODO: Remove this once we officially discontinue sui:signMessage in the wallet standard
-			const signMessageFeature = currentWallet.features['sui:signMessage'];
+			// TODO: Remove this once we officially discontinue pera:signMessage in the wallet standard
+			const signMessageFeature = currentWallet.features['pera:signMessage'];
 			if (signMessageFeature) {
 				console.warn(
 					"This wallet doesn't support the `signPersonalMessage` feature... falling back to `signMessage`.",

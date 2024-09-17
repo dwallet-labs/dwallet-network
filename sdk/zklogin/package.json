@@ -1,8 +1,8 @@
 {
 	"name": "@mysten/zklogin",
 	"version": "0.7.17",
-	"description": "Utilities for interacting with zkLogin in Sui",
-	"license": "Apache-2.0",
+	"description": "Utilities for interacting with zkLogin in Pera",
+	"license": "BSD-3-Clause-Clear",
 	"author": "Mysten Labs <build@mystenlabs.com>",
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",
@@ -48,7 +48,7 @@
 	},
 	"dependencies": {
 		"@mysten/bcs": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@pera-io/pera": "workspace:*",
 		"@noble/hashes": "^1.4.0",
 		"jose": "^5.6.3",
 		"poseidon-lite": "^0.2.0"

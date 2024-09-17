@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
 
-export const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+export const client = new PeraClient({ url: getFullnodeUrl('testnet') });

@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { execSync } from 'child_process';
 import { readFile } from 'fs/promises';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const result = execSync(`git branch --remote --list "origin/releases/sui-graphql-rpc-v*"`)
+const result = execSync(`git branch --remote --list "origin/releases/pera-graphql-rpc-v*"`)
 	.toString()
 	.trim()
 	.split('\n')
 	.map((ref) => {
 		const branch = ref.trim().replace('origin/', '');
-		const match = branch.match(/^releases\/sui-graphql-rpc-v([\d.]+)-release$/);
+		const match = branch.match(/^releases\/pera-graphql-rpc-v([\d.]+)-release$/);
 
 		if (!match) {
 			return null;
@@ -29,7 +29,7 @@ const result = execSync(`git branch --remote --list "origin/releases/sui-graphql
 					minor,
 					patch,
 					branch,
-					schema: `https://raw.githubusercontent.com/MystenLabs/sui/${branch}/crates/sui-graphql-rpc/schema.graphql`,
+					schema: `https://raw.githubusercontent.com/MystenLabs/sui/${branch}/crates/pera-graphql-rpc/schema.graphql`,
 				}
 			: null;
 	})
@@ -80,7 +80,7 @@ for (const { minorVersion, schema } of releasesByVersion.values()) {
 		resolve(filePath, `../../../schemas/${minorVersion}/index.ts`),
 		`
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { initGraphQLTada } from 'gql.tada';
 

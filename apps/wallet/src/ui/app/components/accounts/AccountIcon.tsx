@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { type SerializedUIAccount } from '_src/background/accounts/Account';
 import { isZkLoginAccountSerializedUI } from '_src/background/accounts/zklogin/ZkLoginAccount';
@@ -10,13 +10,13 @@ import {
 	LogoTwitch,
 	SocialFacebook24,
 	SocialKakao24,
-	Sui,
+	Pera,
 } from '@mysten/icons';
 
-function SuiIcon() {
+function PeraIcon() {
 	return (
 		<div className="bg-steel rounded-full text-white h-4 w-4 flex items-center justify-center p-1">
-			<Sui />
+			<Pera />
 		</div>
 	);
 }
@@ -32,7 +32,7 @@ function ProviderIcon({ provider }: { provider: string }) {
 		case 'kakao':
 			return <SocialKakao24 className="h-4 w-4" />;
 		default:
-			return <SuiIcon />;
+			return <PeraIcon />;
 	}
 }
 
@@ -46,5 +46,5 @@ export function AccountIcon({ account }: { account: SerializedUIAccount }) {
 	if (account.type === 'ledger') {
 		return <LedgerLogo17 className="h-4 w-4" />;
 	}
-	return <SuiIcon />;
+	return <PeraIcon />;
 }

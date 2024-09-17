@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { decrypt, encrypt } from '_src/shared/cryptography/keystore';
 import {
@@ -54,7 +54,7 @@ export class ImportedAccount
 		};
 		return {
 			type: 'imported',
-			address: keyPair.getPublicKey().toSuiAddress(),
+			address: keyPair.getPublicKey().toPeraAddress(),
 			publicKey: keyPair.getPublicKey().toBase64(),
 			encrypted: await encrypt(inputs.password, dataToEncrypt),
 			lastUnlockedOn: null,

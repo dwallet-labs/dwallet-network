@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui/bcs';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { bcs } from '@pera-io/pera/bcs';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
+import { Transaction } from '@pera-io/pera/transactions';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { expect, type Mock } from 'vitest';
 
@@ -13,7 +13,7 @@ import {
 	WalletNotConnectedError,
 } from '../../src/errors/walletErrors.js';
 import { useConnectWallet, useSignAndExecuteTransaction } from '../../src/index.js';
-import { suiFeatures } from '../mocks/mockFeatures.js';
+import { peraFeatures } from '../mocks/mockFeatures.js';
 import { createWalletProviderContextWrapper, registerMockWallet } from '../test-utils.js';
 
 describe('useSignAndExecuteTransaction', () => {
@@ -21,7 +21,7 @@ describe('useSignAndExecuteTransaction', () => {
 		const wrapper = createWalletProviderContextWrapper();
 		const { result } = renderHook(() => useSignAndExecuteTransaction(), { wrapper });
 
-		result.current.mutate({ transaction: new Transaction(), chain: 'sui:testnet' });
+		result.current.mutate({ transaction: new Transaction(), chain: 'pera:testnet' });
 
 		await waitFor(() => expect(result.current.error).toBeInstanceOf(WalletNotConnectedError));
 	});
@@ -45,7 +45,7 @@ describe('useSignAndExecuteTransaction', () => {
 
 		result.current.useSignAndExecuteTransaction.mutate({
 			transaction: new Transaction(),
-			chain: 'sui:testnet',
+			chain: 'pera:testnet',
 		});
 		await waitFor(() =>
 			expect(result.current.useSignAndExecuteTransaction.error).toBeInstanceOf(
@@ -59,11 +59,11 @@ describe('useSignAndExecuteTransaction', () => {
 	test('signing and executing a transaction from the currently connected account works successfully', async () => {
 		const { unregister, mockWallet } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		const mockSignMessageFeature = mockWallet.features['sui:signTransaction'];
+		const peraClient = new PeraClient({ url: getFullnodeUrl('localnet') });
+		const mockSignMessageFeature = mockWallet.features['pera:signTransaction'];
 		const signTransaction = mockSignMessageFeature!.signTransaction as Mock;
 
 		signTransaction.mockReturnValueOnce({
@@ -71,19 +71,19 @@ describe('useSignAndExecuteTransaction', () => {
 			signature: '123',
 		});
 
-		const reportEffectsFeature = mockWallet.features['sui:reportTransactionEffects'];
+		const reportEffectsFeature = mockWallet.features['pera:reportTransactionEffects'];
 		const reportEffects = reportEffectsFeature!.reportTransactionEffects as Mock;
 
 		reportEffects.mockImplementation(async () => {});
 
-		const executeTransaction = vi.spyOn(suiClient, 'executeTransactionBlock');
+		const executeTransaction = vi.spyOn(peraClient, 'executeTransactionBlock');
 
 		executeTransaction.mockResolvedValueOnce({
 			digest: '123',
 			rawEffects: [10, 20, 30],
 		});
 
-		const wrapper = createWalletProviderContextWrapper({}, suiClient);
+		const wrapper = createWalletProviderContextWrapper({}, peraClient);
 		const { result } = renderHook(
 			() => ({
 				connectWallet: useConnectWallet(),
@@ -96,7 +96,7 @@ describe('useSignAndExecuteTransaction', () => {
 
 		await waitFor(() => expect(result.current.connectWallet.isSuccess).toBe(true));
 
-		const signTransactionFeature = mockWallet.features['sui:signTransaction'];
+		const signTransactionFeature = mockWallet.features['pera:signTransaction'];
 		const signTransactionMock = signTransactionFeature!.signTransaction as Mock;
 
 		signTransactionMock.mockReturnValueOnce({
@@ -106,7 +106,7 @@ describe('useSignAndExecuteTransaction', () => {
 
 		result.current.useSignAndExecuteTransaction.mutate({
 			transaction: new Transaction(),
-			chain: 'sui:testnet',
+			chain: 'pera:testnet',
 		});
 
 		await waitFor(() => expect(result.current.useSignAndExecuteTransaction.isSuccess).toBe(true));
@@ -119,14 +119,14 @@ describe('useSignAndExecuteTransaction', () => {
 		});
 		expect(reportEffects).toHaveBeenCalledWith({
 			effects: 'ChQe',
-			chain: 'sui:testnet',
+			chain: 'pera:testnet',
 			account: mockWallet.accounts[0],
 		});
 
 		const call = signTransaction.mock.calls[0];
 
 		expect(call[0].account).toStrictEqual(mockWallet.accounts[0]);
-		expect(call[0].chain).toBe('sui:testnet');
+		expect(call[0].chain).toBe('pera:testnet');
 		expect(await call[0].transaction.toJSON()).toEqual(await new Transaction().toJSON());
 
 		act(() => unregister());
@@ -135,11 +135,11 @@ describe('useSignAndExecuteTransaction', () => {
 	test('executing with custom data resolver', async () => {
 		const { unregister, mockWallet } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 
-		const suiClient = new SuiClient({ url: getFullnodeUrl('localnet') });
-		const mockSignMessageFeature = mockWallet.features['sui:signTransaction'];
+		const peraClient = new PeraClient({ url: getFullnodeUrl('localnet') });
+		const mockSignMessageFeature = mockWallet.features['pera:signTransaction'];
 		const signTransaction = mockSignMessageFeature!.signTransaction as Mock;
 
 		signTransaction.mockReturnValueOnce({
@@ -147,12 +147,12 @@ describe('useSignAndExecuteTransaction', () => {
 			signature: '123',
 		});
 
-		const reportEffectsFeature = mockWallet.features['sui:reportTransactionEffects'];
+		const reportEffectsFeature = mockWallet.features['pera:reportTransactionEffects'];
 		const reportEffects = reportEffectsFeature!.reportTransactionEffects as Mock;
 
 		reportEffects.mockImplementation(async () => {});
 
-		const wrapper = createWalletProviderContextWrapper({}, suiClient);
+		const wrapper = createWalletProviderContextWrapper({}, peraClient);
 
 		const fakeDigest = toB58(
 			new Uint8Array([
@@ -201,7 +201,7 @@ describe('useSignAndExecuteTransaction', () => {
 
 		await waitFor(() => expect(result.current.connectWallet.isSuccess).toBe(true));
 
-		const signTransactionFeature = mockWallet.features['sui:signTransaction'];
+		const signTransactionFeature = mockWallet.features['pera:signTransaction'];
 		const signTransactionMock = signTransactionFeature!.signTransaction as Mock;
 
 		signTransactionMock.mockReturnValueOnce({
@@ -211,7 +211,7 @@ describe('useSignAndExecuteTransaction', () => {
 
 		result.current.useSignAndExecuteTransaction.mutate({
 			transaction: new Transaction(),
-			chain: 'sui:testnet',
+			chain: 'pera:testnet',
 		});
 
 		await waitFor(() => expect(result.current.useSignAndExecuteTransaction.isSuccess).toBe(true));
@@ -224,14 +224,14 @@ describe('useSignAndExecuteTransaction', () => {
 		expect(result.current.useSignAndExecuteTransaction.data?.custom).toBe(123);
 		expect(reportEffects).toHaveBeenCalledWith({
 			account: mockWallet.accounts[0],
-			chain: 'sui:testnet',
+			chain: 'pera:testnet',
 			effects: effectsBcs,
 		});
 
 		const call = signTransaction.mock.calls[0];
 
 		expect(call[0].account).toStrictEqual(mockWallet.accounts[0]);
-		expect(call[0].chain).toBe('sui:testnet');
+		expect(call[0].chain).toBe('pera:testnet');
 		expect(await call[0].transaction.toJSON()).toEqual(await new Transaction().toJSON());
 
 		act(() => unregister());

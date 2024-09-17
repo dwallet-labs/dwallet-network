@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 /// <reference types="vitest" />
 
@@ -21,11 +21,11 @@ export default defineConfig({
 			// TODO: Figure out a better way to run tests that avoids these aliases:
 			'@mysten/wallet-standard': new URL('../wallet-standard/src', import.meta.url).pathname,
 			'@mysten/bcs': new URL('../bcs/src', import.meta.url).pathname,
-			'@mysten/sui/keypairs/ed25519': new URL('../typescript/src/keypairs/ed25519', import.meta.url)
+			'@pera-io/pera/keypairs/ed25519': new URL('../typescript/src/keypairs/ed25519', import.meta.url)
 				.pathname,
-			'@mysten/sui/client': new URL('../typescript/src/client', import.meta.url).pathname,
-			'@mysten/sui/utils': new URL('../typescript/src/utils', import.meta.url).pathname,
-			'@mysten/sui/transactions': new URL('../typescript/src/transactions', import.meta.url)
+			'@pera-io/pera/client': new URL('../typescript/src/client', import.meta.url).pathname,
+			'@pera-io/pera/utils': new URL('../typescript/src/utils', import.meta.url).pathname,
+			'@pera-io/pera/transactions': new URL('../typescript/src/transactions', import.meta.url)
 				.pathname,
 		},
 	},

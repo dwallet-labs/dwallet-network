@@ -8,7 +8,7 @@
 		"type": "git",
 		"url": "github.com:MystenLabs/sui.git"
 	},
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"scripts": {
 		"prettier:check": "prettier -c --ignore-unknown .",
 		"prettier:fix": "prettier -w --ignore-unknown .",
@@ -28,7 +28,7 @@
 		"@hookform/resolvers": "^3.9.0",
 		"@mysten/dapp-kit": "workspace:*",
 		"@mysten/kiosk": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@pera-io/pera": "workspace:*",
 		"@sentry/react": "^7.59.2",
 		"@tanstack/react-query": "^5.50.1",
 		"bignumber.js": "^9.1.1",

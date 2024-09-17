@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import { CoinMetadata } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { usePeraClient } from '@mysten/dapp-kit';
+import { CoinMetadata } from '@pera-io/pera/client';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import BigNumber from 'bignumber.js';
 import { useMemo } from 'react';
@@ -45,7 +45,7 @@ const SYMBOL_TRUNCATE_LENGTH = 5;
 const NAME_TRUNCATE_LENGTH = 10;
 
 export function useCoinMetadata(coinType?: string | null) {
-	const client = useSuiClient();
+	const client = usePeraClient();
 	return useQuery({
 		queryKey: ['coin-metadata', coinType],
 		queryFn: async () => {
@@ -53,15 +53,15 @@ export function useCoinMetadata(coinType?: string | null) {
 				throw new Error('Fetching coin metadata should be disabled when coin type is disabled.');
 			}
 
-			// Optimize the known case of SUI to avoid a network call:
-			if (coinType === SUI_TYPE_ARG) {
+			// Optimize the known case of PERA to avoid a network call:
+			if (coinType === PERA_TYPE_ARG) {
 				const metadata: CoinMetadata = {
 					id: null,
 					decimals: 9,
 					description: '',
 					iconUrl: null,
-					name: 'Sui',
-					symbol: 'SUI',
+					name: 'Pera',
+					symbol: 'PERA',
 				};
 
 				return metadata;

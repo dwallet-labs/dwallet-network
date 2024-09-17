@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { createMessage } from '_messages';
 import { WindowMessageStream } from '_messaging/WindowMessageStream';
@@ -28,28 +28,28 @@ import {
 } from '_src/shared/messaging/messages/payloads/QredoConnect';
 import { type SignMessageRequest } from '_src/shared/messaging/messages/payloads/transactions/SignMessage';
 import { isWalletStatusChangePayload } from '_src/shared/messaging/messages/payloads/wallet-status-change';
-import { bcs } from '@mysten/sui/bcs';
-import { isTransaction } from '@mysten/sui/transactions';
-import { fromB64, toB64 } from '@mysten/sui/utils';
+import { bcs } from '@pera-io/pera/bcs';
+import { isTransaction } from '@pera-io/pera/transactions';
+import { fromB64, toB64 } from '@pera-io/pera/utils';
 import {
 	ReadonlyWalletAccount,
-	SUI_CHAINS,
-	SUI_DEVNET_CHAIN,
-	SUI_LOCALNET_CHAIN,
-	SUI_MAINNET_CHAIN,
-	SUI_TESTNET_CHAIN,
+	PERA_CHAINS,
+	PERA_DEVNET_CHAIN,
+	PERA_LOCALNET_CHAIN,
+	PERA_MAINNET_CHAIN,
+	PERA_TESTNET_CHAIN,
 	type StandardConnectFeature,
 	type StandardConnectMethod,
 	type StandardEventsFeature,
 	type StandardEventsListeners,
 	type StandardEventsOnMethod,
-	type SuiFeatures,
-	type SuiSignAndExecuteTransactionBlockMethod,
-	type SuiSignAndExecuteTransactionMethod,
-	type SuiSignMessageMethod,
-	type SuiSignPersonalMessageMethod,
-	type SuiSignTransactionBlockMethod,
-	type SuiSignTransactionMethod,
+	type PeraFeatures,
+	type PeraSignAndExecuteTransactionBlockMethod,
+	type PeraSignAndExecuteTransactionMethod,
+	type PeraSignMessageMethod,
+	type PeraSignPersonalMessageMethod,
+	type PeraSignTransactionBlockMethod,
+	type PeraSignTransactionMethod,
 	type Wallet,
 } from '@mysten/wallet-standard';
 import mitt, { type Emitter } from 'mitt';
@@ -62,7 +62,7 @@ type WalletEventsMap = {
 };
 
 // NOTE: Because this runs in a content script, we can't fetch the manifest.
-const name = process.env.APP_NAME || 'Sui Wallet';
+const name = process.env.APP_NAME || 'Pera Wallet';
 
 export type QredoConnectInput = {
 	service: string;
@@ -86,13 +86,13 @@ type QredoConnectFeature = {
 };
 type ChainType = Wallet['chains'][number];
 const API_ENV_TO_CHAIN: Record<Exclude<API_ENV, API_ENV.customRPC>, ChainType> = {
-	[API_ENV.local]: SUI_LOCALNET_CHAIN,
-	[API_ENV.devNet]: SUI_DEVNET_CHAIN,
-	[API_ENV.testNet]: SUI_TESTNET_CHAIN,
-	[API_ENV.mainnet]: SUI_MAINNET_CHAIN,
+	[API_ENV.local]: PERA_LOCALNET_CHAIN,
+	[API_ENV.devNet]: PERA_DEVNET_CHAIN,
+	[API_ENV.testNet]: PERA_TESTNET_CHAIN,
+	[API_ENV.mainnet]: PERA_MAINNET_CHAIN,
 };
 
-export class SuiWallet implements Wallet {
+export class PeraWallet implements Wallet {
 	readonly #events: Emitter<WalletEventsMap>;
 	readonly #version = '1.0.0' as const;
 	readonly #name = name;
@@ -114,12 +114,12 @@ export class SuiWallet implements Wallet {
 
 	get chains() {
 		// TODO: Extract chain from wallet:
-		return SUI_CHAINS;
+		return PERA_CHAINS;
 	}
 
 	get features(): StandardConnectFeature &
 		StandardEventsFeature &
-		SuiFeatures &
+		PeraFeatures &
 		QredoConnectFeature {
 		return {
 			'standard:connect': {
@@ -130,27 +130,27 @@ export class SuiWallet implements Wallet {
 				version: '1.0.0',
 				on: this.#on,
 			},
-			'sui:signTransactionBlock': {
+			'pera:signTransactionBlock': {
 				version: '1.0.0',
 				signTransactionBlock: this.#signTransactionBlock,
 			},
-			'sui:signTransaction': {
+			'pera:signTransaction': {
 				version: '2.0.0',
 				signTransaction: this.#signTransaction,
 			},
-			'sui:signAndExecuteTransactionBlock': {
+			'pera:signAndExecuteTransactionBlock': {
 				version: '1.0.0',
 				signAndExecuteTransactionBlock: this.#signAndExecuteTransactionBlock,
 			},
-			'sui:signAndExecuteTransaction': {
+			'pera:signAndExecuteTransaction': {
 				version: '2.0.0',
 				signAndExecuteTransaction: this.#signAndExecuteTransaction,
 			},
-			'sui:signMessage': {
+			'pera:signMessage': {
 				version: '1.0.0',
 				signMessage: this.#signMessage,
 			},
-			'sui:signPersonalMessage': {
+			'pera:signPersonalMessage': {
 				version: '1.0.0',
 				signPersonalMessage: this.#signPersonalMessage,
 			},
@@ -173,7 +173,7 @@ export class SuiWallet implements Wallet {
 					label: nickname || undefined,
 					publicKey: publicKey ? fromB64(publicKey) : new Uint8Array(),
 					chains: this.#activeChain ? [this.#activeChain] : [],
-					features: ['sui:signAndExecuteTransaction'],
+					features: ['pera:signAndExecuteTransaction'],
 				}),
 		);
 	}
@@ -181,7 +181,7 @@ export class SuiWallet implements Wallet {
 	constructor() {
 		this.#events = mitt();
 		this.#accounts = [];
-		this.#messagesStream = new WindowMessageStream('sui_in-page', 'sui_content-script');
+		this.#messagesStream = new WindowMessageStream('pera_in-page', 'pera_content-script');
 		this.#messagesStream.messages.subscribe(({ payload }) => {
 			if (isWalletStatusChangePayload(payload)) {
 				const { network, accounts } = payload;
@@ -244,7 +244,7 @@ export class SuiWallet implements Wallet {
 		return { accounts: this.accounts };
 	};
 
-	#signTransactionBlock: SuiSignTransactionBlockMethod = async ({
+	#signTransactionBlock: PeraSignTransactionBlockMethod = async ({
 		transactionBlock,
 		account,
 		...input
@@ -270,7 +270,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signTransaction: SuiSignTransactionMethod = async ({ transaction, account, ...input }) => {
+	#signTransaction: PeraSignTransactionMethod = async ({ transaction, account, ...input }) => {
 		return mapToPromise(
 			this.#send<SignTransactionRequest, SignTransactionResponse>({
 				type: 'sign-transaction-request',
@@ -289,7 +289,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signAndExecuteTransactionBlock: SuiSignAndExecuteTransactionBlockMethod = async (input) => {
+	#signAndExecuteTransactionBlock: PeraSignAndExecuteTransactionBlockMethod = async (input) => {
 		if (!isTransaction(input.transactionBlock)) {
 			throw new Error(
 				'Unexpected transaction format found. Ensure that you are using the `Transaction` class.',
@@ -312,7 +312,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signAndExecuteTransaction: SuiSignAndExecuteTransactionMethod = async (input) => {
+	#signAndExecuteTransaction: PeraSignAndExecuteTransactionMethod = async (input) => {
 		return mapToPromise(
 			this.#send<ExecuteTransactionRequest, ExecuteTransactionResponse>({
 				type: 'execute-transaction-request',
@@ -348,7 +348,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signMessage: SuiSignMessageMethod = async ({ message, account }) => {
+	#signMessage: PeraSignMessageMethod = async ({ message, account }) => {
 		return mapToPromise(
 			this.#send<SignMessageRequest, SignMessageRequest>({
 				type: 'sign-message-request',
@@ -366,7 +366,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signPersonalMessage: SuiSignPersonalMessageMethod = async ({ message, account }) => {
+	#signPersonalMessage: PeraSignPersonalMessageMethod = async ({ message, account }) => {
 		return mapToPromise(
 			this.#send<SignMessageRequest, SignMessageRequest>({
 				type: 'sign-message-request',
@@ -416,7 +416,7 @@ export class SuiWallet implements Wallet {
 	}
 
 	#setActiveChain({ env }: NetworkEnvType) {
-		this.#activeChain = env === API_ENV.customRPC ? 'sui:unknown' : API_ENV_TO_CHAIN[env];
+		this.#activeChain = env === API_ENV.customRPC ? 'pera:unknown' : API_ENV_TO_CHAIN[env];
 	}
 
 	#qredoConnect = async (input: QredoConnectInput): Promise<void> => {

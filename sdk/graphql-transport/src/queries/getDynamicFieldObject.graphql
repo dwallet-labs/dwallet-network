@@ -1,5 +1,5 @@
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 query getTypeLayout($type: String!) {
 	type(type: $type) {
@@ -7,7 +7,7 @@ query getTypeLayout($type: String!) {
 	}
 }
 
-query getDynamicFieldObject($parentId: SuiAddress!, $name: DynamicFieldName!) {
+query getDynamicFieldObject($parentId: PeraAddress!, $name: DynamicFieldName!) {
 	owner(address: $parentId) {
 		dynamicObjectField(name: $name) {
 			value {

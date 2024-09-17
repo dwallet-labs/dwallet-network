@@ -1,5 +1,5 @@
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This module verifies the usage of the "syntax method" functions. These functions are declared
 //! as 'syntax' but have not been ensured to be type-compatible or otherwise adhere to our

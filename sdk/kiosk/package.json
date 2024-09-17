@@ -1,9 +1,9 @@
 {
 	"name": "@mysten/kiosk",
 	"author": "Mysten Labs <build@mystenlabs.com>",
-	"description": "Sui Kiosk library",
+	"description": "Pera Kiosk library",
 	"version": "0.9.16",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"type": "commonjs",
 	"main": "./dist/cjs/index.js",
 	"module": "./dist/esm/index.js",
@@ -35,10 +35,10 @@
 		"lint": "pnpm run eslint:check && pnpm run prettier:check",
 		"lint:fix": "pnpm run eslint:fix && pnpm run prettier:fix",
 		"test:e2e": "wait-on http://127.0.0.1:9123 -l --timeout 120000 && vitest run e2e",
-		"prepare:e2e": "cargo build --bin sui --profile dev && cross-env RUST_LOG=warn,sui=error,anemo_tower=warn,consensus=off cargo run --bin sui -- start --with-faucet --force-regenesis"
+		"prepare:e2e": "cargo build --bin pera --profile dev && cross-env RUST_LOG=warn,pera=error,anemo_tower=warn,consensus=off cargo run --bin pera -- start --with-faucet --force-regenesis"
 	},
 	"dependencies": {
-		"@mysten/sui": "workspace:*"
+		"@pera-io/pera": "workspace:*"
 	},
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",

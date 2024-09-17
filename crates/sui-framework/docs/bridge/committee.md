@@ -23,12 +23,12 @@ title: Module `0xb::committee`
 
 <pre><code><b>use</b> <a href="../move-stdlib/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="../move-stdlib/vector.md#0x1_vector">0x1::vector</a>;
-<b>use</b> <a href="../sui-framework/ecdsa_k1.md#0x2_ecdsa_k1">0x2::ecdsa_k1</a>;
-<b>use</b> <a href="../sui-framework/event.md#0x2_event">0x2::event</a>;
-<b>use</b> <a href="../sui-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
-<b>use</b> <a href="../sui-framework/vec_map.md#0x2_vec_map">0x2::vec_map</a>;
-<b>use</b> <a href="../sui-framework/vec_set.md#0x2_vec_set">0x2::vec_set</a>;
-<b>use</b> <a href="../sui-system/sui_system.md#0x3_sui_system">0x3::sui_system</a>;
+<b>use</b> <a href="../pera-framework/ecdsa_k1.md#0x2_ecdsa_k1">0x2::ecdsa_k1</a>;
+<b>use</b> <a href="../pera-framework/event.md#0x2_event">0x2::event</a>;
+<b>use</b> <a href="../pera-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
+<b>use</b> <a href="../pera-framework/vec_map.md#0x2_vec_map">0x2::vec_map</a>;
+<b>use</b> <a href="../pera-framework/vec_set.md#0x2_vec_set">0x2::vec_set</a>;
+<b>use</b> <a href="../pera-system/pera_system.md#0x3_pera_system">0x3::pera_system</a>;
 <b>use</b> <a href="crypto.md#0xb_crypto">0xb::crypto</a>;
 <b>use</b> <a href="message.md#0xb_message">0xb::message</a>;
 </code></pre>
@@ -85,13 +85,13 @@ title: Module `0xb::committee`
 
 <dl>
 <dt>
-<code>members: <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="committee.md#0xb_committee_CommitteeMember">committee::CommitteeMember</a>&gt;</code>
+<code>members: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="committee.md#0xb_committee_CommitteeMember">committee::CommitteeMember</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>member_registrations: <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="committee.md#0xb_committee_CommitteeMemberRegistration">committee::CommitteeMemberRegistration</a>&gt;</code>
+<code>member_registrations: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="committee.md#0xb_committee_CommitteeMemberRegistration">committee::CommitteeMemberRegistration</a>&gt;</code>
 </dt>
 <dd>
 
@@ -124,7 +124,7 @@ title: Module `0xb::committee`
 
 <dl>
 <dt>
-<code>members: <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="committee.md#0xb_committee_CommitteeMember">committee::CommitteeMember</a>&gt;</code>
+<code>members: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="committee.md#0xb_committee_CommitteeMember">committee::CommitteeMember</a>&gt;</code>
 </dt>
 <dd>
 
@@ -190,10 +190,10 @@ title: Module `0xb::committee`
 
 <dl>
 <dt>
-<code>sui_address: <b>address</b></code>
+<code>pera_address: <b>address</b></code>
 </dt>
 <dd>
- The Sui Address of the validator
+ The Pera Address of the validator
 </dd>
 <dt>
 <code>bridge_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
@@ -202,7 +202,7 @@ title: Module `0xb::committee`
  The public key bytes of the bridge key
 </dd>
 <dt>
-<code><a href="../sui-system/voting_power.md#0x3_voting_power">voting_power</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
+<code><a href="../pera-system/voting_power.md#0x3_voting_power">voting_power</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
 </dt>
 <dd>
  Voting power, values are voting power in the scale of 10000.
@@ -242,10 +242,10 @@ title: Module `0xb::committee`
 
 <dl>
 <dt>
-<code>sui_address: <b>address</b></code>
+<code>pera_address: <b>address</b></code>
 </dt>
 <dd>
- The Sui Address of the validator
+ The Pera Address of the validator
 </dd>
 <dt>
 <code>bridge_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
@@ -369,11 +369,11 @@ title: Module `0xb::committee`
 
 
 
-<a name="0xb_committee_SUI_MESSAGE_PREFIX"></a>
+<a name="0xb_committee_PERA_MESSAGE_PREFIX"></a>
 
 
 
-<pre><code><b>const</b> <a href="committee.md#0xb_committee_SUI_MESSAGE_PREFIX">SUI_MESSAGE_PREFIX</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [83, 85, 73, 95, 66, 82, 73, 68, 71, 69, 95, 77, 69, 83, 83, 65, 71, 69];
+<pre><code><b>const</b> <a href="committee.md#0xb_committee_PERA_MESSAGE_PREFIX">PERA_MESSAGE_PREFIX</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; = [83, 85, 73, 95, 66, 82, 73, 68, 71, 69, 95, 77, 69, 83, 83, 65, 71, 69];
 </code></pre>
 
 
@@ -399,15 +399,15 @@ title: Module `0xb::committee`
     signatures: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
 ) {
     <b>let</b> (<b>mut</b> i, signature_counts) = (0, <a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&signatures));
-    <b>let</b> <b>mut</b> seen_pub_key = <a href="../sui-framework/vec_set.md#0x2_vec_set_empty">vec_set::empty</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;();
+    <b>let</b> <b>mut</b> seen_pub_key = <a href="../pera-framework/vec_set.md#0x2_vec_set_empty">vec_set::empty</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;();
     <b>let</b> required_voting_power = <a href="message.md#0xb_message">message</a>.required_voting_power();
     // add prefix <b>to</b> the <a href="message.md#0xb_message">message</a> bytes
-    <b>let</b> <b>mut</b> message_bytes = <a href="committee.md#0xb_committee_SUI_MESSAGE_PREFIX">SUI_MESSAGE_PREFIX</a>;
+    <b>let</b> <b>mut</b> message_bytes = <a href="committee.md#0xb_committee_PERA_MESSAGE_PREFIX">PERA_MESSAGE_PREFIX</a>;
     message_bytes.append(<a href="message.md#0xb_message">message</a>.serialize_message());
 
     <b>let</b> <b>mut</b> threshold = 0;
     <b>while</b> (i &lt; signature_counts) {
-        <b>let</b> pubkey = <a href="../sui-framework/ecdsa_k1.md#0x2_ecdsa_k1_secp256k1_ecrecover">ecdsa_k1::secp256k1_ecrecover</a>(&signatures[i], &message_bytes, 0);
+        <b>let</b> pubkey = <a href="../pera-framework/ecdsa_k1.md#0x2_ecdsa_k1_secp256k1_ecrecover">ecdsa_k1::secp256k1_ecrecover</a>(&signatures[i], &message_bytes, 0);
 
         // check duplicate
         // and make sure pub key is part of the <a href="committee.md#0xb_committee">committee</a>
@@ -417,7 +417,7 @@ title: Module `0xb::committee`
         // get <a href="committee.md#0xb_committee">committee</a> signature weight and check pubkey is part of the <a href="committee.md#0xb_committee">committee</a>
         <b>let</b> member = &self.members[&pubkey];
         <b>if</b> (!member.blocklisted) {
-            threshold = threshold + member.<a href="../sui-system/voting_power.md#0x3_voting_power">voting_power</a>;
+            threshold = threshold + member.<a href="../pera-system/voting_power.md#0x3_voting_power">voting_power</a>;
         };
         seen_pub_key.insert(pubkey);
         i = i + 1;
@@ -437,7 +437,7 @@ title: Module `0xb::committee`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_create">create</a>(ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_create">create</a>(ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>
 </code></pre>
 
 
@@ -446,11 +446,11 @@ title: Module `0xb::committee`
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_create">create</a>(ctx: &TxContext): <a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a> {
-    <b>assert</b>!(<a href="../sui-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == @0x0, <a href="committee.md#0xb_committee_ENotSystemAddress">ENotSystemAddress</a>);
+<pre><code><b>public</b>(<a href="../pera-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_create">create</a>(ctx: &TxContext): <a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a> {
+    <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == @0x0, <a href="committee.md#0xb_committee_ENotSystemAddress">ENotSystemAddress</a>);
     <a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a> {
-        members: <a href="../sui-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>(),
-        member_registrations: <a href="../sui-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>(),
+        members: <a href="../pera-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>(),
+        member_registrations: <a href="../pera-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>(),
         last_committee_update_epoch: 0,
     }
 }
@@ -466,7 +466,7 @@ title: Module `0xb::committee`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_register">register</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>, system_state: &<b>mut</b> <a href="../sui-system/sui_system.md#0x3_sui_system_SuiSystemState">sui_system::SuiSystemState</a>, bridge_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, http_rest_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_register">register</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>, system_state: &<b>mut</b> <a href="../pera-system/pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, bridge_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, http_rest_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -475,9 +475,9 @@ title: Module `0xb::committee`
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_register">register</a>(
+<pre><code><b>public</b>(<a href="../pera-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_register">register</a>(
     self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a>,
-    system_state: &<b>mut</b> SuiSystemState,
+    system_state: &<b>mut</b> PeraSystemState,
     bridge_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     http_rest_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     ctx: &TxContext
@@ -486,14 +486,14 @@ title: Module `0xb::committee`
     <b>assert</b>!(self.members.is_empty(), <a href="committee.md#0xb_committee_ECommitteeAlreadyInitiated">ECommitteeAlreadyInitiated</a>);
     // Ensure pubkey is valid
     <b>assert</b>!(bridge_pubkey_bytes.length() == <a href="committee.md#0xb_committee_ECDSA_COMPRESSED_PUBKEY_LENGTH">ECDSA_COMPRESSED_PUBKEY_LENGTH</a>, <a href="committee.md#0xb_committee_EInvalidPubkeyLength">EInvalidPubkeyLength</a>);
-    // sender must be the same sender that created the <a href="../sui-system/validator.md#0x3_validator">validator</a> <a href="../sui-framework/object.md#0x2_object">object</a>, this is <b>to</b> prevent DDoS from non-<a href="../sui-system/validator.md#0x3_validator">validator</a> actor.
+    // sender must be the same sender that created the <a href="../pera-system/validator.md#0x3_validator">validator</a> <a href="../pera-framework/object.md#0x2_object">object</a>, this is <b>to</b> prevent DDoS from non-<a href="../pera-system/validator.md#0x3_validator">validator</a> actor.
     <b>let</b> sender = ctx.sender();
     <b>let</b> validators = system_state.active_validator_addresses();
 
     <b>assert</b>!(validators.contains(&sender), <a href="committee.md#0xb_committee_ESenderNotActiveValidator">ESenderNotActiveValidator</a>);
-    // Sender is active <a href="../sui-system/validator.md#0x3_validator">validator</a>, record the registration
+    // Sender is active <a href="../pera-system/validator.md#0x3_validator">validator</a>, record the registration
 
-    // In case <a href="../sui-system/validator.md#0x3_validator">validator</a> need <b>to</b> <b>update</b> the info
+    // In case <a href="../pera-system/validator.md#0x3_validator">validator</a> need <b>to</b> <b>update</b> the info
     <b>let</b> registration = <b>if</b> (self.member_registrations.contains(&sender)) {
         <b>let</b> registration = &<b>mut</b> self.member_registrations[&sender];
         registration.http_rest_url = http_rest_url;
@@ -501,7 +501,7 @@ title: Module `0xb::committee`
         *registration
     } <b>else</b> {
         <b>let</b> registration = <a href="committee.md#0xb_committee_CommitteeMemberRegistration">CommitteeMemberRegistration</a> {
-            sui_address: sender,
+            pera_address: sender,
             bridge_pubkey_bytes,
             http_rest_url,
         };
@@ -512,7 +512,7 @@ title: Module `0xb::committee`
     // check uniqueness of the <a href="bridge.md#0xb_bridge">bridge</a> pubkey.
     // `try_create_next_committee` will <b>abort</b> <b>if</b> bridge_pubkey_bytes are not unique and
     // that will fail the end of epoch transaction (possibly "forever", well, we
-    // need <b>to</b> deploy proper <a href="../sui-system/validator.md#0x3_validator">validator</a> changes <b>to</b> stop end of epoch from failing).
+    // need <b>to</b> deploy proper <a href="../pera-system/validator.md#0x3_validator">validator</a> changes <b>to</b> stop end of epoch from failing).
     <a href="committee.md#0xb_committee_check_uniqueness_bridge_keys">check_uniqueness_bridge_keys</a>(self, bridge_pubkey_bytes);
 
     emit(registration)
@@ -529,7 +529,7 @@ title: Module `0xb::committee`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_try_create_next_committee">try_create_next_committee</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>, active_validator_voting_power: <a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, min_stake_participation_percentage: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_try_create_next_committee">try_create_next_committee</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>, active_validator_voting_power: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<b>address</b>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;, min_stake_participation_percentage: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -538,31 +538,31 @@ title: Module `0xb::committee`
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_try_create_next_committee">try_create_next_committee</a>(
+<pre><code><b>public</b>(<a href="../pera-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_try_create_next_committee">try_create_next_committee</a>(
     self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a>,
     active_validator_voting_power: VecMap&lt;<b>address</b>, <a href="../move-stdlib/u64.md#0x1_u64">u64</a>&gt;,
     min_stake_participation_percentage: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     ctx: &TxContext
 ) {
     <b>let</b> <b>mut</b> i = 0;
-    <b>let</b> <b>mut</b> new_members = <a href="../sui-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>();
+    <b>let</b> <b>mut</b> new_members = <a href="../pera-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>();
     <b>let</b> <b>mut</b> stake_participation_percentage = 0;
 
     <b>while</b> (i &lt; self.member_registrations.size()) {
         // retrieve registration
         <b>let</b> (_, registration) = self.member_registrations.get_entry_by_idx(i);
-        // Find <a href="../sui-system/validator.md#0x3_validator">validator</a> stake amount from system state
+        // Find <a href="../pera-system/validator.md#0x3_validator">validator</a> stake amount from system state
 
-        // Process registration <b>if</b> it's active <a href="../sui-system/validator.md#0x3_validator">validator</a>
-        <b>let</b> <a href="../sui-system/voting_power.md#0x3_voting_power">voting_power</a> = active_validator_voting_power.try_get(&registration.sui_address);
-        <b>if</b> (<a href="../sui-system/voting_power.md#0x3_voting_power">voting_power</a>.is_some()) {
-            <b>let</b> <a href="../sui-system/voting_power.md#0x3_voting_power">voting_power</a> = <a href="../sui-system/voting_power.md#0x3_voting_power">voting_power</a>.destroy_some();
-            stake_participation_percentage = stake_participation_percentage + <a href="../sui-system/voting_power.md#0x3_voting_power">voting_power</a>;
+        // Process registration <b>if</b> it's active <a href="../pera-system/validator.md#0x3_validator">validator</a>
+        <b>let</b> <a href="../pera-system/voting_power.md#0x3_voting_power">voting_power</a> = active_validator_voting_power.try_get(&registration.pera_address);
+        <b>if</b> (<a href="../pera-system/voting_power.md#0x3_voting_power">voting_power</a>.is_some()) {
+            <b>let</b> <a href="../pera-system/voting_power.md#0x3_voting_power">voting_power</a> = <a href="../pera-system/voting_power.md#0x3_voting_power">voting_power</a>.destroy_some();
+            stake_participation_percentage = stake_participation_percentage + <a href="../pera-system/voting_power.md#0x3_voting_power">voting_power</a>;
 
             <b>let</b> member = <a href="committee.md#0xb_committee_CommitteeMember">CommitteeMember</a> {
-                sui_address: registration.sui_address,
+                pera_address: registration.pera_address,
                 bridge_pubkey_bytes: registration.bridge_pubkey_bytes,
-                <a href="../sui-system/voting_power.md#0x3_voting_power">voting_power</a>: (<a href="../sui-system/voting_power.md#0x3_voting_power">voting_power</a> <b>as</b> <a href="../move-stdlib/u64.md#0x1_u64">u64</a>),
+                <a href="../pera-system/voting_power.md#0x3_voting_power">voting_power</a>: (<a href="../pera-system/voting_power.md#0x3_voting_power">voting_power</a> <b>as</b> <a href="../move-stdlib/u64.md#0x1_u64">u64</a>),
                 http_rest_url: registration.http_rest_url,
                 blocklisted: <b>false</b>,
             };
@@ -576,7 +576,7 @@ title: Module `0xb::committee`
     // Make sure the new <a href="committee.md#0xb_committee">committee</a> represent enough stakes, percentage are accurate <b>to</b> 2DP
     <b>if</b> (stake_participation_percentage &gt;= min_stake_participation_percentage) {
         // Clear registrations
-        self.member_registrations = <a href="../sui-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>();
+        self.member_registrations = <a href="../pera-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>();
         // Store new <a href="committee.md#0xb_committee">committee</a> info
         self.members = new_members;
         self.last_committee_update_epoch = ctx.epoch();
@@ -608,7 +608,7 @@ title: Module `0xb::committee`
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_execute_blocklist">execute_blocklist</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a>, blocklist: Blocklist) {
+<pre><code><b>public</b>(<a href="../pera-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_execute_blocklist">execute_blocklist</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a>, blocklist: Blocklist) {
     <b>let</b> blocklisted = blocklist.blocklist_type() != 1;
     <b>let</b> eth_addresses = blocklist.blocklist_validator_addresses();
     <b>let</b> list_len = eth_addresses.length();
@@ -656,7 +656,7 @@ title: Module `0xb::committee`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_committee_members">committee_members</a>(self: &<a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>): &<a href="../sui-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="committee.md#0xb_committee_CommitteeMember">committee::CommitteeMember</a>&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_committee_members">committee_members</a>(self: &<a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>): &<a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="committee.md#0xb_committee_CommitteeMember">committee::CommitteeMember</a>&gt;
 </code></pre>
 
 
@@ -665,7 +665,7 @@ title: Module `0xb::committee`
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_committee_members">committee_members</a>(
+<pre><code><b>public</b>(<a href="../pera-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_committee_members">committee_members</a>(
     self: &<a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a>,
 ): &VecMap&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, <a href="committee.md#0xb_committee_CommitteeMember">CommitteeMember</a>&gt; {
     &self.members
@@ -682,7 +682,7 @@ title: Module `0xb::committee`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_update_node_url">update_node_url</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>, new_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="committee.md#0xb_committee_update_node_url">update_node_url</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">committee::BridgeCommittee</a>, new_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -691,11 +691,11 @@ title: Module `0xb::committee`
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(<a href="../sui-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_update_node_url">update_node_url</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a>, new_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &TxContext) {
+<pre><code><b>public</b>(<a href="../pera-framework/package.md#0x2_package">package</a>) <b>fun</b> <a href="committee.md#0xb_committee_update_node_url">update_node_url</a>(self: &<b>mut</b> <a href="committee.md#0xb_committee_BridgeCommittee">BridgeCommittee</a>, new_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &TxContext) {
     <b>let</b> <b>mut</b> idx = 0;
     <b>while</b> (idx &lt; self.members.size()) {
         <b>let</b> (_, member) = self.members.get_entry_by_idx_mut(idx);
-        <b>if</b> (member.sui_address == ctx.sender()) {
+        <b>if</b> (member.pera_address == ctx.sender()) {
             member.http_rest_url = new_url;
             emit (<a href="committee.md#0xb_committee_CommitteeMemberUrlUpdateEvent">CommitteeMemberUrlUpdateEvent</a> {
                 member: member.bridge_pubkey_bytes,

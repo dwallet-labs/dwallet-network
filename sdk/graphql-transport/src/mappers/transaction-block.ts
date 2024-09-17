@@ -1,28 +1,28 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromB64, toB58 } from '@mysten/bcs';
-import { bcs } from '@mysten/sui/bcs';
+import { bcs } from '@pera-io/pera/bcs';
 import type {
-	SuiArgument,
-	SuiCallArg,
-	SuiObjectChange,
-	SuiTransaction,
-	SuiTransactionBlock,
-	SuiTransactionBlockKind,
-	SuiTransactionBlockResponse,
-	SuiTransactionBlockResponseOptions,
-} from '@mysten/sui/client';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+	PeraArgument,
+	PeraCallArg,
+	PeraObjectChange,
+	PeraTransaction,
+	PeraTransactionBlock,
+	PeraTransactionBlockKind,
+	PeraTransactionBlockResponse,
+	PeraTransactionBlockResponseOptions,
+} from '@pera-io/pera/client';
+import { normalizePeraAddress } from '@pera-io/pera/utils';
 
 import type { Rpc_Transaction_FieldsFragment } from '../generated/queries.js';
 import { toShortTypeString } from './util.js';
 
 export function mapGraphQLTransactionBlockToRpcTransactionBlock(
 	transactionBlock: Rpc_Transaction_FieldsFragment,
-	options?: SuiTransactionBlockResponseOptions | null,
+	options?: PeraTransactionBlockResponseOptions | null,
 	errors?: string[] | null,
-): SuiTransactionBlockResponse {
+): PeraTransactionBlockResponse {
 	const effects = transactionBlock.effects?.bcs ? mapEffects(transactionBlock.effects.bcs) : null;
 
 	return {
@@ -85,9 +85,9 @@ export function mapGraphQLTransactionBlockToRpcTransactionBlock(
 
 function mapObjectChanges(
 	transactionBlock: Rpc_Transaction_FieldsFragment,
-	effects: SuiTransactionBlockResponse['effects'],
+	effects: PeraTransactionBlockResponse['effects'],
 ) {
-	const changes: SuiObjectChange[] = [];
+	const changes: PeraObjectChange[] = [];
 
 	effects?.mutated?.forEach((mutated) => {
 		const objectChange = transactionBlock.effects?.objectChanges?.nodes.find(
@@ -170,7 +170,7 @@ function mapObjectChanges(
 
 export function mapTransactionBlockToInput(
 	data: typeof bcs.SenderSignedTransaction.$inferType,
-): SuiTransactionBlock | null {
+): PeraTransactionBlock | null {
 	const txData = data.intentMessage.value.V1;
 
 	const programableTransaction =
@@ -202,7 +202,7 @@ export function mapTransactionBlockToInput(
 
 export function mapProgramableTransaction(
 	programableTransaction: typeof bcs.ProgrammableTransaction.$inferType,
-): SuiTransactionBlockKind {
+): PeraTransactionBlockKind {
 	return {
 		inputs: programableTransaction.inputs.map(mapTransactionInput),
 		kind: 'ProgrammableTransaction',
@@ -210,7 +210,7 @@ export function mapProgramableTransaction(
 	};
 }
 
-function mapTransactionInput(input: typeof bcs.CallArg.$inferType): SuiCallArg {
+function mapTransactionInput(input: typeof bcs.CallArg.$inferType): PeraCallArg {
 	if (input.Pure) {
 		return {
 			type: 'pure',
@@ -250,7 +250,7 @@ function mapTransactionInput(input: typeof bcs.CallArg.$inferType): SuiCallArg {
 	throw new Error(`Unknown object type: ${input.Object}`);
 }
 
-function mapTransaction(transaction: typeof bcs.Command.$inferType): SuiTransaction {
+function mapTransaction(transaction: typeof bcs.Command.$inferType): PeraTransaction {
 	switch (transaction.$kind) {
 		case 'MoveCall': {
 			return {
@@ -315,7 +315,7 @@ function mapTransaction(transaction: typeof bcs.Command.$inferType): SuiTransact
 	throw new Error(`Unknown transaction type ${transaction}`);
 }
 
-function mapTransactionArgument(arg: typeof bcs.Argument.$inferType): SuiArgument {
+function mapTransactionArgument(arg: typeof bcs.Argument.$inferType): PeraArgument {
 	switch (arg.$kind) {
 		case 'GasCoin': {
 			return 'GasCoin';
@@ -343,9 +343,9 @@ function mapTransactionArgument(arg: typeof bcs.Argument.$inferType): SuiArgumen
 const OBJECT_DIGEST_DELETED = toB58(Uint8Array.from({ length: 32 }, () => 99));
 const OBJECT_DIGEST_WRAPPED = toB58(Uint8Array.from({ length: 32 }, () => 88));
 const OBJECT_DIGEST_ZERO = toB58(Uint8Array.from({ length: 32 }, () => 0));
-const ADDRESS_ZERO = normalizeSuiAddress('0x0');
+const ADDRESS_ZERO = normalizePeraAddress('0x0');
 
-export function mapEffects(data: string): SuiTransactionBlockResponse['effects'] {
+export function mapEffects(data: string): PeraTransactionBlockResponse['effects'] {
 	const effects = bcs.TransactionEffects.parse(fromB64(data));
 
 	let effectsV1 = effects.V1;

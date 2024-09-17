@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { entropyToSerialized, mnemonicToEntropy } from '_src/shared/utils/bip39';
 import { ImportRecoveryPhraseForm } from '_src/ui/app/components/accounts/ImportRecoveryPhraseForm';
@@ -83,7 +83,7 @@ export function RecoverManyPage() {
 					}
 					setRecoverInfo(null);
 				}}
-				background="bg-sui-lightest"
+				background="bg-pera-lightest"
 			>
 				<div className="flex flex-col flex-nowrap w-full h-full gap-4 text-center">
 					<Text variant="pBody" color="gray-90">

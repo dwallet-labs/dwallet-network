@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useIsWalletDefiEnabled } from '_app/hooks/useIsWalletDefiEnabled';
 import { useAppSelector } from '_hooks';
 import { API_ENV } from '_shared/api-env';
 import { Heading } from '_src/ui/app/shared/heading';
 import { Text } from '_src/ui/app/shared/text';
 import { useBalanceInUSD, useFormatCoin } from '@mysten/core';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { PERA_TYPE_ARG } from '@pera-io/pera/utils';
 import { useMemo } from 'react';
 
 export type CoinProps = {
@@ -16,7 +16,7 @@ export type CoinProps = {
 
 function WalletBalanceUsd({ amount: walletBalance }: { amount: bigint }) {
 	const isDefiWalletEnabled = useIsWalletDefiEnabled();
-	const formattedWalletBalance = useBalanceInUSD(SUI_TYPE_ARG, walletBalance);
+	const formattedWalletBalance = useBalanceInUSD(PERA_TYPE_ARG, walletBalance);
 
 	const walletBalanceInUsd = useMemo(() => {
 		if (!formattedWalletBalance) return null;

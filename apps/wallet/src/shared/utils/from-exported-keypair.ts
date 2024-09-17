@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type Keypair, type SignatureScheme } from '@mysten/sui/cryptography';
+import { type Keypair, type SignatureScheme } from '@pera-io/pera/cryptography';
 import {
-	decodeSuiPrivateKey,
+	decodePeraPrivateKey,
 	LEGACY_PRIVATE_KEY_SIZE,
 	PRIVATE_KEY_SIZE,
-} from '@mysten/sui/cryptography/keypair';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { Secp256k1Keypair } from '@mysten/sui/keypairs/secp256k1';
-import { Secp256r1Keypair } from '@mysten/sui/keypairs/secp256r1';
-import { fromB64 } from '@mysten/sui/utils';
+} from '@pera-io/pera/cryptography/keypair';
+import { Ed25519Keypair } from '@pera-io/pera/keypairs/ed25519';
+import { Secp256k1Keypair } from '@pera-io/pera/keypairs/secp256k1';
+import { Secp256r1Keypair } from '@pera-io/pera/keypairs/secp256r1';
+import { fromB64 } from '@pera-io/pera/utils';
 
 /**
  * Wallet stored data might contain imported accounts with their keys stored in the previous format.
@@ -34,7 +34,7 @@ export function fromExportedKeypair(
 		secretKey = fromB64(secret.privateKey);
 		schema = secret.schema;
 	} else {
-		const decoded = decodeSuiPrivateKey(secret);
+		const decoded = decodePeraPrivateKey(secret);
 		schema = decoded.schema;
 		secretKey = decoded.secretKey;
 	}

@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@pera-io/pera/utils';
 import type { WalletAccount } from '@mysten/wallet-standard';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import clsx from 'clsx';
 
-import { useResolveSuiNSName } from '../hooks/useResolveSuiNSNames.js';
+import { useResolvePeraNSName } from '../hooks/useResolvePeraNSNames.js';
 import { useAccounts } from '../hooks/wallet/useAccounts.js';
 import { useDisconnectWallet } from '../hooks/wallet/useDisconnectWallet.js';
 import { useSwitchAccount } from '../hooks/wallet/useSwitchAccount.js';
@@ -24,7 +24,7 @@ type AccountDropdownMenuProps = {
 export function AccountDropdownMenu({ currentAccount }: AccountDropdownMenuProps) {
 	const { mutate: disconnectWallet } = useDisconnectWallet();
 
-	const { data: domain } = useResolveSuiNSName(
+	const { data: domain } = useResolvePeraNSName(
 		currentAccount.label ? null : currentAccount.address,
 	);
 	const accounts = useAccounts();
@@ -73,7 +73,7 @@ export function AccountDropdownMenuItem({
 	active?: boolean;
 }) {
 	const { mutate: switchAccount } = useSwitchAccount();
-	const { data: domain } = useResolveSuiNSName(account.label ? null : account.address);
+	const { data: domain } = useResolvePeraNSName(account.label ? null : account.address);
 
 	return (
 		<DropdownMenu.Item

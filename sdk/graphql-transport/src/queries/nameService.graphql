@@ -1,15 +1,15 @@
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 query resolveNameServiceAddress($domain: String!) {
-	resolveSuinsAddress(domain: $domain) {
+	resolvePeransAddress(domain: $domain) {
 		address
 	}
 }
 
-query resolveNameServiceNames($address: SuiAddress!, $limit: Int, $cursor: String) {
+query resolveNameServiceNames($address: PeraAddress!, $limit: Int, $cursor: String) {
 	address(address: $address) {
-		suinsRegistrations(first: $limit, after: $cursor) {
+		peransRegistrations(first: $limit, after: $cursor) {
 			pageInfo {
 				hasNextPage
 				endCursor

@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! This module provides a checker for verifying that struct definitions in a module are not
 //! recursive. Since the module dependency graph is acylic by construction, applying this checker to

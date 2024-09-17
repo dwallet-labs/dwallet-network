@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiSignMessageOutput } from '@mysten/wallet-standard';
+import { type PeraSignMessageOutput } from '@mysten/wallet-standard';
 
 import { isBasePayload, type BasePayload } from '../BasePayload';
 import { type Payload } from '../Payload';
@@ -12,7 +12,7 @@ export interface SignMessageRequest extends BasePayload {
 		message: string; // base64
 		accountAddress: string;
 	};
-	return?: SuiSignMessageOutput;
+	return?: PeraSignMessageOutput;
 }
 
 export function isSignMessageRequest(payload: Payload): payload is SignMessageRequest {

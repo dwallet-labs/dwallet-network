@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -91,7 +91,7 @@ describe('SerialExecutor', { retry: 3 }, () => {
 		const txb2 = new Transaction();
 		txb2.transferObjects([newCoinId], toolbox.address());
 		const txb3 = new Transaction();
-		txb3.transferObjects([newCoinId], new Ed25519Keypair().toSuiAddress());
+		txb3.transferObjects([newCoinId], new Ed25519Keypair().toPeraAddress());
 
 		const { digest } = await toolbox.client.signAndExecuteTransaction({
 			signer: toolbox.keypair,

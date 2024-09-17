@@ -2,7 +2,7 @@
 name = "narwhal-test-utils"
 version = "0.1.0"
 edition = "2021"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 authors = ["Mysten Labs <build@mystenlabs.com>"]
 publish = false
 
@@ -32,6 +32,6 @@ mysten-metrics.workspace = true
 store = { path = "../../crates/typed-store", package = "typed-store" }
 telemetry-subscribers.workspace = true
 mysten-network.workspace = true
-sui-protocol-config.workspace = true
+pera-protocol-config.workspace = true
 
 anemo.workspace = true

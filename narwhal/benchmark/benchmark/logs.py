@@ -1,6 +1,6 @@
 # Copyright(C) Facebook, Inc. and its affiliates.
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 from datetime import datetime, timezone
 from itertools import chain
 from dateutil import parser

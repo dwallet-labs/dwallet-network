@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { Transaction } from '@mysten/sui/transactions';
-import { toB64 } from '@mysten/sui/utils';
+import type { Transaction } from '@pera-io/pera/transactions';
+import { toB64 } from '@pera-io/pera/utils';
 import type {
-	SuiSignAndExecuteTransactionInput,
-	SuiSignAndExecuteTransactionOutput,
+	PeraSignAndExecuteTransactionInput,
+	PeraSignAndExecuteTransactionOutput,
 } from '@mysten/wallet-standard';
 import { signTransaction } from '@mysten/wallet-standard';
 import type { UseMutationOptions, UseMutationResult } from '@tanstack/react-query';
@@ -18,19 +18,19 @@ import {
 	WalletNotConnectedError,
 } from '../../errors/walletErrors.js';
 import type { PartialBy } from '../../types/utilityTypes.js';
-import { useSuiClient } from '../useSuiClient.js';
+import { usePeraClient } from '../usePeraClient.js';
 import { useCurrentAccount } from './useCurrentAccount.js';
 import { useCurrentWallet } from './useCurrentWallet.js';
 import { useReportTransactionEffects } from './useReportTransactionEffects.js';
 
 type UseSignAndExecuteTransactionArgs = PartialBy<
-	Omit<SuiSignAndExecuteTransactionInput, 'transaction'>,
+	Omit<PeraSignAndExecuteTransactionInput, 'transaction'>,
 	'account' | 'chain'
 > & {
 	transaction: Transaction | string;
 };
 
-type UseSignAndExecuteTransactionResult = SuiSignAndExecuteTransactionOutput;
+type UseSignAndExecuteTransactionResult = PeraSignAndExecuteTransactionOutput;
 
 type UseSignAndExecuteTransactionError =
 	| WalletFeatureNotSupportedError
@@ -77,7 +77,7 @@ export function useSignAndExecuteTransaction<
 > {
 	const { currentWallet, supportedIntents } = useCurrentWallet();
 	const currentAccount = useCurrentAccount();
-	const client = useSuiClient();
+	const client = usePeraClient();
 	const { mutate: reportTransactionEffects } = useReportTransactionEffects();
 
 	const executeTransaction: ({
@@ -122,8 +122,8 @@ export function useSignAndExecuteTransaction<
 			const chain = signTransactionArgs.chain ?? signerAccount?.chains[0];
 
 			if (
-				!currentWallet.features['sui:signTransaction'] &&
-				!currentWallet.features['sui:signTransactionBlock']
+				!currentWallet.features['pera:signTransaction'] &&
+				!currentWallet.features['pera:signTransactionBlock']
 			) {
 				throw new WalletFeatureNotSupportedError(
 					"This wallet doesn't support the `signTransaction` feature.",

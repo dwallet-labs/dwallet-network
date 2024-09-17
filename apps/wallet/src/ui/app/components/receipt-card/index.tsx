@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useRecognizedPackages } from '_src/ui/app/hooks/useRecognizedPackages';
 import { useTransactionSummary } from '@mysten/core';
-import { type SuiTransactionBlockResponse } from '@mysten/sui/client';
+import { type PeraTransactionBlockResponse } from '@pera-io/pera/client';
 
 import { DateCard } from '../../shared/date-card';
 import { TransactionSummary } from '../../shared/transaction-summary';
@@ -14,7 +14,7 @@ import { StatusIcon } from './StatusIcon';
 import { UnStakeTxnCard } from './UnstakeTxnCard';
 
 type ReceiptCardProps = {
-	txn: SuiTransactionBlockResponse;
+	txn: PeraTransactionBlockResponse;
 	activeAddress: string;
 };
 
@@ -53,7 +53,7 @@ export function ReceiptCard({ txn, activeAddress }: ReceiptCardProps) {
 					success={summary?.status === 'success'}
 					timestamp={txn.timestampMs ?? undefined}
 				/>
-				<section className="-mx-5 bg-sui/10 min-h-full">
+				<section className="-mx-5 bg-pera/10 min-h-full">
 					<div className="px-5 py-10">
 						<div className="flex flex-col gap-4">
 							{stakedTxn ? <StakeTxnCard event={stakedTxn} /> : null}

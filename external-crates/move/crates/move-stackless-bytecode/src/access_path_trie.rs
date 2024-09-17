@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! The obvious approach to abstracting a set of concrete paths is using a set of abstract paths.
 //! An access path trie represents a set of paths in a way that avoids redundant representations of

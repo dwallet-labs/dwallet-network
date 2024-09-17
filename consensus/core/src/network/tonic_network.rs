@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{
     collections::BTreeMap,
@@ -844,7 +844,7 @@ impl<S: NetworkService> NetworkManager<S> for TonicManager {
                                 return Err(ConsensusError::NetworkServerConnection(msg));
                             }
                             trace!("Received {} certificates", certs.len());
-                            sui_tls::public_key_from_certificate(&certs[0]).map_err(|e| {
+                            pera_tls::public_key_from_certificate(&certs[0]).map_err(|e| {
                                 trace!("Failed to extract public key from certificate: {e:?}");
                                 ConsensusError::NetworkServerConnection(format!(
                                     "Failed to extract public key from certificate: {e:?}"

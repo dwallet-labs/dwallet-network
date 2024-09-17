@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
 	IdentifierRecord,
@@ -9,50 +9,50 @@ import type {
 	WalletWithFeatures,
 } from '@wallet-standard/core';
 
-import type { SuiReportTransactionEffectsFeature } from './suiReportTransactionEffects.js';
-import type { SuiSignAndExecuteTransactionFeature } from './suiSignAndExecuteTransaction.js';
-import type { SuiSignAndExecuteTransactionBlockFeature } from './suiSignAndExecuteTransactionBlock.js';
-import type { SuiSignMessageFeature } from './suiSignMessage.js';
-import type { SuiSignPersonalMessageFeature } from './suiSignPersonalMessage.js';
-import type { SuiSignTransactionFeature } from './suiSignTransaction.js';
-import type { SuiSignTransactionBlockFeature } from './suiSignTransactionBlock.js';
+import type { PeraReportTransactionEffectsFeature } from './peraReportTransactionEffects.js';
+import type { PeraSignAndExecuteTransactionFeature } from './peraSignAndExecuteTransaction.js';
+import type { PeraSignAndExecuteTransactionBlockFeature } from './peraSignAndExecuteTransactionBlock.js';
+import type { PeraSignMessageFeature } from './peraSignMessage.js';
+import type { PeraSignPersonalMessageFeature } from './peraSignPersonalMessage.js';
+import type { PeraSignTransactionFeature } from './peraSignTransaction.js';
+import type { PeraSignTransactionBlockFeature } from './peraSignTransactionBlock.js';
 
 /**
- * Wallet Standard features that are unique to Sui, and that all Sui wallets are expected to implement.
+ * Wallet Standard features that are unique to Pera, and that all Pera wallets are expected to implement.
  */
-export type SuiFeatures = Partial<SuiSignTransactionBlockFeature> &
-	Partial<SuiSignAndExecuteTransactionBlockFeature> &
-	SuiSignPersonalMessageFeature &
-	SuiSignAndExecuteTransactionFeature &
-	SuiSignTransactionFeature &
+export type PeraFeatures = Partial<PeraSignTransactionBlockFeature> &
+	Partial<PeraSignAndExecuteTransactionBlockFeature> &
+	PeraSignPersonalMessageFeature &
+	PeraSignAndExecuteTransactionFeature &
+	PeraSignTransactionFeature &
 	// This deprecated feature should be removed once wallets update to the new method:
-	Partial<SuiSignMessageFeature> &
-	Partial<SuiReportTransactionEffectsFeature>;
+	Partial<PeraSignMessageFeature> &
+	Partial<PeraReportTransactionEffectsFeature>;
 
-export type SuiWalletFeatures = StandardConnectFeature &
+export type PeraWalletFeatures = StandardConnectFeature &
 	StandardEventsFeature &
-	SuiFeatures &
+	PeraFeatures &
 	// Disconnect is an optional feature:
 	Partial<StandardDisconnectFeature>;
 
-export type WalletWithSuiFeatures = WalletWithFeatures<SuiWalletFeatures>;
+export type WalletWithPeraFeatures = WalletWithFeatures<PeraWalletFeatures>;
 
 /**
- * Represents a wallet with the absolute minimum feature set required to function in the Sui ecosystem.
+ * Represents a wallet with the absolute minimum feature set required to function in the Pera ecosystem.
  */
 export type WalletWithRequiredFeatures = WalletWithFeatures<
 	MinimallyRequiredFeatures &
-		Partial<SuiFeatures> &
+		Partial<PeraFeatures> &
 		Partial<StandardDisconnectFeature> &
 		IdentifierRecord<unknown>
 >;
 
 export type MinimallyRequiredFeatures = StandardConnectFeature & StandardEventsFeature;
 
-export * from './suiSignMessage.js';
-export * from './suiSignTransactionBlock.js';
-export * from './suiSignTransaction.js';
-export * from './suiSignAndExecuteTransactionBlock.js';
-export * from './suiSignAndExecuteTransaction.js';
-export * from './suiSignPersonalMessage.js';
-export * from './suiReportTransactionEffects.js';
+export * from './peraSignMessage.js';
+export * from './peraSignTransactionBlock.js';
+export * from './peraSignTransaction.js';
+export * from './peraSignAndExecuteTransactionBlock.js';
+export * from './peraSignAndExecuteTransaction.js';
+export * from './peraSignPersonalMessage.js';
+export * from './peraReportTransactionEffects.js';

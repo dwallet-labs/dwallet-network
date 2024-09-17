@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { registerWallet } from '@mysten/wallet-standard';
 
-import { SuiWallet } from './WalletStandardInterface';
+import { PeraWallet } from './WalletStandardInterface';
 
-registerWallet(new SuiWallet());
+registerWallet(new PeraWallet());

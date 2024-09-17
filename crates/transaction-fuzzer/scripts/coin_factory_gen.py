@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # Generates ../data/coin_factory/sources/coin_factory.move to create NUM_VARIANTS of a function returning an N-tuple of coins
 
@@ -12,14 +12,14 @@ factory_file = os.path.join(os.path.dirname(__file__), os.pardir, "data", "coin_
 
 with open(factory_file, 'w') as f:
     f.write("// Copyright (c) Mysten Labs, Inc.\n")
-    f.write("// SPDX-License-Identifier: Apache-2.0\n")
+    f.write("// SPDX-License-Identifier: BSD-3-Clause-Clear\n")
 
     f.write("module coiner::coin_factory {\n")
     f.write("    use std::option;\n")
-    f.write("    use sui::coin::{Self, Coin, TreasuryCap};\n")
-    f.write("    use sui::transfer;\n")
+    f.write("    use pera::coin::{Self, Coin, TreasuryCap};\n")
+    f.write("    use pera::transfer;\n")
     f.write("    use std::vector;\n");
-    f.write("    use sui::tx_context::{Self, TxContext};\n")
+    f.write("    use pera::tx_context::{Self, TxContext};\n")
     f.write("\n")
     f.write("    struct COIN_FACTORY has drop {}\n")
     f.write("\n")

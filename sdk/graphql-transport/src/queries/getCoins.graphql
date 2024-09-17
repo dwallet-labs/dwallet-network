@@ -1,7 +1,7 @@
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
-query getCoins($owner: SuiAddress!, $first: Int, $cursor: String, $type: String = "0x2::sui::SUI") {
+query getCoins($owner: PeraAddress!, $first: Int, $cursor: String, $type: String = "0x2::pera::PERA") {
 	address(address: $owner) {
 		address
 		coins(first: $first, after: $cursor, type: $type) {

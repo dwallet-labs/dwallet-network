@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use super::object_runtime::{ObjectRuntime, TransferResult};
 use crate::{
@@ -17,7 +17,7 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use sui_types::{
+use pera_types::{
     base_types::{MoveObjectType, ObjectID, SequenceNumber},
     object::Owner,
 };
@@ -236,7 +236,7 @@ fn object_runtime_transfer(
     if !matches!(context.type_to_type_tag(&ty)?, TypeTag::Struct(_)) {
         return Err(
             PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                .with_message("Sui verifier guarantees this is a struct".to_string()),
+                .with_message("Pera verifier guarantees this is a struct".to_string()),
         );
     }
 

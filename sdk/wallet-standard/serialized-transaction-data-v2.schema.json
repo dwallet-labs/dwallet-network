@@ -382,7 +382,7 @@
 							"type": "null"
 						}
 					],
-					"description": "The list of SUI coins to fund the transaction"
+					"description": "The list of PERA coins to fund the transaction"
 				},
 				"price": {
 					"description": "The gas price used for this transaction",

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import cl from 'clsx';
 import { memo, useEffect, useState } from 'react';
@@ -8,7 +8,7 @@ import { NavLink } from 'react-router-dom';
 
 import st from './Filters.module.scss';
 
-const ELEMENT_ID = '#sui-apps-filters';
+const ELEMENT_ID = '#pera-apps-filters';
 
 // TODO: extend this interface to include params and functions for the filter tags
 export interface Props {

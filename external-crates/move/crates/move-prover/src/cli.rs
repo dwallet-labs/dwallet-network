@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #![forbid(unsafe_code)]
 
@@ -447,7 +447,7 @@ impl Options {
                     .long("stable-test-output")
                     .action(clap::ArgAction::SetTrue)
                     .help("instruct the prover to produce output in diagnosis which is stable \
-                     and suitable for baseline tests. This redacts values in diagnosis which might\
+                     and peratable for baseline tests. This redacts values in diagnosis which might\
                      be non-deterministic, and may do other things to keep output stable.")
             )
             .arg(

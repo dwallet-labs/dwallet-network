@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useActiveAddress } from '_app/hooks/useActiveAddress';
 import { useBlockedObjectList } from '_app/hooks/useBlockedObjectList';
@@ -11,7 +11,7 @@ import { setToSessionStorage } from '_src/background/storage-utils';
 import { AssetFilterTypes, useGetNFTs } from '_src/ui/app/hooks/useGetNFTs';
 import PageTitle from '_src/ui/app/shared/PageTitle';
 import { useOnScreen } from '@mysten/core';
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { normalizeStructTag } from '@pera-io/pera/utils';
 import { useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 

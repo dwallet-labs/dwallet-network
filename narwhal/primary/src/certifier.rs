@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::{aggregators::VotesAggregator, metrics::PrimaryMetrics, synchronizer::Synchronizer};
 
 use config::{AuthorityIdentifier, Committee};
@@ -14,8 +14,8 @@ use mysten_network::anemo_ext::NetworkExt;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::CertificateStore;
-use sui_macros::fail_point_async;
-use sui_protocol_config::ProtocolConfig;
+use pera_macros::fail_point_async;
+use pera_protocol_config::ProtocolConfig;
 use tokio::{
     sync::oneshot,
     task::{JoinHandle, JoinSet},

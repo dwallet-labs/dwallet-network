@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import ExplorerLink from '_src/ui/app/components/explorer-link';
 import { ExplorerLinkType } from '_src/ui/app/components/explorer-link/ExplorerLinkType';
 import { useActiveAddress } from '_src/ui/app/hooks';
-import { formatAddress, isValidSuiAddress } from '@mysten/sui/utils';
+import { formatAddress, isValidPeraAddress } from '@pera-io/pera/utils';
 
 import { Text } from '../text';
 import { SummaryCardFooter } from './Card';
@@ -17,7 +17,7 @@ export function OwnerFooter({ owner, ownerType }: { owner?: string; ownerType?: 
 	const display =
 		ownerType === 'Shared'
 			? 'Shared'
-			: isValidSuiAddress(owner)
+			: isValidPeraAddress(owner)
 				? isOwner
 					? 'You'
 					: formatAddress(owner)

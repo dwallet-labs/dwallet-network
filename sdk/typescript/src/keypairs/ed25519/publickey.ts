@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { fromB64 } from '@mysten/bcs';
 import nacl from 'tweetnacl';
@@ -55,7 +55,7 @@ export class Ed25519PublicKey extends PublicKey {
 	}
 
 	/**
-	 * Return the Sui address associated with this Ed25519 public key
+	 * Return the Pera address associated with this Ed25519 public key
 	 */
 	flag(): number {
 		return SIGNATURE_SCHEME_TO_FLAG['ED25519'];

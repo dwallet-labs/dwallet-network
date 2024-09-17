@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 //! Translates and validates specification language fragments as they are output from the Move
 //! compiler's expansion phase and adds them to the environment (which was initialized from the

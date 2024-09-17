@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
 	StandardConnectInput,
@@ -50,19 +50,19 @@ export function useConnectWallet({
 				setConnectionStatus('connecting');
 
 				const connectResult = await wallet.features['standard:connect'].connect(connectArgs);
-				const connectedSuiAccounts = connectResult.accounts.filter((account) =>
-					account.chains.some((chain) => chain.split(':')[0] === 'sui'),
+				const connectedPeraAccounts = connectResult.accounts.filter((account) =>
+					account.chains.some((chain) => chain.split(':')[0] === 'pera'),
 				);
-				const selectedAccount = getSelectedAccount(connectedSuiAccounts, accountAddress);
+				const selectedAccount = getSelectedAccount(connectedPeraAccounts, accountAddress);
 
 				setWalletConnected(
 					wallet,
-					connectedSuiAccounts,
+					connectedPeraAccounts,
 					selectedAccount,
 					connectResult.supportedIntents,
 				);
 
-				return { accounts: connectedSuiAccounts };
+				return { accounts: connectedPeraAccounts };
 			} catch (error) {
 				setConnectionStatus('disconnected');
 				throw error;

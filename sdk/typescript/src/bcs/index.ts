@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { bcs } from '@mysten/bcs';
 
@@ -27,7 +27,7 @@ import {
 	SenderSignedTransaction,
 	SharedObjectRef,
 	StructTag,
-	SuiObjectRef,
+	PeraObjectRef,
 	TransactionData,
 	TransactionDataV1,
 	TransactionExpiration,
@@ -41,7 +41,7 @@ export type { TypeTag } from './types.js';
 export { TypeTagSerializer } from './type-tag-serializer.js';
 export { BcsType, type BcsTypeOptions } from '@mysten/bcs';
 
-const suiBcs = {
+const peraBcs = {
 	...bcs,
 	U8: bcs.u8(),
 	U16: bcs.u16(),
@@ -74,7 +74,7 @@ const suiBcs = {
 	SenderSignedTransaction,
 	SharedObjectRef,
 	StructTag,
-	SuiObjectRef,
+	PeraObjectRef,
 	Command,
 	TransactionData,
 	TransactionDataV1,
@@ -84,4 +84,4 @@ const suiBcs = {
 	TransactionEffects,
 };
 
-export { suiBcs as bcs };
+export { peraBcs as bcs };

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { Heading } from '_src/ui/app/shared/heading';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { type AnchorHTMLAttributes, type ElementType, type ReactNode } from 'react';
@@ -27,7 +27,7 @@ type CardProps = Props & AnchorHTMLAttributes<HTMLAnchorElement>;
 
 export const SummaryCardFooter = ({ children }: { children: ReactNode }) => {
 	return (
-		<div className="-mb-4.5 -mx-4.5 px-4 py-2 rounded-b-2xl flex justify-between items-center bg-sui/10 ">
+		<div className="-mb-4.5 -mx-4.5 px-4 py-2 rounded-b-2xl flex justify-between items-center bg-pera/10 ">
 			{children}
 		</div>
 	);

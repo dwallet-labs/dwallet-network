@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module display_test::boars {
-    use sui::tx_context::{sender};
-    use sui::transfer;
-    use sui::package;
-    use sui::url::{Self, Url};
-    use sui::display;
+    use pera::tx_context::{sender};
+    use pera::transfer;
+    use pera::package;
+    use pera::url::{Self, Url};
+    use pera::display;
     use std::string::{utf8, String};
 
     /// For when a witness type passed is not an OTW.
@@ -32,7 +32,7 @@ module display_test::boars {
     }
 
     fun init(otw: BOARS, ctx: &mut TxContext) {
-        assert!(sui::types::is_one_time_witness(&otw), ENotOneTimeWitness);
+        assert!(pera::types::is_one_time_witness(&otw), ENotOneTimeWitness);
 
         let pub = package::claim(otw, ctx);
         let mut display = display::new<Boar>(&pub, ctx);

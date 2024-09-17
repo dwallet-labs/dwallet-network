@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { Transaction } from '@mysten/sui/transactions';
-import { toB64 } from '@mysten/sui/utils';
+import { Transaction } from '@pera-io/pera/transactions';
+import { toB64 } from '@pera-io/pera/utils';
 import type {
 	StandardConnectFeature,
 	StandardConnectMethod,
@@ -11,15 +11,15 @@ import type {
 	StandardEventsFeature,
 	StandardEventsListeners,
 	StandardEventsOnMethod,
-	SuiSignPersonalMessageFeature,
-	SuiSignPersonalMessageMethod,
-	SuiSignTransactionBlockFeature,
-	SuiSignTransactionBlockMethod,
-	SuiSignTransactionFeature,
-	SuiSignTransactionMethod,
+	PeraSignPersonalMessageFeature,
+	PeraSignPersonalMessageMethod,
+	PeraSignTransactionBlockFeature,
+	PeraSignTransactionBlockMethod,
+	PeraSignTransactionFeature,
+	PeraSignTransactionMethod,
 	Wallet,
 } from '@mysten/wallet-standard';
-import { getWallets, ReadonlyWalletAccount, SUI_MAINNET_CHAIN } from '@mysten/wallet-standard';
+import { getWallets, ReadonlyWalletAccount, PERA_MAINNET_CHAIN } from '@mysten/wallet-standard';
 import type { Emitter } from 'mitt';
 import mitt from 'mitt';
 
@@ -52,7 +52,7 @@ export class StashedWallet implements Wallet {
 	}
 
 	get chains() {
-		return [SUI_MAINNET_CHAIN] as const;
+		return [PERA_MAINNET_CHAIN] as const;
 	}
 
 	get accounts() {
@@ -62,9 +62,9 @@ export class StashedWallet implements Wallet {
 	get features(): StandardConnectFeature &
 		StandardDisconnectFeature &
 		StandardEventsFeature &
-		SuiSignTransactionBlockFeature &
-		SuiSignTransactionFeature &
-		SuiSignPersonalMessageFeature {
+		PeraSignTransactionBlockFeature &
+		PeraSignTransactionFeature &
+		PeraSignPersonalMessageFeature {
 		return {
 			'standard:connect': {
 				version: '1.0.0',
@@ -78,15 +78,15 @@ export class StashedWallet implements Wallet {
 				version: '1.0.0',
 				on: this.#on,
 			},
-			'sui:signTransactionBlock': {
+			'pera:signTransactionBlock': {
 				version: '1.0.0',
 				signTransactionBlock: this.#signTransactionBlock,
 			},
-			'sui:signTransaction': {
+			'pera:signTransaction': {
 				version: '2.0.0',
 				signTransaction: this.#signTransaction,
 			},
-			'sui:signPersonalMessage': {
+			'pera:signPersonalMessage': {
 				version: '1.0.0',
 				signPersonalMessage: this.#signPersonalMessage,
 			},
@@ -112,7 +112,7 @@ export class StashedWallet implements Wallet {
 		}
 	}
 
-	#signTransactionBlock: SuiSignTransactionBlockMethod = async ({ transactionBlock, account }) => {
+	#signTransactionBlock: PeraSignTransactionBlockMethod = async ({ transactionBlock, account }) => {
 		transactionBlock.setSenderIfNotSet(account.address);
 
 		const data = transactionBlock.serialize();
@@ -134,7 +134,7 @@ export class StashedWallet implements Wallet {
 		};
 	};
 
-	#signTransaction: SuiSignTransactionMethod = async ({ transaction, account }) => {
+	#signTransaction: PeraSignTransactionMethod = async ({ transaction, account }) => {
 		const popup = new StashedPopup({
 			name: this.#name,
 			origin: this.#origin,
@@ -157,7 +157,7 @@ export class StashedWallet implements Wallet {
 		};
 	};
 
-	#signPersonalMessage: SuiSignPersonalMessageMethod = async ({ message, account }) => {
+	#signPersonalMessage: PeraSignPersonalMessageMethod = async ({ message, account }) => {
 		const popup = new StashedPopup({
 			name: this.#name,
 			origin: this.#origin,
@@ -186,8 +186,8 @@ export class StashedWallet implements Wallet {
 			this.#accounts = [
 				new ReadonlyWalletAccount({
 					address,
-					chains: [SUI_MAINNET_CHAIN],
-					features: ['sui:signTransactionBlock', 'sui:signPersonalMessage'],
+					chains: [PERA_MAINNET_CHAIN],
+					features: ['pera:signTransactionBlock', 'pera:signPersonalMessage'],
 					// NOTE: Stashed doesn't support getting public keys, and zkLogin accounts don't have meaningful public keys anyway
 					publicKey: new Uint8Array(),
 				}),

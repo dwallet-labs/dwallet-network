@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import {
 	ConnectModal,
@@ -8,7 +8,7 @@ import {
 	useDisconnectWallet,
 	useSwitchAccount,
 } from '@mysten/dapp-kit';
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@pera-io/pera/utils';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useState } from 'react';
 

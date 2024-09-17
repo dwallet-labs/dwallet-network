@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@mysten/sui/client';
-import { fromB64, isValidSuiAddress } from '@mysten/sui/utils';
+import type { PeraClient } from '@pera-io/pera/client';
+import { fromB64, isValidPeraAddress } from '@pera-io/pera/utils';
 
 import '../bcs.js';
 
@@ -25,7 +25,7 @@ import { getAllOwnedObjects, parseTransferPolicyCapObject } from '../utils.js';
  * @param type
  */
 export async function queryTransferPolicy(
-	client: SuiClient,
+	client: PeraClient,
 	type: string,
 ): Promise<TransferPolicy[]> {
 	// console.log('event type: %s', `${TRANSFER_POLICY_CREATED_EVENT}<${type}>`);
@@ -70,11 +70,11 @@ export async function queryTransferPolicy(
  * @returns TransferPolicyCap Object ID | undefined if not found.
  */
 export async function queryTransferPolicyCapsByType(
-	client: SuiClient,
+	client: PeraClient,
 	address: string,
 	type: string,
 ): Promise<TransferPolicyCap[]> {
-	if (!isValidSuiAddress(address)) return [];
+	if (!isValidPeraAddress(address)) return [];
 
 	const filter = {
 		MatchAll: [
@@ -104,10 +104,10 @@ export async function queryTransferPolicyCapsByType(
  * @returns TransferPolicyCap Object ID | undefined if not found.
  */
 export async function queryOwnedTransferPolicies(
-	client: SuiClient,
+	client: PeraClient,
 	address: string,
 ): Promise<TransferPolicyCap[] | undefined> {
-	if (!isValidSuiAddress(address)) return;
+	if (!isValidPeraAddress(address)) return;
 
 	const filter = {
 		MatchAll: [

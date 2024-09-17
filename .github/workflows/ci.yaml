@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - new-main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  RUSTDOCFLAGS: -Dwarnings
+  RUST_BACKTRACE: 1
+  # Change to specific Rust release to pin or `stable` for the latest stable version.
+  rust_stable: 1.79
+  rust_nightly: nightly
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+
+jobs:
+  build:
+    if: github.event_name == 'push'
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os:
+          - x86_64-unknown-linux-gnu
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Rust ${{ env.rust_stable }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.rust_stable }}
+          targets: ${{ matrix.os }}
+      - name: Install Target
+        run: rustup target add ${{ matrix.os }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --bin dwallet --target ${{ matrix.os }}
+
+  fmt:
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Install Rust ${{ env.rust_nightly }}
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.rust_nightly }}
+          components: rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Fmt Check
+        run: cargo fmt -- --check

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
     get_nested_struct_field, get_object_id,
@@ -23,7 +23,7 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use sui_types::{base_types::MoveObjectType, dynamic_field::derive_dynamic_field_id};
+use pera_types::{base_types::MoveObjectType, dynamic_field::derive_dynamic_field_id};
 use tracing::instrument;
 
 const E_KEY_DOES_NOT_EXIST: u64 = 1;
@@ -215,7 +215,7 @@ pub fn add_child_object(
         _ => {
             return Err(
                 PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                    .with_message("Sui verifier guarantees this is a struct".to_string()),
+                    .with_message("Pera verifier guarantees this is a struct".to_string()),
             )
         }
     };
@@ -475,7 +475,7 @@ pub fn has_child_object_with_ty(
         _ => {
             return Err(
                 PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
-                    .with_message("Sui verifier guarantees this is a struct".to_string()),
+                    .with_message("Pera verifier guarantees this is a struct".to_string()),
             )
         }
     };

@@ -6,13 +6,13 @@ FROM rust:1.73-bullseye AS builder
 ARG PROFILE=release
 ARG GIT_REVISION
 ENV GIT_REVISION=$GIT_REVISION
-WORKDIR "$WORKDIR/sui"
+WORKDIR "$WORKDIR/pera"
 RUN apt-get update && apt-get install -y cmake clang
 
 COPY Cargo.toml Cargo.lock ./
 COPY consensus consensus
 COPY crates crates
-COPY sui-execution sui-execution
+COPY pera-execution pera-execution
 COPY narwhal narwhal
 COPY external-crates external-crates
 
@@ -25,13 +25,13 @@ FROM debian:bullseye-slim AS runtime
 RUN apt-get update && apt-get install -y libjemalloc-dev
 ENV LD_PRELOAD /usr/lib/x86_64-linux-gnu/libjemalloc.so
 ARG PROFILE=release
-WORKDIR "$WORKDIR/sui"
+WORKDIR "$WORKDIR/pera"
 
 # Copy the Narwhal node binary to bin folder
-COPY --from=builder sui/target/${PROFILE}/narwhal-node bin/
+COPY --from=builder pera/target/${PROFILE}/narwhal-node bin/
 
 # This is used for testing a cluster by generating load.
-COPY --from=builder sui/target/${PROFILE}/narwhal-benchmark-client bin/
+COPY --from=builder pera/target/${PROFILE}/narwhal-benchmark-client bin/
 
 # Copy the entry point file
 COPY narwhal/Docker/entry.sh ./

@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module regulated_token::reg {
     use std::option;
-    use sui::tx_context::{sender, TxContext};
-    use sui::transfer;
-    use sui::coin::{Self, TreasuryCap};
-    use sui::token::{Self, Token, TokenPolicy};
+    use pera::tx_context::{sender, TxContext};
+    use pera::transfer;
+    use pera::coin::{Self, TreasuryCap};
+    use pera::token::{Self, Token, TokenPolicy};
 
     use regulated_token::denylist_rule::{Self as denylist, Denylist};
 

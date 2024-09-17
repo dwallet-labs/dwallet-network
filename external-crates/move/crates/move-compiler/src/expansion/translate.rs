@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::{
     diag,
@@ -337,16 +337,16 @@ const IMPLICIT_STD_MEMBERS: &[(Symbol, Symbol, ModuleMemberKind)] = &[(
     ModuleMemberKind::Struct,
 )];
 
-// Implicit aliases for Sui mode:
-// use sui::object::{Self, ID, UID};
-// use sui::transfer;
-// use sui::tx_context::{Self, TxContext};
-const IMPLICIT_SUI_MODULES: &[Symbol] = &[
+// Implicit aliases for Pera mode:
+// use pera::object::{Self, ID, UID};
+// use pera::transfer;
+// use pera::tx_context::{Self, TxContext};
+const IMPLICIT_PERA_MODULES: &[Symbol] = &[
     symbol!("object"),
     symbol!("transfer"),
     symbol!("tx_context"),
 ];
-const IMPLICIT_SUI_MEMBERS: &[(Symbol, Symbol, ModuleMemberKind)] = &[
+const IMPLICIT_PERA_MEMBERS: &[(Symbol, Symbol, ModuleMemberKind)] = &[
     (symbol!("object"), symbol!("ID"), ModuleMemberKind::Struct),
     (symbol!("object"), symbol!("UID"), ModuleMemberKind::Struct),
     (
@@ -368,7 +368,7 @@ fn default_aliases(context: &mut Context) -> AliasMapBuilder {
     // Unused loc since these will not conflict and are implicit so no warnings are given
     let loc = Loc::invalid();
     let std_address = maybe_make_well_known_address(context, loc, symbol!("std"));
-    let sui_address = maybe_make_well_known_address(context, loc, symbol!("sui"));
+    let pera_address = maybe_make_well_known_address(context, loc, symbol!("pera"));
     let mut modules: Vec<(Address, Symbol)> = vec![];
     let mut members: Vec<(Address, Symbol, Symbol, ModuleMemberKind)> = vec![];
     // if std is defined, add implicit std aliases
@@ -386,21 +386,21 @@ fn default_aliases(context: &mut Context) -> AliasMapBuilder {
                 .map(|(m, mem, k)| (std_address, m, mem, k)),
         );
     }
-    // if sui is defined and the current package is in Sui mode, add implicit sui aliases
-    if sui_address.is_some() && context.env().package_config(current_package).flavor == Flavor::Sui
+    // if pera is defined and the current package is in Pera mode, add implicit pera aliases
+    if pera_address.is_some() && context.env().package_config(current_package).flavor == Flavor::Pera
     {
-        let sui_address = sui_address.unwrap();
+        let pera_address = pera_address.unwrap();
         modules.extend(
-            IMPLICIT_SUI_MODULES
+            IMPLICIT_PERA_MODULES
                 .iter()
                 .copied()
-                .map(|m| (sui_address, m)),
+                .map(|m| (pera_address, m)),
         );
         members.extend(
-            IMPLICIT_SUI_MEMBERS
+            IMPLICIT_PERA_MEMBERS
                 .iter()
                 .copied()
-                .map(|(m, mem, k)| (sui_address, m, mem, k)),
+                .map(|(m, mem, k)| (pera_address, m, mem, k)),
         );
     }
     for (addr, module) in modules {

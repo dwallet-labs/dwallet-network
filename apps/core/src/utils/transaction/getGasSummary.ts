@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import {
 	DryRunTransactionBlockResponse,
 	GasCostSummary,
-	SuiGasData,
-	SuiTransactionBlockResponse,
+	PeraGasData,
+	PeraTransactionBlockResponse,
 	TransactionEffects,
-} from '@mysten/sui/client';
+} from '@pera-io/pera/client';
 
 type Optional<T> = {
 	[K in keyof T]?: T[K];
@@ -14,7 +14,7 @@ type Optional<T> = {
 
 export type GasSummaryType =
 	| (GasCostSummary &
-			Optional<SuiGasData> & {
+			Optional<PeraGasData> & {
 				totalGas?: string;
 				owner?: string;
 				isSponsored: boolean;
@@ -23,7 +23,7 @@ export type GasSummaryType =
 	| null;
 
 export function getGasSummary(
-	transaction: SuiTransactionBlockResponse | DryRunTransactionBlockResponse,
+	transaction: PeraTransactionBlockResponse | DryRunTransactionBlockResponse,
 ): GasSummaryType {
 	const { effects } = transaction;
 	if (!effects) return null;

@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-module sui_system::validator {
+module pera_system::validator {
     use std::ascii;
 
-    use sui::tx_context::TxContext;
+    use pera::tx_context::TxContext;
     use std::string::{Self, String};
-    use sui::bag::{Self, Bag};
-    use sui::balance::{Self, Balance};
-    use sui::sui::SUI;
+    use pera::bag::{Self, Bag};
+    use pera::balance::{Self, Balance};
+    use pera::pera::PERA;
 
     public struct ValidatorMetadata has store {
-        sui_address: address,
+        pera_address: address,
         protocol_pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
@@ -25,12 +25,12 @@ module sui_system::validator {
     public struct Validator has store {
         metadata: ValidatorMetadata,
         voting_power: u64,
-        stake: Balance<SUI>,
+        stake: Balance<PERA>,
         extra_fields: Bag,
     }
 
     public(package) fun new(
-        sui_address: address,
+        pera_address: address,
         protocol_pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
@@ -38,11 +38,11 @@ module sui_system::validator {
         p2p_address: vector<u8>,
         primary_address: vector<u8>,
         worker_address: vector<u8>,
-        init_stake: Balance<SUI>,
+        init_stake: Balance<PERA>,
         ctx: &mut TxContext
     ): Validator {
         let metadata = ValidatorMetadata {
-            sui_address,
+            pera_address,
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,

@@ -1,7 +1,7 @@
 {
-	"name": "sui-wallet",
+	"name": "pera-wallet",
 	"private": true,
-	"description": "A wallet for Sui",
+	"description": "A wallet for Pera",
 	"main": "./dist/ui.js",
 	"scripts": {
 		"build": "pnpm build:prod",
@@ -32,14 +32,14 @@
 		"url": "github.com:MystenLabs/sui.git"
 	},
 	"keywords": [
-		"sui",
+		"pera",
 		"wallet",
 		"coins",
 		"tokens",
 		"balance"
 	],
 	"author": "Mysten Labs <build@mystenlabs.com>",
-	"license": "Apache-2.0",
+	"license": "BSD-3-Clause-Clear",
 	"devDependencies": {
 		"@amplitude/ampli": "^1.31.5",
 		"@amplitude/analytics-types": "^0.20.0",
@@ -121,8 +121,8 @@
 		"@mysten/deepbook": "workspace:*",
 		"@mysten/icons": "workspace:*",
 		"@mysten/kiosk": "workspace:*",
-		"@mysten/ledgerjs-hw-app-sui": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@mysten/ledgerjs-hw-app-pera": "workspace:*",
+		"@pera-io/pera": "workspace:*",
 		"@mysten/wallet-standard": "workspace:*",
 		"@mysten/zklogin": "workspace:*",
 		"@noble/hashes": "^1.4.0",

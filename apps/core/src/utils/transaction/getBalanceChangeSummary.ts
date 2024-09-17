@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import {
 	type DryRunTransactionBlockResponse,
 	type ObjectOwner,
-	type SuiTransactionBlockResponse,
-} from '@mysten/sui/client';
-import { normalizeSuiObjectId, parseStructTag } from '@mysten/sui/utils';
+	type PeraTransactionBlockResponse,
+} from '@pera-io/pera/client';
+import { normalizePeraObjectId, parseStructTag } from '@pera-io/pera/utils';
 
 export type BalanceChange = {
 	coinType: string;
@@ -32,14 +32,14 @@ function getOwnerAddress(owner: ObjectOwner): string {
 }
 
 export const getBalanceChangeSummary = (
-	transaction: DryRunTransactionBlockResponse | SuiTransactionBlockResponse,
+	transaction: DryRunTransactionBlockResponse | PeraTransactionBlockResponse,
 	recognizedPackagesList: string[],
 ) => {
 	const { balanceChanges, effects } = transaction;
 	if (!balanceChanges || !effects) return null;
 
 	const normalizedRecognizedPackages = recognizedPackagesList.map((itm) =>
-		normalizeSuiObjectId(itm),
+		normalizePeraObjectId(itm),
 	);
 	const balanceChangeByOwner = {};
 	return balanceChanges.reduce((acc, balanceChange) => {

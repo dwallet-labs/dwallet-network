@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export {
 	type SerializeSignatureInput,
@@ -24,13 +24,13 @@ export type { IntentScope } from './intent.js';
 export {
 	PRIVATE_KEY_SIZE,
 	LEGACY_PRIVATE_KEY_SIZE,
-	SUI_PRIVATE_KEY_PREFIX,
+	PERA_PRIVATE_KEY_PREFIX,
 	type ParsedKeypair,
 	type SignatureWithBytes,
 	Signer,
 	Keypair,
-	decodeSuiPrivateKey,
-	encodeSuiPrivateKey,
+	decodePeraPrivateKey,
+	encodePeraPrivateKey,
 } from './keypair.js';
 
 export { PublicKey } from './publickey.js';

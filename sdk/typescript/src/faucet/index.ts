@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 export {
-	requestSuiFromFaucetV0,
-	requestSuiFromFaucetV1,
+	requestPeraFromFaucetV0,
+	requestPeraFromFaucetV1,
 	getFaucetRequestStatus,
 	getFaucetHost,
 	FaucetRateLimitError,

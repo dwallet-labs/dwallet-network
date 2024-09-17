@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Mysten Labs <eng@mystenlabs.com>"]
 description = "Tool to fuzz the system with randomly generated transactions"
-license = "Apache-2.0"
+license = "BSD-3-Clause-Clear"
 publish = false
 
 [lints]
@@ -19,13 +19,13 @@ tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 
 once_cell.workspace = true
-sui-core.workspace = true
-sui-protocol-config.workspace = true
-sui-types = { workspace = true, features = ["fuzzing"] }
-sui-move-build.workspace = true
+pera-core.workspace = true
+pera-protocol-config.workspace = true
+pera-types = { workspace = true, features = ["fuzzing"] }
+pera-move-build.workspace = true
 
 
 [dev-dependencies]
-sui-core = { workspace = true, features = ["test-utils"] }
-sui-protocol-config.workspace = true
-sui-types = { workspace = true, features = ["test-utils"] }
+pera-core = { workspace = true, features = ["test-utils"] }
+pera-protocol-config.workspace = true
+pera-types = { workspace = true, features = ["test-utils"] }

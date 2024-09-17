@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiObjectChange } from '@mysten/sui/client';
+import { PeraObjectChange } from '@pera-io/pera/client';
 
 import { ObjectLink } from '../ObjectLink';
 import { PreviewCard } from '../PreviewCard';
@@ -30,8 +30,8 @@ const objectTypes: Record<string, Record<string, string>> = {
 	transferred: {},
 };
 
-// SPDX-License-Identifier: Apache-2.0
-export function ObjectChanges({ objects }: { objects: SuiObjectChange[] }) {
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+export function ObjectChanges({ objects }: { objects: PeraObjectChange[] }) {
 	return (
 		<div className="grid grid-cols-1 gap-5">
 			{objects.map((object, index) => (
@@ -41,7 +41,7 @@ export function ObjectChanges({ objects }: { objects: SuiObjectChange[] }) {
 	);
 }
 
-function ChangedObject({ object }: { object: SuiObjectChange }) {
+function ChangedObject({ object }: { object: PeraObjectChange }) {
 	const objectType = objectTypes[object.type];
 
 	return (

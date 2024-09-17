@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // Copyright 2016-2017 The Servo Project Developers. See the COPYRIGHT
 // file at the top-level directory of this distribution and at
 // http://rust-lang.org/COPYRIGHT.
 //
-// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
-// http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
-// <LICENSE-MIT or http://opensource.org/licenses/MIT>, at your
-// option. This file may not be copied, modified, or distributed
-// except according to those terms.
+
+
+
+
+
 
 //! A crate for measuring the heap usage of data structures in a way that
 //! integrates with Firefox's memory reporting, particularly the use of
@@ -19,7 +19,7 @@
 //!   flexibility in the cases where the traits can't be used.
 //! - It allows for measuring blocks even when only an interior pointer can be
 //!   obtained for heap allocations, e.g. `HashSet` and `HashMap`. (This relies
-//!   on the heap allocator having suitable support, which mozjemalloc has.)
+//!   on the heap allocator having peratable support, which mozjemalloc has.)
 //! - It allows handling of types like `Rc` and `Arc` by providing traits that
 //!   are different to the ones for non-graph structures.
 //!

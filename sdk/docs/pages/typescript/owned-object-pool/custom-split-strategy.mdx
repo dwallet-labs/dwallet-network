@@ -3,11 +3,11 @@
 import { Callout } from 'nextra/components';
 
 <Callout type="warning">
-	Sui Owned Object Pools (SuiOOP) will likely be replaced by
+	Pera Owned Object Pools (PeraOOP) will likely be replaced by
 	[`ParallelTransactionExecutor`](../executors#paralleltransactionexecutor) from
-	`@mysten/sui/transactions`
+	`@pera-io/pera/transactions`
 
-    Sui Owned Object Pools (SuiOOP) is a beta library. Enhancements and changes are likely during
+    Pera Owned Object Pools (PeraOOP) is a beta library. Enhancements and changes are likely during
     development.
 
 </Callout>
@@ -16,7 +16,7 @@ The prior example does not define a split strategy explicitly, so it uses the
 `DefaultSplitStrategy`.
 
 This default split strategy only selects enough gas coins (coins of type
-`0x2::coin::Coin<0x2::sui::SUI>`) from the `mainPool` that their sum of balances surpasses a minimum
+`0x2::coin::Coin<0x2::pera::PERA>`) from the `mainPool` that their sum of balances surpasses a minimum
 threshold, and creates a new worker pool only containing these gas coins.
 
 It fulfils the minimum requirement needed for a transaction to be executed, as the client should
@@ -71,4 +71,4 @@ class MyCustomSplitStrategy implements SplitStrategy {
 ```
 
 You can find more examples of split strategies (including an admin cap inclusion case) in the
-[`splitStrategies.ts` file](https://github.com/MystenLabs/Sui_Owned_Object_Pools/blob/main/src/splitStrategies.ts).
+[`splitStrategies.ts` file](https://github.com/MystenLabs/Pera_Owned_Object_Pools/blob/main/src/splitStrategies.ts).

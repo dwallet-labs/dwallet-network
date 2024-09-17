@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { SuiClient } from '@mysten/sui/client';
-import type { TransactionObjectArgument } from '@mysten/sui/transactions';
+import type { PeraClient } from '@pera-io/pera/client';
+import type { TransactionObjectArgument } from '@pera-io/pera/transactions';
 
 import type { BaseRulePackageIds } from '../constants.js';
 
@@ -29,7 +29,7 @@ export enum Network {
  * The Client Options for Both KioskClient & TransferPolicyManager.
  */
 export type KioskClientOptions = {
-	client: SuiClient;
+	client: PeraClient;
 	network: Network;
 	packageIds?: BaseRulePackageIds;
 };

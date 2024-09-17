@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { getAmount } from '_helpers';
-import { type SuiTransactionBlockResponse } from '@mysten/sui/client';
+import { type PeraTransactionBlockResponse } from '@pera-io/pera/client';
 import { useMemo } from 'react';
 
 type Props = {
-	txn: SuiTransactionBlockResponse;
+	txn: PeraTransactionBlockResponse;
 	address: string;
 };
 

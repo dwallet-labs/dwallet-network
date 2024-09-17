@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import {
 	getLedgerConnectionErrorMessage,
-	getSuiApplicationErrorMessage,
+	getPeraApplicationErrorMessage,
 } from '_src/ui/app/helpers/errorMessages';
 import { Link } from '_src/ui/app/shared/Link';
 import { Text } from '_src/ui/app/shared/text';
 import { Check12, X12 } from '@mysten/icons';
-import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
+import { Ed25519PublicKey } from '@pera-io/pera/keypairs/ed25519';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-import { useSuiLedgerClient } from '../../ledger/SuiLedgerClientProvider';
+import { usePeraLedgerClient } from '../../ledger/PeraLedgerClientProvider';
 import LoadingIndicator from '../../loading/LoadingIndicator';
 
 export type VerifyLedgerConnectionLinkProps = {
@@ -33,7 +33,7 @@ export function VerifyLedgerConnectionStatus({
 	accountAddress,
 	derivationPath,
 }: VerifyLedgerConnectionLinkProps) {
-	const { connectToLedger } = useSuiLedgerClient();
+	const { connectToLedger } = usePeraLedgerClient();
 	const [isPending, setLoading] = useState(false);
 	const [verificationStatus, setVerificationStatus] = useState(VerificationStatus.UNKNOWN);
 
@@ -57,20 +57,20 @@ export function VerifyLedgerConnectionStatus({
 						}, loadingStateDelay);
 
 						try {
-							const suiLedgerClient = await connectToLedger();
-							const publicKeyResult = await suiLedgerClient.getPublicKey(derivationPath, true);
+							const peraLedgerClient = await connectToLedger();
+							const publicKeyResult = await peraLedgerClient.getPublicKey(derivationPath, true);
 							const publicKey = new Ed25519PublicKey(publicKeyResult.publicKey);
-							const suiAddress = publicKey.toSuiAddress();
+							const peraAddress = publicKey.toPeraAddress();
 
 							setVerificationStatus(
-								accountAddress === suiAddress
+								accountAddress === peraAddress
 									? VerificationStatus.VERIFIED
 									: VerificationStatus.NOT_VERIFIED,
 							);
 						} catch (error) {
 							const errorMessage =
 								getLedgerConnectionErrorMessage(error) ||
-								getSuiApplicationErrorMessage(error) ||
+								getPeraApplicationErrorMessage(error) ||
 								'Something went wrong';
 							toast.error(errorMessage);
 

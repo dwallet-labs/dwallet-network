@@ -16,14 +16,14 @@ title: Module `0x3::genesis`
 
 <pre><code><b>use</b> <a href="../move-stdlib/option.md#0x1_option">0x1::option</a>;
 <b>use</b> <a href="../move-stdlib/vector.md#0x1_vector">0x1::vector</a>;
-<b>use</b> <a href="../sui-framework/balance.md#0x2_balance">0x2::balance</a>;
-<b>use</b> <a href="../sui-framework/coin.md#0x2_coin">0x2::coin</a>;
-<b>use</b> <a href="../sui-framework/object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="../sui-framework/sui.md#0x2_sui">0x2::sui</a>;
-<b>use</b> <a href="../sui-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
+<b>use</b> <a href="../pera-framework/balance.md#0x2_balance">0x2::balance</a>;
+<b>use</b> <a href="../pera-framework/coin.md#0x2_coin">0x2::coin</a>;
+<b>use</b> <a href="../pera-framework/object.md#0x2_object">0x2::object</a>;
+<b>use</b> <a href="../pera-framework/pera.md#0x2_pera">0x2::pera</a>;
+<b>use</b> <a href="../pera-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="stake_subsidy.md#0x3_stake_subsidy">0x3::stake_subsidy</a>;
-<b>use</b> <a href="sui_system.md#0x3_sui_system">0x3::sui_system</a>;
-<b>use</b> <a href="sui_system_state_inner.md#0x3_sui_system_state_inner">0x3::sui_system_state_inner</a>;
+<b>use</b> <a href="pera_system.md#0x3_pera_system">0x3::pera_system</a>;
+<b>use</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner">0x3::pera_system_state_inner</a>;
 <b>use</b> <a href="validator.md#0x3_validator">0x3::validator</a>;
 <b>use</b> <a href="validator_set.md#0x3_validator_set">0x3::validator_set</a>;
 </code></pre>
@@ -71,7 +71,7 @@ title: Module `0x3::genesis`
 
 </dd>
 <dt>
-<code>sui_address: <b>address</b></code>
+<code>pera_address: <b>address</b></code>
 </dt>
 <dd>
 
@@ -251,7 +251,7 @@ title: Module `0x3::genesis`
 
 <dl>
 <dt>
-<code>stake_subsidy_fund_mist: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
+<code>stake_subsidy_fund_npera: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
 </dt>
 <dd>
 
@@ -290,7 +290,7 @@ title: Module `0x3::genesis`
 
 </dd>
 <dt>
-<code>amount_mist: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
+<code>amount_npera: <a href="../move-stdlib/u64.md#0x1_u64">u64</a></code>
 </dt>
 <dd>
 
@@ -336,11 +336,11 @@ The <code>create</code> function was called at a non-genesis epoch.
 ## Function `create`
 
 This function will be explicitly called once at genesis.
-It will create a singleton SuiSystemState object, which contains
+It will create a singleton PeraSystemState object, which contains
 all the information we need in the system.
 
 
-<pre><code><b>fun</b> <a href="genesis.md#0x3_genesis_create">create</a>(sui_system_state_id: <a href="../sui-framework/object.md#0x2_object_UID">object::UID</a>, sui_supply: <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;, genesis_chain_parameters: <a href="genesis.md#0x3_genesis_GenesisChainParameters">genesis::GenesisChainParameters</a>, genesis_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="genesis.md#0x3_genesis_GenesisValidatorMetadata">genesis::GenesisValidatorMetadata</a>&gt;, token_distribution_schedule: <a href="genesis.md#0x3_genesis_TokenDistributionSchedule">genesis::TokenDistributionSchedule</a>, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="genesis.md#0x3_genesis_create">create</a>(pera_system_state_id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a>, pera_supply: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, genesis_chain_parameters: <a href="genesis.md#0x3_genesis_GenesisChainParameters">genesis::GenesisChainParameters</a>, genesis_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="genesis.md#0x3_genesis_GenesisValidatorMetadata">genesis::GenesisValidatorMetadata</a>&gt;, token_distribution_schedule: <a href="genesis.md#0x3_genesis_TokenDistributionSchedule">genesis::TokenDistributionSchedule</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -350,8 +350,8 @@ all the information we need in the system.
 
 
 <pre><code><b>fun</b> <a href="genesis.md#0x3_genesis_create">create</a>(
-    sui_system_state_id: UID,
-    <b>mut</b> sui_supply: Balance&lt;SUI&gt;,
+    pera_system_state_id: UID,
+    <b>mut</b> pera_supply: Balance&lt;PERA&gt;,
     genesis_chain_parameters: <a href="genesis.md#0x3_genesis_GenesisChainParameters">GenesisChainParameters</a>,
     genesis_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="genesis.md#0x3_genesis_GenesisValidatorMetadata">GenesisValidatorMetadata</a>&gt;,
     token_distribution_schedule: <a href="genesis.md#0x3_genesis_TokenDistributionSchedule">TokenDistributionSchedule</a>,
@@ -361,12 +361,12 @@ all the information we need in the system.
     <b>assert</b>!(ctx.epoch() == 0, <a href="genesis.md#0x3_genesis_ENotCalledAtGenesis">ENotCalledAtGenesis</a>);
 
     <b>let</b> <a href="genesis.md#0x3_genesis_TokenDistributionSchedule">TokenDistributionSchedule</a> {
-        stake_subsidy_fund_mist,
+        stake_subsidy_fund_npera,
         allocations,
     } = token_distribution_schedule;
 
-    <b>let</b> subsidy_fund = sui_supply.split(stake_subsidy_fund_mist);
-    <b>let</b> <a href="storage_fund.md#0x3_storage_fund">storage_fund</a> = <a href="../sui-framework/balance.md#0x2_balance_zero">balance::zero</a>();
+    <b>let</b> subsidy_fund = pera_supply.split(stake_subsidy_fund_npera);
+    <b>let</b> <a href="storage_fund.md#0x3_storage_fund">storage_fund</a> = <a href="../pera-framework/balance.md#0x2_balance_zero">balance::zero</a>();
 
     // Create all the `Validator` structs
     <b>let</b> <b>mut</b> validators = <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[];
@@ -378,7 +378,7 @@ all the information we need in the system.
             description,
             image_url,
             project_url,
-            sui_address,
+            pera_address,
             gas_price,
             commission_rate,
             protocol_public_key,
@@ -392,7 +392,7 @@ all the information we need in the system.
         } = genesis_validators[i];
 
         <b>let</b> <a href="validator.md#0x3_validator">validator</a> = <a href="validator.md#0x3_validator_new">validator::new</a>(
-            sui_address,
+            pera_address,
             protocol_public_key,
             network_public_key,
             worker_public_key,
@@ -423,7 +423,7 @@ all the information we need in the system.
 
     // Allocate tokens and staking operations
     <a href="genesis.md#0x3_genesis_allocate_tokens">allocate_tokens</a>(
-        sui_supply,
+        pera_supply,
         allocations,
         &<b>mut</b> validators,
         ctx
@@ -432,7 +432,7 @@ all the information we need in the system.
     // Activate all validators
     <a href="genesis.md#0x3_genesis_activate_validators">activate_validators</a>(&<b>mut</b> validators);
 
-    <b>let</b> system_parameters = <a href="sui_system_state_inner.md#0x3_sui_system_state_inner_create_system_parameters">sui_system_state_inner::create_system_parameters</a>(
+    <b>let</b> system_parameters = <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_create_system_parameters">pera_system_state_inner::create_system_parameters</a>(
         genesis_chain_parameters.epoch_duration_ms,
         genesis_chain_parameters.stake_subsidy_start_epoch,
 
@@ -454,8 +454,8 @@ all the information we need in the system.
         ctx,
     );
 
-    <a href="sui_system.md#0x3_sui_system_create">sui_system::create</a>(
-        sui_system_state_id,
+    <a href="pera_system.md#0x3_pera_system_create">pera_system::create</a>(
+        pera_system_state_id,
         validators,
         <a href="storage_fund.md#0x3_storage_fund">storage_fund</a>,
         genesis_chain_parameters.protocol_version,
@@ -477,7 +477,7 @@ all the information we need in the system.
 
 
 
-<pre><code><b>fun</b> <a href="genesis.md#0x3_genesis_allocate_tokens">allocate_tokens</a>(sui_supply: <a href="../sui-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../sui-framework/sui.md#0x2_sui_SUI">sui::SUI</a>&gt;, allocations: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="genesis.md#0x3_genesis_TokenAllocation">genesis::TokenAllocation</a>&gt;, validators: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, ctx: &<b>mut</b> <a href="../sui-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="genesis.md#0x3_genesis_allocate_tokens">allocate_tokens</a>(pera_supply: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, allocations: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="genesis.md#0x3_genesis_TokenAllocation">genesis::TokenAllocation</a>&gt;, validators: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -487,7 +487,7 @@ all the information we need in the system.
 
 
 <pre><code><b>fun</b> <a href="genesis.md#0x3_genesis_allocate_tokens">allocate_tokens</a>(
-    <b>mut</b> sui_supply: Balance&lt;SUI&gt;,
+    <b>mut</b> pera_supply: Balance&lt;PERA&gt;,
     <b>mut</b> allocations: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="genesis.md#0x3_genesis_TokenAllocation">TokenAllocation</a>&gt;,
     validators: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;Validator&gt;,
     ctx: &<b>mut</b> TxContext,
@@ -496,11 +496,11 @@ all the information we need in the system.
     <b>while</b> (!allocations.is_empty()) {
         <b>let</b> <a href="genesis.md#0x3_genesis_TokenAllocation">TokenAllocation</a> {
             recipient_address,
-            amount_mist,
+            amount_npera,
             staked_with_validator,
         } = allocations.pop_back();
 
-        <b>let</b> allocation_balance = sui_supply.split(amount_mist);
+        <b>let</b> allocation_balance = pera_supply.split(amount_npera);
 
         <b>if</b> (staked_with_validator.is_some()) {
             <b>let</b> validator_address = staked_with_validator.destroy_some();
@@ -511,7 +511,7 @@ all the information we need in the system.
                 ctx
             );
         } <b>else</b> {
-            <a href="../sui-framework/sui.md#0x2_sui_transfer">sui::transfer</a>(
+            <a href="../pera-framework/pera.md#0x2_pera_transfer">pera::transfer</a>(
                 allocation_balance.into_coin(ctx),
                 recipient_address,
             );
@@ -519,9 +519,9 @@ all the information we need in the system.
     };
     allocations.destroy_empty();
 
-    // Provided allocations must fully allocate the sui_supply and there
+    // Provided allocations must fully allocate the pera_supply and there
     // should be none left at this point.
-    sui_supply.destroy_zero();
+    pera_supply.destroy_zero();
 }
 </code></pre>
 

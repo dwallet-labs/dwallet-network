@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { useActiveAccount } from '_app/hooks/useActiveAccount';
 import { useCoinsReFetchingConfig } from '_hooks';
 import { roundFloat, useFormatCoin } from '@mysten/core';
-import { useSuiClientQuery } from '@mysten/dapp-kit';
+import { usePeraClientQuery } from '@mysten/dapp-kit';
 import { type DeepBookClient } from '@mysten/deepbook';
-import { type BalanceChange } from '@mysten/sui/client';
+import { type BalanceChange } from '@pera-io/pera/client';
 import BigNumber from 'bignumber.js';
 
 export function useSwapData({
@@ -19,13 +19,13 @@ export function useSwapData({
 	const activeAccountAddress = activeAccount?.address;
 	const { staleTime, refetchInterval } = useCoinsReFetchingConfig();
 
-	const { data: baseCoinBalanceData, isPending: baseCoinBalanceDataLoading } = useSuiClientQuery(
+	const { data: baseCoinBalanceData, isPending: baseCoinBalanceDataLoading } = usePeraClientQuery(
 		'getBalance',
 		{ coinType: baseCoinType, owner: activeAccountAddress! },
 		{ enabled: !!activeAccountAddress, refetchInterval, staleTime },
 	);
 
-	const { data: quoteCoinBalanceData, isPending: quoteCoinBalanceDataLoading } = useSuiClientQuery(
+	const { data: quoteCoinBalanceData, isPending: quoteCoinBalanceDataLoading } = usePeraClientQuery(
 		'getBalance',
 		{ coinType: quoteCoinType, owner: activeAccountAddress! },
 		{ enabled: !!activeAccountAddress, refetchInterval, staleTime },

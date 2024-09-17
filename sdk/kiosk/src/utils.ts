@@ -1,21 +1,21 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type {
 	DynamicFieldInfo,
 	PaginationArguments,
-	SuiClient,
-	SuiObjectData,
-	SuiObjectDataFilter,
-	SuiObjectDataOptions,
-	SuiObjectResponse,
-} from '@mysten/sui/client';
+	PeraClient,
+	PeraObjectData,
+	PeraObjectDataFilter,
+	PeraObjectDataOptions,
+	PeraObjectResponse,
+} from '@pera-io/pera/client';
 import {
 	fromB64,
 	normalizeStructTag,
-	normalizeSuiAddress,
+	normalizePeraAddress,
 	parseStructTag,
-} from '@mysten/sui/utils';
+} from '@pera-io/pera/utils';
 
 import { KioskType } from './bcs.js';
 import type { Kiosk, KioskData, KioskListing, TransferPolicyCap } from './types/index.js';
@@ -23,7 +23,7 @@ import { TRANSFER_POLICY_CAP_TYPE } from './types/index.js';
 
 const DEFAULT_QUERY_LIMIT = 50;
 
-export async function getKioskObject(client: SuiClient, id: string): Promise<Kiosk> {
+export async function getKioskObject(client: PeraClient, id: string): Promise<Kiosk> {
 	const queryRes = await client.getObject({ id, options: { showBcs: true } });
 
 	if (!queryRes || queryRes.error || !queryRes.data) {
@@ -88,7 +88,7 @@ export function extractKioskData(
 export function attachListingsAndPrices(
 	kioskData: KioskData,
 	listings: KioskListing[],
-	listingObjects: SuiObjectResponse[],
+	listingObjects: PeraObjectResponse[],
 ) {
 	// map item listings as {item_id: KioskListing}
 	// for easier mapping on the nex
@@ -119,9 +119,9 @@ export function attachListingsAndPrices(
 /**
  * A helper that attaches the listing prices to kiosk listings.
  */
-export function attachObjects(kioskData: KioskData, objects: SuiObjectData[]) {
-	const mapping = objects.reduce<Record<string, SuiObjectData>>(
-		(acc: Record<string, SuiObjectData>, obj) => {
+export function attachObjects(kioskData: KioskData, objects: PeraObjectData[]) {
+	const mapping = objects.reduce<Record<string, PeraObjectData>>(
+		(acc: Record<string, PeraObjectData>, obj) => {
 			acc[obj.objectId] = obj;
 			return acc;
 		},
@@ -158,7 +158,7 @@ export function attachLockedItems(kioskData: KioskData, lockedItemIds: string[])
  * RPC calls that allow filtering of Type / batch fetching of spec
  */
 export async function getAllDynamicFields(
-	client: SuiClient,
+	client: PeraClient,
 	parentId: string,
 	pagination: PaginationArguments<string>,
 ) {
@@ -186,9 +186,9 @@ export async function getAllDynamicFields(
  * Requests are sent using `Promise.all`.
  */
 export async function getAllObjects(
-	client: SuiClient,
+	client: PeraClient,
 	ids: string[],
-	options: SuiObjectDataOptions,
+	options: PeraObjectDataOptions,
 	limit: number = DEFAULT_QUERY_LIMIT,
 ) {
 	const chunks = Array.from({ length: Math.ceil(ids.length / limit) }, (_, index) =>
@@ -218,15 +218,15 @@ export async function getAllOwnedObjects({
 	limit = DEFAULT_QUERY_LIMIT,
 	options = { showType: true, showContent: true },
 }: {
-	client: SuiClient;
+	client: PeraClient;
 	owner: string;
-	filter?: SuiObjectDataFilter;
-	options?: SuiObjectDataOptions;
+	filter?: PeraObjectDataFilter;
+	options?: PeraObjectDataOptions;
 	limit?: number;
 }) {
 	let hasNextPage = true;
 	let cursor = undefined;
-	const data: SuiObjectResponse[] = [];
+	const data: PeraObjectResponse[] = [];
 
 	while (hasNextPage) {
 		const result = await client.getOwnedObjects({
@@ -260,7 +260,7 @@ export function percentageToBasisPoints(percentage: number) {
  * A helper to parse a transfer policy Cap into a usable object.
  */
 export function parseTransferPolicyCapObject(
-	item: SuiObjectResponse,
+	item: PeraObjectResponse,
 ): TransferPolicyCap | undefined {
 	const type = (item?.data?.content as { type: string })?.type;
 
@@ -282,6 +282,6 @@ export function parseTransferPolicyCapObject(
 // Normalizes the packageId part of a rule's type.
 export function getNormalizedRuleType(rule: string) {
 	const normalizedRuleAddress = rule.split('::');
-	normalizedRuleAddress[0] = normalizeSuiAddress(normalizedRuleAddress[0]);
+	normalizedRuleAddress[0] = normalizePeraAddress(normalizedRuleAddress[0]);
 	return normalizedRuleAddress.join('::');
 }

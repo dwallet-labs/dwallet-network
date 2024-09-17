@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { getFaucetRequestStatus, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
+import { getFaucetRequestStatus, requestPeraFromFaucetV1 } from '@pera-io/pera/faucet';
 import { useIsMutating, useMutation, type UseMutationOptions } from '@tanstack/react-query';
 
 import { useActiveAccount } from '../../hooks/useActiveAccount';
@@ -29,7 +29,7 @@ export function useFaucetMutation(options?: UseFaucetMutationOptions) {
 				throw new Error('Failed, faucet host not found.');
 			}
 
-			const { error, task: taskId } = await requestSuiFromFaucetV1({
+			const { error, task: taskId } = await requestPeraFromFaucetV1({
 				recipient: addressToTopUp,
 				host: options.host,
 			});

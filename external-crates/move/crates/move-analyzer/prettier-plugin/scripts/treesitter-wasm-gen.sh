@@ -1,6 +1,6 @@
 #!/bin/bash
 # Copyright (c) Mysten Labs, Inc.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # This scripts regenerates WASM bytecode representing the tree-sitter Move parser by wasm-ifying the
 # tree-sitter Move parser created by Tim Zakian and available at

@@ -9,7 +9,7 @@ note[I15006]: IDE path autocomplete
   │  
   = members: 'A -> a::m::A', 'Option -> std::option::Option', or 'S -> a::m::S'
   = modules: 'Self -> a::m', 'option -> std::option', or 'vector -> std::vector'
-  = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+  = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
   = type params: 
 
 warning[W09009]: unused struct field
@@ -28,7 +28,7 @@ note[I15006]: IDE path autocomplete
   │
   = members: 'A -> a::m::A', 'Option -> std::option::Option', or 'S -> a::m::S'
   = modules: 'Self -> a::m', 'option -> std::option', or 'vector -> std::vector'
-  = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+  = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
   = type params: 'T'
 
 note[I15006]: IDE path autocomplete
@@ -45,7 +45,7 @@ note[I15006]: IDE path autocomplete
    │  
    = members: 'A -> a::m::A', 'Option -> std::option::Option', 'S -> a::m::S', 'p -> a::test::p', or 'q -> a::test::q'
    = modules: 'Self -> a::test', 'm -> a::m', 'option -> std::option', or 'vector -> std::vector'
-   = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+   = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
    = type params: 
 
 warning[W09001]: unused alias
@@ -90,7 +90,7 @@ note[I15006]: IDE path autocomplete
    │  
    = members: 'A -> a::m::A', 'Option -> std::option::Option', 'S -> a::m::S', 'p -> a::test::p', or 'q -> a::test::q'
    = modules: 'Self -> a::test', 'm -> a::m', 'option -> std::option', or 'vector -> std::vector'
-   = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+   = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
    = type params: 
 
 error[E01002]: unexpected token
@@ -119,7 +119,7 @@ note[I15006]: IDE path autocomplete
    │
    = members: 'A -> a::m::A', 'Option -> std::option::Option', 'S -> a::m::S', 'p -> a::test::p', or 'q -> a::test::q'
    = modules: 'Self -> a::test', 'm -> a::m', 'option -> std::option', or 'vector -> std::vector'
-   = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+   = addresses: 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
    = type params: 
 
 error[E01002]: unexpected token

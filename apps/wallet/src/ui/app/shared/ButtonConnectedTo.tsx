@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { cva, cx, type VariantProps } from 'class-variance-authority';
 import clsx from 'clsx';
@@ -10,8 +10,8 @@ const styles = cva(
 		'cursor-pointer outline-0 flex flex-row items-center py-1 px-2 gap-1 rounded-2xl',
 		'transition text-body-small font-medium border border-solid w-full min-w-0',
 		'border-1 border-gray-45 bg-transparent group',
-		'hover:text-hero hover:bg-sui-light hover:border-sui',
-		'focus:text-hero focus:bg-sui-light focus:border-sui',
+		'hover:text-hero hover:bg-pera-light hover:border-pera',
+		'focus:text-hero focus:bg-pera-light focus:border-pera',
 		'active:text-steel active:bg-gray-45 active:border-transparent',
 		'disabled:text-gray-60 disabled:bg-transparent disabled:border-transparent',
 	],

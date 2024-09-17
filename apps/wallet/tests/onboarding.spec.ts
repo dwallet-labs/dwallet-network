@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { expect, test } from './fixtures';
 import { createWallet, importWallet } from './utils/auth';
@@ -16,7 +16,7 @@ test('import wallet', async ({ page, extensionUrl }) => {
 	importWallet(page, extensionUrl, mnemonic);
 	await page.getByRole('navigation').getByRole('link', { name: 'Home' }).click();
 	await expect(
-		page.getByText(keypair.getPublicKey().toSuiAddress().slice(0, 6)).first(),
+		page.getByText(keypair.getPublicKey().toPeraAddress().slice(0, 6)).first(),
 	).toBeVisible();
 });
 

@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { toB58 } from '@mysten/bcs';
 import type { InferInput } from 'valibot';
 import { parse } from 'valibot';
 
 import { bcs } from '../bcs/index.js';
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import { normalizePeraAddress } from '../utils/pera-types.js';
 import type {
 	Argument,
 	CallArg,
@@ -20,8 +20,8 @@ import type { SerializedTransactionDataV1 } from './data/v1.js';
 import type { SerializedTransactionDataV2 } from './data/v2.js';
 import { hashTypedData } from './hash.js';
 
-function prepareSuiAddress(address: string) {
-	return normalizeSuiAddress(address).replace('0x', '');
+function preparePeraAddress(address: string) {
+	return normalizePeraAddress(address).replace('0x', '');
 }
 
 export class TransactionDataBuilder implements TransactionData {
@@ -173,11 +173,11 @@ export class TransactionDataBuilder implements TransactionData {
 		}
 
 		const transactionData = {
-			sender: prepareSuiAddress(sender),
+			sender: preparePeraAddress(sender),
 			expiration: expiration ? expiration : { None: true },
 			gasData: {
 				payment: gasData.payment,
-				owner: prepareSuiAddress(this.gasData.owner ?? sender),
+				owner: preparePeraAddress(this.gasData.owner ?? sender),
 				price: BigInt(gasData.price),
 				budget: BigInt(gasData.budget),
 			},

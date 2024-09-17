@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import { type TransactionSummary as TransactionSummaryType } from '@mysten/core';
 import clsx from 'clsx';
 
@@ -26,7 +26,7 @@ export function TransactionSummary({
 }) {
 	if (isError) return null;
 	return (
-		<section className="-mx-6 bg-sui/10 min-h-full">
+		<section className="-mx-6 bg-pera/10 min-h-full">
 			{isLoading ? (
 				<div className="flex items-center justify-center p-10">
 					<LoadingIndicator />

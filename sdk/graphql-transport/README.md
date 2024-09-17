@@ -1,6 +1,6 @@
 # `@mysten/graphql-transport`
 
-This package provides a `SuiTransport` that enables `SuiClient` to make requests using the RPC 2.0
+This package provides a `PeraTransport` that enables `PeraClient` to make requests using the RPC 2.0
 (GraphQL) API instead of the JSON RPC API.
 
 ## Install
@@ -12,12 +12,12 @@ npm install --save @mysten/graphql-transport
 ## Setup
 
 ```ts
-import { SuiClientGraphQLTransport } from '@mysten/graphql-transport';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
+import { PeraClientGraphQLTransport } from '@mysten/graphql-transport';
+import { getFullnodeUrl, PeraClient } from '@pera-io/pera/client';
 
-const client = new SuiClient({
-	transport: new SuiClientGraphQLTransport({
-		url: 'https://sui-testnet.mystenlabs.com/graphql',
+const client = new PeraClient({
+	transport: new PeraClientGraphQLTransport({
+		url: 'https://pera-testnet.mystenlabs.com/graphql',
 		// When specified, the transport will fallback to JSON RPC for unsupported method and parameters
 		fallbackFullNodeUrl: getFullnodeUrl('testnet'),
 	}),
@@ -28,7 +28,7 @@ const client = new SuiClient({
 
 ### Unsupported methods
 
-The following methods are currently unsupported in SuiClientGraphQLTransport, and will either error,
+The following methods are currently unsupported in PeraClientGraphQLTransport, and will either error,
 or fallback to the JSON RPC API if a `fallbackFullNodeUrl` is provided:
 
 - `subscribeTransaction`
@@ -44,7 +44,7 @@ or fallback to the JSON RPC API if a `fallbackFullNodeUrl` is provided:
 
 ### Unsupported parameters
 
-Some supported methods in `SuiClientGraphQLTransport` do not support the full set of parameters
+Some supported methods in `PeraClientGraphQLTransport` do not support the full set of parameters
 available in the JSON RPC API.
 
 If an unsupported parameter is used, the request will error, or fallback to JSON RPC API if a
@@ -63,7 +63,7 @@ If an unsupported parameter is used, the request will error, or fallback to JSON
   - missing `id` for `events`
 - `getStakes` and `getStakesByIds`
   - missing `validatorAddress`
-- `getLatestSuiSystemState`
+- `getLatestPeraSystemState`
   - missing `stakingPoolMappingsId`, `inactivePoolsId`, `pendingActiveValidatorsId`,
     `validatorCandidatesId`
   - missing `reportRecords` on validators
@@ -90,7 +90,7 @@ Some may require multiple requests to properly resolve:
   - may require additional requests to load all `friends`, `functions`, and `structs`
 - `getCheckpoint` and `getCheckpoints`,
   - may require additional requests to load all `transactionBlocks` and `validators`
-- `getLatestSuiSystemState`, `getCurrentEpoch`, `getValidatorsApy` and `getCommitteeInfo`:
+- `getLatestPeraSystemState`, `getCurrentEpoch`, `getValidatorsApy` and `getCommitteeInfo`:
   - may require additional requests to load all `validators`
 
 ### Pagination

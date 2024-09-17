@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module coin_metadata::test {
     use std::option;
-    use sui::coin;
-    use sui::transfer;
-    use sui::url;
+    use pera::coin;
+    use pera::transfer;
+    use pera::url;
 
     public struct TEST has drop {}
 
@@ -16,7 +16,7 @@ module coin_metadata::test {
             b"TEST",
             b"Test Coin",
             b"Test coin metadata",
-            option::some(url::new_unsafe_from_bytes(b"http://sui.io")),
+            option::some(url::new_unsafe_from_bytes(b"http://pera.io")),
             ctx
         );
 

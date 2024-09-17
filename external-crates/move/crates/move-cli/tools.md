@@ -39,7 +39,7 @@ they should all be able to be made libaries only, with the possible
 exception of the `move-coverage` crate. The primary reason for this, is
 that this tool can collect and report test coverage statistics across
 multiple packages, and multiple runs over a package. This functionality is
-important if you have a large functional test suite such as Diem's and want
+important if you have a large functional test perate such as Diem's and want
 to gather coverage information across all of them.
 
 The `move-resource-viewer` is a library crate that is used by and exposed by

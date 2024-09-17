@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { Button } from '_app/shared/ButtonUI';
 import { normalizeMnemonics, validateMnemonics } from '_src/shared/utils/bip39';
@@ -106,7 +106,7 @@ export function ImportRecoveryPhraseForm({
 					);
 				})}
 			</div>
-			<div className="flex flex-col gap-2.5 pt-3 bg-sui-lightest sticky -bottom-7.5 px-6 pb-7.5 -mx-6 -mb-7.5">
+			<div className="flex flex-col gap-2.5 pt-3 bg-pera-lightest sticky -bottom-7.5 px-6 pb-7.5 -mx-6 -mb-7.5">
 				{touchedFields.recoveryPhrase && errors.recoveryPhrase && (
 					<Alert>{errors.recoveryPhrase.message}</Alert>
 				)}

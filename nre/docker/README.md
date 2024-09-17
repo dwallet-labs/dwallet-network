@@ -1,4 +1,4 @@
-# Run Sui Node using Docker Compose
+# Run Pera Node using Docker Compose
 
 Tested using:
 - ubuntu 20.04 (linux/amd64) on bare metal
@@ -10,26 +10,26 @@ Tested using:
 
 2. Update [validator.yaml](../config/validator.yaml) and place it in the same directory as `docker-compose.yaml`.
 
-Add the paths to your private keys to validator.yaml. If you chose to put them in `/opt/sui/key-pairs`, you can use the following example: 
+Add the paths to your private keys to validator.yaml. If you chose to put them in `/opt/pera/key-pairs`, you can use the following example: 
 
 ```
 protocol-key-pair:
-  path: /opt/sui/key-pairs/protocol.key
+  path: /opt/pera/key-pairs/protocol.key
 worker-key-pair: 
-  path: /opt/sui/key-pairs/worker.key
+  path: /opt/pera/key-pairs/worker.key
 network-key-pair: 
-  path: /opt/sui/key-pairs/network.key
+  path: /opt/pera/key-pairs/network.key
 ```
 
 3. Place `genesis.blob` in the same directory as `docker-compose.yaml`. (available post genesis ceremony)
 
 ## Connectivity
 
-You may need to explicitly open the ports outlined in [Sui for Node Operators](../sui_for_node_operators.md#connectivity) for the required Sui Node connectivity.
+You may need to explicitly open the ports outlined in [Pera for Node Operators](../pera_for_node_operators.md#connectivity) for the required Pera Node connectivity.
 
 ## Start the node
 
-Start Sui Node in detached mode:
+Start Pera Node in detached mode:
 
 `sudo docker compose up -d`
 
@@ -51,16 +51,16 @@ sudo docker logs --since 10m -f validator
 
 ## Storage
 
-- What is the size of the local Sui database?
+- What is the size of the local Pera database?
 
 ```shell
 # get the volume location on disk
-sudo docker volume inspect docker_suidb
+sudo docker volume inspect docker_peradb
 # get the size of the volume on disk
-sudo du -sh /var/lib/docker/volumes/docker_suidb/_data
+sudo du -sh /var/lib/docker/volumes/docker_peradb/_data
 ```
 
-- Delete the local Sui databases (volume)
+- Delete the local Pera databases (volume)
 
 ```shell
 sudo docker-compose down -v
@@ -68,7 +68,7 @@ sudo docker-compose down -v
 
 ## Updates
 
-- **DO NOT** delete the Sui databases
+- **DO NOT** delete the Pera databases
 
 1. Stop docker compose
 
@@ -79,8 +79,8 @@ sudo docker compose down
 2. Update docker-compose.yaml to reference the new image
 
 ```
--    image: mysten/sui-node:<OLD_SUI_SHA>
-+    image: mysten/sui-node:<NEW_SUI_SHA>
+-    image: pera-io/pera-node:<OLD_PERA_SHA>
++    image: pera-io/pera-node:<NEW_PERA_SHA>
 ```
 
 3. Start docker compose in detached mode:

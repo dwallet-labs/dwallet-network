@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anemo::async_trait;
 use config::{
@@ -32,7 +32,7 @@ use std::{
 use store::rocks::DBMap;
 use store::rocks::MetricConf;
 use store::rocks::ReadWriteOptions;
-use sui_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
+use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tracing::info;
 use types::{

@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use proptest::prelude::*;
 use proptest::strategy::ValueTree;
@@ -11,12 +11,12 @@ use transaction_fuzzer::programmable_transaction_gen::{
 };
 use transaction_fuzzer::type_arg_fuzzer::{run_pt, run_pt_effects};
 
-use sui_types::base_types::ObjectRef;
-use sui_types::effects::TransactionEffectsAPI;
-use sui_types::execution_status::{ExecutionFailureStatus, ExecutionStatus};
-use sui_types::object::Owner;
-use sui_types::transaction::{CallArg, ObjectArg, ProgrammableTransaction};
-use sui_types::{MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID};
+use pera_types::base_types::ObjectRef;
+use pera_types::effects::TransactionEffectsAPI;
+use pera_types::execution_status::{ExecutionFailureStatus, ExecutionStatus};
+use pera_types::object::Owner;
+use pera_types::transaction::{CallArg, ObjectArg, ProgrammableTransaction};
+use pera_types::{MOVE_STDLIB_PACKAGE_ID, PERA_FRAMEWORK_PACKAGE_ID};
 
 #[test]
 #[cfg_attr(msim, ignore)]
@@ -37,7 +37,7 @@ fn publish_coin_factory(
 ) -> (ObjectRef, ObjectRef) {
     let effects = exec.publish(
         "coin_factory",
-        vec![MOVE_STDLIB_PACKAGE_ID, SUI_FRAMEWORK_PACKAGE_ID],
+        vec![MOVE_STDLIB_PACKAGE_ID, PERA_FRAMEWORK_PACKAGE_ID],
         account,
     );
     let package = effects

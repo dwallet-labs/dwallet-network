@@ -1,13 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module bridged_eth::eth {
     use std::option;
 
-    use sui::coin;
-    use sui::transfer;
-    use sui::tx_context;
-    use sui::tx_context::TxContext;
+    use pera::coin;
+    use pera::transfer;
+    use pera::tx_context;
+    use pera::tx_context::TxContext;
 
     struct ETH has drop {}
 

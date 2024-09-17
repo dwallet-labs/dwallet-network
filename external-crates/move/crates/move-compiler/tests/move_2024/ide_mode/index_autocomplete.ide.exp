@@ -11,7 +11,7 @@ note[I15006]: IDE path autocomplete
   │  
   = members: 'Option -> std::option::Option', 'vborrow -> std::vector::vborrow', or 'vborrow_mut -> std::vector::vborrow_mut'
   = modules: 'Self -> std::vector', 'option -> std::option', or 'vector -> std::vector'
-  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
   = type params: 
 
 note[I15006]: IDE path autocomplete
@@ -22,7 +22,7 @@ note[I15006]: IDE path autocomplete
   │
   = members: 'Option -> std::option::Option', 'vborrow -> std::vector::vborrow', or 'vborrow_mut -> std::vector::vborrow_mut'
   = modules: 'Self -> std::vector', 'option -> std::option', or 'vector -> std::vector'
-  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
   = type params: 'Element'
 
 note[I15006]: IDE path autocomplete
@@ -33,7 +33,7 @@ note[I15006]: IDE path autocomplete
   │
   = members: 'Option -> std::option::Option', 'vborrow -> std::vector::vborrow', or 'vborrow_mut -> std::vector::vborrow_mut'
   = modules: 'Self -> std::vector', 'option -> std::option', or 'vector -> std::vector'
-  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
   = type params: 'Element'
 
 note[I15006]: IDE path autocomplete
@@ -44,7 +44,7 @@ note[I15006]: IDE path autocomplete
   │
   = members: 'Option -> std::option::Option', 'vborrow -> std::vector::vborrow', or 'vborrow_mut -> std::vector::vborrow_mut'
   = modules: 'Self -> std::vector', 'option -> std::option', or 'vector -> std::vector'
-  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
   = type params: 'Element'
 
 note[I15006]: IDE path autocomplete
@@ -55,7 +55,7 @@ note[I15006]: IDE path autocomplete
   │
   = members: 'Option -> std::option::Option', 'vborrow -> std::vector::vborrow', or 'vborrow_mut -> std::vector::vborrow_mut'
   = modules: 'Self -> std::vector', 'option -> std::option', or 'vector -> std::vector'
-  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'sui -> 0x2'
+  = addresses: 'A -> 0x41', 'B -> 0x42', 'K -> 0x19', 'M -> 0x40', 'a -> 0x44', 'b -> 0x45', 'k -> 0x19', 'std -> 0x1', or 'pera -> 0x2'
   = type params: 'Element'
 
 warning[W09009]: unused struct field

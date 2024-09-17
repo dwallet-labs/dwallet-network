@@ -4,8 +4,8 @@ version = "0.0.1"
 edition = "legacy"
 
 [dependencies]
-MoveStdlib = { local = "../../../../crates/sui-framework/packages/move-stdlib" }
-Sui = { local = "../../../../crates/sui-framework/packages/sui-framework" }
+MoveStdlib = { local = "../../../../crates/pera-framework/packages/move-stdlib" }
+Pera = { local = "../../../../crates/pera-framework/packages/pera-framework" }
 
 [addresses]
 bridged_eth = "0x0"

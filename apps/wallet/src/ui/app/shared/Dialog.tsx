@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { cx } from 'class-variance-authority';

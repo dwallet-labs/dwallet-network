@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiHTTPTransport } from '@mysten/sui/client';
+import { PeraHTTPTransport } from '@pera-io/pera/client';
 import * as Sentry from '@sentry/react';
 
-const IGNORED_METHODS = ['suix_resolveNameServiceNames', 'suix_resolveNameServiceAddresses'];
+const IGNORED_METHODS = ['perax_resolveNameServiceNames', 'perax_resolveNameServiceAddresses'];
 
-export class SentryHttpTransport extends SuiHTTPTransport {
+export class SentryHttpTransport extends PeraHTTPTransport {
 	#url: string;
 	constructor(url: string) {
 		super({ url });

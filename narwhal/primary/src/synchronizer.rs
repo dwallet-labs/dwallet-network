@@ -1,6 +1,6 @@
 // Copyright (c) 2021, Facebook, Inc. and its affiliates
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anemo::{rpc::Status, Network, Request, Response};
 use config::{AuthorityIdentifier, Committee, WorkerCache};
@@ -24,7 +24,7 @@ use std::{
     time::Duration,
 };
 use storage::{CertificateStore, PayloadStore};
-use sui_protocol_config::ProtocolConfig;
+use pera_protocol_config::ProtocolConfig;
 use tokio::task::spawn_blocking;
 use tokio::time::Instant;
 use tokio::{

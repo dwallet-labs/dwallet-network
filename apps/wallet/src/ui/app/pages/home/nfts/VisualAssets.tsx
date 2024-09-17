@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { ErrorBoundary } from '_components/error-boundary';
 import { ampli } from '_src/shared/analytics/ampli';
@@ -9,12 +9,12 @@ import { Button } from '_src/ui/app/shared/ButtonUI';
 import { getKioskIdFromOwnerCap, isKioskOwnerToken } from '@mysten/core';
 import { useKioskClient } from '@mysten/core/src/hooks/useKioskClient';
 import { EyeClose16 } from '@mysten/icons';
-import { type SuiObjectData } from '@mysten/sui/client';
+import { type PeraObjectData } from '@pera-io/pera/client';
 import { Link } from 'react-router-dom';
 
 import { useHiddenAssets } from '../hidden-assets/HiddenAssetsProvider';
 
-export default function VisualAssets({ items }: { items: SuiObjectData[] }) {
+export default function VisualAssets({ items }: { items: PeraObjectData[] }) {
 	const { hideAsset } = useHiddenAssets();
 	const kioskClient = useKioskClient();
 	const bnl = useBuyNLargeAssets();

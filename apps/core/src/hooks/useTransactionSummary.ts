@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 import {
 	DryRunTransactionBlockResponse,
-	type SuiTransactionBlockResponse,
-} from '@mysten/sui/client';
+	type PeraTransactionBlockResponse,
+} from '@pera-io/pera/client';
 import { useMemo } from 'react';
 
 import { getBalanceChangeSummary } from '../utils/transaction/getBalanceChangeSummary';
@@ -11,7 +11,7 @@ import { getGasSummary } from '../utils/transaction/getGasSummary';
 import { getLabel } from '../utils/transaction/getLabel';
 import {
 	getObjectChangeSummary,
-	SuiObjectChangeWithDisplay,
+	PeraObjectChangeWithDisplay,
 } from '../utils/transaction/getObjectChangeSummary';
 import { getObjectDisplayLookup } from '../utils/transaction/getObjectDisplayLookup';
 import { useMultiGetObjects } from './useMultiGetObjects';
@@ -21,7 +21,7 @@ export function useTransactionSummary({
 	currentAddress,
 	recognizedPackagesList,
 }: {
-	transaction?: SuiTransactionBlockResponse | DryRunTransactionBlockResponse;
+	transaction?: PeraTransactionBlockResponse | DryRunTransactionBlockResponse;
 	currentAddress?: string;
 	recognizedPackagesList: string[];
 }) {
@@ -41,7 +41,7 @@ export function useTransactionSummary({
 				display: 'objectId' in change ? lookup?.get(change.objectId) : null,
 			})),
 		[lookup, objectChanges],
-	) as SuiObjectChangeWithDisplay[];
+	) as PeraObjectChangeWithDisplay[];
 
 	const summary = useMemo(() => {
 		if (!transaction) return null;

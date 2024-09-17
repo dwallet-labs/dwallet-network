@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { bcs } from '@mysten/sui/bcs';
-import { Transaction } from '@mysten/sui/transactions';
-import { fromB64, toB64 } from '@mysten/sui/utils';
+import { bcs } from '@pera-io/pera/bcs';
+import { Transaction } from '@pera-io/pera/transactions';
+import { fromB64, toB64 } from '@pera-io/pera/utils';
 import type { WalletWithFeatures } from '@wallet-standard/core';
 
 import type {
-	SuiSignAndExecuteTransactionInput,
-	SuiSignTransactionInput,
-	SuiWalletFeatures,
+	PeraSignAndExecuteTransactionInput,
+	PeraSignTransactionInput,
+	PeraWalletFeatures,
 } from './features/index.js';
 
 declare module '@wallet-standard/core' {
@@ -30,20 +30,20 @@ declare module '@wallet-standard/core' {
 export type { Wallet } from '@wallet-standard/core';
 
 export async function signAndExecuteTransaction(
-	wallet: WalletWithFeatures<Partial<SuiWalletFeatures>>,
-	input: SuiSignAndExecuteTransactionInput,
+	wallet: WalletWithFeatures<Partial<PeraWalletFeatures>>,
+	input: PeraSignAndExecuteTransactionInput,
 ) {
-	if (wallet.features['sui:signAndExecuteTransaction']) {
-		return wallet.features['sui:signAndExecuteTransaction'].signAndExecuteTransaction(input);
+	if (wallet.features['pera:signAndExecuteTransaction']) {
+		return wallet.features['pera:signAndExecuteTransaction'].signAndExecuteTransaction(input);
 	}
 
-	if (!wallet.features['sui:signAndExecuteTransactionBlock']) {
+	if (!wallet.features['pera:signAndExecuteTransactionBlock']) {
 		throw new Error(
 			`Provided wallet (${wallet.name}) does not support the signAndExecuteTransaction feature.`,
 		);
 	}
 
-	const { signAndExecuteTransactionBlock } = wallet.features['sui:signAndExecuteTransactionBlock'];
+	const { signAndExecuteTransactionBlock } = wallet.features['pera:signAndExecuteTransactionBlock'];
 
 	const transactionBlock = Transaction.from(await input.transaction.toJSON());
 	const { digest, rawEffects, rawTransaction } = await signAndExecuteTransactionBlock({
@@ -74,20 +74,20 @@ export async function signAndExecuteTransaction(
 }
 
 export async function signTransaction(
-	wallet: WalletWithFeatures<Partial<SuiWalletFeatures>>,
-	input: SuiSignTransactionInput,
+	wallet: WalletWithFeatures<Partial<PeraWalletFeatures>>,
+	input: PeraSignTransactionInput,
 ) {
-	if (wallet.features['sui:signTransaction']) {
-		return wallet.features['sui:signTransaction'].signTransaction(input);
+	if (wallet.features['pera:signTransaction']) {
+		return wallet.features['pera:signTransaction'].signTransaction(input);
 	}
 
-	if (!wallet.features['sui:signTransactionBlock']) {
+	if (!wallet.features['pera:signTransactionBlock']) {
 		throw new Error(
 			`Provided wallet (${wallet.name}) does not support the signTransaction feature.`,
 		);
 	}
 
-	const { signTransactionBlock } = wallet.features['sui:signTransactionBlock'];
+	const { signTransactionBlock } = wallet.features['pera:signTransactionBlock'];
 
 	const transaction = Transaction.from(await input.transaction.toJSON());
 	const { transactionBlockBytes, signature } = await signTransactionBlock({

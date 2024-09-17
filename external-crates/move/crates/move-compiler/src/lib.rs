@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 // #![forbid(unsafe_code)]
 
@@ -23,7 +23,7 @@ pub mod linters;
 pub mod naming;
 pub mod parser;
 pub mod shared;
-pub mod sui_mode;
+pub mod pera_mode;
 mod to_bytecode;
 pub mod typing;
 pub mod unit_test;

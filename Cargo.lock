@@ -2709,6 +2709,9 @@ dependencies = [
  "mysten-network",
  "nom",
  "parking_lot 0.12.1",
+ "pera-macros",
+ "pera-protocol-config",
+ "pera-tls",
  "prometheus",
  "prost 0.13.1",
  "quinn-proto",
@@ -2718,9 +2721,6 @@ dependencies = [
  "serde",
  "shared-crypto",
  "strum_macros 0.24.3",
- "sui-macros",
- "sui-protocol-config",
- "sui-tls",
  "tap",
  "telemetry-subscribers",
  "tempfile",
@@ -8086,9 +8086,9 @@ dependencies = [
  "narwhal-storage",
  "narwhal-test-utils",
  "narwhal-types",
+ "pera-protocol-config",
  "prometheus",
  "serde",
- "sui-protocol-config",
  "telemetry-subscribers",
  "tempfile",
  "thiserror",
@@ -8118,10 +8118,10 @@ dependencies = [
  "narwhal-test-utils",
  "narwhal-types",
  "parking_lot 0.12.1",
+ "pera-macros",
  "prometheus",
  "quinn-proto",
  "rand 0.8.5",
- "sui-macros",
  "tokio",
  "tower",
  "tracing",
@@ -8152,15 +8152,15 @@ dependencies = [
  "narwhal-test-utils",
  "narwhal-types",
  "narwhal-worker",
+ "pera-keys",
+ "pera-protocol-config",
+ "pera-types",
  "pretty_assertions",
  "prometheus",
  "rand 0.8.5",
  "reqwest 0.12.5",
  "serde-reflection",
  "serde_yaml 0.8.26",
- "sui-keys",
- "sui-protocol-config",
- "sui-types",
  "telemetry-subscribers",
  "thiserror",
  "tokio",
@@ -8206,12 +8206,12 @@ dependencies = [
  "narwhal-worker",
  "once_cell",
  "parking_lot 0.12.1",
+ "pera-macros",
+ "pera-protocol-config",
  "prometheus",
  "proptest",
  "rand 0.8.5",
  "reqwest 0.12.5",
- "sui-macros",
- "sui-protocol-config",
  "tap",
  "telemetry-subscribers",
  "tempfile",
@@ -8237,8 +8237,8 @@ dependencies = [
  "narwhal-test-utils",
  "narwhal-types",
  "parking_lot 0.12.1",
+ "pera-macros",
  "prometheus",
- "sui-macros",
  "tap",
  "tempfile",
  "tokio",
@@ -8267,9 +8267,9 @@ dependencies = [
  "narwhal-types",
  "narwhal-worker",
  "once_cell",
+ "pera-protocol-config",
  "prometheus",
  "rand 0.8.5",
- "sui-protocol-config",
  "telemetry-subscribers",
  "tempfile",
  "tokio",
@@ -8303,6 +8303,7 @@ dependencies = [
  "narwhal-crypto",
  "narwhal-test-utils",
  "once_cell",
+ "pera-protocol-config",
  "prometheus",
  "proptest",
  "proptest-derive",
@@ -8312,7 +8313,6 @@ dependencies = [
  "serde",
  "serde_test",
  "serde_with 3.9.0",
- "sui-protocol-config",
  "thiserror",
  "tokio",
  "tonic 0.12.1",
@@ -8347,10 +8347,10 @@ dependencies = [
  "narwhal-storage",
  "narwhal-test-utils",
  "narwhal-types",
+ "pera-protocol-config",
  "prometheus",
  "rand 0.8.5",
  "reqwest 0.12.5",
- "sui-protocol-config",
  "tap",
  "telemetry-subscribers",
  "tempfile",
@@ -9462,6 +9462,2791 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "88b39c9bfcfc231068454382784bb460aae594343fb030d46e9f50a645418412"
 dependencies = [
  "base64ct",
+]
+
+[[package]]
+name = "pera"
+version = "1.32.2"
+dependencies = [
+ "anemo",
+ "anyhow",
+ "assert_cmd",
+ "async-recursion",
+ "async-trait",
+ "axum 0.7.5",
+ "bcs",
+ "bin-version",
+ "bip32",
+ "camino",
+ "clap",
+ "colored",
+ "csv",
+ "datatest-stable",
+ "diesel",
+ "expect-test",
+ "fastcrypto",
+ "fastcrypto-zkp",
+ "fs_extra",
+ "futures",
+ "http 1.1.0",
+ "im",
+ "inquire",
+ "insta",
+ "jemalloc-ctl",
+ "json_to_table",
+ "miette",
+ "move-analyzer",
+ "move-binary-format",
+ "move-bytecode-verifier-meter",
+ "move-command-line-common",
+ "move-core-types",
+ "move-package",
+ "move-vm-config",
+ "move-vm-profiler",
+ "msim",
+ "num-bigint 0.4.4",
+ "pera-bridge",
+ "pera-cluster-test",
+ "pera-config",
+ "pera-execution",
+ "pera-faucet",
+ "pera-genesis-builder",
+ "pera-graphql-rpc",
+ "pera-indexer",
+ "pera-json",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-macros",
+ "pera-move",
+ "pera-move-build",
+ "pera-package-management",
+ "pera-protocol-config",
+ "pera-replay",
+ "pera-sdk",
+ "pera-simulator",
+ "pera-source-validation",
+ "pera-swarm",
+ "pera-swarm-config",
+ "pera-test-transaction-builder",
+ "pera-transaction-builder",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "regex",
+ "reqwest 0.12.5",
+ "rusoto_core",
+ "rusoto_kms",
+ "rustyline",
+ "rustyline-derive",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "shared-crypto",
+ "shell-words",
+ "shlex",
+ "signature 1.6.4",
+ "tabled",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-cluster",
+ "thiserror",
+ "tokio",
+ "toml 0.7.4",
+ "tower",
+ "tower-http",
+ "tracing",
+ "unescape",
+ "url",
+ "uuid 1.2.2",
+]
+
+[[package]]
+name = "pera-adapter-latest"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "leb128",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier",
+ "move-bytecode-verifier-meter",
+ "move-core-types",
+ "move-package",
+ "move-vm-config",
+ "move-vm-profiler",
+ "move-vm-runtime",
+ "move-vm-types",
+ "mysten-metrics",
+ "parking_lot 0.12.1",
+ "pera-macros",
+ "pera-move-natives-latest",
+ "pera-protocol-config",
+ "pera-types",
+ "pera-verifier-latest",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "pera-adapter-transactional-tests"
+version = "0.1.0"
+dependencies = [
+ "datatest-stable",
+ "pera-transactional-test-runner",
+]
+
+[[package]]
+name = "pera-adapter-v0"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "leb128",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier-meter",
+ "move-bytecode-verifier-v0",
+ "move-core-types",
+ "move-package",
+ "move-vm-config",
+ "move-vm-profiler",
+ "move-vm-runtime-v0",
+ "move-vm-types",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "pera-macros",
+ "pera-move-natives-v0",
+ "pera-protocol-config",
+ "pera-types",
+ "pera-verifier-v0",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "pera-adapter-v1"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "leb128",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier-meter",
+ "move-bytecode-verifier-v1",
+ "move-core-types",
+ "move-package",
+ "move-vm-config",
+ "move-vm-profiler",
+ "move-vm-runtime-v1",
+ "move-vm-types",
+ "parking_lot 0.12.1",
+ "pera-macros",
+ "pera-move-natives-v1",
+ "pera-protocol-config",
+ "pera-types",
+ "pera-verifier-v1",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "pera-adapter-v2"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "leb128",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier-meter",
+ "move-bytecode-verifier-v2",
+ "move-core-types",
+ "move-package",
+ "move-vm-config",
+ "move-vm-profiler",
+ "move-vm-runtime-v2",
+ "move-vm-types",
+ "parking_lot 0.12.1",
+ "pera-macros",
+ "pera-move-natives-v2",
+ "pera-protocol-config",
+ "pera-types",
+ "pera-verifier-v2",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "pera-analytics-indexer"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "arrow",
+ "arrow-array",
+ "async-trait",
+ "axum 0.7.5",
+ "bcs",
+ "byteorder",
+ "bytes",
+ "chrono",
+ "clap",
+ "csv",
+ "eyre",
+ "fastcrypto",
+ "gcp-bigquery-client",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "mysten-metrics",
+ "num_enum 0.6.1",
+ "object_store",
+ "parquet",
+ "pera-analytics-indexer-derive",
+ "pera-config",
+ "pera-data-ingestion-core",
+ "pera-indexer",
+ "pera-json-rpc-types",
+ "pera-package-resolver",
+ "pera-rest-api",
+ "pera-storage",
+ "pera-types",
+ "prometheus",
+ "serde",
+ "serde_json",
+ "simulacrum",
+ "snowflake-api",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "typed-store",
+ "url",
+]
+
+[[package]]
+name = "pera-analytics-indexer-derive"
+version = "1.32.2"
+dependencies = [
+ "proc-macro2 1.0.78",
+ "quote 1.0.35",
+ "syn 1.0.107",
+]
+
+[[package]]
+name = "pera-archival"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "byteorder",
+ "bytes",
+ "ed25519-consensus",
+ "fastcrypto",
+ "futures",
+ "indicatif",
+ "more-asserts",
+ "move-binary-format",
+ "move-core-types",
+ "move-package",
+ "num_enum 0.6.1",
+ "object_store",
+ "pera-config",
+ "pera-macros",
+ "pera-simulator",
+ "pera-storage",
+ "pera-swarm-config",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-authority-aggregation"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "mysten-metrics",
+ "pera-types",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-aws-orchestrator"
+version = "0.0.1"
+dependencies = [
+ "async-trait",
+ "aws-config",
+ "aws-sdk-ec2",
+ "aws-smithy-http",
+ "aws-smithy-runtime-api",
+ "clap",
+ "color-eyre",
+ "crossterm",
+ "eyre",
+ "futures",
+ "mysten-metrics",
+ "narwhal-config",
+ "pera-config",
+ "pera-swarm-config",
+ "pera-types",
+ "prettytable-rs",
+ "prometheus-parse",
+ "reqwest 0.12.5",
+ "russh",
+ "russh-keys",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "pera-benchmark"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs",
+ "clap",
+ "comfy-table",
+ "duration-str",
+ "fastcrypto-zkp",
+ "futures",
+ "hdrhistogram",
+ "indicatif",
+ "itertools 0.10.5",
+ "move-core-types",
+ "mysten-metrics",
+ "narwhal-node",
+ "pera-config",
+ "pera-core",
+ "pera-framework",
+ "pera-framework-snapshot",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-macros",
+ "pera-network",
+ "pera-protocol-config",
+ "pera-sdk",
+ "pera-simulator",
+ "pera-storage",
+ "pera-surfer",
+ "pera-swarm-config",
+ "pera-test-transaction-builder",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "regex",
+ "roaring",
+ "serde",
+ "serde_json",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "sysinfo",
+ "telemetry-subscribers",
+ "test-cluster",
+ "tokio",
+ "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tracing",
+ "typed-store",
+]
+
+[[package]]
+name = "pera-bridge"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "async-trait",
+ "axum 0.7.5",
+ "backoff",
+ "bcs",
+ "bin-version",
+ "clap",
+ "enum_dispatch",
+ "ethers",
+ "eyre",
+ "fastcrypto",
+ "futures",
+ "hex-literal 0.3.4",
+ "lru 0.10.0",
+ "maplit",
+ "move-core-types",
+ "mysten-metrics",
+ "num_enum 0.6.1",
+ "once_cell",
+ "pera-authority-aggregation",
+ "pera-config",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-sdk",
+ "pera-test-transaction-builder",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "serde_with 3.9.0",
+ "shared-crypto",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-cluster",
+ "tokio",
+ "tracing",
+ "typed-store",
+ "url",
+]
+
+[[package]]
+name = "pera-bridge-cli"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "clap",
+ "ethers",
+ "fastcrypto",
+ "futures",
+ "move-core-types",
+ "pera-bridge",
+ "pera-config",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-sdk",
+ "pera-types",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "serde_with 3.9.0",
+ "shared-crypto",
+ "telemetry-subscribers",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-bridge-indexer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "backoff",
+ "bcs",
+ "bin-version",
+ "clap",
+ "diesel",
+ "ethers",
+ "futures",
+ "hex-literal 0.3.4",
+ "mysten-metrics",
+ "pera-bridge",
+ "pera-config",
+ "pera-data-ingestion-core",
+ "pera-indexer-builder",
+ "pera-json-rpc-types",
+ "pera-sdk",
+ "pera-test-transaction-builder",
+ "pera-types",
+ "prometheus",
+ "rayon",
+ "serde",
+ "serde_yaml 0.8.26",
+ "tap",
+ "telemetry-subscribers",
+ "test-cluster",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-cluster-test"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "clap",
+ "derivative",
+ "diesel",
+ "fastcrypto",
+ "futures",
+ "jsonrpsee",
+ "move-core-types",
+ "pera-config",
+ "pera-core",
+ "pera-faucet",
+ "pera-graphql-rpc",
+ "pera-indexer",
+ "pera-json",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-sdk",
+ "pera-swarm",
+ "pera-swarm-config",
+ "pera-test-transaction-builder",
+ "pera-types",
+ "prometheus",
+ "regex",
+ "reqwest 0.12.5",
+ "serde_json",
+ "shared-crypto",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-cluster",
+ "tokio",
+ "tracing",
+ "uuid 1.2.2",
+]
+
+[[package]]
+name = "pera-config"
+version = "0.0.0"
+dependencies = [
+ "anemo",
+ "anyhow",
+ "bcs",
+ "clap",
+ "consensus-config",
+ "csv",
+ "dirs 4.0.0",
+ "fastcrypto",
+ "insta",
+ "narwhal-config",
+ "object_store",
+ "once_cell",
+ "pera-keys",
+ "pera-protocol-config",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_with 3.9.0",
+ "serde_yaml 0.8.26",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
+name = "pera-core"
+version = "0.1.0"
+dependencies = [
+ "anemo",
+ "anyhow",
+ "arc-swap",
+ "async-trait",
+ "axum 0.7.5",
+ "bcs",
+ "bytes",
+ "chrono",
+ "clap",
+ "consensus-config",
+ "consensus-core",
+ "count-min-sketch",
+ "criterion",
+ "dashmap",
+ "diffy",
+ "either",
+ "enum_dispatch",
+ "expect-test",
+ "eyre",
+ "fastcrypto",
+ "fastcrypto-tbls",
+ "fastcrypto-zkp",
+ "fs_extra",
+ "futures",
+ "im",
+ "indexmap 2.2.6",
+ "itertools 0.10.5",
+ "jsonrpsee",
+ "lru 0.10.0",
+ "mockall",
+ "moka",
+ "more-asserts",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "move-package",
+ "move-symbol-pool",
+ "mysten-common",
+ "mysten-metrics",
+ "mysten-network",
+ "narwhal-config",
+ "narwhal-crypto",
+ "narwhal-executor",
+ "narwhal-network",
+ "narwhal-node",
+ "narwhal-test-utils",
+ "narwhal-types",
+ "narwhal-worker",
+ "nonempty",
+ "num-bigint 0.4.4",
+ "num_cpus",
+ "object_store",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "pera-archival",
+ "pera-authority-aggregation",
+ "pera-config",
+ "pera-execution",
+ "pera-framework",
+ "pera-genesis-builder",
+ "pera-json-rpc-types",
+ "pera-macros",
+ "pera-move",
+ "pera-move-build",
+ "pera-network",
+ "pera-protocol-config",
+ "pera-simulator",
+ "pera-storage",
+ "pera-swarm-config",
+ "pera-test-transaction-builder",
+ "pera-transaction-checks",
+ "pera-types",
+ "pprof",
+ "pretty_assertions",
+ "prometheus",
+ "rand 0.8.5",
+ "rayon",
+ "reqwest 0.12.5",
+ "roaring",
+ "rstest",
+ "scopeguard",
+ "serde",
+ "serde-reflection",
+ "serde_json",
+ "serde_with 3.9.0",
+ "serde_yaml 0.8.26",
+ "shared-crypto",
+ "signature 1.6.4",
+ "static_assertions",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-fuzz",
+ "thiserror",
+ "tokio",
+ "tokio-retry",
+ "tokio-stream",
+ "tracing",
+ "twox-hash",
+ "typed-store",
+ "zeroize",
+]
+
+[[package]]
+name = "pera-cost"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "insta",
+ "move-cli",
+ "move-disassembler",
+ "pera-config",
+ "pera-json-rpc-types",
+ "pera-move-build",
+ "pera-swarm-config",
+ "pera-test-transaction-builder",
+ "pera-types",
+ "serde",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "test-cluster",
+ "tokio",
+]
+
+[[package]]
+name = "pera-data-ingestion"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "aws-config",
+ "aws-sdk-dynamodb",
+ "aws-sdk-s3",
+ "backoff",
+ "base64-url",
+ "bcs",
+ "byteorder",
+ "bytes",
+ "futures",
+ "mysten-metrics",
+ "notify",
+ "object_store",
+ "pera-archival",
+ "pera-data-ingestion-core",
+ "pera-storage",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "pera-data-ingestion-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "backoff",
+ "bcs",
+ "futures",
+ "mysten-metrics",
+ "notify",
+ "object_store",
+ "pera-protocol-config",
+ "pera-rest-api",
+ "pera-storage",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "pera-e2e-tests"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "async-trait",
+ "bcs",
+ "clap",
+ "coset",
+ "expect-test",
+ "fastcrypto",
+ "fastcrypto-zkp",
+ "fs_extra",
+ "futures",
+ "indexmap 2.2.6",
+ "insta",
+ "jsonrpsee",
+ "move-binary-format",
+ "move-core-types",
+ "move-package",
+ "mysten-metrics",
+ "p256",
+ "passkey-authenticator",
+ "passkey-client",
+ "passkey-types",
+ "pera",
+ "pera-bridge",
+ "pera-config",
+ "pera-core",
+ "pera-framework",
+ "pera-json-rpc",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-macros",
+ "pera-move-build",
+ "pera-network",
+ "pera-node",
+ "pera-protocol-config",
+ "pera-rest-api",
+ "pera-sdk",
+ "pera-simulator",
+ "pera-storage",
+ "pera-swarm",
+ "pera-swarm-config",
+ "pera-test-transaction-builder",
+ "pera-tool",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "shared-crypto",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-cluster",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "pera-enum-compat-util"
+version = "0.1.0"
+dependencies = [
+ "serde_yaml 0.8.26",
+]
+
+[[package]]
+name = "pera-execution"
+version = "0.1.0"
+dependencies = [
+ "cargo_metadata 0.15.4",
+ "move-abstract-interpreter",
+ "move-abstract-interpreter-v2",
+ "move-binary-format",
+ "move-bytecode-verifier",
+ "move-bytecode-verifier-meter",
+ "move-bytecode-verifier-v0",
+ "move-bytecode-verifier-v1",
+ "move-bytecode-verifier-v2",
+ "move-vm-config",
+ "move-vm-runtime",
+ "move-vm-runtime-v0",
+ "move-vm-runtime-v1",
+ "move-vm-runtime-v2",
+ "pera-adapter-latest",
+ "pera-adapter-v0",
+ "pera-adapter-v1",
+ "pera-adapter-v2",
+ "pera-move-natives-latest",
+ "pera-move-natives-v0",
+ "pera-move-natives-v1",
+ "pera-move-natives-v2",
+ "pera-protocol-config",
+ "pera-types",
+ "pera-verifier-latest",
+ "pera-verifier-v0",
+ "pera-verifier-v1",
+ "pera-verifier-v2",
+ "petgraph 0.5.1",
+]
+
+[[package]]
+name = "pera-execution-cut"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "expect-test",
+ "tempfile",
+ "thiserror",
+ "toml 0.7.4",
+ "toml_edit 0.19.10",
+]
+
+[[package]]
+name = "pera-faucet"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "async-trait",
+ "axum 0.7.5",
+ "clap",
+ "eyre",
+ "futures",
+ "http 1.1.0",
+ "mysten-metrics",
+ "parking_lot 0.12.1",
+ "pera-config",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-sdk",
+ "pera-types",
+ "prometheus",
+ "scopeguard",
+ "serde",
+ "shared-crypto",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-cluster",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "ttl_cache",
+ "typed-store",
+ "uuid 1.2.2",
+]
+
+[[package]]
+name = "pera-framework"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "move-binary-format",
+ "move-compiler",
+ "move-core-types",
+ "move-package",
+ "once_cell",
+ "pera-move-build",
+ "pera-types",
+ "regex",
+ "serde",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
+name = "pera-framework-snapshot"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "bin-version",
+ "pera-framework",
+ "pera-protocol-config",
+ "pera-types",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "pera-framework-tests"
+version = "0.1.0"
+dependencies = [
+ "datatest-stable",
+ "move-bytecode-verifier",
+ "move-bytecode-verifier-meter",
+ "move-cli",
+ "move-package",
+ "move-unit-test",
+ "pera-adapter-latest",
+ "pera-framework",
+ "pera-move",
+ "pera-move-build",
+ "pera-protocol-config",
+ "pera-types",
+ "pera-verifier-latest",
+ "prometheus",
+]
+
+[[package]]
+name = "pera-genesis-builder"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "camino",
+ "fastcrypto",
+ "insta",
+ "move-binary-format",
+ "move-core-types",
+ "pera-config",
+ "pera-execution",
+ "pera-framework",
+ "pera-framework-snapshot",
+ "pera-protocol-config",
+ "pera-simulator",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "serde",
+ "serde_with 3.9.0",
+ "serde_yaml 0.8.26",
+ "shared-crypto",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
+name = "pera-graphql-config"
+version = "1.32.2"
+dependencies = [
+ "quote 1.0.35",
+ "syn 1.0.107",
+]
+
+[[package]]
+name = "pera-graphql-e2e-tests"
+version = "0.1.0"
+dependencies = [
+ "datatest-stable",
+ "msim",
+ "pera-graphql-rpc",
+ "pera-transactional-test-runner",
+ "tokio",
+]
+
+[[package]]
+name = "pera-graphql-rpc"
+version = "2024.7.0"
+dependencies = [
+ "anyhow",
+ "async-graphql",
+ "async-graphql-axum",
+ "async-graphql-value",
+ "async-trait",
+ "axum 0.7.5",
+ "axum-extra",
+ "bcs",
+ "bin-version",
+ "chrono",
+ "clap",
+ "const-str",
+ "diesel",
+ "downcast",
+ "either",
+ "expect-test",
+ "fastcrypto",
+ "fastcrypto-zkp",
+ "futures",
+ "hex",
+ "http 1.1.0",
+ "hyper 1.4.1",
+ "im",
+ "insta",
+ "itertools 0.10.5",
+ "lru 0.10.0",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "move-disassembler",
+ "move-ir-types",
+ "mysten-metrics",
+ "mysten-network",
+ "once_cell",
+ "pera-framework",
+ "pera-graphql-config",
+ "pera-graphql-rpc-client",
+ "pera-graphql-rpc-headers",
+ "pera-indexer",
+ "pera-json-rpc",
+ "pera-json-rpc-types",
+ "pera-package-resolver",
+ "pera-protocol-config",
+ "pera-rest-api",
+ "pera-sdk",
+ "pera-swarm-config",
+ "pera-test-transaction-builder",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "regex",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "serde_with 3.9.0",
+ "serde_yaml 0.8.26",
+ "serial_test",
+ "shared-crypto",
+ "similar",
+ "simulacrum",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-cluster",
+ "thiserror",
+ "tokio",
+ "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "toml 0.7.4",
+ "tower",
+ "tower-http",
+ "tracing",
+ "uuid 1.2.2",
+]
+
+[[package]]
+name = "pera-graphql-rpc-client"
+version = "0.1.0"
+dependencies = [
+ "async-graphql",
+ "axum 0.7.5",
+ "hyper 1.4.1",
+ "pera-graphql-rpc-headers",
+ "reqwest 0.12.5",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "pera-graphql-rpc-headers"
+version = "0.1.0"
+dependencies = [
+ "axum 0.7.5",
+]
+
+[[package]]
+name = "pera-indexer"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum 0.7.5",
+ "backoff",
+ "bcs",
+ "cached",
+ "chrono",
+ "clap",
+ "criterion",
+ "diesel",
+ "diesel-derive-enum",
+ "diesel_migrations",
+ "downcast",
+ "fastcrypto",
+ "futures",
+ "itertools 0.10.5",
+ "jsonrpsee",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "mysten-metrics",
+ "ntest",
+ "pera-data-ingestion-core",
+ "pera-json",
+ "pera-json-rpc",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-move-build",
+ "pera-open-rpc",
+ "pera-package-resolver",
+ "pera-protocol-config",
+ "pera-rest-api",
+ "pera-sdk",
+ "pera-test-transaction-builder",
+ "pera-transaction-builder",
+ "pera-types",
+ "prometheus",
+ "rayon",
+ "regex",
+ "secrecy",
+ "serde",
+ "serde_json",
+ "serde_with 3.9.0",
+ "simulacrum",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-cluster",
+ "thiserror",
+ "tokio",
+ "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "pera-indexer-builder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "mysten-metrics",
+ "pera-data-ingestion-core",
+ "pera-types",
+ "prometheus",
+ "telemetry-subscribers",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-json"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "fastcrypto",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "pera-framework",
+ "pera-move-build",
+ "pera-types",
+ "schemars",
+ "serde",
+ "serde_json",
+ "test-fuzz",
+]
+
+[[package]]
+name = "pera-json-rpc"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "arc-swap",
+ "async-trait",
+ "axum 0.7.5",
+ "bcs",
+ "cached",
+ "chrono",
+ "expect-test",
+ "eyre",
+ "fastcrypto",
+ "futures",
+ "http-body 0.4.5",
+ "hyper 1.4.1",
+ "indexmap 2.2.6",
+ "itertools 0.10.5",
+ "jsonrpsee",
+ "mockall",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "move-package",
+ "mysten-metrics",
+ "mysten-service",
+ "once_cell",
+ "pera-config",
+ "pera-core",
+ "pera-json",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-macros",
+ "pera-open-rpc",
+ "pera-open-rpc-macros",
+ "pera-protocol-config",
+ "pera-storage",
+ "pera-transaction-builder",
+ "pera-types",
+ "prometheus",
+ "serde",
+ "serde_json",
+ "shared-crypto",
+ "signature 1.6.4",
+ "tap",
+ "telemetry-subscribers",
+ "thiserror",
+ "tokio",
+ "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tower",
+ "tower-http",
+ "tracing",
+ "typed-store-error",
+]
+
+[[package]]
+name = "pera-json-rpc-api"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "fastcrypto",
+ "jsonrpsee",
+ "mysten-metrics",
+ "once_cell",
+ "pera-json",
+ "pera-json-rpc-types",
+ "pera-open-rpc",
+ "pera-open-rpc-macros",
+ "pera-types",
+ "prometheus",
+ "tap",
+ "tracing",
+]
+
+[[package]]
+name = "pera-json-rpc-tests"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs",
+ "hyper 1.4.1",
+ "jsonrpsee",
+ "move-core-types",
+ "move-package",
+ "pera-config",
+ "pera-core",
+ "pera-json",
+ "pera-json-rpc",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-macros",
+ "pera-move-build",
+ "pera-open-rpc",
+ "pera-open-rpc-macros",
+ "pera-protocol-config",
+ "pera-sdk",
+ "pera-simulator",
+ "pera-swarm-config",
+ "pera-test-transaction-builder",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "reqwest 0.12.5",
+ "telemetry-subscribers",
+ "test-cluster",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-json-rpc-types"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "colored",
+ "enum_dispatch",
+ "fastcrypto",
+ "itertools 0.10.5",
+ "json_to_table",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "mysten-metrics",
+ "pera-enum-compat-util",
+ "pera-json",
+ "pera-macros",
+ "pera-package-resolver",
+ "pera-protocol-config",
+ "pera-types",
+ "schemars",
+ "serde",
+ "serde_json",
+ "serde_with 3.9.0",
+ "tabled",
+ "tracing",
+]
+
+[[package]]
+name = "pera-keys"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "bip32",
+ "fastcrypto",
+ "pera-types",
+ "rand 0.8.5",
+ "regex",
+ "serde",
+ "serde_json",
+ "shared-crypto",
+ "signature 1.6.4",
+ "slip10_ed25519",
+ "tempfile",
+ "tiny-bip39",
+]
+
+[[package]]
+name = "pera-light-client"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs",
+ "bytes",
+ "clap",
+ "move-binary-format",
+ "move-core-types",
+ "pera-config",
+ "pera-json",
+ "pera-json-rpc-types",
+ "pera-package-resolver",
+ "pera-rest-api",
+ "pera-sdk",
+ "pera-types",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "tokio",
+]
+
+[[package]]
+name = "pera-macros"
+version = "0.7.0"
+dependencies = [
+ "futures",
+ "once_cell",
+ "pera-proc-macros",
+ "tracing",
+]
+
+[[package]]
+name = "pera-metric-checker"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "backoff",
+ "base64 0.21.7",
+ "chrono",
+ "clap",
+ "humantime",
+ "once_cell",
+ "prometheus-http-query",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_yaml 0.9.21",
+ "strum_macros 0.24.3",
+ "telemetry-subscribers",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-move"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "assert_cmd",
+ "better_any",
+ "bin-version",
+ "clap",
+ "colored",
+ "futures",
+ "jemalloc-ctl",
+ "jsonrpsee",
+ "move-binary-format",
+ "move-cli",
+ "move-compiler",
+ "move-disassembler",
+ "move-ir-types",
+ "move-package",
+ "move-prover",
+ "move-unit-test",
+ "move-vm-runtime",
+ "mysten-metrics",
+ "once_cell",
+ "pera-core",
+ "pera-macros",
+ "pera-move-build",
+ "pera-move-natives-latest",
+ "pera-node",
+ "pera-protocol-config",
+ "pera-simulator",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-move-build"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "datatest-stable",
+ "fastcrypto",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier",
+ "move-command-line-common",
+ "move-compiler",
+ "move-core-types",
+ "move-ir-types",
+ "move-package",
+ "move-symbol-pool",
+ "pera-package-management",
+ "pera-protocol-config",
+ "pera-types",
+ "pera-verifier-latest",
+ "serde-reflection",
+ "tempfile",
+]
+
+[[package]]
+name = "pera-move-lsp"
+version = "1.32.2"
+dependencies = [
+ "bin-version",
+ "clap",
+ "move-analyzer",
+ "tokio",
+]
+
+[[package]]
+name = "pera-move-natives-latest"
+version = "0.1.0"
+dependencies = [
+ "bcs",
+ "better_any",
+ "fastcrypto",
+ "fastcrypto-vdf",
+ "fastcrypto-zkp",
+ "indexmap 2.2.6",
+ "move-binary-format",
+ "move-core-types",
+ "move-stdlib-natives",
+ "move-vm-runtime",
+ "move-vm-types",
+ "pera-protocol-config",
+ "pera-types",
+ "rand 0.8.5",
+ "smallvec",
+ "tracing",
+]
+
+[[package]]
+name = "pera-move-natives-v0"
+version = "0.1.0"
+dependencies = [
+ "bcs",
+ "better_any",
+ "fastcrypto",
+ "fastcrypto-zkp",
+ "linked-hash-map",
+ "move-binary-format",
+ "move-core-types",
+ "move-stdlib-natives-v0",
+ "move-vm-runtime-v0",
+ "move-vm-types",
+ "pera-protocol-config",
+ "pera-types",
+ "smallvec",
+ "tracing",
+]
+
+[[package]]
+name = "pera-move-natives-v1"
+version = "0.1.0"
+dependencies = [
+ "bcs",
+ "better_any",
+ "fastcrypto",
+ "fastcrypto-zkp",
+ "linked-hash-map",
+ "move-binary-format",
+ "move-core-types",
+ "move-stdlib-natives-v1",
+ "move-vm-runtime-v1",
+ "move-vm-types",
+ "pera-protocol-config",
+ "pera-types",
+ "smallvec",
+ "tracing",
+]
+
+[[package]]
+name = "pera-move-natives-v2"
+version = "0.1.0"
+dependencies = [
+ "bcs",
+ "better_any",
+ "fastcrypto",
+ "fastcrypto-zkp",
+ "indexmap 2.2.6",
+ "move-binary-format",
+ "move-core-types",
+ "move-stdlib-natives-v2",
+ "move-vm-runtime-v2",
+ "move-vm-types",
+ "pera-protocol-config",
+ "pera-types",
+ "smallvec",
+ "tracing",
+]
+
+[[package]]
+name = "pera-network"
+version = "0.0.0"
+dependencies = [
+ "anemo",
+ "anemo-build",
+ "anemo-tower",
+ "anyhow",
+ "arc-swap",
+ "bcs",
+ "bytes",
+ "dashmap",
+ "ed25519-consensus",
+ "fastcrypto",
+ "fastcrypto-tbls",
+ "futures",
+ "governor",
+ "mysten-metrics",
+ "mysten-network",
+ "pera-archival",
+ "pera-config",
+ "pera-macros",
+ "pera-storage",
+ "pera-swarm-config",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "serde",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "tonic 0.12.1",
+ "tonic-build",
+ "tower",
+ "tracing",
+]
+
+[[package]]
+name = "pera-node"
+version = "1.32.2"
+dependencies = [
+ "anemo",
+ "anemo-tower",
+ "anyhow",
+ "arc-swap",
+ "axum 0.7.5",
+ "base64 0.21.7",
+ "bcs",
+ "bin-version",
+ "clap",
+ "fastcrypto",
+ "fastcrypto-zkp",
+ "futures",
+ "humantime",
+ "move-vm-profiler",
+ "mysten-common",
+ "mysten-metrics",
+ "mysten-network",
+ "mysten-service",
+ "narwhal-network",
+ "narwhal-worker",
+ "parking_lot 0.12.1",
+ "pera-archival",
+ "pera-config",
+ "pera-core",
+ "pera-json-rpc",
+ "pera-json-rpc-api",
+ "pera-macros",
+ "pera-network",
+ "pera-protocol-config",
+ "pera-rest-api",
+ "pera-simulator",
+ "pera-snapshot",
+ "pera-storage",
+ "pera-telemetry",
+ "pera-tls",
+ "pera-types",
+ "prometheus",
+ "reqwest 0.12.5",
+ "serde",
+ "snap",
+ "tap",
+ "telemetry-subscribers",
+ "tokio",
+ "tower",
+ "tracing",
+ "typed-store",
+ "url",
+]
+
+[[package]]
+name = "pera-open-rpc"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "clap",
+ "fastcrypto",
+ "move-core-types",
+ "pera-json",
+ "pera-json-rpc",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-protocol-config",
+ "pera-types",
+ "pretty_assertions",
+ "rand 0.8.5",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tokio",
+ "versions",
+]
+
+[[package]]
+name = "pera-open-rpc-macros"
+version = "0.1.0"
+dependencies = [
+ "derive-syn-parse",
+ "itertools 0.10.5",
+ "proc-macro2 1.0.78",
+ "quote 1.0.35",
+ "syn 1.0.107",
+ "unescape",
+]
+
+[[package]]
+name = "pera-oracle"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "chrono",
+ "clap",
+ "dirs 4.0.0",
+ "jsonpath_lib",
+ "mysten-metrics",
+ "once_cell",
+ "pera-config",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-move-build",
+ "pera-sdk",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "shared-crypto",
+ "tap",
+ "telemetry-subscribers",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-package-dump"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "cynic",
+ "cynic-codegen",
+ "fastcrypto",
+ "move-core-types",
+ "pera-types",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "pera-package-management"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "move-core-types",
+ "move-package",
+ "move-symbol-pool",
+ "pera-json-rpc-types",
+ "pera-sdk",
+ "pera-types",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "pera-package-resolver"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bcs",
+ "eyre",
+ "hyper 1.4.1",
+ "insta",
+ "lru 0.10.0",
+ "move-binary-format",
+ "move-command-line-common",
+ "move-compiler",
+ "move-core-types",
+ "pera-move-build",
+ "pera-rest-api",
+ "pera-types",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tower",
+]
+
+[[package]]
+name = "pera-proc-macros"
+version = "0.7.0"
+dependencies = [
+ "msim-macros",
+ "pera-enum-compat-util",
+ "proc-macro2 1.0.78",
+ "quote 1.0.35",
+ "syn 2.0.48",
+]
+
+[[package]]
+name = "pera-protocol-config"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "insta",
+ "move-vm-config",
+ "pera-protocol-config-macros",
+ "schemars",
+ "serde",
+ "serde_with 3.9.0",
+ "tracing",
+]
+
+[[package]]
+name = "pera-protocol-config-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2 1.0.78",
+ "quote 1.0.35",
+ "syn 1.0.107",
+]
+
+[[package]]
+name = "pera-proxy"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "axum 0.7.5",
+ "axum-extra",
+ "axum-server",
+ "bin-version",
+ "bytes",
+ "clap",
+ "const-str",
+ "fastcrypto",
+ "hex",
+ "hyper 1.4.1",
+ "ipnetwork",
+ "itertools 0.10.5",
+ "mime",
+ "multiaddr",
+ "mysten-metrics",
+ "once_cell",
+ "pera-tls",
+ "pera-types",
+ "prometheus",
+ "prost 0.13.1",
+ "prost-build",
+ "protobuf",
+ "rand 0.8.5",
+ "reqwest 0.12.5",
+ "rustls 0.23.12",
+ "rustls-pemfile 2.1.2",
+ "serde",
+ "serde_json",
+ "serde_with 3.9.0",
+ "serde_yaml 0.8.26",
+ "snap",
+ "telemetry-subscribers",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+]
+
+[[package]]
+name = "pera-replay"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "async-trait",
+ "bcs",
+ "clap",
+ "futures",
+ "http 1.1.0",
+ "jsonrpsee",
+ "lru 0.10.0",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "move-vm-config",
+ "parking_lot 0.12.1",
+ "pera-config",
+ "pera-core",
+ "pera-execution",
+ "pera-framework",
+ "pera-json-rpc",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-protocol-config",
+ "pera-sdk",
+ "pera-storage",
+ "pera-transaction-checks",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_with 3.9.0",
+ "serde_yaml 0.8.26",
+ "shared-crypto",
+ "shellexpand",
+ "similar",
+ "tabled",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tracing",
+]
+
+[[package]]
+name = "pera-rest-api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum 0.7.5",
+ "bcs",
+ "diffy",
+ "fastcrypto",
+ "itertools 0.10.5",
+ "mime",
+ "mysten-network",
+ "openapiv3",
+ "pera-protocol-config",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "reqwest 0.12.5",
+ "schemars",
+ "serde",
+ "serde_json",
+ "serde_with 3.9.0",
+ "serde_yaml 0.8.26",
+ "sui-sdk",
+ "tap",
+ "thiserror",
+ "tokio",
+ "url",
+]
+
+[[package]]
+name = "pera-rosetta"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum 0.7.5",
+ "axum-extra",
+ "bcs",
+ "clap",
+ "eyre",
+ "fastcrypto",
+ "futures",
+ "hyper 1.4.1",
+ "move-core-types",
+ "mysten-metrics",
+ "once_cell",
+ "pera-config",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-move-build",
+ "pera-node",
+ "pera-sdk",
+ "pera-swarm-config",
+ "pera-types",
+ "rand 0.8.5",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "shared-crypto",
+ "signature 1.6.4",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-cluster",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "typed-store",
+]
+
+[[package]]
+name = "pera-rpc-loadgen"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "clap",
+ "dashmap",
+ "dirs 4.0.0",
+ "futures",
+ "itertools 0.10.5",
+ "pera-json-rpc",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-sdk",
+ "pera-types",
+ "serde",
+ "serde_json",
+ "shared-crypto",
+ "shellexpand",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "telemetry-subscribers",
+ "test-cluster",
+ "tokio",
+ "tonic 0.12.1",
+ "tracing",
+]
+
+[[package]]
+name = "pera-sdk"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "async-trait",
+ "base64 0.21.7",
+ "bcs",
+ "clap",
+ "colored",
+ "dirs 4.0.0",
+ "fastcrypto",
+ "futures",
+ "futures-core",
+ "jsonrpsee",
+ "move-core-types",
+ "pera-config",
+ "pera-json",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-transaction-builder",
+ "pera-types",
+ "rand 0.8.5",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "serde_with 3.9.0",
+ "shared-crypto",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-security-watchdog"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "arrow-array",
+ "async-trait",
+ "chrono",
+ "clap",
+ "env_logger",
+ "lexical-util",
+ "mysten-metrics",
+ "prometheus",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "snowflake-api",
+ "telemetry-subscribers",
+ "tokio",
+ "tokio-cron-scheduler",
+ "tracing",
+ "uuid 1.2.2",
+]
+
+[[package]]
+name = "pera-simulator"
+version = "0.7.0"
+dependencies = [
+ "anemo",
+ "anemo-tower",
+ "bcs",
+ "fastcrypto",
+ "lru 0.10.0",
+ "move-package",
+ "msim",
+ "narwhal-network",
+ "pera-framework",
+ "pera-move-build",
+ "pera-types",
+ "rand 0.8.5",
+ "serde",
+ "telemetry-subscribers",
+ "tempfile",
+ "tower",
+ "tracing",
+]
+
+[[package]]
+name = "pera-single-node-benchmark"
+version = "1.32.2"
+dependencies = [
+ "async-trait",
+ "bcs",
+ "clap",
+ "fs_extra",
+ "futures",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "move-package",
+ "move-symbol-pool",
+ "once_cell",
+ "pera-config",
+ "pera-core",
+ "pera-macros",
+ "pera-move-build",
+ "pera-protocol-config",
+ "pera-simulator",
+ "pera-storage",
+ "pera-test-transaction-builder",
+ "pera-transaction-checks",
+ "pera-types",
+ "prometheus",
+ "serde",
+ "serde_json",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "telemetry-subscribers",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-snapshot"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "byteorder",
+ "bytes",
+ "fastcrypto",
+ "futures",
+ "indicatif",
+ "integer-encoding",
+ "num_enum 0.6.1",
+ "object_store",
+ "pera-config",
+ "pera-core",
+ "pera-protocol-config",
+ "pera-storage",
+ "pera-types",
+ "prometheus",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+]
+
+[[package]]
+name = "pera-source-validation"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "colored",
+ "expect-test",
+ "flate2",
+ "futures",
+ "move-binary-format",
+ "move-bytecode-source-map",
+ "move-command-line-common",
+ "move-compiler",
+ "move-core-types",
+ "move-package",
+ "move-symbol-pool",
+ "pera-json-rpc-types",
+ "pera-move-build",
+ "pera-package-management",
+ "pera-sdk",
+ "pera-test-transaction-builder",
+ "pera-types",
+ "rand 0.8.5",
+ "tar",
+ "tempfile",
+ "test-cluster",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "ureq",
+]
+
+[[package]]
+name = "pera-source-validation-service"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum 0.7.5",
+ "bin-version",
+ "clap",
+ "expect-test",
+ "fs_extra",
+ "hyper 1.4.1",
+ "jsonrpsee",
+ "move-compiler",
+ "move-core-types",
+ "move-package",
+ "move-symbol-pool",
+ "mysten-metrics",
+ "pera",
+ "pera-json-rpc-types",
+ "pera-move",
+ "pera-move-build",
+ "pera-sdk",
+ "pera-source-validation",
+ "prometheus",
+ "reqwest 0.12.5",
+ "serde",
+ "telemetry-subscribers",
+ "tempfile",
+ "test-cluster",
+ "tokio",
+ "toml 0.7.4",
+ "tower",
+ "tower-http",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "pera-storage"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum 0.7.5",
+ "backoff",
+ "base64-url",
+ "bcs",
+ "byteorder",
+ "bytes",
+ "chrono",
+ "clap",
+ "criterion",
+ "eyre",
+ "fastcrypto",
+ "futures",
+ "hyper 1.4.1",
+ "hyper-rustls 0.27.2",
+ "indicatif",
+ "integer-encoding",
+ "itertools 0.10.5",
+ "lru 0.10.0",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "mysten-metrics",
+ "num_cpus",
+ "num_enum 0.6.1",
+ "object_store",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "pera-config",
+ "pera-json-rpc-types",
+ "pera-macros",
+ "pera-protocol-config",
+ "pera-simulator",
+ "pera-test-transaction-builder",
+ "pera-types",
+ "percent-encoding",
+ "pretty_assertions",
+ "prometheus",
+ "reqwest 0.12.5",
+ "serde",
+ "serde_json",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "typed-store",
+ "url",
+ "zstd 0.12.3+zstd.1.5.2",
+]
+
+[[package]]
+name = "pera-surfer"
+version = "1.32.2"
+dependencies = [
+ "async-trait",
+ "bcs",
+ "clap",
+ "futures",
+ "indexmap 2.2.6",
+ "move-binary-format",
+ "move-core-types",
+ "move-package",
+ "pera-core",
+ "pera-json-rpc-types",
+ "pera-macros",
+ "pera-move-build",
+ "pera-protocol-config",
+ "pera-simulator",
+ "pera-swarm-config",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "telemetry-subscribers",
+ "test-cluster",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pera-swarm"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "futures",
+ "mysten-metrics",
+ "mysten-network",
+ "pera-config",
+ "pera-macros",
+ "pera-node",
+ "pera-protocol-config",
+ "pera-simulator",
+ "pera-swarm-config",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "tap",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "tonic-health",
+ "tracing",
+]
+
+[[package]]
+name = "pera-swarm-config"
+version = "0.0.0"
+dependencies = [
+ "anemo",
+ "anyhow",
+ "bcs",
+ "fastcrypto",
+ "insta",
+ "move-bytecode-utils",
+ "narwhal-config",
+ "pera-config",
+ "pera-execution",
+ "pera-genesis-builder",
+ "pera-macros",
+ "pera-protocol-config",
+ "pera-simulator",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "serde",
+ "serde_with 3.9.0",
+ "serde_yaml 0.8.26",
+ "shared-crypto",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
+name = "pera-telemetry"
+version = "0.1.0"
+dependencies = [
+ "pera-core",
+ "reqwest 0.12.5",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "pera-test-transaction-builder"
+version = "0.1.0"
+dependencies = [
+ "bcs",
+ "move-core-types",
+ "pera-genesis-builder",
+ "pera-move-build",
+ "pera-sdk",
+ "pera-types",
+ "shared-crypto",
+]
+
+[[package]]
+name = "pera-test-validator"
+version = "1.32.2"
+
+[[package]]
+name = "pera-tls"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "axum 0.7.5",
+ "axum-server",
+ "ed25519 1.5.3",
+ "fastcrypto",
+ "pkcs8 0.9.0",
+ "rand 0.8.5",
+ "rcgen",
+ "reqwest 0.12.5",
+ "rustls 0.23.12",
+ "rustls-webpki 0.102.6",
+ "tokio",
+ "tokio-rustls 0.26.0",
+ "tower-layer",
+ "x509-parser",
+]
+
+[[package]]
+name = "pera-tool"
+version = "1.32.2"
+dependencies = [
+ "anemo",
+ "anemo-cli",
+ "anyhow",
+ "bcs",
+ "bin-version",
+ "clap",
+ "colored",
+ "comfy-table",
+ "eyre",
+ "fastcrypto",
+ "futures",
+ "hex",
+ "indicatif",
+ "itertools 0.10.5",
+ "move-core-types",
+ "narwhal-storage",
+ "narwhal-types",
+ "num_cpus",
+ "object_store",
+ "pera-archival",
+ "pera-config",
+ "pera-core",
+ "pera-network",
+ "pera-package-dump",
+ "pera-protocol-config",
+ "pera-replay",
+ "pera-sdk",
+ "pera-snapshot",
+ "pera-storage",
+ "pera-types",
+ "prometheus",
+ "ron",
+ "serde",
+ "serde_json",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "typed-store",
+]
+
+[[package]]
+name = "pera-transaction-builder"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs",
+ "futures",
+ "move-binary-format",
+ "move-core-types",
+ "pera-json",
+ "pera-json-rpc-types",
+ "pera-protocol-config",
+ "pera-types",
+]
+
+[[package]]
+name = "pera-transaction-checks"
+version = "0.1.0"
+dependencies = [
+ "fastcrypto-zkp",
+ "once_cell",
+ "pera-config",
+ "pera-execution",
+ "pera-macros",
+ "pera-protocol-config",
+ "pera-types",
+ "tracing",
+]
+
+[[package]]
+name = "pera-transactional-test-runner"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bcs",
+ "bimap",
+ "clap",
+ "criterion",
+ "eyre",
+ "fastcrypto",
+ "futures",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-command-line-common",
+ "move-compiler",
+ "move-core-types",
+ "move-stdlib",
+ "move-symbol-pool",
+ "move-transactional-test-runner",
+ "move-vm-runtime",
+ "msim",
+ "once_cell",
+ "pera-config",
+ "pera-core",
+ "pera-framework",
+ "pera-framework-snapshot",
+ "pera-graphql-rpc",
+ "pera-json-rpc",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-protocol-config",
+ "pera-rest-api",
+ "pera-storage",
+ "pera-swarm-config",
+ "pera-types",
+ "rand 0.8.5",
+ "regex",
+ "serde_json",
+ "simulacrum",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "typed-store",
+]
+
+[[package]]
+name = "pera-types"
+version = "0.1.0"
+dependencies = [
+ "anemo",
+ "anyhow",
+ "async-trait",
+ "bcs",
+ "better_any",
+ "bincode",
+ "byteorder",
+ "chrono",
+ "consensus-config",
+ "coset",
+ "criterion",
+ "derivative",
+ "derive_more",
+ "enum_dispatch",
+ "expect-test",
+ "eyre",
+ "fastcrypto",
+ "fastcrypto-tbls",
+ "fastcrypto-zkp",
+ "im",
+ "indexmap 2.2.6",
+ "itertools 0.10.5",
+ "jsonrpsee",
+ "lru 0.10.0",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-command-line-common",
+ "move-core-types",
+ "move-disassembler",
+ "move-ir-types",
+ "move-vm-profiler",
+ "move-vm-test-utils",
+ "move-vm-types",
+ "mysten-metrics",
+ "mysten-network",
+ "narwhal-config",
+ "narwhal-crypto",
+ "nonempty",
+ "num-bigint 0.4.4",
+ "num-traits",
+ "num_enum 0.6.1",
+ "once_cell",
+ "p256",
+ "parking_lot 0.12.1",
+ "passkey-authenticator",
+ "passkey-client",
+ "passkey-types",
+ "pera-enum-compat-util",
+ "pera-macros",
+ "pera-protocol-config",
+ "prometheus",
+ "proptest",
+ "proptest-derive",
+ "rand 0.8.5",
+ "roaring",
+ "schemars",
+ "serde",
+ "serde-name",
+ "serde_json",
+ "serde_with 3.9.0",
+ "serde_yaml 0.8.26",
+ "shared-crypto",
+ "signature 1.6.4",
+ "static_assertions",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "sui-sdk",
+ "tap",
+ "thiserror",
+ "tokio",
+ "tonic 0.12.1",
+ "tracing",
+ "typed-store-error",
+ "url",
+]
+
+[[package]]
+name = "pera-upgrade-compatibility-transactional-tests"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "datatest-stable",
+ "insta",
+ "move-binary-format",
+ "move-command-line-common",
+ "move-compiler",
+ "move-package",
+ "pera-move-build",
+]
+
+[[package]]
+name = "pera-verifier-latest"
+version = "0.1.0"
+dependencies = [
+ "move-abstract-interpreter",
+ "move-abstract-stack",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier",
+ "move-bytecode-verifier-meter",
+ "move-core-types",
+ "move-vm-config",
+ "pera-protocol-config",
+ "pera-types",
+]
+
+[[package]]
+name = "pera-verifier-transactional-tests"
+version = "0.1.0"
+dependencies = [
+ "datatest-stable",
+ "pera-transactional-test-runner",
+]
+
+[[package]]
+name = "pera-verifier-v0"
+version = "0.1.0"
+dependencies = [
+ "move-abstract-stack",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier-meter",
+ "move-bytecode-verifier-v0",
+ "move-core-types",
+ "move-vm-config",
+ "pera-protocol-config",
+ "pera-types",
+]
+
+[[package]]
+name = "pera-verifier-v1"
+version = "0.1.0"
+dependencies = [
+ "move-abstract-stack",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier-meter",
+ "move-bytecode-verifier-v1",
+ "move-core-types",
+ "move-vm-config",
+ "pera-types",
+]
+
+[[package]]
+name = "pera-verifier-v2"
+version = "0.1.0"
+dependencies = [
+ "move-abstract-stack",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-bytecode-verifier-meter",
+ "move-bytecode-verifier-v2",
+ "move-core-types",
+ "move-vm-config",
+ "pera-protocol-config",
+ "pera-types",
+]
+
+[[package]]
+name = "perans-indexer"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "backoff",
+ "base64-url",
+ "bcs",
+ "bytes",
+ "diesel",
+ "dotenvy",
+ "futures",
+ "move-core-types",
+ "mysten-metrics",
+ "mysten-service",
+ "notify",
+ "object_store",
+ "pera-data-ingestion-core",
+ "pera-json-rpc",
+ "pera-storage",
+ "pera-types",
+ "prometheus",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "telemetry-subscribers",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "peraop-cli"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "axum 0.7.5",
+ "base64 0.21.7",
+ "chrono",
+ "clap",
+ "colored",
+ "dirs 4.0.0",
+ "docker-api",
+ "field_names",
+ "include_dir",
+ "inquire",
+ "open",
+ "prettytable-rs",
+ "rand 0.8.5",
+ "regex",
+ "reqwest 0.12.5",
+ "semver 1.0.23",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "sha2 0.10.8",
+ "spinners",
+ "strum 0.24.1",
+ "tabled",
+ "tempfile",
+ "tokio",
+ "toml_edit 0.19.10",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -12032,20 +14817,20 @@ dependencies = [
  "move-bytecode-utils",
  "move-core-types",
  "once_cell",
+ "pera-config",
+ "pera-execution",
+ "pera-framework",
+ "pera-genesis-builder",
+ "pera-keys",
+ "pera-protocol-config",
+ "pera-storage",
+ "pera-swarm-config",
+ "pera-transaction-checks",
+ "pera-types",
  "prometheus",
  "rand 0.8.5",
  "serde",
  "shared-crypto",
- "sui-config",
- "sui-execution",
- "sui-framework",
- "sui-genesis-builder",
- "sui-keys",
- "sui-protocol-config",
- "sui-storage",
- "sui-swarm-config",
- "sui-transaction-checks",
- "sui-types",
  "tracing",
 ]
 
@@ -12433,2036 +15218,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
 
 [[package]]
-name = "sui"
-version = "1.32.2"
-dependencies = [
- "anemo",
- "anyhow",
- "assert_cmd",
- "async-recursion",
- "async-trait",
- "axum 0.7.5",
- "bcs",
- "bin-version",
- "bip32",
- "camino",
- "clap",
- "colored",
- "csv",
- "datatest-stable",
- "diesel",
- "expect-test",
- "fastcrypto",
- "fastcrypto-zkp",
- "fs_extra",
- "futures",
- "http 1.1.0",
- "im",
- "inquire",
- "insta",
- "jemalloc-ctl",
- "json_to_table",
- "miette",
- "move-analyzer",
- "move-binary-format",
- "move-bytecode-verifier-meter",
- "move-command-line-common",
- "move-core-types",
- "move-package",
- "move-vm-config",
- "move-vm-profiler",
- "msim",
- "num-bigint 0.4.4",
- "prometheus",
- "rand 0.8.5",
- "regex",
- "reqwest 0.12.5",
- "rusoto_core",
- "rusoto_kms",
- "rustyline",
- "rustyline-derive",
- "serde",
- "serde_json",
- "serde_yaml 0.8.26",
- "shared-crypto",
- "shell-words",
- "shlex",
- "signature 1.6.4",
- "sui-bridge",
- "sui-cluster-test",
- "sui-config",
- "sui-execution",
- "sui-faucet",
- "sui-genesis-builder",
- "sui-graphql-rpc",
- "sui-indexer",
- "sui-json",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-macros",
- "sui-move",
- "sui-move-build",
- "sui-package-management",
- "sui-protocol-config",
- "sui-replay",
- "sui-sdk 1.32.2",
- "sui-simulator",
- "sui-source-validation",
- "sui-swarm",
- "sui-swarm-config",
- "sui-test-transaction-builder",
- "sui-transaction-builder",
- "sui-types",
- "tabled",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "test-cluster",
- "thiserror",
- "tokio",
- "toml 0.7.4",
- "tower",
- "tower-http",
- "tracing",
- "unescape",
- "url",
- "uuid 1.2.2",
-]
-
-[[package]]
-name = "sui-adapter-latest"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs",
- "leb128",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier",
- "move-bytecode-verifier-meter",
- "move-core-types",
- "move-package",
- "move-vm-config",
- "move-vm-profiler",
- "move-vm-runtime",
- "move-vm-types",
- "mysten-metrics",
- "parking_lot 0.12.1",
- "serde",
- "sui-macros",
- "sui-move-natives-latest",
- "sui-protocol-config",
- "sui-types",
- "sui-verifier-latest",
- "tracing",
-]
-
-[[package]]
-name = "sui-adapter-transactional-tests"
-version = "0.1.0"
-dependencies = [
- "datatest-stable",
- "sui-transactional-test-runner",
-]
-
-[[package]]
-name = "sui-adapter-v0"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs",
- "leb128",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier-meter",
- "move-bytecode-verifier-v0",
- "move-core-types",
- "move-package",
- "move-vm-config",
- "move-vm-profiler",
- "move-vm-runtime-v0",
- "move-vm-types",
- "once_cell",
- "parking_lot 0.12.1",
- "serde",
- "sui-macros",
- "sui-move-natives-v0",
- "sui-protocol-config",
- "sui-types",
- "sui-verifier-v0",
- "tracing",
-]
-
-[[package]]
-name = "sui-adapter-v1"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs",
- "leb128",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier-meter",
- "move-bytecode-verifier-v1",
- "move-core-types",
- "move-package",
- "move-vm-config",
- "move-vm-profiler",
- "move-vm-runtime-v1",
- "move-vm-types",
- "parking_lot 0.12.1",
- "serde",
- "sui-macros",
- "sui-move-natives-v1",
- "sui-protocol-config",
- "sui-types",
- "sui-verifier-v1",
- "tracing",
-]
-
-[[package]]
-name = "sui-adapter-v2"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs",
- "leb128",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier-meter",
- "move-bytecode-verifier-v2",
- "move-core-types",
- "move-package",
- "move-vm-config",
- "move-vm-profiler",
- "move-vm-runtime-v2",
- "move-vm-types",
- "parking_lot 0.12.1",
- "serde",
- "sui-macros",
- "sui-move-natives-v2",
- "sui-protocol-config",
- "sui-types",
- "sui-verifier-v2",
- "tracing",
-]
-
-[[package]]
-name = "sui-analytics-indexer"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "arrow",
- "arrow-array",
- "async-trait",
- "axum 0.7.5",
- "bcs",
- "byteorder",
- "bytes",
- "chrono",
- "clap",
- "csv",
- "eyre",
- "fastcrypto",
- "gcp-bigquery-client",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "mysten-metrics",
- "num_enum 0.6.1",
- "object_store",
- "parquet",
- "prometheus",
- "serde",
- "serde_json",
- "simulacrum",
- "snowflake-api",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "sui-analytics-indexer-derive",
- "sui-config",
- "sui-data-ingestion-core",
- "sui-indexer",
- "sui-json-rpc-types",
- "sui-package-resolver",
- "sui-rest-api",
- "sui-storage",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tracing",
- "typed-store",
- "url",
-]
-
-[[package]]
-name = "sui-analytics-indexer-derive"
-version = "1.32.2"
-dependencies = [
- "proc-macro2 1.0.78",
- "quote 1.0.35",
- "syn 1.0.107",
-]
-
-[[package]]
-name = "sui-archival"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "byteorder",
- "bytes",
- "ed25519-consensus",
- "fastcrypto",
- "futures",
- "indicatif",
- "more-asserts",
- "move-binary-format",
- "move-core-types",
- "move-package",
- "num_enum 0.6.1",
- "object_store",
- "prometheus",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "sui-config",
- "sui-macros",
- "sui-simulator",
- "sui-storage",
- "sui-swarm-config",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-authority-aggregation"
-version = "0.1.0"
-dependencies = [
- "futures",
- "mysten-metrics",
- "sui-types",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-aws-orchestrator"
-version = "0.0.1"
-dependencies = [
- "async-trait",
- "aws-config",
- "aws-sdk-ec2",
- "aws-smithy-http",
- "aws-smithy-runtime-api",
- "clap",
- "color-eyre",
- "crossterm",
- "eyre",
- "futures",
- "mysten-metrics",
- "narwhal-config",
- "prettytable-rs",
- "prometheus-parse",
- "reqwest 0.12.5",
- "russh",
- "russh-keys",
- "serde",
- "serde_json",
- "sui-config",
- "sui-swarm-config",
- "sui-types",
- "tempfile",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "sui-benchmark"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bcs",
- "clap",
- "comfy-table",
- "duration-str",
- "fastcrypto-zkp",
- "futures",
- "hdrhistogram",
- "indicatif",
- "itertools 0.10.5",
- "move-core-types",
- "mysten-metrics",
- "narwhal-node",
- "prometheus",
- "rand 0.8.5",
- "regex",
- "roaring",
- "serde",
- "serde_json",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "sui-config",
- "sui-core",
- "sui-framework",
- "sui-framework-snapshot",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-macros",
- "sui-network",
- "sui-protocol-config",
- "sui-sdk 1.32.2",
- "sui-simulator",
- "sui-storage",
- "sui-surfer",
- "sui-swarm-config",
- "sui-test-transaction-builder",
- "sui-types",
- "sysinfo",
- "telemetry-subscribers",
- "test-cluster",
- "tokio",
- "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "tracing",
- "typed-store",
-]
-
-[[package]]
-name = "sui-bridge"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "arc-swap",
- "async-trait",
- "axum 0.7.5",
- "backoff",
- "bcs",
- "bin-version",
- "clap",
- "enum_dispatch",
- "ethers",
- "eyre",
- "fastcrypto",
- "futures",
- "hex-literal 0.3.4",
- "lru 0.10.0",
- "maplit",
- "move-core-types",
- "mysten-metrics",
- "num_enum 0.6.1",
- "once_cell",
- "prometheus",
- "rand 0.8.5",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "serde_with 3.9.0",
- "shared-crypto",
- "sui-authority-aggregation",
- "sui-config",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-sdk 1.32.2",
- "sui-test-transaction-builder",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "test-cluster",
- "tokio",
- "tracing",
- "typed-store",
- "url",
-]
-
-[[package]]
-name = "sui-bridge-cli"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "clap",
- "ethers",
- "fastcrypto",
- "futures",
- "move-core-types",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "serde_with 3.9.0",
- "shared-crypto",
- "sui-bridge",
- "sui-config",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-sdk 1.32.2",
- "sui-types",
- "telemetry-subscribers",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-bridge-indexer"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "backoff",
- "bcs",
- "bin-version",
- "clap",
- "diesel",
- "ethers",
- "futures",
- "hex-literal 0.3.4",
- "mysten-metrics",
- "prometheus",
- "rayon",
- "serde",
- "serde_yaml 0.8.26",
- "sui-bridge",
- "sui-config",
- "sui-data-ingestion-core",
- "sui-indexer-builder",
- "sui-json-rpc-types",
- "sui-sdk 1.32.2",
- "sui-test-transaction-builder",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "test-cluster",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-cluster-test"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "async-trait",
- "clap",
- "derivative",
- "diesel",
- "fastcrypto",
- "futures",
- "jsonrpsee",
- "move-core-types",
- "prometheus",
- "regex",
- "reqwest 0.12.5",
- "serde_json",
- "shared-crypto",
- "sui-config",
- "sui-core",
- "sui-faucet",
- "sui-graphql-rpc",
- "sui-indexer",
- "sui-json",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-sdk 1.32.2",
- "sui-swarm",
- "sui-swarm-config",
- "sui-test-transaction-builder",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "test-cluster",
- "tokio",
- "tracing",
- "uuid 1.2.2",
-]
-
-[[package]]
-name = "sui-config"
-version = "0.0.0"
-dependencies = [
- "anemo",
- "anyhow",
- "bcs",
- "clap",
- "consensus-config",
- "csv",
- "dirs 4.0.0",
- "fastcrypto",
- "insta",
- "narwhal-config",
- "object_store",
- "once_cell",
- "prometheus",
- "rand 0.8.5",
- "reqwest 0.12.5",
- "serde",
- "serde_with 3.9.0",
- "serde_yaml 0.8.26",
- "sui-keys",
- "sui-protocol-config",
- "sui-types",
- "tempfile",
- "tracing",
-]
-
-[[package]]
-name = "sui-core"
-version = "0.1.0"
-dependencies = [
- "anemo",
- "anyhow",
- "arc-swap",
- "async-trait",
- "axum 0.7.5",
- "bcs",
- "bytes",
- "chrono",
- "clap",
- "consensus-config",
- "consensus-core",
- "count-min-sketch",
- "criterion",
- "dashmap",
- "diffy",
- "either",
- "enum_dispatch",
- "expect-test",
- "eyre",
- "fastcrypto",
- "fastcrypto-tbls",
- "fastcrypto-zkp",
- "fs_extra",
- "futures",
- "im",
- "indexmap 2.2.6",
- "itertools 0.10.5",
- "jsonrpsee",
- "lru 0.10.0",
- "mockall",
- "moka",
- "more-asserts",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "move-package",
- "move-symbol-pool",
- "mysten-common",
- "mysten-metrics",
- "mysten-network",
- "narwhal-config",
- "narwhal-crypto",
- "narwhal-executor",
- "narwhal-network",
- "narwhal-node",
- "narwhal-test-utils",
- "narwhal-types",
- "narwhal-worker",
- "nonempty",
- "num-bigint 0.4.4",
- "num_cpus",
- "object_store",
- "once_cell",
- "parking_lot 0.12.1",
- "pprof",
- "pretty_assertions",
- "prometheus",
- "rand 0.8.5",
- "rayon",
- "reqwest 0.12.5",
- "roaring",
- "rstest",
- "scopeguard",
- "serde",
- "serde-reflection",
- "serde_json",
- "serde_with 3.9.0",
- "serde_yaml 0.8.26",
- "shared-crypto",
- "signature 1.6.4",
- "static_assertions",
- "sui-archival",
- "sui-authority-aggregation",
- "sui-config",
- "sui-execution",
- "sui-framework",
- "sui-genesis-builder",
- "sui-json-rpc-types",
- "sui-macros",
- "sui-move",
- "sui-move-build",
- "sui-network",
- "sui-protocol-config",
- "sui-simulator",
- "sui-storage",
- "sui-swarm-config",
- "sui-test-transaction-builder",
- "sui-transaction-checks",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "test-fuzz",
- "thiserror",
- "tokio",
- "tokio-retry",
- "tokio-stream",
- "tracing",
- "twox-hash",
- "typed-store",
- "zeroize",
-]
-
-[[package]]
-name = "sui-cost"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs",
- "insta",
- "move-cli",
- "move-disassembler",
- "serde",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "sui-config",
- "sui-json-rpc-types",
- "sui-move-build",
- "sui-swarm-config",
- "sui-test-transaction-builder",
- "sui-types",
- "test-cluster",
- "tokio",
-]
-
-[[package]]
-name = "sui-data-ingestion"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "async-trait",
- "aws-config",
- "aws-sdk-dynamodb",
- "aws-sdk-s3",
- "backoff",
- "base64-url",
- "bcs",
- "byteorder",
- "bytes",
- "futures",
- "mysten-metrics",
- "notify",
- "object_store",
- "prometheus",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "serde_yaml 0.8.26",
- "sui-archival",
- "sui-data-ingestion-core",
- "sui-storage",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "sui-data-ingestion-core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "backoff",
- "bcs",
- "futures",
- "mysten-metrics",
- "notify",
- "object_store",
- "prometheus",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "sui-protocol-config",
- "sui-rest-api",
- "sui-storage",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "sui-e2e-tests"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "async-trait",
- "bcs",
- "clap",
- "coset",
- "expect-test",
- "fastcrypto",
- "fastcrypto-zkp",
- "fs_extra",
- "futures",
- "indexmap 2.2.6",
- "insta",
- "jsonrpsee",
- "move-binary-format",
- "move-core-types",
- "move-package",
- "mysten-metrics",
- "p256",
- "passkey-authenticator",
- "passkey-client",
- "passkey-types",
- "prometheus",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "shared-crypto",
- "sui",
- "sui-bridge",
- "sui-config",
- "sui-core",
- "sui-framework",
- "sui-json-rpc",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-macros",
- "sui-move-build",
- "sui-network",
- "sui-node",
- "sui-protocol-config",
- "sui-rest-api",
- "sui-sdk 1.32.2",
- "sui-simulator",
- "sui-storage",
- "sui-swarm",
- "sui-swarm-config",
- "sui-test-transaction-builder",
- "sui-tool",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "test-cluster",
- "tokio",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "sui-enum-compat-util"
-version = "0.1.0"
-dependencies = [
- "serde_yaml 0.8.26",
-]
-
-[[package]]
-name = "sui-execution"
-version = "0.1.0"
-dependencies = [
- "cargo_metadata 0.15.4",
- "move-abstract-interpreter",
- "move-abstract-interpreter-v2",
- "move-binary-format",
- "move-bytecode-verifier",
- "move-bytecode-verifier-meter",
- "move-bytecode-verifier-v0",
- "move-bytecode-verifier-v1",
- "move-bytecode-verifier-v2",
- "move-vm-config",
- "move-vm-runtime",
- "move-vm-runtime-v0",
- "move-vm-runtime-v1",
- "move-vm-runtime-v2",
- "petgraph 0.5.1",
- "sui-adapter-latest",
- "sui-adapter-v0",
- "sui-adapter-v1",
- "sui-adapter-v2",
- "sui-move-natives-latest",
- "sui-move-natives-v0",
- "sui-move-natives-v1",
- "sui-move-natives-v2",
- "sui-protocol-config",
- "sui-types",
- "sui-verifier-latest",
- "sui-verifier-v0",
- "sui-verifier-v1",
- "sui-verifier-v2",
-]
-
-[[package]]
-name = "sui-execution-cut"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "expect-test",
- "tempfile",
- "thiserror",
- "toml 0.7.4",
- "toml_edit 0.19.10",
-]
-
-[[package]]
-name = "sui-faucet"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "async-recursion",
- "async-trait",
- "axum 0.7.5",
- "clap",
- "eyre",
- "futures",
- "http 1.1.0",
- "mysten-metrics",
- "parking_lot 0.12.1",
- "prometheus",
- "scopeguard",
- "serde",
- "shared-crypto",
- "sui-config",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-sdk 1.32.2",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "test-cluster",
- "thiserror",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "ttl_cache",
- "typed-store",
- "uuid 1.2.2",
-]
-
-[[package]]
-name = "sui-framework"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs",
- "move-binary-format",
- "move-compiler",
- "move-core-types",
- "move-package",
- "once_cell",
- "regex",
- "serde",
- "sui-move-build",
- "sui-types",
- "tempfile",
- "tracing",
-]
-
-[[package]]
-name = "sui-framework-snapshot"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "bcs",
- "bin-version",
- "serde",
- "serde_json",
- "sui-framework",
- "sui-protocol-config",
- "sui-types",
- "tokio",
-]
-
-[[package]]
-name = "sui-framework-tests"
-version = "0.1.0"
-dependencies = [
- "datatest-stable",
- "move-bytecode-verifier",
- "move-bytecode-verifier-meter",
- "move-cli",
- "move-package",
- "move-unit-test",
- "prometheus",
- "sui-adapter-latest",
- "sui-framework",
- "sui-move",
- "sui-move-build",
- "sui-protocol-config",
- "sui-types",
- "sui-verifier-latest",
-]
-
-[[package]]
-name = "sui-genesis-builder"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "bcs",
- "camino",
- "fastcrypto",
- "insta",
- "move-binary-format",
- "move-core-types",
- "prometheus",
- "rand 0.8.5",
- "serde",
- "serde_with 3.9.0",
- "serde_yaml 0.8.26",
- "shared-crypto",
- "sui-config",
- "sui-execution",
- "sui-framework",
- "sui-framework-snapshot",
- "sui-protocol-config",
- "sui-simulator",
- "sui-types",
- "tempfile",
- "tracing",
-]
-
-[[package]]
-name = "sui-graphql-config"
-version = "1.32.2"
-dependencies = [
- "quote 1.0.35",
- "syn 1.0.107",
-]
-
-[[package]]
-name = "sui-graphql-e2e-tests"
-version = "0.1.0"
-dependencies = [
- "datatest-stable",
- "msim",
- "sui-graphql-rpc",
- "sui-transactional-test-runner",
- "tokio",
-]
-
-[[package]]
-name = "sui-graphql-rpc"
-version = "2024.7.0"
-dependencies = [
- "anyhow",
- "async-graphql",
- "async-graphql-axum",
- "async-graphql-value",
- "async-trait",
- "axum 0.7.5",
- "axum-extra",
- "bcs",
- "bin-version",
- "chrono",
- "clap",
- "const-str",
- "diesel",
- "downcast",
- "either",
- "expect-test",
- "fastcrypto",
- "fastcrypto-zkp",
- "futures",
- "hex",
- "http 1.1.0",
- "hyper 1.4.1",
- "im",
- "insta",
- "itertools 0.10.5",
- "lru 0.10.0",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "move-disassembler",
- "move-ir-types",
- "mysten-metrics",
- "mysten-network",
- "once_cell",
- "prometheus",
- "rand 0.8.5",
- "regex",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "serde_with 3.9.0",
- "serde_yaml 0.8.26",
- "serial_test",
- "shared-crypto",
- "similar",
- "simulacrum",
- "sui-framework",
- "sui-graphql-config",
- "sui-graphql-rpc-client",
- "sui-graphql-rpc-headers",
- "sui-indexer",
- "sui-json-rpc",
- "sui-json-rpc-types",
- "sui-package-resolver",
- "sui-protocol-config",
- "sui-rest-api",
- "sui-sdk 1.32.2",
- "sui-swarm-config",
- "sui-test-transaction-builder",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "test-cluster",
- "thiserror",
- "tokio",
- "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "toml 0.7.4",
- "tower",
- "tower-http",
- "tracing",
- "uuid 1.2.2",
-]
-
-[[package]]
-name = "sui-graphql-rpc-client"
-version = "0.1.0"
-dependencies = [
- "async-graphql",
- "axum 0.7.5",
- "hyper 1.4.1",
- "reqwest 0.12.5",
- "serde_json",
- "sui-graphql-rpc-headers",
- "thiserror",
-]
-
-[[package]]
-name = "sui-graphql-rpc-headers"
-version = "0.1.0"
-dependencies = [
- "axum 0.7.5",
-]
-
-[[package]]
-name = "sui-indexer"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum 0.7.5",
- "backoff",
- "bcs",
- "cached",
- "chrono",
- "clap",
- "criterion",
- "diesel",
- "diesel-derive-enum",
- "diesel_migrations",
- "downcast",
- "fastcrypto",
- "futures",
- "itertools 0.10.5",
- "jsonrpsee",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "mysten-metrics",
- "ntest",
- "prometheus",
- "rayon",
- "regex",
- "secrecy",
- "serde",
- "serde_json",
- "serde_with 3.9.0",
- "simulacrum",
- "sui-data-ingestion-core",
- "sui-json",
- "sui-json-rpc",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-move-build",
- "sui-open-rpc",
- "sui-package-resolver",
- "sui-protocol-config",
- "sui-rest-api",
- "sui-sdk 1.32.2",
- "sui-test-transaction-builder",
- "sui-transaction-builder",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "test-cluster",
- "thiserror",
- "tokio",
- "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "sui-indexer-builder"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "mysten-metrics",
- "prometheus",
- "sui-data-ingestion-core",
- "sui-types",
- "telemetry-subscribers",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-json"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "bcs",
- "fastcrypto",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "schemars",
- "serde",
- "serde_json",
- "sui-framework",
- "sui-move-build",
- "sui-types",
- "test-fuzz",
-]
-
-[[package]]
-name = "sui-json-rpc"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "arc-swap",
- "async-trait",
- "axum 0.7.5",
- "bcs",
- "cached",
- "chrono",
- "expect-test",
- "eyre",
- "fastcrypto",
- "futures",
- "http-body 0.4.5",
- "hyper 1.4.1",
- "indexmap 2.2.6",
- "itertools 0.10.5",
- "jsonrpsee",
- "mockall",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "move-package",
- "mysten-metrics",
- "mysten-service",
- "once_cell",
- "prometheus",
- "serde",
- "serde_json",
- "shared-crypto",
- "signature 1.6.4",
- "sui-config",
- "sui-core",
- "sui-json",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-macros",
- "sui-open-rpc",
- "sui-open-rpc-macros",
- "sui-protocol-config",
- "sui-storage",
- "sui-transaction-builder",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "thiserror",
- "tokio",
- "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "tower",
- "tower-http",
- "tracing",
- "typed-store-error",
-]
-
-[[package]]
-name = "sui-json-rpc-api"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "fastcrypto",
- "jsonrpsee",
- "mysten-metrics",
- "once_cell",
- "prometheus",
- "sui-json",
- "sui-json-rpc-types",
- "sui-open-rpc",
- "sui-open-rpc-macros",
- "sui-types",
- "tap",
- "tracing",
-]
-
-[[package]]
-name = "sui-json-rpc-tests"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bcs",
- "hyper 1.4.1",
- "jsonrpsee",
- "move-core-types",
- "move-package",
- "prometheus",
- "rand 0.8.5",
- "reqwest 0.12.5",
- "sui-config",
- "sui-core",
- "sui-json",
- "sui-json-rpc",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-macros",
- "sui-move-build",
- "sui-open-rpc",
- "sui-open-rpc-macros",
- "sui-protocol-config",
- "sui-sdk 1.32.2",
- "sui-simulator",
- "sui-swarm-config",
- "sui-test-transaction-builder",
- "sui-types",
- "telemetry-subscribers",
- "test-cluster",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-json-rpc-types"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "bcs",
- "colored",
- "enum_dispatch",
- "fastcrypto",
- "itertools 0.10.5",
- "json_to_table",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "mysten-metrics",
- "schemars",
- "serde",
- "serde_json",
- "serde_with 3.9.0",
- "sui-enum-compat-util",
- "sui-json",
- "sui-macros",
- "sui-package-resolver",
- "sui-protocol-config",
- "sui-types",
- "tabled",
- "tracing",
-]
-
-[[package]]
-name = "sui-keys"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "bip32",
- "fastcrypto",
- "rand 0.8.5",
- "regex",
- "serde",
- "serde_json",
- "shared-crypto",
- "signature 1.6.4",
- "slip10_ed25519",
- "sui-types",
- "tempfile",
- "tiny-bip39",
-]
-
-[[package]]
-name = "sui-light-client"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "async-trait",
- "bcs",
- "bytes",
- "clap",
- "move-binary-format",
- "move-core-types",
- "serde",
- "serde_json",
- "serde_yaml 0.8.26",
- "sui-config",
- "sui-json",
- "sui-json-rpc-types",
- "sui-package-resolver",
- "sui-rest-api",
- "sui-sdk 1.32.2",
- "sui-types",
- "tokio",
-]
-
-[[package]]
-name = "sui-macros"
-version = "0.7.0"
-dependencies = [
- "futures",
- "once_cell",
- "sui-proc-macros",
- "tracing",
-]
-
-[[package]]
-name = "sui-metric-checker"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "backoff",
- "base64 0.21.7",
- "chrono",
- "clap",
- "humantime",
- "once_cell",
- "prometheus-http-query",
- "reqwest 0.12.5",
- "serde",
- "serde_yaml 0.9.21",
- "strum_macros 0.24.3",
- "telemetry-subscribers",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-move"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "assert_cmd",
- "better_any",
- "bin-version",
- "clap",
- "colored",
- "futures",
- "jemalloc-ctl",
- "jsonrpsee",
- "move-binary-format",
- "move-cli",
- "move-compiler",
- "move-disassembler",
- "move-ir-types",
- "move-package",
- "move-prover",
- "move-unit-test",
- "move-vm-runtime",
- "mysten-metrics",
- "once_cell",
- "prometheus",
- "rand 0.8.5",
- "serde_json",
- "serde_yaml 0.8.26",
- "sui-core",
- "sui-macros",
- "sui-move-build",
- "sui-move-natives-latest",
- "sui-node",
- "sui-protocol-config",
- "sui-simulator",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-move-build"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "datatest-stable",
- "fastcrypto",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-ir-types",
- "move-package",
- "move-symbol-pool",
- "serde-reflection",
- "sui-package-management",
- "sui-protocol-config",
- "sui-types",
- "sui-verifier-latest",
- "tempfile",
-]
-
-[[package]]
-name = "sui-move-lsp"
-version = "1.32.2"
-dependencies = [
- "bin-version",
- "clap",
- "move-analyzer",
- "tokio",
-]
-
-[[package]]
-name = "sui-move-natives-latest"
-version = "0.1.0"
-dependencies = [
- "bcs",
- "better_any",
- "fastcrypto",
- "fastcrypto-vdf",
- "fastcrypto-zkp",
- "indexmap 2.2.6",
- "move-binary-format",
- "move-core-types",
- "move-stdlib-natives",
- "move-vm-runtime",
- "move-vm-types",
- "rand 0.8.5",
- "smallvec",
- "sui-protocol-config",
- "sui-types",
- "tracing",
-]
-
-[[package]]
-name = "sui-move-natives-v0"
-version = "0.1.0"
-dependencies = [
- "bcs",
- "better_any",
- "fastcrypto",
- "fastcrypto-zkp",
- "linked-hash-map",
- "move-binary-format",
- "move-core-types",
- "move-stdlib-natives-v0",
- "move-vm-runtime-v0",
- "move-vm-types",
- "smallvec",
- "sui-protocol-config",
- "sui-types",
- "tracing",
-]
-
-[[package]]
-name = "sui-move-natives-v1"
-version = "0.1.0"
-dependencies = [
- "bcs",
- "better_any",
- "fastcrypto",
- "fastcrypto-zkp",
- "linked-hash-map",
- "move-binary-format",
- "move-core-types",
- "move-stdlib-natives-v1",
- "move-vm-runtime-v1",
- "move-vm-types",
- "smallvec",
- "sui-protocol-config",
- "sui-types",
- "tracing",
-]
-
-[[package]]
-name = "sui-move-natives-v2"
-version = "0.1.0"
-dependencies = [
- "bcs",
- "better_any",
- "fastcrypto",
- "fastcrypto-zkp",
- "indexmap 2.2.6",
- "move-binary-format",
- "move-core-types",
- "move-stdlib-natives-v2",
- "move-vm-runtime-v2",
- "move-vm-types",
- "smallvec",
- "sui-protocol-config",
- "sui-types",
- "tracing",
-]
-
-[[package]]
-name = "sui-network"
-version = "0.0.0"
-dependencies = [
- "anemo",
- "anemo-build",
- "anemo-tower",
- "anyhow",
- "arc-swap",
- "bcs",
- "bytes",
- "dashmap",
- "ed25519-consensus",
- "fastcrypto",
- "fastcrypto-tbls",
- "futures",
- "governor",
- "mysten-metrics",
- "mysten-network",
- "prometheus",
- "rand 0.8.5",
- "serde",
- "sui-archival",
- "sui-config",
- "sui-macros",
- "sui-storage",
- "sui-swarm-config",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "tonic 0.12.1",
- "tonic-build",
- "tower",
- "tracing",
-]
-
-[[package]]
-name = "sui-node"
-version = "1.32.2"
-dependencies = [
- "anemo",
- "anemo-tower",
- "anyhow",
- "arc-swap",
- "axum 0.7.5",
- "base64 0.21.7",
- "bcs",
- "bin-version",
- "clap",
- "fastcrypto",
- "fastcrypto-zkp",
- "futures",
- "humantime",
- "move-vm-profiler",
- "mysten-common",
- "mysten-metrics",
- "mysten-network",
- "mysten-service",
- "narwhal-network",
- "narwhal-worker",
- "parking_lot 0.12.1",
- "prometheus",
- "reqwest 0.12.5",
- "serde",
- "snap",
- "sui-archival",
- "sui-config",
- "sui-core",
- "sui-json-rpc",
- "sui-json-rpc-api",
- "sui-macros",
- "sui-network",
- "sui-protocol-config",
- "sui-rest-api",
- "sui-simulator",
- "sui-snapshot",
- "sui-storage",
- "sui-telemetry",
- "sui-tls",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tokio",
- "tower",
- "tracing",
- "typed-store",
- "url",
-]
-
-[[package]]
-name = "sui-open-rpc"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "bcs",
- "clap",
- "fastcrypto",
- "move-core-types",
- "pretty_assertions",
- "rand 0.8.5",
- "schemars",
- "serde",
- "serde_json",
- "sui-json",
- "sui-json-rpc",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-protocol-config",
- "sui-types",
- "tokio",
- "versions",
-]
-
-[[package]]
-name = "sui-open-rpc-macros"
-version = "0.1.0"
-dependencies = [
- "derive-syn-parse",
- "itertools 0.10.5",
- "proc-macro2 1.0.78",
- "quote 1.0.35",
- "syn 1.0.107",
- "unescape",
-]
-
-[[package]]
-name = "sui-oracle"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "bcs",
- "chrono",
- "clap",
- "dirs 4.0.0",
- "jsonpath_lib",
- "mysten-metrics",
- "once_cell",
- "prometheus",
- "rand 0.8.5",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "shared-crypto",
- "sui-config",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-move-build",
- "sui-sdk 1.32.2",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-package-dump"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "bcs",
- "cynic",
- "cynic-codegen",
- "fastcrypto",
- "move-core-types",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "sui-types",
- "tracing",
-]
-
-[[package]]
-name = "sui-package-management"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "move-core-types",
- "move-package",
- "move-symbol-pool",
- "sui-json-rpc-types",
- "sui-sdk 1.32.2",
- "sui-types",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "sui-package-resolver"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bcs",
- "eyre",
- "hyper 1.4.1",
- "insta",
- "lru 0.10.0",
- "move-binary-format",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "serde",
- "serde_json",
- "sui-move-build",
- "sui-rest-api",
- "sui-types",
- "thiserror",
- "tokio",
- "tower",
-]
-
-[[package]]
-name = "sui-proc-macros"
-version = "0.7.0"
-dependencies = [
- "msim-macros",
- "proc-macro2 1.0.78",
- "quote 1.0.35",
- "sui-enum-compat-util",
- "syn 2.0.48",
-]
-
-[[package]]
-name = "sui-protocol-config"
-version = "0.1.0"
-dependencies = [
- "clap",
- "insta",
- "move-vm-config",
- "schemars",
- "serde",
- "serde_with 3.9.0",
- "sui-protocol-config-macros",
- "tracing",
-]
-
-[[package]]
-name = "sui-protocol-config-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2 1.0.78",
- "quote 1.0.35",
- "syn 1.0.107",
-]
-
-[[package]]
-name = "sui-proxy"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "axum 0.7.5",
- "axum-extra",
- "axum-server",
- "bin-version",
- "bytes",
- "clap",
- "const-str",
- "fastcrypto",
- "hex",
- "hyper 1.4.1",
- "ipnetwork",
- "itertools 0.10.5",
- "mime",
- "multiaddr",
- "mysten-metrics",
- "once_cell",
- "prometheus",
- "prost 0.13.1",
- "prost-build",
- "protobuf",
- "rand 0.8.5",
- "reqwest 0.12.5",
- "rustls 0.23.12",
- "rustls-pemfile 2.1.2",
- "serde",
- "serde_json",
- "serde_with 3.9.0",
- "serde_yaml 0.8.26",
- "snap",
- "sui-tls",
- "sui-types",
- "telemetry-subscribers",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
-]
-
-[[package]]
-name = "sui-replay"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "async-trait",
- "bcs",
- "clap",
- "futures",
- "http 1.1.0",
- "jsonrpsee",
- "lru 0.10.0",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "move-vm-config",
- "parking_lot 0.12.1",
- "prometheus",
- "rand 0.8.5",
- "regex",
- "serde",
- "serde_json",
- "serde_with 3.9.0",
- "serde_yaml 0.8.26",
- "shared-crypto",
- "shellexpand",
- "similar",
- "sui-config",
- "sui-core",
- "sui-execution",
- "sui-framework",
- "sui-json-rpc",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-protocol-config",
- "sui-sdk 1.32.2",
- "sui-storage",
- "sui-transaction-checks",
- "sui-types",
- "tabled",
- "tempfile",
- "thiserror",
- "tokio",
- "tokio-util 0.7.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "tracing",
-]
-
-[[package]]
-name = "sui-rest-api"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum 0.7.5",
- "bcs",
- "diffy",
- "fastcrypto",
- "itertools 0.10.5",
- "mime",
- "mysten-network",
- "openapiv3",
- "prometheus",
- "rand 0.8.5",
- "reqwest 0.12.5",
- "schemars",
- "serde",
- "serde_json",
- "serde_with 3.9.0",
- "serde_yaml 0.8.26",
- "sui-protocol-config",
- "sui-sdk 0.0.0",
- "sui-types",
- "tap",
- "thiserror",
- "tokio",
- "url",
-]
-
-[[package]]
-name = "sui-rosetta"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum 0.7.5",
- "axum-extra",
- "bcs",
- "clap",
- "eyre",
- "fastcrypto",
- "futures",
- "hyper 1.4.1",
- "move-core-types",
- "mysten-metrics",
- "once_cell",
- "rand 0.8.5",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "shared-crypto",
- "signature 1.6.4",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "sui-config",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-move-build",
- "sui-node",
- "sui-sdk 1.32.2",
- "sui-swarm-config",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "test-cluster",
- "thiserror",
- "tokio",
- "tracing",
- "typed-store",
-]
-
-[[package]]
-name = "sui-rpc-loadgen"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "async-trait",
- "clap",
- "dashmap",
- "dirs 4.0.0",
- "futures",
- "itertools 0.10.5",
- "serde",
- "serde_json",
- "shared-crypto",
- "shellexpand",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "sui-json-rpc",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-sdk 1.32.2",
- "sui-types",
- "telemetry-subscribers",
- "test-cluster",
- "tokio",
- "tonic 0.12.1",
- "tracing",
-]
-
-[[package]]
 name = "sui-sdk"
 version = "0.0.0"
 source = "git+https://github.com/mystenlabs/sui-rust-sdk.git?rev=bd233b6879b917fb95e17f21927c198e7a60c924#bd233b6879b917fb95e17f21927c198e7a60c924"
@@ -14480,761 +15235,6 @@ dependencies = [
  "serde_json",
  "serde_with 3.9.0",
  "winnow 0.6.18",
-]
-
-[[package]]
-name = "sui-sdk"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "async-recursion",
- "async-trait",
- "base64 0.21.7",
- "bcs",
- "clap",
- "colored",
- "dirs 4.0.0",
- "fastcrypto",
- "futures",
- "futures-core",
- "jsonrpsee",
- "move-core-types",
- "rand 0.8.5",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "serde_with 3.9.0",
- "shared-crypto",
- "sui-config",
- "sui-json",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-transaction-builder",
- "sui-types",
- "tempfile",
- "thiserror",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-security-watchdog"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "arrow-array",
- "async-trait",
- "chrono",
- "clap",
- "env_logger",
- "lexical-util",
- "mysten-metrics",
- "prometheus",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "snowflake-api",
- "telemetry-subscribers",
- "tokio",
- "tokio-cron-scheduler",
- "tracing",
- "uuid 1.2.2",
-]
-
-[[package]]
-name = "sui-simulator"
-version = "0.7.0"
-dependencies = [
- "anemo",
- "anemo-tower",
- "bcs",
- "fastcrypto",
- "lru 0.10.0",
- "move-package",
- "msim",
- "narwhal-network",
- "rand 0.8.5",
- "serde",
- "sui-framework",
- "sui-move-build",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "tower",
- "tracing",
-]
-
-[[package]]
-name = "sui-single-node-benchmark"
-version = "1.32.2"
-dependencies = [
- "async-trait",
- "bcs",
- "clap",
- "fs_extra",
- "futures",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "move-package",
- "move-symbol-pool",
- "once_cell",
- "prometheus",
- "serde",
- "serde_json",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "sui-config",
- "sui-core",
- "sui-macros",
- "sui-move-build",
- "sui-protocol-config",
- "sui-simulator",
- "sui-storage",
- "sui-test-transaction-builder",
- "sui-transaction-checks",
- "sui-types",
- "telemetry-subscribers",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-snapshot"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bcs",
- "byteorder",
- "bytes",
- "fastcrypto",
- "futures",
- "indicatif",
- "integer-encoding",
- "num_enum 0.6.1",
- "object_store",
- "prometheus",
- "serde",
- "serde_json",
- "sui-config",
- "sui-core",
- "sui-protocol-config",
- "sui-storage",
- "sui-types",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
-]
-
-[[package]]
-name = "sui-source-validation"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "colored",
- "expect-test",
- "flate2",
- "futures",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-package",
- "move-symbol-pool",
- "rand 0.8.5",
- "sui-json-rpc-types",
- "sui-move-build",
- "sui-package-management",
- "sui-sdk 1.32.2",
- "sui-test-transaction-builder",
- "sui-types",
- "tar",
- "tempfile",
- "test-cluster",
- "thiserror",
- "tokio",
- "tracing",
- "ureq",
-]
-
-[[package]]
-name = "sui-source-validation-service"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum 0.7.5",
- "bin-version",
- "clap",
- "expect-test",
- "fs_extra",
- "hyper 1.4.1",
- "jsonrpsee",
- "move-compiler",
- "move-core-types",
- "move-package",
- "move-symbol-pool",
- "mysten-metrics",
- "prometheus",
- "reqwest 0.12.5",
- "serde",
- "sui",
- "sui-json-rpc-types",
- "sui-move",
- "sui-move-build",
- "sui-sdk 1.32.2",
- "sui-source-validation",
- "telemetry-subscribers",
- "tempfile",
- "test-cluster",
- "tokio",
- "toml 0.7.4",
- "tower",
- "tower-http",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "sui-storage"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum 0.7.5",
- "backoff",
- "base64-url",
- "bcs",
- "byteorder",
- "bytes",
- "chrono",
- "clap",
- "criterion",
- "eyre",
- "fastcrypto",
- "futures",
- "hyper 1.4.1",
- "hyper-rustls 0.27.2",
- "indicatif",
- "integer-encoding",
- "itertools 0.10.5",
- "lru 0.10.0",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "mysten-metrics",
- "num_cpus",
- "num_enum 0.6.1",
- "object_store",
- "once_cell",
- "parking_lot 0.12.1",
- "percent-encoding",
- "pretty_assertions",
- "prometheus",
- "reqwest 0.12.5",
- "serde",
- "serde_json",
- "sui-config",
- "sui-json-rpc-types",
- "sui-macros",
- "sui-protocol-config",
- "sui-simulator",
- "sui-test-transaction-builder",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "tracing",
- "typed-store",
- "url",
- "zstd 0.12.3+zstd.1.5.2",
-]
-
-[[package]]
-name = "sui-surfer"
-version = "1.32.2"
-dependencies = [
- "async-trait",
- "bcs",
- "clap",
- "futures",
- "indexmap 2.2.6",
- "move-binary-format",
- "move-core-types",
- "move-package",
- "prometheus",
- "rand 0.8.5",
- "sui-core",
- "sui-json-rpc-types",
- "sui-macros",
- "sui-move-build",
- "sui-protocol-config",
- "sui-simulator",
- "sui-swarm-config",
- "sui-types",
- "telemetry-subscribers",
- "test-cluster",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "sui-swarm"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "futures",
- "mysten-metrics",
- "mysten-network",
- "prometheus",
- "rand 0.8.5",
- "sui-config",
- "sui-macros",
- "sui-node",
- "sui-protocol-config",
- "sui-simulator",
- "sui-swarm-config",
- "sui-types",
- "tap",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "tonic-health",
- "tracing",
-]
-
-[[package]]
-name = "sui-swarm-config"
-version = "0.0.0"
-dependencies = [
- "anemo",
- "anyhow",
- "bcs",
- "fastcrypto",
- "insta",
- "move-bytecode-utils",
- "narwhal-config",
- "prometheus",
- "rand 0.8.5",
- "serde",
- "serde_with 3.9.0",
- "serde_yaml 0.8.26",
- "shared-crypto",
- "sui-config",
- "sui-execution",
- "sui-genesis-builder",
- "sui-macros",
- "sui-protocol-config",
- "sui-simulator",
- "sui-types",
- "tempfile",
- "tracing",
-]
-
-[[package]]
-name = "sui-telemetry"
-version = "0.1.0"
-dependencies = [
- "reqwest 0.12.5",
- "serde",
- "sui-core",
- "tracing",
-]
-
-[[package]]
-name = "sui-test-transaction-builder"
-version = "0.1.0"
-dependencies = [
- "bcs",
- "move-core-types",
- "shared-crypto",
- "sui-genesis-builder",
- "sui-move-build",
- "sui-sdk 1.32.2",
- "sui-types",
-]
-
-[[package]]
-name = "sui-test-validator"
-version = "1.32.2"
-
-[[package]]
-name = "sui-tls"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "axum 0.7.5",
- "axum-server",
- "ed25519 1.5.3",
- "fastcrypto",
- "pkcs8 0.9.0",
- "rand 0.8.5",
- "rcgen",
- "reqwest 0.12.5",
- "rustls 0.23.12",
- "rustls-webpki 0.102.6",
- "tokio",
- "tokio-rustls 0.26.0",
- "tower-layer",
- "x509-parser",
-]
-
-[[package]]
-name = "sui-tool"
-version = "1.32.2"
-dependencies = [
- "anemo",
- "anemo-cli",
- "anyhow",
- "bcs",
- "bin-version",
- "clap",
- "colored",
- "comfy-table",
- "eyre",
- "fastcrypto",
- "futures",
- "hex",
- "indicatif",
- "itertools 0.10.5",
- "move-core-types",
- "narwhal-storage",
- "narwhal-types",
- "num_cpus",
- "object_store",
- "prometheus",
- "ron",
- "serde",
- "serde_json",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "sui-archival",
- "sui-config",
- "sui-core",
- "sui-network",
- "sui-package-dump",
- "sui-protocol-config",
- "sui-replay",
- "sui-sdk 1.32.2",
- "sui-snapshot",
- "sui-storage",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "tracing",
- "typed-store",
-]
-
-[[package]]
-name = "sui-transaction-builder"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bcs",
- "futures",
- "move-binary-format",
- "move-core-types",
- "sui-json",
- "sui-json-rpc-types",
- "sui-protocol-config",
- "sui-types",
-]
-
-[[package]]
-name = "sui-transaction-checks"
-version = "0.1.0"
-dependencies = [
- "fastcrypto-zkp",
- "once_cell",
- "sui-config",
- "sui-execution",
- "sui-macros",
- "sui-protocol-config",
- "sui-types",
- "tracing",
-]
-
-[[package]]
-name = "sui-transactional-test-runner"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "bcs",
- "bimap",
- "clap",
- "criterion",
- "eyre",
- "fastcrypto",
- "futures",
- "move-binary-format",
- "move-bytecode-utils",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-stdlib",
- "move-symbol-pool",
- "move-transactional-test-runner",
- "move-vm-runtime",
- "msim",
- "once_cell",
- "rand 0.8.5",
- "regex",
- "serde_json",
- "simulacrum",
- "sui-config",
- "sui-core",
- "sui-framework",
- "sui-framework-snapshot",
- "sui-graphql-rpc",
- "sui-json-rpc",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-protocol-config",
- "sui-rest-api",
- "sui-storage",
- "sui-swarm-config",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "typed-store",
-]
-
-[[package]]
-name = "sui-types"
-version = "0.1.0"
-dependencies = [
- "anemo",
- "anyhow",
- "async-trait",
- "bcs",
- "better_any",
- "bincode",
- "byteorder",
- "chrono",
- "consensus-config",
- "coset",
- "criterion",
- "derivative",
- "derive_more",
- "enum_dispatch",
- "expect-test",
- "eyre",
- "fastcrypto",
- "fastcrypto-tbls",
- "fastcrypto-zkp",
- "im",
- "indexmap 2.2.6",
- "itertools 0.10.5",
- "jsonrpsee",
- "lru 0.10.0",
- "move-binary-format",
- "move-bytecode-utils",
- "move-command-line-common",
- "move-core-types",
- "move-disassembler",
- "move-ir-types",
- "move-vm-profiler",
- "move-vm-test-utils",
- "move-vm-types",
- "mysten-metrics",
- "mysten-network",
- "narwhal-config",
- "narwhal-crypto",
- "nonempty",
- "num-bigint 0.4.4",
- "num-traits",
- "num_enum 0.6.1",
- "once_cell",
- "p256",
- "parking_lot 0.12.1",
- "passkey-authenticator",
- "passkey-client",
- "passkey-types",
- "prometheus",
- "proptest",
- "proptest-derive",
- "rand 0.8.5",
- "roaring",
- "schemars",
- "serde",
- "serde-name",
- "serde_json",
- "serde_with 3.9.0",
- "serde_yaml 0.8.26",
- "shared-crypto",
- "signature 1.6.4",
- "static_assertions",
- "strum 0.24.1",
- "strum_macros 0.24.3",
- "sui-enum-compat-util",
- "sui-macros",
- "sui-protocol-config",
- "sui-sdk 0.0.0",
- "tap",
- "thiserror",
- "tokio",
- "tonic 0.12.1",
- "tracing",
- "typed-store-error",
- "url",
-]
-
-[[package]]
-name = "sui-upgrade-compatibility-transactional-tests"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "datatest-stable",
- "insta",
- "move-binary-format",
- "move-command-line-common",
- "move-compiler",
- "move-package",
- "sui-move-build",
-]
-
-[[package]]
-name = "sui-verifier-latest"
-version = "0.1.0"
-dependencies = [
- "move-abstract-interpreter",
- "move-abstract-stack",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier",
- "move-bytecode-verifier-meter",
- "move-core-types",
- "move-vm-config",
- "sui-protocol-config",
- "sui-types",
-]
-
-[[package]]
-name = "sui-verifier-transactional-tests"
-version = "0.1.0"
-dependencies = [
- "datatest-stable",
- "sui-transactional-test-runner",
-]
-
-[[package]]
-name = "sui-verifier-v0"
-version = "0.1.0"
-dependencies = [
- "move-abstract-stack",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier-meter",
- "move-bytecode-verifier-v0",
- "move-core-types",
- "move-vm-config",
- "sui-protocol-config",
- "sui-types",
-]
-
-[[package]]
-name = "sui-verifier-v1"
-version = "0.1.0"
-dependencies = [
- "move-abstract-stack",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier-meter",
- "move-bytecode-verifier-v1",
- "move-core-types",
- "move-vm-config",
- "sui-types",
-]
-
-[[package]]
-name = "sui-verifier-v2"
-version = "0.1.0"
-dependencies = [
- "move-abstract-stack",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier-meter",
- "move-bytecode-verifier-v2",
- "move-core-types",
- "move-vm-config",
- "sui-protocol-config",
- "sui-types",
-]
-
-[[package]]
-name = "suins-indexer"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "async-trait",
- "backoff",
- "base64-url",
- "bcs",
- "bytes",
- "diesel",
- "dotenvy",
- "futures",
- "move-core-types",
- "mysten-metrics",
- "mysten-service",
- "notify",
- "object_store",
- "prometheus",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "serde_yaml 0.8.26",
- "sui-data-ingestion-core",
- "sui-json-rpc",
- "sui-storage",
- "sui-types",
- "telemetry-subscribers",
- "tempfile",
- "tokio",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "suiop-cli"
-version = "1.32.2"
-dependencies = [
- "anyhow",
- "axum 0.7.5",
- "base64 0.21.7",
- "chrono",
- "clap",
- "colored",
- "dirs 4.0.0",
- "docker-api",
- "field_names",
- "include_dir",
- "inquire",
- "open",
- "prettytable-rs",
- "rand 0.8.5",
- "regex",
- "reqwest 0.12.5",
- "semver 1.0.23",
- "serde",
- "serde_json",
- "serde_yaml 0.8.26",
- "sha2 0.10.8",
- "spinners",
- "strum 0.24.1",
- "tabled",
- "tempfile",
- "tokio",
- "toml_edit 0.19.10",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -15536,25 +15536,25 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "move-binary-format",
+ "pera-bridge",
+ "pera-config",
+ "pera-core",
+ "pera-framework",
+ "pera-json-rpc",
+ "pera-json-rpc-api",
+ "pera-json-rpc-types",
+ "pera-keys",
+ "pera-macros",
+ "pera-node",
+ "pera-protocol-config",
+ "pera-sdk",
+ "pera-simulator",
+ "pera-swarm",
+ "pera-swarm-config",
+ "pera-test-transaction-builder",
+ "pera-types",
  "prometheus",
  "rand 0.8.5",
- "sui-bridge",
- "sui-config",
- "sui-core",
- "sui-framework",
- "sui-json-rpc",
- "sui-json-rpc-api",
- "sui-json-rpc-types",
- "sui-keys",
- "sui-macros",
- "sui-node",
- "sui-protocol-config",
- "sui-sdk 1.32.2",
- "sui-simulator",
- "sui-swarm",
- "sui-swarm-config",
- "sui-test-transaction-builder",
- "sui-types",
  "tokio",
  "tracing",
 ]
@@ -16374,13 +16374,13 @@ version = "0.1.0"
 dependencies = [
  "move-core-types",
  "once_cell",
+ "pera-core",
+ "pera-move-build",
+ "pera-protocol-config",
+ "pera-types",
  "proptest",
  "proptest-derive",
  "rand 0.8.5",
- "sui-core",
- "sui-move-build",
- "sui-protocol-config",
- "sui-types",
  "tokio",
  "tracing",
 ]
@@ -16490,6 +16490,7 @@ dependencies = [
  "msim",
  "once_cell",
  "ouroboros 0.17.2",
+ "pera-macros",
  "proc-macro2 1.0.78",
  "prometheus",
  "quote 1.0.35",
@@ -16497,7 +16498,6 @@ dependencies = [
  "rocksdb",
  "rstest",
  "serde",
- "sui-macros",
  "syn 1.0.107",
  "tap",
  "tempfile",

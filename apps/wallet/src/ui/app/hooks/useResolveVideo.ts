@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { type SuiObjectResponse } from '@mysten/sui/client';
+import { type PeraObjectResponse } from '@pera-io/pera/client';
 
 import { useRecognizedPackages } from './useRecognizedPackages';
 
-export function useResolveVideo(object?: SuiObjectResponse | null) {
+export function useResolveVideo(object?: PeraObjectResponse | null) {
 	const recognizedPackages = useRecognizedPackages();
 
 	if (!object) return null;

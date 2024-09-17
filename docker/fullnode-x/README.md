@@ -6,9 +6,9 @@
 1. First start postgres so you can create the DB with the `diesel` command:
 	- `docker compose up postgres -d`
 	  * **Note** that postgres will store its db data in `./postgres/data`
-	- `psql -U postgres -p 5432 -h localhost -c 'create database sui_indexer_testnet'`
-	- run these in sui.git/crates/sui-indexer:
-      * `diesel setup --database-url=postgres://postgres:admin@localhost:5432/sui_indexer_testnet`
+	- `psql -U postgres -p 5432 -h localhost -c 'create database pera_indexer_testnet'`
+	- run these in pera.git/crates/pera-indexer:
+      * `diesel setup --database-url=postgres://postgres:admin@localhost:5432/pera_indexer_testnet`
 
 2. Copy the fullnode.yaml and genesis.blob files for the network to use and put them in the `fullnode/config/` folder.
 

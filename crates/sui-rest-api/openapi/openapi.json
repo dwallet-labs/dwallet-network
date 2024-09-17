@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Sui Node Api",
-    "description": "REST Api for interacting with the Sui Blockchain",
+    "title": "Pera Node Api",
+    "description": "REST Api for interacting with the Pera Blockchain",
     "contact": {
       "name": "Mysten Labs",
       "url": "https://github.com/MystenLabs/sui"
@@ -106,7 +106,7 @@
           "200": {
             "description": "",
             "headers": {
-              "x-sui-cursor": {
+              "x-pera-cursor": {
                 "style": "simple",
                 "schema": {
                   "type": "string"
@@ -247,7 +247,7 @@
           "200": {
             "description": "",
             "headers": {
-              "x-sui-cursor": {
+              "x-pera-cursor": {
                 "style": "simple",
                 "schema": {
                   "type": "string"
@@ -310,7 +310,7 @@
           "200": {
             "description": "",
             "headers": {
-              "x-sui-cursor": {
+              "x-pera-cursor": {
                 "style": "simple",
                 "schema": {
                   "type": "string"
@@ -448,7 +448,7 @@
           "200": {
             "description": "",
             "headers": {
-              "x-sui-cursor": {
+              "x-pera-cursor": {
                 "style": "simple",
                 "schema": {
                   "type": "string"
@@ -631,13 +631,13 @@
           "200": {
             "description": "",
             "headers": {
-              "x-sui-min-supported-protocol-version": {
+              "x-pera-min-supported-protocol-version": {
                 "style": "simple",
                 "schema": {
                   "type": "string"
                 }
               },
-              "x-sui-max-supported-protocol-version": {
+              "x-pera-max-supported-protocol-version": {
                 "style": "simple",
                 "schema": {
                   "type": "string"
@@ -678,13 +678,13 @@
           "200": {
             "description": "",
             "headers": {
-              "x-sui-min-supported-protocol-version": {
+              "x-pera-min-supported-protocol-version": {
                 "style": "simple",
                 "schema": {
                   "type": "string"
                 }
               },
-              "x-sui-max-supported-protocol-version": {
+              "x-pera-max-supported-protocol-version": {
                 "style": "simple",
                 "schema": {
                   "type": "string"
@@ -858,7 +858,7 @@
       },
       "Address": {
         "title": "Address",
-        "description": "A 32-byte Sui address, encoded as a hex string.",
+        "description": "A 32-byte Pera address, encoded as a hex string.",
         "examples": [
           "0x0000000000000000000000000000000000000000000000000000000000000002"
         ],
@@ -2234,7 +2234,7 @@
             }
           },
           {
-            "description": "Sui Move Bytecode Verification Error.",
+            "description": "Pera Move Bytecode Verification Error.",
             "type": "object",
             "required": [
               "error"
@@ -2243,7 +2243,7 @@
               "error": {
                 "type": "string",
                 "enum": [
-                  "sui_move_verification_error"
+                  "pera_move_verification_error"
                 ]
               }
             }
@@ -2614,7 +2614,7 @@
             }
           },
           {
-            "description": "Sui Move Bytecode verification timed out.",
+            "description": "Pera Move Bytecode verification timed out.",
             "type": "object",
             "required": [
               "error"
@@ -2623,7 +2623,7 @@
               "error": {
                 "type": "string",
                 "enum": [
-                  "sui_move_verification_timedout"
+                  "pera_move_verification_timedout"
                 ]
               }
             }
@@ -2875,7 +2875,7 @@
         "title": "Identifier",
         "description": "A Move Identifier",
         "examples": [
-          "sui"
+          "pera"
         ],
         "type": "string",
         "pattern": "(?:[a-zA-Z][a-zA-Z0-9_]{0,127})|(?:_[a-zA-Z0-9_]{0,127})"
@@ -3915,7 +3915,7 @@
         "title": "StructTag",
         "description": "A Move StructTag",
         "examples": [
-          "0x2::coin::Coin<0x2::sui::SUI>"
+          "0x2::coin::Coin<0x2::pera::PERA>"
         ],
         "type": "string"
       },
@@ -4111,7 +4111,7 @@
             "format": "u64"
           },
           "stake_subsidy_balance": {
-            "description": "Balance of SUI set aside for stake subsidies that will be drawn down over time.",
+            "description": "Balance of PERA set aside for stake subsidies that will be drawn down over time.",
             "type": "string",
             "format": "u64"
           },
@@ -4142,7 +4142,7 @@
             "format": "u64"
           },
           "staking_pool_mappings_id": {
-            "description": "ID of the object that maps from staking pool's ID to the sui address of a validator.",
+            "description": "ID of the object that maps from staking pool's ID to the pera address of a validator.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ObjectId"
@@ -5372,7 +5372,7 @@
         }
       },
       "ValidatorSummary": {
-        "description": "This is the REST type for the sui validator. It flattens all inner structures to top-level fields so that they are decoupled from the internal definitions.",
+        "description": "This is the REST type for the pera validator. It flattens all inner structures to top-level fields so that they are decoupled from the internal definitions.",
         "type": "object",
         "required": [
           "address",
@@ -5392,7 +5392,7 @@
           "p2p_address",
           "pending_pool_token_withdraw",
           "pending_stake",
-          "pending_total_sui_withdraw",
+          "pending_total_pera_withdraw",
           "pool_token_balance",
           "primary_address",
           "project_url",
@@ -5400,7 +5400,7 @@
           "protocol_public_key",
           "rewards_pool",
           "staking_pool_id",
-          "staking_pool_sui_balance",
+          "staking_pool_pera_balance",
           "voting_power",
           "worker_address",
           "worker_public_key"
@@ -5503,7 +5503,7 @@
             "type": "string",
             "format": "u64"
           },
-          "pending_total_sui_withdraw": {
+          "pending_total_pera_withdraw": {
             "description": "Pending stake withdrawn during the current epoch, emptied at epoch boundaries.",
             "type": "string",
             "format": "u64"
@@ -5550,8 +5550,8 @@
               }
             ]
           },
-          "staking_pool_sui_balance": {
-            "description": "The total number of SUI tokens in this pool.",
+          "staking_pool_pera_balance": {
+            "description": "The total number of PERA tokens in this pool.",
             "type": "string",
             "format": "u64"
           },

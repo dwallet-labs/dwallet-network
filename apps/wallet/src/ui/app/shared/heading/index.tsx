@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import { type ReactNode } from 'react';
@@ -31,9 +31,9 @@ const headingStyles = cva(
 				'gray-70': 'text-gray-70',
 				'gray-65': 'text-gray-65',
 				'gray-60': 'text-gray-60',
-				'sui-dark': 'text-sui-dark',
-				sui: 'text-sui',
-				'sui-light': 'text-sui-light',
+				'pera-dark': 'text-pera-dark',
+				pera: 'text-pera',
+				'pera-light': 'text-pera-light',
 				steel: 'text-steel',
 				'steel-dark': 'text-steel-dark',
 				'steel-darker': 'text-steel-darker',

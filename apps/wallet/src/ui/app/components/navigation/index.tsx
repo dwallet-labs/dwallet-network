@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { useAppSelector } from '_hooks';
 import { getNavIsVisible } from '_redux/slices/app';
@@ -23,7 +23,7 @@ export function Navigation() {
 				[st.hidden]: !isVisible,
 			})}
 		>
-			<div id="sui-apps-filters" className="flex whitespace-nowrap w-full justify-center"></div>
+			<div id="pera-apps-filters" className="flex whitespace-nowrap w-full justify-center"></div>
 			<div className={st.navMenu}>
 				<NavLink
 					data-testid="nav-tokens"

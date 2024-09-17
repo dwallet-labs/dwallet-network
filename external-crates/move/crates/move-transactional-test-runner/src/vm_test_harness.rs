@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use std::{collections::BTreeMap, path::Path};
 
@@ -272,7 +272,7 @@ impl SimpleVMTestAdapter {
         let vm = MoveVM::new_with_config(
             move_stdlib_natives::all_natives(
                 STD_ADDR,
-                // TODO: come up with a suitable gas schedule
+                // TODO: come up with a peratable gas schedule
                 move_stdlib_natives::GasParameters::zeros(),
                 /* silent */ false,
             ),

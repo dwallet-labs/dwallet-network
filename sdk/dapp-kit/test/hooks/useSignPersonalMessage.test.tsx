@@ -1,5 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { Mock } from 'vitest';
@@ -9,7 +9,7 @@ import {
 	WalletNotConnectedError,
 } from '../../src/errors/walletErrors.js';
 import { useConnectWallet, useSignPersonalMessage } from '../../src/index.js';
-import { signMessageFeature, suiFeatures } from '../mocks/mockFeatures.js';
+import { signMessageFeature, peraFeatures } from '../mocks/mockFeatures.js';
 import { createWalletProviderContextWrapper, registerMockWallet } from '../test-utils.js';
 
 describe('useSignPersonalMessage', () => {
@@ -49,7 +49,7 @@ describe('useSignPersonalMessage', () => {
 		act(() => unregister());
 	});
 
-	test('falls back to the `sui:signMessage` feature with a wallet that lacks support for `sui:signPersonalMessage`.', async () => {
+	test('falls back to the `pera:signMessage` feature with a wallet that lacks support for `pera:signPersonalMessage`.', async () => {
 		const { unregister, mockWallet } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
 			features: signMessageFeature,
@@ -67,7 +67,7 @@ describe('useSignPersonalMessage', () => {
 		result.current.connectWallet.mutate({ wallet: mockWallet });
 		await waitFor(() => expect(result.current.connectWallet.isSuccess).toBe(true));
 
-		const mockSignMessageFeature = mockWallet.features['sui:signMessage'];
+		const mockSignMessageFeature = mockWallet.features['pera:signMessage'];
 		const signMessageMock = mockSignMessageFeature!.signMessage as Mock;
 
 		signMessageMock.mockReturnValueOnce({ messageBytes: 'abc', signature: '123' });
@@ -88,7 +88,7 @@ describe('useSignPersonalMessage', () => {
 	test('signing a personal message from the currently connected account works successfully', async () => {
 		const { unregister, mockWallet } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
-			features: suiFeatures,
+			features: peraFeatures,
 		});
 
 		const wrapper = createWalletProviderContextWrapper();
@@ -104,7 +104,7 @@ describe('useSignPersonalMessage', () => {
 
 		await waitFor(() => expect(result.current.connectWallet.isSuccess).toBe(true));
 
-		const signPersonalMessageFeature = mockWallet.features['sui:signPersonalMessage'];
+		const signPersonalMessageFeature = mockWallet.features['pera:signPersonalMessage'];
 		const signPersonalMessageMock = signPersonalMessageFeature!.signPersonalMessage as Mock;
 
 		signPersonalMessageMock.mockReturnValueOnce({ bytes: 'abc', signature: '123' });

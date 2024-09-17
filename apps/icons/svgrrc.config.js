@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 const path = require('path');
 
 const COPYRIGHT = `
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 `;
 
 /** @type {import('@svgr/core').Config} */
@@ -46,7 +46,7 @@ module.exports = {
 		// Insert the copyright header, attached to the first node:
 		template[0].leadingComments = [
 			{ type: 'CommentLine', value: ' Copyright (c) Mysten Labs, Inc.' },
-			{ type: 'CommentLine', value: ' SPDX-License-Identifier: Apache-2.0' },
+			{ type: 'CommentLine', value: ' SPDX-License-Identifier: BSD-3-Clause-Clear' },
 		];
 
 		return template;

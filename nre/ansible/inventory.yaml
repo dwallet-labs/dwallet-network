@@ -4,7 +4,7 @@ validator:
     validator:
       ansible_host: validator.example.com
       ansible_user: ubuntu
-      sui_release: "$SUI_SHA" # UPDATE THIS
+      pera_release: "$PERA_SHA" # UPDATE THIS
       node_config: "./validator.yaml"
       genesis_blob: "./genesis.blob"
       keypair_path: "./key-pairs/"

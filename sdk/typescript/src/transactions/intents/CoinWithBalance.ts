@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { InferInput } from 'valibot';
 import { bigint, object, parse, string } from 'valibot';
 
 import { bcs } from '../../bcs/index.js';
-import type { CoinStruct, SuiClient } from '../../client/index.js';
-import { normalizeStructTag } from '../../utils/sui-types.js';
+import type { CoinStruct, PeraClient } from '../../client/index.js';
+import { normalizeStructTag } from '../../utils/pera-types.js';
 import { Commands } from '../Commands.js';
 import type { Argument } from '../data/internal.js';
 import { Inputs } from '../Inputs.js';
@@ -16,10 +16,10 @@ import type { Transaction } from '../Transaction.js';
 import type { TransactionDataBuilder } from '../TransactionData.js';
 
 const COIN_WITH_BALANCE = 'CoinWithBalance';
-const SUI_TYPE = normalizeStructTag('0x2::sui::SUI');
+const PERA_TYPE = normalizeStructTag('0x2::pera::PERA');
 
 export function coinWithBalance({
-	type = SUI_TYPE,
+	type = PERA_TYPE,
 	balance,
 	useGasCoin = true,
 }: {
@@ -36,7 +36,7 @@ export function coinWithBalance({
 				name: COIN_WITH_BALANCE,
 				inputs: {},
 				data: {
-					type: coinType === SUI_TYPE && useGasCoin ? 'gas' : coinType,
+					type: coinType === PERA_TYPE && useGasCoin ? 'gas' : coinType,
 					balance: BigInt(balance),
 				} satisfies InferInput<typeof CoinWithBalanceData>,
 			}),
@@ -167,7 +167,7 @@ async function getCoinsOfType({
 }: {
 	coinType: string;
 	balance: bigint;
-	client: SuiClient;
+	client: PeraClient;
 	owner: string;
 	usedIds: Set<string>;
 }): Promise<CoinStruct[]> {

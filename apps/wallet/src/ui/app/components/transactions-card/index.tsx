@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { DateCard } from '_app/shared/date-card';
 import { Text } from '_app/shared/text';
 import { useGetTxnRecipientAddress } from '_hooks';
 import { useRecognizedPackages } from '_src/ui/app/hooks/useRecognizedPackages';
 import { getLabel, useTransactionSummary } from '@mysten/core';
-import type { SuiTransactionBlockResponse } from '@mysten/sui/client';
+import type { PeraTransactionBlockResponse } from '@pera-io/pera/client';
 import { Link } from 'react-router-dom';
 
 import { TxnTypeLabel } from './TxnActionLabel';
@@ -16,7 +16,7 @@ export function TransactionCard({
 	txn,
 	address,
 }: {
-	txn: SuiTransactionBlockResponse;
+	txn: PeraTransactionBlockResponse;
 	address: string;
 }) {
 	const executionStatus = txn.effects?.status.status;
@@ -28,7 +28,7 @@ export function TransactionCard({
 		recognizedPackagesList,
 	});
 
-	// we only show Sui Transfer amount or the first non-Sui transfer amount
+	// we only show Pera Transfer amount or the first non-Pera transfer amount
 
 	const recipientAddress = useGetTxnRecipientAddress({ txn, address });
 
@@ -42,8 +42,8 @@ export function TransactionCard({
 	// For other transaction show Sent or Received
 
 	// TODO: Support programmable tx:
-	// Show sui symbol only if transfer transferAmount coinType is SUI_TYPE_ARG, staking or unstaking
-	const showSuiSymbol = false;
+	// Show pera symbol only if transfer transferAmount coinType is PERA_TYPE_ARG, staking or unstaking
+	const showPeraSymbol = false;
 
 	const timestamp = txn.timestampMs;
 
@@ -86,9 +86,9 @@ export function TransactionCard({
 									<Text color="gray-90" weight="semibold">
 										{summary?.label}
 									</Text>
-									{showSuiSymbol && (
+									{showPeraSymbol && (
 										<Text color="gray-90" weight="normal" variant="subtitleSmall">
-											SUI
+											PERA
 										</Text>
 									)}
 								</div>
