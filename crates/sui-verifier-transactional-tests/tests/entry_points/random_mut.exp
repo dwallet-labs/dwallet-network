@@ -1,6 +1,0 @@
-processed 1 task
-
-task 0, lines 6-14:
-//# publish
-Error: Transaction Effects Status: Pera Move Bytecode Verification Error. Please run the Pera Move Verifier for more information.
-Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: PeraMoveVerificationError, source: Some("Invalid entry point parameter type. Random must be passed by immutable reference. got: &mut pera::random::Random"), command: Some(0) } }

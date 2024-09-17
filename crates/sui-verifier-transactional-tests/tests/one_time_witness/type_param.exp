@@ -1,6 +1,0 @@
-processed 1 task
-
-task 0, lines 6-16:
-//# publish
-Error: Transaction Effects Status: Pera Move Bytecode Verification Error. Please run the Pera Move Verifier for more information.
-Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: PeraMoveVerificationError, source: Some("_::m. 'init' function cannot have type parameters"), command: Some(0) } }

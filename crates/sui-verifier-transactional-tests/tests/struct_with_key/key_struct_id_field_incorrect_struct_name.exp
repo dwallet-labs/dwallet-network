@@ -1,6 +1,0 @@
-processed 1 task
-
-task 0, lines 4-10:
-//# publish
-Error: Transaction Effects Status: Pera Move Bytecode Verification Error. Please run the Pera Move Verifier for more information.
-Execution Error: ExecutionError: ExecutionError { inner: ExecutionErrorInner { kind: PeraMoveVerificationError, source: Some("First field of struct S must be of type pera::object::UID, pera::object::ID type found"), command: Some(0) } }
