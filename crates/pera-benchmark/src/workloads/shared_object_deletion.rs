@@ -14,15 +14,15 @@ use crate::workloads::{Gas, WorkloadBuilderInfo, WorkloadParams};
 use crate::{ExecutionEffects, ValidatorProxy};
 use async_trait::async_trait;
 use futures::future::join_all;
-use rand::seq::SliceRandom;
-use rand::Rng;
-use std::sync::Arc;
 use pera_test_transaction_builder::TestTransactionBuilder;
 use pera_types::crypto::get_key_pair;
 use pera_types::{
     base_types::{ObjectDigest, ObjectID, SequenceNumber},
     transaction::Transaction,
 };
+use rand::seq::SliceRandom;
+use rand::Rng;
+use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 /// The max amount of gas units needed for a payload.

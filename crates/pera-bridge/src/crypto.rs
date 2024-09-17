@@ -19,10 +19,10 @@ use fastcrypto::{
     traits::{RecoverableSigner, ToFromBytes, VerifyRecoverable},
 };
 use fastcrypto::{hash::Keccak256, traits::KeyPair};
+use pera_types::{base_types::ConciseableName, message_envelope::VerifiedEnvelope};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fmt::{Display, Formatter};
-use pera_types::{base_types::ConciseableName, message_envelope::VerifiedEnvelope};
 use tap::TapFallible;
 pub type BridgeAuthorityKeyPair = Secp256k1KeyPair;
 pub type BridgeAuthorityPublicKey = Secp256k1PublicKey;
@@ -185,13 +185,13 @@ mod tests {
     use crate::types::{BridgeAction, BridgeAuthority, PeraToEthBridgeAction};
     use ethers::types::Address as EthAddress;
     use fastcrypto::traits::{KeyPair, ToFromBytes};
-    use prometheus::Registry;
-    use std::str::FromStr;
-    use std::sync::Arc;
     use pera_types::base_types::PeraAddress;
     use pera_types::bridge::{BridgeChainId, TOKEN_ID_ETH};
     use pera_types::crypto::get_key_pair;
     use pera_types::digests::TransactionDigest;
+    use prometheus::Registry;
+    use std::str::FromStr;
+    use std::sync::Arc;
 
     use super::*;
 

@@ -3,7 +3,9 @@
 
 use clap::*;
 use colored::Colorize;
-use pera::client_commands::PeraClientCommands::{ProfileTransaction, ReplayBatch, ReplayTransaction};
+use pera::client_commands::PeraClientCommands::{
+    ProfileTransaction, ReplayBatch, ReplayTransaction,
+};
 use pera::pera_commands::PeraCommand;
 use pera_types::exit_main;
 use tracing::debug;

@@ -15,10 +15,10 @@ use fastcrypto::hash::Hash;
 use futures::{stream::FuturesUnordered, FutureExt, StreamExt};
 use itertools::Itertools;
 use network::WorkerRpc;
+use pera_protocol_config::ProtocolConfig;
 use prometheus::IntGauge;
 use rand::{rngs::ThreadRng, seq::SliceRandom};
 use store::{rocks::DBMap, Map};
-use pera_protocol_config::ProtocolConfig;
 use tokio::{
     select,
     time::{sleep, sleep_until, Instant},

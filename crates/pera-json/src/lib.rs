@@ -515,7 +515,9 @@ pub fn check_valid_homogeneous(val: &JsonValue) -> Result<(), PeraJsonValueError
 
 /// Check via BFS
 /// The invariant is that all types at a given level must be the same or be empty
-fn check_valid_homogeneous_rec(curr_q: &mut VecDeque<&JsonValue>) -> Result<(), PeraJsonValueError> {
+fn check_valid_homogeneous_rec(
+    curr_q: &mut VecDeque<&JsonValue>,
+) -> Result<(), PeraJsonValueError> {
     if curr_q.is_empty() {
         // Nothing to do
         return Ok(());

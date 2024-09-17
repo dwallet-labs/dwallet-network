@@ -11,10 +11,6 @@ use crate::transaction_outputs::TransactionOutputs;
 use pera_types::bridge::Bridge;
 
 use futures::{future::BoxFuture, FutureExt};
-use prometheus::Registry;
-use std::collections::HashSet;
-use std::path::Path;
-use std::sync::Arc;
 use pera_config::ExecutionCacheConfig;
 use pera_protocol_config::ProtocolVersion;
 use pera_types::base_types::VerifiedExecutionData;
@@ -23,18 +19,22 @@ use pera_types::effects::{TransactionEffects, TransactionEvents};
 use pera_types::error::{PeraError, PeraResult, UserInputError};
 use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use pera_types::object::Object;
+use pera_types::pera_system_state::PeraSystemState;
 use pera_types::storage::{
     error::{Error as StorageError, Result as StorageResult},
     BackingPackageStore, BackingStore, ChildObjectResolver, MarkerValue, ObjectKey,
     ObjectOrTombstone, ObjectStore, PackageObject, ParentSync,
 };
-use pera_types::pera_system_state::PeraSystemState;
 use pera_types::transaction::{VerifiedSignedTransaction, VerifiedTransaction};
 use pera_types::{
     base_types::{EpochId, ObjectID, ObjectRef, SequenceNumber},
     object::Owner,
     storage::InputKey,
 };
+use prometheus::Registry;
+use std::collections::HashSet;
+use std::path::Path;
+use std::sync::Arc;
 use tracing::instrument;
 
 pub(crate) mod cache_types;
@@ -225,8 +225,10 @@ pub trait ObjectCacheRead: Send + Sync {
         version: SequenceNumber,
     ) -> PeraResult<Option<Object>>;
 
-    fn multi_get_objects_by_key(&self, object_keys: &[ObjectKey])
-        -> PeraResult<Vec<Option<Object>>>;
+    fn multi_get_objects_by_key(
+        &self,
+        object_keys: &[ObjectKey],
+    ) -> PeraResult<Vec<Option<Object>>>;
 
     fn object_exists_by_key(
         &self,
@@ -574,7 +576,10 @@ pub trait TransactionCacheRead: Send + Sync {
         event_digests: &[TransactionEventsDigest],
     ) -> PeraResult<Vec<Option<TransactionEvents>>>;
 
-    fn get_events(&self, digest: &TransactionEventsDigest) -> PeraResult<Option<TransactionEvents>> {
+    fn get_events(
+        &self,
+        digest: &TransactionEventsDigest,
+    ) -> PeraResult<Option<TransactionEvents>> {
         self.multi_get_events(&[*digest]).map(|mut events| {
             events
                 .pop()

@@ -1,7 +1,5 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-use shared_crypto::intent::Intent;
-use std::{str::FromStr, time::Duration};
 use pera_config::{pera_config_dir, PERA_CLIENT_CONFIG};
 use pera_faucet::FaucetError;
 use pera_json_rpc_types::PeraTransactionBlockResponseOptions;
@@ -9,6 +7,8 @@ use pera_keys::keystore::AccountKeystore;
 use pera_sdk::wallet_context::WalletContext;
 use pera_types::quorum_driver_types::ExecuteTransactionRequestType;
 use pera_types::{base_types::ObjectID, gas_coin::GasCoin, transaction::Transaction};
+use shared_crypto::intent::Intent;
+use std::{str::FromStr, time::Duration};
 use tracing::info;
 
 #[tokio::main]

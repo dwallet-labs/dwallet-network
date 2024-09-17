@@ -16,9 +16,9 @@ use mysten_metrics::{
     monitored_scope,
 };
 use parking_lot::{Mutex, RwLock};
+use pera_macros::fail_point_async;
 #[cfg(not(test))]
 use rand::{prelude::SliceRandom, rngs::ThreadRng};
-use pera_macros::fail_point_async;
 use tap::TapFallible;
 use tokio::{
     sync::{mpsc::error::TrySendError, oneshot},

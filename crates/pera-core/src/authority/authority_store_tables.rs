@@ -3,13 +3,13 @@
 
 use super::*;
 use crate::authority::authority_store::LockDetailsWrapperDeprecated;
-use serde::{Deserialize, Serialize};
-use std::path::Path;
 use pera_types::accumulator::Accumulator;
 use pera_types::base_types::SequenceNumber;
 use pera_types::digests::TransactionEventsDigest;
 use pera_types::effects::TransactionEffects;
 use pera_types::storage::MarkerValue;
+use serde::{Deserialize, Serialize};
+use std::path::Path;
 use typed_store::metrics::SamplingInterval;
 use typed_store::rocks::util::{empty_compaction_filter, reference_count_merge_operator};
 use typed_store::rocks::{
@@ -322,7 +322,10 @@ impl AuthorityPerpetualTables {
         Ok(Some(transaction))
     }
 
-    pub fn get_effects(&self, digest: &TransactionDigest) -> PeraResult<Option<TransactionEffects>> {
+    pub fn get_effects(
+        &self,
+        digest: &TransactionDigest,
+    ) -> PeraResult<Option<TransactionEffects>> {
         let Some(effect_digest) = self.executed_effects.get(digest)? else {
             return Ok(None);
         };

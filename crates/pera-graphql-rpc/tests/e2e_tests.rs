@@ -4,13 +4,6 @@
 #[cfg(feature = "pg_integration")]
 mod tests {
     use fastcrypto::encoding::{Base64, Encoding};
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
-    use serde_json::json;
-    use serial_test::serial;
-    use simulacrum::Simulacrum;
-    use std::sync::Arc;
-    use std::time::Duration;
     use pera_graphql_rpc::client::simple_client::GraphqlQueryVariable;
     use pera_graphql_rpc::client::ClientError;
     use pera_graphql_rpc::config::ConnectionConfig;
@@ -24,6 +17,13 @@ mod tests {
     use pera_types::DEEPBOOK_ADDRESS;
     use pera_types::PERA_FRAMEWORK_ADDRESS;
     use pera_types::PERA_FRAMEWORK_PACKAGE_ID;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+    use serde_json::json;
+    use serial_test::serial;
+    use simulacrum::Simulacrum;
+    use std::sync::Arc;
+    use std::time::Duration;
     use tempfile::tempdir;
     use tokio::time::sleep;
 
@@ -418,14 +418,14 @@ mod tests {
     #[tokio::test]
     #[serial]
     async fn test_zklogin_sig_verify() {
-        use shared_crypto::intent::Intent;
-        use shared_crypto::intent::IntentMessage;
         use pera_test_transaction_builder::TestTransactionBuilder;
         use pera_types::base_types::PeraAddress;
         use pera_types::crypto::Signature;
         use pera_types::signature::GenericSignature;
         use pera_types::utils::load_test_vectors;
         use pera_types::zk_login_authenticator::ZkLoginAuthenticator;
+        use shared_crypto::intent::Intent;
+        use shared_crypto::intent::IntentMessage;
 
         let _guard = telemetry_subscribers::TelemetryConfig::new()
             .with_env()

@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::path::PathBuf;
 use pera_macros::*;
 use pera_test_transaction_builder::publish_package;
 use pera_types::base_types::{ObjectID, ObjectRef, SequenceNumber};
@@ -11,6 +10,7 @@ use pera_types::execution_status::{ExecutionFailureStatus, ExecutionStatus};
 use pera_types::object::{Owner, OBJECT_START_VERSION};
 use pera_types::transaction::{CallArg, ObjectArg};
 use pera_types::PERA_FRAMEWORK_ADDRESS;
+use std::path::PathBuf;
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 #[sim_test]

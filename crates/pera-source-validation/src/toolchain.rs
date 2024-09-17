@@ -48,7 +48,7 @@ pub(crate) fn current_toolchain() -> ToolchainVersion {
     ToolchainVersion {
         compiler_version: CURRENT_COMPILER_VERSION.into(),
         edition: Edition::LEGACY, /* does not matter, unused for current_toolchain */
-        flavor: Flavor::Pera,      /* does not matter, unused for current_toolchain */
+        flavor: Flavor::Pera,     /* does not matter, unused for current_toolchain */
     }
 }
 

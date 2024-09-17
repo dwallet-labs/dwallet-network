@@ -4,12 +4,6 @@
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::stream::{self, StreamExt};
-use reqwest::header::{HeaderValue, CONTENT_LENGTH};
-use reqwest::Client;
-use reqwest::Url;
-use serde::{Deserialize, Serialize};
-use std::str::FromStr;
-use std::sync::Arc;
 use pera_types::base_types::{ObjectID, SequenceNumber, VersionNumber};
 use pera_types::object::Object;
 use pera_types::storage::ObjectKey;
@@ -24,6 +18,12 @@ use pera_types::{
     },
     transaction::Transaction,
 };
+use reqwest::header::{HeaderValue, CONTENT_LENGTH};
+use reqwest::Client;
+use reqwest::Url;
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+use std::sync::Arc;
 use tap::TapFallible;
 use tracing::{error, info, instrument, trace, warn};
 

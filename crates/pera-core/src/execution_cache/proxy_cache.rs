@@ -12,8 +12,6 @@ use crate::transaction_outputs::TransactionOutputs;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use parking_lot::RwLock;
-use std::sync::Arc;
-use std::time::Duration;
 use pera_protocol_config::ProtocolVersion;
 use pera_types::accumulator::Accumulator;
 use pera_types::base_types::VerifiedExecutionData;
@@ -24,9 +22,11 @@ use pera_types::effects::{TransactionEffects, TransactionEvents};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use pera_types::object::Object;
-use pera_types::storage::{MarkerValue, ObjectKey, ObjectOrTombstone, PackageObject};
 use pera_types::pera_system_state::PeraSystemState;
+use pera_types::storage::{MarkerValue, ObjectKey, ObjectOrTombstone, PackageObject};
 use pera_types::transaction::{VerifiedSignedTransaction, VerifiedTransaction};
+use std::sync::Arc;
+use std::time::Duration;
 
 use super::{
     CheckpointCache, ExecutionCacheCommit, ExecutionCacheConfigType, ExecutionCacheMetrics,

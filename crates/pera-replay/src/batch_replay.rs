@@ -6,12 +6,12 @@ use crate::types::ReplayEngineError;
 use futures::future::join_all;
 use futures::FutureExt;
 use parking_lot::Mutex;
+use pera_config::node::ExpensiveSafetyCheckConfig;
+use pera_types::base_types::TransactionDigest;
 use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
-use pera_config::node::ExpensiveSafetyCheckConfig;
-use pera_types::base_types::TransactionDigest;
 use tokio::time::Instant;
 use tracing::{error, info};
 

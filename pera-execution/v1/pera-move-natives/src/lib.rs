@@ -52,9 +52,9 @@ use move_vm_types::{
     natives::function::NativeResult,
     values::{Struct, Value},
 };
-use std::sync::Arc;
 use pera_protocol_config::ProtocolConfig;
 use pera_types::{MOVE_STDLIB_ADDRESS, PERA_FRAMEWORK_ADDRESS, PERA_SYSTEM_ADDRESS};
+use std::sync::Arc;
 use transfer::TransferReceiveObjectInternalCostParams;
 
 mod address;

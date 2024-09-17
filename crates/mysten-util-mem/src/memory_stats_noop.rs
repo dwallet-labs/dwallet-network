@@ -4,11 +4,6 @@
 // Copyright 2021 Parity Technologies
 //
 
-
-
-
-
-
 #[derive(Clone, Debug)]
 pub struct Unimplemented;
 pub use Unimplemented as Error;

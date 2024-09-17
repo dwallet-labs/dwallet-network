@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use super::{string_input::impl_string_input, pera_address::PeraAddress};
+use super::{pera_address::PeraAddress, string_input::impl_string_input};
 use crate::filter;
 use crate::raw_query::RawQuery;
 use async_graphql::*;
 use move_core_types::language_storage::StructTag;
-use std::{fmt, result::Result, str::FromStr};
 use pera_types::{
     parse_pera_address, parse_pera_fq_name, parse_pera_module_id, parse_pera_struct_tag,
     parse_pera_type_tag, TypeTag,
 };
+use std::{fmt, result::Result, str::FromStr};
 
 /// A GraphQL scalar containing a filter on types that requires an exact match.
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -3,11 +3,11 @@
 
 use crate::authority::transaction_deferral::DeferralKey;
 use narwhal_types::Round;
-use std::collections::HashMap;
 use pera_protocol_config::PerObjectCongestionControlMode;
 use pera_types::base_types::{ObjectID, TransactionDigest};
 use pera_types::executable_transaction::VerifiedExecutableTransaction;
 use pera_types::transaction::SharedInputObject;
+use std::collections::HashMap;
 
 // SharedObjectCongestionTracker stores the accumulated cost of executing transactions on an object, for
 // all transactions in a consensus commit.
@@ -160,11 +160,11 @@ impl SharedObjectCongestionTracker {
 mod object_cost_tests {
     use super::*;
 
-    use rstest::rstest;
     use pera_test_transaction_builder::TestTransactionBuilder;
     use pera_types::base_types::{random_object_ref, SequenceNumber};
     use pera_types::crypto::{get_key_pair, AccountKeyPair};
     use pera_types::transaction::{CallArg, ObjectArg, VerifiedTransaction};
+    use rstest::rstest;
 
     fn construct_shared_input_objects(objects: &[(ObjectID, bool)]) -> Vec<SharedInputObject> {
         objects

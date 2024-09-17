@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use inquire::Select;
-use std::collections::BTreeMap;
 use pera_config::genesis::UnsignedGenesis;
 use pera_types::pera_system_state::PeraValidatorGenesis;
 use pera_types::{
@@ -13,6 +12,7 @@ use pera_types::{
     move_package::MovePackage,
     object::{MoveObject, Owner},
 };
+use std::collections::BTreeMap;
 
 const STR_ALL: &str = "All";
 const STR_EXIT: &str = "Exit";
@@ -115,7 +115,8 @@ pub(crate) fn examine_genesis_checkpoint(genesis: UnsignedGenesis) {
     examine_total_supply(&pera_distribution, false);
 
     // Main loop for inspection
-    let main_options: Vec<&str> = vec![STR_PERA_DISTRIBUTION, STR_VALIDATORS, STR_OBJECTS, STR_EXIT];
+    let main_options: Vec<&str> =
+        vec![STR_PERA_DISTRIBUTION, STR_VALIDATORS, STR_OBJECTS, STR_EXIT];
     loop {
         let ans = Select::new(
             "Select one main category to examine ('Exit' to exit the program):",

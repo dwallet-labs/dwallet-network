@@ -3,15 +3,15 @@
 use super::cluster::{new_wallet_context_from_cluster, Cluster};
 use async_trait::async_trait;
 use fastcrypto::encoding::{Encoding, Hex};
-use std::collections::HashMap;
-use std::env;
-use std::sync::Arc;
 use pera_faucet::{
     BatchFaucetResponse, BatchStatusFaucetResponse, Faucet, FaucetConfig, FaucetResponse,
     SimpleFaucet,
 };
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::KeypairTraits;
+use std::collections::HashMap;
+use std::env;
+use std::sync::Arc;
 use tracing::{debug, info, info_span, Instrument};
 use uuid::Uuid;
 

@@ -3,9 +3,6 @@
 
 use crate::Page;
 use fastcrypto::encoding::Base64;
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use pera_types::base_types::TransactionDigest;
 use pera_types::committee::EpochId;
 use pera_types::crypto::AggregateAuthoritySignature;
@@ -17,6 +14,9 @@ use pera_types::messages_checkpoint::{
     CheckpointTimestamp, EndOfEpochData,
 };
 use pera_types::pera_serde::BigInt;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 pub type CheckpointPage = Page<Checkpoint, BigInt<u64>>;
 
 #[serde_as]

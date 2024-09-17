@@ -9,10 +9,10 @@ use crate::pera_transaction_builder::build_pera_transaction;
 use crate::types::{BridgeAction, EmergencyAction};
 use crate::types::{BridgeActionStatus, EmergencyActionType};
 use ethers::types::Address as EthAddress;
-use std::sync::Arc;
 use pera_json_rpc_types::PeraExecutionStatus;
 use pera_json_rpc_types::PeraTransactionBlockEffectsAPI;
 use pera_types::bridge::{BridgeChainId, TOKEN_ID_ETH};
+use std::sync::Arc;
 use tracing::info;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 16)]

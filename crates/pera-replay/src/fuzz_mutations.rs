@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use rand::{seq::SliceRandom, SeedableRng};
 use pera_types::transaction::TransactionKind;
+use rand::{seq::SliceRandom, SeedableRng};
 
 use crate::fuzz::TransactionKindMutator;
 

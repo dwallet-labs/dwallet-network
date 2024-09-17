@@ -23,26 +23,17 @@ use futures::FutureExt;
 use itertools::Itertools;
 use mysten_metrics::{monitored_scope, spawn_monitored_task, MonitoredFutureExt};
 use parking_lot::Mutex;
-use serde::{Deserialize, Serialize};
 use pera_macros::fail_point;
 use pera_network::default_mysten_network_config;
 use pera_types::base_types::ConciseableName;
 use pera_types::executable_transaction::VerifiedExecutableTransaction;
 use pera_types::messages_checkpoint::CheckpointCommitment;
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
+use serde::{Deserialize, Serialize};
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_handler::SequencedConsensusTransactionKey;
 use chrono::Utc;
-use rand::rngs::OsRng;
-use rand::seq::SliceRandom;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
-use std::sync::Arc;
-use std::sync::Weak;
-use std::time::Duration;
 use pera_protocol_config::ProtocolVersion;
 use pera_types::base_types::{AuthorityName, EpochId, TransactionDigest};
 use pera_types::committee::StakeUnit;
@@ -60,9 +51,18 @@ use pera_types::messages_checkpoint::{
 };
 use pera_types::messages_checkpoint::{CheckpointRequestV2, SignedCheckpointSummary};
 use pera_types::messages_consensus::ConsensusTransactionKey;
-use pera_types::signature::GenericSignature;
 use pera_types::pera_system_state::{PeraSystemState, PeraSystemStateTrait};
+use pera_types::signature::GenericSignature;
 use pera_types::transaction::{TransactionDataAPI, TransactionKey, TransactionKind};
+use rand::rngs::OsRng;
+use rand::seq::SliceRandom;
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
+use std::sync::Arc;
+use std::sync::Weak;
+use std::time::Duration;
 use tokio::{
     sync::{watch, Notify},
     time::timeout,
@@ -2392,9 +2392,6 @@ mod tests {
     use super::*;
     use crate::authority::test_authority_builder::TestAuthorityBuilder;
     use futures::future::BoxFuture;
-    use shared_crypto::intent::{Intent, IntentScope};
-    use std::collections::{BTreeMap, HashMap};
-    use std::ops::Deref;
     use pera_macros::sim_test;
     use pera_protocol_config::{Chain, ProtocolConfig};
     use pera_types::base_types::{ObjectID, SequenceNumber, TransactionEffectsDigest};
@@ -2405,6 +2402,9 @@ mod tests {
     use pera_types::move_package::MovePackage;
     use pera_types::object;
     use pera_types::transaction::{GenesisObject, VerifiedTransaction};
+    use shared_crypto::intent::{Intent, IntentScope};
+    use std::collections::{BTreeMap, HashMap};
+    use std::ops::Deref;
     use tokio::sync::mpsc;
 
     #[sim_test]

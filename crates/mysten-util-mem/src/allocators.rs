@@ -4,11 +4,6 @@
 // Copyright 2020 Parity Technologies
 //
 
-
-
-
-
-
 #[cfg(feature = "std")]
 use crate::malloc_size::MallocUnconditionalSizeOf;
 use crate::malloc_size::{MallocSizeOf, MallocSizeOfOps, VoidPtrToSizeFn};

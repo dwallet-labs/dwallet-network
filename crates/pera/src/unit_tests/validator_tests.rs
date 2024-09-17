@@ -6,10 +6,10 @@ use crate::validator_commands::{
 };
 use anyhow::Ok;
 use fastcrypto::encoding::{Base64, Encoding};
-use shared_crypto::intent::{Intent, IntentMessage};
 use pera_types::crypto::PeraKeyPair;
 use pera_types::transaction::TransactionData;
 use pera_types::{base_types::PeraAddress, crypto::Signature, transaction::Transaction};
+use shared_crypto::intent::{Intent, IntentMessage};
 use test_cluster::TestClusterBuilder;
 
 #[tokio::test]

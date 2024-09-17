@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use once_cell::sync::OnceCell;
+use pera_types::base_types::TransactionDigest;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use pera_types::base_types::TransactionDigest;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]

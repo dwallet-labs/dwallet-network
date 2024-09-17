@@ -5,7 +5,7 @@ use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 
 use pera_json_rpc_types::{
-    CheckpointedObjectID, EpochInfo, EpochPage, QueryObjectsPage, PeraObjectResponseQuery,
+    CheckpointedObjectID, EpochInfo, EpochPage, PeraObjectResponseQuery, QueryObjectsPage,
 };
 use pera_open_rpc_macros::open_rpc;
 use pera_types::pera_serde::BigInt;

@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use pera_types::traffic_control::RemoteFirewallConfig;
 use std::net::IpAddr;
 use std::time::SystemTime;
 use std::{net::SocketAddr, sync::Arc};
-use pera_types::traffic_control::RemoteFirewallConfig;
 
 use axum::extract::{ConnectInfo, Json, State};
 use axum::response::Response;
@@ -20,13 +20,13 @@ use jsonrpsee::server::RandomIntegerIdProvider;
 use jsonrpsee::types::error::{ErrorCode, BATCHES_NOT_SUPPORTED_CODE, BATCHES_NOT_SUPPORTED_MSG};
 use jsonrpsee::types::{ErrorObject, Id, InvalidRequest, Params, Request};
 use jsonrpsee::{core::server::rpc_module::Methods, server::logger::Logger};
-use serde_json::value::RawValue;
 use pera_core::traffic_controller::{
     metrics::TrafficControllerMetrics, policies::TrafficTally, TrafficController,
 };
 use pera_json_rpc_api::TRANSACTION_EXECUTION_CLIENT_ERROR_CODE;
 use pera_types::traffic_control::ClientIdSource;
 use pera_types::traffic_control::{PolicyConfig, Weight};
+use serde_json::value::RawValue;
 use tracing::error;
 
 use crate::routing_layer::RpcRouter;

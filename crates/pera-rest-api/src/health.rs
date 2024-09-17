@@ -11,8 +11,8 @@ use axum::{
     http::StatusCode,
     response::IntoResponse,
 };
-use std::time::{Duration, SystemTime};
 use pera_types::storage::ReadStore;
+use std::time::{Duration, SystemTime};
 use tap::Pipe;
 
 pub struct HealthCheck;

@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use mysten_metrics::histogram::Histogram;
+use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
 use std::sync::Arc;
-use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use tap::Pipe;
 
 #[derive(Clone)]

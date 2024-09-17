@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 use crate::FaucetError;
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
 use pera_types::base_types::{ObjectID, PeraAddress, TransactionDigest};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 mod simple_faucet;

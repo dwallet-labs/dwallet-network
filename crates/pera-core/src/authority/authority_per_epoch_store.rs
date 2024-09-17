@@ -14,11 +14,6 @@ use itertools::{izip, Itertools};
 use narwhal_executor::ExecutionIndices;
 use parking_lot::RwLock;
 use parking_lot::{Mutex, RwLockReadGuard, RwLockWriteGuard};
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
-use std::future::Future;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use pera_config::node::{ConsensusProtocol, ExpensiveSafetyCheckConfig};
 use pera_macros::fail_point_arg;
 use pera_types::accumulator::Accumulator;
@@ -37,6 +32,11 @@ use pera_types::transaction::{
     TransactionDataAPI, TransactionKey, TransactionKind, VerifiedCertificate,
     VerifiedSignedTransaction, VerifiedTransaction,
 };
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use std::future::Future;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use tokio::sync::OnceCell;
 use tracing::{debug, error, info, instrument, trace, warn};
 use typed_store::rocks::{read_size_from_env, ReadWriteOptions};
@@ -83,8 +83,6 @@ use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
 use mysten_metrics::monitored_scope;
 use narwhal_types::{Round, TimestampMs};
-use prometheus::IntCounter;
-use std::str::FromStr;
 use pera_execution::{self, Executor};
 use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
@@ -102,10 +100,12 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::storage::GetSharedLocks;
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
+use pera_types::storage::GetSharedLocks;
+use prometheus::IntCounter;
+use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;

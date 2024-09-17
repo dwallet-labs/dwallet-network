@@ -16,6 +16,8 @@ use axum::{
 };
 use http::Method;
 use mysten_metrics::spawn_monitored_task;
+use pera_config::PERA_CLIENT_CONFIG;
+use pera_sdk::wallet_context::WalletContext;
 use prometheus::Registry;
 use std::{
     borrow::Cow,
@@ -24,8 +26,6 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-use pera_config::PERA_CLIENT_CONFIG;
-use pera_sdk::wallet_context::WalletContext;
 use tower::{limit::RateLimitLayer, ServiceBuilder};
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{info, warn};

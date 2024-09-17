@@ -76,7 +76,10 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // Total balance
     // Returns the balance for each coin owned by this address
-    let total_balance = pera.coin_read_api().get_all_balances(active_address).await?;
+    let total_balance = pera
+        .coin_read_api()
+        .get_all_balances(active_address)
+        .await?;
     println!(" *** Balance + Total Balance *** ");
     println!("Balance: {:?}", balance);
     println!("Total Balance: {:?}", total_balance);

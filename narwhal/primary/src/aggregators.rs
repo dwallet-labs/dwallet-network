@@ -9,9 +9,9 @@ use crypto::{
     NarwhalAuthoritySignature, Signature,
 };
 use fastcrypto::hash::{Digest, Hash};
+use pera_protocol_config::ProtocolConfig;
 use std::collections::HashSet;
 use std::sync::Arc;
-use pera_protocol_config::ProtocolConfig;
 use tracing::warn;
 use types::{
     ensure,

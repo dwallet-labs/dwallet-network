@@ -7,7 +7,6 @@ use crate::db_tool::db_dump::{compact, print_table_metadata, prune_checkpoints, 
 use anyhow::{anyhow, bail};
 use clap::Parser;
 use narwhal_storage::NodeStorage;
-use std::path::{Path, PathBuf};
 use pera_core::authority::authority_per_epoch_store::AuthorityEpochTables;
 use pera_core::authority::authority_store_tables::AuthorityPerpetualTables;
 use pera_core::checkpoints::CheckpointStore;
@@ -16,6 +15,7 @@ use pera_types::digests::{CheckpointContentsDigest, TransactionDigest};
 use pera_types::effects::TransactionEffectsAPI;
 use pera_types::messages_checkpoint::{CheckpointDigest, CheckpointSequenceNumber};
 use pera_types::storage::ObjectStore;
+use std::path::{Path, PathBuf};
 use typed_store::rocks::MetricConf;
 pub mod db_dump;
 mod index_search;

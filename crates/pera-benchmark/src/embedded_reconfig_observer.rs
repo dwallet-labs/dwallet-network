@@ -3,7 +3,6 @@
 
 use anyhow::anyhow;
 use async_trait::async_trait;
-use std::sync::Arc;
 use pera_core::authority_aggregator::AuthorityAggregator;
 use pera_core::{
     authority_client::NetworkAuthorityClient,
@@ -11,6 +10,7 @@ use pera_core::{
 };
 use pera_network::default_mysten_network_config;
 use pera_types::pera_system_state::PeraSystemStateTrait;
+use std::sync::Arc;
 use tracing::{error, info, trace};
 
 /// A ReconfigObserver that polls validators periodically

@@ -21,6 +21,26 @@ use fastcrypto_zkp::bn254::zk_login_api::ZkLoginEnv;
 use im::hashmap::HashMap as ImHashMap;
 use json_to_table::{json_to_table, Orientation};
 use num_bigint::BigUint;
+use pera_keys::key_derive::generate_new_key;
+use pera_keys::keypair_file::{
+    read_authority_keypair_from_file, read_keypair_from_file, write_authority_keypair_to_file,
+    write_keypair_to_file,
+};
+use pera_keys::keystore::{AccountKeystore, Keystore};
+use pera_types::base_types::PeraAddress;
+use pera_types::committee::EpochId;
+use pera_types::crypto::{
+    get_authority_key_pair, EncodeDecodeBase64, PeraKeyPair, Signature, SignatureScheme,
+    ZkLoginPublicIdentifier,
+};
+use pera_types::crypto::{DefaultHash, PublicKey};
+use pera_types::error::PeraResult;
+use pera_types::multisig::{MultiSig, MultiSigPublicKey, ThresholdUnit, WeightUnit};
+use pera_types::multisig_legacy::{MultiSigLegacy, MultiSigPublicKeyLegacy};
+use pera_types::signature::{GenericSignature, VerifyParams};
+use pera_types::signature_verification::VerifiedDigestCache;
+use pera_types::transaction::{TransactionData, TransactionDataAPI};
+use pera_types::zk_login_authenticator::ZkLoginAuthenticator;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rand::SeedableRng;
@@ -33,26 +53,6 @@ use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use pera_keys::key_derive::generate_new_key;
-use pera_keys::keypair_file::{
-    read_authority_keypair_from_file, read_keypair_from_file, write_authority_keypair_to_file,
-    write_keypair_to_file,
-};
-use pera_keys::keystore::{AccountKeystore, Keystore};
-use pera_types::base_types::PeraAddress;
-use pera_types::committee::EpochId;
-use pera_types::crypto::{
-    get_authority_key_pair, EncodeDecodeBase64, Signature, SignatureScheme, PeraKeyPair,
-    ZkLoginPublicIdentifier,
-};
-use pera_types::crypto::{DefaultHash, PublicKey};
-use pera_types::error::PeraResult;
-use pera_types::multisig::{MultiSig, MultiSigPublicKey, ThresholdUnit, WeightUnit};
-use pera_types::multisig_legacy::{MultiSigLegacy, MultiSigPublicKeyLegacy};
-use pera_types::signature::{GenericSignature, VerifyParams};
-use pera_types::signature_verification::VerifiedDigestCache;
-use pera_types::transaction::{TransactionData, TransactionDataAPI};
-use pera_types::zk_login_authenticator::ZkLoginAuthenticator;
 use tabled::builder::Builder;
 use tabled::settings::Rotate;
 use tabled::settings::{object::Rows, Modify, Width};
@@ -1215,7 +1215,10 @@ impl KeyToolCommand {
 
                                 let sig = GenericSignature::ZkLoginAuthenticator(zk.clone());
                                 let res = sig.verify_authenticator(
-                                    &IntentMessage::new(Intent::pera_transaction(), tx_data.clone()),
+                                    &IntentMessage::new(
+                                        Intent::pera_transaction(),
+                                        tx_data.clone(),
+                                    ),
                                     tx_data.execution_parts().1,
                                     cur_epoch.unwrap(),
                                     &verify_params,

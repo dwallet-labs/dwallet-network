@@ -43,9 +43,9 @@
 //! We can't prevent this completely, but we can at least make the right way the easy way.
 
 use super::PeraNode;
+use pera_core::authority::AuthorityState;
 use std::future::Future;
 use std::sync::Arc;
-use pera_core::authority::AuthorityState;
 
 /// Wrap PeraNode to allow correct access to PeraNode in simulator tests.
 pub struct PeraNodeHandle {

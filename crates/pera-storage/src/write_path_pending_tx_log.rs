@@ -6,12 +6,12 @@
 //! 1. At one time, a transaction is only processed once.
 //! 2. When Fullnode crashes and restarts, the pending transaction will be loaded and retried.
 
-use std::path::PathBuf;
 use pera_types::base_types::TransactionDigest;
 use pera_types::crypto::EmptySignInfo;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::message_envelope::TrustedEnvelope;
 use pera_types::transaction::{SenderSignedData, VerifiedTransaction};
+use std::path::PathBuf;
 use typed_store::rocks::MetricConf;
 use typed_store::traits::{TableSummary, TypedStoreDebug};
 use typed_store::DBMapUtils;
@@ -95,8 +95,8 @@ impl WritePathPendingTransactionLog {
 mod tests {
     use super::*;
     use anyhow;
-    use std::collections::HashSet;
     use pera_types::utils::create_fake_transaction;
+    use std::collections::HashSet;
 
     #[tokio::test]
     async fn test_pending_tx_log_basic() -> anyhow::Result<()> {

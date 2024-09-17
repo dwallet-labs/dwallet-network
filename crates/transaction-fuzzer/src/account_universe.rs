@@ -6,9 +6,9 @@
 
 use crate::executor::{ExecutionResult, Executor};
 use once_cell::sync::Lazy;
+use pera_types::{storage::ObjectStore, transaction::Transaction};
 use proptest::{prelude::*, strategy::Union};
 use std::{fmt, sync::Arc};
-use pera_types::{storage::ObjectStore, transaction::Transaction};
 
 mod account;
 mod helpers;

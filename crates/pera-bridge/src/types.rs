@@ -16,12 +16,6 @@ use ethers::types::H256;
 pub use ethers::types::H256 as EthTransactionHash;
 use fastcrypto::hash::{HashFunction, Keccak256};
 use num_enum::TryFromPrimitive;
-use rand::seq::SliceRandom;
-use rand::Rng;
-use serde::{Deserialize, Serialize};
-use shared_crypto::intent::IntentScope;
-use std::collections::{BTreeMap, BTreeSet};
-use std::fmt::Debug;
 use pera_types::bridge::{
     BridgeChainId, MoveTypeTokenTransferPayload, APPROVAL_THRESHOLD_ADD_TOKENS_ON_EVM,
     APPROVAL_THRESHOLD_ADD_TOKENS_ON_PERA, BRIDGE_COMMITTEE_MAXIMAL_VOTING_POWER,
@@ -38,6 +32,12 @@ use pera_types::committee::StakeUnit;
 use pera_types::digests::{Digest, TransactionDigest};
 use pera_types::message_envelope::{Envelope, Message, VerifiedEnvelope};
 use pera_types::TypeTag;
+use rand::seq::SliceRandom;
+use rand::Rng;
+use serde::{Deserialize, Serialize};
+use shared_crypto::intent::IntentScope;
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Debug;
 
 pub const BRIDGE_AUTHORITY_TOTAL_VOTING_POWER: u64 = 10000;
 
@@ -590,9 +590,9 @@ mod tests {
     use crate::test_utils::get_test_pera_to_eth_bridge_action;
     use ethers::types::Address as EthAddress;
     use fastcrypto::traits::KeyPair;
-    use std::collections::HashSet;
     use pera_types::bridge::TOKEN_ID_BTC;
     use pera_types::crypto::get_key_pair;
+    use std::collections::HashSet;
 
     use super::*;
 

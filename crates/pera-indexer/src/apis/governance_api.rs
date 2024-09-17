@@ -12,7 +12,7 @@ use diesel::r2d2::R2D2Connection;
 use pera_json_rpc::{governance_api::ValidatorExchangeRates, PeraRpcModule};
 use pera_json_rpc_api::GovernanceReadApiServer;
 use pera_json_rpc_types::{
-    DelegatedStake, EpochInfo, StakeStatus, PeraCommittee, PeraObjectDataFilter, ValidatorApys,
+    DelegatedStake, EpochInfo, PeraCommittee, PeraObjectDataFilter, StakeStatus, ValidatorApys,
 };
 use pera_open_rpc::Module;
 use pera_types::{
@@ -242,9 +242,11 @@ pub async fn exchange_rates(
         {
             let dynamic_field = df
                 .to_dynamic_field::<EpochId, PoolTokenExchangeRate>()
-                .ok_or_else(|| pera_types::error::PeraError::ObjectDeserializationError {
-                    error: "dynamic field malformed".to_owned(),
-                })?;
+                .ok_or_else(
+                    || pera_types::error::PeraError::ObjectDeserializationError {
+                        error: "dynamic field malformed".to_owned(),
+                    },
+                )?;
 
             rates.push((dynamic_field.name, dynamic_field.value));
         }
@@ -282,7 +284,9 @@ impl<T: R2D2Connection + 'static> GovernanceReadApiServer for GovernanceReadApi<
     }
 
     async fn get_latest_pera_system_state(&self) -> RpcResult<PeraSystemStateSummary> {
-        self.get_latest_pera_system_state().await.map_err(Into::into)
+        self.get_latest_pera_system_state()
+            .await
+            .map_err(Into::into)
     }
 
     async fn get_reference_gas_price(&self) -> RpcResult<BigInt<u64>> {

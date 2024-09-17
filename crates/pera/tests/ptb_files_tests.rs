@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[cfg(not(msim))]
-use std::path::Path;
-#[cfg(not(msim))]
 use pera_types::transaction::{CallArg, ObjectArg};
+#[cfg(not(msim))]
+use std::path::Path;
 
 #[cfg(not(msim))]
 const TEST_DIR: &str = "tests";

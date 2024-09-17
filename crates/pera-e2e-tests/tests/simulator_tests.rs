@@ -5,14 +5,14 @@ use futures::{
     stream::{FuturesOrdered, FuturesUnordered},
     StreamExt,
 };
+use pera_protocol_config::ProtocolConfig;
+use pera_test_transaction_builder::make_transfer_pera_transaction;
 use rand::{
     distributions::{Distribution, Uniform},
     rngs::OsRng,
     Rng,
 };
 use std::collections::{HashMap, HashSet};
-use pera_protocol_config::ProtocolConfig;
-use pera_test_transaction_builder::make_transfer_pera_transaction;
 use tokio::time::{sleep, Duration, Instant};
 use tracing::{debug, trace};
 

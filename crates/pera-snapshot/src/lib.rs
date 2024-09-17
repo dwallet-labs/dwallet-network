@@ -17,12 +17,6 @@ use indicatif::ProgressStyle;
 use num_enum::IntoPrimitive;
 use num_enum::TryFromPrimitive;
 use object_store::path::Path;
-use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
-use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::time::Duration;
 use pera_core::authority::authority_store_tables::AuthorityPerpetualTables;
 use pera_core::authority::authority_store_tables::LiveObject;
 use pera_core::authority::epoch_start_configuration::EpochFlag;
@@ -39,6 +33,12 @@ use pera_types::messages_checkpoint::ECMHLiveObjectSetDigest;
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
 use pera_types::pera_system_state::get_pera_system_state;
 use pera_types::pera_system_state::PeraSystemStateTrait;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::time::Instant;
 
 /// The following describes the format of an object file (*.obj) used for persisting live pera objects.

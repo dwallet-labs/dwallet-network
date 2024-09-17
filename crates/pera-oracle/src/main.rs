@@ -3,11 +3,11 @@
 
 use clap::Parser;
 use mysten_metrics::start_prometheus_server;
-use std::path::PathBuf;
-use std::time::Duration;
 use pera_config::Config;
 use pera_oracle::{config::OracleNodeConfig, OracleNode};
 use pera_sdk::wallet_context::WalletContext;
+use std::path::PathBuf;
+use std::time::Duration;
 
 #[derive(Parser)]
 #[clap(rename_all = "kebab-case")]

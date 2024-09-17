@@ -16,10 +16,10 @@ use diesel::{
     sql_types::{BigInt as SqlBigInt, Nullable, Text},
     OptionalExtension, QueryableByName,
 };
-use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use pera_indexer::types::OwnerType;
 use pera_types::{parse_pera_type_tag, TypeTag};
+use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// The total balance for a particular coin type.
 #[derive(Clone, Debug, SimpleObject)]

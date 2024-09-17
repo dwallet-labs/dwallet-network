@@ -4,7 +4,7 @@
 use std::collections::BTreeMap;
 
 use pera_json_rpc_types::ObjectChange;
-use pera_types::base_types::{ObjectID, ObjectRef, SequenceNumber, PeraAddress};
+use pera_types::base_types::{ObjectID, ObjectRef, PeraAddress, SequenceNumber};
 use pera_types::effects::ObjectRemoveKind;
 use pera_types::object::Owner;
 use pera_types::storage::WriteKind;

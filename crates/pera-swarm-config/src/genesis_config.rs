@@ -5,8 +5,6 @@ use std::net::{IpAddr, SocketAddr};
 
 use anyhow::Result;
 use fastcrypto::traits::KeyPair;
-use rand::{rngs::StdRng, SeedableRng};
-use serde::{Deserialize, Serialize};
 use pera_config::genesis::{GenesisCeremonyParameters, TokenAllocation};
 use pera_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
 use pera_config::{local_ip_utils, Config};
@@ -14,9 +12,11 @@ use pera_genesis_builder::validator_info::{GenesisValidatorInfo, ValidatorInfo};
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::{
     generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
-    AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey, PublicKey, PeraKeyPair,
+    AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey, PeraKeyPair, PublicKey,
 };
 use pera_types::multiaddr::Multiaddr;
+use rand::{rngs::StdRng, SeedableRng};
+use serde::{Deserialize, Serialize};
 use tracing::info;
 
 // All information needed to build a NodeConfig for a state sync fullnode.

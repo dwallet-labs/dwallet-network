@@ -5,11 +5,6 @@
 mod ingestion_tests {
     use diesel::ExpressionMethods;
     use diesel::{QueryDsl, RunQueryDsl};
-    use simulacrum::Simulacrum;
-    use std::net::SocketAddr;
-    use std::path::PathBuf;
-    use std::sync::Arc;
-    use std::time::Duration;
     use pera_indexer::db::get_pool_connection;
     use pera_indexer::errors::Context;
     use pera_indexer::errors::IndexerError;
@@ -21,6 +16,11 @@ mod ingestion_tests {
     use pera_types::effects::TransactionEffectsAPI;
     use pera_types::gas_coin::GasCoin;
     use pera_types::PERA_FRAMEWORK_PACKAGE_ID;
+    use simulacrum::Simulacrum;
+    use std::net::SocketAddr;
+    use std::path::PathBuf;
+    use std::sync::Arc;
+    use std::time::Duration;
     use tempfile::tempdir;
     use tokio::task::JoinHandle;
 

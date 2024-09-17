@@ -10,10 +10,10 @@ use crate::{
     safe_client::SafeClientMetricsBase,
 };
 use async_trait::async_trait;
-use std::sync::Arc;
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait;
 use pera_types::pera_system_state::PeraSystemState;
 use pera_types::pera_system_state::PeraSystemStateTrait;
+use std::sync::Arc;
 use tokio::sync::broadcast::error::RecvError;
 use tracing::{info, warn};
 

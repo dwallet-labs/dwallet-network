@@ -7,9 +7,9 @@ use std::{
     str::FromStr,
 };
 
-use serde::{Deserialize, Serialize};
 use pera_swarm_config::genesis_config::GenesisConfig;
 use pera_types::{base_types::PeraAddress, multiaddr::Multiaddr};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     benchmark::{BenchmarkParameters, BenchmarkType},
@@ -158,9 +158,12 @@ impl ProtocolCommands<PeraBenchmarkType> for PeraProtocol {
     where
         I: IntoIterator<Item = Instance>,
     {
-        let genesis_path: PathBuf = [&self.working_dir, &pera_config::PERA_GENESIS_FILENAME.into()]
-            .iter()
-            .collect();
+        let genesis_path: PathBuf = [
+            &self.working_dir,
+            &pera_config::PERA_GENESIS_FILENAME.into(),
+        ]
+        .iter()
+        .collect();
         let keystore_path: PathBuf = [
             &self.working_dir,
             &pera_config::PERA_BENCHMARK_GENESIS_GAS_KEYSTORE_FILENAME.into(),

@@ -11,11 +11,11 @@ use crate::{DataIngestionMetrics, ReaderOptions};
 use anyhow::Result;
 use futures::Future;
 use mysten_metrics::spawn_monitored_task;
+use pera_types::full_checkpoint_content::CheckpointData;
+use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use prometheus::Registry;
 use std::path::PathBuf;
 use std::pin::Pin;
-use pera_types::full_checkpoint_content::CheckpointData;
-use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 

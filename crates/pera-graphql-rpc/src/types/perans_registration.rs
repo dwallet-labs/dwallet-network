@@ -17,9 +17,9 @@ use super::{
     move_value::MoveValue,
     object::{self, Object, ObjectFilter, ObjectImpl, ObjectOwner, ObjectStatus},
     owner::OwnerImpl,
+    pera_address::PeraAddress,
     stake::StakedPera,
     string_input::impl_string_input,
-    pera_address::PeraAddress,
     transaction_block::{self, TransactionBlock, TransactionBlockFilter},
     type_filter::ExactTypeFilter,
     uint53::UInt53,
@@ -32,12 +32,12 @@ use crate::{
 };
 use async_graphql::{connection::Connection, *};
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
-use serde::{Deserialize, Serialize};
 use pera_indexer::models::objects::StoredHistoryObject;
 use pera_json_rpc::name_service::{
     Domain as NativeDomain, NameRecord, NameServiceConfig, NameServiceError,
 };
 use pera_types::{base_types::PeraAddress as NativePeraAddress, dynamic_field::Field, id::UID};
+use serde::{Deserialize, Serialize};
 
 const MOD_REGISTRATION: &IdentStr = ident_str!("perans_registration");
 const TYP_REGISTRATION: &IdentStr = ident_str!("PeransRegistration");
@@ -472,7 +472,9 @@ impl NameService {
         // parent's `NameRecord`.
         let mut object_ids = vec![PeraAddress::from(config.record_field_id(&domain.0))];
         if domain.0.is_subdomain() {
-            object_ids.push(PeraAddress::from(config.record_field_id(&domain.0.parent())));
+            object_ids.push(PeraAddress::from(
+                config.record_field_id(&domain.0.parent()),
+            ));
         }
 
         // Create a page with a bound of `object_ids` length to fetch the relevant `NameRecord`s.

@@ -10,8 +10,6 @@ use crate::test_utils::make_transfer_pera_transaction;
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::traits::KeyPair;
 use move_core_types::ident_str;
-use std::path::PathBuf;
-use std::sync::Arc;
 use pera_config::certificate_deny_config::CertificateDenyConfigBuilder;
 use pera_config::transaction_deny_config::{TransactionDenyConfig, TransactionDenyConfigBuilder};
 use pera_swarm_config::genesis_config::{AccountConfig, DEFAULT_GAS_AMOUNT};
@@ -30,6 +28,8 @@ use pera_types::utils::get_zklogin_user_address;
 use pera_types::utils::{
     make_zklogin_tx, to_sender_signed_transaction, to_sender_signed_transaction_with_multi_signers,
 };
+use std::path::PathBuf;
+use std::sync::Arc;
 
 const ACCOUNT_NUM: usize = 5;
 const GAS_OBJECT_COUNT: usize = 15;

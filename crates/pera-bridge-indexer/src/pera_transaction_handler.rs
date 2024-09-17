@@ -11,10 +11,10 @@ use anyhow::Result;
 use futures::StreamExt;
 use pera_types::digests::TransactionDigest;
 
-use std::time::Duration;
 use pera_bridge::events::{
     MoveTokenDepositedEvent, MoveTokenTransferApproved, MoveTokenTransferClaimed,
 };
+use std::time::Duration;
 
 use pera_json_rpc_types::PeraTransactionBlockEffectsAPI;
 

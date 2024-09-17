@@ -11,13 +11,13 @@ use crate::{
 };
 use anyhow::Result;
 use futures::{future::join_all, StreamExt};
-use std::path::PathBuf;
-use std::{collections::BTreeMap, env, sync::Arc};
 use pera_config::genesis::Genesis;
 use pera_core::authority_client::AuthorityAPI;
 use pera_protocol_config::Chain;
 use pera_replay::{execute_replay_command, ReplayToolCommand};
 use pera_sdk::{rpc_types::PeraTransactionBlockResponseOptions, PeraClient, PeraClientBuilder};
+use std::path::PathBuf;
+use std::{collections::BTreeMap, env, sync::Arc};
 use telemetry_subscribers::TracingHandle;
 
 use pera_types::{

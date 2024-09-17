@@ -13,7 +13,6 @@ use std::str::FromStr;
 
 use expect_test::expect;
 use move_package::{lock_file::schema::ManagedPackage, BuildConfig as MoveBuildConfig};
-use serde_json::json;
 use pera::client_ptb::ptb::PTB;
 use pera::key_identity::{get_identity_address, KeyIdentity};
 #[cfg(feature = "indexer")]
@@ -26,6 +25,7 @@ use pera_types::transaction::{
     TEST_ONLY_GAS_UNIT_FOR_PUBLISH, TEST_ONLY_GAS_UNIT_FOR_SPLIT_COIN,
     TEST_ONLY_GAS_UNIT_FOR_TRANSFER,
 };
+use serde_json::json;
 use tokio::time::sleep;
 
 use pera::{
@@ -54,7 +54,7 @@ use pera_swarm_config::genesis_config::{AccountConfig, GenesisConfig};
 use pera_swarm_config::network_config::NetworkConfig;
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::{
-    Ed25519PeraSignature, Secp256k1PeraSignature, SignatureScheme, PeraKeyPair, PeraSignatureInner,
+    Ed25519PeraSignature, PeraKeyPair, PeraSignatureInner, Secp256k1PeraSignature, SignatureScheme,
 };
 use pera_types::error::PeraObjectResponseError;
 use pera_types::{base_types::ObjectID, crypto::get_key_pair, gas_coin::GasCoin};
@@ -2427,7 +2427,9 @@ async fn test_active_address_command() -> Result<(), anyhow::Error> {
     let addr1 = context.active_address()?;
 
     // Run a command with address omitted
-    let os = PeraClientCommands::ActiveAddress {}.execute(context).await?;
+    let os = PeraClientCommands::ActiveAddress {}
+        .execute(context)
+        .await?;
 
     let a = if let PeraClientCommandResult::ActiveAddress(Some(v)) = os {
         v

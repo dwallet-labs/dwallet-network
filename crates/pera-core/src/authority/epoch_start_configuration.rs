@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use enum_dispatch::enum_dispatch;
-use serde::{Deserialize, Serialize};
 use pera_config::{ExecutionCacheConfig, NodeConfig};
+use serde::{Deserialize, Serialize};
 
-use std::fmt;
 use pera_types::authenticator_state::get_authenticator_state_obj_initial_shared_version;
 use pera_types::base_types::SequenceNumber;
 use pera_types::bridge::{get_bridge_obj_initial_shared_version, is_bridge_committee_initiated};
@@ -13,11 +12,12 @@ use pera_types::deny_list_v1::get_deny_list_obj_initial_shared_version;
 use pera_types::epoch_data::EpochData;
 use pera_types::error::PeraResult;
 use pera_types::messages_checkpoint::{CheckpointDigest, CheckpointTimestamp};
-use pera_types::randomness_state::get_randomness_state_obj_initial_shared_version;
-use pera_types::storage::ObjectStore;
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
+use pera_types::randomness_state::get_randomness_state_obj_initial_shared_version;
+use pera_types::storage::ObjectStore;
+use std::fmt;
 
 use crate::execution_cache::{choose_execution_cache, ExecutionCacheConfigType};
 

@@ -10,15 +10,6 @@ use anyhow::Result;
 use consensus_config::Parameters as ConsensusParameters;
 use narwhal_config::Parameters as NarwhalParameters;
 use once_cell::sync::OnceCell;
-use rand::rngs::OsRng;
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use std::collections::{BTreeMap, BTreeSet};
-use std::net::SocketAddr;
-use std::num::NonZeroUsize;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::time::Duration;
 use pera_keys::keypair_file::{read_authority_keypair_from_file, read_keypair_from_file};
 use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::committee::EpochId;
@@ -29,6 +20,15 @@ use pera_types::crypto::PeraKeyPair;
 use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use pera_types::supported_protocol_versions::{Chain, SupportedProtocolVersions};
 use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
+use rand::rngs::OsRng;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::collections::{BTreeMap, BTreeSet};
+use std::net::SocketAddr;
+use std::num::NonZeroUsize;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::Duration;
 
 use pera_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use pera_types::multiaddr::Multiaddr;
@@ -1077,9 +1077,11 @@ mod tests {
     use std::path::PathBuf;
 
     use fastcrypto::traits::KeyPair;
-    use rand::{rngs::StdRng, SeedableRng};
     use pera_keys::keypair_file::{write_authority_keypair_to_file, write_keypair_to_file};
-    use pera_types::crypto::{get_key_pair_from_rng, AuthorityKeyPair, NetworkKeyPair, PeraKeyPair};
+    use pera_types::crypto::{
+        get_key_pair_from_rng, AuthorityKeyPair, NetworkKeyPair, PeraKeyPair,
+    };
+    use rand::{rngs::StdRng, SeedableRng};
 
     use super::Genesis;
     use crate::NodeConfig;

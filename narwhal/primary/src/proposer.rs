@@ -8,10 +8,10 @@ use config::{AuthorityIdentifier, Committee, WorkerId};
 use fastcrypto::hash::Hash as _;
 use mysten_metrics::metered_channel::{Receiver, Sender};
 use mysten_metrics::spawn_logged_monitored_task;
+use pera_protocol_config::ProtocolConfig;
 use std::collections::{BTreeMap, VecDeque};
 use std::{cmp::Ordering, sync::Arc};
 use storage::ProposerStore;
-use pera_protocol_config::ProtocolConfig;
 use tokio::time::{sleep_until, Instant};
 use tokio::{
     sync::{oneshot, watch},

@@ -10,9 +10,9 @@ use diesel::{
     query_dsl::LoadQuery,
     QueryResult, RunQueryDsl,
 };
+use pera_indexer::indexer_reader::IndexerReader;
 use std::fmt;
 use std::time::Instant;
-use pera_indexer::indexer_reader::IndexerReader;
 
 use pera_indexer::{run_query_async, run_query_repeatable_async, spawn_read_only_blocking};
 use tracing::error;

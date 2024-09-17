@@ -10,7 +10,7 @@ use pera_keys::key_derive::generate_new_key;
 use tempfile::TempDir;
 
 use pera_keys::keystore::{AccountKeystore, FileBasedKeystore, InMemKeystore, Keystore};
-use pera_types::crypto::{DefaultHash, SignatureScheme, PeraSignatureInner};
+use pera_types::crypto::{DefaultHash, PeraSignatureInner, SignatureScheme};
 use pera_types::{
     base_types::{PeraAddress, PERA_ADDRESS_LENGTH},
     crypto::Ed25519PeraSignature,
@@ -214,8 +214,9 @@ fn mnemonic_test() {
 #[test]
 fn pera_wallet_address_mnemonic_test() -> Result<(), anyhow::Error> {
     let phrase = "result crisp session latin must fruit genuine question prevent start coconut brave speak student dismiss";
-    let expected_address =
-        PeraAddress::from_str("0x936accb491f0facaac668baaedcf4d0cfc6da1120b66f77fa6a43af718669973")?;
+    let expected_address = PeraAddress::from_str(
+        "0x936accb491f0facaac668baaedcf4d0cfc6da1120b66f77fa6a43af718669973",
+    )?;
 
     let temp_dir = TempDir::new().unwrap();
     let keystore_path = temp_dir.path().join("pera.keystore");

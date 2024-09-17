@@ -6,7 +6,6 @@ use crate::{
     types::{address::Address, pera_address::PeraAddress, validator::Validator},
 };
 use diesel::PgConnection;
-use std::{collections::BTreeMap, time::Duration};
 use pera_indexer::db::ConnectionPoolConfig;
 use pera_indexer::{apis::GovernanceReadApi, indexer_reader::IndexerReader};
 use pera_json_rpc_types::Stake as RpcStakedPera;
@@ -14,6 +13,7 @@ use pera_types::{
     governance::StakedPera as NativeStakedPera,
     pera_system_state::pera_system_state_summary::PeraSystemStateSummary as NativePeraSystemStateSummary,
 };
+use std::{collections::BTreeMap, time::Duration};
 
 pub(crate) struct PgManager {
     pub inner: IndexerReader<PgConnection>,

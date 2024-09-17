@@ -1,18 +1,18 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use serde::Serialize;
-use shared_crypto::intent::Intent;
-use std::collections::hash_map::Entry;
-use std::collections::{BTreeMap, HashMap};
-use std::hash::Hash;
-use std::sync::Arc;
 use pera_types::base_types::AuthorityName;
 use pera_types::base_types::ConciseableName;
 use pera_types::committee::{Committee, CommitteeTrait, StakeUnit};
 use pera_types::crypto::{AuthorityQuorumSignInfo, AuthoritySignInfo, AuthoritySignInfoTrait};
 use pera_types::error::PeraError;
 use pera_types::message_envelope::{Envelope, Message};
+use serde::Serialize;
+use shared_crypto::intent::Intent;
+use std::collections::hash_map::Entry;
+use std::collections::{BTreeMap, HashMap};
+use std::hash::Hash;
+use std::sync::Arc;
 use tracing::warn;
 
 /// StakeAggregator allows us to keep track of the total stake of a set of validators.

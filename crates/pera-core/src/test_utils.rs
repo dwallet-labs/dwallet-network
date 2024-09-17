@@ -6,11 +6,6 @@ use fastcrypto::traits::KeyPair;
 use futures::future::join_all;
 use move_core_types::account_address::AccountAddress;
 use move_core_types::ident_str;
-use shared_crypto::intent::{Intent, IntentScope};
-use std::collections::BTreeMap;
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
 use pera_config::genesis::Genesis;
 use pera_config::local_ip_utils;
 use pera_config::node::AuthorityOverloadConfig;
@@ -42,6 +37,11 @@ use pera_types::{
     object::Object,
     transaction::CertifiedTransaction,
 };
+use shared_crypto::intent::{Intent, IntentScope};
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::time::timeout;
 use tracing::{info, warn};
 

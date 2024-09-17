@@ -415,9 +415,9 @@ mod tests {
         copy_recursively, delete_recursively, write_snapshot_manifest, MANIFEST_FILENAME,
     };
     use object_store::path::Path;
+    use pera_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
     use std::fs;
     use std::num::NonZeroUsize;
-    use pera_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
     use tempfile::TempDir;
 
     #[tokio::test]

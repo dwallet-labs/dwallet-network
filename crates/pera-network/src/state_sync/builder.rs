@@ -3,13 +3,13 @@
 
 use anemo::codegen::InboundRequestLayer;
 use anemo_tower::{inflight_limit, rate_limit};
+use pera_archival::reader::ArchiveReaderBalancer;
+use pera_config::p2p::StateSyncConfig;
+use pera_types::messages_checkpoint::VerifiedCheckpoint;
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
 };
-use pera_archival::reader::ArchiveReaderBalancer;
-use pera_config::p2p::StateSyncConfig;
-use pera_types::messages_checkpoint::VerifiedCheckpoint;
 use tap::Pipe;
 use tokio::{
     sync::{broadcast, mpsc},

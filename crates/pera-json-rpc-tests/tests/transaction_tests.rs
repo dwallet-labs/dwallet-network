@@ -330,7 +330,10 @@ async fn test_get_fullnode_transaction() -> Result<(), anyhow::Error> {
     for tx_resp in tx.data {
         let response: PeraTransactionBlockResponse = client
             .read_api()
-            .get_transaction_with_options(tx_resp.digest, PeraTransactionBlockResponseOptions::new())
+            .get_transaction_with_options(
+                tx_resp.digest,
+                PeraTransactionBlockResponseOptions::new(),
+            )
             .await
             .unwrap();
         assert_eq!(tx_resp.digest, response.digest);

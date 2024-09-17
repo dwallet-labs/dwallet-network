@@ -13,11 +13,11 @@ async fn cluster_test() {
 #[cfg(feature = "pg_integration")]
 #[tokio::test]
 async fn test_pera_cluster() {
-    use reqwest::StatusCode;
     use pera_cluster_test::cluster::Cluster;
     use pera_cluster_test::cluster::LocalNewCluster;
     use pera_cluster_test::config::Env;
     use pera_graphql_rpc::client::simple_client::SimpleClient;
+    use reqwest::StatusCode;
     use tokio::time::sleep;
     let fullnode_rpc_port: u16 = 9020;
     let indexer_rpc_port: u16 = 9124;

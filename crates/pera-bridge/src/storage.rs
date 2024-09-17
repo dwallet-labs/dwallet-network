@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use pera_types::Identifier;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
-use pera_types::Identifier;
 
 use pera_types::event::EventID;
 use typed_store::rocks::{DBMap, MetricConf};
@@ -114,9 +114,11 @@ impl BridgeOrchestratorTables {
         &self,
         identifiers: &[Identifier],
     ) -> BridgeResult<Vec<Option<EventID>>> {
-        self.pera_syncer_cursors.multi_get(identifiers).map_err(|e| {
-            BridgeError::StorageError(format!("Couldn't get pera_syncer_cursors: {:?}", e))
-        })
+        self.pera_syncer_cursors
+            .multi_get(identifiers)
+            .map_err(|e| {
+                BridgeError::StorageError(format!("Couldn't get pera_syncer_cursors: {:?}", e))
+            })
     }
 
     pub fn get_eth_event_cursors(
@@ -235,12 +237,18 @@ mod tests {
             tx_digest: TransactionDigest::random(),
             event_seq: 1,
         };
-        assert!(store.get_pera_event_cursors(&[pera_module.clone()]).unwrap()[0].is_none());
+        assert!(store
+            .get_pera_event_cursors(&[pera_module.clone()])
+            .unwrap()[0]
+            .is_none());
         store
             .update_pera_event_cursor(pera_module.clone(), pera_cursor)
             .unwrap();
         assert_eq!(
-            store.get_pera_event_cursors(&[pera_module.clone()]).unwrap()[0].unwrap(),
+            store
+                .get_pera_event_cursors(&[pera_module.clone()])
+                .unwrap()[0]
+                .unwrap(),
             pera_cursor
         );
     }

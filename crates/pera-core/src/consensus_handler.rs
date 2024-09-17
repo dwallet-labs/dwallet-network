@@ -16,7 +16,6 @@ use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_m
 use narwhal_config::Committee;
 use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
-use serde::{Deserialize, Serialize};
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
 use pera_types::{
@@ -28,6 +27,7 @@ use pera_types::{
     pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
     transaction::{SenderSignedData, VerifiedTransaction},
 };
+use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
 
 use crate::{
@@ -877,7 +877,6 @@ mod tests {
     use narwhal_config::AuthorityIdentifier;
     use narwhal_test_utils::latest_protocol_version;
     use narwhal_types::{Batch, Certificate, CommittedSubDag, HeaderV1Builder, ReputationScores};
-    use prometheus::Registry;
     use pera_protocol_config::ConsensusTransactionOrdering;
     use pera_types::{
         base_types::{random_object_ref, AuthorityName, PeraAddress},
@@ -892,6 +891,7 @@ mod tests {
             CertifiedTransaction, SenderSignedData, TransactionData, TransactionDataAPI,
         },
     };
+    use prometheus::Registry;
 
     use super::*;
     use crate::{

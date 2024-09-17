@@ -12,12 +12,12 @@ use fastcrypto::{
     secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
     traits::{KeyPair, ToFromBytes},
 };
-use slip10_ed25519::derive_ed25519_private_key;
 use pera_types::{
     base_types::PeraAddress,
-    crypto::{SignatureScheme, PeraKeyPair},
+    crypto::{PeraKeyPair, SignatureScheme},
     error::PeraError,
 };
+use slip10_ed25519::derive_ed25519_private_key;
 
 pub const DERIVATION_PATH_COIN_TYPE: u32 = 784;
 pub const DERVIATION_PATH_PURPOSE_ED25519: u32 = 44;

@@ -1,9 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::collections::HashSet;
-use std::net::SocketAddr;
-use std::path::PathBuf;
 use pera_core::authority_client::AuthorityAPI;
 use pera_macros::*;
 use pera_test_transaction_builder::publish_package;
@@ -13,6 +10,9 @@ use pera_types::effects::{TransactionEffects, TransactionEvents};
 use pera_types::error::{PeraError, UserInputError};
 use pera_types::object::Owner;
 use pera_types::transaction::{CallArg, ObjectArg, Transaction};
+use std::collections::HashSet;
+use std::net::SocketAddr;
+use std::path::PathBuf;
 use test_cluster::{TestCluster, TestClusterBuilder};
 
 #[sim_test]

@@ -4,14 +4,14 @@
 use anemo::types::PeerInfo;
 use anemo::{types::PeerEvent, Network, Peer, PeerId, Request, Response};
 use futures::StreamExt;
+use pera_config::p2p::{AccessType, DiscoveryConfig, P2pConfig, SeedPeer};
+use pera_types::multiaddr::Multiaddr;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
     time::Duration,
 };
-use pera_config::p2p::{AccessType, DiscoveryConfig, P2pConfig, SeedPeer};
-use pera_types::multiaddr::Multiaddr;
 use tap::{Pipe, TapFallible};
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::watch;

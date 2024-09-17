@@ -7,10 +7,10 @@ use crate::consensus::{
 };
 use config::{Committee, Stake};
 use fastcrypto::hash::Hash;
+use pera_protocol_config::ProtocolConfig;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use storage::ConsensusStore;
-use pera_protocol_config::ProtocolConfig;
 use tokio::time::Instant;
 use tracing::{debug, error_span};
 use types::{Certificate, CertificateAPI, CommittedSubDag, HeaderAPI, ReputationScores, Round};

@@ -7,7 +7,7 @@ use jsonrpsee::{core::RpcResult, RpcModule};
 use pera_json_rpc::PeraRpcModule;
 use pera_json_rpc_api::{validate_limit, ExtendedApiServer, QUERY_MAX_RESULT_LIMIT_CHECKPOINTS};
 use pera_json_rpc_types::{
-    CheckpointedObjectID, EpochInfo, EpochPage, Page, QueryObjectsPage, PeraObjectResponseQuery,
+    CheckpointedObjectID, EpochInfo, EpochPage, Page, PeraObjectResponseQuery, QueryObjectsPage,
 };
 use pera_open_rpc::Module;
 use pera_types::pera_serde::BigInt;

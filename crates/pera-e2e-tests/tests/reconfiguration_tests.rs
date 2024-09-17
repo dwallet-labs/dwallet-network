@@ -2,10 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use futures::future::join_all;
-use rand::rngs::OsRng;
-use std::collections::{BTreeSet, HashSet};
-use std::sync::Arc;
-use std::time::Duration;
 use pera_core::consensus_adapter::position_submit_certificate;
 use pera_json_rpc_types::PeraTransactionBlockEffectsAPI;
 use pera_macros::sim_test;
@@ -24,6 +20,10 @@ use pera_types::pera_system_state::{
     PeraSystemStateTrait,
 };
 use pera_types::transaction::{TransactionDataAPI, TransactionExpiration, VerifiedTransaction};
+use rand::rngs::OsRng;
+use std::collections::{BTreeSet, HashSet};
+use std::sync::Arc;
+use std::time::Duration;
 use test_cluster::{TestCluster, TestClusterBuilder};
 use tokio::time::sleep;
 
@@ -366,8 +366,8 @@ async fn test_expired_locks() {
 #[cfg(msim)]
 #[sim_test]
 async fn test_create_advance_epoch_tx_race() {
-    use std::sync::Arc;
     use pera_macros::{register_fail_point, register_fail_point_async};
+    use std::sync::Arc;
     use tokio::sync::broadcast;
     use tracing::info;
 
@@ -724,10 +724,10 @@ async fn do_test_reconfig_with_committee_change_stress() {
 #[cfg(msim)]
 #[sim_test]
 async fn test_epoch_flag_upgrade() {
-    use std::sync::Mutex;
     use pera_core::authority::epoch_start_configuration::EpochFlag;
     use pera_core::authority::epoch_start_configuration::EpochStartConfigTrait;
     use pera_macros::register_fail_point_arg;
+    use std::sync::Mutex;
 
     let initial_flags_nodes = Arc::new(Mutex::new(HashSet::new()));
     register_fail_point_arg("initial_epoch_flags", move || {

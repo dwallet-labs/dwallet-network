@@ -21,7 +21,6 @@ use fastcrypto::hash::{HashFunction, MultisetHash, Sha3_256};
 use futures::stream::FuturesUnordered;
 use itertools::izip;
 use move_core_types::resolver::ModuleResolver;
-use serde::{Deserialize, Serialize};
 use pera_config::node::AuthorityStorePruningConfig;
 use pera_macros::fail_point_arg;
 use pera_storage::mutex_table::{MutexGuard, MutexTable, RwLockGuard, RwLockTable};
@@ -30,11 +29,12 @@ use pera_types::digests::TransactionEventsDigest;
 use pera_types::error::UserInputError;
 use pera_types::execution::TypeLayoutStore;
 use pera_types::message_envelope::Message;
+use pera_types::pera_system_state::get_pera_system_state;
 use pera_types::storage::{
     get_module, BackingPackageStore, MarkerValue, ObjectKey, ObjectOrTombstone, ObjectStore,
 };
-use pera_types::pera_system_state::get_pera_system_state;
 use pera_types::{base_types::SequenceNumber, fp_bail, fp_ensure};
+use serde::{Deserialize, Serialize};
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 use tokio::time::Instant;
 use tracing::{debug, info, trace};

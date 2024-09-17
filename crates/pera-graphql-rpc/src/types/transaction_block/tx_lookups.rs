@@ -15,8 +15,8 @@ use crate::{
     },
 };
 use diesel::{ExpressionMethods, OptionalExtension, QueryDsl};
-use std::fmt::Write;
 use pera_indexer::schema::checkpoints;
+use std::fmt::Write;
 
 /// Bounds on transaction sequence number, imposed by filters, cursors, and the scan limit. The
 /// outermost bounds are determined by the checkpoint filters. These get translated into bounds in

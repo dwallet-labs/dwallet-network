@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
 use pera_data_ingestion::{ArchivalConfig, ArchivalWorker};
 use pera_data_ingestion_core::setup_single_workflow;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Config {

@@ -11,6 +11,7 @@ use itertools::Itertools;
 use mysten_metrics::metered_channel::Receiver;
 use mysten_metrics::{monitored_future, monitored_scope, spawn_logged_monitored_task};
 use network::PrimaryToPrimaryRpc;
+use pera_protocol_config::ProtocolConfig;
 use rand::{rngs::ThreadRng, seq::SliceRandom};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -18,7 +19,6 @@ use std::{
     time::Duration,
 };
 use storage::CertificateStore;
-use pera_protocol_config::ProtocolConfig;
 use tokio::{
     sync::watch,
     task::{spawn_blocking, JoinHandle, JoinSet},

@@ -35,8 +35,8 @@ fn test_macro_shows_feature_enabled() {
 #[cfg(feature = "gas-profiler")]
 #[tokio::test(flavor = "multi_thread")]
 async fn test_profiler() {
-    use std::fs;
     use pera_replay::ReplayToolCommand;
+    use std::fs;
     use tempfile::tempdir;
 
     let output_dir = tempdir().unwrap();

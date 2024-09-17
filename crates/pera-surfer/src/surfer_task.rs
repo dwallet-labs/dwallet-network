@@ -3,12 +3,12 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use rand::{rngs::StdRng, Rng, SeedableRng};
 use pera_core::authority::authority_store_tables::LiveObject;
 use pera_types::{
     base_types::{ObjectRef, PeraAddress},
     object::Owner,
 };
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use test_cluster::TestCluster;
 use tokio::sync::{watch, RwLock};
 

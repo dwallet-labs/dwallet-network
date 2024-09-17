@@ -14,10 +14,10 @@ use axum::Json;
 use ethers::providers::JsonRpcClient;
 use ethers::types::TxHash;
 use lru::LruCache;
+use pera_types::digests::TransactionDigest;
 use std::num::NonZeroUsize;
 use std::str::FromStr;
 use std::sync::Arc;
-use pera_types::digests::TransactionDigest;
 use tap::TapFallible;
 use tokio::sync::{oneshot, Mutex};
 use tracing::info;
@@ -373,7 +373,8 @@ mod tests {
             pera_client: Arc::new(PeraClient::new_for_testing(pera_client_mock.clone())),
         };
         let metrics = Arc::new(BridgeMetrics::new_for_testing());
-        let mut pera_signer_with_cache = SignerWithCache::new(signer.clone(), pera_verifier, metrics);
+        let mut pera_signer_with_cache =
+            SignerWithCache::new(signer.clone(), pera_verifier, metrics);
 
         // Test `get_cache_entry` creates a new entry if not exist
         let pera_tx_digest = TransactionDigest::random();

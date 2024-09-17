@@ -15,8 +15,6 @@ use passkey_types::{
     },
     Bytes, Passkey,
 };
-use shared_crypto::intent::{Intent, IntentMessage, INTENT_PREFIX_LENGTH};
-use std::net::SocketAddr;
 use pera_core::authority_client::AuthorityAPI;
 use pera_macros::sim_test;
 use pera_test_transaction_builder::TestTransactionBuilder;
@@ -34,6 +32,8 @@ use pera_types::{
     crypto::{DefaultHash, Signature},
     passkey_authenticator::to_signing_digest,
 };
+use shared_crypto::intent::{Intent, IntentMessage, INTENT_PREFIX_LENGTH};
+use std::net::SocketAddr;
 use test_cluster::TestCluster;
 use test_cluster::TestClusterBuilder;
 use url::Url;

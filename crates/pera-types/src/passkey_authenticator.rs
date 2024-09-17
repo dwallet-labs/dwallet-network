@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+use crate::crypto::PeraSignatureInner;
 use crate::crypto::PublicKey;
 use crate::crypto::Secp256r1PeraSignature;
-use crate::crypto::PeraSignatureInner;
 use crate::signature_verification::VerifiedDigestCache;
 use crate::{
     base_types::{EpochId, PeraAddress},
-    crypto::{DefaultHash, Signature, SignatureScheme, PeraSignature},
+    crypto::{DefaultHash, PeraSignature, Signature, SignatureScheme},
     digests::ZKLoginInputsDigest,
     error::{PeraError, PeraResult},
     signature::{AuthenticatorTrait, VerifyParams},

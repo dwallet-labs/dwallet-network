@@ -8,7 +8,7 @@ use crate::committee::{Committee, EpochId, ProtocolVersion};
 use crate::crypto::{
     default_hash, AuthoritySignInfo, AuthoritySignInfoTrait, AuthoritySignature,
     AuthorityStrongQuorumSignInfo, DefaultHash, Ed25519PeraSignature, EmptySignInfo,
-    RandomnessRound, Signature, Signer, PeraSignatureInner, ToFromBytes,
+    PeraSignatureInner, RandomnessRound, Signature, Signer, ToFromBytes,
 };
 use crate::digests::{CertificateDigest, SenderSignedDataDigest};
 use crate::digests::{ChainIdentifier, ConsensusCommitDigest, ZKLoginInputsDigest};
@@ -38,6 +38,7 @@ use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::{identifier::Identifier, language_storage::TypeTag};
 use nonempty::{nonempty, NonEmpty};
+use pera_protocol_config::ProtocolConfig;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 use std::fmt::Write;
@@ -50,7 +51,6 @@ use std::{
     iter,
 };
 use strum::IntoStaticStr;
-use pera_protocol_config::ProtocolConfig;
 use tap::Pipe;
 use tracing::trace;
 
@@ -1595,7 +1595,11 @@ impl TransactionData {
         })
     }
 
-    pub fn new_with_gas_data(kind: TransactionKind, sender: PeraAddress, gas_data: GasData) -> Self {
+    pub fn new_with_gas_data(
+        kind: TransactionKind,
+        sender: PeraAddress,
+        gas_data: GasData,
+    ) -> Self {
         TransactionData::V1(TransactionDataV1 {
             kind,
             sender,

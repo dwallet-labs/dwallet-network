@@ -5,8 +5,8 @@ use std::{sync::Arc, time::Instant};
 
 use consensus_config::{AuthorityIndex, Committee, NetworkKeyPair, Parameters, ProtocolKeyPair};
 use parking_lot::RwLock;
-use prometheus::Registry;
 use pera_protocol_config::{ConsensusNetwork, ProtocolConfig};
+use prometheus::Registry;
 use tracing::{info, warn};
 
 use crate::{
@@ -388,9 +388,9 @@ mod tests {
 
     use consensus_config::{local_committee_and_keys, Parameters};
     use mysten_metrics::monitored_mpsc::{unbounded_channel, UnboundedReceiver};
+    use pera_protocol_config::ProtocolConfig;
     use prometheus::Registry;
     use rstest::rstest;
-    use pera_protocol_config::ProtocolConfig;
     use tempfile::TempDir;
     use tokio::time::{sleep, timeout};
     use typed_store::DBMetrics;

@@ -4,8 +4,6 @@
 use crate::workloads::Gas;
 use crate::ValidatorProxy;
 use anyhow::Result;
-use std::path::PathBuf;
-use std::sync::Arc;
 use pera_keys::keystore::{AccountKeystore, FileBasedKeystore};
 use pera_test_transaction_builder::TestTransactionBuilder;
 use pera_types::base_types::ObjectRef;
@@ -14,6 +12,8 @@ use pera_types::object::Owner;
 use pera_types::transaction::{Transaction, TransactionData, TEST_ONLY_GAS_UNIT_FOR_TRANSFER};
 use pera_types::utils::to_sender_signed_transaction;
 use pera_types::{base_types::PeraAddress, crypto::PeraKeyPair};
+use std::path::PathBuf;
+use std::sync::Arc;
 
 // This is the maximum gas we will transfer from primary coin into any gas coin
 // for running the benchmark

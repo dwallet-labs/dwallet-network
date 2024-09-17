@@ -4,11 +4,10 @@
 use move_binary_format::CompiledModule;
 use move_bytecode_utils::module_cache::GetModule;
 use move_core_types::{language_storage::ModuleId, resolver::ModuleResolver};
-use std::collections::{BTreeMap, HashMap};
 use pera_config::genesis;
 use pera_types::storage::{get_module, load_package_object_from_object_store, PackageObject};
 use pera_types::{
-    base_types::{AuthorityName, ObjectID, SequenceNumber, PeraAddress},
+    base_types::{AuthorityName, ObjectID, PeraAddress, SequenceNumber},
     committee::{Committee, EpochId},
     crypto::{AccountKeyPair, AuthorityKeyPair},
     digests::{ObjectDigest, TransactionDigest, TransactionEventsDigest},
@@ -22,6 +21,7 @@ use pera_types::{
     storage::{BackingPackageStore, ChildObjectResolver, ObjectStore, ParentSync},
     transaction::VerifiedTransaction,
 };
+use std::collections::{BTreeMap, HashMap};
 
 use super::SimulatorStore;
 

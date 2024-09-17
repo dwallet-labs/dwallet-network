@@ -16,7 +16,6 @@ use clap::*;
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use move_core_types::ident_str;
-use std::path::{Path, PathBuf};
 use pera_config::node::{AuthorityKeyPairWithPath, KeyPairWithPath};
 use pera_config::{local_ip_utils, Config, NodeConfig, PersistedConfig};
 use pera_json_rpc_types::{PeraExecutionStatus, PeraTransactionBlockResponseOptions};
@@ -29,6 +28,7 @@ use pera_types::transaction::{
     CallArg, Transaction, TransactionData, TEST_ONLY_GAS_UNIT_FOR_GENERIC,
 };
 use pera_types::{committee::EpochId, crypto::get_authority_key_pair, PERA_SYSTEM_PACKAGE_ID};
+use std::path::{Path, PathBuf};
 use tracing::info;
 
 #[derive(Parser)]
@@ -355,7 +355,10 @@ async fn execute_tx(
     Ok(())
 }
 
-async fn wait_for_next_epoch(pera_client: &PeraClient, target_epoch: EpochId) -> anyhow::Result<()> {
+async fn wait_for_next_epoch(
+    pera_client: &PeraClient,
+    target_epoch: EpochId,
+) -> anyhow::Result<()> {
     loop {
         let epoch_id = current_epoch(pera_client).await?;
         if epoch_id > target_epoch {

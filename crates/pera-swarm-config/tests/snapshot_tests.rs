@@ -18,9 +18,6 @@
 
 use fastcrypto::traits::KeyPair;
 use insta::assert_yaml_snapshot;
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use std::num::NonZeroUsize;
 use pera_config::genesis::{GenesisCeremonyParameters, TokenDistributionScheduleBuilder};
 use pera_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
 use pera_genesis_builder::validator_info::ValidatorInfo;
@@ -32,6 +29,9 @@ use pera_types::crypto::{
     NetworkKeyPair, PeraKeyPair,
 };
 use pera_types::multiaddr::Multiaddr;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use std::num::NonZeroUsize;
 
 #[test]
 #[cfg_attr(msim, ignore)]
@@ -106,9 +106,9 @@ fn populated_genesis_snapshot_matches() {
 #[test]
 #[cfg_attr(msim, ignore)]
 fn network_config_snapshot_matches() {
+    use pera_swarm_config::network_config_builder::ConfigBuilder;
     use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::path::PathBuf;
-    use pera_swarm_config::network_config_builder::ConfigBuilder;
 
     let temp_dir = tempfile::tempdir().unwrap();
     let committee_size = 7;

@@ -4,16 +4,16 @@
 use move_core_types::ident_str;
 use move_core_types::identifier::IdentStr;
 use move_core_types::language_storage::StructTag;
-use serde::{Deserialize, Serialize};
-use std::fmt;
-use std::marker::PhantomData;
-use std::str::FromStr;
 use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::collection_types::VecMap;
 use pera_types::dynamic_field::Field;
 use pera_types::id::{ID, UID};
 use pera_types::object::{MoveObject, Object};
 use pera_types::TypeTag;
+use serde::{Deserialize, Serialize};
+use std::fmt;
+use std::marker::PhantomData;
+use std::str::FromStr;
 
 const NAME_SERVICE_DOMAIN_MODULE: &IdentStr = ident_str!("domain");
 const NAME_SERVICE_DOMAIN_STRUCT: &IdentStr = ident_str!("Domain");

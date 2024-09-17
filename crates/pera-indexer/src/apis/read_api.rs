@@ -14,9 +14,9 @@ use crate::indexer_reader::IndexerReader;
 use pera_json_rpc::PeraRpcModule;
 use pera_json_rpc_api::{ReadApiServer, QUERY_MAX_RESULT_LIMIT};
 use pera_json_rpc_types::{
-    Checkpoint, CheckpointId, CheckpointPage, ProtocolConfigResponse, PeraEvent,
-    PeraGetPastObjectRequest, PeraObjectDataOptions, PeraObjectResponse, PeraPastObjectResponse,
-    PeraTransactionBlockResponse, PeraTransactionBlockResponseOptions,
+    Checkpoint, CheckpointId, CheckpointPage, PeraEvent, PeraGetPastObjectRequest,
+    PeraObjectDataOptions, PeraObjectResponse, PeraPastObjectResponse,
+    PeraTransactionBlockResponse, PeraTransactionBlockResponseOptions, ProtocolConfigResponse,
 };
 use pera_open_rpc::Module;
 use pera_protocol_config::{ProtocolConfig, ProtocolVersion};

@@ -3,13 +3,13 @@
 
 use anyhow::{anyhow, bail, Result};
 use move_core_types::ident_str;
+use pera_genesis_builder::validator_info::GenesisValidatorInfo;
 use std::{
     collections::{BTreeMap, HashSet},
     fmt::{self, Debug, Display, Formatter, Write},
     fs,
     path::PathBuf,
 };
-use pera_genesis_builder::validator_info::GenesisValidatorInfo;
 use url::{ParseError, Url};
 
 use pera_types::{
@@ -33,8 +33,6 @@ use fastcrypto::{
     encoding::{Base64, Encoding},
     traits::KeyPair,
 };
-use serde::Serialize;
-use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 use pera_bridge::pera_client::PeraClient as PeraBridgeClient;
 use pera_bridge::pera_transaction_builder::{
     build_committee_register_transaction, build_committee_update_url_transaction,
@@ -55,8 +53,10 @@ use pera_sdk::PeraClient;
 use pera_types::crypto::{
     generate_proof_of_possession, get_authority_key_pair, AuthorityPublicKeyBytes,
 };
-use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, SignatureScheme, PeraKeyPair};
+use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, PeraKeyPair, SignatureScheme};
 use pera_types::transaction::{CallArg, ObjectArg, Transaction, TransactionData};
+use serde::Serialize;
+use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 
 #[path = "unit_tests/validator_tests.rs"]
 #[cfg(test)]
@@ -792,7 +792,10 @@ async fn get_validator_summary_from_cap_id(
 ) -> anyhow::Result<(ValidatorStatus, PeraValidatorSummary)> {
     let resp = client
         .read_api()
-        .get_object_with_options(operation_cap_id, PeraObjectDataOptions::default().with_bcs())
+        .get_object_with_options(
+            operation_cap_id,
+            PeraObjectDataOptions::default().with_bcs(),
+        )
         .await?;
     let bcs = resp.move_object_bcs().ok_or_else(|| {
         anyhow::anyhow!(

@@ -23,7 +23,7 @@ use serde_with::DisplayFromStr;
 
 use pera_protocol_config::ProtocolConfig;
 use pera_types::base_types::{
-    ObjectDigest, ObjectID, ObjectInfo, ObjectRef, ObjectType, SequenceNumber, PeraAddress,
+    ObjectDigest, ObjectID, ObjectInfo, ObjectRef, ObjectType, PeraAddress, SequenceNumber,
     TransactionDigest,
 };
 use pera_types::error::{
@@ -34,8 +34,8 @@ use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use pera_types::move_package::{MovePackage, TypeOrigin, UpgradeInfo};
 use pera_types::object::{Data, MoveObject, Object, ObjectInner, ObjectRead, Owner};
 use pera_types::pera_serde::BigInt;
-use pera_types::pera_serde::SequenceNumber as AsSequenceNumber;
 use pera_types::pera_serde::PeraStructTag;
+use pera_types::pera_serde::SequenceNumber as AsSequenceNumber;
 
 use crate::{Page, PeraMoveStruct, PeraMoveValue};
 
@@ -1237,7 +1237,10 @@ pub struct PeraObjectResponseQuery {
 }
 
 impl PeraObjectResponseQuery {
-    pub fn new(filter: Option<PeraObjectDataFilter>, options: Option<PeraObjectDataOptions>) -> Self {
+    pub fn new(
+        filter: Option<PeraObjectDataFilter>,
+        options: Option<PeraObjectDataOptions>,
+    ) -> Self {
         Self { filter, options }
     }
 

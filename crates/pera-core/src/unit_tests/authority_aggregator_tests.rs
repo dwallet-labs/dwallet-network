@@ -4,14 +4,6 @@
 use crate::test_utils::make_transfer_object_transaction;
 use crate::test_utils::make_transfer_pera_transaction;
 use move_core_types::{account_address::AccountAddress, ident_str};
-use rand::rngs::StdRng;
-use rand::SeedableRng;
-use shared_crypto::intent::{Intent, IntentScope};
-use std::collections::BTreeMap;
-use std::collections::HashSet;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use pera_authority_aggregation::quorum_map_then_reduce_with_timeout;
 use pera_macros::sim_test;
 use pera_move_build::BuildConfig;
@@ -22,6 +14,14 @@ use pera_types::crypto::{KeypairTraits, Signature};
 use pera_types::object::Object;
 use pera_types::transaction::*;
 use pera_types::utils::create_fake_transaction;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use shared_crypto::intent::{Intent, IntentScope};
+use std::collections::BTreeMap;
+use std::collections::HashSet;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 use super::*;
 use crate::authority_client::AuthorityAPI;
@@ -1304,7 +1304,12 @@ async fn test_handle_transaction_response() {
                 AggregatorProcessTransactionError::RetryableTransaction { .. }
             )
         },
-        |e| matches!(e, PeraError::UserInputError { .. } | PeraError::RpcError(..)),
+        |e| {
+            matches!(
+                e,
+                PeraError::UserInputError { .. } | PeraError::RpcError(..)
+            )
+        },
     )
     .await;
 
@@ -1327,7 +1332,12 @@ async fn test_handle_transaction_response() {
                 AggregatorProcessTransactionError::RetryableTransaction { .. }
             )
         },
-        |e| matches!(e, PeraError::UserInputError { .. } | PeraError::RpcError(..)),
+        |e| {
+            matches!(
+                e,
+                PeraError::UserInputError { .. } | PeraError::RpcError(..)
+            )
+        },
     )
     .await;
 
@@ -1351,7 +1361,12 @@ async fn test_handle_transaction_response() {
                 AggregatorProcessTransactionError::RetryableTransaction { .. }
             )
         },
-        |e| matches!(e, PeraError::UserInputError { .. } | PeraError::RpcError(..)),
+        |e| {
+            matches!(
+                e,
+                PeraError::UserInputError { .. } | PeraError::RpcError(..)
+            )
+        },
     )
     .await;
 
@@ -1374,7 +1389,12 @@ async fn test_handle_transaction_response() {
                 AggregatorProcessTransactionError::FatalTransaction { .. }
             )
         },
-        |e| matches!(e, PeraError::UserInputError { .. } | PeraError::RpcError(..)),
+        |e| {
+            matches!(
+                e,
+                PeraError::UserInputError { .. } | PeraError::RpcError(..)
+            )
+        },
     )
     .await;
 
@@ -1397,7 +1417,12 @@ async fn test_handle_transaction_response() {
                 AggregatorProcessTransactionError::FatalTransaction { .. }
             )
         },
-        |e| matches!(e, PeraError::UserInputError { .. } | PeraError::RpcError(..)),
+        |e| {
+            matches!(
+                e,
+                PeraError::UserInputError { .. } | PeraError::RpcError(..)
+            )
+        },
     )
     .await;
 
@@ -1425,7 +1450,12 @@ async fn test_handle_transaction_response() {
                 AggregatorProcessTransactionError::FatalTransaction { .. }
             )
         },
-        |e| matches!(e, PeraError::UserInputError { .. } | PeraError::RpcError(..)),
+        |e| {
+            matches!(
+                e,
+                PeraError::UserInputError { .. } | PeraError::RpcError(..)
+            )
+        },
     )
     .await;
 }
@@ -1636,7 +1666,8 @@ async fn test_handle_conflicting_transaction_response() {
         |e| {
             matches!(
                 e,
-                PeraError::ObjectLockConflict { .. } | PeraError::ByzantineAuthoritySuspicion { .. }
+                PeraError::ObjectLockConflict { .. }
+                    | PeraError::ByzantineAuthoritySuspicion { .. }
             )
         },
     )

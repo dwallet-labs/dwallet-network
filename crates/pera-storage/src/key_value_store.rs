@@ -6,8 +6,6 @@
 
 use crate::key_value_store_metrics::KeyValueStoreMetrics;
 use async_trait::async_trait;
-use std::sync::Arc;
-use std::time::Instant;
 use pera_types::base_types::{ObjectID, SequenceNumber, VersionNumber};
 use pera_types::digests::{
     CheckpointContentsDigest, CheckpointDigest, TransactionDigest, TransactionEventsDigest,
@@ -19,6 +17,8 @@ use pera_types::messages_checkpoint::{
 };
 use pera_types::object::Object;
 use pera_types::transaction::Transaction;
+use std::sync::Arc;
+use std::time::Instant;
 use tracing::instrument;
 
 pub type KVStoreTransactionData = (

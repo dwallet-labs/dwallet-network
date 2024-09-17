@@ -10,19 +10,13 @@ use crate::{
     metrics::BridgeMetrics,
     monitor::BridgeMonitor,
     orchestrator::BridgeOrchestrator,
+    pera_syncer::PeraSyncer,
     server::{handler::BridgeRequestHandler, run_server, BridgeNodePublicMetadata},
     storage::BridgeOrchestratorTables,
-    pera_syncer::PeraSyncer,
 };
 use arc_swap::ArcSwap;
 use ethers::types::Address as EthAddress;
 use mysten_metrics::spawn_logged_monitored_task;
-use std::{
-    collections::HashMap,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    sync::Arc,
-    time::Duration,
-};
 use pera_types::{
     bridge::{
         BRIDGE_COMMITTEE_MODULE_NAME, BRIDGE_LIMITER_MODULE_NAME, BRIDGE_MODULE_NAME,
@@ -30,6 +24,12 @@ use pera_types::{
     },
     event::EventID,
     Identifier,
+};
+use std::{
+    collections::HashMap,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    sync::Arc,
+    time::Duration,
 };
 use tokio::task::JoinHandle;
 use tracing::info;

@@ -11,14 +11,14 @@ use crate::workloads::workload::{
 use crate::workloads::{Gas, GasCoinConfig, WorkloadBuilderInfo, WorkloadParams};
 use crate::{ExecutionEffects, ValidatorProxy};
 use async_trait::async_trait;
-use rand::seq::IteratorRandom;
-use std::sync::Arc;
 use pera_core::test_utils::make_transfer_pera_transaction;
 use pera_test_transaction_builder::TestTransactionBuilder;
 use pera_types::base_types::{ObjectRef, PeraAddress};
 use pera_types::crypto::{get_key_pair, AccountKeyPair};
 use pera_types::gas_coin::NPERA_PER_PERA;
 use pera_types::transaction::Transaction;
+use rand::seq::IteratorRandom;
+use std::sync::Arc;
 use tracing::error;
 
 #[derive(Debug)]

@@ -12,12 +12,6 @@ use bytes::Bytes;
 use futures::future::try_join_all;
 use object_store::path::Path;
 use object_store::DynObjectStore;
-use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
-use std::fs;
-use std::num::NonZeroUsize;
-use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
 use pera_config::node::AuthorityStorePruningConfig;
 use pera_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
 use pera_storage::mutex_table::RwLockTable;
@@ -25,6 +19,12 @@ use pera_storage::object_store::util::{
     copy_recursively, find_all_dirs_with_epoch_prefix, find_missing_epochs_dirs,
     path_to_filesystem, put, run_manifest_update_loop, write_snapshot_manifest,
 };
+use prometheus::{register_int_gauge_with_registry, IntGauge, Registry};
+use std::fs;
+use std::num::NonZeroUsize;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::Duration;
 use tracing::{debug, error, info};
 use typed_store::rocks::MetricConf;
 
@@ -390,11 +390,11 @@ mod tests {
         DBCheckpointHandler, SUCCESS_MARKER, TEST_MARKER, UPLOAD_COMPLETED_MARKER,
     };
     use itertools::Itertools;
-    use std::fs;
     use pera_config::object_storage_config::{ObjectStoreConfig, ObjectStoreType};
     use pera_storage::object_store::util::{
         find_all_dirs_with_epoch_prefix, find_missing_epochs_dirs, path_to_filesystem,
     };
+    use std::fs;
     use tempfile::TempDir;
 
     #[tokio::test]

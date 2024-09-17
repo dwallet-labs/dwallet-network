@@ -33,7 +33,7 @@ use pera_types::parse_pera_struct_tag;
 use mockall::automock;
 
 use crate::authority_state::StateRead;
-use crate::error::{Error, RpcInterimResult, PeraRpcInputError};
+use crate::error::{Error, PeraRpcInputError, RpcInterimResult};
 use crate::{with_tracing, PeraRpcModule};
 
 pub fn parse_to_struct_tag(coin_type: &str) -> Result<StructTag, PeraRpcInputError> {
@@ -412,7 +412,7 @@ mod tests {
     };
     use pera_storage::key_value_store_metrics::KeyValueStoreMetrics;
     use pera_types::balance::Supply;
-    use pera_types::base_types::{ObjectID, SequenceNumber, PeraAddress};
+    use pera_types::base_types::{ObjectID, PeraAddress, SequenceNumber};
     use pera_types::coin::TreasuryCap;
     use pera_types::digests::{ObjectDigest, TransactionDigest, TransactionEventsDigest};
     use pera_types::effects::TransactionEffects;
@@ -682,8 +682,9 @@ mod tests {
             let cursor = coins[0].coin_object_id;
             let limit = 2;
 
-            let coin_type_tag =
-                TypeTag::Struct(Box::new(parse_pera_struct_tag(&coins[0].coin_type).unwrap()));
+            let coin_type_tag = TypeTag::Struct(Box::new(
+                parse_pera_struct_tag(&coins[0].coin_type).unwrap(),
+            ));
             let mut mock_state = MockStateRead::new();
             mock_state
                 .expect_get_owned_coins()

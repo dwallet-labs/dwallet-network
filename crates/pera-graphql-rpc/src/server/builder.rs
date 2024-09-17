@@ -29,7 +29,7 @@ use crate::{
         timeout::Timeout,
     },
     server::version::{check_version_middleware, set_version_middleware},
-    types::query::{Query, PeraGraphQLSchema},
+    types::query::{PeraGraphQLSchema, Query},
 };
 use async_graphql::extensions::ApolloTracing;
 use async_graphql::extensions::Tracing;
@@ -49,14 +49,14 @@ use chrono::Utc;
 use http::{HeaderValue, Method, Request};
 use mysten_metrics::spawn_monitored_task;
 use mysten_network::callback::{CallbackLayer, MakeCallbackHandler, ResponseHandler};
+use pera_graphql_rpc_headers::LIMITS_HEADER;
+use pera_package_resolver::{PackageStoreWithLruCache, Resolver};
+use pera_sdk::PeraClientBuilder;
 use std::convert::Infallible;
 use std::net::TcpStream;
 use std::sync::Arc;
 use std::time::Duration;
 use std::{any::Any, net::SocketAddr, time::Instant};
-use pera_graphql_rpc_headers::LIMITS_HEADER;
-use pera_package_resolver::{PackageStoreWithLruCache, Resolver};
-use pera_sdk::PeraClientBuilder;
 use tokio::join;
 use tokio::sync::OnceCell;
 use tokio_util::sync::CancellationToken;
@@ -675,10 +675,10 @@ pub mod tests {
         extensions::{Extension, ExtensionContext, NextExecute},
         Response,
     };
-    use std::sync::Arc;
-    use std::time::Duration;
     use pera_sdk::{wallet_context::WalletContext, PeraClient};
     use pera_types::transaction::TransactionData;
+    use std::sync::Arc;
+    use std::time::Duration;
     use uuid::Uuid;
 
     /// Prepares a schema for tests dealing with extensions. Returns a `ServerBuilder` that can be

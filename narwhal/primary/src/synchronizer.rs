@@ -14,6 +14,7 @@ use mysten_metrics::{monitored_scope, spawn_logged_monitored_task};
 use mysten_network::anemo_ext::{NetworkExt, WaitingPeer};
 use network::{client::NetworkClient, PrimaryToWorkerClient, RetryConfig};
 use parking_lot::Mutex;
+use pera_protocol_config::ProtocolConfig;
 use std::{
     cmp::min,
     collections::{BTreeMap, HashMap, HashSet, VecDeque},
@@ -24,7 +25,6 @@ use std::{
     time::Duration,
 };
 use storage::{CertificateStore, PayloadStore};
-use pera_protocol_config::ProtocolConfig;
 use tokio::task::spawn_blocking;
 use tokio::time::Instant;
 use tokio::{

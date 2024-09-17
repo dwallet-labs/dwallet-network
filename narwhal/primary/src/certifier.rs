@@ -11,11 +11,11 @@ use futures::StreamExt;
 use mysten_metrics::metered_channel::Receiver;
 use mysten_metrics::{monitored_future, spawn_logged_monitored_task};
 use mysten_network::anemo_ext::NetworkExt;
+use pera_macros::fail_point_async;
+use pera_protocol_config::ProtocolConfig;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::CertificateStore;
-use pera_macros::fail_point_async;
-use pera_protocol_config::ProtocolConfig;
 use tokio::{
     sync::oneshot,
     task::{JoinHandle, JoinSet},

@@ -12,16 +12,16 @@ use crate::types::{
     BridgeAction, BridgeCommittee, CertifiedBridgeAction, VerifiedCertifiedBridgeAction,
     VerifiedSignedBridgeAction,
 };
-use std::collections::btree_map::Entry;
-use std::collections::BTreeMap;
-use std::collections::BTreeSet;
-use std::sync::Arc;
-use std::time::Duration;
 use pera_authority_aggregation::quorum_map_then_reduce_with_timeout_and_prefs;
 use pera_authority_aggregation::ReduceOutput;
 use pera_types::base_types::ConciseableName;
 use pera_types::committee::StakeUnit;
 use pera_types::committee::TOTAL_VOTING_POWER;
+use std::collections::btree_map::Entry;
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::sync::Arc;
+use std::time::Duration;
 use tracing::{error, info, warn};
 
 pub struct BridgeAuthorityAggregator {

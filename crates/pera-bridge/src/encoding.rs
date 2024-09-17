@@ -406,13 +406,13 @@ mod tests {
     use fastcrypto::hash::HashFunction;
     use fastcrypto::hash::Keccak256;
     use fastcrypto::traits::ToFromBytes;
-    use prometheus::Registry;
-    use std::str::FromStr;
     use pera_types::base_types::{PeraAddress, TransactionDigest};
     use pera_types::bridge::BridgeChainId;
     use pera_types::bridge::TOKEN_ID_BTC;
     use pera_types::bridge::TOKEN_ID_USDC;
     use pera_types::TypeTag;
+    use prometheus::Registry;
+    use std::str::FromStr;
 
     use super::*;
 

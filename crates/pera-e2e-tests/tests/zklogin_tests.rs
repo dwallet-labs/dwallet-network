@@ -2,9 +2,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use shared_crypto::intent::Intent;
-use shared_crypto::intent::IntentMessage;
-use std::net::SocketAddr;
 use pera_core::authority_client::AuthorityAPI;
 use pera_macros::sim_test;
 use pera_protocol_config::ProtocolConfig;
@@ -21,6 +18,9 @@ use pera_types::utils::{
 };
 use pera_types::zk_login_authenticator::ZkLoginAuthenticator;
 use pera_types::PERA_AUTHENTICATOR_STATE_OBJECT_ID;
+use shared_crypto::intent::Intent;
+use shared_crypto::intent::IntentMessage;
+use std::net::SocketAddr;
 use test_cluster::TestCluster;
 use test_cluster::TestClusterBuilder;
 
@@ -273,12 +273,12 @@ async fn test_create_authenticator_state_object() {
 #[sim_test]
 async fn test_conflicting_jwks() {
     use futures::StreamExt;
-    use std::collections::HashSet;
-    use std::sync::{Arc, Mutex};
     use pera_json_rpc_types::PeraTransactionBlockEffectsAPI;
     use pera_json_rpc_types::TransactionFilter;
     use pera_types::base_types::ObjectID;
     use pera_types::transaction::{TransactionDataAPI, TransactionKind};
+    use std::collections::HashSet;
+    use std::sync::{Arc, Mutex};
     use tokio::time::Duration;
 
     let test_cluster = TestClusterBuilder::new()

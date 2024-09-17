@@ -2,12 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use move_bytecode_verifier_meter::Scope;
-use prometheus::Registry;
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-    time::Instant,
-};
 use pera_adapter::adapter::run_metered_move_bytecode_verifier;
 use pera_framework::BuiltInFramework;
 use pera_move_build::{CompiledPackage, PeraPackageHooks};
@@ -17,6 +11,12 @@ use pera_types::{
     metrics::BytecodeVerifierMetrics,
 };
 use pera_verifier::meter::PeraVerifierMeter;
+use prometheus::Registry;
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Instant,
+};
 
 fn build(path: &Path) -> PeraResult<CompiledPackage> {
     let mut config = pera_move_build::BuildConfig::new_for_testing();

@@ -61,7 +61,8 @@ impl SubscriptionMetrics {
 
 pub struct SubscriptionHandler {
     event_streamer: Streamer<PeraEvent, PeraEvent, EventFilter>,
-    transaction_streamer: Streamer<EffectsWithInput, PeraTransactionBlockEffects, TransactionFilter>,
+    transaction_streamer:
+        Streamer<EffectsWithInput, PeraTransactionBlockEffects, TransactionFilter>,
 }
 
 impl SubscriptionHandler {

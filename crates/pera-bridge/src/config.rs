@@ -15,12 +15,6 @@ use anyhow::anyhow;
 use ethers::providers::Middleware;
 use ethers::types::Address as EthAddress;
 use futures::{future, StreamExt};
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use std::collections::HashSet;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::Arc;
 use pera_config::Config;
 use pera_json_rpc_types::Coin;
 use pera_keys::keypair_file::read_key;
@@ -34,6 +28,12 @@ use pera_types::crypto::PeraKeyPair;
 use pera_types::digests::{get_mainnet_chain_identifier, get_testnet_chain_identifier};
 use pera_types::event::EventID;
 use pera_types::object::Owner;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use std::collections::HashSet;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::sync::Arc;
 use tracing::info;
 
 #[serde_as]
@@ -141,7 +141,8 @@ impl BridgeNodeConfig {
 
         // we do this check here instead of `prepare_for_pera` below because
         // that is only called when `run_client` is true.
-        let pera_client = Arc::new(PeraClient::<PeraSdkClient>::new(&self.pera.pera_rpc_url).await?);
+        let pera_client =
+            Arc::new(PeraClient::<PeraSdkClient>::new(&self.pera.pera_rpc_url).await?);
         let bridge_committee = pera_client
             .get_bridge_committee()
             .await

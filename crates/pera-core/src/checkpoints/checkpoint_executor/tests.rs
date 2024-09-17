@@ -11,7 +11,9 @@ use std::{sync::Arc, time::Duration};
 use crate::authority::epoch_start_configuration::{EpochFlag, EpochStartConfiguration};
 use broadcast::{Receiver, Sender};
 use pera_types::committee::ProtocolVersion;
-use pera_types::messages_checkpoint::{ECMHLiveObjectSetDigest, EndOfEpochData, VerifiedCheckpoint};
+use pera_types::messages_checkpoint::{
+    ECMHLiveObjectSetDigest, EndOfEpochData, VerifiedCheckpoint,
+};
 use pera_types::supported_protocol_versions::SupportedProtocolVersions;
 use tokio::{sync::broadcast, time::timeout};
 

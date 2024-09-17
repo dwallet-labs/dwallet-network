@@ -10,9 +10,9 @@ use mysten_metrics::spawn_monitored_task;
 use pera_rest_api::CheckpointData;
 use tokio::sync::watch;
 
+use pera_types::object::Object;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use pera_types::object::Object;
 use tokio::time::Duration;
 use tokio::time::Instant;
 

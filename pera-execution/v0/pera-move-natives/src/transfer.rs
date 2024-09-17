@@ -12,9 +12,9 @@ use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeCont
 use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
+use pera_types::{base_types::SequenceNumber, object::Owner};
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use pera_types::{base_types::SequenceNumber, object::Owner};
 
 const E_SHARED_NON_NEW_OBJECT: u64 = 0;
 

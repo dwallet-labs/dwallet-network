@@ -10,9 +10,6 @@ use crate::{
     executor::{ExecutionResult, Executor},
 };
 use once_cell::sync::Lazy;
-use proptest::prelude::*;
-use proptest_derive::Arbitrary;
-use std::sync::Arc;
 use pera_protocol_config::ProtocolConfig;
 use pera_types::base_types::ObjectRef;
 use pera_types::execution_status::{ExecutionFailureStatus, ExecutionStatus};
@@ -24,6 +21,9 @@ use pera_types::{
     transaction::{GasData, Transaction, TransactionData, TransactionKind},
     utils::{to_sender_signed_transaction, to_sender_signed_transaction_with_multi_signers},
 };
+use proptest::prelude::*;
+use proptest_derive::Arbitrary;
+use std::sync::Arc;
 
 const GAS_UNIT_PRICE: u64 = 2;
 const DEFAULT_TRANSFER_AMOUNT: u64 = 1;

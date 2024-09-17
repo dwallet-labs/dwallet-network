@@ -5,7 +5,7 @@
 use std::sync::Arc;
 
 use pera_types::{
-    base_types::{ObjectID, ObjectRef, SequenceNumber, PeraAddress},
+    base_types::{ObjectID, ObjectRef, PeraAddress, SequenceNumber},
     crypto::{get_key_pair, AccountKeyPair},
     effects::TransactionEffects,
     execution_status::{CommandArgumentError, ExecutionFailureStatus},

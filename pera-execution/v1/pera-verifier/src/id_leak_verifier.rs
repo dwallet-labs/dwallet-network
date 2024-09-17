@@ -27,7 +27,6 @@ use move_bytecode_verifier_meter::{Meter, Scope};
 use move_core_types::{
     account_address::AccountAddress, ident_str, identifier::IdentStr, vm_status::StatusCode,
 };
-use std::{collections::BTreeMap, error::Error, num::NonZeroU64};
 use pera_types::bridge::BRIDGE_MODULE_NAME;
 use pera_types::{
     authenticator_state::AUTHENTICATOR_STATE_MODULE_NAME,
@@ -37,6 +36,7 @@ use pera_types::{
     pera_system_state::PERA_SYSTEM_MODULE_NAME,
     BRIDGE_ADDRESS, PERA_FRAMEWORK_ADDRESS, PERA_SYSTEM_ADDRESS,
 };
+use std::{collections::BTreeMap, error::Error, num::NonZeroU64};
 
 use crate::{
     check_for_verifier_timeout, to_verification_timeout_error, verification_failure,

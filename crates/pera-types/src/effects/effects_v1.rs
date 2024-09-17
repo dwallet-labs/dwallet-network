@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::base_types::{
-    random_object_ref, EpochId, ObjectID, ObjectRef, SequenceNumber, PeraAddress, TransactionDigest,
+    random_object_ref, EpochId, ObjectID, ObjectRef, PeraAddress, SequenceNumber, TransactionDigest,
 };
 use crate::digests::{ObjectDigest, TransactionEventsDigest};
 use crate::effects::{InputSharedObject, TransactionEffectsAPI, UnchangedSharedKind};

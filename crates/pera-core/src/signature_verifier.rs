@@ -10,9 +10,6 @@ use im::hashmap::HashMap as ImHashMap;
 use itertools::izip;
 use mysten_metrics::monitored_scope;
 use parking_lot::{Mutex, MutexGuard, RwLock};
-use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
-use shared_crypto::intent::Intent;
-use std::sync::Arc;
 use pera_types::digests::SenderSignedDataDigest;
 use pera_types::digests::ZKLoginInputsDigest;
 use pera_types::signature_verification::{
@@ -29,6 +26,9 @@ use pera_types::{
     signature::VerifyParams,
     transaction::{CertifiedTransaction, VerifiedCertificate},
 };
+use prometheus::{register_int_counter_with_registry, IntCounter, Registry};
+use shared_crypto::intent::Intent;
+use std::sync::Arc;
 use tap::TapFallible;
 use tokio::runtime::Handle;
 use tokio::{

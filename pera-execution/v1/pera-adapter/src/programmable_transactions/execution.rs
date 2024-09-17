@@ -28,12 +28,6 @@ mod checked {
         session::{LoadedFunctionInstantiation, SerializedReturnValues},
     };
     use move_vm_types::loaded_data::runtime_types::{CachedDatatype, Type};
-    use serde::{de::DeserializeSeed, Deserialize};
-    use std::{
-        collections::{BTreeMap, BTreeSet},
-        fmt,
-        sync::Arc,
-    };
     use pera_move_natives::object_runtime::ObjectRuntime;
     use pera_protocol_config::ProtocolConfig;
     use pera_types::execution_config_utils::to_binary_config;
@@ -59,6 +53,12 @@ mod checked {
     use pera_verifier::{
         private_generics::{EVENT_MODULE, PRIVATE_TRANSFER_FUNCTIONS, TRANSFER_MODULE},
         INIT_FN_NAME,
+    };
+    use serde::{de::DeserializeSeed, Deserialize};
+    use std::{
+        collections::{BTreeMap, BTreeSet},
+        fmt,
+        sync::Arc,
     };
     use tracing::instrument;
 

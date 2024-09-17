@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::collections::BTreeMap;
 use pera_config::genesis;
 use pera_types::base_types::ObjectRef;
 use pera_types::error::UserInputError;
@@ -10,7 +9,7 @@ use pera_types::transaction::ObjectReadResult;
 use pera_types::transaction::ReceivingObjectReadResult;
 use pera_types::transaction::ReceivingObjects;
 use pera_types::{
-    base_types::{ObjectID, SequenceNumber, PeraAddress},
+    base_types::{ObjectID, PeraAddress, SequenceNumber},
     committee::{Committee, EpochId},
     digests::{ObjectDigest, TransactionDigest, TransactionEventsDigest},
     effects::{TransactionEffects, TransactionEffectsAPI, TransactionEvents},
@@ -23,6 +22,7 @@ use pera_types::{
     storage::{BackingStore, ChildObjectResolver, ParentSync},
     transaction::{InputObjectKind, VerifiedTransaction},
 };
+use std::collections::BTreeMap;
 pub mod in_mem_store;
 
 pub trait SimulatorStore:

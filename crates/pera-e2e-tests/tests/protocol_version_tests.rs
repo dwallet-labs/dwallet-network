@@ -59,8 +59,6 @@ mod sim_only_tests {
     use fastcrypto::encoding::Base64;
     use move_binary_format::{file_format_common::VERSION_MAX, CompiledModule};
     use move_core_types::ident_str;
-    use std::path::PathBuf;
-    use std::sync::Arc;
     use pera_core::authority::framework_injection;
     use pera_framework::BuiltInFramework;
     use pera_json_rpc_api::WriteApiClient;
@@ -83,7 +81,7 @@ mod sim_only_tests {
         TransactionData, TEST_ONLY_GAS_UNIT_FOR_GENERIC,
     };
     use pera_types::{
-        base_types::{SequenceNumber, PeraAddress},
+        base_types::{PeraAddress, SequenceNumber},
         digests::TransactionDigest,
         object::Object,
         programmable_transaction_builder::ProgrammableTransactionBuilder,
@@ -95,6 +93,8 @@ mod sim_only_tests {
         PERA_AUTHENTICATOR_STATE_OBJECT_ID, PERA_CLOCK_OBJECT_ID, PERA_RANDOMNESS_STATE_OBJECT_ID,
         PERA_SYSTEM_STATE_OBJECT_ID,
     };
+    use std::path::PathBuf;
+    use std::sync::Arc;
     use test_cluster::TestCluster;
     use tokio::time::{sleep, Duration};
     use tracing::info;

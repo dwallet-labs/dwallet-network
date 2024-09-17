@@ -29,7 +29,7 @@ use crate::layout_resolver::LayoutResolver;
 use crate::move_package::MovePackage;
 use crate::{
     base_types::{
-        ObjectDigest, ObjectID, ObjectRef, SequenceNumber, PeraAddress, TransactionDigest,
+        ObjectDigest, ObjectID, ObjectRef, PeraAddress, SequenceNumber, TransactionDigest,
     },
     gas_coin::GasCoin,
 };
@@ -355,7 +355,10 @@ impl MoveObject {
     }
 
     /// Get the total amount of PERA embedded in `self`. Intended for testing purposes
-    pub fn get_total_pera(&self, layout_resolver: &mut dyn LayoutResolver) -> Result<u64, PeraError> {
+    pub fn get_total_pera(
+        &self,
+        layout_resolver: &mut dyn LayoutResolver,
+    ) -> Result<u64, PeraError> {
         let balances = self.get_coin_balances(layout_resolver)?;
         Ok(balances.get(&GAS::type_tag()).copied().unwrap_or(0))
     }
@@ -899,7 +902,10 @@ impl ObjectInner {
 // Testing-related APIs.
 impl Object {
     /// Get the total amount of PERA embedded in `self`, including both Move objects and the storage rebate
-    pub fn get_total_pera(&self, layout_resolver: &mut dyn LayoutResolver) -> Result<u64, PeraError> {
+    pub fn get_total_pera(
+        &self,
+        layout_resolver: &mut dyn LayoutResolver,
+    ) -> Result<u64, PeraError> {
         Ok(self.storage_rebate
             + match &self.data {
                 Data::Move(m) => m.get_total_pera(layout_resolver)?,

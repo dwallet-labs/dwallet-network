@@ -4,11 +4,6 @@
 // Copyright 2020 Parity Technologies
 //
 
-
-
-
-
-
 #![cfg(feature = "std")]
 
 use mysten_util_mem::{MallocSizeOf, MallocSizeOfExt};

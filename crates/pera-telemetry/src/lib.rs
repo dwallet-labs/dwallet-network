@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use pera_core::authority::AuthorityState;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use pera_core::authority::AuthorityState;
 use tracing::trace;
 
 pub(crate) const GA_API_SECRET: &str = "zeq-aYEzS0aGdRJ8kNZTEg";

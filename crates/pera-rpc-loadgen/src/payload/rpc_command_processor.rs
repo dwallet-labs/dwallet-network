@@ -5,6 +5,12 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use dashmap::{DashMap, DashSet};
 use futures::future::join_all;
+use pera_json_rpc_types::{
+    PeraExecutionStatus, PeraObjectDataOptions, PeraTransactionBlockDataAPI,
+    PeraTransactionBlockEffectsAPI, PeraTransactionBlockResponse,
+    PeraTransactionBlockResponseOptions,
+};
+use pera_types::digests::TransactionDigest;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use shared_crypto::intent::{Intent, IntentMessage};
@@ -13,11 +19,6 @@ use std::fs::{self, File};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use pera_json_rpc_types::{
-    PeraExecutionStatus, PeraObjectDataOptions, PeraTransactionBlockDataAPI,
-    PeraTransactionBlockEffectsAPI, PeraTransactionBlockResponse, PeraTransactionBlockResponseOptions,
-};
-use pera_types::digests::TransactionDigest;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::{debug, info};
@@ -25,7 +26,9 @@ use tracing::{debug, info};
 use crate::load_test::LoadTestConfig;
 use pera_sdk::{PeraClient, PeraClientBuilder};
 use pera_types::base_types::{ObjectID, ObjectRef, PeraAddress};
-use pera_types::crypto::{get_key_pair, AccountKeyPair, EncodeDecodeBase64, Signature, PeraKeyPair};
+use pera_types::crypto::{
+    get_key_pair, AccountKeyPair, EncodeDecodeBase64, PeraKeyPair, Signature,
+};
 use pera_types::quorum_driver_types::ExecuteTransactionRequestType;
 use pera_types::transaction::{Transaction, TransactionData};
 

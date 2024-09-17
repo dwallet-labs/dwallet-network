@@ -10,9 +10,6 @@ use crate::{
 };
 use anemo::{PeerId, Request};
 use anyhow::anyhow;
-use prometheus::Registry;
-use std::num::NonZeroUsize;
-use std::{collections::HashMap, time::Duration};
 use pera_archival::reader::ArchiveReaderBalancer;
 use pera_archival::writer::ArchiveWriter;
 use pera_config::node::ArchiveReaderConfig;
@@ -23,6 +20,9 @@ use pera_types::{
     messages_checkpoint::CheckpointDigest,
     storage::{ReadStore, SharedInMemoryStore, WriteStore},
 };
+use prometheus::Registry;
+use std::num::NonZeroUsize;
+use std::{collections::HashMap, time::Duration};
 use tempfile::tempdir;
 use tokio::time::{timeout, Instant};
 

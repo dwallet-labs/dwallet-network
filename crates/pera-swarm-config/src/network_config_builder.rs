@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::{num::NonZeroUsize, path::Path, sync::Arc};
 
-use rand::rngs::OsRng;
 use pera_config::genesis::{TokenAllocation, TokenDistributionScheduleBuilder};
 use pera_config::node::AuthorityOverloadConfig;
 use pera_macros::nondeterministic;
@@ -15,6 +14,7 @@ use pera_types::crypto::{get_key_pair_from_rng, AccountKeyPair, KeypairTraits, P
 use pera_types::object::Object;
 use pera_types::supported_protocol_versions::SupportedProtocolVersions;
 use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
+use rand::rngs::OsRng;
 
 use crate::genesis_config::{AccountConfig, ValidatorGenesisConfigBuilder, DEFAULT_GAS_AMOUNT};
 use crate::genesis_config::{GenesisConfig, ValidatorGenesisConfig};
@@ -537,8 +537,6 @@ mod tests {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashSet;
-    use std::sync::Arc;
     use pera_config::genesis::Genesis;
     use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
     use pera_types::epoch_data::EpochData;
@@ -547,6 +545,8 @@ mod test {
     use pera_types::metrics::LimitsMetrics;
     use pera_types::pera_system_state::PeraSystemStateTrait;
     use pera_types::transaction::CheckedInputObjects;
+    use std::collections::HashSet;
+    use std::sync::Arc;
 
     #[test]
     fn roundtrip() {
@@ -566,7 +566,8 @@ mod test {
         let builder = crate::network_config_builder::ConfigBuilder::new_with_temp_dir();
         let network_config = builder.build();
         let genesis = network_config.genesis;
-        let protocol_version = ProtocolVersion::new(genesis.pera_system_object().protocol_version());
+        let protocol_version =
+            ProtocolVersion::new(genesis.pera_system_object().protocol_version());
         let protocol_config = ProtocolConfig::get_for_version(protocol_version, Chain::Unknown);
 
         let genesis_transaction = genesis.transaction().clone();

@@ -5,13 +5,13 @@ use crate::{AnalyticsWriter, FileFormat, FileType};
 use crate::{ParquetSchema, ParquetValue};
 use anyhow::{anyhow, Result};
 use arrow_array::{ArrayRef, BooleanArray, Int64Array, RecordBatch, StringArray, UInt64Array};
+use pera_types::base_types::EpochId;
 use serde::Serialize;
 use std::fs::File;
 use std::fs::{create_dir_all, remove_file};
 use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use pera_types::base_types::EpochId;
 
 use parquet::arrow::ArrowWriter;
 use parquet::basic::Compression;

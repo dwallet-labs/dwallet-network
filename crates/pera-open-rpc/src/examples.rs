@@ -24,16 +24,16 @@ use pera_json_rpc_types::{
     DevInspectResults, DynamicFieldPage, EventFilter, EventPage, MoveCallParams,
     MoveFunctionArgType, ObjectChange, ObjectValueKind::ByImmutableReference,
     ObjectValueKind::ByMutableReference, ObjectValueKind::ByValue, ObjectsPage, OwnedObjectRef,
-    Page, ProtocolConfigResponse, RPCTransactionRequestParams, Stake, StakeStatus, PeraCoinMetadata,
-    PeraCommittee, PeraData, PeraEvent, PeraExecutionStatus, PeraGetPastObjectRequest, PeraMoveAbility,
-    PeraMoveAbilitySet, PeraMoveNormalizedFunction, PeraMoveNormalizedModule, PeraMoveNormalizedStruct,
-    PeraMoveNormalizedType, PeraMoveVisibility, PeraObjectData, PeraObjectDataFilter,
-    PeraObjectDataOptions, PeraObjectRef, PeraObjectResponse, PeraObjectResponseQuery, PeraParsedData,
-    PeraPastObjectResponse, PeraTransactionBlock, PeraTransactionBlockData,
-    PeraTransactionBlockEffects, PeraTransactionBlockEffectsV1, PeraTransactionBlockEvents,
-    PeraTransactionBlockResponse, PeraTransactionBlockResponseOptions,
-    PeraTransactionBlockResponseQuery, TransactionBlockBytes, TransactionBlocksPage,
-    TransactionFilter, TransferObjectParams,
+    Page, PeraCoinMetadata, PeraCommittee, PeraData, PeraEvent, PeraExecutionStatus,
+    PeraGetPastObjectRequest, PeraMoveAbility, PeraMoveAbilitySet, PeraMoveNormalizedFunction,
+    PeraMoveNormalizedModule, PeraMoveNormalizedStruct, PeraMoveNormalizedType, PeraMoveVisibility,
+    PeraObjectData, PeraObjectDataFilter, PeraObjectDataOptions, PeraObjectRef, PeraObjectResponse,
+    PeraObjectResponseQuery, PeraParsedData, PeraPastObjectResponse, PeraTransactionBlock,
+    PeraTransactionBlockData, PeraTransactionBlockEffects, PeraTransactionBlockEffectsV1,
+    PeraTransactionBlockEvents, PeraTransactionBlockResponse, PeraTransactionBlockResponseOptions,
+    PeraTransactionBlockResponseQuery, ProtocolConfigResponse, RPCTransactionRequestParams, Stake,
+    StakeStatus, TransactionBlockBytes, TransactionBlocksPage, TransactionFilter,
+    TransferObjectParams,
 };
 use pera_json_rpc_types::{PeraTypeTag, ValidatorApy, ValidatorApys};
 use pera_open_rpc::ExamplePairing;
@@ -42,7 +42,7 @@ use pera_protocol_config::ProtocolConfig;
 use pera_types::balance::Supply;
 use pera_types::base_types::random_object_ref;
 use pera_types::base_types::{
-    MoveObjectType, ObjectDigest, ObjectID, ObjectType, SequenceNumber, PeraAddress,
+    MoveObjectType, ObjectDigest, ObjectID, ObjectType, PeraAddress, SequenceNumber,
     TransactionDigest,
 };
 use pera_types::committee::Committee;

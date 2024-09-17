@@ -25,13 +25,13 @@ use move_core_types::{
 };
 use move_disassembler::disassembler::Disassembler;
 use move_ir_types::location::Spanned;
+use pera_protocol_config::ProtocolConfig;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serde_with::serde_as;
 use serde_with::Bytes;
 use std::collections::{BTreeMap, BTreeSet};
-use pera_protocol_config::ProtocolConfig;
 
 // TODO: robust MovePackage tests
 // #[cfg(test)]

@@ -21,7 +21,7 @@ use pera_sdk::rpc_types::{
     PeraTransactionBlockData, PeraTransactionBlockDataAPI, PeraTransactionBlockEffectsAPI,
     PeraTransactionBlockKind, PeraTransactionBlockResponse,
 };
-use pera_types::base_types::{ObjectID, SequenceNumber, PeraAddress};
+use pera_types::base_types::{ObjectID, PeraAddress, SequenceNumber};
 use pera_types::gas_coin::{GasCoin, GAS};
 use pera_types::governance::{ADD_STAKE_FUN_NAME, WITHDRAW_STAKE_FUN_NAME};
 use pera_types::object::Owner;
@@ -287,9 +287,9 @@ impl Operations {
         ) -> Option<Vec<KnownValue>> {
             let addr = match recipient {
                 PeraArgument::Input(i) => inputs[i as usize].pure()?.to_pera_address().ok()?,
-                PeraArgument::GasCoin | PeraArgument::Result(_) | PeraArgument::NestedResult(_, _) => {
-                    return None
-                }
+                PeraArgument::GasCoin
+                | PeraArgument::Result(_)
+                | PeraArgument::NestedResult(_, _) => return None,
             };
             for obj in objs {
                 let value = match *obj {

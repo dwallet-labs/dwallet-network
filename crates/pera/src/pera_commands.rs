@@ -12,13 +12,6 @@ use clap::*;
 use fastcrypto::traits::KeyPair;
 use move_analyzer::analyzer;
 use move_package::BuildConfig;
-use rand::rngs::OsRng;
-use std::io::{stderr, stdout, Write};
-use std::net::{AddrParseError, IpAddr, Ipv4Addr, SocketAddr};
-use std::num::NonZeroUsize;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::{fs, io};
 use pera_bridge::config::BridgeCommitteeConfig;
 use pera_bridge::pera_client::PeraBridgeClient;
 use pera_bridge::pera_transaction_builder::build_committee_register_transaction;
@@ -50,7 +43,14 @@ use pera_swarm_config::network_config::NetworkConfig;
 use pera_swarm_config::network_config_builder::ConfigBuilder;
 use pera_swarm_config::node_config_builder::FullnodeConfigBuilder;
 use pera_types::base_types::PeraAddress;
-use pera_types::crypto::{SignatureScheme, PeraKeyPair, ToFromBytes};
+use pera_types::crypto::{PeraKeyPair, SignatureScheme, ToFromBytes};
+use rand::rngs::OsRng;
+use std::io::{stderr, stdout, Write};
+use std::net::{AddrParseError, IpAddr, Ipv4Addr, SocketAddr};
+use std::num::NonZeroUsize;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::{fs, io};
 use tempfile::tempdir;
 use tracing;
 use tracing::info;
@@ -886,12 +886,16 @@ async fn genesis(
                 }
             } else {
                 fs::remove_dir_all(pera_config_dir).map_err(|err| {
-                    anyhow!(err)
-                        .context(format!("Cannot remove Pera config dir {:?}", pera_config_dir))
+                    anyhow!(err).context(format!(
+                        "Cannot remove Pera config dir {:?}",
+                        pera_config_dir
+                    ))
                 })?;
                 fs::create_dir(pera_config_dir).map_err(|err| {
-                    anyhow!(err)
-                        .context(format!("Cannot create Pera config dir {:?}", pera_config_dir))
+                    anyhow!(err).context(format!(
+                        "Cannot create Pera config dir {:?}",
+                        pera_config_dir
+                    ))
                 })?;
             }
         } else if files.len() != 2 || !client_path.exists() || !keystore_path.exists() {

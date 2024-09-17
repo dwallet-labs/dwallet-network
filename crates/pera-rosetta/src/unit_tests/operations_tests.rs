@@ -3,7 +3,7 @@
 
 use move_core_types::annotated_value::MoveTypeLayout;
 use pera_json_rpc_types::PeraCallArg;
-use pera_types::base_types::{ObjectDigest, ObjectID, SequenceNumber, PeraAddress};
+use pera_types::base_types::{ObjectDigest, ObjectID, PeraAddress, SequenceNumber};
 use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::transaction::{CallArg, TransactionData, TEST_ONLY_GAS_UNIT_FOR_TRANSFER};
 

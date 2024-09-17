@@ -17,7 +17,6 @@ use std::sync::Arc;
 use anyhow::{anyhow, Result};
 use fastcrypto::traits::Signer;
 use move_core_types::language_storage::StructTag;
-use rand::rngs::OsRng;
 use pera_config::{genesis, transaction_deny_config::TransactionDenyConfig};
 use pera_protocol_config::ProtocolVersion;
 use pera_storage::blob::{Blob, BlobEncoding};
@@ -28,8 +27,8 @@ use pera_types::base_types::{AuthorityName, ObjectID, VersionNumber};
 use pera_types::crypto::AuthoritySignature;
 use pera_types::digests::ConsensusCommitDigest;
 use pera_types::object::Object;
-use pera_types::storage::{ObjectStore, ReadStore, RestStateReader};
 use pera_types::pera_system_state::epoch_start_pera_system_state::EpochStartSystemState;
+use pera_types::storage::{ObjectStore, ReadStore, RestStateReader};
 use pera_types::transaction::EndOfEpochTransactionKind;
 use pera_types::{
     base_types::PeraAddress,
@@ -42,6 +41,7 @@ use pera_types::{
     signature::VerifyParams,
     transaction::{Transaction, VerifiedTransaction},
 };
+use rand::rngs::OsRng;
 
 use self::epoch_state::EpochState;
 pub use self::store::in_mem_store::InMemoryStore;
@@ -497,16 +497,18 @@ impl<T, V: store::SimulatorStore> ReadStore for Simulacrum<T, V> {
     fn get_checkpoint_contents_by_digest(
         &self,
         digest: &pera_types::messages_checkpoint::CheckpointContentsDigest,
-    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
-    {
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::CheckpointContents>,
+    > {
         Ok(self.store().get_checkpoint_contents(digest))
     }
 
     fn get_checkpoint_contents_by_sequence_number(
         &self,
         _sequence_number: pera_types::messages_checkpoint::CheckpointSequenceNumber,
-    ) -> pera_types::storage::error::Result<Option<pera_types::messages_checkpoint::CheckpointContents>>
-    {
+    ) -> pera_types::storage::error::Result<
+        Option<pera_types::messages_checkpoint::CheckpointContents>,
+    > {
         todo!()
     }
 
@@ -653,11 +655,11 @@ impl Simulacrum {
 mod tests {
     use std::time::Duration;
 
-    use rand::{rngs::StdRng, SeedableRng};
     use pera_types::{
         base_types::PeraAddress, effects::TransactionEffectsAPI, gas_coin::GasCoin,
         transaction::TransactionDataAPI,
     };
+    use rand::{rngs::StdRng, SeedableRng};
 
     use super::*;
 

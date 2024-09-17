@@ -25,7 +25,7 @@ use crate::postgres_manager::PgPool;
 use crate::schema::progress_store::{columns, dsl};
 use crate::schema::{pera_error_transactions, token_transfer, token_transfer_data};
 use crate::{
-    models, schema, BridgeDataSource, ProcessedTxnData, PeraTxnError, TokenTransfer,
+    models, schema, BridgeDataSource, PeraTxnError, ProcessedTxnData, TokenTransfer,
     TokenTransferData, TokenTransferStatus,
 };
 

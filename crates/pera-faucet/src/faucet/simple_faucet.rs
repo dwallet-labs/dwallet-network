@@ -6,6 +6,7 @@ use crate::metrics::FaucetMetrics;
 use async_recursion::async_recursion;
 use async_trait::async_trait;
 use mysten_metrics::spawn_monitored_task;
+use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use prometheus::Registry;
 use shared_crypto::intent::Intent;
 use std::collections::HashMap;
@@ -14,7 +15,6 @@ use std::collections::HashSet;
 use std::fmt;
 use std::path::Path;
 use std::sync::{Arc, Weak};
-use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use tap::tap::TapFallible;
 use tokio::sync::oneshot;
 use ttl_cache::TtlCache;
@@ -124,8 +124,9 @@ impl SimpleFaucet {
         let (producer, consumer) = mpsc::channel(coins.len());
         let (batch_producer, batch_consumer) = mpsc::channel(coins.len());
 
-        let (sender, mut receiver) =
-            mpsc::channel::<(Uuid, PeraAddress, Vec<u64>)>(config.max_request_queue_length as usize);
+        let (sender, mut receiver) = mpsc::channel::<(Uuid, PeraAddress, Vec<u64>)>(
+            config.max_request_queue_length as usize,
+        );
 
         // This is to handle the case where there is only 1 coin, we want it to go to the normal queue
         let split_point = if coins.len() > 10 {
@@ -584,7 +585,9 @@ impl SimpleFaucet {
         let mut retry_delay = Duration::from_millis(500);
 
         loop {
-            let res = self.execute_pay_pera_txn(tx, coin_id, recipient, uuid).await;
+            let res = self
+                .execute_pay_pera_txn(tx, coin_id, recipient, uuid)
+                .await;
 
             if let Ok(res) = res {
                 return res;
@@ -1089,12 +1092,12 @@ pub async fn batch_transfer_gases(
 mod tests {
     use super::*;
     use anyhow::*;
-    use shared_crypto::intent::Intent;
     use pera_json_rpc_types::PeraExecutionStatus;
     use pera_json_rpc_types::PeraTransactionBlockEffects;
     use pera_sdk::wallet_context::WalletContext;
     use pera_types::transaction::SenderSignedData;
     use pera_types::transaction::TransactionDataAPI;
+    use shared_crypto::intent::Intent;
     use test_cluster::TestClusterBuilder;
 
     async fn execute_tx(

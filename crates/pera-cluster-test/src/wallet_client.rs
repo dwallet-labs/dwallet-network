@@ -4,13 +4,13 @@
 use crate::cluster::new_wallet_context_from_cluster;
 
 use super::Cluster;
-use shared_crypto::intent::Intent;
 use pera_keys::keystore::AccountKeystore;
 use pera_sdk::wallet_context::WalletContext;
 use pera_sdk::{PeraClient, PeraClientBuilder};
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::{KeypairTraits, Signature};
 use pera_types::transaction::TransactionData;
+use shared_crypto::intent::Intent;
 use tracing::{info, info_span, Instrument};
 
 pub struct WalletClient {

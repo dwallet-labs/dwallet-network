@@ -3,14 +3,14 @@
 
 use anyhow::bail;
 use fastcrypto::traits::ToFromBytes;
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::{
     verify_proof_of_possession, AuthorityPublicKey, AuthorityPublicKeyBytes, AuthoritySignature,
     NetworkPublicKey,
 };
 use pera_types::multiaddr::Multiaddr;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 const MAX_VALIDATOR_METADATA_LENGTH: usize = 256;
 

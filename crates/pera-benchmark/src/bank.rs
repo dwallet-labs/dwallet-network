@@ -8,11 +8,11 @@ use crate::workloads::{Gas, GasCoinConfig};
 use crate::ValidatorProxy;
 use anyhow::{Error, Result};
 use itertools::Itertools;
-use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
 use pera_core::test_utils::{make_pay_pera_transaction, make_transfer_pera_transaction};
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::AccountKeyPair;
+use std::collections::{HashMap, VecDeque};
+use std::sync::Arc;
 use tracing::info;
 
 /// Bank is used for generating gas for running the benchmark.
@@ -101,7 +101,8 @@ impl BenchmarkBank {
         init_coin: &mut Gas,
         gas_price: u64,
     ) -> Result<UpdatedAndNewlyMintedGasCoins> {
-        let recipient_addresses: Vec<PeraAddress> = coin_configs.iter().map(|g| g.address).collect();
+        let recipient_addresses: Vec<PeraAddress> =
+            coin_configs.iter().map(|g| g.address).collect();
         let amounts: Vec<u64> = coin_configs.iter().map(|c| c.amount).collect();
 
         info!(

@@ -31,14 +31,13 @@ use move_binary_format::CompiledModule;
 use move_bytecode_verifier_meter::Scope;
 use move_core_types::{account_address::AccountAddress, language_storage::TypeTag};
 use move_package::BuildConfig as MoveBuildConfig;
-use prometheus::Registry;
-use serde::Serialize;
-use serde_json::{json, Value};
 use pera_move::manage_package::resolve_lock_file_path;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_source_validation::{BytecodeSourceVerifier, ValidationMode};
+use prometheus::Registry;
+use serde::Serialize;
+use serde_json::{json, Value};
 
-use shared_crypto::intent::Intent;
 use pera_json::PeraJsonValue;
 use pera_json_rpc_types::{
     Coin, DryRunTransactionBlockResponse, DynamicFieldPage, PeraCoinMetadata, PeraData,
@@ -62,7 +61,7 @@ use pera_sdk::{
     PERA_TESTNET_URL,
 };
 use pera_types::{
-    base_types::{ObjectID, SequenceNumber, PeraAddress},
+    base_types::{ObjectID, PeraAddress, SequenceNumber},
     crypto::{EmptySignInfo, SignatureScheme},
     digests::TransactionDigest,
     dynamic_field::DynamicFieldInfo,
@@ -79,6 +78,7 @@ use pera_types::{
         SenderSignedData, Transaction, TransactionData, TransactionDataAPI, TransactionKind,
     },
 };
+use shared_crypto::intent::Intent;
 
 use json_to_table::json_to_table;
 use tabled::{
@@ -1179,7 +1179,9 @@ impl PeraClientCommands {
                 // without failing PeraJSON's checks.
                 let args = args
                     .into_iter()
-                    .map(|value| PeraJsonValue::new(convert_number_to_string(value.to_json_value())))
+                    .map(|value| {
+                        PeraJsonValue::new(convert_number_to_string(value.to_json_value()))
+                    })
                     .collect::<Result<_, _>>()?;
 
                 let type_args = type_args
@@ -1958,7 +1960,11 @@ impl Display for PeraClientCommandResult {
                 }
 
                 let mut builder = TableBuilder::default();
-                builder.set_header(vec!["gasCoinId", "nperaBalance (NPERA)", "peraBalance (PERA)"]);
+                builder.set_header(vec![
+                    "gasCoinId",
+                    "nperaBalance (NPERA)",
+                    "peraBalance (PERA)",
+                ]);
                 for coin in &gas_coins {
                     builder.push_record(vec![
                         coin.gas_coin_id.to_string(),

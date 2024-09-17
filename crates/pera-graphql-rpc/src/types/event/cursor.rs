@@ -13,8 +13,8 @@ use diesel::{
     row::NamedRow,
     BoolExpressionMethods, ExpressionMethods, QueryDsl,
 };
-use serde::{Deserialize, Serialize};
 use pera_indexer::{models::events::StoredEvent, schema::events};
+use serde::{Deserialize, Serialize};
 
 use super::Query;
 

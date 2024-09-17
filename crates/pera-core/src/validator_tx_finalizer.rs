@@ -6,6 +6,8 @@ use crate::authority_client::AuthorityAPI;
 use crate::execution_cache::TransactionCacheRead;
 use arc_swap::ArcSwap;
 use mysten_metrics::LATENCY_SEC_BUCKETS;
+use pera_types::base_types::{AuthorityName, TransactionDigest};
+use pera_types::transaction::VerifiedSignedTransaction;
 use prometheus::{
     register_histogram_with_registry, register_int_counter_with_registry, Histogram, IntCounter,
     Registry,
@@ -16,8 +18,6 @@ use std::ops::Add;
 use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
 use std::sync::Arc;
 use std::time::Duration;
-use pera_types::base_types::{AuthorityName, TransactionDigest};
-use pera_types::transaction::VerifiedSignedTransaction;
 use tokio::select;
 use tokio::time::Instant;
 use tracing::{debug, error, trace};
@@ -266,14 +266,6 @@ mod tests {
     use crate::validator_tx_finalizer::ValidatorTxFinalizer;
     use arc_swap::ArcSwap;
     use async_trait::async_trait;
-    use std::cmp::min;
-    use std::collections::BTreeMap;
-    use std::iter;
-    use std::net::SocketAddr;
-    use std::num::NonZeroUsize;
-    use std::sync::atomic::AtomicBool;
-    use std::sync::atomic::Ordering::Relaxed;
-    use std::sync::Arc;
     use pera_macros::sim_test;
     use pera_swarm_config::network_config_builder::ConfigBuilder;
     use pera_test_transaction_builder::TestTransactionBuilder;
@@ -299,6 +291,14 @@ mod tests {
         VerifiedSignedTransaction, VerifiedTransaction,
     };
     use pera_types::utils::to_sender_signed_transaction;
+    use std::cmp::min;
+    use std::collections::BTreeMap;
+    use std::iter;
+    use std::net::SocketAddr;
+    use std::num::NonZeroUsize;
+    use std::sync::atomic::AtomicBool;
+    use std::sync::atomic::Ordering::Relaxed;
+    use std::sync::Arc;
 
     #[derive(Clone)]
     struct MockAuthorityClient {

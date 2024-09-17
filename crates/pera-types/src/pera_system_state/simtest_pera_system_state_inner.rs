@@ -7,7 +7,6 @@ use crate::collection_types::{Bag, Table};
 use crate::committee::{CommitteeWithNetworkMetadata, NetworkMetadata};
 use crate::crypto::AuthorityPublicKeyBytes;
 use crate::error::PeraError;
-use crate::storage::ObjectStore;
 use crate::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartValidatorInfoV1,
 };
@@ -15,6 +14,7 @@ use crate::pera_system_state::pera_system_state_summary::{
     PeraSystemStateSummary, PeraValidatorSummary,
 };
 use crate::pera_system_state::{AdvanceEpochParams, PeraSystemStateTrait};
+use crate::storage::ObjectStore;
 use fastcrypto::traits::ToFromBytes;
 use mysten_network::Multiaddr;
 use once_cell::sync::OnceCell;

@@ -7,8 +7,8 @@ use prometheus::{
     Registry, PROTOBUF_FORMAT,
 };
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use pera_network::tonic::Code;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use mysten_metrics::RegistryService;
 use tracing::error;

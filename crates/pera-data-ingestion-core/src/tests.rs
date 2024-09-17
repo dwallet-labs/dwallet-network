@@ -6,11 +6,6 @@ use crate::{DataIngestionMetrics, FileProgressStore, IndexerExecutor, WorkerPool
 use crate::{ReaderOptions, Worker};
 use anyhow::Result;
 use async_trait::async_trait;
-use prometheus::Registry;
-use rand::prelude::StdRng;
-use rand::SeedableRng;
-use std::path::PathBuf;
-use std::time::Duration;
 use pera_protocol_config::ProtocolConfig;
 use pera_storage::blob::{Blob, BlobEncoding};
 use pera_types::crypto::KeypairTraits;
@@ -21,6 +16,11 @@ use pera_types::messages_checkpoint::{
     SignedCheckpointSummary,
 };
 use pera_types::utils::make_committee_key;
+use prometheus::Registry;
+use rand::prelude::StdRng;
+use rand::SeedableRng;
+use std::path::PathBuf;
+use std::time::Duration;
 use tempfile::NamedTempFile;
 use tokio::sync::oneshot;
 

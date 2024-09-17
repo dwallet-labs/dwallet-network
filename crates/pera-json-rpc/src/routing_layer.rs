@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::collections::{HashMap, HashSet};
 use pera_open_rpc::MethodRouting;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Clone)]
 pub struct RpcRouter {

@@ -1,9 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
-use serde_with::Bytes;
 use pera_types::base_types::MoveObjectType;
 use pera_types::base_types::{ObjectDigest, SequenceNumber, TransactionDigest};
 use pera_types::coin::Coin;
@@ -12,6 +9,9 @@ use pera_types::error::PeraError;
 use pera_types::move_package::MovePackage;
 use pera_types::object::{Data, MoveObject, Object, ObjectInner, Owner};
 use pera_types::storage::ObjectKey;
+use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
+use serde_with::Bytes;
 
 pub type ObjectContentDigest = ObjectDigest;
 

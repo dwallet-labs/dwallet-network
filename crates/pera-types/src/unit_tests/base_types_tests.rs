@@ -13,13 +13,13 @@ use move_binary_format::file_format;
 use crate::crypto::bcs_signable_test::{Bar, Foo};
 use crate::crypto::{
     get_key_pair, get_key_pair_from_bytes, AccountKeyPair, AuthorityKeyPair, AuthoritySignature,
-    Signature, PeraAuthoritySignature, PeraSignature,
+    PeraAuthoritySignature, PeraSignature, Signature,
 };
 use crate::digests::Digest;
 use crate::id::{ID, UID};
 use crate::{gas_coin::GasCoin, object::Object, PERA_FRAMEWORK_ADDRESS};
-use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 use pera_protocol_config::ProtocolConfig;
+use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 
 use super::*;
 

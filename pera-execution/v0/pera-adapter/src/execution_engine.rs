@@ -12,7 +12,6 @@ mod checked {
     use crate::type_layout_resolver::TypeLayoutResolver;
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
-    use std::{collections::HashSet, sync::Arc};
     use pera_protocol_config::{check_limit_by_meter, LimitThresholdCrossed, ProtocolConfig};
     use pera_types::balance::{
         BALANCE_CREATE_REWARDS_FUNCTION_NAME, BALANCE_DESTROY_REBATES_FUNCTION_NAME,
@@ -32,12 +31,14 @@ mod checked {
     use pera_types::messages_checkpoint::CheckpointTimestamp;
     use pera_types::metrics::LimitsMetrics;
     use pera_types::object::OBJECT_START_VERSION;
+    #[cfg(msim)]
+    use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
+    use pera_types::pera_system_state::{
+        AdvanceEpochParams, ADVANCE_EPOCH_SAFE_MODE_FUNCTION_NAME,
+    };
     use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
     use pera_types::storage::BackingStore;
     use pera_types::storage::WriteKind;
-    #[cfg(msim)]
-    use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
-    use pera_types::pera_system_state::{AdvanceEpochParams, ADVANCE_EPOCH_SAFE_MODE_FUNCTION_NAME};
     use pera_types::transaction::CheckedInputObjects;
     use pera_types::transaction::{
         Argument, CallArg, ChangeEpoch, Command, GenesisTransaction, ProgrammableTransaction,
@@ -50,6 +51,7 @@ mod checked {
         PERA_FRAMEWORK_ADDRESS,
     };
     use pera_types::{PERA_FRAMEWORK_PACKAGE_ID, PERA_SYSTEM_PACKAGE_ID};
+    use std::{collections::HashSet, sync::Arc};
     use tracing::{info, instrument, trace, warn};
 
     #[instrument(name = "tx_execute_to_effects", level = "debug", skip_all)]

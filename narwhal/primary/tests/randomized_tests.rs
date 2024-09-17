@@ -9,6 +9,7 @@ use narwhal_primary::consensus::{
     make_consensus_store, Bullshark, ConsensusMetrics, ConsensusState, LeaderSchedule,
     LeaderSwapTable,
 };
+use pera_protocol_config::ProtocolConfig;
 use prometheus::Registry;
 use rand::distributions::Bernoulli;
 use rand::distributions::Distribution;
@@ -21,7 +22,6 @@ use std::num::NonZeroUsize;
 use std::ops::RangeInclusive;
 use std::sync::Arc;
 use storage::ConsensusStore;
-use pera_protocol_config::ProtocolConfig;
 use test_utils::latest_protocol_version;
 use test_utils::mock_certificate_with_rand;
 use test_utils::CommitteeFixture;

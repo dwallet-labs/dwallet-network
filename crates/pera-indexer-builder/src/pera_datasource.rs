@@ -5,7 +5,6 @@ use crate::indexer_builder::{DataSender, Datasource};
 use anyhow::Error;
 use async_trait::async_trait;
 use mysten_metrics::{metered_channel, spawn_monitored_task};
-use std::path::PathBuf;
 use pera_data_ingestion_core::{
     DataIngestionMetrics, IndexerExecutor, ProgressStore, ReaderOptions, Worker, WorkerPool,
 };
@@ -13,6 +12,7 @@ use pera_types::base_types::TransactionDigest;
 use pera_types::full_checkpoint_content::CheckpointData as PeraCheckpointData;
 use pera_types::full_checkpoint_content::CheckpointTransaction;
 use pera_types::messages_checkpoint::CheckpointSequenceNumber;
+use std::path::PathBuf;
 use tokio::sync::oneshot;
 use tokio::sync::oneshot::Sender;
 use tokio::task::JoinHandle;

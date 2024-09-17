@@ -11,11 +11,11 @@ use axum::{
     extract::{Path, State},
     Json,
 };
+use pera_protocol_config::{ProtocolConfig, ProtocolConfigValue, ProtocolVersion};
+use pera_sdk2::types::{Address, ObjectId};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use pera_protocol_config::{ProtocolConfig, ProtocolConfigValue, ProtocolVersion};
-use pera_sdk2::types::{Address, ObjectId};
 
 pub struct GetSystemStateSummary;
 
@@ -378,8 +378,10 @@ impl From<pera_types::pera_system_state::pera_system_state_summary::PeraValidato
                 protocol_pubkey_bytes,
             )
             .unwrap(),
-            network_public_key: pera_sdk2::types::Ed25519PublicKey::from_bytes(network_pubkey_bytes)
-                .unwrap(),
+            network_public_key: pera_sdk2::types::Ed25519PublicKey::from_bytes(
+                network_pubkey_bytes,
+            )
+            .unwrap(),
             worker_public_key: pera_sdk2::types::Ed25519PublicKey::from_bytes(worker_pubkey_bytes)
                 .unwrap(),
             proof_of_possession_bytes,

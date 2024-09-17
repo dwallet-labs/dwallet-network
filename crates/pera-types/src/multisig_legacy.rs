@@ -5,9 +5,9 @@ use crate::{
     crypto::{CompressedSignature, SignatureScheme},
     digests::ZKLoginInputsDigest,
     multisig::{MultiSig, MultiSigPublicKey},
+    pera_serde::PeraBitmap,
     signature::{AuthenticatorTrait, GenericSignature, VerifyParams},
     signature_verification::VerifiedDigestCache,
-    pera_serde::PeraBitmap,
 };
 pub use enum_dispatch::enum_dispatch;
 use fastcrypto::{

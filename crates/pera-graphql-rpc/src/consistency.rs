@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use async_graphql::connection::CursorType;
-use serde::{Deserialize, Serialize};
 use pera_indexer::models::objects::StoredHistoryObject;
+use serde::{Deserialize, Serialize};
 
 use crate::raw_query::RawQuery;
 use crate::types::available_range::AvailableRange;

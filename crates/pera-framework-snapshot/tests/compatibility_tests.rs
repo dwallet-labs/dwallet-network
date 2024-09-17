@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 mod compatibility_tests {
-    use std::collections::BTreeMap;
     use pera_framework::{compare_system_package, BuiltInFramework};
     use pera_framework_snapshot::{load_bytecode_snapshot, load_bytecode_snapshot_manifest};
     use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
     use pera_types::execution_config_utils::to_binary_config;
+    use std::collections::BTreeMap;
 
     #[tokio::test]
     async fn test_framework_compatibility() {

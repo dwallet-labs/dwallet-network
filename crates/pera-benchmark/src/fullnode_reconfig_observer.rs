@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use async_trait::async_trait;
-use std::{collections::HashMap, sync::Arc};
 use pera_core::{
     authority_aggregator::{AuthAggMetrics, AuthorityAggregator},
     authority_client::NetworkAuthorityClient,
@@ -11,6 +10,7 @@ use pera_core::{
     safe_client::SafeClientMetricsBase,
 };
 use pera_sdk::{PeraClient, PeraClientBuilder};
+use std::{collections::HashMap, sync::Arc};
 use tracing::{debug, error, trace};
 
 /// A ReconfigObserver that polls FullNode periodically

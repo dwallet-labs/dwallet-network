@@ -24,8 +24,6 @@ use connection::Edge;
 use cursor::TxLookup;
 use diesel::{ExpressionMethods, JoinOnDsl, QueryDsl, SelectableHelper};
 use fastcrypto::encoding::{Base58, Encoding};
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
 use pera_indexer::{
     models::transactions::StoredTransaction,
     schema::{transactions, tx_digests},
@@ -40,6 +38,8 @@ use pera_types::{
         TransactionDataAPI, TransactionExpiration,
     },
 };
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, HashMap};
 
 mod cursor;
 mod filter;

@@ -44,6 +44,7 @@ use network::{
 };
 use network::{failpoints::FailpointsMakeCallbackHandler, metrics::MetricsMakeCallbackHandler};
 use parking_lot::Mutex;
+use pera_protocol_config::ProtocolConfig;
 use prometheus::Registry;
 use std::collections::{btree_map::Entry, BTreeMap, HashMap};
 use std::{
@@ -55,7 +56,6 @@ use std::{
     time::Duration,
 };
 use storage::{CertificateStore, PayloadStore, ProposerStore, VoteDigestStore};
-use pera_protocol_config::ProtocolConfig;
 use tokio::{sync::oneshot, time::Instant};
 use tokio::{sync::watch, task::JoinHandle};
 use tower::ServiceBuilder;

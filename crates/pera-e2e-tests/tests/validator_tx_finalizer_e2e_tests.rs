@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::time::Duration;
 use pera_macros::sim_test;
 use pera_test_transaction_builder::publish_basics_package_and_make_counter;
 use pera_types::base_types::dbg_addr;
+use std::time::Duration;
 use test_cluster::TestClusterBuilder;
 
 #[sim_test]

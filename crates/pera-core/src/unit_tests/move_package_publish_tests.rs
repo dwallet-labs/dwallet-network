@@ -26,14 +26,14 @@ use crate::authority::move_integration_tests::{
     build_multi_publish_txns, build_package, run_multi_txns,
 };
 use expect_test::expect;
-use std::env;
-use std::fs::File;
-use std::io::Read;
-use std::{collections::HashSet, path::PathBuf};
 use pera_framework::BuiltInFramework;
 use pera_types::effects::TransactionEffectsAPI;
 use pera_types::execution_status::{ExecutionFailureStatus, ExecutionStatus};
 use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
+use std::env;
+use std::fs::File;
+use std::io::Read;
+use std::{collections::HashSet, path::PathBuf};
 
 #[tokio::test]
 #[cfg_attr(msim, ignore)]

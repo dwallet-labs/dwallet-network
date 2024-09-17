@@ -4,9 +4,9 @@
 use std::{collections::BTreeSet, sync::Arc};
 
 use fastcrypto::hash::Hash;
+use pera_protocol_config::ProtocolConfig;
 use prometheus::Registry;
 use storage::NodeStorage;
-use pera_protocol_config::ProtocolConfig;
 use telemetry_subscribers::TelemetryGuards;
 use test_utils::latest_protocol_version;
 use test_utils::{temp_dir, CommitteeFixture};

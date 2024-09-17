@@ -5,12 +5,12 @@ use anyhow::Result;
 use move_binary_format::{file_format::Visibility, CompiledModule};
 use move_compiler::editions::Edition;
 use move_package::{BuildConfig as MoveBuildConfig, LintFlag};
+use pera_move_build::{BuildConfig, PeraPackageHooks};
 use std::{
     collections::BTreeMap,
     env, fs,
     path::{Path, PathBuf},
 };
-use pera_move_build::{BuildConfig, PeraPackageHooks};
 
 const CRATE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 const COMPILED_PACKAGES_DIR: &str = "packages_compiled";

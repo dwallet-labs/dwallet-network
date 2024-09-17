@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::{collections::HashSet, sync::Arc};
 use pera_protocol_config::ProtocolConfig;
 use pera_types::storage::BackingStore;
 use pera_types::{
@@ -17,6 +16,7 @@ use pera_types::{
     metrics::LimitsMetrics,
     transaction::{CheckedInputObjects, ProgrammableTransaction, TransactionKind},
 };
+use std::{collections::HashSet, sync::Arc};
 
 /// Abstracts over access to the VM across versions of the execution layer.
 pub trait Executor {

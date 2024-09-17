@@ -33,7 +33,7 @@ use pera_package_resolver::{PackageStoreWithLruCache, Resolver};
 use pera_types::effects::TransactionEvents;
 use pera_types::{balance::Supply, coin::TreasuryCap, dynamic_field::DynamicFieldName};
 use pera_types::{
-    base_types::{ObjectID, ObjectRef, SequenceNumber, PeraAddress, VersionNumber},
+    base_types::{ObjectID, ObjectRef, PeraAddress, SequenceNumber, VersionNumber},
     committee::EpochId,
     digests::{ObjectDigest, TransactionDigest},
     dynamic_field::DynamicFieldInfo,
@@ -506,8 +506,10 @@ impl<U: R2D2Connection> IndexerReader<U> {
             let package_resolver_clone = self.package_resolver();
             let options_clone = options.clone();
             tx_block_responses_futures.push(tokio::task::spawn(
-                stored_tx
-                    .try_into_pera_transaction_block_response(options_clone, package_resolver_clone),
+                stored_tx.try_into_pera_transaction_block_response(
+                    options_clone,
+                    package_resolver_clone,
+                ),
             ));
         }
 

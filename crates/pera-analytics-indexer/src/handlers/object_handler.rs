@@ -3,9 +3,9 @@
 
 use anyhow::Result;
 use fastcrypto::encoding::{Base64, Encoding};
-use std::path::Path;
 use pera_data_ingestion_core::Worker;
 use pera_types::SYSTEM_PACKAGE_ADDRESSES;
+use std::path::Path;
 use tokio::sync::Mutex;
 
 use pera_json_rpc_types::PeraMoveStruct;

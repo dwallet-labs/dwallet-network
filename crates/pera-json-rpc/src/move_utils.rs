@@ -14,8 +14,6 @@ use move_binary_format::{
     normalized::{Module as NormalizedModule, Type},
 };
 use move_core_types::identifier::Identifier;
-use std::collections::BTreeMap;
-use std::sync::Arc;
 use pera_core::authority::AuthorityState;
 use pera_json_rpc_api::{MoveUtilsOpenRpc, MoveUtilsServer};
 use pera_json_rpc_types::{
@@ -26,6 +24,8 @@ use pera_open_rpc::Module;
 use pera_types::base_types::ObjectID;
 use pera_types::move_package::normalize_modules;
 use pera_types::object::{Data, ObjectRead};
+use std::collections::BTreeMap;
+use std::sync::Arc;
 use tap::TapFallible;
 use tracing::{error, instrument, warn};
 

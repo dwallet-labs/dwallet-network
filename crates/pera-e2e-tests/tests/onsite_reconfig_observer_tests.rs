@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use prometheus::Registry;
 use pera_core::authority_aggregator::AuthAggMetrics;
 use pera_core::quorum_driver::reconfig_observer::OnsiteReconfigObserver;
 use pera_core::quorum_driver::reconfig_observer::ReconfigObserver;
 use pera_core::safe_client::SafeClientMetricsBase;
+use prometheus::Registry;
 use test_cluster::TestClusterBuilder;
 use tracing::info;
 

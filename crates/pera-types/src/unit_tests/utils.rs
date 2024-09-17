@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::crypto::{Signer, PeraKeyPair};
+use crate::crypto::{PeraKeyPair, Signer};
 use crate::multisig::{MultiSig, MultiSigPublicKey};
 use crate::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use crate::transaction::{SenderSignedData, TEST_ONLY_GAS_UNIT_FOR_TRANSFER};

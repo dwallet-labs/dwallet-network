@@ -1,9 +1,0 @@
-[package]
-name = "pera-test-validator"
-version.workspace = true
-authors = ["Mysten Labs <build@mystenlabs.com>"]
-license = "BSD-3-Clause-Clear"
-publish = false
-edition = "2021"
-
-[dependencies]

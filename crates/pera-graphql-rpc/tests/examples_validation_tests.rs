@@ -4,6 +4,9 @@
 #[cfg(feature = "pg_integration")]
 mod tests {
     use anyhow::{anyhow, Context, Result};
+    use pera_graphql_rpc::config::{ConnectionConfig, Limits};
+    use pera_graphql_rpc::test_infra::cluster::ExecutorCluster;
+    use pera_graphql_rpc::test_infra::cluster::DEFAULT_INTERNAL_DATA_SOURCE_PORT;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
     use serial_test::serial;
@@ -13,9 +16,6 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
     use std::sync::Arc;
-    use pera_graphql_rpc::config::{ConnectionConfig, Limits};
-    use pera_graphql_rpc::test_infra::cluster::ExecutorCluster;
-    use pera_graphql_rpc::test_infra::cluster::DEFAULT_INTERNAL_DATA_SOURCE_PORT;
     use tempfile::tempdir;
 
     struct Example {

@@ -3,11 +3,11 @@
 
 use anyhow::Result;
 use fastcrypto::encoding::{Base64, Encoding};
-use std::collections::HashMap;
-use std::path::Path;
 use pera_data_ingestion_core::Worker;
 use pera_indexer::errors::IndexerError;
 use pera_types::SYSTEM_PACKAGE_ADDRESSES;
+use std::collections::HashMap;
+use std::path::Path;
 use tap::tap::TapFallible;
 use tokio::sync::Mutex;
 use tracing::warn;

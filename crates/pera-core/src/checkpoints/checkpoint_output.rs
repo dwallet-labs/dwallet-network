@@ -6,7 +6,6 @@ use crate::authority::StableSyncAuthoritySigner;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::epoch::reconfiguration::ReconfigurationInitiator;
 use async_trait::async_trait;
-use std::sync::Arc;
 use pera_types::base_types::AuthorityName;
 use pera_types::error::PeraResult;
 use pera_types::message_envelope::Message;
@@ -15,6 +14,7 @@ use pera_types::messages_checkpoint::{
     SignedCheckpointSummary, VerifiedCheckpoint,
 };
 use pera_types::messages_consensus::ConsensusTransaction;
+use std::sync::Arc;
 use tracing::{debug, info, instrument, trace};
 
 use super::{CheckpointMetrics, CheckpointStore};
@@ -32,8 +32,10 @@ pub trait CheckpointOutput: Sync + Send + 'static {
 
 #[async_trait]
 pub trait CertifiedCheckpointOutput: Sync + Send + 'static {
-    async fn certified_checkpoint_created(&self, summary: &CertifiedCheckpointSummary)
-        -> PeraResult;
+    async fn certified_checkpoint_created(
+        &self,
+        summary: &CertifiedCheckpointSummary,
+    ) -> PeraResult;
 }
 
 pub struct SubmitCheckpointToConsensus<T> {

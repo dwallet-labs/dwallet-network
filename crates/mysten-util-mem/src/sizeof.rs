@@ -4,11 +4,6 @@
 // Copyright 2020 Parity Technologies
 //
 
-
-
-
-
-
 //! Estimation for heapsize calculation. Usable to replace call to allocator method (for some
 //! allocators or simply because we just need a deterministic cunsumption measurement).
 

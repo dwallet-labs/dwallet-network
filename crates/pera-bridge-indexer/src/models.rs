@@ -7,7 +7,8 @@ use diesel::{Identifiable, Insertable, Queryable, Selectable};
 use pera_indexer_builder::Task;
 
 use crate::schema::{
-    progress_store, pera_error_transactions, pera_progress_store, token_transfer, token_transfer_data,
+    pera_error_transactions, pera_progress_store, progress_store, token_transfer,
+    token_transfer_data,
 };
 
 #[derive(Queryable, Selectable, Insertable, Identifiable, Debug)]

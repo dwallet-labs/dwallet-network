@@ -15,10 +15,12 @@ use move_binary_format::CompiledModule;
 use move_core_types::ident_str;
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{StructTag, TypeTag};
-use pera_json::{is_receiving_argument, resolve_move_function_args, ResolvedCallArg, PeraJsonValue};
+use pera_json::{
+    is_receiving_argument, resolve_move_function_args, PeraJsonValue, ResolvedCallArg,
+};
 use pera_json_rpc_types::{
-    RPCTransactionRequestParams, PeraData, PeraObjectDataOptions, PeraObjectResponse, PeraRawData,
-    PeraTypeTag,
+    PeraData, PeraObjectDataOptions, PeraObjectResponse, PeraRawData, PeraTypeTag,
+    RPCTransactionRequestParams,
 };
 use pera_protocol_config::ProtocolConfig;
 use pera_types::base_types::{ObjectID, ObjectInfo, ObjectRef, ObjectType, PeraAddress};
@@ -27,8 +29,8 @@ use pera_types::gas_coin::GasCoin;
 use pera_types::governance::{ADD_STAKE_MUL_COIN_FUN_NAME, WITHDRAW_STAKE_FUN_NAME};
 use pera_types::move_package::MovePackage;
 use pera_types::object::{Object, Owner};
-use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::pera_system_state::PERA_SYSTEM_MODULE_NAME;
+use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::transaction::{
     Argument, CallArg, Command, InputObjectKind, ObjectArg, TransactionData, TransactionKind,
 };
@@ -618,7 +620,10 @@ impl TransactionBuilder {
     ) -> Result<TransactionKind, anyhow::Error> {
         let upgrade_capability = self
             .0
-            .get_object_with_options(upgrade_capability, PeraObjectDataOptions::new().with_owner())
+            .get_object_with_options(
+                upgrade_capability,
+                PeraObjectDataOptions::new().with_owner(),
+            )
             .await?
             .into_object()?;
         let capability_owner = upgrade_capability
@@ -690,7 +695,10 @@ impl TransactionBuilder {
             .await?;
         let upgrade_cap = self
             .0
-            .get_object_with_options(upgrade_capability, PeraObjectDataOptions::new().with_owner())
+            .get_object_with_options(
+                upgrade_capability,
+                PeraObjectDataOptions::new().with_owner(),
+            )
             .await?
             .into_object()?;
         let cap_owner = upgrade_cap

@@ -11,10 +11,10 @@ use crate::models::{PeraErrorTransactions, TokenTransfer as DBTokenTransfer};
 pub mod config;
 pub mod metrics;
 pub mod models;
-pub mod postgres_manager;
-pub mod schema;
 pub mod pera_transaction_handler;
 pub mod pera_transaction_queries;
+pub mod postgres_manager;
+pub mod schema;
 pub mod types;
 
 pub mod eth_bridge_indexer;

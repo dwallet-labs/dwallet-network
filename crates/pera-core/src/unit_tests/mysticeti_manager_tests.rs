@@ -5,8 +5,8 @@ use std::{sync::Arc, time::Duration};
 
 use fastcrypto::traits::KeyPair;
 use mysten_metrics::RegistryService;
-use prometheus::Registry;
 use pera_swarm_config::network_config_builder::ConfigBuilder;
+use prometheus::Registry;
 use tokio::time::sleep;
 
 use crate::{

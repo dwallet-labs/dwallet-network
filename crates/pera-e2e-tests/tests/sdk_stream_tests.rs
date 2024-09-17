@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use futures::StreamExt;
-use std::future;
 use pera_sdk::{PeraClientBuilder, PERA_COIN_TYPE};
 use pera_swarm_config::genesis_config::{DEFAULT_GAS_AMOUNT, DEFAULT_NUMBER_OF_OBJECT_PER_ACCOUNT};
+use std::future;
 use test_cluster::TestClusterBuilder;
 
 // TODO: rewrite the tests after the removal of DevNet NFT

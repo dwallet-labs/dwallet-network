@@ -9,12 +9,13 @@ use consensus_core::{CommitConsumer, CommitIndex, ConsensusAuthority};
 use fastcrypto::ed25519;
 use mysten_metrics::{monitored_mpsc::unbounded_channel, RegistryID, RegistryService};
 use narwhal_executor::ExecutionState;
-use prometheus::Registry;
 use pera_config::NodeConfig;
 use pera_protocol_config::ConsensusNetwork;
 use pera_types::{
-    committee::EpochId, pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
+    committee::EpochId,
+    pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
 };
+use prometheus::Registry;
 use tokio::sync::Mutex;
 use tracing::info;
 

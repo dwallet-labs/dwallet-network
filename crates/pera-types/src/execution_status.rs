@@ -5,9 +5,9 @@ use crate::base_types::PeraAddress;
 use crate::ObjectID;
 use move_binary_format::file_format::{CodeOffset, TypeParameterIndex};
 use move_core_types::language_storage::ModuleId;
+use pera_macros::EnumVariantOrder;
 use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display, Formatter};
-use pera_macros::EnumVariantOrder;
 use thiserror::Error;
 
 #[cfg(test)]

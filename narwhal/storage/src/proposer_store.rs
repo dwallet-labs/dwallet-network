@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::StoreResult;
+use pera_macros::fail_point;
 use store::rocks::{open_cf, MetricConf};
 use store::{reopen, rocks::DBMap, rocks::ReadWriteOptions, Map};
-use pera_macros::fail_point;
 use types::Header;
 
 pub type ProposerKey = u32;

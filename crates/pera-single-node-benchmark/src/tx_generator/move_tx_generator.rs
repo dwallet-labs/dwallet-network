@@ -4,11 +4,11 @@
 use crate::mock_account::Account;
 use crate::tx_generator::TxGenerator;
 use move_core_types::identifier::Identifier;
-use std::collections::HashMap;
 use pera_test_transaction_builder::TestTransactionBuilder;
-use pera_types::base_types::{ObjectID, ObjectRef, SequenceNumber, PeraAddress};
+use pera_types::base_types::{ObjectID, ObjectRef, PeraAddress, SequenceNumber};
 use pera_types::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use pera_types::transaction::{CallArg, ObjectArg, Transaction, DEFAULT_VALIDATOR_GAS_PRICE};
+use std::collections::HashMap;
 
 pub struct MoveTxGenerator {
     move_package: ObjectID,

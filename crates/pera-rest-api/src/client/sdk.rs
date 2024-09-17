@@ -1,9 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use reqwest::header::HeaderValue;
-use reqwest::StatusCode;
-use reqwest::Url;
 use pera_sdk2::types::Address;
 use pera_sdk2::types::CheckpointData;
 use pera_sdk2::types::CheckpointDigest;
@@ -17,6 +14,9 @@ use pera_sdk2::types::StructTag;
 use pera_sdk2::types::TransactionDigest;
 use pera_sdk2::types::ValidatorCommittee;
 use pera_sdk2::types::Version;
+use reqwest::header::HeaderValue;
+use reqwest::StatusCode;
+use reqwest::Url;
 use tap::Pipe;
 
 use crate::accounts::AccountOwnedObjectInfo;

@@ -17,17 +17,17 @@ use strum_macros::EnumString;
 use anyhow::Result;
 use async_trait::async_trait;
 use core::default::Default;
-use std::time::Duration;
 use pera_types::{
     base_types::PeraAddress, digests::TransactionDigest,
     messages_checkpoint::CheckpointSequenceNumber,
 };
+use std::time::Duration;
 
 use crate::load_test::LoadTestConfig;
+use pera_types::base_types::ObjectID;
 pub use rpc_command_processor::{
     load_addresses_from_file, load_digests_from_file, load_objects_from_file, RpcCommandProcessor,
 };
-use pera_types::base_types::ObjectID;
 
 #[derive(Default, Clone)]
 pub struct SignerInfo {

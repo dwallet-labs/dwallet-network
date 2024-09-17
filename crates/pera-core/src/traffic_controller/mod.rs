@@ -20,10 +20,10 @@ use crate::traffic_controller::policies::{
     Policy, PolicyResponse, TrafficControlPolicy, TrafficTally,
 };
 use mysten_metrics::spawn_monitored_task;
+use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig, Weight};
 use rand::Rng;
 use std::fmt::Debug;
 use std::time::{Duration, Instant, SystemTime};
-use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig, Weight};
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::error::TrySendError;
 use tracing::{debug, error, info, trace, warn};

@@ -13,8 +13,6 @@ use fastcrypto::{
     secp256r1::Secp256r1KeyPair,
     traits::{EncodeDecodeBase64, KeyPair},
 };
-use rand::{rngs::StdRng, SeedableRng};
-use shared_crypto::intent::{Intent, IntentMessage};
 use pera_sdk::{
     rpc_types::PeraTransactionBlockResponseOptions,
     types::{
@@ -23,14 +21,16 @@ use pera_sdk::{
     },
     PeraClientBuilder,
 };
-use pera_types::crypto::Signer;
 use pera_types::crypto::PeraSignature;
+use pera_types::crypto::Signer;
 use pera_types::crypto::ToFromBytes;
 use pera_types::signature::GenericSignature;
 use pera_types::{
     base_types::PeraAddress,
     crypto::{get_key_pair_from_rng, PeraKeyPair},
 };
+use rand::{rngs::StdRng, SeedableRng};
+use shared_crypto::intent::{Intent, IntentMessage};
 
 /// This example walks through the Rust SDK use case described in
 /// https://github.com/MystenLabs/sui/blob/main/docs/content/guides/developer/pera-101/sign-and-send-txn.mdx

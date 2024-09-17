@@ -239,10 +239,10 @@ mod tests {
     use ethers::types::TxHash;
     use fastcrypto::hash::{HashFunction, Keccak256};
     use fastcrypto::traits::KeyPair;
-    use prometheus::Registry;
     use pera_types::bridge::{BridgeChainId, TOKEN_ID_BTC, TOKEN_ID_USDT};
     use pera_types::TypeTag;
     use pera_types::{base_types::PeraAddress, crypto::get_key_pair, digests::TransactionDigest};
+    use prometheus::Registry;
 
     #[tokio::test]
     async fn test_bridge_client() {

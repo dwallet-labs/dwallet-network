@@ -3,9 +3,6 @@
 
 use crate::checkpoints::CheckpointStore;
 use crate::execution_cache::{ObjectCacheRead, TransactionCacheRead};
-use std::collections::HashMap;
-use std::path::PathBuf;
-use std::sync::Arc;
 use pera_storage::blob::{Blob, BlobEncoding};
 use pera_types::digests::TransactionDigest;
 use pera_types::effects::TransactionEffectsAPI;
@@ -13,6 +10,9 @@ use pera_types::error::{PeraError, PeraResult, UserInputError};
 use pera_types::full_checkpoint_content::{CheckpointData, CheckpointTransaction};
 use pera_types::messages_checkpoint::VerifiedCheckpoint;
 use pera_types::storage::ObjectKey;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 pub(crate) fn load_checkpoint_data(
     checkpoint: VerifiedCheckpoint,
@@ -48,7 +48,9 @@ pub(crate) fn load_checkpoint_data(
         .multi_get_events(&event_digests)?
         .into_iter()
         .zip(&event_digests)
-        .map(|(event, digest)| event.ok_or(PeraError::TransactionEventsNotFound { digest: *digest }))
+        .map(|(event, digest)| {
+            event.ok_or(PeraError::TransactionEventsNotFound { digest: *digest })
+        })
         .collect::<PeraResult<Vec<_>>>()?;
 
     let events: HashMap<_, _> = event_digests.into_iter().zip(events).collect();

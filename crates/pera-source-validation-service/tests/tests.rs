@@ -2,12 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use expect_test::expect;
-use reqwest::Client;
-use std::fs;
-use std::io::Read;
-use std::os::unix::fs::FileExt;
-use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
 use pera::client_commands::{OptsWithGas, PeraClientCommandResult, PeraClientCommands};
 use pera_json_rpc_types::{PeraTransactionBlockEffects, PeraTransactionBlockEffectsAPI};
 use pera_move_build::{BuildConfig, PeraPackageHooks};
@@ -18,6 +12,12 @@ use pera_sdk::types::base_types::ObjectID;
 use pera_sdk::types::object::Owner;
 use pera_sdk::types::transaction::TEST_ONLY_GAS_UNIT_FOR_PUBLISH;
 use pera_sdk::wallet_context::WalletContext;
+use reqwest::Client;
+use std::fs;
+use std::io::Read;
+use std::os::unix::fs::FileExt;
+use std::path::PathBuf;
+use std::sync::{Arc, RwLock};
 use tokio::sync::oneshot;
 
 use move_core_types::account_address::AccountAddress;

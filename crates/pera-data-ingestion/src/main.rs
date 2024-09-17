@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::Result;
-use prometheus::Registry;
-use serde::{Deserialize, Serialize};
-use std::env;
-use std::path::PathBuf;
 use pera_data_ingestion::{
     ArchivalConfig, ArchivalWorker, BlobTaskConfig, BlobWorker, DynamoDBProgressStore,
     KVStoreTaskConfig, KVStoreWorker,
 };
 use pera_data_ingestion_core::{DataIngestionMetrics, ReaderOptions};
 use pera_data_ingestion_core::{IndexerExecutor, WorkerPool};
+use prometheus::Registry;
+use serde::{Deserialize, Serialize};
+use std::env;
+use std::path::PathBuf;
 use tokio::signal;
 use tokio::sync::oneshot;
 

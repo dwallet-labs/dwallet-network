@@ -13,9 +13,6 @@ use crate::types::pera_address::PeraAddress;
 use crate::types::type_filter::ExactTypeFilter;
 use async_graphql::*;
 use im::hashmap::HashMap as ImHashMap;
-use shared_crypto::intent::{
-    AppId, Intent, IntentMessage, IntentScope, IntentVersion, PersonalMessage,
-};
 use pera_types::authenticator_state::{ActiveJwk, AuthenticatorStateInner};
 use pera_types::crypto::ToFromBytes;
 use pera_types::dynamic_field::{DynamicFieldType, Field};
@@ -24,6 +21,9 @@ use pera_types::signature::VerifyParams;
 use pera_types::signature_verification::VerifiedDigestCache;
 use pera_types::transaction::TransactionData;
 use pera_types::{TypeTag, PERA_AUTHENTICATOR_STATE_ADDRESS};
+use shared_crypto::intent::{
+    AppId, Intent, IntentMessage, IntentScope, IntentVersion, PersonalMessage,
+};
 use tracing::warn;
 
 /// An enum that specifies the intent scope to be used to parse the bytes for signature

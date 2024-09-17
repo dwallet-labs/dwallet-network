@@ -3,17 +3,17 @@
 
 use crate::authority::AuthorityState;
 use mysten_metrics::monitored_scope;
+use pera_config::node::AuthorityOverloadConfig;
+use pera_types::digests::TransactionDigest;
+use pera_types::error::PeraError;
+use pera_types::error::PeraResult;
+use pera_types::fp_bail;
 use std::cmp::{max, min};
 use std::hash::Hasher;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Weak;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
-use pera_config::node::AuthorityOverloadConfig;
-use pera_types::digests::TransactionDigest;
-use pera_types::error::PeraError;
-use pera_types::error::PeraResult;
-use pera_types::fp_bail;
 use tokio::time::sleep;
 use tracing::{debug, info};
 use twox_hash::XxHash64;
@@ -262,12 +262,12 @@ mod tests {
     use super::*;
 
     use crate::authority::test_authority_builder::TestAuthorityBuilder;
+    use pera_macros::sim_test;
     use rand::{
         rngs::{OsRng, StdRng},
         Rng, SeedableRng,
     };
     use std::sync::Arc;
-    use pera_macros::sim_test;
     use tokio::sync::mpsc::unbounded_channel;
     use tokio::sync::mpsc::UnboundedReceiver;
     use tokio::sync::mpsc::UnboundedSender;

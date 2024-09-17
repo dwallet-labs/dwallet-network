@@ -5,10 +5,10 @@ use std::fmt::{self, Display, Formatter, Write};
 use std::sync::Arc;
 
 use enum_dispatch::enum_dispatch;
+use pera_package_resolver::{PackageStore, Resolver};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use pera_package_resolver::{PackageStore, Resolver};
 use tabled::{
     builder::Builder as TableBuilder,
     settings::{style::HorizontalLine, Panel as TablePanel, Style as TableStyle},
@@ -24,7 +24,7 @@ use mysten_metrics::monitored_scope;
 use pera_json::{primitive_type, PeraJsonValue};
 use pera_types::authenticator_state::ActiveJwk;
 use pera_types::base_types::{
-    EpochId, ObjectID, ObjectRef, SequenceNumber, PeraAddress, TransactionDigest,
+    EpochId, ObjectID, ObjectRef, PeraAddress, SequenceNumber, TransactionDigest,
 };
 use pera_types::crypto::PeraSignature;
 use pera_types::digests::{
@@ -39,13 +39,13 @@ use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use pera_types::messages_consensus::ConsensusDeterminedVersionAssignments;
 use pera_types::object::Owner;
 use pera_types::parse_pera_type_tag;
+use pera_types::pera_serde::Readable;
+use pera_types::pera_serde::{
+    BigInt, PeraTypeTag as AsPeraTypeTag, SequenceNumber as AsSequenceNumber,
+};
 use pera_types::quorum_driver_types::ExecuteTransactionRequestType;
 use pera_types::signature::GenericSignature;
 use pera_types::storage::{DeleteKind, WriteKind};
-use pera_types::pera_serde::Readable;
-use pera_types::pera_serde::{
-    BigInt, SequenceNumber as AsSequenceNumber, PeraTypeTag as AsPeraTypeTag,
-};
 use pera_types::transaction::{
     Argument, CallArg, ChangeEpoch, Command, EndOfEpochTransactionKind, GenesisObject,
     InputObjectKind, ObjectArg, ProgrammableMoveCall, ProgrammableTransaction, SenderSignedData,
@@ -974,7 +974,9 @@ impl TryFrom<TransactionEffects> for PeraTransactionBlockEffects {
                 mutated: to_owned_ref(effect.mutated().to_vec()),
                 unwrapped: to_owned_ref(effect.unwrapped().to_vec()),
                 deleted: to_pera_object_ref(effect.deleted().to_vec()),
-                unwrapped_then_deleted: to_pera_object_ref(effect.unwrapped_then_deleted().to_vec()),
+                unwrapped_then_deleted: to_pera_object_ref(
+                    effect.unwrapped_then_deleted().to_vec(),
+                ),
                 wrapped: to_pera_object_ref(effect.wrapped().to_vec()),
                 gas_object: OwnedObjectRef {
                     owner: effect.gas_object().1,

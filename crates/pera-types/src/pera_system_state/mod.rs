@@ -8,18 +8,18 @@ use crate::dynamic_field::{
 };
 use crate::error::PeraError;
 use crate::object::{MoveObject, Object};
-use crate::storage::ObjectStore;
 use crate::pera_system_state::epoch_start_pera_system_state::EpochStartSystemState;
 use crate::pera_system_state::pera_system_state_inner_v2::PeraSystemStateInnerV2;
+use crate::storage::ObjectStore;
 use crate::versioned::Versioned;
 use crate::{id::UID, MoveTypeTagTrait, PERA_SYSTEM_ADDRESS, PERA_SYSTEM_STATE_OBJECT_ID};
 use anyhow::Result;
 use enum_dispatch::enum_dispatch;
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
+use pera_protocol_config::{ProtocolConfig, ProtocolVersion};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use pera_protocol_config::{ProtocolConfig, ProtocolVersion};
 
 use self::pera_system_state_inner_v1::{PeraSystemStateInnerV1, ValidatorV1};
 use self::pera_system_state_summary::{PeraSystemStateSummary, PeraValidatorSummary};
@@ -228,7 +228,9 @@ pub fn get_pera_system_state_wrapper(
         .get_object(&PERA_SYSTEM_STATE_OBJECT_ID)?
         // Don't panic here on None because object_store is a generic store.
         .ok_or_else(|| {
-            PeraError::PeraSystemStateReadError("PeraSystemStateWrapper object not found".to_owned())
+            PeraError::PeraSystemStateReadError(
+                "PeraSystemStateWrapper object not found".to_owned(),
+            )
         })?;
     let move_object = wrapper.data.try_as_move().ok_or_else(|| {
         PeraError::PeraSystemStateReadError(

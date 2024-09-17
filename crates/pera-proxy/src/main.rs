@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 use anyhow::Result;
 use clap::Parser;
-use std::env;
 use pera_proxy::config::ProxyConfig;
 use pera_proxy::{
     admin::{
@@ -13,6 +12,7 @@ use pera_proxy::{
     histogram_relay, metrics,
 };
 use pera_tls::TlsAcceptor;
+use std::env;
 use telemetry_subscribers::TelemetryConfig;
 use tracing::info;
 

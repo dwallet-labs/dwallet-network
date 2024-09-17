@@ -4,8 +4,8 @@
 use super::string_input::impl_string_input;
 use async_graphql::*;
 use fastcrypto::encoding::{Base58, Encoding};
-use std::{fmt, str::FromStr};
 use pera_types::digests::{ObjectDigest, TransactionDigest};
+use std::{fmt, str::FromStr};
 
 pub(crate) const BASE58_DIGEST_LENGTH: usize = 32;
 

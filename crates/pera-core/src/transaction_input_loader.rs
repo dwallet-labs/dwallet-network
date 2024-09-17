@@ -4,8 +4,6 @@
 use crate::execution_cache::ObjectCacheRead;
 use itertools::izip;
 use once_cell::unsync::OnceCell;
-use std::collections::HashMap;
-use std::sync::Arc;
 use pera_types::{
     base_types::{EpochId, ObjectID, ObjectRef, SequenceNumber, TransactionDigest},
     error::{PeraError, PeraResult, UserInputError},
@@ -15,6 +13,8 @@ use pera_types::{
         ReceivingObjectReadResult, ReceivingObjectReadResultKind, ReceivingObjects, TransactionKey,
     },
 };
+use std::collections::HashMap;
+use std::sync::Arc;
 use tracing::instrument;
 
 pub(crate) struct TransactionInputLoader {

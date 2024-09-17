@@ -4,11 +4,11 @@
 use crate::executor::MAX_CHECKPOINTS_IN_PROGRESS;
 use crate::Worker;
 use mysten_metrics::spawn_monitored_task;
+use pera_types::full_checkpoint_content::CheckpointData;
+use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use std::collections::{BTreeSet, HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::Instant;
-use pera_types::full_checkpoint_content::CheckpointData;
-use pera_types::messages_checkpoint::CheckpointSequenceNumber;
 use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 use tracing::info;
