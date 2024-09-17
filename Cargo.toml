@@ -70,6 +70,7 @@ exclude = [
 members = [
     "consensus/config",
     "consensus/core",
+    "crates/mpc-protocols",
     "crates/anemo-benchmark",
     "crates/bin-version",
     "crates/mysten-common",
