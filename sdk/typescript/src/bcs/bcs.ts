@@ -4,7 +4,11 @@
 import type { BcsType, BcsTypeOptions } from '@mysten/bcs';
 import { bcs, fromB58, fromB64, fromHEX, toB58, toB64, toHEX } from '@mysten/bcs';
 
-import { isValidPeraAddress, normalizePeraAddress, PERA_ADDRESS_LENGTH } from '../utils/pera-types.js';
+import {
+	isValidPeraAddress,
+	normalizePeraAddress,
+	PERA_ADDRESS_LENGTH,
+} from '../utils/pera-types.js';
 import { TypeTagSerializer } from './type-tag-serializer.js';
 import type { TypeTag as TypeTagType } from './types.js';
 

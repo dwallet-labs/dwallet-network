@@ -5,7 +5,7 @@ import { toB58 } from '@mysten/bcs';
 import { expect, it } from 'vitest';
 
 import { bcs } from '../../bcs/index.js';
-import { normalizeStructTag, normalizePeraAddress } from '../../utils/pera-types.js';
+import { normalizePeraAddress, normalizeStructTag } from '../../utils/pera-types.js';
 
 // Oooh-weeee we nailed it!
 it('can serialize simplified programmable call struct', () => {
