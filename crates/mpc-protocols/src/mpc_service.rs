@@ -62,7 +62,7 @@ impl MPCService {
         });
     }
 
-    /// Filter the relevant MPC events from all the consensus output transactions events & handle them
+    /// Filter the relevant MPC events from the transaction events & handle them
     pub fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
         for event in events {
             if CreatedProofMPCEvent::type_() == event.type_ {
