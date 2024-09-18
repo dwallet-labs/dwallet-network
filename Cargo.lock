@@ -7787,6 +7787,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpc-protocols"
+version = "1.32.2"
+dependencies = [
+ "move-core-types",
+ "pera-types",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "msim"
 version = "0.1.0"
 source = "git+https://github.com/MystenLabs/mysten-sim.git?rev=b320996d8dfb99b273fe31c0222c659332283c99#b320996d8dfb99b273fe31c0222c659332283c99"
