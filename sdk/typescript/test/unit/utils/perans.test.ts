@@ -91,7 +91,9 @@ describe('normalizePeraNSName', () => {
 		expect(() => normalizePeraNSName('@test.test')).toThrowError('Invalid PeraNS name @test.test');
 		expect(() => normalizePeraNSName('#@test')).toThrowError('Invalid PeraNS name #@test');
 		expect(() => normalizePeraNSName('test@#')).toThrowError('Invalid PeraNS name test@#');
-		expect(() => normalizePeraNSName('test.#.pera')).toThrowError('Invalid PeraNS name test.#.pera');
+		expect(() => normalizePeraNSName('test.#.pera')).toThrowError(
+			'Invalid PeraNS name test.#.pera',
+		);
 		expect(() => normalizePeraNSName('#.pera')).toThrowError('Invalid PeraNS name #.pera');
 		expect(() => normalizePeraNSName('@.test.sue')).toThrowError('Invalid PeraNS name @.test.sue');
 	});
