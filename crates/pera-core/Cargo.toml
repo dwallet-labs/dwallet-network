@@ -98,6 +98,7 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
+mpc-protocols.workspace = true
 
 [dev-dependencies]
 clap.workspace = true

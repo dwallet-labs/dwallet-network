@@ -7790,11 +7790,14 @@ dependencies = [
 name = "mpc-protocols"
 version = "1.32.2"
 dependencies = [
+ "anyhow",
+ "bcs",
  "move-core-types",
  "pera-types",
  "schemars",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -10095,6 +10098,7 @@ dependencies = [
  "move-core-types",
  "move-package",
  "move-symbol-pool",
+ "mpc-protocols",
  "mysten-common",
  "mysten-metrics",
  "mysten-network",

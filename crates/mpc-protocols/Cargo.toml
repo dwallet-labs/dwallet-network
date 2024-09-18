@@ -9,3 +9,6 @@ serde_json.workspace = true
 schemars.workspace = true
 pera-types.workspace = true
 move-core-types.workspace = true
+anyhow.workspace = true
+tokio.workspace = true
+bcs.workspace = true

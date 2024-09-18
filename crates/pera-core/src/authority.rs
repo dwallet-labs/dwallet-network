@@ -40,6 +40,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Write;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
@@ -136,6 +137,10 @@ use crate::authority::authority_store_pruner::{
 };
 use crate::authority::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
+#[cfg(msim)]
+pub use crate::checkpoints::checkpoint_executor::{
+    init_checkpoint_timeout_config, CheckpointTimeoutConfig,
+};
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
 use crate::epoch::committee_store::CommitteeStore;
@@ -153,11 +158,9 @@ use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
-
-#[cfg(msim)]
-pub use crate::checkpoints::checkpoint_executor::{
-    init_checkpoint_timeout_config, CheckpointTimeoutConfig,
-};
+use mpc_protocols::mpc_events::CreatedProofMPCEvent;
+use mpc_protocols::mpc_events::MPCEvent;
+use mpc_protocols::mpc_service::{MPCInput, MPCService};
 
 use crate::authority_client::NetworkAuthorityClient;
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
@@ -803,6 +806,8 @@ pub struct AuthorityState {
     pub overload_info: AuthorityOverloadInfo,
 
     pub validator_tx_finalizer: Option<Arc<ValidatorTxFinalizer<NetworkAuthorityClient>>>,
+
+    mpc_state: MPCService,
 }
 
 /// The authority state encapsulates all state, drives execution, and ensures safety.
@@ -1489,6 +1494,12 @@ impl AuthorityState {
             effects_sig.as_ref(),
         )?;
 
+        // Check if there are any MPC events emitted from this transaction and if so, send them to the MPC service.
+        // Handle the MPC events here because there is access to the event, as the transaction has been just executed.
+        let _ = self
+            .handle_mpc_events(&inner_temporary_store, effects, epoch_store)
+            .await;
+
         // Allow testing what happens if we crash here.
         fail_point_async!("crash");
 
@@ -1519,6 +1530,27 @@ impl AuthorityState {
 
         self.update_metrics(certificate, input_object_count, shared_object_count);
 
+        Ok(())
+    }
+
+    async fn handle_mpc_events(
+        &self,
+        inner_temporary_store: &InnerTemporaryStore,
+        effects: &TransactionEffects,
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+    ) -> anyhow::Result<()> {
+        if !self.is_validator(epoch_store) {
+            return Ok(());
+        }
+        let status = match &effects {
+            TransactionEffects::V1(effects) => effects.status(),
+            TransactionEffects::V2(effects) => effects.status(),
+        };
+        if status.is_err() {
+            return Ok(());
+        }
+        self.mpc_state
+            .handle_mpc_events(&inner_temporary_store.events.data)?;
         Ok(())
     }
 
@@ -2703,6 +2735,7 @@ impl AuthorityState {
             config,
             overload_info: AuthorityOverloadInfo::default(),
             validator_tx_finalizer,
+            mpc_state: MPCService::new(),
         });
 
         // Start a task to execute ready certificates.
