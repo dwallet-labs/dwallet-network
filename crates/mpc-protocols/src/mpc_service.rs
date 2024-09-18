@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use crate::mpc_events::{CreatedProofMPCEvent, MPCEvent};
 use pera_types::base_types::ObjectID;
 use pera_types::event::Event;
@@ -37,17 +38,17 @@ enum MPCStatus {
 /// - Runs the MPC session for each active instance
 /// - Ensures that the number of active sessions does not go over `MAX_ACTIVE_MPC_INSTANCES` at the same time
 pub struct MPCService {
-    mpc_instances: Mutex<HashMap<ObjectID, MPCInstance>>,
-    pending: Mutex<VecDeque<ObjectID>>,
-    active_instances_counter: Mutex<usize>,
+    mpc_instances: HashMap<ObjectID, MPCInstance>,
+    pending: VecDeque<ObjectID>,
+    active_instances_counter: usize,
 }
 
 impl MPCService {
     pub fn new() -> Self {
         Self {
-            mpc_instances: Mutex::new(HashMap::new()),
-            pending: Mutex::new(VecDeque::new()),
-            active_instances_counter: Mutex::new(0),
+            mpc_instances: HashMap::new(),
+            pending: VecDeque::new(),
+            active_instances_counter: 0,
         }
     }
 
@@ -62,7 +63,7 @@ impl MPCService {
     }
 
     /// Filter the relevant MPC events from all the consensus output transactions events & handle them
-    pub fn handle_mpc_events(&self, events: &Vec<Event>) -> anyhow::Result<()> {
+    pub fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
         for event in events {
             if CreatedProofMPCEvent::type_() == event.type_ {
                 let deserialized_event: CreatedProofMPCEvent = bcs::from_bytes(&event.contents)?;
@@ -76,16 +77,15 @@ impl MPCService {
     /// Handles a proof initialization event
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    fn handle_proof_init_event(self: &MPCService, event: CreatedProofMPCEvent) {
+    fn handle_proof_init_event(&mut self, event: CreatedProofMPCEvent) {
         println!(
             "Received start flow event for session ID {:?}",
             event.session_id
         );
-        let mut locked_mpc_instances = self.mpc_instances.try_lock().unwrap();
-        let mut locked_active_instances_counter = self.active_instances_counter.try_lock().unwrap();
+        // let active_instances_counter = self.active_instances_counter.clone().into_inner();
         // If the number of active instances exceeds the limit, add to pending
-        if *locked_active_instances_counter >= MAX_ACTIVE_MPC_INSTANCES {
-            locked_mpc_instances.insert(
+        if self.active_instances_counter >= MAX_ACTIVE_MPC_INSTANCES {
+            self.mpc_instances.insert(
                 event.session_id.clone().bytes,
                 MPCInstance {
                     status: MPCStatus::Pending,
@@ -93,13 +93,13 @@ impl MPCService {
                     pending_messages: vec![],
                 },
             );
-            (*self.pending.try_lock().unwrap()).push_back(event.session_id.bytes);
+            self.pending.push_back(event.session_id.bytes);
             return;
         }
         let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
         self.spawn_mpc_messages_handler(messages_handler_receiver);
         let _ = messages_handler_sender.send(MPCInput::InitEvent(event.clone()));
-        locked_mpc_instances.insert(
+        self.mpc_instances.insert(
             event.session_id.clone().bytes,
             MPCInstance {
                 status: MPCStatus::Active,
@@ -107,7 +107,7 @@ impl MPCService {
                 pending_messages: vec![],
             },
         );
-        *locked_active_instances_counter += 1;
+        self.active_instances_counter += 1;
         println!(
             "Added MPCInstance to service for session_id {:?}",
             event.session_id

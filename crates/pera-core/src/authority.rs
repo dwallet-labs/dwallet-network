@@ -807,7 +807,7 @@ pub struct AuthorityState {
 
     pub validator_tx_finalizer: Option<Arc<ValidatorTxFinalizer<NetworkAuthorityClient>>>,
 
-    mpc_state: MPCService,
+    mpc_state: Mutex<MPCService>,
 }
 
 /// The authority state encapsulates all state, drives execution, and ensures safety.
@@ -1549,7 +1549,7 @@ impl AuthorityState {
         if status.is_err() {
             return Ok(());
         }
-        self.mpc_state
+        self.mpc_state.lock()
             .handle_mpc_events(&inner_temporary_store.events.data)?;
         Ok(())
     }
@@ -2735,7 +2735,7 @@ impl AuthorityState {
             config,
             overload_info: AuthorityOverloadInfo::default(),
             validator_tx_finalizer,
-            mpc_state: MPCService::new(),
+            mpc_state: Mutex::new(MPCService::new()),
         });
 
         // Start a task to execute ready certificates.
