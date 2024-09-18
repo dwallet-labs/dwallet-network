@@ -104,7 +104,10 @@ export class ParallelTransactionExecutor {
 		await this.#updateCache(() => this.#waitForLastDigest());
 	}
 
-	async executeTransaction(transaction: Transaction, options?: PeraTransactionBlockResponseOptions) {
+	async executeTransaction(
+		transaction: Transaction,
+		options?: PeraTransactionBlockResponseOptions,
+	) {
 		const { promise, resolve, reject } = promiseWithResolvers<{
 			digest: string;
 			effects: string;

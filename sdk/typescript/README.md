@@ -15,8 +15,8 @@ upcoming TestNet launch.
 
 ## Working with Devnet
 
-The SDK will be published to [npm registry](https://www.npmjs.com/package/@pera-io/pera) with the same
-bi-weekly release cycle as the Devnet validators and
+The SDK will be published to [npm registry](https://www.npmjs.com/package/@pera-io/pera) with the
+same bi-weekly release cycle as the Devnet validators and
 [RPC Server](https://github.com/MystenLabs/sui/blob/main/docs/content/references/pera-api.mdx). To
 use the SDK in your project, you can do:
 
@@ -28,10 +28,10 @@ You can also use your preferred npm client, such as yarn or pnpm.
 
 ## Working with local network
 
-Note that the `latest` tag for the [published SDK](https://www.npmjs.com/package/@pera-io/pera) might
-go out of sync with the RPC server on the `main` branch until the next release. If you're developing
-against a local network, we recommend using the `experimental`-tagged packages, which contain the
-latest changes from `main`.
+Note that the `latest` tag for the [published SDK](https://www.npmjs.com/package/@pera-io/pera)
+might go out of sync with the RPC server on the `main` branch until the next release. If you're
+developing against a local network, we recommend using the `experimental`-tagged packages, which
+contain the latest changes from `main`.
 
 ```bash
 npm install @pera-io/pera@experimental
