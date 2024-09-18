@@ -86,7 +86,9 @@ export class PeraGraphQLClient<Queries extends Record<string, GraphQLDocument> =
 		});
 
 		if (!res.ok) {
-			throw new PeraGraphQLRequestError(`GraphQL request failed: ${res.statusText} (${res.status})`);
+			throw new PeraGraphQLRequestError(
+				`GraphQL request failed: ${res.statusText} (${res.status})`,
+			);
 		}
 
 		return await res.json();
