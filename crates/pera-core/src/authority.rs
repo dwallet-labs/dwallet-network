@@ -1549,7 +1549,8 @@ impl AuthorityState {
         if status.is_err() {
             return Ok(());
         }
-        self.mpc_state.lock()
+        self.mpc_state
+            .lock()
             .handle_mpc_events(&inner_temporary_store.events.data)?;
         Ok(())
     }
