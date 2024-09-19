@@ -66,7 +66,7 @@ impl MPCService {
         for event in events {
             if CreatedProofMPCEvent::type_() == event.type_ {
                 let deserialized_event: CreatedProofMPCEvent = bcs::from_bytes(&event.contents)?;
-                let _ = self.handle_proof_init_event(deserialized_event);
+                self.handle_proof_init_event(deserialized_event);
                 println!("event: CreatedProofMPCEvent {:?}", event);
             };
         }
