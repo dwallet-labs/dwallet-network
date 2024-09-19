@@ -1,7 +1,8 @@
-// Copyright (c) dWallet Labs, Ltd.
+// Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { beforeAll, describe, it } from 'vitest';
+
 import { launchProofMPCEvent } from '../../src/signature-mpc/proof';
 import { setup, TestToolbox } from './utils/setup';
 

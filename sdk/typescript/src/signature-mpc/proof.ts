@@ -1,8 +1,8 @@
-// Copyright (c) dWallet Labs, Ltd.
+// Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { Transaction } from '../transactions';
+import { Transaction } from '../transactions/index.js';
 
 const packageId = '0x3';
 const dWalletProofMPCModuleName = 'proof';
