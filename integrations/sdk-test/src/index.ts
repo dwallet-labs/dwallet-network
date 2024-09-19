@@ -1,6 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { bcs } from '@dwallet-network/dwallet.js/bcs';
 import { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { requestSuiFromFaucetV0 as requestDwltFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
@@ -13,24 +14,26 @@ import {
 	submitTxStateProof,
 } from '@dwallet-network/dwallet.js/signature-mpc';
 import { SuiClient } from '@mysten/sui.js/client';
-import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
+// import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
 import { TransactionBlock as TransactionBlockSUI } from '@mysten/sui.js/transactions';
 
 async function main() {
 	try {
-		// const serviceUrl = 'http://sui-devnet-light-client.devnet.dwallet.cloud/gettxdata';
-		const serviceUrl = 'http://sui-testnet-light-client.testnet.dwallet.cloud/gettxdata';
+		const serviceUrl = 'http://localhost:6920/gettxdata'; // For local development
+		// const serviceUrl = 'http://sui-testnet-light-client.testnet.dwallet.cloud/gettxdata';
 
 		const dWalletNodeUrl = 'http://127.0.0.1:9000';
 
 		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
 
-		const configObjectId = '0xd3fc444d4d546eb6f1617294a1b4fc814a7f868558b1cb86954a1a7e13d7b92e'; // should take this from the light_client.yaml
+		const configObjectId = '0xee1f258082e0991e9bc3a1cc0cad1acb5498aacdb7ceca2e8fa9ae0ae7dcb913'; // should take this from the light_client.yaml
+		const registryObjectId = '0xbffb47b8d9ec00e0c7d0e413ba7cc978c290e10b7e82891bd89a74ba686d836b';
 
 		const sui_client = new SuiClient({ url: suiTestnetURL });
 		const dwallet_client = new DWalletClient({ url: dWalletNodeUrl });
 
-		const messageSign = 'dWallets are coming... to Sui';
+		// const messageSign = 'dWallets are coming... to Sui';
+		const messageSign: Uint8Array = new TextEncoder().encode('dWallets are coming... to Sui');
 
 		const keyPair = Ed25519Keypair.deriveKeypairFromSeed(
 			'witch collapse practice feed shame open despair creek road again ice least',
@@ -42,17 +45,17 @@ async function main() {
 		console.log('SUI address', keyPair.toSuiAddress());
 
 		const dWalletCapPackageSUI =
-			'0x07c99ee5b1db2083c604b7f7d349e99e834656b4a84527f1d199e8460c3ed953';
+			'0x0bde775d63aa25d1fb0df56b71acc516d746ea8d79a89a6dc7c9039e0bd41db6';
 
 		await requestDwltFromFaucetV0({
 			host: 'http://127.0.0.1:9123/gas',
 			recipient: keyPair.getPublicKey().toSuiAddress(),
 		});
 
-		await requestSuiFromFaucetV0({
-			host: 'https://faucet.testnet.sui.io',
-			recipient: keyPair.getPublicKey().toSuiAddress(),
-		});
+		// await requestSuiFromFaucetV0({
+		// 	host: 'https://faucet.testnet.sui.io',
+		// 	recipient: keyPair.getPublicKey().toSuiAddress(),
+		// });
 
 		// sleep for 5 seconds
 		await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -92,7 +95,8 @@ async function main() {
 			arguments: [dWalletCapArg],
 		});
 
-		let signMsgArg = txb.pure(messageSign);
+		let signMsgArg = txb.pure(bcs.vector(bcs.vector(bcs.u8())).serialize([messageSign]));
+
 		txb.moveCall({
 			target: `${dWalletCapPackageSUI}::dwallet_cap::approve_message`,
 			arguments: [cap, signMsgArg],
@@ -132,6 +136,7 @@ async function main() {
 			dwallet_client,
 			sui_client,
 			configObjectId,
+			registryObjectId,
 			dwalletCapId,
 			createCapTxId,
 			serviceUrl,
@@ -170,6 +175,7 @@ async function main() {
 				dwallet_client,
 				sui_client,
 				configObjectId,
+				registryObjectId,
 				capWrapperRef,
 				signMessagesIdSHA256,
 				signTxId,

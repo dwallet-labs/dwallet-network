@@ -24,7 +24,9 @@ type TxDataResponse = {
 export async function submitDWalletCreationProof(
 	dwallet_client: DWalletClient,
 	sui_client: SuiClient,
+	// @ts-ignore
 	configObjectId: string,
+	registryObjectId: string,
 	dWalletCapId: string,
 	txId: string,
 	serviceUrl: string,
@@ -40,16 +42,22 @@ export async function submitDWalletCreationProof(
 	if (!seq) {
 		throw new Error('Checkpoint is undefined or null');
 	}
-
+	// @ts-ignore
 	let { ckp_epoch_id, checkpoint_summary_bytes, checkpoint_contents_bytes, transaction_bytes } =
 		await queryTxData(txId, serviceUrl);
-
+	console.log('ckp_epoch_id', ckp_epoch_id);
 	let txb = new TransactionBlock();
 
 	let dWalletCap = await getOwnedObject(dwallet_client, dWalletCapId);
+	// @ts-ignore
 	let dWalletCapArg = txb.object(dWalletCap);
 
-	let epoch_committee_id = await retrieveEpochCommitteeIdByEpoch(dwallet_client, ckp_epoch_id - 1);
+	let epoch_committee_id = await retrieveEpochCommitteeIdByEpoch(
+		dwallet_client,
+		ckp_epoch_id - 1,
+		registryObjectId,
+	);
+	// @ts-ignore
 	let epochCommitteeObject = await getOwnedObject(dwallet_client, epoch_committee_id);
 	let committeArg = txb.object(epochCommitteeObject);
 
@@ -60,11 +68,17 @@ export async function submitDWalletCreationProof(
 	let checkpoint_contents_arg = txb.pure(checkpoint_contents_bytes);
 	let transaction_arg = txb.pure(transaction_bytes);
 
+	// pass here a vector  a vector of dwallet caps
+	let dWalletCapArgVec = txb.makeMoveVec({
+		type: '0x3::dwallet::DWalletCap',
+		objects: [dWalletCapArg],
+	});
+
 	txb.moveCall({
 		target: `${packageId}::${stateProofModuleName}::create_dwallet_wrapper`,
 		arguments: [
 			configArg,
-			dWalletCapArg,
+			dWalletCapArgVec,
 			committeArg,
 			checkpoint_arg,
 			checkpoint_contents_arg,
@@ -84,12 +98,15 @@ export async function submitTxStateProof(
 	dwallet_client: DWalletClient,
 	sui_client: SuiClient,
 	configObjectId: string,
+	registryObjectId: string,
 	capWrapperRef: SuiObjectRef,
 	signMessagesId: string,
 	txId: string,
 	serviceUrl: string,
 	keypair: Keypair,
 ) {
+	console.log('start submitTxStateProof');
+
 	let tx = await sui_client.getTransactionBlock({
 		digest: txId,
 		options: {},
@@ -119,7 +136,11 @@ export async function submitTxStateProof(
 		},
 	});
 
-	let epoch_committee_id = await retrieveEpochCommitteeIdByEpoch(dwallet_client, ckp_epoch_id - 1);
+	let epoch_committee_id = await retrieveEpochCommitteeIdByEpoch(
+		dwallet_client,
+		ckp_epoch_id - 1,
+		registryObjectId,
+	);
 	let epochCommitteeObject = await getOwnedObject(dwallet_client, epoch_committee_id);
 
 	let committeArg = txb.object(epochCommitteeObject);
@@ -139,12 +160,22 @@ export async function submitTxStateProof(
 		],
 	});
 
+	// txb.moveCall({
+	// 	target: `${packageId}::${dWalletModuleName}::sign`,
+	// 	typeArguments: [`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`],
+	// 	arguments: [txb.object(signMessagesId), messageApprovals],
+	// });
+
 	// sign the message approvals
 	txb.moveCall({
-		target: `${packageId}::${dWalletModuleName}::sign_messages`,
-		typeArguments: [`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`],
+		target: `${packageId}::${dWalletModuleName}::sign`,
+		typeArguments: [
+			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`,
+			`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CreatedSignDataEvent`,
+		],
 		arguments: [txb.object(signMessagesId), messageApprovals],
 	});
+
 	const result = await dwallet_client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: txb,
@@ -153,8 +184,12 @@ export async function submitTxStateProof(
 		},
 	});
 
+	console.log('sign result', result);
+
 	const signSessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
 		.reference!;
+
+	console.log('signSessionRef', signSessionRef);
 
 	const signOutput = await fetchObjectBySessionId(
 		signSessionRef.objectId,
@@ -208,6 +243,7 @@ async function getOwnedObject(client: DWalletClient, id: string) {
 async function retrieveEpochCommitteeIdByEpoch(
 	client: DWalletClient,
 	targetEpoch: number,
+	targetRegistryId: string,
 ): Promise<string> {
 	const query: SuiEventFilter = {
 		MoveModule: {
@@ -228,9 +264,13 @@ async function retrieveEpochCommitteeIdByEpoch(
 
 		const filtered = res.data.find((event) => {
 			let json = event.parsedJson as object;
-			if ('epoch' in json) {
+			if ('epoch' in json && 'registry_id' in json) {
 				const epoch = (event.parsedJson as { epoch: number })?.epoch;
-				return epoch !== undefined && Number(epoch) === targetEpoch;
+				const registryId = (event.parsedJson as { registry_id: string })?.registry_id;
+
+				return (
+					epoch !== undefined && Number(epoch) === targetEpoch && registryId === targetRegistryId
+				);
 			}
 			return false;
 		});
