@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { bcs } from '@dwallet-network/dwallet.js/bcs';
-import { DWalletClient } from '@dwallet-network/dwallet.js/client';
+import { DWalletClient, SuiHTTPTransport } from '@dwallet-network/dwallet.js/client';
 import { requestSuiFromFaucetV0 as requestDwltFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import {
@@ -26,11 +26,20 @@ async function main() {
 
 		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
 
-		const configObjectId = '0xee1f258082e0991e9bc3a1cc0cad1acb5498aacdb7ceca2e8fa9ae0ae7dcb913'; // should take this from the light_client.yaml
-		const registryObjectId = '0xbffb47b8d9ec00e0c7d0e413ba7cc978c290e10b7e82891bd89a74ba686d836b';
+		const configObjectId = '0x5cad71d9b6289b111d476ab86725c52c1a92adb81cf2c09cfc456f180109f4a8'; // should take this from the light_client.yaml
+		const registryObjectId = '0x0be2ba6cd77cfaa4c38d3a1f9f06d8c4bb347af414334b874ef2d6353dd67196';
 
 		const sui_client = new SuiClient({ url: suiTestnetURL });
-		const dwallet_client = new DWalletClient({ url: dWalletNodeUrl });
+		const dwallet_client = new DWalletClient({
+			transport: new SuiHTTPTransport({
+				url: dWalletNodeUrl,
+
+				// websocket: {
+				// 	reconnectTimeout: 1000,
+				// 	url: dWalletNodeUrl + '/websockets',
+				// },
+			}),
+		});
 
 		// const messageSign = 'dWallets are coming... to Sui';
 		const messageSign: Uint8Array = new TextEncoder().encode('dWallets are coming... to Sui');
@@ -84,6 +93,7 @@ async function main() {
 			throw new Error('createDWallet returned null');
 		}
 		let dwalletCapId = createdDwallet?.dwalletCapID;
+		let dWalletId = createdDwallet?.dwalletID;
 
 		console.log('initialising dwallet cap with id: ', dwalletCapId);
 		let txb = new TransactionBlockSUI();
@@ -174,6 +184,7 @@ async function main() {
 			let res = await submitTxStateProof(
 				dwallet_client,
 				sui_client,
+				dWalletId,
 				configObjectId,
 				registryObjectId,
 				capWrapperRef,

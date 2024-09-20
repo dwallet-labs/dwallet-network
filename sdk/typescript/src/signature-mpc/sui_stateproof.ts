@@ -7,7 +7,7 @@ import axios from 'axios';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient, EventId, SuiEventFilter, SuiObjectRef } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { fetchObjectBySessionId } from './utils.js';
+import { SignOutputEventData } from './dwallet.js';
 
 const packageId = '0x3';
 const stateProofModuleName = 'sui_state_proof';
@@ -45,7 +45,6 @@ export async function submitDWalletCreationProof(
 	// @ts-ignore
 	let { ckp_epoch_id, checkpoint_summary_bytes, checkpoint_contents_bytes, transaction_bytes } =
 		await queryTxData(txId, serviceUrl);
-	console.log('ckp_epoch_id', ckp_epoch_id);
 	let txb = new TransactionBlock();
 
 	let dWalletCap = await getOwnedObject(dwallet_client, dWalletCapId);
@@ -97,6 +96,7 @@ export async function submitDWalletCreationProof(
 export async function submitTxStateProof(
 	dwallet_client: DWalletClient,
 	sui_client: SuiClient,
+	dWalletId: string,
 	configObjectId: string,
 	registryObjectId: string,
 	capWrapperRef: SuiObjectRef,
@@ -105,8 +105,6 @@ export async function submitTxStateProof(
 	serviceUrl: string,
 	keypair: Keypair,
 ) {
-	console.log('start submitTxStateProof');
-
 	let tx = await sui_client.getTransactionBlock({
 		digest: txId,
 		options: {},
@@ -160,12 +158,6 @@ export async function submitTxStateProof(
 		],
 	});
 
-	// txb.moveCall({
-	// 	target: `${packageId}::${dWalletModuleName}::sign`,
-	// 	typeArguments: [`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignData`],
-	// 	arguments: [txb.object(signMessagesId), messageApprovals],
-	// });
-
 	// sign the message approvals
 	txb.moveCall({
 		target: `${packageId}::${dWalletModuleName}::sign`,
@@ -176,7 +168,7 @@ export async function submitTxStateProof(
 		arguments: [txb.object(signMessagesId), messageApprovals],
 	});
 
-	const result = await dwallet_client.signAndExecuteTransactionBlock({
+	await dwallet_client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: txb,
 		options: {
@@ -184,29 +176,9 @@ export async function submitTxStateProof(
 		},
 	});
 
-	console.log('sign result', result);
+	let signatures = await retrieveSignResult(dwallet_client, dWalletId);
 
-	const signSessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
-		.reference!;
-
-	console.log('signSessionRef', signSessionRef);
-
-	const signOutput = await fetchObjectBySessionId(
-		signSessionRef.objectId,
-		`${packageId}::${dWalletModuleName}::SignOutput`,
-		keypair,
-		dwallet_client,
-	);
-
-	if (signOutput?.dataType === 'moveObject') {
-		return {
-			// @ts-ignore
-			signOutputId: signOutput.fields['id']['id'],
-			// @ts-ignore
-			signatures: signOutput.fields['signatures'],
-		};
-	}
-	return;
+	return signatures;
 }
 
 // Function to query the Rust service
@@ -239,7 +211,31 @@ async function getOwnedObject(client: DWalletClient, id: string) {
 		},
 	};
 }
+async function retrieveSignResult(client: DWalletClient, dWalletId: string): Promise<Uint8Array[]> {
+	let reqEventFiltered: any[] = [];
+	const queryInterval = 100;
 
+	while (reqEventFiltered.length === 0) {
+		const requestedEvents = await client.queryEvents({
+			query: {
+				MoveEventType: `${packageId}::${dWalletModuleName}::SignOutputEvent`,
+			},
+			order: 'descending',
+		});
+
+		reqEventFiltered = requestedEvents.data.filter((event) => {
+			let eventData = event.parsedJson! as SignOutputEventData;
+			return eventData.dwallet_id === dWalletId;
+		});
+
+		if (reqEventFiltered.length === 0) {
+			await new Promise((resolve) => setTimeout(resolve, queryInterval));
+		}
+	}
+
+	let eventData = reqEventFiltered[0].parsedJson! as SignOutputEventData;
+	return eventData.signatures;
+}
 async function retrieveEpochCommitteeIdByEpoch(
 	client: DWalletClient,
 	targetEpoch: number,
