@@ -1546,12 +1546,12 @@ impl AuthorityState {
             TransactionEffects::V2(effects) => effects.status(),
         };
         if status.is_err() {
+            // If the transaction failed, we don't need to handle MPC events.
             return Ok(());
         }
-        self.mpc_state
+        self.mpc_service
             .lock()
-            .handle_mpc_events(&inner_temporary_store.events.data)?;
-        Ok(())
+            .handle_mpc_events(&inner_temporary_store.events.data)
     }
 
     fn update_metrics(
@@ -2735,7 +2735,7 @@ impl AuthorityState {
             config,
             overload_info: AuthorityOverloadInfo::default(),
             validator_tx_finalizer,
-            mpc_state: Mutex::new(SignatureMPCManager::new()),
+            mpc_service: Mutex::new(SignatureMPCManager::new()),
         });
 
         // Start a task to execute ready certificates.

@@ -1,4 +1,4 @@
-// Copyright (c) Mysten Labs, Inc.
+// Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
