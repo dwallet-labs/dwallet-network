@@ -376,13 +376,6 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let transaction = SequencedConsensusTransactionKind::External(transaction);
                         transactions.push((serialized_transaction, transaction, authority_index));
                     }
-                    let mut signature_mpc_manager = self
-                        .epoch_store
-                        .signature_mpc_manager
-                        .get()
-                        .unwrap()
-                        .lock()
-                        .await;
                 }
             }
         }
