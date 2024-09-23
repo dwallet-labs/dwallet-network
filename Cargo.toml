@@ -70,7 +70,6 @@ exclude = [
 members = [
     "consensus/config",
     "consensus/core",
-    "crates/mpc-protocols",
     "crates/anemo-benchmark",
     "crates/bin-version",
     "crates/mysten-common",
@@ -584,7 +583,6 @@ pera-sdk2 = { package = "sui-sdk", git = "https://github.com/mystenlabs/sui-rust
 ### Workspace Members ###
 anemo-benchmark = { path = "crates/anemo-benchmark" }
 bin-version = { path = "crates/bin-version" }
-mpc-protocols = { path = "crates/mpc-protocols" }
 mysten-common = { path = "crates/mysten-common" }
 mysten-metrics = { path = "crates/mysten-metrics" }
 mysten-network = { path = "crates/mysten-network" }

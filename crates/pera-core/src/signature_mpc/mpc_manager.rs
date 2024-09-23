@@ -1,4 +1,4 @@
-use crate::mpc_events::{CreatedProofMPCEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
 use pera_types::base_types::ObjectID;
 use pera_types::event::Event;
 use std::cell::RefCell;
@@ -36,13 +36,13 @@ enum MPCStatus {
 /// - It keeps track of all MPC instances
 /// - Runs the MPC session for each active instance
 /// - Ensures that the number of active sessions does not go over `MAX_ACTIVE_MPC_INSTANCES` at the same time
-pub struct MPCService {
+pub struct SignatureMPCManager {
     mpc_instances: HashMap<ObjectID, MPCInstance>,
     pending: VecDeque<ObjectID>,
     active_instances_counter: usize,
 }
 
-impl MPCService {
+impl SignatureMPCManager {
     pub fn new() -> Self {
         Self {
             mpc_instances: HashMap::new(),
@@ -52,7 +52,7 @@ impl MPCService {
     }
 
     /// Spawns an asynchronous task to handle incoming messages for a new MPC instance.
-    /// The [`MPCService`] will forward any message related to that instance to this channel.
+    /// The [`SignatureMPCManager`] will forward any message related to that instance to this channel.
     fn spawn_mpc_messages_handler(&self, mut receiver: mpsc::Receiver<MPCInput>) {
         tokio::spawn(async move {
             while let Some(message) = receiver.recv().await {
