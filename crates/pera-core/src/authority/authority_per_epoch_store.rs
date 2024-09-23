@@ -76,6 +76,7 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
+use crate::signature_mpc::mpc_manager::SignatureMPCManager;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -333,6 +334,9 @@ pub struct AuthorityPerEpochStore {
     /// State machine managing randomness DKG and generation.
     randomness_manager: OnceCell<tokio::sync::Mutex<RandomnessManager>>,
     randomness_reporter: OnceCell<RandomnessReporter>,
+
+    /// State machine managing Signature MPC flows.
+    pub signature_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -848,6 +852,7 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
+            signature_mpc_manager: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -914,6 +919,22 @@ impl AuthorityPerEpochStore {
             error!("BUG: `set_randomness_manager` called more than once; this should never happen");
         }
         result
+    }
+
+    pub async fn set_signature_mpc_manager(
+        &self,
+        mut signature_mpc: SignatureMPCManager,
+    ) -> PeraResult<()> {
+        if self
+            .signature_mpc_manager
+            .set(tokio::sync::Mutex::new(signature_mpc))
+            .is_err()
+        {
+            error!(
+                "BUG: `set_signature_mpc_manager` called more than once; this should never happen"
+            );
+        }
+        Ok(())
     }
 
     pub fn coin_deny_list_state_exists(&self) -> bool {
@@ -2397,6 +2418,10 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message),
+                ..
+            }) => {}
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CheckpointSignature(data),
                 ..
             }) => {
@@ -3340,6 +3365,13 @@ impl AuthorityPerEpochStore {
         let tracking_id = transaction.get_tracking_id();
 
         match &transaction {
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message),
+                ..
+            }) => {
+                // TODO(#235): Implement message handling for MPC messages.
+                Ok(ConsensusCertificateResult::Ignored)
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::UserTransaction(certificate),
                 ..

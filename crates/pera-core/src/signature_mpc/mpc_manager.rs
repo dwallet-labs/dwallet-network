@@ -1,14 +1,25 @@
+use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::consensus_adapter::SubmitToConsensus;
 use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
-use pera_types::base_types::ObjectID;
+use anyhow::anyhow;
+use group::{secp256k1, GroupElement};
+use maurer::knowledge_of_discrete_log::PublicParameters;
+use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::event::Event;
-use std::cell::RefCell;
+use pera_types::messages_consensus::ConsensusTransaction;
+use proof::mpc::{AdvanceResult, Party};
+use rand_core::OsRng;
 use std::collections::{HashMap, VecDeque};
+use std::io;
+use std::io::Write;
+use std::marker::PhantomData;
+use std::sync::{Arc, Weak};
+use std::time::Duration;
 use tokio::sync::{mpsc, Mutex, RwLock};
-use tracing::{debug, info};
+use tokio::time::sleep;
+use tracing::debug;
 
-// TODO (#253): Make this configurable from a config file
-const MAX_ACTIVE_MPC_INSTANCES: usize = 100;
-
+#[derive(Debug)]
 pub enum MPCInput {
     InitEvent(CreatedProofMPCEvent),
     Message,
@@ -42,49 +53,158 @@ pub struct SignatureMPCManager {
     /// Being used to keep track of the order of the received pending instances, so we'll know which one to launch first.
     pending_instances_queue: VecDeque<ObjectID>,
     active_instances_counter: usize,
+    language_public_parameters:
+        maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
+    consensus_adapter: Arc<dyn SubmitToConsensus>,
+    pub epoch_store: Weak<AuthorityPerEpochStore>,
+    pub max_active_mpc_instances: usize,
+    threshold: usize,
+}
+
+type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
+type ProofParty = proof::aggregation::asynchronous::Party<
+    maurer::Proof<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang, PhantomData<()>>,
+>;
+
+fn generate_language_public_parameters<const REPETITIONS: usize>(
+) -> maurer::language::PublicParameters<REPETITIONS, Lang> {
+    let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
+
+    let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
+
+    PublicParameters::new::<secp256k1::Scalar, secp256k1::GroupElement>(
+        secp256k1_scalar_public_parameters,
+        secp256k1_group_public_parameters.clone(),
+        secp256k1_group_public_parameters.generator,
+    )
 }
 
 impl SignatureMPCManager {
-    pub fn new() -> Self {
+    pub fn new(
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store_weak: Weak<AuthorityPerEpochStore>,
+        max_active_mpc_instances: usize,
+        num_of_parties: usize,
+    ) -> Self {
         Self {
             mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
+            language_public_parameters: generate_language_public_parameters::<
+                { maurer::SOUND_PROOFS_REPETITIONS },
+            >(),
+            consensus_adapter,
+            epoch_store: epoch_store_weak,
+            max_active_mpc_instances,
+            threshold: ((num_of_parties / 3) * 2) + 1,
         }
     }
 
     /// Spawns an asynchronous task to handle incoming messages for a new MPC instance.
     /// The [`SignatureMPCManager`] will forward any message related to that instance to this channel.
     fn spawn_mpc_messages_handler(&self, mut receiver: mpsc::Receiver<MPCInput>) {
+        let public_parameters = self.language_public_parameters.clone();
+        let consensus_adapter = Arc::clone(&self.consensus_adapter);
+        let epoch_store = self.epoch_store.clone();
+        let threshold = self.threshold.clone();
+
         tokio::spawn(async move {
+            let mut party: ProofParty;
             while let Some(message) = receiver.recv().await {
-                // TODO (#235): Implement MPC messages handling
+                match message {
+                    MPCInput::InitEvent(_) => {
+                        party = match Self::handle_mpc_proof_init_event(
+                            public_parameters.clone(),
+                            consensus_adapter.clone(),
+                            epoch_store.clone(),
+                            threshold,
+                        )
+                        .await
+                        {
+                            Ok(party) => party,
+                            Err(err) => {
+                                // This should never happen, as there should be on-chain verification on the init transaction
+                                return;
+                            }
+                        };
+                    }
+                    MPCInput::Message => {
+                        // TODO (#235): Implement MPC messages handling
+                    }
+                }
             }
         });
     }
 
+    async fn handle_mpc_proof_init_event(
+        public_parameters: maurer::language::PublicParameters<
+            { maurer::SOUND_PROOFS_REPETITIONS },
+            Lang,
+        >,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Weak<AuthorityPerEpochStore>,
+        threshold: usize,
+    ) -> anyhow::Result<ProofParty> {
+        let batch_size = 1;
+        let party: ProofParty = proof::aggregation::asynchronous::Party::new_proof_round_party(
+            public_parameters,
+            PhantomData,
+            threshold as group::PartyID,
+            batch_size,
+            &mut OsRng,
+        )?;
+
+        let party: ProofParty = match party.advance(HashMap::new(), &(), &mut OsRng) {
+            Ok(advance_result) => match advance_result {
+                AdvanceResult::Advance((message, new_party)) => {
+                    // It is safe to unwrap here, as the epoch store is already created
+                    let epoch_store = epoch_store.upgrade().unwrap();
+                    let message_tx = ConsensusTransaction::new_signature_mpc_message(
+                        epoch_store.name,
+                        bcs::to_bytes(&message)?,
+                    );
+                    consensus_adapter
+                        .submit_to_consensus(&vec![message_tx], &epoch_store)
+                        .await?;
+                    new_party
+                }
+                AdvanceResult::Finalize(output) => {
+                    return Err(anyhow!("Finalization reached unexpectedly"));
+                }
+            },
+            Err(err) => {
+                return Err(anyhow!("Error advancing the party: {:?}", err));
+            }
+        };
+        Ok(party)
+    }
+
     /// Filter the relevant MPC events from the transaction events & handle them
-    pub fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
+    pub async fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
         for event in events {
             if CreatedProofMPCEvent::type_() == event.type_ {
                 let deserialized_event: CreatedProofMPCEvent = bcs::from_bytes(&event.contents)?;
-                self.handle_proof_init_event(deserialized_event);
+                self.push_new_mpc_instance(deserialized_event).await;
                 debug!("event: CreatedProofMPCEvent {:?}", event);
             };
         }
         Ok(())
     }
 
-    /// Handles a proof initialization event
+    pub fn handle_mpc_message(
+        &mut self,
+        message: &[u8],
+        authority_name: AuthorityName,
+    ) -> anyhow::Result<()> {
+        // TODO (#235): Implement MPC messages handling
+        Ok(())
+    }
+
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    fn handle_proof_init_event(&mut self, event: CreatedProofMPCEvent) {
-        info!(
-            "Received start flow event for session ID {:?}",
-            event.session_id
-        );
+    async fn push_new_mpc_instance(&mut self, event: CreatedProofMPCEvent) {
         // If the number of active instances exceeds the limit, add to pending
-        if self.active_instances_counter >= MAX_ACTIVE_MPC_INSTANCES {
+        if self.active_instances_counter >= self.max_active_mpc_instances {
             self.mpc_instances.insert(
                 event.session_id.clone().bytes,
                 MPCInstance {
@@ -99,7 +219,9 @@ impl SignatureMPCManager {
         }
         let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
         self.spawn_mpc_messages_handler(messages_handler_receiver);
-        let _ = messages_handler_sender.send(MPCInput::InitEvent(event.clone()));
+        let _ = messages_handler_sender
+            .send(MPCInput::InitEvent(event.clone()))
+            .await;
         self.mpc_instances.insert(
             event.session_id.clone().bytes,
             MPCInstance {
@@ -109,9 +231,5 @@ impl SignatureMPCManager {
             },
         );
         self.active_instances_counter += 1;
-        info!(
-            "Added MPCInstance to service for session_id {:?}",
-            event.session_id
-        );
     }
 }
