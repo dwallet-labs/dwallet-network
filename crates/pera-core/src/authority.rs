@@ -806,7 +806,7 @@ pub struct AuthorityState {
 
     pub validator_tx_finalizer: Option<Arc<ValidatorTxFinalizer<NetworkAuthorityClient>>>,
 
-    mpc_state: Mutex<SignatureMPCManager>,
+    mpc_service: Mutex<SignatureMPCManager>,
 }
 
 /// The authority state encapsulates all state, drives execution, and ensures safety.

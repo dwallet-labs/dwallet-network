@@ -1,10 +1,10 @@
 use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
-use log::info;
 use pera_types::base_types::ObjectID;
 use pera_types::event::Event;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use tokio::sync::{mpsc, Mutex, RwLock};
+use tracing::{debug, info};
 
 // TODO (#253): Make this configurable from a config file
 const MAX_ACTIVE_MPC_INSTANCES: usize = 100;
