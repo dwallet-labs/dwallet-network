@@ -3,8 +3,8 @@ title: Module `0x3::proof`
 ---
 
 The proof module
-Responsible to start and manage the Proof generation MPC flow
-Used only for testing the way we launch & manage an MPC flow.
+Responsible for starting and managing the Proof generation for the MPC flow.
+Used only for testing launching & managing an MPC flow.
 
 
 -  [Struct `CreatedProofMPCSessionEvent`](#0x3_proof_CreatedProofMPCSessionEvent)

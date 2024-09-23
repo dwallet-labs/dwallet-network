@@ -7792,6 +7792,7 @@ version = "1.32.2"
 dependencies = [
  "anyhow",
  "bcs",
+ "log",
  "move-core-types",
  "pera-types",
  "schemars",

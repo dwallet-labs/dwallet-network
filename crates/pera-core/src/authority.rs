@@ -807,7 +807,7 @@ pub struct AuthorityState {
 
     pub validator_tx_finalizer: Option<Arc<ValidatorTxFinalizer<NetworkAuthorityClient>>>,
 
-    mpc_state: Mutex<MPCService>,
+    mpc_service: Mutex<MPCService>,
 }
 
 /// The authority state encapsulates all state, drives execution, and ensures safety.
@@ -1547,12 +1547,12 @@ impl AuthorityState {
             TransactionEffects::V2(effects) => effects.status(),
         };
         if status.is_err() {
+            // If the transaction failed, we don't need to handle MPC events.
             return Ok(());
         }
-        self.mpc_state
+        self.mpc_service
             .lock()
-            .handle_mpc_events(&inner_temporary_store.events.data)?;
-        Ok(())
+            .handle_mpc_events(&inner_temporary_store.events.data)
     }
 
     fn update_metrics(
@@ -2736,7 +2736,7 @@ impl AuthorityState {
             config,
             overload_info: AuthorityOverloadInfo::default(),
             validator_tx_finalizer,
-            mpc_state: Mutex::new(MPCService::new()),
+            mpc_service: Mutex::new(MPCService::new()),
         });
 
         // Start a task to execute ready certificates.

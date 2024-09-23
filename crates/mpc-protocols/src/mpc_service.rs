@@ -1,22 +1,23 @@
 use crate::mpc_events::{CreatedProofMPCEvent, MPCEvent};
+use log::info;
 use pera_types::base_types::ObjectID;
 use pera_types::event::Event;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use tokio::sync::{mpsc, Mutex, RwLock};
 
+// TODO (#253): Make this configurable from a config file
 const MAX_ACTIVE_MPC_INSTANCES: usize = 100;
 
 pub enum MPCInput {
     InitEvent(CreatedProofMPCEvent),
     Message,
-    OutputEvent,
 }
 
 struct MPCInstance {
-    status: MPCStatus,
+    status: MPCSessionStatus,
     /// The channel to send message to this instance's message handler thread when this instance is active
-    messages_handler_sender: Option<mpsc::Sender<MPCInput>>,
+    input_receiver: Option<mpsc::Sender<MPCInput>>,
     pending_messages: Vec<MPCInput>,
 }
 
@@ -26,7 +27,7 @@ struct MPCInstance {
 /// - Finished: The session has finished, no more messages will be forwarded. The session will be removed from the service after a timeout.
 /// We want to keep it for some time so leftover messages related to it won't be treated as malicious.
 #[derive(Clone, Copy)]
-enum MPCStatus {
+enum MPCSessionStatus {
     Active,
     Pending,
     Finished,
@@ -38,7 +39,8 @@ enum MPCStatus {
 /// - Ensures that the number of active sessions does not go over `MAX_ACTIVE_MPC_INSTANCES` at the same time
 pub struct MPCService {
     mpc_instances: HashMap<ObjectID, MPCInstance>,
-    pending: VecDeque<ObjectID>,
+    /// Being used to keep track of the order of the received pending instances, so we'll know which one to launch first.
+    pending_instances_queue: VecDeque<ObjectID>,
     active_instances_counter: usize,
 }
 
@@ -46,7 +48,7 @@ impl MPCService {
     pub fn new() -> Self {
         Self {
             mpc_instances: HashMap::new(),
-            pending: VecDeque::new(),
+            pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
         }
     }
@@ -67,7 +69,7 @@ impl MPCService {
             if CreatedProofMPCEvent::type_() == event.type_ {
                 let deserialized_event: CreatedProofMPCEvent = bcs::from_bytes(&event.contents)?;
                 self.handle_proof_init_event(deserialized_event);
-                println!("event: CreatedProofMPCEvent {:?}", event);
+                debug!("event: CreatedProofMPCEvent {:?}", event);
             };
         }
         Ok(())
@@ -77,22 +79,22 @@ impl MPCService {
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
     fn handle_proof_init_event(&mut self, event: CreatedProofMPCEvent) {
-        println!(
+        info!(
             "Received start flow event for session ID {:?}",
             event.session_id
         );
-        // let active_instances_counter = self.active_instances_counter.clone().into_inner();
         // If the number of active instances exceeds the limit, add to pending
         if self.active_instances_counter >= MAX_ACTIVE_MPC_INSTANCES {
             self.mpc_instances.insert(
                 event.session_id.clone().bytes,
                 MPCInstance {
-                    status: MPCStatus::Pending,
-                    messages_handler_sender: None,
+                    status: MPCSessionStatus::Pending,
+                    input_receiver: None,
                     pending_messages: vec![],
                 },
             );
-            self.pending.push_back(event.session_id.bytes);
+            self.pending_instances_queue
+                .push_back(event.session_id.bytes);
             return;
         }
         let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
@@ -101,13 +103,13 @@ impl MPCService {
         self.mpc_instances.insert(
             event.session_id.clone().bytes,
             MPCInstance {
-                status: MPCStatus::Active,
-                messages_handler_sender: Some(messages_handler_sender),
+                status: MPCSessionStatus::Active,
+                input_receiver: Some(messages_handler_sender),
                 pending_messages: vec![],
             },
         );
         self.active_instances_counter += 1;
-        println!(
+        info!(
             "Added MPCInstance to service for session_id {:?}",
             event.session_id
         );
