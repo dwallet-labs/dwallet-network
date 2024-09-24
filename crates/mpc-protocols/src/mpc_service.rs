@@ -57,11 +57,10 @@ impl MPCInstance {
     }
 }
 
-/// Possible status of an MPC session
-/// - Active: The session is currently running, new messages will be forwarded to the session
-/// - Pending: The session is waiting for a slot to become active, when the init received there were already `MAX_ACTIVE_MPC_INSTANCES` active sessions
-/// - Finished: The session has finished, no more messages will be forwarded. The session will be removed from the service after a timeout.
-/// We want to keep it for some time so leftover messages related to it won't be treated as malicious.
+/// Possible statuses of an MPC session:
+/// - Active: The session is currently running; new messages will be forwarded to the session.
+/// - Pending: The session is awaiting a slot <WHAT IS A SLOT?> to become active.
+/// - Finished: The session is finished and pending removal; incoming messages will not be forwarded.
 #[derive(Clone, Copy)]
 enum MPCSessionStatus {
     Active,
