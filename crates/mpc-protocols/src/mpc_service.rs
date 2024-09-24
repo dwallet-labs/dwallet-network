@@ -97,6 +97,7 @@ impl MPCService {
                 .push_back(event.session_id.bytes);
             return;
         }
+        // TODO (#256): Replace hard coded 100 with the number of validators times 10
         let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
         self.spawn_mpc_messages_handler(messages_handler_receiver);
         let _ = messages_handler_sender.send(MPCInput::InitEvent(event.clone()));
