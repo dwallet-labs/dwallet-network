@@ -1,5 +1,5 @@
 use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
-use log::{debug, info};
+use tracing::{debug, info};
 use pera_types::base_types::ObjectID;
 use pera_types::event::Event;
 use std::cell::RefCell;
