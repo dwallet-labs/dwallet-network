@@ -85,16 +85,20 @@ impl MPCInstance {
     fn spawn_mpc_messages_handler(
         &self, mut receiver: mpsc::Receiver<MPCInput>,
     ) {
+        let public_parameters = self.language_public_parameters.clone();
+        let consensus_adapter = Arc::clone(&self.consensus_adapter);
+        let epoch_store = self.epoch_store.clone();
+        let threshold = self.threshold.clone();
         tokio::spawn(async move {
             let mut party: ProofParty;
             while let Some(message) = receiver.recv().await {
                 match message {
                     MPCInput::InitEvent(_) => {
                         party = match Self::handle_mpc_proof_init_event(
-                            self.language_public_parameters.clone(),
-                            self.consensus_adapter.clone(),
-                            self.epoch_store.clone(),
-                            self.threshold,
+                            public_parameters.clone(),
+                            consensus_adapter.clone(),
+                            epoch_store.clone(),
+                            threshold,
                         )
                             .await
                         {
@@ -114,6 +118,50 @@ impl MPCInstance {
             }
         });
     }
+
+    async fn handle_mpc_proof_init_event(
+        public_parameters: maurer::language::PublicParameters<
+            { maurer::SOUND_PROOFS_REPETITIONS },
+            Lang,
+        >,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Weak<AuthorityPerEpochStore>,
+        threshold: usize,
+    ) -> anyhow::Result<ProofParty> {
+        let batch_size = 1;
+        let party: ProofParty = proof::aggregation::asynchronous::Party::new_proof_round_party(
+            public_parameters,
+            PhantomData,
+            threshold as group::PartyID,
+            batch_size,
+            &mut OsRng,
+        )?;
+
+        let party: ProofParty = match party.advance(HashMap::new(), &(), &mut OsRng) {
+            Ok(advance_result) => match advance_result {
+                AdvanceResult::Advance((message, new_party)) => {
+                    // It is safe to unwrap here, as the epoch store is already created
+                    let epoch_store = epoch_store.upgrade().unwrap();
+                    let message_tx = ConsensusTransaction::new_signature_mpc_message(
+                        epoch_store.name,
+                        bcs::to_bytes(&message)?,
+                    );
+                    consensus_adapter
+                        .submit_to_consensus(&vec![message_tx], &epoch_store)
+                        .await?;
+                    new_party
+                }
+                AdvanceResult::Finalize(output) => {
+                    return Err(anyhow!("Finalization reached unexpectedly"));
+                }
+            },
+            Err(err) => {
+                return Err(anyhow!("Error advancing the party: {:?}", err));
+            }
+        };
+        Ok(party)
+    }
+
 
     async fn handle_message(&mut self, message: MPCInput) {
         match self.status {
