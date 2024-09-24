@@ -41,6 +41,7 @@ pub struct MPCService {
     mpc_instances: HashMap<ObjectID, MPCInstance>,
     /// Being used to keep track of the order of the received pending instances, so we'll know which one to launch first.
     pending_instances_queue: VecDeque<ObjectID>,
+    // TODO (#257): Make sure the counter is always in sync with the number of active instances.
     active_instances_counter: usize,
 }
 
