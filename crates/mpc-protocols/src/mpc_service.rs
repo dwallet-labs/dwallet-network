@@ -16,7 +16,7 @@ pub enum MPCInput {
 
 struct MPCInstance {
     status: MPCSessionStatus,
-    /// The channel to send message to this instance's message handler thread when this instance is active
+    /// The channel to send message to this instance
     input_receiver: Option<mpsc::Sender<MPCInput>>,
     pending_messages: Vec<MPCInput>,
 }
