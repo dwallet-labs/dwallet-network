@@ -1,6 +1,4 @@
-use move_core_types::ident_str;
-use move_core_types::identifier::IdentStr;
-use move_core_types::language_storage::StructTag;
+use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
 use pera_types::{
     base_types::{ObjectID, PeraAddress},
     id::ID,

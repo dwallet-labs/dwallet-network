@@ -1544,25 +1544,25 @@ impl AuthorityState {
             TransactionEffects::V1(effects) => effects.status(),
             TransactionEffects::V2(effects) => effects.status(),
         };
-        if status.is_err() {
+        if status.is_ok() {
+            let mut signature_mpc_manager = epoch_store.signature_mpc_manager.get();
+            match signature_mpc_manager {
+                Some(mpc_manager) => {
+                    let mut mpc_manager_lock = mpc_manager.lock().await;
+                    mpc_manager_lock
+                        .handle_mpc_events(&inner_temporary_store.events.data)
+                        .await?;
+                }
+                None => {
+                    // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
+                    // TODO (#250): Check if we can ignore these events and be sure that the MPC manager is initialized before MPC events emitted.
+                    info!("MPC manager is not initialized");
+                }
+            }
+        } else {
             // If the transaction failed, we don't need to handle MPC events.
-            return Ok(());
+            Ok(())
         }
-        let mut signature_mpc_manager = epoch_store.signature_mpc_manager.get();
-        match signature_mpc_manager {
-            Some(mpc_manager) => {
-                let mut mpc_manager_lock = mpc_manager.lock().await;
-                mpc_manager_lock
-                    .handle_mpc_events(&inner_temporary_store.events.data)
-                    .await?;
-            }
-            None => {
-                // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
-                // TODO (#250): Check if we can ignore these events and be sure that the MPC manager is initialized before MPC events emitted.
-                info!("MPC manager is not initialized");
-            }
-        }
-        Ok(())
     }
 
     fn update_metrics(

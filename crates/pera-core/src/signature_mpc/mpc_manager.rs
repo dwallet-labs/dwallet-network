@@ -27,16 +27,52 @@ pub enum MPCInput {
 
 struct MPCInstance {
     status: MPCSessionStatus,
-    /// The channel to send message to this instance's message handler thread when this instance is active
+    /// The channel to send message to this instance
     input_receiver: Option<mpsc::Sender<MPCInput>>,
     pending_messages: Vec<MPCInput>,
 }
 
-/// Possible status of an MPC session
-/// - Active: The session is currently running, new messages will be forwarded to the session
-/// - Pending: The session is waiting for a slot to become active, when the init received there were already `MAX_ACTIVE_MPC_INSTANCES` active sessions
-/// - Finished: The session has finished, no more messages will be forwarded. The session will be removed from the service after a timeout.
-/// We want to keep it for some time so leftover messages related to it won't be treated as malicious.
+impl MPCInstance {
+    fn set_active(&mut self) {
+        self.status = MPCSessionStatus::Active;
+        // TODO (#256): Replace hard coded 100 with the number of validators times 10
+        let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
+        self.input_receiver = Some(messages_handler_sender);
+        self.spawn_mpc_messages_handler(messages_handler_receiver);
+    }
+
+    /// Spawns an asynchronous task to handle incoming messages.
+    /// The [`MPCService`] will forward any message related to that instance to this channel.
+    fn spawn_mpc_messages_handler(&self, mut receiver: mpsc::Receiver<MPCInput>) {
+        tokio::spawn(async move {
+            while let Some(message) = receiver.recv().await {
+                // TODO (#235): Implement MPC messages handling
+            }
+        });
+    }
+
+    fn handle_message(&mut self, message: MPCInput) {
+        match self.status {
+            MPCSessionStatus::Active => {
+                if let Some(input_receiver) = &self.input_receiver {
+                    let _ = input_receiver.send(message);
+                }
+            }
+            MPCSessionStatus::Pending => {
+                self.pending_messages.push(message);
+            }
+            MPCSessionStatus::Finished => {
+                // Do nothing
+            }
+        }
+    }
+}
+
+/// Possible statuses of an MPC session:
+/// - Active: The session is currently running; new messages will be forwarded to the session.
+/// - Pending: Too many active instances are running atm; incoming messages will be queued. The session
+/// will be activated once there is room, i.e. when enough active instances finish.
+/// - Finished: The session is finished and pending removal; incoming messages will not be forwarded.
 #[derive(Clone, Copy)]
 enum MPCSessionStatus {
     Active,
@@ -45,13 +81,14 @@ enum MPCSessionStatus {
 }
 
 /// The `MPCService` is responsible for managing MPC instances:
-/// - It keeps track of all MPC instances
-/// - Runs the MPC session for each active instance
-/// - Ensures that the number of active sessions does not go over `MAX_ACTIVE_MPC_INSTANCES` at the same time
+/// - keeping track of all MPC instances,
+/// - executing all active instances, and
+/// - (de)activating instances.
 pub struct SignatureMPCManager {
     mpc_instances: HashMap<ObjectID, MPCInstance>,
-    /// Being used to keep track of the order of the received pending instances, so we'll know which one to launch first.
+    /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
     pending_instances_queue: VecDeque<ObjectID>,
+    // TODO (#257): Make sure the counter is always in sync with the number of active instances.
     active_instances_counter: usize,
     language_public_parameters:
         maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
@@ -100,85 +137,6 @@ impl SignatureMPCManager {
         }
     }
 
-    /// Spawns an asynchronous task to handle incoming messages for a new MPC instance.
-    /// The [`SignatureMPCManager`] will forward any message related to that instance to this channel.
-    fn spawn_mpc_messages_handler(&self, mut receiver: mpsc::Receiver<MPCInput>) {
-        let public_parameters = self.language_public_parameters.clone();
-        let consensus_adapter = Arc::clone(&self.consensus_adapter);
-        let epoch_store = self.epoch_store.clone();
-        let threshold = self.threshold.clone();
-
-        tokio::spawn(async move {
-            let mut party: ProofParty;
-            while let Some(message) = receiver.recv().await {
-                match message {
-                    MPCInput::InitEvent(_) => {
-                        party = match Self::handle_mpc_proof_init_event(
-                            public_parameters.clone(),
-                            consensus_adapter.clone(),
-                            epoch_store.clone(),
-                            threshold,
-                        )
-                        .await
-                        {
-                            Ok(party) => party,
-                            Err(err) => {
-                                // This should never happen, as there should be on-chain verification on the init transaction
-                                return;
-                            }
-                        };
-                    }
-                    MPCInput::Message => {
-                        // TODO (#235): Implement MPC messages handling
-                    }
-                }
-            }
-        });
-    }
-
-    async fn handle_mpc_proof_init_event(
-        public_parameters: maurer::language::PublicParameters<
-            { maurer::SOUND_PROOFS_REPETITIONS },
-            Lang,
-        >,
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Weak<AuthorityPerEpochStore>,
-        threshold: usize,
-    ) -> anyhow::Result<ProofParty> {
-        let batch_size = 1;
-        let party: ProofParty = proof::aggregation::asynchronous::Party::new_proof_round_party(
-            public_parameters,
-            PhantomData,
-            threshold as group::PartyID,
-            batch_size,
-            &mut OsRng,
-        )?;
-
-        let party: ProofParty = match party.advance(HashMap::new(), &(), &mut OsRng) {
-            Ok(advance_result) => match advance_result {
-                AdvanceResult::Advance((message, new_party)) => {
-                    // It is safe to unwrap here, as the epoch store is already created
-                    let epoch_store = epoch_store.upgrade().unwrap();
-                    let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                        epoch_store.name,
-                        bcs::to_bytes(&message)?,
-                    );
-                    consensus_adapter
-                        .submit_to_consensus(&vec![message_tx], &epoch_store)
-                        .await?;
-                    new_party
-                }
-                AdvanceResult::Finalize(output) => {
-                    return Err(anyhow!("Finalization reached unexpectedly"));
-                }
-            },
-            Err(err) => {
-                return Err(anyhow!("Error advancing the party: {:?}", err));
-            }
-        };
-        Ok(party)
-    }
-
     /// Filter the relevant MPC events from the transaction events & handle them
     pub async fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
         for event in events {
@@ -202,34 +160,34 @@ impl SignatureMPCManager {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    async fn push_new_mpc_instance(&mut self, event: CreatedProofMPCEvent) {
-        // If the number of active instances exceeds the limit, add to pending
-        if self.active_instances_counter >= self.max_active_mpc_instances {
-            self.mpc_instances.insert(
-                event.session_id.clone().bytes,
-                MPCInstance {
-                    status: MPCSessionStatus::Pending,
-                    input_receiver: None,
-                    pending_messages: vec![],
-                },
-            );
+    fn handle_proof_init_event(&mut self, event: CreatedProofMPCEvent) {
+        info!(
+            "Received start flow event for session ID {:?}",
+            event.session_id
+        );
+
+        let mut new_instance = MPCInstance {
+            status: MPCSessionStatus::Pending,
+            input_receiver: None,
+            pending_messages: vec![],
+        };
+
+        // Activate the instance if possible
+        if self.active_instances_counter < MAX_ACTIVE_MPC_INSTANCES {
+            new_instance.set_active();
+            self.active_instances_counter += 1;
+        } else {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
-            return;
-        }
-        let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
-        self.spawn_mpc_messages_handler(messages_handler_receiver);
-        let _ = messages_handler_sender
-            .send(MPCInput::InitEvent(event.clone()))
-            .await;
-        self.mpc_instances.insert(
-            event.session_id.clone().bytes,
-            MPCInstance {
-                status: MPCSessionStatus::Active,
-                input_receiver: Some(messages_handler_sender),
-                pending_messages: vec![],
-            },
+        };
+        new_instance.handle_message(MPCInput::InitEvent(event.clone()));
+
+        self.mpc_instances
+            .insert(event.session_id.clone().bytes, new_instance);
+
+        info!(
+            "Added MPCInstance to service for session_id {:?}",
+            event.session_id
         );
-        self.active_instances_counter += 1;
     }
 }
