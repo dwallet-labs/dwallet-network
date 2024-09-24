@@ -30,7 +30,8 @@ struct MPCInstance {
     /// The channel to send message to this instance
     input_receiver: Option<mpsc::Sender<MPCInput>>,
     pending_messages: Vec<MPCInput>,
-    language_public_parameters: maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
+    language_public_parameters:
+        maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     threshold: usize,
@@ -82,9 +83,7 @@ impl MPCInstance {
 
     /// Spawns an asynchronous task to handle incoming messages.
     /// The [`MPCService`] will forward any message related to that instance to this channel.
-    fn spawn_mpc_messages_handler(
-        &self, mut receiver: mpsc::Receiver<MPCInput>,
-    ) {
+    fn spawn_mpc_messages_handler(&self, mut receiver: mpsc::Receiver<MPCInput>) {
         let public_parameters = self.language_public_parameters.clone();
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = self.epoch_store.clone();
@@ -100,7 +99,7 @@ impl MPCInstance {
                             epoch_store.clone(),
                             threshold,
                         )
-                            .await
+                        .await
                         {
                             Ok(party) => party,
                             Err(err) => {
@@ -161,7 +160,6 @@ impl MPCInstance {
         };
         Ok(party)
     }
-
 
     async fn handle_message(&mut self, message: MPCInput) {
         match self.status {
@@ -296,7 +294,9 @@ impl SignatureMPCManager {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
         };
-        new_instance.handle_message(MPCInput::InitEvent(event.clone())).await;
+        new_instance
+            .handle_message(MPCInput::InitEvent(event.clone()))
+            .await;
 
         self.mpc_instances
             .insert(event.session_id.clone().bytes, new_instance);
