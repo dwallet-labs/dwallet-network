@@ -90,7 +90,6 @@ impl MPCService {
         }
     }
 
-
     /// Filter the relevant MPC events from the transaction events & handle them
     pub fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
         for event in events {
