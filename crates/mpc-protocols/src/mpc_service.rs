@@ -70,9 +70,9 @@ enum MPCSessionStatus {
 }
 
 /// The `MPCService` is responsible for managing MPC instances:
-/// - It keeps track of all MPC instances
-/// - Runs the MPC session for each active instance
-/// - Ensures that the number of active sessions does not go over `MAX_ACTIVE_MPC_INSTANCES` at the same time
+/// - keeping track of all MPC instances,
+/// - executing all active instances, and
+/// - (de)activating instances.
 pub struct MPCService {
     mpc_instances: HashMap<ObjectID, MPCInstance>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
