@@ -30,6 +30,10 @@ struct MPCInstance {
     /// The channel to send message to this instance
     input_receiver: Option<mpsc::Sender<MPCInput>>,
     pending_messages: Vec<MPCInput>,
+    language_public_parameters: maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
+    consensus_adapter: Arc<dyn SubmitToConsensus>,
+    epoch_store: Weak<AuthorityPerEpochStore>,
+    threshold: usize,
 }
 
 impl MPCInstance {
@@ -80,10 +84,6 @@ impl MPCInstance {
     /// The [`MPCService`] will forward any message related to that instance to this channel.
     fn spawn_mpc_messages_handler(
         &self, mut receiver: mpsc::Receiver<MPCInput>,
-        language_public_parameters: maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Weak<AuthorityPerEpochStore>,
-        threshold: usize,
     ) {
         tokio::spawn(async move {
             let mut party: ProofParty;
@@ -91,10 +91,10 @@ impl MPCInstance {
                 match message {
                     MPCInput::InitEvent(_) => {
                         party = match Self::handle_mpc_proof_init_event(
-                            language_public_parameters.clone(),
-                            consensus_adapter.clone(),
-                            epoch_store.clone(),
-                            threshold,
+                            self.language_public_parameters.clone(),
+                            self.consensus_adapter.clone(),
+                            self.epoch_store.clone(),
+                            self.threshold,
                         )
                             .await
                         {
@@ -224,7 +224,7 @@ impl SignatureMPCManager {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    async fn handle_proof_init_event(&mut self, event: CreatedProofMPCEvent) {
+    async fn push_new_mpc_instance(&mut self, event: CreatedProofMPCEvent) {
         info!(
             "Received start flow event for session ID {:?}",
             event.session_id
@@ -234,6 +234,10 @@ impl SignatureMPCManager {
             status: MPCSessionStatus::Pending,
             input_receiver: None,
             pending_messages: vec![],
+            language_public_parameters: self.language_public_parameters.clone(),
+            consensus_adapter: Arc::clone(&self.consensus_adapter),
+            epoch_store: self.epoch_store.clone(),
+            threshold: self.threshold,
         };
 
         // Activate the instance if possible
