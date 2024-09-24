@@ -124,12 +124,12 @@ impl MPCService {
         // Activate the instance if possible
         if self.active_instances_counter < MAX_ACTIVE_MPC_INSTANCES {
             new_instance.set_active();
-            new_instance.handle_message(MPCInput::InitEvent(event.clone()));
             self.active_instances_counter += 1;
         } else {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
         };
+        new_instance.handle_message(MPCInput::InitEvent(event.clone()));
 
         self.mpc_instances
             .insert(event.session_id.clone().bytes, new_instance);
@@ -139,41 +139,4 @@ impl MPCService {
             event.session_id
         );
     }
-    // fn handle_proof_init_event(&mut self, event: CreatedProofMPCEvent) {
-    //     info!(
-    //         "Received start flow event for session ID {:?}",
-    //         event.session_id
-    //     );
-    //     // If the number of active instances exceeds the limit, add to pending
-    //     if self.active_instances_counter >= MAX_ACTIVE_MPC_INSTANCES {
-    //         self.mpc_instances.insert(
-    //             event.session_id.clone().bytes,
-    //             MPCInstance {
-    //                 status: MPCSessionStatus::Pending,
-    //                 input_receiver: None,
-    //                 pending_messages: vec![],
-    //             },
-    //         );
-    //         self.pending_instances_queue
-    //             .push_back(event.session_id.bytes);
-    //         return;
-    //     }
-    //     // TODO (#256): Replace hard coded 100 with the number of validators times 10
-    //     let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
-    //     self.spawn_mpc_messages_handler(messages_handler_receiver);
-    //     let _ = messages_handler_sender.send(MPCInput::InitEvent(event.clone()));
-    //     self.mpc_instances.insert(
-    //         event.session_id.clone().bytes,
-    //         MPCInstance {
-    //             status: MPCSessionStatus::Active,
-    //             input_receiver: Some(messages_handler_sender),
-    //             pending_messages: vec![],
-    //         },
-    //     );
-    //     self.active_instances_counter += 1;
-    //     info!(
-    //         "Added MPCInstance to service for session_id {:?}",
-    //         event.session_id
-    //     );
-    // }
 }
