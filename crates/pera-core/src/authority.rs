@@ -1546,13 +1546,14 @@ impl AuthorityState {
             TransactionEffects::V1(effects) => effects.status(),
             TransactionEffects::V2(effects) => effects.status(),
         };
-        if status.is_err() {
+        if status.is_ok() {
+            self.mpc_service
+                .lock()
+                .handle_mpc_events(&inner_temporary_store.events.data)
+        } else {
             // If the transaction failed, we don't need to handle MPC events.
-            return Ok(());
+            Ok(())
         }
-        self.mpc_service
-            .lock()
-            .handle_mpc_events(&inner_temporary_store.events.data)
     }
 
     fn update_metrics(
