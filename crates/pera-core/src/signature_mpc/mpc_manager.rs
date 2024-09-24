@@ -40,22 +40,86 @@ impl MPCInstance {
         self.input_receiver = Some(messages_handler_sender);
         self.spawn_mpc_messages_handler(messages_handler_receiver);
     }
+    // /// Spawns an asynchronous task to handle incoming messages for a new MPC instance.
+    // /// The [`SignatureMPCManager`] will forward any message related to that instance to this channel.
+    // fn spawn_mpc_messages_handler(&self, mut receiver: mpsc::Receiver<MPCInput>) {
+    //     let public_parameters = self.language_public_parameters.clone();
+    //     let consensus_adapter = Arc::clone(&self.consensus_adapter);
+    //     let epoch_store = self.epoch_store.clone();
+    //     let threshold = self.threshold.clone();
+    //
+    //     tokio::spawn(async move {
+    //         let mut party: ProofParty;
+    //         while let Some(message) = receiver.recv().await {
+    //             match message {
+    //                 MPCInput::InitEvent(_) => {
+    //                     party = match Self::handle_mpc_proof_init_event(
+    //                         public_parameters.clone(),
+    //                         consensus_adapter.clone(),
+    //                         epoch_store.clone(),
+    //                         threshold,
+    //                     )
+    //                         .await
+    //                     {
+    //                         Ok(party) => party,
+    //                         Err(err) => {
+    //                             // This should never happen, as there should be on-chain verification on the init transaction
+    //                             return;
+    //                         }
+    //                     };
+    //                 }
+    //                 MPCInput::Message => {
+    //                     // TODO (#235): Implement MPC messages handling
+    //                 }
+    //             }
+    //         }
+    //     });
+    // }
 
     /// Spawns an asynchronous task to handle incoming messages.
     /// The [`MPCService`] will forward any message related to that instance to this channel.
-    fn spawn_mpc_messages_handler(&self, mut receiver: mpsc::Receiver<MPCInput>) {
+    fn spawn_mpc_messages_handler(
+        &self, mut receiver: mpsc::Receiver<MPCInput>,
+        language_public_parameters: maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Weak<AuthorityPerEpochStore>,
+        threshold: usize,
+    ) {
         tokio::spawn(async move {
+            let mut party: ProofParty;
             while let Some(message) = receiver.recv().await {
+                match message {
+                    MPCInput::InitEvent(_) => {
+                        party = match Self::handle_mpc_proof_init_event(
+                            language_public_parameters.clone(),
+                            consensus_adapter.clone(),
+                            epoch_store.clone(),
+                            threshold,
+                        )
+                            .await
+                        {
+                            Ok(party) => party,
+                            Err(err) => {
+                                // This should never happen, as there should be on-chain verification on the init transaction
+                                return;
+                            }
+                        };
+                    }
+                    MPCInput::Message => {
+                        // TODO (#235): Implement MPC messages handling
+                    }
+                }
+
                 // TODO (#235): Implement MPC messages handling
             }
         });
     }
 
-    fn handle_message(&mut self, message: MPCInput) {
+    async fn handle_message(&mut self, message: MPCInput) {
         match self.status {
             MPCSessionStatus::Active => {
                 if let Some(input_receiver) = &self.input_receiver {
-                    let _ = input_receiver.send(message);
+                    let _ = input_receiver.send(message).await;
                 }
             }
             MPCSessionStatus::Pending => {
@@ -160,7 +224,7 @@ impl SignatureMPCManager {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    fn handle_proof_init_event(&mut self, event: CreatedProofMPCEvent) {
+    async fn handle_proof_init_event(&mut self, event: CreatedProofMPCEvent) {
         info!(
             "Received start flow event for session ID {:?}",
             event.session_id
@@ -180,7 +244,7 @@ impl SignatureMPCManager {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
         };
-        new_instance.handle_message(MPCInput::InitEvent(event.clone()));
+        new_instance.handle_message(MPCInput::InitEvent(event.clone())).await;
 
         self.mpc_instances
             .insert(event.session_id.clone().bytes, new_instance);
