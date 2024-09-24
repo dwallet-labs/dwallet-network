@@ -1551,12 +1551,13 @@ impl AuthorityState {
                     let mut mpc_manager_lock = mpc_manager.lock().await;
                     mpc_manager_lock
                         .handle_mpc_events(&inner_temporary_store.events.data)
-                        .await?;
+                        .await
                 }
                 None => {
                     // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
                     // TODO (#250): Check if we can ignore these events and be sure that the MPC manager is initialized before MPC events emitted.
                     info!("MPC manager is not initialized");
+                    Ok(())
                 }
             }
         } else {

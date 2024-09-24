@@ -17,7 +17,7 @@ use std::sync::{Arc, Weak};
 use std::time::Duration;
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
-use tracing::debug;
+use tracing::{debug, info};
 
 #[derive(Debug)]
 pub enum MPCInput {
@@ -237,7 +237,7 @@ impl SignatureMPCManager {
         };
 
         // Activate the instance if possible
-        if self.active_instances_counter < MAX_ACTIVE_MPC_INSTANCES {
+        if self.active_instances_counter < self.max_active_mpc_instances {
             new_instance.set_active();
             self.active_instances_counter += 1;
         } else {
