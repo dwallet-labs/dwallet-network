@@ -269,7 +269,7 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
-    SignatureMPCMessage(AuthorityName, Vec<u8>),
+    SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -464,13 +464,17 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_signature_mpc_message(authority: AuthorityName, message: Vec<u8>) -> Self {
+    pub fn new_signature_mpc_message(
+        authority: AuthorityName,
+        message: Vec<u8>,
+        session_id: ObjectID,
+    ) -> Self {
         let mut hasher = DefaultHasher::new();
         message.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message),
+            kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
         }
     }
 
@@ -545,7 +549,7 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
             }
-            ConsensusTransactionKind::SignatureMPCMessage(authority, _) => {
+            ConsensusTransactionKind::SignatureMPCMessage(authority, _, _) => {
                 ConsensusTransactionKey::SignatureMPCMessage(*authority)
             }
         }

@@ -2418,9 +2418,17 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message),
+                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, _),
                 ..
-            }) => {}
+            }) => {
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "SignatureMPCMessage authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CheckpointSignature(data),
                 ..
@@ -3366,10 +3374,17 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message),
+                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                // TODO(#235): Implement message handling for MPC messages.
+                let Some(signature_mpc_manager) = self.signature_mpc_manager.get() else {
+                    // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
+                    Ok(ConsensusCertificateResult::Ignored)
+                };
+                let mut signature_mpc_manager = signature_mpc_manager.lock().await;
+                let _ = signature_mpc_manager
+                    .handle_mpc_message(message, *authority, *session_id)
+                    .await;
                 Ok(ConsensusCertificateResult::Ignored)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
