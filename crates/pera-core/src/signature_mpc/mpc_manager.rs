@@ -34,7 +34,8 @@ struct MPCInstance {
         maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
-    threshold: usize,
+    /// The threshold number of parties required to participate in each round of the Proof MPC protocol
+    mpc_threshold_number_of_parties: usize,
 }
 
 impl MPCInstance {
@@ -52,7 +53,7 @@ impl MPCInstance {
         let public_parameters = self.language_public_parameters.clone();
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = self.epoch_store.clone();
-        let threshold = self.threshold.clone();
+        let threshold = self.mpc_threshold_number_of_parties.clone();
         tokio::spawn(async move {
             let mut party: ProofParty;
             while let Some(message) = receiver.recv().await {
@@ -248,7 +249,7 @@ impl SignatureMPCManager {
             language_public_parameters: self.language_public_parameters.clone(),
             consensus_adapter: Arc::clone(&self.consensus_adapter),
             epoch_store: self.epoch_store.clone(),
-            threshold: self.threshold,
+            mpc_threshold_number_of_parties: self.threshold,
         };
 
         // Activate the instance if possible
