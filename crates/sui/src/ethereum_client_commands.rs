@@ -14,7 +14,6 @@ use helios::dwallet::light_client::{
 };
 use helios::prelude::networks::Network;
 use helios::prelude::Address;
-use hex::encode;
 
 use light_client_helpers::{
     get_object_bcs_by_id, get_object_from_transaction_changes, get_object_ref_by_id,
@@ -379,12 +378,6 @@ pub(crate) async fn eth_approve_message(
     let latest_eth_state_shared_object =
         get_shared_object_input_by_id(context, latest_state_object_id).await?;
 
-    if let Some(checkpoint) = eth_state.last_checkpoint.clone() {
-        eth_lc_config.checkpoint = format!("0x{}", encode(checkpoint));
-    } else {
-        return Err(anyhow!("checkpoint is missing in the Ethereum state"));
-    }
-
     let data_slot = latest_eth_state_obj.eth_smart_contract_slot;
     let contract_address = latest_eth_state_obj.eth_smart_contract_address;
     let contract_address = contract_address.parse::<Address>()?;
@@ -493,7 +486,6 @@ pub(crate) async fn eth_approve_message(
         .get_beacon_block(latest_slot)
         .await
         .map_err(|e| anyhow!("could not fetch beacon block: {e}"))?;
-
     let beacon_block_body = beacon_block.clone().body;
     let beacon_block_execution_payload = beacon_block_body.execution_payload();
     let beacon_block_type = beacon_block.body.get_block_type();
