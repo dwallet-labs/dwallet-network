@@ -3379,7 +3379,7 @@ impl AuthorityPerEpochStore {
             }) => {
                 let Some(signature_mpc_manager) = self.signature_mpc_manager.get() else {
                     // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
-                    Ok(ConsensusCertificateResult::Ignored)
+                    return Ok(ConsensusCertificateResult::Ignored);
                 };
                 let mut signature_mpc_manager = signature_mpc_manager.lock().await;
                 let _ = signature_mpc_manager

@@ -57,19 +57,19 @@ struct MPCInstance {
 
 impl MPCInstance {
     async fn set_active(&mut self) {
+        // TODO (#256): Replace hard coded 100 with the number of validators times 10
+        let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
+        self.input_receiver = Some(messages_handler_sender);
         match Self::start_proof_mpc_flow(
             self.language_public_parameters.clone(),
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
-            self.threshold.clone(),
+            self.mpc_threshold_number_of_parties.clone(),
             self.session_id,
         )
         .await
         {
             Ok((party, message)) => {
-                // TODO (#256): Replace hard coded 100 with the number of validators times 10
-                let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
-                self.input_receiver = Some(messages_handler_sender);
                 self.status = MPCSessionStatus::Active;
                 self.spawn_mpc_messages_handler(messages_handler_receiver, party, message);
             }
