@@ -211,7 +211,7 @@ impl SignatureMPCManager {
             consensus_adapter,
             epoch_store: epoch_store_weak,
             max_active_mpc_instances,
-            threshold: ((num_of_parties / 3) * 2) + 1,
+            threshold: ((num_of_parties * 2) + 2) / 3
         }
     }
 
