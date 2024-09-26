@@ -101,11 +101,7 @@ impl MPCInstance {
             };
 
             while let Some(message) = receiver.recv().await {
-                let _ = Self::insert_mpc_message(
-                    &message,
-                    &mut messages,
-                    Arc::clone(&epoch_store),
-                );
+                let _ = Self::insert_mpc_message(&message, &mut messages, Arc::clone(&epoch_store));
                 if messages.len() == threshold {
                     party = match party.advance(messages.clone(), &(), &mut OsRng) {
                         Ok(advance_result) => match advance_result {
@@ -140,15 +136,10 @@ impl MPCInstance {
         epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> anyhow::Result<()> {
         let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
-        println!("inserting mpc_message number {} from party {}", messages.keys().len() + 1, party_id);
         if messages.contains_key(&party_id) {
-        // if false {
-            println!("party {} already sent a message in this round", party_id);
             // TODO(#260): Punish an authority that sends multiple messages in the same round
             return Err(anyhow!(
                 "Authority {} already sent a message in this round",
-                // print the map in a pretty way copilot
-
                 epoch_store.name
             ));
         }
@@ -158,10 +149,7 @@ impl MPCInstance {
                 messages.insert(party_id, message);
                 Ok(())
             }
-            Err(err) => {
-                println!("Error deserializing mpc_message: {:?}", err);
-                Err(anyhow!("Error deserializing the first message: {:?}", err))
-            },
+            Err(err) => Err(anyhow!("Error deserializing the first message: {:?}", err)),
         }
     }
 
