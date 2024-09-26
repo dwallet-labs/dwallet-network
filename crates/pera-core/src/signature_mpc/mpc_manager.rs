@@ -50,7 +50,8 @@ struct MPCInstance {
         maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
-    threshold: usize,
+    /// The threshold number of parties required to participate in each round of the Proof MPC protocol
+    mpc_threshold_number_of_parties: usize,
     session_id: ObjectID,
 }
 
@@ -90,9 +91,8 @@ impl MPCInstance {
     ) {
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = self.epoch_store.clone();
-        let threshold = self.threshold.clone();
+        let threshold = self.mpc_threshold_number_of_parties;
         let session_id = self.session_id.clone();
-
         tokio::spawn(async move {
             let mut messages = HashMap::new();
 
@@ -274,7 +274,7 @@ fn generate_language_public_parameters<const REPETITIONS: usize>(
 impl SignatureMPCManager {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store_weak: Weak<AuthorityPerEpochStore>,
+        epoch_store: Weak<AuthorityPerEpochStore>,
         max_active_mpc_instances: usize,
         num_of_parties: usize,
     ) -> Self {
@@ -286,9 +286,9 @@ impl SignatureMPCManager {
                 { maurer::SOUND_PROOFS_REPETITIONS },
             >(),
             consensus_adapter,
-            epoch_store: epoch_store_weak,
+            epoch_store,
             max_active_mpc_instances,
-            threshold: ((num_of_parties / 3) * 2) + 1,
+            threshold: ((num_of_parties * 2) + 2) / 3,
         }
     }
 
@@ -348,7 +348,7 @@ impl SignatureMPCManager {
             language_public_parameters: self.language_public_parameters.clone(),
             consensus_adapter: Arc::clone(&self.consensus_adapter),
             epoch_store: self.epoch_store.clone(),
-            threshold: self.threshold,
+            mpc_threshold_number_of_parties: self.threshold,
             session_id: event.session_id.bytes.clone(),
         };
 

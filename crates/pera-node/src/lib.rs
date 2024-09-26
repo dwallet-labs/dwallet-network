@@ -1291,6 +1291,7 @@ impl PeraNode {
                     .await?;
             }
         }
+
         epoch_store
             .set_signature_mpc_manager(SignatureMPCManager::new(
                 Arc::new(consensus_adapter.clone()),
