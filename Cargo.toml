@@ -66,6 +66,7 @@ exclude = [
     "external-crates/move/move-execution/v1/crates/move-vm-runtime",
     "sdk/move-binary-format-wasm",
     "sdk/signature-mpc-wasm",
+    "sdk/eth-light-client-wasm",
 ]
 
 members = [

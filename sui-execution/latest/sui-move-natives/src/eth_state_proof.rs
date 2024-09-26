@@ -124,14 +124,15 @@ pub fn verify_message_proof(
         .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_STATUS))?;
 
     let contract_address = String::from_utf8(contract_address.clone())
-        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+        .unwrap_or(hex::encode(contract_address.clone()));
 
     let contract_address: Address = contract_address
         .parse()
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
-    let mut beacon_block: BeaconBlock = serde_json::from_slice(&beacon_block)
-        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+    let mut beacon_block: BeaconBlock =
+        serde_json::from_str(&String::from_utf8(beacon_block).unwrap())
+            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
     let beacon_block_type = String::from_utf8(beacon_block_type.clone())
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
@@ -149,7 +150,7 @@ pub fn verify_message_proof(
             .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
     let beacon_block_execution_payload: ExecutionPayload = beacon_block_execution_payload.inner();
 
-    let mut beacon_block_body = BeaconBlockBody::new_from_existing_with_execution_payload(
+    let beacon_block_body = BeaconBlockBody::new_from_existing_with_execution_payload(
         beacon_block_body,
         beacon_block_execution_payload,
     );
@@ -343,8 +344,12 @@ pub(crate) fn create_initial_eth_state_data(
     // hardcoded hashes for verifying network states
     const MAINNET_STATE_HASH: &str =
         "9fb325c6f66a0f98b57f4b8117c193982c622ee4eb0f6373c84cfc46821091de";
+    const MAINNET_STATE_HASH_TS: &str =
+        "22d83711af758bd69236ba1d59e148e01708f798f18235820a28d80f2ed9310f";
     const HOLESKY_STATE_HASH: &str =
         "e418e4c236fcb1b13282f23346f8c4b14af29cce5ad843f27ed565fd00d49269";
+    const HOLESKY_STATE_HASH_TS: &str =
+        "5022f33b121e88c7210706e1321a804a92ab59deb46db07d3c66a4a40dd64c72";
 
     let cost = context.gas_used();
 
@@ -366,7 +371,7 @@ pub(crate) fn create_initial_eth_state_data(
     }
 
     let mut eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&state_bytes)
-        .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
 
     let updates_vec = serde_json::from_slice::<Vec<Update>>(updates_vec.as_slice())
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
