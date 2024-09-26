@@ -71,7 +71,7 @@ impl MPCInstance {
         {
             Ok((party, message)) => {
                 self.status = MPCSessionStatus::Active;
-                self.spawn_mpc_messages_handler(messages_handler_receiver, party, message);
+                self.spawn_mpc_messages_handler(messages_handler_receiver, party);
             }
             Err(err) => {
                 // This should never happen, as there should be on-chain verification on the init transaction, and
@@ -87,7 +87,6 @@ impl MPCInstance {
         &self,
         mut receiver: mpsc::Receiver<ProofMPCMessage>,
         mut party: ProofParty,
-        first_message: Vec<u8>,
     ) {
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = self.epoch_store.clone();
@@ -102,7 +101,6 @@ impl MPCInstance {
             };
 
             while let Some(message) = receiver.recv().await {
-
                 let _ = Self::insert_mpc_message(
                     &message.message,
                     &mut messages,
@@ -143,7 +141,8 @@ impl MPCInstance {
     ) -> anyhow::Result<()> {
         let party_id = authority_name_to_party_id(epoch_store.name, &epoch_store)?;
         println!("inserting mpc_message number {} from party {}", messages.keys().len() + 1, party_id);
-        if messages.contains_key(&party_id) {
+        // if messages.contains_key(&party_id) {
+        if false {
             println!("party {} already sent a message in this round", party_id);
             // TODO(#260): Punish an authority that sends multiple messages in the same round
             return Err(anyhow!(
