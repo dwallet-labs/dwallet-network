@@ -197,7 +197,7 @@ fn generate_language_public_parameters<const REPETITIONS: usize>(
 impl SignatureMPCManager {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store_weak: Weak<AuthorityPerEpochStore>,
+        epoch_store: Weak<AuthorityPerEpochStore>,
         max_active_mpc_instances: usize,
         num_of_parties: usize,
     ) -> Self {
@@ -209,7 +209,7 @@ impl SignatureMPCManager {
                 { maurer::SOUND_PROOFS_REPETITIONS },
             >(),
             consensus_adapter,
-            epoch_store: epoch_store_weak,
+            epoch_store,
             max_active_mpc_instances,
             threshold: ((num_of_parties * 2) + 2) / 3
         }
