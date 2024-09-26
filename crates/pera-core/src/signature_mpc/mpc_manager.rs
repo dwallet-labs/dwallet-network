@@ -105,8 +105,10 @@ impl MPCInstance {
         let party: ProofParty = match party.advance(HashMap::new(), &(), &mut OsRng) {
             Ok(advance_result) => match advance_result {
                 AdvanceResult::Advance((message, new_party)) => {
-                    // It is safe to unwrap here, as the epoch store is already created
-                    let epoch_store = epoch_store.upgrade().unwrap();
+                    let Some(epoch_store) = epoch_store.upgrade() else {
+                        // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+                        return Err(anyhow!("Epoch store not found"));
+                    };
                     let message_tx = ConsensusTransaction::new_signature_mpc_message(
                         epoch_store.name,
                         bcs::to_bytes(&message)?,
