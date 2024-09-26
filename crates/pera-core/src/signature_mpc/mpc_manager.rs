@@ -102,7 +102,7 @@ impl MPCInstance {
 
             while let Some(message) = receiver.recv().await {
                 let _ = Self::insert_mpc_message(
-                    &message.message,
+                    &message,
                     &mut messages,
                     Arc::clone(&epoch_store),
                 );
@@ -135,14 +135,14 @@ impl MPCInstance {
     }
 
     fn insert_mpc_message(
-        message: &Vec<u8>,
+        message: &ProofMPCMessage,
         mut messages: &mut HashMap<PartyID, (Proof<1, Lang, PhantomData<()>>, Vec<Value>)>,
         epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> anyhow::Result<()> {
-        let party_id = authority_name_to_party_id(epoch_store.name, &epoch_store)?;
+        let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
         println!("inserting mpc_message number {} from party {}", messages.keys().len() + 1, party_id);
-        // if messages.contains_key(&party_id) {
-        if false {
+        if messages.contains_key(&party_id) {
+        // if false {
             println!("party {} already sent a message in this round", party_id);
             // TODO(#260): Punish an authority that sends multiple messages in the same round
             return Err(anyhow!(
@@ -153,7 +153,7 @@ impl MPCInstance {
             ));
         }
 
-        match bcs::from_bytes(&message) {
+        match bcs::from_bytes(&message.message) {
             Ok(message) => {
                 messages.insert(party_id, message);
                 Ok(())
