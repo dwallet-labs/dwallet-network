@@ -11,7 +11,6 @@ use wasm_bindgen::JsValue;
 /// Error type for better JS handling and generalization
 /// of Rust / WASM -> JS error conversion.
 pub struct JsErr {
-    // type_: String,
     pub message: String,
     pub display: String,
 }
