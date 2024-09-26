@@ -96,8 +96,7 @@ pub fn get_initial_state_bcs(
 
 /// Calculates the current finalized period of the Ethereum light client state.
 #[wasm_bindgen]
-pub fn get_current_period(state_bytes: JsValue) -> Result<JsValue, JsErr> {
-    let state_bytes: Vec<u8> = serde_wasm_bindgen::from_value(state_bytes)?;
+pub fn get_current_period(state_bytes: Vec<u8>) -> Result<JsValue, JsErr> {
     let mut eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&state_bytes)?;
     Ok(serde_wasm_bindgen::to_value(&eth_state.get_sync_period())?)
 }
