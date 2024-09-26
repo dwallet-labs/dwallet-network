@@ -2422,6 +2422,7 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 if transaction.sender_authority() != *authority {
+                    // TODO (#263): Mark the validator who sent this message as malicious
                     warn!(
                         "SignatureMPCMessage authority {} does not match its author from consensus {}",
                         authority, transaction.certificate_author_index
