@@ -2420,7 +2420,15 @@ impl AuthorityPerEpochStore {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message),
                 ..
-            }) => {}
+            }) => {
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "SignatureMPCMessage authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CheckpointSignature(data),
                 ..
