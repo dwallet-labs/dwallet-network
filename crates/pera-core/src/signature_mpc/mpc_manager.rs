@@ -53,7 +53,7 @@ impl MPCInstance {
         let public_parameters = self.language_public_parameters.clone();
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = self.epoch_store.clone();
-        let threshold = self.mpc_threshold_number_of_parties.clone();
+        let threshold = self.mpc_threshold_number_of_parties;
         tokio::spawn(async move {
             let mut party: ProofParty;
             while let Some(message) = receiver.recv().await {
