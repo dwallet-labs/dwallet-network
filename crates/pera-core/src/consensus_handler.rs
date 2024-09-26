@@ -355,18 +355,6 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
-                    if let ConsensusTransactionKind::SignatureMPCMessage(authority, message) =
-                        &transaction.kind
-                    {
-                        let mut signature_mpc_manager = self
-                            .epoch_store
-                            .signature_mpc_manager
-                            .get()
-                            .unwrap()
-                            .lock()
-                            .await;
-                        signature_mpc_manager.handle_mpc_message(message, *authority);
-                    }
                     if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
                         &transaction.kind
                     {
