@@ -71,7 +71,7 @@ impl MPCInstance {
         )
         .await
         {
-            Ok((party, message)) => {
+            Ok(party) => {
                 self.status = MPCSessionStatus::Active;
                 self.spawn_mpc_messages_handler(messages_handler_receiver, party);
             }
@@ -108,9 +108,9 @@ impl MPCInstance {
                     threshold,
                     &session_id,
                     &mut messages,
-                    &epoch_store,
+                    epoch_store.clone(),
                     &message,
-                ) {
+                ).await {
                     Some(new_party) => party = new_party,
                     None => {
                         return;
@@ -126,7 +126,7 @@ impl MPCInstance {
         threshold: usize,
         session_id: &ObjectID,
         mut messages: &mut HashMap<PartyID, (Proof<1, Lang, PhantomData<()>>, Vec<Value>)>,
-        epoch_store: &Arc<AuthorityPerEpochStore>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
         message: &ProofMPCMessage,
     ) -> Option<ProofParty> {
         let _ = Self::store_message(&message, &mut messages, Arc::clone(&epoch_store));
@@ -191,7 +191,7 @@ impl MPCInstance {
         epoch_store: Weak<AuthorityPerEpochStore>,
         threshold: usize,
         session_id: ObjectID,
-    ) -> anyhow::Result<(ProofParty, Vec<u8>)> {
+    ) -> anyhow::Result<ProofParty> {
         let batch_size = 1;
         let party_state: ProofParty =
             proof::aggregation::asynchronous::Party::new_proof_round_party(
@@ -202,26 +202,28 @@ impl MPCInstance {
                 &mut OsRng,
             )?;
 
-        match party_state.advance(HashMap::new(), &(), &mut OsRng) {
-            Ok(advance_result) => {
-                let AdvanceResult::Advance((message, new_party)) = advance_result else {
-                    return Err(anyhow!("Finalization reached unexpectedly"));
-                };
-                let Some(epoch_store) = epoch_store.upgrade() else {
-                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-                    return Err(anyhow!("Epoch store not found"));
-                };
-                let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                    epoch_store.name,
-                    bcs::to_bytes(&message)?,
-                    session_id,
-                );
-                consensus_adapter
-                    .submit_to_consensus(&vec![message_tx], &epoch_store)
-                    .await?;
-                Ok((new_party, bcs::to_bytes(&message)?))
+        let Some(epoch_store) = epoch_store.upgrade() else {
+            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+            return Err(anyhow!("Epoch store not found"));
+        };
+        match Self::advance_message(
+            party_state,
+            consensus_adapter,
+            threshold,
+            &session_id,
+            &mut HashMap::new(),
+            epoch_store.clone(),
+            &ProofMPCMessage {
+                message: vec![],
+                authority: AuthorityName::default(),
+            },
+        ).await {
+            None => {
+                Err(anyhow!("Finalization reached unexpectedly"))
             }
-            Err(err) => Err(anyhow!("Error while advancing the MPC instance: {:?}", err)),
+            Some(new_party) => {
+                Ok(new_party)
+            }
         }
     }
 
