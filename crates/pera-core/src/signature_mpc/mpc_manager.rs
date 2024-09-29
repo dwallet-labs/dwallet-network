@@ -216,6 +216,7 @@ impl SignatureMPCManager {
             consensus_adapter,
             epoch_store,
             max_active_mpc_instances,
+            // TODO (#268): Take into account the validator's voting power
             threshold: ((num_of_parties * 2) + 2) / 3,
         }
     }
