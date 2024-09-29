@@ -3186,7 +3186,13 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-
+        if let Some(signature_mpc_manager) = self.signature_mpc_manager.get() {
+            let mut signature_mpc_manager = signature_mpc_manager.lock().await;
+            signature_mpc_manager.handle_mpc_message()
+        } else {
+            // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
+            error!("signature_mpc_manager is not initialized after all consensus output transactions are processed");
+        }
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
         for (key, txns) in deferred_txns.into_iter() {
