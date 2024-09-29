@@ -26,40 +26,44 @@ async function main() {
 
 		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
 
-		const configObjectId = '0x5cad71d9b6289b111d476ab86725c52c1a92adb81cf2c09cfc456f180109f4a8'; // should take this from the light_client.yaml
-		const registryObjectId = '0x0be2ba6cd77cfaa4c38d3a1f9f06d8c4bb347af414334b874ef2d6353dd67196';
+		const dWalletCapPackageSUI =
+			'0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec';
+
+		const configObjectId = '0x6b824c206279b07d888a275bdc621221f2319315d06882d0536830afb4d778ec';
+		const registryObjectId = '0xbe183defd8d54de7927ea7da8ddd3ae9eaa26ce47bfd6758d36a7b68c2e3f3a0';
 
 		const sui_client = new SuiClient({ url: suiTestnetURL });
 		const dwallet_client = new DWalletClient({
 			transport: new SuiHTTPTransport({
 				url: dWalletNodeUrl,
-
-				// websocket: {
-				// 	reconnectTimeout: 1000,
-				// 	url: dWalletNodeUrl + '/websockets',
-				// },
 			}),
 		});
 
-		// const messageSign = 'dWallets are coming... to Sui';
 		const messageSign: Uint8Array = new TextEncoder().encode('dWallets are coming... to Sui');
 
 		const keyPair = Ed25519Keypair.deriveKeypairFromSeed(
 			'witch collapse practice feed shame open despair creek road again ice least',
 		);
+		// const keyPair2 = Ed25519Keypair.generate();
+
 		const address = keyPair.getPublicKey().toSuiAddress();
+		// const address2 = keyPair2.getPublicKey().toSuiAddress();
 
 		console.log('address', address);
+		// console.log('address2', address);
 
 		console.log('SUI address', keyPair.toSuiAddress());
-
-		const dWalletCapPackageSUI =
-			'0x0bde775d63aa25d1fb0df56b71acc516d746ea8d79a89a6dc7c9039e0bd41db6';
+		// console.log('SUI address2', keyPair2.toSuiAddress());
 
 		await requestDwltFromFaucetV0({
 			host: 'http://127.0.0.1:9123/gas',
 			recipient: keyPair.getPublicKey().toSuiAddress(),
 		});
+
+		// await requestDwltFromFaucetV0({
+		// 	host: 'http://127.0.0.1:9123/gas',
+		// 	recipient: keyPair2.getPublicKey().toSuiAddress(),
+		// });
 
 		// await requestSuiFromFaucetV0({
 		// 	host: 'https://faucet.testnet.sui.io',
@@ -71,48 +75,85 @@ async function main() {
 
 		console.log('creating dwallet');
 
-		let activeEncryptionKeysTableID: string;
-
 		const encryptionKeysHolder = await createActiveEncryptionKeysTable(dwallet_client, keyPair);
+		// const encryptionKeysHolder2 = await createActiveEncryptionKeysTable(dwallet_client, keyPair2);
 
-		activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
+		let activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
 		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(
 			keyPair,
 			dwallet_client,
 			activeEncryptionKeysTableID,
 		);
 
-		const createdDwallet = await createDWallet(
+		// let activeEncryptionKeysTableID2 = encryptionKeysHolder2.objectId;
+		// let senderEncryptionKeyObj2 = await getOrCreateEncryptionKey(
+		// 	keyPair2,
+		// 	dwallet_client,
+		// 	activeEncryptionKeysTableID2,
+		// );
+
+		const createdDwallet1 = await createDWallet(
+			keyPair,
+			dwallet_client,
+			senderEncryptionKeyObj.encryptionKey,
+			senderEncryptionKeyObj.objectID,
+		);
+		const createdDwallet2 = await createDWallet(
 			keyPair,
 			dwallet_client,
 			senderEncryptionKeyObj.encryptionKey,
 			senderEncryptionKeyObj.objectID,
 		);
 
-		if (createdDwallet == null) {
+		const createdDwallet3 = await createDWallet(
+			keyPair,
+			dwallet_client,
+			senderEncryptionKeyObj.encryptionKey,
+			senderEncryptionKeyObj.objectID,
+		);
+
+		if (createdDwallet1 == null || createdDwallet2 == null) {
 			throw new Error('createDWallet returned null');
 		}
-		let dwalletCapId = createdDwallet?.dwalletCapID;
-		let dWalletId = createdDwallet?.dwalletID;
+		let dwalletCapId1 = createdDwallet1?.dwalletCapID;
+		let dWalletId1 = createdDwallet1?.dwalletID;
+		// @ts-ignore
+		let dwalletCapId2 = createdDwallet2?.dwalletCapID;
+		// let dWalletId2 = createdDwallet2?.dwalletID;
 
-		console.log('initialising dwallet cap with id: ', dwalletCapId);
+		let dwalletCapId3 = createdDwallet3?.dwalletCapID;
+
+		console.log('initialising dwallet cap with id: ', dwalletCapId1);
 		let txb = new TransactionBlockSUI();
 
-		let dWalletCapArg = txb.pure(dwalletCapId);
+		let dWalletCapArg1 = txb.pure(dwalletCapId1);
+		let dWalletCapArg2 = txb.pure(dwalletCapId2);
+		let dWalletCapArg3 = txb.pure(dwalletCapId3);
 
-		let [cap] = txb.moveCall({
+		let [cap1] = txb.moveCall({
 			target: `${dWalletCapPackageSUI}::dwallet_cap::create_cap`,
-			arguments: [dWalletCapArg],
+			arguments: [dWalletCapArg1],
+		});
+
+		let [cap2] = txb.moveCall({
+			target: `${dWalletCapPackageSUI}::dwallet_cap::create_cap`,
+			arguments: [dWalletCapArg2],
+		});
+		let [cap3] = txb.moveCall({
+			target: `${dWalletCapPackageSUI}::dwallet_cap::create_cap`,
+			arguments: [dWalletCapArg3],
 		});
 
 		let signMsgArg = txb.pure(bcs.vector(bcs.vector(bcs.u8())).serialize([messageSign]));
 
 		txb.moveCall({
 			target: `${dWalletCapPackageSUI}::dwallet_cap::approve_message`,
-			arguments: [cap, signMsgArg],
+			arguments: [cap1, signMsgArg],
 		});
 
-		txb.transferObjects([cap], keyPair.toSuiAddress());
+		txb.transferObjects([cap1], keyPair.toSuiAddress());
+		txb.transferObjects([cap2], keyPair.toSuiAddress());
+		txb.transferObjects([cap3], keyPair.toSuiAddress());
 
 		txb.setGasBudget(10000000);
 
@@ -141,13 +182,16 @@ async function main() {
 		await new Promise((resolve) => setTimeout(resolve, 10000));
 
 		console.log('address', keyPair.getPublicKey().toSuiAddress());
-
+		console.log('dWalletId1', dwalletCapId1);
+		console.log('dWalletId2', dwalletCapId2);
+		console.log('dWalletId3', dwalletCapId3);
 		let resultFinal = await submitDWalletCreationProof(
 			dwallet_client,
 			sui_client,
 			configObjectId,
 			registryObjectId,
-			dwalletCapId,
+			// @ts-ignore
+			[dwalletCapId1, dwalletCapId2, dwalletCapId3],
 			createCapTxId,
 			serviceUrl,
 			keyPair,
@@ -158,9 +202,9 @@ async function main() {
 		const bytes: Uint8Array = new TextEncoder().encode('dWallets are coming... to Sui');
 
 		const signMessagesIdSHA256 = await createPartialUserSignedMessages(
-			createdDwallet?.dwalletID!,
-			createdDwallet?.decentralizedDKGOutput!,
-			new Uint8Array(createdDwallet?.secretKeyShare!),
+			createdDwallet1?.dwalletID!,
+			createdDwallet1?.decentralizedDKGOutput!,
+			new Uint8Array(createdDwallet1?.secretKeyShare!),
 			[bytes],
 			'SHA256',
 			keyPair,
@@ -184,7 +228,7 @@ async function main() {
 			let res = await submitTxStateProof(
 				dwallet_client,
 				sui_client,
-				dWalletId,
+				dWalletId1,
 				configObjectId,
 				registryObjectId,
 				capWrapperRef,

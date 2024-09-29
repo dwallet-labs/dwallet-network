@@ -8,16 +8,17 @@ use move_vm_types::{
     loaded_data::runtime_types::Type, natives::function::NativeResult, pop_arg, values::Value,
 };
 use smallvec::smallvec;
-use std::{collections::VecDeque, ops::Add, str::FromStr};
+use std::{collections::VecDeque, str::FromStr};
 use sui_types::{
     base_types::{ObjectID, SuiAddress},
-    committee::{self, Committee},
-    full_checkpoint_content::{CheckpointData, CheckpointTransaction},
+    committee::Committee,
+    full_checkpoint_content::CheckpointTransaction,
     messages_checkpoint::{
-        CertifiedCheckpointSummary, CheckpointContents, CheckpointSummary, EndOfEpochData,
+        CertifiedCheckpointSummary, CheckpointContents, EndOfEpochData,
     },
-    transaction,
+    effects::TransactionEffectsAPI
 };
+
 
 use serde_json::Value as JsonValue;
 use sui_json::SuiJsonValue;
@@ -81,8 +82,8 @@ pub fn sui_state_proof_verify_committee(
     };
 
     match checkpoint_summary.clone().verify(&prev_committee) {
-        Ok((_)) => (),
-        Err(e) => return Ok(NativeResult::err(cost, INVALID_TX)),
+        Ok(_) => (),
+        Err(_) => return Ok(NativeResult::err(cost, INVALID_TX)),
     }
 
     let next_committee_epoch;
@@ -185,55 +186,74 @@ pub fn sui_state_proof_verify_link_cap(
         return Ok(NativeResult::err(cost, INVALID_TX));
     };
 
-    let tx_events = &transaction.events.as_ref().unwrap().data;
+    let events_digest = transaction.events.as_ref().map(|events| events.digest());
+    // Ensure that the execution digest matches the events digest of the passed transaction
+    if !(events_digest.as_ref() == transaction.effects.events_digest()) {
+        return Ok(NativeResult::err(cost, INVALID_TX));
+    };
 
-    let (sui_cap_ids, dwallet_cap_ids): (Vec<SuiAddress>, Vec<SuiAddress>) = tx_events
-        .into_iter()
-        .filter_map(|event| {
-            if event.type_.address.to_hex() == package_id_target.to_hex()
-                && event.type_.module.clone().into_string() == "dwallet_cap"
-                && event.type_.name.clone().into_string() == "DWalletNetworkInitCapRequest"
-            {
-                let json_val = SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents)
-                    .unwrap()
-                    .to_json_value();
+    let tx_events = match transaction.events.as_ref() {
+        Some(events) => &events.data,
+        None => {
+            return Ok(NativeResult::err(cost, INVALID_TX));
+        }
+    };
 
-                let sui_cap_id_str = match json_val.clone() {
-                    JsonValue::Object(map) => map
-                        .get("cap_id")
-                        .and_then(|s| s.as_str())
-                        .map(|s| s.to_owned()),
-                    _ => None,
-                };
-    
-                let sui_cap_id = sui_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
-                let dwallet_cap_id_str = match json_val.clone() {
-                    JsonValue::Object(map) => map.get("dwallet_network_cap_id").and_then(|s| s.as_str()).map(|s| s.to_owned()),
-                    _ => None,
-            };    
-            let dwallet_cap_id = dwallet_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()).unwrap();
-                    Some((sui_cap_id, dwallet_cap_id))
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>()  // First collect into a vector of tuples
-        .into_iter()
-        .unzip();  // Then unzip into two vectors
-    
+    let mut sui_cap_ids: Vec<SuiAddress> = Vec::new();
+    let mut dwallet_cap_ids: Vec<SuiAddress> = Vec::new();
 
-    // match result {
-    //     Some((sui_cap_ids, dwallet_cap_ids)) => {
-            return Ok(NativeResult::ok(
-                cost,
-                smallvec![
-                    Value::vector_u8(bcs::to_bytes(&sui_cap_ids).unwrap()),
-                    Value::vector_u8(bcs::to_bytes(&dwallet_cap_ids).unwrap())
-                ],
-            ));
-    //     }
-    //     _ => return Ok(NativeResult::err(cost, INVALID_TX)),
-    // }
+    // Iterate over each event to process
+    for event in tx_events {
+        // Check if the event matches the desired type
+        if event.type_.address.to_hex() == package_id_target.to_hex()
+            && event.type_.module.clone().into_string() == "dwallet_cap"
+            && event.type_.name.clone().into_string() == "DWalletNetworkInitCapRequest"
+        {
+            let json_val = match SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents) {
+                Ok(val) => val.to_json_value(),
+                Err(_) => {
+                    return Ok(NativeResult::err(cost, INVALID_TX));
+                }
+            };
+            let sui_cap_id_str: Option<String> = match json_val.clone() {
+                JsonValue::Object(map) => map
+                    .get("cap_id")
+                    .and_then(|s| s.as_str())
+                    .map(|s| s.to_owned()),
+                _ => None,
+            };
+            let sui_cap_id = match sui_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()) {
+                Some(id) => id,
+                None => {
+                    return Ok(NativeResult::err(cost, INVALID_TX)); 
+                }
+            };
+            let dwallet_cap_id_str = match json_val.clone() {
+                JsonValue::Object(map) => map.get("dwallet_network_cap_id").and_then(|s| s.as_str()).map(|s| s.to_owned()),
+                _ => None,
+            };
+            let dwallet_cap_id = match dwallet_cap_id_str.and_then(|s| SuiAddress::from_str(&s).ok()) {
+                Some(id) => id,
+                None => {
+                    return Ok(NativeResult::err(cost, INVALID_TX));
+                }
+            };
+            sui_cap_ids.push(sui_cap_id);
+            dwallet_cap_ids.push(dwallet_cap_id);
+        }
+    }
+
+
+        // ensure that the execution digest matches the actual digest of the passed transaction
+
+        
+        return Ok(NativeResult::ok(
+            cost,
+            smallvec![
+                Value::vector_u8(bcs::to_bytes(&sui_cap_ids).unwrap()),
+                Value::vector_u8(bcs::to_bytes(&dwallet_cap_ids).unwrap())
+            ],
+        ));
 }
 
 /***************************************************************************************************
@@ -242,7 +262,7 @@ pub fn sui_state_proof_verify_link_cap(
  *   gas cost: sui_state_proof_verify_transaction_base   | base cost for function call and fixed opers
  **************************************************************************************************/
 
-pub fn sui_state_proof_verify_transaction(
+ pub fn sui_state_proof_verify_transaction(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,
@@ -311,6 +331,13 @@ pub fn sui_state_proof_verify_transaction(
         return Ok(NativeResult::err(cost, INVALID_TX));
     };
 
+    let events_digest = transaction.events.as_ref().map(|events| events.digest());
+    // Ensure that the execution digest matches the events digest of the passed transaction
+    if !(events_digest.as_ref() == transaction.effects.events_digest()) {
+        return Ok(NativeResult::err(cost, INVALID_TX));
+    };
+
+
     let tx_events = &transaction.events.as_ref().unwrap().data;
 
     let results: Vec<(SuiAddress, Vec<Vec<u8>>)> = tx_events
@@ -334,8 +361,8 @@ pub fn sui_state_proof_verify_transaction(
                             inner.iter().filter_map(|byte| byte.as_u64().map(|b| b as u8)).collect()
                         })
                     }).collect()
-                });
-
+                }
+            );  
                 if let (Some(cap_id), Some(approve_msgs_vec)) = (cap_id, approve_msgs_vec) {
                     Some((cap_id, approve_msgs_vec))
                 } else {
@@ -347,7 +374,9 @@ pub fn sui_state_proof_verify_transaction(
         })
         .collect();
 
-    // let (cap_ids, messages): (Vec<_>, Vec<_>) = results.into_iter().unzip();
+    if results.is_empty() {
+        return Ok(NativeResult::err(cost, INVALID_TX));
+    }
 
     let (cap_ids_nested, messages_nested): (Vec<SuiAddress>, Vec<Vec<Vec<u8>>>) = results.into_iter().unzip();
 

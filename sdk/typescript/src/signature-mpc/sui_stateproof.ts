@@ -24,10 +24,9 @@ type TxDataResponse = {
 export async function submitDWalletCreationProof(
 	dwallet_client: DWalletClient,
 	sui_client: SuiClient,
-	// @ts-ignore
 	configObjectId: string,
 	registryObjectId: string,
-	dWalletCapId: string,
+	dWalletCapIds: string[],
 	txId: string,
 	serviceUrl: string,
 	keypair: Keypair,
@@ -42,21 +41,25 @@ export async function submitDWalletCreationProof(
 	if (!seq) {
 		throw new Error('Checkpoint is undefined or null');
 	}
-	// @ts-ignore
+
 	let { ckp_epoch_id, checkpoint_summary_bytes, checkpoint_contents_bytes, transaction_bytes } =
 		await queryTxData(txId, serviceUrl);
 	let txb = new TransactionBlock();
 
-	let dWalletCap = await getOwnedObject(dwallet_client, dWalletCapId);
-	// @ts-ignore
-	let dWalletCapArg = txb.object(dWalletCap);
+	let dWalletCaps = await Promise.all(
+		dWalletCapIds.map(async (dWalletCapId) => {
+			return await getOwnedObject(dwallet_client, dWalletCapId);
+		}),
+	);
+
+	let dWalletCapArgs = dWalletCaps.map((dWalletCap) => txb.object(dWalletCap));
 
 	let epoch_committee_id = await retrieveEpochCommitteeIdByEpoch(
 		dwallet_client,
 		ckp_epoch_id - 1,
 		registryObjectId,
 	);
-	// @ts-ignore
+
 	let epochCommitteeObject = await getOwnedObject(dwallet_client, epoch_committee_id);
 	let committeArg = txb.object(epochCommitteeObject);
 
@@ -70,7 +73,7 @@ export async function submitDWalletCreationProof(
 	// pass here a vector  a vector of dwallet caps
 	let dWalletCapArgVec = txb.makeMoveVec({
 		type: '0x3::dwallet::DWalletCap',
-		objects: [dWalletCapArg],
+		objects: dWalletCapArgs,
 	});
 
 	txb.moveCall({

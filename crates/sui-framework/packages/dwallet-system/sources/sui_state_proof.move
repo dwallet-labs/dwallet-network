@@ -144,12 +144,12 @@ module dwallet_system::sui_state_proof {
 
         assert!(vector::length(&sui_cap_id_address_vec) == vector::length(&dwallet_caps), EWrongAmountOfDWalletCaps);
 
-        let i = 0;
-        while (i < vector::length(&sui_cap_id_address_vec)) {
-            let sui_cap_id_address = *vector::borrow(&sui_cap_id_address_vec, i);
-            let dwallet_cap = vector::remove(&mut dwallet_caps, i);
-            let dwallet_cap_id_address = *vector::borrow(&dwallet_cap_id_address_vec, i);
-
+        let i = vector::length(&sui_cap_id_address_vec);
+        while (i > 0) {
+            i = i - 1; 
+            let sui_cap_id_address = vector::pop_back(&mut sui_cap_id_address_vec);
+            let dwallet_cap = vector::pop_back(&mut dwallet_caps);
+            let dwallet_cap_id_address = vector::pop_back(&mut dwallet_cap_id_address_vec);
             assert!(object::id_from_address(dwallet_cap_id_address) == object::id(&dwallet_cap), EWrongDWalletCapId);
             
             let wrapper = CapWrapper {
@@ -159,7 +159,6 @@ module dwallet_system::sui_state_proof {
             };
 
             transfer::share_object(wrapper);
-            i = i + 1;
         };
         vector::destroy_empty(dwallet_caps);
     }
