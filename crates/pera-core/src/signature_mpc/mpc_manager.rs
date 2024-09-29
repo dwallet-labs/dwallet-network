@@ -24,6 +24,7 @@ use std::time::Duration;
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
+use pera_types::error::PeraResult;
 
 struct ProofMPCMessage {
     message: Vec<u8>,
@@ -347,12 +348,13 @@ impl SignatureMPCManager {
         message: &[u8],
         authority_name: AuthorityName,
         session_id: ObjectID,
-    ) -> anyhow::Result<()> {
-        let mut instance = self
+    ) -> PeraResult<()> {
+        let Some(mut instance) = self
             .mpc_instances
-            .get_mut(&session_id)
+            .get_mut(&session_id) else {
             // TODO (#261): Punish a validator that sends a message related to a non-existing mpc instance
-            .ok_or_else(|| anyhow!("MPC instance not found"))?;
+            return Ok(());
+        };
         instance
             .handle_message(ProofMPCMessage {
                 message: message.to_vec(),
