@@ -15,6 +15,7 @@ use proof::mpc::{AdvanceResult, Party};
 use rand_core::OsRng;
 use schemars::_private::NoSerialize;
 use std::collections::{HashMap, VecDeque};
+use std::future::Future;
 use std::io;
 use std::io::Write;
 use std::marker::PhantomData;
@@ -101,36 +102,63 @@ impl MPCInstance {
                 return;
             };
             while let Some(message) = receiver.recv().await {
-                let _ = Self::insert_mpc_message(&message, &mut messages, Arc::clone(&epoch_store));
-                if messages.len() == threshold {
-                    party = match party.advance(messages.clone(), &(), &mut OsRng) {
-                        Ok(advance_result) => match advance_result {
-                            AdvanceResult::Advance((message, new_party)) => {
-                                let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                                    epoch_store.name,
-                                    bcs::to_bytes(&message).unwrap(),
-                                    session_id,
-                                );
-                                let _ = consensus_adapter
-                                    .submit_to_consensus(&[message_tx], &epoch_store)
-                                    .await;
-                                new_party
-                            }
-                            AdvanceResult::Finalize(output) => {
-                                // TODO (#238): Verify the output and write it to the chain
-                                return;
-                            }
-                        },
-                        _ => {
-                            return;
-                        }
+                match Self::advance_message(
+                    party,
+                    consensus_adapter.clone(),
+                    threshold,
+                    &session_id,
+                    &mut messages,
+                    &epoch_store,
+                    &message,
+                ) {
+                    Some(new_party) => party = new_party,
+                    None => {
+                        return;
                     }
                 }
             }
         });
     }
 
-    fn insert_mpc_message(
+    async fn advance_message(
+        mut party: ProofParty,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        threshold: usize,
+        session_id: &ObjectID,
+        mut messages: &mut HashMap<PartyID, (Proof<1, Lang, PhantomData<()>>, Vec<Value>)>,
+        epoch_store: &Arc<AuthorityPerEpochStore>,
+        message: &ProofMPCMessage,
+    ) -> Option<ProofParty> {
+        let _ = Self::store_message(&message, &mut messages, Arc::clone(&epoch_store));
+        if messages.len() == threshold {
+            return match party.advance(messages.clone(), &(), &mut OsRng) {
+                Ok(advance_result) => match advance_result {
+                    AdvanceResult::Advance((message, new_party)) => {
+                        let message_tx = ConsensusTransaction::new_signature_mpc_message(
+                            epoch_store.name,
+                            bcs::to_bytes(&message).unwrap(),
+                            session_id.clone(),
+                        );
+                        consensus_adapter
+                            .submit_to_consensus(&[message_tx], &epoch_store)
+                            .await;
+                        Some(new_party)
+                    }
+                    AdvanceResult::Finalize(output) => {
+                        // TODO (#238): Verify the output and write it to the chain
+                        None
+                    }
+                },
+                Err(_) => {
+                    // TODO (#263): Mark the sender as malicious
+                    None
+                }
+            };
+        }
+        Some(party)
+    }
+
+    fn store_message(
         message: &ProofMPCMessage,
         mut messages: &mut HashMap<PartyID, (Proof<1, Lang, PhantomData<()>>, Vec<Value>)>,
         epoch_store: Arc<AuthorityPerEpochStore>,
