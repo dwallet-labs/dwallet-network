@@ -94,7 +94,7 @@ impl MPCInstance {
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = self.epoch_store.clone();
         let threshold = self.mpc_threshold_number_of_parties;
-        let session_id = self.session_id.clone();
+        let session_id = self.session_id;
         tokio::spawn(async move {
             let mut messages = HashMap::new();
 
