@@ -57,7 +57,7 @@ type ProofPublicParameters =
     maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
 
 impl MPCInstance {
-    async fn set_active(&mut self, public_parameters: ProofPublicParameters) {
+    async fn activate(&mut self, public_parameters: ProofPublicParameters) {
         self.status = MPCSessionStatus::Active;
         // TODO (#256): Replace hard coded 100 with the number of validators times 10
         let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
@@ -377,7 +377,7 @@ impl SignatureMPCManager {
         // Activate the instance if possible
         if self.active_instances_counter < self.max_active_mpc_instances {
             new_instance
-                .set_active(self.language_public_parameters.clone())
+                .activate(self.language_public_parameters.clone())
                 .await;
             self.active_instances_counter += 1;
         } else {
