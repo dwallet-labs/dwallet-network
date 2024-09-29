@@ -102,7 +102,7 @@ impl MPCInstance {
                 return;
             };
             while let Some(message) = receiver.recv().await {
-                match Self::advance_message(
+                match Self::store_message_and_advance(
                     party,
                     consensus_adapter.clone(),
                     threshold,
@@ -120,7 +120,7 @@ impl MPCInstance {
         });
     }
 
-    async fn advance_message(
+    async fn store_message_and_advance(
         mut party: ProofParty,
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         threshold: usize,
@@ -131,32 +131,50 @@ impl MPCInstance {
     ) -> Option<ProofParty> {
         let _ = Self::store_message(&message, &mut messages, Arc::clone(&epoch_store));
         if messages.len() == threshold {
-            return match party.advance(messages.clone(), &(), &mut OsRng) {
-                Ok(advance_result) => match advance_result {
-                    AdvanceResult::Advance((message, new_party)) => {
-                        let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                            epoch_store.name,
-                            bcs::to_bytes(&message).unwrap(),
-                            session_id.clone(),
-                        );
-                        // TODO (#270): Handle Proof flow in a synchronous way & propagate this result
-                        consensus_adapter
-                            .submit_to_consensus(&[message_tx], &epoch_store)
-                            .await;
-                        Some(new_party)
-                    }
-                    AdvanceResult::Finalize(output) => {
-                        // TODO (#238): Verify the output and write it to the chain
-                        None
-                    }
-                },
-                Err(_) => {
-                    // TODO (#263): Mark the sender as malicious
-                    None
-                }
-            };
+            return Self::advance_party(
+                party,
+                consensus_adapter,
+                session_id,
+                &mut messages,
+                epoch_store,
+            )
+            .await;
         }
         Some(party)
+    }
+
+    async fn advance_party(
+        mut party: ProofParty,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        session_id: &ObjectID,
+        mut messages: &mut HashMap<PartyID, (Proof<1, Lang, PhantomData<()>>, Vec<Value>)>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+    ) -> Option<ProofParty> {
+        match party.advance(messages.clone(), &(), &mut OsRng) {
+            Ok(advance_result) => match advance_result {
+                AdvanceResult::Advance((message, new_party)) => {
+                    let message_tx = ConsensusTransaction::new_signature_mpc_message(
+                        epoch_store.name,
+                        bcs::to_bytes(&message).unwrap(),
+                        session_id.clone(),
+                    );
+                    // TODO (#270): Handle Proof flow in a synchronous way & propagate this result
+                    consensus_adapter
+                        .submit_to_consensus(&[message_tx], &epoch_store)
+                        .await.expect("failed to submit to consensus");
+                    Some(new_party)
+                }
+                AdvanceResult::Finalize(output) => {
+                    // TODO (#238): Verify the output and write it to the chain
+                    println!("Finalized output: {:?}", output);
+                    None
+                }
+            },
+            Err(_) => {
+                // TODO (#263): Mark the sender as malicious
+                None
+            }
+        }
     }
 
     fn store_message(
@@ -206,17 +224,12 @@ impl MPCInstance {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
             return Err(anyhow!("Epoch store not found"));
         };
-        match Self::advance_message(
+        match Self::advance_party(
             party_state,
             consensus_adapter,
-            threshold,
             &session_id,
             &mut HashMap::new(),
-            epoch_store.clone(),
-            &ProofMPCMessage {
-                message: vec![],
-                authority: AuthorityName::default(),
-            },
+            epoch_store.clone()
         ).await {
             None => {
                 Err(anyhow!("Finalization reached unexpectedly"))
