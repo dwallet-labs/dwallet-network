@@ -4,6 +4,7 @@ use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
 use anyhow::anyhow;
 use group::{secp256k1, GroupElement};
 use maurer::knowledge_of_discrete_log::PublicParameters;
+use maurer::Proof;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
@@ -106,31 +107,28 @@ impl MPCInstance {
             &mut OsRng,
         )?;
 
-        let party: ProofParty = match party.advance(HashMap::new(), &(), &mut OsRng) {
-            Ok(advance_result) => match advance_result {
-                AdvanceResult::Advance((message, new_party)) => {
-                    let Some(epoch_store) = epoch_store.upgrade() else {
-                        // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-                        return Err(anyhow!("Epoch store not found"));
-                    };
-                    let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                        epoch_store.name,
-                        bcs::to_bytes(&message)?,
-                    );
-                    consensus_adapter
-                        .submit_to_consensus(&vec![message_tx], &epoch_store)
-                        .await?;
-                    new_party
-                }
-                AdvanceResult::Finalize(output) => {
+        match party.advance(HashMap::new(), &(), &mut OsRng) {
+            Ok(advance_result) => {
+                let AdvanceResult::Advance((message, new_party)) = advance_result else {
                     return Err(anyhow!("Finalization reached unexpectedly"));
-                }
-            },
-            Err(err) => {
-                return Err(anyhow!("Error advancing the party: {:?}", err));
+                };
+                let Some(epoch_store) = epoch_store.upgrade() else {
+                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+                    return Err(anyhow!("Epoch store not found"));
+                };
+                let message_tx = ConsensusTransaction::new_signature_mpc_message(
+                    epoch_store.name,
+                    bcs::to_bytes(&message)?,
+                );
+                consensus_adapter
+                    .submit_to_consensus(&vec![message_tx], &epoch_store)
+                    .await?;
+                Ok(new_party)
             }
-        };
-        Ok(party)
+            Err(err) => {
+                Err(anyhow!("Error while advancing the MPC instance: {:?}", err))
+            }
+        }
     }
 
     async fn handle_message(&mut self, message: MPCInput) {
