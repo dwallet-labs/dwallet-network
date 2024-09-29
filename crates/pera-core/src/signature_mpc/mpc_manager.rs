@@ -18,7 +18,7 @@ use std::sync::{Arc, Weak};
 use std::time::Duration;
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 #[derive(Debug)]
 pub enum MPCInput {
@@ -136,6 +136,7 @@ impl MPCInstance {
             MPCSessionStatus::Active => {
                 let Some(input_receiver) = &self.input_receiver else {
                     // This should never happen, as the input_receiver is set when the session is activated
+                    error!("No input receiver found for active session");
                     return;
                 };
                 let _ = input_receiver.send(message).await;
