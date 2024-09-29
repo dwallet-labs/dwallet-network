@@ -67,7 +67,7 @@ impl MPCInstance {
             public_parameters,
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
-            self.mpc_threshold_number_of_parties.clone(),
+            self.mpc_threshold_number_of_parties,
             self.session_id,
         )
         .await
