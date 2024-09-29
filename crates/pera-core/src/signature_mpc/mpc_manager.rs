@@ -61,15 +61,33 @@ impl MPCInstance {
         // TODO (#256): Replace hard coded 100 with the number of validators times 10
         let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
         self.input_receiver = Some(messages_handler_sender);
-        self.spawn_mpc_messages_handler(public_parameters, messages_handler_receiver);
+        match Self::start_proof_mpc_flow(
+            public_parameters,
+            Arc::clone(&self.consensus_adapter),
+            self.epoch_store.clone(),
+            self.mpc_threshold_number_of_parties.clone(),
+            self.session_id,
+        )
+            .await
+        {
+            Ok((party, message)) => {
+                self.status = MPCSessionStatus::Active;
+                self.spawn_mpc_messages_handler(messages_handler_receiver, party);
+            }
+            Err(err) => {
+                // This should never happen, as there should be on-chain verification on the init transaction, and
+                // we are ignoring failed transactions.
+                error!("Error initializing the MPC proof flow: {:?}", err);
+            }
+        }
     }
 
     /// Spawns an asynchronous task to handle incoming messages.
     /// The [`MPCService`] will forward any message related to that instance to this channel.
     fn spawn_mpc_messages_handler(
         &self,
-        public_parameters: ProofPublicParameters,
-        mut receiver: mpsc::Receiver<MPCInput>,
+        mut receiver: mpsc::Receiver<ProofMPCMessage>,
+        mut party: ProofParty,
     ) {
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = self.epoch_store.clone();
@@ -82,7 +100,6 @@ impl MPCInstance {
                 // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
                 return;
             };
-
             while let Some(message) = receiver.recv().await {
                 let _ = Self::insert_mpc_message(&message, &mut messages, Arc::clone(&epoch_store));
                 if messages.len() == threshold {
