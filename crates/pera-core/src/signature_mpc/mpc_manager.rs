@@ -99,13 +99,14 @@ impl MPCInstance {
         threshold: usize,
     ) -> anyhow::Result<ProofParty> {
         let batch_size = 1;
-        let party_state: ProofParty = proof::aggregation::asynchronous::Party::new_proof_round_party(
-            public_parameters,
-            PhantomData,
-            threshold as group::PartyID,
-            batch_size,
-            &mut OsRng,
-        )?;
+        let party_state: ProofParty =
+            proof::aggregation::asynchronous::Party::new_proof_round_party(
+                public_parameters,
+                PhantomData,
+                threshold as group::PartyID,
+                batch_size,
+                &mut OsRng,
+            )?;
 
         match party_state.advance(HashMap::new(), &(), &mut OsRng) {
             Ok(advance_result) => {
@@ -125,9 +126,7 @@ impl MPCInstance {
                     .await?;
                 Ok(new_party)
             }
-            Err(err) => {
-                Err(anyhow!("Error while advancing the MPC instance: {:?}", err))
-            }
+            Err(err) => Err(anyhow!("Error while advancing the MPC instance: {:?}", err)),
         }
     }
 
