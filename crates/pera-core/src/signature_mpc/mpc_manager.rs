@@ -139,6 +139,7 @@ impl MPCInstance {
                             bcs::to_bytes(&message).unwrap(),
                             session_id.clone(),
                         );
+                        // TODO (#270): Handle Proof flow in a synchronous way & propagate this result
                         consensus_adapter
                             .submit_to_consensus(&[message_tx], &epoch_store)
                             .await;
