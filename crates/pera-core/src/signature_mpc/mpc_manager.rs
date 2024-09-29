@@ -99,7 +99,7 @@ impl MPCInstance {
         threshold: usize,
     ) -> anyhow::Result<ProofParty> {
         let batch_size = 1;
-        let party: ProofParty = proof::aggregation::asynchronous::Party::new_proof_round_party(
+        let party_state: ProofParty = proof::aggregation::asynchronous::Party::new_proof_round_party(
             public_parameters,
             PhantomData,
             threshold as group::PartyID,
@@ -107,7 +107,7 @@ impl MPCInstance {
             &mut OsRng,
         )?;
 
-        match party.advance(HashMap::new(), &(), &mut OsRng) {
+        match party_state.advance(HashMap::new(), &(), &mut OsRng) {
             Ok(advance_result) => {
                 let AdvanceResult::Advance((message, new_party)) = advance_result else {
                     return Err(anyhow!("Finalization reached unexpectedly"));
