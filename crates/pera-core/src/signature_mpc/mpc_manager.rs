@@ -68,7 +68,7 @@ impl MPCInstance {
             self.mpc_threshold_number_of_parties.clone(),
             self.session_id,
         )
-            .await
+        .await
         {
             Ok((party, message)) => {
                 self.status = MPCSessionStatus::Active;
@@ -185,11 +185,12 @@ impl MPCInstance {
                 let message_tx = ConsensusTransaction::new_signature_mpc_message(
                     epoch_store.name,
                     bcs::to_bytes(&message)?,
+                    session_id,
                 );
                 consensus_adapter
                     .submit_to_consensus(&vec![message_tx], &epoch_store)
                     .await?;
-                Ok(new_party)
+                Ok((new_party, bcs::to_bytes(&message)?))
             }
             Err(err) => Err(anyhow!("Error while advancing the MPC instance: {:?}", err)),
         }
@@ -346,7 +347,9 @@ impl SignatureMPCManager {
 
         // Activate the instance if possible
         if self.active_instances_counter < self.max_active_mpc_instances {
-            new_instance.set_active(self.language_public_parameters.clone()).await;
+            new_instance
+                .set_active(self.language_public_parameters.clone())
+                .await;
             self.active_instances_counter += 1;
         } else {
             self.pending_instances_queue
