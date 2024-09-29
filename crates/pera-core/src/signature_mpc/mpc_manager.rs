@@ -134,9 +134,11 @@ impl MPCInstance {
     async fn handle_message(&mut self, message: MPCInput) {
         match self.status {
             MPCSessionStatus::Active => {
-                if let Some(input_receiver) = &self.input_receiver {
-                    let _ = input_receiver.send(message).await;
-                }
+                let Some(input_receiver) = &self.input_receiver else {
+                    // This should never happen, as the input_receiver is set when the session is activated
+                    return;
+                };
+                let _ = input_receiver.send(message).await;
             }
             MPCSessionStatus::Pending => {
                 self.pending_messages.push(message);
