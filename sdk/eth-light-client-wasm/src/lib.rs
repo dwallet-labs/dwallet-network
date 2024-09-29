@@ -46,6 +46,22 @@ pub struct EthereumStateValue {
     pub hash: String,
 }
 
+/// Retrieves the initial state of the Ethereum light client using BCS serialization.
+///
+/// This function takes in several JavaScript values, deserializes them into Rust types,
+/// and initializes the Ethereum light client state. It then serializes the state back
+/// into a JavaScript value for further use.
+///
+/// # Arguments
+///
+/// * `checkpoint` - A `JsValue` representing the checkpoint in hexadecimal format.
+/// * `rpc` - A `JsValue` representing the RPC endpoint as a string.
+/// * `network` - A `JsValue` representing the network as a string.
+/// * `bootstrap` - A `JsValue` representing the bootstrap configuration.
+///
+/// # Returns
+///
+/// A `Result` containing a `JsValue` with the serialized Ethereum state value or a `JsErr` on failure.
 #[wasm_bindgen]
 pub fn get_initial_state_bcs(
     checkpoint: JsValue,
@@ -78,6 +94,7 @@ pub fn get_initial_state_bcs(
     Ok(serde_wasm_bindgen::to_value(&ethereum_state_value)?)
 }
 
+/// Calculates the current finalized period of the Ethereum light client state.
 #[wasm_bindgen]
 pub fn get_current_period(state_bytes: JsValue) -> Result<JsValue, JsErr> {
     let state_bytes: Vec<u8> = serde_wasm_bindgen::from_value(state_bytes)?;
