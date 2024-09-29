@@ -30,27 +30,31 @@ struct MPCInstance {
     /// The channel to send message to this instance
     input_receiver: Option<mpsc::Sender<MPCInput>>,
     pending_messages: Vec<MPCInput>,
-    language_public_parameters:
-        maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
     mpc_threshold_number_of_parties: usize,
 }
 
+type ProofPublicParameters =
+    maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
+
 impl MPCInstance {
-    fn set_active(&mut self) {
+    fn set_active(&mut self, public_parameters: ProofPublicParameters) {
         self.status = MPCSessionStatus::Active;
         // TODO (#256): Replace hard coded 100 with the number of validators times 10
         let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
         self.input_receiver = Some(messages_handler_sender);
-        self.spawn_mpc_messages_handler(messages_handler_receiver);
+        self.spawn_mpc_messages_handler(public_parameters, messages_handler_receiver);
     }
 
     /// Spawns an asynchronous task to handle incoming messages.
     /// The [`MPCService`] will forward any message related to that instance to this channel.
-    fn spawn_mpc_messages_handler(&self, mut receiver: mpsc::Receiver<MPCInput>) {
-        let public_parameters = self.language_public_parameters.clone();
+    fn spawn_mpc_messages_handler(
+        &self,
+        public_parameters: ProofPublicParameters,
+        mut receiver: mpsc::Receiver<MPCInput>,
+    ) {
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = self.epoch_store.clone();
         let threshold = self.mpc_threshold_number_of_parties;
@@ -248,7 +252,6 @@ impl SignatureMPCManager {
             status: MPCSessionStatus::Pending,
             input_receiver: None,
             pending_messages: vec![],
-            language_public_parameters: self.language_public_parameters.clone(),
             consensus_adapter: Arc::clone(&self.consensus_adapter),
             epoch_store: self.epoch_store.clone(),
             mpc_threshold_number_of_parties: self.threshold,
@@ -256,7 +259,7 @@ impl SignatureMPCManager {
 
         // Activate the instance if possible
         if self.active_instances_counter < self.max_active_mpc_instances {
-            new_instance.set_active();
+            new_instance.set_active(self.language_public_parameters.clone());
             self.active_instances_counter += 1;
         } else {
             self.pending_instances_queue
