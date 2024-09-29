@@ -6,12 +6,21 @@ import { ethers } from 'ethers';
 
 import { calculateMessageStorageSlot, compareUint8Arrays, keysToSnakeCase } from './utils.js';
 
+// Maximum number of light client updates per request
 const MAX_REQUEST_LIGHT_CLIENT_UPDATES = 128;
 
 interface VerifiedFinalityHeader {
 	version: 'phase0' | 'altair' | 'bellatrix' | 'capella' | 'deneb';
 	data: any;
 }
+
+type BeaconBlockData = {
+	blockJsonString: string;
+	blockBodyJsonString: string;
+	blockExecutionPayloadJsonString: string;
+	blockType: string;
+	latestFinalizedBlockNumber: number;
+};
 
 /**
  * Retrieves a Merkle proof for a specific storage slot in an Ethereum smart contract.
@@ -64,6 +73,7 @@ export async function getProof(
  *
  * **Returns**
  * An object containing serialized block data strings, block type, and the latest finalized block number.
+ * Note that the block data strings are serialized JSON objects, excluding certain fields for proper deserialization.
  *
  * **Errors**
  * Throws an error if the beacon block cannot be retrieved or verified.
@@ -73,7 +83,6 @@ export async function getBeaconBlockData(
 	finalityUpdateJson: VerifiedFinalityHeader,
 ) {
 	let block = await getVerifiedBeaconBlock(consensusRpc, finalityUpdateJson);
-	// Convert keys to snake case
 	block = keysToSnakeCase(block);
 
 	let blockJsonString = JSON.stringify(block, (key, value) => {
@@ -94,15 +103,15 @@ export async function getBeaconBlockData(
 	let blockExecutionPayload = blockBody.execution_payload;
 	let blockExecutionPayloadJsonString = JSON.stringify(blockExecutionPayload);
 
-	let latestFinalizedBlockNumber = blockExecutionPayload.block_number;
-
-	return {
+	let result: BeaconBlockData = {
 		blockJsonString: blockJsonString,
 		blockBodyJsonString: blockBodyJsonString,
 		blockExecutionPayloadJsonString: blockExecutionPayloadJsonString,
 		blockType: finalityUpdateJson['version'],
-		latestFinalizedBlockNumber: latestFinalizedBlockNumber,
+		latestFinalizedBlockNumber: blockExecutionPayload.block_number,
 	};
+
+	return result;
 }
 
 /**

@@ -46,7 +46,6 @@ export const createEthereumDWallet = async (
 		target: `${packageId}::${ethDWalletModuleName}::create_eth_dwallet_cap`,
 		arguments: [tx.object(dwalletCapId), tx.object(latestEthereumStateId)],
 	});
-	tx.setGasBudget(200000000);
 
 	let result = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
@@ -54,9 +53,10 @@ export const createEthereumDWallet = async (
 		options: { showEffects: true },
 	});
 
-	if (result.effects?.created?.at(0)?.reference.objectId === undefined) {
-		console.log(result.effects);
+	if (result.effects?.status.status !== 'success') {
+		throw new Error('Failed to verify Ethereum state. txResult: ' + JSON.stringify(result.effects));
 	}
+
 	return result.effects?.created?.at(0)?.reference.objectId;
 };
 
@@ -147,7 +147,6 @@ export const initEthereumState = async (
 		],
 		typeArguments: [],
 	});
-	tx.setGasBudget(20000000000);
 
 	let result = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
@@ -220,7 +219,6 @@ export const approveEthereumMessage = async (
 	let optimisticUpdateBcs = stringToArrayU8Bcs(optimisticUpdateJson);
 
 	const tx = new TransactionBlock();
-	tx.setGasBudget(2000000000);
 	tx.moveCall({
 		target: `${packageId}::${ethereumStateModuleName}::verify_new_state`,
 		arguments: [
@@ -244,7 +242,7 @@ export const approveEthereumMessage = async (
 		);
 	}
 
-	// Get the latest Ethereum state after verification.
+	// Get the latest Ethereum state again, to get the new state after it is verified.
 	latestEthereumStateObj = await getLatestEthereumStateById(client, latestStateObjectID);
 	let verifiedEthereumStateID = latestEthereumStateObj?.eth_state_id as string;
 	let contractAddress = latestEthereumStateObj?.eth_smart_contract_address as number[];
@@ -276,7 +274,6 @@ export const approveEthereumMessage = async (
 	);
 
 	const tx2 = new TransactionBlock();
-	tx2.setGasBudget(2000000000);
 	tx2.moveCall({
 		target: `${packageId}::${ethDWalletModuleName}::approve_message`,
 		arguments: [
