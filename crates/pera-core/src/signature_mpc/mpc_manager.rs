@@ -241,17 +241,9 @@ impl MPCInstance {
         }
     }
 
-    async fn handle_message(&mut self, message: ProofMPCMessage) {
+    fn save_message(&mut self, message: ProofMPCMessage) {
         match self.status {
-            MPCSessionStatus::Active => {
-                let Some(input_receiver) = &self.input_receiver else {
-                    // This should never happen, as the input_receiver is set when the session is activated
-                    error!("No input receiver found for active session");
-                    return;
-                };
-                let _ = input_receiver.send(message).await;
-            }
-            MPCSessionStatus::Pending => {
+            MPCSessionStatus::Active | MPCSessionStatus::Pending => {
                 self.pending_messages.push(message);
             }
             MPCSessionStatus::Finished => {
@@ -343,7 +335,7 @@ impl SignatureMPCManager {
         Ok(())
     }
 
-    pub async fn handle_mpc_message(
+    pub fn handle_mpc_message(
         &mut self,
         message: &[u8],
         authority_name: AuthorityName,
@@ -356,11 +348,10 @@ impl SignatureMPCManager {
             return Ok(());
         };
         instance
-            .handle_message(ProofMPCMessage {
+            .save_message(ProofMPCMessage {
                 message: message.to_vec(),
                 authority: authority_name,
-            })
-            .await;
+            });
         Ok(())
     }
 
