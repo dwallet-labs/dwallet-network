@@ -43,7 +43,7 @@ const SESSION_ID_LENGTH: usize = 32;
 pub type SignatureMPCRound = u64;
 pub type SignatureMPCMessageKind = u64;
 
-/// This is a message validators publish to consensus to sign checkpoint.
+/// The message validators sending to each other during the signature MPC flow.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SignatureMPCMessage {
     pub summary: SignedSignatureMPCMessageSummary,
