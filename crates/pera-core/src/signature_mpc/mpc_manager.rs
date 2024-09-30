@@ -125,6 +125,7 @@ impl MPCInstance {
             }
             AdvanceResult::Finalize(output) => {
                 println!("Finalized output: {:?}", output);
+                self.status = MPCSessionStatus::Finished;
             }
         }
         Ok(())
