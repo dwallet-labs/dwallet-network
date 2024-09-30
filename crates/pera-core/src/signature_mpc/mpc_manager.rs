@@ -99,20 +99,24 @@ impl MPCInstance {
         }
     }
 
-    async fn advance(&mut self) -> anyhow::Result<()> {
+    async fn advance(&mut self) -> PeraResult<()> {
         let party = mem::take(&mut self.party);
         let Some(party) = party else {
             // This should never happen, the party is initialized in the constructor
             // and advance should not be called simultaneously for the same instance
-            return Err(anyhow!("Party is not initialized"));
+            error!("Party is not initialized");
+            return Ok(());
         };
-        let advance_result = party.advance(self.pending_messages.clone(), &(), &mut OsRng)?;
+        let Ok(advance_result) = party.advance(self.pending_messages.clone(), &(), &mut OsRng) else {
+            // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
+            return Ok(());
+        };
         match advance_result {
             AdvanceResult::Advance((message, party)) => {
                 self.party = Some(party);
                 let message_tx = ConsensusTransaction::new_signature_mpc_message(
                     self.epoch_store.upgrade().unwrap().name,
-                    bcs::to_bytes(&message)?,
+                    bcs::to_bytes(&message).unwrap(),
                     self.session_id.clone(),
                 );
                 self.consensus_adapter
@@ -300,7 +304,7 @@ impl SignatureMPCManager {
             instance.status == MPCSessionStatus::Active
                 && instance.pending_messages.len() >= self.mpc_threshold_number_of_parties
         }) {
-            instance.advance()?;
+            instance.advance().await?;
         }
         Ok(())
     }

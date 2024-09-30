@@ -3191,7 +3191,7 @@ impl AuthorityPerEpochStore {
         // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
         if let Some(signature_mpc_manager) = self.signature_mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
-            signature_mpc_manager.handle_end_of_delivery()?;
+            signature_mpc_manager.handle_end_of_delivery().await?;
         };
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
