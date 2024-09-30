@@ -84,7 +84,7 @@ impl MPCInstance {
                 epoch_store,
                 mpc_threshold_number_of_parties,
                 session_id,
-                party,
+                party: Some(party),
             },
             Err(err) => {
                 // This should never happen, as there should be on-chain verification on the init transaction, and
@@ -192,19 +192,30 @@ impl MPCInstance {
                 batch_size,
                 &mut OsRng,
             )?;
-        let mut new_party = Self {
-            status: MPCSessionStatus::Active,
-            pending_messages: HashMap::new(),
-            consensus_adapter,
-            epoch_store,
-            mpc_threshold_number_of_parties: threshold,
-            session_id,
-            party: Some(party_state),
+        let Some(epoch_store) = epoch_store.upgrade() else {
+            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+            return Err(anyhow!("Epoch store not found"));
         };
-
-        match new_party.make_first_step().await {
-            None => Err(anyhow!("Finalization reached unexpectedly")),
-            Some(new_party) => Ok(new_party),
+        let Ok(advance_result) = party_state.advance(HashMap::new(), &(), &mut OsRng) else {
+            // This should never happen, as the party is just initialized & there should be
+            // on chain verification on the initial event input
+            return Err(anyhow!("Error performing first step for session id: {:?}", session_id));
+        };
+        match advance_result {
+            AdvanceResult::Advance((message, party)) => {
+                let message_tx = ConsensusTransaction::new_signature_mpc_message(
+                    epoch_store.name,
+                    bcs::to_bytes(&message)?,
+                    session_id.clone(),
+                );
+                consensus_adapter
+                    .submit_to_consensus(&[message_tx], &epoch_store)
+                    .await?;
+                Ok(party)
+            }
+            AdvanceResult::Finalize(_) => {
+                Err(anyhow!("Finalization reached unexpectedly: {:?}", session_id))
+            }
         }
     }
 
