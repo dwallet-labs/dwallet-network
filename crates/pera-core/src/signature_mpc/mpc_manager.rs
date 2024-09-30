@@ -123,7 +123,9 @@ impl MPCInstance {
                     .submit_to_consensus(&[message_tx], &self.epoch_store.upgrade().unwrap())
                     .await?;
             }
-            AdvanceResult::Finalize(_) => {}
+            AdvanceResult::Finalize(output) => {
+                println!("Finalized output: {:?}", output);
+            }
         }
         Ok(())
     }
@@ -342,7 +344,7 @@ impl SignatureMPCManager {
             event.session_id
         );
 
-        if self.active_instances_counter < self.max_active_mpc_instances {
+        if self.active_instances_counter > self.max_active_mpc_instances {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
             info!(
