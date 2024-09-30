@@ -226,8 +226,8 @@ impl MPCInstance {
                     // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
                     return Ok(());
                 };
-                self.store_message(&message, epoch_store)
-                    .map_err(|err| PeraError::from(err))
+                self.store_message(&message, epoch_store).unwrap();
+                Ok(())
             }
             MPCSessionStatus::Finished => {
                 // Do nothing
