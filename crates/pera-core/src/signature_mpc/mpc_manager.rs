@@ -133,6 +133,7 @@ impl MPCInstance {
                     .await?;
             }
             AdvanceResult::Finalize(output) => {
+                // TODO (#238): Verify the output and write it to the chain
                 println!("Finalized output: {:?}", output);
                 self.status = MPCSessionStatus::Finished;
             }
