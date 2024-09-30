@@ -72,23 +72,19 @@ impl MPCInstance {
         session_id: ObjectID,
         public_parameters: ProofPublicParameters,
     ) -> Self {
-        match Self::start_proof_mpc_flow(
-            public_parameters,
-            Arc::clone(&consensus_adapter),
-            epoch_store.clone(),
+        let mut new_instance = Self {
+            status: MPCSessionStatus::Active,
+            pending_messages: HashMap::new(),
+            consensus_adapter: consensus_adapter.clone(),
+            epoch_store: epoch_store.clone(),
             mpc_threshold_number_of_parties,
             session_id,
-        )
-        .await
-        {
-            Ok(party) => Self {
-                status: MPCSessionStatus::Active,
-                pending_messages: HashMap::new(),
-                consensus_adapter,
-                epoch_store,
-                mpc_threshold_number_of_parties,
-                session_id,
-                party: Some(party),
+            party: None,
+        };
+        match new_instance.start_proof_mpc_flow(public_parameters).await {
+            Ok(party) => {
+                new_instance.party = Some(party);
+                new_instance
             },
             Err(err) => {
                 // This should never happen, as there should be on-chain verification on the init transaction, and
@@ -164,34 +160,26 @@ impl MPCInstance {
     }
 
     async fn start_proof_mpc_flow(
-        public_parameters: maurer::language::PublicParameters<
-            { maurer::SOUND_PROOFS_REPETITIONS },
-            Lang,
-        >,
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Weak<AuthorityPerEpochStore>,
-        threshold: usize,
-        session_id: ObjectID,
+        &self,
+        public_parameters: ProofPublicParameters,
     ) -> anyhow::Result<ProofParty> {
         let batch_size = 1;
-        let party_state: ProofParty =
-            proof::aggregation::asynchronous::Party::new_proof_round_party(
-                public_parameters,
-                PhantomData,
-                threshold as PartyID,
-                batch_size,
-                &mut OsRng,
-            )?;
-        let Some(epoch_store) = epoch_store.upgrade() else {
+        let party: ProofParty = proof::aggregation::asynchronous::Party::new_proof_round_party(
+            public_parameters,
+            PhantomData,
+            self.mpc_threshold_number_of_parties as PartyID,
+            batch_size,
+            &mut OsRng,
+        )?;
+        let Some(epoch_store) = self.epoch_store.upgrade() else {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
             return Err(anyhow!("Epoch store not found"));
         };
-        let Ok(advance_result) = party_state.advance(HashMap::new(), &(), &mut OsRng) else {
-            // This should never happen, as the party is just initialized & there should be
-            // on chain verification on the initial event input
+        let Ok(advance_result) = party.advance(HashMap::new(), &(), &mut OsRng) else {
+            // This should never happen, as there should be on chain verification on the initial event input
             return Err(anyhow!(
                 "Error performing first step for session id: {:?}",
-                session_id
+                self.session_id
             ));
         };
         match advance_result {
@@ -199,16 +187,16 @@ impl MPCInstance {
                 let message_tx = ConsensusTransaction::new_signature_mpc_message(
                     epoch_store.name,
                     bcs::to_bytes(&message)?,
-                    session_id.clone(),
+                    self.session_id.clone(),
                 );
-                consensus_adapter
+                self.consensus_adapter
                     .submit_to_consensus(&[message_tx], &epoch_store)
                     .await?;
                 Ok(party)
             }
             AdvanceResult::Finalize(_) => Err(anyhow!(
                 "Finalization reached unexpectedly: {:?}",
-                session_id
+                self.session_id
             )),
         }
     }
