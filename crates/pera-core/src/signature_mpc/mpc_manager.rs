@@ -93,7 +93,16 @@ impl MPCInstance {
             Err(err) => {
                 // This should never happen, as there should be on-chain verification on the init transaction, and
                 // we are ignoring failed transactions.
-                panic!("Error initializing the MPC proof flow: {:?}", err);
+                error!("Error initializing the MPC proof flow: {:?}", err);
+                Self {
+                    status: MPCSessionStatus::Finished,
+                    pending_messages: HashMap::new(),
+                    consensus_adapter,
+                    epoch_store,
+                    mpc_threshold_number_of_parties,
+                    session_id,
+                    party: None,
+                }
             }
         }
     }
