@@ -107,7 +107,8 @@ impl MPCInstance {
             error!("Party is not initialized");
             return Ok(());
         };
-        let Ok(advance_result) = party.advance(self.pending_messages.clone(), &(), &mut OsRng) else {
+        let Ok(advance_result) = party.advance(self.pending_messages.clone(), &(), &mut OsRng)
+        else {
             // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
             return Ok(());
         };

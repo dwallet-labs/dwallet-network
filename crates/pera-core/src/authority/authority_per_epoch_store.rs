@@ -3390,8 +3390,7 @@ impl AuthorityPerEpochStore {
                     return Ok(ConsensusCertificateResult::Ignored);
                 };
                 let mut signature_mpc_manager = signature_mpc_manager.lock().await;
-                signature_mpc_manager
-                    .handle_message(message, *authority, *session_id)?;
+                signature_mpc_manager.handle_message(message, *authority, *session_id)?;
                 Ok(ConsensusCertificateResult::Ignored)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
