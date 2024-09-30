@@ -34,6 +34,7 @@ use ssz_rs::Merkleized;
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io::Read;
+use std::result;
 use std::str::FromStr;
 use tracing::log::error;
 use tracing::Instrument;
@@ -62,12 +63,8 @@ pub struct EthDWalletCostParams {
 *  message: vector<u8>,
 *  dwallet_id: vector<u8>,
 *  data_slot: u64,
-*  beacon_block: vector<u8>,
 *  contract_address: vector<u8>,
-*  eth_state_data: vector<u8>,
-*  beacon_block_type: vector<u8>,
-*  beacon_block_body: vector<u8>,
-*  beacon_block_execution_payload: vector<u8>): bool;`
+*  state_root: vector<u8>) -> bool;`
 * gas cost: verify_message_proof_cost_base | base cost for function call and fixed operations.
 **************************************************************************************************/
 pub fn verify_message_proof(
@@ -90,22 +87,7 @@ pub fn verify_message_proof(
 
     let cost = context.gas_used();
 
-    let (
-        beacon_block_execution_payload,
-        beacon_block_body,
-        beacon_block_type,
-        eth_state_data,
-        contract_address,
-        beacon_block,
-        map_slot,
-        dwallet_id,
-        message,
-        proof,
-    ) = (
-        pop_arg!(args, Vector).to_vec_u8()?,
-        pop_arg!(args, Vector).to_vec_u8()?,
-        pop_arg!(args, Vector).to_vec_u8()?,
-        pop_arg!(args, Vector).to_vec_u8()?,
+    let (state_root, contract_address, map_slot, dwallet_id, message, proof) = (
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, u64),
@@ -129,71 +111,6 @@ pub fn verify_message_proof(
     let contract_address: Address = contract_address
         .parse()
         .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-
-    let mut beacon_block: BeaconBlock =
-        serde_json::from_str(&String::from_utf8(beacon_block).unwrap())
-            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-
-    let beacon_block_type = String::from_utf8(beacon_block_type.clone())
-        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-
-    let beacon_block_type: BeaconBlockType = BeaconBlockType::from_str(&beacon_block_type)
-        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-
-    let mut beacon_block_body =
-        BeaconBlockBodyWrapper::new_from_json(beacon_block_body, &beacon_block_type)
-            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-    let beacon_block_body: BeaconBlockBody = beacon_block_body.inner();
-
-    let beacon_block_execution_payload =
-        ExecutionPayloadWrapper::new_from_json(beacon_block_execution_payload, &beacon_block_type)
-            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-    let beacon_block_execution_payload: ExecutionPayload = beacon_block_execution_payload.inner();
-
-    let beacon_block_body = BeaconBlockBody::new_from_existing_with_execution_payload(
-        beacon_block_body,
-        beacon_block_execution_payload,
-    );
-    beacon_block.body = beacon_block_body;
-
-    let eth_state_data = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&eth_state_data)
-        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
-
-    // Compute the root hash of the Merkle tree using the unverified (user-specified) beacon block.
-    let beacon_block_hash = beacon_block
-        .hash_tree_root()
-        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
-
-    let mut verified_block_header = eth_state_data.get_finalized_header();
-
-    // Compute the root hash of the Merkle tree using the verified beacon header.
-    let verified_block_hash = verified_block_header
-        .hash_tree_root()
-        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
-
-    // Verify the beacon block hash against the verified block hash.
-    // If the hashes match, it means we can trust the beacon block, and use its state
-    // root to verify the proof.
-    // More info in [Ethereum Consensus Specs](https://github.com/ethereum/consensus-specs/blob/fa09d896484bbe240334fa21ffaa454bafe5842e/ssz/simple-serialize.md#summaries-and-expansions).
-    if beacon_block_hash != verified_block_hash {
-        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
-    }
-
-    // Verify that the `body_root` of the verified beacon block matches the actual root hash
-    // of the beacon block body.
-    let beacon_block_body_root = beacon_block
-        .body
-        .hash_tree_root()
-        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
-    let beacon_block_body_root = Bytes32::try_from(beacon_block_body_root.as_ref())
-        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
-
-    if verified_block_header.body_root != beacon_block_body_root {
-        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
-    }
-
-    // Get the Execution layer's state root from the verified beacon block.
-    let state_root = beacon_block.body.execution_payload().state_root();
 
     let account_path = keccak256(contract_address.as_bytes()).to_vec();
     let account_encoded = encode_account(&proof);
@@ -241,7 +158,10 @@ pub fn verify_message_proof(
  * finality_update: vector<u8>,
  * optimistic_update: vector<u8>,
  * eth_state: vector<u8>,
- * should_apply_finality_update_first: bool) -> (vector<u8>, u64, vector<u8>, vector<u8>);`
+ * beacon_block: vector<u8>,
+ * beacon_block_body: vector<u8>,
+ * beacon_block_execution_payload: vector<u8>,
+ * beacon_block_type: vector<u8>) -> (vector<u8>, u64, vector<u8>, vector<u8>);`
  * gas cost: verify_eth_state_cost_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
 pub(crate) fn verify_eth_state(
@@ -263,7 +183,20 @@ pub(crate) fn verify_eth_state(
     );
 
     let cost = context.gas_used();
-    let (current_eth_state, optimistic_update, finality_update, updates_vec) = (
+    let (
+        beacon_block_type,
+        beacon_block_execution_payload,
+        beacon_block_body,
+        beacon_block,
+        current_eth_state,
+        optimistic_update,
+        finality_update,
+        updates_vec,
+    ) = (
+        pop_arg!(args, Vector).to_vec_u8()?,
+        pop_arg!(args, Vector).to_vec_u8()?,
+        pop_arg!(args, Vector).to_vec_u8()?,
+        pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
@@ -290,10 +223,21 @@ pub(crate) fn verify_eth_state(
         optimistic_update,
     };
 
-    eth_state.advance_state(updates).map_err(|e| {
+    eth_state.advance_state(&updates).map_err(|e| {
         error!("failed to advance state: {:?}", e);
         PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
     })?;
+
+    let beacon_block = verify_beacon_block(
+        beacon_block_type,
+        beacon_block_execution_payload,
+        beacon_block_body,
+        beacon_block,
+        &mut eth_state,
+    )?;
+
+    // Get the Execution layer's state root from the verified beacon block.
+    let state_root = beacon_block.body.execution_payload().state_root();
 
     let new_state_bcs = bcs::to_bytes(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
@@ -311,6 +255,7 @@ pub(crate) fn verify_eth_state(
             Value::vector_u8(new_state_bcs),
             Value::u64(slot),
             Value::vector_u8(network),
+            Value::vector_u8(state_root.as_slice().to_vec())
         ],
     ))
 }
@@ -318,8 +263,17 @@ pub(crate) fn verify_eth_state(
 /***************************************************************************************************
 * native fun create_initial_eth_state_data
 * Implementation of the Move native function
-* `eth_dwallet::create_initial_eth_state_data(state_bytes: vector<u8>, network: vector<u8>)
-* : (vector<u8>, u64);`
+* `eth_dwallet::create_initial_eth_state_data(
+* state_bytes: vector<u8>,
+* network: vector<u8>,
+* updates_vec: vector<u8>,
+* finality_update: vector<u8>,
+* optimistic_update: vector<u8>,
+* beacon_block: vector<u8>,
+* beacon_block_body: vector<u8>,
+* beacon_block_execution_payload: vector<u8>,
+* beacon_block_type: vector<u8>,
+* ) -> (vector<u8>, u64, vector<u8>);`
 * gas cost:
 * create_initial_eth_state_data_cost_base | base cost for function call and fixed operations.
 **************************************************************************************************/
@@ -353,6 +307,10 @@ pub(crate) fn create_initial_eth_state_data(
 
     let cost = context.gas_used();
 
+    let beacon_block_type = pop_arg!(args, Vector).to_vec_u8()?;
+    let beacon_block_execution_payload = pop_arg!(args, Vector).to_vec_u8()?;
+    let beacon_block_body = pop_arg!(args, Vector).to_vec_u8()?;
+    let beacon_block = pop_arg!(args, Vector).to_vec_u8()?;
     let optimistic_update = pop_arg!(args, Vector).to_vec_u8()?;
     let finality_update = pop_arg!(args, Vector).to_vec_u8()?;
     let updates_vec = pop_arg!(args, Vector).to_vec_u8()?;
@@ -396,6 +354,17 @@ pub(crate) fn create_initial_eth_state_data(
             PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR)
         })?;
 
+    let beacon_block = verify_beacon_block(
+        beacon_block_type,
+        beacon_block_execution_payload,
+        beacon_block_body,
+        beacon_block,
+        &eth_state,
+    )?;
+
+    // Get the Execution layer's state root from the verified beacon block.
+    let state_root = beacon_block.body.execution_payload().state_root();
+
     let state_bytes = bcs::to_bytes(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
     let time_slot = eth_state.get_latest_slot();
@@ -403,7 +372,80 @@ pub(crate) fn create_initial_eth_state_data(
         cost,
         smallvec![
             Value::vector_u8(state_bytes),
-            Value::u64(time_slot.as_u64())
+            Value::u64(time_slot.as_u64()),
+            Value::vector_u8(state_root.as_slice().to_vec())
         ],
     ))
+}
+
+fn verify_beacon_block(
+    beacon_block_type: Vec<u8>,
+    beacon_block_execution_payload: Vec<u8>,
+    beacon_block_body: Vec<u8>,
+    beacon_block: Vec<u8>,
+    eth_state: &ConsensusStateManager<NimbusRpc>,
+) -> PartialVMResult<BeaconBlock> {
+    let mut beacon_block: BeaconBlock =
+        serde_json::from_str(&String::from_utf8(beacon_block).unwrap())
+            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let beacon_block_type = String::from_utf8(beacon_block_type.clone())
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let beacon_block_type: BeaconBlockType = BeaconBlockType::from_str(&beacon_block_type)
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+
+    let mut beacon_block_body =
+        BeaconBlockBodyWrapper::new_from_json(beacon_block_body, &beacon_block_type)
+            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+    let beacon_block_body: BeaconBlockBody = beacon_block_body.inner();
+
+    let beacon_block_execution_payload =
+        ExecutionPayloadWrapper::new_from_json(beacon_block_execution_payload, &beacon_block_type)
+            .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+    let beacon_block_execution_payload: ExecutionPayload = beacon_block_execution_payload.inner();
+
+    let beacon_block_body = BeaconBlockBody::new_from_existing_with_execution_payload(
+        beacon_block_body,
+        beacon_block_execution_payload,
+    );
+    beacon_block.body = beacon_block_body;
+
+    // Compute the root hash of the Merkle tree using the unverified (user-specified) beacon block.
+    let beacon_block_hash = beacon_block
+        .hash_tree_root()
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
+
+    let mut verified_block_header = eth_state.clone().get_finalized_header();
+
+    // Compute the root hash of the Merkle tree using the verified beacon header.
+    let verified_block_hash = verified_block_header
+        .hash_tree_root()
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
+
+    // Verify the beacon block hash against the verified block hash.
+    // If the hashes match, it means we can trust the beacon block, and use its state
+    // root to verify the proof.
+    // More info in [Ethereum Consensus Specs](https://github.com/ethereum/consensus-specs/blob/fa09d896484bbe240334fa21ffaa454bafe5842e/ssz/simple-serialize.md#summaries-and-expansions).
+    if beacon_block_hash != verified_block_hash {
+        return Err(PartialVMError::new(
+            StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+        ));
+    }
+
+    // Verify that the `body_root` of the verified beacon block matches the actual root hash
+    // of the beacon block body.
+    let beacon_block_body_root = beacon_block
+        .body
+        .hash_tree_root()
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
+    let beacon_block_body_root = Bytes32::try_from(beacon_block_body_root.as_ref())
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
+
+    if verified_block_header.body_root != beacon_block_body_root {
+        return Err(PartialVMError::new(
+            StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR,
+        ));
+    }
+    Ok(beacon_block)
 }
