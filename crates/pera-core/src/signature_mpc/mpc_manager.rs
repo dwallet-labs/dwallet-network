@@ -37,12 +37,17 @@ pub type ProofMessage = (Proof<1, Lang, PhantomData<()>>, Vec<Value>);
 fn authority_name_to_party_id(
     authority_name: AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
-) -> anyhow::Result<PartyID> {
+) -> PeraResult<PartyID> {
     Ok(epoch_store
         .committee()
         .authority_index(&authority_name)
-        .ok_or_else(|| anyhow!("Authority {} not found in the committee", authority_name))?
-        as PartyID)
+        // This should never happen, as the validator only accepts messages from committee members
+        .ok_or_else(|| {
+            PeraError::InvalidCommittee(
+                "Received a proof MPC message from a validator that is not in the committee"
+                    .to_string(),
+            )
+        })? as PartyID)
 }
 
 struct MPCInstance {
@@ -94,45 +99,6 @@ impl MPCInstance {
         }
     }
 
-    // /// Spawns an asynchronous task to handle incoming messages.
-    // /// The [`MPCService`] will forward any message related to that instance to this channel.
-    // fn spawn_mpc_messages_handler(
-    //     &self,
-    //     mut receiver: mpsc::Receiver<ProofMPCMessage>,
-    //     mut party: ProofParty,
-    // ) {
-    //     let consensus_adapter = Arc::clone(&self.consensus_adapter);
-    //     let epoch_store = self.epoch_store.clone();
-    //     let threshold = self.mpc_threshold_number_of_parties;
-    //     let session_id = self.session_id;
-    //     tokio::spawn(async move {
-    //         let mut messages = HashMap::new();
-    //
-    //         let Some(epoch_store) = epoch_store.upgrade() else {
-    //             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-    //             return;
-    //         };
-    //         while let Some(message) = receiver.recv().await {
-    //             match Self::store_message_and_advance(
-    //                 party,
-    //                 consensus_adapter.clone(),
-    //                 threshold,
-    //                 &session_id,
-    //                 &mut messages,
-    //                 epoch_store.clone(),
-    //                 &message,
-    //             )
-    //             .await
-    //             {
-    //                 Some(new_party) => party = new_party,
-    //                 None => {
-    //                     return;
-    //                 }
-    //             }
-    //         }
-    //     });
-    // }
-
     async fn advance_if_possible(&mut self) -> anyhow::Result<()> {
         if self.pending_messages.len() < self.mpc_threshold_number_of_parties {
             return Ok(());
@@ -154,14 +120,11 @@ impl MPCInstance {
         &mut self,
         message: &ProofMPCMessage,
         epoch_store: Arc<AuthorityPerEpochStore>,
-    ) -> anyhow::Result<()> {
+    ) -> PeraResult<()> {
         let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
         if self.pending_messages.contains_key(&party_id) {
             // TODO(#260): Punish an authority that sends multiple messages in the same round
-            return Err(anyhow!(
-                "Authority {} already sent a message in this round",
-                message.authority
-            ));
+            return Ok(());
         }
 
         match bcs::from_bytes(&message.message) {
@@ -169,7 +132,9 @@ impl MPCInstance {
                 self.pending_messages.insert(party_id, message);
                 Ok(())
             }
-            Err(err) => Err(anyhow!("Error deserializing the first message: {:?}", err)),
+            Err(err) => Err(PeraError::ObjectDeserializationError {
+                error: err.to_string(),
+            }),
         }
     }
 
@@ -199,7 +164,10 @@ impl MPCInstance {
         let Ok(advance_result) = party_state.advance(HashMap::new(), &(), &mut OsRng) else {
             // This should never happen, as the party is just initialized & there should be
             // on chain verification on the initial event input
-            return Err(anyhow!("Error performing first step for session id: {:?}", session_id));
+            return Err(anyhow!(
+                "Error performing first step for session id: {:?}",
+                session_id
+            ));
         };
         match advance_result {
             AdvanceResult::Advance((message, party)) => {
@@ -213,9 +181,10 @@ impl MPCInstance {
                     .await?;
                 Ok(party)
             }
-            AdvanceResult::Finalize(_) => {
-                Err(anyhow!("Finalization reached unexpectedly: {:?}", session_id))
-            }
+            AdvanceResult::Finalize(_) => Err(anyhow!(
+                "Finalization reached unexpectedly: {:?}",
+                session_id
+            )),
         }
     }
 
@@ -226,8 +195,7 @@ impl MPCInstance {
                     // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
                     return Ok(());
                 };
-                self.store_message(&message, epoch_store).unwrap();
-                Ok(())
+                self.store_message(&message, epoch_store)
             }
             MPCSessionStatus::Finished => {
                 // Do nothing
