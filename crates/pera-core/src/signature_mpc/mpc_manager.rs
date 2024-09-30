@@ -119,13 +119,17 @@ impl MPCInstance {
         match advance_result {
             AdvanceResult::Advance((message, party)) => {
                 self.party = Some(party);
+                let Some(epoch_store) = self.epoch_store.upgrade() else {
+                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+                    return Ok(());
+                };
                 let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                    self.epoch_store.upgrade().unwrap().name,
+                    epoch_store.name,
                     bcs::to_bytes(&message).unwrap(),
                     self.session_id.clone(),
                 );
                 self.consensus_adapter
-                    .submit_to_consensus(&[message_tx], &self.epoch_store.upgrade().unwrap())
+                    .submit_to_consensus(&[message_tx], &epoch_store)
                     .await?;
             }
             AdvanceResult::Finalize(output) => {
