@@ -99,18 +99,26 @@ impl MPCInstance {
         }
     }
 
-    async fn advance_if_possible(&mut self) -> anyhow::Result<()> {
-        if self.pending_messages.len() < self.mpc_threshold_number_of_parties {
-            return Ok(());
-        }
+    async fn advance(&mut self) -> anyhow::Result<()> {
         let party = mem::take(&mut self.party);
         let Some(party) = party else {
-            // This should never happen, as advance should not be called simultaneously for the same party
+            // This should never happen, the party is initialized in the constructor
+            // and advance should not be called simultaneously for the same instance
             return Err(anyhow!("Party is not initialized"));
         };
         let advance_result = party.advance(self.pending_messages.clone(), &(), &mut OsRng)?;
         match advance_result {
-            AdvanceResult::Advance((message, party)) => {}
+            AdvanceResult::Advance((message, party)) => {
+                self.party = Some(party);
+                let message_tx = ConsensusTransaction::new_signature_mpc_message(
+                    self.epoch_store.upgrade().unwrap().name,
+                    bcs::to_bytes(&message)?,
+                    self.session_id.clone(),
+                );
+                self.consensus_adapter
+                    .submit_to_consensus(&[message_tx], &self.epoch_store.upgrade().unwrap())
+                    .await?;
+            }
             AdvanceResult::Finalize(_) => {}
         }
         Ok(())
@@ -231,7 +239,7 @@ pub struct SignatureMPCManager {
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
-    threshold: usize,
+    mpc_threshold_number_of_parties: usize,
 }
 
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
@@ -270,7 +278,7 @@ impl SignatureMPCManager {
             epoch_store,
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
-            threshold: ((num_of_parties * 2) + 2) / 3,
+            mpc_threshold_number_of_parties: ((num_of_parties * 2) + 2) / 3,
         }
     }
 
@@ -288,12 +296,11 @@ impl SignatureMPCManager {
 
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
         // iterate over all active instances copilot do it don't add more docs write the code
-        for (session_id, mut instance) in self.mpc_instances.iter_mut() {
-            if instance.status == MPCSessionStatus::Active {
-                if instance.pending_messages.len() >= self.threshold {
-                    instance.advance_if_possible().await;
-                }
-            }
+        for (_, mut instance) in self.mpc_instances.iter_mut().filter(|(_, instance)| {
+            instance.status == MPCSessionStatus::Active
+                && instance.pending_messages.len() >= self.mpc_threshold_number_of_parties
+        }) {
+            instance.advance()?;
         }
         Ok(())
     }
@@ -343,7 +350,7 @@ impl SignatureMPCManager {
         let new_instance = MPCInstance::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
-            self.threshold,
+            self.mpc_threshold_number_of_parties,
             event.session_id.clone().bytes,
             self.language_public_parameters.clone(),
         )
