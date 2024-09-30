@@ -39,7 +39,7 @@ module dwallet_system::ethereum_state {
     }
 
     /// Initializes the first Ethereum state with the given checkpoint.
-    /// Creates an EthereumState object, shares a LatestEthereumState object pointing to it,
+    /// Creates an EthereumState object, shares a `LatestEthereumState` object pointing to it,
     /// and freezes the EthereumState object.
     /// NOTE: this function performs no verification on the `checkpoint`,
     /// and it serves as an initial "trusted" state which users should verify externally (once) before using.
@@ -81,7 +81,7 @@ module dwallet_system::ethereum_state {
     }
 
     /// Verifies the new Ethereum state according to the provided updates,
-    /// and updates the LatestEthereumState object if the new state is valid and has a newer time slot.
+    /// and updates the `LatestEthereumState` object if the new state is valid and has a newer time slot.
     public fun verify_new_state(
         updates_bytes: vector<u8>,
         finality_update_bytes: vector<u8>,
