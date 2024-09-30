@@ -77,17 +77,15 @@ impl MPCInstance {
         )
         .await
         {
-            Ok(party) => {
-                Self {
-                    status: MPCSessionStatus::Active,
-                    pending_messages: HashMap::new(),
-                    consensus_adapter,
-                    epoch_store,
-                    mpc_threshold_number_of_parties,
-                    session_id,
-                    party,
-                }
-            }
+            Ok(party) => Self {
+                status: MPCSessionStatus::Active,
+                pending_messages: HashMap::new(),
+                consensus_adapter,
+                epoch_store,
+                mpc_threshold_number_of_parties,
+                session_id,
+                party,
+            },
             Err(err) => {
                 // This should never happen, as there should be on-chain verification on the init transaction, and
                 // we are ignoring failed transactions.
@@ -137,11 +135,9 @@ impl MPCInstance {
 
     async fn advance_if_possible(&mut self) {
         if self.pending_messages.len() >= self.mpc_threshold_number_of_parties {
-            self.party.clone().advance(
-                self.pending_messages.clone(),
-                &(),
-                &mut OsRng,
-            );
+            self.party
+                .clone()
+                .advance(self.pending_messages.clone(), &(), &mut OsRng);
         }
     }
 
@@ -173,50 +169,50 @@ impl MPCInstance {
         self.party.advance(messages, &(), &mut OsRng);
         None
         // {
-            // Ok(advance_result) => match advance_result {
-            //     AdvanceResult::Advance((message, new_party)) => {
-            //         let message_tx = ConsensusTransaction::new_signature_mpc_message(
-            //             epoch_store.name,
-            //             bcs::to_bytes(&message).unwrap(),
-            //             session_id.clone(),
-            //         );
-            //         // TODO (#270): Handle Proof flow in a synchronous way & propagate this result
-            //         consensus_adapter
-            //             .submit_to_consensus(&[message_tx], &epoch_store)
-            //             .await
-            //             .expect("failed to submit to consensus");
-            //         Some(new_party)
-            //     }
-            //     AdvanceResult::Finalize(output) => {
-            //         // TODO (#238): Verify the output and write it to the chain
-            //         println!("Finalized output: {:?}", output);
-            //         None
-            //     }
-            // },
-            // Err(_) => {
-            //     // TODO (#263): Mark the sender as malicious
-            //     None
-            // }
+        // Ok(advance_result) => match advance_result {
+        //     AdvanceResult::Advance((message, new_party)) => {
+        //         let message_tx = ConsensusTransaction::new_signature_mpc_message(
+        //             epoch_store.name,
+        //             bcs::to_bytes(&message).unwrap(),
+        //             session_id.clone(),
+        //         );
+        //         // TODO (#270): Handle Proof flow in a synchronous way & propagate this result
+        //         consensus_adapter
+        //             .submit_to_consensus(&[message_tx], &epoch_store)
+        //             .await
+        //             .expect("failed to submit to consensus");
+        //         Some(new_party)
+        //     }
+        //     AdvanceResult::Finalize(output) => {
+        //         // TODO (#238): Verify the output and write it to the chain
+        //         println!("Finalized output: {:?}", output);
+        //         None
+        //     }
+        // },
+        // Err(_) => {
+        //     // TODO (#263): Mark the sender as malicious
+        //     None
+        // }
         // }
     }
 
     fn store_message(
+        &mut self,
         message: &ProofMPCMessage,
-        mut messages: &mut HashMap<PartyID, (Proof<1, Lang, PhantomData<()>>, Vec<Value>)>,
         epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> anyhow::Result<()> {
         let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
-        if messages.contains_key(&party_id) {
+        if self.pending_messages.contains_key(&party_id) {
             // TODO(#260): Punish an authority that sends multiple messages in the same round
             return Err(anyhow!(
                 "Authority {} already sent a message in this round",
-                epoch_store.name
+                message.authority
             ));
         }
 
         match bcs::from_bytes(&message.message) {
             Ok(message) => {
-                messages.insert(party_id, message);
+                self.pending_messages.insert(party_id, message);
                 Ok(())
             }
             Err(err) => Err(anyhow!("Error deserializing the first message: {:?}", err)),
@@ -252,20 +248,25 @@ impl MPCInstance {
             party: party_state,
         };
 
-        match new_party.advance().await
-        {
+        match new_party.advance().await {
             None => Err(anyhow!("Finalization reached unexpectedly")),
             Some(new_party) => Ok(new_party),
         }
     }
 
-    fn save_message(&mut self, message: ProofMPCMessage) {
+    fn handle_message(&mut self, message: ProofMPCMessage) -> PeraResult<()> {
         match self.status {
-            MPCSessionStatus::Active | MPCSessionStatus::Pending => {
-                self.pending_messages.push(message);
+            MPCSessionStatus::Active => {
+                let Some(epoch_store) = self.epoch_store.upgrade() else {
+                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+                    return Ok(());
+                };
+                self.store_message(&message, epoch_store)
+                    .map_err(|err| PeraError::from(err))
             }
             MPCSessionStatus::Finished => {
                 // Do nothing
+                Ok(())
             }
         }
     }
@@ -364,7 +365,7 @@ impl SignatureMPCManager {
         Ok(())
     }
 
-    pub fn handle_mpc_message(
+    pub fn handle_message(
         &mut self,
         message: &[u8],
         authority_name: AuthorityName,
@@ -374,11 +375,10 @@ impl SignatureMPCManager {
             // TODO (#261): Punish a validator that sends a message related to a non-existing mpc instance
             return Ok(());
         };
-        instance.save_message(ProofMPCMessage {
+        instance.handle_message(ProofMPCMessage {
             message: message.to_vec(),
             authority: authority_name,
-        });
-        Ok(())
+        })
     }
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
@@ -405,7 +405,8 @@ impl SignatureMPCManager {
                 self.threshold,
                 event.session_id.clone().bytes,
                 self.language_public_parameters.clone(),
-            ).await;
+            )
+            .await;
             self.mpc_instances
                 .insert(event.session_id.clone().bytes, new_instance);
             self.active_instances_counter += 1;
