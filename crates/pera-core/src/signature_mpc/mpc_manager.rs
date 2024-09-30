@@ -107,7 +107,7 @@ impl MPCInstance {
         let party = mem::take(&mut self.party);
         let Some(party) = party else {
             // This should never happen, the party is initialized in the constructor
-            // and advance should not be called simultaneously for the same instance
+            // and advance should not be called more than once simultaneously for the same instance
             error!("Party is not initialized");
             return Ok(());
         };
