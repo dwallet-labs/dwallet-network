@@ -52,7 +52,6 @@ fn authority_name_to_party_id(
 
 struct MPCInstance {
     status: MPCSessionStatus,
-    /// The channel to send message to this instance
     pending_messages: HashMap<PartyID, ProofMessage>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
