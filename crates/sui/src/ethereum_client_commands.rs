@@ -15,15 +15,15 @@ use helios::dwallet::light_client::{
 use helios::prelude::networks::Network;
 use helios::prelude::Address;
 
+use hex::encode;
 use light_client_helpers::{
     get_object_bcs_by_id, get_object_from_transaction_changes, get_object_ref_by_id,
     get_shared_object_input_by_id,
 };
-use std::str::FromStr;
-use hex::encode;
 use serde::Serialize;
 use serde_json::{Number, Value};
 use shared_crypto::intent::Intent;
+use std::str::FromStr;
 use sui_json::SuiJsonValue;
 use sui_json_rpc_types::SuiData;
 #[allow(unused_imports)]
@@ -156,7 +156,8 @@ pub(crate) async fn init_ethereum_state(
     let network = Network::from_str(&network)?;
     let checkpoint = match network {
         Network::MAINNET => "0x8bfa089414dc5fe78dadc8b160a097fe744f17a80251f08eed0a3cdcc60b42f4",
-        Network::HOLESKY => "0x8f867e31e2c55d9257dcd83effa0b7b74d7566a08bf2aabc5e133e91ffd11e2f",
+        // Network::HOLESKY => "0x8f867e31e2c55d9257dcd83effa0b7b74d7566a08bf2aabc5e133e91ffd11e2f",
+        Network::HOLESKY => "0x12e6b81891d23c90502dbc2354de9cb52afe4ff823ca00fd41d411213c6e7bbb",
         _ => return Err(anyhow!("invalid network")),
     };
 
@@ -171,24 +172,42 @@ pub(crate) async fn init_ethereum_state(
         .await
         .map_err(|e| anyhow!("could not fetch updates: {e}"))?;
 
+    // Serialize state bytes *before* applying the updates locally.
+    // The state bytes are used in the Move call to initialize the Ethereum state.
     let state_bytes = bcs::to_bytes(&state)?;
 
+    // Apply updates locally.
+    state
+        .verify_and_apply_initial_updates(&updates_response)
+        .map_err(|e| anyhow!("{e}"))?;
+
+    let latest_slot = updates_response
+        .finality_update
+        .finalized_header
+        .slot
+        .as_u64();
+
+    let beacon_block = state
+        .get_beacon_block(latest_slot)
+        .await
+        .map_err(|e| anyhow!("could not fetch beacon block: {e}"))?;
+    let beacon_block_body = beacon_block.clone().body;
+    let beacon_block_execution_payload = beacon_block_body.execution_payload();
+    let beacon_block_type = beacon_block.body.get_block_type();
+
     let mut pt_builder = ProgrammableTransactionBuilder::new();
-    let state_bytes_vec = pt_builder
-        .pure(state_bytes)
-        .map_err(|e| anyhow!("could not serialize updates: {e}"))?;
+    let state_bytes_vec = pt_builder.pure(state_bytes)?;
 
-    let updates_vec_arg = pt_builder
-        .pure(serde_json::to_vec(&updates_response.updates)?)
-        .map_err(|e| anyhow!("could not serialize updates: {e}"))?;
-
-    let finality_update_arg = pt_builder
-        .pure(serde_json::to_vec(&updates_response.finality_update)?)
-        .map_err(|e| anyhow!("could not serialize `finality_updates`: {e}"))?;
-
-    let optimistic_update_arg = pt_builder
-        .pure(serde_json::to_vec(&updates_response.optimistic_update)?)
-        .map_err(|e| anyhow!("could not serialize `optimistic_updates`: {e}"))?;
+    let updates_vec_arg = pt_builder.pure(serde_json::to_vec(&updates_response.updates)?)?;
+    let finality_update_arg =
+        pt_builder.pure(serde_json::to_vec(&updates_response.finality_update)?)?;
+    let optimistic_update_arg =
+        pt_builder.pure(serde_json::to_vec(&updates_response.optimistic_update)?)?;
+    let beacon_block_arg = pt_builder.pure(serde_json::to_vec(&beacon_block)?)?;
+    let beacon_block_body_arg = pt_builder.pure(serde_json::to_vec(&beacon_block_body)?)?;
+    let beacon_block_execution_payload_arg =
+        pt_builder.pure(serde_json::to_vec(&beacon_block_execution_payload)?)?;
+    let beacon_block_type_arg = pt_builder.pure(beacon_block_type.to_string())?;
 
     let network_arg = pt_builder.pure(network.to_string())?;
     let contract_address_arg = pt_builder.pure(contract_address.clone())?;
@@ -207,6 +226,10 @@ pub(crate) async fn init_ethereum_state(
             updates_vec_arg,
             finality_update_arg,
             optimistic_update_arg,
+            beacon_block_arg,
+            beacon_block_body_arg,
+            beacon_block_execution_payload_arg,
+            beacon_block_type_arg,
         ]),
     );
 
@@ -299,7 +322,7 @@ pub(crate) async fn create_eth_dwallet(
 ///
 /// Interacts with the Ethereum light client to verify and approve a transaction message
 /// using an Ethereum smart contract linked to a dWallet within the dWallet blockchain context.
-/// The verification of the state & message is done offline, inside the dWallet module.
+/// The verification of the state and message is done offline, inside the dWallet module.
 /// # Logic
 /// 1. **Retrieve Configuration**: It starts by retrieving the Ethereum state object ID from
 ///      the active environment.
@@ -393,6 +416,32 @@ pub(crate) async fn eth_approve_message(
         .await
         .map_err(|e| anyhow!("could not fetch updates: {e}"))?;
 
+    // Update the Ethereum state with the latest updates to fetch the latest beacon block.
+    // This is only local and does not affect the state kept in the blockchain.
+    eth_state
+        .advance_state(&updates_response)
+        .map_err(|e| anyhow!("could not advance state: {e}"))?;
+
+    let latest_slot = updates_response
+        .finality_update
+        .finalized_header
+        .slot
+        .as_u64();
+    let latest_finalized_block_number = eth_state
+        .get_execution_payload(&Some(latest_slot))
+        .await
+        .map_err(|e| anyhow!("could not fetch execution payload: {e}"))?
+        .block_number()
+        .as_u64();
+
+    let beacon_block = eth_state
+        .get_beacon_block(latest_slot)
+        .await
+        .map_err(|e| anyhow!("could not fetch beacon block: {e}"))?;
+    let beacon_block_body = beacon_block.clone().body;
+    let beacon_block_execution_payload = beacon_block_body.execution_payload();
+    let beacon_block_type = beacon_block.body.get_block_type();
+
     let gas_owner = context.try_get_object_owner(&gas).await?;
     let sender = gas_owner.unwrap_or(context.active_address()?);
 
@@ -423,6 +472,22 @@ pub(crate) async fn eth_approve_message(
         .obj(ObjectArg::ImmOrOwnedObject(eth_state_object_ref))
         .map_err(|e| anyhow!("could not serialize `eth_state_id`: {e}"))?;
 
+    let beacon_block_arg = pt_builder
+        .pure(serde_json::to_vec(&beacon_block)?)
+        .map_err(|e| anyhow!("could not serialize `beacon_block`: {e}"))?;
+
+    let beacon_block_body_arg = pt_builder
+        .pure(serde_json::to_vec(&beacon_block_body)?)
+        .map_err(|e| anyhow!("could not serialize `beacon_block_body`: {e}"))?;
+
+    let beacon_block_execution_payload_arg = pt_builder
+        .pure(serde_json::to_vec(&beacon_block_execution_payload)?)
+        .map_err(|e| anyhow!("could not serialize `beacon_block_execution_payload`: {e}"))?;
+
+    let beacon_block_type_arg = pt_builder
+        .pure(beacon_block_type.to_string())
+        .map_err(|e| anyhow!("could not serialize `beacon_block_type`: {e}"))?;
+
     pt_builder.programmable_move_call(
         SUI_SYSTEM_PACKAGE_ID,
         ETHEREUM_STATE_MODULE_NAME.into(),
@@ -434,6 +499,10 @@ pub(crate) async fn eth_approve_message(
             optimistic_update_arg,
             latest_eth_state_arg,
             eth_state_id_arg,
+            beacon_block_arg,
+            beacon_block_body_arg,
+            beacon_block_execution_payload_arg,
+            beacon_block_type_arg,
         ]),
     );
 
@@ -463,39 +532,6 @@ pub(crate) async fn eth_approve_message(
         .map_err(|e| anyhow!("error deserializing object: {e}"))?;
 
     let verified_state_object_id = latest_eth_state_obj.eth_state_id;
-    let verified_eth_state_data_bcs =
-        get_object_bcs_by_id(context, verified_state_object_id).await?;
-    let verified_eth_state_obj: EthereumStateObject = verified_eth_state_data_bcs
-        .try_as_move()
-        .ok_or_else(|| anyhow!("object is not a Move Object"))?
-        .deserialize()
-        .map_err(|e| anyhow!("error deserializing object: {e}"))?;
-
-    let mut verified_eth_state =
-        bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&verified_eth_state_obj.data)
-            .map_err(|e| anyhow!("error parsing eth state data: {e}"))?;
-    let verified_eth_state = verified_eth_state.set_rpc(&eth_lc_config.consensus_rpc);
-
-    let latest_slot = updates_response
-        .finality_update
-        .finalized_header
-        .slot
-        .as_u64();
-    let latest_finalized_block_number = verified_eth_state
-        .get_execution_payload(&Some(latest_slot))
-        .await
-        .map_err(|e| anyhow!("could not fetch execution payload: {e}"))?
-        .block_number()
-        .as_u64();
-
-    let beacon_block = verified_eth_state
-        .get_beacon_block(latest_slot)
-        .await
-        .map_err(|e| anyhow!("could not fetch beacon block: {e}"))?;
-
-    let beacon_block_body = beacon_block.clone().body;
-    let beacon_block_execution_payload = beacon_block_body.execution_payload();
-    let beacon_block_type = beacon_block.body.get_block_type();
 
     let proof_params = ProofRequestParameters {
         message: message.clone(),
@@ -515,12 +551,6 @@ pub(crate) async fn eth_approve_message(
 
     let proof_sui_json =
         serialize_object(&proof).map_err(|e| anyhow!("could not serialize proof: {e}"))?;
-    let beacon_block_sui_json = serialize_object(&beacon_block)
-        .map_err(|e| anyhow!("could not serialize beacon block: {e}"))?;
-    let beacon_block_body = serialize_object(&beacon_block_body)
-        .map_err(|e| anyhow!("could not serialize beacon block body: {e}"))?;
-    let beacon_block_execution_payload = serialize_object(&beacon_block_execution_payload)
-        .map_err(|e| anyhow!("could not serialize execution payload: {e}"))?;
 
     let mut pt_builder = ProgrammableTransactionBuilder::new();
     client
@@ -538,10 +568,6 @@ pub(crate) async fn eth_approve_message(
                 SuiJsonValue::from_object_id(latest_eth_state_shared_object.id),
                 SuiJsonValue::from_object_id(verified_state_object_id),
                 proof_sui_json,
-                beacon_block_sui_json,
-                SuiJsonValue::new(Value::String(beacon_block_type.to_string()))?,
-                beacon_block_body,
-                beacon_block_execution_payload,
             ]),
         )
         .await?;

@@ -10,9 +10,9 @@ module dwallet_system::eth_dwallet {
     use dwallet::tx_context::TxContext;
 
     use dwallet_system::dwallet;
-    use dwallet_system::dwallet::{DWalletCap, MessageApproval};
-    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::DWallet;
-    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::get_dwallet_cap_id;
+    use dwallet_system::dwallet::{get_dwallet_cap_id};
+    use dwallet_system::dwallet::{DWallet, DWalletCap, MessageApproval};
+    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{Secp256K1};
     use dwallet_system::ethereum_state;
     use dwallet_system::ethereum_state::{EthereumState, LatestEthereumState};
 
@@ -44,51 +44,45 @@ module dwallet_system::eth_dwallet {
     /// Verifies the provided proof using the `verify_message_proof` native function.
     /// If the proof is valid, the message is approved.
     public fun approve_message(
-            eth_dwallet_cap: &EthereumDWalletCap,
-            message: vector<u8>,
-            dwallet: &DWallet,
-            latest_ethereum_state: &LatestEthereumState,
-            eth_state: &EthereumState,
-            proof: vector<u8>,
-            beacon_block: vector<u8>,
-            beacon_block_type: vector<u8>,
-            beacon_block_body: vector<u8>,
-            beacon_block_execution_payload: vector<u8>,
-        ): vector<MessageApproval> {
-            let latest_ethereum_state_id = object::id(latest_ethereum_state);
+        eth_dwallet_cap: &EthereumDWalletCap,
+        message: vector<u8>,
+        dwallet: &DWallet<Secp256K1>,
+        latest_ethereum_state: &LatestEthereumState,
+        eth_state: &EthereumState,
+        proof: vector<u8>,
+    ): vector<MessageApproval> {
+        let latest_ethereum_state_id = object::id(latest_ethereum_state);
 
-            // Validate that the Ethereum dWallet capability is for the correct network.
-            assert!(eth_dwallet_cap.latest_ethereum_state_id == latest_ethereum_state_id, EStateObjectMismatch);
+        // Validate that the Ethereum dWallet capability is for the correct network.
+        assert!(eth_dwallet_cap.latest_ethereum_state_id == latest_ethereum_state_id, EStateObjectMismatch);
 
-            // Validate that the EthereumState is for the correct network.
-            assert!(
-                latest_ethereum_state_id == ethereum_state::get_ethereum_state_latest_state_id(eth_state),
-                EStateObjectMismatch
-            );
+        // Validate that the EthereumState is for the correct network.
+        assert!(
+            latest_ethereum_state_id == ethereum_state::get_ethereum_state_latest_state_id(eth_state),
+            EStateObjectMismatch
+        );
 
-            // Validate that the Ethereum dWallet capability is for the correct DWallet.
-            let dwallet_cap_id = get_dwallet_cap_id(dwallet);
-            assert!(object::id(&eth_dwallet_cap.dwallet_cap) == dwallet_cap_id, EInvalidDWalletCap);
+        // Validate that the Ethereum dWallet capability is for the correct DWallet.
+        let dwallet_cap_id = get_dwallet_cap_id(dwallet);
+        assert!(object::id(&eth_dwallet_cap.dwallet_cap) == dwallet_cap_id, EInvalidDWalletCap);
 
-            let eth_state_data = ethereum_state::get_ethereum_state_data(eth_state);
-            let contract_address = ethereum_state::get_contract_address(latest_ethereum_state);
-            let data_slot = ethereum_state::get_contract_approved_transactions_slot(latest_ethereum_state);
+        let eth_state_state_root = ethereum_state::get_ethereum_state_state_root(eth_state);
+        let contract_address = ethereum_state::get_contract_address(latest_ethereum_state);
+        let data_slot = ethereum_state::get_contract_approved_transactions_slot(latest_ethereum_state);
 
-            let is_valid = verify_message_proof(
-                proof,
-                message,
-                object::id_to_bytes(&object::id(dwallet)),
-                data_slot,
-                beacon_block,
-                contract_address,
-                eth_state_data,
-                beacon_block_type,
-                beacon_block_body,
-                beacon_block_execution_payload,
-            );
-            assert!(is_valid, EInvalidStateProof);
-            dwallet::approve_messages(&eth_dwallet_cap.dwallet_cap, vector[message])
-        }
+        let is_valid = verify_message_proof(
+            proof,
+            message,
+            object::id_to_bytes(&object::id(dwallet)),
+            data_slot,
+            contract_address,
+            eth_state_state_root,
+        );
+        assert!(is_valid, EInvalidStateProof);
+
+        let message_approvals = dwallet::approve_messages(&eth_dwallet_cap.dwallet_cap, vector[message]);
+        message_approvals
+    }
 
     /// Verify the Message inside the Storage Merkle Root.
     native fun verify_message_proof(
@@ -96,11 +90,7 @@ module dwallet_system::eth_dwallet {
         message: vector<u8>,
         dwallet_id: vector<u8>,
         data_slot: u64,
-        beacon_block: vector<u8>,
         contract_address: vector<u8>,
-        eth_state_data: vector<u8>,
-        beacon_block_type: vector<u8>,
-        beacon_block_body: vector<u8>,
-        beacon_block_execution_payload: vector<u8>,
+        eth_state_state_root: vector<u8>,
     ): bool;
 }
