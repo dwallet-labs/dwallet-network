@@ -18,11 +18,11 @@ use schemars::_private::NoSerialize;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, VecDeque};
 use std::future::Future;
-use std::{io, mem};
 use std::io::Write;
 use std::marker::PhantomData;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
+use std::{io, mem};
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
@@ -133,76 +133,21 @@ impl MPCInstance {
     //     });
     // }
 
-    async fn advance_if_possible(&mut self) -> anyhow::Result<()>{
+    async fn advance_if_possible(&mut self) -> anyhow::Result<()> {
         if self.pending_messages.len() < self.mpc_threshold_number_of_parties {
-            return Ok(())
+            return Ok(());
         }
         let party = mem::take(&mut self.party);
         let Some(party) = party else {
             // This should never happen, as advance should not be called simultaneously for the same party
-            return Err(anyhow!("Party is not initialized"))
+            return Err(anyhow!("Party is not initialized"));
         };
         let advance_result = party.advance(self.pending_messages.clone(), &(), &mut OsRng)?;
         match advance_result {
-            AdvanceResult::Advance(_) => {}
+            AdvanceResult::Advance((message, party)) => {}
             AdvanceResult::Finalize(_) => {}
         }
         Ok(())
-    }
-
-    // async fn store_message_and_advance(
-    //     mut party: ProofParty,
-    //     consensus_adapter: Arc<dyn SubmitToConsensus>,
-    //     threshold: usize,
-    //     session_id: &ObjectID,
-    //     mut messages: &mut HashMap<PartyID, (Proof<1, Lang, PhantomData<()>>, Vec<Value>)>,
-    //     epoch_store: Arc<AuthorityPerEpochStore>,
-    //     message: &ProofMPCMessage,
-    // ) -> Option<ProofParty> {
-    //     let _ = Self::store_message(&message, &mut messages, Arc::clone(&epoch_store));
-    //     if messages.len() == threshold {
-    //         return Self::advance_party(
-    //             party,
-    //             consensus_adapter,
-    //             session_id,
-    //             &mut messages,
-    //             epoch_store,
-    //         )
-    //         .await;
-    //     }
-    //     Some(party)
-    // }
-
-    async fn advance(self) -> Option<ProofParty> {
-        let messages = self.pending_messages.clone();
-        self.party.advance(messages, &(), &mut OsRng);
-        None
-        // {
-        // Ok(advance_result) => match advance_result {
-        //     AdvanceResult::Advance((message, new_party)) => {
-        //         let message_tx = ConsensusTransaction::new_signature_mpc_message(
-        //             epoch_store.name,
-        //             bcs::to_bytes(&message).unwrap(),
-        //             session_id.clone(),
-        //         );
-        //         // TODO (#270): Handle Proof flow in a synchronous way & propagate this result
-        //         consensus_adapter
-        //             .submit_to_consensus(&[message_tx], &epoch_store)
-        //             .await
-        //             .expect("failed to submit to consensus");
-        //         Some(new_party)
-        //     }
-        //     AdvanceResult::Finalize(output) => {
-        //         // TODO (#238): Verify the output and write it to the chain
-        //         println!("Finalized output: {:?}", output);
-        //         None
-        //     }
-        // },
-        // Err(_) => {
-        //     // TODO (#263): Mark the sender as malicious
-        //     None
-        // }
-        // }
     }
 
     fn store_message(
@@ -254,10 +199,10 @@ impl MPCInstance {
             epoch_store,
             mpc_threshold_number_of_parties: threshold,
             session_id,
-            party: party_state,
+            party: Some(party_state),
         };
 
-        match new_party.advance().await {
+        match new_party.make_first_step().await {
             None => Err(anyhow!("Finalization reached unexpectedly")),
             Some(new_party) => Ok(new_party),
         }
@@ -392,13 +337,14 @@ impl SignatureMPCManager {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    async fn push_new_mpc_instance(&mut self, event: CreatedProofMPCEvent) -> PeraResult<()> {
+    async fn push_new_mpc_instance(&mut self, event: CreatedProofMPCEvent) {
         if self.mpc_instances.contains_key(&event.session_id.bytes) {
             // This should never happen, as the session ID is a move UniqueID
             error!(
                 "Received start flow event for session ID {:?} that already exists",
                 event.session_id
             );
+            return;
         }
 
         info!(
@@ -406,31 +352,29 @@ impl SignatureMPCManager {
             event.session_id
         );
 
-        // Activate the instance if possible
         if self.active_instances_counter < self.max_active_mpc_instances {
-            let new_instance = MPCInstance::new(
-                Arc::clone(&self.consensus_adapter),
-                self.epoch_store.clone(),
-                self.threshold,
-                event.session_id.clone().bytes,
-                self.language_public_parameters.clone(),
-            )
-            .await;
-            self.mpc_instances
-                .insert(event.session_id.clone().bytes, new_instance);
-            self.active_instances_counter += 1;
-            info!(
-                "Added MPCInstance to MPC manager for session_id {:?}",
-                event.session_id
-            );
-        } else {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
             info!(
                 "Added MPCInstance to pending queue for session_id {:?}",
                 event.session_id
             );
-        };
-        Ok(())
+            return;
+        }
+        let new_instance = MPCInstance::new(
+            Arc::clone(&self.consensus_adapter),
+            self.epoch_store.clone(),
+            self.threshold,
+            event.session_id.clone().bytes,
+            self.language_public_parameters.clone(),
+        )
+        .await;
+        self.mpc_instances
+            .insert(event.session_id.clone().bytes, new_instance);
+        self.active_instances_counter += 1;
+        info!(
+            "Added MPCInstance to MPC manager for session_id {:?}",
+            event.session_id
+        );
     }
 }
