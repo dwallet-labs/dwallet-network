@@ -18,7 +18,7 @@ use schemars::_private::NoSerialize;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, VecDeque};
 use std::future::Future;
-use std::io;
+use std::{io, mem};
 use std::io::Write;
 use std::marker::PhantomData;
 use std::sync::{Arc, Weak};
@@ -54,7 +54,7 @@ struct MPCInstance {
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
     mpc_threshold_number_of_parties: usize,
     session_id: ObjectID,
-    party: ProofParty,
+    party: Option<ProofParty>,
 }
 
 type ProofPublicParameters =
@@ -133,12 +133,21 @@ impl MPCInstance {
     //     });
     // }
 
-    async fn advance_if_possible(&mut self) {
-        if self.pending_messages.len() >= self.mpc_threshold_number_of_parties {
-            self.party
-                .clone()
-                .advance(self.pending_messages.clone(), &(), &mut OsRng);
+    async fn advance_if_possible(&mut self) -> anyhow::Result<()>{
+        if self.pending_messages.len() < self.mpc_threshold_number_of_parties {
+            return Ok(())
         }
+        let party = mem::take(&mut self.party);
+        let Some(party) = party else {
+            // This should never happen, as advance should not be called simultaneously for the same party
+            return Err(anyhow!("Party is not initialized"))
+        };
+        let advance_result = party.advance(self.pending_messages.clone(), &(), &mut OsRng)?;
+        match advance_result {
+            AdvanceResult::Advance(_) => {}
+            AdvanceResult::Finalize(_) => {}
+        }
+        Ok(())
     }
 
     // async fn store_message_and_advance(
