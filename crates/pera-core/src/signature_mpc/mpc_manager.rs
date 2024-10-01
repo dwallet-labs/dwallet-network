@@ -113,16 +113,7 @@ impl MPCInstance {
         match advance_result {
             AdvanceResult::Advance((message, party)) => {
                 self.party = Some(party);
-                let Some(epoch_store) = self.epoch_store.upgrade() else {
-                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-                    return None;
-                };
-                let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                    epoch_store.name,
-                    bcs::to_bytes(&message).unwrap(),
-                    self.session_id.clone(),
-                );
-                return Some(message_tx);
+                return self.new_signature_mpc_message(message);
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
@@ -131,6 +122,18 @@ impl MPCInstance {
             }
         }
         None
+    }
+
+    fn new_signature_mpc_message(&self, message: ProofMessage) -> Option<ConsensusTransaction> {
+        let Some(epoch_store) = self.epoch_store.upgrade() else {
+            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+            return None;
+        };
+        Some(ConsensusTransaction::new_signature_mpc_message(
+            epoch_store.name,
+            bcs::to_bytes(&message).unwrap(),
+            self.session_id.clone(),
+        ))
     }
 
     fn store_message(
@@ -180,11 +183,12 @@ impl MPCInstance {
         };
         match advance_result {
             AdvanceResult::Advance((message, party)) => {
-                let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                    epoch_store.name,
-                    bcs::to_bytes(&message)?,
-                    self.session_id.clone(),
-                );
+                let message_tx = self.new_signature_mpc_message(message).ok_or_else(|| {
+                    anyhow!(
+                        "Epoch store switched in the middle of session: {:?}",
+                        self.session_id
+                    )
+                })?;
                 self.consensus_adapter
                     .submit_to_consensus(&[message_tx], &epoch_store)
                     .await?;
