@@ -108,10 +108,12 @@ impl MPCInstance {
         let Ok(advance_result) = party.advance(self.pending_messages.clone(), &(), &mut OsRng)
         else {
             // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
+            self.pending_messages.clear();
             return None;
         };
         match advance_result {
             AdvanceResult::Advance((message, party)) => {
+                self.pending_messages.clear();
                 self.party = Some(party);
                 return self.new_signature_mpc_message(message);
             }
