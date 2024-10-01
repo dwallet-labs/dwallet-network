@@ -156,8 +156,7 @@ pub(crate) async fn init_ethereum_state(
     let network = Network::from_str(&network)?;
     let checkpoint = match network {
         Network::MAINNET => "0x8bfa089414dc5fe78dadc8b160a097fe744f17a80251f08eed0a3cdcc60b42f4",
-        // Network::HOLESKY => "0x8f867e31e2c55d9257dcd83effa0b7b74d7566a08bf2aabc5e133e91ffd11e2f",
-        Network::HOLESKY => "0x12e6b81891d23c90502dbc2354de9cb52afe4ff823ca00fd41d411213c6e7bbb",
+        Network::HOLESKY => "0x8f867e31e2c55d9257dcd83effa0b7b74d7566a08bf2aabc5e133e91ffd11e2f",
         _ => return Err(anyhow!("invalid network")),
     };
 
