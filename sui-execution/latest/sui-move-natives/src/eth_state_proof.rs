@@ -238,6 +238,7 @@ pub(crate) fn verify_eth_state(
 
     // Get the Execution layer's state root from the verified beacon block.
     let state_root = beacon_block.body.execution_payload().state_root();
+    let block_number = beacon_block.body.execution_payload().block_number();
 
     let new_state_bcs = bcs::to_bytes(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
@@ -255,7 +256,8 @@ pub(crate) fn verify_eth_state(
             Value::vector_u8(new_state_bcs),
             Value::u64(slot),
             Value::vector_u8(network),
-            Value::vector_u8(state_root.as_slice().to_vec())
+            Value::vector_u8(state_root.as_slice().to_vec()),
+            Value::u64(block_number.as_u64())
         ],
     ))
 }
@@ -364,6 +366,7 @@ pub(crate) fn create_initial_eth_state_data(
 
     // Get the Execution layer's state root from the verified beacon block.
     let state_root = beacon_block.body.execution_payload().state_root();
+    let block_number = beacon_block.body.execution_payload().block_number();
 
     let state_bytes = bcs::to_bytes(&eth_state)
         .map_err(|_| PartialVMError::new(StatusCode::VALUE_SERIALIZATION_ERROR))?;
@@ -373,7 +376,8 @@ pub(crate) fn create_initial_eth_state_data(
         smallvec![
             Value::vector_u8(state_bytes),
             Value::u64(time_slot.as_u64()),
-            Value::vector_u8(state_root.as_slice().to_vec())
+            Value::vector_u8(state_root.as_slice().to_vec()),
+            Value::u64(block_number.as_u64())
         ],
     ))
 }
