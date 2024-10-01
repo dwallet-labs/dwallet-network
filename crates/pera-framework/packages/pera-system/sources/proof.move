@@ -37,4 +37,19 @@ module pera_system::proof {
         event::emit(created_proof_mpc_session_event);
         transfer::freeze_object(session_data);
     }
+
+    public struct ProofSessionResult has key {
+        id: UID,
+        session_id: ID,
+        proof: vector<vector<u8>>,
+    }
+
+    public fun create_proof_session_result(sender: address, session_id: ID, proof: vector<vector<u8>>, ctx: &mut TxContext) {
+        let proof_session_result = ProofSessionResult {
+            id: object::new(ctx),
+            session_id: session_id,
+            proof: proof,
+        };
+        transfer::transfer(proof_session_result, sender);
+    }
 }

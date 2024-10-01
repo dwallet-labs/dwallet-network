@@ -25,6 +25,8 @@ mod checked {
     };
     use pera_types::PERA_RANDOMNESS_STATE_OBJECT_ID;
     use std::{collections::HashSet, sync::Arc};
+    use move_core_types::account_address::AccountAddress;
+    use move_core_types::ident_str;
     use tracing::{info, instrument, trace, warn};
 
     use crate::programmable_transactions;
@@ -699,8 +701,7 @@ mod checked {
                 Ok(Mode::empty_results())
             }
             TransactionKind::ProofMPCComplete(_) => {
-                println!("Hiidde!");
-                Ok(Mode::empty_results())
+                panic!("ProofMPCComplete should not exist in v2");
             }
         }?;
         temporary_store.check_execution_results_consistency()?;

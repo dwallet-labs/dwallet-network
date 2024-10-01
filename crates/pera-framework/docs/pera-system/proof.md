@@ -3,13 +3,15 @@ title: Module `0x3::proof`
 ---
 
 The proof module
-Responsible for starting and managing the Proof generation for the MPC flow.
-Used only for testing launching & managing an MPC flow.
+Responsible to start and manage the Proof generation MPC flow
+Used only for testing the way we launch & manage an MPC flow.
 
 
 -  [Struct `CreatedProofMPCSessionEvent`](#0x3_proof_CreatedProofMPCSessionEvent)
 -  [Resource `ProofSessionData`](#0x3_proof_ProofSessionData)
+-  [Resource `ProofSessionResult`](#0x3_proof_ProofSessionResult)
 -  [Function `launch_proof_mpc_flow`](#0x3_proof_launch_proof_mpc_flow)
+-  [Function `create_proof_session_result`](#0x3_proof_create_proof_session_result)
 
 
 <pre><code><b>use</b> <a href="../pera-framework/event.md#0x2_event">0x2::event</a>;
@@ -81,6 +83,45 @@ Event to start a <code>MockMPCSession</code>, caught by the Validators.
 
 </details>
 
+<a name="0x3_proof_ProofSessionResult"></a>
+
+## Resource `ProofSessionResult`
+
+
+
+<pre><code><b>struct</b> <a href="proof.md#0x3_proof_ProofSessionResult">ProofSessionResult</a> <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code><a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="0x3_proof_launch_proof_mpc_flow"></a>
 
 ## Function `launch_proof_mpc_flow`
@@ -114,6 +155,35 @@ Function to launch proof MPC flow.
     };
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(created_proof_mpc_session_event);
     <a href="../pera-framework/transfer.md#0x2_transfer_freeze_object">transfer::freeze_object</a>(session_data);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_proof_create_proof_session_result"></a>
+
+## Function `create_proof_session_result`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(sender: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(sender: <b>address</b>, session_id: ID, <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> TxContext) {
+    <b>let</b> proof_session_result = <a href="proof.md#0x3_proof_ProofSessionResult">ProofSessionResult</a> {
+        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+        session_id: session_id,
+        <a href="proof.md#0x3_proof">proof</a>: <a href="proof.md#0x3_proof">proof</a>,
+    };
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, sender);
 }
 </code></pre>
 

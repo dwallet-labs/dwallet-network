@@ -24,6 +24,7 @@ mod checked {
     };
     use pera_types::{BRIDGE_ADDRESS, PERA_BRIDGE_OBJECT_ID, PERA_RANDOMNESS_STATE_OBJECT_ID};
     use std::{collections::HashSet, sync::Arc};
+    use move_core_types::account_address::AccountAddress;
     use tracing::{info, instrument, trace, warn};
 
     use crate::adapter::new_move_vm;
@@ -77,6 +78,7 @@ mod checked {
         PERA_AUTHENTICATOR_STATE_OBJECT_ID, PERA_FRAMEWORK_ADDRESS, PERA_FRAMEWORK_PACKAGE_ID,
         PERA_SYSTEM_PACKAGE_ID,
     };
+    use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
 
     #[instrument(name = "tx_execute_to_effects", level = "debug", skip_all)]
     pub fn execute_transaction_to_effects<Mode: ExecutionMode>(
@@ -134,6 +136,7 @@ mod checked {
         let is_epoch_change = transaction_kind.is_end_of_epoch_tx();
 
         let deny_cert = is_certificate_denied(&transaction_digest, certificate_deny_set);
+
         let (gas_cost_summary, execution_result) = execute_transaction::<Mode>(
             &mut temporary_store,
             transaction_kind,
@@ -297,6 +300,7 @@ mod checked {
 
         // We must charge object read here during transaction execution, because if this fails
         // we must still ensure an effect is committed and all objects versions incremented
+
         let result = gas_charger.charge_input_objects(temporary_store);
         let mut result = result.and_then(|()| {
             let mut execution_result = if deny_cert {
@@ -713,8 +717,18 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
-            TransactionKind::ProofMPCComplete(_) => {
-                println!("Hiidde latest");
+            TransactionKind::ProofMPCComplete(data) => {
+                let res = setup_signature_mpc_result(
+                    data,
+                    temporary_store,
+                    tx_ctx,
+                    move_vm,
+                    gas_charger,
+                    protocol_config,
+                    metrics,
+                );
+
+                println!("{:?}", res);
                 Ok(Mode::empty_results())
             }
         }?;
@@ -1084,6 +1098,42 @@ mod checked {
             )
             .expect("Unable to generate randomness_state_create transaction!");
         builder
+    }
+
+    fn setup_signature_mpc_result(
+        data: ProofMPCResultOnChain,
+        temporary_store: &mut TemporaryStore<'_>,
+        tx_ctx: &mut TxContext,
+        move_vm: &Arc<MoveVM>,
+        gas_charger: &mut GasCharger,
+        protocol_config: &ProtocolConfig,
+        metrics: Arc<LimitsMetrics>,
+    ) -> Result<(), ExecutionError> {
+        let pt = {
+            let mut builder = ProgrammableTransactionBuilder::new();
+            // TODO (yael): move call
+            builder.move_call(
+                PERA_SYSTEM_PACKAGE_ID.into(),
+                ident_str!("proof").to_owned(),
+                ident_str!("create_proof_session_result").to_owned(),
+                vec![],
+                vec![
+                    CallArg::Pure(data.sender_address.to_vec()),
+                    CallArg::Pure(data.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.statements).unwrap()),
+                ],
+            );
+            builder.finish()
+        };
+        programmable_transactions::execution::execute::<execution_mode::System>(
+            protocol_config,
+            metrics,
+            move_vm,
+            temporary_store,
+            tx_ctx,
+            gas_charger,
+            pt,
+        )
     }
 
     fn setup_bridge_create(
