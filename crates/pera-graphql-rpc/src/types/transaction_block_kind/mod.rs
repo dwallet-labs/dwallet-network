@@ -11,7 +11,7 @@ use crate::types::transaction_block_kind::{
     end_of_epoch::EndOfEpochTransaction, programmable::ProgrammableTransactionBlock,
 };
 use async_graphql::*;
-use pera_types::transaction::TransactionKind as NativeTransactionKind;
+use pera_types::transaction::{TransactionKind as NativeTransactionKind, TransactionKind};
 
 pub(crate) mod authenticator_state_update;
 pub(crate) mod consensus_commit_prologue;
@@ -30,6 +30,7 @@ pub(crate) enum TransactionBlockKind {
     AuthenticatorState(AuthenticatorStateUpdateTransaction),
     Randomness(RandomnessStateUpdateTransaction),
     EndOfEpoch(EndOfEpochTransaction),
+    // ProofMPCComplete(ProofMPCResultOnChain),
 }
 
 impl TransactionBlockKind {
@@ -73,6 +74,7 @@ impl TransactionBlockKind {
                 native: rsu,
                 checkpoint_viewed_at,
             }),
+            K::ProofMPCComplete(_) => todo!(),
         }
     }
 }

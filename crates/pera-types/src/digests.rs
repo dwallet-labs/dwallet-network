@@ -388,6 +388,41 @@ impl SignatureMPCMessageDigest {
     }
 }
 
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
+)]
+pub struct ProofMPCResultOnChainDigest(pub Digest);
+
+impl ProofMPCResultOnChainDigest {
+    pub const fn new(digest: [u8; 32]) -> Self {
+        Self(Digest::new(digest))
+    }
+
+    pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
+        Self(Digest::generate(rng))
+    }
+
+    pub fn random() -> Self {
+        Self(Digest::random())
+    }
+
+    pub const fn inner(&self) -> &[u8; 32] {
+        self.0.inner()
+    }
+
+    pub const fn into_inner(self) -> [u8; 32] {
+        self.0.into_inner()
+    }
+
+    pub fn base58_encode(&self) -> String {
+        Base58::encode(self.0)
+    }
+
+    pub fn next_lexicographical(&self) -> Option<Self> {
+        self.0.next_lexicographical().map(Self)
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct CheckpointContentsDigest(Digest);
 

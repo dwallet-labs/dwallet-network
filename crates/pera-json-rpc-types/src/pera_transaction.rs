@@ -560,6 +560,11 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
+            TransactionKind::ProofMPCComplete(_) => {
+                // TODO: Implement this
+                println!("oops");
+                return Err(anyhow::anyhow!("ProofMPCComplete is not supported"));
+            }
         })
     }
 
@@ -658,6 +663,11 @@ impl PeraTransactionBlockKind {
                         })
                         .collect(),
                 })
+            }
+            TransactionKind::ProofMPCComplete(_) => {
+                // TODO: Implement this
+                println!("oops");
+                return Err(anyhow::anyhow!("ProofMPCComplete is not supported"));
             }
         })
     }

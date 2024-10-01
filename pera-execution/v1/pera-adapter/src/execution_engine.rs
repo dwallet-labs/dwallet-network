@@ -668,6 +668,9 @@ mod checked {
             TransactionKind::RandomnessStateUpdate(_) => {
                 panic!("RandomnessStateUpdate should not exist in v1");
             }
+            TransactionKind::ProofMPCComplete(_) => {
+                panic!("ProofMPCComplete should not exist in v1");
+            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)

@@ -53,6 +53,7 @@ use std::{
 use strum::IntoStaticStr;
 use tap::Pipe;
 use tracing::trace;
+use crate::messages_signature_mpc::ProofMPCResultOnChain;
 
 pub const TEST_ONLY_GAS_UNIT_FOR_TRANSFER: u64 = 10_000;
 pub const TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS: u64 = 50_000;
@@ -292,6 +293,7 @@ pub enum TransactionKind {
 
     ConsensusCommitPrologueV3(ConsensusCommitPrologueV3),
     // .. more transaction types go here
+    ProofMPCComplete(ProofMPCResultOnChain),
 }
 
 /// EndOfEpochTransactionKind
@@ -1176,6 +1178,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV3(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
+            | TransactionKind::ProofMPCComplete(_)
             | TransactionKind::EndOfEpochTransaction(_) => true,
             TransactionKind::ProgrammableTransaction(_) => false,
         }
@@ -1270,6 +1273,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV3(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
+            | TransactionKind::ProofMPCComplete(_)
             | TransactionKind::EndOfEpochTransaction(_) => vec![],
             TransactionKind::ProgrammableTransaction(pt) => pt.receiving_objects(),
         }
@@ -1329,6 +1333,7 @@ impl TransactionKind {
                 after_dedup
             }
             Self::ProgrammableTransaction(p) => return p.input_objects(),
+            Self::ProofMPCComplete(_) => vec![],
         };
         // Ensure that there are no duplicate inputs. This cannot be removed because:
         // In [`AuthorityState::check_locks`], we check that there are no duplicate mutable
@@ -1392,6 +1397,7 @@ impl TransactionKind {
                     ));
                 }
             }
+            TransactionKind::ProofMPCComplete(_) => {}
         };
         Ok(())
     }
@@ -1430,6 +1436,7 @@ impl TransactionKind {
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
+            Self::ProofMPCComplete(_) => "ProofMPCComplete",
         }
     }
 }
@@ -1480,6 +1487,9 @@ impl Display for TransactionKind {
             }
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind : End of Epoch Transaction")?;
+            }
+            Self::ProofMPCComplete(_) => {
+                writeln!(writer, "Transaction Kind : Proof MPC Complete")?;
             }
         }
         write!(f, "{}", writer)
@@ -2626,6 +2636,10 @@ impl VerifiedTransaction {
             })
             .pipe(Transaction::new)
             .pipe(Self::new_from_verified)
+    }
+
+    pub fn new_proof_mpc_system_transaction(data: ProofMPCResultOnChain) -> Self {
+        TransactionKind::ProofMPCComplete(data).pipe(Self::new_system_transaction)
     }
 }
 

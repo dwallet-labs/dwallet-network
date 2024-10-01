@@ -109,6 +109,7 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
+use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
 
@@ -3386,11 +3387,21 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::ProofMPCStatements(_, _, _),
+                kind: ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address),
                 ..
             }) => {
                 println!("recv proof mpc statements from authority per epoch store process consensus transaction");
-                Ok(ConsensusCertificateResult::Ignored)
+                let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
+                    ProofMPCResultOnChain{
+                        session_id: *session_id,
+                        sender_address: *sender_address,
+                        statements: statements.clone(),
+                    }
+                );
+
+                let transaction_k = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
+                // let transaction = SequencedConsensusTransactionKind::System(transaction);
+                Ok(ConsensusCertificateResult::PeraTransaction(transaction_k))
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),

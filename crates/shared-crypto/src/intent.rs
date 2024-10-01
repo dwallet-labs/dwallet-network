@@ -68,6 +68,7 @@ pub enum IntentScope {
     BridgeEventUnused = 7, // for bridge purposes but it's currently not included in messages.
     ConsensusBlock = 8,    // Used for consensus authority signature on block's digest
     SignatureMPCMessage = 9, // Used for an authority signature on a signature mpc message.
+    ProofMPCResultOnChain = 10, // Used for an authority signature on a proof mpc result on chain.
 }
 
 impl TryFrom<u8> for IntentScope {
