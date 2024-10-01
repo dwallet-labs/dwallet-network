@@ -3187,7 +3187,6 @@ impl AuthorityPerEpochStore {
             }
         }
 
-        // handle mpc manager end of delivery
         // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
         if let Some(signature_mpc_manager) = self.signature_mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
