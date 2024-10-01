@@ -355,6 +355,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
+                    if let ConsensusTransactionKind::ProofMPCStatements(_, _,_ ) = &transaction.kind {
+                        println!("recv proof mpc statements from consensus handler output internal");
+                    }
                     if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
                         &transaction.kind
                     {
@@ -583,6 +586,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
         ConsensusTransactionKind::SignatureMPCMessage(_, _, _) => "signature_mpc_message",
+        ConsensusTransactionKind::ProofMPCStatements(_, _, _) => "proof_mpc_statements",
     }
 }
 

@@ -2417,6 +2417,10 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::UserTransaction(_certificate),
                 ..
             }) => {}
+            SequencedConsensusTransactionKind::External(ConsensusTransaction{
+                kind: ConsensusTransactionKind::ProofMPCStatements(_, _, _),
+                ..
+            }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, _),
                 ..
@@ -3381,6 +3385,13 @@ impl AuthorityPerEpochStore {
         let tracking_id = transaction.get_tracking_id();
 
         match &transaction {
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::ProofMPCStatements(_, _, _),
+                ..
+            }) => {
+                println!("recv proof mpc statements from authority per epoch store process consensus transaction");
+                Ok(ConsensusCertificateResult::Ignored)
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
                 ..

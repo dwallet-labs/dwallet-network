@@ -129,8 +129,6 @@ impl MPCInstance {
                     .await?;
             }
             AdvanceResult::Finalize(output) => {
-                // TODO (#238): Verify the output and write it to the chain
-                // println!("Finalized output: {:?}", output);
                 let output = output.iter().map(|x| { bcs::to_bytes(&x.value()).unwrap() }).collect();
 
                 let message_tx = ConsensusTransaction::new_proof_mpc_statements(
@@ -367,6 +365,7 @@ impl SignatureMPCManager {
             self.mpc_threshold_number_of_parties,
             event.session_id.clone().bytes,
             self.language_public_parameters.clone(),
+            event.sender.clone()
         )
         .await;
         self.mpc_instances

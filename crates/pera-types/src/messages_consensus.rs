@@ -97,6 +97,7 @@ pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
     SignatureMPCMessage(AuthorityName),
+    ProofMPCStatements(Vec<Vec<u8>>, ObjectID, PeraAddress),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -138,6 +139,9 @@ impl Debug for ConsensusTransactionKey {
             }
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
+            }
+            ConsensusTransactionKey::ProofMPCStatements(statements, session_id, sender_address) => {
+                write!(f, "ProofMPCStatements({:?}, {:?}, {:?})", statements, session_id, sender_address)
             }
         }
     }
@@ -566,6 +570,9 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::SignatureMPCMessage(authority, _, _) => {
                 ConsensusTransactionKey::SignatureMPCMessage(*authority)
+            }
+            ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address) => {
+                ConsensusTransactionKey::ProofMPCStatements(statements.clone(), *session_id, *sender_address)
             }
         }
     }
