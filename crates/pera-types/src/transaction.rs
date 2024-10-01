@@ -2,7 +2,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use super::{base_types::*, error::*, PERA_BRIDGE_OBJECT_ID};
+use super::{base_types::*, error::*, PERA_BRIDGE_OBJECT_ID, PERA_SYSTEM_PACKAGE_ID};
 use crate::authenticator_state::ActiveJwk;
 use crate::committee::{Committee, EpochId, ProtocolVersion};
 use crate::crypto::{
@@ -1333,7 +1333,7 @@ impl TransactionKind {
                 after_dedup
             }
             Self::ProgrammableTransaction(p) => return p.input_objects(),
-            Self::ProofMPCComplete(_) => vec![],
+            Self::ProofMPCComplete(_) => vec![InputObjectKind::MovePackage(PERA_SYSTEM_PACKAGE_ID)],
         };
         // Ensure that there are no duplicate inputs. This cannot be removed because:
         // In [`AuthorityState::check_locks`], we check that there are no duplicate mutable
