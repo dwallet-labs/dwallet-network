@@ -9,190 +9,206 @@ use itertools::Itertools;
 use maurer::knowledge_of_discrete_log::PublicParameters;
 use maurer::Proof;
 use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
 use proof::mpc::{AdvanceResult, Party};
 use rand_core::OsRng;
+use rayon::prelude::*;
 use schemars::_private::NoSerialize;
+use std::cmp::PartialEq;
 use std::collections::{HashMap, VecDeque};
-use std::io;
+use std::future::Future;
 use std::io::Write;
 use std::marker::PhantomData;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
+use std::{io, mem};
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
 
+#[derive(Clone)]
 struct ProofMPCMessage {
     message: Vec<u8>,
     authority: AuthorityName,
 }
+pub type ProofMessage = (Proof<1, Lang, PhantomData<()>>, Vec<Value>);
 
 fn authority_name_to_party_id(
     authority_name: AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
-) -> anyhow::Result<PartyID> {
+) -> PeraResult<PartyID> {
     Ok(epoch_store
         .committee()
         .authority_index(&authority_name)
-        .ok_or_else(|| anyhow!("Authority {} not found in the committee", authority_name))?
-        as PartyID)
+        // This should never happen, as the validator only accepts messages from committee members
+        .ok_or_else(|| {
+            PeraError::InvalidCommittee(
+                "Received a proof MPC message from a validator that is not in the committee"
+                    .to_string(),
+            )
+        })? as PartyID)
 }
 
 struct MPCInstance {
     status: MPCSessionStatus,
-    /// The channel to send message to this instance
-    input_receiver: Option<mpsc::Sender<ProofMPCMessage>>,
-    pending_messages: Vec<ProofMPCMessage>,
+    pending_messages: HashMap<PartyID, ProofMessage>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
     mpc_threshold_number_of_parties: usize,
     session_id: ObjectID,
+    party: Option<ProofParty>,
 }
 
 type ProofPublicParameters =
     maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
 
 impl MPCInstance {
-    async fn set_active(&mut self, public_parameters: ProofPublicParameters) {
-        self.status = MPCSessionStatus::Active;
-        // TODO (#256): Replace hard coded 100 with the number of validators times 10
-        let (messages_handler_sender, messages_handler_receiver) = mpsc::channel(100);
-        self.input_receiver = Some(messages_handler_sender);
-        self.spawn_mpc_messages_handler(public_parameters, messages_handler_receiver);
-    }
-
-    /// Spawns an asynchronous task to handle incoming messages.
-    /// The [`MPCService`] will forward any message related to that instance to this channel.
-    fn spawn_mpc_messages_handler(
-        &self,
+    async fn new(
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Weak<AuthorityPerEpochStore>,
+        mpc_threshold_number_of_parties: usize,
+        session_id: ObjectID,
         public_parameters: ProofPublicParameters,
-        mut receiver: mpsc::Receiver<MPCInput>,
-    ) {
-        let consensus_adapter = Arc::clone(&self.consensus_adapter);
-        let epoch_store = self.epoch_store.clone();
-        let threshold = self.mpc_threshold_number_of_parties;
-        let session_id = self.session_id.clone();
-        tokio::spawn(async move {
-            let mut messages = HashMap::new();
-
-            let Some(epoch_store) = epoch_store.upgrade() else {
-                // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-                return;
-            };
-
-            while let Some(message) = receiver.recv().await {
-                let _ = Self::insert_mpc_message(&message, &mut messages, Arc::clone(&epoch_store));
-                if messages.len() == threshold {
-                    party = match party.advance(messages.clone(), &(), &mut OsRng) {
-                        Ok(advance_result) => match advance_result {
-                            AdvanceResult::Advance((message, new_party)) => {
-                                let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                                    epoch_store.name,
-                                    bcs::to_bytes(&message).unwrap(),
-                                    session_id,
-                                );
-                                let _ = consensus_adapter
-                                    .submit_to_consensus(&[message_tx], &epoch_store)
-                                    .await;
-                                new_party
-                            }
-                            AdvanceResult::Finalize(output) => {
-                                // TODO (#238): Verify the output and write it to the chain
-                                return;
-                            }
-                        },
-                        _ => {
-                            return;
-                        }
-                    }
-                }
+    ) -> Self {
+        let mut new_instance = Self {
+            status: MPCSessionStatus::Active,
+            pending_messages: HashMap::new(),
+            consensus_adapter: consensus_adapter.clone(),
+            epoch_store: epoch_store.clone(),
+            mpc_threshold_number_of_parties,
+            session_id,
+            party: None,
+        };
+        match new_instance.start_proof_mpc_flow(public_parameters).await {
+            Ok(party) => {
+                new_instance.party = Some(party);
+                new_instance
             }
-        });
+            Err(err) => {
+                // This should never happen, as there should be on-chain verification on the init transaction, and
+                // we are ignoring failed transactions.
+                error!("Error initializing the MPC proof flow: {:?}", err);
+                new_instance.status = MPCSessionStatus::Finished;
+                new_instance
+            }
+        }
     }
 
-    fn insert_mpc_message(
+    fn advance(&mut self) -> Option<ConsensusTransaction> {
+        let party = mem::take(&mut self.party);
+        let Some(party) = party else {
+            // This should never happen, the party is initialized in the constructor
+            // and advance should not be called more than once simultaneously for the same instance
+            error!("Party is not initialized");
+            return None;
+        };
+        let Ok(advance_result) = party.advance(self.pending_messages.clone(), &(), &mut OsRng)
+        else {
+            // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
+            return None;
+        };
+        match advance_result {
+            AdvanceResult::Advance((message, party)) => {
+                self.party = Some(party);
+                let Some(epoch_store) = self.epoch_store.upgrade() else {
+                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+                    return None;
+                };
+                let message_tx = ConsensusTransaction::new_signature_mpc_message(
+                    epoch_store.name,
+                    bcs::to_bytes(&message).unwrap(),
+                    self.session_id.clone(),
+                );
+                return Some(message_tx);
+            }
+            AdvanceResult::Finalize(output) => {
+                // TODO (#238): Verify the output and write it to the chain
+                println!("Finalized output: {:?}", output);
+                self.status = MPCSessionStatus::Finished;
+            }
+        }
+        None
+    }
+
+    fn store_message(
+        &mut self,
         message: &ProofMPCMessage,
-        mut messages: &mut HashMap<PartyID, (Proof<1, Lang, PhantomData<()>>, Vec<Value>)>,
         epoch_store: Arc<AuthorityPerEpochStore>,
-    ) -> anyhow::Result<()> {
+    ) -> PeraResult<()> {
         let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
-        if messages.contains_key(&party_id) {
+        if self.pending_messages.contains_key(&party_id) {
             // TODO(#260): Punish an authority that sends multiple messages in the same round
-            return Err(anyhow!(
-                "Authority {} already sent a message in this round",
-                epoch_store.name
-            ));
+            return Ok(());
         }
 
         match bcs::from_bytes(&message.message) {
             Ok(message) => {
-                messages.insert(party_id, message);
+                self.pending_messages.insert(party_id, message);
                 Ok(())
             }
-            Err(err) => Err(anyhow!("Error deserializing the first message: {:?}", err)),
+            Err(err) => Err(PeraError::ObjectDeserializationError {
+                error: err.to_string(),
+            }),
         }
     }
 
     async fn start_proof_mpc_flow(
-        public_parameters: maurer::language::PublicParameters<
-            { maurer::SOUND_PROOFS_REPETITIONS },
-            Lang,
-        >,
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Weak<AuthorityPerEpochStore>,
-        threshold: usize,
-        session_id: ObjectID,
-    ) -> anyhow::Result<(ProofParty, Vec<u8>)> {
+        &self,
+        public_parameters: ProofPublicParameters,
+    ) -> anyhow::Result<ProofParty> {
         let batch_size = 1;
-        let party_state: ProofParty =
-            proof::aggregation::asynchronous::Party::new_proof_round_party(
-                public_parameters,
-                PhantomData,
-                threshold as PartyID,
-                batch_size,
-                &mut OsRng,
-            )?;
-
-        match party_state.advance(HashMap::new(), &(), &mut OsRng) {
-            Ok(advance_result) => {
-                let AdvanceResult::Advance((message, new_party)) = advance_result else {
-                    return Err(anyhow!("Finalization reached unexpectedly"));
-                };
-                let Some(epoch_store) = epoch_store.upgrade() else {
-                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-                    return Err(anyhow!("Epoch store not found"));
-                };
+        let party: ProofParty = proof::aggregation::asynchronous::Party::new_proof_round_party(
+            public_parameters,
+            PhantomData,
+            self.mpc_threshold_number_of_parties as PartyID,
+            batch_size,
+            &mut OsRng,
+        )?;
+        let Some(epoch_store) = self.epoch_store.upgrade() else {
+            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+            return Err(anyhow!("Epoch store not found"));
+        };
+        let Ok(advance_result) = party.advance(HashMap::new(), &(), &mut OsRng) else {
+            // This should never happen, as there should be on chain verification on the initial event input
+            return Err(anyhow!(
+                "Error performing first step for session id: {:?}",
+                self.session_id
+            ));
+        };
+        match advance_result {
+            AdvanceResult::Advance((message, party)) => {
                 let message_tx = ConsensusTransaction::new_signature_mpc_message(
                     epoch_store.name,
                     bcs::to_bytes(&message)?,
+                    self.session_id.clone(),
                 );
-                consensus_adapter
-                    .submit_to_consensus(&vec![message_tx], &epoch_store)
+                self.consensus_adapter
+                    .submit_to_consensus(&[message_tx], &epoch_store)
                     .await?;
-                Ok(new_party)
+                Ok(party)
             }
-            Err(err) => Err(anyhow!("Error while advancing the MPC instance: {:?}", err)),
+            AdvanceResult::Finalize(_) => Err(anyhow!(
+                "Finalization reached unexpectedly: {:?}",
+                self.session_id
+            )),
         }
     }
 
-    async fn handle_message(&mut self, message: ProofMPCMessage) {
+    fn handle_message(&mut self, message: ProofMPCMessage) -> PeraResult<()> {
         match self.status {
             MPCSessionStatus::Active => {
-                let Some(input_receiver) = &self.input_receiver else {
-                    // This should never happen, as the input_receiver is set when the session is activated
-                    error!("No input receiver found for active session");
-                    return;
+                let Some(epoch_store) = self.epoch_store.upgrade() else {
+                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+                    return Ok(());
                 };
-                let _ = input_receiver.send(message).await;
-            }
-            MPCSessionStatus::Pending => {
-                self.pending_messages.push(message);
+                self.store_message(&message, epoch_store)
             }
             MPCSessionStatus::Finished => {
                 // Do nothing
+                Ok(())
             }
         }
     }
@@ -200,13 +216,11 @@ impl MPCInstance {
 
 /// Possible statuses of an MPC session:
 /// - Active: The session is currently running; new messages will be forwarded to the session.
-/// - Pending: Too many active instances are running atm; incoming messages will be queued. The session
-/// will be activated once there is room, i.e. when enough active instances finish.
-/// - Finished: The session is finished and pending removal; incoming messages will not be forwarded.
-#[derive(Clone, Copy)]
+/// - Finished: The session is finished and pending removal; incoming messages will not be forwarded,
+/// but will not be marked as malicious.
+#[derive(Clone, Copy, PartialEq)]
 enum MPCSessionStatus {
     Active,
-    Pending,
     Finished,
 }
 
@@ -225,7 +239,7 @@ pub struct SignatureMPCManager {
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
-    threshold: usize,
+    mpc_threshold_number_of_parties: usize,
 }
 
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
@@ -264,7 +278,7 @@ impl SignatureMPCManager {
             epoch_store,
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
-            threshold: ((num_of_parties * 2) + 2) / 3,
+            mpc_threshold_number_of_parties: ((num_of_parties * 2) + 2) / 3,
         }
     }
 
@@ -280,24 +294,41 @@ impl SignatureMPCManager {
         Ok(())
     }
 
-    pub async fn handle_mpc_message(
+    pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
+        let txs_to_send: Vec<ConsensusTransaction> = self
+            .mpc_instances
+            .iter_mut()
+            .filter(|(_, instance)| {
+                instance.status == MPCSessionStatus::Active
+                    && instance.pending_messages.len() >= self.mpc_threshold_number_of_parties
+            })
+            .collect::<Vec<_>>()
+            .par_iter_mut()
+            .filter_map(|(_, ref mut instance)| instance.advance())
+            .collect();
+        let Some(epoch_store) = self.epoch_store.upgrade() else {
+            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+            return Ok(());
+        };
+        self.consensus_adapter
+            .submit_to_consensus(&txs_to_send, &epoch_store)
+            .await
+    }
+
+    pub fn handle_message(
         &mut self,
         message: &[u8],
         authority_name: AuthorityName,
         session_id: ObjectID,
-    ) -> anyhow::Result<()> {
-        let mut instance = self
-            .mpc_instances
-            .get_mut(&session_id)
+    ) -> PeraResult<()> {
+        let Some(mut instance) = self.mpc_instances.get_mut(&session_id) else {
             // TODO (#261): Punish a validator that sends a message related to a non-existing mpc instance
-            .ok_or_else(|| anyhow!("MPC instance not found"))?;
-        instance
-            .handle_message(ProofMPCMessage {
-                message: message.to_vec(),
-                authority: authority_name,
-            })
-            .await;
-        Ok(())
+            return Ok(());
+        };
+        instance.handle_message(ProofMPCMessage {
+            message: message.to_vec(),
+            authority: authority_name,
+        })
     }
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
@@ -317,30 +348,28 @@ impl SignatureMPCManager {
             event.session_id
         );
 
-        let mut new_instance = MPCInstance {
-            status: MPCSessionStatus::Pending,
-            input_receiver: None,
-            pending_messages: vec![],
-            consensus_adapter: Arc::clone(&self.consensus_adapter),
-            epoch_store: self.epoch_store.clone(),
-            mpc_threshold_number_of_parties: self.threshold,
-            session_id: event.session_id.bytes.clone(),
-        };
-
-        // Activate the instance if possible
-        if self.active_instances_counter < self.max_active_mpc_instances {
-            new_instance.set_active(self.language_public_parameters.clone()).await;
-            self.active_instances_counter += 1;
-        } else {
+        if self.active_instances_counter > self.max_active_mpc_instances {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
-        };
-
+            info!(
+                "Added MPCInstance to pending queue for session_id {:?}",
+                event.session_id
+            );
+            return;
+        }
+        let new_instance = MPCInstance::new(
+            Arc::clone(&self.consensus_adapter),
+            self.epoch_store.clone(),
+            self.mpc_threshold_number_of_parties,
+            event.session_id.clone().bytes,
+            self.language_public_parameters.clone(),
+        )
+        .await;
         self.mpc_instances
             .insert(event.session_id.clone().bytes, new_instance);
-
+        self.active_instances_counter += 1;
         info!(
-            "Added MPCInstance to service for session_id {:?}",
+            "Added MPCInstance to MPC manager for session_id {:?}",
             event.session_id
         );
     }
