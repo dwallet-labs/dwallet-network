@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::base_types::{AuthorityName, ObjectRef, TransactionDigest};
+use crate::base_types::{AuthorityName, ObjectRef, PeraAddress, TransactionDigest};
 use crate::base_types::{ConciseableName, ObjectID, SequenceNumber};
 use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
@@ -270,6 +270,7 @@ pub enum ConsensusTransactionKind {
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
     SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    ProofMPCStatements(Vec<Vec<u8>>, ObjectID, PeraAddress),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -475,6 +476,20 @@ impl ConsensusTransaction {
         Self {
             tracking_id,
             kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
+        }
+    }
+
+    pub fn new_proof_mpc_statements(
+        statements: Vec<Vec<u8>>,
+        session_id: ObjectID,
+        sender_address: PeraAddress
+    ) -> Self {
+        let mut hasher = DefaultHasher::new();
+        statements.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address),
         }
     }
 

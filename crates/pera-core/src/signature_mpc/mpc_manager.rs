@@ -8,7 +8,7 @@ use im::hashmap;
 use itertools::Itertools;
 use maurer::knowledge_of_discrete_log::PublicParameters;
 use maurer::Proof;
-use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
@@ -59,6 +59,7 @@ struct MPCInstance {
     mpc_threshold_number_of_parties: usize,
     session_id: ObjectID,
     party: Option<ProofParty>,
+    sender_address: PeraAddress
 }
 
 type ProofPublicParameters =
@@ -71,6 +72,7 @@ impl MPCInstance {
         mpc_threshold_number_of_parties: usize,
         session_id: ObjectID,
         public_parameters: ProofPublicParameters,
+        sender_address: PeraAddress
     ) -> Self {
         let mut new_instance = Self {
             status: MPCSessionStatus::Active,
@@ -80,6 +82,7 @@ impl MPCInstance {
             mpc_threshold_number_of_parties,
             session_id,
             party: None,
+            sender_address
         };
         match new_instance.start_proof_mpc_flow(public_parameters).await {
             Ok(party) => {
@@ -127,7 +130,17 @@ impl MPCInstance {
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
-                println!("Finalized output: {:?}", output);
+                // println!("Finalized output: {:?}", output);
+                let output = output.iter().map(|x| { bcs::to_bytes(&x.value()).unwrap() }).collect();
+
+                let message_tx = ConsensusTransaction::new_proof_mpc_statements(
+                    output,
+                    self.session_id.clone(),
+                    self.sender_address.clone(),
+                );
+                self.consensus_adapter
+                    .submit_to_consensus(&[message_tx], &self.epoch_store.upgrade().unwrap())
+                    .await?;
                 self.status = MPCSessionStatus::Finished;
             }
         }
