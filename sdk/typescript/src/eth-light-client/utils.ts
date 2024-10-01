@@ -102,6 +102,8 @@ export const getEthereumStateById = async (
 				data: number[];
 				time_slot: number;
 				latest_ethereum_state_id: string;
+				state_root: number[];
+				block_number: number;
 			})
 		: null;
 };

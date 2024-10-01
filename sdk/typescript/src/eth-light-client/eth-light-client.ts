@@ -1,7 +1,11 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { get_current_period, get_initial_state_bcs } from '@dwallet-network/eth-light-client-wasm';
+import {
+	get_current_period,
+	get_initial_state_bcs,
+	try_verify_proof,
+} from '@dwallet-network/eth-light-client-wasm';
 import { ethers } from 'ethers';
 
 import { bcs } from '../bcs/index.js';
@@ -219,62 +223,8 @@ export const approveEthereumMessage = async (
 	let currentEthereumStateData = currentEthereumStateObj?.data as number[];
 	let currentEthereumStateArrayU8 = Uint8Array.from(currentEthereumStateData);
 
-	let syncPeriod = get_current_period(currentEthereumStateArrayU8);
-
-	let updatesResponseJson = await getUpdates(consensusRpc, syncPeriod);
-	let updatesJson = JSON.stringify(updatesResponseJson.map((update: any) => update['data']));
-	let updatesBcs = stringToArrayU8Bcs(updatesJson);
-
-	let finalityUpdateResponseJson = await getFinalityUpdate(consensusRpc);
-	let finalityUpdateJson = JSON.stringify(finalityUpdateResponseJson['data']);
-	let finalityUpdateBcs = stringToArrayU8Bcs(finalityUpdateJson);
-
-	let optimisticUpdateResponse = await getOptimisticUpdate(consensusRpc);
-	let optimisticUpdateJson = JSON.stringify(optimisticUpdateResponse['data']);
-	let optimisticUpdateBcs = stringToArrayU8Bcs(optimisticUpdateJson);
-
-	let beaconBlockData = await getBeaconBlockData(consensusRpc, finalityUpdateResponseJson);
-	let beaconBlockTypeBcs = stringToArrayU8Bcs(beaconBlockData.blockType);
-	let beaconBlockBcs = stringToArrayU8Bcs(beaconBlockData.blockJsonString);
-	let beaconBlockBodyBcs = stringToArrayU8Bcs(beaconBlockData.blockBodyJsonString);
-	let beaconBlockExecutionPayloadBcs = stringToArrayU8Bcs(
-		beaconBlockData.blockExecutionPayloadJsonString,
-	);
-
-	const tx = new TransactionBlock();
-	tx.moveCall({
-		target: `${packageId}::${ethereumStateModuleName}::verify_new_state`,
-		arguments: [
-			tx.pure(updatesBcs),
-			tx.pure(finalityUpdateBcs),
-			tx.pure(optimisticUpdateBcs),
-			tx.object(latestStateObjectID),
-			tx.object(currentEthereumStateID),
-			tx.pure(beaconBlockBcs),
-			tx.pure(beaconBlockBodyBcs),
-			tx.pure(beaconBlockExecutionPayloadBcs),
-			tx.pure(beaconBlockTypeBcs),
-		],
-	});
-
-	let txResult = await client.signAndExecuteTransactionBlock({
-		signer: keypair,
-		transactionBlock: tx,
-		options: { showEffects: true },
-	});
-
-	if (txResult.effects?.status.status !== 'success') {
-		throw new Error(
-			'Failed to verify Ethereum state. txResult: ' + JSON.stringify(txResult.effects),
-		);
-	}
-
-	// Get the latest Ethereum state again, to get the new state after it is verified.
-	latestEthereumStateObj = await getLatestEthereumStateById(client, latestStateObjectID);
-	let verifiedEthereumStateID = latestEthereumStateObj?.eth_state_id as string;
-	let contractAddress = latestEthereumStateObj?.eth_smart_contract_address as number[];
 	let dataSlot = latestEthereumStateObj?.eth_smart_contract_slot as number;
-
+	let contractAddress = latestEthereumStateObj?.eth_smart_contract_address as number[];
 	let contractAddressArrayU8 = Uint8Array.from(contractAddress);
 	let contractAddressString = ethers.hexlify(contractAddressArrayU8);
 
@@ -284,9 +234,87 @@ export const approveEthereumMessage = async (
 		dWalletID,
 		dataSlot,
 		contractAddressString,
-		beaconBlockData.latestFinalizedBlockNumber,
+		currentEthereumStateObj?.block_number as number,
 		executionRpc,
 	);
+	let state_root = currentEthereumStateObj?.state_root as number[];
+
+	let successful_proof = try_verify_proof(
+		proof,
+		contractAddressString,
+		message,
+		ethers.getBytes(dWalletID),
+		dataSlot,
+		state_root,
+	);
+
+	// If the proof has failed, then we need to update the state and try again.
+	if (!successful_proof) {
+		let syncPeriod = get_current_period(currentEthereumStateArrayU8);
+
+		let updatesResponseJson = await getUpdates(consensusRpc, syncPeriod);
+		let updatesJson = JSON.stringify(updatesResponseJson.map((update: any) => update['data']));
+		let updatesBcs = stringToArrayU8Bcs(updatesJson);
+
+		let finalityUpdateResponseJson = await getFinalityUpdate(consensusRpc);
+		let finalityUpdateJson = JSON.stringify(finalityUpdateResponseJson['data']);
+		let finalityUpdateBcs = stringToArrayU8Bcs(finalityUpdateJson);
+
+		let optimisticUpdateResponse = await getOptimisticUpdate(consensusRpc);
+		let optimisticUpdateJson = JSON.stringify(optimisticUpdateResponse['data']);
+		let optimisticUpdateBcs = stringToArrayU8Bcs(optimisticUpdateJson);
+
+		let beaconBlockData = await getBeaconBlockData(consensusRpc, finalityUpdateResponseJson);
+		let beaconBlockTypeBcs = stringToArrayU8Bcs(beaconBlockData.blockType);
+		let beaconBlockBcs = stringToArrayU8Bcs(beaconBlockData.blockJsonString);
+		let beaconBlockBodyBcs = stringToArrayU8Bcs(beaconBlockData.blockBodyJsonString);
+		let beaconBlockExecutionPayloadBcs = stringToArrayU8Bcs(
+			beaconBlockData.blockExecutionPayloadJsonString,
+		);
+
+		const tx = new TransactionBlock();
+		tx.moveCall({
+			target: `${packageId}::${ethereumStateModuleName}::verify_new_state`,
+			arguments: [
+				tx.pure(updatesBcs),
+				tx.pure(finalityUpdateBcs),
+				tx.pure(optimisticUpdateBcs),
+				tx.object(latestStateObjectID),
+				tx.object(currentEthereumStateID),
+				tx.pure(beaconBlockBcs),
+				tx.pure(beaconBlockBodyBcs),
+				tx.pure(beaconBlockExecutionPayloadBcs),
+				tx.pure(beaconBlockTypeBcs),
+			],
+		});
+
+		let txResult = await client.signAndExecuteTransactionBlock({
+			signer: keypair,
+			transactionBlock: tx,
+			options: { showEffects: true },
+		});
+
+		if (txResult.effects?.status.status !== 'success') {
+			throw new Error(
+				'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(txResult.effects),
+			);
+		}
+
+		// Get the latest Ethereum state again, to get the updated state after it is verified.
+		latestEthereumStateObj = await getLatestEthereumStateById(client, latestStateObjectID);
+		currentEthereumStateID = latestEthereumStateObj?.eth_state_id as string;
+		currentEthereumStateObj = await getEthereumStateById(client, currentEthereumStateID);
+
+		// Get the proof again, using the updated state.
+		proof = await getProof(
+			message,
+			dWalletID,
+			dataSlot,
+			contractAddressString,
+			currentEthereumStateObj?.block_number as number,
+			executionRpc,
+		);
+	}
 
 	let proofBcs = stringToArrayU8Bcs(JSON.stringify(proof));
 	let messageBcs = stringToArrayU8Bcs(message);
@@ -299,12 +327,12 @@ export const approveEthereumMessage = async (
 			tx2.pure(messageBcs),
 			tx2.object(dWalletID),
 			tx2.object(latestStateObjectID),
-			tx2.object(verifiedEthereumStateID),
+			tx2.object(currentEthereumStateID),
 			tx2.pure(proofBcs),
 		],
 	});
 
-	txResult = await client.signAndExecuteTransactionBlock({
+	let txResult = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx2,
 		options: { showEffects: true },
