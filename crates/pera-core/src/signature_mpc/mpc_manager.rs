@@ -147,6 +147,9 @@ impl MPCInstance {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
             return None;
         };
+        if authority_name_to_party_id(epoch_store.name, &epoch_store).unwrap() != 3 {
+            return None;
+        }
         let statements = statements.iter().map(|s| {bcs::to_bytes(&s.value()).unwrap()}).collect::<Vec<Vec<u8>>>();
         Some(ConsensusTransaction::new_proof_mpc_statements(
             statements,
