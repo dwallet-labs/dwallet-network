@@ -8,12 +8,13 @@ use im::hashmap;
 use itertools::Itertools;
 use maurer::knowledge_of_discrete_log::PublicParameters;
 use maurer::Proof;
-use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
+use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
 use proof::mpc::{AdvanceResult, Party};
 use rand_core::OsRng;
+use rayon::prelude::*;
 use schemars::_private::NoSerialize;
 use std::cmp::PartialEq;
 use std::collections::{HashMap, VecDeque};
@@ -59,7 +60,6 @@ struct MPCInstance {
     mpc_threshold_number_of_parties: usize,
     session_id: ObjectID,
     party: Option<ProofParty>,
-    sender_address: PeraAddress
 }
 
 type ProofPublicParameters =
@@ -72,7 +72,6 @@ impl MPCInstance {
         mpc_threshold_number_of_parties: usize,
         session_id: ObjectID,
         public_parameters: ProofPublicParameters,
-        sender_address: PeraAddress
     ) -> Self {
         let mut new_instance = Self {
             status: MPCSessionStatus::Active,
@@ -82,13 +81,12 @@ impl MPCInstance {
             mpc_threshold_number_of_parties,
             session_id,
             party: None,
-            sender_address
         };
         match new_instance.start_proof_mpc_flow(public_parameters).await {
             Ok(party) => {
                 new_instance.party = Some(party);
                 new_instance
-            },
+            }
             Err(err) => {
                 // This should never happen, as there should be on-chain verification on the init transaction, and
                 // we are ignoring failed transactions.
@@ -99,50 +97,45 @@ impl MPCInstance {
         }
     }
 
-    async fn advance(&mut self) -> PeraResult<()> {
+    fn advance(&mut self) -> Option<ConsensusTransaction> {
         let party = mem::take(&mut self.party);
         let Some(party) = party else {
             // This should never happen, the party is initialized in the constructor
             // and advance should not be called more than once simultaneously for the same instance
             error!("Party is not initialized");
-            return Ok(());
+            return None;
         };
         let Ok(advance_result) = party.advance(self.pending_messages.clone(), &(), &mut OsRng)
         else {
             // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
-            return Ok(());
+            self.pending_messages.clear();
+            return None;
         };
         match advance_result {
             AdvanceResult::Advance((message, party)) => {
+                self.pending_messages.clear();
                 self.party = Some(party);
-                let Some(epoch_store) = self.epoch_store.upgrade() else {
-                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-                    return Ok(());
-                };
-                let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                    epoch_store.name,
-                    bcs::to_bytes(&message).unwrap(),
-                    self.session_id.clone(),
-                );
-                self.consensus_adapter
-                    .submit_to_consensus(&[message_tx], &epoch_store)
-                    .await?;
+                return self.new_signature_mpc_message(message);
             }
             AdvanceResult::Finalize(output) => {
-                let output = output.iter().map(|x| { bcs::to_bytes(&x.value()).unwrap() }).collect();
-
-                let message_tx = ConsensusTransaction::new_proof_mpc_statements(
-                    output,
-                    self.session_id.clone(),
-                    self.sender_address.clone(),
-                );
-                self.consensus_adapter
-                    .submit_to_consensus(&[message_tx], &self.epoch_store.upgrade().unwrap())
-                    .await?;
+                // TODO (#238): Verify the output and write it to the chain
+                println!("Finalized output: {:?}", output);
                 self.status = MPCSessionStatus::Finished;
             }
         }
-        Ok(())
+        None
+    }
+
+    fn new_signature_mpc_message(&self, message: ProofMessage) -> Option<ConsensusTransaction> {
+        let Some(epoch_store) = self.epoch_store.upgrade() else {
+            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+            return None;
+        };
+        Some(ConsensusTransaction::new_signature_mpc_message(
+            epoch_store.name,
+            bcs::to_bytes(&message).unwrap(),
+            self.session_id.clone(),
+        ))
     }
 
     fn store_message(
@@ -192,11 +185,12 @@ impl MPCInstance {
         };
         match advance_result {
             AdvanceResult::Advance((message, party)) => {
-                let message_tx = ConsensusTransaction::new_signature_mpc_message(
-                    epoch_store.name,
-                    bcs::to_bytes(&message)?,
-                    self.session_id.clone(),
-                );
+                let message_tx = self.new_signature_mpc_message(message).ok_or_else(|| {
+                    anyhow!(
+                        "Epoch store switched in the middle of session: {:?}",
+                        self.session_id
+                    )
+                })?;
                 self.consensus_adapter
                     .submit_to_consensus(&[message_tx], &epoch_store)
                     .await?;
@@ -307,14 +301,24 @@ impl SignatureMPCManager {
     }
 
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
-        // iterate over all active instances copilot do it don't add more docs write the code
-        for (_, mut instance) in self.mpc_instances.iter_mut().filter(|(_, instance)| {
-            instance.status == MPCSessionStatus::Active
-                && instance.pending_messages.len() >= self.mpc_threshold_number_of_parties
-        }) {
-            instance.advance().await?;
-        }
-        Ok(())
+        let txs_to_send: Vec<ConsensusTransaction> = self
+            .mpc_instances
+            .iter_mut()
+            .filter(|(_, instance)| {
+                instance.status == MPCSessionStatus::Active
+                    && instance.pending_messages.len() >= self.mpc_threshold_number_of_parties
+            })
+            .collect::<Vec<_>>()
+            .par_iter_mut()
+            .filter_map(|(_, ref mut instance)| instance.advance())
+            .collect();
+        let Some(epoch_store) = self.epoch_store.upgrade() else {
+            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+            return Ok(());
+        };
+        self.consensus_adapter
+            .submit_to_consensus(&txs_to_send, &epoch_store)
+            .await
     }
 
     pub fn handle_message(
@@ -365,7 +369,6 @@ impl SignatureMPCManager {
             self.mpc_threshold_number_of_parties,
             event.session_id.clone().bytes,
             self.language_public_parameters.clone(),
-            event.sender.clone()
         )
         .await;
         self.mpc_instances
