@@ -1483,6 +1483,10 @@ impl AuthorityState {
                 error!(?tx_digest, "tx post processing failed: {e}");
             });
 
+        if let TransactionKind::ProofMPCComplete(_) = certificate.data().intent_message().value.execution_parts().0 {
+            println!("written to executed");
+        }
+
         // The insertion to epoch_store is not atomic with the insertion to the perpetual store. This is OK because
         // we insert to the epoch store first. And during lookups we always look up in the perpetual store first.
         epoch_store.insert_tx_key_and_effects_signature(
