@@ -8,7 +8,7 @@ use im::hashmap;
 use itertools::Itertools;
 use maurer::knowledge_of_discrete_log::PublicParameters;
 use maurer::Proof;
-use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
@@ -59,6 +59,7 @@ struct MPCInstance {
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
     mpc_threshold_number_of_parties: usize,
     session_id: ObjectID,
+    sender_address: PeraAddress,
     party: Option<ProofParty>,
 }
 
@@ -71,6 +72,7 @@ impl MPCInstance {
         epoch_store: Weak<AuthorityPerEpochStore>,
         mpc_threshold_number_of_parties: usize,
         session_id: ObjectID,
+        sender_address: PeraAddress,
         public_parameters: ProofPublicParameters,
     ) -> Self {
         let mut new_instance = Self {
@@ -80,6 +82,7 @@ impl MPCInstance {
             epoch_store: epoch_store.clone(),
             mpc_threshold_number_of_parties,
             session_id,
+            sender_address,
             party: None,
         };
         match new_instance.start_proof_mpc_flow(public_parameters).await {
@@ -121,6 +124,7 @@ impl MPCInstance {
                 // TODO (#238): Verify the output and write it to the chain
                 println!("Finalized output: {:?}", output);
                 self.status = MPCSessionStatus::Finished;
+                return self.new_proof_mpc_statements_message(output);
             }
         }
         None
@@ -135,6 +139,19 @@ impl MPCInstance {
             epoch_store.name,
             bcs::to_bytes(&message).unwrap(),
             self.session_id.clone(),
+        ))
+    }
+
+    fn new_proof_mpc_statements_message(&self, statements: Vec<secp256k1::group_element::GroupElement>) -> Option<ConsensusTransaction> {
+        let Some(epoch_store) = self.epoch_store.upgrade() else {
+            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+            return None;
+        };
+        let statements = statements.iter().map(|s| {bcs::to_bytes(&s.value()).unwrap()}).collect::<Vec<Vec<u8>>>();
+        Some(ConsensusTransaction::new_proof_mpc_statements(
+            statements,
+            self.session_id.clone(),
+            self.sender_address.clone(),
         ))
     }
 
@@ -368,6 +385,7 @@ impl SignatureMPCManager {
             self.epoch_store.clone(),
             self.mpc_threshold_number_of_parties,
             event.session_id.clone().bytes,
+            event.sender.clone(),
             self.language_public_parameters.clone(),
         )
         .await;
