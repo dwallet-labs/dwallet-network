@@ -16,6 +16,23 @@ module dwallet_system::ethereum_state {
     const ENetworkMismatch: u64 = 2;
     const EUpdateIrrelevant: u64 = 3;
 
+    /// State verification response.
+    struct StateVerificationResponse has copy, drop {
+        data: vector<u8>,
+        time_slot: u64,
+        network: vector<u8>,
+        state_root: vector<u8>,
+        block_number: u64,
+    }
+
+    /// Initial state creation response.
+    struct InitStateResponse has copy, drop {
+        data: vector<u8>,
+        time_slot: u64,
+        state_root: vector<u8>,
+        block_number: u64,
+    }
+
     /// Ethereum state object.
     struct EthereumState has key {
         id: UID,
@@ -58,14 +75,14 @@ module dwallet_system::ethereum_state {
         beacon_block_type: vector<u8>,
         ctx: &mut TxContext
     ) {
-        let (data, time_slot, state_root, block_number) = create_initial_eth_state_data(state_bytes, network, updates_vec_arg, finality_update_arg, optimistic_update_arg, beacon_block, beacon_block_body, beacon_block_execution_payload, beacon_block_type);
+        let response = create_initial_eth_state_data(state_bytes, network, updates_vec_arg, finality_update_arg, optimistic_update_arg, beacon_block, beacon_block_body, beacon_block_execution_payload, beacon_block_type);
         let state = EthereumState {
             id: object::new(ctx),
-            data,
-            time_slot,
+            data: response.data,
+            time_slot: response.time_slot,
             latest_ethereum_state_id: object::id_from_address(@0x0),
-            state_root,
-            block_number
+            state_root: response.state_root,
+            block_number: response.block_number,
         };
 
         let latest_ethereum_state = LatestEthereumState {
@@ -105,7 +122,7 @@ module dwallet_system::ethereum_state {
         assert!(latest_ethereum_state_id == object::id(latest_ethereum_state), EStateObjectMismatch);
 
         let eth_state_bytes = get_ethereum_state_data(eth_state);
-        let (data, time_slot, network, state_root, block_number) = verify_eth_state(
+        let response = verify_eth_state(
             updates_bytes,
             finality_update_bytes,
             optimistic_update_bytes,
@@ -116,20 +133,20 @@ module dwallet_system::ethereum_state {
             beacon_block_type,
         );
 
-        assert!(network == latest_ethereum_state.network, ENetworkMismatch);
-        assert!(time_slot >= latest_ethereum_state.last_slot, EUpdateIrrelevant);
+        assert!(response.network == latest_ethereum_state.network, ENetworkMismatch);
+        assert!(response.time_slot >= latest_ethereum_state.last_slot, EUpdateIrrelevant);
 
-        if(time_slot == latest_ethereum_state.last_slot) {
+        if(response.time_slot == latest_ethereum_state.last_slot) {
             return
         };
 
         let new_state = EthereumState {
             id: object::new(ctx),
-            data,
-            time_slot,
+            data: response.data,
+            time_slot: response.time_slot,
             latest_ethereum_state_id: object::id(latest_ethereum_state),
-            state_root,
-            block_number
+            state_root: response.state_root,
+            block_number: response.block_number,
         };
 
         latest_ethereum_state.eth_state_id = object::id(&new_state);
@@ -190,7 +207,7 @@ module dwallet_system::ethereum_state {
         beacon_block_body: vector<u8>,
         beacon_block_execution_payload: vector<u8>,
         beacon_block_type: vector<u8>,
-    ): (vector<u8>, u64, vector<u8>, vector<u8>, u64);
+    ): StateVerificationResponse;
 
     /// Native function.
     /// Creates the initial Ethereum state data with the given checkpoint.
@@ -204,5 +221,5 @@ module dwallet_system::ethereum_state {
         beacon_block_body: vector<u8>,
         beacon_block_execution_payload: vector<u8>,
         beacon_block_type: vector<u8>,
-    ): (vector<u8>, u64, vector<u8>, u64);
+    ): InitStateResponse;
 }
