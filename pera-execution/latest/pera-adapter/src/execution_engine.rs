@@ -728,7 +728,6 @@ mod checked {
                     metrics,
                 );
 
-                println!("{:?}", res);
                 Ok(Mode::empty_results())
             }
         }?;

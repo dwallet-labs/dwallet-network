@@ -29,7 +29,7 @@ use pera_types::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
-
+use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -355,10 +355,23 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
-                    if let ConsensusTransactionKind::ProofMPCStatements(_, _,_ ) = &transaction.kind {
+
+                    if let ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address) = &transaction.kind {
                         println!("recv proof mpc statements from consensus handler output internal");
+                        let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
+                            ProofMPCResultOnChain {
+                                session_id: *session_id,
+                                sender_address: *sender_address,
+                                statements: statements.clone(),
+                            }
+                        );
+
+                        let transaction_k = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
+                        let transaction = SequencedConsensusTransactionKind::System(transaction_k);
+                        transactions.push((serialized_transaction, transaction, authority_index));
+                        // Ok(ConsensusCertificateResult::PeraTransaction(transaction_k))
                     }
-                    if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
+                    else if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
                         &transaction.kind
                     {
                         // These are deprecated and we should never see them. Log an error and eat the tx if one appears.
