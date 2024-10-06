@@ -26,7 +26,7 @@ use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeCont
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
-    pop_arg,
+    pop_arg, values,
     values::{Value, Vector},
 };
 use smallvec::smallvec;
@@ -252,13 +252,13 @@ pub(crate) fn verify_eth_state(
 
     Ok(NativeResult::ok(
         cost,
-        smallvec![
+        smallvec![Value::struct_(values::Struct::pack(vec![
             Value::vector_u8(new_state_bcs),
             Value::u64(slot),
             Value::vector_u8(network),
             Value::vector_u8(state_root.as_slice().to_vec()),
             Value::u64(block_number.as_u64())
-        ],
+        ]))],
     ))
 }
 
@@ -373,12 +373,12 @@ pub(crate) fn create_initial_eth_state_data(
     let time_slot = eth_state.get_latest_slot();
     Ok(NativeResult::ok(
         cost,
-        smallvec![
+        smallvec![Value::struct_(values::Struct::pack(vec![
             Value::vector_u8(state_bytes),
             Value::u64(time_slot.as_u64()),
             Value::vector_u8(state_root.as_slice().to_vec()),
             Value::u64(block_number.as_u64())
-        ],
+        ]))],
     ))
 }
 
