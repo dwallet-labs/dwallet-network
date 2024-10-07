@@ -88,7 +88,7 @@ impl MPCInstance {
         }
     }
 
-    fn advance(&mut self, publ) -> Option<ConsensusTransaction> {
+    fn advance(&mut self, public_parameters: ProofPublicParameters) -> Option<ConsensusTransaction> {
         let party: ProofParty;
         let optional_party = mem::take(&mut self.party);
 
