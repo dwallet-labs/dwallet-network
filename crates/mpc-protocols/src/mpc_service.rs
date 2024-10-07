@@ -45,6 +45,7 @@ impl MPCInstance {
         });
     }
 
+    /// Handles a message by either forwarding it to the instance or queuing it
     fn handle_message(&mut self, message: MPCInput) {
         match self.status {
             MPCSessionStatus::Active => {

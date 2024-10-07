@@ -159,7 +159,6 @@ use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
 use mpc_protocols::mpc_events::CreatedProofMPCEvent;
-use mpc_protocols::mpc_events::MPCEvent;
 use mpc_protocols::mpc_service::{MPCInput, MPCService};
 
 use crate::authority_client::NetworkAuthorityClient;
