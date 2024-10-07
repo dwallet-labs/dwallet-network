@@ -284,6 +284,7 @@ impl SignatureMPCManager {
             })
             .collect::<Vec<_>>()
             .par_iter_mut()
+            // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
             .filter_map(|(_, ref mut instance)| instance.advance(self.language_public_parameters.clone()))
             .collect();
         let Some(epoch_store) = self.epoch_store.upgrade() else {
