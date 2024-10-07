@@ -7,6 +7,35 @@ use helios::dwallet::light_client::ProofRequestParameters;
 use helios::execution::{get_message_storage_slot, verify_proof};
 use helios::types::Address;
 
+/// Attempts to verify an Ethereum Merkle Patricia Trie proof that a specific storage slot in a contract's storage
+/// contains the expected value (`1`), given the proof data, contract address, proof parameters, and state root.
+///
+/// # Parameters
+/// - `proof`: [`EIP1186ProofResponse`]
+///   - The proof response containing the account proof and storage proofs for the specified contract address.
+/// - `contract_address`: `&Address`
+///   - The Ethereum address of the contract whose storage slot is being verified.
+/// - `proof_params`: [`ProofRequestParameters`]
+///   - Parameters required for the proof verification, including:
+///     - `message`: The message used to compute the storage slot key.
+///     - `dwallet_id`: An identifier associated with the wallet.
+///     - `data_slot`: Additional data used in computing the storage slot key.
+/// - `state_root`: `Vec<u8>`
+///   - The state root hash of the Ethereum blockchain state against which the proof is verified.
+///
+/// # Returns
+/// - `Ok(true)` if the proof is valid and the storage slot contains the expected value (`1`).
+/// - `Ok(false)` if the proof is invalid or the storage slot does not contain the expected value.
+/// - `Err(anyhow::Error)` if there is an error during verification, such as missing proofs or encoding issues.
+///
+/// # Notes
+/// - The function assumes that the expected value stored at the storage slot is `1`.
+/// - Cloning of proofs is performed to avoid ownership issues; consider optimizing if performance is critical.
+/// - Uses `anyhow::Result` for error handling to simplify error propagation.
+///
+/// # See Also
+/// - [Ethereum Yellow Paper](https://ethereum.github.io/yellowpaper/paper.pdf) for details on Merkle Patricia Trie proofs.
+/// - [EIP-1186](https://eips.ethereum.org/EIPS/eip-1186) for account and storage proof structures.
 pub fn try_verify_proof(
     proof: EIP1186ProofResponse,
     contract_address: &Address,
