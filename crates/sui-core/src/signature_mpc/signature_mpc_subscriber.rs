@@ -10,7 +10,6 @@ use std::sync::Arc;
 use tokio::sync::{mpsc, watch};
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::signature_mpc::MAX_MESSAGES_IN_PROGRESS;
 use futures::future::{select, Either};
 use futures::FutureExt;
 use std::str::FromStr;
@@ -24,21 +23,24 @@ use sui_types::SUI_SYSTEM_ADDRESS;
 use tokio_stream::{Stream, StreamExt};
 use tracing::{debug, error, info, instrument, subscriber, trace_span};
 
-pub struct SignatureMpcSubscriber {
+pub struct SignatureInitMpcSubscriber {
     epoch_store: Arc<AuthorityPerEpochStore>,
     exit: watch::Receiver<()>,
     tx_initiate_signature_mpc_protocol_sender: mpsc::Sender<InitiateSignatureMPCProtocol>,
     last: InitSignatureMPCProtocolSequenceNumber,
 }
 
-impl SignatureMpcSubscriber {
+impl SignatureInitMpcSubscriber {
+    // Create a channel for sending and receiving MPC messages.
     pub fn new(
         epoch_store: Arc<AuthorityPerEpochStore>,
         exit: watch::Receiver<()>,
+        max_mpc_protocol_messages_in_progress: usize,
     ) -> mpsc::Receiver<InitiateSignatureMPCProtocol> {
         let (tx_initiate_signature_mpc_protocol_sender, rx_initiate_signature_mpc_protocol_sender) =
-            mpsc::channel(MAX_MESSAGES_IN_PROGRESS);
+            mpsc::channel(max_mpc_protocol_messages_in_progress);
 
+        // Subscribe to MPC msgs.
         let subscriber = Self {
             epoch_store,
             exit,
@@ -51,77 +53,40 @@ impl SignatureMpcSubscriber {
         rx_initiate_signature_mpc_protocol_sender
     }
 
+    // A special subscriber that listens for new MPC sessions.
     async fn run(mut self) {
-        info!("Starting SignatureMpcSubscriber");
+        info!("Starting SignatureInitMpcSubscriber");
         loop {
-            // Check whether an exit signal has been received if so we break the loop.
-            // This gives us a chance to exit if checkpoint making keeps failing.
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            // If an exit signal received, break the loop.
+            // This gives a chance to exit, if checkpoint making keeps failing.
             match self.exit.has_changed() {
                 Ok(true) | Err(_) => {
                     break;
                 }
                 Ok(false) => (),
             };
-            let messages = self
+            let Ok(messages) = self
                 .epoch_store
                 .get_initiate_signature_mpc_protocols(self.last)
-                .unwrap();
-            for (last, message) in messages {
+            else {
+                error!(
+                    "Failed to get initiate signature mpc protocols for epoch {:?}",
+                    self.last
+                );
+                return;
+            };
+            for (last_sequence, message) in messages {
+                // Send MPC messages to channel.
+                // todo(mpc-async): handle error. Itay - what exactly should be done here upon error?
                 let _ = self
                     .tx_initiate_signature_mpc_protocol_sender
                     .send(message)
                     .await;
-                self.last = last;
+                self.last = last_sequence;
             }
             tokio::task::yield_now().await;
         }
-        info!("Shutting down SignatureMpcSubscriber");
+        info!("Shutting down SignatureInitMpcSubscriber");
     }
-
-    // fn stream(&self) -> impl Stream<Item = sui_json_rpc_types::SuiTransactionBlockEffects> {
-    //     self.state.subscription_handler.subscribe_transactions(TransactionFilter::MoveFunction {
-    //         package: "0x3".parse().unwrap(),
-    //         module: None,
-    //         function: None,
-    //     })
-    // }
-    //
-    // async fn run(mut self) {
-    //     info!("Starting SignatureMpcSubscriber");
-    //
-    //     let mut stream = self.stream();
-    //
-    //
-    //
-    //     loop {
-    //         tokio::select! {
-    //             biased;
-    //
-    //             _ = self.exit.changed().boxed() => {
-    //                 // return on exit signal
-    //                 info!("Shutting down SignatureMpcSubscriber");
-    //                 return;
-    //             }
-    //
-    //             Some(effects) = stream.next() => {
-    //                 if let sui_json_rpc_types::SuiTransactionBlockEffects::V1(effects) = effects {
-    //                     let obj_ref = &effects.created[0];
-    //
-    //                     // TODO: Rewrite the code with no unwrap
-    //
-    //                     let obj = self.state.database.get_object(&obj_ref.object_id()).unwrap();
-    //                     if let Some(move_object) = obj.unwrap().data.try_as_move() {
-    //                         let obj: DKGSession = bcs::from_bytes(move_object.contents()).ok().unwrap();
-    //                         info!("fetching DKGSession {:?}", obj);
-    //                         let commitment = obj.commitment;
-    //                         // TODO: validate commitment error
-    //                         let message = InitiateSignatureMPCProtocol::DKG((SignatureMpcSessionID(move_object.id().into_bytes()), bcs::from_bytes(&*commitment).unwrap()));
-    //                         let _ = self.tx_initiate_signature_mpc_protocol_sender.send(message);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    //
-    // }
 }

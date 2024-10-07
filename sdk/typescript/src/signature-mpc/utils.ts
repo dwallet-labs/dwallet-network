@@ -1,11 +1,12 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { generate_keypair_from_seed } from '@dwallet-network/signature-mpc-wasm';
+import { ethers, keccak256 } from 'ethers';
+
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { Ed25519Keypair } from '../keypairs/ed25519';
-import { ethers, keccak256 } from 'ethers';
-import { generate_keypair_from_seed } from './dwallet_2pc_mpc_ecdsa_k1_module';
+import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
 
 export async function fetchObjectBySessionId(
 	sessionId: string,
@@ -26,7 +27,7 @@ export async function fetchObjectBySessionId(
 			.filter((o) => {
 				return (
 					// @ts-ignore
-					o?.dataType == 'moveObject' && o?.type == type && o.fields['session_id'] == sessionId
+					o?.dataType === 'moveObject' && o?.type === type && o.fields['session_id'] === sessionId
 				);
 			});
 		if (objectsFiltered.length > 0) {
@@ -37,6 +38,34 @@ export async function fetchObjectBySessionId(
 			cursor = null;
 		}
 		await new Promise((r) => setTimeout(r, 500));
+	}
+}
+
+export async function fetchOwnedObjectByType(
+	type: string,
+	keypair: Keypair,
+	client: DWalletClient,
+) {
+	let cursor = null;
+	for (;;) {
+		const objects = await client.getOwnedObjects({ owner: keypair.toSuiAddress(), cursor: cursor });
+		const objectsContent = await client.multiGetObjects({
+			ids: objects.data.map((o) => o.data?.objectId!),
+			options: { showContent: true },
+		});
+
+		const objectsFiltered = objectsContent
+			.map((o) => o.data?.content)
+			.filter((o) => {
+				return (
+					// @ts-ignore
+					o?.dataType === 'moveObject' && o?.type === type
+				);
+			});
+		if (objectsFiltered.length > 0) {
+			return objectsFiltered[0];
+		}
+		return null;
 	}
 }
 

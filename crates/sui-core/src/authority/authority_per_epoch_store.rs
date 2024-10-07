@@ -132,7 +132,7 @@ pub enum ConsensusCertificateResult {
     SuiTransaction(VerifiedExecutableTransaction),
     /// The transaction should be re-processed at a future commit, specified by the DeferralKey
     Defered(DeferralKey),
-    /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
+    /// Everything else, e.g., AuthorityCapabilities, CheckpointSignatures, etc.
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
     IgnoredSystem,
@@ -2690,8 +2690,10 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(message),
                 ..
             }) => {
-                // TODO: should we? We usually call notify_signature_mpc_message in SuiTxValidator, but that step can
-                // be skipped when a batch is already part of a certificate, so we must also
+                // TODO(async-mpc): should we?
+                // We usually call notify_signature_mpc_message in SuiTxValidator, but that step can
+                // be skipped when a batch is already part of a certificate,
+                // so we must also
                 // notify here.
                 signature_mpc_service.notify_signature_mpc_message(self, message)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
@@ -2903,6 +2905,7 @@ impl AuthorityPerEpochStore {
         Ok(iter.collect())
     }
 
+    // After collecting all signatures, this code starts the MPC protocol.
     pub fn get_initiate_signature_mpc_protocols(
         &self,
         last: InitSignatureMPCProtocolSequenceNumber,
@@ -2912,19 +2915,21 @@ impl AuthorityPerEpochStore {
             InitiateSignatureMPCProtocol,
         )>,
     > {
-        let tables = self.tables()?;
-        let iter = tables
+        Ok(self
+            .tables()?
             .initiate_signature_mpc_protocols
             .unbounded_iter()
-            .skip_to(&(last + 1))?;
-        Ok(iter.collect())
+            .skip_to(&(last + 1))?
+            .collect())
     }
 
+    // Initialize the state for the MPC protocol.
+    // todo(mpc-async): this function should be removed, and replaced with TX iterator.
     pub fn insert_initiate_signature_mpc_protocols(
         &self,
         messages: &[InitiateSignatureMPCProtocol],
     ) -> SuiResult<()> {
-        let last = self
+        let last_sequence = self
             .tables()?
             .initiate_signature_mpc_protocols
             .unbounded_iter()
@@ -2933,9 +2938,10 @@ impl AuthorityPerEpochStore {
             .map(|(key, _)| key)
             .unwrap_or_default();
         let mut batch = self.tables()?.initiate_signature_mpc_protocols.batch();
+        // This code collects the MPC protocol messages.
         batch.insert_batch(
             &self.tables()?.initiate_signature_mpc_protocols,
-            messages.into_iter().map(|m| (last + 1, m)),
+            messages.into_iter().map(|m| (last_sequence + 1, m)),
         )?;
         batch.write()?;
         Ok(())

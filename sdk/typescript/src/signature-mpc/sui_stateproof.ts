@@ -1,12 +1,12 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { SuiClient } from '@mysten/sui.js/client';
+import type { SuiClient } from '@mysten/sui.js/client';
 import axios from 'axios';
 
 import { TransactionBlock } from '../builder/index.js';
-import { DWalletClient, EventId, SuiEventFilter, SuiObjectRef } from '../client/index.js';
-import { Keypair } from '../cryptography/index.js';
+import type { DWalletClient, EventId, SuiEventFilter, SuiObjectRef } from '../client/index.js';
+import type { Keypair } from '../cryptography/index.js';
 import { fetchObjectBySessionId } from './utils.js';
 
 const packageId = '0x3';
@@ -153,7 +153,7 @@ export async function submitTxStateProof(
 		},
 	});
 
-	const signSessionRef = result.effects?.created?.filter((o) => o.owner == 'Immutable')[0]
+	const signSessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0]
 		.reference!;
 
 	const signOutput = await fetchObjectBySessionId(

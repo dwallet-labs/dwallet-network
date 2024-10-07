@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 use signature_mpc::twopc_mpc_protocols::CentralizedPartyPresign;
-use signature_mpc::twopc_mpc_protocols::DKGCentralizedPartyOutput;
+use signature_mpc::twopc_mpc_protocols::{DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput};
 use wasm_bindgen::prelude::*;
 
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
@@ -25,8 +25,8 @@ use signature_mpc::twopc_mpc_protocols::Result as TwoPCMPCResult;
 use signature_mpc::twopc_mpc_protocols::Scalar;
 use signature_mpc::twopc_mpc_protocols::{
     affine_point_to_public_key, decommitment_round_centralized_party_dkg,
-    initiate_centralized_party_dkg, recovery_id, DKGDecommitmentRoundState, Hash, ProtocolContext,
-    PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1,
+    initiate_centralized_party_dkg, recovery_id, verify_signature, DKGDecommitmentRoundState, Hash,
+    ProtocolContext, PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -40,6 +40,7 @@ pub struct FinalizeDKGValue {
     pub public_key_share_decommitment_and_proof: Vec<u8>,
     pub secret_key_share: Vec<u8>,
     pub dkg_output: Vec<u8>,
+    pub encrypted_user_share_and_proof: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -71,6 +72,7 @@ pub fn initiate_dkg() -> Result<JsValue, JsErr> {
 pub fn finalize_dkg(
     decommitment_round_party_state: Vec<u8>,
     secret_key_share_encryption_and_proof: Vec<u8>,
+    secret_share_encryption_key: Vec<u8>,
 ) -> Result<JsValue, JsErr> {
     let decommitment_round_party_state: DKGDecommitmentRoundState<ProtocolContext> =
         bcs::from_bytes(&decommitment_round_party_state)?;
@@ -84,20 +86,40 @@ pub fn finalize_dkg(
     let (public_key_share_decommitment_and_proof, dkg_output) = decommitment_round_party
         .decommit_proof_public_key_share(secret_key_share_encryption_and_proof, &mut OsRng)?;
 
+    let secret_key_share = bcs::to_bytes(&dkg_output.secret_key_share)?;
+
+    let language_public_parameters =
+        encryption_of_discrete_log_public_parameters(secret_share_encryption_key.clone())
+            .map_err(to_js_err)?;
+    let proof_public_output =
+        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_proof(
+            secret_share_encryption_key,
+            secret_key_share.clone(),
+            language_public_parameters,
+        )
+        .map_err(to_js_err)?;
+    let encrypted_user_share_and_proof = bcs::to_bytes(&proof_public_output)?;
+
     let value = FinalizeDKGValue {
         public_key_share_decommitment_and_proof: bcs::to_bytes(
             &public_key_share_decommitment_and_proof,
         )?,
-        secret_key_share: bcs::to_bytes(&dkg_output.secret_key_share)?,
+        secret_key_share,
         dkg_output: bcs::to_bytes(&dkg_output)?,
+        encrypted_user_share_and_proof,
     };
     Ok(serde_wasm_bindgen::to_value(&value)?)
 }
 
 #[wasm_bindgen]
-pub fn initiate_presign(dkg_output: Vec<u8>, batch_size: usize) -> Result<JsValue, JsErr> {
-    let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
-    let commitment_round_party = initiate_centralized_party_presign(dkg_output.clone())?;
+pub fn initiate_presign(
+    decentralized_dkg_output: Vec<u8>,
+    secret_share: Vec<u8>,
+    batch_size: usize,
+) -> Result<JsValue, JsErr> {
+    let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&decentralized_dkg_output)?;
+    let commitment_round_party =
+        initiate_centralized_party_presign(dkg_output.clone(), secret_share)?;
 
     let (nonce_shares_commitments_and_batched_proof, proof_verification_round_party) =
         commitment_round_party
@@ -117,17 +139,19 @@ pub fn initiate_presign(dkg_output: Vec<u8>, batch_size: usize) -> Result<JsValu
 
 #[wasm_bindgen]
 pub fn finalize_presign(
-    dkg_output: Vec<u8>,
+    decentralized_dkg_output: Vec<u8>,
+    secret_share: Vec<u8>,
     signature_nonce_shares_and_commitment_randomnesses: Vec<u8>,
     presign_output: Vec<u8>,
 ) -> Result<JsValue, JsErr> {
-    let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
+    let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&decentralized_dkg_output)?;
     let presign_output: PresignDecentralizedPartyOutput<ProtocolContext> =
         bcs::from_bytes(&presign_output)?;
     let signature_nonce_shares_and_commitment_randomnesses: Vec<(Scalar, Scalar)> =
         bcs::from_bytes(&signature_nonce_shares_and_commitment_randomnesses)?;
     let commitment_round_party = finalize_centralized_party_presign(
         dkg_output.clone(),
+        secret_share,
         signature_nonce_shares_and_commitment_randomnesses,
     )?;
 
@@ -140,15 +164,17 @@ pub fn finalize_presign(
 
 #[wasm_bindgen]
 pub fn initiate_sign(
-    dkg_output: Vec<u8>,
+    decentralized_dkg_output: Vec<u8>,
+    secret_share: Vec<u8>,
     presigns: Vec<u8>,
     messages: Vec<u8>,
     hash: u8,
 ) -> Result<JsValue, JsErr> {
     let messages: Vec<Vec<u8>> = bcs::from_bytes(&messages)?;
     let presigns: Vec<CentralizedPartyPresign> = bcs::from_bytes(&presigns)?;
-    let dkg_output: DKGCentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
-    let commitment_round_parties = initiate_centralized_party_sign(dkg_output.clone(), presigns)?;
+    let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&decentralized_dkg_output)?;
+    let commitment_round_parties =
+        initiate_centralized_party_sign(dkg_output.clone(), secret_share, presigns)?;
 
     let (
         public_nonce_encrypted_partial_signature_and_proofs,
@@ -170,6 +196,24 @@ pub fn initiate_sign(
     Ok(serde_wasm_bindgen::to_value(
         &public_nonce_encrypted_partial_signature_and_proofs,
     )?)
+}
+
+#[wasm_bindgen]
+pub fn verify_signatures(
+    messages: Vec<u8>,
+    hash: u8,
+    dkg_output: Vec<u8>,
+    signatures: Vec<u8>,
+) -> Result<JsValue, JsErr> {
+    let messages: Vec<Vec<u8>> = bcs::from_bytes(&messages)?;
+    let signatures: Vec<Vec<u8>> = bcs::from_bytes(&signatures)?;
+    let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
+    Ok(JsValue::from(verify_signature(
+        messages,
+        &Hash::from(hash),
+        dkg_output.public_key,
+        signatures,
+    )))
 }
 
 #[wasm_bindgen]
@@ -197,7 +241,7 @@ pub fn finalize_sign(
         public_nonce_encrypted_partial_signature_and_proofs,
         signatures_s,
     )
-        .map_err(JsErr::from)
+    .map_err(JsErr::from)
 }
 
 #[wasm_bindgen]
@@ -254,8 +298,10 @@ pub fn generate_keypair() -> Result<JsValue, JsErr> {
 pub fn generate_keypair_from_seed(seed: &[u8]) -> Result<JsValue, JsErr> {
     let fixed_size_seed: [u8; 32] = seed.try_into().expect("seed must be 32 bytes long");
     let (public_key, private_key) =
-        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair_from_seed(fixed_size_seed)
-            .map_err(to_js_err)?;
+        signature_mpc::twopc_mpc_protocols::encrypt_user_share::generate_keypair_from_seed(
+            fixed_size_seed,
+        )
+        .map_err(to_js_err)?;
     Ok(serde_wasm_bindgen::to_value(&(public_key, private_key))?)
 }
 
@@ -269,7 +315,7 @@ pub fn generate_proof(secret_share: Vec<u8>, public_key: Vec<u8>) -> Result<JsVa
             secret_share,
             language_public_parameters,
         )
-            .map_err(to_js_err)?;
+        .map_err(to_js_err)?;
     let proof_public_output = bcs::to_bytes(&proof_public_output)?;
 
     Ok(serde_wasm_bindgen::to_value(&proof_public_output)?)
@@ -288,8 +334,22 @@ pub fn decrypt_user_share(
         decryption_key,
         encrypted_user_share_and_proof,
     )
-        .map_err(to_js_err)?;
+    .map_err(to_js_err)?;
     Ok(user_share)
+}
+
+#[wasm_bindgen]
+pub fn serialized_pubkeys_from_centralized_dkg_output(
+    centralized_dkg_output: Vec<u8>,
+) -> Result<Vec<u8>, JsErr> {
+    signature_mpc::twopc_mpc_protocols::encrypt_user_share::serialized_pubkeys_from_centralized_dkg_output(&centralized_dkg_output).map_err(to_js_err)
+}
+
+#[wasm_bindgen]
+pub fn serialized_pubkeys_from_decentralized_dkg_output(
+    centralized_dkg_output: Vec<u8>,
+) -> Result<Vec<u8>, JsErr> {
+    signature_mpc::twopc_mpc_protocols::encrypt_user_share::serialized_pubkeys_from_decentralized_dkg_output(&centralized_dkg_output).map_err(to_js_err)
 }
 
 #[wasm_bindgen]

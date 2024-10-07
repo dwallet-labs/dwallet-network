@@ -15,10 +15,16 @@ module dwallet_system::dwallet_tests {
         EMesssageApprovalDWalletMismatch,
         EInvalidEncryptionKeyScheme,
         EInvalidEncryptionKeyOwner,
+        EInvalidParametes,
         create_mock_active_encryption_keys,
         create_mock_encryption_key,
         get_active_encryption_key,
-        get_active_encryption_keys_table
+        get_active_encryption_keys_table,
+        create_encrypted_user_shares,
+        create_mock_encrypted_user_share,
+        create_mock_encrypted_user_shares,
+        get_encrypted_user_share_dwallet_id,
+        get_encrypted_user_shares_table,
     };
     use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{create_mock_sign_data, create_mock_sign_data_event};
 
@@ -26,6 +32,11 @@ module dwallet_system::dwallet_tests {
         let sender = @0x1;
         let scenario = test_scenario::begin(sender);
         (sender, scenario)
+    }
+
+    fun set_up_with_sender_address(sender: address): test_scenario::Scenario {
+        let scenario = test_scenario::begin(sender);
+        scenario
     }
 
 
@@ -261,12 +272,21 @@ module dwallet_system::dwallet_tests {
 
     #[test]
     public fun test_register_encryption_key_with_valid_input() {
-        let (sender, scenario) = set_up();
-        test_scenario::next_tx(&mut scenario, sender);
+        // Need to use a custom sender address so the [`dwallet::register_encryption_key`] signature verification will pass
+        let mock_sender_address = @0x92c28a0905643d2b861c12b3dd2aba20619b9748f3e5cb6165f9a4388c515668;
+        let scenario = set_up_with_sender_address(mock_sender_address);
         {
+            let mock_encryption_key = vector[1];
+            let signed_encryption_key = vector[97, 159, 229, 209, 91, 100, 9, 202, 132, 225, 75, 24, 235, 53, 144, 103, 246, 193, 91, 93, 95, 160, 25, 74, 199, 26, 159, 199, 4, 208, 6, 67, 3, 20, 32, 35, 112, 114, 62, 134, 112, 246, 126, 69, 54, 34, 249, 141, 194, 115, 4, 38, 189, 110, 141, 174, 224, 174, 87, 194, 125, 211, 67, 4];
+            let mock_sui_pubkey = vector[204, 188, 31, 23, 159, 78, 46, 145, 247, 191, 82, 249, 88, 130, 89, 6, 254, 235, 251, 29, 151, 11, 249, 229, 128, 137, 15, 255, 24, 22, 102, 25];
             let ctx = test_scenario::ctx(&mut scenario);
-            let key = vector::empty<u8>();
-            dwallet::register_encryption_key(key, VALID_SCHEME, ctx);
+            dwallet::register_encryption_key(
+                mock_encryption_key,
+                signed_encryption_key,
+                mock_sui_pubkey,
+                VALID_SCHEME,
+                ctx
+            );
         };
         let effects: TransactionEffects = test_scenario::end(scenario);
         let created_objects = test_scenario::created(&effects);
@@ -284,7 +304,7 @@ module dwallet_system::dwallet_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let key = vector::empty<u8>();
-            dwallet::register_encryption_key(key, INVALID_SCHEME, ctx);
+            dwallet::register_encryption_key(key, vector::empty(), vector::empty(), INVALID_SCHEME, ctx);
         };
         let effects: TransactionEffects = test_scenario::end(scenario);
         let created_objects = test_scenario::created(&effects);
@@ -392,4 +412,106 @@ module dwallet_system::dwallet_tests {
         };
         test_scenario::end(scenario);
     }
+
+    #[test]
+    public fun test_create_encrypted_user_shares() {
+        let (sender, scenario) = set_up();
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            create_encrypted_user_shares(ctx);
+        };
+        let effects: TransactionEffects = test_scenario::end(scenario);
+
+        let created_objects = test_scenario::created(&effects);
+        assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+    }
+
+    #[test]
+    public fun test_save_encypted_user_share() {
+        let mock_sender_address = @0x92c28a0905643d2b861c12b3dd2aba20619b9748f3e5cb6165f9a4388c515668;
+        let scenario = set_up_with_sender_address(mock_sender_address);
+        test_scenario::next_tx(&mut scenario, mock_sender_address);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let encrypted_user_shares = create_mock_encrypted_user_shares(ctx);
+            let encryption_key = create_mock_encryption_key(vector::empty(), VALID_SCHEME, tx_context::sender(ctx), ctx);
+            let mock_sui_pubkey = vector[204, 188, 31, 23, 159, 78, 46, 145, 247, 191, 82, 249, 88, 130, 89, 6, 254, 235, 251, 29, 151, 11, 249, 229, 128, 137, 15, 255, 24, 22, 102, 25];
+            let encrypted_user_share = create_mock_encrypted_user_share(object::id_from_address(@0xD), vector::empty(), object::id(&encryption_key), mock_sui_pubkey, ctx);
+            dwallet::save_encrypted_user_share(&mut encrypted_user_shares, &encrypted_user_share, &encryption_key, ctx);
+            assert!(
+                table::contains(get_encrypted_user_shares_table(&encrypted_user_shares), get_encrypted_user_share_dwallet_id(&encrypted_user_share)),
+                EObjectNotInTable
+            );
+            test_utils::destroy(encrypted_user_shares);
+            test_utils::destroy(encryption_key);
+            test_utils::destroy(encrypted_user_share);
+        };
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+    public fun test_save_encypted_user_share_twice() {
+        let mock_sender_address = @0x92c28a0905643d2b861c12b3dd2aba20619b9748f3e5cb6165f9a4388c515668;
+        let scenario = set_up_with_sender_address(mock_sender_address);
+        test_scenario::next_tx(&mut scenario, mock_sender_address);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let encrypted_user_shares = create_mock_encrypted_user_shares(ctx);
+            let encryption_key = create_mock_encryption_key(vector::empty(), VALID_SCHEME, tx_context::sender(ctx), ctx);
+            let mock_sui_pubkey = vector[204, 188, 31, 23, 159, 78, 46, 145, 247, 191, 82, 249, 88, 130, 89, 6, 254, 235, 251, 29, 151, 11, 249, 229, 128, 137, 15, 255, 24, 22, 102, 25];
+            let encrypted_user_share = create_mock_encrypted_user_share(object::id_from_address(@0xD), vector::empty(), object::id(&encryption_key), mock_sui_pubkey, ctx);
+            dwallet::save_encrypted_user_share(&mut encrypted_user_shares, &encrypted_user_share, &encryption_key, ctx);
+            dwallet::save_encrypted_user_share(&mut encrypted_user_shares, &encrypted_user_share, &encryption_key, ctx);
+
+            test_utils::destroy(encrypted_user_shares);
+            test_utils::destroy(encryption_key);
+            test_utils::destroy(encrypted_user_share);
+        };
+        test_scenario::end(scenario);
+    }
+
+    #[test]
+   #[expected_failure(abort_code = EInvalidParametes)]
+   public fun test_save_encypted_with_invalid_public_key_failuer() {
+       let (sender, scenario) = set_up();
+       test_scenario::next_tx(&mut scenario, sender);
+       {
+           let ctx = test_scenario::ctx(&mut scenario);
+           let encrypted_user_shares = create_mock_encrypted_user_shares(ctx);
+           let encryption_key = create_mock_encryption_key(vector::empty(), VALID_SCHEME, tx_context::sender(ctx), ctx);
+           let mock_invalid_pubkey = vector[204, 188, 31, 23, 159, 78, 46, 145, 247, 191, 82, 249, 88, 130, 89, 6, 254, 235, 251, 29, 151, 11, 249, 229, 128, 137, 15, 255, 24, 22, 102, 25];
+           let encrypted_user_share = create_mock_encrypted_user_share(object::id_from_address(@0xD), vector::empty(), object::id(&encryption_key), mock_invalid_pubkey, ctx);
+           dwallet::save_encrypted_user_share(&mut encrypted_user_shares, &encrypted_user_share, &encryption_key, ctx);
+
+           test_utils::destroy(encrypted_user_shares);
+           test_utils::destroy(encryption_key);
+           test_utils::destroy(encrypted_user_share);
+       };
+       test_scenario::end(scenario);
+   }
+
+   #[test]
+   #[expected_failure(abort_code = EInvalidParametes)]
+   public fun test_save_encypted_user_share_different_encryption_key_failuer() {
+       let mock_sender_address = @0x92c28a0905643d2b861c12b3dd2aba20619b9748f3e5cb6165f9a4388c515668;
+       let scenario = set_up_with_sender_address(mock_sender_address);
+       test_scenario::next_tx(&mut scenario, mock_sender_address);
+       {
+           let ctx = test_scenario::ctx(&mut scenario);
+           let encrypted_user_shares = create_mock_encrypted_user_shares(ctx);
+           let encryption_key_real = create_mock_encryption_key(vector::empty(), VALID_SCHEME, tx_context::sender(ctx), ctx);
+           let encryption_key_fake = create_mock_encryption_key(vector::empty(), VALID_SCHEME, tx_context::sender(ctx), ctx);
+           let mock_sui_pubkey = vector[204, 188, 31, 23, 159, 78, 46, 145, 247, 191, 82, 249, 88, 130, 89, 6, 254, 235, 251, 29, 151, 11, 249, 229, 128, 137, 15, 255, 24, 22, 102, 25];
+           let encrypted_user_share = create_mock_encrypted_user_share(object::id_from_address(@0xD), vector::empty(), object::id(&encryption_key_real), mock_sui_pubkey, ctx);
+           dwallet::save_encrypted_user_share(&mut encrypted_user_shares, &encrypted_user_share, &encryption_key_fake, ctx);
+
+           test_utils::destroy(encrypted_user_shares);
+           test_utils::destroy(encryption_key_real);
+           test_utils::destroy(encryption_key_fake);
+           test_utils::destroy(encrypted_user_share);
+       };
+       test_scenario::end(scenario);
+   }
+
 }

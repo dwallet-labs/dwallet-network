@@ -1,14 +1,20 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use fastcrypto::ed25519::{Ed25519PublicKey, Ed25519Signature};
+use fastcrypto::traits::{ToFromBytes, VerifyingKey};
 use std::collections::VecDeque;
 
 use group::GroupElement as g;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
+use move_core_types::account_address::AccountAddress;
 use move_core_types::gas_algebra::InternalGas;
 use move_core_types::vm_status::StatusCode;
-use move_core_types::vm_status::StatusCode::INVALID_PARAM_TYPE_FOR_DESERIALIZATION;
+use move_core_types::vm_status::StatusCode::{
+    FAILED_TO_DESERIALIZE_ARGUMENT, INVALID_PARAM_TYPE_FOR_DESERIALIZATION,
+};
 use move_vm_runtime::{native_charge_gas_early_exit, native_functions::NativeContext};
+use move_vm_types::values::VectorRef;
 use move_vm_types::{
     loaded_data::runtime_types::Type,
     natives::function::NativeResult,
@@ -17,9 +23,11 @@ use move_vm_types::{
 };
 use smallvec::smallvec;
 
+use crate::object_runtime::ObjectRuntime;
+use crate::NativesCostTable;
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
-    encryption_of_discrete_log_public_parameters, verify_proof,
+    encryption_of_discrete_log_public_parameters, verify_proof, DWalletPublicKeys,
 };
 use signature_mpc::twopc_mpc_protocols::{
     affine_point_to_public_key,
@@ -29,9 +37,8 @@ use signature_mpc::twopc_mpc_protocols::{
     PublicKeyShareDecommitmentAndProof, PublicNonceEncryptedPartialSignatureAndProof,
     SecretKeyShareEncryptionAndProof,
 };
-
-use crate::object_runtime::ObjectRuntime;
-use crate::NativesCostTable;
+use sui_types::base_types::SuiAddress;
+use sui_types::crypto::{PublicKey, SignatureScheme};
 
 pub const INVALID_INPUT: u64 = 0;
 
@@ -49,6 +56,8 @@ pub struct TwoPCMPCDKGCostParams {
 #[derive(Clone)]
 pub struct TransferDWalletCostParams {
     pub transfer_dwallet_gas: InternalGas,
+    pub ed2551_pubkey_to_sui_addr_gas: InternalGas,
+    pub verify_signed_pubkeys_gas: InternalGas,
 }
 
 /***************************************************************************************************
@@ -306,5 +315,89 @@ pub fn convert_signature_to_canonical_form(
     Ok(NativeResult::ok(
         cost,
         smallvec![Value::vector_u8(signature)],
+    ))
+}
+
+/// Convert an Ed25519 public key to a Sui address.
+pub fn ed2551_pubkey_to_sui_addr(
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 1);
+    let dwallet_transfer_cost_params = &context
+        .extensions()
+        .get::<NativesCostTable>()
+        .transfer_dwallet_cost_params
+        .clone();
+    native_charge_gas_early_exit!(
+        context,
+        dwallet_transfer_cost_params.ed2551_pubkey_to_sui_addr_gas
+    );
+    let cost = context.gas_used();
+    let pubkey_bytes = pop_arg!(args, Vec<u8>);
+    let pubkey = PublicKey::try_from_bytes(SignatureScheme::ED25519, &pubkey_bytes)
+        .map_err(|_| PartialVMError::new(FAILED_TO_DESERIALIZE_ARGUMENT))?;
+    let sui_addr = SuiAddress::from(&pubkey).to_vec();
+    let addr = Value::address(
+        AccountAddress::from_bytes(&sui_addr)
+            .map_err(|_| PartialVMError::new(FAILED_TO_DESERIALIZE_ARGUMENT))?,
+    );
+    Ok(NativeResult::ok(cost, smallvec![addr]))
+}
+
+/// Verify that the public keys have been signed by the given ed2551 public key.
+pub fn verify_signed_pubkeys(
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 3);
+    let dwallet_transfer_cost_params = &context
+        .extensions()
+        .get::<NativesCostTable>()
+        .transfer_dwallet_cost_params
+        .clone();
+    native_charge_gas_early_exit!(
+        context,
+        dwallet_transfer_cost_params.verify_signed_pubkeys_gas
+    );
+    let decentralized_dkg_output = pop_arg!(args, VectorRef);
+    let decentralized_dkg_output = decentralized_dkg_output.as_bytes_ref();
+    let pubkey_bytes = pop_arg!(args, VectorRef);
+    let pubkey_bytes = pubkey_bytes.as_bytes_ref();
+    let signed_pubkeys = pop_arg!(args, VectorRef);
+    let signed_pubkeys = signed_pubkeys.as_bytes_ref();
+
+    let decentralized_dkg_output: DKGDecentralizedPartyOutput =
+        bcs::from_bytes(&decentralized_dkg_output)
+            .map_err(|_| PartialVMError::new(FAILED_TO_DESERIALIZE_ARGUMENT))?;
+    let dwallet_public_keys = DWalletPublicKeys {
+        public_key: decentralized_dkg_output.public_key,
+        decentralized_public_key_share: decentralized_dkg_output.public_key_share,
+        centralized_public_key_share: decentralized_dkg_output.centralized_party_public_key_share,
+    };
+    let cost = context.gas_used();
+    let Ok(signature) = <Ed25519Signature as ToFromBytes>::from_bytes(&signed_pubkeys) else {
+        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+    };
+
+    let Ok(public_key) = <Ed25519PublicKey as ToFromBytes>::from_bytes(&pubkey_bytes) else {
+        return Ok(NativeResult::ok(cost, smallvec![Value::bool(false)]));
+    };
+
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![Value::bool(
+            public_key
+                .verify(
+                    &bcs::to_bytes(&dwallet_public_keys)
+                        .map_err(|_| PartialVMError::new(FAILED_TO_DESERIALIZE_ARGUMENT))?,
+                    &signature
+                )
+                .is_ok()
+        )],
     ))
 }
