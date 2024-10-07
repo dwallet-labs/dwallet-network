@@ -3690,15 +3690,6 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::RandomnessConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
-                let is_proof_mpc_complete = matches!(
-                    system_transaction.clone().data().inner().intent_message.value.execution_parts().0,
-                    TransactionKind::ProofMPCComplete(_)
-        );
-                if is_proof_mpc_complete {
-                    let tables = self.tables()?;
-                    let iter = system_transaction.data().inner().intent_message.value.execution_parts().2.iter().map(|x| {(x, system_transaction.digest())}).collect();
-                    let _ = tables.write_transaction_locks(system_transaction.into(), iter);
-                }
                 Ok(self.process_consensus_system_transaction(system_transaction))
             }
         }
