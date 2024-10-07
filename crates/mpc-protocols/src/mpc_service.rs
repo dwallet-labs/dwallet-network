@@ -1,4 +1,4 @@
-use crate::mpc_events::{CreatedProofMPCEvent, MPCEvent};
+use crate::mpc_events::{CreatedProofMPCEvent};
 use log::{debug, info};
 use pera_types::base_types::ObjectID;
 use pera_types::event::Event;
