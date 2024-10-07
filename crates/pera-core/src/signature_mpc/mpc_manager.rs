@@ -77,7 +77,7 @@ fn authority_name_to_party_id(
 /// and the messages that are pending to be sent to the instance.
 struct MPCInstance<T: CreatableParty> {
     status: MPCSessionStatus,
-    pending_messages: HashMap<PartyID, ProofMessage>,
+    pending_messages: HashMap<PartyID, T::Message>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
@@ -91,7 +91,7 @@ type ProofPublicParameters =
 
 type ProofMPCMessage = ConsensusTransaction;
 
-impl <P: CreatableParty> MPCInstance<P> {
+impl <P: CreatableParty> MPCInstance<P>  {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
