@@ -356,7 +356,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .inc_num_user_transactions(authority_index as usize);
                     }
 
-                    if let ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address) = &transaction.kind {
+
+                    else if let ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address) = &transaction.kind {
                         println!("recv proof mpc statements from consensus handler output internal");
                         let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
                             ProofMPCResultOnChain {
@@ -369,14 +370,15 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let transaction_k = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
                         let transaction = SequencedConsensusTransactionKind::System(transaction_k);
                         transactions.push((serialized_transaction, transaction, authority_index));
-                        // Ok(ConsensusCertificateResult::PeraTransaction(transaction_k))
                     }
-                    else if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
+
+                    if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
                         &transaction.kind
                     {
                         // These are deprecated and we should never see them. Log an error and eat the tx if one appears.
                         error!("BUG: saw deprecated RandomnessStateUpdate tx for commit round {round:?}, randomness round {randomness_round:?}")
-                    } else {
+                    }
+                     else {
                         let transaction = SequencedConsensusTransactionKind::External(transaction);
                         transactions.push((serialized_transaction, transaction, authority_index));
                     }

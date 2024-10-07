@@ -3390,17 +3390,18 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 println!("recv proof mpc statements from authority per epoch store process consensus transaction");
-                let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
-                    ProofMPCResultOnChain{
-                        session_id: *session_id,
-                        sender_address: *sender_address,
-                        statements: statements.clone(),
-                    }
-                );
+                // let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
+                //     ProofMPCResultOnChain{
+                //         session_id: *session_id,
+                //         sender_address: *sender_address,
+                //         statements: statements.clone(),
+                //     }
+                // );
 
-                let transaction_k = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
+                // let transaction_k = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
                 // let transaction = SequencedConsensusTransactionKind::System(transaction);
-                Ok(ConsensusCertificateResult::PeraTransaction(transaction_k))
+                Ok(ConsensusCertificateResult::Ignored)
+                // PeraTransaction(transaction_k))
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
@@ -3689,6 +3690,15 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::RandomnessConsensusMessage)
             }
             SequencedConsensusTransactionKind::System(system_transaction) => {
+                let is_proof_mpc_complete = matches!(
+                    system_transaction.clone().data().inner().intent_message.value.execution_parts().0,
+                    TransactionKind::ProofMPCComplete(_)
+        );
+                if is_proof_mpc_complete {
+                    let tables = self.tables()?;
+                    let iter = system_transaction.data().inner().intent_message.value.execution_parts().2.iter().map(|x| {(x, system_transaction.digest())}).collect();
+                    let _ = tables.write_transaction_locks(system_transaction.into(), iter);
+                }
                 Ok(self.process_consensus_system_transaction(system_transaction))
             }
         }
