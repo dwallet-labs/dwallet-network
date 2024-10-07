@@ -14,6 +14,9 @@ pub enum MPCInput {
     Message,
 }
 
+/// A Proof MPC session instance
+/// It keeps track of the status of the session, the channel to send messages to the instance,
+/// and the messages that are pending to be sent to the instance.
 struct MPCInstance {
     status: MPCSessionStatus,
     /// The channel to send message to this instance
