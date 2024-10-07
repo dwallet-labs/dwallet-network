@@ -1,6 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
 use anyhow::anyhow;
 use group::{secp256k1, GroupElement};
 use maurer::knowledge_of_discrete_log::PublicParameters;
@@ -20,12 +20,17 @@ use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
 
+/// The possible inputs to an MPC instance
+/// Removed in a later PR as actually the only relevant input is the message
 #[derive(Debug)]
 pub enum MPCInput {
     InitEvent(CreatedProofMPCEvent),
     Message,
 }
 
+/// A Proof MPC session instance
+/// It keeps track of the status of the session, the channel to send messages to the instance,
+/// and the messages that are pending to be sent to the instance.
 struct MPCInstance {
     status: MPCSessionStatus,
     /// The channel to send message to this instance
@@ -130,6 +135,7 @@ impl MPCInstance {
         }
     }
 
+    /// Handles a message by either forwarding it to the instance or queuing it
     async fn handle_message(&mut self, message: MPCInput) {
         match self.status {
             MPCSessionStatus::Active => {
@@ -150,9 +156,19 @@ impl MPCInstance {
     }
 }
 
+impl Default for MPCInstance {
+    fn default() -> Self {
+        MPCInstance {
+            status: MPCSessionStatus::Pending,
+            input_receiver: None,
+            pending_messages: vec![],
+        }
+    }
+}
+
 /// Possible statuses of an MPC session:
 /// - Active: The session is currently running; new messages will be forwarded to the session.
-/// - Pending: Too many active instances are running atm; incoming messages will be queued. The session
+/// - Pending: Too many active instances are running at the moment; incoming messages will be queued. The session
 /// will be activated once there is room, i.e. when enough active instances finish.
 /// - Finished: The session is finished and pending removal; incoming messages will not be forwarded.
 #[derive(Clone, Copy)]
