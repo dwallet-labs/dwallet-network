@@ -113,8 +113,7 @@ impl <P: CreatableParty> MPCInstance<P> {
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
     fn advance(
-        &mut self,
-        public_parameters: ProofPublicParameters,
+        &mut self
     ) -> Option<ProofMPCMessage> {
         let optional_party = mem::take(&mut self.party);
 
@@ -122,18 +121,7 @@ impl <P: CreatableParty> MPCInstance<P> {
         let party: P = if let Some(existing_party) = optional_party {
             existing_party
         } else {
-            let batch_size = 1;
-            let Ok(new_party) = proof::aggregation::asynchronous::Party::new_proof_round_party(
-                public_parameters,
-                PhantomData,
-                self.mpc_threshold_number_of_parties as PartyID,
-                batch_size,
-                &mut OsRng,
-            ) else {
-                // This should never happen, as party initialization should never fail
-                return None;
-            };
-            new_party
+            P::new(self.mpc_threshold_number_of_parties as PartyID)
         };
         let Ok(advance_result) = party.advance(self.pending_messages.clone(), &(), &mut OsRng)
         else {
@@ -258,7 +246,7 @@ fn generate_language_public_parameters<const REPETITIONS: usize>(
     )
 }
 
-impl <P: Party> SignatureMPCManager<P> {
+impl <P: CreatableParty> SignatureMPCManager<P> {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -304,7 +292,7 @@ impl <P: Party> SignatureMPCManager<P> {
             .collect::<Vec<_>>()
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .filter_map(|(_, ref mut instance)| instance.advance(self.language_public_parameters.clone()))
+            .filter_map(|(_, ref mut instance)| instance.advance())
             .collect();
         let Some(epoch_store) = self.epoch_store.upgrade() else {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
