@@ -299,13 +299,9 @@ pub(crate) fn create_initial_eth_state_data(
 
     // hardcoded hashes for verifying network states
     const MAINNET_STATE_HASH: &str =
-        "9fb325c6f66a0f98b57f4b8117c193982c622ee4eb0f6373c84cfc46821091de";
-    const MAINNET_STATE_HASH_TS: &str =
-        "22d83711af758bd69236ba1d59e148e01708f798f18235820a28d80f2ed9310f";
+        "37e9ce4f5764c4709724c256304e151e0af18662b22b1f3b5d916f878eb3ce0d";
     const HOLESKY_STATE_HASH: &str =
-        "e418e4c236fcb1b13282f23346f8c4b14af29cce5ad843f27ed565fd00d49269";
-    const HOLESKY_STATE_HASH_TS: &str =
-        "5022f33b121e88c7210706e1321a804a92ab59deb46db07d3c66a4a40dd64c72";
+        "f0c6cc1e9a7d2516659fea19f84fc553ffda5067355a15dcacb78535bbaf7366";
 
     let cost = context.gas_used();
 

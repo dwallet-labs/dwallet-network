@@ -81,17 +81,17 @@ pub fn get_initial_state_bcs(
     network: JsValue,
     bootstrap: JsValue,
 ) -> Result<JsValue, JsErr> {
-    let checkpoint_value: String = serde_wasm_bindgen::from_value(checkpoint)?;
-    let rpc_value: String = serde_wasm_bindgen::from_value(rpc)?;
-    let network_value: String = serde_wasm_bindgen::from_value(network)?;
+    let checkpoint: String = serde_wasm_bindgen::from_value(checkpoint)?;
+    let rpc: String = serde_wasm_bindgen::from_value(rpc)?;
+    let network: String = serde_wasm_bindgen::from_value(network)?;
     let mut bootstrap: Bootstrap = serde_wasm_bindgen::from_value(bootstrap)?;
 
-    let network = Network::from_str(&network_value)?;
-    let checkpoint = hex::decode(checkpoint_value.strip_prefix("0x").unwrap())?;
+    let network = Network::from_str(&network)?;
+    let checkpoint = hex::decode(checkpoint.strip_prefix("0x").unwrap())?;
     let state = ConsensusStateManager::<NimbusRpc>::new_from_checkpoint_and_bootstrap(
         checkpoint,
         network,
-        rpc_value,
+        rpc,
         &mut bootstrap,
     )
     .map_err(from_eyre_to_js_err)?;
