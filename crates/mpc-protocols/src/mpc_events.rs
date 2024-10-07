@@ -18,7 +18,7 @@ pub const PROOF_MODULE_NAME: &IdentStr = ident_str!("proof");
 pub const CREATED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CreatedProofMPCSessionEvent");
 
 impl CreatedProofMPCEvent {
-    fn type_() -> StructTag {
+    pub fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: CREATED_PROOF_STRUCT_NAME.to_owned(),
