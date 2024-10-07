@@ -5,5 +5,5 @@ test:
 test-bin:
 	./../../target/debug/pera move test proof_tests --path ./packages/pera-system/tests
 snapshot:
-	cd .. && cargo run --bin pera-framework-snapshot
+	cd .. && UPDATE=1 cargo test -p pera-framework --test build-system-packages && cargo run --bin pera-framework-snapshot
 
