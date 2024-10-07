@@ -10,6 +10,7 @@ use tokio::sync::{mpsc, Mutex, RwLock};
 const MAX_ACTIVE_MPC_INSTANCES: usize = 100;
 
 /// The possible inputs to an MPC instance
+/// Removed in a later PR as actually the only relevant input is the message
 pub enum MPCInput {
     InitEvent(CreatedProofMPCEvent),
     Message,
