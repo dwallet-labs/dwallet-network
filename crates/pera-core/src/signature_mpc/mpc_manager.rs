@@ -37,6 +37,10 @@ struct SignatureMPCMessage {
 }
 pub type ProofMessage = (Proof<1, Lang, PhantomData<()>>, Vec<Value>);
 
+pub trait CreatableParty: Party {
+    fn new(threshold: PartyID) -> Self;
+}
+
 fn authority_name_to_party_id(
     authority_name: AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
@@ -56,7 +60,7 @@ fn authority_name_to_party_id(
 /// A Proof MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-struct MPCInstance<T: Party> {
+struct MPCInstance<T: CreatableParty> {
     status: MPCSessionStatus,
     pending_messages: HashMap<PartyID, ProofMessage>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -72,7 +76,7 @@ type ProofPublicParameters =
 
 type ProofMPCMessage = ConsensusTransaction;
 
-impl <P: Party> MPCInstance<P> {
+impl <P: CreatableParty> MPCInstance<P> {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -207,7 +211,7 @@ enum MPCSessionStatus {
 /// - keeping track of all MPC instances,
 /// - executing all active instances, and
 /// - (de)activating instances.
-pub struct SignatureMPCManager<P: Party> {
+pub struct SignatureMPCManager<P: CreatableParty> {
     mpc_instances: HashMap<ObjectID, MPCInstance<P>>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
     pending_instances_queue: VecDeque<ObjectID>,
