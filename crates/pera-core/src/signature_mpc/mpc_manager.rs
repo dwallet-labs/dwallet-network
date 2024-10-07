@@ -56,7 +56,7 @@ fn authority_name_to_party_id(
 /// A Proof MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-struct MPCInstance {
+struct MPCInstance<T: Party> {
     status: MPCSessionStatus,
     pending_messages: HashMap<PartyID, ProofMessage>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -64,7 +64,7 @@ struct MPCInstance {
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
     mpc_threshold_number_of_parties: usize,
     session_id: ObjectID,
-    party: Option<ProofParty>,
+    party: Option<T>,
 }
 
 type ProofPublicParameters =
@@ -72,7 +72,7 @@ type ProofPublicParameters =
 
 type ProofMPCMessage = ConsensusTransaction;
 
-impl MPCInstance {
+impl <P: Party> MPCInstance<P> {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -100,7 +100,7 @@ impl MPCInstance {
         let optional_party = mem::take(&mut self.party);
 
         /// Gets the instance existing party or creates a new one if this is the first advance
-        let party: ProofParty = if let Some(existing_party) = optional_party {
+        let party: P = if let Some(existing_party) = optional_party {
             existing_party
         } else {
             let batch_size = 1;
@@ -207,8 +207,8 @@ enum MPCSessionStatus {
 /// - keeping track of all MPC instances,
 /// - executing all active instances, and
 /// - (de)activating instances.
-pub struct SignatureMPCManager {
-    mpc_instances: HashMap<ObjectID, MPCInstance>,
+pub struct SignatureMPCManager<P: Party> {
+    mpc_instances: HashMap<ObjectID, MPCInstance<P>>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
     pending_instances_queue: VecDeque<ObjectID>,
     // TODO (#257): Make sure the counter is always in sync with the number of active instances.
@@ -222,7 +222,7 @@ pub struct SignatureMPCManager {
 }
 
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
-type ProofParty = proof::aggregation::asynchronous::Party<
+pub type ProofParty = proof::aggregation::asynchronous::Party<
     maurer::Proof<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang, PhantomData<()>>,
 >;
 
@@ -239,7 +239,7 @@ fn generate_language_public_parameters<const REPETITIONS: usize>(
     )
 }
 
-impl SignatureMPCManager {
+impl <P: Party> SignatureMPCManager<P> {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,

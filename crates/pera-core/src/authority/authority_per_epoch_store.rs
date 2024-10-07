@@ -76,7 +76,7 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
-use crate::signature_mpc::mpc_manager::SignatureMPCManager;
+use crate::signature_mpc::mpc_manager::{ProofParty, SignatureMPCManager};
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -336,7 +336,7 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing Signature MPC flows.
-    pub signature_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager>>,
+    pub signature_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -923,7 +923,7 @@ impl AuthorityPerEpochStore {
 
     pub async fn set_signature_mpc_manager(
         &self,
-        mut signature_mpc: SignatureMPCManager,
+        mut signature_mpc: SignatureMPCManager<ProofParty>,
     ) -> PeraResult<()> {
         if self
             .signature_mpc_manager
