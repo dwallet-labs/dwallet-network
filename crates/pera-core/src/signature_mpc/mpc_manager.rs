@@ -295,6 +295,8 @@ impl SignatureMPCManager {
             .await
     }
 
+    /// Handles a message by forwarding it to the relevant MPC instance
+    /// If the instance does not exist, the sender is punished
     pub fn handle_message(
         &mut self,
         message: &[u8],
