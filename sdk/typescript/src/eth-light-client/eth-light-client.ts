@@ -54,7 +54,9 @@ export const createEthereumDWallet = async (
 	});
 
 	if (result.effects?.status.status !== 'success') {
-		throw new Error('Failed to verify Ethereum state. txResult: ' + JSON.stringify(result.effects));
+		throw new Error(
+			'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(result.effects),
+		);
 	}
 
 	return result.effects?.created?.at(0)?.reference.objectId;
@@ -130,6 +132,15 @@ export const initEthereumState = async (
 		allocateSize: stateBytes.length,
 	});
 
+	// Get Beacon block data for the latest finalized block.
+	let beaconBlockData = await getBeaconBlockData(rpc, finalityUpdateResponse);
+	let beaconBlockTypeBcs = stringToArrayU8Bcs(beaconBlockData.blockType);
+	let beaconBlockBcs = stringToArrayU8Bcs(beaconBlockData.blockJsonString);
+	let beaconBlockBodyBcs = stringToArrayU8Bcs(beaconBlockData.blockBodyJsonString);
+	let beaconBlockExecutionPayloadBcs = stringToArrayU8Bcs(
+		beaconBlockData.blockExecutionPayloadJsonString,
+	);
+
 	let contractAddressArrayU8 = ethers.getBytes(contractAddress);
 	let contractAddressBcs = bcs.vector(bcs.u8()).serialize(contractAddressArrayU8);
 
@@ -144,6 +155,10 @@ export const initEthereumState = async (
 			tx.pure(updatesBcs),
 			tx.pure(finalityUpdateBcs),
 			tx.pure(optimisticUpdateBcs),
+			tx.pure(beaconBlockBcs),
+			tx.pure(beaconBlockBodyBcs),
+			tx.pure(beaconBlockExecutionPayloadBcs),
+			tx.pure(beaconBlockTypeBcs),
 		],
 		typeArguments: [],
 	});
@@ -218,6 +233,14 @@ export const approveEthereumMessage = async (
 	let optimisticUpdateJson = JSON.stringify(optimisticUpdateResponse['data']);
 	let optimisticUpdateBcs = stringToArrayU8Bcs(optimisticUpdateJson);
 
+	let beaconBlockData = await getBeaconBlockData(consensusRpc, finalityUpdateResponseJson);
+	let beaconBlockTypeBcs = stringToArrayU8Bcs(beaconBlockData.blockType);
+	let beaconBlockBcs = stringToArrayU8Bcs(beaconBlockData.blockJsonString);
+	let beaconBlockBodyBcs = stringToArrayU8Bcs(beaconBlockData.blockBodyJsonString);
+	let beaconBlockExecutionPayloadBcs = stringToArrayU8Bcs(
+		beaconBlockData.blockExecutionPayloadJsonString,
+	);
+
 	const tx = new TransactionBlock();
 	tx.moveCall({
 		target: `${packageId}::${ethereumStateModuleName}::verify_new_state`,
@@ -227,6 +250,10 @@ export const approveEthereumMessage = async (
 			tx.pure(optimisticUpdateBcs),
 			tx.object(latestStateObjectID),
 			tx.object(currentEthereumStateID),
+			tx.pure(beaconBlockBcs),
+			tx.pure(beaconBlockBodyBcs),
+			tx.pure(beaconBlockExecutionPayloadBcs),
+			tx.pure(beaconBlockTypeBcs),
 		],
 	});
 
@@ -248,9 +275,6 @@ export const approveEthereumMessage = async (
 	let contractAddress = latestEthereumStateObj?.eth_smart_contract_address as number[];
 	let dataSlot = latestEthereumStateObj?.eth_smart_contract_slot as number;
 
-	// Get Beacon block data for the latest finalized block.
-	let beaconBlockData = await getBeaconBlockData(consensusRpc, finalityUpdateResponseJson);
-
 	let contractAddressArrayU8 = Uint8Array.from(contractAddress);
 	let contractAddressString = ethers.hexlify(contractAddressArrayU8);
 
@@ -266,12 +290,6 @@ export const approveEthereumMessage = async (
 
 	let proofBcs = stringToArrayU8Bcs(JSON.stringify(proof));
 	let messageBcs = stringToArrayU8Bcs(message);
-	let beaconBlockTypeBcs = stringToArrayU8Bcs(beaconBlockData.blockType);
-	let beaconBlockBcs = stringToArrayU8Bcs(beaconBlockData.blockJsonString);
-	let beaconBlockBodyBcs = stringToArrayU8Bcs(beaconBlockData.blockBodyJsonString);
-	let beaconBlockExecutionPayloadBcs = stringToArrayU8Bcs(
-		beaconBlockData.blockExecutionPayloadJsonString,
-	);
 
 	const tx2 = new TransactionBlock();
 	tx2.moveCall({
@@ -283,10 +301,6 @@ export const approveEthereumMessage = async (
 			tx2.object(latestStateObjectID),
 			tx2.object(verifiedEthereumStateID),
 			tx2.pure(proofBcs),
-			tx2.pure(beaconBlockBcs),
-			tx2.pure(beaconBlockTypeBcs),
-			tx2.pure(beaconBlockBodyBcs),
-			tx2.pure(beaconBlockExecutionPayloadBcs),
 		],
 	});
 
