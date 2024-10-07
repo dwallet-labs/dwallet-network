@@ -175,7 +175,7 @@ impl MPCInstance {
         }
     }
 
-    /// Handles a message by either forwarding it to the instance or queuing it
+    /// Handles a message by either forwarding it to the instance or ignoring it if the instance is finished.
     fn handle_message(&mut self, message: SignatureMPCMessage) -> PeraResult<()> {
         match self.status {
             MPCSessionStatus::Active => {
