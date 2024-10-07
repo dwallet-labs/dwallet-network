@@ -1,6 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
 use anyhow::anyhow;
 use group::secp256k1::group_element::Value;
 use group::{secp256k1, GroupElement, PartyID};
@@ -28,6 +28,8 @@ use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
 
+/// The possible inputs to an MPC instance
+/// Removed in a later PR as actually the only relevant input is the message
 #[derive(Clone)]
 struct ProofMPCMessage {
     message: Vec<u8>,
@@ -51,6 +53,9 @@ fn authority_name_to_party_id(
         })? as PartyID)
 }
 
+/// A Proof MPC session instance
+/// It keeps track of the status of the session, the channel to send messages to the instance,
+/// and the messages that are pending to be sent to the instance.
 struct MPCInstance {
     status: MPCSessionStatus,
     pending_messages: HashMap<PartyID, ProofMessage>,
@@ -203,6 +208,7 @@ impl MPCInstance {
         }
     }
 
+    /// Handles a message by either forwarding it to the instance or queuing it
     fn handle_message(&mut self, message: ProofMPCMessage) -> PeraResult<()> {
         match self.status {
             MPCSessionStatus::Active => {
