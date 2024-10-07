@@ -146,7 +146,7 @@ impl <P: CreatableParty> MPCInstance<P> {
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns None only if the epoch switched in the middle and was not available.
-    fn new_signature_mpc_message(&self, message: ProofMessage) -> Option<ConsensusTransaction> {
+    fn new_signature_mpc_message(&self, message: P::Message) -> Option<ConsensusTransaction> {
         let Some(epoch_store) = self.epoch_store.upgrade() else {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
             return None;
@@ -292,7 +292,7 @@ impl <P: CreatableParty> SignatureMPCManager<P> {
             .collect::<Vec<_>>()
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .filter_map(|(_, ref mut instance)| instance.advance())
+            .filter_map(|(_, ref mut instance): (_, MPCInstance<P>)| instance.advance())
             .collect();
         let Some(epoch_store) = self.epoch_store.upgrade() else {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
