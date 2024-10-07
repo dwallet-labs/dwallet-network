@@ -45,6 +45,7 @@ scopeguard.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
+schemars.workspace = true
 signature.workspace = true
 static_assertions.workspace = true
 tap.workspace = true
@@ -98,7 +99,10 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
-mpc-protocols.workspace = true
+proof = { git = "https://github.com/dwallet-labs/proof.git", rev = "a571ca9" }
+maurer = { git = "https://github.com/dwallet-labs/maurer.git", rev = "8215405" }
+group = { git = "https://github.com/dwallet-labs/group.git" }
+rand_core = "0.6.4"
 
 [dev-dependencies]
 clap.workspace = true

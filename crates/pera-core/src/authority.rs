@@ -153,13 +153,13 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
+use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
+use crate::signature_mpc::mpc_manager::{MPCInput, SignatureMPCManager};
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
-use mpc_protocols::mpc_events::CreatedProofMPCEvent;
-use mpc_protocols::mpc_service::{MPCInput, MPCService};
 
 use crate::authority_client::NetworkAuthorityClient;
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
@@ -806,7 +806,7 @@ pub struct AuthorityState {
 
     pub validator_tx_finalizer: Option<Arc<ValidatorTxFinalizer<NetworkAuthorityClient>>>,
 
-    mpc_service: Mutex<MPCService>,
+    mpc_service: Mutex<SignatureMPCManager>,
 }
 
 /// The authority state encapsulates all state, drives execution, and ensures safety.
@@ -2736,7 +2736,7 @@ impl AuthorityState {
             config,
             overload_info: AuthorityOverloadInfo::default(),
             validator_tx_finalizer,
-            mpc_service: Mutex::new(MPCService::new()),
+            mpc_service: Mutex::new(SignatureMPCManager::new()),
         });
 
         // Start a task to execute ready certificates.

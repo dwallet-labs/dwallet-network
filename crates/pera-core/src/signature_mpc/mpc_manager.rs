@@ -1,10 +1,10 @@
-use crate::mpc_events::CreatedProofMPCEvent;
-use log::{debug, info};
+use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
 use pera_types::base_types::ObjectID;
 use pera_types::event::Event;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use tokio::sync::{mpsc, Mutex, RwLock};
+use tracing::{debug, info};
 
 // TODO (#253): Make this configurable from a config file
 const MAX_ACTIVE_MPC_INSTANCES: usize = 100;
@@ -89,7 +89,7 @@ enum MPCSessionStatus {
 /// - keeping track of all MPC instances,
 /// - executing all active instances, and
 /// - (de)activating instances.
-pub struct MPCService {
+pub struct SignatureMPCManager {
     mpc_instances: HashMap<ObjectID, MPCInstance>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
     pending_instances_queue: VecDeque<ObjectID>,
@@ -97,7 +97,7 @@ pub struct MPCService {
     active_instances_counter: usize,
 }
 
-impl MPCService {
+impl SignatureMPCManager {
     pub fn new() -> Self {
         Self {
             mpc_instances: HashMap::new(),
@@ -118,9 +118,6 @@ impl MPCService {
         Ok(())
     }
 
-    /// Handles a proof initialization event
-    /// Spawns a new MPC instance if the number of active instances is below the limit
-    /// Otherwise, adds the instance to the pending queue
     /// Handles a proof initialization event
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
