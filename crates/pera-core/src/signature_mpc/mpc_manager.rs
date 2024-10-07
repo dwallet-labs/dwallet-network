@@ -41,6 +41,21 @@ pub trait CreatableParty: Party {
     fn new(threshold: PartyID) -> Self;
 }
 
+impl CreatableParty for ProofParty {
+    fn new(threshold: PartyID) -> Self {
+        let public_parameters = generate_language_public_parameters::<{ maurer::SOUND_PROOFS_REPETITIONS }>();
+        let batch_size = 1;
+        ProofParty::new_proof_round_party(
+            public_parameters,
+            PhantomData,
+            threshold,
+            batch_size,
+            &mut OsRng,
+        ).unwrap()
+    }
+}
+
+
 fn authority_name_to_party_id(
     authority_name: AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
