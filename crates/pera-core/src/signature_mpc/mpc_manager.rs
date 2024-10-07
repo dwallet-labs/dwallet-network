@@ -156,16 +156,6 @@ impl MPCInstance {
     }
 }
 
-impl Default for MPCInstance {
-    fn default() -> Self {
-        MPCInstance {
-            status: MPCSessionStatus::Pending,
-            input_receiver: None,
-            pending_messages: vec![],
-        }
-    }
-}
-
 /// Possible statuses of an MPC session:
 /// - Active: The session is currently running; new messages will be forwarded to the session.
 /// - Pending: Too many active instances are running at the moment; incoming messages will be queued. The session
