@@ -11,7 +11,6 @@ use wasm_bindgen::JsValue;
 /// Error type for better JS handling and generalization
 /// of Rust / WASM -> JS error conversion.
 pub struct JsErr {
-    // type_: String,
     pub message: String,
     pub display: String,
 }
@@ -70,17 +69,17 @@ pub fn get_initial_state_bcs(
     network: JsValue,
     bootstrap: JsValue,
 ) -> Result<JsValue, JsErr> {
-    let checkpoint_value: String = serde_wasm_bindgen::from_value(checkpoint)?;
-    let rpc_value: String = serde_wasm_bindgen::from_value(rpc)?;
-    let network_value: String = serde_wasm_bindgen::from_value(network)?;
+    let checkpoint: String = serde_wasm_bindgen::from_value(checkpoint)?;
+    let rpc: String = serde_wasm_bindgen::from_value(rpc)?;
+    let network: String = serde_wasm_bindgen::from_value(network)?;
     let mut bootstrap: Bootstrap = serde_wasm_bindgen::from_value(bootstrap)?;
 
-    let network = Network::from_str(&network_value)?;
-    let checkpoint = hex::decode(checkpoint_value.strip_prefix("0x").unwrap())?;
+    let network = Network::from_str(&network)?;
+    let checkpoint = hex::decode(checkpoint.strip_prefix("0x").unwrap())?;
     let state = ConsensusStateManager::<NimbusRpc>::new_from_checkpoint_and_bootstrap(
         checkpoint,
         network,
-        rpc_value,
+        rpc,
         &mut bootstrap,
     )
     .map_err(from_eyre_to_js_err)?;
@@ -97,8 +96,7 @@ pub fn get_initial_state_bcs(
 
 /// Calculates the current finalized period of the Ethereum light client state.
 #[wasm_bindgen]
-pub fn get_current_period(state_bytes: JsValue) -> Result<JsValue, JsErr> {
-    let state_bytes: Vec<u8> = serde_wasm_bindgen::from_value(state_bytes)?;
+pub fn get_current_period(state_bytes: Vec<u8>) -> Result<JsValue, JsErr> {
     let mut eth_state = bcs::from_bytes::<ConsensusStateManager<NimbusRpc>>(&state_bytes)?;
     Ok(serde_wasm_bindgen::to_value(&eth_state.get_sync_period())?)
 }
