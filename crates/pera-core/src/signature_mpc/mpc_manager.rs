@@ -1,4 +1,4 @@
-use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
 use pera_types::base_types::ObjectID;
 use pera_types::event::Event;
 use std::cell::RefCell;
@@ -9,11 +9,16 @@ use tracing::{debug, info};
 // TODO (#253): Make this configurable from a config file
 const MAX_ACTIVE_MPC_INSTANCES: usize = 100;
 
+/// The possible inputs to an MPC instance
+/// Removed in a later PR as actually the only relevant input is the message
 pub enum MPCInput {
     InitEvent(CreatedProofMPCEvent),
     Message,
 }
 
+/// A Proof MPC session instance
+/// It keeps track of the status of the session, the channel to send messages to the instance,
+/// and the messages that are pending to be sent to the instance.
 struct MPCInstance {
     status: MPCSessionStatus,
     /// The channel to send message to this instance
@@ -40,6 +45,7 @@ impl MPCInstance {
         });
     }
 
+    /// Handles a message by either forwarding it to the instance or queuing it
     fn handle_message(&mut self, message: MPCInput) {
         match self.status {
             MPCSessionStatus::Active => {
@@ -57,9 +63,19 @@ impl MPCInstance {
     }
 }
 
+impl Default for MPCInstance {
+    fn default() -> Self {
+        MPCInstance {
+            status: MPCSessionStatus::Pending,
+            input_receiver: None,
+            pending_messages: vec![],
+        }
+    }
+}
+
 /// Possible statuses of an MPC session:
 /// - Active: The session is currently running; new messages will be forwarded to the session.
-/// - Pending: Too many active instances are running atm; incoming messages will be queued. The session
+/// - Pending: Too many active instances are running at the moment; incoming messages will be queued. The session
 /// will be activated once there is room, i.e. when enough active instances finish.
 /// - Finished: The session is finished and pending removal; incoming messages will not be forwarded.
 #[derive(Clone, Copy)]
@@ -111,11 +127,7 @@ impl SignatureMPCManager {
             event.session_id
         );
 
-        let mut new_instance = MPCInstance {
-            status: MPCSessionStatus::Pending,
-            input_receiver: None,
-            pending_messages: vec![],
-        };
+        let mut new_instance = MPCInstance::default();
 
         // Activate the instance if possible
         if self.active_instances_counter < MAX_ACTIVE_MPC_INSTANCES {
