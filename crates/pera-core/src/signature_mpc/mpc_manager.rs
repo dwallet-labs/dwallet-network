@@ -149,6 +149,8 @@ impl MPCInstance {
         ))
     }
 
+    /// Stores a message in the pending messages map. The code stores every new message it receives for that instance,
+    /// and when we reach the end of delivery we will advance the instance if we have a threshold of messages.
     fn store_message(
         &mut self,
         message: &SignatureMPCMessage,
