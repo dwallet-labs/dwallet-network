@@ -92,6 +92,7 @@ impl MPCInstance {
 
 
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
+    /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
     fn advance(
         &mut self,
         public_parameters: ProofPublicParameters,
