@@ -17,6 +17,7 @@ serde-wasm-bindgen = "0.6.5"
 wasm-bindgen = "0.2.92"
 wasm-bindgen-futures = "0.4.43"
 ethers = "2.0.14"
+light-client-helpers = { path = "../../crates/light-client-helpers" }
 
 [dev-dependencies]
 dirs = "5.0.1"
