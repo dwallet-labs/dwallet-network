@@ -70,6 +70,8 @@ struct MPCInstance {
 type ProofPublicParameters =
     maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
 
+type ProofMPCMessage = ConsensusTransaction;
+
 impl MPCInstance {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -88,13 +90,12 @@ impl MPCInstance {
         }
     }
 
-    /// Advances the MPC instance and return the next message the validator want to send to the other MPC parties.
-    /// This message is of type [`ConsensusTransaction`] so it can be submitted to the other validators through the consensus adapter.
-    /// When the other validators will receive such a transaction, they will handle it as a proof MPC message.
+
+    /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     fn advance(
         &mut self,
         public_parameters: ProofPublicParameters,
-    ) -> Option<ConsensusTransaction> {
+    ) -> Option<ProofMPCMessage> {
         let optional_party = mem::take(&mut self.party);
 
         /// Gets the instance existing party or creates a new one if this is the first advance
