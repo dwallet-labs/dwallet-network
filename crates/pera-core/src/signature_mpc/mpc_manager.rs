@@ -137,6 +137,8 @@ impl MPCInstance {
         None
     }
 
+    /// Create a new consensus transaction with the message to be sent to the other MPC parties.
+    /// Returns None only if the epoch switched in the middle and was not available.
     fn new_signature_mpc_message(&self, message: ProofMessage) -> Option<ConsensusTransaction> {
         let Some(epoch_store) = self.epoch_store.upgrade() else {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
@@ -170,49 +172,6 @@ impl MPCInstance {
             Err(err) => Err(PeraError::ObjectDeserializationError {
                 error: err.to_string(),
             }),
-        }
-    }
-
-    async fn start_proof_mpc_flow(
-        &self,
-        public_parameters: ProofPublicParameters,
-    ) -> anyhow::Result<ProofParty> {
-        let batch_size = 1;
-        let party: ProofParty = proof::aggregation::asynchronous::Party::new_proof_round_party(
-            public_parameters,
-            PhantomData,
-            self.mpc_threshold_number_of_parties as PartyID,
-            batch_size,
-            &mut OsRng,
-        )?;
-        let Some(epoch_store) = self.epoch_store.upgrade() else {
-            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-            return Err(anyhow!("Epoch store not found"));
-        };
-        let Ok(advance_result) = party.advance(HashMap::new(), &(), &mut OsRng) else {
-            // This should never happen, as there should be on chain verification on the initial event input
-            return Err(anyhow!(
-                "Error performing first step for session id: {:?}",
-                self.session_id
-            ));
-        };
-        match advance_result {
-            AdvanceResult::Advance((message, party)) => {
-                let message_tx = self.new_signature_mpc_message(message).ok_or_else(|| {
-                    anyhow!(
-                        "Epoch store switched in the middle of session: {:?}",
-                        self.session_id
-                    )
-                })?;
-                self.consensus_adapter
-                    .submit_to_consensus(&[message_tx], &epoch_store)
-                    .await?;
-                Ok(party)
-            }
-            AdvanceResult::Finalize(_) => Err(anyhow!(
-                "Finalization reached unexpectedly: {:?}",
-                self.session_id
-            )),
         }
     }
 
