@@ -153,7 +153,7 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent};
+use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
 use crate::signature_mpc::mpc_manager::{MPCInput, SignatureMPCManager};
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
