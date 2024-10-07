@@ -88,6 +88,9 @@ impl MPCInstance {
         }
     }
 
+    /// Advances the MPC instance and return the next message the validator want to send to the other MPC parties.
+    /// This message is of type [`ConsensusTransaction`] so it can be submitted to the other validators through the consensus adapter.
+    /// When the other validators will receive such a transaction, they will handle it as a proof MPC message.
     fn advance(
         &mut self,
         public_parameters: ProofPublicParameters,
