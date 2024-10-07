@@ -185,6 +185,7 @@ impl ValidatorConfigBuilder {
         };
 
         NodeConfig {
+            max_active_mpc_instances: 3000,
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator.key_pair),
             network_key_pair: KeyPairWithPath::new(PeraKeyPair::Ed25519(
                 validator.network_key_pair,
@@ -458,6 +459,7 @@ impl FullnodeConfigBuilder {
         };
 
         NodeConfig {
+            max_active_mpc_instances: 3000,
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator_config.key_pair),
             account_key_pair: KeyPairWithPath::new(validator_config.account_key_pair),
             worker_key_pair: KeyPairWithPath::new(PeraKeyPair::Ed25519(

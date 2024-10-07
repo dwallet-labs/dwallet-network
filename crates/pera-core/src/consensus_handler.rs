@@ -582,6 +582,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessStateUpdate(_, _) => "randomness_state_update",
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
+        ConsensusTransactionKind::SignatureMPCMessage(_, _) => "signature_mpc_message",
     }
 }
 

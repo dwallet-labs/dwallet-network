@@ -7,6 +7,9 @@ use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
 };
+use crate::messages_signature_mpc::{
+    SignatureMPCMessageKind, SignatureMPCRound, SignatureMPCSessionID,
+};
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -93,6 +96,7 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
+    SignatureMPCMessage(AuthorityName),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -108,6 +112,9 @@ impl Debug for ConsensusTransactionKey {
             Self::Certificate(digest) => write!(f, "Certificate({:?})", digest),
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
+            }
+            Self::SignatureMPCMessage(name) => {
+                write!(f, "SignatureMPCMessage({:?})", name.concise(),)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
             Self::CapabilityNotification(name, generation) => write!(
@@ -262,6 +269,7 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
+    SignatureMPCMessage(AuthorityName, Vec<u8>),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -456,6 +464,16 @@ impl ConsensusTransaction {
         }
     }
 
+    pub fn new_signature_mpc_message(authority: AuthorityName, message: Vec<u8>) -> Self {
+        let mut hasher = DefaultHasher::new();
+        message.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message),
+        }
+    }
+
     pub fn new_randomness_dkg_message(
         authority: AuthorityName,
         versioned_message: &VersionedDkgMessage,
@@ -526,6 +544,9 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
+            }
+            ConsensusTransactionKind::SignatureMPCMessage(authority, _) => {
+                ConsensusTransactionKey::SignatureMPCMessage(*authority)
             }
         }
     }

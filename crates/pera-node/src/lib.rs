@@ -213,6 +213,7 @@ use simulator::*;
 
 use pera_core::consensus_handler::ConsensusHandlerInitializer;
 use pera_core::safe_client::SafeClientMetricsBase;
+use pera_core::signature_mpc::mpc_manager::SignatureMPCManager;
 use pera_core::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::execution_config_utils::to_binary_config;
 #[cfg(msim)]
@@ -1291,6 +1292,14 @@ impl PeraNode {
             }
         }
 
+        epoch_store
+            .set_signature_mpc_manager(SignatureMPCManager::new(
+                Arc::new(consensus_adapter.clone()),
+                Arc::downgrade(&epoch_store),
+                config.max_active_mpc_instances,
+                epoch_store.committee().voting_rights.len(),
+            ))
+            .await?;
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(
             None,
             state.metrics.clone(),
