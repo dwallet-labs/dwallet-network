@@ -100,11 +100,11 @@ export const initEthereumState = async (
 	let checkpoint = '';
 	switch (network) {
 		case 'mainnet': {
-			checkpoint = '0x8bfa089414dc5fe78dadc8b160a097fe744f17a80251f08eed0a3cdcc60b42f4';
+			checkpoint = '0x886083d6ba589617fabc0e69127982299f60426ddbf863ade18b3dd30259c11d';
 			break;
 		}
 		case 'holesky': {
-			checkpoint = '0x12e6b81891d23c90502dbc2354de9cb52afe4ff823ca00fd41d411213c6e7bbb';
+			checkpoint = '0x089ad025c4a629091ea8ff20ba34f3eaf5b2c690f1a9e2c29a64022d95ddf1a4';
 			break;
 		}
 		default: {

@@ -33,7 +33,7 @@ use sui_keys::keystore::AccountKeystore;
 use sui_sdk::wallet_context::WalletContext;
 use sui_types::base_types::ObjectID;
 use sui_types::eth_dwallet::{
-    EthereumStateObject, LatestEthereumStateObject, APPROVE_MESSAGE_FUNC_NAME,
+    EthereumDWalletCap, EthereumStateObject, LatestEthereumStateObject, APPROVE_MESSAGE_FUNC_NAME,
     CREATE_ETH_DWALLET_CAP_FUNC_NAME, ETHEREUM_STATE_MODULE_NAME, ETH_DWALLET_MODULE_NAME,
     INIT_STATE_FUNC_NAME, LATEST_ETH_STATE_STRUCT_NAME, VERIFY_ETH_STATE_FUNC_NAME,
 };
@@ -157,9 +157,8 @@ pub(crate) async fn init_ethereum_state(
 ) -> Result<SuiClientCommandResult> {
     let network = Network::from_str(&network)?;
     let checkpoint = match network {
-        Network::MAINNET => "0x8bfa089414dc5fe78dadc8b160a097fe744f17a80251f08eed0a3cdcc60b42f4",
-        // Network::HOLESKY => "0x8f867e31e2c55d9257dcd83effa0b7b74d7566a08bf2aabc5e133e91ffd11e2f",
-        Network::HOLESKY => "0x12e6b81891d23c90502dbc2354de9cb52afe4ff823ca00fd41d411213c6e7bbb",
+        Network::MAINNET => "0x886083d6ba589617fabc0e69127982299f60426ddbf863ade18b3dd30259c11d",
+        Network::HOLESKY => "0x089ad025c4a629091ea8ff20ba34f3eaf5b2c690f1a9e2c29a64022d95ddf1a4",
         _ => return Err(anyhow!("invalid network")),
     };
 
@@ -372,9 +371,20 @@ pub(crate) async fn eth_approve_message(
     let active_env = context.config.get_active_env()?.clone();
 
     let latest_state_object_id = match active_env.eth_client_settings {
-        Some(eth_client_settings) => eth_client_settings
-            .state_object_id
-            .ok_or_else(|| anyhow!("ETH State object ID configuration not found"))?,
+        Some(eth_client_settings) => {
+            if let Some(state_object_id) = eth_client_settings.state_object_id {
+                state_object_id
+            } else {
+                // Perform the async operation here
+                let eth_dwallet_cap_bcs = get_object_bcs_by_id(context, eth_dwallet_cap_id).await?;
+                let eth_dwallet_cap: EthereumDWalletCap = eth_dwallet_cap_bcs
+                    .try_as_move()
+                    .ok_or_else(|| anyhow!("object is not a Move Object"))?
+                    .deserialize()
+                    .map_err(|e| anyhow!("error deserializing object: {e}"))?;
+                eth_dwallet_cap.latest_ethereum_state_id
+            }
+        }
         None => return Err(anyhow!("ETH State object ID configuration not found")),
     };
 

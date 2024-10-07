@@ -1,3 +1,5 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 //
 // `ethereum_state` module provides functionality for managing and verifying the state of Ethereum within
 // the dwallet_system.

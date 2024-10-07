@@ -1,3 +1,5 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
 //
 // `eth_dwallet` module provides functionality for managing Ethereum dWallets within the dwallet_system.
 // It includes structures to represent dWallet capabilities, functions to create and manage Ethereum dWallets,
