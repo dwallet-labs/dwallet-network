@@ -153,7 +153,22 @@ impl<P: CreatableParty> MPCInstance<P> {
                 // TODO (#238): Verify the output and write it to the chain
                 println!("Finalized output: {:?}", output);
                 self.status = MPCSessionStatus::Finished;
-                return self.new_proof_mpc_statements_message(output);
+                let consensus_adapter = Arc::clone(&self.consensus_adapter);
+                let Some(epoch_store) = self.epoch_store.upgrade() else {
+                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+                    return;
+                };
+                let epoch_store = Arc::clone(&epoch_store);
+                tokio::spawn(async move {
+                    if let Some(output) = self.new_proof_mpc_statements_message(output) {
+                        let res = consensus_adapter
+                            .submit_to_consensus(
+                                &vec![output],
+                                &epoch_store,
+                            )
+                            .await;
+                    }
+                });
             }
         }
     }
@@ -172,7 +187,10 @@ impl<P: CreatableParty> MPCInstance<P> {
         ))
     }
 
-    fn new_proof_mpc_statements_message(&self, statements: Vec<secp256k1::group_element::GroupElement>) -> Option<ConsensusTransaction> {
+    fn new_proof_mpc_statements_message(
+        &self,
+        statements: Vec<secp256k1::group_element::GroupElement>,
+    ) -> Option<ConsensusTransaction> {
         let Some(epoch_store) = self.epoch_store.upgrade() else {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
             return None;
@@ -180,7 +198,10 @@ impl<P: CreatableParty> MPCInstance<P> {
         if authority_name_to_party_id(epoch_store.name, &epoch_store).unwrap() != 3 {
             return None;
         }
-        let statements = statements.iter().map(|s| {bcs::to_bytes(&s.value()).unwrap()}).collect::<Vec<Vec<u8>>>();
+        let statements = statements
+            .iter()
+            .map(|s| bcs::to_bytes(&s.value()).unwrap())
+            .collect::<Vec<Vec<u8>>>();
         Some(ConsensusTransaction::new_proof_mpc_statements(
             statements,
             self.session_id.clone(),
@@ -372,7 +393,10 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             event.session_id
         );
 
-        println!("max_active_mpc_instances: {:?}", self.max_active_mpc_instances);
+        println!(
+            "max_active_mpc_instances: {:?}",
+            self.max_active_mpc_instances
+        );
         if self.active_instances_counter > self.max_active_mpc_instances {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
