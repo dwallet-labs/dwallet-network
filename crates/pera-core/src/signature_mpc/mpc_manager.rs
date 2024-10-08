@@ -138,7 +138,7 @@ impl<P: CreatableParty> MPCInstance<P> {
                 };
                 let consensus_adapter = Arc::clone(&self.consensus_adapter);
                 let epoch_store = Arc::clone(&epoch_store);
-                tokio::spawn(async {
+                tokio::spawn(async move {
                     consensus_adapter
                         .submit_to_consensus(&vec![msg.unwrap()], &epoch_store)
                         .await
