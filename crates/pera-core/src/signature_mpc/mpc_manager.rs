@@ -112,7 +112,7 @@ impl<P: CreatableParty> MPCInstance<P> {
 
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    fn advance(&mut self) -> Option<ProofMPCMessage> {
+    fn advance(&mut self) {
         let optional_party = mem::take(&mut self.party);
 
         /// Gets the instance existing party or creates a new one if this is the first advance
@@ -125,13 +125,24 @@ impl<P: CreatableParty> MPCInstance<P> {
         else {
             // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
             self.pending_messages.clear();
-            return None;
+            return;
         };
         match advance_result {
             AdvanceResult::Advance((message, party)) => {
                 self.pending_messages.clear();
                 self.party = Some(party);
-                return self.new_signature_mpc_message(message);
+                let msg = self.new_signature_mpc_message(message);
+                let Some(epoch_store) = self.epoch_store.upgrade() else {
+                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+                    return;
+                };
+                let consensus_adapter = Arc::clone(&self.consensus_adapter);
+                let epoch_store = Arc::clone(&epoch_store);
+                tokio::spawn(async {
+                    consensus_adapter
+                        .submit_to_consensus(&vec![msg.unwrap()], &epoch_store)
+                        .await
+                });
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
@@ -139,7 +150,6 @@ impl<P: CreatableParty> MPCInstance<P> {
                 self.status = MPCSessionStatus::Finished;
             }
         }
-        None
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
@@ -296,18 +306,18 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
                 }
             })
             .collect::<Vec<&mut MPCInstance<P>>>();
-        let txs_to_send: Vec<ConsensusTransaction> = ready_to_advance
+        ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .filter_map(|ref mut instance| instance.advance())
-            .collect();
-        let Some(epoch_store) = self.epoch_store.upgrade() else {
-            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-            return Ok(());
-        };
-        self.consensus_adapter
-            .submit_to_consensus(&txs_to_send, &epoch_store)
-            .await
+            .for_each(|ref mut instance| instance.advance());
+        Ok(())
+        // let Some(epoch_store) = self.epoch_store.upgrade() else {
+        //     // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+        //     return Ok(());
+        // };
+        // self.consensus_adapter
+        //     .submit_to_consensus(&txs_to_send, &epoch_store)
+        //     .await
     }
 
     /// Handles a message by forwarding it to the relevant MPC instance
