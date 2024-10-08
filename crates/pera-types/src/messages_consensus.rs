@@ -96,7 +96,7 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
-    SignatureMPCMessage(AuthorityName, Vec<u8>,[u8; 32]),
+    SignatureMPCMessage(AuthorityName, Vec<u8>, [u8; 32]),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -552,7 +552,11 @@ impl ConsensusTransaction {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
             }
             ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id) => {
-                ConsensusTransactionKey::SignatureMPCMessage(*authority, message.clone(), session_id.into_bytes())
+                ConsensusTransactionKey::SignatureMPCMessage(
+                    *authority,
+                    message.clone(),
+                    session_id.into_bytes(),
+                )
             }
         }
     }
