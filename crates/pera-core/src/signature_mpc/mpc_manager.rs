@@ -189,7 +189,7 @@ impl<P: CreatableParty> MPCInstance<P> {
 
     fn new_proof_mpc_statements_message(
         &self,
-        statements: Vec<secp256k1::group_element::GroupElement>,
+        statements: P::Output,
     ) -> Option<ConsensusTransaction> {
         let Some(epoch_store) = self.epoch_store.upgrade() else {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
@@ -198,10 +198,9 @@ impl<P: CreatableParty> MPCInstance<P> {
         if authority_name_to_party_id(epoch_store.name, &epoch_store).unwrap() != 3 {
             return None;
         }
-        let statements = statements
-            .iter()
-            .map(|s| bcs::to_bytes(&s.value()).unwrap())
-            .collect::<Vec<Vec<u8>>>();
+
+        /// TODO: Make it serializable
+        let statements = vec![];
         Some(ConsensusTransaction::new_proof_mpc_statements(
             statements,
             self.session_id.clone(),
