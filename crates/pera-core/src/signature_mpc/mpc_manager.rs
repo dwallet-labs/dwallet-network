@@ -43,7 +43,8 @@ pub trait CreatableParty: Party {
 
 impl CreatableParty for ProofParty {
     fn new(threshold: PartyID) -> Self {
-        let public_parameters = generate_language_public_parameters::<{ maurer::SOUND_PROOFS_REPETITIONS }>();
+        let public_parameters =
+            generate_language_public_parameters::<{ maurer::SOUND_PROOFS_REPETITIONS }>();
         let batch_size = 1;
         ProofParty::new_proof_round_party(
             public_parameters,
@@ -51,10 +52,10 @@ impl CreatableParty for ProofParty {
             threshold,
             batch_size,
             &mut OsRng,
-        ).unwrap()
+        )
+        .unwrap()
     }
 }
-
 
 fn authority_name_to_party_id(
     authority_name: AuthorityName,
@@ -91,7 +92,7 @@ type ProofPublicParameters =
 
 type ProofMPCMessage = ConsensusTransaction;
 
-impl <P: CreatableParty> MPCInstance<P> {
+impl<P: CreatableParty> MPCInstance<P> {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -109,12 +110,9 @@ impl <P: CreatableParty> MPCInstance<P> {
         }
     }
 
-
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    fn advance(
-        &mut self
-    ) -> Option<ProofMPCMessage> {
+    fn advance(&mut self) -> Option<ProofMPCMessage> {
         let optional_party = mem::take(&mut self.party);
 
         /// Gets the instance existing party or creates a new one if this is the first advance
@@ -246,7 +244,15 @@ fn generate_language_public_parameters<const REPETITIONS: usize>(
     )
 }
 
-impl <P: CreatableParty> SignatureMPCManager<P> {
+unsafe impl <P: CreatableParty + Sync + Send> Send for  MPCInstance<P>{
+
+}
+
+unsafe impl <P: CreatableParty + Sync + Send> Sync for  MPCInstance<P>{
+
+}
+
+impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -281,18 +287,24 @@ impl <P: CreatableParty> SignatureMPCManager<P> {
     }
 
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
-        let txs_to_send: Vec<ConsensusTransaction> = self
+        let mut ready_to_advance = self
             .mpc_instances
             .iter_mut()
-            .filter(|(_, instance)| {
-                (instance.status == MPCSessionStatus::Active
+            .filter_map(|(_, instance)| {
+                if (instance.status == MPCSessionStatus::Active
                     && instance.pending_messages.len() >= self.mpc_threshold_number_of_parties)
                     || instance.party.is_none()
+                {
+                    Some(instance)
+                } else {
+                    None
+                }
             })
-            .collect::<Vec<_>>()
+            .collect::<Vec<&mut MPCInstance<P>>>();
+        let txs_to_send: Vec<ConsensusTransaction> = ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .filter_map(|(_, ref mut instance): (_, MPCInstance<P>)| instance.advance())
+            .filter_map(|ref mut instance| instance.advance())
             .collect();
         let Some(epoch_store) = self.epoch_store.upgrade() else {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
