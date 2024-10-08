@@ -130,43 +130,31 @@ impl<P: CreatableParty> MPCInstance<P> {
             self.pending_messages.clear();
             return;
         };
-        match advance_result {
+        let msg = match advance_result {
             AdvanceResult::Advance((message, party)) => {
                 self.pending_messages.clear();
                 self.party = Some(party);
-                let msg = self.new_signature_mpc_message(message);
-                let Some(epoch_store) = self.epoch_store.upgrade() else {
-                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-                    return;
-                };
-                let consensus_adapter = Arc::clone(&self.consensus_adapter);
-                let epoch_store = Arc::clone(&epoch_store);
-                tokio::spawn(async move {
-                    let res = consensus_adapter
-                        .submit_to_consensus(&vec![msg.unwrap()], &epoch_store)
-                        .await;
-                    println!("epoch_store: {:?}", epoch_store.epoch());
-                });
+                self.new_signature_mpc_message(message)
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
-                println!("Finalized output: {:?}", output);
                 self.status = MPCSessionStatus::Finished;
-                let consensus_adapter = Arc::clone(&self.consensus_adapter);
-                let Some(epoch_store) = self.epoch_store.upgrade() else {
-                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-                    return;
-                };
-                let epoch_store = Arc::clone(&epoch_store);
-                if let Some(output) = self.new_proof_mpc_statements_message(output) {
-                    tokio::spawn(async move {
-                        let res = consensus_adapter
-                            .submit_to_consensus(&vec![output], &epoch_store)
-                            .await;
-                    });
-                }
+                self.new_proof_mpc_statements_message(output)
             }
-        }
+        };
+
+        let Some(epoch_store) = self.epoch_store.upgrade() else {
+            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+            return;
+        };
+
+        let consensus_adapter = Arc::clone(&self.consensus_adapter);
+        let epoch_store = Arc::clone(&epoch_store);
+        tokio::spawn(async move {
+            let res = consensus_adapter
+                .submit_to_consensus(&vec![msg.unwrap()], &epoch_store)
+                .await;
+        });
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.

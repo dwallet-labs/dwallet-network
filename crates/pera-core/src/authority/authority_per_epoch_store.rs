@@ -3696,14 +3696,7 @@ impl AuthorityPerEpochStore {
 
         // If needed we can support owned object system transactions as well...
         let is_proof_mpc_complete = matches!(
-            system_transaction
-                .clone()
-                .data()
-                .inner()
-                .intent_message
-                .value
-                .execution_parts()
-                .0,
+            system_transaction.transaction_data().execution_parts().0,
             TransactionKind::ProofMPCComplete(_)
         );
         assert!(system_transaction.contains_shared_object() || is_proof_mpc_complete);
@@ -3998,12 +3991,8 @@ impl AuthorityPerEpochStore {
         info!("Verifying that all executed transactions are in a checkpoint");
 
         let mut executed_iter = tables.executed_in_epoch.unbounded_iter();
-        let mut a = tables.executed_in_epoch.unbounded_iter();
-        let mut b = tables.executed_transactions_to_checkpoint.unbounded_iter();
         let mut checkpointed_iter = tables.executed_transactions_to_checkpoint.unbounded_iter();
 
-        println!("executed_iter len {:?}", a.count());
-        println!("checkpointed_iter len {:?}", b.count());
         // verify that the two iterators (which are both sorted) are identical
         loop {
             let executed = executed_iter.next();
