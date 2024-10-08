@@ -244,13 +244,8 @@ fn generate_language_public_parameters<const REPETITIONS: usize>(
     )
 }
 
-unsafe impl <P: CreatableParty + Sync + Send> Send for  MPCInstance<P>{
-
-}
-
-unsafe impl <P: CreatableParty + Sync + Send> Sync for  MPCInstance<P>{
-
-}
+/// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
+unsafe impl<P: CreatableParty + Sync + Send> Send for MPCInstance<P> {}
 
 impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     pub fn new(
