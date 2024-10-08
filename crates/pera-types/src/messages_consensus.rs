@@ -96,7 +96,7 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
-    SignatureMPCMessage(AuthorityName),
+    SignatureMPCMessage(AuthorityName, Vec<u8>, [u8; 32]),
     ProofMPCStatements(Vec<Vec<u8>>, ObjectID, PeraAddress),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
@@ -114,7 +114,7 @@ impl Debug for ConsensusTransactionKey {
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
-            Self::SignatureMPCMessage(name) => {
+            Self::SignatureMPCMessage(name, _, _) => {
                 write!(f, "SignatureMPCMessage({:?})", name.concise(),)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
@@ -475,7 +475,9 @@ impl ConsensusTransaction {
         session_id: ObjectID,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        message.hash(&mut hasher);
+        // message.hash(&mut hasher);
+        println!("session id: {:?}", session_id.into_bytes());
+        session_id.into_bytes().hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
@@ -568,8 +570,12 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
             }
-            ConsensusTransactionKind::SignatureMPCMessage(authority, _, _) => {
-                ConsensusTransactionKey::SignatureMPCMessage(*authority)
+            ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id) => {
+                ConsensusTransactionKey::SignatureMPCMessage(
+                    *authority,
+                    message.clone(),
+                    session_id.into_bytes(),
+                )
             }
             ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address) => {
                 ConsensusTransactionKey::ProofMPCStatements(statements.clone(), *session_id, *sender_address)

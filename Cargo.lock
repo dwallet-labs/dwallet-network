@@ -6930,7 +6930,7 @@ checksum = "b87248edafb776e59e6ee64a79086f65890d3510f2c656c000bf2a7e8a0aea40"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/maurer.git?rev=8215405#8215405577090cdb954be2653cf7bf57477473a6"
+source = "git+https://github.com/dwallet-labs/maurer.git?rev=24fefa7#24fefa77d08daf91f5c74d25c041f7cfdcbd7050"
 dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
@@ -12943,7 +12943,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/proof.git?rev=a571ca9#a571ca9b46069d5a03b7ee357bab7ab524b2bb24"
+source = "git+https://github.com/dwallet-labs/proof.git?rev=addfe9f#addfe9f864c3260514454cb9c904cc169ba5769b"
 dependencies = [
  "bulletproofs",
  "commitment",

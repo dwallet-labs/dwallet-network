@@ -493,6 +493,7 @@ impl RandomnessManager {
                         self.consensus_adapter
                             .submit_to_consensus(&[transaction], &epoch_store)
                             .await?;
+                        warn!("randomness manager epoch: {:?}", epoch_store.epoch());
                     }
 
                     let elapsed = self.dkg_start_time.get().map(|t| t.elapsed().as_millis());
