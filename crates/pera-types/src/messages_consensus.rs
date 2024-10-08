@@ -96,7 +96,7 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
-    SignatureMPCMessage(AuthorityName, [u8; 32]),
+    SignatureMPCMessage(AuthorityName, Vec<u8>,[u8; 32]),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -113,7 +113,7 @@ impl Debug for ConsensusTransactionKey {
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
-            Self::SignatureMPCMessage(name, _) => {
+            Self::SignatureMPCMessage(name, _, _) => {
                 write!(f, "SignatureMPCMessage({:?})", name.concise(),)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
@@ -551,8 +551,8 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
             }
-            ConsensusTransactionKind::SignatureMPCMessage(authority, _, session_id) => {
-                ConsensusTransactionKey::SignatureMPCMessage(*authority, session_id.into_bytes())
+            ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id) => {
+                ConsensusTransactionKey::SignatureMPCMessage(*authority, message.clone(), session_id.into_bytes())
             }
         }
     }
