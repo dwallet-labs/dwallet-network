@@ -99,7 +99,7 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
-proof = { git = "https://github.com/dwallet-labs/proof.git", rev = "a571ca9" }
+proof = { git = "https://github.com/dwallet-labs/proof.git", rev = "addfe9fm" }
 maurer = { git = "https://github.com/dwallet-labs/maurer.git", rev = "24fefa7" }
 group = { git = "https://github.com/dwallet-labs/group.git" }
 rand_core = "0.6.4"
