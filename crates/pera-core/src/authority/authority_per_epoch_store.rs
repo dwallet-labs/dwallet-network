@@ -3383,8 +3383,7 @@ impl AuthorityPerEpochStore {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
                 ..
-            }) => {
-                let Some(signature_mpc_manager) = self.signature_mpc_manager.get() else {
+            }) => { let Some(signature_mpc_manager) = self.signature_mpc_manager.get() else {
                     // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
                     return Ok(ConsensusCertificateResult::Ignored);
                 };

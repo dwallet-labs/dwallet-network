@@ -139,9 +139,11 @@ impl<P: CreatableParty> MPCInstance<P> {
                 let consensus_adapter = Arc::clone(&self.consensus_adapter);
                 let epoch_store = Arc::clone(&epoch_store);
                 tokio::spawn(async move {
-                    consensus_adapter
+                    let res = consensus_adapter
                         .submit_to_consensus(&vec![msg.unwrap()], &epoch_store)
-                        .await
+                        .await;
+                    println!("res from submitting message to consensus: {:?}", res);
+                    println!("epoch_store: {:?}", epoch_store.epoch());
                 });
             }
             AdvanceResult::Finalize(output) => {
@@ -298,7 +300,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             .filter_map(|(_, instance)| {
                 if (instance.status == MPCSessionStatus::Active
                     && instance.pending_messages.len() >= self.mpc_threshold_number_of_parties)
-                    || instance.party.is_none()
+                    || (instance.party.is_none() && instance.status == MPCSessionStatus::Active)
                 {
                     Some(instance)
                 } else {
@@ -311,13 +313,6 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
             .for_each(|ref mut instance| instance.advance());
         Ok(())
-        // let Some(epoch_store) = self.epoch_store.upgrade() else {
-        //     // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-        //     return Ok(());
-        // };
-        // self.consensus_adapter
-        //     .submit_to_consensus(&txs_to_send, &epoch_store)
-        //     .await
     }
 
     /// Handles a message by forwarding it to the relevant MPC instance
@@ -328,7 +323,9 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         authority_name: AuthorityName,
         session_id: ObjectID,
     ) -> PeraResult<()> {
+        println!("starting handle_message");
         let Some(mut instance) = self.mpc_instances.get_mut(&session_id) else {
+            println!("instance {:?} not found", session_id);
             // TODO (#261): Punish a validator that sends a message related to a non-existing mpc instance
             return Ok(());
         };
@@ -355,6 +352,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             event.session_id
         );
 
+        println!("max_active_mpc_instances: {:?}", self.max_active_mpc_instances);
         if self.active_instances_counter > self.max_active_mpc_instances {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
