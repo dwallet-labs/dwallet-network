@@ -6937,7 +6937,7 @@ dependencies = [
  "getrandom 0.2.9",
  "group 0.1.0",
  "merlin",
- "proof 0.1.0 (git+https://github.com/dwallet-labs/proof.git?rev=addfe9f)",
+ "proof",
  "serde",
  "serde_json",
  "thiserror",
@@ -10266,7 +10266,7 @@ dependencies = [
  "pprof",
  "pretty_assertions",
  "prometheus",
- "proof 0.1.0 (git+https://github.com/dwallet-labs/proof.git?rev=a571ca9)",
+ "proof",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rayon",
@@ -12938,23 +12938,6 @@ dependencies = [
  "itertools 0.10.5",
  "lazy_static",
  "regex",
-]
-
-[[package]]
-name = "proof"
-version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/proof.git?rev=a571ca9#a571ca9b46069d5a03b7ee357bab7ab524b2bb24"
-dependencies = [
- "bulletproofs",
- "commitment",
- "crypto-bigint 0.5.5",
- "curve25519-dalek-ng",
- "getrandom 0.2.9",
- "group 0.1.0",
- "merlin",
- "serde",
- "serde_json",
- "thiserror",
 ]
 
 [[package]]
