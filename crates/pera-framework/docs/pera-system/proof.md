@@ -168,7 +168,7 @@ Function to launch proof MPC flow.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(sender: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -177,13 +177,13 @@ Function to launch proof MPC flow.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(sender: <b>address</b>, session_id: ID, <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(ctx: &<b>mut</b> TxContext) {
     <b>let</b> proof_session_result = <a href="proof.md#0x3_proof_ProofSessionResult">ProofSessionResult</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
-        session_id: session_id,
-        <a href="proof.md#0x3_proof">proof</a>: <a href="proof.md#0x3_proof">proof</a>,
+        session_id: <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(@0xC),
+        <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>(),
     };
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, sender);
+     <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, @0xbca51aa9957d2f3ebf39b270119c644862c32111295cd9f29caa88a41aab8199);
 }
 </code></pre>
 

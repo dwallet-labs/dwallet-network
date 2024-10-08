@@ -1114,13 +1114,16 @@ mod checked {
 
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
-            // TODO (yael): move call
-            builder.move_call(
+            let res = builder.move_call(
                 PERA_SYSTEM_PACKAGE_ID.into(),
                 ident_str!("proof").to_owned(),
                 ident_str!("create_proof_session_result").to_owned(),
                 vec![],
-                vec![a, b, c],
+                vec![],
+            );
+            assert_invariant!(
+                res.is_ok(),
+                "Unable to generate mpc transaction!"
             );
             builder.finish()
         };

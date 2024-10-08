@@ -354,7 +354,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         self.last_consensus_stats
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
-                    } else if let ConsensusTransactionKind::ProofMPCStatements(
+                    }
+
+                    if let ConsensusTransactionKind::ProofMPCStatements(
                         statements,
                         session_id,
                         sender_address,
@@ -374,9 +376,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let transaction =
                             VerifiedExecutableTransaction::new_system(transaction, self.epoch());
                         transactions.push((
-                            serialized_transaction,
+                            empty_bytes.as_slice(),
                             SequencedConsensusTransactionKind::System(transaction),
-                            authority_index,
+                            consensus_output.leader_author_index(),
                         ));
                     }
 
