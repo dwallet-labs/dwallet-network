@@ -96,7 +96,7 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
-    SignatureMPCMessage(AuthorityName),
+    SignatureMPCMessage(AuthorityName, Vec<u8>, [u8; 32]),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -113,7 +113,7 @@ impl Debug for ConsensusTransactionKey {
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
-            Self::SignatureMPCMessage(name) => {
+            Self::SignatureMPCMessage(name, _, _) => {
                 write!(f, "SignatureMPCMessage({:?})", name.concise(),)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
@@ -269,7 +269,7 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
-    SignatureMPCMessage(AuthorityName, Vec<u8>),
+    SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -464,13 +464,19 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_signature_mpc_message(authority: AuthorityName, message: Vec<u8>) -> Self {
+    pub fn new_signature_mpc_message(
+        authority: AuthorityName,
+        message: Vec<u8>,
+        session_id: ObjectID,
+    ) -> Self {
         let mut hasher = DefaultHasher::new();
-        message.hash(&mut hasher);
+        // message.hash(&mut hasher);
+        println!("session id: {:?}", session_id.into_bytes());
+        session_id.into_bytes().hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message),
+            kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
         }
     }
 
@@ -545,8 +551,12 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
             }
-            ConsensusTransactionKind::SignatureMPCMessage(authority, _) => {
-                ConsensusTransactionKey::SignatureMPCMessage(*authority)
+            ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id) => {
+                ConsensusTransactionKey::SignatureMPCMessage(
+                    *authority,
+                    message.clone(),
+                    session_id.into_bytes(),
+                )
             }
         }
     }

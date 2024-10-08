@@ -160,7 +160,7 @@ use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
 
-use crate::signature_mpc::mpc_manager::{MPCInput, SignatureMPCManager};
+use crate::signature_mpc::mpc_manager::SignatureMPCManager;
 
 use crate::authority_client::NetworkAuthorityClient;
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
