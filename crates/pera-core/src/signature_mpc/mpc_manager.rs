@@ -1,5 +1,5 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::SubmitToConsensus;
+use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
 use anyhow::anyhow;
 use group::secp256k1::group_element::Value;
@@ -79,7 +79,7 @@ fn authority_name_to_party_id(
 struct MPCInstance<T: CreatableParty> {
     status: MPCSessionStatus,
     pending_messages: HashMap<PartyID, T::Message>,
-    consensus_adapter: Arc<dyn SubmitToConsensus>,
+    consensus_adapter: Arc<ConsensusAdapter>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
     mpc_threshold_number_of_parties: usize,
@@ -94,7 +94,7 @@ type ProofMPCMessage = ConsensusTransaction;
 
 impl<P: CreatableParty> MPCInstance<P> {
     fn new(
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        consensus_adapter: Arc<ConsensusAdapter>,
         epoch_store: Weak<AuthorityPerEpochStore>,
         mpc_threshold_number_of_parties: usize,
         session_id: ObjectID,
@@ -232,7 +232,7 @@ pub struct SignatureMPCManager<P: CreatableParty> {
     active_instances_counter: usize,
     language_public_parameters:
         maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
-    consensus_adapter: Arc<dyn SubmitToConsensus>,
+    consensus_adapter: Arc<ConsensusAdapter>,
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
     mpc_threshold_number_of_parties: usize,
@@ -261,7 +261,7 @@ unsafe impl<P: CreatableParty + Sync + Send> Send for MPCInstance<P> {}
 
 impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     pub fn new(
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        consensus_adapter: Arc<ConsensusAdapter>,
         epoch_store: Weak<AuthorityPerEpochStore>,
         max_active_mpc_instances: usize,
         num_of_parties: usize,
