@@ -93,7 +93,7 @@ type ProofPublicParameters =
 
 type ProofMPCMessage = ConsensusTransaction;
 
-impl<P: CreatableParty> MPCInstance<P> where P::Output: Send + Sync{
+impl<P: CreatableParty> MPCInstance<P> {
     fn new(
         consensus_adapter: Arc<ConsensusAdapter>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -159,16 +159,16 @@ impl<P: CreatableParty> MPCInstance<P> where P::Output: Send + Sync{
                     return;
                 };
                 let epoch_store = Arc::clone(&epoch_store);
-                tokio::spawn(async move {
-                    if let Some(output) = self.new_proof_mpc_statements_message(output) {
+                if let Some(output) = self.new_proof_mpc_statements_message(output) {
+                    tokio::spawn(async move {
                         let res = consensus_adapter
                             .submit_to_consensus(
                                 &vec![output],
                                 &epoch_store,
                             )
                             .await;
-                    }
-                });
+                    });
+                }
             }
         }
     }
