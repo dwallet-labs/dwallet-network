@@ -8,28 +8,6 @@ use std::{
     sync::Arc,
 };
 
-use arc_swap::ArcSwap;
-use async_trait::async_trait;
-use consensus_core::CommitConsumerMonitor;
-use lru::LruCache;
-use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
-use narwhal_config::Committee;
-use narwhal_executor::{ExecutionIndices, ExecutionState};
-use narwhal_types::ConsensusOutput;
-use pera_macros::{fail_point_async, fail_point_if};
-use pera_protocol_config::ProtocolConfig;
-use pera_types::{
-    authenticator_state::ActiveJwk,
-    base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
-    digests::ConsensusCommitDigest,
-    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
-    messages_consensus::{ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind},
-    pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
-    transaction::{SenderSignedData, VerifiedTransaction},
-};
-use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, instrument, trace_span, warn};
-use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -47,6 +25,28 @@ use crate::{
     scoring_decision::update_low_scoring_authorities,
     transaction_manager::TransactionManager,
 };
+use arc_swap::ArcSwap;
+use async_trait::async_trait;
+use consensus_core::CommitConsumerMonitor;
+use lru::LruCache;
+use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
+use narwhal_config::Committee;
+use narwhal_executor::{ExecutionIndices, ExecutionState};
+use narwhal_types::ConsensusOutput;
+use pera_macros::{fail_point_async, fail_point_if};
+use pera_protocol_config::ProtocolConfig;
+use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
+use pera_types::{
+    authenticator_state::ActiveJwk,
+    base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
+    digests::ConsensusCommitDigest,
+    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
+    messages_consensus::{ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind},
+    pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
+    transaction::{SenderSignedData, VerifiedTransaction},
+};
+use serde::{Deserialize, Serialize};
+use tracing::{debug, error, info, instrument, trace_span, warn};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -354,22 +354,30 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         self.last_consensus_stats
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
-                    }
-
-
-                    else if let ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address) = &transaction.kind {
-                        println!("recv proof mpc statements from consensus handler output internal");
+                    } else if let ConsensusTransactionKind::ProofMPCStatements(
+                        statements,
+                        session_id,
+                        sender_address,
+                    ) = &transaction.kind
+                    {
+                        println!(
+                            "recv proof mpc statements from consensus handler output internal"
+                        );
                         let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
                             ProofMPCResultOnChain {
                                 session_id: *session_id,
                                 sender_address: *sender_address,
                                 statements: statements.clone(),
-                            }
+                            },
                         );
 
-                        let transaction_k = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
-                        let transaction = SequencedConsensusTransactionKind::System(transaction_k);
-                        transactions.push((serialized_transaction, transaction, authority_index));
+                        let transaction =
+                            VerifiedExecutableTransaction::new_system(transaction, self.epoch());
+                        transactions.push((
+                            serialized_transaction,
+                            SequencedConsensusTransactionKind::System(transaction),
+                            authority_index,
+                        ));
                     }
 
                     if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
@@ -377,8 +385,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     {
                         // These are deprecated and we should never see them. Log an error and eat the tx if one appears.
                         error!("BUG: saw deprecated RandomnessStateUpdate tx for commit round {round:?}, randomness round {randomness_round:?}")
-                    }
-                     else {
+                    } else {
                         let transaction = SequencedConsensusTransactionKind::External(transaction);
                         transactions.push((serialized_transaction, transaction, authority_index));
                     }

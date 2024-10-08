@@ -8,6 +8,7 @@ mod checked {
 
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
+    use move_core_types::account_address::AccountAddress;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
         BALANCE_CREATE_REWARDS_FUNCTION_NAME, BALANCE_DESTROY_REBATES_FUNCTION_NAME,
@@ -24,7 +25,6 @@ mod checked {
     };
     use pera_types::{BRIDGE_ADDRESS, PERA_BRIDGE_OBJECT_ID, PERA_RANDOMNESS_STATE_OBJECT_ID};
     use std::{collections::HashSet, sync::Arc};
-    use move_core_types::account_address::AccountAddress;
     use tracing::{info, instrument, trace, warn};
 
     use crate::adapter::new_move_vm;
@@ -59,6 +59,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
+    use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -78,7 +79,6 @@ mod checked {
         PERA_AUTHENTICATOR_STATE_OBJECT_ID, PERA_FRAMEWORK_ADDRESS, PERA_FRAMEWORK_PACKAGE_ID,
         PERA_SYSTEM_PACKAGE_ID,
     };
-    use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
 
     #[instrument(name = "tx_execute_to_effects", level = "debug", skip_all)]
     pub fn execute_transaction_to_effects<Mode: ExecutionMode>(
@@ -1108,7 +1108,6 @@ mod checked {
         protocol_config: &ProtocolConfig,
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
-
         let a = CallArg::Pure(data.sender_address.to_vec());
         let b = CallArg::Pure(data.session_id.to_vec());
         let c = CallArg::Pure(bcs::to_bytes(&data.statements).unwrap());
@@ -1121,11 +1120,7 @@ mod checked {
                 ident_str!("proof").to_owned(),
                 ident_str!("create_proof_session_result").to_owned(),
                 vec![],
-                vec![
-                    a,
-                    b,
-                    c,
-                ],
+                vec![a, b, c],
             );
             builder.finish()
         };

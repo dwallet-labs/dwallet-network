@@ -101,6 +101,7 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
+use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -109,7 +110,6 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
-use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
 
@@ -2418,7 +2418,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::UserTransaction(_certificate),
                 ..
             }) => {}
-            SequencedConsensusTransactionKind::External(ConsensusTransaction{
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::ProofMPCStatements(_, _, _),
                 ..
             }) => {}
@@ -3386,27 +3386,15 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address),
+                kind:
+                    ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address),
                 ..
-            }) => {
-                println!("recv proof mpc statements from authority per epoch store process consensus transaction");
-                // let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
-                //     ProofMPCResultOnChain{
-                //         session_id: *session_id,
-                //         sender_address: *sender_address,
-                //         statements: statements.clone(),
-                //     }
-                // );
-
-                // let transaction_k = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
-                // let transaction = SequencedConsensusTransactionKind::System(transaction);
-                Ok(ConsensusCertificateResult::Ignored)
-                // PeraTransaction(transaction_k))
-            }
+            }) => Ok(ConsensusCertificateResult::Ignored),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
                 ..
-            }) => { let Some(signature_mpc_manager) = self.signature_mpc_manager.get() else {
+            }) => {
+                let Some(signature_mpc_manager) = self.signature_mpc_manager.get() else {
                     // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
                     return Ok(ConsensusCertificateResult::Ignored);
                 };
@@ -3708,7 +3696,14 @@ impl AuthorityPerEpochStore {
 
         // If needed we can support owned object system transactions as well...
         let is_proof_mpc_complete = matches!(
-            system_transaction.clone().data().inner().intent_message.value.execution_parts().0,
+            system_transaction
+                .clone()
+                .data()
+                .inner()
+                .intent_message
+                .value
+                .execution_parts()
+                .0,
             TransactionKind::ProofMPCComplete(_)
         );
         assert!(system_transaction.contains_shared_object() || is_proof_mpc_complete);

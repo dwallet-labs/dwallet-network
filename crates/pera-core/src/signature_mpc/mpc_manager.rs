@@ -145,7 +145,6 @@ impl<P: CreatableParty> MPCInstance<P> {
                     let res = consensus_adapter
                         .submit_to_consensus(&vec![msg.unwrap()], &epoch_store)
                         .await;
-                    println!("res from submitting message to consensus: {:?}", res);
                     println!("epoch_store: {:?}", epoch_store.epoch());
                 });
             }
@@ -162,10 +161,7 @@ impl<P: CreatableParty> MPCInstance<P> {
                 if let Some(output) = self.new_proof_mpc_statements_message(output) {
                     tokio::spawn(async move {
                         let res = consensus_adapter
-                            .submit_to_consensus(
-                                &vec![output],
-                                &epoch_store,
-                            )
+                            .submit_to_consensus(&vec![output], &epoch_store)
                             .await;
                     });
                 }
@@ -363,7 +359,6 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         authority_name: AuthorityName,
         session_id: ObjectID,
     ) -> PeraResult<()> {
-        println!("starting handle_message");
         let Some(mut instance) = self.mpc_instances.get_mut(&session_id) else {
             println!("instance {:?} not found", session_id);
             // TODO (#261): Punish a validator that sends a message related to a non-existing mpc instance

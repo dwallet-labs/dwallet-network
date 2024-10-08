@@ -1483,7 +1483,13 @@ impl AuthorityState {
                 error!(?tx_digest, "tx post processing failed: {e}");
             });
 
-        if let TransactionKind::ProofMPCComplete(_) = certificate.data().intent_message().value.execution_parts().0 {
+        if let TransactionKind::ProofMPCComplete(_) = certificate
+            .data()
+            .intent_message()
+            .value
+            .execution_parts()
+            .0
+        {
             println!("written to executed");
         }
 

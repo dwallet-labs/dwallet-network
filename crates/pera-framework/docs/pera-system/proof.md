@@ -168,7 +168,7 @@ Function to launch proof MPC flow.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(_sender: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(sender: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -177,13 +177,13 @@ Function to launch proof MPC flow.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(_sender: <b>address</b>, session_id: ID, <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(sender: <b>address</b>, session_id: ID, <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> TxContext) {
     <b>let</b> proof_session_result = <a href="proof.md#0x3_proof_ProofSessionResult">ProofSessionResult</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         session_id: session_id,
         <a href="proof.md#0x3_proof">proof</a>: <a href="proof.md#0x3_proof">proof</a>,
     };
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, @0x045f2320ab3f4f0178f504d505d1c20c91ff9d0171861c8e2ae88b06ea65c204);
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, sender);
 }
 </code></pre>
 

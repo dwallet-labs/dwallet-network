@@ -1,3 +1,4 @@
+use crate::base_types::{ObjectID, PeraAddress};
 use crate::committee::EpochId;
 use crate::crypto::{default_hash, AuthoritySignInfo};
 use crate::digests::{ProofMPCResultOnChainDigest, SignatureMPCMessageDigest};
@@ -5,7 +6,6 @@ use crate::message_envelope::{Envelope, Message};
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 use std::fmt::{Display, Formatter};
-use crate::base_types::{ObjectID, PeraAddress};
 
 impl Message for SignatureMPCMessageSummary {
     type DigestType = SignatureMPCMessageDigest;

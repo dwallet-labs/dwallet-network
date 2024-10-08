@@ -44,12 +44,12 @@ module pera_system::proof {
         proof: vector<vector<u8>>,
     }
 
-    public fun create_proof_session_result(_sender: address, session_id: ID, proof: vector<vector<u8>>, ctx: &mut TxContext) {
+    public fun create_proof_session_result(sender: address, session_id: ID, proof: vector<vector<u8>>, ctx: &mut TxContext) {
         let proof_session_result = ProofSessionResult {
             id: object::new(ctx),
             session_id: session_id,
             proof: proof,
         };
-        transfer::transfer(proof_session_result, @0x045f2320ab3f4f0178f504d505d1c20c91ff9d0171861c8e2ae88b06ea65c204);
+        transfer::transfer(proof_session_result, sender);
     }
 }

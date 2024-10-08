@@ -141,7 +141,11 @@ impl Debug for ConsensusTransactionKey {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
             }
             ConsensusTransactionKey::ProofMPCStatements(statements, session_id, sender_address) => {
-                write!(f, "ProofMPCStatements({:?}, {:?}, {:?})", statements, session_id, sender_address)
+                write!(
+                    f,
+                    "ProofMPCStatements({:?}, {:?}, {:?})",
+                    statements, session_id, sender_address
+                )
             }
         }
     }
@@ -488,14 +492,18 @@ impl ConsensusTransaction {
     pub fn new_proof_mpc_statements(
         statements: Vec<Vec<u8>>,
         session_id: ObjectID,
-        sender_address: PeraAddress
+        sender_address: PeraAddress,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         statements.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address),
+            kind: ConsensusTransactionKind::ProofMPCStatements(
+                statements,
+                session_id,
+                sender_address,
+            ),
         }
     }
 
@@ -577,9 +585,15 @@ impl ConsensusTransaction {
                     session_id.into_bytes(),
                 )
             }
-            ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address) => {
-                ConsensusTransactionKey::ProofMPCStatements(statements.clone(), *session_id, *sender_address)
-            }
+            ConsensusTransactionKind::ProofMPCStatements(
+                statements,
+                session_id,
+                sender_address,
+            ) => ConsensusTransactionKey::ProofMPCStatements(
+                statements.clone(),
+                *session_id,
+                *sender_address,
+            ),
         }
     }
 

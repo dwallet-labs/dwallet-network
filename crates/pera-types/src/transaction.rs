@@ -19,6 +19,7 @@ use crate::messages_consensus::{
     ConsensusCommitPrologue, ConsensusCommitPrologueV2, ConsensusCommitPrologueV3,
     ConsensusDeterminedVersionAssignments,
 };
+use crate::messages_signature_mpc::ProofMPCResultOnChain;
 use crate::object::{MoveObject, Object, Owner};
 use crate::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use crate::signature::{GenericSignature, VerifyParams};
@@ -53,7 +54,6 @@ use std::{
 use strum::IntoStaticStr;
 use tap::Pipe;
 use tracing::trace;
-use crate::messages_signature_mpc::ProofMPCResultOnChain;
 
 pub const TEST_ONLY_GAS_UNIT_FOR_TRANSFER: u64 = 10_000;
 pub const TEST_ONLY_GAS_UNIT_FOR_OBJECT_BASICS: u64 = 50_000;
