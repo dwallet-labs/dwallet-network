@@ -134,6 +134,7 @@
 		"ws": "^8.14.2"
 	},
 	"dependencies": {
+		"@lodestar/types": "^1.22.0",
 		"@dwallet-network/eth-light-client-wasm": "workspace:*",
 		"@mysten/bcs": "0.11.1",
 		"@mysten/sui.js": "^0.51.2",
