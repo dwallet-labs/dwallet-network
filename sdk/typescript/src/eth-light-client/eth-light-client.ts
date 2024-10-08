@@ -320,7 +320,7 @@ export const approveEthereumMessage = async (
 	let messageBcs = stringToArrayU8Bcs(message);
 
 	const tx2 = new TransactionBlock();
-	tx2.moveCall({
+	const [messageApprovals] = tx2.moveCall({
 		target: `${packageId}::${ethDWalletModuleName}::approve_message`,
 		arguments: [
 			tx2.object(ethDwalletCapId),
@@ -341,4 +341,5 @@ export const approveEthereumMessage = async (
 	if (txResult.effects?.status.status !== 'success') {
 		throw new Error('Failed to verify Ethereum state');
 	}
+	return messageApprovals;
 };

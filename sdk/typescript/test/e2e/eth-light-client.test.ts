@@ -8,20 +8,37 @@ import {
 	createEthereumDWallet,
 	initEthereumState,
 } from '../../src/eth-light-client';
-import { createDWallet } from '../../src/signature-mpc';
+import { createActiveEncryptionKeysTable, createDWallet } from '../../src/signature-mpc';
+import { getOrCreateEncryptionKey } from '../../src/signature-mpc/encrypt_user_share';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test Ethereum Light Client', () => {
 	let toolbox: TestToolbox;
+	let activeEncryptionKeysTableID: string;
 
 	beforeAll(async () => {
 		toolbox = await setup();
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
+			toolbox.client,
+			toolbox.keypair,
+		);
+		activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
 	});
 
 	it('should init the state, create ethereum dwallet, and verify a message', async () => {
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		const dwalletID = dwallet?.dwalletId!;
-		const dwalletCapID = dwallet?.dwalletCapId!;
+		let encryptionKeyObj = await getOrCreateEncryptionKey(
+			toolbox.keypair,
+			toolbox.client,
+			activeEncryptionKeysTableID,
+		);
+		const dwallet = await createDWallet(
+			toolbox.keypair,
+			toolbox.client,
+			encryptionKeyObj.encryptionKey,
+			encryptionKeyObj.objectID,
+		);
+		const dwalletID = dwallet?.dwalletID!;
+		const dwalletCapID = dwallet?.dwalletCapID!;
 		const network = 'holesky';
 		const consensusRpc = 'http://unstable.holesky.beacon-api.nimbus.team';
 		const executionRpc = 'https://eth-holesky.g.alchemy.com/v2/KxdGyszqQHA3rcEpy44FqOH1hhx7vq8g';
