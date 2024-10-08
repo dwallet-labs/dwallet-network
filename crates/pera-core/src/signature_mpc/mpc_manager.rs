@@ -123,7 +123,7 @@ impl <P: CreatableParty> MPCInstance<P> {
         } else {
             P::new(self.mpc_threshold_number_of_parties as PartyID)
         };
-        let Ok(advance_result) = party.advance(self.pending_messages.clone(), P::AuxiliaryInput::default(), &mut OsRng)
+        let Ok(advance_result) = party.advance(self.pending_messages.clone(), None, &mut OsRng)
         else {
             // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
             self.pending_messages.clear();
