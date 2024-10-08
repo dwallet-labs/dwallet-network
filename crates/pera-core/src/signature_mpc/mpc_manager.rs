@@ -93,7 +93,7 @@ type ProofPublicParameters =
 
 type ProofMPCMessage = ConsensusTransaction;
 
-impl<P: CreatableParty> MPCInstance<P> {
+impl<P: CreatableParty> MPCInstance<P> where P::Output: Send + Sync{
     fn new(
         consensus_adapter: Arc<ConsensusAdapter>,
         epoch_store: Weak<AuthorityPerEpochStore>,
