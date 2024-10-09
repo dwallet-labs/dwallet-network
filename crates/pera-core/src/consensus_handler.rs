@@ -359,7 +359,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
 
                     // If we receive a ProofMPCOutput transaction, verify that it's valid & create a system transaction
                     // to store its output on the blockchain, so it will be available for the initiating user.
-                    if let ConsensusTransactionKind::ProofMPCOutput(
+                    if let ConsensusTransactionKind::SignatureMPCOutput(
                         value,
                         session_id,
                         sender_address,
@@ -632,7 +632,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
         ConsensusTransactionKind::SignatureMPCMessage(_, _, _) => "signature_mpc_message",
-        ConsensusTransactionKind::ProofMPCOutput(_, _, _) => "proof_mpc_statements",
+        ConsensusTransactionKind::SignatureMPCOutput(_, _, _) => "proof_mpc_statements",
     }
 }
 

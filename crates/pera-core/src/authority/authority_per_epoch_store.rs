@@ -2419,7 +2419,7 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::ProofMPCOutput(_, _, _),
+                kind: ConsensusTransactionKind::SignatureMPCOutput(_, _, _),
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -3387,7 +3387,7 @@ impl AuthorityPerEpochStore {
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind:
-                    ConsensusTransactionKind::ProofMPCOutput(statements, session_id, sender_address),
+                    ConsensusTransactionKind::SignatureMPCOutput(statements, session_id, sender_address),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
