@@ -1121,10 +1121,7 @@ mod checked {
                 vec![],
                 vec![],
             );
-            assert_invariant!(
-                res.is_ok(),
-                "Unable to generate mpc transaction!"
-            );
+            assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
             builder.finish()
         };
         programmable_transactions::execution::execute::<execution_mode::System>(
