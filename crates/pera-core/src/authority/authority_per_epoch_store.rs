@@ -3697,12 +3697,12 @@ impl AuthorityPerEpochStore {
             return ConsensusCertificateResult::IgnoredSystem;
         }
 
-        // If needed we can support owned object system transactions as well...
-        let is_proof_mpc_complete = matches!(
+        // System transactions either contain a shared object or are proof MPC output transactions.
+        let is_proof_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
             TransactionKind::ProofMPCComplete(_)
         );
-        assert!(system_transaction.contains_shared_object() || is_proof_mpc_complete);
+        assert!(system_transaction.contains_shared_object() || is_proof_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())
     }
 
