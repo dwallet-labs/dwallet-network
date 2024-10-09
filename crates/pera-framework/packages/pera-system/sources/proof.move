@@ -50,17 +50,17 @@ module pera_system::proof {
         proof: vector<vector<u8>>,
     }
 
-   public fun create_proof_session_result(ctx: &mut TxContext) {
+   public fun create_proof_session_result(session_initiator: address, session_id: ID, output: vector<vector<u8>>, ctx: &mut TxContext) {
        let proof_session_result = ProofSessionResult {
            id: object::new(ctx),
-           session_id: object::id_from_address(@0xC),
-           proof: vector::empty(),
+           session_id: session_id,
+           proof: output,
        };
        transfer::transfer(proof_session_result, @0xbca51aa9957d2f3ebf39b270119c644862c32111295cd9f29caa88a41aab8199);
 
        let completed_proof_mpc_session_event = CompletedProofMPCSessionEvent {
-           session_id: object::id_from_address(@0xC),
-           sender: tx_context::sender(ctx),
+           session_id: session_id,
+           sender: session_initiator,
        };
 
        event::emit(completed_proof_mpc_session_event);

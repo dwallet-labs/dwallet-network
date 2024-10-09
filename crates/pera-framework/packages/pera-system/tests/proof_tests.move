@@ -38,7 +38,7 @@ module pera_system::proof_tests {
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
-            create_proof_session_result(ctx);
+            create_proof_session_result(@0xC, object::id_from_address(@0xD), vector::empty(), ctx);
         };
         let effects: TransactionEffects = test_scenario::end(scenario);
         let events_num = test_scenario::num_user_events(&effects);

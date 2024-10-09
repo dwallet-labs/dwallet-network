@@ -1108,10 +1108,6 @@ mod checked {
         protocol_config: &ProtocolConfig,
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
-        let a = CallArg::Pure(data.sender_address.to_vec());
-        let b = CallArg::Pure(data.session_id.to_vec());
-        let c = CallArg::Pure(bcs::to_bytes(&data.value).unwrap());
-
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
             let res = builder.move_call(
@@ -1119,7 +1115,11 @@ mod checked {
                 ident_str!("proof").to_owned(),
                 ident_str!("create_proof_session_result").to_owned(),
                 vec![],
-                vec![],
+                vec![
+                    CallArg::Pure(data.sender_address.to_vec()),
+                    CallArg::Pure(data.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.value).unwrap()),
+                ],
             );
             assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
             builder.finish()

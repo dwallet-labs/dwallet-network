@@ -388,10 +388,6 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             event.session_id
         );
 
-        println!(
-            "max_active_mpc_instances: {:?}",
-            self.max_active_mpc_instances
-        );
         if self.active_instances_counter > self.max_active_mpc_instances {
             self.pending_instances_queue
                 .push_back(event.session_id.bytes);
