@@ -308,11 +308,11 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     }
 
     /// Filter the relevant MPC events from the transaction events & handle them
-    pub async fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
+    pub fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
         for event in events {
             if CreatedProofMPCEvent::type_() == event.type_ {
                 let deserialized_event: CreatedProofMPCEvent = bcs::from_bytes(&event.contents)?;
-                self.push_new_mpc_instance(deserialized_event).await;
+                self.push_new_mpc_instance(deserialized_event);
                 debug!("event: CreatedProofMPCEvent {:?}", event);
             };
         }
@@ -362,7 +362,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    async fn push_new_mpc_instance(&mut self, event: CreatedProofMPCEvent) {
+    fn push_new_mpc_instance(&mut self, event: CreatedProofMPCEvent) {
         if self.mpc_instances.contains_key(&event.session_id.bytes) {
             // This should never happen, as the session ID is a move UniqueID
             error!(
