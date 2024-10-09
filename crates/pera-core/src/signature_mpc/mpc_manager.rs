@@ -24,6 +24,7 @@ use std::marker::PhantomData;
 use std::sync::{Arc, Weak};
 use std::time::Duration;
 use std::{io, mem};
+use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
@@ -77,7 +78,7 @@ fn authority_name_to_party_id(
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
 struct MPCInstance<P: CreatableParty> {
-    status: MPCSessionStatus<P>,
+    status: MPCSessionStatus<P::Output>,
     pending_messages: HashMap<PartyID, P::Message>,
     consensus_adapter: Arc<ConsensusAdapter>,
     epoch_store: Weak<AuthorityPerEpochStore>,
@@ -228,7 +229,7 @@ impl<P: CreatableParty> MPCInstance<P> {
                 };
                 self.store_message(&message, epoch_store)
             }
-            MPCSessionStatus::Finished => {
+            MPCSessionStatus::Finished(_) => {
                 // Do nothing
                 Ok(())
             }
@@ -241,9 +242,9 @@ impl<P: CreatableParty> MPCInstance<P> {
 /// - Finished: The session is finished and pending removal; incoming messages will not be forwarded,
 /// but will not be marked as malicious.
 #[derive(Clone, Copy, PartialEq)]
-enum MPCSessionStatus<P: CreatableParty> {
+enum MPCSessionStatus<Output: Serialize + PartialEq> {
     Active,
-    Finished(P::Output),
+    Finished(Output),
 }
 
 /// The `MPCService` is responsible for managing MPC instances:
@@ -266,7 +267,7 @@ pub struct SignatureMPCManager<P: CreatableParty> {
 
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
 pub type ProofParty = proof::aggregation::asynchronous::Party<
-    maurer::Proof<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang, PhantomData<()>>,
+    Proof<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang, PhantomData<()>>,
 >;
 
 fn generate_language_public_parameters<const REPETITIONS: usize>(
