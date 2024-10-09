@@ -395,7 +395,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 }
                             }
                             None => {
-                                // TODO (#250): Check if we can ignore these events and be sure that the MPC manager is initialized before MPC events emitted.
+                                // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
                                 error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
                             }
                         }

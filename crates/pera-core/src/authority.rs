@@ -1556,7 +1556,7 @@ impl AuthorityState {
                 }
                 None => {
                     // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
-                    // TODO (#250): Check if we can ignore these events and be sure that the MPC manager is initialized before MPC events emitted.
+                    // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are emitted.
                     info!("MPC manager is not initialized");
                     Ok(())
                 }
