@@ -151,6 +151,8 @@ pub enum ConsensusCertificateResult {
     Deferred(DeferralKey),
     /// A message was processed which updates randomness state.
     RandomnessConsensusMessage,
+    /// A message was processed which updates signature MPC manager state.
+    SignatureMPCConsensusMessage,
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
@@ -3162,6 +3164,7 @@ impl AuthorityPerEpochStore {
                     assert!(cancelled_txns.insert(*cert.digest(), reason).is_none());
                     verified_certificates.push_back(cert);
                 }
+                ConsensusCertificateResult::SignatureMPCConsensusMessage => {}
                 ConsensusCertificateResult::RandomnessConsensusMessage => {
                     randomness_state_updated = true;
                     notifications.push(key.clone());
@@ -3391,18 +3394,6 @@ impl AuthorityPerEpochStore {
                 ..
             }) => Ok(ConsensusCertificateResult::Ignored),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
-                ..
-            }) => {
-                let Some(signature_mpc_manager) = self.signature_mpc_manager.get() else {
-                    // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
-                    return Ok(ConsensusCertificateResult::Ignored);
-                };
-                let mut signature_mpc_manager = signature_mpc_manager.lock().await;
-                signature_mpc_manager.handle_message(message, *authority, *session_id)?;
-                Ok(ConsensusCertificateResult::Ignored)
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::UserTransaction(certificate),
                 ..
             }) => {
@@ -3600,6 +3591,18 @@ impl AuthorityPerEpochStore {
                     );
                 }
                 Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
+                ..
+            }) => {
+                let Some(signature_mpc_manager) = self.signature_mpc_manager.get() else {
+                    // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
+                    return Ok(ConsensusCertificateResult::Ignored);
+                };
+                let mut signature_mpc_manager = signature_mpc_manager.lock().await;
+                signature_mpc_manager.handle_message(message, *authority, *session_id)?;
+                Ok(ConsensusCertificateResult::SignatureMPCConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::RandomnessStateUpdate(_, _),
