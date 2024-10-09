@@ -632,7 +632,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
         ConsensusTransactionKind::SignatureMPCMessage(_, _, _) => "signature_mpc_message",
-        ConsensusTransactionKind::SignatureMPCOutput(_, _, _) => "proof_mpc_statements",
+        ConsensusTransactionKind::SignatureMPCOutput(_, _, _) => "signature_mpc_statements",
     }
 }
 

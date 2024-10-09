@@ -2,7 +2,7 @@
 module pera_system::proof_tests {
     use pera::test_scenario;
     use pera::test_scenario::TransactionEffects;
-    use pera_system::proof::launch_proof_mpc_flow;
+    use pera_system::proof::{launch_proof_mpc_flow, create_proof_session_result};
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const EWrongEventNumber: u64 = 0;
@@ -28,8 +28,25 @@ module pera_system::proof_tests {
         let created_objects = test_scenario::created(&effects);
         assert!(vector::length(&frozen_objects) == 1, EWrongFrozenObjectsNum);
         assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
-        let c = vector::borrow(&created_objects, 0);
-        let f = vector::borrow(&frozen_objects, 0);
-        assert!(c == f, EObjectMismatchCreateAndFrozen);
+        assert!(vector::borrow(&created_objects, 0) == vector::borrow(&frozen_objects, 0), EObjectMismatchCreateAndFrozen);
+    }
+
+    #[test]
+    public fun test_create_proof_session_result() {
+        let sender = @0x1;
+        let mut scenario = test_scenario::begin(sender);
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            create_proof_session_result(ctx);
+        };
+        let effects: TransactionEffects = test_scenario::end(scenario);
+        let events_num = test_scenario::num_user_events(&effects);
+        assert!(events_num == 1, EWrongEventNumber);
+
+        let created_objects = test_scenario::created(&effects);
+        assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+
+        // TODO: After we change the move function properly we need to add a check for the owned object
     }
 }

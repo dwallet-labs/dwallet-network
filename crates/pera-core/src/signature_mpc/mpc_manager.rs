@@ -311,14 +311,8 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
 
     pub fn verify_output(&self, output: &Vec<Vec<u8>>, session_id: &ObjectID) -> bool {
         // TODO: Verify the output properly once we change to work with crypto
-        // let Some(instance) = self.mpc_instances.get(session_id) else {
-        //     return false;
-        // };
-        // let MPCSessionStatus::Finished(&stored_output) = instance.status else {
-        //     return false;
-        // };
+        // At the moment this means to compare the output with the stored output
         true
-        // bcs::to_bytes(&stored_output).unwrap().as_slice() == output.as_slice()
     }
 
     /// Filter the relevant MPC events from the transaction events & handle them
