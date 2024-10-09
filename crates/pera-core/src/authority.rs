@@ -1495,7 +1495,7 @@ impl AuthorityState {
         // Check if there are any MPC events emitted from this transaction and if so, send them to the MPC service.
         // Handle the MPC events here because there is access to the event, as the transaction has been just executed.
         let _ = self
-            .handle_mpc_events(&inner_temporary_store, effects, epoch_store)
+            .handle_signature_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await;
 
         // Allow testing what happens if we crash here.
@@ -1531,7 +1531,9 @@ impl AuthorityState {
         Ok(())
     }
 
-    async fn handle_mpc_events(
+    /// Handle the MPC signature events emitted from the transaction, if any.
+    /// The filtering to handle only signature-mpc related events happens within [`SignatureMPCManager::handle_mpc_events`] function.
+    async fn handle_signature_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,
@@ -1548,8 +1550,8 @@ impl AuthorityState {
             let mut signature_mpc_manager = epoch_store.signature_mpc_manager.get();
             match signature_mpc_manager {
                 Some(mpc_manager) => {
-                    let mut mpc_manager_lock = mpc_manager.lock().await;
-                    mpc_manager_lock
+                    let mut mpc_manager = mpc_manager.lock().await;
+                    mpc_manager
                         .handle_mpc_events(&inner_temporary_store.events.data)
                 }
                 None => {
