@@ -47,6 +47,7 @@ use pera_types::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
+use crate::signature_mpc::mpc_manager::ProofParty;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -370,13 +371,14 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let mut signature_mpc_manager = self.epoch_store.signature_mpc_manager.get();
                         match signature_mpc_manager {
                             Some(mpc_manager) => {
+                                // TODO (yael): remove the unwrap here
                                 let signature_mpc_manager = mpc_manager.lock().await;
                                 if signature_mpc_manager.verify_output(value, session_id) {
                                     let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
                                         ProofMPCOutput {
                                             session_id: *session_id,
                                             sender_address: *sender_address,
-                                            value,
+                                            value: value.clone(),
                                         },
                                     );
                                     let transaction =

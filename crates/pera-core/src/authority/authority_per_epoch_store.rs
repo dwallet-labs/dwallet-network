@@ -151,8 +151,6 @@ pub enum ConsensusCertificateResult {
     Deferred(DeferralKey),
     /// A message was processed which updates randomness state.
     RandomnessConsensusMessage,
-    /// A message was processed which updates signature MPC manager state.
-    SignatureMPCConsensusMessage,
     /// Everything else, e.g. AuthorityCapabilities, CheckpointSignatures, etc.
     ConsensusMessage,
     /// A system message in consensus was ignored (e.g. because of end of epoch).
@@ -3164,7 +3162,6 @@ impl AuthorityPerEpochStore {
                     assert!(cancelled_txns.insert(*cert.digest(), reason).is_none());
                     verified_certificates.push_back(cert);
                 }
-                ConsensusCertificateResult::SignatureMPCConsensusMessage => {}
                 ConsensusCertificateResult::RandomnessConsensusMessage => {
                     randomness_state_updated = true;
                     notifications.push(key.clone());
@@ -3392,7 +3389,7 @@ impl AuthorityPerEpochStore {
                 kind:
                     ConsensusTransactionKind::ProofMPCOutput(statements, session_id, sender_address),
                 ..
-            }) => Ok(ConsensusCertificateResult::Ignored),
+            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::UserTransaction(certificate),
                 ..
@@ -3602,7 +3599,7 @@ impl AuthorityPerEpochStore {
                 };
                 let mut signature_mpc_manager = signature_mpc_manager.lock().await;
                 signature_mpc_manager.handle_message(message, *authority, *session_id)?;
-                Ok(ConsensusCertificateResult::SignatureMPCConsensusMessage)
+                Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::RandomnessStateUpdate(_, _),
