@@ -29,10 +29,10 @@ use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
 
-/// The possible inputs to an MPC instance
-/// Removed in a later PR as actually the only relevant input is the message
+/// The message a validator can send to the other parties while running a signature MPC session.
 #[derive(Clone)]
 struct SignatureMPCMessage {
+    /// The serialized message
     message: Vec<u8>,
     authority: AuthorityName,
 }
