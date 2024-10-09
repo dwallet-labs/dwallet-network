@@ -409,6 +409,7 @@ pub enum PeraTransactionBlockKind {
     ConsensusCommitPrologueV2(PeraConsensusCommitPrologueV2),
     ConsensusCommitPrologueV3(PeraConsensusCommitPrologueV3),
     // .. more transaction types go here
+    SignatureMPCOutput(PeraSignatureMPCOutput),
 }
 
 impl Display for PeraTransactionBlockKind {
@@ -462,6 +463,9 @@ impl Display for PeraTransactionBlockKind {
             }
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind: End of Epoch Transaction")?;
+            }
+            Self::SignatureMPCOutput(_) => {
+                writeln!(writer, "Transaction Kind: Signature MPC Output")?;
             }
         }
         write!(f, "{}", writer)
@@ -560,10 +564,12 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
-            TransactionKind::ProofMPCComplete(_) => {
-                // TODO: Implement this
-                println!("oops");
-                return Err(anyhow::anyhow!("ProofMPCComplete is not supported"));
+            TransactionKind::ProofMPCComplete(output) => {
+                Self::SignatureMPCOutput(PeraSignatureMPCOutput{
+                    session_id: output.session_id,
+                    sender_address: output.sender_address,
+                    value: output.value,
+                })
             }
         })
     }
@@ -664,10 +670,14 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
-            TransactionKind::ProofMPCComplete(_) => {
-                // TODO: Implement this
-                println!("oops");
-                return Err(anyhow::anyhow!("ProofMPCComplete is not supported"));
+            TransactionKind::ProofMPCComplete(output) => {
+                Self::SignatureMPCOutput(
+                    PeraSignatureMPCOutput {
+                        session_id: output.session_id,
+                        sender_address: output.sender_address,
+                        value: output.value,
+                    }
+                )
             }
         })
     }
@@ -690,6 +700,7 @@ impl PeraTransactionBlockKind {
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
+            Self::SignatureMPCOutput(_) => "SignatureMPCOutput",
         }
     }
 }
@@ -1683,6 +1694,14 @@ pub enum PeraEndOfEpochTransactionKind {
     CoinDenyListStateCreate,
     BridgeStateCreate(CheckpointDigest),
     BridgeCommitteeUpdate(SequenceNumber),
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+pub struct PeraSignatureMPCOutput {
+    pub session_id: ObjectID,
+    pub sender_address: PeraAddress,
+    pub value: Vec<Vec<u8>>,
 }
 
 #[serde_as]

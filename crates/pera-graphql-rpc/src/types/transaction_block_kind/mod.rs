@@ -11,7 +11,8 @@ use crate::types::transaction_block_kind::{
     end_of_epoch::EndOfEpochTransaction, programmable::ProgrammableTransactionBlock,
 };
 use async_graphql::*;
-use pera_types::transaction::{TransactionKind as NativeTransactionKind, TransactionKind};
+use pera_types::transaction::{TransactionKind as NativeTransactionKind};
+use crate::types::transaction_block_kind::signature_mpc_output::SignatureMPCOutputTransaction;
 
 pub(crate) mod authenticator_state_update;
 pub(crate) mod consensus_commit_prologue;
@@ -19,6 +20,7 @@ pub(crate) mod end_of_epoch;
 pub(crate) mod genesis;
 pub(crate) mod programmable;
 pub(crate) mod randomness_state_update;
+mod signature_mpc_output;
 
 /// The kind of transaction block, either a programmable transaction or a system transaction.
 #[derive(Union, PartialEq, Clone, Eq)]
@@ -30,7 +32,7 @@ pub(crate) enum TransactionBlockKind {
     AuthenticatorState(AuthenticatorStateUpdateTransaction),
     Randomness(RandomnessStateUpdateTransaction),
     EndOfEpoch(EndOfEpochTransaction),
-    // ProofMPCComplete(ProofMPCResultOnChain),
+    SignatureMPCOutput(SignatureMPCOutputTransaction),
 }
 
 impl TransactionBlockKind {
@@ -74,7 +76,10 @@ impl TransactionBlockKind {
                 native: rsu,
                 checkpoint_viewed_at,
             }),
-            K::ProofMPCComplete(_) => todo!(),
+            K::ProofMPCComplete(output) => T::SignatureMPCOutput(SignatureMPCOutputTransaction {
+                native: output,
+                checkpoint_viewed_at,
+            }),
         }
     }
 }
