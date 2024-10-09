@@ -367,20 +367,38 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             "Received proof mpc output from authority {:?} for session {:?}",
                             authority_index, session_id
                         );
-                        let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
-                            ProofMPCOutput {
-                                session_id: *session_id,
-                                sender_address: *sender_address,
-                                value,
-                            },
-                        );
-                        let transaction =
-                            VerifiedExecutableTransaction::new_system(transaction, self.epoch());
-                        transactions.push((
-                            empty_bytes.as_slice(),
-                            SequencedConsensusTransactionKind::System(transaction),
-                            consensus_output.leader_author_index(),
-                        ));
+                        let mut signature_mpc_manager = self.epoch_store.signature_mpc_manager.get();
+                        match signature_mpc_manager {
+                            Some(mpc_manager) => {
+                                let signature_mpc_manager = mpc_manager.lock().await;
+                                if signature_mpc_manager.verify_output(value, session_id) {
+                                    let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
+                                        ProofMPCOutput {
+                                            session_id: *session_id,
+                                            sender_address: *sender_address,
+                                            value,
+                                        },
+                                    );
+                                    let transaction =
+                                        VerifiedExecutableTransaction::new_system(transaction, self.epoch());
+                                    transactions.push((
+                                        empty_bytes.as_slice(),
+                                        SequencedConsensusTransactionKind::System(transaction),
+                                        consensus_output.leader_author_index(),
+                                    ));
+                                } else {
+                                    // TODO (#263): Mark the validator who sent this message as malicious
+                                    error!(
+                                        "ProofMPCOutput output from session {:?} and party {:?} failed verification",
+                                        session_id, authority_index
+                                    );
+                                }
+                            }
+                            None => {
+                                // TODO (#250): Check if we can ignore these events and be sure that the MPC manager is initialized before MPC events emitted.
+                                error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
+                            }
+                        }
                     }
 
                     if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =

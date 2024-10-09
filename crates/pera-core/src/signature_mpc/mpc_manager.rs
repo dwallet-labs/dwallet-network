@@ -307,6 +307,16 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         }
     }
 
+    pub fn verify_output(&self, output: &Vec<u8>, session_id: &ObjectID) -> bool {
+        let Some(instance) = self.mpc_instances.get(session_id) else {
+            return false;
+        };
+        let MPCSessionStatus::Finished(&stored_output) = instance.status else {
+            return false;
+        };
+        bcs::to_bytes(&stored_output).unwrap().as_slice() == output.as_slice()
+    }
+
     /// Filter the relevant MPC events from the transaction events & handle them
     pub fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
         for event in events {
