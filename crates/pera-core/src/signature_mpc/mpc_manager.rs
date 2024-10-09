@@ -76,16 +76,16 @@ fn authority_name_to_party_id(
 /// A Proof MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-struct MPCInstance<T: CreatableParty> {
-    status: MPCSessionStatus,
-    pending_messages: HashMap<PartyID, T::Message>,
+struct MPCInstance<P: CreatableParty> {
+    status: MPCSessionStatus<P>,
+    pending_messages: HashMap<PartyID, P::Message>,
     consensus_adapter: Arc<ConsensusAdapter>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
     mpc_threshold_number_of_parties: usize,
     session_id: ObjectID,
     sender_address: PeraAddress,
-    party: Option<T>,
+    party: Option<P>,
 }
 
 type ProofPublicParameters =
@@ -138,7 +138,7 @@ impl<P: CreatableParty> MPCInstance<P> {
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
-                self.status = MPCSessionStatus::Finished;
+                self.status = MPCSessionStatus::Finished(output.clone());
                 self.new_proof_mpc_statements_message(output)
             }
         };
@@ -241,9 +241,9 @@ impl<P: CreatableParty> MPCInstance<P> {
 /// - Finished: The session is finished and pending removal; incoming messages will not be forwarded,
 /// but will not be marked as malicious.
 #[derive(Clone, Copy, PartialEq)]
-enum MPCSessionStatus {
+enum MPCSessionStatus<P: CreatableParty> {
     Active,
-    Finished,
+    Finished(P::Output),
 }
 
 /// The `MPCService` is responsible for managing MPC instances:
