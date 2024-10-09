@@ -37,7 +37,7 @@ export const getDwalletByObjID = async (
 			? (dwalletObject.data?.content?.fields as {
 					dwallet_cap_id: string;
 					output: number[];
-				})
+			  })
 			: null;
 
 	return dwalletObjectFields
@@ -45,7 +45,7 @@ export const getDwalletByObjID = async (
 				dwalletID: dwalletObjID,
 				decentralizedDKGOutput: dwalletObjectFields.output,
 				dwalletCapID: dwalletObjectFields.dwallet_cap_id,
-			}
+		  }
 		: null;
 };
 
@@ -188,7 +188,7 @@ export const getEncryptionKeyByObjectId = async (
 					encryption_key: Uint8Array;
 					key_owner_address: string;
 					encryption_key_signature: Uint8Array;
-				})
+			  })
 			: null;
 
 	return objectFields
@@ -196,7 +196,7 @@ export const getEncryptionKeyByObjectId = async (
 				encryptionKey: objectFields?.encryption_key,
 				signedEncryptionKey: objectFields?.encryption_key_signature,
 				keyOwnerAddress: objectFields?.key_owner_address,
-			}
+		  }
 		: null;
 };
 
@@ -220,7 +220,7 @@ export const getEncryptedUserShareByObjectID = async (
 					encryption_key_id: string;
 					signed_dwallet_pubkeys: number[];
 					sender_pubkey: number[];
-				})
+			  })
 			: null;
 
 	return objectFields
@@ -230,7 +230,7 @@ export const getEncryptedUserShareByObjectID = async (
 				encryptionKeyObjID: objectFields?.encryption_key_id,
 				signedDWalletPubKeys: objectFields.signed_dwallet_pubkeys,
 				senderPubKey: objectFields.sender_pubkey,
-			}
+		  }
 		: null;
 };
 
@@ -380,7 +380,7 @@ export const getEncryptedUserSharesObjID = async (client: DWalletClient, keypair
 		table?.dataType === 'moveObject'
 			? (table.fields as {
 					id: { id: string };
-				})
+			  })
 			: null;
 
 	if (table === null) {
