@@ -8,6 +8,7 @@ Used only for testing the way we launch & manage an MPC flow.
 
 
 -  [Struct `CreatedProofMPCSessionEvent`](#0x3_proof_CreatedProofMPCSessionEvent)
+-  [Struct `CompletedProofMPCSessionEvent`](#0x3_proof_CompletedProofMPCSessionEvent)
 -  [Resource `ProofSessionData`](#0x3_proof_ProofSessionData)
 -  [Resource `ProofSessionResult`](#0x3_proof_ProofSessionResult)
 -  [Function `launch_proof_mpc_flow`](#0x3_proof_launch_proof_mpc_flow)
@@ -30,6 +31,40 @@ Event to start a <code>MockMPCSession</code>, caught by the Validators.
 
 
 <pre><code><b>struct</b> <a href="proof.md#0x3_proof_CreatedProofMPCSessionEvent">CreatedProofMPCSessionEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>sender: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_proof_CompletedProofMPCSessionEvent"></a>
+
+## Struct `CompletedProofMPCSessionEvent`
+
+Event that is being emitted when the proof MPC flow is completed.
+
+
+<pre><code><b>struct</b> <a href="proof.md#0x3_proof_CompletedProofMPCSessionEvent">CompletedProofMPCSessionEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -183,7 +218,14 @@ Function to launch proof MPC flow.
         session_id: <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(@0xC),
         <a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>(),
     };
-     <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, @0xbca51aa9957d2f3ebf39b270119c644862c32111295cd9f29caa88a41aab8199);
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, @0xbca51aa9957d2f3ebf39b270119c644862c32111295cd9f29caa88a41aab8199);
+
+    <b>let</b> completed_proof_mpc_session_event = <a href="proof.md#0x3_proof_CompletedProofMPCSessionEvent">CompletedProofMPCSessionEvent</a> {
+        session_id: <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(@0xC),
+        sender: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
+    };
+
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(completed_proof_mpc_session_event);
 }
 </code></pre>
 

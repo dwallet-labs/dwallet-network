@@ -967,6 +967,9 @@ activate_validators
 CreatedProofMPCSessionEvent
 	public struct
 	0x3::proof
+CompletedProofMPCSessionEvent
+	public struct
+	0x3::proof
 ProofSessionData
 	public struct
 	0x3::proof

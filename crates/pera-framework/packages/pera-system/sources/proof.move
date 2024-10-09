@@ -14,6 +14,12 @@ module pera_system::proof {
         sender: address,
     }
 
+    /// Event that is being emitted when the proof MPC flow is completed.
+    public struct CompletedProofMPCSessionEvent has copy, drop {
+        session_id: ID,
+        sender: address,
+    }
+
     public struct ProofSessionData has key {
         id: UID,
     }
@@ -50,6 +56,13 @@ module pera_system::proof {
            session_id: object::id_from_address(@0xC),
            proof: vector::empty(),
        };
-        transfer::transfer(proof_session_result, @0xbca51aa9957d2f3ebf39b270119c644862c32111295cd9f29caa88a41aab8199);
+       transfer::transfer(proof_session_result, @0xbca51aa9957d2f3ebf39b270119c644862c32111295cd9f29caa88a41aab8199);
+
+       let completed_proof_mpc_session_event = CompletedProofMPCSessionEvent {
+           session_id: object::id_from_address(@0xC),
+           sender: tx_context::sender(ctx),
+       };
+
+       event::emit(completed_proof_mpc_session_event);
    }
 }
