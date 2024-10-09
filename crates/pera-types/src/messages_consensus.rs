@@ -140,11 +140,11 @@ impl Debug for ConsensusTransactionKey {
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
             }
-            ConsensusTransactionKey::SignatureMPCOutput(statements, session_id, sender_address) => {
+            ConsensusTransactionKey::SignatureMPCOutput(value, session_id, sender_address) => {
                 write!(
                     f,
-                    "ProofMPCStatements({:?}, {:?}, {:?})",
-                    statements, session_id, sender_address
+                    "SignatureMPCOutput({:?}, {:?}, {:?})",
+                    value, session_id, sender_address
                 )
             }
         }
@@ -584,11 +584,11 @@ impl ConsensusTransaction {
                 )
             }
             ConsensusTransactionKind::SignatureMPCOutput(
-                statements,
+                value,
                 session_id,
                 sender_address,
             ) => ConsensusTransactionKey::SignatureMPCOutput(
-                statements.clone(),
+                value.clone(),
                 *session_id,
                 *sender_address,
             ),
