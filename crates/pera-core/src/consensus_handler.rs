@@ -35,7 +35,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
+use pera_types::messages_signature_mpc::ProofMPCOutput;
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -355,24 +355,25 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
-
-                    if let ConsensusTransactionKind::ProofMPCStatements(
-                        statements,
+                    // If we receive a ProofMPCOutput transaction, verify that it's valid & create a system transaction
+                    // to store its output on the blockchain, so it will be available for the initiating user.
+                    if let ConsensusTransactionKind::ProofMPCOutput(
+                        value,
                         session_id,
                         sender_address,
                     ) = &transaction.kind
                     {
-                        println!(
-                            "recv proof mpc statements from consensus handler output internal"
+                        info!(
+                            "Received proof mpc output from authority {:?} for session {:?}",
+                            authority_index, session_id
                         );
                         let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
-                            ProofMPCResultOnChain {
+                            ProofMPCOutput {
                                 session_id: *session_id,
                                 sender_address: *sender_address,
-                                statements: statements.clone(),
+                                value,
                             },
                         );
-
                         let transaction =
                             VerifiedExecutableTransaction::new_system(transaction, self.epoch());
                         transactions.push((
@@ -610,7 +611,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
         ConsensusTransactionKind::SignatureMPCMessage(_, _, _) => "signature_mpc_message",
-        ConsensusTransactionKind::ProofMPCStatements(_, _, _) => "proof_mpc_statements",
+        ConsensusTransactionKind::ProofMPCOutput(_, _, _) => "proof_mpc_statements",
     }
 }
 

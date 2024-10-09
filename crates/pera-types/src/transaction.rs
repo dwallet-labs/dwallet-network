@@ -19,7 +19,7 @@ use crate::messages_consensus::{
     ConsensusCommitPrologue, ConsensusCommitPrologueV2, ConsensusCommitPrologueV3,
     ConsensusDeterminedVersionAssignments,
 };
-use crate::messages_signature_mpc::ProofMPCResultOnChain;
+use crate::messages_signature_mpc::ProofMPCOutput;
 use crate::object::{MoveObject, Object, Owner};
 use crate::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use crate::signature::{GenericSignature, VerifyParams};
@@ -293,7 +293,7 @@ pub enum TransactionKind {
 
     ConsensusCommitPrologueV3(ConsensusCommitPrologueV3),
     // .. more transaction types go here
-    ProofMPCComplete(ProofMPCResultOnChain),
+    ProofMPCComplete(ProofMPCOutput),
 }
 
 /// EndOfEpochTransactionKind
@@ -2638,7 +2638,7 @@ impl VerifiedTransaction {
             .pipe(Self::new_from_verified)
     }
 
-    pub fn new_proof_mpc_system_transaction(data: ProofMPCResultOnChain) -> Self {
+    pub fn new_proof_mpc_system_transaction(data: ProofMPCOutput) -> Self {
         TransactionKind::ProofMPCComplete(data).pipe(Self::new_system_transaction)
     }
 }

@@ -101,7 +101,7 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
+use pera_types::messages_signature_mpc::ProofMPCOutput;
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -2419,7 +2419,7 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::ProofMPCStatements(_, _, _),
+                kind: ConsensusTransactionKind::ProofMPCOutput(_, _, _),
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -3387,7 +3387,7 @@ impl AuthorityPerEpochStore {
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind:
-                    ConsensusTransactionKind::ProofMPCStatements(statements, session_id, sender_address),
+                    ConsensusTransactionKind::ProofMPCOutput(statements, session_id, sender_address),
                 ..
             }) => Ok(ConsensusCertificateResult::Ignored),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

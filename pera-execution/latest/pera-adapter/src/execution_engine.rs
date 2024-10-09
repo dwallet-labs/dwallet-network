@@ -59,7 +59,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
-    use pera_types::messages_signature_mpc::ProofMPCResultOnChain;
+    use pera_types::messages_signature_mpc::ProofMPCOutput;
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -1100,7 +1100,7 @@ mod checked {
     }
 
     fn setup_signature_mpc_result(
-        data: ProofMPCResultOnChain,
+        data: ProofMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
         tx_ctx: &mut TxContext,
         move_vm: &Arc<MoveVM>,
@@ -1110,7 +1110,7 @@ mod checked {
     ) -> Result<(), ExecutionError> {
         let a = CallArg::Pure(data.sender_address.to_vec());
         let b = CallArg::Pure(data.session_id.to_vec());
-        let c = CallArg::Pure(bcs::to_bytes(&data.statements).unwrap());
+        let c = CallArg::Pure(bcs::to_bytes(&data.value).unwrap());
 
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();

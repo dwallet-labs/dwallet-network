@@ -51,13 +51,13 @@ pub struct SignatureMPCMessage {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct ProofMPCResultOnChain {
+pub struct ProofMPCOutput {
     pub session_id: ObjectID,
     pub sender_address: PeraAddress,
-    pub statements: Vec<Vec<u8>>,
+    pub value: Vec<Vec<u8>>,
 }
 
-impl Message for ProofMPCResultOnChain {
+impl Message for ProofMPCOutput {
     type DigestType = ProofMPCResultOnChainDigest;
     const SCOPE: IntentScope = IntentScope::ProofMPCResultOnChain;
 
@@ -66,5 +66,5 @@ impl Message for ProofMPCResultOnChain {
     }
 }
 
-pub type ProofMPCResultOnChainEnvelope<S> = Envelope<ProofMPCResultOnChain, S>;
+pub type ProofMPCResultOnChainEnvelope<S> = Envelope<ProofMPCOutput, S>;
 pub type SignedProofMPCResultOnChain = ProofMPCResultOnChainEnvelope<AuthoritySignInfo>;

@@ -278,7 +278,7 @@ pub enum ConsensusTransactionKind {
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
     SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    ProofMPCStatements(Vec<Vec<u8>>, ObjectID, PeraAddress),
+    ProofMPCOutput(Vec<Vec<u8>>, ObjectID, PeraAddress),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -499,7 +499,7 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::ProofMPCStatements(
+            kind: ConsensusTransactionKind::ProofMPCOutput(
                 statements,
                 session_id,
                 sender_address,
@@ -585,7 +585,7 @@ impl ConsensusTransaction {
                     session_id.into_bytes(),
                 )
             }
-            ConsensusTransactionKind::ProofMPCStatements(
+            ConsensusTransactionKind::ProofMPCOutput(
                 statements,
                 session_id,
                 sender_address,
