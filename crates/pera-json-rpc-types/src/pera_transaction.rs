@@ -565,7 +565,7 @@ impl PeraTransactionBlockKind {
                 })
             }
             TransactionKind::SignatureMPCOutput(output) => {
-                Self::SignatureMPCOutput(PeraSignatureMPCOutput{
+                Self::SignatureMPCOutput(PeraSignatureMPCOutput {
                     session_id: output.session_id,
                     sender_address: output.sender_address,
                     value: output.value,
@@ -671,13 +671,11 @@ impl PeraTransactionBlockKind {
                 })
             }
             TransactionKind::SignatureMPCOutput(output) => {
-                Self::SignatureMPCOutput(
-                    PeraSignatureMPCOutput {
-                        session_id: output.session_id,
-                        sender_address: output.sender_address,
-                        value: output.value,
-                    }
-                )
+                Self::SignatureMPCOutput(PeraSignatureMPCOutput {
+                    session_id: output.session_id,
+                    sender_address: output.sender_address,
+                    value: output.value,
+                })
             }
         })
     }

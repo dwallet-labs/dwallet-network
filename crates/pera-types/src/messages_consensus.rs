@@ -497,11 +497,7 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::SignatureMPCOutput(
-                value,
-                session_id,
-                sender_address,
-            ),
+            kind: ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address),
         }
     }
 
@@ -583,15 +579,13 @@ impl ConsensusTransaction {
                     session_id.into_bytes(),
                 )
             }
-            ConsensusTransactionKind::SignatureMPCOutput(
-                value,
-                session_id,
-                sender_address,
-            ) => ConsensusTransactionKey::SignatureMPCOutput(
-                value.clone(),
-                *session_id,
-                *sender_address,
-            ),
+            ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address) => {
+                ConsensusTransactionKey::SignatureMPCOutput(
+                    value.clone(),
+                    *session_id,
+                    *sender_address,
+                )
+            }
         }
     }
 

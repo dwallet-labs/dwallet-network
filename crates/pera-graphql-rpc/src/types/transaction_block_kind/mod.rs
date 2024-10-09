@@ -6,13 +6,13 @@ use self::{
     end_of_epoch::ChangeEpochTransaction, genesis::GenesisTransaction,
     randomness_state_update::RandomnessStateUpdateTransaction,
 };
+use crate::types::transaction_block_kind::signature_mpc_output::SignatureMPCOutputTransaction;
 use crate::types::transaction_block_kind::{
     authenticator_state_update::AuthenticatorStateUpdateTransaction,
     end_of_epoch::EndOfEpochTransaction, programmable::ProgrammableTransactionBlock,
 };
 use async_graphql::*;
-use pera_types::transaction::{TransactionKind as NativeTransactionKind};
-use crate::types::transaction_block_kind::signature_mpc_output::SignatureMPCOutputTransaction;
+use pera_types::transaction::TransactionKind as NativeTransactionKind;
 
 pub(crate) mod authenticator_state_update;
 pub(crate) mod consensus_commit_prologue;

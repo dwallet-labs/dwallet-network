@@ -1551,8 +1551,7 @@ impl AuthorityState {
             match signature_mpc_manager {
                 Some(mpc_manager) => {
                     let mut mpc_manager = mpc_manager.lock().await;
-                    mpc_manager
-                        .handle_mpc_events(&inner_temporary_store.events.data)
+                    mpc_manager.handle_mpc_events(&inner_temporary_store.events.data)
                 }
                 None => {
                     // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.

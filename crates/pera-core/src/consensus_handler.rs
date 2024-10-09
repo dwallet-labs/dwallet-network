@@ -8,6 +8,7 @@ use std::{
     sync::Arc,
 };
 
+use crate::signature_mpc::mpc_manager::ProofParty;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -47,7 +48,6 @@ use pera_types::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
-use crate::signature_mpc::mpc_manager::ProofParty;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -370,7 +370,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             authority_index, session_id
                         );
 
-                        let mut signature_mpc_manager = self.epoch_store.signature_mpc_manager.get();
+                        let mut signature_mpc_manager =
+                            self.epoch_store.signature_mpc_manager.get();
                         match signature_mpc_manager {
                             Some(mpc_manager) => {
                                 let signature_mpc_manager = mpc_manager.lock().await;
@@ -388,13 +389,14 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             }
                         }
 
-                        let transaction = VerifiedTransaction::new_signature_mpc_output_system_transaction(
-                            SignatureMPCOutput {
-                                session_id: *session_id,
-                                sender_address: *sender_address,
-                                value: value.clone(),
-                            },
-                        );
+                        let transaction =
+                            VerifiedTransaction::new_signature_mpc_output_system_transaction(
+                                SignatureMPCOutput {
+                                    session_id: *session_id,
+                                    sender_address: *sender_address,
+                                    value: value.clone(),
+                                },
+                            );
                         let transaction =
                             VerifiedExecutableTransaction::new_system(transaction, self.epoch());
                         transactions.push((

@@ -1,7 +1,7 @@
 use crate::base_types::{ObjectID, PeraAddress};
 use crate::committee::EpochId;
 use crate::crypto::{default_hash, AuthoritySignInfo};
-use crate::digests::{SignatureMPCOutputDigest, SignatureMPCMessageDigest};
+use crate::digests::{SignatureMPCMessageDigest, SignatureMPCOutputDigest};
 use crate::message_envelope::{Envelope, Message};
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;

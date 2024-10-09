@@ -1333,7 +1333,9 @@ impl TransactionKind {
                 after_dedup
             }
             Self::ProgrammableTransaction(p) => return p.input_objects(),
-            Self::SignatureMPCOutput(_) => vec![InputObjectKind::MovePackage(PERA_SYSTEM_PACKAGE_ID)],
+            Self::SignatureMPCOutput(_) => {
+                vec![InputObjectKind::MovePackage(PERA_SYSTEM_PACKAGE_ID)]
+            }
         };
         // Ensure that there are no duplicate inputs. This cannot be removed because:
         // In [`AuthorityState::check_locks`], we check that there are no duplicate mutable
