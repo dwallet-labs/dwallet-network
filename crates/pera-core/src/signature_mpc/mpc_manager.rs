@@ -34,6 +34,7 @@ use tracing::{debug, error, info};
 struct SignatureMPCMessage {
     /// The serialized message
     message: Vec<u8>,
+    /// The authority that sent the message
     authority: AuthorityName,
 }
 pub type ProofMessage = (Proof<1, Lang, PhantomData<()>>, Vec<Value>);
