@@ -7,7 +7,7 @@ import axios from 'axios';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient, EventId, SuiEventFilter, SuiObjectRef } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { SignOutputEventData } from './dwallet.js';
+import type { SignOutputEventData } from './dwallet.js';
 
 const packageId = '0x3';
 const stateProofModuleName = 'sui_state_proof';
