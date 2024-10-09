@@ -150,11 +150,13 @@ impl<P: CreatableParty> MPCInstance<P> {
 
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = Arc::clone(&epoch_store);
-        tokio::spawn(async move {
-            let res = consensus_adapter
-                .submit_to_consensus(&vec![msg.unwrap()], &epoch_store)
-                .await;
-        });
+        if let Some(msg) = msg {
+            tokio::spawn(async move {
+                let _ = consensus_adapter
+                    .submit_to_consensus(&vec![msg], &epoch_store)
+                    .await;
+            });
+        }
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
