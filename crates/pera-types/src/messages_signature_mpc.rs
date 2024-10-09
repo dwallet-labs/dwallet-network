@@ -1,7 +1,7 @@
 use crate::base_types::{ObjectID, PeraAddress};
 use crate::committee::EpochId;
 use crate::crypto::{default_hash, AuthoritySignInfo};
-use crate::digests::{ProofMPCResultOnChainDigest, SignatureMPCMessageDigest};
+use crate::digests::{SignatureMPCOutputDigest, SignatureMPCMessageDigest};
 use crate::message_envelope::{Envelope, Message};
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
@@ -51,20 +51,20 @@ pub struct SignatureMPCMessage {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct ProofMPCOutput {
+pub struct SignatureMPCOutput {
     pub session_id: ObjectID,
     pub sender_address: PeraAddress,
     pub value: Vec<Vec<u8>>,
 }
 
-impl Message for ProofMPCOutput {
-    type DigestType = ProofMPCResultOnChainDigest;
-    const SCOPE: IntentScope = IntentScope::ProofMPCResultOnChain;
+impl Message for SignatureMPCOutput {
+    type DigestType = SignatureMPCOutputDigest;
+    const SCOPE: IntentScope = IntentScope::SignatureMPCOutput;
 
     fn digest(&self) -> Self::DigestType {
-        ProofMPCResultOnChainDigest::new(default_hash(self))
+        SignatureMPCOutputDigest::new(default_hash(self))
     }
 }
 
-pub type ProofMPCResultOnChainEnvelope<S> = Envelope<ProofMPCOutput, S>;
-pub type SignedProofMPCResultOnChain = ProofMPCResultOnChainEnvelope<AuthoritySignInfo>;
+pub type SignatureMPCOutputEnvelope<S> = Envelope<SignatureMPCOutput, S>;
+pub type SignedSignatureMPCOutput = SignatureMPCOutputEnvelope<AuthoritySignInfo>;

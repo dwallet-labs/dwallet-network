@@ -97,7 +97,7 @@ pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
     SignatureMPCMessage(AuthorityName, Vec<u8>, [u8; 32]),
-    ProofMPCStatements(Vec<Vec<u8>>, ObjectID, PeraAddress),
+    SignatureMPCOutput(Vec<Vec<u8>>, ObjectID, PeraAddress),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -140,7 +140,7 @@ impl Debug for ConsensusTransactionKey {
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
             }
-            ConsensusTransactionKey::ProofMPCStatements(statements, session_id, sender_address) => {
+            ConsensusTransactionKey::SignatureMPCOutput(statements, session_id, sender_address) => {
                 write!(
                     f,
                     "ProofMPCStatements({:?}, {:?}, {:?})",
@@ -479,8 +479,6 @@ impl ConsensusTransaction {
         session_id: ObjectID,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        // message.hash(&mut hasher);
-        println!("session id: {:?}", session_id.into_bytes());
         session_id.into_bytes().hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
@@ -489,18 +487,18 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_proof_mpc_statements(
-        statements: Vec<Vec<u8>>,
+    pub fn new_signature_mpc_output(
+        value: Vec<Vec<u8>>,
         session_id: ObjectID,
         sender_address: PeraAddress,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        statements.hash(&mut hasher);
+        value.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
             kind: ConsensusTransactionKind::SignatureMPCOutput(
-                statements,
+                value,
                 session_id,
                 sender_address,
             ),
@@ -589,7 +587,7 @@ impl ConsensusTransaction {
                 statements,
                 session_id,
                 sender_address,
-            ) => ConsensusTransactionKey::ProofMPCStatements(
+            ) => ConsensusTransactionKey::SignatureMPCOutput(
                 statements.clone(),
                 *session_id,
                 *sender_address,

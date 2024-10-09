@@ -564,7 +564,7 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
-            TransactionKind::ProofMPCComplete(output) => {
+            TransactionKind::SignatureMPCOutput(output) => {
                 Self::SignatureMPCOutput(PeraSignatureMPCOutput{
                     session_id: output.session_id,
                     sender_address: output.sender_address,
@@ -670,7 +670,7 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
-            TransactionKind::ProofMPCComplete(output) => {
+            TransactionKind::SignatureMPCOutput(output) => {
                 Self::SignatureMPCOutput(
                     PeraSignatureMPCOutput {
                         session_id: output.session_id,

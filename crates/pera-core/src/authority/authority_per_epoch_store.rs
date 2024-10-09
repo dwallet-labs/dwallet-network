@@ -101,7 +101,7 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::messages_signature_mpc::ProofMPCOutput;
+use pera_types::messages_signature_mpc::SignatureMPCOutput;
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -3697,7 +3697,7 @@ impl AuthorityPerEpochStore {
         // System transactions either contain a shared object or are proof MPC output transactions.
         let is_proof_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
-            TransactionKind::ProofMPCComplete(_)
+            TransactionKind::SignatureMPCOutput(_)
         );
         assert!(system_transaction.contains_shared_object() || is_proof_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())

@@ -59,7 +59,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
-    use pera_types::messages_signature_mpc::ProofMPCOutput;
+    use pera_types::messages_signature_mpc::SignatureMPCOutput;
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -717,8 +717,8 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
-            TransactionKind::ProofMPCComplete(data) => {
-                let res = setup_signature_mpc_result(
+            TransactionKind::SignatureMPCOutput(data) => {
+                let res = setup_and_execute_signature_mpc_output(
                     data,
                     temporary_store,
                     tx_ctx,
@@ -1099,8 +1099,8 @@ mod checked {
         builder
     }
 
-    fn setup_signature_mpc_result(
-        data: ProofMPCOutput,
+    fn setup_and_execute_signature_mpc_output(
+        data: SignatureMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
         tx_ctx: &mut TxContext,
         move_vm: &Arc<MoveVM>,

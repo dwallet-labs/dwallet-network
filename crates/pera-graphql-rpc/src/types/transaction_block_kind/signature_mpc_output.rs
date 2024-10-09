@@ -1,5 +1,5 @@
 use async_graphql::Object;
-use pera_types::messages_signature_mpc::ProofMPCOutput as NativeSignatureMPCOutput;
+use pera_types::messages_signature_mpc::SignatureMPCOutput as NativeSignatureMPCOutput;
 use crate::types::base64::Base64;
 
 

@@ -189,7 +189,7 @@ impl<P: CreatableParty> MPCInstance<P> {
 
         /// TODO: Make it serializable
         let statements = vec![];
-        Some(ConsensusTransaction::new_proof_mpc_statements(
+        Some(ConsensusTransaction::new_signature_mpc_output(
             statements,
             self.session_id.clone(),
             self.sender_address.clone(),

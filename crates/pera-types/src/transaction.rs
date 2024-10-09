@@ -19,7 +19,7 @@ use crate::messages_consensus::{
     ConsensusCommitPrologue, ConsensusCommitPrologueV2, ConsensusCommitPrologueV3,
     ConsensusDeterminedVersionAssignments,
 };
-use crate::messages_signature_mpc::ProofMPCOutput;
+use crate::messages_signature_mpc::SignatureMPCOutput;
 use crate::object::{MoveObject, Object, Owner};
 use crate::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use crate::signature::{GenericSignature, VerifyParams};
@@ -293,7 +293,7 @@ pub enum TransactionKind {
 
     ConsensusCommitPrologueV3(ConsensusCommitPrologueV3),
     // .. more transaction types go here
-    ProofMPCComplete(ProofMPCOutput),
+    SignatureMPCOutput(SignatureMPCOutput),
 }
 
 /// EndOfEpochTransactionKind
@@ -1178,7 +1178,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV3(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
-            | TransactionKind::ProofMPCComplete(_)
+            | TransactionKind::SignatureMPCOutput(_)
             | TransactionKind::EndOfEpochTransaction(_) => true,
             TransactionKind::ProgrammableTransaction(_) => false,
         }
@@ -1273,7 +1273,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV3(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
-            | TransactionKind::ProofMPCComplete(_)
+            | TransactionKind::SignatureMPCOutput(_)
             | TransactionKind::EndOfEpochTransaction(_) => vec![],
             TransactionKind::ProgrammableTransaction(pt) => pt.receiving_objects(),
         }
@@ -1333,7 +1333,7 @@ impl TransactionKind {
                 after_dedup
             }
             Self::ProgrammableTransaction(p) => return p.input_objects(),
-            Self::ProofMPCComplete(_) => vec![InputObjectKind::MovePackage(PERA_SYSTEM_PACKAGE_ID)],
+            Self::SignatureMPCOutput(_) => vec![InputObjectKind::MovePackage(PERA_SYSTEM_PACKAGE_ID)],
         };
         // Ensure that there are no duplicate inputs. This cannot be removed because:
         // In [`AuthorityState::check_locks`], we check that there are no duplicate mutable
@@ -1397,7 +1397,7 @@ impl TransactionKind {
                     ));
                 }
             }
-            TransactionKind::ProofMPCComplete(_) => {}
+            TransactionKind::SignatureMPCOutput(_) => {}
         };
         Ok(())
     }
@@ -1436,7 +1436,7 @@ impl TransactionKind {
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
-            Self::ProofMPCComplete(_) => "ProofMPCComplete",
+            Self::SignatureMPCOutput(_) => "SignatureMPCOutput",
         }
     }
 }
@@ -1488,8 +1488,8 @@ impl Display for TransactionKind {
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind : End of Epoch Transaction")?;
             }
-            Self::ProofMPCComplete(_) => {
-                writeln!(writer, "Transaction Kind : Proof MPC Complete")?;
+            Self::SignatureMPCOutput(_) => {
+                writeln!(writer, "Transaction Kind : Signature MPC Output")?;
             }
         }
         write!(f, "{}", writer)
@@ -2638,8 +2638,8 @@ impl VerifiedTransaction {
             .pipe(Self::new_from_verified)
     }
 
-    pub fn new_proof_mpc_system_transaction(data: ProofMPCOutput) -> Self {
-        TransactionKind::ProofMPCComplete(data).pipe(Self::new_system_transaction)
+    pub fn new_signature_mpc_output_system_transaction(data: SignatureMPCOutput) -> Self {
+        TransactionKind::SignatureMPCOutput(data).pipe(Self::new_system_transaction)
     }
 }
 

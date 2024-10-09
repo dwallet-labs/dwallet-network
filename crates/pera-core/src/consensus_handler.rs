@@ -35,7 +35,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_signature_mpc::ProofMPCOutput;
+use pera_types::messages_signature_mpc::SignatureMPCOutput;
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -388,8 +388,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             }
                         }
 
-                        let transaction = VerifiedTransaction::new_proof_mpc_system_transaction(
-                            ProofMPCOutput {
+                        let transaction = VerifiedTransaction::new_signature_mpc_output_system_transaction(
+                            SignatureMPCOutput {
                                 session_id: *session_id,
                                 sender_address: *sender_address,
                                 value: value.clone(),
