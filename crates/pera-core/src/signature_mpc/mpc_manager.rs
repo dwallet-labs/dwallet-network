@@ -12,6 +12,7 @@ use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
 use mpc::{AdvanceResult, two_party::Round};
+use mpc::party::Advance;
 
 use rand_core::OsRng;
 use rayon::prelude::*;
@@ -40,7 +41,7 @@ struct SignatureMPCMessage {
 
 /// A wrapper for the generic Party trait that allows creating new instances of the Party from only the threshold.
 /// Should be implemented internally in newer versions of the [`proof`] crate.
-pub trait CreatableParty: Round {
+pub trait CreatableParty: Advance {
     fn new(threshold: PartyID) -> Self;
 }
 
@@ -69,7 +70,7 @@ struct SignatureMPCInstance<P: CreatableParty> {
     status: MPCSessionStatus<P::Output>,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
-    pending_messages: HashMap<PartyID, P::IncomingMessage>,
+    pending_messages: HashMap<PartyID, P::Message>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
@@ -152,7 +153,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns None only if the epoch switched in the middle and was not available.
-    fn new_signature_mpc_message(&self, message: P::IncomingMessage) -> Option<ConsensusTransaction> {
+    fn new_signature_mpc_message(&self, message: P::Message) -> Option<ConsensusTransaction> {
         let Some(epoch_store) = self.epoch_store.upgrade() else {
             // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
             return None;
