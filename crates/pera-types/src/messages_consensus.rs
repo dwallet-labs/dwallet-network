@@ -97,7 +97,7 @@ pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
     SignatureMPCMessage(AuthorityName, Vec<u8>, [u8; 32]),
-    SignatureMPCOutput(Vec<Vec<u8>>, ObjectID, PeraAddress),
+    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -278,7 +278,7 @@ pub enum ConsensusTransactionKind {
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
     SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    SignatureMPCOutput(Vec<Vec<u8>>, ObjectID, PeraAddress),
+    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -488,7 +488,7 @@ impl ConsensusTransaction {
     }
 
     pub fn new_signature_mpc_output(
-        value: Vec<Vec<u8>>,
+        value: Vec<u8>,
         session_id: ObjectID,
         sender_address: PeraAddress,
     ) -> Self {

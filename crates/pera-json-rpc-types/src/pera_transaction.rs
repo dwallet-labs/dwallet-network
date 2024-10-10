@@ -1699,7 +1699,7 @@ pub enum PeraEndOfEpochTransactionKind {
 pub struct PeraSignatureMPCOutput {
     pub session_id: ObjectID,
     pub sender_address: PeraAddress,
-    pub value: Vec<Vec<u8>>,
+    pub value: Vec<u8>,
 }
 
 #[serde_as]

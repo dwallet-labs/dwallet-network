@@ -54,7 +54,7 @@ pub struct SignatureMPCMessage {
 pub struct SignatureMPCOutput {
     pub session_id: ObjectID,
     pub sender_address: PeraAddress,
-    pub value: Vec<Vec<u8>>,
+    pub value: Vec<u8>,
 }
 
 impl Message for SignatureMPCOutput {

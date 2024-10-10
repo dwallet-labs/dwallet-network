@@ -371,38 +371,44 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         );
 
                         let mut signature_mpc_manager = self.epoch_store.proof_mpc_manager.get();
-                        match signature_mpc_manager {
+                        let is_valid_transaction = match signature_mpc_manager {
                             Some(mpc_manager) => {
                                 let signature_mpc_manager = mpc_manager.lock().await;
-                                if !signature_mpc_manager.verify_output(value, session_id) {
-                                    // TODO (#263): Mark the validator who sent this message as malicious
-                                    error!(
-                                        "ProofMPCOutput output from session {:?} and party {:?} failed verification",
-                                        session_id, authority_index
-                                    );
+                                match signature_mpc_manager.try_verify_output(value, session_id) {
+                                    Ok(is_valid) => is_valid,
+                                    Err(e) => {
+                                        error!(
+                                            "Error verifying ProofMPCOutput output from session {:?} and party {:?}: {:?}",
+                                            session_id, authority_index, e
+                                        );
+                                        false
+                                    }
                                 }
                             }
                             None => {
                                 // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
                                 error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
+                                false
                             }
-                        }
+                        };
 
-                        let transaction =
-                            VerifiedTransaction::new_signature_mpc_output_system_transaction(
-                                SignatureMPCOutput {
-                                    session_id: *session_id,
-                                    sender_address: *sender_address,
-                                    value: value.clone(),
-                                },
-                            );
-                        let transaction =
-                            VerifiedExecutableTransaction::new_system(transaction, self.epoch());
-                        transactions.push((
-                            empty_bytes.as_slice(),
-                            SequencedConsensusTransactionKind::System(transaction),
-                            consensus_output.leader_author_index(),
-                        ));
+                        if is_valid_transaction{
+                            let transaction =
+                                VerifiedTransaction::new_signature_mpc_output_system_transaction(
+                                    SignatureMPCOutput {
+                                        session_id: *session_id,
+                                        sender_address: *sender_address,
+                                        value: value.clone(),
+                                    },
+                                );
+                            let transaction =
+                                VerifiedExecutableTransaction::new_system(transaction, self.epoch());
+                            transactions.push((
+                                empty_bytes.as_slice(),
+                                SequencedConsensusTransactionKind::System(transaction),
+                                consensus_output.leader_author_index(),
+                            ));
+                        }
                     }
 
                     if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =

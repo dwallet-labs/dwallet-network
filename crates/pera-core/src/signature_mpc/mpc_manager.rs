@@ -178,18 +178,15 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
         ))
     }
 
-    fn new_proof_mpc_output_message(&self, statements: P::Output) -> Option<ConsensusTransaction> {
+    fn new_proof_mpc_output_message(&self, output: P::Output) -> Option<ConsensusTransaction> {
         let Ok(epoch_store) = self.epoch_store() else {
             return None;
         };
         if authority_name_to_party_id(epoch_store.name, &epoch_store).unwrap() != 3 {
             return None;
         }
-
-        /// TODO: Make it serializable
-        let statements = vec![];
         Some(ConsensusTransaction::new_signature_mpc_output(
-            statements,
+            output,
             self.session_id.clone(),
             self.sender_address.clone(),
         ))
@@ -291,10 +288,16 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         }
     }
 
-    pub fn verify_output(&self, output: &Vec<Vec<u8>>, session_id: &ObjectID) -> bool {
-        // TODO: Verify the output properly once we change to work with crypto
-        // At the moment this means to compare the output with the stored output
-        true
+    pub fn try_verify_output(&self, output: &Vec<u8>, session_id: &ObjectID) -> anyhow::Result<bool> {
+        let Some(instance) = self.mpc_instances.get(session_id) else {
+            return Ok(false);
+        };
+        let MPCSessionStatus::Finished(&stored_output) = instance.status else {
+            return Ok(false);
+        };
+
+        let output = bcs::from_bytes(output)?;
+        stored_output.value() == output
     }
 
     /// Filter the relevant MPC events from the transaction events & handle them
