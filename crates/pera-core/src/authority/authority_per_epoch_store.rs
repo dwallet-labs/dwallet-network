@@ -3197,6 +3197,7 @@ impl AuthorityPerEpochStore {
         // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
         if let Some(signature_mpc_manager) = self.proof_mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
+            // TODO (#282): Process the end of delivery asynchronously
             signature_mpc_manager.handle_end_of_delivery().await?;
         };
 
