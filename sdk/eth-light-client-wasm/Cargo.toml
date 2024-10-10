@@ -7,7 +7,7 @@ publish = false
 
 [dependencies]
 bcs = "0.1.6"
-helios = { git = "https://github.com/dwallet-labs/helios", branch = "main" }
+helios = { git = "https://github.com/dwallet-labs/helios" }
 hex = "0.4.3"
 serde_json = "1.0.128"
 serde = "1.0.210"
