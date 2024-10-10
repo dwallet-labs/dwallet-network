@@ -43,7 +43,8 @@ pub trait CreatableParty: Party {
     fn new(threshold: PartyID) -> Self;
 }
 
-
+/// Convert a given authority name (address) to it's corresponding party ID.
+/// The party ID is the index of the authority in the committee.
 fn authority_name_to_party_id(
     authority_name: AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
@@ -65,8 +66,10 @@ fn authority_name_to_party_id(
 /// and the messages that are pending to be sent to the instance.
 struct MPCInstance<P: CreatableParty> {
     status: MPCSessionStatus<P::Output>,
+    /// The messages that are pending to be executed while advancing the instance
+    /// We need to accumulate threshold of those before advancing the instance
     pending_messages: HashMap<PartyID, P::Message>,
-    consensus_adapter: Arc<ConsensusAdapter>,
+    consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
     mpc_threshold_number_of_parties: usize,
@@ -75,13 +78,11 @@ struct MPCInstance<P: CreatableParty> {
     party: Option<P>,
 }
 
-
-
 type ProofMPCMessage = ConsensusTransaction;
 
 impl<P: CreatableParty> MPCInstance<P> {
     fn new(
-        consensus_adapter: Arc<ConsensusAdapter>,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
         mpc_threshold_number_of_parties: usize,
         session_id: ObjectID,
@@ -242,19 +243,18 @@ pub struct SignatureMPCManager<P: CreatableParty> {
     pending_instances_queue: VecDeque<ObjectID>,
     // TODO (#257): Make sure the counter is always in sync with the number of active instances.
     active_instances_counter: usize,
-    consensus_adapter: Arc<ConsensusAdapter>,
+    consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
     mpc_threshold_number_of_parties: usize,
 }
-
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
 unsafe impl<P: CreatableParty + Sync + Send> Send for MPCInstance<P> {}
 
 impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     pub fn new(
-        consensus_adapter: Arc<ConsensusAdapter>,
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
         max_active_mpc_instances: usize,
         num_of_parties: usize,

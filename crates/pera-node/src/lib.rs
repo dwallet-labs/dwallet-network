@@ -1294,7 +1294,7 @@ impl PeraNode {
 
         epoch_store
             .set_proof_mpc_manager(SignatureMPCManager::new(
-                consensus_adapter.clone(),
+                Arc::new(consensus_adapter.clone()),
                 Arc::downgrade(&epoch_store),
                 config.max_active_signature_mpc_instances,
                 epoch_store.committee().voting_rights.len(),
