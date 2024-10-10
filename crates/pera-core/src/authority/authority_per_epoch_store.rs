@@ -922,13 +922,14 @@ impl AuthorityPerEpochStore {
         result
     }
 
-    pub async fn set_signature_mpc_manager(
+    /// A function to initiate the proof MPC manager when a new epoch starts.
+    pub async fn set_proof_mpc_manager(
         &self,
-        mut signature_mpc: SignatureMPCManager<ProofParty>,
+        mut manager: SignatureMPCManager<ProofParty>,
     ) -> PeraResult<()> {
         if self
             .proof_mpc_manager
-            .set(tokio::sync::Mutex::new(signature_mpc))
+            .set(tokio::sync::Mutex::new(manager))
             .is_err()
         {
             error!(
