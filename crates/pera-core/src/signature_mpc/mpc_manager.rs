@@ -337,7 +337,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     }
 
     /// Handles a message by forwarding it to the relevant MPC instance
-    /// If the instance does not exist, the sender is punished
+    /// If the instance does not exist, punish the sender
     pub fn handle_message(
         &mut self,
         message: &[u8],
@@ -345,7 +345,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         session_id: ObjectID,
     ) -> PeraResult<()> {
         let Some(mut instance) = self.mpc_instances.get_mut(&session_id) else {
-            println!("instance {:?} not found", session_id);
+            error!("received a message for instance {:?} which does not exist", session_id);
             // TODO (#261): Punish a validator that sends a message related to a non-existing mpc instance
             return Ok(());
         };
