@@ -243,17 +243,6 @@ pub fn sui_state_proof_verify_link_cap(
         }
     }
 
-<<<<<<< HEAD
-    // ensure that the execution digest matches the actual digest of the passed transaction
-
-    return Ok(NativeResult::ok(
-        cost,
-        smallvec![
-            Value::vector_u8(bcs::to_bytes(&sui_cap_ids).unwrap()),
-            Value::vector_u8(bcs::to_bytes(&dwallet_cap_ids).unwrap())
-        ],
-    ));
-=======
         
         return Ok(NativeResult::ok(
             cost,
@@ -262,7 +251,6 @@ pub fn sui_state_proof_verify_link_cap(
                 Value::vector_u8(bcs::to_bytes(&dwallet_cap_ids).unwrap())
             ],
         ));
->>>>>>> 8d807450a0 (addressed fb PR)
 }
 
 /***************************************************************************************************
@@ -391,19 +379,7 @@ pub fn sui_state_proof_verify_transaction(
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
 
-<<<<<<< HEAD
-    let (cap_ids_nested, messages_nested): (Vec<SuiAddress>, Vec<Vec<Vec<u8>>>) =
-        results.into_iter().unzip();
-
-    // Flatten the messages and associate with cap_ids
-    let (cap_ids, messages): (Vec<SuiAddress>, Vec<Vec<u8>>) = cap_ids_nested
-        .into_iter()
-        .zip(messages_nested.into_iter())
-        .flat_map(|(cap_id, msgs_vec)| msgs_vec.into_iter().map(move |msg| (cap_id.clone(), msg)))
-        .unzip();
-=======
     let (cap_ids, messages): (Vec<SuiAddress>, Vec<Vec<Vec<u8>>>) = results.into_iter().unzip();
->>>>>>> 8d807450a0 (addressed fb PR)
 
     Ok(NativeResult::ok(
         cost,
