@@ -1,11 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::base_types::{AuthorityName, ObjectRef, TransactionDigest};
+use crate::base_types::{AuthorityName, ObjectRef, PeraAddress, TransactionDigest};
 use crate::base_types::{ConciseableName, ObjectID, SequenceNumber};
 use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
+};
+use crate::messages_signature_mpc::{
+    SignatureMPCMessageKind, SignatureMPCRound, SignatureMPCSessionID,
 };
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
@@ -93,6 +96,8 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
+    SignatureMPCMessage(AuthorityName, Vec<u8>, [u8; 32]),
+    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -108,6 +113,9 @@ impl Debug for ConsensusTransactionKey {
             Self::Certificate(digest) => write!(f, "Certificate({:?})", digest),
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
+            }
+            Self::SignatureMPCMessage(name, _, _) => {
+                write!(f, "SignatureMPCMessage({:?})", name.concise(),)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
             Self::CapabilityNotification(name, generation) => write!(
@@ -131,6 +139,13 @@ impl Debug for ConsensusTransactionKey {
             }
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
+            }
+            ConsensusTransactionKey::SignatureMPCOutput(value, session_id, sender_address) => {
+                write!(
+                    f,
+                    "SignatureMPCOutput({:?}, {:?}, {:?})",
+                    value, session_id, sender_address
+                )
             }
         }
     }
@@ -262,6 +277,8 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
+    SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -456,6 +473,34 @@ impl ConsensusTransaction {
         }
     }
 
+    pub fn new_signature_mpc_message(
+        authority: AuthorityName,
+        message: Vec<u8>,
+        session_id: ObjectID,
+    ) -> Self {
+        let mut hasher = DefaultHasher::new();
+        session_id.into_bytes().hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
+        }
+    }
+
+    pub fn new_signature_mpc_output(
+        value: Vec<u8>,
+        session_id: ObjectID,
+        sender_address: PeraAddress,
+    ) -> Self {
+        let mut hasher = DefaultHasher::new();
+        value.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address),
+        }
+    }
+
     pub fn new_randomness_dkg_message(
         authority: AuthorityName,
         versioned_message: &VersionedDkgMessage,
@@ -526,6 +571,20 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
+            }
+            ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id) => {
+                ConsensusTransactionKey::SignatureMPCMessage(
+                    *authority,
+                    message.clone(),
+                    session_id.into_bytes(),
+                )
+            }
+            ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address) => {
+                ConsensusTransactionKey::SignatureMPCOutput(
+                    value.clone(),
+                    *session_id,
+                    *sender_address,
+                )
             }
         }
     }
