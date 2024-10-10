@@ -8,7 +8,7 @@
 module pera_system::proof {
     use pera::event;
 
-    /// Event to start a `MockMPCSession`, caught by the Validators.
+    /// Event to start a `ProofMPCSession`, caught by the Validators.
     public struct CreatedProofMPCSessionEvent has copy, drop {
         session_id: ID,
         sender: address,
@@ -20,6 +20,7 @@ module pera_system::proof {
         sender: address,
     }
 
+    /// Stores the session data for the proof MPC flow.
     public struct ProofSessionData has key {
         id: UID,
     }
@@ -44,12 +45,14 @@ module pera_system::proof {
         transfer::freeze_object(session_data);
     }
 
+    /// Stores the result of the proof MPC flow so it will be accessible for the initiating user.
     public struct ProofSessionResult has key {
         id: UID,
         session_id: ID,
         proof: vector<vector<u8>>,
     }
 
+    /// Function to create the proof session result.
    public fun create_proof_session_result(session_initiator: address, session_id: ID, output: vector<vector<u8>>, ctx: &mut TxContext) {
        let proof_session_result = ProofSessionResult {
            id: object::new(ctx),
