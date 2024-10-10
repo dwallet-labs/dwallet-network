@@ -75,10 +75,9 @@ struct SignatureMPCInstance<P: CreatableParty> {
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
-
-    /// The threshold number of parties required to participate in each round of the Proof MPC protocol
-    threshold_number_of_parties: usize,
-    parties: HashSet<PartyID>,
+    /// The total number of parties in the chain
+    /// We can calculate the threshold and parties IDs (indexes) from it
+    number_of_parties: usize,
     session_id: ObjectID,
     sender_address: PeraAddress,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
@@ -92,10 +91,9 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
         epoch: EpochId,
-        mpc_threshold_number_of_parties: usize,
         session_id: ObjectID,
         sender_address: PeraAddress,
-        parties: HashSet<PartyID>,
+        number_of_parties: usize,
     ) -> Self {
         Self {
             status: MPCSessionStatus::Active,
@@ -103,11 +101,10 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
             consensus_adapter: consensus_adapter.clone(),
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
-            threshold_number_of_parties: mpc_threshold_number_of_parties,
             session_id,
             sender_address,
             party: None,
-            parties,
+            number_of_parties,
         }
     }
 
@@ -126,8 +123,12 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
         let party: P = if let Some(existing_party) = optional_party {
             existing_party
         } else {
+            let mut parties = HashSet::new();
+            for i in 0..self.number_of_parties {
+                parties.insert(i as PartyID);
+            }
             P::new(
-                self.parties.clone(),
+                parties,
                 authority_name_to_party_id(self.epoch_store()?.name, &*(self.epoch_store()?))?,
             )
         };
@@ -254,10 +255,11 @@ pub struct SignatureMPCManager<P: CreatableParty> {
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
-    mpc_threshold_number_of_parties: usize,
     auxiliary_input: P::AuxiliaryInput,
-    parties: HashSet<PartyID>,
     pub epoch_id: EpochId,
+    /// The total number of parties in the chain
+    /// We can calculate the threshold and parties IDs (indexes) from it
+    number_of_parties: usize,
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
@@ -269,13 +271,9 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         epoch_store: Weak<AuthorityPerEpochStore>,
         epoch_id: EpochId,
         max_active_mpc_instances: usize,
-        num_of_parties: usize,
+        number_of_parties: usize,
         auxiliary_input: P::AuxiliaryInput,
     ) -> Self {
-        let mut parties = HashSet::new();
-        for i in 0..num_of_parties {
-            parties.insert(i as PartyID);
-        }
         Self {
             mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
@@ -285,9 +283,8 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             epoch_id,
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
-            mpc_threshold_number_of_parties: ((num_of_parties * 2) + 2) / 3,
             auxiliary_input,
-            parties,
+            number_of_parties,
         }
     }
 
@@ -317,8 +314,9 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             .mpc_instances
             .iter_mut()
             .filter_map(|(_, instance)| {
+                let threshold_number_of_parties = ((self.number_of_parties * 2) + 2) / 3;
                 if (instance.status == MPCSessionStatus::Active
-                    && instance.pending_messages.len() >= self.mpc_threshold_number_of_parties)
+                    && instance.pending_messages.len() >= threshold_number_of_parties)
                     || (instance.party.is_none() && instance.status == MPCSessionStatus::Active)
                 {
                     Some(instance)
@@ -384,10 +382,9 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.epoch_id,
-            self.mpc_threshold_number_of_parties,
             event.session_id.clone().bytes,
             event.sender.clone(),
-            self.parties.clone(),
+            self.number_of_parties,
         );
         self.mpc_instances
             .insert(event.session_id.clone().bytes, new_instance);
