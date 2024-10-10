@@ -8,7 +8,7 @@ use rand_core::{CryptoRngCore, OsRng};
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
-use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
+use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent};
 
 /// Create dummy witnesses for the dummy proof flow.
 fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
@@ -37,7 +37,7 @@ type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp2
 
 impl CreatableParty for ProofParty {
     type InitEvent = CreatedProofMPCEvent;
-    type FinalizeEvent = CreatedProofMPCEvent;
+    type FinalizeEvent = CompletedProofMPCSessionEvent;
 
     fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self {
         let public_parameters =

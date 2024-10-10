@@ -17,15 +17,16 @@ pub trait MPCEvent {
     fn event_emitter(&self) -> PeraAddress;
 }
 
+pub const PROOF_MODULE_NAME: &IdentStr = ident_str!("proof");
+pub const CREATED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CreatedProofMPCSessionEvent");
+pub const COMPLETED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CompletedProofMPCSessionEvent");
+
 /// Rust version of the Move [`pera_system::dwallet::CreatedProofMPCSessionEvent`] type.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct CreatedProofMPCEvent {
     pub session_id: ID,
     pub sender: PeraAddress,
 }
-
-pub const PROOF_MODULE_NAME: &IdentStr = ident_str!("proof");
-pub const CREATED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CreatedProofMPCSessionEvent");
 
 impl MPCEvent for CreatedProofMPCEvent {
     /// This function allows comparing this event with the Move event.
@@ -34,6 +35,33 @@ impl MPCEvent for CreatedProofMPCEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: CREATED_PROOF_STRUCT_NAME.to_owned(),
+            module: PROOF_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+
+    fn session_id(&self) -> ID {
+        self.session_id.clone()
+    }
+
+    fn event_emitter(&self) -> PeraAddress {
+        self.sender.clone()
+    }
+}
+
+/// Rust version of the Move [`pera_system::dwallet::CompletedProofMPCSessionEvent`] type.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct CompletedProofMPCSessionEvent {
+    session_id: ID,
+    sender: PeraAddress,
+}
+
+impl MPCEvent for CompletedProofMPCSessionEvent {
+    /// It is used to detect [`CompletedProofMPCSessionEvent`] events from the chain and finalize the MPC session.
+    fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: COMPLETED_PROOF_STRUCT_NAME.to_owned(),
             module: PROOF_MODULE_NAME.to_owned(),
             type_params: vec![],
         }

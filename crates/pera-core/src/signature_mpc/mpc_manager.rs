@@ -152,7 +152,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
-                self.status = MPCSessionStatus::Finished(output.clone().into());
+                self.status = MPCSessionStatus::Finalizing(output.clone().into());
                 self.new_proof_mpc_output_message(output.into())
             }
         };
@@ -230,7 +230,8 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     fn handle_message(&mut self, message: SignatureMPCMessage) -> PeraResult<()> {
         match self.status {
             MPCSessionStatus::Active => self.store_message(&message, self.epoch_store()?),
-            MPCSessionStatus::Finished(_) => {
+            MPCSessionStatus::Finalizing(_)
+            | MPCSessionStatus::Finished(_) => {
                 // Do nothing
                 Ok(())
             }
@@ -240,11 +241,13 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
 
 /// Possible statuses of an MPC session:
 /// - Active: The session is currently running; new messages will be forwarded to the session.
-/// - Finished: The session is finished and pending removal; incoming messages will not be forwarded,
+/// - Finalizing: The session is finished and pending removal; incoming messages will not be forwarded,
+/// - Finished: The session removed from active instances; incoming messages will not be forwarded,
 /// but will not be marked as malicious.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 enum MPCSessionStatus<Output> {
     Active,
+    Finalizing(Output),
     Finished(Output),
 }
 
@@ -304,7 +307,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         let Some(instance) = self.mpc_instances.get(session_id) else {
             return Ok(false);
         };
-        let MPCSessionStatus::Finished(stored_output) = &instance.status else {
+        let MPCSessionStatus::Finalizing(stored_output) = &instance.status else {
             return Ok(false);
         };
 
@@ -322,7 +325,12 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             if P::InitEvent::type_() == event.type_ {
                 let deserialized_event = bcs::from_bytes(&event.contents)?;
                 self.push_new_mpc_instance(deserialized_event);
-                debug!("event: CreatedProofMPCEvent {:?}", event);
+                debug!("event: Init MPC Session {:?}", event);
+            };
+            if P::FinalizeEvent::type_() == event.type_ {
+                let deserialized_event = bcs::from_bytes(&event.contents)?;
+                self.finalize_mpc_instance(deserialized_event)?;
+                debug!("event: Finalize MPC Session {:?}", event);
             };
         }
         Ok(())
@@ -417,5 +425,28 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             "Added MPCInstance to MPC manager for session_id {:?}",
             event.session_id()
         );
+    }
+
+    fn finalize_mpc_instance(&mut self, event: P::FinalizeEvent) -> PeraResult {
+        let session_id = event.session_id().bytes;
+        let mut instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
+            PeraError::InvalidCommittee(format!(
+                "Received a finalize event for session ID {:?} that does not exist",
+                event.session_id()
+            ))
+        })?;
+        if let MPCSessionStatus::Finalizing(output) = &instance.status {
+            instance.status = MPCSessionStatus::Finished(output.clone());
+            self.active_instances_counter -= 1;
+            info!(
+                "Finalized MPCInstance for session_id {:?}",
+                event.session_id()
+            );
+            return Ok(());
+        }
+        Err(PeraError::Unknown(format!(
+            "Received a finalize event for session ID {:?} that is not in the finalizing state; current state: {:?}",
+            event.session_id(), instance.status
+        )))
     }
 }
