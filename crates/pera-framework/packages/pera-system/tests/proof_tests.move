@@ -2,7 +2,7 @@
 module pera_system::proof_tests {
     use pera::test_scenario;
     use pera::test_scenario::TransactionEffects;
-    use pera_system::proof::{launch_proof_mpc_flow, create_proof_session_result};
+    use pera_system::proof::{launch_proof_mpc_flow, create_proof_session_output};
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const EWrongEventNumber: u64 = 0;
@@ -32,13 +32,13 @@ module pera_system::proof_tests {
     }
 
     #[test]
-    public fun test_create_proof_session_result() {
+    public fun test_create_proof_session_output() {
         let sender = @0x1;
         let mut scenario = test_scenario::begin(sender);
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
-            create_proof_session_result(@0xC, object::id_from_address(@0xD), vector::empty(), ctx);
+            create_proof_session_output(@0xC, object::id_from_address(@0xD), vector::empty(), ctx);
         };
         let effects: TransactionEffects = test_scenario::end(scenario);
         let events_num = test_scenario::num_user_events(&effects);

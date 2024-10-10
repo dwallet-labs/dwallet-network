@@ -1113,7 +1113,7 @@ mod checked {
             let res = builder.move_call(
                 PERA_SYSTEM_PACKAGE_ID.into(),
                 ident_str!("proof").to_owned(),
-                ident_str!("create_proof_session_result").to_owned(),
+                ident_str!("create_proof_session_output").to_owned(),
                 vec![],
                 vec![
                     CallArg::Pure(data.sender_address.to_vec()),

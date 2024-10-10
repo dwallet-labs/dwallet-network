@@ -9,7 +9,8 @@ use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
 
-pub fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
+/// Create dummy witnesses for the dummy proof flow.
+fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
     language_public_parameters: &Lang::PublicParameters,
     batch_size: usize,
     rng: &mut impl CryptoRngCore,
@@ -25,10 +26,12 @@ pub fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
     .collect()
 }
 
+/// A party in the proof MPC flow.
 pub type ProofParty = proof::aggregation::asynchronous::Party<
     Proof<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang, PhantomData<()>>,
 >;
 
+/// The language used in the proof MPC flow.
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
 
 impl CreatableParty for ProofParty {
@@ -55,9 +58,11 @@ impl CreatableParty for ProofParty {
     }
 }
 
+/// The public parameters for the proof MPC flow.
 type ProofPublicParameters =
     maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
 
+/// Generate the public parameters for the proof MPC flow.
 fn generate_language_public_parameters<const REPETITIONS: usize>() -> ProofPublicParameters {
     let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
 

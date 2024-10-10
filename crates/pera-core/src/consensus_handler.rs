@@ -8,7 +8,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::signature_mpc::parties_implementations::ProofParty;
+use crate::signature_mpc::proof::ProofParty;
 use crate::{
     authority::{
         authority_per_epoch_store::{

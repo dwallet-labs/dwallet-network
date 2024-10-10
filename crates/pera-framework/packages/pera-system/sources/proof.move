@@ -8,7 +8,11 @@
 module pera_system::proof {
     use pera::event;
 
-    /// Event to start a `MockMPCSession`, caught by the Validators.
+    // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
+    const ENotSystemAddress: u64 = 0;
+    // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
+
+    /// Event to start a `ProofMPCSession`, caught by the Validators.
     public struct CreatedProofMPCSessionEvent has copy, drop {
         session_id: ID,
         sender: address,
@@ -20,6 +24,7 @@ module pera_system::proof {
         sender: address,
     }
 
+    /// Stores the session data for the proof MPC flow.
     public struct ProofSessionData has key {
         id: UID,
     }
@@ -44,14 +49,19 @@ module pera_system::proof {
         transfer::freeze_object(session_data);
     }
 
-    public struct ProofSessionResult has key {
+    /// Stores the result of the proof MPC flow so it will be accessible for the initiating user.
+    public struct ProofSessionOutput has key {
         id: UID,
         session_id: ID,
         proof: vector<vector<u8>>,
     }
 
-   public fun create_proof_session_result(session_initiator: address, session_id: ID, output: vector<vector<u8>>, ctx: &mut TxContext) {
-       let proof_session_result = ProofSessionResult {
+    /// Function to create the proof session output.
+    /// Creates it & transfers it to the user that initiated the proof MPC flow.
+    /// Should be called only as a system transaction after all the validators received & verified the rust `SignatureMPCOutput`.
+    public fun create_proof_session_output(session_initiator: address, session_id: ID, output: vector<vector<u8>>, ctx: &mut TxContext) {
+       assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+       let proof_session_result = ProofSessionOutput {
            id: object::new(ctx),
            session_id: session_id,
            proof: output,
