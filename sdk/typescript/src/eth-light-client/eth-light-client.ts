@@ -320,7 +320,7 @@ export const approveEthereumMessage = async (
 	let messageBcs = stringToArrayU8Bcs(message);
 
 	const tx2 = new TransactionBlock();
-	const [messageApprovals] = tx2.moveCall({
+	tx2.moveCall({
 		target: `${packageId}::${ethDWalletModuleName}::approve_message`,
 		arguments: [
 			tx2.object(ethDwalletCapId),
