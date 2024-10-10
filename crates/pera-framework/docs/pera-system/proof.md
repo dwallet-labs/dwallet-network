@@ -218,7 +218,7 @@ Function to launch proof MPC flow.
         session_id: session_id,
         <a href="proof.md#0x3_proof">proof</a>: output,
     };
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, @0xbca51aa9957d2f3ebf39b270119c644862c32111295cd9f29caa88a41aab8199);
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, session_initiator);
 
     <b>let</b> completed_proof_mpc_session_event = <a href="proof.md#0x3_proof_CompletedProofMPCSessionEvent">CompletedProofMPCSessionEvent</a> {
         session_id: session_id,

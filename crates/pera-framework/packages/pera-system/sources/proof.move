@@ -56,7 +56,7 @@ module pera_system::proof {
            session_id: session_id,
            proof: output,
        };
-       transfer::transfer(proof_session_result, @0xbca51aa9957d2f3ebf39b270119c644862c32111295cd9f29caa88a41aab8199);
+       transfer::transfer(proof_session_result, session_initiator);
 
        let completed_proof_mpc_session_event = CompletedProofMPCSessionEvent {
            session_id: session_id,

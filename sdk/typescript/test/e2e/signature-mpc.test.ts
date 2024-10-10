@@ -13,7 +13,8 @@ describe('Test signature mpc', () => {
 		toolbox = await setup();
 	});
 
-	it('A simple test to launch the Proof MPC flow', async () => {
+	it('should create proof MPC Event', async () => {
 		await launchProofMPCEvent(toolbox.keypair, toolbox.client);
+		console.log(toolbox.keypair.toPeraAddress());
 	});
 });
