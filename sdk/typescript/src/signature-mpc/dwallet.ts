@@ -122,9 +122,10 @@ export async function approveAndSign(
 
 export interface SignOutputEventData {
 	signatures: Uint8Array[];
+	dwallet_id: string;
 }
 
-const waitForSignOutput = async (client: DWalletClient): Promise<Uint8Array[]> => {
+export const waitForSignOutput = async (client: DWalletClient): Promise<Uint8Array[]> => {
 	return new Promise((resolve) => {
 		client.subscribeEvent({
 			filter: {
