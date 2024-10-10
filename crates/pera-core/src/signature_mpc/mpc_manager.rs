@@ -289,7 +289,11 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         }
     }
 
-    pub fn try_verify_output(&self, output: &Vec<u8>, session_id: &ObjectID) -> anyhow::Result<bool> {
+    pub fn try_verify_output(
+        &self,
+        output: &Vec<u8>,
+        session_id: &ObjectID,
+    ) -> anyhow::Result<bool> {
         let Some(instance) = self.mpc_instances.get(session_id) else {
             return Ok(false);
         };
@@ -349,7 +353,10 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         session_id: ObjectID,
     ) -> PeraResult<()> {
         let Some(mut instance) = self.mpc_instances.get_mut(&session_id) else {
-            error!("received a message for instance {:?} which does not exist", session_id);
+            error!(
+                "received a message for instance {:?} which does not exist",
+                session_id
+            );
             // TODO (#261): Punish a validator that sends a message related to a non-existing mpc instance
             return Ok(());
         };

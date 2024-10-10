@@ -392,7 +392,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             }
                         };
 
-                        if is_valid_transaction{
+                        if is_valid_transaction {
                             let transaction =
                                 VerifiedTransaction::new_signature_mpc_output_system_transaction(
                                     SignatureMPCOutput {
@@ -401,8 +401,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         value: value.clone(),
                                     },
                                 );
-                            let transaction =
-                                VerifiedExecutableTransaction::new_system(transaction, self.epoch());
+                            let transaction = VerifiedExecutableTransaction::new_system(
+                                transaction,
+                                self.epoch(),
+                            );
                             transactions.push((
                                 empty_bytes.as_slice(),
                                 SequencedConsensusTransactionKind::System(transaction),
