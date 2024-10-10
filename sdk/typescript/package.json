@@ -146,6 +146,7 @@
 		"axios": "^1.6.8",
 		"superstruct": "^1.0.3",
 		"tweetnacl": "^1.0.3",
-		"ethers": "6.13.2"
+		"ethers": "6.13.2",
+		"vite-plugin-wasm": "^3.3.0"
 	}
 }
