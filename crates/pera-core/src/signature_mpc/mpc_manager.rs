@@ -61,10 +61,10 @@ fn authority_name_to_party_id(
         })? as PartyID)
 }
 
-/// A Proof MPC session instance
+/// A Signature MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-struct MPCInstance<P: CreatableParty> {
+struct SignatureMPCInstance<P: CreatableParty> {
     status: MPCSessionStatus<P::Output>,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
@@ -72,15 +72,16 @@ struct MPCInstance<P: CreatableParty> {
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
-    mpc_threshold_number_of_parties: usize,
+    threshold_number_of_parties: usize,
     session_id: ObjectID,
     sender_address: PeraAddress,
+    /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: Option<P>,
 }
 
-type ProofMPCMessage = ConsensusTransaction;
+type SignatureMPCMessageTx = ConsensusTransaction;
 
-impl<P: CreatableParty> MPCInstance<P> {
+impl<P: CreatableParty> SignatureMPCInstance<P> {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -93,7 +94,7 @@ impl<P: CreatableParty> MPCInstance<P> {
             pending_messages: HashMap::new(),
             consensus_adapter: consensus_adapter.clone(),
             epoch_store: epoch_store.clone(),
-            mpc_threshold_number_of_parties,
+            threshold_number_of_parties: mpc_threshold_number_of_parties,
             session_id,
             sender_address,
             party: None,
@@ -109,7 +110,7 @@ impl<P: CreatableParty> MPCInstance<P> {
         let party: P = if let Some(existing_party) = optional_party {
             existing_party
         } else {
-            P::new(self.mpc_threshold_number_of_parties as PartyID)
+            P::new(self.threshold_number_of_parties as PartyID)
         };
         let Ok(advance_result) = party.advance(self.pending_messages.clone(), None, &mut OsRng)
         else {
@@ -126,7 +127,7 @@ impl<P: CreatableParty> MPCInstance<P> {
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
                 self.status = MPCSessionStatus::Finished(output.clone());
-                self.new_proof_mpc_statements_message(output)
+                self.new_proof_mpc_output_message(output)
             }
         };
 
@@ -138,6 +139,8 @@ impl<P: CreatableParty> MPCInstance<P> {
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = Arc::clone(&epoch_store);
         if let Some(msg) = msg {
+            /// Spawns sending this message asynchronously the [`self.advance`] function will stay synchronous
+            /// and can be parallelized with Rayon.
             tokio::spawn(async move {
                 let _ = consensus_adapter
                     .submit_to_consensus(&vec![msg], &epoch_store)
@@ -160,7 +163,7 @@ impl<P: CreatableParty> MPCInstance<P> {
         ))
     }
 
-    fn new_proof_mpc_statements_message(
+    fn new_proof_mpc_output_message(
         &self,
         statements: P::Output,
     ) -> Option<ConsensusTransaction> {
@@ -238,7 +241,7 @@ enum MPCSessionStatus<Output> {
 /// - executing all active instances, and
 /// - (de)activating instances.
 pub struct SignatureMPCManager<P: CreatableParty> {
-    mpc_instances: HashMap<ObjectID, MPCInstance<P>>,
+    mpc_instances: HashMap<ObjectID, SignatureMPCInstance<P>>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
     pending_instances_queue: VecDeque<ObjectID>,
     // TODO (#257): Make sure the counter is always in sync with the number of active instances.
@@ -250,7 +253,7 @@ pub struct SignatureMPCManager<P: CreatableParty> {
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
-unsafe impl<P: CreatableParty + Sync + Send> Send for MPCInstance<P> {}
+unsafe impl<P: CreatableParty + Sync + Send> Send for SignatureMPCInstance<P> {}
 
 impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     pub fn new(
@@ -306,7 +309,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
                     None
                 }
             })
-            .collect::<Vec<&mut MPCInstance<P>>>();
+            .collect::<Vec<&mut SignatureMPCInstance<P>>>();
         ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
@@ -359,7 +362,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             );
             return;
         }
-        let new_instance = MPCInstance::new(
+        let new_instance = SignatureMPCInstance::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.mpc_threshold_number_of_parties,
