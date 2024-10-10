@@ -3074,6 +3074,7 @@ impl AuthorityPerEpochStore {
         dkg_failed: bool,
         randomness_round: Option<RandomnessRound>,
         authority_metrics: &Arc<AuthorityMetrics>,
+
     ) -> PeraResult<(
         Vec<VerifiedExecutableTransaction>,    // transactions to schedule
         Vec<SequencedConsensusTransactionKey>, // keys to notify as complete

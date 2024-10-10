@@ -105,7 +105,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
 
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    fn advance(&mut self) {
+    fn advance(&mut self, auxiliary_input: &P::AuxiliaryInput) {
         let optional_party = mem::take(&mut self.party);
 
         /// Gets the instance existing party or creates a new one if this is the first advance
@@ -114,7 +114,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
         } else {
             P::new(self.threshold_number_of_parties as PartyID)
         };
-        let Ok(advance_result) = party.advance(self.pending_messages.clone(), None, &mut OsRng)
+        let Ok(advance_result) = party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng)
         else {
             // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
             self.pending_messages.clear();
@@ -252,6 +252,7 @@ pub struct SignatureMPCManager<P: CreatableParty> {
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
     mpc_threshold_number_of_parties: usize,
+    auxiliary_input: P::AuxiliaryInput,
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
@@ -263,6 +264,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         epoch_store: Weak<AuthorityPerEpochStore>,
         max_active_mpc_instances: usize,
         num_of_parties: usize,
+        auxiliary_input: P::AuxiliaryInput,
     ) -> Self {
         Self {
             mpc_instances: HashMap::new(),
@@ -273,6 +275,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
             mpc_threshold_number_of_parties: ((num_of_parties * 2) + 2) / 3,
+            auxiliary_input: (),
         }
     }
 
@@ -315,7 +318,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .for_each(|ref mut instance| instance.advance());
+            .for_each(|ref mut instance| instance.advance(&self.auxiliary_input));
         Ok(())
     }
 
