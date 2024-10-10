@@ -1,10 +1,10 @@
+use std::collections::HashSet;
 use crate::signature_mpc::mpc_manager::CreatableParty;
 use group::{secp256k1, PartyID};
 use maurer::knowledge_of_discrete_log::PublicParameters;
 use maurer::Proof;
 use rand_core::OsRng;
 use std::marker::PhantomData;
-use im::HashSet;
 use maurer::test_helpers::sample_witnesses;
 use proof::aggregation::Instantiatable;
 
@@ -14,12 +14,12 @@ pub type ProofParty = proof::aggregation::asynchronous::Party<
 
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
 
-impl  ProofParty {
-    fn new(parties: std::collections::hash::set::HashSet<PartyID>, party_id: PartyID) -> Self {
+impl ProofParty {
+    fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self {
         let public_parameters =
             generate_language_public_parameters::<{ maurer::SOUND_PROOFS_REPETITIONS }>();
         let batch_size = 1;
-        let witnesses = sample_witnesses::<maurer::SOUND_PROOFS_REPETITIONS, Lang>(
+        let witnesses = sample_witnesses::<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>(
             &public_parameters,
             batch_size,
             &mut OsRng,
