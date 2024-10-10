@@ -64,7 +64,7 @@ describe('Test Ethereum Light Client', () => {
 		// For this part to work, you need to wait until the block that includes the transaction we want to verify, is FINALIZED.
 		if (ethereumDWallet !== undefined) {
 			let message = 'U3VwcmlzZSEgSGF2ZSBhIGdyZWF0IGRheSE=';
-			let messageApproval = await approveEthereumMessage(
+			let messageApprovalBcs = await approveEthereumMessage(
 				ethereumDWallet!,
 				message,
 				dwalletID,
@@ -74,8 +74,6 @@ describe('Test Ethereum Light Client', () => {
 				toolbox.keypair,
 				toolbox.client,
 			);
-
-			console.log(`messageApproval: ${messageApproval}`);
 		}
 	});
 });

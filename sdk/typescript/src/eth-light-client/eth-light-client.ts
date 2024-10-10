@@ -332,6 +332,15 @@ export const approveEthereumMessage = async (
 		],
 	});
 
+	let res = await client.devInspectTransactionBlock({
+		sender: keypair.toSuiAddress(),
+		transactionBlock: tx2,
+	});
+
+	const messageApprovalBcs = new Uint8Array(
+		res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[],
+	);
+
 	let txResult = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx2,
@@ -341,5 +350,5 @@ export const approveEthereumMessage = async (
 	if (txResult.effects?.status.status !== 'success') {
 		throw new Error('Failed to verify Ethereum state');
 	}
-	return messageApprovals;
+	return messageApprovalBcs;
 };
