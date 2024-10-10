@@ -8,6 +8,10 @@
 module pera_system::proof {
     use pera::event;
 
+    // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
+    const ENotSystemAddress: u64 = 0;
+    // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
+
     /// Event to start a `ProofMPCSession`, caught by the Validators.
     public struct CreatedProofMPCSessionEvent has copy, drop {
         session_id: ID,
