@@ -5,6 +5,7 @@
 pub mod client_commands;
 pub mod console;
 pub mod dwallet_commands;
+pub mod ethereum_client_commands;
 pub mod fire_drill;
 pub mod genesis_ceremony;
 pub mod genesis_inspector;

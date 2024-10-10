@@ -7,11 +7,12 @@ use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 use signature_mpc::twopc_mpc_protocols::{DKGCentralizedPartyOutput, DKGDecentralizedPartyOutput};
 use sui_config::Config;
 use sui_keys::keystore::{AccountKeystore, Keystore};
 use sui_types::base_types::*;
+
+use crate::{SuiClient, SuiClientBuilder, SUI_DEVNET_URL, SUI_LOCAL_NETWORK_URL, SUI_TESTNET_URL};
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
@@ -22,6 +23,14 @@ pub struct SuiClientConfig {
     pub active_env: Option<String>,
     pub active_address: Option<SuiAddress>,
     pub active_dwallet: Option<String>,
+}
+
+/// Configuration settings for the Ethereum light client.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EthClientSettings {
+    pub eth_execution_rpc: Option<String>,
+    pub eth_consensus_rpc: Option<String>,
+    pub state_object_id: Option<ObjectID>,
 }
 
 impl SuiClientConfig {
@@ -47,10 +56,42 @@ impl SuiClientConfig {
     pub fn get_active_env(&self) -> Result<&SuiEnv, anyhow::Error> {
         self.get_env(&self.active_env).ok_or_else(|| {
             anyhow!(
-                "Environment configuration not found for env [{}]",
+                "Environment configuration wasn't found for the environment: [{}]",
                 self.active_env.as_deref().unwrap_or("None")
             )
         })
+    }
+
+    fn get_active_env_mut(&mut self) -> Result<&mut SuiEnv, anyhow::Error> {
+        let active_env = self.active_env.clone();
+        self.get_env_mut(&active_env).ok_or_else(|| {
+            anyhow!(
+                "Environment configuration wasn't found for the environment: [{}]",
+                active_env.unwrap_or("None".to_string())
+            )
+        })
+    }
+
+    fn get_env_mut(&mut self, alias: &Option<String>) -> Option<&mut SuiEnv> {
+        alias
+            .as_ref()
+            .and_then(|alias| self.envs.iter_mut().find(|env| &env.alias == alias))
+    }
+
+    pub fn update_ethereum_state_object_id(
+        &mut self,
+        object_id: ObjectID,
+    ) -> Result<(), anyhow::Error> {
+        let env = self.get_active_env_mut()?;
+        env.eth_client_settings
+            .as_mut()
+            .map(|config| config.state_object_id = Some(object_id))
+            .ok_or_else(|| {
+                anyhow!(
+                    "no Ethereum State object ID found for active environment: [{}]",
+                    env.alias
+                )
+            })
     }
 
     pub fn add_env(&mut self, env: SuiEnv) {
@@ -99,6 +140,7 @@ pub struct SuiEnv {
     pub alias: String,
     pub rpc: String,
     pub ws: Option<String>,
+    pub eth_client_settings: Option<EthClientSettings>,
 }
 
 impl SuiEnv {
@@ -126,6 +168,7 @@ impl SuiEnv {
             alias: "devnet".to_string(),
             rpc: SUI_DEVNET_URL.into(),
             ws: None,
+            eth_client_settings: None,
         }
     }
     pub fn testnet() -> Self {
@@ -133,6 +176,7 @@ impl SuiEnv {
             alias: "testnet".to_string(),
             rpc: SUI_TESTNET_URL.into(),
             ws: None,
+            eth_client_settings: None,
         }
     }
 
@@ -141,6 +185,7 @@ impl SuiEnv {
             alias: "local".to_string(),
             rpc: SUI_LOCAL_NETWORK_URL.into(),
             ws: None,
+            eth_client_settings: None,
         }
     }
 }

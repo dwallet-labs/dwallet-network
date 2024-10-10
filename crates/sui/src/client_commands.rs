@@ -19,11 +19,11 @@ use fastcrypto::{
 };
 
 use json_to_table::json_to_table;
-use move_core_types::language_storage::{StructTag, TypeTag};
+use move_core_types::language_storage::TypeTag;
 use move_package::BuildConfig as MoveBuildConfig;
 use prometheus::Registry;
 use serde::Serialize;
-use serde_json::{json, Number, Value};
+use serde_json::{json, Value};
 use sui_move::build::resolve_lock_file_path;
 use sui_protocol_config::ProtocolConfig;
 use sui_source_validation::{BytecodeSourceVerifier, SourceMode};
@@ -88,6 +88,9 @@ use tabled::{
 use tokio::time::sleep;
 use tracing::info;
 
+use crate::ethereum_client_commands::{
+    create_eth_dwallet, eth_approve_message, init_ethereum_state, EthClientCommands,
+};
 use crate::key_identity::{get_identity_address, KeyIdentity};
 use crate::sui_commands::SuiCommand;
 
@@ -675,6 +678,13 @@ pub enum SuiClientCommands {
     DWallet {
         #[clap(subcommand)]
         cmd: Option<SuiDWalletCommands>,
+    },
+
+    /// Ethereum light-client subcommands.
+    #[command(name = "eth-lc")]
+    EthClient {
+        #[command(subcommand)]
+        command: EthClientCommands,
     },
 }
 
@@ -1359,7 +1369,12 @@ impl SuiClientCommands {
                         "Environment config with name [{alias}] already exists."
                     ));
                 }
-                let env = SuiEnv { alias, rpc, ws };
+                let env = SuiEnv {
+                    alias,
+                    rpc,
+                    ws,
+                    eth_client_settings: None,
+                };
 
                 // Check urls are valid and server is reachable
                 env.create_rpc_client(None, None).await?;
@@ -1427,6 +1442,71 @@ impl SuiClientCommands {
                     bail!("Wrong dwallet command.");
                 }
             }
+            SuiClientCommands::EthClient { command } => match command {
+                EthClientCommands::EthApproveMessage {
+                    eth_dwallet_cap_id,
+                    message,
+                    dwallet_id,
+                    network,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                } => {
+                    eth_approve_message(
+                        context,
+                        eth_dwallet_cap_id,
+                        message,
+                        dwallet_id,
+                        network,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    )
+                    .await?
+                }
+                EthClientCommands::CreateEthDwallet {
+                    dwallet_cap_id,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                } => {
+                    create_eth_dwallet(
+                        context,
+                        dwallet_cap_id,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    )
+                    .await?
+                }
+                EthClientCommands::InitEthState {
+                    network,
+                    consensus_rpc,
+                    contract_address,
+                    contract_approved_tx_slot,
+                    gas,
+                    gas_budget,
+                    serialize_unsigned_transaction,
+                    serialize_signed_transaction,
+                } => {
+                    init_ethereum_state(
+                        network,
+                        consensus_rpc,
+                        contract_address,
+                        contract_approved_tx_slot,
+                        context,
+                        gas,
+                        gas_budget,
+                        serialize_unsigned_transaction,
+                        serialize_signed_transaction,
+                    )
+                    .await?
+                }
+            },
         });
         ret
     }

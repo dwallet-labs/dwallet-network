@@ -674,6 +674,27 @@ impl TransactionBuilder {
         ))
     }
 
+    /// Completes the construction of a programmable transaction.
+    ///
+    /// This function finalizes a `ProgrammableTransactionBuilder` into a `TransactionData` object.
+    /// It selects the appropriate gas object and calculates the gas price required for the transaction.
+    ///
+    /// # Arguments
+    /// * `signer`: The `SuiAddress` of the transaction signer.
+    /// * `builder`: A `ProgrammableTransactionBuilder` that contains the transaction commands.
+    /// * `gas`: An optional `ObjectID` representing the gas object to be used.
+    ///     If not provided, a suitable gas object will be selected.
+    /// * `gas_budget`: A `u64` value representing the gas budget for the transaction.
+    ///
+    /// # Returns
+    /// * Returns a `TransactionData` object on success,
+    /// or an error if the transaction could not be completed.
+    ///
+    /// # Errors
+    /// This function will return an error if:
+    /// * The gas budget is not enough.
+    /// * A suitable gas object cannot be found.
+    /// * There is an issue finalizing the transaction builder.
     pub async fn finish_programmable_transaction(
         &self,
         signer: SuiAddress,

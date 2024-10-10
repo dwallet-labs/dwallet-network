@@ -1,0 +1,17 @@
+[package]
+name = "light-client-helpers"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+ethers.workspace = true
+helios.workspace = true
+ssz-rs = { package = "ssz_rs", version = "0.9.0" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+sui-types.workspace = true
+sui-json.workspace = true
+sui-json-rpc-types.workspace = true
+sui-sdk.workspace = true
+move-core-types.workspace = true

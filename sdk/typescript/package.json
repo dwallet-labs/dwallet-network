@@ -14,6 +14,7 @@
 		"client",
 		"cryptography",
 		"dist",
+		"eth-light-client",
 		"faucet",
 		"keypairs",
 		"multisig",
@@ -44,6 +45,10 @@
 		"./faucet": {
 			"import": "./dist/esm/faucet/index.js",
 			"require": "./dist/cjs/faucet/index.js"
+		},
+		"./eth-light-client": {
+			"import": "./dist/esm/eth-light-client/index.js",
+			"require": "./dist/cjs/eth-light-client/index.js"
 		},
 		"./signature-mpc": {
 			"import": "./dist/esm/signature-mpc/index.js",
@@ -123,12 +128,14 @@
 		"ts-retry-promise": "^0.7.0",
 		"typedoc": "^0.24.8",
 		"typescript": "^5.1.6",
-		"vite": "^4.4.4",
+		"vite": "5.2.6",
 		"vitest": "^0.33.0",
 		"wait-on": "^7.0.1",
 		"ws": "^8.14.2"
 	},
 	"dependencies": {
+		"@lodestar/types": "^1.22.0",
+		"@dwallet-network/eth-light-client-wasm": "workspace:*",
 		"@dwallet-network/signature-mpc-wasm": "workspace:*",
 		"@mysten/bcs": "0.11.1",
 		"@mysten/sui.js": "^0.51.2",
@@ -140,6 +147,7 @@
 		"axios": "^1.6.8",
 		"ethers": "6.13.2",
 		"superstruct": "^1.0.3",
-		"tweetnacl": "^1.0.3"
+		"tweetnacl": "^1.0.3",
+		"vite-plugin-wasm": "^3.3.0"
 	}
 }
