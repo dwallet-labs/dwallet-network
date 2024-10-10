@@ -18,6 +18,8 @@ pub const PROOF_MODULE_NAME: &IdentStr = ident_str!("proof");
 pub const CREATED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CreatedProofMPCSessionEvent");
 
 impl CreatedProofMPCEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`CreatedProofMPCEvent`] events from the chain and initiate the MPC session.
     pub fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
