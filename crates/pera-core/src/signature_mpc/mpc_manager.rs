@@ -7,13 +7,14 @@ use group::secp256k1::group_element::Value;
 use group::{secp256k1, GroupElement, PartyID};
 use im::hashmap;
 use itertools::Itertools;
+use mpc::party::Advance;
+use mpc::{two_party::Round, AdvanceResult};
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
-use mpc::{AdvanceResult, two_party::Round};
-use mpc::party::Advance;
 
+use pera_types::committee::EpochId;
 use rand_core::OsRng;
 use rayon::prelude::*;
 use schemars::_private::NoSerialize;
@@ -73,8 +74,11 @@ struct SignatureMPCInstance<P: CreatableParty> {
     pending_messages: HashMap<PartyID, P::Message>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
+    epoch_id: EpochId,
+
     /// The threshold number of parties required to participate in each round of the Proof MPC protocol
     threshold_number_of_parties: usize,
+    parties: HashSet<PartyID>,
     session_id: ObjectID,
     sender_address: PeraAddress,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
@@ -87,38 +91,52 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
+        epoch: EpochId,
         mpc_threshold_number_of_parties: usize,
         session_id: ObjectID,
         sender_address: PeraAddress,
+        parties: HashSet<PartyID>,
     ) -> Self {
         Self {
             status: MPCSessionStatus::Active,
             pending_messages: HashMap::new(),
             consensus_adapter: consensus_adapter.clone(),
             epoch_store: epoch_store.clone(),
+            epoch_id: epoch,
             threshold_number_of_parties: mpc_threshold_number_of_parties,
             session_id,
             sender_address,
             party: None,
+            parties,
         }
+    }
+
+    fn epoch_store(&self) -> PeraResult<Arc<AuthorityPerEpochStore>> {
+        self.epoch_store
+            .upgrade()
+            .ok_or(PeraError::EpochEnded(self.epoch_id))
     }
 
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    fn advance(&mut self, auxiliary_input: &P::AuxiliaryInput) {
+    fn advance(&mut self, auxiliary_input: &P::AuxiliaryInput) -> PeraResult {
         let optional_party = mem::take(&mut self.party);
 
         /// Gets the instance existing party or creates a new one if this is the first advance
         let party: P = if let Some(existing_party) = optional_party {
             existing_party
         } else {
-            P::new(self.threshold_number_of_parties as PartyID)
+            P::new(
+                self.parties.clone(),
+                authority_name_to_party_id(self.epoch_store()?.name, &self.epoch_store()?)?,
+            )
         };
-        let Ok(advance_result) = party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng)
+        let Ok(advance_result) =
+            party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng)
         else {
             // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
             self.pending_messages.clear();
-            return;
+            Ok(())
         };
         let msg = match advance_result {
             AdvanceResult::Advance((message, party)) => {
@@ -133,13 +151,8 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
             }
         };
 
-        let Some(epoch_store) = self.epoch_store.upgrade() else {
-            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-            return;
-        };
-
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
-        let epoch_store = Arc::clone(&epoch_store);
+        let epoch_store = Arc::clone(&self.epoch_store()?);
         if let Some(msg) = msg {
             /// Spawns sending this message asynchronously the [`self.advance`] function will stay synchronous
             /// and can be parallelized with Rayon.
@@ -149,13 +162,13 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
                     .await;
             });
         }
+        Ok(())
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns None only if the epoch switched in the middle and was not available.
     fn new_signature_mpc_message(&self, message: P::Message) -> Option<ConsensusTransaction> {
-        let Some(epoch_store) = self.epoch_store.upgrade() else {
-            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+        let Ok(epoch_store) = self.epoch_store() else {
             return None;
         };
         Some(ConsensusTransaction::new_signature_mpc_message(
@@ -165,12 +178,8 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
         ))
     }
 
-    fn new_proof_mpc_output_message(
-        &self,
-        statements: P::Output,
-    ) -> Option<ConsensusTransaction> {
-        let Some(epoch_store) = self.epoch_store.upgrade() else {
-            // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
+    fn new_proof_mpc_output_message(&self, statements: P::Output) -> Option<ConsensusTransaction> {
+        let Ok(epoch_store) = self.epoch_store() else {
             return None;
         };
         if authority_name_to_party_id(epoch_store.name, &epoch_store).unwrap() != 3 {
@@ -214,11 +223,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     fn handle_message(&mut self, message: SignatureMPCMessage) -> PeraResult<()> {
         match self.status {
             MPCSessionStatus::Active => {
-                let Some(epoch_store) = self.epoch_store.upgrade() else {
-                    // TODO: (#259) Handle the case when the epoch switched in the middle of the MPC instance
-                    return Ok(());
-                };
-                self.store_message(&message, epoch_store)
+                self.store_message(&message, self.epoch_store()?)
             }
             MPCSessionStatus::Finished(_) => {
                 // Do nothing
@@ -253,6 +258,8 @@ pub struct SignatureMPCManager<P: CreatableParty> {
     pub max_active_mpc_instances: usize,
     mpc_threshold_number_of_parties: usize,
     auxiliary_input: P::AuxiliaryInput,
+    parties: HashSet<PartyID>,
+    pub epoch_id: EpochId,
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
@@ -262,20 +269,27 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
+        epoch_id: EpochId,
         max_active_mpc_instances: usize,
         num_of_parties: usize,
         auxiliary_input: P::AuxiliaryInput,
     ) -> Self {
+        let mut parties = HashSet::new();
+        for i in 0..num_of_parties {
+            parties.insert(i as PartyID);
+        }
         Self {
             mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
             consensus_adapter,
             epoch_store,
+            epoch_id,
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
             mpc_threshold_number_of_parties: ((num_of_parties * 2) + 2) / 3,
             auxiliary_input,
+            parties,
         }
     }
 
@@ -318,7 +332,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .for_each(|ref mut instance| instance.advance(&self.auxiliary_input));
+            .for_each(|ref mut instance| instance.advance(&self.auxiliary_input)?);
         Ok(())
     }
 
@@ -373,6 +387,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             self.mpc_threshold_number_of_parties,
             event.session_id.clone().bytes,
             event.sender.clone(),
+            self.parties,
         );
         self.mpc_instances
             .insert(event.session_id.clone().bytes, new_instance);
