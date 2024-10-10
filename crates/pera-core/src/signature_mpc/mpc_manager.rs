@@ -128,7 +128,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
         } else {
             P::new(
                 self.parties.clone(),
-                authority_name_to_party_id(self.epoch_store()?.name, &self.epoch_store()?)?,
+                authority_name_to_party_id(self.epoch_store()?.name, &*(self.epoch_store()?))?,
             )
         };
         let Ok(advance_result) =
@@ -332,7 +332,8 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .for_each(|ref mut instance| instance.advance(&self.auxiliary_input)?);
+            .map(|ref mut instance| instance.advance(&self.auxiliary_input))
+            .collect::<PeraResult<_>>()?;
         Ok(())
     }
 
