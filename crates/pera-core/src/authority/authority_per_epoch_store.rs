@@ -336,8 +336,8 @@ pub struct AuthorityPerEpochStore {
     randomness_manager: OnceCell<tokio::sync::Mutex<RandomnessManager>>,
     randomness_reporter: OnceCell<RandomnessReporter>,
 
-    /// State machine managing Signature MPC flows.
-    pub signature_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
+    /// State machine managing Proof Signature MPC flows.
+    pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -853,7 +853,7 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
-            signature_mpc_manager: OnceCell::new(),
+            proof_mpc_manager: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -927,7 +927,7 @@ impl AuthorityPerEpochStore {
         mut signature_mpc: SignatureMPCManager<ProofParty>,
     ) -> PeraResult<()> {
         if self
-            .signature_mpc_manager
+            .proof_mpc_manager
             .set(tokio::sync::Mutex::new(signature_mpc))
             .is_err()
         {
@@ -3193,7 +3193,7 @@ impl AuthorityPerEpochStore {
         }
 
         // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
-        if let Some(signature_mpc_manager) = self.signature_mpc_manager.get() {
+        if let Some(signature_mpc_manager) = self.proof_mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
             signature_mpc_manager.handle_end_of_delivery().await?;
         };
@@ -3593,7 +3593,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                let Some(signature_mpc_manager) = self.signature_mpc_manager.get() else {
+                let Some(signature_mpc_manager) = self.proof_mpc_manager.get() else {
                     // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
                     return Ok(ConsensusCertificateResult::Ignored);
                 };

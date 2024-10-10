@@ -1547,7 +1547,7 @@ impl AuthorityState {
             TransactionEffects::V2(effects) => effects.status(),
         };
         if status.is_ok() {
-            let mut signature_mpc_manager = epoch_store.signature_mpc_manager.get();
+            let mut signature_mpc_manager = epoch_store.proof_mpc_manager.get();
             match signature_mpc_manager {
                 Some(mpc_manager) => {
                     let mut mpc_manager = mpc_manager.lock().await;

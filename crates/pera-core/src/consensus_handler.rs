@@ -371,7 +371,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         );
 
                         let mut signature_mpc_manager =
-                            self.epoch_store.signature_mpc_manager.get();
+                            self.epoch_store.proof_mpc_manager.get();
                         match signature_mpc_manager {
                             Some(mpc_manager) => {
                                 let signature_mpc_manager = mpc_manager.lock().await;
