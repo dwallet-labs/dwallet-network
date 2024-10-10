@@ -12,7 +12,7 @@ pub(crate) struct SignatureMPCOutputTransaction {
 /// System transaction to store the output of signature mpc dkg on-chain.
 #[Object]
 impl SignatureMPCOutputTransaction {
-    async fn value(&self) -> Vec<Vec<u8>> {
+    async fn value(&self) -> Vec<u8> {
         self.native.value.clone()
     }
 

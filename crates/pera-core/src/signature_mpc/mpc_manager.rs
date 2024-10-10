@@ -68,7 +68,7 @@ fn authority_name_to_party_id(
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
 struct SignatureMPCInstance<P: CreatableParty> {
-    status: MPCSessionStatus<P::Output>,
+    status: MPCSessionStatus<P::OutputValue>,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
     pending_messages: HashMap<PartyID, P::Message>,
@@ -147,8 +147,8 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
-                self.status = MPCSessionStatus::Finished(output.clone());
-                self.new_proof_mpc_output_message(output)
+                self.status = MPCSessionStatus::Finished(output.clone().into());
+                self.new_proof_mpc_output_message(output.into())
             }
         };
 
@@ -182,13 +182,14 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     /// Create a new consensus transaction with the flow result (output) to be sent to the other MPC parties.
     /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
     /// Only the aggregator party should send the output to the other parties.
-    fn new_proof_mpc_output_message(&self, output: P::Output) -> Option<ConsensusTransaction> {
+    fn new_proof_mpc_output_message(&self, output: P::OutputValue) -> Option<ConsensusTransaction> {
         let Ok(epoch_store) = self.epoch_store() else {
             return None;
         };
         if authority_name_to_party_id(epoch_store.name, &epoch_store).unwrap() != 3 {
             return None;
         }
+        let output = bcs::to_bytes(&output).unwrap();
         Some(ConsensusTransaction::new_signature_mpc_output(
             output,
             self.session_id.clone(),
@@ -292,12 +293,12 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         let Some(instance) = self.mpc_instances.get(session_id) else {
             return Ok(false);
         };
-        let MPCSessionStatus::Finished(&stored_output) = instance.status else {
+        let MPCSessionStatus::Finished(stored_output) = &instance.status else {
             return Ok(false);
         };
 
-        let output = bcs::from_bytes(output)?;
-        stored_output.value() == output
+        let output: P::OutputValue = bcs::from_bytes(output)?;
+        Ok(*stored_output == output)
     }
 
     /// Filter the relevant MPC events from the transaction events & handle them
