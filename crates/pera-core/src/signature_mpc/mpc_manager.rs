@@ -1,13 +1,12 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
+use crate::signature_mpc::parties_implementations::ProofParty;
 use anyhow::anyhow;
 use group::secp256k1::group_element::Value;
 use group::{secp256k1, GroupElement, PartyID};
 use im::hashmap;
 use itertools::Itertools;
-use maurer::knowledge_of_discrete_log::PublicParameters;
-use maurer::Proof;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
@@ -38,25 +37,12 @@ struct SignatureMPCMessage {
     authority: AuthorityName,
 }
 
+/// A wrapper for the generic Party trait that allows creating new instances of the Party from only the threshold.
+/// Should be implemented internally in newer versions of the [`proof`] crate.
 pub trait CreatableParty: Party {
     fn new(threshold: PartyID) -> Self;
 }
 
-impl CreatableParty for ProofParty {
-    fn new(threshold: PartyID) -> Self {
-        let public_parameters =
-            generate_language_public_parameters::<{ maurer::SOUND_PROOFS_REPETITIONS }>();
-        let batch_size = 1;
-        ProofParty::new_proof_round_party(
-            public_parameters,
-            PhantomData,
-            threshold,
-            batch_size,
-            &mut OsRng,
-        )
-        .unwrap()
-    }
-}
 
 fn authority_name_to_party_id(
     authority_name: AuthorityName,
@@ -89,8 +75,7 @@ struct MPCInstance<P: CreatableParty> {
     party: Option<P>,
 }
 
-type ProofPublicParameters =
-    maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
+
 
 type ProofMPCMessage = ConsensusTransaction;
 
@@ -257,31 +242,12 @@ pub struct SignatureMPCManager<P: CreatableParty> {
     pending_instances_queue: VecDeque<ObjectID>,
     // TODO (#257): Make sure the counter is always in sync with the number of active instances.
     active_instances_counter: usize,
-    language_public_parameters:
-        maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>,
     consensus_adapter: Arc<ConsensusAdapter>,
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
     mpc_threshold_number_of_parties: usize,
 }
 
-type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
-pub type ProofParty = proof::aggregation::asynchronous::Party<
-    Proof<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang, PhantomData<()>>,
->;
-
-fn generate_language_public_parameters<const REPETITIONS: usize>(
-) -> maurer::language::PublicParameters<REPETITIONS, Lang> {
-    let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
-
-    let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
-
-    PublicParameters::new::<secp256k1::Scalar, secp256k1::GroupElement>(
-        secp256k1_scalar_public_parameters,
-        secp256k1_group_public_parameters.clone(),
-        secp256k1_group_public_parameters.generator,
-    )
-}
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
 unsafe impl<P: CreatableParty + Sync + Send> Send for MPCInstance<P> {}
@@ -297,9 +263,6 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
-            language_public_parameters: generate_language_public_parameters::<
-                { maurer::SOUND_PROOFS_REPETITIONS },
-            >(),
             consensus_adapter,
             epoch_store,
             max_active_mpc_instances,
