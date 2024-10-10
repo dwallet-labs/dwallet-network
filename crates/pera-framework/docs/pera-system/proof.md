@@ -150,7 +150,7 @@ Stores the result of the proof MPC flow so it will be accessible for the initiat
 
 </dd>
 <dt>
-<code><a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+<code><a href="proof.md#0x3_proof">proof</a>: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
@@ -223,7 +223,7 @@ Creates it & transfers it to the user that initiated the proof MPC flow.
 Should be called only as a system transaction after all the validators received & verified the rust <code>SignatureMPCOutput</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -232,7 +232,7 @@ Should be called only as a system transaction after all the validators received 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(session_initiator: <b>address</b>, session_id: ID, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(session_initiator: <b>address</b>, session_id: ID, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> TxContext) {
    <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == @0x0, <a href="proof.md#0x3_proof_ENotSystemAddress">ENotSystemAddress</a>);
    <b>let</b> proof_session_result = <a href="proof.md#0x3_proof_ProofSessionOutput">ProofSessionOutput</a> {
        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
