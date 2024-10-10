@@ -1,3 +1,4 @@
+use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent};
 use crate::signature_mpc::mpc_manager::CreatableParty;
 use group::{secp256k1, PartyID, Samplable};
 use maurer::knowledge_of_discrete_log::PublicParameters;
@@ -8,7 +9,6 @@ use rand_core::{CryptoRngCore, OsRng};
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
-use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent};
 
 /// Create dummy witnesses for the dummy proof flow.
 fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(

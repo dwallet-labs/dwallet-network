@@ -230,8 +230,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     fn handle_message(&mut self, message: SignatureMPCMessage) -> PeraResult<()> {
         match self.status {
             MPCSessionStatus::Active => self.store_message(&message, self.epoch_store()?),
-            MPCSessionStatus::Finalizing(_)
-            | MPCSessionStatus::Finished(_) => {
+            MPCSessionStatus::Finalizing(_) | MPCSessionStatus::Finished(_) => {
                 // Do nothing
                 Ok(())
             }
