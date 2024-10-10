@@ -1,15 +1,14 @@
-// todo(yuval): license + doc + create cost base
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+
+// todo(yuval): doc all
 
 use crate::NativesCostTable;
-use ethers::abi::struct_def::StructType;
-use ethers::core::types::{
-    transaction::eip712::{EIP712WithDomain, Eip712},
-    H256,
-};
-use ethers::prelude::transaction::eip712::{EIP712Domain, TypedData};
+use ethers::core::types::transaction::eip712::{EIP712WithDomain, Eip712};
+use ethers::prelude::transaction::eip712::EIP712Domain;
 use ethers::prelude::{Address, Eip712, EthAbiType, U256};
-use helios::prelude::networks::Network;
 use move_binary_format::errors::PartialVMResult;
+use move_core_types::gas_algebra::InternalGas;
 use move_vm_runtime::native_charge_gas_early_exit;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::loaded_data::runtime_types::Type;
@@ -18,7 +17,7 @@ use move_vm_types::pop_arg;
 use move_vm_types::values::{Value, Vector};
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::VecDeque;
 
 /// Bind a `dwallet::DWalletCap` to an authority.
 #[derive(Clone, Debug, Serialize, Deserialize, Eip712, EthAbiType)]
@@ -42,6 +41,12 @@ pub struct DWalletBinder {
     pub nonce: u64,
 }
 
+#[derive(Clone)]
+pub struct AuthorityBinderCostParams {
+    /// Base cost for invoking the `verify_eth_state` function.
+    pub create_authority_ack_transaction_cost_base: InternalGas,
+}
+
 /***************************************************************************************************
 * native fun create_authority_ack_transaction
 * Implementation of the Move native function
@@ -56,21 +61,20 @@ pub fn create_authority_ack_transaction(
     mut args: VecDeque<Value>,
 ) -> PartialVMResult<NativeResult> {
     // Load the cost parameters from the protocol config.
-    let verify_message_proof_cost_params = &context
+    let create_authority_ack_transaction_cost_params = &context
         .extensions()
         .get::<NativesCostTable>()
-        .eth_state_proof // todo(yuval): change to authority_binder
+        .authority_binder
         .clone();
 
     // Charge the base cost for this operation.
     native_charge_gas_early_exit!(
         context,
-        verify_message_proof_cost_params.verify_message_proof_cost_base
+        create_authority_ack_transaction_cost_params.create_authority_ack_transaction_cost_base
     );
 
     let cost = context.gas_used();
 
-    // add domain fields
     let (
         contract_address,
         domain_version,

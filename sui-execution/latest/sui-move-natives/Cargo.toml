@@ -13,6 +13,7 @@ bcs.workspace = true
 indexmap.workspace = true
 smallvec.workspace = true
 serde_json.workspace = true
+serde.workspace = true
 
 helios.workspace = true
 ethers.workspace = true

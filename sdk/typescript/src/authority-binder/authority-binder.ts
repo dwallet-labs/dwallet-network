@@ -12,7 +12,6 @@ import { stringToArrayU8Bcs } from '../eth-light-client/utils.js';
 const packageId = '0x3';
 const authorityBinderModuleName = 'authority_binder';
 
-// todo(yuval): update this function, now it's just garbage code
 export const createAuthorityAckTransactionHash = async (
 	binderID: string,
 	authorityDWalletCapId: string,
@@ -69,16 +68,14 @@ export const createAuthorityAckTransactionHash = async (
 export const createAuthority = async (
 	binderName: string,
 	chainIdentifier: string,
-	latestSnapshot: string, // todo(yuval): update to snapshot type
-	config: string, // todo(yuval): update to config type
+	latestSnapshotID: string,
+	configID: string,
 	authorityOwnerDWalletCapID: string,
 	keypair: Keypair,
 	client: DWalletClient,
 ) => {
 	let binderNameBcs = stringToArrayU8Bcs(binderName);
 	let uniqueIdentifierBcs = stringToArrayU8Bcs(chainIdentifier);
-	let latestSnapshotBcs = stringToArrayU8Bcs(latestSnapshot);
-	let configBcs = stringToArrayU8Bcs(config);
 	let authorityOwnerDWalletCapIDBcs = stringToArrayU8Bcs(authorityOwnerDWalletCapID);
 
 	const tx = new TransactionBlock();
@@ -87,8 +84,8 @@ export const createAuthority = async (
 		arguments: [
 			tx.pure(binderNameBcs),
 			tx.pure(uniqueIdentifierBcs),
-			tx.pure(latestSnapshotBcs),
-			tx.pure(configBcs),
+			tx.object(latestSnapshotID),
+			tx.object(configID),
 			tx.pure(authorityOwnerDWalletCapIDBcs),
 		],
 		typeArguments: [],
