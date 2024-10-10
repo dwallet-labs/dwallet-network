@@ -1,12 +1,30 @@
 use std::collections::HashSet;
+use std::iter;
 use crate::signature_mpc::mpc_manager::CreatableParty;
-use group::{secp256k1, PartyID};
+use group::{secp256k1, PartyID, Samplable};
 use maurer::knowledge_of_discrete_log::PublicParameters;
-use maurer::Proof;
-use rand_core::OsRng;
+use maurer::{Language, Proof};
+use rand_core::{CryptoRngCore, OsRng};
 use std::marker::PhantomData;
-use maurer::test_helpers::sample_witnesses;
 use proof::aggregation::Instantiatable;
+use proof::GroupsPublicParametersAccessors;
+
+pub fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
+    language_public_parameters: &Lang::PublicParameters,
+    batch_size: usize,
+    rng: &mut impl CryptoRngCore,
+) -> Vec<Lang::WitnessSpaceGroupElement> {
+    iter::repeat_with(|| {
+        Lang::WitnessSpaceGroupElement::sample(
+            language_public_parameters.witness_space_public_parameters(),
+            rng,
+        )
+            .unwrap()
+    })
+        .take(batch_size)
+        .collect()
+}
+
 
 pub type ProofParty = proof::aggregation::asynchronous::Party<
     Proof<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang, PhantomData<()>>,
@@ -14,7 +32,7 @@ pub type ProofParty = proof::aggregation::asynchronous::Party<
 
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
 
-impl ProofParty {
+impl CreatableParty for ProofParty {
     fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self {
         let public_parameters =
             generate_language_public_parameters::<{ maurer::SOUND_PROOFS_REPETITIONS }>();

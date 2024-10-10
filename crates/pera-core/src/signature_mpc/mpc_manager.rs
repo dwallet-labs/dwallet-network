@@ -19,7 +19,7 @@ use rayon::prelude::*;
 use schemars::_private::NoSerialize;
 use serde::{Deserialize, Serialize};
 use std::cmp::PartialEq;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::future::Future;
 use std::io::Write;
 use std::marker::PhantomData;
@@ -42,7 +42,7 @@ struct SignatureMPCMessage {
 /// A wrapper for the generic Party trait that allows creating new instances of the Party from only the threshold.
 /// Should be implemented internally in newer versions of the [`proof`] crate.
 pub trait CreatableParty: Advance {
-    fn new(threshold: PartyID) -> Self;
+    fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self;
 }
 
 /// Convert a given authority name (address) to it's corresponding party ID.
