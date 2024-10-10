@@ -1299,7 +1299,7 @@ impl PeraNode {
                 epoch_store.epoch(),
                 config.max_active_signature_mpc_instances,
                 epoch_store.committee().voting_rights.len(),
-                &()
+                ()
             ))
             .await?;
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(

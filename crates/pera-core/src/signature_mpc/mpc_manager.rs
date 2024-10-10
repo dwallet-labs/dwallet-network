@@ -132,11 +132,10 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
             )
         };
         let Ok(advance_result) =
-            party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng)
-        else {
+            party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng) else {
             // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
             self.pending_messages.clear();
-            Ok(())
+            return Ok(());
         };
         let msg = match advance_result {
             AdvanceResult::Advance((message, party)) => {
@@ -385,10 +384,11 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         let new_instance = SignatureMPCInstance::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
+            self.epoch_id,
             self.mpc_threshold_number_of_parties,
             event.session_id.clone().bytes,
             event.sender.clone(),
-            self.parties,
+            self.parties.clone(),
         );
         self.mpc_instances
             .insert(event.session_id.clone().bytes, new_instance);
