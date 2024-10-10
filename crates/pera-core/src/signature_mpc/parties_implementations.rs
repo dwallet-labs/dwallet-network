@@ -9,7 +9,8 @@ use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
 
-pub fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
+/// Create dummy witnesses for the dummy proof flow.
+fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
     language_public_parameters: &Lang::PublicParameters,
     batch_size: usize,
     rng: &mut impl CryptoRngCore,
