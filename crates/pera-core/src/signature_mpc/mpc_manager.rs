@@ -308,6 +308,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     }
 
     /// Filter the relevant MPC events from the transaction events & handle them
+    /// Create new MPC instances when receiving a CreatedProofMPCEvent, and decrease the [`active_instances_counter`] when receiving a FinishedProofMPCEvent.
     pub fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
         if events.is_empty() {
             return Ok(());
@@ -322,6 +323,8 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         Ok(())
     }
 
+    /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
+    /// We parallelize the advances with Rayon to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
         let mut ready_to_advance = self
             .mpc_instances
