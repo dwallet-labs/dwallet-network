@@ -102,6 +102,7 @@ nonempty.workspace = true
 proof = { path = "../../../cryptography-private/proof" }
 maurer = { path = "../../../cryptography-private/maurer" }
 group = { path = "../../../cryptography-private/group" }
+mpc = { path = "../../../cryptography-private/mpc" }
 rand_core = "0.6.4"
 
 [dev-dependencies]
