@@ -979,7 +979,7 @@ ProofSessionResult
 launch_proof_mpc_flow
 	public fun
 	0x3::proof
-create_proof_session_result
+create_proof_session_output
 	public fun
 	0x3::proof
 secp256k1_ecrecover

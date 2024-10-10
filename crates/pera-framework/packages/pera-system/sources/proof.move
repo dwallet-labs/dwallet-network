@@ -53,7 +53,8 @@ module pera_system::proof {
     }
 
     /// Function to create the proof session result.
-   public fun create_proof_session_result(session_initiator: address, session_id: ID, output: vector<vector<u8>>, ctx: &mut TxContext) {
+    public fun create_proof_session_output(session_initiator: address, session_id: ID, output: vector<vector<u8>>, ctx: &mut TxContext) {
+       assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
        let proof_session_result = ProofSessionResult {
            id: object::new(ctx),
            session_id: session_id,

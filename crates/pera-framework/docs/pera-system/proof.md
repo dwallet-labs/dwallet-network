@@ -12,7 +12,7 @@ Used only for testing the way we launch & manage an MPC flow.
 -  [Resource `ProofSessionData`](#0x3_proof_ProofSessionData)
 -  [Resource `ProofSessionResult`](#0x3_proof_ProofSessionResult)
 -  [Function `launch_proof_mpc_flow`](#0x3_proof_launch_proof_mpc_flow)
--  [Function `create_proof_session_result`](#0x3_proof_create_proof_session_result)
+-  [Function `create_proof_session_output`](#0x3_proof_create_proof_session_output)
 
 
 <pre><code><b>use</b> <a href="../pera-framework/event.md#0x2_event">0x2::event</a>;
@@ -197,13 +197,13 @@ Function to launch proof MPC flow.
 
 </details>
 
-<a name="0x3_proof_create_proof_session_result"></a>
+<a name="0x3_proof_create_proof_session_output"></a>
 
-## Function `create_proof_session_result`
+## Function `create_proof_session_output`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -212,7 +212,7 @@ Function to launch proof MPC flow.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_result">create_proof_session_result</a>(session_initiator: <b>address</b>, session_id: ID, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(session_initiator: <b>address</b>, session_id: ID, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<b>mut</b> TxContext) {
     <b>let</b> proof_session_result = <a href="proof.md#0x3_proof_ProofSessionResult">ProofSessionResult</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         session_id: session_id,
