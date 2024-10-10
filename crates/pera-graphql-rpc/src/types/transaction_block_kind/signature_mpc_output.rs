@@ -11,7 +11,6 @@ pub(crate) struct SignatureMPCOutputTransaction {
     pub checkpoint_viewed_at: u64,
 }
 
-///
 #[Object]
 impl SignatureMPCOutputTransaction {
     /// The output value of the signature mpc session

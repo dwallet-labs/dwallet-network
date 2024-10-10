@@ -1,6 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
-use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
+use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
 use crate::signature_mpc::proof::ProofParty;
 use anyhow::anyhow;
 use group::secp256k1::group_element::Value;
@@ -43,6 +43,11 @@ struct SignatureMPCMessage {
 /// A wrapper for the generic Party trait that allows creating new instances of the Party from only the threshold.
 /// Should be implemented internally in newer versions of the [`proof`] crate.
 pub trait CreatableParty: Advance {
+    /// The MPC Manager will create a new mpc instance after the init event is received.
+    type InitEvent: MPCEvent + Serialize + for<'a> Deserialize<'a>;
+    /// The MPC Manager will finalize the mpc instance after the finalize event is received.
+    type FinalizeEvent: MPCEvent + Serialize + for<'a> Deserialize<'a>;
+
     fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self;
 }
 
@@ -314,8 +319,8 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             return Ok(());
         }
         for event in events {
-            if CreatedProofMPCEvent::type_() == event.type_ {
-                let deserialized_event: CreatedProofMPCEvent = bcs::from_bytes(&event.contents)?;
+            if P::InitEvent::type_() == event.type_ {
+                let deserialized_event = bcs::from_bytes(&event.contents)?;
                 self.push_new_mpc_instance(deserialized_event);
                 debug!("event: CreatedProofMPCEvent {:?}", event);
             };
@@ -373,27 +378,27 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    fn push_new_mpc_instance(&mut self, event: CreatedProofMPCEvent) {
-        if self.mpc_instances.contains_key(&event.session_id.bytes) {
+    fn push_new_mpc_instance(&mut self, event: P::InitEvent) {
+        if self.mpc_instances.contains_key(&event.session_id().bytes) {
             // This should never happen, as the session ID is a move UniqueID
             error!(
                 "Received start flow event for session ID {:?} that already exists",
-                event.session_id
+                event.session_id()
             );
             return;
         }
 
         info!(
             "Received start flow event for session ID {:?}",
-            event.session_id
+            event.session_id()
         );
 
         if self.active_instances_counter > self.max_active_mpc_instances {
             self.pending_instances_queue
-                .push_back(event.session_id.bytes);
+                .push_back(event.session_id().bytes);
             info!(
                 "Added MPCInstance to pending queue for session_id {:?}",
-                event.session_id
+                event.session_id()
             );
             return;
         }
@@ -401,16 +406,16 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.epoch_id,
-            event.session_id.clone().bytes,
-            event.sender.clone(),
+            event.session_id().clone().bytes,
+            event.event_emitter().clone(),
             self.number_of_parties,
         );
         self.mpc_instances
-            .insert(event.session_id.clone().bytes, new_instance);
+            .insert(event.session_id().clone().bytes, new_instance);
         self.active_instances_counter += 1;
         info!(
             "Added MPCInstance to MPC manager for session_id {:?}",
-            event.session_id
+            event.session_id()
         );
     }
 }
