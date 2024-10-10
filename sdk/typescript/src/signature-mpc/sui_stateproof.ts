@@ -26,7 +26,7 @@ export async function submitDWalletCreationProof(
 	sui_client: SuiClient,
 	configObjectId: string,
 	registryObjectId: string,
-	dWalletCapIds: string[],
+	dWalletCapId: string,
 	txId: string,
 	serviceUrl: string,
 	keypair: Keypair,
@@ -46,13 +46,8 @@ export async function submitDWalletCreationProof(
 		await queryTxData(txId, serviceUrl);
 	let txb = new TransactionBlock();
 
-	let dWalletCaps = await Promise.all(
-		dWalletCapIds.map(async (dWalletCapId) => {
-			return await getOwnedObject(dwallet_client, dWalletCapId);
-		}),
-	);
-
-	let dWalletCapArgs = dWalletCaps.map((dWalletCap) => txb.object(dWalletCap));
+	let dWalletCap = await getOwnedObject(dwallet_client, dWalletCapId);
+	let dWalletCapArg = txb.object(dWalletCap);
 
 	let epoch_committee_id = await retrieveEpochCommitteeIdByEpoch(
 		dwallet_client,
@@ -70,17 +65,11 @@ export async function submitDWalletCreationProof(
 	let checkpoint_contents_arg = txb.pure(checkpoint_contents_bytes);
 	let transaction_arg = txb.pure(transaction_bytes);
 
-	// pass here a vector  a vector of dwallet caps
-	let dWalletCapArgVec = txb.makeMoveVec({
-		type: '0x3::dwallet::DWalletCap',
-		objects: dWalletCapArgs,
-	});
-
 	txb.moveCall({
 		target: `${packageId}::${stateProofModuleName}::create_dwallet_wrapper`,
 		arguments: [
 			configArg,
-			dWalletCapArgVec,
+			dWalletCapArg,
 			committeArg,
 			checkpoint_arg,
 			checkpoint_contents_arg,
@@ -149,7 +138,7 @@ export async function submitTxStateProof(
 	let checkpointContentsArg = txb.pure(checkpoint_contents_bytes);
 	let transactionArg = txb.pure(transaction_bytes);
 
-	let [messageApprovals] = txb.moveCall({
+	let [messageApprovalsVec] = txb.moveCall({
 		target: `${packageId}::${stateProofModuleName}::transaction_state_proof`,
 		arguments: [
 			configArg,
@@ -161,7 +150,20 @@ export async function submitTxStateProof(
 		],
 	});
 
+	let messageApprovals = txb.moveCall({
+		target: `0x1::vector::pop_back`,
+		typeArguments: ['vector<0x3::dwallet::MessageApproval>'],
+		arguments: [messageApprovalsVec],
+	});
+
+	txb.moveCall({
+		target: `0x1::vector::destroy_empty`,
+		typeArguments: ['vector<0x3::dwallet::MessageApproval>'],
+		arguments: [messageApprovalsVec],
+	});
+
 	// sign the message approvals
+	// so only signing the first vec<vec<u8>> is supported
 	txb.moveCall({
 		target: `${packageId}::${dWalletModuleName}::sign`,
 		typeArguments: [

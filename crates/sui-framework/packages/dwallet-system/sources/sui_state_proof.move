@@ -13,12 +13,11 @@ module dwallet_system::sui_state_proof {
     const EWrongEpochSubmitted: u64 = 0;
     const EWrongDWalletCapId: u64 = 1;
     const EWrongAmountOfDWalletCaps: u64 = 2;
-    const EStateProofNoMessagesToApprove: u64 = 3;
 
 
     struct StateProofRegistry has key, store {
-            id: UID,
-            highest_epoch: u64,
+        id: UID,
+        highest_epoch: u64,
     }
 
     struct StateProofConfig has key, store{
@@ -127,7 +126,7 @@ module dwallet_system::sui_state_proof {
 
     public fun create_dwallet_wrapper(
         config: &StateProofConfig,
-        dwallet_caps: vector<DWalletCap>, 
+        dwallet_cap: DWalletCap, 
         committee: &EpochCommittee,
         checkpoint_summary: vector<u8>,
         checkpoint_contents: vector<u8>,
@@ -142,25 +141,21 @@ module dwallet_system::sui_state_proof {
         let sui_cap_id_address_vec = bcs::peel_vec_address(&mut bcs::new(sui_cap_ids_bytes));
         let dwallet_cap_id_address_vec = bcs::peel_vec_address(&mut bcs::new(dwallet_cap_ids_bytes));
 
-        assert!(vector::length(&sui_cap_id_address_vec) == vector::length(&dwallet_caps), EWrongAmountOfDWalletCaps);
+        // assert!(vector::length(&sui_cap_id_address_vec) == vector::length(&dwallet_caps), EWrongAmountOfDWalletCaps);
+        let dwallet_cap_id = object::id(&dwallet_cap);
+        let (is_valid, idx) = vector::index_of(&dwallet_cap_id_address_vec, &object::id_to_address(&dwallet_cap_id));
+        assert!(is_valid, EWrongDWalletCapId);
 
-        let i = vector::length(&sui_cap_id_address_vec);
-        while (i > 0) {
-            i = i - 1; 
-            let sui_cap_id_address = vector::pop_back(&mut sui_cap_id_address_vec);
-            let dwallet_cap = vector::pop_back(&mut dwallet_caps);
-            let dwallet_cap_id_address = vector::pop_back(&mut dwallet_cap_id_address_vec);
-            assert!(object::id_from_address(dwallet_cap_id_address) == object::id(&dwallet_cap), EWrongDWalletCapId);
-            
-            let wrapper = CapWrapper {
-                id: object::new(ctx),
-                cap_id_sui: object::id_from_address(sui_cap_id_address),
-                cap: dwallet_cap,
-            };
+        let sui_cap_id_address = vector::remove(&mut sui_cap_id_address_vec, idx);
+        
+        let wrapper = CapWrapper {
+                        id: object::new(ctx),
+                        cap_id_sui: object::id_from_address(sui_cap_id_address),
+                        cap: dwallet_cap,
+                    };
 
-            transfer::share_object(wrapper);
-        };
-        vector::destroy_empty(dwallet_caps);
+        transfer::share_object(wrapper);
+    
     }
 
 
@@ -172,25 +167,33 @@ module dwallet_system::sui_state_proof {
         checkpoint_summary: vector<u8>,
         checkpoint_contents: vector<u8>,
         transaction: vector<u8>,
-        ): vector<MessageApproval>{
+        ): vector<vector<MessageApproval>>{
         
         let (cap_ids_serialised_bytes, messages_serialised_bytes) = sui_state_proof_verify_transaction(committee.committee, checkpoint_summary, checkpoint_contents, transaction, config.approve_event_type_layout, config.package_id );
 
         let cap_ids = bcs::peel_vec_address(&mut bcs::new(cap_ids_serialised_bytes));
-        let messages = bcs::peel_vec_vec_u8(&mut bcs::new(messages_serialised_bytes));
 
-        // only messages are approved for the cap id that is represented by the cap wrapper
-        let messages_to_approve = vector::empty<vector<u8>>();
+        // basically this is peel_vec_vec_vec<u8>,
+        let bcs = bcs::new(messages_serialised_bytes);
+        let (len, i, messages) = (bcs::peel_vec_length(&mut bcs), 0, vector::empty<vector<vector<u8>>>());
+        while (i < len) {
+            vector::push_back(&mut messages, bcs::peel_vec_vec_u8(&mut bcs));
+            i = i + 1;
+        };
+
+        assert!(vector::length(&cap_ids) == vector::length(&messages), EWrongAmountOfDWalletCaps);
+
+        let result = vector::empty<vector<MessageApproval>>();
         let i = 0;
         while (i < vector::length(&cap_ids)) {
             let cap_id_address = *vector::borrow(&cap_ids, i);
             if (object::id_from_address(cap_id_address) == cap_wrapper.cap_id_sui) {
-                vector::push_back(&mut messages_to_approve, *vector::borrow(&messages, i));
+                let messages_to_approve = *vector::borrow(&messages, i);
+                let approvals = dwallet::approve_messages(&cap_wrapper.cap, messages_to_approve);
+                vector::push_back(&mut result, approvals);
             };
             i = i + 1;
         };
-
-        assert!(vector::length(&messages_to_approve) > 0, EStateProofNoMessagesToApprove);
-        dwallet::approve_messages(&cap_wrapper.cap, messages_to_approve)
+        result
     }
 }

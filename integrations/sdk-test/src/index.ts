@@ -29,8 +29,8 @@ async function main() {
 		const dWalletCapPackageSUI =
 			'0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec';
 
-		const configObjectId = '0x6b824c206279b07d888a275bdc621221f2319315d06882d0536830afb4d778ec';
-		const registryObjectId = '0xbe183defd8d54de7927ea7da8ddd3ae9eaa26ce47bfd6758d36a7b68c2e3f3a0';
+		const configObjectId = '0xd0508ac7ca7ff62e3e03bdf830e5f5bbc8425c7be52bea40738904098ba554f6';
+		const registryObjectId = '0xb388dfe5386b44415bff2a2f7c4926c7c76b38246ac78536e23fa0bf61f4d51a';
 
 		const sui_client = new SuiClient({ url: suiTestnetURL });
 		const dwallet_client = new DWalletClient({
@@ -185,19 +185,42 @@ async function main() {
 		console.log('dWalletId1', dwalletCapId1);
 		console.log('dWalletId2', dwalletCapId2);
 		console.log('dWalletId3', dwalletCapId3);
-		let resultFinal = await submitDWalletCreationProof(
+		let resultFinal1 = await submitDWalletCreationProof(
 			dwallet_client,
 			sui_client,
 			configObjectId,
 			registryObjectId,
-			// @ts-ignore
-			[dwalletCapId1, dwalletCapId2, dwalletCapId3],
+			dwalletCapId1,
+			createCapTxId,
+			serviceUrl,
+			keyPair,
+		);
+		let resultFinal2 = await submitDWalletCreationProof(
+			dwallet_client,
+			sui_client,
+			configObjectId,
+			registryObjectId,
+			dwalletCapId2,
 			createCapTxId,
 			serviceUrl,
 			keyPair,
 		);
 
-		console.log('creation done', resultFinal);
+		let resultFinal3 = await submitDWalletCreationProof(
+			dwallet_client,
+			sui_client,
+			configObjectId,
+			registryObjectId,
+			// @ts-ignore
+			dwalletCapId3,
+			createCapTxId,
+			serviceUrl,
+			keyPair,
+		);
+
+		console.log('creation done 1', resultFinal1);
+		console.log('creation done 2', resultFinal2);
+		console.log('creation done 3', resultFinal3);
 
 		const bytes: Uint8Array = new TextEncoder().encode('dWallets are coming... to Sui');
 
@@ -218,10 +241,10 @@ async function main() {
 		}
 
 		if (
-			typeof resultFinal.effects?.created == 'object' &&
-			'reference' in resultFinal.effects?.created?.[0]
+			typeof resultFinal1.effects?.created == 'object' &&
+			'reference' in resultFinal1.effects?.created?.[0]
 		) {
-			const capWrapperRef = resultFinal.effects?.created?.[0].reference;
+			const capWrapperRef = resultFinal1.effects?.created?.[0].reference;
 
 			console.log('A');
 
