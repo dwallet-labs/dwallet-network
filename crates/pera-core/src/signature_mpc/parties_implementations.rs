@@ -1,13 +1,13 @@
-use std::collections::HashSet;
-use std::iter;
 use crate::signature_mpc::mpc_manager::CreatableParty;
 use group::{secp256k1, PartyID, Samplable};
 use maurer::knowledge_of_discrete_log::PublicParameters;
 use maurer::{Language, Proof};
-use rand_core::{CryptoRngCore, OsRng};
-use std::marker::PhantomData;
 use proof::aggregation::Instantiatable;
 use proof::GroupsPublicParametersAccessors;
+use rand_core::{CryptoRngCore, OsRng};
+use std::collections::HashSet;
+use std::iter;
+use std::marker::PhantomData;
 
 pub fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
     language_public_parameters: &Lang::PublicParameters,
@@ -19,12 +19,11 @@ pub fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
             language_public_parameters.witness_space_public_parameters(),
             rng,
         )
-            .unwrap()
+        .unwrap()
     })
-        .take(batch_size)
-        .collect()
+    .take(batch_size)
+    .collect()
 }
-
 
 pub type ProofParty = proof::aggregation::asynchronous::Party<
     Proof<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang, PhantomData<()>>,

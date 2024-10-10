@@ -132,7 +132,8 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
             )
         };
         let Ok(advance_result) =
-            party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng) else {
+            party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng)
+        else {
             // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
             self.pending_messages.clear();
             return Ok(());
@@ -221,9 +222,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     /// Handles a message by either forwarding it to the instance or ignoring it if the instance is finished.
     fn handle_message(&mut self, message: SignatureMPCMessage) -> PeraResult<()> {
         match self.status {
-            MPCSessionStatus::Active => {
-                self.store_message(&message, self.epoch_store()?)
-            }
+            MPCSessionStatus::Active => self.store_message(&message, self.epoch_store()?),
             MPCSessionStatus::Finished(_) => {
                 // Do nothing
                 Ok(())
