@@ -275,7 +275,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
             mpc_threshold_number_of_parties: ((num_of_parties * 2) + 2) / 3,
-            auxiliary_input: (),
+            auxiliary_input,
         }
     }
 
