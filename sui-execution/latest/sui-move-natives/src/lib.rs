@@ -61,6 +61,7 @@ use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
 
 mod address;
+mod authority_binder;
 mod crypto;
 mod dynamic_field;
 mod eth_state_proof;
@@ -835,6 +836,11 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "ethereum_state",
             "create_initial_eth_state_data",
             make_native!(eth_state_proof::create_initial_eth_state_data),
+        ),
+        (
+            "binder",
+            "create_authority_ack_transaction",
+            make_native!(authority_binder::create_authority_ack_transaction),
         ),
     ];
     sui_system_natives
