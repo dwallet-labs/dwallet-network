@@ -37,7 +37,6 @@ struct SignatureMPCMessage {
     /// The authority that sent the message
     authority: AuthorityName,
 }
-pub type ProofMessage = (Proof<1, Lang, PhantomData<()>>, Vec<Value>);
 
 pub trait CreatableParty: Party {
     fn new(threshold: PartyID) -> Self;
