@@ -2686,7 +2686,6 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/commitment.git#898eed70ad1ac3de6d78bf058134f877543dc4b8"
 dependencies = [
  "crypto-bigint 0.5.5",
  "group 0.1.0",
@@ -2744,7 +2743,7 @@ dependencies = [
  "prost 0.13.3",
  "quinn-proto",
  "rand 0.8.5",
- "rstest",
+ "rstest 0.16.0",
  "rustls 0.23.14",
  "serde",
  "shared-crypto",
@@ -5069,6 +5068,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "gcd"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d758ba1b47b00caf47f24925c0074ecb20d6dfcffe7f6d53395c0465674841a"
+
+[[package]]
 name = "gcp-bigquery-client"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5217,7 +5222,6 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/group.git#f723a086b77eb76a61ebd9aafdeb6f98bb0f0b83"
 dependencies = [
  "crypto-bigint 0.5.5",
  "curve25519-dalek-ng",
@@ -6841,14 +6845,17 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/maurer.git?rev=24fefa7#24fefa77d08daf91f5c74d25c041f7cfdcbd7050"
 dependencies = [
  "commitment",
+ "criterion",
  "crypto-bigint 0.5.5",
  "getrandom 0.2.15",
  "group 0.1.0",
  "merlin",
+ "mpc",
  "proof",
+ "rand_core 0.6.4",
+ "rstest 0.22.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -7842,6 +7849,19 @@ dependencies = [
  "move-vm-profiler",
  "serde",
  "smallvec",
+]
+
+[[package]]
+name = "mpc"
+version = "0.1.0"
+dependencies = [
+ "crypto-bigint 0.5.5",
+ "gcd",
+ "getrandom 0.2.15",
+ "group 0.1.0",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -10184,7 +10204,7 @@ dependencies = [
  "rayon",
  "reqwest 0.12.8",
  "roaring",
- "rstest",
+ "rstest 0.16.0",
  "schemars",
  "scopeguard",
  "serde",
@@ -12864,15 +12884,19 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/proof.git?rev=addfe9f#addfe9f864c3260514454cb9c904cc169ba5769b"
 dependencies = [
  "bulletproofs",
  "commitment",
+ "criterion",
  "crypto-bigint 0.5.5",
  "curve25519-dalek-ng",
  "getrandom 0.2.15",
  "group 0.1.0",
  "merlin",
+ "mpc",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "rstest 0.22.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -13432,6 +13456,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 
 [[package]]
+name = "relative-path"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba39f3699c378cd8970968dcbff9c43159ea4cfbd88d43c00b22f2ef10a435d2"
+
+[[package]]
 name = "reqwest"
 version = "0.11.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13731,7 +13761,19 @@ checksum = "b07f2d176c472198ec1e6551dc7da28f1c089652f66a7b722676c2238ebc0edf"
 dependencies = [
  "futures",
  "futures-timer",
- "rstest_macros",
+ "rstest_macros 0.16.0",
+ "rustc_version",
+]
+
+[[package]]
+name = "rstest"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b423f0e62bdd61734b67cd21ff50871dfaeb9cc74f869dcd6af974fbcb19936"
+dependencies = [
+ "futures",
+ "futures-timer",
+ "rstest_macros 0.22.0",
  "rustc_version",
 ]
 
@@ -13746,6 +13788,24 @@ dependencies = [
  "quote 1.0.37",
  "rustc_version",
  "syn 1.0.109",
+ "unicode-ident",
+]
+
+[[package]]
+name = "rstest_macros"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c5e1711e7d14f74b12a58411c542185ef7fb7f2e7f8ee6e2940a883628522b42"
+dependencies = [
+ "cfg-if",
+ "glob",
+ "proc-macro-crate 3.2.0",
+ "proc-macro2 1.0.87",
+ "quote 1.0.37",
+ "regex",
+ "relative-path",
+ "rustc_version",
+ "syn 2.0.79",
  "unicode-ident",
 ]
 
@@ -16607,7 +16667,7 @@ dependencies = [
  "quote 1.0.37",
  "rand 0.8.5",
  "rocksdb",
- "rstest",
+ "rstest 0.16.0",
  "serde",
  "syn 1.0.109",
  "tap",

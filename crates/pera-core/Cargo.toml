@@ -99,9 +99,9 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
-proof = { git = "https://github.com/dwallet-labs/proof.git", rev = "addfe9f" }
-maurer = { git = "https://github.com/dwallet-labs/maurer.git", rev = "24fefa7" }
-group = { git = "https://github.com/dwallet-labs/group.git" }
+proof = { path = "../../../cryptography-private/proof" }
+maurer = { path = "../../../cryptography-private/maurer" }
+group = { path = "../../../cryptography-private/group" }
 rand_core = "0.6.4"
 
 [dev-dependencies]
