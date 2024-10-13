@@ -1,23 +1,21 @@
 # Encryption Keys
 
-Encryption Keys are made for transferring data between accounts on the dWallet Network without exposing this data.
+Encryption keys facilitate secure data transfer between accounts on the dWallet Network by ensuring that sensitive information remains confidential during transmission.
 
-For each address on the dWallet Network, we are creating an Encryption Key.
-Anyone who wants to send an encrypted data to a specific account, will use this account's encryption key to encrypt the data, then transfer it to the account, and the recipient will be the only one who can decrypt and retrieve this data.
+Each address on the dWallet Network is associated with a unique encryption key. When an external party intends to send encrypted data to a particular account, they utilize the recipient’s encryption key to encrypt the data. The recipient is then the sole entity capable of decrypting and accessing this information, ensuring secure, end-to-end encryption.
 
-For example, in case of transferring a dWallet, we'll have to send the dWallet's user secret share. Having the dWallet's user secret share claims the ownership of the dWallet. 
-By transferring the dWallet's user secret share we basically transfer dWallets between accounts.
+For instance, when transferring a dWallet, the sender must securely transmit the dWallet’s `user secret share`. Ownership of a dWallet is determined by possession of the dWallet's `user secret share`, meaning that transferring this secret share effectively transfers ownership of the dWallet between accounts.
 
-This way we can encrypt any data we want over the network and transfer it between accounts on the dWallet Network.
+This approach enables the encryption and secure transmission of any data across the dWallet Network, preserving privacy and security.
 
 ## Prerequisites
 
-For any operation on the dWallet Network we need a `keypair` and a `client`. The following client is connecting to the Alpha Testnet.
+Before interacting with the dWallet Network, a `keypair` and a `client` are required. The example below demonstrates how to connect a client to the Alpha Testnet.
 
 ```typescript
 import { DWalletClient } from '@dwallet-network/dwallet.js/client';
 import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
-// importing the functions for working with encryption keys
+// Importing necessary functions to work with encryption keys
 import {
     EncryptionKeyScheme,
     getActiveEncryptionKeyObjID,
@@ -27,45 +25,39 @@ import {
     transferEncryptedUserShare,
 } from './dwallet.js';
 
-// create a new DWalletClient object pointing to the network you want to use
+// Create a new DWalletClient object that points to the desired network
 const client = new DWalletClient({ url: 'https://fullnode.alpha.testnet.dwallet.cloud' });
 const keypair = new Ed25519Keypair();
 ```
 
-## The Encryption Keys table
-On the dWallet Network we have a mapping of address to Encryption Key.
-If you want to send encrypted data to an account, you can look for an Encryption Key of the target account in the EncryptionKeysTable and use it.
+## The Encryption Keys Table
+The dWallet Network maintains a mapping of addresses to their associated encryption keys, called the `EncryptionKeysTable`. To send encrypted data to an account, one can query the recipient’s encryption key from this table and use it to secure the transmitted data.
 
-This Encryption Key allows any user on the network to send encrypted data to a specific account using their Encryption Key.
-Only the owner of the Encryption Key would be able to decrypt the sent data using its own private key which created the Encryption Key.
+The encryption key allows any user on the network to send encrypted data to a specific account. However, only the recipient, who possesses the private key that generated the encryption key, can decrypt and access the transmitted data.
 
-The id of the Encryption Keys Table on the dWallet Network is `0xblahblahblah`.
+The current identifier (ID) for the `EncryptionKeysTable` on the dWallet Network is `0xblahblahblah`.
 ```typescript
 const activeEncryptionKeysTableID = `0xblahblahblah`;
 ```
 
-There is an option to create a table on your own, and you can do it this way:
+Users also have the option to create their own encryption keys table as follows:
 ```typescript
 const encryptionKeysHolder = await createActiveEncryptionKeysTable(client, keypair);
 const activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
 ```
 
-## Create an Encryption Key
+## Creating an Encryption Key
 
-After creating a `keypair` on the network, we create an `EncryptionKey` for it.
-
+Once a `keypair` is generated on the network, the next step is to create an `EncryptionKey` associated with it.
 ```typescript
 let senderEncryptionKeyObj = await getOrCreateEncryptionKey(keypair, client, activeEncryptionKeysTableID);
 ```
 
-## Store the Encryption Key in the Encryption Keys Table
+## Storing the Encryption Key in the Encryption Keys Table
 
-Now that we have an `EncryptionKey`, we want to store it in the Encryption Keys Table.
-It will allow any user to send us encrypted data over the network that only we will be able to decrypt.
-
+After generating the `EncryptionKey`, it must be stored in the `EncryptionKeysTable`. 
+This process enables other network users to send encrypted data to the address, ensuring that only the owner can decrypt the incoming information.
 ```typescript
-
-
 const pubKeyRef = await storeEncryptionKey(
     senderEncryptionKeyObj.encryptionKey,
     EncryptionKeyScheme.Paillier,
@@ -74,10 +66,9 @@ const pubKeyRef = await storeEncryptionKey(
 );
 ```
 
-## Set the active Encryption Key
+## Setting the active Encryption Key
 
-We can have several Encryption Keys. We need to set the one we want the other users on the network to use.
-
+It is possible to maintain multiple encryption keys for a single account. To specify which encryption key should be used by other network participants when sending encrypted data, we must designate an active encryption key.
 ```typescript
 await setActiveEncryptionKey(
     client,
@@ -87,4 +78,4 @@ await setActiveEncryptionKey(
 );
 ```
 
-Now, we have set the `EncryptionKey` to use when someone would want to send us an encrypted data.
+At this point, the designated EncryptionKey is set as active, enabling other users on the dWallet Network to securely send encrypted data that only the owner of the `EncryptionKey` can decrypt.
