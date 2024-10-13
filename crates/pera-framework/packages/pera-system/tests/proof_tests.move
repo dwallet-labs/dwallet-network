@@ -46,7 +46,5 @@ module pera_system::proof_tests {
 
         let created_objects = test_scenario::created(&effects);
         assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
-
-        // TODO: After we change the move function properly we need to add a check for the owned object
     }
 }
