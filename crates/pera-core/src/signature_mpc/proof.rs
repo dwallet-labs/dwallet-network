@@ -10,6 +10,8 @@ use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
 
+// TODO (#228): Remove this file & all proof MPC code.
+
 /// Create dummy witnesses for the dummy proof flow.
 fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
     language_public_parameters: &Lang::PublicParameters,
