@@ -144,27 +144,33 @@ pub fn sui_state_proof_verify_link_cap(
     let summary_bytes = pop_arg!(args, Vec<u8>);
     let committee_bytes = pop_arg!(args, Vec<u8>);
 
+    // Trusted input from last state committee
     let Ok(committee) = bcs::from_bytes::<Committee>(&committee_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_COMMITTEE));
     };
 
+    // Untrusted input passed in by the user
     let Ok(summary) = bcs::from_bytes::<CertifiedCheckpointSummary>(&summary_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_CHECKPOINT_SUMMARY));
     };
 
+    // Untrusted input passed in by the user
     let Ok(checkpoint_contents) = bcs::from_bytes::<CheckpointContents>(&checkpoint_contents_bytes)
     else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
-
+    
+    // Untrusted input passed in by the user
     let Ok(transaction) = bcs::from_bytes::<CheckpointTransaction>(&transaction_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
-
+    
+    // Trusted input from config
     let Ok(type_layout) = bcs::from_bytes::<MoveTypeLayout>(&type_layout_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
 
+    // Trusted input from config
     let Ok(package_id_target) = bcs::from_bytes::<ObjectID>(&package_id_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
@@ -175,19 +181,26 @@ pub fn sui_state_proof_verify_link_cap(
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
 
-    // Ensure the tx is part of the checkpoint
-    let is_valid_checkpoint_tx = checkpoint_contents
-        .iter()
-        .any(|&digest| digest == transaction.effects.execution_digests());
-    if !is_valid_checkpoint_tx {
+    let digests = transaction.effects.execution_digests();
+
+    // Check that transaction digest matches the execution digest
+    if transaction.transaction.digest() != &digests.transaction {
         return Ok(NativeResult::err(cost, INVALID_TX));
-    };
+    }
+
+    // Ensure the digests are in the checkpoint contents
+    if !checkpoint_contents
+        .enumerate_transactions(&summary)
+        .any(|x| x.1 == &digests) {
+            return Ok(NativeResult::err(cost, INVALID_TX));
+    }   
 
     let events_digest = transaction.events.as_ref().map(|events| events.digest());
+    // Ensure that the execution digest matches the events digest of the passed transaction
     if !(events_digest.as_ref() == transaction.effects.events_digest()) {
         return Ok(NativeResult::err(cost, INVALID_TX));
     };
-
+    
     let tx_events = match transaction.events.as_ref() {
         Some(events) => &events.data,
         None => {
@@ -289,27 +302,33 @@ pub fn sui_state_proof_verify_transaction(
     let summary_bytes = pop_arg!(args, Vec<u8>);
     let committee_bytes = pop_arg!(args, Vec<u8>);
 
+    // Trusted input from last state committee
     let Ok(committee) = bcs::from_bytes::<Committee>(&committee_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_COMMITTEE));
     };
-
+    
+    // Untrusted input passed in by the user
     let Ok(summary) = bcs::from_bytes::<CertifiedCheckpointSummary>(&summary_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_CHECKPOINT_SUMMARY));
     };
-
+    
+    // Untrusted input passed in by the user
     let Ok(checkpoint_contents) = bcs::from_bytes::<CheckpointContents>(&checkpoint_contents_bytes)
     else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
-
+    
+    // Untrusted input passed in by the user
     let Ok(transaction) = bcs::from_bytes::<CheckpointTransaction>(&transaction_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
 
+    // Trusted input from config
     let Ok(type_layout) = bcs::from_bytes::<MoveTypeLayout>(&type_layout_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
 
+    // Trusted input from config
     let Ok(package_id_target) = bcs::from_bytes::<ObjectID>(&package_id_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
@@ -320,13 +339,19 @@ pub fn sui_state_proof_verify_transaction(
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
 
-    // Ensure the tx is part of the checkpoint
-    let is_valid_checkpoint_tx = checkpoint_contents
-        .iter()
-        .any(|&digest| digest == transaction.effects.execution_digests());
-    if !is_valid_checkpoint_tx {
+    let digests = transaction.effects.execution_digests();
+
+    // Check that transaction digest matches the execution digest
+    if transaction.transaction.digest() != &digests.transaction {
         return Ok(NativeResult::err(cost, INVALID_TX));
-    };
+    }
+
+    // Ensure the digests are in the checkpoint contents
+    if !checkpoint_contents
+        .enumerate_transactions(&summary)
+        .any(|x| x.1 == &digests) {
+            return Ok(NativeResult::err(cost, INVALID_TX));
+    }   
 
     let events_digest = transaction.events.as_ref().map(|events| events.digest());
     // Ensure that the execution digest matches the events digest of the passed transaction
@@ -334,7 +359,12 @@ pub fn sui_state_proof_verify_transaction(
         return Ok(NativeResult::err(cost, INVALID_TX));
     };
 
-    let tx_events = &transaction.events.as_ref().unwrap().data;
+    let tx_events = match transaction.events.as_ref() {
+        Some(events) => &events.data,
+        None => {
+            return Ok(NativeResult::err(cost, INVALID_TX));
+        }
+    };
 
     let results: Vec<(SuiAddress, Vec<Vec<u8>>)> = tx_events
         .into_iter()
