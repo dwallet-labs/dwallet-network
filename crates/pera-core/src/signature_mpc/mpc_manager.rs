@@ -89,8 +89,6 @@ struct SignatureMPCInstance<P: CreatableParty> {
     party: Option<P>,
 }
 
-type SignatureMPCMessageTx = ConsensusTransaction;
-
 impl<P: CreatableParty> SignatureMPCInstance<P> {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
