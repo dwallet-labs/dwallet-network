@@ -82,6 +82,7 @@ struct SignatureMPCInstance<P: CreatableParty> {
     epoch_id: EpochId,
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it
+    /// To calculate the parties IDs all we need to know is the number of parties, as the IDs are just the indexes of those parties. If there are 3 parties, the IDs are [0, 1, 2].
     number_of_parties: usize,
     session_id: ObjectID,
     sender_address: PeraAddress,
