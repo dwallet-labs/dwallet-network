@@ -489,6 +489,9 @@ mod checked {
             TransactionKind::EndOfEpochTransaction(_) => {
                 panic!("EndOfEpochTransaction should not exist in execution layer v0");
             }
+            TransactionKind::SignatureMPCOutput(_) => {
+                panic!("SignatureMPCOutput should not exist in execution layer v0");
+            }
         }
     }
 

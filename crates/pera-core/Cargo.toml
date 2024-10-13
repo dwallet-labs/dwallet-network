@@ -45,6 +45,7 @@ scopeguard.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 serde_with.workspace = true
+schemars.workspace = true
 signature.workspace = true
 static_assertions.workspace = true
 tap.workspace = true
@@ -98,6 +99,11 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
+proof = { path = "../../../cryptography-private/proof" }
+maurer = { path = "../../../cryptography-private/maurer" }
+group = { path = "../../../cryptography-private/group" }
+mpc = { path = "../../../cryptography-private/mpc", features = ["parallel"] }
+rand_core = "0.6.4"
 
 [dev-dependencies]
 clap.workspace = true

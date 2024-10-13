@@ -352,6 +352,88 @@ impl std::str::FromStr for CheckpointDigest {
     }
 }
 
+/// Representation of a SignatureMPCMessage's digest
+#[derive(
+    Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
+)]
+pub struct SignatureMPCMessageDigest(pub Digest);
+
+impl SignatureMPCMessageDigest {
+    pub const fn new(digest: [u8; 32]) -> Self {
+        Self(Digest::new(digest))
+    }
+
+    pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
+        Self(Digest::generate(rng))
+    }
+
+    pub fn random() -> Self {
+        Self(Digest::random())
+    }
+
+    pub const fn inner(&self) -> &[u8; 32] {
+        self.0.inner()
+    }
+
+    pub const fn into_inner(self) -> [u8; 32] {
+        self.0.into_inner()
+    }
+
+    pub fn base58_encode(&self) -> String {
+        Base58::encode(self.0)
+    }
+
+    pub fn next_lexicographical(&self) -> Option<Self> {
+        self.0.next_lexicographical().map(Self)
+    }
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+)]
+pub struct SignatureMPCOutputDigest(pub Digest);
+
+impl SignatureMPCOutputDigest {
+    pub const fn new(digest: [u8; 32]) -> Self {
+        Self(Digest::new(digest))
+    }
+
+    pub fn generate<R: rand::RngCore + rand::CryptoRng>(rng: R) -> Self {
+        Self(Digest::generate(rng))
+    }
+
+    pub fn random() -> Self {
+        Self(Digest::random())
+    }
+
+    pub const fn inner(&self) -> &[u8; 32] {
+        self.0.inner()
+    }
+
+    pub const fn into_inner(self) -> [u8; 32] {
+        self.0.into_inner()
+    }
+
+    pub fn base58_encode(&self) -> String {
+        Base58::encode(self.0)
+    }
+
+    pub fn next_lexicographical(&self) -> Option<Self> {
+        self.0.next_lexicographical().map(Self)
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema)]
 pub struct CheckpointContentsDigest(Digest);
 
@@ -420,6 +502,12 @@ impl fmt::Debug for CheckpointContentsDigest {
         f.debug_tuple("CheckpointContentsDigest")
             .field(&self.0)
             .finish()
+    }
+}
+
+impl fmt::Debug for SignatureMPCMessageDigest {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("SignatureMPCDigest").field(&self.0).finish()
     }
 }
 
