@@ -8,6 +8,8 @@ mod checked {
 
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
+    use move_core_types::account_address::AccountAddress;
+    use move_core_types::ident_str;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
         BALANCE_CREATE_REWARDS_FUNCTION_NAME, BALANCE_DESTROY_REBATES_FUNCTION_NAME,
@@ -697,6 +699,9 @@ mod checked {
                     metrics,
                 )?;
                 Ok(Mode::empty_results())
+            }
+            TransactionKind::SignatureMPCOutput(_) => {
+                panic!("SignatureMPCOutput should not exist in v2");
             }
         }?;
         temporary_store.check_execution_results_consistency()?;

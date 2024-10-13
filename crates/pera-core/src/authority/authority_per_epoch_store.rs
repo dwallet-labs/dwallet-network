@@ -76,6 +76,8 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
+use crate::signature_mpc::mpc_manager::SignatureMPCManager;
+use crate::signature_mpc::proof::ProofParty;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -100,6 +102,7 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
+use pera_types::messages_signature_mpc::SignatureMPCOutput;
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -333,6 +336,9 @@ pub struct AuthorityPerEpochStore {
     /// State machine managing randomness DKG and generation.
     randomness_manager: OnceCell<tokio::sync::Mutex<RandomnessManager>>,
     randomness_reporter: OnceCell<RandomnessReporter>,
+
+    /// State machine managing Proof Signature MPC flows.
+    pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -848,6 +854,7 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
+            proof_mpc_manager: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -914,6 +921,23 @@ impl AuthorityPerEpochStore {
             error!("BUG: `set_randomness_manager` called more than once; this should never happen");
         }
         result
+    }
+
+    /// A function to initiate the proof MPC manager when a new epoch starts.
+    pub async fn set_proof_mpc_manager(
+        &self,
+        mut manager: SignatureMPCManager<ProofParty>,
+    ) -> PeraResult<()> {
+        if self
+            .proof_mpc_manager
+            .set(tokio::sync::Mutex::new(manager))
+            .is_err()
+        {
+            error!(
+                "BUG: `set_signature_mpc_manager` called more than once; this should never happen"
+            );
+        }
+        Ok(())
     }
 
     pub fn coin_deny_list_state_exists(&self) -> bool {
@@ -2397,6 +2421,23 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::SignatureMPCOutput(_, _, _),
+                ..
+            }) => {}
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, _),
+                ..
+            }) => {
+                if transaction.sender_authority() != *authority {
+                    // TODO (#263): Mark the validator who sent this message as malicious
+                    warn!(
+                        "SignatureMPCMessage authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CheckpointSignature(data),
                 ..
             }) => {
@@ -3153,6 +3194,13 @@ impl AuthorityPerEpochStore {
             }
         }
 
+        // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
+        if let Some(signature_mpc_manager) = self.proof_mpc_manager.get() {
+            let mut signature_mpc_manager = signature_mpc_manager.lock().await;
+            // TODO (#282): Process the end of delivery asynchronously
+            signature_mpc_manager.handle_end_of_delivery().await?;
+        };
+
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
         for (key, txns) in deferred_txns.into_iter() {
@@ -3340,6 +3388,11 @@ impl AuthorityPerEpochStore {
         let tracking_id = transaction.get_tracking_id();
 
         match &transaction {
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind:
+                    ConsensusTransactionKind::SignatureMPCOutput(statements, session_id, sender_address),
+                ..
+            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::UserTransaction(certificate),
                 ..
@@ -3540,6 +3593,18 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
+                ..
+            }) => {
+                let Some(signature_mpc_manager) = self.proof_mpc_manager.get() else {
+                    // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
+                    return Ok(ConsensusCertificateResult::Ignored);
+                };
+                let mut signature_mpc_manager = signature_mpc_manager.lock().await;
+                signature_mpc_manager.handle_message(message, *authority, *session_id)?;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::RandomnessStateUpdate(_, _),
                 ..
             }) => {
@@ -3632,8 +3697,12 @@ impl AuthorityPerEpochStore {
             return ConsensusCertificateResult::IgnoredSystem;
         }
 
-        // If needed we can support owned object system transactions as well...
-        assert!(system_transaction.contains_shared_object());
+        // System transactions either contain a shared object or are proof MPC output transactions.
+        let is_proof_mpc_output = matches!(
+            system_transaction.transaction_data().execution_parts().0,
+            TransactionKind::SignatureMPCOutput(_)
+        );
+        assert!(system_transaction.contains_shared_object() || is_proof_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())
     }
 
