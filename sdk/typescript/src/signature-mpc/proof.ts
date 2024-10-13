@@ -25,3 +25,21 @@ export async function launchProofMPSession(keypair: Keypair, client: PeraClient)
 		},
 	});
 }
+
+let dwalletModuleName = 'dWallet';
+
+export async function launchDKGSession(keypair: Keypair, client: PeraClient) {
+	const tx = new Transaction();
+	tx.moveCall({
+		target: `${packageId}::${dwalletModuleName}::launch_initiate_dkg_session`,
+		arguments: [],
+	});
+
+	await client.signAndExecuteTransaction({
+		signer: keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+}

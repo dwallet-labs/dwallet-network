@@ -341,7 +341,7 @@ pub struct AuthorityPerEpochStore {
     pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
 
     /// State machine managing DWallets DKG flows
-    pub dwallet_dkg_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
+    pub dwallet_dkg_init_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
