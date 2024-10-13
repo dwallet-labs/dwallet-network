@@ -1,3 +1,12 @@
+InitiateDKGSessionEvent
+	public struct
+	0x3::dwallet
+InitiaiteDKGSessionData
+	public struct
+	0x3::dwallet
+launch_initiate_dkg_session
+	public fun
+	0x3::dwallet
 UnverifiedValidatorOperationCap
 	public struct
 	0x3::validator_cap
