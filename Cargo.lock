@@ -5076,15 +5076,14 @@ checksum = "1d758ba1b47b00caf47f24925c0074ecb20d6dfcffe7f6d53395c0465674841a"
 
 [[package]]
 name = "gcp-bigquery-client"
-version = "0.18.1"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7fe3895eb99784b8ad2776688b41e068e918d18ebb736dafb1a321bce46c749"
+checksum = "13e4e5cfdd7a487197a79e3fbc01134a65697824f97a9c718e04972d27defc60"
 dependencies = [
  "async-stream",
  "async-trait",
  "dyn-clone",
- "hyper 0.14.30",
- "hyper-rustls 0.25.0",
+ "hyper 1.4.1",
  "log",
  "reqwest 0.12.8",
  "serde",
@@ -17538,9 +17537,9 @@ dependencies = [
 
 [[package]]
 name = "yup-oauth2"
-version = "8.3.2"
+version = "9.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b61da40aeb0907a65f7fb5c1de83c5a224d6a9ebb83bf918588a2bb744d636b8"
+checksum = "f75463c432f5d4ca9c75047514df3d768f8ac3276ac22c9a6531af6d0a3da7ee"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -17548,7 +17547,7 @@ dependencies = [
  "futures",
  "http 0.2.12",
  "hyper 0.14.30",
- "hyper-rustls 0.24.2",
+ "hyper-rustls 0.25.0",
  "itertools 0.12.1",
  "log",
  "percent-encoding",
