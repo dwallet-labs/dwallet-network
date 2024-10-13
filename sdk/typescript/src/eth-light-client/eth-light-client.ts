@@ -319,6 +319,8 @@ export const approveEthereumMessage = async (
 	let proofBcs = stringToArrayU8Bcs(JSON.stringify(proof));
 	let messageBcs = stringToArrayU8Bcs(message);
 
+	// todo(yuval): retry proof verification
+
 	const tx2 = new TransactionBlock();
 	tx2.moveCall({
 		target: `${packageId}::${ethDWalletModuleName}::approve_message`,
