@@ -5076,19 +5076,15 @@ checksum = "1d758ba1b47b00caf47f24925c0074ecb20d6dfcffe7f6d53395c0465674841a"
 
 [[package]]
 name = "gcp-bigquery-client"
-version = "0.23.0"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51480b6aca9d7997b8575b7e8b68441a847235673cdd739ae576bbfc708dbd3d"
+checksum = "13e4e5cfdd7a487197a79e3fbc01134a65697824f97a9c718e04972d27defc60"
 dependencies = [
  "async-stream",
  "async-trait",
  "dyn-clone",
- "flate2",
  "hyper 1.4.1",
- "hyper-util",
  "log",
- "prost 0.13.3",
- "prost-types 0.13.3",
  "reqwest 0.12.8",
  "serde",
  "serde_json",
@@ -5096,8 +5092,6 @@ dependencies = [
  "time",
  "tokio",
  "tokio-stream",
- "tonic 0.12.3",
- "tonic-build",
  "url",
  "yup-oauth2",
 ]
@@ -5737,6 +5731,23 @@ dependencies = [
  "rustls-native-certs 0.6.3",
  "tokio",
  "tokio-rustls 0.24.1",
+]
+
+[[package]]
+name = "hyper-rustls"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "399c78f9338483cb7e630c8474b07268983c6bd5acee012e4211f9f7bb21b070"
+dependencies = [
+ "futures-util",
+ "http 0.2.12",
+ "hyper 0.14.30",
+ "log",
+ "rustls 0.22.4",
+ "rustls-native-certs 0.7.3",
+ "rustls-pki-types",
+ "tokio",
+ "tokio-rustls 0.25.0",
 ]
 
 [[package]]
@@ -12968,8 +12979,6 @@ dependencies = [
  "prettyplease",
  "prost 0.13.3",
  "prost-types 0.13.3",
- "pulldown-cmark",
- "pulldown-cmark-to-cmark",
  "regex",
  "syn 2.0.79",
  "tempfile",
@@ -13055,26 +13064,6 @@ name = "public-suffix"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68a59553bc595dc1514e7d713e6167cf1c4d68ef6fcc2d10ad834a97a1ca9bc4"
-
-[[package]]
-name = "pulldown-cmark"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "666f0f59e259aea2d72e6012290c09877a780935cc3c18b1ceded41f3890d59c"
-dependencies = [
- "bitflags 2.6.0",
- "memchr",
- "unicase",
-]
-
-[[package]]
-name = "pulldown-cmark-to-cmark"
-version = "17.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41b27c0d365d60ff3e085007911d73419e5664de48155d558ebfa84d117a5109"
-dependencies = [
- "pulldown-cmark",
-]
 
 [[package]]
 name = "quanta"
@@ -14039,6 +14028,20 @@ dependencies = [
 
 [[package]]
 name = "rustls"
+version = "0.22.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf4ef73721ac7bcd79b2b315da7779d8fc09718c6b3d2d1b2d94850eb8c18432"
+dependencies = [
+ "log",
+ "ring 0.17.8",
+ "rustls-pki-types",
+ "rustls-webpki 0.102.8",
+ "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "rustls"
 version = "0.23.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "415d9944693cb90382053259f89fbb077ea730ad7273047ec63b19bc9b160ba8"
@@ -14060,6 +14063,19 @@ checksum = "a9aace74cb666635c918e9c12bc0d348266037aa8eb599b5cba565709a8dff00"
 dependencies = [
  "openssl-probe",
  "rustls-pemfile 1.0.4",
+ "schannel",
+ "security-framework",
+]
+
+[[package]]
+name = "rustls-native-certs"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5bfb394eeed242e909609f56089eecfe5fda225042e8b171791b9c95f5931e5"
+dependencies = [
+ "openssl-probe",
+ "rustls-pemfile 2.2.0",
+ "rustls-pki-types",
  "schannel",
  "security-framework",
 ]
@@ -15943,6 +15959,17 @@ dependencies = [
 
 [[package]]
 name = "tokio-rustls"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "775e0c0f0adb3a2f22a00c4745d728b479985fc15ee7ca6a2608388c5569860f"
+dependencies = [
+ "rustls 0.22.4",
+ "rustls-pki-types",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-rustls"
 version = "0.26.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c7bc40d0e5a97695bb96e27995cd3a08538541b0a846f65bba7a359f36700d4"
@@ -16200,11 +16227,8 @@ dependencies = [
  "percent-encoding",
  "pin-project",
  "prost 0.13.3",
- "rustls-native-certs 0.8.0",
- "rustls-pemfile 2.2.0",
  "socket2 0.5.7",
  "tokio",
- "tokio-rustls 0.26.0",
  "tokio-stream",
  "tower 0.4.13",
  "tower-layer",
@@ -17513,28 +17537,28 @@ dependencies = [
 
 [[package]]
 name = "yup-oauth2"
-version = "11.0.0"
+version = "9.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ed5f19242090128c5809f6535cc7b8d4e2c32433f6c6005800bbc20a644a7f0"
+checksum = "f75463c432f5d4ca9c75047514df3d768f8ac3276ac22c9a6531af6d0a3da7ee"
 dependencies = [
  "anyhow",
  "async-trait",
- "base64 0.22.1",
+ "base64 0.21.7",
  "futures",
- "http 1.1.0",
- "http-body-util",
- "hyper 1.4.1",
- "hyper-rustls 0.27.3",
- "hyper-util",
+ "http 0.2.12",
+ "hyper 0.14.30",
+ "hyper-rustls 0.25.0",
+ "itertools 0.12.1",
  "log",
  "percent-encoding",
- "rustls 0.23.14",
- "rustls-pemfile 2.2.0",
+ "rustls 0.22.4",
+ "rustls-pemfile 1.0.4",
  "seahash",
  "serde",
  "serde_json",
  "time",
  "tokio",
+ "tower-service",
  "url",
 ]
 
