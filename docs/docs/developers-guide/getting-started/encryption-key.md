@@ -22,7 +22,6 @@ import {
     getEncryptionKeyByObjectId,
     setActiveEncryptionKey,
     storeEncryptionKey,
-    transferEncryptedUserShare,
 } from './dwallet.js';
 
 // Create a new DWalletClient object that points to the desired network
