@@ -1,17 +1,15 @@
 use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent};
 use crate::signature_mpc::mpc_manager::CreatableParty;
 use group::{secp256k1, PartyID, Samplable};
+use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;
 use maurer::knowledge_of_discrete_log::PublicParameters;
-use maurer::{Language};
-use proof::aggregation::Instantiatable;
+use maurer::Language;
 use proof::GroupsPublicParametersAccessors;
-use rand_core::{CryptoRngCore, OsRng};
+use rand_core::CryptoRngCore;
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
-use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;
 use tiresias::test_helpers::{N, SECRET_KEY};
-use twopc_mpc::paillier::EncryptionOfSecretKeyShareRoundParty;
 use twopc_mpc::secp256k1::paillier::bulletproofs::PaillierProtocolPublicParameters;
 // TODO (#228): Remove this file & all proof MPC code.
 
@@ -26,15 +24,17 @@ fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
             language_public_parameters.witness_space_public_parameters(),
             rng,
         )
-            .unwrap()
+        .unwrap()
     })
-        .take(batch_size)
-        .collect()
+    .take(batch_size)
+    .collect()
 }
 
 /// A party in the proof MPC flow.
-pub type AsyncProtocol = twopc_mpc::secp256k1::paillier::bulletproofs::AsyncProtocol<PhantomData<()>>;
-pub type DKGParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
+pub type AsyncProtocol =
+    twopc_mpc::secp256k1::paillier::bulletproofs::AsyncProtocol<PhantomData<()>>;
+pub type DKGParty =
+    <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
 
 pub fn setup_paillier_secp256k1() -> (PaillierProtocolPublicParameters, tiresias::DecryptionKey) {
     let paillier_protocol_public_parameters =
@@ -46,7 +46,7 @@ pub fn setup_paillier_secp256k1() -> (PaillierProtocolPublicParameters, tiresias
             .protocol_public_parameters
             .encryption_scheme_public_parameters,
     )
-        .unwrap();
+    .unwrap();
 
     (paillier_protocol_public_parameters, decryption_key)
 }
@@ -58,7 +58,6 @@ impl CreatableParty for DKGParty {
     fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self {
         Self::default()
     }
-
 
     fn first_auxiliary_input() -> Self::AuxiliaryInput {
         let (paillier_protocol_public_parameters, decryption_key) = setup_paillier_secp256k1();
@@ -82,11 +81,10 @@ type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp2
 
 /// The public parameters for the proof MPC flow.
 type ProofPublicParameters =
-maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
+    maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
 
 /// Generate the public parameters for the proof MPC flow.
 fn generate_language_public_parameters<const REPETITIONS: usize>() -> ProofPublicParameters {
-
     let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
 
     let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
