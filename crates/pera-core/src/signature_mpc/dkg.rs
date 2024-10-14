@@ -1,4 +1,4 @@
-use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent};
+use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent, InitDKGMPCEvent};
 use crate::signature_mpc::mpc_manager::CreatableParty;
 use group::{secp256k1, PartyID, Samplable};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;
@@ -52,7 +52,7 @@ pub fn setup_paillier_secp256k1() -> (PaillierProtocolPublicParameters, tiresias
 }
 
 impl CreatableParty for DKGParty {
-    type InitEvent = CreatedProofMPCEvent;
+    type InitEvent = InitDKGMPCEvent;
     type FinalizeEvent = CompletedProofMPCSessionEvent;
 
     fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self {

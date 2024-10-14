@@ -5,7 +5,7 @@ title: Module `0x3::dwallet`
 
 
 -  [Struct `InitiateDKGSessionEvent`](#0x3_dwallet_InitiateDKGSessionEvent)
--  [Resource `InitiaiteDKGSessionData`](#0x3_dwallet_InitiaiteDKGSessionData)
+-  [Resource `InitiateDKGSessionData`](#0x3_dwallet_InitiateDKGSessionData)
 -  [Function `launch_initiate_dkg_session`](#0x3_dwallet_launch_initiate_dkg_session)
 
 
@@ -44,13 +44,13 @@ title: Module `0x3::dwallet`
 
 </details>
 
-<a name="0x3_dwallet_InitiaiteDKGSessionData"></a>
+<a name="0x3_dwallet_InitiateDKGSessionData"></a>
 
-## Resource `InitiaiteDKGSessionData`
+## Resource `InitiateDKGSessionData`
 
 
 
-<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_InitiaiteDKGSessionData">InitiaiteDKGSessionData</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_InitiateDKGSessionData">InitiateDKGSessionData</a> <b>has</b> key
 </code></pre>
 
 
@@ -94,7 +94,7 @@ Function to launch proof MPC flow.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_launch_initiate_dkg_session">launch_initiate_dkg_session</a>(ctx: &<b>mut</b> TxContext) {
-    <b>let</b> session_data = <a href="dwallet.md#0x3_dwallet_InitiaiteDKGSessionData">InitiaiteDKGSessionData</a> {
+    <b>let</b> session_data = <a href="dwallet.md#0x3_dwallet_InitiateDKGSessionData">InitiateDKGSessionData</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         sender: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx)
     };

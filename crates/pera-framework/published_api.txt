@@ -1,7 +1,7 @@
 InitiateDKGSessionEvent
 	public struct
 	0x3::dwallet
-InitiaiteDKGSessionData
+InitiateDKGSessionData
 	public struct
 	0x3::dwallet
 launch_initiate_dkg_session
