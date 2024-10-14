@@ -44,7 +44,6 @@ module dwallet_system::sui_state_proof {
         cap: DWalletCap,
     }
 
-
     native fun sui_state_proof_verify_committee(
         prev_committee: vector<u8>,
         checkpoint_summary: vector<u8>
@@ -67,7 +66,6 @@ module dwallet_system::sui_state_proof {
         event_type_layout: vector<u8>,
         package_id: vector<u8>
     ): (vector<u8>, vector<u8>);
-
 
     public fun init_module(
         init_committee: vector<u8>,
@@ -105,7 +103,6 @@ module dwallet_system::sui_state_proof {
         transfer::freeze_object(first_committee);
     }
 
-
     public fun submit_new_state_committee(
         registry: &mut StateProofRegistry,
         prev_committee: &EpochCommittee,
@@ -135,7 +132,6 @@ module dwallet_system::sui_state_proof {
         transfer::freeze_object(committee_new);
     }
 
-
     public fun create_dwallet_wrapper(
         config: &StateProofConfig,
         dwallet_cap: DWalletCap,
@@ -154,7 +150,7 @@ module dwallet_system::sui_state_proof {
             config.package_id
         );
 
-        // check if the cap id used on SUI is the same as the id of dwallet_cap
+        // Check if the cap ID used on SUI is the same as the ID of `dwallet_cap`.
         let sui_cap_id_address_vec = bcs::peel_vec_address(&mut bcs::new(sui_cap_ids_bytes));
         let dwallet_cap_id_address_vec = bcs::peel_vec_address(&mut bcs::new(dwallet_cap_ids_bytes));
 
@@ -172,7 +168,6 @@ module dwallet_system::sui_state_proof {
 
         transfer::share_object(wrapper);
     }
-
 
     public fun transaction_state_proof(
         config: &StateProofConfig,
