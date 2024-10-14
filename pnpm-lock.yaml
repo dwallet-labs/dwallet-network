@@ -1419,8 +1419,17 @@ importers:
         specifier: ^2.0.1
         version: 2.0.1(@types/node@20.14.10)(happy-dom@14.12.3)(jsdom@24.1.0)(sass@1.77.6)(terser@5.31.1)
 
+  sdk/signature-mpc-wasm:
+    devDependencies:
+      cross-env:
+        specifier: ^7.0.3
+        version: 7.0.3
+
   sdk/typescript:
     dependencies:
+      '@dwallet-network/signature-mpc-wasm':
+        specifier: workspace:*
+        version: link:../signature-mpc-wasm
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.9.0)
