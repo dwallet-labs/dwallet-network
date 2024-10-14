@@ -69,6 +69,7 @@ exclude = [
 ]
 
 members = [
+    "crates/dwallet-mpc",
     "consensus/config",
     "consensus/core",
     "crates/anemo-benchmark",
@@ -196,7 +197,7 @@ members = [
     "pera-execution/v1/pera-verifier",
     "pera-execution/v2/pera-adapter",
     "pera-execution/v2/pera-move-natives",
-    "pera-execution/v2/pera-verifier",
+    "pera-execution/v2/pera-verifier", "crates/dwallet-mpc",
 ]
 
 [workspace.package]

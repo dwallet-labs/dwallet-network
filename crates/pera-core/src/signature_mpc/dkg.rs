@@ -31,7 +31,7 @@ fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
 }
 
 /// A party in the proof MPC flow.
-pub type AsyncProtocol =
+pub type AsyncProtocol=
     twopc_mpc::secp256k1::paillier::bulletproofs::AsyncProtocol<PhantomData<()>>;
 pub type DKGParty =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;

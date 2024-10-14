@@ -3976,6 +3976,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "dwallet-mpc"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "group 0.1.0",
+ "maurer",
+ "mpc",
+ "pera-core",
+ "proof",
+ "rand_core 0.6.4",
+ "tiresias",
+ "twopc_mpc",
+]
+
+[[package]]
 name = "dyn-clone"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
