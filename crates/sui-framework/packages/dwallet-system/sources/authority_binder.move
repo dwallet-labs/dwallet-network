@@ -31,6 +31,18 @@ module dwallet_system::authority_binder {
 		virgin_bound: bool,
 	}
 
+	#[allow(unused_field)]
+	struct Config has store, key { 
+		id: UID,
+	}
+	
+	public fun create_config(ctx: &mut TxContext) {
+		let config = Config {
+			id: object::new(ctx),
+		};
+		transfer::share_object(config);
+	}
+
 	/// Point to the bound authority that should enforce the login for the `dwallet::DWalletCap`.
 	struct BindToAuthority has key, store {
 		id: UID,
@@ -42,20 +54,20 @@ module dwallet_system::authority_binder {
 
 	#[allow(unused_field)]
 	/// Represents an external authority that enforce the policy for a `dwallet::DWalletCap`.
-	struct Authority<C, L> has key {
+	struct Authority has key {
 		id: UID,
 		name: String,
 		unique_identifier: vector<u8>,
-		latest: L,
-		config: C,
+		latest: ID,
+		config: ID,
 		authority_owner_dwallet_cap: dwallet::DWalletCap,
 	}
 
-	public(friend) fun create_authority<C: store, L: store>(
+	public fun create_authority<C: key, L: key>(
 		name: String,
 		unique_identifier: vector<u8>,
-		latest: L,
-		config: C,
+		latest: &L,
+		config: &C,
 		authority_owner_dwallet_cap: dwallet::DWalletCap,
 		ctx: &mut TxContext,
 	) {
@@ -63,15 +75,15 @@ module dwallet_system::authority_binder {
 			id: object::new(ctx),
 			name,
 			unique_identifier,
-			latest,
-			config,
+			latest: object::id(latest),
+			config: object::id(config),
 			authority_owner_dwallet_cap,
 		};
 		transfer::share_object(authority);
 	}
 	
-	public(friend) fun create_bind_to_authority(
-		authority_id: ID,
+	fun create_bind_to_authority(
+		authority: &Authority,
 		owner: vector<u8>,
 		owner_type: u8,
 		ctx: &mut TxContext,
@@ -79,18 +91,26 @@ module dwallet_system::authority_binder {
 		BindToAuthority {
 			id: object::new(ctx),
 			nonce: 0,
-			authority_id,
+			authority:object::id(authority),
 			owner,
 			owner_type,
 		}
 	}
 
-	public(friend) fun create_binder(
+	public fun create_binder(
 		dwallet_cap: dwallet::DWalletCap,
-		bind_to_authority: BindToAuthority,
+		authority: &Authority,
+		owner: vector<u8>,
+		owner_type: u8,
 		virgin_bound: bool,
 		ctx: &mut TxContext,
 	) {
+		let bind_to_authority = create_bind_to_authority(
+			authority,
+			owner,
+			owner_type,
+			ctx
+			);
 		let binder = DWalletBinder {
 			id: object::new(ctx),
 			dwallet_cap,
@@ -100,14 +120,14 @@ module dwallet_system::authority_binder {
 		transfer::share_object(binder);
 	}
 
-	public(friend) fun set_bind_to_authority(
+	public entry fun set_bind_to_authority(
 		binder: &mut DWalletBinder,
-		authority_id: ID,
+		authority: &Authority,
 		owner: vector<u8>,
 		owner_type: u8,
 	) {
 		binder.bind_to_authority.nonce ;
-		binder.bind_to_authority.authority_id = authority_id;
+		binder.bind_to_authority.authority = object::id(authority);
 		binder.bind_to_authority.owner = owner;
 		binder.bind_to_authority.owner_type = owner_type;
 		// `virgin_bound` must be false after first changing.
@@ -116,34 +136,37 @@ module dwallet_system::authority_binder {
 
 	public entry fun create_authority_ack_transaction_hash(
 		binder: &DWalletBinder,
-		authority_dwallet_cap: &dwallet::DWalletCap,
-		bind_to_authority: &BindToAuthority,
 		virgin_bound: bool,
 		chain_identifier: u64,
 		domain_name: vector<u8>,
-		domain_version: u64,
-		contract_address: vector<u8> 
+		domain_version: vector<u8>,
 		): vector<u8> {
+			// let bind_to_authority_nonce = binder.bind_to_authority.nonce;
+			// let contract_address = binder.bind_to_authority.owner;
+
 			create_authority_ack_transaction(
 				object::id_bytes(binder),
-				object::id_bytes(authority_dwallet_cap),
-				object::id_bytes(bind_to_authority),
+				object::id_bytes(&binder.dwallet_cap),
+				object::id_bytes(&binder.bind_to_authority),
+				binder.bind_to_authority.nonce,
 				virgin_bound,
 				chain_identifier,
 				domain_name,
 				domain_version,
-				contract_address
+				binder.bind_to_authority.owner
 				)
 	}
 
    #[allow(unused_function)]
-	public native fun create_authority_ack_transaction(
+	native fun create_authority_ack_transaction(
 		binder_id: vector<u8>, 
 		dwallet_cap_id: vector<u8>, 
-		bind_to_authority_id: vector<u8>, 
-		virgin_bound: bool, chain_id: u64, 
+		bind_to_authority: vector<u8>, 
+		bind_to_authority_nonce: u64,
+		virgin_bound: bool, 
+		chain_id: u64, 
 		domain_name: vector<u8>, 
-		domain_version: u64, 
+		domain_version: vector<u8>, 
 		contract_address: vector<u8> 
 	): vector<u8>;
 }

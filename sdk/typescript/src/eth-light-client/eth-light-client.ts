@@ -178,7 +178,7 @@ export const initEthereumState = async (
 			typeof o.owner === 'object' &&
 			'Shared' in o.owner &&
 			o.owner.Shared.initial_shared_version !== undefined,
-	)[0].reference!.objectId!;
+	)[0];
 };
 
 /**

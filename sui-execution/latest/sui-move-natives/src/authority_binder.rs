@@ -87,7 +87,7 @@ pub fn create_authority_ack_transaction(
         binder_id,
     ) = (
         pop_arg!(args, Vector).to_vec_u8()?,
-        pop_arg!(args, u64),
+        pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, u64),
         pop_arg!(args, bool),
@@ -97,11 +97,12 @@ pub fn create_authority_ack_transaction(
         pop_arg!(args, Vector).to_vec_u8()?,
     );
     let domain_name = String::from_utf8(domain_name).unwrap();
+    let domain_version = String::from_utf8(domain_version).unwrap();
     let contract_address = Address::from_slice(&contract_address);
 
     let domain = EIP712Domain {
         name: Some(domain_name),
-        version: Some(domain_version.to_string()),
+        version: Some(domain_version),
         chain_id: Some(U256::from(chain_id)),
         verifying_contract: Some(contract_address),
         salt: None,

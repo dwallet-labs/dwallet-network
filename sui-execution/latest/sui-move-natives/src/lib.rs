@@ -847,7 +847,7 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             make_native!(eth_state_proof::create_initial_eth_state_data),
         ),
         (
-            "binder",
+            "authority_binder",
             "create_authority_ack_transaction",
             make_native!(authority_binder::create_authority_ack_transaction),
         ),
