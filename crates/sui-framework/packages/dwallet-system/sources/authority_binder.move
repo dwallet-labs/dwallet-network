@@ -135,6 +135,7 @@ module dwallet_system::authority_binder {
 	}
 
 	public entry fun create_authority_ack_transaction_hash(
+	public fun create_authority_ack_transaction_hash(
 		binder: &DWalletBinder,
 		virgin_bound: bool,
 		chain_identifier: u64,
@@ -144,6 +145,7 @@ module dwallet_system::authority_binder {
 			// let bind_to_authority_nonce = binder.bind_to_authority.nonce;
 			// let contract_address = binder.bind_to_authority.owner;
 
+			// todo(yuval): we might want to use the `chain_identifier`, name, version from Authority			
 			create_authority_ack_transaction(
 				object::id_bytes(binder),
 				object::id_bytes(&binder.dwallet_cap),
