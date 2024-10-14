@@ -37,6 +37,44 @@ pub struct SuiStateProofCostParams {
     pub sui_state_proof_verify_transaction_base: InternalGas,
 }
 
+
+// Helper function to verify if the users inputs are valid and were processed by the epoch committee.
+fn verify_data(
+    committee: &Committee,
+    transaction: &CheckpointTransaction,
+    checkpoint_contents: &CheckpointContents,
+    summary: &CertifiedCheckpointSummary,
+) -> bool {
+
+    // Verify the checkpoint summary using the committee
+    let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
+    if let Err(_) = res {
+        return false;
+    }
+
+    let digests = transaction.effects.execution_digests();
+
+    // Check if transaction digest matches the execution digest.
+    if transaction.transaction.digest() != &digests.transaction {
+        return false;
+    }
+
+    // Ensure the digests are in the checkpoint contents.
+    if !checkpoint_contents
+        .enumerate_transactions(&summary)
+        .any(|x| x.1 == &digests) {
+        return false;
+    }
+
+    let events_digest = transaction.events.as_ref().map(|events| events.digest());
+    // Ensure that the execution digest matches the events digest of the passed transaction.
+    if events_digest.as_ref() != transaction.effects.events_digest() {
+        return false;
+    }
+
+    true
+}
+
 /***************************************************************************************************
  * native fun sui_state_proof_verify_committee
  * Implementation of the Move native function `sui_state_proofs::sui_state_proof_verify_committee(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
@@ -174,31 +212,10 @@ pub fn sui_state_proof_verify_link_cap(
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
 
-    // Verify the checkpoint summary using the committee.
-    let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
-    if let Err(_) = res {
+    // Check if the user inputs are valid and were processed by the epoch committee.
+    if !verify_data(&committee, &transaction, &checkpoint_contents, &summary) {
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
-
-    let digests = transaction.effects.execution_digests();
-
-    // Check if transaction digest matches the execution digest.
-    if transaction.transaction.digest() != &digests.transaction {
-        return Ok(NativeResult::err(cost, INVALID_TX));
-    }
-
-    // Ensure the digests are in the checkpoint contents.
-    if !checkpoint_contents
-        .enumerate_transactions(&summary)
-        .any(|x| x.1 == &digests) {
-        return Ok(NativeResult::err(cost, INVALID_TX));
-    }
-
-    let events_digest = transaction.events.as_ref().map(|events| events.digest());
-    // Ensure that the execution digest matches the events digest of the passed transaction.
-    if !(events_digest.as_ref() == transaction.effects.events_digest()) {
-        return Ok(NativeResult::err(cost, INVALID_TX));
-    };
 
     let tx_events = match transaction.events.as_ref() {
         Some(events) => &events.data,
@@ -264,6 +281,7 @@ pub fn sui_state_proof_verify_link_cap(
             ],
     ))
 }
+
 
 /***************************************************************************************************
  * native fun sui_state_proof_verify_transaction
@@ -331,31 +349,10 @@ pub fn sui_state_proof_verify_transaction(
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
 
-    // Verify the checkpoint summary using the committee
-    let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
-    if let Err(_) = res {
+    // Check if the user inputs are valid and were processed by the epoch committee.
+    if !verify_data(&committee, &transaction, &checkpoint_contents, &summary) {
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
-
-    let digests = transaction.effects.execution_digests();
-
-    // Check if transaction digest matches the execution digest.
-    if transaction.transaction.digest() != &digests.transaction {
-        return Ok(NativeResult::err(cost, INVALID_TX));
-    }
-
-    // Ensure the digests are in the checkpoint contents.
-    if !checkpoint_contents
-        .enumerate_transactions(&summary)
-        .any(|x| x.1 == &digests) {
-        return Ok(NativeResult::err(cost, INVALID_TX));
-    }
-
-    let events_digest = transaction.events.as_ref().map(|events| events.digest());
-    // Ensure that the execution digest matches the events digest of the passed transaction.
-    if !(events_digest.as_ref() == transaction.effects.events_digest()) {
-        return Ok(NativeResult::err(cost, INVALID_TX));
-    };
 
     let tx_events = match transaction.events.as_ref() {
         Some(events) => &events.data,
@@ -392,11 +389,7 @@ pub fn sui_state_proof_verify_transaction(
                         })
                         .collect()
                 });
-                if let (Some(cap_id), Some(approve_msgs_vec)) = (cap_id, approve_msgs_vec) {
-                    Some((cap_id, approve_msgs_vec))
-                } else {
-                    None
-                }
+                cap_id.and_then(|cap_id| approve_msgs_vec.map(|messages| (cap_id, messages)))
             } else {
                 None
             }
