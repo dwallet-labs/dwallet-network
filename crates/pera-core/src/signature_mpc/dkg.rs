@@ -9,6 +9,7 @@ use rand_core::{CryptoRngCore, OsRng};
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
+use twopc_mpc::paillier::EncryptionOfSecretKeyShareRoundParty;
 // TODO (#228): Remove this file & all proof MPC code.
 
 /// Create dummy witnesses for the dummy proof flow.
@@ -29,37 +30,11 @@ fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
 }
 
 /// A party in the proof MPC flow.
-pub type DKGParty = twopc_mpc::secp256k1::paillier::bulletproofs::AsyncProtocol<PhantomData>::EncryptionOfSecretKeyShareRoundParty;
+pub type AsyncProtocol = twopc_mpc::secp256k1::paillier::bulletproofs::AsyncProtocol<PhantomData<()>>;
+pub type DKGParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
 
 /// The language used in the proof MPC flow.
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
-
-impl CreatableParty for DKGParty {
-    type InitEvent = CreatedProofMPCEvent;
-    type FinalizeEvent = CompletedProofMPCSessionEvent;
-
-    fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self {
-        let public_parameters =
-            generate_language_public_parameters::<{ maurer::SOUND_PROOFS_REPETITIONS }>();
-        let batch_size = 1;
-        let witnesses = sample_witnesses::<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>(
-            &public_parameters,
-            batch_size,
-            &mut OsRng,
-        );
-        let threshold = (((parties.len() * 2) + 2) / 3) as PartyID;
-        DKGParty::new_session(
-            party_id,
-            threshold,
-            parties,
-            PhantomData,
-            public_parameters,
-            witnesses,
-            &mut OsRng,
-        )
-            .unwrap()
-    }
-}
 
 /// The public parameters for the proof MPC flow.
 type ProofPublicParameters =

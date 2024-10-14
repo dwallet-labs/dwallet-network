@@ -46,4 +46,4 @@ mysql-clippy = [
 ]
 
 [build]
-rustflags = ["-C", "force-frame-pointers=yes", "-C", "force-unwind-tables=yes"]
+rustflags = ["-C", "force-frame-pointers=yes", "-C", "force-unwind-tables=yes", "-L", "/opt/homebrew/Cellar/gmp/6.3.0/lib"]
