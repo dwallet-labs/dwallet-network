@@ -9,7 +9,10 @@ use rand_core::{CryptoRngCore, OsRng};
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
+use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;
+use tiresias::test_helpers::{N, SECRET_KEY};
 use twopc_mpc::paillier::EncryptionOfSecretKeyShareRoundParty;
+use twopc_mpc::secp256k1::paillier::bulletproofs::PaillierProtocolPublicParameters;
 // TODO (#228): Remove this file & all proof MPC code.
 
 /// Create dummy witnesses for the dummy proof flow.
@@ -33,6 +36,21 @@ fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
 pub type AsyncProtocol = twopc_mpc::secp256k1::paillier::bulletproofs::AsyncProtocol<PhantomData<()>>;
 pub type DKGParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
 
+pub fn setup_paillier_secp256k1() -> (PaillierProtocolPublicParameters, tiresias::DecryptionKey) {
+    let paillier_protocol_public_parameters =
+        PaillierProtocolPublicParameters::new::<secp256k1::GroupElement>(N);
+
+    let decryption_key = tiresias::DecryptionKey::new(
+        SECRET_KEY,
+        &paillier_protocol_public_parameters
+            .protocol_public_parameters
+            .encryption_scheme_public_parameters,
+    )
+        .unwrap();
+
+    (paillier_protocol_public_parameters, decryption_key)
+}
+
 impl CreatableParty for DKGParty {
     type InitEvent = CreatedProofMPCEvent;
     type FinalizeEvent = CompletedProofMPCSessionEvent;
@@ -41,8 +59,11 @@ impl CreatableParty for DKGParty {
         Self::default()
     }
 
+
     fn first_auxiliary_input() -> Self::AuxiliaryInput {
-        let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
+        let (paillier_protocol_public_parameters, decryption_key) = setup_paillier_secp256k1();
+
+        let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
 
         let parties = (0..3).collect::<HashSet<PartyID>>();
         Self::AuxiliaryInput {
