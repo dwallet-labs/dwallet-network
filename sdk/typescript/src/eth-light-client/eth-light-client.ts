@@ -316,6 +316,20 @@ export const approveEthereumMessage = async (
 		);
 	}
 
+	// Retry the verification with the updated state. If it fails again, an error will be returned.
+	successful_proof = try_verify_proof(
+		proof,
+		contractAddressString,
+		message,
+		ethers.getBytes(dWalletID),
+		dataSlot,
+		state_root,
+	);
+
+	if (!successful_proof) {
+		throw new Error('Failed to verify Ethereum state');
+	}
+
 	let proofBcs = stringToArrayU8Bcs(JSON.stringify(proof));
 	let messageBcs = stringToArrayU8Bcs(message);
 

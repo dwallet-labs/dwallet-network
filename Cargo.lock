@@ -7080,7 +7080,10 @@ name = "light-client-helpers"
 version = "1.16.2"
 dependencies = [
  "anyhow",
+ "ethers",
+ "helios",
  "move-core-types 0.0.4",
+ "ssz_rs",
  "sui-json 0.0.0",
  "sui-json-rpc-types 0.0.0",
  "sui-sdk 1.16.2",

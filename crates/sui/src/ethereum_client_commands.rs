@@ -444,7 +444,7 @@ pub(crate) async fn eth_approve_message(
         proof.clone(),
         &contract_address,
         proof_params.clone(),
-        eth_state_obj.state_root,
+        eth_state_obj.state_root.clone(),
     )?;
 
     // If the proof has failed, then we need to update the state and try again.
@@ -479,9 +479,21 @@ pub(crate) async fn eth_approve_message(
 
         block_number = eth_state_obj.block_number;
         proof = eth_lc
-            .get_proofs(&contract_address, proof_params, block_number)
+            .get_proofs(&contract_address, proof_params.clone(), block_number)
             .await
             .map_err(|e| anyhow!("could not fetch proof: {e}"))?;
+    }
+
+    // Retry the verification with the updated state. If it fails again, an error will be returned.
+    let successful_proof = try_verify_proof(
+        proof.clone(),
+        &contract_address,
+        proof_params.clone(),
+        eth_state_obj.state_root,
+    )?;
+
+    if !successful_proof {
+        return Err(anyhow!("proof verification failed"));
     }
 
     let proof_sui_json =
