@@ -1,0 +1,83 @@
+name: Build and Push Sui Node Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - create-image-ci
+#    paths:
+#      - 'consensus/**'
+#      - 'crates/**'
+#      - 'sui-execution/**'
+#      - 'narwhal/explorer/**'
+#      - 'external-crates/**'
+#  #      - '.github/workflows/**'
+#  pull_request:
+#    branches:
+#      - main
+#    paths:
+#      - 'Cargo.toml'
+#      - 'consensus/**'
+#      - 'crates/**'
+#      - 'sui-execution/**'
+#      - 'narwhal/explorer/**'
+#      - 'external-crates/**'
+##      - '.github/workflows/**'
+
+jobs:
+  build-and-push:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ECR_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_ECR_SECRET_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Download version file from S3
+        run: |
+          aws s3 cp s3://sui-fork-version/docker-image-version.txt .
+        env:
+          AWS_REGION: us-east-1
+
+      - name: Increment version number
+        id: increment-version
+        run: |
+          if [ ! -f docker-image-version.txt ]; then
+            echo "0" > docker-image-version.txt
+          fi
+          current_version=$(cat docker-image-version.txt)
+          new_version=$((current_version + 1))
+          echo $new_version > docker-image-version.txt
+          echo "IMAGE_VERSION=$new_version" >> $GITHUB_ENV      
+
+      - name: Build and Push Sui Node Image
+        run: |
+          ./docker/sui-node/build.sh \
+            --platform linux/amd64 \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
+            --push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sui-fork
+          IMAGE_NAME: dwallet-testnet
+          IMAGE_VERSION: ${{ env.IMAGE_VERSION }}
+
+      - name: Upload new version file to S3
+        run: |
+          aws s3 cp docker-image-version.txt s3://sui-fork-version/docker-image-version.txt
+        env:
+          AWS_REGION: us-east-1
