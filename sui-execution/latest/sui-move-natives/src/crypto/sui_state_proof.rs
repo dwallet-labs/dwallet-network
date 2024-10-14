@@ -29,18 +29,18 @@ pub const INVALID_INPUT: u64 = 3;
 
 #[derive(Clone)]
 pub struct SuiStateProofCostParams {
-    /// Base cost for invoking the `sui_state_proof_verify_committee` function
+    /// Base cost for invoking the `sui_state_proof_verify_committee` function.
     pub sui_state_proof_verify_committee_cost_base: InternalGas,
-    /// Base cost for invoking the `sui_state_proof_verify_link_cap` function
+    /// Base cost for invoking the `sui_state_proof_verify_link_cap` function.
     pub sui_state_proof_verify_link_cap_base: InternalGas,
-    /// Base cost for invoking the `sui_state_proof_verify_transaction` function
+    /// Base cost for invoking the `sui_state_proof_verify_transaction` function.
     pub sui_state_proof_verify_transaction_base: InternalGas,
 }
 
 /***************************************************************************************************
  * native fun sui_state_proof_verify_committee
  * Implementation of the Move native function `sui_state_proofs::sui_state_proof_verify_committee(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
- *   gas cost: sui_state_proof_verify_committee_cost_base   | base cost for function call and fixed opers
+ * gas cost: sui_state_proof_verify_committee_cost_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
 pub fn sui_state_proof_verify_committee(
     context: &mut NativeContext,
@@ -50,14 +50,14 @@ pub fn sui_state_proof_verify_committee(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 2);
 
-    // Load the cost parameters from the protocol config
+    // Load the cost parameters from the protocol config.
     let sui_state_proof_cost_params = &context
         .extensions()
         .get::<NativesCostTable>()
         .sui_state_proof_cost_params
         .clone();
 
-    // Charge the base cost for this operation
+    // Charge the base cost for this operation.
     native_charge_gas_early_exit!(
         context,
         sui_state_proof_cost_params.sui_state_proof_verify_committee_cost_base
@@ -84,11 +84,11 @@ pub fn sui_state_proof_verify_committee(
     }
 
     let next_committee_epoch;
-    // Extract the new committee information
+    // Extract the new committee information.
     if let Some(EndOfEpochData {
-        next_epoch_committee,
-        ..
-    }) = &checkpoint_summary.end_of_epoch_data
+                    next_epoch_committee,
+                    ..
+                }) = &checkpoint_summary.end_of_epoch_data
     {
         let next_committee = next_epoch_committee.iter().cloned().collect();
         next_committee_epoch = Committee::new(
@@ -111,9 +111,8 @@ pub fn sui_state_proof_verify_committee(
 /***************************************************************************************************
  * native fun sui_state_proof_verify_link_cap
  * Implementation of the Move native function `sui_state_proof::sui_state_proof_verify_link_cap(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);`
- *   gas cost: sui_state_proof_verify_link_cap_base   | base cost for function call and fixed opers
+ * gas cost: sui_state_proof_verify_link_cap_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
-
 pub fn sui_state_proof_verify_link_cap(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -122,14 +121,14 @@ pub fn sui_state_proof_verify_link_cap(
     debug_assert!(ty_args.is_empty());
     debug_assert!(args.len() == 6);
 
-    // Load the cost parameters from the protocol config
+    // Load the cost parameters from the protocol config.
     let sui_state_proof_cost_params = &context
         .extensions()
         .get::<NativesCostTable>()
         .sui_state_proof_cost_params
         .clone();
 
-    // Charge the base cost for this oper
+    // Charge the base cost for this operation.
     native_charge_gas_early_exit!(
         context,
         sui_state_proof_cost_params.sui_state_proof_verify_link_cap_base
@@ -159,23 +158,23 @@ pub fn sui_state_proof_verify_link_cap(
     else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
-    
-    // Untrusted input passed in by the user
+
+    // Untrusted input passed in by the user.
     let Ok(transaction) = bcs::from_bytes::<CheckpointTransaction>(&transaction_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
-    
-    // Trusted input from config
+
+    // Trusted input from config.
     let Ok(type_layout) = bcs::from_bytes::<MoveTypeLayout>(&type_layout_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
 
-    // Trusted input from config
+    // Trusted input from config.
     let Ok(package_id_target) = bcs::from_bytes::<ObjectID>(&package_id_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
 
-    // Verify the checkpoint summary using the committee
+    // Verify the checkpoint summary using the committee.
     let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
     if let Err(_) = res {
         return Ok(NativeResult::err(cost, INVALID_TX));
@@ -183,24 +182,24 @@ pub fn sui_state_proof_verify_link_cap(
 
     let digests = transaction.effects.execution_digests();
 
-    // Check that transaction digest matches the execution digest
+    // Check if transaction digest matches the execution digest.
     if transaction.transaction.digest() != &digests.transaction {
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
 
-    // Ensure the digests are in the checkpoint contents
+    // Ensure the digests are in the checkpoint contents.
     if !checkpoint_contents
         .enumerate_transactions(&summary)
         .any(|x| x.1 == &digests) {
-            return Ok(NativeResult::err(cost, INVALID_TX));
-    }   
+        return Ok(NativeResult::err(cost, INVALID_TX));
+    }
 
     let events_digest = transaction.events.as_ref().map(|events| events.digest());
-    // Ensure that the execution digest matches the events digest of the passed transaction
+    // Ensure that the execution digest matches the events digest of the passed transaction.
     if !(events_digest.as_ref() == transaction.effects.events_digest()) {
         return Ok(NativeResult::err(cost, INVALID_TX));
     };
-    
+
     let tx_events = match transaction.events.as_ref() {
         Some(events) => &events.data,
         None => {
@@ -256,22 +255,21 @@ pub fn sui_state_proof_verify_link_cap(
         }
     }
 
-        
-        return Ok(NativeResult::ok(
-            cost,
-            smallvec![
+
+    Ok(NativeResult::ok(
+        cost,
+        smallvec![
                 Value::vector_u8(bcs::to_bytes(&sui_cap_ids).unwrap()),
                 Value::vector_u8(bcs::to_bytes(&dwallet_cap_ids).unwrap())
             ],
-        ));
+    ))
 }
 
 /***************************************************************************************************
  * native fun sui_state_proof_verify_transaction
  * Implementation of the Move native function `dwallet_2pc_mpc_ecdsa_k1::sui_state_proof_verify_transaction(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);`
- *   gas cost: sui_state_proof_verify_transaction_base   | base cost for function call and fixed opers
+ * gas cost: sui_state_proof_verify_transaction_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
-
 pub fn sui_state_proof_verify_transaction(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -287,7 +285,7 @@ pub fn sui_state_proof_verify_transaction(
         .sui_state_proof_cost_params
         .clone();
 
-    // Charge the base cost for this oper
+    // Charge the base cost for this operation.
     native_charge_gas_early_exit!(
         context,
         sui_state_proof_cost_params.sui_state_proof_verify_transaction_base
@@ -306,18 +304,18 @@ pub fn sui_state_proof_verify_transaction(
     let Ok(committee) = bcs::from_bytes::<Committee>(&committee_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_COMMITTEE));
     };
-    
+
     // Untrusted input passed in by the user
     let Ok(summary) = bcs::from_bytes::<CertifiedCheckpointSummary>(&summary_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_CHECKPOINT_SUMMARY));
     };
-    
+
     // Untrusted input passed in by the user
     let Ok(checkpoint_contents) = bcs::from_bytes::<CheckpointContents>(&checkpoint_contents_bytes)
     else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
-    
+
     // Untrusted input passed in by the user
     let Ok(transaction) = bcs::from_bytes::<CheckpointTransaction>(&transaction_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
@@ -341,20 +339,20 @@ pub fn sui_state_proof_verify_transaction(
 
     let digests = transaction.effects.execution_digests();
 
-    // Check that transaction digest matches the execution digest
+    // Check if transaction digest matches the execution digest.
     if transaction.transaction.digest() != &digests.transaction {
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
 
-    // Ensure the digests are in the checkpoint contents
+    // Ensure the digests are in the checkpoint contents.
     if !checkpoint_contents
         .enumerate_transactions(&summary)
         .any(|x| x.1 == &digests) {
-            return Ok(NativeResult::err(cost, INVALID_TX));
-    }   
+        return Ok(NativeResult::err(cost, INVALID_TX));
+    }
 
     let events_digest = transaction.events.as_ref().map(|events| events.digest());
-    // Ensure that the execution digest matches the events digest of the passed transaction
+    // Ensure that the execution digest matches the events digest of the passed transaction.
     if !(events_digest.as_ref() == transaction.effects.events_digest()) {
         return Ok(NativeResult::err(cost, INVALID_TX));
     };
