@@ -48,7 +48,7 @@ pub const DEFAULT_COMMISSION_RATE: u64 = 200;
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
     #[serde(default)]
-    /// The maximum number of active signature MPC instances allowed to run simultaneously
+    /// The maximum number of active signature MPC instances allowed to run simultaneously.
     pub max_active_signature_mpc_instances: usize,
     #[serde(default = "default_authority_key_pair")]
     pub protocol_key_pair: AuthorityKeyPairWithPath,

@@ -47,3 +47,9 @@ mysql-clippy = [
 
 [build]
 rustflags = ["-C", "force-frame-pointers=yes", "-C", "force-unwind-tables=yes"]
+
+
+[env]
+MYSQLCLIENT_LIB_DIR = "/usr/local/opt/mysql-client/lib"
+MYSQLCLIENT_INCLUDE_DIR = "/usr/local/opt/mysql-client/include"
+MYSQLCLIENT_VERSION = "8.0"
