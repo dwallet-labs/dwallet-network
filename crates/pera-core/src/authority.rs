@@ -1494,7 +1494,7 @@ impl AuthorityState {
 
         // Check if there are any MPC events emitted from this transaction and if so, send them to the MPC service.
         // Handle the MPC events here because there is access to the event, as the transaction has been just executed.
-        let _ = self
+        let res = self
             .handle_signature_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await;
 

@@ -6,6 +6,7 @@ module pera_system::dwallet {
 
     public struct InitiateDKGSessionEvent has copy, drop {
         session_id: ID,
+        sender: address,
     }
 
     public struct InitiateDKGSessionData has key {
@@ -21,6 +22,7 @@ module pera_system::dwallet {
         };
         let created_proof_mpc_session_event = InitiateDKGSessionEvent {
             session_id: object::id(&session_data),
+            sender: tx_context::sender(ctx)
         };
         event::emit(created_proof_mpc_session_event);
         transfer::freeze_object(session_data);
