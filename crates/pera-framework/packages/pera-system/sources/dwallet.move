@@ -14,6 +14,17 @@ module pera_system::dwallet {
         sender: address,
     }
 
+    public struct CompletedFirstDKGRoundData has key {
+        id: UID,
+        session_id: ID,
+        value: vector<u8>,
+    }
+
+    public struct CompletedDKGRoundEvent has copy, drop {
+        session_id: ID,
+        sender: address,
+    }
+
     /// Function to launch proof MPC flow.
     public fun launch_initiate_dkg_session(ctx: &mut TxContext) {
         let session_data = InitiateDKGSessionData {
@@ -27,4 +38,21 @@ module pera_system::dwallet {
         event::emit(created_proof_mpc_session_event);
         transfer::freeze_object(session_data);
     }
+
+    public fun create_first_dkg_round_output(session_initiator: address, session_id: ID, output: vector<u8>, ctx: &mut TxContext) {
+       assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+       let proof_session_result = CompletedFirstDKGRoundData {
+           id: object::new(ctx),
+           session_id: session_id,
+           value: output,
+       };
+       transfer::transfer(proof_session_result, session_initiator);
+
+       let completed_proof_mpc_session_event = CompletedDKGRoundEvent {
+           session_id: session_id,
+           sender: session_initiator,
+       };
+
+       event::emit(completed_proof_mpc_session_event);
+   }
 }
