@@ -42,6 +42,7 @@ maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
 
 /// Generate the public parameters for the proof MPC flow.
 fn generate_language_public_parameters<const REPETITIONS: usize>() -> ProofPublicParameters {
+
     let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
 
     let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
