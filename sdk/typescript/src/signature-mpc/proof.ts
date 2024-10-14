@@ -53,6 +53,8 @@ export async function launchDKGSession(keypair: Keypair, client: PeraClient) {
 		client,
 	);
 	console.log({ firstRoundOutput });
+
+
 }
 
 export async function fetchObjectBySessionId(
