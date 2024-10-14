@@ -4,6 +4,10 @@
 module pera_system::dwallet {
     use pera::event;
 
+    // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
+    const ENotSystemAddress: u64 = 0;
+    // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
+
     public struct InitiateDKGSessionEvent has copy, drop {
         session_id: ID,
         sender: address,
