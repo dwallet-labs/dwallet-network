@@ -38,7 +38,21 @@ impl CreatableParty for DKGParty {
     type FinalizeEvent = CompletedProofMPCSessionEvent;
 
     fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self {
-        todo!()
+        Self::default()
+    }
+
+    fn first_auxiliary_input() -> Self::AuxiliaryInput {
+        let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
+
+        let parties = (0..3).collect::<HashSet<PartyID>>();
+        Self::AuxiliaryInput {
+            protocol_public_parameters: secp256k1_group_public_parameters,
+            party_id: 1,
+            threshold: 3,
+            number_of_parties: 4,
+            parties: parties.clone(),
+            protocol_context: PhantomData,
+        }
     }
 }
 

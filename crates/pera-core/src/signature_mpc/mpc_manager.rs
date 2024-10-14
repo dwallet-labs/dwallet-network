@@ -8,7 +8,7 @@ use group::{secp256k1, GroupElement, PartyID};
 use im::hashmap;
 use itertools::Itertools;
 use mpc::party::Advance;
-use mpc::{two_party::Round, AdvanceResult};
+use mpc::{two_party::Round, AdvanceResult, AuxiliaryInput};
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
@@ -42,13 +42,14 @@ struct SignatureMPCMessage {
 
 /// A wrapper for the generic Party trait that allows creating new instances of the Party from only the threshold.
 /// Should be implemented internally in newer versions of the [`proof`] crate.
-pub trait CreatableParty: Advance {
+pub trait CreatableParty: Advance + mpc::Party {
     /// The MPC Manager will create a new mpc instance after the init event is received.
     type InitEvent: MPCEvent + Serialize + for<'a> Deserialize<'a>;
     /// The MPC Manager will finalize the mpc instance after the finalize event is received.
     type FinalizeEvent: MPCEvent + Serialize + for<'a> Deserialize<'a>;
 
     fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self;
+    fn first_auxiliary_input() -> Self::AuxiliaryInput;
 }
 
 /// Convert a given authority name (address) to it's corresponding party ID.
@@ -262,7 +263,6 @@ pub struct SignatureMPCManager<P: CreatableParty> {
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
-    auxiliary_input: P::AuxiliaryInput,
     pub epoch_id: EpochId,
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it
@@ -279,7 +279,6 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         epoch_id: EpochId,
         max_active_mpc_instances: usize,
         number_of_parties: usize,
-        auxiliary_input: P::AuxiliaryInput,
     ) -> Self {
         Self {
             mpc_instances: HashMap::new(),
@@ -290,7 +289,6 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
             epoch_id,
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
-            auxiliary_input,
             number_of_parties,
         }
     }
@@ -355,7 +353,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .map(|ref mut instance| instance.advance(&self.auxiliary_input))
+            .map(|ref mut instance| instance.advance(&P::first_auxiliary_input()))
             .collect::<PeraResult<_>>()?;
         Ok(())
     }
