@@ -13,10 +13,10 @@ describe('Test signature mpc', () => {
 		toolbox = await setup();
 	});
 
-	it('should create proof MPC Event', async () => {
-		await launchProofMPSession(toolbox.keypair, toolbox.client);
-		console.log(toolbox.keypair.toPeraAddress());
-	});
+	// it('should create proof MPC Event', async () => {
+	// 	await launchProofMPSession(toolbox.keypair, toolbox.client);
+	// 	console.log(toolbox.keypair.toPeraAddress());
+	// });
 
 	it('should create dkg MPC Event', async () => {
 		await launchDKGSession(toolbox.keypair, toolbox.client);

@@ -26,7 +26,7 @@ export async function launchProofMPSession(keypair: Keypair, client: PeraClient)
 	});
 }
 
-let dwalletModuleName = 'dWallet';
+let dwalletModuleName = 'dwallet';
 
 export async function launchDKGSession(keypair: Keypair, client: PeraClient) {
 	const tx = new Transaction();

@@ -8,14 +8,14 @@ module pera_system::dwallet {
         session_id: ID,
     }
 
-    public struct InitiaiteDKGSessionData has key {
+    public struct InitiateDKGSessionData has key {
         id: UID,
         sender: address,
     }
 
     /// Function to launch proof MPC flow.
     public fun launch_initiate_dkg_session(ctx: &mut TxContext) {
-        let session_data = InitiaiteDKGSessionData {
+        let session_data = InitiateDKGSessionData {
             id: object::new(ctx),
             sender: tx_context::sender(ctx)
         };
