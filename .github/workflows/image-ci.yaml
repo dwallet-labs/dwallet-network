@@ -1,12 +1,7 @@
 name: Build and Push Sui Node Image
 
 on:
-  push:
-    branches:
-      - sign-ia-wasm
-  pull_request:
   workflow_dispatch:
-
 
 jobs:
   build-and-push:
