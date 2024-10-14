@@ -153,7 +153,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                self.new_proof_mpc_output_message(output.into())
+                self.new_dwallet_mpc_output_message(output.into())
             }
         };
 
@@ -187,7 +187,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     /// Create a new consensus transaction with the flow result (output) to be sent to the other MPC parties.
     /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
     /// Only the aggregator party should send the output to the other parties.
-    fn new_proof_mpc_output_message(&self, output: P::OutputValue) -> Option<ConsensusTransaction> {
+    fn new_dwallet_mpc_output_message(&self, output: P::OutputValue) -> Option<ConsensusTransaction> {
         let Ok(epoch_store) = self.epoch_store() else {
             return None;
         };

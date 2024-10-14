@@ -281,7 +281,7 @@ pub enum ConsensusTransactionKind {
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
     SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
+    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress, ),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
