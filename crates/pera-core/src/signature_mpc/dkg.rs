@@ -33,6 +33,15 @@ fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
 pub type AsyncProtocol = twopc_mpc::secp256k1::paillier::bulletproofs::AsyncProtocol<PhantomData<()>>;
 pub type DKGParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
 
+impl CreatableParty for DKGParty {
+    type InitEvent = CreatedProofMPCEvent;
+    type FinalizeEvent = CompletedProofMPCSessionEvent;
+
+    fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self {
+        todo!()
+    }
+}
+
 /// The language used in the proof MPC flow.
 type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
 

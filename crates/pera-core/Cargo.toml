@@ -99,11 +99,11 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
-proof = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "proof", branch = "pera_flow_code" }
-maurer = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "maurer", branch = "pera_flow_code" }
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "pera_flow_code" }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", branch = "pera_flow_code", features = ["parallel"]  }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", branch = "pera_flow_code", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"] }
+proof = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "proof", rev="517ff6d696ff9943c" }
+maurer = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "maurer" , rev="517ff6d696ff9943c"}
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev="517ff6d696ff9943c" }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"] , rev="517ff6d696ff9943c" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev="517ff6d696ff9943c" }
 rand_core = "0.6.4"
 
 [dev-dependencies]
