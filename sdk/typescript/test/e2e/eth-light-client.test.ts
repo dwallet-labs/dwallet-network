@@ -1,7 +1,7 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { beforeAll, describe, it } from 'vitest';
+import { assert, beforeAll, describe, it } from 'vitest';
 
 import {
 	approveEthereumMessage,
@@ -61,21 +61,21 @@ describe('Test Ethereum Light Client', () => {
 			toolbox.client,
 		);
 
-		// For this part to work, you need to wait until the block that includes the transaction we want to verify, is FINALIZED.
-		if (ethereumDWallet !== undefined) {
-			let message = 'U3VwcmlzZSEgSGF2ZSBhIGdyZWF0IGRheSE=';
-			let messageApproval = await approveEthereumMessage(
-				ethereumDWallet!,
-				message,
-				dwalletID,
-				latestStateId,
-				executionRpc,
-				consensusRpc,
-				toolbox.keypair,
-				toolbox.client,
-			);
+		assert(ethereumDWallet !== undefined);
 
-			console.log(`messageApproval: ${messageApproval}`);
-		}
+		// For this part to work, you need to wait until the block that includes the transaction we want to verify, is FINALIZED.
+		let message = 'U3VwcmlzZSEgSGF2ZSBhIGdyZWF0IGRheSE=';
+		let messageApprovalBcs = await approveEthereumMessage(
+			ethereumDWallet!,
+			message,
+			dwalletID,
+			latestStateId,
+			executionRpc,
+			consensusRpc,
+			toolbox.keypair,
+			toolbox.client,
+		);
+
+		assert(messageApprovalBcs !== undefined);
 	});
 });
