@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[wasm_bindgen]
 pub fn hello_wasm() -> Result<JsValue, JsErr> {
     println!("Hello, wasm!");
-    Ok(JsValue::from_bool(true))
+    Ok(JsValue::from_bool(false))
 }
 
 
