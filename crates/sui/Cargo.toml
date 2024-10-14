@@ -34,7 +34,10 @@ num-bigint.workspace = true
 regex.workspace = true
 reqwest.workspace = true
 im.workspace = true
+helios.workspace = true
+hex.workspace = true
 
+light-client-helpers.workspace = true
 sui-config.workspace = true
 sui-execution = { path = "../../sui-execution" }
 sui-swarm-config.workspace = true

@@ -1,0 +1,6 @@
+{
+	"private": true,
+	"import": "../dist/esm/eth-light-client/index.js",
+	"main": "../dist/cjs/eth-light-client/index.js",
+	"sideEffects": false
+}
