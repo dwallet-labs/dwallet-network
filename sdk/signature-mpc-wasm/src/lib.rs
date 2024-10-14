@@ -46,12 +46,3 @@ fn to_js_err(e: Error) -> JsErr {
         message: e.to_string(),
     }
 }
-
-impl<T: std::error::Error> From<T> for JsErr {
-    fn from(err: T) -> Self {
-        JsErr {
-            display: format!("{}", err),
-            message: err.to_string(),
-        }
-    }
-}
