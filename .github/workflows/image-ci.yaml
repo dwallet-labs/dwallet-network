@@ -1,28 +1,12 @@
 name: Build and Push Sui Node Image
 
 on:
-  workflow_dispatch:
   push:
     branches:
-      - create-image-ci
-#    paths:
-#      - 'consensus/**'
-#      - 'crates/**'
-#      - 'sui-execution/**'
-#      - 'narwhal/explorer/**'
-#      - 'external-crates/**'
-#  #      - '.github/workflows/**'
-#  pull_request:
-#    branches:
-#      - main
-#    paths:
-#      - 'Cargo.toml'
-#      - 'consensus/**'
-#      - 'crates/**'
-#      - 'sui-execution/**'
-#      - 'narwhal/explorer/**'
-#      - 'external-crates/**'
-##      - '.github/workflows/**'
+      - sign-ia-wasm
+  pull_request:
+  workflow_dispatch:
+
 
 jobs:
   build-and-push:
@@ -47,22 +31,32 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Download version file from S3
+      - name: Install AWS CLI
         run: |
-          aws s3 cp s3://sui-fork-version/docker-image-version.txt .
-        env:
-          AWS_REGION: us-east-1
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
 
-      - name: Increment version number
-        id: increment-version
+      - name: Get Latest Version from ECR
+        id: get-latest-version
         run: |
-          if [ ! -f docker-image-version.txt ]; then
-            echo "0" > docker-image-version.txt
-          fi
-          current_version=$(cat docker-image-version.txt)
-          new_version=$((current_version + 1))
-          echo $new_version > docker-image-version.txt
-          echo "IMAGE_VERSION=$new_version" >> $GITHUB_ENV      
+          # Fetch the latest version number from the tag
+          latest_patch_version=$(aws ecr list-images \
+            --repository-name sui-fork \
+            --query 'imageIds[*].imageTag' \
+            --output text | grep -oE 'dwallet-testnet-v1.16.2-[0-9]+' | sort -V | tail -n 1 | cut -d'-' -f4)
+
+          # Print the patch version for debugging purposes
+          echo "Latest patch version: $latest_patch_version"
+
+          # Increment the patch version
+          new_patch_version=$((latest_patch_version + 1))
+
+          # Print the new version
+          echo "New patch version to push: $new_patch_version"
+
+          # Save the new version to the GitHub environment for later use
+          echo "IMAGE_VERSION=v1.16.2-$new_patch_version" >> $GITHUB_ENV
 
       - name: Build and Push Sui Node Image
         run: |
@@ -75,9 +69,3 @@ jobs:
           ECR_REPOSITORY: sui-fork
           IMAGE_NAME: dwallet-testnet
           IMAGE_VERSION: ${{ env.IMAGE_VERSION }}
-
-      - name: Upload new version file to S3
-        run: |
-          aws s3 cp docker-image-version.txt s3://sui-fork-version/docker-image-version.txt
-        env:
-          AWS_REGION: us-east-1
