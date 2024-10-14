@@ -18,8 +18,11 @@ pub trait MPCEvent {
 }
 
 pub const PROOF_MODULE_NAME: &IdentStr = ident_str!("proof");
+pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet");
 pub const CREATED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CreatedProofMPCSessionEvent");
 pub const COMPLETED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CompletedProofMPCSessionEvent");
+
+pub const INIT_DKG_STRUCT_NAME: &IdentStr = ident_str!("InitiateDKGSessionEvent");
 
 /// Rust version of the Move [`pera_system::dwallet::CreatedProofMPCSessionEvent`] type.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
@@ -36,6 +39,34 @@ impl MPCEvent for CreatedProofMPCEvent {
             address: PERA_SYSTEM_ADDRESS,
             name: CREATED_PROOF_STRUCT_NAME.to_owned(),
             module: PROOF_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+
+    fn session_id(&self) -> ID {
+        self.session_id.clone()
+    }
+
+    fn event_emitter(&self) -> PeraAddress {
+        self.sender.clone()
+    }
+}
+
+/// Rust version of the Move [`pera_system::dwallet::CreatedProofMPCSessionEvent`] type.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct InitDKGMPCEvent {
+    pub session_id: ID,
+    pub sender: PeraAddress,
+}
+
+impl MPCEvent for InitDKGMPCEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`CreatedProofMPCEvent`] events from the chain and initiate the MPC session.
+    fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: INIT_DKG_STRUCT_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
