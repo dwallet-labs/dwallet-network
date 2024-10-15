@@ -364,48 +364,47 @@ pub fn sui_state_proof_verify_transaction(
 
     for event in tx_events {
         if event.type_.address.to_hex() == package_id_target.to_hex()
-                && event.type_.module.clone().into_string() == "dwallet_cap"
-                && event.type_.name.clone().into_string() == "DWalletNetworkApproveRequest"
-            {
-                let json_val = match SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents) {
-                    Ok(val) => val.to_json_value(),
-                    Err(_) => {
-                        return Ok(NativeResult::err(cost, INVALID_TX));
-                    }
-                };
+            && event.type_.module.clone().into_string() == "dwallet_cap"
+            && event.type_.name.clone().into_string() == "DWalletNetworkApproveRequest"
+        {
+            let json_val = match SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents) {
+                Ok(val) => val.to_json_value(),
+                Err(_) => {
+                    return Ok(NativeResult::err(cost, INVALID_TX));
+                }
+            };
 
-                let cap_id_str = json_val.get("cap_id").and_then(JsonValue::as_str);
-                let cap_id = match cap_id_str.and_then(|s| SuiAddress::from_str(s).ok()) {
-                    Some(id) => id,
-                    None => return Ok(NativeResult::err(cost, INVALID_TX)),
-                };
+            let cap_id_str = json_val.get("cap_id").and_then(JsonValue::as_str);
+            let cap_id = match cap_id_str.and_then(|s| SuiAddress::from_str(s).ok()) {
+                Some(id) => id,
+                None => return Ok(NativeResult::err(cost, INVALID_TX)),
+            };
 
-                let approve_messages = json_val.get("messages").and_then(JsonValue::as_array);
-                let approve_msgs_vec: Option<Vec<Vec<u8>>> = approve_messages.map(|msgs_array| {
-                    msgs_array
-                        .iter()
-                        .filter_map(|msg| {
-                            msg.as_array().map(|inner| {
-                                inner
-                                    .iter()
-                                    .filter_map(|byte| byte.as_u64().map(|b| b as u8))
-                                    .collect()
-                            })
+            let approve_messages = json_val.get("messages").and_then(JsonValue::as_array);
+            let approve_msgs_vec: Option<Vec<Vec<u8>>> = approve_messages.map(|msgs_array| {
+                msgs_array
+                    .iter()
+                    .filter_map(|msg| {
+                        msg.as_array().map(|inner| {
+                            inner
+                                .iter()
+                                .filter_map(|byte| byte.as_u64().map(|b| b as u8))
+                                .collect()
                         })
-                        .collect()
-                });
+                    })
+                    .collect()
+            });
 
-                let approve_msgs = match approve_msgs_vec {
-                    Some(msgs) => msgs,
-                    None => return Ok(NativeResult::err(cost, INVALID_TX)),
-                };
+            let approve_msgs = match approve_msgs_vec {
+                Some(msgs) => msgs,
+                None => return Ok(NativeResult::err(cost, INVALID_TX)),
+            };
 
-                cap_ids.push(cap_id);
-                messages.push(approve_msgs);
-            }
+            cap_ids.push(cap_id);
+            messages.push(approve_msgs);
+        }
     }
 
-    
     if cap_ids.is_empty() || messages.is_empty() || cap_ids.len() != messages.len() {
         return Ok(NativeResult::err(cost, INVALID_TX));
     }
