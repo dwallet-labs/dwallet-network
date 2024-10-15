@@ -1,0 +1,66 @@
+name: Build and Push Sui Node Image
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ECR_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_ECR_SECRET_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --update
+
+      - name: Get Latest Version from ECR
+        id: get-latest-version
+        run: |
+          # Fetch the latest version number from the tag
+          latest_patch_version=$(aws ecr list-images \
+            --repository-name sui-fork \
+            --query 'imageIds[*].imageTag' \
+            --output text | grep -oE 'dwallet-testnet-v1.16.2-[0-9]+' | sort -V | tail -n 1 | cut -d'-' -f4)
+
+          # Print the patch version for debugging purposes
+          echo "Latest patch version: $latest_patch_version"
+
+          # Increment the patch version
+          new_patch_version=$((latest_patch_version + 1))
+
+          # Print the new version
+          echo "New patch version to push: $new_patch_version"
+
+          # Save the new version to the GitHub environment for later use
+          echo "IMAGE_VERSION=v1.16.2-$new_patch_version" >> $GITHUB_ENV
+
+      - name: Build and Push Sui Node Image
+        run: |
+          ./docker/sui-node/build.sh \
+            --platform linux/amd64 \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
+            --push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sui-fork
+          IMAGE_NAME: dwallet-testnet
+          IMAGE_VERSION: ${{ env.IMAGE_VERSION }}
