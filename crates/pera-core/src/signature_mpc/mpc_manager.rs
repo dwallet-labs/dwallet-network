@@ -54,7 +54,7 @@ pub trait CreatableParty: Advance + mpc::Party {
 
 /// Convert a given authority name (address) to it's corresponding party ID.
 /// The party ID is the index of the authority in the committee.
-fn authority_name_to_party_id(
+pub fn authority_name_to_party_id(
     authority_name: AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
 ) -> PeraResult<PartyID> {
@@ -73,7 +73,7 @@ fn authority_name_to_party_id(
 /// A Signature MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-struct SignatureMPCInstance<P: CreatableParty> {
+struct SignatureMPCInstance<P: Advance + mpc::Party> {
     status: MPCSessionStatus<P::OutputValue>,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
@@ -91,7 +91,7 @@ struct SignatureMPCInstance<P: CreatableParty> {
     party: Option<P>,
 }
 
-impl<P: CreatableParty> SignatureMPCInstance<P> {
+impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -254,7 +254,7 @@ enum MPCSessionStatus<Output> {
 /// - keeping track of all MPC instances,
 /// - executing all active instances, and
 /// - (de)activating instances.
-pub struct SignatureMPCManager<P: CreatableParty> {
+pub struct SignatureMPCManager<P: Advance + mpc::Party> {
     mpc_instances: HashMap<ObjectID, SignatureMPCInstance<P>>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
     pending_instances_queue: VecDeque<ObjectID>,
@@ -270,9 +270,9 @@ pub struct SignatureMPCManager<P: CreatableParty> {
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
-unsafe impl<P: CreatableParty + Sync + Send> Send for SignatureMPCInstance<P> {}
+unsafe impl<P: mpc::Party + Advance + Sync + Send> Send for SignatureMPCInstance<P> {}
 
-impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
+impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -382,7 +382,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    fn push_new_mpc_instance(&mut self, event: P::InitEvent) {
+    fn push_new_mpc_instance(&mut self, party: P) {
         if self.mpc_instances.contains_key(&event.session_id().bytes) {
             // This should never happen, as the session ID is a move UniqueID
             error!(

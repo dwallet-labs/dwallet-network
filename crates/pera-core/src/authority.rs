@@ -51,6 +51,9 @@ use std::{
     sync::Arc,
     vec,
 };
+use std::marker::PhantomData;
+use group::PartyID;
+use maurer::test_helpers::sample_witnesses;
 use tap::{TapFallible, TapOptional};
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::{mpsc, oneshot, RwLock};
@@ -63,6 +66,8 @@ pub use authority_store::{AuthorityStore, ResolverWrapper, UpdateType};
 use mysten_metrics::{monitored_scope, spawn_monitored_task};
 
 use once_cell::sync::OnceCell;
+use proof::aggregation::Instantiatable;
+use rand_core::OsRng;
 use pera_archival::reader::ArchiveReaderBalancer;
 use pera_config::genesis::Genesis;
 use pera_config::node::{DBCheckpointConfig, ExpensiveSafetyCheckConfig};
@@ -153,14 +158,14 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
+use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
 
-use crate::signature_mpc::mpc_manager::SignatureMPCManager;
+use crate::signature_mpc::mpc_manager::{authority_name_to_party_id, SignatureMPCManager};
 
 use crate::authority_client::NetworkAuthorityClient;
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
@@ -168,6 +173,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::execution_config_utils::to_binary_config;
+use crate::signature_mpc::proof::{generate_language_public_parameters, Lang, ProofParty};
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1551,7 +1557,33 @@ impl AuthorityState {
             match signature_mpc_manager {
                 Some(mpc_manager) => {
                     let mut mpc_manager = mpc_manager.lock().await;
-                    mpc_manager.handle_mpc_events(&inner_temporary_store.events.data)
+                    for event in &inner_temporary_store.events.data {
+                        if event.type_ == CreatedProofMPCEvent::type_() {
+                            let num_of_parties = epoch_store.committee().voting_rights.len();
+                                    let public_parameters =
+                                        generate_language_public_parameters::<{ maurer::SOUND_PROOFS_REPETITIONS }>();
+                                    let batch_size = 1;
+                            let threshold = (((num_of_parties * 2) + 2) / 3) as PartyID;
+                            let witnesses = sample_witnesses::<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>(
+                                &public_parameters,
+                                batch_size,
+                                &mut OsRng,
+                            );
+                            let mut parties = HashSet::new();
+                            for i in 0..num_of_parties {
+                                parties.insert(i as PartyID);
+                            }
+                            let first_proof_party = ProofParty::new_session(
+                                authority_name_to_party_id(epoch_store()?.name, &*(epoch_store()?))?,
+                                threshold,
+                                parties,
+                                PhantomData,
+                                public_parameters,
+                                witnesses,
+                                &mut OsRng);
+                        }
+                    }
+                    Ok(())
                 }
                 None => {
                     // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
