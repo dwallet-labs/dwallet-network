@@ -165,7 +165,7 @@ use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
 
-use crate::signature_mpc::mpc_manager::{authority_name_to_party_id, SignatureMPCManager};
+use crate::signature_mpc::mpc_manager::{authority_name_to_party_id, SignatureMPCInstance, SignatureMPCManager};
 
 use crate::authority_client::NetworkAuthorityClient;
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
@@ -1581,7 +1581,6 @@ impl AuthorityState {
                                 public_parameters,
                                 witnesses,
                                 &mut OsRng)?;
-
                             mpc_manager.push_new_mpc_instance(first_proof_party);
                         }
                     }

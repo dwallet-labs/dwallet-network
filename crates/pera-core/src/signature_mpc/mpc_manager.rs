@@ -73,7 +73,7 @@ pub fn authority_name_to_party_id(
 /// A Signature MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-struct SignatureMPCInstance<P: Advance + mpc::Party> {
+pub struct SignatureMPCInstance<P: Advance + mpc::Party> {
     status: MPCSessionStatus<P::OutputValue>,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
@@ -99,16 +99,18 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
         session_id: ObjectID,
         sender_address: PeraAddress,
         number_of_parties: usize,
+        party: P,
+        status: MPCSessionStatus<P::OutputValue>,
     ) -> Self {
         Self {
-            status: MPCSessionStatus::Active,
+            status,
             pending_messages: HashMap::new(),
             consensus_adapter: consensus_adapter.clone(),
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             session_id,
             sender_address,
-            party: None,
+            party,
             number_of_parties,
         }
     }
@@ -268,7 +270,7 @@ enum MPCSessionStatus<Output> {
 pub struct SignatureMPCManager<P: Advance + mpc::Party> {
     mpc_instances: HashMap<ObjectID, SignatureMPCInstance<P>>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
-    pending_instances_queue: VecDeque<ObjectID>,
+    pending_instances_queue: VecDeque<SignatureMPCInstance<P>>,
     // TODO (#257): Make sure the counter is always in sync with the number of active instances.
     active_instances_counter: usize,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -393,44 +395,46 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    pub fn push_new_mpc_instance(&mut self, instance: SignatureMPCInstance<P>) {
-        if self.mpc_instances.contains_key(&event.session_id().bytes) {
+    pub fn push_new_mpc_instance(&mut self, party: P, session_id: &ObjectID, initiating_user: PeraAddress) {
+        if self.mpc_instances.contains_key(session_id) {
             // This should never happen, as the session ID is a move UniqueID
             error!(
                 "Received start flow event for session ID {:?} that already exists",
-                event.session_id()
+                session_id
             );
             return;
         }
 
         info!(
             "Received start flow event for session ID {:?}",
-            event.session_id()
+            session_id
         );
-
-        if self.active_instances_counter > self.max_active_mpc_instances {
-            self.pending_instances_queue
-                .push_back(event.session_id().bytes);
-            info!(
-                "Added MPCInstance to pending queue for session_id {:?}",
-                event.session_id()
-            );
-            return;
-        }
-        let new_instance = SignatureMPCInstance::new(
+        let mut new_instance = SignatureMPCInstance::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.epoch_id,
-            event.session_id().clone().bytes,
-            event.event_emitter().clone(),
+            session_id.clone(),
+            initiating_user,
             self.number_of_parties,
+            party,
+            MPCSessionStatus::Pending
         );
+        if self.active_instances_counter > self.max_active_mpc_instances {
+            self.pending_instances_queue
+                .push_back(new_instance);
+            info!(
+                "Added MPCInstance to pending queue for session_id {:?}",
+                session_id
+            );
+            return;
+        }
+        new_instance.status = MPCSessionStatus::FirstExecution;
         self.mpc_instances
-            .insert(event.session_id().clone().bytes, new_instance);
+            .insert(session_id.clone(), new_instance);
         self.active_instances_counter += 1;
         info!(
             "Added MPCInstance to MPC manager for session_id {:?}",
-            event.session_id()
+            session_id
         );
     }
 
