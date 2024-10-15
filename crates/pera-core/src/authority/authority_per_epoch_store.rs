@@ -930,7 +930,7 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the proof MPC manager when a new epoch starts.
     pub async fn set_proof_mpc_manager(
         &self,
-        mut manager: SignatureMPCManager<DKGParty>,
+        mut manager: SignatureMPCManager<ProofParty>,
     ) -> PeraResult<()> {
         if self
             .proof_mpc_manager

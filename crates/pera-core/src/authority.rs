@@ -175,7 +175,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::execution_config_utils::to_binary_config;
-use crate::signature_mpc::dkg::sample_witnesses;
+use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1};
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1579,8 +1579,8 @@ impl AuthorityState {
                             }
                             let first_proof_party = ProofParty::new_session(
                                 authority_name_to_party_id(
-                                    epoch_store()?.name,
-                                    &*(epoch_store()?),
+                                    epoch_store?.name,
+                                    &*(epoch_store?),
                                 )?,
                                 threshold,
                                 parties,
@@ -1590,7 +1590,19 @@ impl AuthorityState {
                                 &mut OsRng,
                             )?;
                             let deserialized_event: CreatedProofMPCEvent = bcs::from_bytes(&event.contents)?;
+                            let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
+
+                            let parties = (0..3).collect::<HashSet<PartyID>>();
+                            let auxiliary = ProofParty::AuxiliaryInput {
+                                protocol_public_parameters: secp256k1_group_public_parameters,
+                                party_id: 1,
+                                threshold: 3,
+                                number_of_parties: 4,
+                                parties: parties.clone(),
+                                protocol_context: PhantomData,
+                            };
                             mpc_manager.push_new_mpc_instance(
+                                auxiliary,
                                 first_proof_party,
                                 deserialized_event.session_id.bytes,
                                 deserialized_event.sender,

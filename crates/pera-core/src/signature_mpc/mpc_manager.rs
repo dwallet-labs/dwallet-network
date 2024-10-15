@@ -89,6 +89,7 @@ pub struct SignatureMPCInstance<P: Advance + mpc::Party> {
     sender_address: PeraAddress,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: Option<P>,
+    auxiliary_input: P::AuxiliaryInput,
 }
 
 impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
@@ -101,6 +102,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
         number_of_parties: usize,
         party: P,
         status: MPCSessionStatus<P::OutputValue>,
+        auxiliary_input: P::AuxiliaryInput,
     ) -> Self {
         Self {
             status,
@@ -112,6 +114,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
             sender_address,
             party,
             number_of_parties,
+            auxiliary_input,
         }
     }
 
@@ -374,8 +377,14 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    pub fn push_new_mpc_instance(&mut self, party: P, session_id: &ObjectID, initiating_user: PeraAddress) {
-        if self.mpc_instances.contains_key(session_id) {
+    pub fn push_new_mpc_instance(
+        &mut self,
+        auxiliary_input: P::AuxiliaryInput,
+        party: P,
+        session_id: ObjectID,
+        initiating_user: PeraAddress,
+    ) {
+        if self.mpc_instances.contains_key(&session_id) {
             // This should never happen, as the session ID is a move UniqueID
             error!(
                 "Received start flow event for session ID {:?} that already exists",
@@ -384,10 +393,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
             return;
         }
 
-        info!(
-            "Received start flow event for session ID {:?}",
-            session_id
-        );
+        info!("Received start flow event for session ID {:?}", session_id);
         let mut new_instance = SignatureMPCInstance::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
@@ -396,11 +402,10 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
             initiating_user,
             self.number_of_parties,
             party,
-            MPCSessionStatus::Pending
+            MPCSessionStatus::Pending,
         );
         if self.active_instances_counter > self.max_active_mpc_instances {
-            self.pending_instances_queue
-                .push_back(new_instance);
+            self.pending_instances_queue.push_back(new_instance);
             info!(
                 "Added MPCInstance to pending queue for session_id {:?}",
                 session_id
@@ -408,8 +413,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
             return;
         }
         new_instance.status = MPCSessionStatus::FirstExecution;
-        self.mpc_instances
-            .insert(session_id.clone(), new_instance);
+        self.mpc_instances.insert(session_id.clone(), new_instance);
         self.active_instances_counter += 1;
         info!(
             "Added MPCInstance to MPC manager for session_id {:?}",
