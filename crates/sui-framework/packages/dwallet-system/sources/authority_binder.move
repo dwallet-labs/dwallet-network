@@ -82,7 +82,7 @@ module dwallet_system::authority_binder {
 		BindToAuthority {
 			id: object::new(ctx),
 			nonce: 0,
-			authority:object::id(authority),
+			authority_id: object::id(authority),
 			owner,
 			owner_type,
 		}
@@ -122,7 +122,7 @@ module dwallet_system::authority_binder {
 		owner_type: u8,
 	) {
 		binder.bind_to_authority.nonce ;
-		binder.bind_to_authority.authority = object::id(authority);
+		binder.bind_to_authority.authority_id = object::id(authority);
 		binder.bind_to_authority.owner = owner;
 		binder.bind_to_authority.owner_type = owner_type;
 		// `virgin_bound` must be false after first changing.
