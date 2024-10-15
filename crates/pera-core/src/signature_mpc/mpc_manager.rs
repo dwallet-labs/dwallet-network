@@ -12,7 +12,7 @@ use mpc::{two_party::Round, AdvanceResult, AuxiliaryInput, Party};
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
-use pera_types::messages_consensus::ConsensusTransaction;
+use pera_types::messages_consensus::{ConsensusTransaction, Flows};
 
 use pera_types::committee::EpochId;
 use rand_core::OsRng;
@@ -197,7 +197,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
             return None;
         }
         let output = bcs::to_bytes(&output).unwrap();
-        Some(ConsensusTransaction::new_signature_mpc_output(
+        Some(ConsensusTransaction::new_dwallet_mpc_output(
             output,
             self.session_id.clone(),
             self.sender_address.clone(),
@@ -259,10 +259,6 @@ enum MPCSessionStatus<Output> {
     Active,
     Finalizing(Output),
     Finished(Output),
-}
-
-pub enum Flows {
-    FirstDKG
 }
 
 /// The `MPCService` is responsible for managing MPC instances:

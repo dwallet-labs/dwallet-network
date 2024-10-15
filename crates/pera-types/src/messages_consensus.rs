@@ -491,10 +491,11 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_signature_mpc_output(
+    pub fn new_dwallet_mpc_output(
         value: Vec<u8>,
         session_id: ObjectID,
         sender_address: PeraAddress,
+        // flow: Flows
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         value.hash(&mut hasher);
@@ -627,4 +628,8 @@ fn test_jwk_compatibility() {
     let expected_id_bytes = vec![3, 97, 98, 99, 3, 100, 101, 102];
     let id_bcs = bcs::to_bytes(&id).unwrap();
     assert_eq!(id_bcs, expected_id_bytes);
+}
+
+pub enum Flows {
+    FirstDKG
 }
