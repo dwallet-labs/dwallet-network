@@ -1589,10 +1589,11 @@ impl AuthorityState {
                                 witnesses,
                                 &mut OsRng,
                             )?;
+                            let deserialized_event: CreatedProofMPCEvent = bcs::from_bytes(&event.contents)?;
                             mpc_manager.push_new_mpc_instance(
                                 first_proof_party,
-                                event.session_id.bytes(),
-                                event.sender,
+                                deserialized_event.session_id.bytes,
+                                deserialized_event.sender,
                             );
                         }
                     }
