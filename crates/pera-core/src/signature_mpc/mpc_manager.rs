@@ -331,7 +331,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
                 let threshold_number_of_parties = ((self.number_of_parties * 2) + 2) / 3;
                 if (instance.status == MPCSessionStatus::Active
                     && instance.pending_messages.len() >= threshold_number_of_parties)
-                    || (instance.party.is_none() && instance.status == MPCSessionStatus::Active)
+                    || (instance.status == MPCSessionStatus::FirstExecution)
                 {
                     Some(instance)
                 } else {
