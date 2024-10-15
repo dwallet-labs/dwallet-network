@@ -38,7 +38,8 @@ pub struct SuiStateProofCostParams {
 }
 
 
-// Helper function to verify if the users inputs are valid and were processed by the epoch committee.
+// Helper function
+// to verify if the user's inputs are valid and were processed by the epoch committee.
 fn verify_data(
     committee: &Committee,
     transaction: &CheckpointTransaction,
@@ -46,9 +47,9 @@ fn verify_data(
     summary: &CertifiedCheckpointSummary,
 ) -> bool {
 
-    // Verify the checkpoint summary using the committee
-    let res = summary.verify_with_contents(&committee, Some(&checkpoint_contents));
-    if let Err(_) = res {
+    // Verify the checkpoint summary using the committee.
+    let res = summary.verify_with_contents(committee, Some(checkpoint_contents));
+    if res.is_err() {
         return false;
     }
 
@@ -61,7 +62,7 @@ fn verify_data(
 
     // Ensure the digests are in the checkpoint contents.
     if !checkpoint_contents
-        .enumerate_transactions(&summary)
+        .enumerate_transactions(summary)
         .any(|x| x.1 == &digests) {
         return false;
     }
@@ -362,7 +363,7 @@ pub fn sui_state_proof_verify_transaction(
     };
 
     let results: Vec<(SuiAddress, Vec<Vec<u8>>)> = tx_events
-        .into_iter()
+        .iter()
         .filter_map(|event| {
             if event.type_.address.to_hex() == package_id_target.to_hex()
                 && event.type_.module.clone().into_string() == "dwallet_cap"
