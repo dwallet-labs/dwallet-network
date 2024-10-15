@@ -112,7 +112,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
             epoch_id: epoch,
             session_id,
             sender_address,
-            party,
+            party: Some(party),
             number_of_parties,
             auxiliary_input,
         }
@@ -235,9 +235,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
                 // Do nothing
                 Ok(())
             }
-            _ => {
-                Ok(())
-            }
+            _ => Ok(()),
         }
     }
 }
@@ -341,10 +339,16 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
                 }
             })
             .collect::<Vec<&mut SignatureMPCInstance<P>>>();
+        let auxiliary_inputs = ready_to_advance
+            .iter()
+            .map(|instance| instance.auxiliary_input.clone())
+            .collect::<Vec<P::AuxiliaryInput>>();
+
         ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .map(|ref mut instance| instance.advance(&instance.auxiliary_input))
+            .enumerate()
+            .map(|(index, ref mut instance)| instance.advance(&auxiliary_inputs[index]))
             .collect::<PeraResult<_>>()?;
         Ok(())
     }
@@ -399,6 +403,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
             self.number_of_parties,
             party,
             MPCSessionStatus::Pending,
+            auxiliary_input,
         );
         if self.active_instances_counter > self.max_active_mpc_instances {
             self.pending_instances_queue.push_back(new_instance);
