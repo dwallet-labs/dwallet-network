@@ -261,11 +261,15 @@ enum MPCSessionStatus<Output> {
     Finished(Output),
 }
 
+pub enum Flows {
+    FirstDKG
+}
+
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
 /// - executing all active instances, and
 /// - (de)activating instances.
-pub struct SignatureMPCManager<P: Advance + mpc::Party> {
+pub struct SignatureMPCManager<P: Advance + Party> {
     mpc_instances: HashMap<ObjectID, SignatureMPCInstance<P>>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
     pending_instances_queue: VecDeque<SignatureMPCInstance<P>>,
@@ -278,6 +282,7 @@ pub struct SignatureMPCManager<P: Advance + mpc::Party> {
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it
     number_of_parties: usize,
+    flow: Flows,
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
@@ -290,6 +295,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
         epoch_id: EpochId,
         max_active_mpc_instances: usize,
         number_of_parties: usize,
+        flow: Flows
     ) -> Self {
         Self {
             mpc_instances: HashMap::new(),
@@ -301,6 +307,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
             number_of_parties,
+            flow
         }
     }
 
