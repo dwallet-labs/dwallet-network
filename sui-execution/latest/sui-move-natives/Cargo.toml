@@ -14,6 +14,8 @@ indexmap.workspace = true
 smallvec.workspace = true
 serde_json.workspace = true
 
+helios.workspace = true
+ethers.workspace = true
 fastcrypto-zkp.workspace = true
 fastcrypto.workspace = true
 move-binary-format.workspace = true
@@ -29,4 +31,5 @@ workspace-hack.workspace = true
 tracing.workspace = true
 sui-json.workspace = true
 signature-mpc.workspace = true
+ssz-rs = { package = "ssz_rs", version = "0.9.0" }
 group = { git = "https://github.com/dwallet-labs/group.git" }

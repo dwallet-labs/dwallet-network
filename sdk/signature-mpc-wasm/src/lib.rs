@@ -25,8 +25,8 @@ use signature_mpc::twopc_mpc_protocols::Result as TwoPCMPCResult;
 use signature_mpc::twopc_mpc_protocols::Scalar;
 use signature_mpc::twopc_mpc_protocols::{
     affine_point_to_public_key, decommitment_round_centralized_party_dkg,
-    initiate_centralized_party_dkg, recovery_id, DKGDecommitmentRoundState, Hash, ProtocolContext,
-    PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1, verify_signature
+    initiate_centralized_party_dkg, recovery_id, verify_signature, DKGDecommitmentRoundState, Hash,
+    ProtocolContext, PublicKeyValue, SecretKeyShareEncryptionAndProof, SignatureK256Secp256k1,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -112,9 +112,14 @@ pub fn finalize_dkg(
 }
 
 #[wasm_bindgen]
-pub fn initiate_presign(decentralized_dkg_output: Vec<u8>, secret_share: Vec<u8>, batch_size: usize) -> Result<JsValue, JsErr> {
+pub fn initiate_presign(
+    decentralized_dkg_output: Vec<u8>,
+    secret_share: Vec<u8>,
+    batch_size: usize,
+) -> Result<JsValue, JsErr> {
     let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&decentralized_dkg_output)?;
-    let commitment_round_party = initiate_centralized_party_presign(dkg_output.clone(), secret_share)?;
+    let commitment_round_party =
+        initiate_centralized_party_presign(dkg_output.clone(), secret_share)?;
 
     let (nonce_shares_commitments_and_batched_proof, proof_verification_round_party) =
         commitment_round_party
@@ -134,7 +139,8 @@ pub fn initiate_presign(decentralized_dkg_output: Vec<u8>, secret_share: Vec<u8>
 
 #[wasm_bindgen]
 pub fn finalize_presign(
-    decentralized_dkg_output: Vec<u8>, secret_share: Vec<u8>,
+    decentralized_dkg_output: Vec<u8>,
+    secret_share: Vec<u8>,
     signature_nonce_shares_and_commitment_randomnesses: Vec<u8>,
     presign_output: Vec<u8>,
 ) -> Result<JsValue, JsErr> {
@@ -167,7 +173,8 @@ pub fn initiate_sign(
     let messages: Vec<Vec<u8>> = bcs::from_bytes(&messages)?;
     let presigns: Vec<CentralizedPartyPresign> = bcs::from_bytes(&presigns)?;
     let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&decentralized_dkg_output)?;
-    let commitment_round_parties = initiate_centralized_party_sign(dkg_output.clone(), secret_share, presigns)?;
+    let commitment_round_parties =
+        initiate_centralized_party_sign(dkg_output.clone(), secret_share, presigns)?;
 
     let (
         public_nonce_encrypted_partial_signature_and_proofs,
@@ -192,11 +199,21 @@ pub fn initiate_sign(
 }
 
 #[wasm_bindgen]
-pub fn verify_signatures(messages: Vec<u8>, hash: u8, dkg_output: Vec<u8>, signatures: Vec<u8>) -> Result<JsValue, JsErr> {
+pub fn verify_signatures(
+    messages: Vec<u8>,
+    hash: u8,
+    dkg_output: Vec<u8>,
+    signatures: Vec<u8>,
+) -> Result<JsValue, JsErr> {
     let messages: Vec<Vec<u8>> = bcs::from_bytes(&messages)?;
     let signatures: Vec<Vec<u8>> = bcs::from_bytes(&signatures)?;
     let dkg_output: DKGDecentralizedPartyOutput = bcs::from_bytes(&dkg_output)?;
-    Ok(JsValue::from(verify_signature(messages, &Hash::from(hash), dkg_output.public_key, signatures)))
+    Ok(JsValue::from(verify_signature(
+        messages,
+        &Hash::from(hash),
+        dkg_output.public_key,
+        signatures,
+    )))
 }
 
 #[wasm_bindgen]

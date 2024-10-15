@@ -10,6 +10,7 @@ packages:
   - '!sdk/typescript/scripts'
   - '!sdk/typescript/builder'
   - '!sdk/typescript/cryptography'
+  - '!sdk/typescript/eth-light-client'
   - '!sdk/typescript/signature-mpc'
   - '!sdk/typescript/faucet'
   - '!sdk/typescript/transactions'

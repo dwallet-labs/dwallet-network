@@ -1,0 +1,32 @@
+{
+  "name": "@dwallet-network/eth-light-client-wasm",
+  "description": "Ethereum Light Client for dWallet Network in WASM",
+  "type": "commonjs",
+  "scripts": {
+    "build": "npm run build:node && npm run build:web && npm run build:bundler",
+    "build:bundler": "npx cross-env wasm-pack build --target bundler --out-dir dist/bundler --${PROFILE} && rm dist/bundler/.gitignore",
+    "build:node": "npx cross-env wasm-pack build --target nodejs --out-dir dist/node --${PROFILE} && rm dist/node/.gitignore",
+    "build:web": "npx cross-env wasm-pack build --target web --out-dir dist/web --${PROFILE} && rm dist/web/.gitignore",
+    "prepare": "npm run build"
+  },
+  "author": "dWallet Labs, Ltd. <dev@dwalletlabs.com>",
+  "license": "BSD-3-Clause-Clear",
+  "main": "dist/bundler/eth_light_client_wasm.js",
+  "browser": "dist/web/eth_light_client_wasm.js",
+  "types": "dist/node/eth_light_client_wasm.d.ts",
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  },
+  "bugs": {
+    "url": "https://github.com/dwallet-labs/dwallet-network/issues/new"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist",
+    "src"
+  ]
+}
