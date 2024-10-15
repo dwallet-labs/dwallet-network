@@ -22,4 +22,4 @@ packages:
   - '!sdk/typescript/zklogin'
   - '!sdk/enoki/react'
   - '!sdk/move-binary-format-wasm/pkg'
-  - 'state-proofs/sui/sdk'
+  - 'integrations/sdk-test'

@@ -22,7 +22,7 @@
 	"license": "ISC",
 	"dependencies": {
 		"@dwallet-network/dwallet.js": "workspace:*",
-		"@mysten/sui.js": "^0.52.0",
+		"@mysten/sui.js": "^0.51.2",
 		"axios": "^1.6.8"
 	},
 	"devDependencies": {
