@@ -17,7 +17,7 @@ import { setup, TestToolbox } from './utils/setup';
 
 describe('Test Ethereum Light Client', () => {
 	let toolbox: TestToolbox;
-	let toolbox2: TestToolbox;
+	let authorityToolbox: TestToolbox;
 	let activeEncryptionKeysTableID: string;
 	let activeEncryptionKeysTableID2: string;
 
@@ -27,14 +27,14 @@ describe('Test Ethereum Light Client', () => {
 
 	beforeAll(async () => {
 		toolbox = await setup();
-		toolbox2 = await setup();
+		authorityToolbox = await setup();
 		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
 			toolbox.client,
 			toolbox.keypair,
 		);
 		const encryptionKeysHolder2 = await createActiveEncryptionKeysTable(
-			toolbox2.client,
-			toolbox2.keypair,
+			authorityToolbox.client,
+			authorityToolbox.keypair,
 		);
 		activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
 		activeEncryptionKeysTableID2 = encryptionKeysHolder2.objectId;
@@ -60,22 +60,21 @@ describe('Test Ethereum Light Client', () => {
 		const virginBound = true;
 
 		// create dwallet for authority
-		let encryptionKeyObj2 = await getOrCreateEncryptionKey(
-			toolbox2.keypair,
-			toolbox2.client,
+		let authorityEncryptionKeyObj = await getOrCreateEncryptionKey(
+			authorityToolbox.keypair,
+			authorityToolbox.client,
 			activeEncryptionKeysTableID2,
 		);
 		let authorityOwnerDWallet = await createDWallet(
-			toolbox2.keypair,
-			toolbox2.client,
-			encryptionKeyObj2.encryptionKey,
-			encryptionKeyObj2.objectID,
+			authorityToolbox.keypair,
+			authorityToolbox.client,
+			authorityEncryptionKeyObj.encryptionKey,
+			authorityEncryptionKeyObj.objectID,
 		);
 		const authorityOwnerDWalletCapID = authorityOwnerDWallet?.dwalletCapID!;
 
 		const binderName = 'Ethereum_Holesky';
 		const chainIdentifier = 123456;
-
 		const network = 'holesky';
 		const consensusRpc = 'http://unstable.holesky.beacon-api.nimbus.team';
 		const contractApprovedTxSlot = 2;
@@ -106,8 +105,8 @@ describe('Test Ethereum Light Client', () => {
 			configOwnedObjectRef,
 			configObjType,
 			authorityOwnerDWalletCapID,
-			toolbox2.keypair,
-			toolbox2.client,
+			authorityToolbox.keypair,
+			authorityToolbox.client,
 		)) as OwnedObjectRef;
 
 		// create dWalletBinder

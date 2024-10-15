@@ -134,7 +134,6 @@ module dwallet_system::authority_binder {
 		binder.virgin_bound = false;
 	}
 
-	public entry fun create_authority_ack_transaction_hash(
 	public fun create_authority_ack_transaction_hash(
 		binder: &DWalletBinder,
 		virgin_bound: bool,
