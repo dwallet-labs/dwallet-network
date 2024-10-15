@@ -14,7 +14,7 @@ use twopc_mpc::secp256k1::paillier::bulletproofs::PaillierProtocolPublicParamete
 // TODO (#228): Remove this file & all proof MPC code.
 
 /// Create dummy witnesses for the dummy proof flow.
-fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
+pub fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
     language_public_parameters: &Lang::PublicParameters,
     batch_size: usize,
     rng: &mut impl CryptoRngCore,

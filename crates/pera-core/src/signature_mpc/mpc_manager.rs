@@ -324,27 +324,6 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
         Ok(*stored_output == output)
     }
 
-    /// Filter the relevant MPC events from the transaction events & handle them
-    /// Create new MPC instances when receiving a CreatedProofMPCEvent, and decrease the [`active_instances_counter`] when receiving a FinishedProofMPCEvent.
-    pub fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
-        if events.is_empty() {
-            return Ok(());
-        }
-        for event in events {
-            if P::InitEvent::type_() == event.type_ {
-                let deserialized_event = bcs::from_bytes(&event.contents)?;
-                self.push_new_mpc_instance(deserialized_event);
-                debug!("event: Init MPC Session {:?}", event);
-            };
-            if P::FinalizeEvent::type_() == event.type_ {
-                let deserialized_event = bcs::from_bytes(&event.contents)?;
-                self.finalize_mpc_instance(deserialized_event)?;
-                debug!("event: Finalize MPC Session {:?}", event);
-            };
-        }
-        Ok(())
-    }
-
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
     /// We parallelize the advances with Rayon to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
@@ -438,26 +417,26 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
         );
     }
 
-    fn finalize_mpc_instance(&mut self, event: P::FinalizeEvent) -> PeraResult {
-        let session_id = event.session_id().bytes;
-        let mut instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
-            PeraError::InvalidCommittee(format!(
-                "Received a finalize event for session ID {:?} that does not exist",
-                event.session_id()
-            ))
-        })?;
-        if let MPCSessionStatus::Finalizing(output) = &instance.status {
-            instance.status = MPCSessionStatus::Finished(output.clone());
-            self.active_instances_counter -= 1;
-            info!(
-                "Finalized MPCInstance for session_id {:?}",
-                event.session_id()
-            );
-            return Ok(());
-        }
-        Err(PeraError::Unknown(format!(
-            "Received a finalize event for session ID {:?} that is not in the finalizing state; current state: {:?}",
-            event.session_id(), instance.status
-        )))
-    }
+    // fn finalize_mpc_instance(&mut self, event: P::FinalizeEvent) -> PeraResult {
+    //     let session_id = event.session_id().bytes;
+    //     let mut instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
+    //         PeraError::InvalidCommittee(format!(
+    //             "Received a finalize event for session ID {:?} that does not exist",
+    //             event.session_id()
+    //         ))
+    //     })?;
+    //     if let MPCSessionStatus::Finalizing(output) = &instance.status {
+    //         instance.status = MPCSessionStatus::Finished(output.clone());
+    //         self.active_instances_counter -= 1;
+    //         info!(
+    //             "Finalized MPCInstance for session_id {:?}",
+    //             event.session_id()
+    //         );
+    //         return Ok(());
+    //     }
+    //     Err(PeraError::Unknown(format!(
+    //         "Received a finalize event for session ID {:?} that is not in the finalizing state; current state: {:?}",
+    //         event.session_id(), instance.status
+    //     )))
+    // }
 }
