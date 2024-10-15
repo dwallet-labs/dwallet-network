@@ -36,6 +36,29 @@ pub type AsyncProtocol=
 pub type DKGParty =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
 
+pub trait Auxiliaryable: mpc::Party {
+    fn first_auxiliary_input() -> Self::AuxiliaryInput;
+}
+
+impl Auxiliaryable for DKGParty {
+    fn first_auxiliary_input() -> Self::AuxiliaryInput {
+        let (paillier_protocol_public_parameters, decryption_key) = setup_paillier_secp256k1();
+
+        let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
+
+        let parties = (0..3).collect::<HashSet<PartyID>>();
+        Self::AuxiliaryInput {
+            protocol_public_parameters: secp256k1_group_public_parameters,
+            party_id: 1,
+            threshold: 3,
+            number_of_parties: 4,
+            parties: parties.clone(),
+            protocol_context: PhantomData,
+        }
+    }
+}
+
+
 pub fn setup_paillier_secp256k1() -> (PaillierProtocolPublicParameters, tiresias::DecryptionKey) {
     let paillier_protocol_public_parameters =
         PaillierProtocolPublicParameters::new::<secp256k1::GroupElement>(N);

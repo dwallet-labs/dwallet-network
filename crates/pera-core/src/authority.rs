@@ -175,7 +175,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::execution_config_utils::to_binary_config;
-use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1, DKGParty};
+use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1, Auxiliaryable, DKGParty};
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1571,14 +1571,7 @@ impl AuthorityState {
                             let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
 
                             let parties = (0..3).collect::<HashSet<PartyID>>();
-                            let auxiliary = DKGParty::AuxiliaryInput {
-                                protocol_public_parameters: secp256k1_group_public_parameters,
-                                party_id: 1,
-                                threshold: 3,
-                                number_of_parties: 4,
-                                parties: parties.clone(),
-                                protocol_context: PhantomData,
-                            };
+                            let auxiliary = DKGParty::first_auxiliary_input();
                             mpc_manager.push_new_mpc_instance(
                                 auxiliary,
                                 first_proof_party,
