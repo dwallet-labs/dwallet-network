@@ -178,7 +178,7 @@ export const initEthereumState = async (
 			typeof o.owner === 'object' &&
 			'Shared' in o.owner &&
 			o.owner.Shared.initial_shared_version !== undefined,
-	)[0].reference!.objectId!;
+	)[0];
 };
 
 /**
@@ -316,25 +316,11 @@ export const approveEthereumMessage = async (
 		);
 	}
 
-	// Retry the verification with the updated state. If it fails again, an error will be returned.
-	successful_proof = try_verify_proof(
-		proof,
-		contractAddressString,
-		message,
-		ethers.getBytes(dWalletID),
-		dataSlot,
-		state_root,
-	);
-
-	if (!successful_proof) {
-		throw new Error('Failed to verify Ethereum state');
-	}
-
 	let proofBcs = stringToArrayU8Bcs(JSON.stringify(proof));
 	let messageBcs = stringToArrayU8Bcs(message);
 
 	const tx2 = new TransactionBlock();
-	tx2.moveCall({
+	const [messageApprovals] = tx2.moveCall({
 		target: `${packageId}::${ethDWalletModuleName}::approve_message`,
 		arguments: [
 			tx2.object(ethDwalletCapId),
@@ -346,15 +332,6 @@ export const approveEthereumMessage = async (
 		],
 	});
 
-	let res = await client.devInspectTransactionBlock({
-		sender: keypair.toSuiAddress(),
-		transactionBlock: tx2,
-	});
-
-	const messageApprovalBcs = new Uint8Array(
-		res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[],
-	);
-
 	let txResult = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
 		transactionBlock: tx2,
@@ -364,5 +341,5 @@ export const approveEthereumMessage = async (
 	if (txResult.effects?.status.status !== 'success') {
 		throw new Error('Failed to verify Ethereum state');
 	}
-	return messageApprovalBcs;
+	return messageApprovals;
 };

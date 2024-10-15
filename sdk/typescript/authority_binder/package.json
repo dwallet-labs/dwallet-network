@@ -1,0 +1,6 @@
+{
+	"private": true,
+	"import": "../dist/esm/authority-binder/index.js",
+	"main": "../dist/cjs/authority-binder/index.js",
+	"sideEffects": false
+}

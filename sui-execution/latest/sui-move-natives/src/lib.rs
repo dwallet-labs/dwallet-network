@@ -33,6 +33,7 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
+use crate::authority_binder::AuthorityBinderCostParams;
 use crate::crypto::sui_state_proof::SuiStateProofCostParams;
 use crate::crypto::twopc_mpc::{TransferDWalletCostParams, TwoPCMPCDKGCostParams};
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
@@ -61,6 +62,7 @@ use sui_types::{MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS};
 use transfer::TransferReceiveObjectInternalCostParams;
 
 mod address;
+mod authority_binder;
 mod crypto;
 mod dynamic_field;
 mod eth_state_proof;
@@ -162,6 +164,9 @@ pub struct NativesCostTable {
 
     // eth state proof
     pub eth_state_proof: EthDWalletCostParams,
+
+    // authority binder
+    pub authority_binder: AuthorityBinderCostParams,
 }
 
 impl NativesCostTable {
@@ -543,6 +548,11 @@ impl NativesCostTable {
                     .create_initial_eth_state_data_cost_base()
                     .into(),
             },
+            authority_binder: AuthorityBinderCostParams {
+                create_authority_ack_transaction_cost_base: protocol_config
+                    .create_authority_ack_transaction_cost_base()
+                    .into(),
+            },
         }
     }
 }
@@ -835,6 +845,11 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "ethereum_state",
             "create_initial_eth_state_data",
             make_native!(eth_state_proof::create_initial_eth_state_data),
+        ),
+        (
+            "authority_binder",
+            "create_authority_ack_transaction",
+            make_native!(authority_binder::create_authority_ack_transaction),
         ),
     ];
     sui_system_natives
