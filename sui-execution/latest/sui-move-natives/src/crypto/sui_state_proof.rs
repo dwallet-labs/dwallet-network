@@ -37,7 +37,6 @@ pub struct SuiStateProofCostParams {
     pub sui_state_proof_verify_transaction_base: InternalGas,
 }
 
-
 // Helper function
 // to verify if the user's inputs are valid and were processed by the epoch committee.
 fn verify_data(
@@ -46,7 +45,6 @@ fn verify_data(
     checkpoint_contents: &CheckpointContents,
     summary: &CertifiedCheckpointSummary,
 ) -> bool {
-
     // Verify the checkpoint summary using the committee.
     let res = summary.verify_with_contents(committee, Some(checkpoint_contents));
     if res.is_err() {
@@ -63,7 +61,8 @@ fn verify_data(
     // Ensure the digests are in the checkpoint contents.
     if !checkpoint_contents
         .enumerate_transactions(summary)
-        .any(|x| x.1 == &digests) {
+        .any(|x| x.1 == &digests)
+    {
         return false;
     }
 
@@ -125,9 +124,9 @@ pub fn sui_state_proof_verify_committee(
     let next_committee_epoch;
     // Extract the new committee information.
     if let Some(EndOfEpochData {
-                    next_epoch_committee,
-                    ..
-                }) = &checkpoint_summary.end_of_epoch_data
+        next_epoch_committee,
+        ..
+    }) = &checkpoint_summary.end_of_epoch_data
     {
         let next_committee = next_epoch_committee.iter().cloned().collect();
         next_committee_epoch = Committee::new(
@@ -273,16 +272,14 @@ pub fn sui_state_proof_verify_link_cap(
         }
     }
 
-
     Ok(NativeResult::ok(
         cost,
         smallvec![
-                Value::vector_u8(bcs::to_bytes(&sui_cap_ids).unwrap()),
-                Value::vector_u8(bcs::to_bytes(&dwallet_cap_ids).unwrap())
-            ],
+            Value::vector_u8(bcs::to_bytes(&sui_cap_ids).unwrap()),
+            Value::vector_u8(bcs::to_bytes(&dwallet_cap_ids).unwrap())
+        ],
     ))
 }
-
 
 /***************************************************************************************************
  * native fun sui_state_proof_verify_transaction
