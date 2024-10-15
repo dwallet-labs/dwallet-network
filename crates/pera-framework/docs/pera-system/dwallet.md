@@ -6,10 +6,13 @@ title: Module `0x3::dwallet`
 
 -  [Struct `InitiateDKGSessionEvent`](#0x3_dwallet_InitiateDKGSessionEvent)
 -  [Resource `InitiateDKGSessionData`](#0x3_dwallet_InitiateDKGSessionData)
+-  [Struct `StartDKGSecondRoundEvent`](#0x3_dwallet_StartDKGSecondRoundEvent)
+-  [Resource `DKGSecondRoundData`](#0x3_dwallet_DKGSecondRoundData)
 -  [Resource `CompletedFirstDKGRoundData`](#0x3_dwallet_CompletedFirstDKGRoundData)
 -  [Struct `CompletedDKGRoundEvent`](#0x3_dwallet_CompletedDKGRoundEvent)
 -  [Constants](#@Constants_0)
 -  [Function `launch_initiate_dkg_session`](#0x3_dwallet_launch_initiate_dkg_session)
+-  [Function `launch_dkg_second_round`](#0x3_dwallet_launch_dkg_second_round)
 -  [Function `create_first_dkg_round_output`](#0x3_dwallet_create_first_dkg_round_output)
 
 
@@ -78,6 +81,84 @@ title: Module `0x3::dwallet`
 </dd>
 <dt>
 <code>sender: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_StartDKGSecondRoundEvent"></a>
+
+## Struct `StartDKGSecondRoundEvent`
+
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_StartDKGSecondRoundEvent">StartDKGSecondRoundEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>sender: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>input: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_DKGSecondRoundData"></a>
+
+## Resource `DKGSecondRoundData`
+
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_DKGSecondRoundData">DKGSecondRoundData</a> <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>sender: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>input: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
@@ -197,6 +278,42 @@ Function to launch proof MPC flow.
     <b>let</b> created_proof_mpc_session_event = <a href="dwallet.md#0x3_dwallet_InitiateDKGSessionEvent">InitiateDKGSessionEvent</a> {
         session_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&session_data),
         sender: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx)
+    };
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(created_proof_mpc_session_event);
+    <a href="../pera-framework/transfer.md#0x2_transfer_freeze_object">transfer::freeze_object</a>(session_data);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_launch_dkg_second_round"></a>
+
+## Function `launch_dkg_second_round`
+
+Function to launch proof MPC flow.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_launch_dkg_second_round">launch_dkg_second_round</a>(input: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_launch_dkg_second_round">launch_dkg_second_round</a>(input: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> TxContext) {
+    <b>let</b> session_data = <a href="dwallet.md#0x3_dwallet_DKGSecondRoundData">DKGSecondRoundData</a> {
+        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+        sender: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
+        input
+    };
+    <b>let</b> created_proof_mpc_session_event = <a href="dwallet.md#0x3_dwallet_StartDKGSecondRoundEvent">StartDKGSecondRoundEvent</a> {
+        session_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&session_data),
+        sender: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
+        input
     };
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(created_proof_mpc_session_event);
     <a href="../pera-framework/transfer.md#0x2_transfer_freeze_object">transfer::freeze_object</a>(session_data);

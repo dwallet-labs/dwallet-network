@@ -4,6 +4,12 @@ InitiateDKGSessionEvent
 InitiateDKGSessionData
 	public struct
 	0x3::dwallet
+StartDKGSecondRoundEvent
+	public struct
+	0x3::dwallet
+DKGSecondRoundData
+	public struct
+	0x3::dwallet
 CompletedFirstDKGRoundData
 	public struct
 	0x3::dwallet
@@ -11,6 +17,9 @@ CompletedDKGRoundEvent
 	public struct
 	0x3::dwallet
 launch_initiate_dkg_session
+	public fun
+	0x3::dwallet
+launch_dkg_second_round
 	public fun
 	0x3::dwallet
 create_first_dkg_round_output
