@@ -187,7 +187,10 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
     /// Create a new consensus transaction with the flow result (output) to be sent to the other MPC parties.
     /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
     /// Only the aggregator party should send the output to the other parties.
-    fn new_dwallet_mpc_output_message(&self, output: P::OutputValue) -> Option<ConsensusTransaction> {
+    fn new_dwallet_mpc_output_message(
+        &self,
+        output: P::OutputValue,
+    ) -> Option<ConsensusTransaction> {
         let Ok(epoch_store) = self.epoch_store() else {
             return None;
         };
@@ -239,12 +242,20 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
 }
 
 /// Possible statuses of an MPC session:
+/// - Pending: The instance has been inserted after we reached [`SignatureMPCManager::max_active_mpc_instances`], so it's waiting
+/// for some active instances to finish before it can be activated.
+/// - FirstExecution: The [`SignatureMPCInstance::party`] has not yet performed it's first advance. This status is needed
+/// so we will be able to filter those instances and advance them, despite they have not received [`threshold_number_of_parties`] messages.
 /// - Active: The session is currently running; new messages will be forwarded to the session.
-/// - Finalizing: The session is finished and pending removal; incoming messages will not be forwarded,
+/// - Finalizing: The session is finished and pending on chain write; after receiving an output, it will be verified
+/// against the local one, and if they match the status will be changed to Finished.
+/// This is needed so we won't write the same output twice to the chain.
 /// - Finished: The session removed from active instances; incoming messages will not be forwarded,
 /// but will not be marked as malicious.
 #[derive(Clone, Copy, PartialEq, Debug)]
 enum MPCSessionStatus<Output> {
+    Pending,
+    FirstExecution,
     Active,
     Finalizing(Output),
     Finished(Output),
