@@ -339,7 +339,7 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing Proof Signature MPC flows.
-    pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
+    pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<DKGParty>>>,
 
     // /// State machine managing DWallets DKG flows
     // pub dwallet_dkg_init_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
@@ -930,7 +930,7 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the proof MPC manager when a new epoch starts.
     pub async fn set_proof_mpc_manager(
         &self,
-        mut manager: SignatureMPCManager<ProofParty>,
+        mut manager: SignatureMPCManager<DKGParty>,
     ) -> PeraResult<()> {
         if self
             .proof_mpc_manager

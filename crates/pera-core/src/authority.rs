@@ -157,7 +157,7 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, InitDKGMPCEvent, MPCEvent};
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
@@ -175,7 +175,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::execution_config_utils::to_binary_config;
-use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1};
+use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1, DKGParty};
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1560,40 +1560,18 @@ impl AuthorityState {
                 Some(mpc_manager) => {
                     let mut mpc_manager = mpc_manager.lock().await;
                     for event in &inner_temporary_store.events.data {
-                        if event.type_ == CreatedProofMPCEvent::type_() {
+                        if event.type_ == InitDKGMPCEvent::type_() {
                             let num_of_parties = epoch_store.committee().voting_rights.len();
-                            let public_parameters = generate_language_public_parameters::<
-                                { maurer::SOUND_PROOFS_REPETITIONS },
-                            >();
-                            let batch_size = 1;
-                            let threshold = (((num_of_parties * 2) + 2) / 3) as PartyID;
-                            let witnesses = sample_witnesses::<
-                                { maurer::SOUND_PROOFS_REPETITIONS },
-                                Lang,
-                            >(
-                                &public_parameters, batch_size, &mut OsRng
-                            );
                             let mut parties = HashSet::new();
                             for i in 0..num_of_parties {
                                 parties.insert(i as PartyID);
                             }
-                            let first_proof_party = ProofParty::new_session(
-                                authority_name_to_party_id(
-                                    epoch_store?.name,
-                                    &*(epoch_store?),
-                                )?,
-                                threshold,
-                                parties,
-                                PhantomData,
-                                public_parameters,
-                                witnesses,
-                                &mut OsRng,
-                            )?;
-                            let deserialized_event: CreatedProofMPCEvent = bcs::from_bytes(&event.contents)?;
+                            let first_proof_party = DKGParty::default();
+                            let deserialized_event: InitDKGMPCEvent = bcs::from_bytes(&event.contents)?;
                             let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
 
                             let parties = (0..3).collect::<HashSet<PartyID>>();
-                            let auxiliary = ProofParty::AuxiliaryInput {
+                            let auxiliary = DKGParty::AuxiliaryInput {
                                 protocol_public_parameters: secp256k1_group_public_parameters,
                                 party_id: 1,
                                 threshold: 3,
