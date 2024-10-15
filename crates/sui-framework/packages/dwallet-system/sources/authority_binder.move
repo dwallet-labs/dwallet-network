@@ -4,7 +4,7 @@
 module dwallet_system::authority_binder {
 	use std::string::String;
 	use dwallet::transfer;
-   use dwallet::object::{Self, ID, UID};
+	use dwallet::object::{Self, ID, UID};
 	use dwallet::tx_context::TxContext;
 	use dwallet_system::dwallet;
 
@@ -51,9 +51,9 @@ module dwallet_system::authority_binder {
 		authority_owner_dwallet_cap: dwallet::DWalletCap,
 	}
 
-    /// Create an Authority object.
-    /// The `latest` object represents the latest state of the authority.
-    /// The `config` object represents a configuration of the authority.
+	/// Create an Authority object.
+	/// The `latest` object represents the latest state of the authority.
+	/// The `config` object represents a configuration of the authority.
 	public fun create_authority<C: key, L: key>(
 		name: String,
 		unique_identifier: vector<u8>,
@@ -89,7 +89,7 @@ module dwallet_system::authority_binder {
 	}
 
 
-    /// Create a `DWalletBinder` object.
+	/// Create a `DWalletBinder` object.
 	public fun create_binder(
 		dwallet_cap: dwallet::DWalletCap,
 		authority: &Authority,
@@ -113,8 +113,8 @@ module dwallet_system::authority_binder {
 		transfer::share_object(binder);
 	}
 
-    /// Bind a new authority to an existing `DWalletBinder`.
-    /// This actually changes the authority that enforces the login policy for the `dwallet::DWalletCap`.
+	/// Bind a new authority to an existing `DWalletBinder`.
+	/// This actually changes the authority that enforces the login policy for the `dwallet::DWalletCap`.
 	public entry fun set_bind_to_authority(
 		binder: &mut DWalletBinder,
 		authority: &Authority,
@@ -129,8 +129,8 @@ module dwallet_system::authority_binder {
 		binder.virgin_bound = false;
 	}
 
-    /// Create a transaction hash for the authority acknowledgment.
-    /// This is used to acknowledge the authority that the `DWalletBinder` is bound to it.
+	/// Create a transaction hash for the authority acknowledgment.
+	/// This is used to acknowledge the authority that the `DWalletBinder` is bound to it.
 	public fun create_authority_ack_transaction_hash(
 		binder: &DWalletBinder,
 		virgin_bound: bool,
@@ -155,7 +155,7 @@ module dwallet_system::authority_binder {
 				)
 	}
 
-   #[allow(unused_function)]
+	#[allow(unused_function)]
 	native fun create_authority_ack_transaction(
 		binder_id: vector<u8>,
 		dwallet_cap_id: vector<u8>,
