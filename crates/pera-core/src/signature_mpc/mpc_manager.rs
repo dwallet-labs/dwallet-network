@@ -8,7 +8,7 @@ use group::{secp256k1, GroupElement, PartyID};
 use im::hashmap;
 use itertools::Itertools;
 use mpc::party::Advance;
-use mpc::{two_party::Round, AdvanceResult, AuxiliaryInput};
+use mpc::{two_party::Round, AdvanceResult, AuxiliaryInput, Party};
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
@@ -133,14 +133,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
         let party: P = if let Some(existing_party) = optional_party {
             existing_party
         } else {
-            let mut parties = HashSet::new();
-            for i in 0..self.number_of_parties {
-                parties.insert(i as PartyID);
-            }
-            P::new(
-                parties,
-                authority_name_to_party_id(self.epoch_store()?.name, &*(self.epoch_store()?))?,
-            )
+            panic!("damn");
         };
         let Ok(advance_result) =
             party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng)
@@ -240,6 +233,9 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
             MPCSessionStatus::Active => self.store_message(&message, self.epoch_store()?),
             MPCSessionStatus::Finalizing(_) | MPCSessionStatus::Finished(_) => {
                 // Do nothing
+                Ok(())
+            }
+            _ => {
                 Ok(())
             }
         }
@@ -348,7 +344,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
         ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .map(|ref mut instance| instance.advance(&P::first_auxiliary_input()))
+            .map(|ref mut instance| instance.advance(&instance.auxiliary_input))
             .collect::<PeraResult<_>>()?;
         Ok(())
     }
