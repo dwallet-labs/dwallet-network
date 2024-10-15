@@ -382,7 +382,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
     /// Otherwise, adds the instance to the pending queue
-    fn push_new_mpc_instance(&mut self, party: P) {
+    pub fn push_new_mpc_instance(&mut self, instance: SignatureMPCInstance<P>) {
         if self.mpc_instances.contains_key(&event.session_id().bytes) {
             // This should never happen, as the session ID is a move UniqueID
             error!(

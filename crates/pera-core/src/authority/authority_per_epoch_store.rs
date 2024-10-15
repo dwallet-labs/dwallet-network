@@ -339,7 +339,7 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing Proof Signature MPC flows.
-    pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<DKGParty>>>,
+    pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
 
     // /// State machine managing DWallets DKG flows
     // pub dwallet_dkg_init_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,

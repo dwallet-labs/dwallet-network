@@ -1580,7 +1580,9 @@ impl AuthorityState {
                                 PhantomData,
                                 public_parameters,
                                 witnesses,
-                                &mut OsRng);
+                                &mut OsRng)?;
+
+                            mpc_manager.push_new_mpc_instance(first_proof_party);
                         }
                     }
                     Ok(())
