@@ -1,5 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import { bcs } from '../bcs';
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
@@ -60,8 +61,23 @@ export async function launchDKGSession(keypair: Keypair, client: PeraClient) {
 				})
 			: null;
 
-	console.log({ firstRoundOutput });
 	return firstRoundOutput?.value;
+}
+
+export async function launchDKGSecondRound(keypair: Keypair, client: PeraClient, input: number[]) {
+	const tx = new Transaction();
+	tx.moveCall({
+		target: `${packageId}::${dwalletModuleName}::launch_dkg_second_round`,
+		arguments: [tx.pure(bcs.vector(bcs.u8()).serialize(input))],
+	});
+
+	const result = await client.signAndExecuteTransaction({
+		signer: keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+		},
+	});
 }
 
 export async function fetchObjectBySessionId(

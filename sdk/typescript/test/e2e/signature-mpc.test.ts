@@ -4,7 +4,11 @@
 import { hello_wasm } from '@dwallet-network/signature-mpc-wasm';
 import { beforeAll, describe, it } from 'vitest';
 
-import { launchDKGSession, launchProofMPSession } from '../../src/signature-mpc/proof';
+import {
+	launchDKGSecondRound,
+	launchDKGSession,
+	launchProofMPSession,
+} from '../../src/signature-mpc/proof';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test signature mpc', () => {
@@ -31,5 +35,6 @@ describe('Test signature mpc', () => {
 		const firstDKGOutput = await launchDKGSession(toolbox.keypair, toolbox.client);
 		let a = hello_wasm(firstDKGOutput);
 		console.log({ a });
+		await launchDKGSecondRound(toolbox.keypair, toolbox.client, firstDKGOutput!);
 	});
 });
