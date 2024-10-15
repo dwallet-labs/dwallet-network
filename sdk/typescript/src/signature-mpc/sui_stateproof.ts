@@ -56,7 +56,7 @@ export async function submitDWalletCreationProof(
 	);
 
 	let epochCommitteeObject = await getOwnedObject(dwallet_client, epoch_committee_id);
-	let committeArg = txb.object(epochCommitteeObject);
+	let committeeArg = txb.object(epochCommitteeObject);
 
 	let configObject = await getOwnedObject(dwallet_client, configObjectId);
 	let configArg = txb.object(configObject);
@@ -70,7 +70,7 @@ export async function submitDWalletCreationProof(
 		arguments: [
 			configArg,
 			dWalletCapArg,
-			committeArg,
+			committeeArg,
 			checkpoint_arg,
 			checkpoint_contents_arg,
 			transaction_arg,
@@ -133,7 +133,7 @@ export async function submitTxStateProof(
 	);
 	let epochCommitteeObject = await getOwnedObject(dwallet_client, epoch_committee_id);
 
-	let committeArg = txb.object(epochCommitteeObject);
+	let committeeArg = txb.object(epochCommitteeObject);
 	let checkpointArg = txb.pure(checkpoint_summary_bytes);
 	let checkpointContentsArg = txb.pure(checkpoint_contents_bytes);
 	let transactionArg = txb.pure(transaction_bytes);
@@ -143,7 +143,7 @@ export async function submitTxStateProof(
 		arguments: [
 			configArg,
 			capWrapperArg,
-			committeArg,
+			committeeArg,
 			checkpointArg,
 			checkpointContentsArg,
 			transactionArg,
@@ -162,8 +162,7 @@ export async function submitTxStateProof(
 		arguments: [messageApprovalsVec],
 	});
 
-	// sign the message approvals
-	// so only signing the first vec<vec<u8>> is supported
+	// Sign the message approvals so only signing the first vec<vec<u8>> is supported.
 	txb.moveCall({
 		target: `${packageId}::${dWalletModuleName}::sign`,
 		typeArguments: [
@@ -181,9 +180,7 @@ export async function submitTxStateProof(
 		},
 	});
 
-	let signatures = await retrieveSignResult(dwallet_client, dWalletId);
-
-	return signatures;
+	return await retrieveSignResult(dwallet_client, dWalletId);
 }
 
 // Function to query the Rust service
