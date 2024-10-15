@@ -18,6 +18,19 @@ module pera_system::dwallet {
         sender: address,
     }
 
+    public struct StartDKGSecondRoundEvent has copy, drop {
+        session_id: ID,
+        sender: address,
+        input: vector<u8>
+    }
+
+    
+    public struct DKGSecondRoundData has key {
+        id: UID,
+        sender: address,
+        input: vector<u8>
+    }
+
     public struct CompletedFirstDKGRoundData has key {
         id: UID,
         session_id: ID,
@@ -38,6 +51,22 @@ module pera_system::dwallet {
         let created_proof_mpc_session_event = InitiateDKGSessionEvent {
             session_id: object::id(&session_data),
             sender: tx_context::sender(ctx)
+        };
+        event::emit(created_proof_mpc_session_event);
+        transfer::freeze_object(session_data);
+    }
+
+    /// Function to launch proof MPC flow.
+    public fun launch_dkg_second_round(input: vector<u8>, ctx: &mut TxContext) {
+        let session_data = DKGSecondRoundData {
+            id: object::new(ctx),
+            sender: tx_context::sender(ctx),
+            input
+        };
+        let created_proof_mpc_session_event = StartDKGSecondRoundEvent {
+            session_id: object::id(&session_data),
+            sender: tx_context::sender(ctx),
+            input
         };
         event::emit(created_proof_mpc_session_event);
         transfer::freeze_object(session_data);
