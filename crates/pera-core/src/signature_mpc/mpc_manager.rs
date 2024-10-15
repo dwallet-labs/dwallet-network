@@ -144,6 +144,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
         };
         let msg = match advance_result {
             AdvanceResult::Advance((message, party)) => {
+                self.status = MPCSessionStatus::Active;
                 self.pending_messages.clear();
                 self.party = Some(party);
                 self.new_signature_mpc_message(message)
