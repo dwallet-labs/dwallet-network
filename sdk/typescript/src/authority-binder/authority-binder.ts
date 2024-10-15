@@ -13,6 +13,29 @@ import type { OwnedObjectRef } from '../types/objects.js';
 const packageId = '0x3';
 const authorityBinderModuleName = 'authority_binder';
 
+export const createConfig = async (keypair: Keypair, client: DWalletClient) => {
+	const tx = new TransactionBlock();
+	tx.moveCall({
+		target: `${packageId}::${authorityBinderModuleName}::create_config`,
+		arguments: [],
+		typeArguments: [],
+	});
+
+	let result = await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: { showEffects: true },
+	});
+
+	if (result.effects?.status.status !== 'success') {
+		throw new Error(
+			'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(result.effects),
+		);
+	}
+
+	return result.effects?.created?.at(0);
+};
+
 export const createAuthorityAckTransactionHash = async (
 	binderObjRef: OwnedObjectRef,
 	virginBound: boolean,
@@ -25,16 +48,11 @@ export const createAuthorityAckTransactionHash = async (
 	let domainNameBcs = stringToArrayU8Bcs(domainName);
 	let domainVersionBcs = stringToArrayU8Bcs(domainVersion);
 
-	// todo(yuval): make sure that the objects are shared objects
-	let binderSharedObjRef = {
-		objectId: binderObjRef.reference.objectId,
-		initialSharedVersion: binderObjRef.owner.Shared.initial_shared_version,
-		mutable: false,
-	};
+	let binderSharedObjRef = getSharedObjectRefFromOwner(binderObjRef);
 
 	const tx = new TransactionBlock();
 	tx.moveCall({
-		target: `${packageId}::authority_binder::create_authority_ack_transaction_hash`,
+		target: `${packageId}::${authorityBinderModuleName}::create_authority_ack_transaction_hash`,
 		arguments: [
 			tx.sharedObjectRef(binderSharedObjRef),
 			tx.pure.bool(virginBound),
@@ -65,55 +83,39 @@ export const createAuthorityAckTransactionHash = async (
 	// todo(yuval): make sure to update nonce on chain if needed
 };
 
-export const createConfig = async (keypair: Keypair, client: DWalletClient) => {
-	const tx = new TransactionBlock();
-	tx.moveCall({
-		target: `${packageId}::${authorityBinderModuleName}::create_config`,
-		arguments: [],
-		typeArguments: [],
-	});
-
-	let result = await client.signAndExecuteTransactionBlock({
-		signer: keypair,
-		transactionBlock: tx,
-		options: { showEffects: true },
-	});
-
-	if (result.effects?.status.status !== 'success') {
-		throw new Error(
-			'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(result.effects),
-		);
-	}
-
-	return result.effects?.created?.at(0);
-};
-
+/**
+ * Creates an authority object on the blockchain.
+ *
+ * @param {string} binderName - The name of the binder.
+ * @param {string} chainIdentifier - A unique identifier for the chain.
+ * @param {OwnedObjectRef} latestSnapshotOwnerObjRef - The reference to the latest snapshot object.
+ * @param {string} latestSnapshotObjType - The type of the latest snapshot object.
+ * @param {OwnedObjectRef} configObjRef - The reference to the configuration object.
+ * @param {string} configObjType - The type of the configuration object.
+ * @param {string} authorityOwnerDWalletCapID - The ID of the dWallet capability for the authority owner.
+ * @param {Keypair} keypair - The keypair used for signing the transaction.
+ * @param {DWalletClient} client - The dWallet client to interact with the blockchain.
+ * @returns The created authority object.
+ * @throws Will throw an error if the transaction fails.
+ */
 export const createAuthority = async (
 	binderName: string,
 	chainIdentifier: string,
-	latestSnapshotObjRef: OwnedObjectRef,
+	latestSnapshotOwnerObjRef: OwnedObjectRef,
+	latestSnapshotObjType: string,
 	configObjRef: OwnedObjectRef,
+	configObjType: string,
 	authorityOwnerDWalletCapID: string,
 	keypair: Keypair,
 	client: DWalletClient,
 ) => {
 	let uniqueIdentifierBcs = stringToArrayU8Bcs(chainIdentifier);
 
-	// todo(yuval): make sure that the objects are shared objects
-	let latestSnapshotSharedObjRef = {
-		objectId: latestSnapshotObjRef.reference.objectId,
-		initialSharedVersion: latestSnapshotObjRef.owner.Shared.initial_shared_version,
-		mutable: false,
-	};
-
-	let configSharedObjRef = {
-		objectId: configObjRef.reference.objectId,
-		initialSharedVersion: configObjRef.owner.Shared.initial_shared_version,
-		mutable: false,
-	};
+	let latestSnapshotSharedObjRef = getSharedObjectRefFromOwner(latestSnapshotOwnerObjRef);
+	let configSharedObjRef = getSharedObjectRefFromOwner(configObjRef);
 
 	const tx = new TransactionBlock();
-	let check = tx.moveCall({
+	tx.moveCall({
 		target: `${packageId}::${authorityBinderModuleName}::create_authority`,
 		arguments: [
 			tx.pure.string(binderName),
@@ -122,15 +124,8 @@ export const createAuthority = async (
 			tx.sharedObjectRef(configSharedObjRef),
 			tx.object(authorityOwnerDWalletCapID),
 		],
-		typeArguments: [
-			`${packageId}::authority_binder::Config`,
-			`${packageId}::ethereum_state::LatestEthereumState`,
-		],
+		typeArguments: [latestSnapshotObjType, configObjType],
 	});
-
-	if (check === undefined) {
-		throw new Error('Failed to create authority');
-	}
 
 	let result = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
@@ -147,9 +142,22 @@ export const createAuthority = async (
 	return result.effects?.created?.at(0)!;
 };
 
+/**
+ * Creates an authority binder on the blockchain.
+ *
+ * @param {string} dWalletCapID - The ID of the dWallet capability.
+ * @param {OwnedObjectRef} authorityOwnerObjRef - The reference to the authority object.
+ * @param {boolean} virginBound - Whether this is a virgin binding.
+ * @param {string} ownerAddress - The address of the owner.
+ * @param {number} ownerType - The type of the owner (e.g., user, contract).
+ * @param {Keypair} keypair - The keypair used for signing the transaction.
+ * @param {DWalletClient} client - The dWallet client to interact with the blockchain.
+ * @returns The created binder object.
+ * @throws Will throw an error if the transaction fails.
+ */
 export const createAuthorityBinder = async (
 	dWalletCapID: string,
-	authorityObjRef: OwnedObjectRef,
+	authorityOwnerObjRef: OwnedObjectRef,
 	virginBound: boolean,
 	ownerAddress: string,
 	ownerType: number,
@@ -159,12 +167,7 @@ export const createAuthorityBinder = async (
 	let ownerAddressArrayU8 = ethers.getBytes(ownerAddress);
 	let ownerAddressBcs = bcs.vector(bcs.u8()).serialize(ownerAddressArrayU8);
 
-	// todo(yuval): make sure that the objects are shared objects
-	let authoritySharedObjRef = {
-		objectId: authorityObjRef.reference.objectId,
-		initialSharedVersion: authorityObjRef.owner.Shared.initial_shared_version,
-		mutable: false,
-	};
+	let authoritySharedObjRef = getSharedObjectRefFromOwner(authorityOwnerObjRef);
 
 	const tx = new TransactionBlock();
 	tx.moveCall({
@@ -194,6 +197,18 @@ export const createAuthorityBinder = async (
 	return result.effects?.created?.at(0)!;
 };
 
+/**
+ * Binds an authority to an existing binder.
+ *
+ * @param {string} binderID - The ID of the binder.
+ * @param {string} authorityID - The ID of the authority to bind.
+ * @param {string} owner - The address of the owner.
+ * @param {number} ownerType - The type of the owner (e.g., user, contract).
+ * @param {Keypair} keypair - The keypair used for signing the transaction.
+ * @param {DWalletClient} client - The dWallet client to interact with the blockchain.
+ * @returns The object ID of the newly bound authority.
+ * @throws Will throw an error if the transaction fails.
+ */
 // todo(yuval): test this function
 export const setBindToAuthority = async (
 	binderID: string,
@@ -232,3 +247,21 @@ export const setBindToAuthority = async (
 
 	return result.effects?.created?.at(0)?.reference.objectId!;
 };
+
+function getSharedObjectRefFromOwner(ownerObjRef: OwnedObjectRef) {
+	let owner = ownerObjRef.owner;
+	const initialSharedVersion =
+		owner && typeof owner === 'object' && 'Shared' in owner
+			? owner.Shared.initial_shared_version!
+			: undefined;
+
+	if (initialSharedVersion === undefined) {
+		throw new Error('Failed to create authority: owner is not a shared object');
+	}
+
+	return {
+		objectId: ownerObjRef.reference.objectId,
+		initialSharedVersion: initialSharedVersion,
+		mutable: false,
+	};
+}

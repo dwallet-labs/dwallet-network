@@ -21,6 +21,10 @@ describe('Test Ethereum Light Client', () => {
 	let activeEncryptionKeysTableID: string;
 	let activeEncryptionKeysTableID2: string;
 
+	const packageId = '0x3';
+	const ethereumStateModuleName = 'ethereum_state';
+	const authorityBinderModuleName = 'authority_binder';
+
 	beforeAll(async () => {
 		toolbox = await setup();
 		toolbox2 = await setup();
@@ -90,12 +94,17 @@ describe('Test Ethereum Light Client', () => {
 			toolbox.client,
 		)) as OwnedObjectRef;
 
+		let latestStateObjType = `${packageId}::${ethereumStateModuleName}::LatestEthereumState`;
+		let configObjType = `${packageId}::${authorityBinderModuleName}::Config`;
+
 		// create authority
 		const authorityOwnedObjRef = (await createAuthority(
 			binderName,
 			chainIdentifier.toString(),
 			latestStateOwnedObjectRef,
+			latestStateObjType,
 			configOwnedObjectRef,
+			configObjType,
 			authorityOwnerDWalletCapID,
 			toolbox2.keypair,
 			toolbox2.client,
