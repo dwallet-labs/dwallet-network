@@ -631,5 +631,6 @@ fn test_jwk_compatibility() {
 }
 
 pub enum Flows {
-    FirstDKG
+    FirstDKG,
+    SecondDKG
 }

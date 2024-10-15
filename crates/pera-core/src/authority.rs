@@ -157,7 +157,7 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, InitDKGMPCEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, InitFirstDKGMPCEvent, MPCEvent};
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
@@ -169,13 +169,15 @@ use crate::signature_mpc::mpc_manager::{
 };
 
 use crate::authority_client::NetworkAuthorityClient;
+use crate::signature_mpc::dkg::{
+    sample_witnesses, setup_paillier_secp256k1, Auxiliary, DKGFirstParty,
+};
 use crate::signature_mpc::proof::{generate_language_public_parameters, Lang, ProofParty};
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::execution_config_utils::to_binary_config;
-use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1, Auxiliaryable, DKGParty};
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1555,40 +1557,38 @@ impl AuthorityState {
             TransactionEffects::V2(effects) => effects.status(),
         };
         if status.is_ok() {
-            let mut signature_mpc_manager = epoch_store.proof_mpc_manager.get();
-            match signature_mpc_manager {
-                Some(mpc_manager) => {
-                    let mut mpc_manager = mpc_manager.lock().await;
-                    for event in &inner_temporary_store.events.data {
-                        if event.type_ == InitDKGMPCEvent::type_() {
-                            let num_of_parties = epoch_store.committee().voting_rights.len();
-                            let mut parties = HashSet::new();
-                            for i in 0..num_of_parties {
-                                parties.insert(i as PartyID);
-                            }
-                            let first_proof_party = DKGParty::default();
-                            let deserialized_event: InitDKGMPCEvent = bcs::from_bytes(&event.contents)?;
-                            let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
-
-                            let parties = (0..3).collect::<HashSet<PartyID>>();
-                            let auxiliary = DKGParty::first_auxiliary_input();
-                            mpc_manager.push_new_mpc_instance(
-                                auxiliary,
-                                first_proof_party,
-                                deserialized_event.session_id.bytes,
-                                deserialized_event.sender,
-                            );
-                        }
+            let Some(mut dkg_first_mpc_manager) = epoch_store.dkg_first_mpc_manager.get() else {
+                Ok(())
+            };
+            let Some(mut dkg_second_mpc_manager) = epoch_store.dkg_second_mpc_manager.get() else {
+                Ok(())
+            };
+            let mut dkg_first_mpc_manager = dkg_first_mpc_manager.lock().await;
+            let mut dkg_second_mpc_manager = dkg_second_mpc_manager.lock().await;
+            for event in &inner_temporary_store.events.data {
+                if event.type_ == InitFirstDKGMPCEvent::type_() {
+                    let num_of_parties = epoch_store.committee().voting_rights.len();
+                    let mut parties = HashSet::new();
+                    for i in 0..num_of_parties {
+                        parties.insert(i as PartyID);
                     }
-                    Ok(())
-                }
-                None => {
-                    // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
-                    // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are emitted.
-                    info!("MPC manager is not initialized");
-                    Ok(())
+                    let first_proof_party = DKGFirstParty::default();
+                    let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
+                    let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
+
+                    let parties = (0..3).collect::<HashSet<PartyID>>();
+                    let auxiliary = DKGFirstParty::first_auxiliary_input();
+                    dkg_first_mpc_manager.push_new_mpc_instance(
+                        auxiliary,
+                        first_proof_party,
+                        deserialized_event.session_id.bytes,
+                        deserialized_event.sender,
+                    );
+                } else if event.type_ == InitFirstDKGMPCEvent::type_() {
+
                 }
             }
+            Ok(())
         } else {
             // If the transaction failed, we don't need to handle MPC events.
             Ok(())

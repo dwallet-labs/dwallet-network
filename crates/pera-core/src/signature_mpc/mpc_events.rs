@@ -54,12 +54,12 @@ impl MPCEvent for CreatedProofMPCEvent {
 
 /// Rust version of the Move [`pera_system::dwallet::CreatedProofMPCSessionEvent`] type.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct InitDKGMPCEvent {
+pub struct InitFirstDKGMPCEvent {
     pub session_id: ID,
     pub sender: PeraAddress,
 }
 
-impl MPCEvent for InitDKGMPCEvent {
+impl MPCEvent for InitFirstDKGMPCEvent {
     /// This function allows comparing this event with the Move event.
     /// It is used to detect [`CreatedProofMPCEvent`] events from the chain and initiate the MPC session.
     fn type_() -> StructTag {

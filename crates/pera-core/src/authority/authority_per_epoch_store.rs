@@ -113,7 +113,7 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use crate::signature_mpc::dkg::DKGParty;
+use crate::signature_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -339,7 +339,8 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing Proof Signature MPC flows.
-    pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<DKGParty>>>,
+    pub dkg_first_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<DKGFirstParty>>>,
+    pub dkg_second_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<DKGSecondParty>>>,
 
     // /// State machine managing DWallets DKG flows
     // pub dwallet_dkg_init_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
@@ -858,7 +859,8 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
-            proof_mpc_manager: OnceCell::new(),
+            dkg_first_mpc_manager: OnceCell::new(),
+            dkg_second_mpc_manager: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -928,12 +930,29 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the proof MPC manager when a new epoch starts.
-    pub async fn set_proof_mpc_manager(
+    pub async fn set_first_dkg_mpc_manager(
         &self,
-        mut manager: SignatureMPCManager<DKGParty>,
+        mut manager: SignatureMPCManager<DKGFirstParty>,
     ) -> PeraResult<()> {
         if self
-            .proof_mpc_manager
+            .dkg_first_mpc_manager
+            .set(tokio::sync::Mutex::new(manager))
+            .is_err()
+        {
+            error!(
+                "BUG: `set_signature_mpc_manager` called more than once; this should never happen"
+            );
+        }
+        Ok(())
+    }
+
+    /// A function to initiate the proof MPC manager when a new epoch starts.
+    pub async fn set_second_dkg_mpc_manager(
+        &self,
+        mut manager: SignatureMPCManager<DKGSecondParty>,
+    ) -> PeraResult<()> {
+        if self
+            .dkg_second_mpc_manager
             .set(tokio::sync::Mutex::new(manager))
             .is_err()
         {
@@ -3199,7 +3218,7 @@ impl AuthorityPerEpochStore {
         }
 
         // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
-        if let Some(signature_mpc_manager) = self.proof_mpc_manager.get() {
+        if let Some(signature_mpc_manager) = self.dkg_first_mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
             signature_mpc_manager.handle_end_of_delivery().await?;
@@ -3600,7 +3619,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                let Some(signature_mpc_manager) = self.proof_mpc_manager.get() else {
+                let Some(signature_mpc_manager) = self.dkg_first_mpc_manager.get() else {
                     // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
                     return Ok(ConsensusCertificateResult::Ignored);
                 };

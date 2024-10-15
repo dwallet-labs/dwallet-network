@@ -370,7 +370,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             authority_index, session_id
                         );
 
-                        let mut signature_mpc_manager = self.epoch_store.proof_mpc_manager.get();
+                        let mut signature_mpc_manager = self.epoch_store.dkg_first_mpc_manager.get();
                         let is_valid_transaction = match signature_mpc_manager {
                             Some(mpc_manager) => {
                                 let signature_mpc_manager = mpc_manager.lock().await;
