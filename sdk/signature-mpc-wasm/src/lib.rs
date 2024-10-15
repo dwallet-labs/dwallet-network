@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 use dwallet_mpc::create_centralized_output;
 
 #[wasm_bindgen]
-pub fn hello_wasm() -> Result<Vec<u8>, JsErr> {
-    let output = create_centralized_output(Vec::new()).map_err(to_js_err)?;;
+pub fn hello_wasm(dkg_first_round_output: Vec<u8>) -> Result<Vec<u8>, JsErr> {
+    let output = create_centralized_output(dkg_first_round_output).map_err(to_js_err)?;;
     Ok(output)
 }
 

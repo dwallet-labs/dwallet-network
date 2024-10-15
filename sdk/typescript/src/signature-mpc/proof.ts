@@ -46,15 +46,22 @@ export async function launchDKGSession(keypair: Keypair, client: PeraClient) {
 
 	// sleep five seconds
 	await new Promise((resolve) => setTimeout(resolve, 5000));
-	let firstRoundOutput = await fetchObjectBySessionId(
+	let firstRoundOutputObject = await fetchObjectBySessionId(
 		sessionRef.objectId,
 		`${packageId}::${dwalletModuleName}::CompletedFirstDKGRoundData`,
 		keypair,
 		client,
 	);
+
+	let firstRoundOutput =
+		firstRoundOutputObject?.dataType === 'moveObject'
+			? (firstRoundOutputObject.fields as {
+					value: number[];
+				})
+			: null;
+
 	console.log({ firstRoundOutput });
-
-
+	return firstRoundOutput?.value;
 }
 
 export async function fetchObjectBySessionId(

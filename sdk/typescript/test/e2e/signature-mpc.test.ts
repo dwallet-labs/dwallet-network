@@ -20,9 +20,8 @@ describe('Test signature mpc', () => {
 	// });
 
 	it('should create dkg MPC Event', async () => {
-		// await launchDKGSession(toolbox.keypair, toolbox.client);
-		// console.log(toolbox.keypair.toPeraAddress());
-		let a = hello_wasm();
+		const firstDKGOutput = await launchDKGSession(toolbox.keypair, toolbox.client);
+		let a = hello_wasm(firstDKGOutput);
 		console.log({ a });
 	});
 });
