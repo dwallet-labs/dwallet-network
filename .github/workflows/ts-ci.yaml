@@ -46,6 +46,10 @@ jobs:
         with:
           version: 'latest'
 
+      - name: Build @dwallet-network/signature-mpc-wasm
+        run: pnpm run build
+        working-directory: ./sdk/signature-mpc-wasm
+
       - name: Install dependencies
         run: pnpm install
         working-directory: ./sdk/typescript
