@@ -123,7 +123,7 @@ async function main() {
 
 		let dwalletCapId3 = createdDwallet3?.dwalletCapID;
 
-		console.log('initialising dwallet cap with id: ', dwalletCapId1);
+		console.log('initialising dwallet cap with ID: ', dwalletCapId1);
 		let txb = new TransactionBlockSUI();
 
 		let dWalletCapArg1 = txb.pure(dwalletCapId1);
@@ -241,8 +241,10 @@ async function main() {
 		}
 
 		if (
-			typeof resultFinal1.effects?.created == 'object' &&
-			'reference' in resultFinal1.effects?.created?.[0]
+			resultFinal1.effects &&
+			Array.isArray(resultFinal1.effects.created) &&
+			typeof resultFinal1.effects.created[0] === 'object' &&
+			'reference' in resultFinal1.effects.created[0]
 		) {
 			const capWrapperRef = resultFinal1.effects?.created?.[0].reference;
 
