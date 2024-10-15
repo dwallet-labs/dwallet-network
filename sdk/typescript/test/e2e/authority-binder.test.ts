@@ -122,7 +122,7 @@ describe('Test Ethereum Light Client', () => {
 		);
 
 		// create authorityAckTransactionHash
-		const authorityAckTransactionHash = await createAuthorityAckTransactionHash(
+		const _authorityAckTransactionHash = await createAuthorityAckTransactionHash(
 			dWalletBinderOwnedObjRef,
 			virginBound,
 			chainIdentifier,
