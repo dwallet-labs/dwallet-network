@@ -4,7 +4,7 @@
 module dwallet_system::authority_binder {
 	use std::string::String;
 	use dwallet::transfer;
-   use dwallet::object::{Self, ID, UID};
+	use dwallet::object::{Self, ID, UID};
 	use dwallet::tx_context::TxContext;
 	use dwallet_system::dwallet;
 
@@ -42,23 +42,23 @@ module dwallet_system::authority_binder {
 
 	#[allow(unused_field)]
 	/// Represents an external authority that enforce the policy for a `dwallet::DWalletCap`.
-	struct Authority has key {
+	struct Authority<C: key + store, L: key + store> has key {
 		id: UID,
 		name: String,
 		unique_identifier: vector<u8>,
-		latest: ID,
-		config: ID,
+		latest: L,
+		config: C,
 		authority_owner_dwallet_cap: dwallet::DWalletCap,
 	}
 
-    /// Create an Authority object.
-    /// The `latest` object represents the latest state of the authority.
-    /// The `config` object represents a configuration of the authority.
-	public fun create_authority<C: key, L: key>(
+	/// Create an Authority object.
+	/// The `latest` object represents the latest state of the authority.
+	/// The `config` object represents a configuration of the authority.
+	public fun create_authority<C: key + store, L: key + store>(
 		name: String,
 		unique_identifier: vector<u8>,
-		latest: &L,
-		config: &C,
+		latest: L,
+		config: C,
 		authority_owner_dwallet_cap: dwallet::DWalletCap,
 		ctx: &mut TxContext,
 	) {
@@ -66,15 +66,15 @@ module dwallet_system::authority_binder {
 			id: object::new(ctx),
 			name,
 			unique_identifier,
-			latest: object::id(latest),
-			config: object::id(config),
+			latest,
+			config,
 			authority_owner_dwallet_cap,
 		};
 		transfer::share_object(authority);
 	}
 
-	fun create_bind_to_authority(
-		authority: &Authority,
+	fun create_bind_to_authority<C: key + store, L: key + store>(
+		authority: &Authority<C, L>,
 		owner: vector<u8>,
 		owner_type: u8,
 		ctx: &mut TxContext,
@@ -89,10 +89,10 @@ module dwallet_system::authority_binder {
 	}
 
 
-    /// Create a `DWalletBinder` object.
-	public fun create_binder(
+	/// Create a `DWalletBinder` object.
+	public fun create_binder<C: key + store, L: key + store>(
 		dwallet_cap: dwallet::DWalletCap,
-		authority: &Authority,
+		authority: &Authority<C, L>,
 		owner: vector<u8>,
 		owner_type: u8,
 		virgin_bound: bool,
@@ -113,12 +113,12 @@ module dwallet_system::authority_binder {
 		transfer::share_object(binder);
 	}
 
-    /// Bind a new authority to an existing `DWalletBinder`.
-    /// This actually changes the authority that enforces the login policy for the `dwallet::DWalletCap`.
-	public entry fun set_bind_to_authority(
+	/// Bind a new authority to an existing `DWalletBinder`.
+	/// This actually changes the authority that enforces the login policy for the `dwallet::DWalletCap`.
+	public entry fun set_bind_to_authority<C: key + store, L: key + store>(
 		binder: &mut DWalletBinder,
-		authority: &Authority,
-		owner: vector<u8>,
+		authority: &Authority<C, L>,
+        owner: vector<u8>,
 		owner_type: u8,
 	) {
 		binder.bind_to_authority.nonce ;
@@ -129,8 +129,8 @@ module dwallet_system::authority_binder {
 		binder.virgin_bound = false;
 	}
 
-    /// Create a transaction hash for the authority acknowledgment.
-    /// This is used to acknowledge the authority that the `DWalletBinder` is bound to it.
+	/// Create a transaction hash for the authority acknowledgment.
+	/// This is used to acknowledge the authority that the `DWalletBinder` is bound to it.
 	public fun create_authority_ack_transaction_hash(
 		binder: &DWalletBinder,
 		virgin_bound: bool,
@@ -155,7 +155,7 @@ module dwallet_system::authority_binder {
 				)
 	}
 
-   #[allow(unused_function)]
+	#[allow(unused_function)]
 	native fun create_authority_ack_transaction(
 		binder_id: vector<u8>,
 		dwallet_cap_id: vector<u8>,
