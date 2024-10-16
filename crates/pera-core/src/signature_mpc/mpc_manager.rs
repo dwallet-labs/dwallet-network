@@ -426,26 +426,25 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
         );
     }
 
-    // fn finalize_mpc_instance(&mut self, event: P::FinalizeEvent) -> PeraResult {
-    //     let session_id = event.session_id().bytes;
-    //     let mut instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
-    //         PeraError::InvalidCommittee(format!(
-    //             "Received a finalize event for session ID {:?} that does not exist",
-    //             event.session_id()
-    //         ))
-    //     })?;
-    //     if let MPCSessionStatus::Finalizing(output) = &instance.status {
-    //         instance.status = MPCSessionStatus::Finished(output.clone());
-    //         self.active_instances_counter -= 1;
-    //         info!(
-    //             "Finalized MPCInstance for session_id {:?}",
-    //             event.session_id()
-    //         );
-    //         return Ok(());
-    //     }
-    //     Err(PeraError::Unknown(format!(
-    //         "Received a finalize event for session ID {:?} that is not in the finalizing state; current state: {:?}",
-    //         event.session_id(), instance.status
-    //     )))
-    // }
+    pub fn finalize_mpc_instance(&mut self, session_id: ObjectID) -> PeraResult {
+        let mut instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
+            PeraError::InvalidCommittee(format!(
+                "Received a finalize event for session ID {:?} that does not exist",
+                session_id
+            ))
+        })?;
+        if let MPCSessionStatus::Finalizing(output) = &instance.status {
+            instance.status = MPCSessionStatus::Finished(output.clone());
+            self.active_instances_counter -= 1;
+            info!(
+                "Finalized MPCInstance for session_id {:?}",
+                session_id
+            );
+            return Ok(());
+        }
+        Err(PeraError::Unknown(format!(
+            "Received a finalize event for session ID {:?} that is not in the finalizing state; current state: {:?}",
+            session_id, instance.status
+        )))
+    }
 }

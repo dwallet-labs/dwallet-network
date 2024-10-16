@@ -157,7 +157,7 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, InitFirstDKGMPCEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::{CompletedDKGFirstRoundEvent, CreatedProofMPCEvent, InitFirstDKGMPCEvent, MPCEvent};
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
@@ -1558,10 +1558,10 @@ impl AuthorityState {
         };
         if status.is_ok() {
             let Some(mut dkg_first_mpc_manager) = epoch_store.dkg_first_mpc_manager.get() else {
-                Ok(())
+                return Ok(());
             };
             let Some(mut dkg_second_mpc_manager) = epoch_store.dkg_second_mpc_manager.get() else {
-                Ok(())
+                return Ok(());
             };
             let mut dkg_first_mpc_manager = dkg_first_mpc_manager.lock().await;
             let mut dkg_second_mpc_manager = dkg_second_mpc_manager.lock().await;
@@ -1584,8 +1584,11 @@ impl AuthorityState {
                         deserialized_event.session_id.bytes,
                         deserialized_event.sender,
                     );
+                } else if event.type_ == CompletedDKGFirstRoundEvent::type_() {
+                    let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
+                    dkg_first_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
                 } else if event.type_ == InitFirstDKGMPCEvent::type_() {
-
+                    // todo (yael): create a new instance with the second party
                 }
             }
             Ok(())
