@@ -14993,6 +14993,7 @@ dependencies = [
  "move-stdlib",
  "move-vm-runtime",
  "move-vm-types 0.1.0",
+ "serde",
  "serde_json",
  "smallvec",
  "ssz_rs",
