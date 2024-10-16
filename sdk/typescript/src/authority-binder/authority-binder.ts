@@ -100,20 +100,17 @@ export const createAuthority = async (
 ) => {
 	let uniqueIdentifierBcs = stringToArrayU8Bcs(chainIdentifier);
 
-	let latestSnapshotSharedObjRef = getSharedObjectRefFromOwner(latestSnapshotOwnerObjRef);
-	let configSharedObjRef = getSharedObjectRefFromOwner(configObjRef);
-
 	const tx = new TransactionBlock();
 	tx.moveCall({
 		target: `${packageId}::${authorityBinderModuleName}::create_authority`,
 		arguments: [
 			tx.pure.string(binderName),
 			tx.pure(uniqueIdentifierBcs),
-			tx.sharedObjectRef(latestSnapshotSharedObjRef),
-			tx.sharedObjectRef(configSharedObjRef),
+			tx.object(latestSnapshotOwnerObjRef.reference.objectId),
+			tx.object(configObjRef.reference.objectId),
 			tx.object(authorityOwnerDWalletCapID),
 		],
-		typeArguments: [latestSnapshotObjType, configObjType],
+		typeArguments: [configObjType, latestSnapshotObjType],
 	});
 
 	let result = await client.signAndExecuteTransactionBlock({
@@ -136,6 +133,8 @@ export const createAuthority = async (
  *
  * @param {string} dWalletCapID - The ID of the dWallet capability.
  * @param {OwnedObjectRef} authorityOwnerObjRef - The reference to the authority object.
+ * @param {string} latestSnapshotType - The type of the latest snapshot object.
+ * @param {string} configType - The type of the configuration object.
  * @param {boolean} virginBound - Whether this is a virgin binding.
  * @param {string} ownerAddress - The address of the owner.
  * @param {number} ownerType - The type of the owner (e.g., user, contract).
@@ -147,6 +146,8 @@ export const createAuthority = async (
 export const createAuthorityBinder = async (
 	dWalletCapID: string,
 	authorityOwnerObjRef: OwnedObjectRef,
+	latestSnapshotType: string,
+	configType: string,
 	virginBound: boolean,
 	ownerAddress: string,
 	ownerType: number,
@@ -168,7 +169,7 @@ export const createAuthorityBinder = async (
 			tx.pure.u8(ownerType),
 			tx.pure.bool(virginBound),
 		],
-		typeArguments: [],
+		typeArguments: [configType, latestSnapshotType],
 	});
 
 	let result = await client.signAndExecuteTransactionBlock({
