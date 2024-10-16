@@ -169,9 +169,7 @@ use crate::signature_mpc::mpc_manager::{
 };
 
 use crate::authority_client::NetworkAuthorityClient;
-use crate::signature_mpc::dkg::{
-    sample_witnesses, setup_paillier_secp256k1, Auxiliary, DKGFirstParty,
-};
+use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1, AsyncProtocol, Auxiliary, DKGFirstParty, DKGSecondParty};
 use crate::signature_mpc::proof::{generate_language_public_parameters, Lang, ProofParty};
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
@@ -1566,6 +1564,7 @@ impl AuthorityState {
             let mut dkg_first_mpc_manager = dkg_first_mpc_manager.lock().await;
             let mut dkg_second_mpc_manager = dkg_second_mpc_manager.lock().await;
             for event in &inner_temporary_store.events.data {
+                println!("Event type: {:?} {:?}", event.type_.name, CompletedDKGFirstRoundEvent::type_().name);
                 if event.type_ == InitFirstDKGMPCEvent::type_() {
                     let num_of_parties = epoch_store.committee().voting_rights.len();
                     let mut parties = HashSet::new();
@@ -1574,9 +1573,6 @@ impl AuthorityState {
                     }
                     let first_proof_party = DKGFirstParty::default();
                     let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
-                    let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
-
-                    let parties = (0..3).collect::<HashSet<PartyID>>();
                     let auxiliary = DKGFirstParty::first_auxiliary_input();
                     dkg_first_mpc_manager.push_new_mpc_instance(
                         auxiliary,
@@ -1588,7 +1584,15 @@ impl AuthorityState {
                     let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
                     dkg_first_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
                 } else if event.type_ == InitFirstDKGMPCEvent::type_() {
-                    // todo (yael): create a new instance with the second party
+                    let party = DKGSecondParty::default();
+                    let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
+                    let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
+                    dkg_second_mpc_manager.push_new_mpc_instance(
+                        (secp256k1_group_public_parameters, PhantomData).into(),
+                        party,
+                        deserialized_event.session_id.bytes,
+                        deserialized_event.sender,
+                    );
                 }
             }
             Ok(())

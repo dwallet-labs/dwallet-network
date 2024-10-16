@@ -39,6 +39,11 @@ pub type DKGFirstParty =
 pub type DKGSecondParty =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty;
 
+// pub fn new_second_party_auxiliary_input() -> DKGSecondParty::AuxiliaryInput {
+//     let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
+//     (secp256k1_group_public_parameters, PhantomData).into()
+// }
+
 pub trait Auxiliary: mpc::Party {
     fn first_auxiliary_input() -> Self::AuxiliaryInput;
 }

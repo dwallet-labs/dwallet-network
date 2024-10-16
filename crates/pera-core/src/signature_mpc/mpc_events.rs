@@ -119,7 +119,7 @@ impl MPCEvent for CompletedDKGFirstRoundEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: COMPLETED_DKG_FIRST_ROUND_STRUCT_NAME.to_owned(),
-            module: PROOF_MODULE_NAME.to_owned(),
+            module: DWALLET_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
