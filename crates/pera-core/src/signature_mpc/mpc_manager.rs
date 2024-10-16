@@ -135,12 +135,14 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
         } else {
             panic!("damn");
         };
-        let Ok(advance_result) =
-            party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng)
-        else {
-            // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
-            self.pending_messages.clear();
-            return Ok(());
+        let advance_result = match party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng){
+            Ok(res) => res,
+            Err(e) => {
+                println!("Error: {:?}", e);
+                // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
+                self.pending_messages.clear();
+                return Ok(());
+            }
         };
         let msg = match advance_result {
             AdvanceResult::Advance((message, party)) => {

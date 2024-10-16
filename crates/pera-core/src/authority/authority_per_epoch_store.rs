@@ -3224,6 +3224,13 @@ impl AuthorityPerEpochStore {
             signature_mpc_manager.handle_end_of_delivery().await?;
         };
 
+        // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
+        if let Some(signature_mpc_manager) = self.dkg_second_mpc_manager.get() {
+            let mut signature_mpc_manager = signature_mpc_manager.lock().await;
+            // TODO (#282): Process the end of delivery asynchronously
+            signature_mpc_manager.handle_end_of_delivery().await?;
+        };
+
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
         for (key, txns) in deferred_txns.into_iter() {
