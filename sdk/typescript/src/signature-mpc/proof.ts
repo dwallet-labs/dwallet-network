@@ -64,11 +64,19 @@ export async function launchDKGSession(keypair: Keypair, client: PeraClient) {
 	return firstRoundOutput?.value;
 }
 
-export async function launchDKGSecondRound(keypair: Keypair, client: PeraClient, input: number[]) {
+export async function launchDKGSecondRound(
+	keypair: Keypair,
+	client: PeraClient,
+	publicKeyShareAndProof: Uint8Array,
+	firstRoundOutput: number[],
+) {
 	const tx = new Transaction();
 	tx.moveCall({
 		target: `${packageId}::${dwalletModuleName}::launch_dkg_second_round`,
-		arguments: [tx.pure(bcs.vector(bcs.u8()).serialize(input))],
+		arguments: [
+			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(firstRoundOutput)),
+		],
 	});
 
 	const result = await client.signAndExecuteTransaction({

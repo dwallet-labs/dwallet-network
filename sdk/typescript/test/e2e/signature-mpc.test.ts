@@ -33,8 +33,12 @@ describe('Test signature mpc', () => {
 	it('should create dkg MPC Event', async () => {
 		console.log(toolbox.keypair.toPeraAddress());
 		const firstDKGOutput = await launchDKGSession(toolbox.keypair, toolbox.client);
-		let a = hello_wasm(firstDKGOutput);
-		console.log({ a });
-		await launchDKGSecondRound(toolbox.keypair, toolbox.client, firstDKGOutput!);
+		let publicKeyShareAndProof = hello_wasm(firstDKGOutput);
+		await launchDKGSecondRound(
+			toolbox.keypair,
+			toolbox.client,
+			publicKeyShareAndProof,
+			firstDKGOutput!,
+		);
 	});
 });

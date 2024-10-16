@@ -119,7 +119,13 @@ title: Module `0x3::dwallet`
 
 </dd>
 <dt>
-<code>input: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
@@ -295,7 +301,7 @@ Function to launch proof MPC flow.
 Function to launch proof MPC flow.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_launch_dkg_second_round">launch_dkg_second_round</a>(input: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_launch_dkg_second_round">launch_dkg_second_round</a>(public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -304,16 +310,17 @@ Function to launch proof MPC flow.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_launch_dkg_second_round">launch_dkg_second_round</a>(input: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_launch_dkg_second_round">launch_dkg_second_round</a>(public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> TxContext) {
     <b>let</b> session_data = <a href="dwallet.md#0x3_dwallet_DKGSecondRoundData">DKGSecondRoundData</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
         sender: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
-        input
+        input: first_round_output
     };
     <b>let</b> created_proof_mpc_session_event = <a href="dwallet.md#0x3_dwallet_StartDKGSecondRoundEvent">StartDKGSecondRoundEvent</a> {
         session_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&session_data),
         sender: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
-        input
+        first_round_output,
+        public_key_share_and_proof
     };
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(created_proof_mpc_session_event);
     <a href="../pera-framework/transfer.md#0x2_transfer_freeze_object">transfer::freeze_object</a>(session_data);

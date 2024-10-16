@@ -157,7 +157,7 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc::mpc_events::{CompletedDKGFirstRoundEvent, CreatedProofMPCEvent, InitFirstDKGMPCEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::{CompletedDKGFirstRoundEvent, CreatedProofMPCEvent, InitFirstDKGMPCEvent, MPCEvent, StartDKGSecondRoundEvent};
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
@@ -169,7 +169,7 @@ use crate::signature_mpc::mpc_manager::{
 };
 
 use crate::authority_client::NetworkAuthorityClient;
-use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1, AsyncProtocol, Auxiliary, DKGFirstParty, DKGSecondParty};
+use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1, AsyncProtocol, AuxiliaryFirst, AuxiliarySecond, DKGFirstParty, DKGSecondParty};
 use crate::signature_mpc::proof::{generate_language_public_parameters, Lang, ProofParty};
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
@@ -1583,12 +1583,14 @@ impl AuthorityState {
                 } else if event.type_ == CompletedDKGFirstRoundEvent::type_() {
                     let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
                     dkg_first_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
-                } else if event.type_ == InitFirstDKGMPCEvent::type_() {
+                } else if event.type_ == StartDKGSecondRoundEvent::type_() {
                     let party = DKGSecondParty::default();
-                    let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
-                    let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
+                    let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
+                    let public_key_share_and_proof = bcs::from_bytes(&deserialized_event.public_key_share_and_proof)?;
+                    let first_round_output = bcs::from_bytes(&deserialized_event.first_round_output)?;
+                    let auxiliary_input = DKGSecondParty::first_auxiliary_input(first_round_output ,public_key_share_and_proof);
                     dkg_second_mpc_manager.push_new_mpc_instance(
-                        (secp256k1_group_public_parameters, PhantomData).into(),
+                        auxiliary_input,
                         party,
                         deserialized_event.session_id.bytes,
                         deserialized_event.sender,

@@ -9,7 +9,10 @@ use rand_core::CryptoRngCore;
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
+use mpc::Party;
 use tiresias::test_helpers::{N, SECRET_KEY};
+use twopc_mpc::dkg::Protocol;
+use twopc_mpc::paillier::DKGCentralizedPartyOutput;
 use twopc_mpc::secp256k1::paillier::bulletproofs::PaillierProtocolPublicParameters;
 // TODO (#228): Remove this file & all proof MPC code.
 
@@ -39,16 +42,28 @@ pub type DKGFirstParty =
 pub type DKGSecondParty =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty;
 
-// pub fn new_second_party_auxiliary_input() -> DKGSecondParty::AuxiliaryInput {
-//     let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
-//     (secp256k1_group_public_parameters, PhantomData).into()
-// }
+pub trait AuxiliarySecond: mpc::Party {
+    fn first_auxiliary_input(
+        first_round_output: <DKGFirstParty as mpc::Party>::Output,
+        centralized_party_public_key_share: <AsyncProtocol as twopc_mpc::dkg::Protocol>::PublicKeyShareAndProof,
+    ) -> Self::AuxiliaryInput;
+}
 
-pub trait Auxiliary: mpc::Party {
+impl AuxiliarySecond for DKGSecondParty {
+    fn first_auxiliary_input(
+        first_round_output: <DKGFirstParty as Party>::Output,
+        centralized_party_public_key_share: <AsyncProtocol as Protocol>::PublicKeyShareAndProof
+    ) -> Self::AuxiliaryInput {
+        let first_round_auxiliary_input = DKGFirstParty::first_auxiliary_input();
+        (first_round_auxiliary_input, first_round_output, centralized_party_public_key_share).into()
+    }
+}
+
+pub trait AuxiliaryFirst: mpc::Party {
     fn first_auxiliary_input() -> Self::AuxiliaryInput;
 }
 
-impl Auxiliary for DKGFirstParty {
+impl AuxiliaryFirst for DKGFirstParty {
     fn first_auxiliary_input() -> Self::AuxiliaryInput {
         let (paillier_protocol_public_parameters, decryption_key) = setup_paillier_secp256k1();
 
