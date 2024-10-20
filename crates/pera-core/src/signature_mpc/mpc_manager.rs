@@ -7,7 +7,7 @@ use group::secp256k1::group_element::Value;
 use group::{secp256k1, GroupElement, PartyID};
 use im::hashmap;
 use itertools::Itertools;
-use mpc::party::Advance;
+use mpc::Advance;
 use mpc::{two_party::Round, AdvanceResult, AuxiliaryInput, Party};
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
