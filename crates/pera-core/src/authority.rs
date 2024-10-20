@@ -169,7 +169,7 @@ use crate::signature_mpc::mpc_manager::{
 };
 
 use crate::authority_client::NetworkAuthorityClient;
-use crate::signature_mpc::dkg::{sample_witnesses, setup_paillier_secp256k1, AsyncProtocol, AuxiliaryFirst, AuxiliarySecond, DKGFirstParty, DKGSecondParty};
+use crate::signature_mpc::dkg::{sample_witnesses, AsyncProtocol, AuxiliaryFirst, AuxiliarySecond, DKGFirstParty, DKGSecondParty};
 use crate::signature_mpc::proof::{generate_language_public_parameters, Lang, ProofParty};
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]

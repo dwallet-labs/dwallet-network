@@ -9,7 +9,7 @@ maurer = { path = "../../../cryptography-private/maurer" }
 group = { path = "../../../cryptography-private/group"}
 mpc = { path = "../../../cryptography-private/mpc" }
 tiresias = { path = "../../../cryptography-private/tiresias"}
-twopc_mpc = { path = "../../../cryptography-private/2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "without-benchmarks"] }
+twopc_mpc = { path = "../../../cryptography-private/2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier"] }
 anyhow.workspace = true
 bcs.workspace = true
 rand_core = "0.6.4"

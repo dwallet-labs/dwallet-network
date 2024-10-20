@@ -10,10 +10,7 @@ use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
 use mpc::Party;
-use tiresias::test_helpers::{N, SECRET_KEY};
 use twopc_mpc::dkg::Protocol;
-use twopc_mpc::paillier::DKGCentralizedPartyOutput;
-use twopc_mpc::secp256k1::paillier::bulletproofs::PaillierProtocolPublicParameters;
 // TODO (#228): Remove this file & all proof MPC code.
 
 /// Create dummy witnesses for the dummy proof flow.
@@ -35,7 +32,7 @@ pub fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
 
 /// A party in the proof MPC flow.
 pub type AsyncProtocol=
-    twopc_mpc::secp256k1::paillier::bulletproofs::AsyncProtocol<PhantomData<()>>;
+    twopc_mpc::secp256k1::class_groups::AsyncProtocol<PhantomData<()>>;
 pub type DKGFirstParty =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
 
@@ -65,9 +62,7 @@ pub trait AuxiliaryFirst: mpc::Party {
 
 impl AuxiliaryFirst for DKGFirstParty {
     fn first_auxiliary_input() -> Self::AuxiliaryInput {
-        let (paillier_protocol_public_parameters, decryption_key) = setup_paillier_secp256k1();
-
-        let (secp256k1_group_public_parameters, _) = setup_paillier_secp256k1();
+        let (secp256k1_group_public_parameters, _) = twopc_mpc::tests::setup_class_groups_secp256k1();
 
         let parties = (0..3).collect::<HashSet<PartyID>>();
         Self::AuxiliaryInput {
@@ -79,22 +74,6 @@ impl AuxiliaryFirst for DKGFirstParty {
             protocol_context: PhantomData,
         }
     }
-}
-
-
-pub fn setup_paillier_secp256k1() -> (PaillierProtocolPublicParameters, tiresias::DecryptionKey) {
-    let paillier_protocol_public_parameters =
-        PaillierProtocolPublicParameters::new::<secp256k1::GroupElement>(N);
-
-    let decryption_key = tiresias::DecryptionKey::new(
-        SECRET_KEY,
-        &paillier_protocol_public_parameters
-            .protocol_public_parameters
-            .encryption_scheme_public_parameters,
-    )
-    .unwrap();
-
-    (paillier_protocol_public_parameters, decryption_key)
 }
 
 /// The language used in the proof MPC flow.
