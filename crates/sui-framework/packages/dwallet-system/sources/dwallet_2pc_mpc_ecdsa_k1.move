@@ -29,14 +29,13 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         get_messages, get_output, get_public_key, get_sign_data, PartialUserSignedMessages,
         SignSession,
     };
+    use dwallet_system::authority_binder::{BindToAuthority, create_binder};
 
     #[test_only]
     friend dwallet_system::dwallet_tests;
 
     #[test_only]
     friend dwallet_system::dwallet_ecdsa_k1_tests;
-
-    friend dwallet_system::eth_dwallet;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
@@ -176,6 +175,16 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         });
         transfer::freeze_object(session);
         cap
+    }
+
+    /// Same as `create_dkg_session` but wrap the cap with `binder::Binder` object to make sure it's a virgin bound.
+    public fun create_virgin_bound_dkg_session(
+        commitment_to_centralized_party_secret_key_share: vector<u8>,
+        bind_to_authority: BindToAuthority,
+        ctx: &mut TxContext
+    ) {
+        let dwallet_cap = create_dkg_session(commitment_to_centralized_party_secret_key_share, ctx);
+        create_binder(dwallet_cap, bind_to_authority, true, ctx);
     }
 
     #[allow(unused_function)]

@@ -4,13 +4,16 @@
 module dwallet_system::authority_binder {
 	use std::string::String;
 	use dwallet::transfer;
-   use dwallet::object::{Self, ID, UID};
+	use dwallet::object::{Self, ID, UID};
 	use dwallet::tx_context::TxContext;
 	use dwallet_system::dwallet;
+	use dwallet_system::dwallet::{MessageApproval};
 
-	friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
+   friend dwallet_system::ethereum_authority;
 
 	// <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
+
+	const EInvalidDWalletCap: u64 = 100;
 
 	// <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 	
@@ -31,16 +34,12 @@ module dwallet_system::authority_binder {
 		virgin_bound: bool,
 	}
 
-	#[allow(unused_field)]
-	struct Config has store, key { 
-		id: UID,
+	public(friend) fun get_bind_to_authority(binder: &DWalletBinder): &BindToAuthority {
+		&binder.bind_to_authority
 	}
 	
-	public fun create_config(ctx: &mut TxContext) {
-		let config = Config {
-			id: object::new(ctx),
-		};
-		transfer::share_object(config);
+	public(friend) fun borrow_dwallet_cap(binder: &DWalletBinder): &dwallet::DWalletCap {
+		&binder.dwallet_cap
 	}
 
 	/// Point to the bound authority that should enforce the login for the `dwallet::DWalletCap`.
@@ -52,22 +51,45 @@ module dwallet_system::authority_binder {
 		owner_type: u8,
 	}
 
+	public(friend) fun get_authority_owner_address(bind_to_authority: &BindToAuthority): vector<u8> {
+		bind_to_authority.owner
+	}
+
+	struct LatestState has store {
+		id: ID,
+	}
+
+	public(friend) fun create_latest_state(id:ID): LatestState {
+		LatestState {
+			id,
+		}
+	}
+
 	#[allow(unused_field)]
 	/// Represents an external authority that enforce the policy for a `dwallet::DWalletCap`.
-	struct Authority has key {
+	struct Authority<C: key + store> has key {
 		id: UID,
 		name: String,
 		unique_identifier: vector<u8>,
-		latest: ID,
-		config: ID,
+		latest: LatestState,
+		config: C,
 		authority_owner_dwallet_cap: dwallet::DWalletCap,
+		// unencrypted user share of the authority's private key - used for 2PC MPC
 	}
 
-	public fun create_authority<C: key, L: key>(
+	public(friend) fun set_latest_id<C: key + store>(authority: &mut Authority<C>, latest_id: ID) {
+		authority.latest.id = latest_id;
+	}
+
+	public(friend) fun borrow_config<C: key + store>(authority: &Authority<C>): &C {
+		&authority.config
+	}
+
+	public(friend) fun create_authority<C: key + store>(
 		name: String,
 		unique_identifier: vector<u8>,
-		latest: &L,
-		config: &C,
+		latest: LatestState,
+		config: C,
 		authority_owner_dwallet_cap: dwallet::DWalletCap,
 		ctx: &mut TxContext,
 	) {
@@ -75,15 +97,16 @@ module dwallet_system::authority_binder {
 			id: object::new(ctx),
 			name,
 			unique_identifier,
-			latest: object::id(latest),
-			config: object::id(config),
+			latest,
+			config,
 			authority_owner_dwallet_cap,
 		};
 		transfer::share_object(authority);
+	
 	}
 	
-	fun create_bind_to_authority(
-		authority: &Authority,
+	public(friend) fun create_bind_to_authority<C: key + store>(
+		authority: &Authority<C>,
 		owner: vector<u8>,
 		owner_type: u8,
 		ctx: &mut TxContext,
@@ -91,7 +114,7 @@ module dwallet_system::authority_binder {
 		BindToAuthority {
 			id: object::new(ctx),
 			nonce: 0,
-			authority:object::id(authority),
+			authority_id: object::id(authority),
 			owner,
 			owner_type,
 		}
@@ -99,18 +122,10 @@ module dwallet_system::authority_binder {
 
 	public fun create_binder(
 		dwallet_cap: dwallet::DWalletCap,
-		authority: &Authority,
-		owner: vector<u8>,
-		owner_type: u8,
+		bind_to_authority: BindToAuthority,
 		virgin_bound: bool,
 		ctx: &mut TxContext,
 	) {
-		let bind_to_authority = create_bind_to_authority(
-			authority,
-			owner,
-			owner_type,
-			ctx
-			);
 		let binder = DWalletBinder {
 			id: object::new(ctx),
 			dwallet_cap,
@@ -120,14 +135,14 @@ module dwallet_system::authority_binder {
 		transfer::share_object(binder);
 	}
 
-	public entry fun set_bind_to_authority(
+	public entry fun set_bind_to_authority<C: key + store>(
 		binder: &mut DWalletBinder,
-		authority: &Authority,
+		authority: &Authority<C>,
 		owner: vector<u8>,
 		owner_type: u8,
 	) {
-		binder.bind_to_authority.nonce ;
-		binder.bind_to_authority.authority = object::id(authority);
+		binder.bind_to_authority.nonce;
+		binder.bind_to_authority.authority_id = object::id(authority);
 		binder.bind_to_authority.owner = owner;
 		binder.bind_to_authority.owner_type = owner_type;
 		// `virgin_bound` must be false after first changing.
@@ -141,10 +156,7 @@ module dwallet_system::authority_binder {
 		domain_name: vector<u8>,
 		domain_version: vector<u8>,
 		): vector<u8> {
-			// let bind_to_authority_nonce = binder.bind_to_authority.nonce;
-			// let contract_address = binder.bind_to_authority.owner;
-
-			// todo(yuval): we might want to use the `chain_identifier`, name, version from Authority			
+			// todo(yuval): use the `chain_identifier`, name, version from Authority			
 			create_authority_ack_transaction(
 				object::id_bytes(binder),
 				object::id_bytes(&binder.dwallet_cap),
@@ -158,6 +170,21 @@ module dwallet_system::authority_binder {
 				)
 	}
 
+	public(friend) fun approve_messages<T: drop>(
+		binder: &DWalletBinder,
+		dwallet: &dwallet::DWallet<T>,
+		messages: vector<vector<u8>>,
+	): vector<MessageApproval> {
+		let binder_dwallet_cap_id = object::id(&binder.dwallet_cap);
+		let dwallet_cap_id = dwallet::get_dwallet_cap_id(dwallet);
+
+		assert!(binder_dwallet_cap_id == dwallet_cap_id, EInvalidDWalletCap);
+
+		dwallet::approve_messages(&binder.dwallet_cap, messages)
+	}
+
+	// <<<<<<<<<<<<<<<<<<<<<<<< Native functions <<<<<<<<<<<<<<<<<<<<<<<<
+
    #[allow(unused_function)]
 	native fun create_authority_ack_transaction(
 		binder_id: vector<u8>, 
@@ -170,4 +197,6 @@ module dwallet_system::authority_binder {
 		domain_version: vector<u8>, 
 		contract_address: vector<u8> 
 	): vector<u8>;
+
+	// <<<<<<<<<<<<<<<<<<<<<<<< Native functions <<<<<<<<<<<<<<<<<<<<<<<<
 }
