@@ -508,8 +508,11 @@ impl SuiTransactionBlockKind {
                     SignatureMPCOutputValue::Presign(o) => {
                         SuiDKGSignatureMPCOutputValue::Presign(o)
                     }
-                    SignatureMPCOutputValue::Sign { sigs, .. } => {
-                        SuiDKGSignatureMPCOutputValue::Sign(sigs)
+                    SignatureMPCOutputValue::Sign { sigs, aggregator_public_key } => {
+                        SuiDKGSignatureMPCOutputValue::Sign {
+                            sigs,
+                            aggregator_public_key
+                        }
                     }
                 },
             }),
@@ -1441,7 +1444,10 @@ pub enum SuiDKGSignatureMPCOutputValue {
     },
     PresignOutput(Vec<u8>),
     Presign(Vec<u8>),
-    Sign(Vec<Vec<u8>>),
+    Sign {
+        sigs: Vec<Vec<u8>>,
+        aggregator_public_key: Vec<u8>,
+    },
 }
 
 #[serde_as]

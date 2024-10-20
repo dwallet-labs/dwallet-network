@@ -38,6 +38,7 @@ struct Presign {
 #[derive(SimpleObject, Clone, Eq, PartialEq)]
 struct Sign {
     sigs: Vec<Vec<u8>>,
+    aggregator_public_key: Vec<u8>,
 }
 
 /// System transaction to store the output of signature mpc dkg on-chain.
@@ -76,7 +77,7 @@ impl From<NativeSignatureMPCOutputValue>
 
             N::PresignOutput(output) => crate::types::transaction_block_kind::signature_mpc::SignatureMPCOutputValue::PresignOutput(crate::types::transaction_block_kind::signature_mpc::PresignOutput { output }),
             N::Presign(presigns) => crate::types::transaction_block_kind::signature_mpc::SignatureMPCOutputValue::Presign(crate::types::transaction_block_kind::signature_mpc::Presign { presigns }),
-            N::Sign{sigs, .. } => crate::types::transaction_block_kind::signature_mpc::SignatureMPCOutputValue::Sign(crate::types::transaction_block_kind::signature_mpc::Sign { sigs }),
+            N::Sign{sigs, aggregator_public_key } => crate::types::transaction_block_kind::signature_mpc::SignatureMPCOutputValue::Sign(crate::types::transaction_block_kind::signature_mpc::Sign { sigs, aggregator_public_key }),
         }
     }
 }
