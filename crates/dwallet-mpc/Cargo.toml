@@ -4,8 +4,6 @@ edition = "2021"
 version.workspace = true
 
 [dependencies]
-proof = { path = "../../../cryptography-private/proof" }
-maurer = { path = "../../../cryptography-private/maurer" }
 group = { path = "../../../cryptography-private/group"}
 mpc = { path = "../../../cryptography-private/mpc" }
 tiresias = { path = "../../../cryptography-private/tiresias"}
