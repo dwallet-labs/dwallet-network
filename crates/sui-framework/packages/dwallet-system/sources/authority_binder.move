@@ -5,7 +5,7 @@ module dwallet_system::authority_binder {
 	use std::string::String;
 	use dwallet::transfer;
 	use dwallet::object::{Self, ID, UID};
-	use dwallet::tx_context::TxContext;
+	use dwallet::tx_context::{ Self, TxContext };
 	use dwallet_system::dwallet;
 	use dwallet_system::dwallet::{MessageApproval};
 
@@ -108,20 +108,21 @@ module dwallet_system::authority_binder {
 	}
 
     /// Create a `BindToAuthority` object.
-	public(friend) fun create_bind_to_authority<C: key + store>(
+	public entry fun create_bind_to_authority<C: key + store>(
 		authority: &Authority<C>,
 		owner: vector<u8>,
 		owner_type: u8,
 		ctx: &mut TxContext,
-	): BindToAuthority {
-		BindToAuthority {
+	) {
+		let bind = BindToAuthority {
 			id: object::new(ctx),
 			nonce: 0,
 			authority_id: object::id(authority),
 			owner,
 			owner_type,
-		}
-	}
+		};
+		transfer::transfer(bind, tx_context::sender(ctx));
+}
 
 	/// Create a `DWalletBinder` object.
 	public fun create_binder(
