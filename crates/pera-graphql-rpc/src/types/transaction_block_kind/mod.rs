@@ -6,6 +6,7 @@ use self::{
     end_of_epoch::ChangeEpochTransaction, genesis::GenesisTransaction,
     randomness_state_update::RandomnessStateUpdateTransaction,
 };
+use crate::types::transaction_block_kind::signature_mpc_output::SignatureMPCOutputTransaction;
 use crate::types::transaction_block_kind::{
     authenticator_state_update::AuthenticatorStateUpdateTransaction,
     end_of_epoch::EndOfEpochTransaction, programmable::ProgrammableTransactionBlock,
@@ -19,6 +20,7 @@ pub(crate) mod end_of_epoch;
 pub(crate) mod genesis;
 pub(crate) mod programmable;
 pub(crate) mod randomness_state_update;
+mod signature_mpc_output;
 
 /// The kind of transaction block, either a programmable transaction or a system transaction.
 #[derive(Union, PartialEq, Clone, Eq)]
@@ -30,6 +32,7 @@ pub(crate) enum TransactionBlockKind {
     AuthenticatorState(AuthenticatorStateUpdateTransaction),
     Randomness(RandomnessStateUpdateTransaction),
     EndOfEpoch(EndOfEpochTransaction),
+    SignatureMPCOutput(SignatureMPCOutputTransaction),
 }
 
 impl TransactionBlockKind {
@@ -71,6 +74,10 @@ impl TransactionBlockKind {
             }),
             K::RandomnessStateUpdate(rsu) => T::Randomness(RandomnessStateUpdateTransaction {
                 native: rsu,
+                checkpoint_viewed_at,
+            }),
+            K::SignatureMPCOutput(output) => T::SignatureMPCOutput(SignatureMPCOutputTransaction {
+                native: output,
                 checkpoint_viewed_at,
             }),
         }
