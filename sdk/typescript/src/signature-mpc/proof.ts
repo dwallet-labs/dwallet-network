@@ -67,7 +67,7 @@ export async function launchDKGSecondRound(
 	keypair: Keypair,
 	client: PeraClient,
 	publicKeyShareAndProof: Uint8Array,
-	firstRoundOutput: number[],
+	firstRoundOutput: Uint8Array,
 ) {
 	const tx = new Transaction();
 	tx.moveCall({

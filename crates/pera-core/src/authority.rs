@@ -157,7 +157,7 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc::mpc_events::{CompletedDKGFirstRoundEvent, CreatedProofMPCEvent, InitFirstDKGMPCEvent, MPCEvent, StartDKGSecondRoundEvent};
+use crate::signature_mpc::mpc_events::{CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedProofMPCEvent, InitFirstDKGMPCEvent, MPCEvent, StartDKGSecondRoundEvent};
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
@@ -1594,6 +1594,9 @@ impl AuthorityState {
                         deserialized_event.session_id.bytes,
                         deserialized_event.sender,
                     );
+                } else if event.type_ == CompletedDKGSecondRoundEvent::type_() {
+                    let deserialized_event: CompletedDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
+                    dkg_second_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
                 }
             }
             Ok(())

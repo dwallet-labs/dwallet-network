@@ -9,11 +9,14 @@ title: Module `0x3::dwallet`
 -  [Struct `StartDKGSecondRoundEvent`](#0x3_dwallet_StartDKGSecondRoundEvent)
 -  [Resource `DKGSecondRoundData`](#0x3_dwallet_DKGSecondRoundData)
 -  [Resource `CompletedFirstDKGRoundData`](#0x3_dwallet_CompletedFirstDKGRoundData)
+-  [Resource `CompletedSecondDKGRoundData`](#0x3_dwallet_CompletedSecondDKGRoundData)
 -  [Struct `CompletedDKGRoundEvent`](#0x3_dwallet_CompletedDKGRoundEvent)
+-  [Struct `CompletedSecondDKGRoundEvent`](#0x3_dwallet_CompletedSecondDKGRoundEvent)
 -  [Constants](#@Constants_0)
 -  [Function `launch_initiate_dkg_session`](#0x3_dwallet_launch_initiate_dkg_session)
 -  [Function `launch_dkg_second_round`](#0x3_dwallet_launch_dkg_second_round)
 -  [Function `create_first_dkg_round_output`](#0x3_dwallet_create_first_dkg_round_output)
+-  [Function `create_second_dkg_round_output`](#0x3_dwallet_create_second_dkg_round_output)
 
 
 <pre><code><b>use</b> <a href="../pera-framework/event.md#0x2_event">0x2::event</a>;
@@ -213,6 +216,45 @@ title: Module `0x3::dwallet`
 
 </details>
 
+<a name="0x3_dwallet_CompletedSecondDKGRoundData"></a>
+
+## Resource `CompletedSecondDKGRoundData`
+
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_CompletedSecondDKGRoundData">CompletedSecondDKGRoundData</a> <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>value: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="0x3_dwallet_CompletedDKGRoundEvent"></a>
 
 ## Struct `CompletedDKGRoundEvent`
@@ -220,6 +262,39 @@ title: Module `0x3::dwallet`
 
 
 <pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_CompletedDKGRoundEvent">CompletedDKGRoundEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>sender: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_CompletedSecondDKGRoundEvent"></a>
+
+## Struct `CompletedSecondDKGRoundEvent`
+
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_CompletedSecondDKGRoundEvent">CompletedSecondDKGRoundEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -356,6 +431,43 @@ Function to launch proof MPC flow.
    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, session_initiator);
 
    <b>let</b> completed_proof_mpc_session_event = <a href="dwallet.md#0x3_dwallet_CompletedDKGRoundEvent">CompletedDKGRoundEvent</a> {
+       session_id: session_id,
+       sender: session_initiator,
+   };
+
+   <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(completed_proof_mpc_session_event);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_create_second_dkg_round_output"></a>
+
+## Function `create_second_dkg_round_output`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_second_dkg_round_output">create_second_dkg_round_output</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_second_dkg_round_output">create_second_dkg_round_output</a>(session_initiator: <b>address</b>, session_id: ID, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> TxContext) {
+   <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == @0x0, <a href="dwallet.md#0x3_dwallet_ENotSystemAddress">ENotSystemAddress</a>);
+   <b>let</b> proof_session_result = <a href="dwallet.md#0x3_dwallet_CompletedSecondDKGRoundData">CompletedSecondDKGRoundData</a> {
+       id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+       session_id: session_id,
+       value: output,
+   };
+   <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, session_initiator);
+
+   <b>let</b> completed_proof_mpc_session_event = <a href="dwallet.md#0x3_dwallet_CompletedSecondDKGRoundEvent">CompletedSecondDKGRoundEvent</a> {
        session_id: session_id,
        sender: session_initiator,
    };
