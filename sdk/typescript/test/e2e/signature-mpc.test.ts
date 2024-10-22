@@ -6,7 +6,7 @@ import { beforeAll, describe, it } from 'vitest';
 import { launchProofMPSession } from '../../src/signature-mpc/proof';
 import { setup, TestToolbox } from './utils/setup';
 
-describe('Test signature mpc', () => {
+describe('Test MPC Proof', () => {
 	let toolbox: TestToolbox;
 
 	beforeAll(async () => {

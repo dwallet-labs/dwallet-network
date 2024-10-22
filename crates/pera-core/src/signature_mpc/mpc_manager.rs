@@ -45,7 +45,7 @@ struct SignatureMPCMessage {
 pub trait CreatableParty: Advance {
     /// The MPC Manager will create a new mpc instance after the init event is received.
     type InitEvent: MPCEvent + Serialize + for<'a> Deserialize<'a>;
-    /// The MPC Manager will finalize the mpc instance after the finalize event is received.
+    /// The MPC Manager will finalize the mpc instance after `FinalizeEvent` is received.
     type FinalizeEvent: MPCEvent + Serialize + for<'a> Deserialize<'a>;
 
     fn new(parties: HashSet<PartyID>, party_id: PartyID) -> Self;
@@ -202,7 +202,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     }
 
     /// Stores a message in the pending messages map. The code stores every new message it receives for that instance,
-    /// and when we reach the end of delivery we will advance the instance if we have a threshold of messages.
+    /// and when we reach the end of delivery, we will advance the instance if we have a threshold of messages.
     fn store_message(
         &mut self,
         message: &SignatureMPCMessage,

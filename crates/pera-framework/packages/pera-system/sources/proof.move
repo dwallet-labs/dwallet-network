@@ -3,7 +3,7 @@
 
 // TODO (#228): Remove this module.
 /// The proof module
-/// Responsible to start and manage the Proof generation MPC flow
+/// Responsible to start and manage the Proof generation MPC flow.
 /// Used only for testing the way we launch & manage an MPC flow.
 module pera_system::proof {
     use pera::event;
@@ -36,7 +36,8 @@ module pera_system::proof {
         };
         // Emit event to start MPC flow.
         // Part of the implementation of section 3.2.1 in the Pera Async paper.
-        // When iterating over the transactions in the batch, MPC transactions will get exectuted locally
+        // When iterating over the transactions in the batch,
+        // MPC transactions will get executed locally
         // to catch the event with all the needed data to start the MPC flow.
         let created_proof_mpc_session_event = CreatedProofMPCSessionEvent {
             // The session ID is a random, unique ID of the ProofSessionData object.
@@ -57,22 +58,28 @@ module pera_system::proof {
     }
 
     /// Function to create the proof session output.
-    /// Creates it & transfers it to the user that initiated the proof MPC flow.
-    /// Should be called only as a system transaction after all the validators received & verified the rust `SignatureMPCOutput`.
-    public fun create_proof_session_output(session_initiator: address, session_id: ID, output: vector<u8>, ctx: &mut TxContext) {
-       assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
-       let proof_session_result = ProofSessionOutput {
-           id: object::new(ctx),
-           session_id: session_id,
-           proof: output,
-       };
-       transfer::transfer(proof_session_result, session_initiator);
+    /// Creates it and transfers it to the user that initiated the proof MPC flow.
+    /// Should be called only as a system transaction after
+    /// all the validators received and verified the Rust `SignatureMPCOutput`.
+    public fun create_proof_session_output(
+        session_initiator: address,
+        session_id: ID,
+        output: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+        let proof_session_result = ProofSessionOutput {
+            id: object::new(ctx),
+            session_id,
+            proof: output,
+        };
+        transfer::transfer(proof_session_result, session_initiator);
 
-       let completed_proof_mpc_session_event = CompletedProofMPCSessionEvent {
-           session_id: session_id,
-           sender: session_initiator,
-       };
+        let completed_proof_mpc_session_event = CompletedProofMPCSessionEvent {
+            session_id: session_id,
+            sender: session_initiator,
+        };
 
-       event::emit(completed_proof_mpc_session_event);
-   }
+        event::emit(completed_proof_mpc_session_event);
+    }
 }
