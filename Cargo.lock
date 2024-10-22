@@ -305,9 +305,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.89"
+version = "1.0.90"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86fdf8605db99b54d3cd748a44c6d04df638eb5dafb219b135d0149bd0db01f6"
+checksum = "37bf3594c4c988a53154954629820791dde498571819ae4ca50ca811e060cc95"
 dependencies = [
  "backtrace",
 ]
@@ -2526,25 +2526,30 @@ dependencies = [
  "criterion",
  "crypto-bigint 0.5.5",
  "crypto-primes",
- "getrandom 0.2.15",
  "group 0.1.0",
- "hex",
  "homomorphic_encryption",
  "maurer",
  "mpc",
  "num-bigint 0.4.6",
  "num-integer",
- "num-rational",
  "num-traits",
- "prime_factorization",
- "primes",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rstest 0.22.0",
- "rust-gmp",
  "serde",
- "subtle",
  "thiserror",
+]
+
+[[package]]
+name = "class_groups_constants"
+version = "1.32.2"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "group 0.1.0",
+ "hex",
+ "serde",
+ "twopc_mpc",
 ]
 
 [[package]]
@@ -3979,6 +3984,10 @@ version = "1.32.2"
 dependencies = [
  "anyhow",
  "bcs",
+ "class_groups_constants",
+ "commitment",
+ "hex",
+ "log",
  "mpc",
  "rand_core 0.6.4",
  "twopc_mpc",
@@ -5650,6 +5659,9 @@ dependencies = [
  "crypto-bigint 0.5.5",
  "getrandom 0.2.15",
  "group 0.1.0",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "rstest 0.22.0",
  "serde",
  "thiserror",
 ]
@@ -5751,7 +5763,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -6695,7 +6707,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -10218,6 +10230,8 @@ dependencies = [
  "chrono",
  "clap",
  "class_groups",
+ "class_groups_constants",
+ "commitment",
  "consensus-config",
  "consensus-core",
  "count-min-sketch",
@@ -12815,17 +12829,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "prime_factorization"
-version = "1.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61b43cd4d5e49fa3c769f72033129f07eeaa102c3db2aa11be0c7f1a0cb50f0c"
-dependencies = [
- "itertools 0.10.5",
- "num",
- "rand 0.8.5",
-]
-
-[[package]]
 name = "primeorder"
 version = "0.13.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12833,12 +12836,6 @@ checksum = "353e1ca18966c16d9deb1c69278edbc5f194139612772bd9537af60ac231e1e6"
 dependencies = [
  "elliptic-curve 0.13.8",
 ]
-
-[[package]]
-name = "primes"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0466ef49edd4a5a4bc9d62804a34e89366810bd8bfc3ed537101e3d099f245c5"
 
 [[package]]
 name = "primitive-types"
@@ -13078,7 +13075,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c1318b19085f08681016926435853bbf7858f9c082d0999b80550ff5d9abe15"
 dependencies = [
  "bytes",
- "heck 0.4.1",
+ "heck 0.5.0",
  "itertools 0.13.0",
  "log",
  "multimap",
@@ -14079,15 +14076,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "yasna",
-]
-
-[[package]]
-name = "rust-gmp"
-version = "0.5.1"
-source = "git+https://github.com/ZenGo-X/rust-gmp.git#48a82600ba8cfd259559fb5e17e465499e7730e0"
-dependencies = [
- "libc",
- "num-traits",
 ]
 
 [[package]]
@@ -16804,7 +16792,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97fee6b57c6a41524a810daee9286c02d7752c4253064d0b05472833a438f675"
 dependencies = [
  "cfg-if",
- "rand 0.7.3",
+ "rand 0.8.5",
  "static_assertions",
 ]
 
@@ -17391,7 +17379,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
