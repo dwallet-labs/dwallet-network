@@ -45,7 +45,6 @@ export async function launchDKGSession(keypair: Keypair, client: PeraClient) {
 	});
 	const sessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
 
-	// sleep five seconds
 	await new Promise((resolve) => setTimeout(resolve, 5000));
 	let firstRoundOutputObject = await fetchObjectBySessionId(
 		sessionRef.objectId,
@@ -68,7 +67,7 @@ export async function launchDKGSecondRound(
 	keypair: Keypair,
 	client: PeraClient,
 	publicKeyShareAndProof: Uint8Array,
-	firstRoundOutput: number[],
+	firstRoundOutput: Uint8Array,
 ) {
 	const tx = new Transaction();
 	tx.moveCall({
@@ -79,7 +78,7 @@ export async function launchDKGSecondRound(
 		],
 	});
 
-	const result = await client.signAndExecuteTransaction({
+	await client.signAndExecuteTransaction({
 		signer: keypair,
 		transaction: tx,
 		options: {

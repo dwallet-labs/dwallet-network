@@ -13,7 +13,13 @@ DKGSecondRoundData
 CompletedFirstDKGRoundData
 	public struct
 	0x3::dwallet
+CompletedSecondDKGRoundData
+	public struct
+	0x3::dwallet
 CompletedDKGRoundEvent
+	public struct
+	0x3::dwallet
+CompletedSecondDKGRoundEvent
 	public struct
 	0x3::dwallet
 launch_initiate_dkg_session
@@ -23,6 +29,9 @@ launch_dkg_second_round
 	public fun
 	0x3::dwallet
 create_first_dkg_round_output
+	public fun
+	0x3::dwallet
+create_second_dkg_round_output
 	public fun
 	0x3::dwallet
 UnverifiedValidatorOperationCap
