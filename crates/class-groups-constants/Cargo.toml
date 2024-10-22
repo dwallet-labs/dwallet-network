@@ -1,0 +1,15 @@
+[package]
+name = "class_groups_constants"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+twopc_mpc = { path = "../../../cryptography-private/2pc-mpc", features = ["secp256k1", "bulletproofs", "class_groups", "paillier"] }
+group = {path = "../../../cryptography-private/group"}
+serde = "1.0.210"
+bcs = "0.1.6"
+hex = "0.4.3"
+anyhow = "1.0.90"
+
+[lints]
+workspace = true
