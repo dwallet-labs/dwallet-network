@@ -4,8 +4,8 @@ edition = "2021"
 version.workspace = true
 
 [dependencies]
-twopc_mpc = { path = "../../../cryptography-private/2pc-mpc", features = ["secp256k1", "bulletproofs", "class_groups", "paillier"] }
-group = {path = "../../../cryptography-private/group"}
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-dkg-changes", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "class_groups", "paillier"] }
+group = {git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-dkg-changes", subdir = "group"}
 serde = "1.0.210"
 bcs = "0.1.6"
 hex = "0.4.3"
