@@ -54,7 +54,7 @@ impl MPCEvent for CreatedProofMPCEvent {
     }
 }
 
-/// Rust version of the Move [`pera_system::dwallet::CompletedProofMPCSessionEvent`] type.
+/// Rust version of the Move [`pera_system::proof::CompletedProofMPCSessionEvent`] type.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct CompletedProofMPCSessionEvent {
     session_id: ID,
