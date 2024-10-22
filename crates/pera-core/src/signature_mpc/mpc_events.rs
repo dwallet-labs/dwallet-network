@@ -1,3 +1,8 @@
+//! # MPC Events Module
+//!
+//! This module provides the Rust representation and handling of **Multiparty Computation
+//! (MPC) events** emitted from the Pera blockchain.
+//! It offers structures and traits that align with on-chain Move events.
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
 use pera_types::{
     base_types::{ObjectID, PeraAddress},
@@ -7,7 +12,7 @@ use pera_types::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-/// Generic trait for all MPC events.
+/// The generic trait for all MPC events.
 pub trait MPCEvent {
     /// This function allows comparing this event with the Move event.
     fn type_() -> StructTag;
@@ -21,7 +26,7 @@ pub const PROOF_MODULE_NAME: &IdentStr = ident_str!("proof");
 pub const CREATED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CreatedProofMPCSessionEvent");
 pub const COMPLETED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CompletedProofMPCSessionEvent");
 
-/// Rust version of the Move [`pera_system::dwallet::CreatedProofMPCSessionEvent`] type.
+/// Rust version of the Move [`pera_system::proof::CreatedProofMPCSessionEvent`] type.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct CreatedProofMPCEvent {
     pub session_id: ID,
@@ -57,7 +62,8 @@ pub struct CompletedProofMPCSessionEvent {
 }
 
 impl MPCEvent for CompletedProofMPCSessionEvent {
-    /// It is used to detect [`CompletedProofMPCSessionEvent`] events from the chain and finalize the MPC session.
+    /// Used to detect [`CompletedProofMPCSessionEvent`] events from the chain
+    /// and finalize the MPC session.
     fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
