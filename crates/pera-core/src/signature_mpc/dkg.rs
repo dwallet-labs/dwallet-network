@@ -40,42 +40,6 @@ pub type DKGFirstParty =
 pub type DKGSecondParty =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty;
 
-pub trait DKGProtocol {}
-// pub trait MPCParty<Party: mpc::Party + mpc::Advance> {
-//     type InitializationInput : for<'a> Deserialize<'a> + Clone;
-//
-//     fn first_auxiliary_input(init_input: Self::InitializationInput) -> Party::AuxiliaryInput;
-// }
-
-pub trait MPCParty : Send + Sync {
-    type InitializationInput : for<'a> Deserialize<'a> + Clone + MPCEvent;
-    type Party: mpc::Party + mpc::Advance + Default;
-
-    fn first_auxiliary_input(init_input: Self::InitializationInput) -> <Self::Party as mpc::Party>::AuxiliaryInput;
-}
-
-pub struct TestParty {}
-unsafe impl Send for TestParty {}
-impl MPCParty for TestParty {
-    type InitializationInput = InitFirstDKGMPCEvent;
-    type Party = DKGFirstParty;
-
-    fn first_auxiliary_input(init_input: Self::InitializationInput) -> <Self::Party as mpc::Party>::AuxiliaryInput {
-        let secp256k1_group_public_parameters = class_groups_constants::protocol_public_parameters().unwrap();
-
-        let parties = (0..3).collect::<HashSet<PartyID>>();
-        let a = init_input.session_id.bytes.to_vec();
-        let protocol_context = commitment::CommitmentSizedNumber::from_be_slice(&a);
-        Party::AuxiliaryInput {
-            protocol_public_parameters: secp256k1_group_public_parameters,
-            party_id: 1,
-            threshold: 3,
-            number_of_parties: 4,
-            parties: parties.clone(),
-            session_id: protocol_context,
-        }
-    }
-}
 pub trait AuxiliarySecond: mpc::Party {
     fn first_auxiliary_input(
         first_round_output: <DKGFirstParty as mpc::Party>::Output,

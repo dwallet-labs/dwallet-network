@@ -1565,11 +1565,6 @@ impl AuthorityState {
             let mut dkg_second_mpc_manager = dkg_second_mpc_manager.lock().await;
             for event in &inner_temporary_store.events.data {
                 if event.type_ == InitFirstDKGMPCEvent::type_() {
-                    let num_of_parties = epoch_store.committee().voting_rights.len();
-                    let mut parties = HashSet::new();
-                    for i in 0..num_of_parties {
-                        parties.insert(i as PartyID);
-                    }
                     let first_proof_party = DKGFirstParty::default();
                     let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
                     let auxiliary = DKGFirstParty::first_auxiliary_input();
