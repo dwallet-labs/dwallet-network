@@ -23,6 +23,7 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::messages_signature_mpc::MPCRound;
 
 /// Only commit_timestamp_ms is passed to the move call currently.
 /// However we include epoch and round to make sure each ConsensusCommitPrologue has a unique tx digest.
@@ -281,7 +282,7 @@ pub enum ConsensusTransactionKind {
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
     SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress, ),
+    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress, MPCRound),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -495,14 +496,14 @@ impl ConsensusTransaction {
         value: Vec<u8>,
         session_id: ObjectID,
         sender_address: PeraAddress,
-        // flow: Flows
+        mpc_round: MPCRound,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
         value.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address),
+            kind: ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address, mpc_round),
         }
     }
 
@@ -584,7 +585,7 @@ impl ConsensusTransaction {
                     session_id.clone(),
                 )
             }
-            ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address) => {
+            ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address,_) => {
                 ConsensusTransactionKey::SignatureMPCOutput(
                     value.clone(),
                     *session_id,

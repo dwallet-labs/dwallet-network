@@ -59,7 +59,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
-    use pera_types::messages_signature_mpc::SignatureMPCOutput;
+    use pera_types::messages_signature_mpc::{MPCRound, SignatureMPCOutput};
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -1110,12 +1110,16 @@ mod checked {
         protocol_config: &ProtocolConfig,
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
+        let move_function_name = match data.mpc_round {
+            MPCRound::DKGFirst => "create_first_dkg_round_output",
+            MPCRound::DKGSecond => "create_second_dkg_round_output",
+        };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
             let res = builder.move_call(
                 PERA_SYSTEM_PACKAGE_ID.into(),
                 ident_str!("dwallet").to_owned(),
-                ident_str!("create_first_dkg_round_output").to_owned(),
+                ident_str!(move_function_name).to_owned(),
                 vec![],
                 vec![
                     CallArg::Pure(data.sender_address.to_vec()),

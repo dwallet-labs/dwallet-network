@@ -30,6 +30,7 @@ use std::{io, mem};
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
+use pera_types::messages_signature_mpc::MPCRound;
 
 /// The message a validator can send to the other parties while running a signature MPC session.
 #[derive(Clone)]
@@ -126,7 +127,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
 
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    fn advance(&mut self, auxiliary_input: &P::AuxiliaryInput) -> PeraResult {
+    fn advance(&mut self, auxiliary_input: &P::AuxiliaryInput, mpc_round: MPCRound) -> PeraResult {
         let optional_party = mem::take(&mut self.party);
 
         /// Gets the instance existing party or creates a new one if this is the first advance
@@ -154,7 +155,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                self.new_dwallet_mpc_output_message(output.into())
+                self.new_dwallet_mpc_output_message(output.into(), mpc_round)
             }
         };
 
@@ -191,6 +192,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
     fn new_dwallet_mpc_output_message(
         &self,
         output: P::OutputValue,
+        mpc_round: MPCRound,
     ) -> Option<ConsensusTransaction> {
         let Ok(epoch_store) = self.epoch_store() else {
             return None;
@@ -203,6 +205,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
             output,
             self.session_id.clone(),
             self.sender_address.clone(),
+            mpc_round,
         ))
     }
 
@@ -329,7 +332,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
     /// We parallelize the advances with Rayon to speed up the process.
-    pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
+    pub async fn handle_end_of_delivery(&mut self, mpc_round : MPCRound) -> PeraResult {
         let mut ready_to_advance = self
             .mpc_instances
             .iter_mut()
@@ -354,7 +357,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
             .enumerate()
-            .map(|(index, ref mut instance)| instance.advance(&auxiliary_inputs[index]))
+            .map(|(index, ref mut instance)| instance.advance(&auxiliary_inputs[index], mpc_round))
             .collect::<PeraResult<_>>()?;
         Ok(())
     }

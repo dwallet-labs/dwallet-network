@@ -6,6 +6,12 @@ use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 use std::fmt::Display;
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy)]
+pub enum MPCRound {
+    DKGFirst,
+    DKGSecond,
+}
+
 /// The content of the system transaction that stores the MPC session output on chain.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SignatureMPCOutput {
@@ -15,6 +21,7 @@ pub struct SignatureMPCOutput {
     pub sender_address: PeraAddress,
     /// The final value of the MPC session.
     pub value: Vec<u8>,
+    pub mpc_round: MPCRound,
 }
 
 impl Message for SignatureMPCOutput {

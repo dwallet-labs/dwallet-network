@@ -36,7 +36,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_signature_mpc::SignatureMPCOutput;
+use pera_types::messages_signature_mpc::{MPCRound, SignatureMPCOutput};
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -363,6 +363,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         value,
                         session_id,
                         sender_address,
+                        mpc_round,
                     ) = &transaction.kind
                     {
                         info!(
@@ -370,25 +371,52 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             authority_index, session_id
                         );
 
-                        let mut signature_mpc_manager = self.epoch_store.dkg_first_mpc_manager.get();
-                        let is_valid_transaction = match signature_mpc_manager {
-                            Some(mpc_manager) => {
-                                let signature_mpc_manager = mpc_manager.lock().await;
-                                match signature_mpc_manager.try_verify_output(value, session_id) {
-                                    Ok(is_valid) => is_valid,
-                                    Err(e) => {
-                                        error!(
-                                            "Error verifying ProofMPCOutput output from session {:?} and party {:?}: {:?}",
-                                            session_id, authority_index, e
-                                        );
+                        let is_valid_transaction = match mpc_round {
+                            MPCRound::DKGFirst => {
+                                let mut signature_mpc_manager = self.epoch_store.dkg_first_mpc_manager.get();
+                                match signature_mpc_manager {
+                                    Some(mpc_manager) => {
+                                        let signature_mpc_manager = mpc_manager.lock().await;
+                                        match signature_mpc_manager.try_verify_output(value, session_id) {
+                                            Ok(is_valid) => is_valid,
+                                            Err(e) => {
+                                                error!(
+                                                    "Error verifying ProofMPCOutput output from session {:?} and party {:?}: {:?}",
+                                                    session_id, authority_index, e
+                                                );
+                                                false
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
+                                        error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
                                         false
                                     }
                                 }
                             }
-                            None => {
-                                // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
-                                error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
-                                false
+                            MPCRound::DKGSecond => {
+                                let mut signature_mpc_manager = self.epoch_store.dkg_second_mpc_manager.get();
+                                match signature_mpc_manager {
+                                    Some(mpc_manager) => {
+                                        let signature_mpc_manager = mpc_manager.lock().await;
+                                        match signature_mpc_manager.try_verify_output(value, session_id) {
+                                            Ok(is_valid) => is_valid,
+                                            Err(e) => {
+                                                error!(
+                                                    "Error verifying ProofMPCOutput output from session {:?} and party {:?}: {:?}",
+                                                    session_id, authority_index, e
+                                                );
+                                                false
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
+                                        error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
+                                        false
+                                    }
+                                }
                             }
                         };
 
@@ -399,6 +427,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         session_id: *session_id,
                                         sender_address: *sender_address,
                                         value: value.clone(),
+                                        mpc_round: mpc_round.clone(),
                                     },
                                 );
                             let transaction = VerifiedExecutableTransaction::new_system(
@@ -641,7 +670,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
         ConsensusTransactionKind::SignatureMPCMessage(_, _, _) => "signature_mpc_message",
-        ConsensusTransactionKind::SignatureMPCOutput(_, _, _) => "signature_mpc_statements",
+        ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _) => "signature_mpc_statements",
     }
 }
 

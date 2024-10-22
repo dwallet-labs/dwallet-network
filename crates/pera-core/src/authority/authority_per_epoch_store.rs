@@ -102,7 +102,7 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::messages_signature_mpc::SignatureMPCOutput;
+use pera_types::messages_signature_mpc::{MPCRound, SignatureMPCOutput};
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -2444,7 +2444,7 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCOutput(_, _, _),
+                kind: ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _),
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -3221,14 +3221,14 @@ impl AuthorityPerEpochStore {
         if let Some(signature_mpc_manager) = self.dkg_first_mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
-            signature_mpc_manager.handle_end_of_delivery().await?;
+            signature_mpc_manager.handle_end_of_delivery(MPCRound::DKGFirst).await?;
         };
 
         // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
         if let Some(signature_mpc_manager) = self.dkg_second_mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
-            signature_mpc_manager.handle_end_of_delivery().await?;
+            signature_mpc_manager.handle_end_of_delivery(MPCRound::DKGSecond).await?;
         };
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
@@ -3420,7 +3420,7 @@ impl AuthorityPerEpochStore {
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind:
-                    ConsensusTransactionKind::SignatureMPCOutput(statements, session_id, sender_address),
+                    ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
