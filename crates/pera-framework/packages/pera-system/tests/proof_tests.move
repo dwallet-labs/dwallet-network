@@ -28,12 +28,15 @@ module pera_system::proof_tests {
         let created_objects = test_scenario::created(&effects);
         assert!(vector::length(&frozen_objects) == 1, EWrongFrozenObjectsNum);
         assert!(vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
-        assert!(vector::borrow(&created_objects, 0) == vector::borrow(&frozen_objects, 0), EObjectMismatchCreateAndFrozen);
+        assert!(
+            vector::borrow(&created_objects, 0) == vector::borrow(&frozen_objects, 0),
+            EObjectMismatchCreateAndFrozen
+        );
     }
 
     #[test]
     public fun test_create_proof_session_output() {
-        let sender = @0x1;
+        let sender = @0x0;
         let mut scenario = test_scenario::begin(sender);
         test_scenario::next_tx(&mut scenario, sender);
         {
