@@ -6,9 +6,14 @@ version.workspace = true
 [dependencies]
 mpc = { path = "../../../cryptography-private/mpc" }
 twopc_mpc = { path = "../../../cryptography-private/2pc-mpc", features = ["secp256k1", "bulletproofs", "class_groups", "paillier"] }
+commitment = { path = "../../../cryptography-private/commitment" }
+class_groups_constants = { path = "../class-groups-constants" }
+
 anyhow.workspace = true
 bcs.workspace = true
 rand_core = "0.6.4"
+hex = "0.4.3"
+log = "0.4.22"
 
 [lints]
 workspace = true

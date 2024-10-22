@@ -197,7 +197,9 @@ members = [
     "pera-execution/v1/pera-verifier",
     "pera-execution/v2/pera-adapter",
     "pera-execution/v2/pera-move-natives",
-    "pera-execution/v2/pera-verifier", "crates/dwallet-mpc",
+    "pera-execution/v2/pera-verifier",
+    "crates/dwallet-mpc",
+    "crates/class-groups-constants",
 ]
 
 [workspace.package]

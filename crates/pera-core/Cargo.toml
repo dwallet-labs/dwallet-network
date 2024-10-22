@@ -116,6 +116,8 @@ twopc_mpc = { path = "../../../cryptography-private/2pc-mpc", features = ["secp2
 rand_core = "0.6.4"
 homomorphic_encryption = { path = "../../../cryptography-private/homomorphic-encryption" }
 class_groups = { path = "../../../cryptography-private/class-groups" }
+commitment = { path = "../../../cryptography-private/commitment" }
+class_groups_constants = {path = "../class-groups-constants"}
 
 [dev-dependencies]
 clap.workspace = true
