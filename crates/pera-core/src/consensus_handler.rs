@@ -357,8 +357,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .inc_num_user_transactions(authority_index as usize);
                     }
 
-                    // If we receive a ProofMPCOutput transaction, verify that it's valid & create a system transaction
-                    // to store its output on the blockchain, so it will be available for the initiating user.
+                    // If we receive a `SignatureMPCOutput` transaction,
+                    // verify that it's valid and create a system transaction
+                    // to store its output on the blockchain,
+                    // so it will be available for the initiating user.
                     if let ConsensusTransactionKind::SignatureMPCOutput(
                         value,
                         session_id,
@@ -374,20 +376,16 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let is_valid_transaction = match signature_mpc_manager {
                             Some(mpc_manager) => {
                                 let signature_mpc_manager = mpc_manager.lock().await;
-                                match signature_mpc_manager.try_verify_output(value, session_id) {
-                                    Ok(is_valid) => is_valid,
-                                    Err(e) => {
-                                        error!(
-                                            "Error verifying ProofMPCOutput output from session {:?} and party {:?}: {:?}",
-                                            session_id, authority_index, e
-                                        );
+                                signature_mpc_manager
+                                    .try_verify_output(value, session_id)
+                                    .unwrap_or_else(|e| {
+                                        error!("error verifying ProofMPCOutput for the session {:?} from party {:?}: {:?}",session_id, authority_index, e);
                                         false
-                                    }
-                                }
+                                    })
                             }
                             None => {
                                 // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
-                                error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
+                                error!("MPC manager was not initialized when verifying SignatureMPCOutput output from session {:?}", session_id);
                                 false
                             }
                         };

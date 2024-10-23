@@ -1495,7 +1495,7 @@ impl AuthorityState {
         // Check if there are any MPC events emitted from this transaction and if so, send them to the MPC service.
         // Handle the MPC events here because there is access to the event, as the transaction has been just executed.
         let _ = self
-            .handle_signature_mpc_events(&inner_temporary_store, effects, epoch_store)
+            .handle_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await;
 
         // Allow testing what happens if we crash here.
@@ -1531,9 +1531,10 @@ impl AuthorityState {
         Ok(())
     }
 
-    /// Handle the MPC signature events emitted from the transaction, if any.
-    /// The filtering to handle only signature-mpc related events happens within [`SignatureMPCManager::handle_mpc_events`] function.
-    async fn handle_signature_mpc_events(
+    /// Handle the MPC events emitted from the transaction, if any.
+    /// The filtering to handle only MPC related events
+    /// happens within [`SignatureMPCManager::handle_mpc_events`] function.
+    async fn handle_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,
@@ -1542,28 +1543,29 @@ impl AuthorityState {
         if !self.is_validator(epoch_store) {
             return Ok(());
         }
-        let status = match &effects {
-            TransactionEffects::V1(effects) => effects.status(),
-            TransactionEffects::V2(effects) => effects.status(),
+        let status = match effects {
+            TransactionEffects::V1(effects) | TransactionEffects::V2(effects) => effects.status(),
         };
-        if status.is_ok() {
-            let mut signature_mpc_manager = epoch_store.proof_mpc_manager.get();
-            match signature_mpc_manager {
-                Some(mpc_manager) => {
-                    let mut mpc_manager = mpc_manager.lock().await;
-                    mpc_manager.handle_mpc_events(&inner_temporary_store.events.data)
-                }
-                None => {
-                    // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
+
+        status
+            .is_ok()
+            .then_some(epoch_store.proof_mpc_manager.get())
+            .map_or_else(
+                || {
+                    // Log if the MPC manager is not initialized.
+                    // This function is being executed for all events,
+                    // some events are being emitted before the MPC manager is initialized.
                     // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are emitted.
+                    // TODO (#303): Decide what to do about a failed transaction with MPC events.
                     info!("MPC manager is not initialized");
                     Ok(())
-                }
-            }
-        } else {
-            // If the transaction failed, we don't need to handle MPC events.
-            Ok(())
-        }
+                },
+                |Some(mpc_manager)| async move {
+                    let mut mpc_manager = mpc_manager.lock().await;
+                    mpc_manager.handle_mpc_events(&inner_temporary_store.events.data)
+                },
+            )
+            .await
     }
 
     fn update_metrics(
@@ -2315,7 +2317,7 @@ impl AuthorityState {
                         }
                         )
                     else {
-                        // Skip indexing for non dynamic field objects.
+                        // Skip indexing for non-dynamic field objects.
                         continue;
                     };
                     new_dynamic_fields.push(((ObjectID::from(owner), *id), df_info))
