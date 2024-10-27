@@ -22,6 +22,12 @@ CompletedDKGRoundEvent
 CompletedSecondDKGRoundEvent
 	public struct
 	0x3::dwallet
+DWalletCap
+	public struct
+	0x3::dwallet
+create_dwallet_cap
+	public(package) fun
+	0x3::dwallet
 launch_initiate_dkg_session
 	public fun
 	0x3::dwallet
@@ -34,6 +40,15 @@ create_first_dkg_round_output
 create_second_dkg_round_output
 	public fun
 	0x3::dwallet
+DKGSession
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CreatedDKGSessionEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+start_first_dkg_session
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct
 	0x3::validator_cap

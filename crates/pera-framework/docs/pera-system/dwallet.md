@@ -12,7 +12,9 @@ title: Module `0x3::dwallet`
 -  [Resource `CompletedSecondDKGRoundData`](#0x3_dwallet_CompletedSecondDKGRoundData)
 -  [Struct `CompletedDKGRoundEvent`](#0x3_dwallet_CompletedDKGRoundEvent)
 -  [Struct `CompletedSecondDKGRoundEvent`](#0x3_dwallet_CompletedSecondDKGRoundEvent)
+-  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
 -  [Constants](#@Constants_0)
+-  [Function `create_dwallet_cap`](#0x3_dwallet_create_dwallet_cap)
 -  [Function `launch_initiate_dkg_session`](#0x3_dwallet_launch_initiate_dkg_session)
 -  [Function `launch_dkg_second_round`](#0x3_dwallet_launch_dkg_second_round)
 -  [Function `create_first_dkg_round_output`](#0x3_dwallet_create_first_dkg_round_output)
@@ -321,6 +323,34 @@ title: Module `0x3::dwallet`
 
 </details>
 
+<a name="0x3_dwallet_DWalletCap"></a>
+
+## Resource `DWalletCap`
+
+<code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> holder controls a corresponding <code>Dwallet</code>.
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a> <b>has</b> store, key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -334,6 +364,34 @@ title: Module `0x3::dwallet`
 </code></pre>
 
 
+
+<a name="0x3_dwallet_create_dwallet_cap"></a>
+
+## Function `create_dwallet_cap`
+
+Create a new <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code>
+The holder of this capability owns the <code>DWallet</code>.
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet_cap">create_dwallet_cap</a>(ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet_cap">create_dwallet_cap</a>(ctx: &<b>mut</b> TxContext): <a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a> {
+    <a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a> {
+        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+    }
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x3_dwallet_launch_initiate_dkg_session"></a>
 
