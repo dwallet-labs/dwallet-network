@@ -12,6 +12,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         sender: address,
     }
 
+    public struct DKGFirstRoundOutput has key {
+        id: UID,
+        session_id: ID,
+        output: vector<u8>,
+    }
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
     /// Event to start a `DKG` session, caught by the Validators.
     public struct CreatedDKGSessionEvent has copy, drop {
@@ -20,7 +26,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
     // >>>>>>>>>>>>>>>>>>>>>>>> Events >>>>>>>>>>>>>>>>>>>>>>>>
 
-
+    // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
+    const SYSTEM_ADDRESS: address = @0x0;
+    // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
 
     /// Starts the first Distributed Key Generation (DKG) session. Two MPC sessions are required to
     /// create a Dwallet.
@@ -42,5 +50,23 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         });
         transfer::freeze_object(session);
         cap
+    }
+
+    #[allow(unused_function)]
+    /// Create the first DKG MPC first round output, transfer it to the initiating user.
+    /// This function is called by blockchain itself.
+    /// Validtors call it, it's part of the blockchain logic.
+    fun create_dkg_first_round_output(
+        session: &DKGSession,
+        output: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
+        let output = DKGFirstRoundOutput {
+            id: object::new(ctx),
+            session_id: object::id(session),
+            output,
+        };
+        transfer::transfer(output, session.sender);
     }
 }
