@@ -6,20 +6,27 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     friend pera_system::dwallet_2pc_mpc_ecdsa_k1;
     use pera_system::dwallet::{create_dwallet_cap};
 
+    struct DKGSession has key {
+        id: UID,
+        dwallet_cap_id: ID,
+        sender: address,
+    }
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
     /// Event to start a `DKG` session, caught by the Validators.
     struct CreatedDKGSessionEvent has copy, drop {
         session_id: ID,
-        dwallet_cap_id: ID,
         sender: address,
     }
     // >>>>>>>>>>>>>>>>>>>>>>>> Events >>>>>>>>>>>>>>>>>>>>>>>>
+
+
 
     /// Starts the first Distributed Key Generation (DKG) session. Two MPC sessions are required to
     /// create a Dwallet.
     /// Capabilities are used to control access to the Dwallet.
     /// This function start the DKG proccess in the Validators.
-    public fun create_first_dkg_session(
+    public fun start_first_dkg_session(
         ctx: &mut TxContext
     ): DWalletCap {
         let cap = create_dwallet_cap(ctx);
@@ -31,7 +38,6 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         };
         event::emit(CreatedDKGSessionEvent {
             session_id: object::id(&session),
-            dwallet_cap_id: object::id(&cap),
             sender,
         });
         transfer::freeze_object(session);

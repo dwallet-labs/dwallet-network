@@ -157,7 +157,7 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc::mpc_events::{CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedProofMPCEvent, InitFirstDKGMPCEvent, MPCEvent, StartDKGSecondRoundEvent};
+use crate::signature_mpc::mpc_events::{CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedProofMPCEvent, CreatedDKGSessionEvent, MPCEvent, StartDKGSecondRoundEvent};
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
@@ -1564,9 +1564,9 @@ impl AuthorityState {
             let mut dkg_first_mpc_manager = dkg_first_mpc_manager.lock().await;
             let mut dkg_second_mpc_manager = dkg_second_mpc_manager.lock().await;
             for event in &inner_temporary_store.events.data {
-                if event.type_ == InitFirstDKGMPCEvent::type_() {
+                if event.type_ == CreatedDKGSessionEvent::type_() {
                     let first_proof_party = DKGFirstParty::default();
-                    let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
+                    let deserialized_event: CreatedDKGSessionEvent = bcs::from_bytes(&event.contents)?;
                     let auxiliary = DKGFirstParty::first_auxiliary_input();
                     dkg_first_mpc_manager.push_new_mpc_instance(
                         auxiliary,
@@ -1575,7 +1575,7 @@ impl AuthorityState {
                         deserialized_event.sender,
                     );
                 } else if event.type_ == CompletedDKGFirstRoundEvent::type_() {
-                    let deserialized_event: InitFirstDKGMPCEvent = bcs::from_bytes(&event.contents)?;
+                    let deserialized_event: CreatedDKGSessionEvent = bcs::from_bytes(&event.contents)?;
                     dkg_first_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
                 } else if event.type_ == StartDKGSecondRoundEvent::type_() {
                     let party = DKGSecondParty::default();

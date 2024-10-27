@@ -1,4 +1,4 @@
-use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent, InitFirstDKGMPCEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent, CreatedDKGSessionEvent, MPCEvent};
 use crate::signature_mpc::mpc_manager::{CreatableParty, SignatureMPCInstance};
 use group::{secp256k1, PartyID, Samplable};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;

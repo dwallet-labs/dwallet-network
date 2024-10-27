@@ -6,7 +6,7 @@ import { beforeAll, describe, it } from 'vitest';
 
 import {
 	launchDKGSecondRound,
-	launchDKGSession,
+	startFirstDKGSession,
 	launchProofMPSession,
 } from '../../src/signature-mpc/proof';
 import { setup, TestToolbox } from './utils/setup';

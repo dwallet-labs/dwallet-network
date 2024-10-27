@@ -28,11 +28,12 @@ export async function launchProofMPSession(keypair: Keypair, client: PeraClient)
 }
 
 let dwalletModuleName = 'dwallet';
+const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
-export async function launchDKGSession(keypair: Keypair, client: PeraClient) {
+export async function startFirstDKGSession(keypair: Keypair, client: PeraClient) {
 	const tx = new Transaction();
 	tx.moveCall({
-		target: `${packageId}::${dwalletModuleName}::launch_initiate_dkg_session`,
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::start_first_dkg_session`,
 		arguments: [],
 	});
 
@@ -48,7 +49,7 @@ export async function launchDKGSession(keypair: Keypair, client: PeraClient) {
 	await new Promise((resolve) => setTimeout(resolve, 5000));
 	let firstRoundOutputObject = await fetchObjectBySessionId(
 		sessionRef.objectId,
-		`${packageId}::${dwalletModuleName}::CompletedFirstDKGRoundData`,
+		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedFirstDKGRoundData`,
 		keypair,
 		client,
 	);
