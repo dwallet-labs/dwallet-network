@@ -85,7 +85,7 @@ const sidebars = {
             },
             {
               type: 'doc',
-              label: 'Encryption Key',
+              label: 'Encryption Keys',
               id: 'developers-guide/getting-started/encryption-key',
             },
             {
