@@ -22,35 +22,35 @@ Before interacting with the dWallet Network, a `keypair` and a `client` are requ
 The example below demonstrates how to connect a client to the Alpha Testnet.
 
 ```typescript
-import {DWalletClient} from '@dwallet-network/dwallet.js/client';
-import {Ed25519Keypair} from '@dwallet-network/dwallet.js/keypairs/ed25519';
-import {requestSuiFromFaucetV0 as requestDwltFromFaucetV0} from '@dwallet-network/dwallet.js/faucet';
+import { DWalletClient } from '@dwallet-network/dwallet.js/client';
+import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
+import { requestSuiFromFaucetV0 as requestDwltFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
 
 // Necessary functions to work with encryption keys.
 import {
-    createDWallet,
-    getOrCreateEncryptionKey,
-    storeEncryptionKey,
-    setActiveEncryptionKey,
-    EncryptionKeyScheme,
-    createActiveEncryptionKeysTable
+  createDWallet,
+  getOrCreateEncryptionKey,
+  storeEncryptionKey,
+  setActiveEncryptionKey,
+  EncryptionKeyScheme,
+  createActiveEncryptionKeysTable
 } from "@dwallet-network/dwallet.js/signature-mpc";
 
 // Create a new DWalletClient object that points to the desired network.
 // Create a new DWalletClient object pointing to the network you want to use.
 const client = new DWalletClient({
-    transport: new SuiHTTPTransport({
-        url: 'https://fullnode.alpha.testnet.dwallet.cloud',
-        WebSocketConstructor: WebSocket as never,
-    }),
+  transport: new SuiHTTPTransport({
+    url: 'https://fullnode.alpha.testnet.dwallet.cloud',
+    WebSocketConstructor: WebSocket as never,
+  }),
 });
 const keypair = new Ed25519Keypair();
 
 // Get tokens from the Testnet faucet server.
 const response = await requestDwltFromFaucetV0({
-    // connect to Testnet
-    host: 'http://faucet.alpha.testnet.dwallet.cloud/gas',
-    recipient: keypair.toSuiAddress(),
+  // connect to Testnet
+  host: 'http://faucet.alpha.testnet.dwallet.cloud/gas',
+  recipient: keypair.toSuiAddress(),
 });
 ```
 
@@ -90,10 +90,10 @@ the incoming information.
 
 ```typescript
 const pubKeyRef = await storeEncryptionKey(
-    senderEncryptionKeyObj.encryptionKey,
-    EncryptionKeyScheme.Paillier,
-    keypair,
-    client,
+  senderEncryptionKeyObj.encryptionKey,
+  EncryptionKeyScheme.Paillier,
+  keypair,
+  client,
 );
 ```
 
@@ -105,10 +105,10 @@ designate an active encryption key.
 
 ```typescript
 await setActiveEncryptionKey(
-    client,
-    keypair,
-    pubKeyRef?.objectId!,
-    activeEncryptionKeysTableID,
+  client,
+  keypair,
+  pubKeyRef?.objectId!,
+  activeEncryptionKeysTableID,
 );
 ```
 

@@ -43,16 +43,16 @@ On the *sender* side, we need the public key of the target account.
 This is how we perform the transfer.
 
 ```typescript
-import {serialized_pubkeys_from_decentralized_dkg_output} from '@dwallet-network/signature-mpc-wasm';
+import { serialized_pubkeys_from_decentralized_dkg_output } from '@dwallet-network/signature-mpc-wasm';
 import {
-    getEncryptedUserShareByObjectID,
-    sendUserShareToSuiPubKey,
+  getEncryptedUserShareByObjectID,
+  sendUserShareToSuiPubKey,
 } from '@dwallet-network/dwallet.js/signature-mpc';
 
 // Get your encrypted user secret share.
 const encryptedSecretShare = await getEncryptedUserShareByObjectID(
-    client,
-    createdDwallet?.encryptedSecretShareObjID!,
+  client,
+  createdDwallet?.encryptedSecretShareObjID!,
 );
 
 // Verify you signed the dkg output public keys before using it to send the user share.
@@ -60,13 +60,13 @@ let signedDWalletPubKeys = new Uint8Array(encryptedSecretShare?.signedDWalletPub
 console.log("signedDWalletPubKeys ", signedDWalletPubKeys);
 
 const res = await keypair
-    .getPublicKey()
-    .verify(
-        serialized_pubkeys_from_decentralized_dkg_output(
-            new Uint8Array(createdDwallet?.decentralizedDKGOutput!),
-        ),
-        signedDWalletPubKeys,
-    );
+  .getPublicKey()
+  .verify(
+    serialized_pubkeys_from_decentralized_dkg_output(
+      new Uint8Array(createdDwallet?.decentralizedDKGOutput!),
+    ),
+    signedDWalletPubKeys,
+  );
 console.assert(res, "Failed to verify the signed dkg output public keys");
 
 // This is sent to you off-chain by the receiver.
@@ -76,12 +76,12 @@ const otherKeypair = new Ed25519Keypair();
 
 // Send the user secret share to a target address
 const objRef = await sendUserShareToSuiPubKey(
-    client,
-    keypair,
-    createdDwallet!,
-    otherKeypair.getPublicKey(), 
-    activeEncryptionKeysTableID,
-    signedDWalletPubKeys,
+  client,
+  keypair,
+  createdDwallet!,
+  otherKeypair.getPublicKey(),
+  activeEncryptionKeysTableID,
+  signedDWalletPubKeys,
 );
 ```
 
@@ -89,7 +89,7 @@ Now, you transfer off-chain the `objectId` of the `objRef` to the receiver.
 Also, the receiver needs the address of the sender.
 
 ```typescript
-import {createDWallet} from "@dwallet-network/dwallet.js/signature-mpc";
+import { createDWallet } from "@dwallet-network/dwallet.js/signature-mpc";
 
 let encryptedUserShareObjID = objRef?.objectId;
 let senderAddress = keypair.toSuiAddress();
@@ -104,31 +104,31 @@ It’s important to note that the `client` and `keypair` parameters in this cont
 from those used by the sender.
 
 ```typescript
-import {getEncryptedUserShareByObjID} from "@dwallet-network/dwallet.js/signature-mpc";
+import { getEncryptedUserShareByObjID } from "@dwallet-network/dwallet.js/signature-mpc";
 
 // Get the parameters from the sender.
 const {
-    encryptedUserShareObjID,
-    senderAddress,
-    dwalletID,
-    // This is not a real function, you have to implement it yourself.
+  encryptedUserShareObjID,
+  senderAddress,
+  dwalletID,
+  // This is not a real function, you have to implement it yourself.
 } = ReceiveParametersOffChain();
 
 // Get the new Encrypted User Share object ID.
 let encryptedUserShare = await getEncryptedUserShareByObjID(
-    client,
-    encryptedUserShareObjID!,
+  client,
+  encryptedUserShareObjID!,
 );
 
 // Approve acceptance of the User Secret Share.
 const result = await acceptUserShare(
-    encryptedUserShare!,
-    senderAddress,
-    receiverEncryptionKeyObj,
-    dwalletID,
-    activeEncryptionKeysTableID,
-    client,
-    keypair,
+  encryptedUserShare!,
+  senderAddress,
+  receiverEncryptionKeyObj,
+  dwalletID,
+  activeEncryptionKeysTableID,
+  client,
+  keypair,
 );
 
 console.assert(result, 'Failed to accept user share: Result is not truthy.');

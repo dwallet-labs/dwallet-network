@@ -3,25 +3,50 @@ title: Get DWLT Address
 description: You need an address on the dWallet network before you can start testing dWallets, hold DWLT tokens, or perform transactions.
 ---
 
-An address is a way to uniquely and anonymously identify an account that exists on the dWallet blockchain network. In other words, an address is a way for a user to store and use tokens on the dWallet network, without providing any personally identifying information (such as email address, phone number, and so on). For example, if you want to have a number of DWLT tokens to create dWallets and use them to sign, you must specify an address where these tokens are to be charged.
+## Overview
 
-The DWLT address is unique, similarly to the way a social security number or a personal identification number is unique to one person. However, in the dWallet Network you can create and own multiple addresses, all of which are unique.
+Before you can start testing dWallets, hold **DWLT** tokens, or perform transactions on the dWallet network,
+you need to have a **DWLT** address.
 
-In the dWallet Network, an address is 32 bytes and is often encoded in base58 with `0x` prefix. For example, this is a valid dWallet address: `0x02a212de6a9dfa3a69e22387acfbafbb1a9e591bd9d636e7895dcfc8de05f331`.
+An address uniquely and anonymously identifies an account on the dWallet blockchain network.
+It allows a user to store and use tokens on the dWallet network without providing any personally identifiable
+information
+(such as an email address or phone number). For example, if you want to receive DWLT tokens to create dWallets and sign
+transactions, you must specify an address where these tokens will be sent.
 
-## How to obtain a DWLT address
+A DWLT address is unique, much like a social security number or personal identification number is unique to an
+individual. However, on the dWallet Network, you can create and own multiple unique addresses.
 
-### Command line interface
+In the dWallet Network, an address is 32 bytes long and is typically encoded in base58 with a `0x` prefix. For example,
+this is a valid dWallet address: `0x02a212de6a9dfa3a69e22387acfbafbb1a9e591bd9d636e7895dcfc8de05f331`.
 
-If you are using the dWallet command line interface (CLI) to interact with the dWallet Network, you can use the `dwallet client` command to generate a new address. By default, when the dWallet CLI runs for the first time it will prompt you to set up your local wallet, and then it generates one DWLT address and the associated secret recovery phrase. Make sure you write down the secret recovery phrase and store it in a safe place.
+## How to Obtain a DWLT Address
 
+### Command Line Interface
 
-To generate a new Sui address use `dwallet client new-address ed25519`, which specifies the keypair scheme flag to be of type `ed25519`.
+If you are using the dWallet Command Line Interface (CLI) to interact with the dWallet Network, you can generate a new
+address using the dwallet client command.By default, when you run the dWallet CLI for the first time, it will prompt
+you to set up your local wallet and automatically generate one DWLT address along with the associated secret recovery
+phrase. Make sure to write down and securely store the secret recovery phrase.
 
-To see all the generated addresses in the local wallet on your machine, run `dwallet keytool list`.
+To generate a new DWLT address, use the following command:
+
+```shell
+dwallet client new-address ed25519
+```
+
+This command specifies the keypair scheme as `ed25519`.
+
+To view all the generated addresses stored in your local wallet, run the following command:
+
+```shell
+dwallet keytool list
+```
 
 :::danger
 
-The private keys associated with the DWLT addresses are stored locally on the machine where the CLI is installed, in the `~/.dwallet/dwallet_config/dwallet.keystore` file. Make sure you do not expose this to anyone, as they can use it to get access to your account.
+The private keys associated with your DWLT addresses are stored locally on the machine where the CLI is installed, in
+the `~/.dwallet/dwallet_config/dwallet.keystore` file.Ensure that this file is not exposed to anyone, as access to this
+file could allow unauthorized control of your account.
 
 :::

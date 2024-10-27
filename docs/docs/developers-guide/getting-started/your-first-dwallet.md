@@ -150,7 +150,7 @@ const sigSHA256 = await approveAndSign(
     dkg?.dwalletCapID!,
     signMessagesIdSHA256!,
     [bytes],
-    dkg?.dwalletID!,
+  dkg?.dwalletID!,
     'SHA256',
     keypair,
     client

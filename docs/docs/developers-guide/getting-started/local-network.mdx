@@ -1,22 +1,26 @@
 
 # Connect to a Local Network
-If you haven't already, you need to [install dWallet](./install-dwallet.mdx) on your system.
+If you haven't already done so, [install dWallet](./install-dwallet.mdx) on your system.
 
-## Start the local network
+## Start the Local Network
 
-To start the local network, run the following command from your `dwallet-network` root folder (the one you cloned in [dWallet Enviornment Setup](./dwallet-network-environment.mdx))
+To start the local network, run the following command from the root folder of your dwallet-network repository
+(the one you cloned during the [dWallet Enviornment Setup](./dwallet-network-environment.mdx)):
 
 ```bash
 RUST_MIN_STACK=16777216 RUST_LOG="off,sui_node=info" cargo run --bin sui-test-validator
 ```
 
-The command starts the `sui-test-validator`. The `RUST_MIN_STACK`=`16777216` gives enough resources to install and run a node. The `RUST_LOG`=`off,sui_node=info` turns off logging for all components except
-sui-node. If you want to see more detailed logs, you can remove `RUST_LOG` from the command.
+This command starts the `sui-test-validator`.
+The `RUST_MIN_STACK=16777216` ensures enough resources are allocated to install and run the node.
+The `RUST_LOG="off,sui_node=info"` turns off logging for all components except for the sui-node.
+If you want to see more detailed logs, you can remove `RUST_LOG` from the command.
 
-**Important:** Each time you start the `sui-test-validator`, the network starts as a new network with no previous data. The local network is not persistent.
+**Important:** Every time you start the `sui-test-validator`, it initializes a new network with no previous data.
+The local network is not persistent.
 
-To customize your local dWallet network, such as changing the port used, include additional parameters in the command to start `sui-test-validator`:
-
+To customize your local dWallet network, such as changing the port,
+you can include additional parameters in the `sui-test-validator` command:
 ```
 OPTIONS:
         --epoch-duration-ms <EPOCH_DURATION_MS>
@@ -27,9 +31,9 @@ OPTIONS:
             Port to start the Fullnode RPC server on [default: 9000]
 ```
 
-Use `sui-test-validator --help` to see these options in your console.
+To see all available options, run `sui-test-validator --help` in your console.
 
-### Access your local Full node
+### Access Your Local Full Node
 
 Use the following command to retrieve the total transaction count from your local network:
 
@@ -44,7 +48,7 @@ curl --location --request POST 'http://127.0.0.1:9000' \
 }'
 ```
 
-If successful, the response resembles the following:
+If successful, you will see a response like the following:
 
 ```json
 {
@@ -54,55 +58,62 @@ If successful, the response resembles the following:
 }
 ```
 
-## Connect the dWallet Client CLI to your local network
+## Connect the dWallet Client CLI to Your Local Network
 
-You can use the dWallet Client CLI with the dWallet testnet. To connect to your local network, create a new environment alias named `local` that sets the RPC URL the client uses to your local network.
-
+You can connect the dWallet Client CLI to your local network by creating a new environment alias named `local`
+and setting the RPC URL to your local network.
 ```shell
 dwallet client new-env --alias local --rpc http://127.0.0.1:9000
 ```
 
-Next, use the following command to set the active environment to the new `local` environment you created.
+Next, use the following command to switch to the new `local` environment:
 
 ```
 dwallet client switch --env local
 ```
 
-The command returns:
+The command will return:
 
 `Active environment switched to [local]`
 
-You can check the current active environment with the following command:
+To verify the current active environment, run:
 
 ```bash
 dwallet client active-env
 ```
 
-The command returns:
+The command will return:
 
 `local`
 
-## Show the current active address
+## Show the Current Active Address
 
-The dWallet Client CLI uses the active address for command if you don't specify one. Use the following command to show the active address on your local network.
+The dWallet Client CLI uses the active address for commands unless you specify a different one.
+To view the active address for your local network, run:
 
 ```
 dwallet client active-address
 ```
 
-The command returns an address:
+The command will return an address similar to:
 
 `0xbc33e6e4818f9f2ef77d020b35c24be738213e64d9e58839ee7b4222029610de`
 
-Use the active address to get test DWLT to use on your local network. Use the `dwallet client addresses` command to see all of the addresses on your local network.
+You can use this active address to request test DWLT tokens for use on your local network.
+To see all addresses in your local wallet, run:
+```shell
+dwallet client addresses
+```
+**Note:** The address returned by the command is unique and will not match the example above.
 
-**Note:** The address returned when you run the command is unique and does not match the one used in this example.
+## Use the Local Faucet {#use-the-local-faucet}
 
-## Use the local faucet {#use-the-local-faucet}
+Transactions on your local network require DWLT tokens to pay for gas fees, just like other networks.
+To send tokens to an account on your local dWallet network, use the address from the
+[Set up a local dWallet Network account](#show-the-current-active-address) section.
+You can use this address with the local faucet.
 
-Transactions on your local network require DWLT coins to pay for gas fees just like other networks. To send coins to a dWallet Network account connected to your local network, see [Set up a local dWallet Network account](#show-the-current-active-address). You can use the address for the local dWallet Network account with the faucet.
-
-Use the following cURL command to get test coins from the local faucet.
+To request test coins from the local faucet, run the following cURL command:
 
 ```bash
 curl --location --request POST 'http://127.0.0.1:9123/gas' \
@@ -114,7 +125,7 @@ curl --location --request POST 'http://127.0.0.1:9123/gas' \
 }'
 ```
 
-If successful, the response resembles the following:
+If successful, the response will resemble:
 
 ```json
 {
@@ -149,15 +160,15 @@ If successful, the response resembles the following:
 }
 ```
 
-### Check the gas coin objects for the active address
+### Check Gas Coin Objects for the Active Address
 
-After you get coins from the faucet, use the following command to view the coin objects for the address:
-
+After requesting coins from the faucet,
+you can view the coin objects associated with your address using the following command:
 ```shell
 dwallet client gas
 ```
 
-The response resembles the following, but with different IDs:
+The response will resemble the following, but with different IDs:
 
 ```shell
 ╭────────────────────────────────────────────────────────────────────┬────────────╮
@@ -171,19 +182,22 @@ The response resembles the following, but with different IDs:
 ╰────────────────────────────────────────────────────────────────────┴────────────╯
 ```
 
-### Set up dWallet Network Explorer on your local network
+### Set Up dWallet Network Explorer on Your Local Network
 
-To connect the live dWallet Network Explorer to your local network, open the URL: [http://explorer.alpha.testnet.dwallet.cloud/](http://explorer.alpha.testnet.dwallet.cloud/). The live version of dWallet Network Explorer may not include recent updates added to the `main` branch of the dWallet Network repo. To use dWallet Network Explorer that includes the most recent updates, install and run dWallet Network Explorer from your local clone of the dWallet Network repo.
+To connect the live dWallet Network Explorer to your local network, open the following URL:
+http://explorer.alpha.testnet.dwallet.cloud/.
 
-Run the following command from the `dwallet-network` root folder:
+For the most recent updates to the dWallet Network Explorer,
+install and run it from your local clone of the dWallet Network repository.
 
-**Note:** To run the command you have `pnpm` installed.
+To run the explorer, ensure that you have `pnpm` installed.
+Then, run the following commands from the root folder of `dwallet-network`:
 
 ```bash
 pnpm install
 pnpm explorer dev
 ```
 
-After the command completes, open your local dWallet Network Explorer at the following URL: [http://localhost:3000/](http://localhost:3000/).
+Once the command completes, open your local dWallet Network Explorer at http://localhost:3000/.
 
-For more details about dWallet Network Explorer, see the [Explorer README](https://github.com/dwallet-labs/dwallet-network/blob/main/apps/explorer/README.md#set-up).
+For more details, see the [Explorer README](https://github.com/dwallet-labs/dwallet-network/blob/main/apps/explorer/README.md#set-up).

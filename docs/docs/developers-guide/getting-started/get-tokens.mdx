@@ -2,25 +2,26 @@
 title: Get DWLT Tokens
 ---
 
-dWallet faucet is a helpful tool where dWallet developers can get free test DWLT tokens to deploy and interact with their programs on dWallet's Testnet.
-
+The dWallet faucet is a useful tool for developers to get free test DWLT tokens,
+allowing them to deploy and interact with their programs on dWallet's Testnet.
 ## Prerequisites
 
-To request tokens from the faucet, you must own a DWLT Address that can receive the DWLT tokens.
+To request tokens from the faucet, you need a DWLT address that can receive the tokens.
 
 ## Find your DWLT Address
-You can see it running the following command:
-```
+To find your DWLT address, run the following command:
+
+```shell
 dwallet client active-address
 ```
 
-You can also [create a new DWLT Address](./get-address).
+If you need to create a new DWLT address, follow the steps in [create a new DWLT Address](./get-address).
 
-## Request test tokens through cURL
+## Request Test Tokens via cURL
 
-Use the following cURL command to request tokens directly from the faucet server:
+Use the following cURL command to request tokens from the faucet server:
 
-```
+```shell
 curl --location --request POST 'http://faucet.alpha.testnet.dwallet.cloud/gas' \
 --header 'Content-Type: application/json' \
 --data-raw '{
@@ -30,11 +31,12 @@ curl --location --request POST 'http://faucet.alpha.testnet.dwallet.cloud/gas' \
 }'
 ```
 
-If you're working with a local network, replace `'http://faucet.alpha.testnet.dwallet.cloud/gas'` with `'http://127.0.0.1:9123/gas'`.
+If you are working with a local network,
+replace `http://faucet.alpha.testnet.dwallet.cloud/gas` with `http://127.0.0.1:9123/gas`.
 
-## Request test tokens through TypeScript SDK
+## Request Test Tokens via TypeScript SDK
 
-You can also access the faucet using the Sui TypeScript-SDK.
+You can also request tokens using the dWallet TypeScript SDK.
 
 ```typescript
 import { requestSuiFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
@@ -49,8 +51,10 @@ const response = await requestSuiFromFaucetV0({
 console.log(response);
 ```
 
-If you're working with a local network, replace `'http://faucet.alpha.testnet.dwallet.cloud/gas'` with `'http://127.0.0.1:9123/gas'`.
+If you are working with a local network,
+replace `'http://faucet.alpha.testnet.dwallet.cloud/gas'` with `'http://127.0.0.1:9123/gas'`.
 
 ## Test tokens on a local network
 
-If you are running a local dWallet network, you can get tokens from your local faucet. See the [Connect to a Local Network](./local-network.mdx#use-the-local-faucet) topic for details.
+If you are running a local dWallet network, you can request tokens from your local faucet. For more details,
+refer to the [Connect to a Local Network](./local-network.mdx#use-the-local-faucet) guide.
