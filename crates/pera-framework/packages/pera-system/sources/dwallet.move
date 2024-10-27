@@ -54,6 +54,19 @@ module pera_system::dwallet {
             sender: address,
         }
 
+    /// `DWalletCap` holder controls a corresponding `Dwallet`.
+    struct DWalletCap has key, store {
+        id: UID,
+    }
+
+    /// Create a new `DWalletCap`
+    /// The holder of this capability owns the `DWallet`.
+    public(friend) fun create_dwallet_cap(ctx: &mut TxContext): DWalletCap {
+        DWalletCap {
+            id: object::new(ctx),
+        }
+    }
+
     /// Function to launch proof MPC flow.
     public fun launch_initiate_dkg_session(ctx: &mut TxContext) {
         let session_data = InitiateDKGSessionData {
