@@ -32,10 +32,11 @@ const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
 export async function startFirstDKGSession(keypair: Keypair, client: PeraClient) {
 	const tx = new Transaction();
-	tx.moveCall({
+	const [cap] = tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::start_first_dkg_session`,
 		arguments: [],
 	});
+	tx.transferObjects([cap], keypair.toPeraAddress());
 
 	const result = await client.signAndExecuteTransaction({
 		signer: keypair,
@@ -49,7 +50,7 @@ export async function startFirstDKGSession(keypair: Keypair, client: PeraClient)
 	await new Promise((resolve) => setTimeout(resolve, 5000));
 	let firstRoundOutputObject = await fetchObjectBySessionId(
 		sessionRef.objectId,
-		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedFirstDKGRoundData`,
+		`${packageId}::${dwalletModuleName}::CompletedFirstDKGRoundData`,
 		keypair,
 		client,
 	);
