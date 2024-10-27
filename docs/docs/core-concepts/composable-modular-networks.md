@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # Composable Modularity
 
 ## Blockchain Modularity
@@ -15,7 +11,7 @@ layers, each dedicated to a specific function. This separation allows for enhanc
 adaptability, enabling more efficient processing and optimization for each network's specific role.
 
 The modular approach is exemplified by the development of Ethereum L2 solutions such as optimistic rollups (e.g.,
-Arbitrum and Optimism) and ZK rollups (e.g. Starknet and zkSync), which focus on transaction processing and smart
+Arbitrum and Optimism) and ZK rollups (e.g., Starknet and zkSync), which focus on transaction processing and smart
 contract execution, thereby improving efficiency and reducing costs, and data availability layers such as Celestia or
 Avail.
 
@@ -36,10 +32,10 @@ required for public blockchains' real-world adoption.
 ## A Composable Modular Signature Network
 
 The dWallet Network stands at the forefront of composable modularity as the first composable modular signature network.
-It introduces the dWallet primitive, a noncollusive and massively decentralized signing mechanism powered by 2PC-MPC,
+It introduces the dWallet primitive, a non-collusive and massively decentralized signing mechanism powered by 2PC-MPC,
 that can be used as a building block by builders on other networks.
 
 The dWallet Network facilitates a wide range of use cases, including decentralized custody, interoperable DeFi, and
-universal "restaking," and with [state proofs](state-proofs.md), its composable modularity allows builders on any L1 or
+universal "restaking" and with [state proofs](state-proofs.md), its composable modularity allows builders on any L1 or
 L2 network to build those use cases on those networks, managing assets and logic across Web3 through light clients,
 paving the way for a more secure and interoperable blockchain ecosystem.

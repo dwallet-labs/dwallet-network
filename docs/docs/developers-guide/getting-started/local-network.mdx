@@ -1,11 +1,11 @@
-
 # Connect to a Local Network
+
 If you haven't already done so, [install dWallet](./install-dwallet.mdx) on your system.
 
 ## Start the Local Network
 
 To start the local network, run the following command from the root folder of your dwallet-network repository
-(the one you cloned during the [dWallet Enviornment Setup](./dwallet-network-environment.mdx)):
+(the one you cloned during the [dWallet Environment Setup](./dwallet-network-environment.mdx)):
 
 ```bash
 RUST_MIN_STACK=16777216 RUST_LOG="off,sui_node=info" cargo run --bin sui-test-validator
@@ -62,6 +62,7 @@ If successful, you will see a response like the following:
 
 You can connect the dWallet Client CLI to your local network by creating a new environment alias named `local`
 and setting the RPC URL to your local network.
+
 ```shell
 dwallet client new-env --alias local --rpc http://127.0.0.1:9000
 ```
@@ -91,7 +92,7 @@ The command will return:
 The dWallet Client CLI uses the active address for commands unless you specify a different one.
 To view the active address for your local network, run:
 
-```
+```bash
 dwallet client active-address
 ```
 
@@ -101,28 +102,28 @@ The command will return an address similar to:
 
 You can use this active address to request test DWLT tokens for use on your local network.
 To see all addresses in your local wallet, run:
-```shell
+```bash
 dwallet client addresses
 ```
 **Note:** The address returned by the command is unique and will not match the example above.
 
 ## Use the Local Faucet {#use-the-local-faucet}
 
-Transactions on your local network require DWLT tokens to pay for gas fees, just like other networks.
+Transactions on your local network require `DWLT` tokens to pay for gas fees, just like other networks.
 To send tokens to an account on your local dWallet network, use the address from the
-[Set up a local dWallet Network account](#show-the-current-active-address) section.
+[Setup a local dWallet Network account](#show-the-current-active-address) section.
 You can use this address with the local faucet.
 
-To request test coins from the local faucet, run the following cURL command:
+To request test `DWLT` coins from the local faucet, run the following cURL command:
 
 ```bash
-curl --location --request POST 'http://127.0.0.1:9123/gas' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "FixedAmountRequest": {
-        "recipient": "<YOUR-ACTIVE-ADDRESS>"
-    }
-}'
+curl -X POST --location "http://127.0.0.01:9123/gas" \
+    -H "Content-Type: application/json" \
+    -d '{
+          "FixedAmountRequest": {
+            "recipient": "<YOUR-ACTIVE-ADDRESS>"
+          }
+        }'
 ```
 
 If successful, the response will resemble:
@@ -164,13 +165,14 @@ If successful, the response will resemble:
 
 After requesting coins from the faucet,
 you can view the coin objects associated with your address using the following command:
+
 ```shell
 dwallet client gas
 ```
 
 The response will resemble the following, but with different IDs:
 
-```shell
+```
 ╭────────────────────────────────────────────────────────────────────┬────────────╮
 │ gasCoinId                                                          │ gasBalance │
 ├────────────────────────────────────────────────────────────────────┼────────────┤
@@ -183,12 +185,6 @@ The response will resemble the following, but with different IDs:
 ```
 
 ### Set Up dWallet Network Explorer on Your Local Network
-
-To connect the live dWallet Network Explorer to your local network, open the following URL:
-http://explorer.alpha.testnet.dwallet.cloud/.
-
-For the most recent updates to the dWallet Network Explorer,
-install and run it from your local clone of the dWallet Network repository.
 
 To run the explorer, ensure that you have `pnpm` installed.
 Then, run the following commands from the root folder of `dwallet-network`:

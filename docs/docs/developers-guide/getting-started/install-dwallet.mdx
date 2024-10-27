@@ -1,9 +1,6 @@
----
-sidebar_position: 1
----
-
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Admonition from '@theme/Admonition';
 
 # Install dWallet
 
@@ -13,37 +10,41 @@ Your system needs the following prerequisites to successfully install dWallet.
 
 ### Rust and Cargo {#rust-and-cargo}
 
-dWallet requires **Rust** and **Cargo** (Rust's package manager) on all supported operating systems.
-The recommended method to install Rust is with `rustup` using cURL.
+dWallet requires `Rust` and `Cargo` (Rust's package manager) on all supported operating systems.
+The recommended method to install Rust is with `rustup` using `cURL`.
 
-Some commands in the installation instructions also require cURL.If you can't run the cURL command to install Rust,
-see the instructions to install cURL for your operating system in the following section before proceeding.
+Some commands in the installation instructions also require `cURL`.
+If you can't run the `cURL` command to install Rust,
+see the instructions to install `cURL` for your operating system in the following section before proceeding.
 
-To install Rust and Cargo on macOS or Linux, run the following command:
+Use the following command to install `Rust` and `Cargo` on macOS or Linux:
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-If you use Windows 11,refer to the [Rust installer](https://www.rust-lang.org/tools/install) on the Rust website.
+If you use Windows 11, refer to the [Rust installer](https://www.rust-lang.org/tools/install) on the Rust website.
 The installer checks for C++ build tools and prompts you to install them if needed.
 Select the appropriate option for your environment and follow the installation wizard instructions.
 
 For additional installation options, see [Install Rust](https://www.rust-lang.org/tools/install).
 
-dWallet uses the latest version of Cargo to manage dependencies and build the project.
-For more details, see the [Cargo installation](https://doc.rust-lang.org/cargo/getting-started/installation.html) page.
+dWallet uses the latest version of `Cargo` to manage dependencies and build the project.
+For more details,
+see the [Cargo installation](https://doc.rust-lang.org/cargo/getting-started/installation.html) page.
 
-Use the following command to update Rust with `rustup`:
+Use the following command to update `Rust` with `rustup`:
 
 ```bash
 rustup update stable
 ```
+
 ### Additional prerequisites by operating system
 
 Select the appropriate tab to view the requirements for your system.
 
 <Tabs groupId="operating-systems">
+
   <TabItem value="linux" label="Linux">
 
     The prerequisites needed for the Linux operating system include:
@@ -57,42 +58,40 @@ Select the appropriate tab to view the requirements for your system.
     - [libpq-dev](#libpq-dev)
     - [build-essential](#build-essential)
 
-    :::info
+    <Admonition type="info">
 
-    The following instructions assume you are using a Linux distribution with the APT package manager.
-    You may need to adjust the commands for other package managers.
+      The Linux instructions assume a distribution that uses the APT package manager. You might need to adjust the
+      instructions to use other package managers.
 
-    :::
-
-    To install all the prerequisites at once, run the following command:
-
-    ```bash
-    sudo apt-get update
-    sudo apt-get install curl git-all cmake gcc libssl-dev libclang-dev libpq-dev build-essential
-    ```
+    </Admonition>
 
     #### All Linux prerequisites
 
     Reference the relevant sections that follow to install each prerequisite individually, or run the following to
     install them all at once:
 
+    ```bash
+    sudo apt-get update
+    sudo apt-get install curl git-all cmake gcc libssl-dev libclang-dev libpq-dev build-essential
+    ```
 
-    #### cURL \{#curl\}
+    #### cURL
 
     Install cURL with the following command:
 
     ```bash
     sudo apt-get install curl
     ```
+
     Verify that cURL installed correctly with the following command:
 
     ```bash
     curl --version
     ```
 
-    #### Git CLI \{#git - cli\}
+    #### Git CLI
 
-    Install Git and the [Git CLI](https://cli.github.com/):
+    Run the following command to install Git:
 
     ```bash
     sudo apt-get install git-all
@@ -101,7 +100,7 @@ Select the appropriate tab to view the requirements for your system.
     For more information, see [Install Git on Linux](https://github.com/git-guides/install-git#install-git-on-linux) on
     the GitHub website.
 
-    #### CMake \{#cmake\}
+    #### CMake
 
     Use the following command to install CMake.
 
@@ -111,34 +110,34 @@ Select the appropriate tab to view the requirements for your system.
 
     To customize the installation, see [Installing CMake](https://cmake.org/install/) on the CMake website.
 
-    #### GCC \{#gcc\}
+    #### GCC
 
-    Install the GNU Compiler Collection `gcc`:
+    Use the following command to install the GNU Compiler Collection, `gcc`:
 
     ```bash
     sudo apt-get install gcc
     ```
 
-    #### libssl-dev \{#libssl-dev\}
+    #### libssl-dev
 
-    Install `libssl-dev`:
+    Use the following command to install `libssl-dev`:
 
     ```bash
     sudo apt-get install libssl-dev
     ```
 
-    If `libssl-dev` is not available for your distribution,
-    find an equivalent package on the [ROS Index](https://index.ros.org/d/libssl-dev/).
+    If the version of Linux you use doesn't support `libssl-dev`, find an equivalent package for it on the [ROS
+    Index](https://index.ros.org/d/libssl-dev/).
 
-    (Optionally) Install `pkg-config` for OpenSSL:
+    (Optional) If you have OpenSSL you might also need to also install `pkg-config`:
 
     ```bash
     sudo apt-get install pkg-config
     ```
 
-    #### libclang-dev \{#libclang-dev\}
+    #### libclang-dev
 
-    Install `libclang-dev`:
+    Use the following command to install `libclang-dev`:
 
     ```bash
     sudo apt-get install libclang-dev
@@ -147,9 +146,9 @@ Select the appropriate tab to view the requirements for your system.
     If the version of Linux you use doesn't support `libclang-dev`, find an equivalent package for it on the [ROS
     Index](https://index.ros.org/d/libclang-dev/).
 
-    #### libpq-dev \{#libpq-dev\}
+    #### libpq-dev
 
-    Install `libpq-dev`:
+    Use the following command to install `libpq-dev`:
 
     ```bash
     sudo apt-get install libpq-dev
@@ -158,9 +157,9 @@ Select the appropriate tab to view the requirements for your system.
     If the version of Linux you use doesn't support `libpq-dev`, find an equivalent package for it on the [ROS
     Index](https://index.ros.org/d/libpq-dev/).
 
-    #### build-essential \{#build-essential}
+    #### build-essential
 
-    Install `build-essential`:
+    Use the following command to install `build-essential`:
 
     ```bash
     sudo apt-get install build-essential
@@ -172,36 +171,29 @@ Select the appropriate tab to view the requirements for your system.
 
     The prerequisites needed for the macOS operating system include:
 
-    - [Homebrew](#brew)
+    - [Homebrew](#homebrew)
     - [cURL](#curl-1)
     - [CMake](#cmake-1)
-    - [libpq](#libpq-1)
+    - [libpq](#libpq)
     - [Git CLI](#git-cli-1)
 
-    macOS includes a version of cURL that can be used to install Homebrew.
+    macOS includes a version of cURL you can use to install Homebrew.
     Use Homebrew to install other tools, including a newer version of cURL.
 
-    #### Homebrew \{#brew\}
+    #### Homebrew
 
-    Install [Homebrew](https://brew.sh/) using the following command:
+    Use the following command to install [Homebrew](https://brew.sh/):
 
     ```bash
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     ```
-
-    :::info
-
-    If you have already installed Homebrew, you don't need to install anything else.
-
-    :::
 
     #### All macOS prerequisites
 
     With Homebrew installed, you can install individual prerequisites from the following sections or install them all at
     once with this command:
 
-
-    #### cURL \{#curl-1\}
+    #### cURL
 
     Use the following command to update the default [cURL](https://curl.se) on macOS:
 
@@ -209,7 +201,7 @@ Select the appropriate tab to view the requirements for your system.
     brew install curl
     ```
 
-    #### CMake \{#cmake-1\}
+    #### CMake
 
     Use the following command to install CMake:
 
@@ -219,21 +211,21 @@ Select the appropriate tab to view the requirements for your system.
 
     To customize the installation, see [Installing CMake](https://cmake.org/install/) on the CMake website.
 
-    #### libpq \{#libpq-1\}
+    #### libpq
+
     Use the following command to install libpq:
+
     ```bash
     brew install libpq
     ```
 
-    #### Git CLI \{#git-cli-1\}
+    #### Git CLI
 
     Use the following command to install Git:
 
     ```bash
     brew install git
     ```
-
-    After installing Git, download and install the [Git command line interface](https://git-scm.com/download/).
 
   </TabItem>
 
@@ -245,49 +237,48 @@ Select the appropriate tab to view the requirements for your system.
     - [Git CLI](#git-cli-2)
     - [CMake](#cmake-2)
     - [Protocol Buffers](#protocol-buffers)
-    - [C++ build tools](#additional-tools-windows)
-    - [LLVM compiler](#additional-tools-windows)
+    - [C++ build tools](#additional-tools-for-windows)
+    - [LLVM compiler](#additional-tools-for-windows)
 
-    #### cURL \{#curl-2\}
+    #### cURL
 
     Windows 11 comes with a Microsoft version of [cURL](https://curl.se/windows/microsoft.html)
     If you prefer the cURL project version, download it from [https://curl.se/windows/](https://curl.se/windows/).
 
-    #### Git CLI \{#git-cli-2\}
+    #### Git CLI
 
     Download and install the [Git command line interface](https://git-scm.com/download/).
 
-    #### CMake \{#cmake-2\}
+    #### CMake
 
     Download and install [CMake](https://cmake.org/download/) from the CMake website.
 
-    #### Protocol Buffers \{#protocol-buffers\}
+    #### Protocol Buffers
 
     Download [Protocol Buffers](https://github.com/protocolbuffers/protobuf/releases) (protoc-xx.x-win32.zip or
     protoc-xx.x-win64.zip) and add the \bin directory to your Windows PATH environment variable.
 
-    #### Additional tools for Windows \{#additional-tools-windows\}
+    #### Additional tools for Windows
 
-    dWallet requires the following additional tools on computers running Windows.
+    dWallet requires the following additional tools on computers running Windows:
 
-    - For Windows on ARM64 only - [Visual Studio 2022 Preview](https://visualstudio.microsoft.com/vs/preview/).
+    - For Windows on ARM64 only — [Visual Studio 2022 Preview](https://visualstudio.microsoft.com/vs/preview/).
     - [C++ build tools](https://visualstudio.microsoft.com/downloads/) is required to [install Rust](#rust-and-cargo).
     - The [LLVM Compiler Infrastructure](https://releases.llvm.org/). Look for a file with a name similar to
     LLVM-15.0.7-win64.exe for 64-bit Windows, or LLVM-15.0.7-win32.exe for 32-bit Windows.
 
-    **Known issue** - The `dwallet console` command does not work in PowerShell.
+    **Known issue** — The `dwallet console` command does not work in PowerShell.
 
   </TabItem>
 
 </Tabs>
-
 
 ## Install dWallet binaries from source {#install-dwallet-binaries-from-source}
 
 To install dWallet binaries, run the following command:
 
 ```shell
-cargo install --locked --git https://github.com/dwallet-labs/dwallet-network.git --branch sign-ia-wasm sui
+cargo install --locked --git https://github.com/dwallet-labs/dwallet-network.git --branch sign-ia-wasm dwallet
 ```
 
 The installation process may take some time. You can monitor the progress in your terminal.
@@ -299,12 +290,13 @@ To update to the latest stable version of Rust:
 rustup update stable
 ```
 
-The dWallet components will be installed in the `~/.cargo/bin` folder.
+The command installs dWallet components in the `~/.cargo/bin` folder.
 
 ## Upgrade dWallet binaries
 
-To update dWallet binaries to the latest release, use the same command you used to install them:
+If you previously installed the dWallet binaries,
+you can update them to the most recent release with the same command you used to install them:
 
 ```shell
-cargo install --locked --git https://github.com/dwallet-labs/dwallet-network.git --branch sign-ia-wasm sui
+cargo install --locked --git https://github.com/dwallet-labs/dwallet-network.git --branch sign-ia-wasm dwallet
 ```

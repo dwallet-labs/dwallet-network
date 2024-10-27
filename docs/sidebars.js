@@ -60,7 +60,7 @@ const sidebars = {
             },
             {
               type: 'doc',
-              label: 'Get DWLT Address',
+              label: 'Get a dWallet Network Address',
               id: 'developers-guide/getting-started/get-address',
             },
             {

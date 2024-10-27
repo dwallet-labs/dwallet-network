@@ -1,22 +1,21 @@
 # Connect to a dWallet Network
-You can use our test network to experiment with the current version of dWallet running on that network.
-Alternatively, you can spin up a local dWallet network for [local dWallet network](./local-network.mdx) for local development.
 
-You can request test DWLT tokens through your [local faucet](./local-network.mdx#use-the-local-faucet).
-These tokens have no financial value. Please note that there is no faucet service for Mainnet.
+You can use our [test network](../../alpha-testnet.md)
+to experiment with the current version of dWallet running on that network.
+Alternatively,
+you can spin up a local dWallet network for [local dWallet network](./local-network.mdx) for local development.
 
 ## Tools
 
 You can use the following tools to interact with dWallet networks:
 
  * dWallet command line interface (CLI)
- * [dWallet Network Explorer](https://github.com/dwallet-labs/dwallet-network/blob/main/apps/explorer/README.md#sui-explorer) to view transactions and objects on the network
+ * [dWallet Network Explorer](https://github.com/dwallet-labs/dwallet-network/blob/main/apps/explorer/README.md#sui-explorer)
+to view transactions and objects on the network.
 
 ## Environment setup
 
 First, [Install dWallet](./install-dwallet.mdx#install-dwallet-binaries-from-source).
-After installation, request DWLT test tokens by using cURL to request tokens from your [local faucet](./local-network.mdx#use-the-local-faucet).
-
 To check if dWallet is already installed, run the following command:
 
 ```shell
@@ -26,6 +25,25 @@ which dwallet
 If dWallet is installed, the command will return the path to the dWallet binary.
 
 If it is not installed, it will return `dwallet not found`.
+In this case, see [install dWallet](./install-dwallet.mdx).
+
+## Request Tokens from the Faucet
+
+After installation, request `DWLT` test tokens by using `cURL`:
+
+```bash
+curl -X POST --location "https://faucet.alpha.testnet.dwallet.cloud/gas" \
+    -H "Content-Type: application/json" \
+    -d '{
+          "FixedAmountRequest": {
+            "recipient": "<YOUR-ACTIVE-ADDRESS>"
+          }
+        }'
+```
+
+## Connect with Explorer
+
+The Alpha Testnet explorer is available at https://explorer.alpha.testnet.dwallet.cloud/
 
 ## Configure dWallet Client
 
@@ -36,7 +54,8 @@ dwallet client
 ```
 
 If the `dwallet-client` help output appears, you already have a `client.yaml` file.
-Refer to [Connect to a custom RPC endpoint](#connect-to-a-custom-rpc-endpoint) to add a new environment alias or to switch the currently active network.
+Refer to [Connect to a custom RPC endpoint](#connect-to-a-custom-rpc-endpoint) to add a
+new environment alias or to switch the currently active network.
 
 If this is the first time you are running the dWallet client and a `client.yaml` file does not exist,
 the console will display the following message:
@@ -64,10 +83,10 @@ Type an alias name and press **Enter**.
 Select key scheme to generate keypair (0 for ed25519, 1 for secp256k1, 2 for secp256r1):
 ```
 
-Press **0**, **1**, or **2** to select a key scheme and the press **Enter**.
+Press **0**, **1**, or **2** to select a key scheme, and the press **Enter**.
 
 dWallet will return a message similar to the following (depending on the key scheme selected),
-which includes the address and a 12-word recovery phrase:
+which includes the address, and a 12-word recovery phrase:
 ```
 Generated new keypair for address with scheme "ed25519" [0xb9c83a8b40d3263c9ba40d551514fbac1f8c12e98a4005a0dac072d3549c2442]
 Secret Recovery Phrase : [cap wheat many line human lazy few solid bored proud speed grocery]
@@ -142,5 +161,6 @@ After switching, run `dwallet client envs` again to confirm that `testnet` is th
 │ testnet │ https://fullnode.alpha.testnet.dwallet.cloud     │ *      │
 ╰─────────┴──────────────────────────────────────────────────┴────────╯
 ```
+
 If you encounter any issues, delete the dWallet configuration directory (`~/.dwallet/dwallet_config`)
 and reinstall the latest [dWallet binaries](./install-dwallet.mdx#install-dwallet-binaries-from-source).
