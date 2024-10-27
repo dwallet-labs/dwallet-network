@@ -5,6 +5,7 @@
 module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     friend pera_system::dwallet_2pc_mpc_ecdsa_k1;
     use pera_system::dwallet::{create_dwallet_cap};
+    use pera::{event, transfer};
 
     struct DKGSession has key {
         id: UID,
