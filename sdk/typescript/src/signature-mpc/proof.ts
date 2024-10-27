@@ -50,7 +50,7 @@ export async function startFirstDKGSession(keypair: Keypair, client: PeraClient)
 	await new Promise((resolve) => setTimeout(resolve, 5000));
 	let firstRoundOutputObject = await fetchObjectBySessionId(
 		sessionRef.objectId,
-		`${packageId}::${dwalletModuleName}::CompletedFirstDKGRoundData`,
+		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutput`,
 		keypair,
 		client,
 	);
@@ -58,11 +58,11 @@ export async function startFirstDKGSession(keypair: Keypair, client: PeraClient)
 	let firstRoundOutput =
 		firstRoundOutputObject?.dataType === 'moveObject'
 			? (firstRoundOutputObject.fields as {
-					value: number[];
+					output: number[];
 				})
 			: null;
 
-	return firstRoundOutput?.value;
+	return firstRoundOutput?.output;
 }
 
 export async function launchDKGSecondRound(
