@@ -44,7 +44,6 @@ rustup update stable
 Select the appropriate tab to view the requirements for your system.
 
 <Tabs groupId="operating-systems">
-
   <TabItem value="linux" label="Linux">
 
     The prerequisites needed for the Linux operating system include:
@@ -65,7 +64,7 @@ Select the appropriate tab to view the requirements for your system.
 
     :::
 
-    To install all the prerequisites at once, run the following command::
+    To install all the prerequisites at once, run the following command:
 
     ```bash
     sudo apt-get update
@@ -78,21 +77,20 @@ Select the appropriate tab to view the requirements for your system.
     install them all at once:
 
 
-    #### cURL {#curl}
+    #### cURL \{#curl\}
 
     Install cURL with the following command:
 
     ```bash
     sudo apt-get install curl
     ```
-
     Verify that cURL installed correctly with the following command:
 
     ```bash
     curl --version
     ```
 
-    #### Git CLI {#git - cli}
+    #### Git CLI \{#git - cli\}
 
     Install Git and the [Git CLI](https://cli.github.com/):
 
@@ -103,7 +101,7 @@ Select the appropriate tab to view the requirements for your system.
     For more information, see [Install Git on Linux](https://github.com/git-guides/install-git#install-git-on-linux) on
     the GitHub website.
 
-    #### CMake {#cmake}
+    #### CMake \{#cmake\}
 
     Use the following command to install CMake.
 
@@ -113,7 +111,7 @@ Select the appropriate tab to view the requirements for your system.
 
     To customize the installation, see [Installing CMake](https://cmake.org/install/) on the CMake website.
 
-    #### GCC {#gcc}
+    #### GCC \{#gcc\}
 
     Install the GNU Compiler Collection `gcc`:
 
@@ -121,7 +119,7 @@ Select the appropriate tab to view the requirements for your system.
     sudo apt-get install gcc
     ```
 
-    #### libssl-dev {#libssl - dev}
+    #### libssl-dev \{#libssl-dev\}
 
     Install `libssl-dev`:
 
@@ -138,7 +136,7 @@ Select the appropriate tab to view the requirements for your system.
     sudo apt-get install pkg-config
     ```
 
-    #### libclang-dev {#libclang - dev}
+    #### libclang-dev \{#libclang-dev\}
 
     Install `libclang-dev`:
 
@@ -149,7 +147,7 @@ Select the appropriate tab to view the requirements for your system.
     If the version of Linux you use doesn't support `libclang-dev`, find an equivalent package for it on the [ROS
     Index](https://index.ros.org/d/libclang-dev/).
 
-    #### libpq-dev {#libpq - dev}
+    #### libpq-dev \{#libpq-dev\}
 
     Install `libpq-dev`:
 
@@ -160,7 +158,7 @@ Select the appropriate tab to view the requirements for your system.
     If the version of Linux you use doesn't support `libpq-dev`, find an equivalent package for it on the [ROS
     Index](https://index.ros.org/d/libpq-dev/).
 
-    #### build-essential {#build - essential}
+    #### build-essential \{#build-essential}
 
     Install `build-essential`:
 
@@ -183,7 +181,7 @@ Select the appropriate tab to view the requirements for your system.
     macOS includes a version of cURL that can be used to install Homebrew.
     Use Homebrew to install other tools, including a newer version of cURL.
 
-    #### Homebrew {#brew}
+    #### Homebrew \{#brew\}
 
     Install [Homebrew](https://brew.sh/) using the following command:
 
@@ -203,7 +201,7 @@ Select the appropriate tab to view the requirements for your system.
     once with this command:
 
 
-    #### cURL {#curl - 1}
+    #### cURL \{#curl-1\}
 
     Use the following command to update the default [cURL](https://curl.se) on macOS:
 
@@ -211,7 +209,7 @@ Select the appropriate tab to view the requirements for your system.
     brew install curl
     ```
 
-    #### CMake {#cmake - 1}
+    #### CMake \{#cmake-1\}
 
     Use the following command to install CMake:
 
@@ -221,13 +219,13 @@ Select the appropriate tab to view the requirements for your system.
 
     To customize the installation, see [Installing CMake](https://cmake.org/install/) on the CMake website.
 
-    #### libpq {#libpq - 1}
+    #### libpq \{#libpq-1\}
     Use the following command to install libpq:
     ```bash
     brew install libpq
     ```
 
-    #### Git CLI {#git - cli - 1}
+    #### Git CLI \{#git-cli-1\}
 
     Use the following command to install Git:
 
@@ -250,25 +248,25 @@ Select the appropriate tab to view the requirements for your system.
     - [C++ build tools](#additional-tools-windows)
     - [LLVM compiler](#additional-tools-windows)
 
-    #### cURL {#curl - 2}
+    #### cURL \{#curl-2\}
 
     Windows 11 comes with a Microsoft version of [cURL](https://curl.se/windows/microsoft.html)
     If you prefer the cURL project version, download it from [https://curl.se/windows/](https://curl.se/windows/).
 
-    #### Git CLI {#git - cli - 2}
+    #### Git CLI \{#git-cli-2\}
 
     Download and install the [Git command line interface](https://git-scm.com/download/).
 
-    #### CMake {#cmake - 2}
+    #### CMake \{#cmake-2\}
 
     Download and install [CMake](https://cmake.org/download/) from the CMake website.
 
-    #### Protocol Buffers {#protocol - buffers}
+    #### Protocol Buffers \{#protocol-buffers\}
 
     Download [Protocol Buffers](https://github.com/protocolbuffers/protobuf/releases) (protoc-xx.x-win32.zip or
     protoc-xx.x-win64.zip) and add the \bin directory to your Windows PATH environment variable.
 
-    #### Additional tools for Windows {#additional - tools - windows}
+    #### Additional tools for Windows \{#additional-tools-windows\}
 
     dWallet requires the following additional tools on computers running Windows.
 
@@ -282,6 +280,7 @@ Select the appropriate tab to view the requirements for your system.
   </TabItem>
 
 </Tabs>
+
 
 ## Install dWallet binaries from source {#install-dwallet-binaries-from-source}
 
