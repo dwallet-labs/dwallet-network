@@ -55,7 +55,7 @@ module pera_system::dwallet {
         }
 
     /// `DWalletCap` holder controls a corresponding `Dwallet`.
-    struct DWalletCap has key, store {
+    public struct DWalletCap has key, store {
         id: UID,
     }
 

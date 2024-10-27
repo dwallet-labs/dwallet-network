@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 #[allow(unused_const)]
-module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
+module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet::{create_dwallet_cap};
-    use pera::{event, transfer};
+    use pera::event;
 
-    struct DKGSession has key {
+    public struct DKGSession has key {
         id: UID,
         dwallet_cap_id: ID,
         sender: address,
@@ -14,7 +14,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
     /// Event to start a `DKG` session, caught by the Validators.
-    struct CreatedDKGSessionEvent has copy, drop {
+    public struct CreatedDKGSessionEvent has copy, drop {
         session_id: ID,
         sender: address,
     }
