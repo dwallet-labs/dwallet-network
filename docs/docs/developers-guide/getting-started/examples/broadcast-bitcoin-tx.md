@@ -43,7 +43,7 @@ const TESTNET = bitcoin.networks.testnet;
 const {dwalletId, dkgOutput, dwalletCapId} = dkg;
 
 // Get the dWallet object
-const dwallet = await dwalletClient.getObject({ id: dwalletId, options: {showContent: true}});
+const dwallet = await dwalletClient.getObject({id: dwalletId, options: {showContent: true}});
 if (dwallet?.data?.content?.dataType == 'moveObject') {
     // Get the dWallet's public key
     // @ts-ignore
