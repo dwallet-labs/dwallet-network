@@ -43,11 +43,17 @@ create_second_dkg_round_output
 DKGSession
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+DKGFirstRoundOutput
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 CreatedDKGSessionEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 start_first_dkg_session
 	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_dkg_first_round_output
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct

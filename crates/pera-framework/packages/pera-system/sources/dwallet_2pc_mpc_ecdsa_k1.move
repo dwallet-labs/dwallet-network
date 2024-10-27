@@ -26,9 +26,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
     // >>>>>>>>>>>>>>>>>>>>>>>> Events >>>>>>>>>>>>>>>>>>>>>>>>
 
+    // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
+    const ENotSystemAddress: u64 = 0;
+    // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
     const SYSTEM_ADDRESS: address = @0x0;
-    // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
+    // >>>>>>>>>>>>>>>>>>>>>>>> Constants >>>>>>>>>>>>>>>>>>>>>>>>
 
     /// Starts the first Distributed Key Generation (DKG) session. Two MPC sessions are required to
     /// create a Dwallet.
