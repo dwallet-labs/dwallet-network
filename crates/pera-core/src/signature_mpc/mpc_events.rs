@@ -6,6 +6,7 @@ use pera_types::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
 /// Generic trait for all MPC events.
 pub trait MPCEvent {
@@ -19,7 +20,6 @@ pub trait MPCEvent {
 
 pub const PROOF_MODULE_NAME: &IdentStr = ident_str!("proof");
 pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet");
-pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
 pub const CREATED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CreatedProofMPCSessionEvent");
 pub const COMPLETED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CompletedProofMPCSessionEvent");
 

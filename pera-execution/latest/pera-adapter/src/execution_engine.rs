@@ -79,6 +79,7 @@ mod checked {
         PERA_AUTHENTICATOR_STATE_OBJECT_ID, PERA_FRAMEWORK_ADDRESS, PERA_FRAMEWORK_PACKAGE_ID,
         PERA_SYSTEM_PACKAGE_ID,
     };
+    use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
     #[instrument(name = "tx_execute_to_effects", level = "debug", skip_all)]
     pub fn execute_transaction_to_effects<Mode: ExecutionMode>(
@@ -1111,14 +1112,14 @@ mod checked {
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
         let move_function_name = match data.mpc_round {
-            MPCRound::DKGFirst => "create_first_dkg_round_output",
+            MPCRound::DKGFirst => "create_dkg_first_round_output",
             MPCRound::DKGSecond => "create_second_dkg_round_output",
         };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
             let res = builder.move_call(
                 PERA_SYSTEM_PACKAGE_ID.into(),
-                ident_str!("dwallet").to_owned(),
+                DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
                 ident_str!(move_function_name).to_owned(),
                 vec![],
                 vec![
