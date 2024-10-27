@@ -61,7 +61,7 @@ module pera_system::dwallet {
 
     /// Create a new `DWalletCap`
     /// The holder of this capability owns the `DWallet`.
-    public(friend) fun create_dwallet_cap(ctx: &mut TxContext): DWalletCap {
+    public(package) fun create_dwallet_cap(ctx: &mut TxContext): DWalletCap {
         DWalletCap {
             id: object::new(ctx),
         }
