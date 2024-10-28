@@ -122,7 +122,7 @@ impl MPCEvent for CompletedDKGFirstRoundEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: COMPLETED_DKG_FIRST_ROUND_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -149,7 +149,7 @@ impl MPCEvent for StartDKGSecondRoundEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: INIT_DKG_SECOND_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }
@@ -176,7 +176,7 @@ impl MPCEvent for CompletedDKGSecondRoundEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: COMPLETED_DKG_SECOND_STRUCT_NAME.to_owned(),
-            module: DWALLET_MODULE_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
         }
     }

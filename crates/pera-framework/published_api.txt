@@ -52,11 +52,29 @@ CreatedDKGSessionEvent
 CompletedDKGRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartDKGSecondRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+DKGSecondRoundData
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CompletedSecondDKGRoundData
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CompletedSecondDKGRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 start_first_dkg_session
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_dkg_first_round_output
 	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+launch_dkg_second_round
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_second_dkg_round_output
+	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct

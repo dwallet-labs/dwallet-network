@@ -86,4 +86,67 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
        event::emit(completed_proof_mpc_session_event);
     }
+
+        public struct StartDKGSecondRoundEvent has copy, drop {
+            session_id: ID,
+            sender: address,
+            first_round_output: vector<u8>,
+            public_key_share_and_proof: vector<u8>
+        }
+
+
+      public struct DKGSecondRoundData has key {
+          id: UID,
+          sender: address,
+          input: vector<u8>
+      }
+
+
+      public struct CompletedSecondDKGRoundData has key {
+              id: UID,
+              session_id: ID,
+              value: vector<u8>,
+          }
+
+      public struct CompletedSecondDKGRoundEvent has copy, drop {
+              session_id: ID,
+              sender: address,
+          }
+
+        /// Function to launch proof MPC flow.
+        public fun launch_dkg_second_round(public_key_share_and_proof: vector<u8>, first_round_output: vector<u8>, ctx: &mut TxContext) {
+            let session_data = DKGSecondRoundData {
+                id: object::new(ctx),
+                sender: tx_context::sender(ctx),
+                input: first_round_output
+            };
+            let created_proof_mpc_session_event = StartDKGSecondRoundEvent {
+                session_id: object::id(&session_data),
+                sender: tx_context::sender(ctx),
+                first_round_output,
+                public_key_share_and_proof
+            };
+            event::emit(created_proof_mpc_session_event);
+            transfer::freeze_object(session_data);
+        }
+
+
+           public fun create_second_dkg_round_output(session_initiator: address, session_id: ID, output: vector<u8>, ctx: &mut TxContext) {
+              assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+              let proof_session_result = CompletedSecondDKGRoundData {
+                  id: object::new(ctx),
+                  session_id: session_id,
+                  value: output,
+              };
+              transfer::transfer(proof_session_result, session_initiator);
+
+              let completed_proof_mpc_session_event = CompletedSecondDKGRoundEvent {
+                  session_id: session_id,
+                  sender: session_initiator,
+              };
+
+              event::emit(completed_proof_mpc_session_event);
+          }
+
+
 }
