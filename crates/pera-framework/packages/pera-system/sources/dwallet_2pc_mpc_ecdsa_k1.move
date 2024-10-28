@@ -24,6 +24,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id: ID,
         sender: address,
     }
+
+    public struct CompletedDKGRoundEvent has copy, drop {
+        session_id: ID,
+        sender: address,
+    }
     // >>>>>>>>>>>>>>>>>>>>>>>> Events >>>>>>>>>>>>>>>>>>>>>>>>
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
@@ -61,16 +66,24 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
     fun create_dkg_first_round_output(
-        session: &DKGSession,
+        sender: address,
+        session_id: ID,
         output: vector<u8>,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
         let output = DKGFirstRoundOutput {
             id: object::new(ctx),
-            session_id: object::id(session),
+            session_id: session_id,
             output,
         };
-        transfer::transfer(output, session.sender);
+        transfer::transfer(output, sender);
+
+       let completed_proof_mpc_session_event = CompletedDKGRoundEvent {
+           session_id: session_id,
+           sender: sender,
+       };
+
+       event::emit(completed_proof_mpc_session_event);
     }
 }

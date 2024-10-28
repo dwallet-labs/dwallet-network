@@ -7,6 +7,7 @@ title: Module `0x3::dwallet_2pc_mpc_ecdsa_k1`
 -  [Resource `DKGSession`](#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGSession)
 -  [Resource `DKGFirstRoundOutput`](#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput)
 -  [Struct `CreatedDKGSessionEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CreatedDKGSessionEvent)
+-  [Struct `CompletedDKGRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGRoundEvent)
 -  [Constants](#@Constants_0)
 -  [Function `start_first_dkg_session`](#0x3_dwallet_2pc_mpc_ecdsa_k1_start_first_dkg_session)
 -  [Function `create_dkg_first_round_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output)
@@ -133,6 +134,39 @@ Event to start a <code>DKG</code> session, caught by the Validators.
 
 </details>
 
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGRoundEvent"></a>
+
+## Struct `CompletedDKGRoundEvent`
+
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGRoundEvent">CompletedDKGRoundEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>sender: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -207,7 +241,7 @@ This function is called by blockchain itself.
 Validtors call it, it's part of the blockchain logic.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(session: &<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGSession">dwallet_2pc_mpc_ecdsa_k1::DKGSession</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(sender: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -217,17 +251,25 @@ Validtors call it, it's part of the blockchain logic.
 
 
 <pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(
-    session: &<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGSession">DKGSession</a>,
+    sender: <b>address</b>,
+    session_id: ID,
     output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     ctx: &<b>mut</b> TxContext
 ) {
     <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>);
     <b>let</b> output = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
-        session_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(session),
+        session_id: session_id,
         output,
     };
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(output, session.sender);
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(output, sender);
+
+   <b>let</b> completed_proof_mpc_session_event = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGRoundEvent">CompletedDKGRoundEvent</a> {
+       session_id: session_id,
+       sender: sender,
+   };
+
+   <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(completed_proof_mpc_session_event);
 }
 </code></pre>
 
