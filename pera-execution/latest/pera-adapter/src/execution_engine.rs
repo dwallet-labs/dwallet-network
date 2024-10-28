@@ -1126,6 +1126,7 @@ mod checked {
                     CallArg::Pure(data.sender_address.to_vec()),
                     CallArg::Pure(data.session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.value).unwrap()),
+                    CallArg::Pure(data.dwallet_cap_id.to_vec()),
                 ],
             );
             assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");

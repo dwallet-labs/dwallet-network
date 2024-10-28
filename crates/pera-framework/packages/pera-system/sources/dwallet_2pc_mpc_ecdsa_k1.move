@@ -16,6 +16,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         id: UID,
         session_id: ID,
         output: vector<u8>,
+        dwallet_cap_id: ID,
     }
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
@@ -23,6 +24,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public struct CreatedDKGSessionEvent has copy, drop {
         session_id: ID,
         sender: address,
+        dwallet_cap_id: ID,
     }
 
     public struct CompletedDKGRoundEvent has copy, drop {
@@ -56,6 +58,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         event::emit(CreatedDKGSessionEvent {
             session_id: object::id(&session),
             sender,
+            dwallet_cap_id: object::id(&cap),
         });
         transfer::freeze_object(session);
         cap
@@ -69,6 +72,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         sender: address,
         session_id: ID,
         output: vector<u8>,
+        dwallet_cap_id: ID,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
@@ -76,6 +80,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             id: object::new(ctx),
             session_id: session_id,
             output,
+            dwallet_cap_id,
         };
         transfer::transfer(output, sender);
 
@@ -91,7 +96,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             session_id: ID,
             sender: address,
             first_round_output: vector<u8>,
-            public_key_share_and_proof: vector<u8>
+            public_key_share_and_proof: vector<u8>,
+            dwallet_cap_id: ID,
         }
 
 
@@ -106,15 +112,17 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
               id: UID,
               session_id: ID,
               value: vector<u8>,
+              dwallet_cap_id: ID,
           }
 
       public struct CompletedSecondDKGRoundEvent has copy, drop {
               session_id: ID,
               sender: address,
+              dwallet_cap_id: ID,
           }
 
         /// Function to launch proof MPC flow.
-        public fun launch_dkg_second_round(public_key_share_and_proof: vector<u8>, first_round_output: vector<u8>, ctx: &mut TxContext) {
+        public fun launch_dkg_second_round(dwallet_cap: &DWalletCap, public_key_share_and_proof: vector<u8>, first_round_output: vector<u8>, ctx: &mut TxContext) {
             let session_data = DKGSecondRoundData {
                 id: object::new(ctx),
                 sender: tx_context::sender(ctx),
@@ -124,25 +132,28 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 session_id: object::id(&session_data),
                 sender: tx_context::sender(ctx),
                 first_round_output,
-                public_key_share_and_proof
+                public_key_share_and_proof,
+                dwallet_cap_id: object::id(dwallet_cap),
             };
             event::emit(created_proof_mpc_session_event);
             transfer::freeze_object(session_data);
         }
 
 
-           public fun create_second_dkg_round_output(session_initiator: address, session_id: ID, output: vector<u8>, ctx: &mut TxContext) {
+           public fun create_second_dkg_round_output(session_initiator: address, session_id: ID, output: vector<u8>, dwallet_cap_id: ID, ctx: &mut TxContext) {
               assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
               let proof_session_result = CompletedSecondDKGRoundData {
                   id: object::new(ctx),
                   session_id: session_id,
                   value: output,
+                  dwallet_cap_id: dwallet_cap_id,
               };
               transfer::transfer(proof_session_result, session_initiator);
 
               let completed_proof_mpc_session_event = CompletedSecondDKGRoundEvent {
                   session_id: session_id,
                   sender: session_initiator,
+                    dwallet_cap_id: dwallet_cap_id,
               };
 
               event::emit(completed_proof_mpc_session_event);

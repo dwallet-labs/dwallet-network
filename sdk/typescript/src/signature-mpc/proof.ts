@@ -59,10 +59,11 @@ export async function startFirstDKGSession(keypair: Keypair, client: PeraClient)
 		firstRoundOutputObject?.dataType === 'moveObject'
 			? (firstRoundOutputObject.fields as {
 					output: number[];
+					dwallet_cap_id: string;
 				})
 			: null;
 
-	return firstRoundOutput?.output;
+	return firstRoundOutput;
 }
 
 export async function launchDKGSecondRound(
@@ -70,11 +71,13 @@ export async function launchDKGSecondRound(
 	client: PeraClient,
 	publicKeyShareAndProof: Uint8Array,
 	firstRoundOutput: Uint8Array,
+	dwalletCapId: string,
 ) {
 	const tx = new Transaction();
 	tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
 		arguments: [
+			tx.object(dwalletCapId),
 			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(firstRoundOutput)),
 		],
