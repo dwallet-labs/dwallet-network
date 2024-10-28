@@ -1,27 +1,53 @@
+# Get a dWallet Network Address
+
+An address uniquely and anonymously identifies an account on the dWallet blockchain network.
+It allows users to store and use tokens on the network without sharing personally identifying information (such as an
+email address or phone number).
+
+For example, to receive `DWLT` tokens for creating dWallets or signing transactions, you need to specify an address
+where these tokens will be deposited.
+
+Each address is **unique**, much like a social security number or personal identification number (PIN).
+However, users can generate and own multiple unique addresses on the dWallet network.
+
+On the dWallet Network, an address is 32 bytes and is typically encoded in **base58** with a `0x` prefix.  
+Example:  
+`0x02a212de6a9dfa3a69e22387acfbafbb1a9e591bd9d636e7895dcfc8de05f331`
+
 ---
-title: Get DWLT Address
-description: You need an address on the dWallet network before you can start testing dWallets, hold DWLT tokens, or perform transactions.
+
+## How to Get a DWLT Address
+
+### Using the Command Line Interface (CLI)
+
+If you interact with the dWallet Network using the **command line interface (CLI)**, you can generate a new address with
+the following command:
+
+```bash
+dwallet client new-address ed25519
+```
+
+This command creates a new address using the `ed25519` keypair scheme.
+
+When you run the dWallet CLI for the first time, it will prompt you to set up a local wallet and generate an initial
+`DWLT` address along with a **secret recovery phrase**.
+Make sure to **write the recovery phrase** and store it securely.
+
+To list all generated addresses in your local wallet, use:
+
+```bash
+dwallet keytool list
+```
+
 ---
 
-An address is a way to uniquely and anonymously identify an account that exists on the dWallet blockchain network. In other words, an address is a way for a user to store and use tokens on the dWallet network, without providing any personally identifying information (such as email address, phone number, and so on). For example, if you want to have a number of DWLT tokens to create dWallets and use them to sign, you must specify an address where these tokens are to be charged.
+:::danger  
+The **private keys** for your dWallet network addresses are stored locally in the following file on your machine:
 
-The DWLT address is unique, similarly to the way a social security number or a personal identification number is unique to one person. However, in the dWallet Network you can create and own multiple addresses, all of which are unique.
+```
+~/.dwallet/dwallet_config/dwallet.keystore
+```
 
-In the dWallet Network, an address is 32 bytes and is often encoded in base58 with `0x` prefix. For example, this is a valid dWallet address: `0x02a212de6a9dfa3a69e22387acfbafbb1a9e591bd9d636e7895dcfc8de05f331`.
-
-## How to obtain a DWLT address
-
-### Command line interface
-
-If you are using the dWallet command line interface (CLI) to interact with the dWallet Network, you can use the `dwallet client` command to generate a new address. By default, when the dWallet CLI runs for the first time it will prompt you to set up your local wallet, and then it generates one DWLT address and the associated secret recovery phrase. Make sure you write down the secret recovery phrase and store it in a safe place.
-
-
-To generate a new Sui address use `dwallet client new-address ed25519`, which specifies the keypair scheme flag to be of type `ed25519`.
-
-To see all the generated addresses in the local wallet on your machine, run `dwallet keytool list`.
-
-:::danger
-
-The private keys associated with the DWLT addresses are stored locally on the machine where the CLI is installed, in the `~/.dwallet/dwallet_config/dwallet.keystore` file. Make sure you do not expose this to anyone, as they can use it to get access to your account.
-
+**Do not share this file** with anyone, as it contains the keys required to access your account and tokens.  
 :::
+

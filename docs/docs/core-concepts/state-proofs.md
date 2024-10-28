@@ -1,7 +1,3 @@
----
-sidebar_position: 6
----
-
 # State Proofs
 
 ## History of State Proofs
@@ -38,8 +34,9 @@ one network (like Ethereum) are recognized and verified on the dWallet Network.
 
 This verification process is critical for the dWallet Network to function as a composable modular signature network,
 enabling dWallets to empower builders on existing networks to control assets and manage logic across multiple
-blockchains securely. Through the use of light clients and state proofs, the dWallet Network signs transactions on
-behalf of users only when a valid state proof from a controlling smart contract is provided, ensuring the transaction's
+blockchains securely.
+With light clients and state proofs, the dWallet Network signs transactions on behalf of users only when a valid state
+proof from a controlling smart contract is provided, ensuring the transaction's
 legitimacy and the network's security.
 
 The first light client to be implemented on the dWallet Network will be Ethereum, with many more to follow.

@@ -1,22 +1,19 @@
----
-sidebar_position: 3
----
+# Non-collusive and Decentralized
 
-# Noncollusive and Decentralized
-
-Since the inception of Bitcoin, noncollusivity and decentralization have been foundational principles of the Web3
+Since Bitcoin’s inception, non-collusivity and decentralization have been foundational principles of the Web3
 ecosystem. These principles ensure that no single entity or group of entities can steal user assets or manipulate the
 network, promoting a secure, transparent, and equitable digital infrastructure.
 
-## Noncollusivity
+## Non-collusivity
 
-Noncollusivity refers to the design and operation of systems in a way that prevents collusion among participants. In the
-context of blockchain and Web3 technologies, this means ensuring that validators, miners, or any parties involved in the
-network cannot conspire to steal user assets.
+Non-collusivity refers to the design and operation of systems in a way that prevents collusion among participants.
+In the context of blockchain and Web3 technologies, this means ensuring that validators, miners, or any parties involved
+in the network cannot conspire to steal user assets.
 
-In the context of a specific blockchain, noncollusivity is achieved through digital signatures. Even if all nodes on a
-specific network collude, they can never sign a transation on behalf of the user who holds the private key. That is a
-fundamental value that Web3 is built upon.
+In the context of a specific blockchain, non-collusivity is achieved through digital signatures.
+Even if all nodes on a specific network colluded, they can never sign a transaction on behalf of the user who holds the
+private key.
+That is a fundamental value that Web3 is built upon.
 
 ## Decentralization
 
@@ -25,13 +22,13 @@ participants. This ensures that no single party has complete control over the ne
 and resistance to censorship.
 
 Whatever the consensus mechanism is, decentralization helps protect users in blockchains from double spending and
-similar attacks,
+similar attacks.
 
-## dWallets - Noncollusive and Massively Decentralized
+## dWallets—Non-collusive and Massively Decentralized
 
-Noncollusivity and decentralization are not just technical features; they are the bedrock principles that underpin the
+Non-collusivity and decentralization are not just technical features; they are the bedrock principles that underpin the
 trust, security, and openness of the Web3 ecosystem. dWallets are the enablers
-of [secure multi-chain interoperability](multi-chain-vs-cross-chain.md) due to their noncollusive and massively
+of [secure multi-chain interoperability](multi-chain-vs-cross-chain.md) due to their non-collusive and massively
 decentralized nature.
 
 Developers integrating these principles into their projects using dWallets contribute to a more robust, secure, and
