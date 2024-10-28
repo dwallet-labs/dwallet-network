@@ -19,6 +19,7 @@ pub struct SignatureMPCOutput {
     pub session_id: ObjectID,
     /// The address of the initiating user.
     pub sender_address: PeraAddress,
+    pub dwallet_cap_id: ObjectID,
     /// The final value of the MPC session.
     pub value: Vec<u8>,
     pub mpc_round: MPCRound,

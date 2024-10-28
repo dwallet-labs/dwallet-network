@@ -101,7 +101,7 @@ pub enum ConsensusTransactionKey {
     /// The output of a signature MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
-    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
+    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress, ObjectID),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -144,11 +144,11 @@ impl Debug for ConsensusTransactionKey {
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
             }
-            ConsensusTransactionKey::SignatureMPCOutput(value, session_id, sender_address) => {
+            ConsensusTransactionKey::SignatureMPCOutput(value, session_id, sender_address, dwallet_cap_id) => {
                 write!(
                     f,
-                    "SignatureMPCOutput({:?}, {:?}, {:?})",
-                    value, session_id, sender_address
+                    "SignatureMPCOutput({:?}, {:?}, {:?}, {:?})",
+                    value, session_id, sender_address, dwallet_cap_id
                 )
             }
         }
@@ -282,7 +282,7 @@ pub enum ConsensusTransactionKind {
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
     SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress, MPCRound),
+    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress, ObjectID, MPCRound),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -496,6 +496,7 @@ impl ConsensusTransaction {
         value: Vec<u8>,
         session_id: ObjectID,
         sender_address: PeraAddress,
+        dwallet_cap_id: ObjectID,
         mpc_round: MPCRound,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
@@ -503,7 +504,7 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address, mpc_round),
+            kind: ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address, dwallet_cap_id, mpc_round),
         }
     }
 
@@ -585,11 +586,12 @@ impl ConsensusTransaction {
                     session_id.clone(),
                 )
             }
-            ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address,_) => {
+            ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address, dwallet_cap_id, _) => {
                 ConsensusTransactionKey::SignatureMPCOutput(
                     value.clone(),
                     *session_id,
                     *sender_address,
+                    *dwallet_cap_id,
                 )
             }
         }

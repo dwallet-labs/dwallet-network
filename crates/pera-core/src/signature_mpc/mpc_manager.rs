@@ -88,6 +88,7 @@ pub struct SignatureMPCInstance<P: Advance + mpc::Party> {
     number_of_parties: usize,
     session_id: ObjectID,
     sender_address: PeraAddress,
+    dwallet_cap_id: ObjectID,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: Option<P>,
     auxiliary_input: P::AuxiliaryInput,
@@ -100,6 +101,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
         epoch: EpochId,
         session_id: ObjectID,
         sender_address: PeraAddress,
+        dwallet_cap_id: ObjectID,
         number_of_parties: usize,
         party: P,
         status: MPCSessionStatus<P::OutputValue>,
@@ -113,6 +115,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
             epoch_id: epoch,
             session_id,
             sender_address,
+            dwallet_cap_id,
             party: Some(party),
             number_of_parties,
             auxiliary_input,
@@ -205,6 +208,7 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
             output,
             self.session_id.clone(),
             self.sender_address.clone(),
+            self.dwallet_cap_id.clone(),
             mpc_round,
         ))
     }
@@ -392,6 +396,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
         party: P,
         session_id: ObjectID,
         initiating_user: PeraAddress,
+        dwallet_cap_id: ObjectID,
     ) {
         if self.mpc_instances.contains_key(&session_id) {
             // This should never happen, as the session ID is a move UniqueID
@@ -409,6 +414,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
             self.epoch_id,
             session_id.clone(),
             initiating_user,
+            dwallet_cap_id,
             self.number_of_parties,
             party,
             MPCSessionStatus::Pending,

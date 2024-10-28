@@ -356,13 +356,11 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
-
-                    // If we receive a ProofMPCOutput transaction, verify that it's valid & create a system transaction
-                    // to store its output on the blockchain, so it will be available for the initiating user.
                     if let ConsensusTransactionKind::SignatureMPCOutput(
                         value,
                         session_id,
                         sender_address,
+                        dwallet_cap_id,
                         mpc_round,
                     ) = &transaction.kind
                     {
@@ -426,6 +424,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     SignatureMPCOutput {
                                         session_id: *session_id,
                                         sender_address: *sender_address,
+                                        dwallet_cap_id: *dwallet_cap_id,
                                         value: value.clone(),
                                         mpc_round: mpc_round.clone(),
                                     },
@@ -441,6 +440,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             ));
                         }
                     }
+
+                    // If we receive a ProofMPCOutput transaction, verify that it's valid & create a system transaction
+                    // to store its output on the blockchain, so it will be available for the initiating user.
 
                     if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
                         &transaction.kind
@@ -670,7 +672,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
         ConsensusTransactionKind::SignatureMPCMessage(_, _, _) => "signature_mpc_message",
-        ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _) => "signature_mpc_statements",
+        ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _, _) => "signature_mpc_statements",
     }
 }
 

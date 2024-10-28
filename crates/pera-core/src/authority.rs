@@ -1573,6 +1573,7 @@ impl AuthorityState {
                         first_proof_party,
                         deserialized_event.session_id.bytes,
                         deserialized_event.sender,
+                        deserialized_event.dwallet_cap_id.bytes,
                     );
                 } else if event.type_ == CompletedDKGFirstRoundEvent::type_() {
                     let deserialized_event: CreatedDKGSessionEvent = bcs::from_bytes(&event.contents)?;
@@ -1588,6 +1589,7 @@ impl AuthorityState {
                         party,
                         deserialized_event.session_id.bytes,
                         deserialized_event.sender,
+                        deserialized_event.dwallet_cap_id.bytes,
                     );
                 } else if event.type_ == CompletedDKGSecondRoundEvent::type_() {
                     let deserialized_event: CompletedDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;

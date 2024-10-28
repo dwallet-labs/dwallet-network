@@ -61,6 +61,7 @@ impl MPCEvent for CreatedProofMPCEvent {
 pub struct CreatedDKGSessionEvent {
     pub session_id: ID,
     pub sender: PeraAddress,
+    pub dwallet_cap_id: ID,
 }
 
 impl MPCEvent for CreatedDKGSessionEvent {
@@ -141,7 +142,8 @@ pub struct StartDKGSecondRoundEvent {
     pub session_id: ID,
     pub sender: PeraAddress,
     pub first_round_output: Vec<u8>,
-    pub public_key_share_and_proof: Vec<u8>
+    pub public_key_share_and_proof: Vec<u8>,
+    pub dwallet_cap_id: ID,
 }
 
 impl MPCEvent for StartDKGSecondRoundEvent {
