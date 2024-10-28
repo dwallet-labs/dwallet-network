@@ -220,6 +220,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
                 Ok(())
             }
             Err(err) => Err(PeraError::ObjectDeserializationError {
+                // TODO (#310): Mark and punish a validator that sends a message that cannot be deserialized
                 error: err.to_string(),
             }),
         }
