@@ -5,7 +5,7 @@ use pera_types::messages_signature_mpc::SignatureMPCOutput as NativeSignatureMPC
 /// System transaction to store the output of signature mpc on-chain.
 #[derive(Clone, Eq, PartialEq)]
 pub(crate) struct SignatureMPCOutputTransaction {
-    /// The native representation of the transaction arguments
+    /// The native representation of the transaction arguments.
     pub native: NativeSignatureMPCOutput,
     /// The checkpoint sequence number this transaction was viewed at.
     pub checkpoint_viewed_at: u64,
@@ -13,17 +13,17 @@ pub(crate) struct SignatureMPCOutputTransaction {
 
 #[Object]
 impl SignatureMPCOutputTransaction {
-    /// The output value of the signature mpc session
+    /// The output value of the signature mpc session.
     async fn value(&self) -> Vec<u8> {
         self.native.value.clone()
     }
 
-    /// The session ID
+    /// The session ID.
     async fn session_id(&self) -> Base64 {
         Base64::from(self.native.session_id.to_vec().as_slice())
     }
 
-    /// The address of the session initiator
+    /// The address of the session initiator.
     async fn sender_address(&self) -> Base64 {
         Base64::from(self.native.sender_address.to_vec().as_slice())
     }

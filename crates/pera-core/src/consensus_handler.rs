@@ -372,11 +372,12 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             authority_index, session_id
                         );
 
-                        let mut signature_mpc_manager = self.epoch_store.proof_mpc_manager.get();
-                        let is_valid_transaction = match signature_mpc_manager {
+                        let mut mpc_manager = self.epoch_store.proof_mpc_manager.get();
+                        // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files?diff=unified&w=1#r1798936930
+                        let is_valid_transaction = match mpc_manager {
                             Some(mpc_manager) => {
-                                let signature_mpc_manager = mpc_manager.lock().await;
-                                signature_mpc_manager
+                                mpc_manager.lock().await
+                                    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files?diff=unified&w=1#r1799347218
                                     .try_verify_output(value, session_id)
                                     .unwrap_or_else(|e| {
                                         error!("error verifying ProofMPCOutput for the session {:?} from party {:?}: {:?}",session_id, authority_index, e);
@@ -395,6 +396,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 VerifiedTransaction::new_signature_mpc_output_system_transaction(
                                     SignatureMPCOutput {
                                         session_id: *session_id,
+                                        // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files?diff=unified&w=1#r1808190284
                                         sender_address: *sender_address,
                                         value: value.clone(),
                                     },

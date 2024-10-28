@@ -11,6 +11,7 @@ use crate::{
     object::Owner,
 };
 
+use mpc::{two_party::Round, AdvanceResult, Party};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fmt::Debug};
@@ -437,7 +438,7 @@ pub enum PeraError {
     #[error("Invalid DKG message size")]
     InvalidDkgMessageSize,
 
-    #[error("Unexpected message.")]
+    #[error("unexpected message")]
     UnexpectedMessage,
 
     // Move module publishing related errors
@@ -660,6 +661,9 @@ pub enum PeraError {
 
     #[error("The request did not contain a certificate")]
     NoCertificateProvidedError,
+
+    #[error("MPC Error: {0}")]
+    MpcError(String),
 }
 
 #[repr(u64)]

@@ -280,9 +280,11 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
+    // todo(zeev): add docs
     SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
     SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
-    RandomnessStateUpdate(u64, Vec<u8>), // deprecated
+    // Deprecated.
+    RandomnessStateUpdate(u64, Vec<u8>),
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
     // Contents are a serialized `fastcrypto_tbls::dkg::Message`.

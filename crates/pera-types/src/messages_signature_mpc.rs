@@ -1,12 +1,11 @@
 use crate::base_types::{ObjectID, PeraAddress};
-use crate::crypto::{default_hash, AuthoritySignInfo};
+use crate::crypto::default_hash;
 use crate::digests::SignatureMPCOutputDigest;
-use crate::message_envelope::{Envelope, Message};
+use crate::message_envelope::Message;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
-use std::fmt::Display;
 
-/// The content of the system transaction that stores the MPC session output on chain.
+/// The content of the system transaction that stores the MPC session output on the chain.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct SignatureMPCOutput {
     /// The session ID of the MPC session.

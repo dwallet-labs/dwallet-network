@@ -5,7 +5,6 @@ pub use checked::*;
 
 #[pera_macros::with_checked_arithmetic]
 mod checked {
-
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
     use move_core_types::account_address::AccountAddress;
@@ -718,6 +717,7 @@ mod checked {
                 Ok(Mode::empty_results())
             }
             TransactionKind::SignatureMPCOutput(data) => {
+                // todo(zeev): why is it ignored?
                 let res = setup_and_execute_signature_mpc_output(
                     data,
                     temporary_store,
@@ -1099,8 +1099,11 @@ mod checked {
         builder
     }
 
-    /// Executes the transaction to store the final MPC output on chain, so it will be accessible to the initiating user.
-    /// All the validators execute this TX locally, and if more than 2/3 of them did so the output is stored on chain.
+    /// Executes the transaction to store the final MPC output on the chain,
+    /// so it will be accessible to the initiating user.
+    /// All the validators execute this TX locally, and if more than 2/3
+    /// of them did, so the output is stored on the chain.
+    /// todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1799362302
     fn setup_and_execute_signature_mpc_output(
         data: SignatureMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
@@ -1116,6 +1119,7 @@ mod checked {
                 PERA_SYSTEM_PACKAGE_ID.into(),
                 ident_str!("proof").to_owned(),
                 ident_str!("create_proof_session_output").to_owned(),
+                // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1806162377
                 vec![],
                 vec![
                     CallArg::Pure(data.sender_address.to_vec()),

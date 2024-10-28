@@ -36,6 +36,7 @@ module pera_system::proof {
         };
         // Emit event to start MPC flow.
         // Part of the implementation of section 3.2.1 in the Pera Async paper.
+        // See docs/pera-async.pdf
         // When iterating over the transactions in the batch,
         // MPC transactions will get executed locally
         // to catch the event with all the needed data to start the MPC flow.

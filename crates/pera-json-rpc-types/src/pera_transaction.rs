@@ -70,7 +70,7 @@ pub type PeraEpochId = BigInt<u64>;
 pub struct PeraTransactionBlockResponseQuery {
     /// If None, no filter will be applied
     pub filter: Option<TransactionFilter>,
-    /// config which fields to include in the response, by default only digest is included
+    /// Configure fields to include in the response, by default, only digest is included.
     pub options: Option<PeraTransactionBlockResponseOptions>,
 }
 

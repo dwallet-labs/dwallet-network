@@ -238,27 +238,29 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
         let party = self
             .party
             .take()
-            .unwrap_or_else(|| self.initialize_party()?);
+            // todo(zeev): error handling
+            .unwrap_or_else(|| self.initialize_party().unwrap());
 
         // Attempt to advance the party using the pending messages and auxiliary input.
-        let advance_result = party
-            .advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng)
-            .map_err(|_| {
-                self.pending_messages.clear();
-                // todo(zeev): fix this
-                anyhow!("Advance failed due to malicious validators.")
-            })?;
+        // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
+        let Ok(advance_result) =
+            party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng)
+        else {
+            // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
+            self.pending_messages.clear();
+            return Ok(());
+        };
 
         // Handle the result of the advance: either continue or finalize the session.
         let message = match advance_result {
             AdvanceResult::Advance((msg, updated_party)) => {
                 self.pending_messages.clear();
                 self.party = Some(updated_party);
-                self.create_signature_mpc_message(msg)
+                self.new_signature_mpc_message(msg)
             }
             AdvanceResult::Finalize(output) => {
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                self.create_proof_mpc_output_message(output.into())
+                self.new_proof_mpc_output_message(output.into())
             }
         };
 
@@ -280,7 +282,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     /// Initializes a new party instance with the participating validators.
     fn initialize_party(&self) -> PeraResult<P> {
         let parties: HashSet<_> = (0..self.number_of_parties).map(|i| i as PartyID).collect();
-        let party_id = authority_name_to_party_id(self.epoch_store()?.name, &self.epoch_store()?)?;
+        let party_id = authority_name_to_party_id(self.epoch_store()?.name, &*(self.epoch_store()?))?;
         Ok(P::new(parties, party_id))
     }
 

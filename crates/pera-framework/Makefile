@@ -1,5 +1,5 @@
 build:
-	cargo build --release
+	cargo build
 test:
 	cd .. && pwd && cargo run --bin pera -- move test proof_tests --path ./pera-framework/packages/pera-system/tests
 test-bin:
