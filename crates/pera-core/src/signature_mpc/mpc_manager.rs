@@ -282,7 +282,8 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     /// Initializes a new party instance with the participating validators.
     fn initialize_party(&self) -> PeraResult<P> {
         let parties: HashSet<_> = (0..self.number_of_parties).map(|i| i as PartyID).collect();
-        let party_id = authority_name_to_party_id(self.epoch_store()?.name, &*(self.epoch_store()?))?;
+        let party_id =
+            authority_name_to_party_id(self.epoch_store()?.name, &*(self.epoch_store()?))?;
         Ok(P::new(parties, party_id))
     }
 
