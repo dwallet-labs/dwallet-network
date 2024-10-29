@@ -114,6 +114,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
               session_id: ID,
               sender: address,
               dwallet_cap_id: ID,
+              dwallet_id: ID,
+              value: vector<u8>,
           }
 
         /// Function to launch proof MPC flow.
@@ -138,14 +140,16 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
            public fun create_second_dkg_round_output(session_initiator: address, session_id: ID, output: vector<u8>, dwallet_cap_id: ID, ctx: &mut TxContext) {
               assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
               let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, ctx);
-              transfer::public_freeze_object(dwallet);
 
               let completed_proof_mpc_session_event = CompletedSecondDKGRoundEvent {
                   session_id: session_id,
                   sender: session_initiator,
-                    dwallet_cap_id: dwallet_cap_id,
+                  dwallet_cap_id: dwallet_cap_id,
+                  dwallet_id: object::id(&dwallet),
+                  value: output,
               };
 
+              transfer::public_freeze_object(dwallet);
               event::emit(completed_proof_mpc_session_event);
           }
 

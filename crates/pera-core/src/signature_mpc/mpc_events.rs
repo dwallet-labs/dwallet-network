@@ -26,7 +26,7 @@ pub const COMPLETED_PROOF_STRUCT_NAME: &IdentStr = ident_str!("CompletedProofMPC
 pub const CREATED_DKG_SESSION_EVENT_STRUCT_NAME: &IdentStr = ident_str!("CreatedDKGSessionEvent");
 pub const COMPLETED_DKG_FIRST_ROUND_STRUCT_NAME: &IdentStr = ident_str!("CompletedDKGRoundEvent");
 pub const INIT_DKG_SECOND_STRUCT_NAME: &IdentStr = ident_str!("StartDKGSecondRoundEvent");
-pub const COMPLETED_DKG_SECOND_STRUCT_NAME: &IdentStr = ident_str!("CompletedSecondDKGRoundData");
+pub const COMPLETED_DKG_SECOND_STRUCT_NAME: &IdentStr = ident_str!("CompletedSecondDKGRoundEvent");
 
 /// Rust version of the Move [`pera_system::dwallet::CreatedProofMPCSessionEvent`] type.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
@@ -169,8 +169,9 @@ impl MPCEvent for StartDKGSecondRoundEvent {
 pub struct CompletedDKGSecondRoundEvent {
     pub session_id: ID,
     pub sender: PeraAddress,
-    pub first_round_output: Vec<u8>,
-    pub public_key_share_and_proof: Vec<u8>
+    pub dwallet_cap_id: ID,
+    pub dwallet_id: ID,
+    pub value: Vec<u8>,
 }
 
 impl MPCEvent for CompletedDKGSecondRoundEvent {
