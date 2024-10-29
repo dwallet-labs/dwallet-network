@@ -10,7 +10,7 @@ publish = false
 [dependencies]
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-dwallet-mpc = { path = "../../crates/dwallet-mpc" }
+dwallet-mpc = { path = "../../crates/dwallet-mpc-centralized-party" }
 
 console_error_panic_hook = "0.1.7"
 log = "0.4.22"

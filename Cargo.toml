@@ -69,7 +69,7 @@ exclude = [
 ]
 
 members = [
-    "crates/dwallet-mpc",
+    "crates/dwallet-mpc-centralized-party",
     "consensus/config",
     "consensus/core",
     "crates/anemo-benchmark",
@@ -198,7 +198,7 @@ members = [
     "pera-execution/v2/pera-adapter",
     "pera-execution/v2/pera-move-natives",
     "pera-execution/v2/pera-verifier",
-    "crates/dwallet-mpc",
+    "crates/dwallet-mpc-centralized-party",
     "crates/class-groups-constants",
 ]
 

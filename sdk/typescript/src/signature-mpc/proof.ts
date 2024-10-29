@@ -60,6 +60,7 @@ export async function startFirstDKGSession(keypair: Keypair, client: PeraClient)
 			? (firstRoundOutputObject.fields as {
 					output: number[];
 					dwallet_cap_id: string;
+					session_id: string;
 				})
 			: null;
 
@@ -72,6 +73,7 @@ export async function launchDKGSecondRound(
 	publicKeyShareAndProof: Uint8Array,
 	firstRoundOutput: Uint8Array,
 	dwalletCapId: string,
+	firstRoundSessionId: string,
 ) {
 	const tx = new Transaction();
 	tx.moveCall({
@@ -80,6 +82,7 @@ export async function launchDKGSecondRound(
 			tx.object(dwalletCapId),
 			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(firstRoundOutput)),
+			tx.pure.id(firstRoundSessionId),
 		],
 	});
 

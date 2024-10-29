@@ -44,36 +44,41 @@ pub trait AuxiliarySecond: mpc::Party {
     fn first_auxiliary_input(
         first_round_output: <DKGFirstParty as mpc::Party>::Output,
         centralized_party_public_key_share: <AsyncProtocol as twopc_mpc::dkg::Protocol>::PublicKeyShareAndProof,
+        session_is: Vec<u8>,
     ) -> Self::AuxiliaryInput;
 }
 
 impl AuxiliarySecond for DKGSecondParty {
     fn first_auxiliary_input(
         first_round_output: <DKGFirstParty as Party>::Output,
-        centralized_party_public_key_share: <AsyncProtocol as Protocol>::PublicKeyShareAndProof
+        centralized_party_public_key_share: <AsyncProtocol as Protocol>::PublicKeyShareAndProof,
+        session_id: Vec<u8>,
     ) -> Self::AuxiliaryInput {
-        let first_round_auxiliary_input = DKGFirstParty::first_auxiliary_input();
+        let first_round_auxiliary_input = DKGFirstParty::first_auxiliary_input(session_id);
         (first_round_auxiliary_input, first_round_output, centralized_party_public_key_share).into()
     }
 }
 
 pub trait AuxiliaryFirst: mpc::Party {
-    fn first_auxiliary_input() -> Self::AuxiliaryInput;
+    fn first_auxiliary_input( session_id : Vec<u8>) -> Self::AuxiliaryInput;
 }
 
 impl AuxiliaryFirst for DKGFirstParty {
-    fn first_auxiliary_input() -> Self::AuxiliaryInput {
+    fn first_auxiliary_input(
+        session_id: Vec<u8>,
+    ) -> Self::AuxiliaryInput {
         let secp256k1_group_public_parameters = class_groups_constants::protocol_public_parameters().unwrap();
 
         let parties = (0..3).collect::<HashSet<PartyID>>();
-        let protocol_context = commitment::CommitmentSizedNumber::from_u8(8);
+        // let session_id = commitment::CommitmentSizedNumber::from_be_slice(&session_id);
+        let session_id = commitment::CommitmentSizedNumber::from_u8(8);
         Self::AuxiliaryInput {
             protocol_public_parameters: secp256k1_group_public_parameters,
             party_id: 1,
             threshold: 3,
             number_of_parties: 4,
             parties: parties.clone(),
-            session_id: protocol_context,
+            session_id,
         }
     }
 }

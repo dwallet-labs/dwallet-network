@@ -5,16 +5,16 @@ use anyhow::Error;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
-use dwallet_mpc::create_centralized_output;
+use dwallet_mpc::create_dkg_output;
 use log::debug;
 
 #[wasm_bindgen]
-pub fn hello_wasm(dkg_first_round_output: Vec<u8>) -> Result<Vec<u8>, JsErr> {
+pub fn hello_wasm(dkg_first_round_output: Vec<u8>, session_id: String) -> Result<Vec<u8>, JsErr> {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
     debug!("hello wasm {:?}", dkg_first_round_output);
-    let output = match create_centralized_output(dkg_first_round_output) {
-        Ok(output) => output,
+    let output = match create_dkg_output(dkg_first_round_output, session_id) {
+        Ok((output, _)) => output,
         Err(e) => {debug!("{:?}", e);return Ok(vec![1,2]);},
     };
     Ok(output)

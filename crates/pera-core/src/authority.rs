@@ -1567,7 +1567,7 @@ impl AuthorityState {
                 if event.type_ == CreatedDKGSessionEvent::type_() {
                     let first_proof_party = DKGFirstParty::default();
                     let deserialized_event: CreatedDKGSessionEvent = bcs::from_bytes(&event.contents)?;
-                    let auxiliary = DKGFirstParty::first_auxiliary_input();
+                    let auxiliary = DKGFirstParty::first_auxiliary_input(deserialized_event.session_id.bytes.to_vec());
                     dkg_first_mpc_manager.push_new_mpc_instance(
                         auxiliary,
                         first_proof_party,
@@ -1583,7 +1583,7 @@ impl AuthorityState {
                     let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
                     let public_key_share_and_proof = bcs::from_bytes(&deserialized_event.public_key_share_and_proof)?;
                     let first_round_output = bcs::from_bytes(&deserialized_event.first_round_output)?;
-                    let auxiliary_input = DKGSecondParty::first_auxiliary_input(first_round_output ,public_key_share_and_proof);
+                    let auxiliary_input = DKGSecondParty::first_auxiliary_input(first_round_output ,public_key_share_and_proof, deserialized_event.first_round_session_id.bytes.to_vec());
                     dkg_second_mpc_manager.push_new_mpc_instance(
                         auxiliary_input,
                         party,

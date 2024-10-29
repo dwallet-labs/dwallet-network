@@ -144,6 +144,7 @@ pub struct StartDKGSecondRoundEvent {
     pub first_round_output: Vec<u8>,
     pub public_key_share_and_proof: Vec<u8>,
     pub dwallet_cap_id: ID,
+    pub first_round_session_id: ID,
 }
 
 impl MPCEvent for StartDKGSecondRoundEvent {

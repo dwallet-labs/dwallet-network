@@ -72,6 +72,7 @@ describe('Test signature mpc', () => {
 			Uint8Array.from(d),
 			Uint8Array.from(b),
 			firstDKGOutput?.dwallet_cap_id!,
+			firstDKGOutput?.session_id!,
 		);
 	});
 });
