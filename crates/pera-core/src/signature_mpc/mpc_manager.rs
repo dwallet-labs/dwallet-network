@@ -432,10 +432,9 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     fn finalize_mpc_instance(&mut self, event: P::FinalizeEvent) -> PeraResult {
         let session_id = event.session_id().bytes;
         let mut instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
-            PeraError::InvalidCommittee(format!(
-                "Received a finalize event for session ID {:?} that does not exist",
-                event.session_id()
-            ))
+            // This can only happen while the validator is syncing, as otherwise it should never
+            // receive a completion event for an MPC instance it's not aware of
+            Ok(())
         })?;
         if let MPCSessionStatus::Finalizing(output) = &instance.status {
             instance.status = MPCSessionStatus::Finished(output.clone());
