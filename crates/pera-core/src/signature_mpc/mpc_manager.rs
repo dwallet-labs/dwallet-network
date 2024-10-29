@@ -40,6 +40,7 @@ struct SignatureMPCMessage {
     authority: AuthorityName,
 }
 
+// TODO (#283): Remove this trait
 /// A wrapper for the generic Party trait that allows creating new instances of the Party from only the threshold.
 /// Should be implemented internally in newer versions of the [`proof`] crate.
 pub trait CreatableParty: Advance {
