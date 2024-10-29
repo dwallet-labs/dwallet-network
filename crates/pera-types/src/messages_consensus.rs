@@ -281,7 +281,7 @@ pub enum ConsensusTransactionKind {
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
     // todo(zeev): add docs
-    SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    DwalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
     SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
     // Deprecated.
     RandomnessStateUpdate(u64, Vec<u8>),
@@ -489,7 +489,7 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
+            kind: ConsensusTransactionKind::DwalletMPCMessage(authority, message, session_id),
         }
     }
 
@@ -578,7 +578,7 @@ impl ConsensusTransaction {
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
             }
-            ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id) => {
+            ConsensusTransactionKind::DwalletMPCMessage(authority, message, session_id) => {
                 ConsensusTransactionKey::SignatureMPCMessage(
                     *authority,
                     message.clone(),

@@ -76,7 +76,7 @@ impl TransactionBlockKind {
                 native: rsu,
                 checkpoint_viewed_at,
             }),
-            K::SignatureMPCOutput(output) => T::SignatureMPCOutput(SignatureMPCOutputTransaction {
+            K::DwalletMPCOutput(output) => T::SignatureMPCOutput(SignatureMPCOutputTransaction {
                 native: output,
                 checkpoint_viewed_at,
             }),

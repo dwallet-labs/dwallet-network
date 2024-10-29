@@ -160,7 +160,7 @@ use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
 
-use crate::signature_mpc::mpc_manager::SignatureMPCManager;
+use crate::signature_mpc::mpc_manager::DwalletMPCManager;
 
 use crate::authority_client::NetworkAuthorityClient;
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
@@ -1492,10 +1492,12 @@ impl AuthorityState {
             effects_sig.as_ref(),
         )?;
 
-        // Check if there are any MPC events emitted from this transaction and if so, send them to the MPC service.
-        // Handle the MPC events here because there is access to the event, as the transaction has been just executed.
+        // Check if there are any MPC events emitted from this transaction 
+        // and if so, send them to the MPC service.
+        // Handle the MPC events here because there is access to the 
+        // event, as the transaction has been just executed.
         let _ = self
-            .handle_mpc_events(&inner_temporary_store, effects, epoch_store)
+            .handle_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await;
 
         // Allow testing what happens if we crash here.
@@ -1531,10 +1533,10 @@ impl AuthorityState {
         Ok(())
     }
 
-    /// Handle the MPC events emitted from the transaction, if any.
+    /// Handle the dWallet MPC events emitted from the transaction, if any.
     /// The filtering to handle only MPC related events
-    /// happens within [`SignatureMPCManager::handle_mpc_events`] function.
-    async fn handle_mpc_events(
+    /// happens within [`DwalletMPCManager::event_handler`] function.
+    async fn handle_dwallet_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,
@@ -1548,6 +1550,7 @@ impl AuthorityState {
             TransactionEffects::V2(effects) => effects.status(),
         };
         if !status.is_ok() {
+            // TODO (#303): Decide what to do about a failed transaction with MPC events.
             // If the transaction failed, we don't need to handle MPC events.
             return Ok(());
         }
@@ -1555,14 +1558,13 @@ impl AuthorityState {
         match signature_mpc_manager {
             Some(mpc_manager) => {
                 let mut mpc_manager = mpc_manager.lock().await;
-                mpc_manager.handle_mpc_events(&inner_temporary_store.events.data)
+                mpc_manager.event_handler(&inner_temporary_store.events.data)
             }
             None => {
                 // Log if the MPC manager is not initialized.
                 // This function is being executed for all events,
                 // some events are being emitted before the MPC manager is initialized.
                 // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are emitted.
-                // TODO (#303): Decide what to do about a failed transaction with MPC events.
                 info!("MPC manager is not initialized");
                 Ok(())
             }

@@ -58,7 +58,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
-    use pera_types::messages_signature_mpc::SignatureMPCOutput;
+    use pera_types::messages_signature_mpc::DwalletMPCOutput;
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -299,7 +299,6 @@ mod checked {
 
         // We must charge object read here during transaction execution, because if this fails
         // we must still ensure an effect is committed and all objects versions incremented
-
         let result = gas_charger.charge_input_objects(temporary_store);
         let mut result = result.and_then(|()| {
             let mut execution_result = if deny_cert {
@@ -716,9 +715,9 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
-            TransactionKind::SignatureMPCOutput(data) => {
+            TransactionKind::DwalletMPCOutput(data) => {
                 // todo(zeev): why is it ignored?
-                let res = setup_and_execute_signature_mpc_output(
+                setup_and_execute_signature_mpc_output(
                     data,
                     temporary_store,
                     tx_ctx,
@@ -726,7 +725,7 @@ mod checked {
                     gas_charger,
                     protocol_config,
                     metrics,
-                );
+                )?;
 
                 Ok(Mode::empty_results())
             }
@@ -1105,7 +1104,7 @@ mod checked {
     /// of them did, so the output is stored on the chain.
     /// todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1799362302
     fn setup_and_execute_signature_mpc_output(
-        data: SignatureMPCOutput,
+        data: DwalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
         tx_ctx: &mut TxContext,
         move_vm: &Arc<MoveVM>,

@@ -48,7 +48,7 @@
 //! transactions.
 //! — **MPCEvent Handling**: Detects and processes [`CreatedProofMPCEvent`] and
 //! [`CompletedProofMPCSessionEvent`] to manage MPC sessions.
-//! — **[`SignatureMPCInstance`]**: Manages individual MPC sessions, including tracking messages,
+//! — **[`DwalletMPCInstance`]**: Manages individual MPC sessions, including tracking messages,
 //! advancing the cryptographic steps, and verifying outputs.
 //!
 //! ## Handling Messages and Outputs
@@ -173,7 +173,7 @@ fn authority_name_to_party_id(
 /// Signature MPC Session Instance.
 /// It keeps track of the session status, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-struct SignatureMPCInstance<Party: CreatableParty> {
+struct DwalletMPCInstance<Party: CreatableParty> {
     status: MPCSessionStatus<Party::OutputValue>,
     /// The messages that are pending to be executed while advancing the instance.
     /// We need to accumulate a threshold of those before advancing the instance.
@@ -195,7 +195,7 @@ struct SignatureMPCInstance<Party: CreatableParty> {
     party: Option<Party>,
 }
 
-impl<P: CreatableParty> SignatureMPCInstance<P> {
+impl<P: CreatableParty> DwalletMPCInstance<P> {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -231,8 +231,6 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     /// party instance, it continues the process with it.
     /// If not, it creates a new party based on the
     /// participating validators, and their assigned IDs.
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1799190311
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1811389017
     fn advance(&mut self, auxiliary_input: &P::AuxiliaryInput) -> PeraResult<()> {
         // Take ownership of the current party, or create a new one if it's the first advance.
         let party = self
@@ -268,7 +266,9 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
         if let Some(msg) = message {
             let consensus_adapter = Arc::clone(&self.consensus_adapter);
             let epoch_store = Arc::clone(&self.epoch_store()?);
-            // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1808577675
+            // Spawn sends this message asynchronously via a thread
+            // so that [`self.advance`] function will stay synchronous,
+            // and can be parallelized with Rayon.
             tokio::spawn(async move {
                 let _ = consensus_adapter
                     .submit_to_consensus(&[msg], &epoch_store)
@@ -299,8 +299,10 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
         })
     }
 
-    /// Create a new consensus transaction with the flow result (output) to be sent to the other MPC parties.
-    /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
+    /// Create a new consensus transaction with the flow result
+    /// (output) to be sent to the other MPC parties.
+    /// Returns None if the epoch switched in the middle and was
+    /// not available or if this party is not the aggregator.
     /// Only the aggregator party should send the output to the other parties.
     fn new_proof_mpc_output_message(&self, output: P::OutputValue) -> Option<ConsensusTransaction> {
         self.epoch_store().ok().and_then(|epoch_store| {
@@ -325,7 +327,6 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     /// If the message is from an already recorded party within the same round, it will be ignored
     /// (as each party can send only one message per round).
     /// When all required messages are received, the instance will be advanced.
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807765223
     // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807765430
     fn store_message(
         &mut self,
@@ -366,7 +367,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
 
 /// Manages the lifecycle and execution of Signature MPC (Multiparty Computation) instances.
 ///
-/// The `SignatureMPCManager` responsible for tracking, activating,
+/// The [`DwalletMPCManager`] responsible for tracking, activating,
 /// and managing MPC instances, ensuring smooth
 /// cryptographic processes across multiple parties in the network.
 /// It coordinates message flow, handles the state of
@@ -378,9 +379,9 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
 /// Ensures pending instances are activated in the order they are received, using a queue.
 /// — **Execution and Deactivation**: Executes active instances and deactivates them once completed.
 /// todo: rename and https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807766408.
-pub struct SignatureMPCManager<P: CreatableParty> {
+pub struct DwalletMPCManager<P: CreatableParty> {
     // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807766541
-    mpc_instances: HashMap<ObjectID, SignatureMPCInstance<P>>,
+    mpc_instances: HashMap<ObjectID, DwalletMPCInstance<P>>,
     /// Used to keep track of the order in which pending instances are received,
     /// so they are activated in order of arrival.
     pending_instances_queue: VecDeque<ObjectID>,
@@ -398,9 +399,9 @@ pub struct SignatureMPCManager<P: CreatableParty> {
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with `Rayon`.
-unsafe impl<P: CreatableParty + Sync + Send> Send for SignatureMPCInstance<P> {}
+unsafe impl<P: CreatableParty + Sync + Send> Send for DwalletMPCInstance<P> {}
 
-impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
+impl<P: CreatableParty + Sync + Send> DwalletMPCManager<P> {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -467,7 +468,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     /// # Returns
     /// — `Ok(())` if all events are successfully processed.
     /// — `Err` if any event fails to deserialize, or an MPC instance cannot be finalized.
-    pub fn handle_mpc_events(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
+    pub fn event_handler(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
         events.iter().try_for_each(|event| {
             if P::InitEvent::type_() == event.type_ {
                 let deserialized_event = bcs::from_bytes(&event.contents)?;
@@ -505,9 +506,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     /// — `Err` if any instance fails during the advance process.
     ///
     // TODO (#263): Implement logic to mark and punish validators responsible for failed advances.
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1799327439
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult<()> {
-        // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1799321713
         let threshold = ((self.number_of_parties * 2) + 2) / 3;
 
         // Collect instances that are ready to advance.
@@ -616,7 +615,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         }
 
         // Create and register the new MPC instance.
-        let new_instance = SignatureMPCInstance::new(
+        let new_instance = DwalletMPCInstance::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.epoch_id,

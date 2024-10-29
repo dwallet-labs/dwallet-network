@@ -700,7 +700,7 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
-            TransactionKind::SignatureMPCOutput(_) => {
+            TransactionKind::DwalletMPCOutput(_) => {
                 panic!("SignatureMPCOutput should not exist in v2");
             }
         }?;

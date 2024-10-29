@@ -668,7 +668,7 @@ mod checked {
             TransactionKind::RandomnessStateUpdate(_) => {
                 panic!("RandomnessStateUpdate should not exist in v1");
             }
-            TransactionKind::SignatureMPCOutput(_) => {
+            TransactionKind::DwalletMPCOutput(_) => {
                 panic!("SignatureMPCOutput should not exist in v1");
             }
         }?;

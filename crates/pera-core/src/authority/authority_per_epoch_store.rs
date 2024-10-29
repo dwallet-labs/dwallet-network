@@ -76,7 +76,7 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
-use crate::signature_mpc::mpc_manager::SignatureMPCManager;
+use crate::signature_mpc::mpc_manager::DwalletMPCManager;
 use crate::signature_mpc::proof::ProofParty;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
@@ -102,7 +102,7 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::messages_signature_mpc::SignatureMPCOutput;
+use pera_types::messages_signature_mpc::DwalletMPCOutput;
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -338,7 +338,7 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing Proof Signature MPC flows.
-    pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
+    pub proof_mpc_manager: OnceCell<tokio::sync::Mutex<DwalletMPCManager<ProofParty>>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -926,7 +926,7 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the proof MPC manager when a new epoch starts.
     pub async fn set_proof_mpc_manager(
         &self,
-        manager: SignatureMPCManager<ProofParty>,
+        manager: DwalletMPCManager<ProofParty>,
     ) -> PeraResult<()> {
         if self
             .proof_mpc_manager
@@ -2425,7 +2425,7 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, _),
+                kind: ConsensusTransactionKind::DwalletMPCMessage(authority, message, _),
                 ..
             }) => {
                 if transaction.sender_authority() != *authority {
@@ -3597,7 +3597,7 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
+                kind: ConsensusTransactionKind::DwalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
                 let Some(signature_mpc_manager) = self.proof_mpc_manager.get() else {
@@ -3704,7 +3704,7 @@ impl AuthorityPerEpochStore {
         // System transactions either contain a shared object or are proof MPC output transactions.
         let is_proof_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
-            TransactionKind::SignatureMPCOutput(_)
+            TransactionKind::DwalletMPCOutput(_)
         );
         assert!(system_transaction.contains_shared_object() || is_proof_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())

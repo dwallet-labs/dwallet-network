@@ -36,7 +36,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_signature_mpc::SignatureMPCOutput;
+use pera_types::messages_signature_mpc::DwalletMPCOutput;
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -394,7 +394,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         if is_valid_transaction {
                             let transaction =
                                 VerifiedTransaction::new_signature_mpc_output_system_transaction(
-                                    SignatureMPCOutput {
+                                    DwalletMPCOutput {
                                         session_id: *session_id,
                                         // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files?diff=unified&w=1#r1808190284
                                         sender_address: *sender_address,
@@ -640,7 +640,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessStateUpdate(_, _) => "randomness_state_update",
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
-        ConsensusTransactionKind::SignatureMPCMessage(_, _, _) => "signature_mpc_message",
+        ConsensusTransactionKind::DwalletMPCMessage(_, _, _) => "signature_mpc_message",
         ConsensusTransactionKind::SignatureMPCOutput(_, _, _) => "signature_mpc_statements",
     }
 }

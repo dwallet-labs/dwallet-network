@@ -7,7 +7,7 @@ use shared_crypto::intent::IntentScope;
 
 /// The content of the system transaction that stores the MPC session output on the chain.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct SignatureMPCOutput {
+pub struct DwalletMPCOutput {
     /// The session ID of the MPC session.
     pub session_id: ObjectID,
     /// The address of the initiating user.
@@ -16,7 +16,7 @@ pub struct SignatureMPCOutput {
     pub value: Vec<u8>,
 }
 
-impl Message for SignatureMPCOutput {
+impl Message for DwalletMPCOutput {
     type DigestType = SignatureMPCOutputDigest;
     const SCOPE: IntentScope = IntentScope::SignatureMPCOutput;
 
