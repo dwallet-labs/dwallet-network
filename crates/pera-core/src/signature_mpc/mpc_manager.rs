@@ -297,6 +297,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
         }
     }
 
+    // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
     /// Tries to verify that the received output for the MPC session matches the one generated locally.
     /// Returns true if the output is correct, false otherwise.
     pub fn try_verify_output(
