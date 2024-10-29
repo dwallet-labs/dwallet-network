@@ -1100,7 +1100,8 @@ mod checked {
     }
 
     /// Executes the transaction to store the final MPC output on chain, so it will be accessible to the initiating user.
-    /// All the validators execute this TX locally, and if more than 2/3 of them did so the output is stored on chain.
+    /// Every validator executes this TX locally, and if more than two thirds of the validators voting power "vote"
+    /// to include this TX, by executing it locally, it's being included in the block.
     fn setup_and_execute_signature_mpc_output(
         mpc_output_data: SignatureMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
