@@ -15,6 +15,7 @@ use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, Flows};
 
 use pera_types::committee::EpochId;
+use pera_types::messages_signature_mpc::MPCRound;
 use rand_core::OsRng;
 use rayon::prelude::*;
 use schemars::_private::NoSerialize;
@@ -30,7 +31,6 @@ use std::{io, mem};
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
-use pera_types::messages_signature_mpc::MPCRound;
 
 /// The message a validator can send to the other parties while running a signature MPC session.
 #[derive(Clone)]
@@ -139,15 +139,16 @@ impl<P: Advance + mpc::Party> SignatureMPCInstance<P> {
         } else {
             panic!("damn");
         };
-        let advance_result = match party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng){
-            Ok(res) => res,
-            Err(e) => {
-                println!("Error: {:?}", e);
-                // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
-                self.pending_messages.clear();
-                return Ok(());
-            }
-        };
+        let advance_result =
+            match party.advance(self.pending_messages.clone(), auxiliary_input, &mut OsRng) {
+                Ok(res) => res,
+                Err(e) => {
+                    println!("Error: {:?}", e);
+                    // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
+                    self.pending_messages.clear();
+                    return Ok(());
+                }
+            };
         let msg = match advance_result {
             AdvanceResult::Advance((message, party)) => {
                 self.status = MPCSessionStatus::Active;
@@ -300,7 +301,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
         epoch_id: EpochId,
         max_active_mpc_instances: usize,
         number_of_parties: usize,
-        flow: Flows
+        flow: Flows,
     ) -> Self {
         Self {
             mpc_instances: HashMap::new(),
@@ -312,7 +313,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
             number_of_parties,
-            flow
+            flow,
         }
     }
 
@@ -336,7 +337,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
     /// We parallelize the advances with Rayon to speed up the process.
-    pub async fn handle_end_of_delivery(&mut self, mpc_round : MPCRound) -> PeraResult {
+    pub async fn handle_end_of_delivery(&mut self, mpc_round: MPCRound) -> PeraResult {
         let mut ready_to_advance = self
             .mpc_instances
             .iter_mut()
@@ -447,10 +448,7 @@ impl<P: Advance + mpc::Party + Sync + Send> SignatureMPCManager<P> {
         if let MPCSessionStatus::Finalizing(output) = &instance.status {
             instance.status = MPCSessionStatus::Finished(output.clone());
             self.active_instances_counter -= 1;
-            info!(
-                "Finalized MPCInstance for session_id {:?}",
-                session_id
-            );
+            info!("Finalized MPCInstance for session_id {:?}", session_id);
             return Ok(());
         }
         Err(PeraError::Unknown(format!(

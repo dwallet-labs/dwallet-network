@@ -371,11 +371,14 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
 
                         let is_valid_transaction = match mpc_round {
                             MPCRound::DKGFirst => {
-                                let mut signature_mpc_manager = self.epoch_store.dkg_first_mpc_manager.get();
+                                let mut signature_mpc_manager =
+                                    self.epoch_store.dkg_first_mpc_manager.get();
                                 match signature_mpc_manager {
                                     Some(mpc_manager) => {
                                         let signature_mpc_manager = mpc_manager.lock().await;
-                                        match signature_mpc_manager.try_verify_output(value, session_id) {
+                                        match signature_mpc_manager
+                                            .try_verify_output(value, session_id)
+                                        {
                                             Ok(is_valid) => is_valid,
                                             Err(e) => {
                                                 error!(
@@ -394,11 +397,14 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 }
                             }
                             MPCRound::DKGSecond => {
-                                let mut signature_mpc_manager = self.epoch_store.dkg_second_mpc_manager.get();
+                                let mut signature_mpc_manager =
+                                    self.epoch_store.dkg_second_mpc_manager.get();
                                 match signature_mpc_manager {
                                     Some(mpc_manager) => {
                                         let signature_mpc_manager = mpc_manager.lock().await;
-                                        match signature_mpc_manager.try_verify_output(value, session_id) {
+                                        match signature_mpc_manager
+                                            .try_verify_output(value, session_id)
+                                        {
                                             Ok(is_valid) => is_valid,
                                             Err(e) => {
                                                 error!(

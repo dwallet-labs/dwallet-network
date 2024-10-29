@@ -1,4 +1,5 @@
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
+use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use pera_types::{
     base_types::{ObjectID, PeraAddress},
     id::ID,
@@ -6,7 +7,6 @@ use pera_types::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
 /// Generic trait for all MPC events.
 pub trait MPCEvent {

@@ -1,16 +1,18 @@
-use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent, CreatedDKGSessionEvent, MPCEvent};
+use crate::signature_mpc::mpc_events::{
+    CompletedProofMPCSessionEvent, CreatedDKGSessionEvent, CreatedProofMPCEvent, MPCEvent,
+};
 use crate::signature_mpc::mpc_manager::{CreatableParty, SignatureMPCInstance};
 use group::{secp256k1, PartyID, Samplable};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;
 use maurer::knowledge_of_discrete_log::PublicParameters;
 use maurer::Language;
+use mpc::{Advance, Party};
 use proof::GroupsPublicParametersAccessors;
 use rand_core::CryptoRngCore;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::iter;
 use std::marker::PhantomData;
-use mpc::{Advance, Party};
-use serde::{Deserialize, Serialize};
 use twopc_mpc::dkg::Protocol;
 // TODO (#228): Remove this file & all proof MPC code.
 
@@ -32,13 +34,11 @@ pub fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
 }
 
 /// A party in the proof MPC flow.
-pub type AsyncProtocol=
-    twopc_mpc::secp256k1::class_groups::AsyncProtocol<>;
+pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 pub type DKGFirstParty =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty;
 
-pub type DKGSecondParty =
-    <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty;
+pub type DKGSecondParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty;
 
 pub trait AuxiliarySecond: mpc::Party {
     fn first_auxiliary_input(
@@ -55,19 +55,23 @@ impl AuxiliarySecond for DKGSecondParty {
         session_id: Vec<u8>,
     ) -> Self::AuxiliaryInput {
         let first_round_auxiliary_input = DKGFirstParty::first_auxiliary_input(session_id);
-        (first_round_auxiliary_input, first_round_output, centralized_party_public_key_share).into()
+        (
+            first_round_auxiliary_input,
+            first_round_output,
+            centralized_party_public_key_share,
+        )
+            .into()
     }
 }
 
 pub trait AuxiliaryFirst: mpc::Party {
-    fn first_auxiliary_input( session_id : Vec<u8>) -> Self::AuxiliaryInput;
+    fn first_auxiliary_input(session_id: Vec<u8>) -> Self::AuxiliaryInput;
 }
 
 impl AuxiliaryFirst for DKGFirstParty {
-    fn first_auxiliary_input(
-        session_id: Vec<u8>,
-    ) -> Self::AuxiliaryInput {
-        let secp256k1_group_public_parameters = class_groups_constants::protocol_public_parameters().unwrap();
+    fn first_auxiliary_input(session_id: Vec<u8>) -> Self::AuxiliaryInput {
+        let secp256k1_group_public_parameters =
+            class_groups_constants::protocol_public_parameters().unwrap();
 
         let parties = (0..3).collect::<HashSet<PartyID>>();
         // let session_id = commitment::CommitmentSizedNumber::from_be_slice(&session_id);

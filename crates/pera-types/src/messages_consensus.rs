@@ -7,6 +7,7 @@ use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
 };
+use crate::messages_signature_mpc::MPCRound;
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -23,7 +24,6 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::messages_signature_mpc::MPCRound;
 
 /// Only commit_timestamp_ms is passed to the move call currently.
 /// However we include epoch and round to make sure each ConsensusCommitPrologue has a unique tx digest.
@@ -144,7 +144,12 @@ impl Debug for ConsensusTransactionKey {
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
             }
-            ConsensusTransactionKey::SignatureMPCOutput(value, session_id, sender_address, dwallet_cap_id) => {
+            ConsensusTransactionKey::SignatureMPCOutput(
+                value,
+                session_id,
+                sender_address,
+                dwallet_cap_id,
+            ) => {
                 write!(
                     f,
                     "SignatureMPCOutput({:?}, {:?}, {:?}, {:?})",
@@ -504,7 +509,13 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address, dwallet_cap_id, mpc_round),
+            kind: ConsensusTransactionKind::SignatureMPCOutput(
+                value,
+                session_id,
+                sender_address,
+                dwallet_cap_id,
+                mpc_round,
+            ),
         }
     }
 
@@ -586,14 +597,18 @@ impl ConsensusTransaction {
                     session_id.clone(),
                 )
             }
-            ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address, dwallet_cap_id, _) => {
-                ConsensusTransactionKey::SignatureMPCOutput(
-                    value.clone(),
-                    *session_id,
-                    *sender_address,
-                    *dwallet_cap_id,
-                )
-            }
+            ConsensusTransactionKind::SignatureMPCOutput(
+                value,
+                session_id,
+                sender_address,
+                dwallet_cap_id,
+                _,
+            ) => ConsensusTransactionKey::SignatureMPCOutput(
+                value.clone(),
+                *session_id,
+                *sender_address,
+                *dwallet_cap_id,
+            ),
         }
     }
 
@@ -635,5 +650,5 @@ fn test_jwk_compatibility() {
 
 pub enum Flows {
     FirstDKG,
-    SecondDKG
+    SecondDKG,
 }

@@ -50,6 +50,7 @@ mod checked {
     use pera_types::digests::{
         get_mainnet_chain_identifier, get_testnet_chain_identifier, ChainIdentifier,
     };
+    use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
     use pera_types::effects::TransactionEffects;
     use pera_types::error::{ExecutionError, ExecutionErrorKind};
     use pera_types::execution::is_certificate_denied;
@@ -79,7 +80,6 @@ mod checked {
         PERA_AUTHENTICATOR_STATE_OBJECT_ID, PERA_FRAMEWORK_ADDRESS, PERA_FRAMEWORK_PACKAGE_ID,
         PERA_SYSTEM_PACKAGE_ID,
     };
-    use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 
     #[instrument(name = "tx_execute_to_effects", level = "debug", skip_all)]
     pub fn execute_transaction_to_effects<Mode: ExecutionMode>(

@@ -76,6 +76,7 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
+use crate::signature_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::signature_mpc::mpc_manager::SignatureMPCManager;
 use crate::signature_mpc::proof::ProofParty;
 use crate::signature_verifier::*;
@@ -113,7 +114,6 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use crate::signature_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -341,7 +341,6 @@ pub struct AuthorityPerEpochStore {
     /// State machine managing Proof Signature MPC flows.
     pub dkg_first_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<DKGFirstParty>>>,
     pub dkg_second_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<DKGSecondParty>>>,
-
     // /// State machine managing DWallets DKG flows
     // pub dwallet_dkg_init_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
 }
@@ -3221,14 +3220,18 @@ impl AuthorityPerEpochStore {
         if let Some(signature_mpc_manager) = self.dkg_first_mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
-            signature_mpc_manager.handle_end_of_delivery(MPCRound::DKGFirst).await?;
+            signature_mpc_manager
+                .handle_end_of_delivery(MPCRound::DKGFirst)
+                .await?;
         };
 
         // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
         if let Some(signature_mpc_manager) = self.dkg_second_mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
-            signature_mpc_manager.handle_end_of_delivery(MPCRound::DKGSecond).await?;
+            signature_mpc_manager
+                .handle_end_of_delivery(MPCRound::DKGSecond)
+                .await?;
         };
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
@@ -3419,8 +3422,7 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind:
-                    ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _, _),
+                kind: ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _, _),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

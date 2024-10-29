@@ -89,10 +89,10 @@ pub mod versioned;
 pub mod zk_login_authenticator;
 pub mod zk_login_util;
 
+pub mod dwallet_mpc;
 #[cfg(any(test, feature = "test-utils"))]
 #[path = "./unit_tests/utils.rs"]
 pub mod utils;
-pub mod dwallet_mpc;
 
 macro_rules! built_in_ids {
     ($($addr:ident / $id:ident = $init:expr);* $(;)?) => {

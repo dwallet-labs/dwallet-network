@@ -17,12 +17,18 @@ type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentr
 ///   decentralized party from the first round.
 /// * `session_id` - A unique identifier for the session, represented as a hexadecimal string.
 ///   Received from the `pera_system::dwallet_2pc_mpc_ecdsa_k1::start_first_dkg_session` transaction.
-pub fn create_dkg_output(decentralized_first_round_output: Vec<u8>, session_id: String) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
+pub fn create_dkg_output(
+    decentralized_first_round_output: Vec<u8>,
+    session_id: String,
+) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareAndPublicKeyShare = bcs::from_bytes(&decentralized_first_round_output)?;
     let public_parameters = class_groups_constants::protocol_public_parameters()?;
     let session_id = commitment::CommitmentSizedNumber::from_be_hex(&session_id);
-    let (public_key_share_and_proof, centralized_output) =
-        DKGCentralizedParty::advance(decentralized_first_round_output, &(public_parameters, session_id).into(), &mut OsRng)?;
+    let (public_key_share_and_proof, centralized_output) = DKGCentralizedParty::advance(
+        decentralized_first_round_output,
+        &(public_parameters, session_id).into(),
+        &mut OsRng,
+    )?;
     let public_key_share_and_proof = bcs::to_bytes(&public_key_share_and_proof)?;
     let centralized_output = bcs::to_bytes(&centralized_output)?;
     Ok((public_key_share_and_proof, centralized_output))

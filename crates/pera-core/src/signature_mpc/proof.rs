@@ -35,7 +35,8 @@ pub type ProofParty = proof::aggregation::asynchronous::Party<
 >;
 
 /// The language used in the proof MPC flow.
-pub type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
+pub type Lang =
+    maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
 
 // impl CreatableParty for ProofParty {
 //     type InitEvent = CreatedProofMPCEvent;
