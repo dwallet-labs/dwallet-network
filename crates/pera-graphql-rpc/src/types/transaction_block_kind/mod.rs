@@ -6,7 +6,7 @@ use self::{
     end_of_epoch::ChangeEpochTransaction, genesis::GenesisTransaction,
     randomness_state_update::RandomnessStateUpdateTransaction,
 };
-use crate::types::transaction_block_kind::signature_mpc_output::SignatureMPCOutputTransaction;
+use crate::types::transaction_block_kind::signature_mpc_output::DwalletMPCOutputTransaction;
 use crate::types::transaction_block_kind::{
     authenticator_state_update::AuthenticatorStateUpdateTransaction,
     end_of_epoch::EndOfEpochTransaction, programmable::ProgrammableTransactionBlock,
@@ -32,7 +32,7 @@ pub(crate) enum TransactionBlockKind {
     AuthenticatorState(AuthenticatorStateUpdateTransaction),
     Randomness(RandomnessStateUpdateTransaction),
     EndOfEpoch(EndOfEpochTransaction),
-    SignatureMPCOutput(SignatureMPCOutputTransaction),
+    DwalletMPCOutput(DwalletMPCOutputTransaction),
 }
 
 impl TransactionBlockKind {
@@ -76,7 +76,7 @@ impl TransactionBlockKind {
                 native: rsu,
                 checkpoint_viewed_at,
             }),
-            K::DwalletMPCOutput(output) => T::SignatureMPCOutput(SignatureMPCOutputTransaction {
+            K::DwalletMPCOutput(output) => T::DwalletMPCOutput(DwalletMPCOutputTransaction {
                 native: output,
                 checkpoint_viewed_at,
             }),

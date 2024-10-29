@@ -717,7 +717,7 @@ mod checked {
             }
             TransactionKind::DwalletMPCOutput(data) => {
                 // todo(zeev): why is it ignored?
-                setup_and_execute_signature_mpc_output(
+                setup_and_execute_dwallet_mpc_output(
                     data,
                     temporary_store,
                     tx_ctx,
@@ -1098,13 +1098,13 @@ mod checked {
         builder
     }
 
-    /// Executes the transaction to store the final MPC output on the chain,
-    /// so it will be accessible to the initiating user.
-    /// All the validators execute this TX locally, and if more than 2/3
-    /// of them did, so the output is stored on the chain.
-    /// todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1799362302
-    fn setup_and_execute_signature_mpc_output(
-        data: DwalletMPCOutput,
+    /// Executes the transaction to store the final MPC output on-chain,
+    /// making it accessible to the initiating user.
+    /// Each validator executes this transaction locally,
+    /// and if validators represent more than two-thirds of the voting power
+    /// "vote" to include it by executing it, the transaction is added to the block.
+    fn setup_and_execute_dwallet_mpc_output(
+        mpc_output_data: DwalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
         tx_ctx: &mut TxContext,
         move_vm: &Arc<MoveVM>,
@@ -1121,9 +1121,9 @@ mod checked {
                 // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1806162377
                 vec![],
                 vec![
-                    CallArg::Pure(data.sender_address.to_vec()),
-                    CallArg::Pure(data.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&data.value).unwrap()),
+                    CallArg::Pure(mpc_output_data.initiating_address.to_vec()),
+                    CallArg::Pure(mpc_output_data.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&mpc_output_data.value).unwrap()),
                 ],
             );
             assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");

@@ -402,9 +402,9 @@ impl SignatureMPCMessageDigest {
     Deserialize,
     JsonSchema,
 )]
-pub struct SignatureMPCOutputDigest(pub Digest);
+pub struct DwalletMPCOutputDigest(pub Digest);
 
-impl SignatureMPCOutputDigest {
+impl DwalletMPCOutputDigest {
     pub const fn new(digest: [u8; 32]) -> Self {
         Self(Digest::new(digest))
     }

@@ -361,10 +361,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
-                    if let ConsensusTransactionKind::SignatureMPCOutput(
+                    if let ConsensusTransactionKind::DwalletMPCOutput(
                         value,
                         session_id,
-                        sender_address,
+                        initiating_address,
                     ) = &transaction.kind
                     {
                         info!(
@@ -373,13 +373,12 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         );
 
                         let mut mpc_manager = self.epoch_store.proof_mpc_manager.get();
-                        // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files?diff=unified&w=1#r1798936930
                         let is_valid_transaction = match mpc_manager {
                             Some(mpc_manager) => {
                                 mpc_manager.lock().await
-                                    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files?diff=unified&w=1#r1799347218
                                     .try_verify_output(value, session_id)
                                     .unwrap_or_else(|e| {
+                                        // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
                                         error!("error verifying ProofMPCOutput for the session {:?} from party {:?}: {:?}",session_id, authority_index, e);
                                         false
                                     })
@@ -396,8 +395,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 VerifiedTransaction::new_signature_mpc_output_system_transaction(
                                     DwalletMPCOutput {
                                         session_id: *session_id,
-                                        // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files?diff=unified&w=1#r1808190284
-                                        sender_address: *sender_address,
+                                        initiating_address: *initiating_address,
                                         value: value.clone(),
                                     },
                                 );
@@ -641,7 +639,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
         ConsensusTransactionKind::DwalletMPCMessage(_, _, _) => "signature_mpc_message",
-        ConsensusTransactionKind::SignatureMPCOutput(_, _, _) => "signature_mpc_statements",
+        ConsensusTransactionKind::DwalletMPCOutput(_, _, _) => "signature_mpc_statements",
     }
 }
 

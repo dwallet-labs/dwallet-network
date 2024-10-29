@@ -1444,7 +1444,7 @@ impl TransactionKind {
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
-            Self::DwalletMPCOutput(_) => "SignatureMPCOutput",
+            Self::DwalletMPCOutput(_) => "DwalletMPCOutput",
         }
     }
 }

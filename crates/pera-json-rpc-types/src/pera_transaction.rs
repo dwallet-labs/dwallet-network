@@ -567,7 +567,7 @@ impl PeraTransactionBlockKind {
             TransactionKind::DwalletMPCOutput(output) => {
                 Self::SignatureMPCOutput(PeraSignatureMPCOutput {
                     session_id: output.session_id,
-                    sender_address: output.sender_address,
+                    sender_address: output.initiating_address,
                     value: output.value,
                 })
             }
@@ -673,7 +673,7 @@ impl PeraTransactionBlockKind {
             TransactionKind::DwalletMPCOutput(output) => {
                 Self::SignatureMPCOutput(PeraSignatureMPCOutput {
                     session_id: output.session_id,
-                    sender_address: output.sender_address,
+                    sender_address: output.initiating_address,
                     value: output.value,
                 })
             }

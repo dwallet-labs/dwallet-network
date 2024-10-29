@@ -282,7 +282,7 @@ pub enum ConsensusTransactionKind {
     NewJWKFetched(AuthorityName, JwkId, JWK),
     // todo(zeev): add docs
     DwalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
+    DwalletMPCOutput(Vec<u8>, ObjectID, PeraAddress),
     // Deprecated.
     RandomnessStateUpdate(u64, Vec<u8>),
     // DKG is used to generate keys for use in the random beacon protocol.
@@ -503,7 +503,7 @@ impl ConsensusTransaction {
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address),
+            kind: ConsensusTransactionKind::DwalletMPCOutput(value, session_id, sender_address),
         }
     }
 
@@ -585,7 +585,7 @@ impl ConsensusTransaction {
                     session_id.clone(),
                 )
             }
-            ConsensusTransactionKind::SignatureMPCOutput(value, session_id, sender_address) => {
+            ConsensusTransactionKind::DwalletMPCOutput(value, session_id, sender_address) => {
                 ConsensusTransactionKey::SignatureMPCOutput(
                     value.clone(),
                     *session_id,

@@ -2421,13 +2421,22 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCOutput(_, _, _),
+                // This verification is intentionally left empty and always returns true,
+                // as the actual output verification is performed earlier,
+                // before it is replaced by the system transaction,
+                // via the [`DwalletMPCManager::try_verify_output`] function.
+                kind: ConsensusTransactionKind::DwalletMPCOutput(_, _, _),
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DwalletMPCMessage(authority, message, _),
                 ..
             }) => {
+                // When sending an MPC message, the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used
+                // to identify the authority that sent the MPC message.
                 if transaction.sender_authority() != *authority {
                     // TODO (#263): Mark the validator who sent this message as malicious
                     warn!(
@@ -3390,7 +3399,7 @@ impl AuthorityPerEpochStore {
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind:
-                    ConsensusTransactionKind::SignatureMPCOutput(
+                    ConsensusTransactionKind::DwalletMPCOutput(
                         _statements,
                         _session_id,
                         _sender_address,

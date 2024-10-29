@@ -604,7 +604,7 @@ impl<P: CreatableParty + Sync + Send> DwalletMPCManager<P> {
         );
 
         // Queue the instance if the active limit is reached.
-        // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1799333519
+        // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing.
         if self.active_instances_counter >= self.max_active_mpc_instances {
             self.pending_instances_queue.push_back(session_id_bytes);
             info!(
