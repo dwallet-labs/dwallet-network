@@ -1,3 +1,6 @@
+DWallet
+	public struct
+	0x3::dwallet
 InitiateDKGSessionEvent
 	public struct
 	0x3::dwallet
@@ -25,6 +28,9 @@ CompletedSecondDKGRoundEvent
 DWalletCap
 	public struct
 	0x3::dwallet
+create_dwallet
+	public(package) fun
+	0x3::dwallet
 create_dwallet_cap
 	public(package) fun
 	0x3::dwallet
@@ -40,6 +46,9 @@ create_first_dkg_round_output
 create_second_dkg_round_output
 	public fun
 	0x3::dwallet
+Secp256K1
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 DKGSession
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -56,9 +65,6 @@ StartDKGSecondRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 DKGSecondRoundData
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-CompletedSecondDKGRoundData
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 CompletedSecondDKGRoundEvent

@@ -4,6 +4,7 @@ title: Module `0x3::dwallet`
 
 
 
+-  [Resource `DWallet`](#0x3_dwallet_DWallet)
 -  [Struct `InitiateDKGSessionEvent`](#0x3_dwallet_InitiateDKGSessionEvent)
 -  [Resource `InitiateDKGSessionData`](#0x3_dwallet_InitiateDKGSessionData)
 -  [Struct `StartDKGSecondRoundEvent`](#0x3_dwallet_StartDKGSecondRoundEvent)
@@ -14,6 +15,7 @@ title: Module `0x3::dwallet`
 -  [Struct `CompletedSecondDKGRoundEvent`](#0x3_dwallet_CompletedSecondDKGRoundEvent)
 -  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
 -  [Constants](#@Constants_0)
+-  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `create_dwallet_cap`](#0x3_dwallet_create_dwallet_cap)
 -  [Function `launch_initiate_dkg_session`](#0x3_dwallet_launch_initiate_dkg_session)
 -  [Function `launch_dkg_second_round`](#0x3_dwallet_launch_dkg_second_round)
@@ -28,6 +30,52 @@ title: Module `0x3::dwallet`
 </code></pre>
 
 
+
+<a name="0x3_dwallet_DWallet"></a>
+
+## Resource `DWallet`
+
+<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code> represents a wallet that is created after the DKG process.
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt; <b>has</b> store, key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
 
 <a name="0x3_dwallet_InitiateDKGSessionEvent"></a>
 
@@ -365,12 +413,46 @@ title: Module `0x3::dwallet`
 
 
 
+<a name="0x3_dwallet_create_dwallet"></a>
+
+## Function `create_dwallet`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet">create_dwallet</a>&lt;T: drop&gt;(session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet">create_dwallet</a>&lt;T: drop&gt;(
+    session_id: ID,
+    dwallet_cap_id: ID,
+    output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext
+): <a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt; {
+    <a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt; {
+        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+        session_id,
+        dwallet_cap_id,
+        output,
+    }
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x3_dwallet_create_dwallet_cap"></a>
 
 ## Function `create_dwallet_cap`
 
 Create a new <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code>
-The holder of this capability owns the <code>DWallet</code>.
+The holder of this capability owns the <code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet_cap">create_dwallet_cap</a>(ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>

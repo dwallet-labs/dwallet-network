@@ -3,8 +3,11 @@
 
 #[allow(unused_const)]
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
+    use pera_system::dwallet;
     use pera_system::dwallet::{create_dwallet_cap, DWalletCap};
     use pera::event;
+
+    public struct Secp256K1 has drop {}
 
     public struct DKGSession has key {
         id: UID,
@@ -107,14 +110,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
           input: vector<u8>
       }
 
-
-      public struct CompletedSecondDKGRoundData has key {
-              id: UID,
-              session_id: ID,
-              value: vector<u8>,
-              dwallet_cap_id: ID,
-          }
-
       public struct CompletedSecondDKGRoundEvent has copy, drop {
               session_id: ID,
               sender: address,
@@ -142,13 +137,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
            public fun create_second_dkg_round_output(session_initiator: address, session_id: ID, output: vector<u8>, dwallet_cap_id: ID, ctx: &mut TxContext) {
               assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
-              let proof_session_result = CompletedSecondDKGRoundData {
-                  id: object::new(ctx),
-                  session_id: session_id,
-                  value: output,
-                  dwallet_cap_id: dwallet_cap_id,
-              };
-              transfer::transfer(proof_session_result, session_initiator);
+              let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, ctx);
+              transfer::public_freeze_object(dwallet);
 
               let completed_proof_mpc_session_event = CompletedSecondDKGRoundEvent {
                   session_id: session_id,

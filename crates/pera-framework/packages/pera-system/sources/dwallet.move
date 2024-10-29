@@ -4,6 +4,30 @@
 module pera_system::dwallet {
     use pera::event;
 
+        #[allow(unused_field)]
+        /// `DWallet` represents a wallet that is created after the DKG process.
+        public struct DWallet<phantom T> has key, store {
+            id: UID,
+            session_id: ID,
+            dwallet_cap_id: ID,
+            // `output` of the DKG decentralized process.
+            output: vector<u8>,
+        }
+
+        public(package) fun create_dwallet<T: drop>(
+            session_id: ID,
+            dwallet_cap_id: ID,
+            output: vector<u8>,
+            ctx: &mut TxContext
+        ): DWallet<T> {
+            DWallet<T> {
+                id: object::new(ctx),
+                session_id,
+                dwallet_cap_id,
+                output,
+            }
+        }
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
     // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
