@@ -410,6 +410,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 SequencedConsensusTransactionKind::System(transaction),
                                 consensus_output.leader_author_index(),
                             ));
+                        } else {
+                            // TODO (#263): Mark and punish the malicious validator that sent an invalid output
                         }
                     }
 
