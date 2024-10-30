@@ -1,3 +1,4 @@
+use log::debug;
 /// This crate contains the cryptographic logic for the centralized 2PC-MPC party
 use mpc::two_party::Round;
 use rand_core::OsRng;
@@ -23,7 +24,8 @@ pub fn create_dkg_output(
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareAndPublicKeyShare = bcs::from_bytes(&decentralized_first_round_output)?;
     let public_parameters = class_groups_constants::protocol_public_parameters()?;
-    let session_id = commitment::CommitmentSizedNumber::from_be_hex(&session_id);
+    let session_id = commitment::CommitmentSizedNumber::from_be_slice(&vec![]);
+    debug!("{:?}", session_id);
     let (public_key_share_and_proof, centralized_output) = DKGCentralizedParty::advance(
         decentralized_first_round_output,
         &(public_parameters, session_id).into(),
