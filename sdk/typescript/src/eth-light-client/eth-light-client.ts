@@ -12,6 +12,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
+import { getSharedObjectRefById } from '../utils/sui-types.js';
 import {
 	getBeaconBlockData,
 	getBootstrapData,
@@ -25,7 +26,6 @@ import {
 	getAuthorityBinderByID,
 	getAuthorityByID,
 	getEthereumStateById,
-	getSharedObjectRefById,
 	stringToArrayU8Bcs,
 } from './utils.js';
 
