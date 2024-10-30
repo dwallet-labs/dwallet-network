@@ -12,7 +12,6 @@ use log::debug;
 pub fn hello_wasm(dkg_first_round_output: Vec<u8>, session_id: String) -> Result<Vec<u8>, JsErr> {
     console_error_panic_hook::set_once();
     console_log::init_with_level(log::Level::Debug).unwrap();
-    debug!("hello wasm {:?}", dkg_first_round_output);
     let output = match create_dkg_output(dkg_first_round_output, session_id) {
         Ok((output, _)) => output,
         Err(e) => {debug!("{:?}", e);return Ok(vec![1,2]);},

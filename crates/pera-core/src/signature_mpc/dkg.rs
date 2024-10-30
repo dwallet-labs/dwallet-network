@@ -74,8 +74,7 @@ impl AuxiliaryFirst for DKGFirstParty {
             class_groups_constants::protocol_public_parameters().unwrap();
 
         let parties = (0..3).collect::<HashSet<PartyID>>();
-        // let session_id = commitment::CommitmentSizedNumber::from_be_slice(&session_id);
-        let session_id = commitment::CommitmentSizedNumber::from_u8(8);
+        let session_id = commitment::CommitmentSizedNumber::from_be_slice(&session_id);
         Self::AuxiliaryInput {
             protocol_public_parameters: secp256k1_group_public_parameters,
             party_id: 1,
