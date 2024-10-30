@@ -7,8 +7,10 @@ use crate::NativesCostTable;
 use ethers::core::types::transaction::eip712::{EIP712WithDomain, Eip712};
 use ethers::prelude::transaction::eip712::EIP712Domain;
 use ethers::prelude::{Address, Eip712, EthAbiType, U256};
+use ethers::utils::hex;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::gas_algebra::InternalGas;
+use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_charge_gas_early_exit;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::loaded_data::runtime_types::Type;
@@ -18,8 +20,6 @@ use move_vm_types::values::{Value, Vector};
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 use std::collections::VecDeque;
-use ethers::utils::hex;
-use move_core_types::vm_status::StatusCode;
 
 /// Bind a `dwallet::DWalletCap` to an authority.
 #[derive(Clone, Debug, Serialize, Deserialize, Eip712, EthAbiType)]
@@ -114,11 +114,13 @@ pub fn create_authority_ack_transaction(
     let binder_with_domain = EIP712WithDomain::<DWalletBinder>::new(dwallet_binder)
         .unwrap()
         .set_domain(domain);
-    
-    let domain_separator = binder_with_domain.domain_separator()
+
+    let domain_separator = binder_with_domain
+        .domain_separator()
         .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
-    let struct_hash = binder_with_domain.struct_hash()
-        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;;
+    let struct_hash = binder_with_domain
+        .struct_hash()
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
 
     let digest_input = [&[0x19, 0x01], &domain_separator[..], &struct_hash[..]].concat();
     Ok(NativeResult::ok(
