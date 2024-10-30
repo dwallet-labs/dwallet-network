@@ -564,13 +564,11 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
-            TransactionKind::DwalletMPCOutput(output) => {
-                Self::DwalletMPCOutput(DwalletMPCOutput {
-                    session_id: output.session_id,
-                    sender_address: output.initiating_address,
-                    value: output.value,
-                })
-            }
+            TransactionKind::DwalletMPCOutput(output) => Self::DwalletMPCOutput(DwalletMPCOutput {
+                session_id: output.session_id,
+                sender_address: output.initiating_address,
+                value: output.value,
+            }),
         })
     }
 
@@ -670,13 +668,11 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
-            TransactionKind::DwalletMPCOutput(output) => {
-                Self::DwalletMPCOutput(DwalletMPCOutput {
-                    session_id: output.session_id,
-                    sender_address: output.initiating_address,
-                    value: output.value,
-                })
-            }
+            TransactionKind::DwalletMPCOutput(output) => Self::DwalletMPCOutput(DwalletMPCOutput {
+                session_id: output.session_id,
+                sender_address: output.initiating_address,
+                value: output.value,
+            }),
         })
     }
 

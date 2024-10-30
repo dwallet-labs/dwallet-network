@@ -4,11 +4,7 @@
 //! (MPC) events** emitted from the Pera blockchain.
 //! It offers structures and traits that align with on-chain Move events.
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
-use pera_types::{
-    base_types::{PeraAddress},
-    id::ID,
-    PERA_SYSTEM_ADDRESS,
-};
+use pera_types::{base_types::PeraAddress, id::ID, PERA_SYSTEM_ADDRESS};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 

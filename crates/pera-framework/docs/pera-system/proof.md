@@ -3,7 +3,7 @@ title: Module `0x3::proof`
 ---
 
 The proof module
-Responsible to start and manage the Proof generation MPC flow
+Responsible to start and manage the Proof generation MPC flow.
 Used only for testing the way we launch & manage an MPC flow.
 
 
@@ -196,7 +196,9 @@ Function to launch proof MPC flow.
     };
     // Emit <a href="../pera-framework/event.md#0x2_event">event</a> <b>to</b> start MPC flow.
     // Part of the implementation of section 3.2.1 in the Pera Async paper.
-    // When iterating over the transactions in the batch, MPC transactions will get exectuted locally
+    // See docs/<a href="../pera-framework/pera.md#0x2_pera">pera</a>-async.pdf
+    // When iterating over the transactions in the batch,
+    // MPC transactions will get executed locally
     // <b>to</b> catch the <a href="../pera-framework/event.md#0x2_event">event</a> <b>with</b> all the needed data <b>to</b> start the MPC flow.
     <b>let</b> created_proof_mpc_session_event = <a href="proof.md#0x3_proof_CreatedProofMPCSessionEvent">CreatedProofMPCSessionEvent</a> {
         // The session ID is a <a href="../pera-framework/random.md#0x2_random">random</a>, unique ID of the <a href="proof.md#0x3_proof_ProofSessionData">ProofSessionData</a> <a href="../pera-framework/object.md#0x2_object">object</a>.
@@ -219,8 +221,9 @@ Function to launch proof MPC flow.
 ## Function `create_proof_session_output`
 
 Function to create the proof session output.
-Creates it & transfers it to the user that initiated the proof MPC flow.
-Should be called only as a system transaction after all the validators received & verified the rust <code>DwalletMPCOutput</code>.
+Creates it and transfers it to the user that initiated the proof MPC flow.
+Should be called only as a system transaction after
+all the validators received and verified the Rust <code>DwalletMPCOutput</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
@@ -232,21 +235,26 @@ Should be called only as a system transaction after all the validators received 
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(session_initiator: <b>address</b>, session_id: ID, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> TxContext) {
-   <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == @0x0, <a href="proof.md#0x3_proof_ENotSystemAddress">ENotSystemAddress</a>);
-   <b>let</b> proof_session_result = <a href="proof.md#0x3_proof_ProofSessionOutput">ProofSessionOutput</a> {
-       id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
-       session_id: session_id,
-       <a href="proof.md#0x3_proof">proof</a>: output,
-   };
-   <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, session_initiator);
+<pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(
+    session_initiator: <b>address</b>,
+    session_id: ID,
+    output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    ctx: &<b>mut</b> TxContext
+) {
+    <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == @0x0, <a href="proof.md#0x3_proof_ENotSystemAddress">ENotSystemAddress</a>);
+    <b>let</b> proof_session_result = <a href="proof.md#0x3_proof_ProofSessionOutput">ProofSessionOutput</a> {
+        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+        session_id,
+        <a href="proof.md#0x3_proof">proof</a>: output,
+    };
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(proof_session_result, session_initiator);
 
-   <b>let</b> completed_proof_mpc_session_event = <a href="proof.md#0x3_proof_CompletedProofMPCSessionEvent">CompletedProofMPCSessionEvent</a> {
-       session_id: session_id,
-       sender: session_initiator,
-   };
+    <b>let</b> completed_proof_mpc_session_event = <a href="proof.md#0x3_proof_CompletedProofMPCSessionEvent">CompletedProofMPCSessionEvent</a> {
+        session_id: session_id,
+        sender: session_initiator,
+    };
 
-   <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(completed_proof_mpc_session_event);
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(completed_proof_mpc_session_event);
 }
 </code></pre>
 

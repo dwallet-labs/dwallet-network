@@ -67,6 +67,8 @@ use crate::consensus_handler::{
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
 use crate::consensus_manager::ConsensusManager;
+use crate::dwallet_mpc::mpc_manager::DwalletMPCManager;
+use crate::dwallet_mpc::proof::ProofParty;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
     DkgStatus, RandomnessManager, RandomnessReporter, VersionedProcessedMessage,
@@ -76,8 +78,6 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
-use crate::dwallet_mpc::mpc_manager::DwalletMPCManager;
-use crate::dwallet_mpc::proof::ProofParty;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use move_bytecode_utils::module_cache::SyncModuleCache;
