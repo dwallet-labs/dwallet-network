@@ -8,36 +8,52 @@ import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { stringToArrayU8Bcs } from '../eth-light-client/utils.js';
-import type { OwnedObjectRef } from '../types/objects.js';
+import { getSharedObjectRefById } from '../utils/sui-types.js';
+import { toPaddedBigEndianBytes } from '../zklogin/utils.js';
 
 const packageId = '0x3';
 const authorityBinderModuleName = 'authority_binder';
 
 /**
- * Creates a transaction hash for acknowledging authority binding.
+ * Creates an authority acknowledgment transaction hash.
  *
- * @param {OwnedObjectRef} binderObjRef - The reference to the binder object.
- * @param {boolean} virginBound - Whether this binding is for a virgin object (i.e., not previously bound).
- * @param {number} chainID - The ID of the blockchain.
+ * This function constructs a transaction block to call the `create_authority_ack_transaction_hash`
+ * function in the authority binder module.
+ *
+ * @param {string} dwalletBinderId - The ID of the dWallet binder.
+ * @param {boolean} virginBound - Indicates if this is a virgin binding.
+ * @param {number} chainID - The chain ID of the Ethereum network.
+ * @param {'Number' | 'HexString'} chainIDType - The type of the chain ID.
  * @param {string} domainName - The domain name for the transaction.
- * @param {string} domainVersion - The version of the domain.
- * @param {Keypair} keypair - The keypair used for signing the transaction.
- * @param {DWalletClient} client - The dWallet client to interact with the blockchain.
- * @returns {Promise<string>} The transaction hash in hexadecimal format.
+ * @param {string} domainVersion - The domain version for the transaction.
+ * @param {Keypair} keypair - The keypair used to sign the transaction.
+ * @param {DWalletClient} client - The dWallet client instance.
+ * @returns The transaction hash as a hexadecimal string.
+ * @throws Will throw an error if the transaction fails to verify the Ethereum state.
  */
-export const createAuthorityAckTransactionHash = async (
-	binderObjRef: OwnedObjectRef,
+export const createAuthorityEIP712Acknowledgement = async (
+	dwalletBinderId: string,
 	virginBound: boolean,
-	chainID: number,
+	chainID: string,
+	chainIDType: 'Number' | 'HexString',
 	domainName: string,
 	domainVersion: string,
 	keypair: Keypair,
 	client: DWalletClient,
-): Promise<string> => {
+) => {
 	let domainNameBcs = stringToArrayU8Bcs(domainName);
 	let domainVersionBcs = stringToArrayU8Bcs(domainVersion);
 
-	let binderSharedObjRef = getSharedObjectRefFromOwner(binderObjRef);
+	let chainIdTypeArg = chainIDType === 'Number' ? 0 : 1;
+	let chainIdBcs;
+	if (chainIdTypeArg === 0) {
+		let chainIdArg = toPaddedBigEndianBytes(BigInt(chainID), 32).slice(1);
+		chainIdBcs = bcs.vector(bcs.u8()).serialize(chainIdArg);
+	} else {
+		chainIdBcs = stringToArrayU8Bcs(chainID);
+	}
+
+	let binderSharedObjRef = await getSharedObjectRefById(dwalletBinderId, client);
 
 	const tx = new TransactionBlock();
 	tx.moveCall({
@@ -45,7 +61,8 @@ export const createAuthorityAckTransactionHash = async (
 		arguments: [
 			tx.sharedObjectRef(binderSharedObjRef),
 			tx.pure.bool(virginBound),
-			tx.pure.u64(chainID),
+			tx.pure(chainIdBcs),
+			tx.pure.u8(chainIdTypeArg),
 			tx.pure(domainNameBcs),
 			tx.pure(domainVersionBcs),
 		],
@@ -64,112 +81,46 @@ export const createAuthorityAckTransactionHash = async (
 	});
 
 	const array = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
-	const hexString = Array.from(array)
-		.map((byte) => byte.toString(16).padStart(2, '0'))
-		.join('');
-	return hexString;
-
-	// todo(yuval): update nonce on chain **if needed**
+	// The First byte is array length, so we skip it.
+	return ethers.hexlify(array.slice(1));
 };
 
 /**
- * Creates an authority object on the blockchain.
+ * Creates a `BindToAuthority` object on the blockchain.
  *
- * @param {string} binderName - The name of the binder.
- * @param {string} chainIdentifier - A unique identifier for the chain.
- * @param {OwnedObjectRef} latestSnapshotOwnerObjRef - The reference to the latest snapshot object.
- * @param {string} latestSnapshotObjType - The type of the latest snapshot object.
- * @param {OwnedObjectRef} configObjRef - The reference to the configuration object.
- * @param {string} configObjType - The type of the configuration object.
- * @param {string} authorityOwnerDWalletCapID - The ID of the dWallet capability for the authority owner.
- * @param {Keypair} keypair - The keypair used for signing the transaction.
- * @param {DWalletClient} client - The dWallet client to interact with the blockchain.
- * @returns The created authority object.
- * @throws Will throw an error if the transaction fails.
- */
-export const createAuthority = async (
-	binderName: string,
-	chainIdentifier: string,
-	latestSnapshotOwnerObjRef: OwnedObjectRef,
-	latestSnapshotObjType: string,
-	configObjRef: OwnedObjectRef,
-	configObjType: string,
-	authorityOwnerDWalletCapID: string,
-	keypair: Keypair,
-	client: DWalletClient,
-) => {
-	let uniqueIdentifierBcs = stringToArrayU8Bcs(chainIdentifier);
-
-	const tx = new TransactionBlock();
-	tx.moveCall({
-		target: `${packageId}::${authorityBinderModuleName}::create_authority`,
-		arguments: [
-			tx.pure.string(binderName),
-			tx.pure(uniqueIdentifierBcs),
-			tx.object(latestSnapshotOwnerObjRef.reference.objectId),
-			tx.object(configObjRef.reference.objectId),
-			tx.object(authorityOwnerDWalletCapID),
-		],
-		typeArguments: [configObjType, latestSnapshotObjType],
-	});
-
-	let result = await client.signAndExecuteTransactionBlock({
-		signer: keypair,
-		transactionBlock: tx,
-		options: { showEffects: true },
-	});
-
-	if (result.effects?.status.status !== 'success') {
-		throw new Error(
-			'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(result.effects),
-		);
-	}
-
-	return result.effects?.created?.at(0)!;
-};
-
-/**
- * Creates an authority binder on the blockchain.
+ * This function constructs a transaction block to call the `create_bind_to_authority`
+ * function in the authority binder module.
  *
- * @param {string} dWalletCapID - The ID of the dWallet capability.
- * @param {OwnedObjectRef} authorityOwnerObjRef - The reference to the authority object.
- * @param {string} latestSnapshotType - The type of the latest snapshot object.
- * @param {string} configType - The type of the configuration object.
- * @param {boolean} virginBound - Whether this is a virgin binding.
+ * @param {string} authorityId - The ID of the authority to bind to.
  * @param {string} ownerAddress - The address of the owner.
  * @param {number} ownerType - The type of the owner (e.g., user, contract).
- * @param {Keypair} keypair - The keypair used for signing the transaction.
- * @param {DWalletClient} client - The dWallet client to interact with the blockchain.
- * @returns The created binder object.
- * @throws Will throw an error if the transaction fails.
+ * @param {string} configType - The configuration type.
+ * @param {Keypair} keypair - The keypair used to sign the transaction.
+ * @param {DWalletClient} client - The dWallet client instance.
+ * @returns The ObjectID of the created binding.
+ * @throws Will throw an error if the transaction fails to verify the Ethereum state.
  */
-export const createAuthorityBinder = async (
-	dWalletCapID: string,
-	authorityOwnerObjRef: OwnedObjectRef,
-	latestSnapshotType: string,
-	configType: string,
-	virginBound: boolean,
+export const createBindToAuthority = async (
+	authorityId: string,
 	ownerAddress: string,
 	ownerType: number,
+	configType: string,
 	keypair: Keypair,
 	client: DWalletClient,
 ) => {
 	let ownerAddressArrayU8 = ethers.getBytes(ownerAddress);
 	let ownerAddressBcs = bcs.vector(bcs.u8()).serialize(ownerAddressArrayU8);
-
-	let authoritySharedObjRef = getSharedObjectRefFromOwner(authorityOwnerObjRef);
+	let authoritySharedObjectRef = await getSharedObjectRefById(authorityId, client);
 
 	const tx = new TransactionBlock();
 	tx.moveCall({
-		target: `${packageId}::${authorityBinderModuleName}::create_binder`,
+		target: `${packageId}::${authorityBinderModuleName}::create_bind_to_authority`,
 		arguments: [
-			tx.object(dWalletCapID),
-			tx.sharedObjectRef(authoritySharedObjRef),
+			tx.sharedObjectRef(authoritySharedObjectRef),
 			tx.pure(ownerAddressBcs),
 			tx.pure.u8(ownerType),
-			tx.pure.bool(virginBound),
 		],
-		typeArguments: [configType, latestSnapshotType],
+		typeArguments: [configType],
 	});
 
 	let result = await client.signAndExecuteTransactionBlock({
@@ -184,11 +135,11 @@ export const createAuthorityBinder = async (
 		);
 	}
 
-	return result.effects?.created?.at(0)!;
+	return result.effects?.created?.at(0)?.reference.objectId!;
 };
 
 /**
- * Binds an authority to an existing binder.
+ * Binds an `Authority` to an existing `DWalletBinder`.
  *
  * @param {string} binderID - The ID of the binder.
  * @param {string} authorityID - The ID of the authority to bind.
@@ -237,21 +188,3 @@ export const setBindToAuthority = async (
 
 	return result.effects?.created?.at(0)?.reference.objectId!;
 };
-
-function getSharedObjectRefFromOwner(ownerObjRef: OwnedObjectRef) {
-	let owner = ownerObjRef.owner;
-	const initialSharedVersion =
-		owner && typeof owner === 'object' && 'Shared' in owner
-			? owner.Shared.initial_shared_version!
-			: undefined;
-
-	if (initialSharedVersion === undefined) {
-		throw new Error('Failed to create authority: owner is not a shared object');
-	}
-
-	return {
-		objectId: ownerObjRef.reference.objectId,
-		initialSharedVersion: initialSharedVersion,
-		mutable: false,
-	};
-}
