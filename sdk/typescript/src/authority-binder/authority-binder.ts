@@ -7,7 +7,9 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { getSharedObjectRefById, stringToArrayU8Bcs } from '../eth-light-client/utils.js';
+import { stringToArrayU8Bcs } from '../eth-light-client/utils.js';
+import { getSharedObjectRefById } from '../utils/sui-types.js';
+import { toPaddedBigEndianBytes } from '../zklogin/utils.js';
 
 const packageId = '0x3';
 const authorityBinderModuleName = 'authority_binder';
@@ -28,10 +30,11 @@ const authorityBinderModuleName = 'authority_binder';
  * @returns The transaction hash as a hexadecimal string.
  * @throws Will throw an error if the transaction fails to verify the Ethereum state.
  */
-export const createAuthorityAckTransactionHash = async (
+export const createAuthorityEIP712Acknowledgement = async (
 	dwalletBinderId: string,
 	virginBound: boolean,
-	chainID: number,
+	chainID: string,
+	chainIDType: 'Number' | 'HexString',
 	domainName: string,
 	domainVersion: string,
 	keypair: Keypair,
@@ -39,6 +42,15 @@ export const createAuthorityAckTransactionHash = async (
 ) => {
 	let domainNameBcs = stringToArrayU8Bcs(domainName);
 	let domainVersionBcs = stringToArrayU8Bcs(domainVersion);
+
+	let chainIdTypeArg = chainIDType === 'Number' ? 0 : 1;
+	let chainIdBcs;
+	if (chainIdTypeArg === 0) {
+		let chainIdArg = toPaddedBigEndianBytes(BigInt(chainID), 32).slice(1);
+		chainIdBcs = bcs.vector(bcs.u8()).serialize(chainIdArg);
+	} else {
+		chainIdBcs = stringToArrayU8Bcs(chainID);
+	}
 
 	let binderSharedObjRef = await getSharedObjectRefById(dwalletBinderId, client);
 
@@ -48,7 +60,8 @@ export const createAuthorityAckTransactionHash = async (
 		arguments: [
 			tx.sharedObjectRef(binderSharedObjRef),
 			tx.pure.bool(virginBound),
-			tx.pure.u64(chainID),
+			tx.pure(chainIdBcs),
+			tx.pure.u8(chainIdTypeArg),
 			tx.pure(domainNameBcs),
 			tx.pure(domainVersionBcs),
 		],
@@ -67,12 +80,8 @@ export const createAuthorityAckTransactionHash = async (
 	});
 
 	const array = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
-	const hexString = Array.from(array)
-		.map((byte) => byte.toString(16).padStart(2, '0'))
-		.join('');
-	return hexString;
-
-	// todo(yuval): make sure to update nonce on chain if needed
+	// The First byte is array length, so we skip it.
+	return ethers.hexlify(array.slice(1));
 };
 
 /**
@@ -126,46 +135,6 @@ export const createBindToAuthority = async (
 	}
 
 	return result.effects?.created?.at(0)?.reference.objectId!;
-};
-
-/**
- * Creates a `DWalletBinder` object on the blockchain.
- *
- * @param {string} dWalletCapID - The ID of the dWallet capability.
- * @param {string} bindToAuthorityID - The ID of the BindToAuthority object.
- * @param {boolean} virginBound - Whether this is a virgin binding.
- * @param {Keypair} keypair - The keypair used for signing the transaction.
- * @param {DWalletClient} client - The dWallet client to interact with the blockchain.
- * @returns The created binder object.
- * @throws Will throw an error if the transaction fails.
- */
-export const createDWalletBinder = async (
-	dWalletCapID: string,
-	bindToAuthorityID: string,
-	virginBound: boolean,
-	keypair: Keypair,
-	client: DWalletClient,
-) => {
-	const tx = new TransactionBlock();
-	tx.moveCall({
-		target: `${packageId}::${authorityBinderModuleName}::create_binder`,
-		arguments: [tx.object(dWalletCapID), tx.object(bindToAuthorityID), tx.pure.bool(virginBound)],
-		typeArguments: [],
-	});
-
-	let result = await client.signAndExecuteTransactionBlock({
-		signer: keypair,
-		transactionBlock: tx,
-		options: { showEffects: true },
-	});
-
-	if (result.effects?.status.status !== 'success') {
-		throw new Error(
-			'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(result.effects),
-		);
-	}
-
-	return result.effects?.created?.at(0)!;
 };
 
 /**
