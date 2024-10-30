@@ -2,7 +2,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use super::{base_types::*, error::*, PERA_BRIDGE_OBJECT_ID};
+use super::{base_types::*, error::*, PERA_BRIDGE_OBJECT_ID, PERA_SYSTEM_PACKAGE_ID};
 use crate::authenticator_state::ActiveJwk;
 use crate::committee::{Committee, EpochId, ProtocolVersion};
 use crate::crypto::{
@@ -19,6 +19,7 @@ use crate::messages_consensus::{
     ConsensusCommitPrologue, ConsensusCommitPrologueV2, ConsensusCommitPrologueV3,
     ConsensusDeterminedVersionAssignments,
 };
+use crate::messages_dwallet_mpc::DwalletMPCOutput;
 use crate::object::{MoveObject, Object, Owner};
 use crate::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use crate::signature::{GenericSignature, VerifyParams};
@@ -291,6 +292,13 @@ pub enum TransactionKind {
     ConsensusCommitPrologueV2(ConsensusCommitPrologueV2),
 
     ConsensusCommitPrologueV3(ConsensusCommitPrologueV3),
+
+    /// A transaction containing the output of the MPC flow.
+    /// This transaction is used to share the MPC output with other validators, enabling them
+    /// to create a system transaction.
+    /// The system transaction allows the Move VM
+    /// to generate a Move object that encapsulates the MPC output.
+    DwalletMPCOutput(DwalletMPCOutput),
     // .. more transaction types go here
 }
 
@@ -1176,6 +1184,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV3(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
+            | TransactionKind::DwalletMPCOutput(_)
             | TransactionKind::EndOfEpochTransaction(_) => true,
             TransactionKind::ProgrammableTransaction(_) => false,
         }
@@ -1270,6 +1279,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV3(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
+            | TransactionKind::DwalletMPCOutput(_)
             | TransactionKind::EndOfEpochTransaction(_) => vec![],
             TransactionKind::ProgrammableTransaction(pt) => pt.receiving_objects(),
         }
@@ -1329,6 +1339,9 @@ impl TransactionKind {
                 after_dedup
             }
             Self::ProgrammableTransaction(p) => return p.input_objects(),
+            Self::DwalletMPCOutput(_) => {
+                vec![InputObjectKind::MovePackage(PERA_SYSTEM_PACKAGE_ID)]
+            }
         };
         // Ensure that there are no duplicate inputs. This cannot be removed because:
         // In [`AuthorityState::check_locks`], we check that there are no duplicate mutable
@@ -1392,6 +1405,7 @@ impl TransactionKind {
                     ));
                 }
             }
+            TransactionKind::DwalletMPCOutput(_) => {}
         };
         Ok(())
     }
@@ -1430,6 +1444,7 @@ impl TransactionKind {
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
+            Self::DwalletMPCOutput(_) => "DwalletMPCOutput",
         }
     }
 }
@@ -1480,6 +1495,9 @@ impl Display for TransactionKind {
             }
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind : End of Epoch Transaction")?;
+            }
+            Self::DwalletMPCOutput(_) => {
+                writeln!(writer, "Transaction Kind : Signature MPC Output")?;
             }
         }
         write!(f, "{}", writer)
@@ -2626,6 +2644,10 @@ impl VerifiedTransaction {
             })
             .pipe(Transaction::new)
             .pipe(Self::new_from_verified)
+    }
+
+    pub fn new_dwallet_mpc_output_system_transaction(data: DwalletMPCOutput) -> Self {
+        TransactionKind::DwalletMPCOutput(data).pipe(Self::new_system_transaction)
     }
 }
 

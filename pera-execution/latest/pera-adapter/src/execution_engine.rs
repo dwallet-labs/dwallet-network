@@ -5,7 +5,6 @@ pub use checked::*;
 
 #[pera_macros::with_checked_arithmetic]
 mod checked {
-
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
@@ -58,6 +57,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
+    use pera_types::messages_dwallet_mpc::DwalletMPCOutput;
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -134,6 +134,7 @@ mod checked {
         let is_epoch_change = transaction_kind.is_end_of_epoch_tx();
 
         let deny_cert = is_certificate_denied(&transaction_digest, certificate_deny_set);
+
         let (gas_cost_summary, execution_result) = execute_transaction::<Mode>(
             &mut temporary_store,
             transaction_kind,
@@ -713,6 +714,19 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
+            TransactionKind::DwalletMPCOutput(data) => {
+                setup_and_execute_dwallet_mpc_output(
+                    data,
+                    temporary_store,
+                    tx_ctx,
+                    move_vm,
+                    gas_charger,
+                    protocol_config,
+                    metrics,
+                )?;
+
+                Ok(Mode::empty_results())
+            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)
@@ -1080,6 +1094,47 @@ mod checked {
             )
             .expect("Unable to generate randomness_state_create transaction!");
         builder
+    }
+
+    /// Executes the transaction to store the final MPC output on-chain,
+    /// making it accessible to the initiating user.
+    /// Each validator executes this transaction locally,
+    /// and if validators represent more than two-thirds of the voting power
+    /// "vote" to include it by executing it, the transaction is added to the block.
+    fn setup_and_execute_dwallet_mpc_output(
+        mpc_output_data: DwalletMPCOutput,
+        temporary_store: &mut TemporaryStore<'_>,
+        tx_ctx: &mut TxContext,
+        move_vm: &Arc<MoveVM>,
+        gas_charger: &mut GasCharger,
+        protocol_config: &ProtocolConfig,
+        metrics: Arc<LimitsMetrics>,
+    ) -> Result<(), ExecutionError> {
+        let pt = {
+            let mut builder = ProgrammableTransactionBuilder::new();
+            let res = builder.move_call(
+                PERA_SYSTEM_PACKAGE_ID.into(),
+                ident_str!("proof").to_owned(),
+                ident_str!("create_proof_session_output").to_owned(),
+                vec![],
+                vec![
+                    CallArg::Pure(mpc_output_data.initiating_address.to_vec()),
+                    CallArg::Pure(mpc_output_data.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&mpc_output_data.value).unwrap()),
+                ],
+            );
+            assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
+            builder.finish()
+        };
+        programmable_transactions::execution::execute::<execution_mode::System>(
+            protocol_config,
+            metrics,
+            move_vm,
+            temporary_store,
+            tx_ctx,
+            gas_charger,
+            pt,
+        )
     }
 
     fn setup_bridge_create(

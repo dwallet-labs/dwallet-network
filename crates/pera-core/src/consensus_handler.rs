@@ -8,28 +8,6 @@ use std::{
     sync::Arc,
 };
 
-use arc_swap::ArcSwap;
-use async_trait::async_trait;
-use consensus_core::CommitConsumerMonitor;
-use lru::LruCache;
-use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
-use narwhal_config::Committee;
-use narwhal_executor::{ExecutionIndices, ExecutionState};
-use narwhal_types::ConsensusOutput;
-use pera_macros::{fail_point_async, fail_point_if};
-use pera_protocol_config::ProtocolConfig;
-use pera_types::{
-    authenticator_state::ActiveJwk,
-    base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
-    digests::ConsensusCommitDigest,
-    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
-    messages_consensus::{ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind},
-    pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
-    transaction::{SenderSignedData, VerifiedTransaction},
-};
-use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, instrument, trace_span, warn};
-
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -47,6 +25,28 @@ use crate::{
     scoring_decision::update_low_scoring_authorities,
     transaction_manager::TransactionManager,
 };
+use arc_swap::ArcSwap;
+use async_trait::async_trait;
+use consensus_core::CommitConsumerMonitor;
+use lru::LruCache;
+use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
+use narwhal_config::Committee;
+use narwhal_executor::{ExecutionIndices, ExecutionState};
+use narwhal_types::ConsensusOutput;
+use pera_macros::{fail_point_async, fail_point_if};
+use pera_protocol_config::ProtocolConfig;
+use pera_types::messages_dwallet_mpc::DwalletMPCOutput;
+use pera_types::{
+    authenticator_state::ActiveJwk,
+    base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
+    digests::ConsensusCommitDigest,
+    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
+    messages_consensus::{ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind},
+    pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
+    transaction::{SenderSignedData, VerifiedTransaction},
+};
+use serde::{Deserialize, Serialize};
+use tracing::{debug, error, info, instrument, trace_span, warn};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -355,6 +355,63 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
+
+                    // If we receive a `DwalletMPCOutput` transaction,
+                    // verify that it's valid and create a system transaction
+                    // to store its output on the blockchain,
+                    // so it will be available for the initiating user.
+                    if let ConsensusTransactionKind::DwalletMPCOutput(
+                        value,
+                        session_id,
+                        initiating_address,
+                    ) = &transaction.kind
+                    {
+                        info!(
+                            "Received proof mpc output from authority {:?} for session {:?}",
+                            authority_index, session_id
+                        );
+
+                        let mpc_manager = self.epoch_store.proof_mpc_manager.get();
+                        let is_valid_transaction = match mpc_manager {
+                            Some(mpc_manager) => {
+                                mpc_manager.lock().await
+                                    .try_verify_output(value, session_id)
+                                    .unwrap_or_else(|e| {
+                                        // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
+                                        error!("error verifying ProofMPCOutput for the session {:?} from party {:?}: {:?}",session_id, authority_index, e);
+                                        false
+                                    })
+                            }
+                            None => {
+                                // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
+                                error!("MPC manager was not initialized when verifying DwalletMPCOutput output from session {:?}", session_id);
+                                false
+                            }
+                        };
+
+                        if is_valid_transaction {
+                            let transaction =
+                                VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
+                                    DwalletMPCOutput {
+                                        session_id: *session_id,
+                                        initiating_address: *initiating_address,
+                                        value: value.clone(),
+                                    },
+                                );
+                            let transaction = VerifiedExecutableTransaction::new_system(
+                                transaction,
+                                self.epoch(),
+                            );
+                            transactions.push((
+                                empty_bytes.as_slice(),
+                                SequencedConsensusTransactionKind::System(transaction),
+                                consensus_output.leader_author_index(),
+                            ));
+                        } else {
+                            // TODO (#263): Mark and punish the malicious validator that sent an invalid output
+                        }
+                    }
+
                     if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
                         &transaction.kind
                     {
@@ -582,6 +639,8 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessStateUpdate(_, _) => "randomness_state_update",
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
+        ConsensusTransactionKind::DwalletMPCMessage(_, _, _) => "dwallet_mpc_message",
+        ConsensusTransactionKind::DwalletMPCOutput(_, _, _) => "dwallet_mpc_statements",
     }
 }
 

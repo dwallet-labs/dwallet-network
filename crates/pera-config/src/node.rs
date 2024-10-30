@@ -47,6 +47,9 @@ pub const DEFAULT_COMMISSION_RATE: u64 = 200;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
+    /// The maximum number of active signature MPC instances allowed to run simultaneously.
+    #[serde(default = "default_max_mpc_protocol_messages_in_progress")]
+    pub max_active_dwallet_mpc_instances: usize,
     #[serde(default = "default_authority_key_pair")]
     pub protocol_key_pair: AuthorityKeyPairWithPath,
     #[serde(default = "default_key_pair")]
@@ -287,6 +290,10 @@ fn default_key_pair() -> KeyPairWithPath {
             .1
             .into(),
     )
+}
+
+pub fn default_max_mpc_protocol_messages_in_progress() -> usize {
+    3000
 }
 
 fn default_metrics_address() -> SocketAddr {

@@ -964,6 +964,24 @@ allocate_tokens
 activate_validators
 	fun
 	0x3::genesis
+CreatedProofMPCSessionEvent
+	public struct
+	0x3::proof
+CompletedProofMPCSessionEvent
+	public struct
+	0x3::proof
+ProofSessionData
+	public struct
+	0x3::proof
+ProofSessionOutput
+	public struct
+	0x3::proof
+launch_proof_mpc_flow
+	public fun
+	0x3::proof
+create_proof_session_output
+	public fun
+	0x3::proof
 secp256k1_ecrecover
 	public fun
 	0x2::ecdsa_k1

@@ -61,6 +61,7 @@ pub mod layout_resolver;
 pub mod message_envelope;
 pub mod messages_checkpoint;
 pub mod messages_consensus;
+pub mod messages_dwallet_mpc;
 pub mod messages_grpc;
 pub mod messages_safe_client;
 pub mod metrics;
