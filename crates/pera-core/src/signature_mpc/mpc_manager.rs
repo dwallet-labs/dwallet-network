@@ -110,6 +110,7 @@ struct SignatureMPCMessage {
     authority: AuthorityName,
 }
 
+// TODO (#283): Remove this trait
 /// A wrapper for the generic Party trait that allows creating new instances of
 /// the Party from only the threshold.
 /// Should be implemented internally in newer versions of the [`proof`] crate.
@@ -257,6 +258,7 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
                 self.create_signature_mpc_message(msg)
             }
             AdvanceResult::Finalize(output) => {
+                // TODO (#238): Verify the output and write it to the chain
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
                 self.create_proof_mpc_output_message(output.into())
             }
@@ -322,8 +324,6 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
     /// If the message is from an already recorded party within the same round, it will be ignored
     /// (as each party can send only one message per round).
     /// When all required messages are received, the instance will be advanced.
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807765223
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807765430
     fn store_message(
         &mut self,
         message: &SignatureMPCMessage,
@@ -343,16 +343,17 @@ impl<P: CreatableParty> SignatureMPCInstance<P> {
                 self.pending_messages.insert(party_id, msg);
             })
             .map_err(|err| PeraError::ObjectDeserializationError {
+                // TODO (#310): Mark and punish a validator that sends a message that cannot be deserialized
                 error: err.to_string(),
             })
     }
 
     /// Handles a message by either forwarding it to the instance or ignoring
     /// it if the instance is finished.
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807765688
     fn handle_message(&mut self, message: SignatureMPCMessage) -> PeraResult<()> {
         match self.status {
             MPCSessionStatus::Active => self.store_message(&message, self.epoch_store()?),
+            // TODO (#263): Check for malicious messages also after the instance is finished
             MPCSessionStatus::Finalizing(_) | MPCSessionStatus::Finished(_) => {
                 // Do nothing.
                 Ok(())
@@ -431,6 +432,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     /// — `Ok(true)` if the outputs match.
     /// — `Ok(false)` if the session does not exist, is not finalizing, or the outputs don't match.
     /// — `Err` if deserialization of the provided output fails.
+    // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
     pub fn try_verify_output(
         &self,
         output: &Vec<u8>,
@@ -503,6 +505,7 @@ impl<P: CreatableParty + Sync + Send> SignatureMPCManager<P> {
     ///
     // TODO (#263): Implement logic to mark and punish validators responsible for failed advances.
     // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1799327439
+    // TODO (#268): Take the voting power into account when dealing with the threshold
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult<()> {
         // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1799321713
         let threshold = ((self.number_of_parties * 2) + 2) / 3;

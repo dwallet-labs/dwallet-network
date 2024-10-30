@@ -1100,9 +1100,10 @@ mod checked {
     }
 
     /// Executes the transaction to store the final MPC output on chain, so it will be accessible to the initiating user.
-    /// All the validators execute this TX locally, and if more than 2/3 of them did so the output is stored on chain.
+    /// Every validator executes this TX locally, and if more than two thirds of the validators voting power "vote"
+    /// to include this TX, by executing it locally, it's being included in the block.
     fn setup_and_execute_signature_mpc_output(
-        data: SignatureMPCOutput,
+        mpc_output_data: SignatureMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
         tx_ctx: &mut TxContext,
         move_vm: &Arc<MoveVM>,
@@ -1118,9 +1119,9 @@ mod checked {
                 ident_str!("create_proof_session_output").to_owned(),
                 vec![],
                 vec![
-                    CallArg::Pure(data.sender_address.to_vec()),
-                    CallArg::Pure(data.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&data.value).unwrap()),
+                    CallArg::Pure(mpc_output_data.sender_address.to_vec()),
+                    CallArg::Pure(mpc_output_data.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&mpc_output_data.value).unwrap()),
                 ],
             );
             assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
