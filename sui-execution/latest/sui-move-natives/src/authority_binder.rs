@@ -1,12 +1,16 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+// todo(yuval): doc all
+
 use crate::NativesCostTable;
 use ethers::core::types::transaction::eip712::{EIP712WithDomain, Eip712};
 use ethers::prelude::transaction::eip712::EIP712Domain;
 use ethers::prelude::{Address, Eip712, EthAbiType, U256};
+use ethers::utils::hex;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
-use move_core_types::{gas_algebra::InternalGas, vm_status::StatusCode};
+use move_core_types::gas_algebra::InternalGas;
+use move_core_types::vm_status::StatusCode;
 use move_vm_runtime::native_charge_gas_early_exit;
 use move_vm_runtime::native_functions::NativeContext;
 use move_vm_types::loaded_data::runtime_types::Type;
@@ -19,27 +23,19 @@ use std::collections::VecDeque;
 
 /// Bind a `dwallet::DWalletCap` to an authority.
 #[derive(Clone, Debug, Serialize, Deserialize, Eip712, EthAbiType)]
-#[eip712(
-    // These are placeholders; actual domain values will be supplied dynamically.
-    name = "Placeholder",
-    version = "1",
-    chain_id = 1,
-    verifying_contract = "0x0000000000000000000000000000000000000000"
-)]
 pub struct DWalletBinder {
-    #[serde(rename = "id")]
+    // #[serde(rename = "id")]
     pub id: Vec<u8>,
-    #[serde(rename = "dwalletCap")]
+    // #[serde(rename = "dwalletCap")]
     pub dwallet_cap: Vec<u8>,
-    #[serde(rename = "bindToAuthority")]
+    // #[serde(rename = "bindToAuthority")]
     pub bind_to_authority: Vec<u8>,
-    #[serde(rename = "virginBound")]
+    // #[serde(rename = "virginBound")]
     pub virgin_bound: bool,
-    #[serde(rename = "nonce")]
+    // #[serde(rename = "nonce")]
     pub nonce: u64,
 }
 
-/// Cost parameters for the `create_authority_ack_transaction` function.
 #[derive(Clone)]
 pub struct AuthorityBinderCostParams {
     /// Base cost for invoking the `verify_eth_state` function.
@@ -50,17 +46,10 @@ pub struct AuthorityBinderCostParams {
 * native fun create_authority_ack_transaction
 * Implementation of the Move native function
 * `create_authority_ack_transaction(
-*  binder_id: vector<u8>,
-*  dwallet_cap_id: vector<u8>,
-*  bind_to_authority_id: vector<u8>,
-*  bind_to_authority_nonce: u64,
-*  virgin_bound: bool,
-*  chain_id: u64,
-*  domain_name: vector<u8>,
-*  domain_version: vector<u8>,
-*  contract_address: vector<u8>) -> vector<u8>;`
+*  state_root: vector<u8>) -> vector<u8>;`
 * gas cost: create_authority_ack_transaction_cost_base | base cost for function call and fixed operations.
 **************************************************************************************************/
+
 pub fn create_authority_ack_transaction(
     context: &mut NativeContext,
     _ty_args: Vec<Type>,
@@ -102,10 +91,8 @@ pub fn create_authority_ack_transaction(
         pop_arg!(args, Vector).to_vec_u8()?,
         pop_arg!(args, Vector).to_vec_u8()?,
     );
-    let domain_name = String::from_utf8(domain_name)
-        .map_err(|_| PartialVMError::new(StatusCode::VALUE_DESERIALIZATION_ERROR))?;
-    let domain_version = String::from_utf8(domain_version)
-        .map_err(|_| PartialVMError::new(StatusCode::VALUE_DESERIALIZATION_ERROR))?;
+    let domain_name = String::from_utf8(domain_name).unwrap();
+    let domain_version = String::from_utf8(domain_version).unwrap();
     let contract_address = Address::from_slice(&contract_address);
 
     let domain = EIP712Domain {
@@ -125,12 +112,19 @@ pub fn create_authority_ack_transaction(
     };
 
     let binder_with_domain = EIP712WithDomain::<DWalletBinder>::new(dwallet_binder)
-        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?
+        .unwrap()
         .set_domain(domain);
 
-    let typed_data_hash = binder_with_domain.encode_eip712().unwrap();
+    let domain_separator = binder_with_domain
+        .domain_separator()
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
+    let struct_hash = binder_with_domain
+        .struct_hash()
+        .map_err(|_| PartialVMError::new(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR))?;
+
+    let digest_input = [&[0x19, 0x01], &domain_separator[..], &struct_hash[..]].concat();
     Ok(NativeResult::ok(
         cost,
-        smallvec![Value::vector_u8(typed_data_hash)],
+        smallvec![Value::vector_u8(digest_input)],
     ))
 }
