@@ -130,8 +130,8 @@ pub fn create_authority_ack_transaction(
     let domain_version = String::from_utf8(domain_version).unwrap();
     let contract_address = Address::from_slice(&contract_address);
 
-    //! todo(yuval): need to implement the differentiation between network types.
-    //! for example, SUI would use the chain_id as a string, while Ethereum would use it as a number.
+    // todo(yuval): need to implement the differentiation between network types.
+    // for example, SUI would use the chain_id as a string, while Ethereum would use it as a number.
     let chain_id_inner = match chain_id {
         ChainIdResult::U256(chain_id) => chain_id,
         ChainIdResult::String(_) => {
