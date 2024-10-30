@@ -671,6 +671,9 @@ pub enum PeraError {
         session_id: ObjectID,
         sender_address: PeraAddress,
     },
+
+    #[error("mpc session with ID `{session_id:?}` was not found.")]
+    MPCSessionNotFound { session_id: ObjectID },
 }
 
 #[repr(u64)]
@@ -790,6 +793,14 @@ impl From<UserInputError> for PeraError {
 impl From<PeraObjectResponseError> for PeraError {
     fn from(error: PeraObjectResponseError) -> Self {
         PeraError::PeraObjectResponseError { error }
+    }
+}
+
+impl From<bcs::Error> for PeraError {
+    fn from(err: bcs::Error) -> Self {
+        PeraError::ObjectDeserializationError {
+            error: err.to_string(),
+        }
     }
 }
 

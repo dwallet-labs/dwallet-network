@@ -277,10 +277,7 @@ impl<P: CreatableParty> DwalletMPCInstance<P> {
     fn new_dwallet_mpc_message(&self, message: P::Message) -> PeraResult<ConsensusTransaction> {
         let epoch_store = self.epoch_store()?;
 
-        let message_bytes =
-            bcs::to_bytes(&message).map_err(|_| PeraError::ObjectDeserializationError {
-                error: "failed to serialize MPC messages".into(),
-            })?;
+        let message_bytes = bcs::to_bytes(&message)?;
 
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
             epoch_store.name,
@@ -431,52 +428,48 @@ impl<P: CreatableParty + Sync + Send> DwalletMPCManager<P> {
     /// — `Ok(false)` if the session does not exist, is not finalizing, or the outputs don't match.
     /// — `Err` if deserialization of the provided output fails.
     // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
-    pub fn try_verify_output(
-        &self,
-        output: &Vec<u8>,
-        session_id: &ObjectID,
-    ) -> anyhow::Result<bool> {
-        self.mpc_instances
-            .get(session_id)
-            .filter(|instance| matches!(instance.status, MPCSessionStatus::Finalizing(_)))
-            .and_then(|instance| match &instance.status {
-                MPCSessionStatus::Finalizing(stored_output) => bcs::from_bytes(output)
-                    .ok()
-                    .map(|decoded: P::OutputValue| decoded == *stored_output),
-                _ => None,
-            })
-            // todo(zeev): fix error.
-            .ok_or_else(|| anyhow::Error::msg("output verification failed"))
+    pub fn try_verify_output(&self, output: &Vec<u8>, session_id: &ObjectID) -> PeraResult<bool> {
+        let instance =
+            self.mpc_instances
+                .get(session_id)
+                .ok_or_else(|| PeraError::MPCSessionNotFound {
+                    session_id: session_id.clone(),
+                })?;
+
+        match &instance.status {
+            MPCSessionStatus::Finalizing(stored_output) => {
+                let decoded: P::OutputValue =
+                    bcs::from_bytes(output).map_err(|_| PeraError::ObjectDeserializationError {
+                        error: "failed to deserialize MPC output".into(),
+                    })?;
+                Ok(decoded == *stored_output)
+            }
+            _ => Ok(false), // Not in the finalizing state, return false.
+        }
     }
 
-    /// Filter the relevant MPC events from the transaction events and handle them
-    /// Create new MPC instances when receiving a [`CreatedProofMPCEvent`],
-    /// and decrease the [`active_instances_counter`]
-    /// when receiving a [`CompletedProofMPCSessionEvent`].
-    /// Processes relevant MPC events from the provided transaction events.
+    /// Filter the relevant MPC events from the transaction events and handle them.
     ///
-    /// This function filters out and handles specific MPC events:
-    /// - `CreatedProofMPCEvent`: Creates a new MPC instance upon receiving this event.
+    /// This function processes specific MPC events:
+    /// - `CreatedProofMPCSessionEvent`: Creates a new MPC instance upon receiving this event.
     /// - `CompletedProofMPCSessionEvent`:
     /// Finalizes the MPC instance and decrements the active instances counter.
     ///
     /// # Returns
     /// — `Ok(())` if all events are successfully processed.
     /// — `Err` if any event fails to deserialize, or an MPC instance cannot be finalized.
-    pub fn event_handler(&mut self, events: &Vec<Event>) -> anyhow::Result<()> {
+    pub fn event_handler(&mut self, events: &Vec<Event>) -> PeraResult<()> {
         events.iter().try_for_each(|event| {
             if P::InitEvent::type_() == event.type_ {
                 let deserialized_event = bcs::from_bytes(&event.contents)?;
                 self.push_new_mpc_instance(deserialized_event);
                 debug!("event: Init MPC Session {:?}", event);
             }
-
             if P::FinalizeEvent::type_() == event.type_ {
                 let deserialized_event = bcs::from_bytes(&event.contents)?;
                 self.finalize_mpc_instance(deserialized_event)?;
                 debug!("event: Finalize MPC Session {:?}", event);
             }
-
             Ok(())
         })
     }

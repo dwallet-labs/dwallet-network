@@ -12,7 +12,7 @@ use std::marker::PhantomData;
 
 // TODO (#228): Remove this file & all proof MPC code.
 
-/// Create dummy witnesses for the dummy proof flow.
+/// Create a fake witnesses for the stub proof flow.
 fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
     language_public_parameters: &Lang::PublicParameters,
     batch_size: usize,

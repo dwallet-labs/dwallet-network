@@ -1554,7 +1554,7 @@ impl AuthorityState {
         match dwallet_mpc_manager {
             Some(mpc_manager) => {
                 let mut mpc_manager = mpc_manager.lock().await;
-                mpc_manager.event_handler(&inner_temporary_store.events.data)
+                Ok(mpc_manager.event_handler(&inner_temporary_store.events.data)?)
             }
             None => {
                 // Log if the MPC manager is not initialized.

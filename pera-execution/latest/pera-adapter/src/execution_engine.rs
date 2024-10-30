@@ -715,7 +715,6 @@ mod checked {
                 Ok(Mode::empty_results())
             }
             TransactionKind::DwalletMPCOutput(data) => {
-                // todo(zeev): why is it ignored?
                 setup_and_execute_dwallet_mpc_output(
                     data,
                     temporary_store,
