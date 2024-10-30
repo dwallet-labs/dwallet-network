@@ -79,7 +79,7 @@ export async function launchDKGSecondRound(
 	tx.moveCall({
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
 		arguments: [
-			tx.object(dwalletCapId),
+			tx.pure.id(dwalletCapId),
 			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(firstRoundOutput)),
 			tx.pure.id(firstRoundSessionId),

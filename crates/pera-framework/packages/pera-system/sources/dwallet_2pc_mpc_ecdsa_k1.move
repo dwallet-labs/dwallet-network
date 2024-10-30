@@ -120,7 +120,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
           }
 
         /// Function to launch proof MPC flow.
-        public fun launch_dkg_second_round(dwallet_cap: &DWalletCap, public_key_share_and_proof: vector<u8>, first_round_output: vector<u8>, first_round_session_id: ID, ctx: &mut TxContext) {
+        public fun launch_dkg_second_round(dwallet_cap: ID, public_key_share_and_proof: vector<u8>, first_round_output: vector<u8>, first_round_session_id: ID, ctx: &mut TxContext) {
             let session_data = DKGSecondRoundData {
                 id: object::new(ctx),
                 sender: tx_context::sender(ctx),
@@ -131,7 +131,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 sender: tx_context::sender(ctx),
                 first_round_output,
                 public_key_share_and_proof,
-                dwallet_cap_id: object::id(dwallet_cap),
+                dwallet_cap_id: dwallet_cap,
                 first_round_session_id
             };
             event::emit(created_proof_mpc_session_event);
