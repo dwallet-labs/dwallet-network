@@ -18,7 +18,7 @@ pub struct DwalletMPCOutput {
 
 impl Message for DwalletMPCOutput {
     type DigestType = DwalletMPCOutputDigest;
-    const SCOPE: IntentScope = IntentScope::SignatureMPCOutput;
+    const SCOPE: IntentScope = IntentScope::DwalletMPCOutput;
 
     fn digest(&self) -> Self::DigestType {
         DwalletMPCOutputDigest::new(default_hash(self))

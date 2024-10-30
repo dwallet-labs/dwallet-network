@@ -5,7 +5,7 @@
 //! It offers structures and traits that align with on-chain Move events.
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
 use pera_types::{
-    base_types::{ObjectID, PeraAddress},
+    base_types::{PeraAddress},
     id::ID,
     PERA_SYSTEM_ADDRESS,
 };

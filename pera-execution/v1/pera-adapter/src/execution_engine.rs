@@ -669,7 +669,7 @@ mod checked {
                 panic!("RandomnessStateUpdate should not exist in v1");
             }
             TransactionKind::DwalletMPCOutput(_) => {
-                panic!("SignatureMPCOutput should not exist in v1");
+                panic!("DwalletMPCOutput should not exist in v1");
             }
         }?;
         temporary_store.check_execution_results_consistency()?;

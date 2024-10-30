@@ -408,8 +408,8 @@ pub enum PeraTransactionBlockKind {
     EndOfEpochTransaction(PeraEndOfEpochTransaction),
     ConsensusCommitPrologueV2(PeraConsensusCommitPrologueV2),
     ConsensusCommitPrologueV3(PeraConsensusCommitPrologueV3),
+    DwalletMPCOutput(DwalletMPCOutput),
     // .. more transaction types go here
-    SignatureMPCOutput(PeraSignatureMPCOutput),
 }
 
 impl Display for PeraTransactionBlockKind {
@@ -464,7 +464,7 @@ impl Display for PeraTransactionBlockKind {
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind: End of Epoch Transaction")?;
             }
-            Self::SignatureMPCOutput(_) => {
+            Self::DwalletMPCOutput(_) => {
                 writeln!(writer, "Transaction Kind: Signature MPC Output")?;
             }
         }
@@ -565,7 +565,7 @@ impl PeraTransactionBlockKind {
                 })
             }
             TransactionKind::DwalletMPCOutput(output) => {
-                Self::SignatureMPCOutput(PeraSignatureMPCOutput {
+                Self::DwalletMPCOutput(DwalletMPCOutput {
                     session_id: output.session_id,
                     sender_address: output.initiating_address,
                     value: output.value,
@@ -671,7 +671,7 @@ impl PeraTransactionBlockKind {
                 })
             }
             TransactionKind::DwalletMPCOutput(output) => {
-                Self::SignatureMPCOutput(PeraSignatureMPCOutput {
+                Self::DwalletMPCOutput(DwalletMPCOutput {
                     session_id: output.session_id,
                     sender_address: output.initiating_address,
                     value: output.value,
@@ -698,7 +698,7 @@ impl PeraTransactionBlockKind {
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
-            Self::SignatureMPCOutput(_) => "SignatureMPCOutput",
+            Self::DwalletMPCOutput(_) => "DwalletMPCOutput",
         }
     }
 }
@@ -1696,7 +1696,7 @@ pub enum PeraEndOfEpochTransactionKind {
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
-pub struct PeraSignatureMPCOutput {
+pub struct DwalletMPCOutput {
     pub session_id: ObjectID,
     pub sender_address: PeraAddress,
     pub value: Vec<u8>,

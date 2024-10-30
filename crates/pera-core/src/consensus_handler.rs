@@ -8,7 +8,6 @@ use std::{
     sync::Arc,
 };
 
-use crate::signature_mpc::proof::ProofParty;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -36,7 +35,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_signature_mpc::DwalletMPCOutput;
+use pera_types::messages_dwallet_mpc::DwalletMPCOutput;
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -357,7 +356,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .inc_num_user_transactions(authority_index as usize);
                     }
 
-                    // If we receive a `SignatureMPCOutput` transaction,
+                    // If we receive a `DwalletMPCOutput` transaction,
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
@@ -372,7 +371,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             authority_index, session_id
                         );
 
-                        let mut mpc_manager = self.epoch_store.proof_mpc_manager.get();
+                        let mpc_manager = self.epoch_store.proof_mpc_manager.get();
                         let is_valid_transaction = match mpc_manager {
                             Some(mpc_manager) => {
                                 mpc_manager.lock().await
@@ -385,14 +384,14 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             }
                             None => {
                                 // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
-                                error!("MPC manager was not initialized when verifying SignatureMPCOutput output from session {:?}", session_id);
+                                error!("MPC manager was not initialized when verifying DwalletMPCOutput output from session {:?}", session_id);
                                 false
                             }
                         };
 
                         if is_valid_transaction {
                             let transaction =
-                                VerifiedTransaction::new_signature_mpc_output_system_transaction(
+                                VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
                                     DwalletMPCOutput {
                                         session_id: *session_id,
                                         initiating_address: *initiating_address,
@@ -640,8 +639,8 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessStateUpdate(_, _) => "randomness_state_update",
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
-        ConsensusTransactionKind::DwalletMPCMessage(_, _, _) => "signature_mpc_message",
-        ConsensusTransactionKind::DwalletMPCOutput(_, _, _) => "signature_mpc_statements",
+        ConsensusTransactionKind::DwalletMPCMessage(_, _, _) => "dwallet_mpc_message",
+        ConsensusTransactionKind::DwalletMPCOutput(_, _, _) => "dwallet_mpc_statements",
     }
 }
 

@@ -490,7 +490,7 @@ mod checked {
                 panic!("EndOfEpochTransaction should not exist in execution layer v0");
             }
             TransactionKind::DwalletMPCOutput(_) => {
-                panic!("SignatureMPCOutput should not exist in execution layer v0");
+                panic!("DwalletMPCOutput should not exist in execution layer v0");
             }
         }
     }

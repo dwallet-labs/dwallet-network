@@ -61,7 +61,7 @@ module pera_system::proof {
     /// Function to create the proof session output.
     /// Creates it and transfers it to the user that initiated the proof MPC flow.
     /// Should be called only as a system transaction after
-    /// all the validators received and verified the Rust `SignatureMPCOutput`.
+    /// all the validators received and verified the Rust `DwalletMPCOutput`.
     public fun create_proof_session_output(
         session_initiator: address,
         session_id: ID,

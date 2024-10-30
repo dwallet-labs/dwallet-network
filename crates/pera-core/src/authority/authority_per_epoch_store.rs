@@ -76,8 +76,8 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
-use crate::signature_mpc::mpc_manager::DwalletMPCManager;
-use crate::signature_mpc::proof::ProofParty;
+use crate::dwallet_mpc::mpc_manager::DwalletMPCManager;
+use crate::dwallet_mpc::proof::ProofParty;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -102,7 +102,6 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::messages_signature_mpc::DwalletMPCOutput;
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -934,7 +933,7 @@ impl AuthorityPerEpochStore {
             .is_err()
         {
             error!(
-                "BUG: `set_signature_mpc_manager` called more than once; this should never happen"
+                "BUG: `set_dwallet_mpc_manager` called more than once; this should never happen"
             );
         }
         Ok(())
@@ -2429,7 +2428,7 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DwalletMPCMessage(authority, message, _),
+                kind: ConsensusTransactionKind::DwalletMPCMessage(authority, _message, _),
                 ..
             }) => {
                 // When sending an MPC message, the validator also includes its public key.
@@ -2440,7 +2439,7 @@ impl AuthorityPerEpochStore {
                 if transaction.sender_authority() != *authority {
                     // TODO (#263): Mark the validator who sent this message as malicious
                     warn!(
-                        "SignatureMPCMessage authority {} does not match its author from consensus {}",
+                        "DwalletMPCMessage authority {} does not match its author from consensus {}",
                         authority, transaction.certificate_author_index
                     );
                     return None;
@@ -3203,11 +3202,11 @@ impl AuthorityPerEpochStore {
             }
         }
 
-        // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
-        if let Some(signature_mpc_manager) = self.proof_mpc_manager.get() {
-            let mut signature_mpc_manager = signature_mpc_manager.lock().await;
+        // TODO (#250): Make sure the dwallet_mpc_manager is always initialized at this point.
+        if let Some(dwallet_mpc_manager) = self.proof_mpc_manager.get() {
+            let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
-            signature_mpc_manager.handle_end_of_delivery().await?;
+            dwallet_mpc_manager.handle_end_of_delivery().await?;
         };
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
@@ -3609,12 +3608,12 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DwalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                let Some(signature_mpc_manager) = self.proof_mpc_manager.get() else {
-                    // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
+                let Some(dwallet_mpc_manager) = self.proof_mpc_manager.get() else {
+                    // TODO (#250): Make sure the dwallet_mpc_manager is always initialized at this point.
                     return Ok(ConsensusCertificateResult::Ignored);
                 };
-                let mut signature_mpc_manager = signature_mpc_manager.lock().await;
-                signature_mpc_manager.handle_message(message, *authority, *session_id)?;
+                let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
+                dwallet_mpc_manager.handle_message(message, *authority, *session_id)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

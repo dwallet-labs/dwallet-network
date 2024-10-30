@@ -1,12 +1,12 @@
 use crate::types::base64::Base64;
 use async_graphql::Object;
-use pera_types::messages_signature_mpc::DwalletMPCOutput as NativeSignatureMPCOutput;
+use pera_types::messages_dwallet_mpc::DwalletMPCOutput;
 
 /// System transaction to store the output of signature mpc on-chain.
 #[derive(Clone, Eq, PartialEq)]
 pub(crate) struct DwalletMPCOutputTransaction {
     /// The native representation of the transaction arguments.
-    pub native: NativeSignatureMPCOutput,
+    pub native: DwalletMPCOutput,
     /// The checkpoint sequence number this transaction was viewed at.
     pub checkpoint_viewed_at: u64,
 }

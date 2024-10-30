@@ -96,11 +96,11 @@ pub enum ConsensusTransactionKey {
     /// The message sent between MPC parties in a signature MPC session.
     /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
     /// [`ObjectID`] is the session ID.
-    SignatureMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    DwalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
     /// The output of a signature MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
-    SignatureMPCOutput(Vec<u8>, ObjectID, PeraAddress),
+    DwalletMPCOutput(Vec<u8>, ObjectID, PeraAddress),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -117,8 +117,8 @@ impl Debug for ConsensusTransactionKey {
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
-            Self::SignatureMPCMessage(name, _, _) => {
-                write!(f, "SignatureMPCMessage({:?})", name.concise(),)
+            Self::DwalletMPCMessage(name, _, _) => {
+                write!(f, "DwalletMPCMessage({:?})", name.concise(),)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
             Self::CapabilityNotification(name, generation) => write!(
@@ -143,10 +143,10 @@ impl Debug for ConsensusTransactionKey {
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
             }
-            ConsensusTransactionKey::SignatureMPCOutput(value, session_id, sender_address) => {
+            ConsensusTransactionKey::DwalletMPCOutput(value, session_id, sender_address) => {
                 write!(
                     f,
-                    "SignatureMPCOutput({:?}, {:?}, {:?})",
+                    "DwalletMPCOutput({:?}, {:?}, {:?})",
                     value, session_id, sender_address
                 )
             }
@@ -479,7 +479,7 @@ impl ConsensusTransaction {
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
-    pub fn new_signature_mpc_message(
+    pub fn new_dwallet_mpc_message(
         authority: AuthorityName,
         message: Vec<u8>,
         session_id: ObjectID,
@@ -493,7 +493,7 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_signature_mpc_output(
+    pub fn new_dwallet_mpc_output(
         value: Vec<u8>,
         session_id: ObjectID,
         sender_address: PeraAddress,
@@ -579,14 +579,14 @@ impl ConsensusTransaction {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
             }
             ConsensusTransactionKind::DwalletMPCMessage(authority, message, session_id) => {
-                ConsensusTransactionKey::SignatureMPCMessage(
+                ConsensusTransactionKey::DwalletMPCMessage(
                     *authority,
                     message.clone(),
                     session_id.clone(),
                 )
             }
             ConsensusTransactionKind::DwalletMPCOutput(value, session_id, sender_address) => {
-                ConsensusTransactionKey::SignatureMPCOutput(
+                ConsensusTransactionKey::DwalletMPCOutput(
                     value.clone(),
                     *session_id,
                     *sender_address,

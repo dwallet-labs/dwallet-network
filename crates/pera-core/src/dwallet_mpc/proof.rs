@@ -1,5 +1,5 @@
-use crate::signature_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent};
-use crate::signature_mpc::mpc_manager::CreatableParty;
+use crate::dwallet_mpc::mpc_events::{CompletedProofMPCSessionEvent, CreatedProofMPCEvent};
+use crate::dwallet_mpc::mpc_manager::CreatableParty;
 use group::{secp256k1, PartyID, Samplable};
 use maurer::knowledge_of_discrete_log::PublicParameters;
 use maurer::{Language, Proof};

@@ -40,7 +40,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Write;
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
@@ -153,14 +152,12 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc::mpc_events::CreatedProofMPCEvent;
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
 
-use crate::signature_mpc::mpc_manager::DwalletMPCManager;
 
 use crate::authority_client::NetworkAuthorityClient;
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
@@ -1492,9 +1489,9 @@ impl AuthorityState {
             effects_sig.as_ref(),
         )?;
 
-        // Check if there are any MPC events emitted from this transaction 
+        // Check if there are any MPC events emitted from this transaction
         // and if so, send them to the MPC service.
-        // Handle the MPC events here because there is access to the 
+        // Handle the MPC events here because there is access to the
         // event, as the transaction has been just executed.
         let _ = self
             .handle_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
@@ -1554,8 +1551,8 @@ impl AuthorityState {
             // If the transaction failed, we don't need to handle MPC events.
             return Ok(());
         }
-        let mut signature_mpc_manager = epoch_store.proof_mpc_manager.get();
-        match signature_mpc_manager {
+        let dwallet_mpc_manager = epoch_store.proof_mpc_manager.get();
+        match dwallet_mpc_manager {
             Some(mpc_manager) => {
                 let mut mpc_manager = mpc_manager.lock().await;
                 mpc_manager.event_handler(&inner_temporary_store.events.data)

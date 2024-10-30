@@ -78,5 +78,5 @@ mod type_param_tests;
 pub mod signature_verifier;
 
 pub mod runtime;
-pub mod signature_mpc;
+pub mod dwallet_mpc;
 mod transaction_signing_filter;

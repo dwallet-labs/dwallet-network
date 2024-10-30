@@ -220,7 +220,7 @@ Function to launch proof MPC flow.
 
 Function to create the proof session output.
 Creates it & transfers it to the user that initiated the proof MPC flow.
-Should be called only as a system transaction after all the validators received & verified the rust <code>SignatureMPCOutput</code>.
+Should be called only as a system transaction after all the validators received & verified the rust <code>DwalletMPCOutput</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="proof.md#0x3_proof_create_proof_session_output">create_proof_session_output</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
