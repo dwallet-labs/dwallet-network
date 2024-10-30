@@ -8,8 +8,6 @@ mod checked {
 
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
-    use move_core_types::account_address::AccountAddress;
-    use move_core_types::ident_str;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
         BALANCE_CREATE_REWARDS_FUNCTION_NAME, BALANCE_DESTROY_REBATES_FUNCTION_NAME,

@@ -280,7 +280,6 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
-    // todo(zeev): add docs
     DwalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
     DwalletMPCOutput(Vec<u8>, ObjectID, PeraAddress),
     // Deprecated.

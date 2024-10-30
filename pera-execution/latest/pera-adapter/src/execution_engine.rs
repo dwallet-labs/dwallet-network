@@ -7,7 +7,6 @@ pub use checked::*;
 mod checked {
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
-    use move_core_types::account_address::AccountAddress;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
         BALANCE_CREATE_REWARDS_FUNCTION_NAME, BALANCE_DESTROY_REBATES_FUNCTION_NAME,
@@ -1118,7 +1117,6 @@ mod checked {
                 PERA_SYSTEM_PACKAGE_ID.into(),
                 ident_str!("proof").to_owned(),
                 ident_str!("create_proof_session_output").to_owned(),
-                // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1806162377
                 vec![],
                 vec![
                     CallArg::Pure(mpc_output_data.initiating_address.to_vec()),

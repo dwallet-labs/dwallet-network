@@ -70,12 +70,11 @@
 //! - Validator Punishment: Detects and punishes validators that behave maliciously,
 //! such as sending multiple messages within a single round or submitting invalid messages.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::{SubmitToConsensus};
-use crate::dwallet_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
-use group::{GroupElement, PartyID};
-use itertools::Itertools;
+use crate::consensus_adapter::SubmitToConsensus;
+use crate::dwallet_mpc::mpc_events::MPCEvent;
+use group::PartyID;
 use mpc::party::Advance;
-use mpc::{two_party::Round, AdvanceResult};
+use mpc::AdvanceResult;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
@@ -84,12 +83,9 @@ use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::committee::EpochId;
 use rand_core::OsRng;
 use rayon::prelude::*;
-use schemars::_private::NoSerialize;
 use serde::{Deserialize, Serialize};
 use std::cmp::PartialEq;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::future::Future;
-use std::io::Write;
 use std::sync::{Arc, Weak};
 use tracing::{debug, error, info};
 
@@ -161,7 +157,6 @@ fn authority_name_to_party_id(
                     .to_string(),
             )
         })? as PartyID)
-
 }
 /// Signature MPC Session Instance.
 /// It keeps track of the session status, the channel to send messages to the instance,
@@ -170,7 +165,6 @@ struct DwalletMPCInstance<Party: CreatableParty> {
     status: MPCSessionStatus<Party::OutputValue>,
     /// The messages that are pending to be executed while advancing the instance.
     /// We need to accumulate a threshold of those before advancing the instance.
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807744916
     pending_messages: HashMap<PartyID, Party::Message>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
@@ -226,12 +220,10 @@ impl<P: CreatableParty> DwalletMPCInstance<P> {
     /// participating validators, and their assigned IDs.
     fn advance(&mut self, auxiliary_input: &P::AuxiliaryInput) -> PeraResult<()> {
         // Take ownership of the current party, or create a new one if it's the first advance.
-        let party = self
-            .party
-            .take()
-            // todo(zeev): error handling
-            .unwrap_or_else(|| self.initialize_party().unwrap());
-
+        let party = match self.party.take() {
+            Some(existing_party) => existing_party,
+            None => self.initialize_party()?,
+        };
         // Attempt to advance the party using the pending messages and auxiliary input.
         // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
         let Ok(advance_result) =
@@ -247,28 +239,26 @@ impl<P: CreatableParty> DwalletMPCInstance<P> {
             AdvanceResult::Advance((msg, updated_party)) => {
                 self.pending_messages.clear();
                 self.party = Some(updated_party);
-                self.new_dwallet_mpc_message(msg)
+                self.new_dwallet_mpc_message(msg)?
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                self.new_proof_mpc_output_message(output.into())
+                self.new_proof_mpc_output_message(output.into())?
             }
         };
 
         // Submit the message asynchronously, if available.
-        if let Some(msg) = message {
-            let consensus_adapter = Arc::clone(&self.consensus_adapter);
-            let epoch_store = Arc::clone(&self.epoch_store()?);
-            // Spawn sends this message asynchronously via a thread
-            // so that [`self.advance`] function will stay synchronous,
-            // and can be parallelized with Rayon.
-            tokio::spawn(async move {
-                let _ = consensus_adapter
-                    .submit_to_consensus(&[msg], &epoch_store)
-                    .await;
-            });
-        }
+        let consensus_adapter = Arc::clone(&self.consensus_adapter);
+        let epoch_store = Arc::clone(&self.epoch_store()?);
+        // Spawn sends this message asynchronously via a thread
+        // so that [`self.advance`] function will stay synchronous,
+        // and can be parallelized with Rayon.
+        tokio::spawn(async move {
+            let _ = consensus_adapter
+                .submit_to_consensus(&[message], &epoch_store)
+                .await;
+        });
 
         Ok(())
     }
@@ -281,39 +271,52 @@ impl<P: CreatableParty> DwalletMPCInstance<P> {
         Ok(P::new(parties, party_id))
     }
 
-    /// Create a new consensus transaction with the message to be sent to the other MPC parties.
-    /// Returns `None` only if the epoch switched in the middle and was not available.
-    fn new_dwallet_mpc_message(&self, message: P::Message) -> Option<ConsensusTransaction> {
-        self.epoch_store().ok().map(|epoch_store| {
-            ConsensusTransaction::new_dwallet_mpc_message(
-                epoch_store.name,
-                bcs::to_bytes(&message).unwrap(),
-                self.session_id.clone(),
-            )
-        })
+    /// Creates a new consensus transaction with the message to be sent to other MPC parties.
+    /// Returns a `PeraResult` with the created `ConsensusTransaction` if successful,
+    /// or an error if the epoch store is unavailable or serialization fails.
+    fn new_dwallet_mpc_message(&self, message: P::Message) -> PeraResult<ConsensusTransaction> {
+        let epoch_store = self.epoch_store()?;
+
+        let message_bytes =
+            bcs::to_bytes(&message).map_err(|_| PeraError::ObjectDeserializationError {
+                error: "failed to serialize MPC messages".into(),
+            })?;
+
+        Ok(ConsensusTransaction::new_dwallet_mpc_message(
+            epoch_store.name,
+            message_bytes,
+            self.session_id.clone(),
+        ))
     }
 
-    /// Create a new consensus transaction with the flow result
-    /// (output) to be sent to the other MPC parties.
-    /// Returns None if the epoch switched in the middle and was
-    /// not available or if this party is not the aggregator.
-    /// Only the aggregator party should send the output to the other parties.
-    fn new_proof_mpc_output_message(&self, output: P::OutputValue) -> Option<ConsensusTransaction> {
-        self.epoch_store().ok().and_then(|epoch_store| {
-            authority_name_to_party_id(epoch_store.name, &epoch_store)
-                .ok()
-                // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1808562659
-                .filter(|&party_id| party_id == 3)
-                .and_then(|_| {
-                    bcs::to_bytes(&output).ok().map(|output_bytes| {
-                        ConsensusTransaction::new_dwallet_mpc_output(
-                            output_bytes,
-                            self.session_id.clone(),
-                            self.sender_address.clone(),
-                        )
-                    })
-                })
-        })
+    /// Creates a new consensus transaction with the flow result (output) to be sent
+    /// to other MPC parties.
+    ///
+    /// Returns a [`PeraResult`] with the created [`ConsensusTransaction`] if successful.
+    fn new_proof_mpc_output_message(
+        &self,
+        output: P::OutputValue,
+    ) -> PeraResult<ConsensusTransaction> {
+        let epoch_store = self.epoch_store()?;
+        let party_id = authority_name_to_party_id(epoch_store.name, &epoch_store)?;
+        if party_id != 3 {
+            return Err(PeraError::NotAggregatorParty {
+                party_id,
+                session_id: self.session_id.clone(),
+                sender_address: self.sender_address.clone(),
+            });
+        }
+
+        let output_bytes =
+            bcs::to_bytes(&output).map_err(|_| PeraError::ObjectSerializationError {
+                error: "failed to serialize MPC output".into(),
+            })?;
+
+        Ok(ConsensusTransaction::new_dwallet_mpc_output(
+            output_bytes,
+            self.session_id.clone(),
+            self.sender_address.clone(),
+        ))
     }
 
     /// Stores a message in the pending messages map for the current MPC instance.
@@ -374,7 +377,6 @@ impl<P: CreatableParty> DwalletMPCInstance<P> {
 /// — Execution and Deactivation: Executes active instances and deactivates them once completed.
 /// todo: rename and https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807766408.
 pub struct DwalletMPCManager<P: CreatableParty> {
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807766541
     mpc_instances: HashMap<ObjectID, DwalletMPCInstance<P>>,
     /// Used to keep track of the order in which pending instances are received,
     /// so they are activated in order of arrival.
@@ -384,7 +386,6 @@ pub struct DwalletMPCManager<P: CreatableParty> {
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1808589063
     auxiliary_input: P::AuxiliaryInput,
     pub epoch_id: EpochId,
     /// The total number of parties in the chain
@@ -435,7 +436,6 @@ impl<P: CreatableParty + Sync + Send> DwalletMPCManager<P> {
         output: &Vec<u8>,
         session_id: &ObjectID,
     ) -> anyhow::Result<bool> {
-        // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1808919404
         self.mpc_instances
             .get(session_id)
             .filter(|instance| matches!(instance.status, MPCSessionStatus::Finalizing(_)))
@@ -542,7 +542,6 @@ impl<P: CreatableParty + Sync + Send> DwalletMPCManager<P> {
     ///
     // TODO (#261): Implement punishment logic for validators sending messages
     // TODO (#261): to non-existing MPC instances.
-    // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1798889640
     pub fn handle_message(
         &mut self,
         message: &[u8],
@@ -644,7 +643,6 @@ impl<P: CreatableParty + Sync + Send> DwalletMPCManager<P> {
 
         // Retrieve the MPC instance or return an error if it doesn't exist.
         let instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
-            // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1807810448
             PeraError::InvalidCommittee(format!(
                 "received a `finalize` event for non-existent session ID: `{:?}`",
                 event.session_id()
@@ -664,7 +662,6 @@ impl<P: CreatableParty + Sync + Send> DwalletMPCManager<P> {
 
                 Ok(())
             }
-            // todo: https://github.com/dwallet-labs/dwallet-network/pull/280/files#r1809022864
             _ => Err(PeraError::Unknown(format!(
                 "received a `finalize` event for session ID: `{:?}` that is not in the finalizing state; current state: {:?}",
                 event.session_id(),
