@@ -18,6 +18,11 @@ module dwallet_system::authority_binder {
 
 	// <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
 
+	#[allow(unused_const)]
+	const SMART_CONTRACT: u8 = 0;
+	#[allow(unused_const)]
+	const MODULE: u8 = 1;
+
 	// <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
 
 	// <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
@@ -44,6 +49,7 @@ module dwallet_system::authority_binder {
 		nonce: u64,
 		authority_id: ID,
 		owner: vector<u8>,
+		// 0 = Smart Contract, 1 = Module.
 		owner_type: u8,
 	}
 
@@ -160,7 +166,9 @@ module dwallet_system::authority_binder {
 	public fun create_authority_ack_transaction_hash(
 		binder: &DWalletBinder,
 		virgin_bound: bool,
-		chain_identifier: u64,
+		chain_identifier: vector<u8>,
+		// 0 = Number, 1 = Hex String
+		chain_id_type: u8,
 		domain_name: vector<u8>,
 		domain_version: vector<u8>,
 		): vector<u8> {
@@ -174,12 +182,13 @@ module dwallet_system::authority_binder {
 				chain_identifier,
 				domain_name,
 				domain_version,
-				binder.bind_to_authority.owner
+				binder.bind_to_authority.owner,
+				chain_id_type,
 				)
 	}
 
 	/// Approve messages using the `DWalletBinder`.
-	public(friend) fun approve_messages<T>(
+	public entry fun approve_messages<T>(
 		binder: &DWalletBinder,
 		dwallet: &dwallet::DWallet<T>,
 		messages: vector<vector<u8>>,
@@ -201,9 +210,10 @@ module dwallet_system::authority_binder {
 		bind_to_authority: vector<u8>,
 		bind_to_authority_nonce: u64,
 		virgin_bound: bool,
-		chain_id: u64,
+		chain_id: vector<u8>,
 		domain_name: vector<u8>,
 		domain_version: vector<u8>,
-		contract_address: vector<u8>
+		contract_address: vector<u8>,
+		chain_id_type: u8,
 	): vector<u8>;
 }
