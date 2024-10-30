@@ -23,6 +23,7 @@ const authorityBinderModuleName = 'authority_binder';
  * @param {string} dwalletBinderId - The ID of the dWallet binder.
  * @param {boolean} virginBound - Indicates if this is a virgin binding.
  * @param {number} chainID - The chain ID of the Ethereum network.
+ * @param {'Number' | 'HexString'} chainIDType - The type of the chain ID.
  * @param {string} domainName - The domain name for the transaction.
  * @param {string} domainVersion - The domain version for the transaction.
  * @param {Keypair} keypair - The keypair used to sign the transaction.
