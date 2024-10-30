@@ -3,6 +3,8 @@
 
 import { fromB58, splitGenericParameters } from '@mysten/bcs';
 
+import type { DWalletClient } from '../client/client.js';
+
 const TX_DIGEST_LENGTH = 32;
 
 /** Returns whether the tx digest is valid based on the serialization format */
@@ -107,4 +109,46 @@ function isHex(value: string): boolean {
 
 function getHexByteLength(value: string): number {
 	return /^(0x|0X)/.test(value) ? (value.length - 2) / 2 : value.length / 2;
+}
+
+/**
+ * Retrieves a shared object reference of an object by its ID.
+ *
+ * This function fetches the object from the dWallet client using the provided object ID.
+ * It then checks if the object is a shared object and retrieves its initial shared version.
+ * If the object is not a shared object, an error is thrown.
+ *
+ * @param {string} objectId - The ID of the object to retrieve.
+ * @param {DWalletClient} client - The dWallet client instance.
+ * @param {boolean} [mutable=false] - Indicates if the shared object reference should be mutable.
+ * @returns An object containing the shared object reference details.
+ * @throws Will throw an error if the object is not a shared object.
+ */
+export async function getSharedObjectRefById(
+	objectId: string,
+	client: DWalletClient,
+	mutable: boolean = false,
+) {
+	let objectResponse = await client.getObject({
+		id: objectId,
+		options: { showContent: true, showOwner: true },
+	});
+	let owner = objectResponse.data?.owner;
+	const initialSharedVersion =
+		owner &&
+		typeof owner === 'object' &&
+		'Shared' in owner &&
+		owner.Shared.initial_shared_version !== undefined
+			? owner.Shared.initial_shared_version!
+			: undefined;
+
+	if (initialSharedVersion === undefined) {
+		throw new Error('Failed to create shared ref: object is not a shared object');
+	}
+
+	return {
+		objectId: objectResponse.data?.objectId!,
+		initialSharedVersion: initialSharedVersion,
+		mutable: mutable,
+	};
 }

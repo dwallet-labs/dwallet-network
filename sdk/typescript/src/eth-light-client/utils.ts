@@ -76,7 +76,7 @@ export const getLatestEthereumStateById = async (
 				eth_smart_contract_address: number[];
 				eth_smart_contract_slot: number;
 				network: string;
-			})
+		  })
 		: null;
 };
 
@@ -104,7 +104,7 @@ export const getEthereumStateById = async (
 				latest_ethereum_state_id: string;
 				state_root: number[];
 				block_number: number;
-			})
+		  })
 		: null;
 };
 
