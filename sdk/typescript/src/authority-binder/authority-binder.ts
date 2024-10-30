@@ -143,35 +143,37 @@ export const createBindToAuthority = async (
  *
  * @param {string} binderID - The ID of the binder.
  * @param {string} authorityID - The ID of the authority to bind.
+ * @param {string} authorityConfigType - The configuration type of the authority.
  * @param {string} owner - The address of the owner.
  * @param {number} ownerType - The type of the owner (e.g., user, contract).
  * @param {Keypair} keypair - The keypair used for signing the transaction.
  * @param {DWalletClient} client - The dWallet client to interact with the blockchain.
- * @returns The object ID of the newly bound authority.
+ * @returns The object ID of the dWalletBinder.
  * @throws Will throw an error if the transaction fails.
  */
-// todo(yuval): test this function
 export const setBindToAuthority = async (
 	binderID: string,
 	authorityID: string,
+	authorityConfigType: string,
 	owner: string,
 	ownerType: number,
 	keypair: Keypair,
 	client: DWalletClient,
 ) => {
-	let authorityIDBcs = stringToArrayU8Bcs(authorityID);
+	let binderSharedObjectRef = await getSharedObjectRefById(binderID, client, true);
+	let authoritySharedObjectRef = await getSharedObjectRefById(authorityID, client);
 	let ownerBcs = stringToArrayU8Bcs(owner);
 
 	const tx = new TransactionBlock();
 	tx.moveCall({
 		target: `${packageId}::${authorityBinderModuleName}::set_bind_to_authority`,
 		arguments: [
-			tx.object(binderID),
-			tx.pure(authorityIDBcs),
+			tx.sharedObjectRef(binderSharedObjectRef),
+			tx.sharedObjectRef(authoritySharedObjectRef),
 			tx.pure(ownerBcs),
-			tx.pure.u64(ownerType),
+			tx.pure.u8(ownerType),
 		],
-		typeArguments: [],
+		typeArguments: [authorityConfigType],
 	});
 
 	let result = await client.signAndExecuteTransactionBlock({
@@ -186,5 +188,10 @@ export const setBindToAuthority = async (
 		);
 	}
 
-	return result.effects?.created?.at(0)?.reference.objectId!;
+	return result.effects?.mutated?.filter(
+		(o) =>
+			typeof o.owner === 'object' &&
+			'Shared' in o.owner &&
+			o.owner.Shared.initial_shared_version !== undefined,
+	)[0].reference.objectId!;
 };
