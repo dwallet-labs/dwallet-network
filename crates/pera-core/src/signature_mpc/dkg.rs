@@ -1,7 +1,6 @@
 use crate::signature_mpc::mpc_events::{
     CompletedProofMPCSessionEvent, CreatedDKGSessionEvent, CreatedProofMPCEvent, MPCEvent,
 };
-use crate::signature_mpc::mpc_manager::{CreatableParty, SignatureMPCInstance};
 use group::{secp256k1, PartyID, Samplable};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;
 use maurer::knowledge_of_discrete_log::PublicParameters;

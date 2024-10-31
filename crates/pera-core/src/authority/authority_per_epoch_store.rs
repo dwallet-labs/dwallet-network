@@ -78,7 +78,6 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_mpc;
 use crate::signature_mpc::dkg::{DKGFirstParty, DKGSecondParty};
-use crate::signature_mpc::mpc_manager::SignatureMPCManager;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use move_bytecode_utils::module_cache::SyncModuleCache;

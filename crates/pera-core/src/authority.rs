@@ -166,11 +166,6 @@ use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
-
-use crate::signature_mpc::mpc_manager::{
-    authority_name_to_party_id, SignatureMPCInstance, SignatureMPCManager,
-};
-
 use crate::authority_client::NetworkAuthorityClient;
 use crate::signature_mpc;
 use crate::signature_mpc::bytes_party::MPCParty;
