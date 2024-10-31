@@ -1,17 +1,12 @@
-use crate::signature_mpc::mpc_events::{
-    CompletedProofMPCSessionEvent, CreatedDKGSessionEvent, CreatedProofMPCEvent, MPCEvent,
-};
 use group::{secp256k1, PartyID, Samplable};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;
 use maurer::knowledge_of_discrete_log::PublicParameters;
 use maurer::Language;
-use mpc::{Advance, Party};
+use mpc::Party;
 use proof::GroupsPublicParametersAccessors;
 use rand_core::CryptoRngCore;
-use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::iter;
-use std::marker::PhantomData;
 use twopc_mpc::dkg::Protocol;
 // TODO (#228): Remove this file & all proof MPC code.
 

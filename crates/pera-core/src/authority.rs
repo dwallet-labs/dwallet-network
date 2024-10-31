@@ -141,6 +141,7 @@ use crate::authority::authority_store_pruner::{
 };
 use crate::authority::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
+use crate::authority_client::NetworkAuthorityClient;
 #[cfg(msim)]
 pub use crate::checkpoints::checkpoint_executor::{
     init_checkpoint_timeout_config, CheckpointTimeoutConfig,
@@ -157,6 +158,11 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
+use crate::signature_mpc;
+use crate::signature_mpc::bytes_party::MPCParty;
+use crate::signature_mpc::dkg::{
+    sample_witnesses, AsyncProtocol, AuxiliaryFirst, AuxiliarySecond, DKGFirstParty, DKGSecondParty,
+};
 use crate::signature_mpc::mpc_events::{
     CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGSessionEvent,
     CreatedProofMPCEvent, MPCEvent, StartDKGSecondRoundEvent,
@@ -166,12 +172,6 @@ use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
-use crate::authority_client::NetworkAuthorityClient;
-use crate::signature_mpc;
-use crate::signature_mpc::bytes_party::MPCParty;
-use crate::signature_mpc::dkg::{
-    sample_witnesses, AsyncProtocol, AuxiliaryFirst, AuxiliarySecond, DKGFirstParty, DKGSecondParty,
-};
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;

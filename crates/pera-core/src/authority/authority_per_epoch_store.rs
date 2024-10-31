@@ -339,7 +339,7 @@ pub struct AuthorityPerEpochStore {
 
     /// State machine managing Proof Signature MPC flows.
     pub bytes_party_manager:
-        OnceCell<tokio::sync::Mutex<signature_mpc::mpc_bytes_manager::SignatureMPCManager>>,
+        OnceCell<tokio::sync::Mutex<signature_mpc::mpc_manager::SignatureMPCManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -927,7 +927,7 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the proof MPC manager when a new epoch starts.
     pub async fn set_mpc_manager(
         &self,
-        mut manager: signature_mpc::mpc_bytes_manager::SignatureMPCManager,
+        mut manager: signature_mpc::mpc_manager::SignatureMPCManager,
     ) -> PeraResult<()> {
         if self
             .bytes_party_manager
