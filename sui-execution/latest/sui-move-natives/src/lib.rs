@@ -801,17 +801,17 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             make_native!(twopc_mpc::sign_verify_encrypted_signature_parts_prehash),
         ),
         (
-            "ethereum_state",
+            "ethereum_authority",
             "verify_eth_state",
             make_native!(eth_state_proof::verify_eth_state),
         ),
         (
-            "eth_dwallet",
+            "ethereum_authority",
             "verify_message_proof",
             make_native!(eth_state_proof::verify_message_proof),
         ),
         (
-            "ethereum_state",
+            "ethereum_authority",
             "create_initial_eth_state_data",
             make_native!(eth_state_proof::create_initial_eth_state_data),
         ),

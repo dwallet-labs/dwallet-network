@@ -22,16 +22,11 @@ use std::collections::VecDeque;
 /// Bind a `dwallet::DWalletCap` to an authority.
 #[derive(Clone, Debug, Serialize, Deserialize, Eip712, EthAbiType)]
 pub struct DWalletBinder {
-    // #[serde(rename = "id")]
     pub id: Vec<u8>,
-    // #[serde(rename = "dwalletCap")]
     pub dwallet_cap: Vec<u8>,
-    // #[serde(rename = "bindToAuthority")]
     pub bind_to_authority: Vec<u8>,
-    // #[serde(rename = "virginBound")]
-    pub virgin_bound: bool,
-    // #[serde(rename = "nonce")]
     pub nonce: u64,
+    pub virgin_bound: bool,
 }
 
 #[derive(Debug)]
@@ -74,7 +69,6 @@ pub struct AuthorityBinderCostParams {
 *  chain_id_type: u8) -> vector<u8>;`
 * gas cost: create_authority_ack_transaction_cost_base | base cost for function call and fixed operations.
 **************************************************************************************************/
-
 pub fn create_authority_ack_transaction(
     context: &mut NativeContext,
     _ty_args: Vec<Type>,

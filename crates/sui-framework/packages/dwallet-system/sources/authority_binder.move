@@ -9,6 +9,7 @@ module dwallet_system::authority_binder {
 	use dwallet_system::dwallet;
 	use dwallet_system::dwallet::{MessageApproval};
 
+	friend dwallet_system::ethereum_authority;
 	friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 	// <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -53,7 +54,7 @@ module dwallet_system::authority_binder {
 		owner_type: u8,
 	}
 
-	/// Get the `Authority`'s owner address from the `BindToAuthority`.
+   /// Get the `Authority`'s owner address from the `BindToAuthority`.
 	public(friend) fun get_authority_owner_address(bind_to_authority: &BindToAuthority): vector<u8> {
 		bind_to_authority.owner
 	}
@@ -79,16 +80,6 @@ module dwallet_system::authority_binder {
 		latest: LatestState,
 		config: C,
 		authority_owner_dwallet_cap: dwallet::DWalletCap,
-	}
-
-	/// Set the latest state object to be pointed by the `Authority`.
-	public(friend) fun set_latest_id<C: key + store>(authority: &mut Authority<C>, latest_id: ID) {
-		authority.latest.id = latest_id;
-	}
-
-	/// Borrow the `config` object from the `Authority`.
-	public(friend) fun borrow_config<C: key + store>(authority: &Authority<C>): &C {
-		&authority.config
 	}
 
 	/// Create an Authority object.
@@ -161,6 +152,20 @@ module dwallet_system::authority_binder {
 		binder.virgin_bound = false;
 	}
 
+	/// Approve messages using the `DWalletBinder`.
+	public entry fun approve_messages<T>(
+		binder: &DWalletBinder,
+		dwallet: &dwallet::DWallet<T>,
+		messages: vector<vector<u8>>,
+	): vector<MessageApproval> {
+		let binder_dwallet_cap_id = object::id(&binder.dwallet_cap);
+		let dwallet_cap_id = dwallet::get_dwallet_cap_id(dwallet);
+
+		assert!(binder_dwallet_cap_id == dwallet_cap_id, EInvalidDWalletCap);
+
+		dwallet::approve_messages(&binder.dwallet_cap, messages)
+	}
+
 	/// Create a transaction hash for the authority acknowledgment.
 	/// This is used to acknowledge the authority that the `DWalletBinder` is bound to it.
 	public fun create_authority_ack_transaction_hash(
@@ -187,23 +192,9 @@ module dwallet_system::authority_binder {
 				)
 	}
 
-	/// Approve messages using the `DWalletBinder`.
-	public entry fun approve_messages<T>(
-		binder: &DWalletBinder,
-		dwallet: &dwallet::DWallet<T>,
-		messages: vector<vector<u8>>,
-	): vector<MessageApproval> {
-		let binder_dwallet_cap_id = object::id(&binder.dwallet_cap);
-		let dwallet_cap_id = dwallet::get_dwallet_cap_id(dwallet);
-
-		assert!(binder_dwallet_cap_id == dwallet_cap_id, EInvalidDWalletCap);
-
-		dwallet::approve_messages(&binder.dwallet_cap, messages)
-	}
-
 	#[allow(unused_function)]
-    /// Create a transaction hash that will be signed later, to acknowledge the
-    /// authority that the `DWalletBinder` is bound to it.
+	/// Create a transaction hash that will be signed later, to acknowledge the
+	/// authority that the `DWalletBinder` is bound to it.
 	native fun create_authority_ack_transaction(
 		binder_id: vector<u8>,
 		dwallet_cap_id: vector<u8>,
