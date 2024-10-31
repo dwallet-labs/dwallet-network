@@ -172,6 +172,8 @@ use crate::signature_mpc::mpc_manager::{
 };
 
 use crate::authority_client::NetworkAuthorityClient;
+use crate::signature_mpc;
+use crate::signature_mpc::bytes_party::MPCParty;
 use crate::signature_mpc::dkg::{
     sample_witnesses, AsyncProtocol, AuxiliaryFirst, AuxiliarySecond, DKGFirstParty, DKGSecondParty,
 };
@@ -181,8 +183,6 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::execution_config_utils::to_binary_config;
-use crate::signature_mpc;
-use crate::signature_mpc::bytes_party::MPCParty;
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1574,22 +1574,21 @@ impl AuthorityState {
                 } else if event.type_ == CompletedDKGSecondRoundEvent::type_() {
                     let deserialized_event: CompletedDKGSecondRoundEvent =
                         bcs::from_bytes(&event.contents)?;
-                    bytes_mpc_manager
-                        .finalize_mpc_instance(deserialized_event.session_id.bytes)?;
+                    bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
                     println!("created dwallet {:?}", deserialized_event.dwallet_id);
                 } else {
                     match MPCParty::from_event(event)? {
                         Some((party, auxiliary_input, session_ref)) => {
                             bytes_mpc_manager.push_new_mpc_instance(
-                            auxiliary_input,
-                            party,
-                            session_ref.session_id,
-                            session_ref.event_emitter,
-                            session_ref.dwallet_cap_id,
-                            session_ref.mpc_round,
+                                auxiliary_input,
+                                party,
+                                session_ref.session_id,
+                                session_ref.event_emitter,
+                                session_ref.dwallet_cap_id,
+                                session_ref.mpc_round,
                             );
                         }
-                        None => {},
+                        None => {}
                     };
                 }
             }

@@ -76,6 +76,7 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
+use crate::signature_mpc;
 use crate::signature_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::signature_mpc::mpc_manager::SignatureMPCManager;
 use crate::signature_mpc::proof::ProofParty;
@@ -114,7 +115,6 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use crate::signature_mpc;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -340,7 +340,8 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing Proof Signature MPC flows.
-    pub bytes_party_manager: OnceCell<tokio::sync::Mutex<signature_mpc::mpc_bytes_manager::SignatureMPCManager>>,
+    pub bytes_party_manager:
+        OnceCell<tokio::sync::Mutex<signature_mpc::mpc_bytes_manager::SignatureMPCManager>>,
     // /// State machine managing DWallets DKG flows
     // pub dwallet_dkg_init_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
 }
@@ -3203,9 +3204,7 @@ impl AuthorityPerEpochStore {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
             // todo: remove round
-            signature_mpc_manager
-                .handle_end_of_delivery()
-                .await?;
+            signature_mpc_manager.handle_end_of_delivery().await?;
         };
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();

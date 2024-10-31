@@ -369,30 +369,26 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             authority_index, session_id
                         );
 
-                        let mut signature_mpc_manager =
-                            self.epoch_store.bytes_party_manager.get();
-                        let is_valid_transaction =
-                                match signature_mpc_manager {
-                                    Some(mpc_manager) => {
-                                        let signature_mpc_manager = mpc_manager.lock().await;
-                                        match signature_mpc_manager
-                                            .try_verify_output(value, session_id)
-                                        {
-                                            Ok(is_valid) => is_valid,
-                                            Err(e) => {
-                                                error!(
+                        let mut signature_mpc_manager = self.epoch_store.bytes_party_manager.get();
+                        let is_valid_transaction = match signature_mpc_manager {
+                            Some(mpc_manager) => {
+                                let signature_mpc_manager = mpc_manager.lock().await;
+                                match signature_mpc_manager.try_verify_output(value, session_id) {
+                                    Ok(is_valid) => is_valid,
+                                    Err(e) => {
+                                        error!(
                                                     "Error verifying ProofMPCOutput output from session {:?} and party {:?}: {:?}",
                                                     session_id, authority_index, e
                                                 );
-                                                false
-                                            }
-                                        }
-                                    }
-                                    None => {
-                                        // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
-                                        error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
                                         false
                                     }
+                                }
+                            }
+                            None => {
+                                // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
+                                error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
+                                false
+                            }
                         };
 
                         if is_valid_transaction {

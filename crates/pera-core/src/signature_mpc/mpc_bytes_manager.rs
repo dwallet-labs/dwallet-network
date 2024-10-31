@@ -213,9 +213,9 @@ impl SignatureMPCInstance {
             return Ok(());
         }
 
-        self.pending_messages.insert(party_id, message.message.clone());
+        self.pending_messages
+            .insert(party_id, message.message.clone());
         Ok(())
-
     }
 
     /// Handles a message by either forwarding it to the instance or ignoring it if the instance is finished.
@@ -243,7 +243,7 @@ impl SignatureMPCInstance {
 /// - Finished: The session removed from active instances; incoming messages will not be forwarded,
 /// but will not be marked as malicious.
 #[derive(Clone, PartialEq, Debug)]
-enum MPCSessionStatus{
+enum MPCSessionStatus {
     Pending,
     FirstExecution,
     Active,
