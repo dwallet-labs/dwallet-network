@@ -340,7 +340,6 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing Proof Signature MPC flows.
-    pub dkg_second_mpc_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<DKGSecondParty>>>,
     pub bytes_party_manager: OnceCell<tokio::sync::Mutex<signature_mpc::mpc_bytes_manager::SignatureMPCManager>>,
     // /// State machine managing DWallets DKG flows
     // pub dwallet_dkg_init_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
@@ -859,7 +858,6 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
-            dkg_second_mpc_manager: OnceCell::new(),
             bytes_party_manager: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
@@ -930,29 +928,12 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the proof MPC manager when a new epoch starts.
-    pub async fn set_first_dkg_mpc_manager(
+    pub async fn set_mpc_manager(
         &self,
         mut manager: signature_mpc::mpc_bytes_manager::SignatureMPCManager,
     ) -> PeraResult<()> {
         if self
             .bytes_party_manager
-            .set(tokio::sync::Mutex::new(manager))
-            .is_err()
-        {
-            error!(
-                "BUG: `set_signature_mpc_manager` called more than once; this should never happen"
-            );
-        }
-        Ok(())
-    }
-
-    /// A function to initiate the proof MPC manager when a new epoch starts.
-    pub async fn set_second_dkg_mpc_manager(
-        &self,
-        mut manager: SignatureMPCManager<DKGSecondParty>,
-    ) -> PeraResult<()> {
-        if self
-            .dkg_second_mpc_manager
             .set(tokio::sync::Mutex::new(manager))
             .is_err()
         {
@@ -3221,17 +3202,9 @@ impl AuthorityPerEpochStore {
         if let Some(signature_mpc_manager) = self.bytes_party_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
+            // todo: remove round
             signature_mpc_manager
-                .handle_end_of_delivery(MPCRound::DKGFirst)
-                .await?;
-        };
-
-        // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
-        if let Some(signature_mpc_manager) = self.dkg_second_mpc_manager.get() {
-            let mut signature_mpc_manager = signature_mpc_manager.lock().await;
-            // TODO (#282): Process the end of delivery asynchronously
-            signature_mpc_manager
-                .handle_end_of_delivery(MPCRound::DKGSecond)
+                .handle_end_of_delivery()
                 .await?;
         };
 

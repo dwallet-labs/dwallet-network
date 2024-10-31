@@ -1294,7 +1294,7 @@ impl PeraNode {
         }
 
         epoch_store
-            .set_first_dkg_mpc_manager(pera_core::signature_mpc::mpc_bytes_manager::SignatureMPCManager::new(
+            .set_mpc_manager(pera_core::signature_mpc::mpc_bytes_manager::SignatureMPCManager::new(
                 Arc::new(consensus_adapter.clone()),
                 Arc::downgrade(&epoch_store),
                 epoch_store.epoch(),
@@ -1303,16 +1303,6 @@ impl PeraNode {
             ))
             .await?;
 
-        epoch_store
-            .set_second_dkg_mpc_manager(SignatureMPCManager::new(
-                Arc::new(consensus_adapter.clone()),
-                Arc::downgrade(&epoch_store),
-                epoch_store.epoch(),
-                config.max_active_signature_mpc_instances,
-                epoch_store.committee().voting_rights.len(),
-                Flows::SecondDKG,
-            ))
-            .await?;
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(
             None,
             state.metrics.clone(),

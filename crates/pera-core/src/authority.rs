@@ -1562,75 +1562,35 @@ impl AuthorityState {
             TransactionEffects::V2(effects) => effects.status(),
         };
         if status.is_ok() {
-            // let Some(mut dkg_first_mpc_manager) = epoch_store..get() else {
-            //     return Ok(());
-            // };
-            let Some(mut dkg_second_mpc_manager) = epoch_store.dkg_second_mpc_manager.get() else {
-                return Ok(());
-            };
             let Some(mut bytes_mpc_manager) = epoch_store.bytes_party_manager.get() else {
                 return Ok(());
             };
-            // let mut dkg_first_mpc_manager = dkg_first_mpc_manager.lock().await;
-            let mut dkg_second_mpc_manager = dkg_second_mpc_manager.lock().await;
             let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
             for event in &inner_temporary_store.events.data {
-                if event.type_ == CreatedDKGSessionEvent::type_() {
-                    let first_proof_party = DKGFirstParty::default();
+                if event.type_ == CompletedDKGFirstRoundEvent::type_() {
                     let deserialized_event: CreatedDKGSessionEvent =
                         bcs::from_bytes(&event.contents)?;
-                    let auxiliary = DKGFirstParty::first_auxiliary_input(
-                        deserialized_event.session_id.bytes.to_vec(),
-                    );
-                    // dkg_first_mpc_manager.push_new_mpc_instance(
-                    //     auxiliary,
-                    //     first_proof_party,
-                    //     deserialized_event.session_id.bytes,
-                    //     deserialized_event.sender,
-                    //     deserialized_event.dwallet_cap_id.bytes,
-                    // );
-
-                    bytes_mpc_manager.push_new_mpc_instance(
-                        Vec::new(),
-                        MPCParty::FirstDKGBytesParty(signature_mpc::bytes_party::FirstDKGBytesParty{party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default()}),
-                        deserialized_event.session_id.bytes,
-                        deserialized_event.sender,
-                        deserialized_event.dwallet_cap_id.bytes,
-                    );
-
-                } else if event.type_ == CompletedDKGFirstRoundEvent::type_() {
-                    let deserialized_event: CreatedDKGSessionEvent =
-                        bcs::from_bytes(&event.contents)?;
-                    // dkg_first_mpc_manager
-                    //     .finalize_mpc_instance(deserialized_event.session_id.bytes)?;
-
                     bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?
-                } else if event.type_ == StartDKGSecondRoundEvent::type_() {
-                    let party = DKGSecondParty::default();
-                    let deserialized_event: StartDKGSecondRoundEvent =
-                        bcs::from_bytes(&event.contents)?;
-                    let public_key_share_and_proof =
-                        bcs::from_bytes(&deserialized_event.public_key_share_and_proof)?;
-                    let first_round_output =
-                        bcs::from_bytes(&deserialized_event.first_round_output)?;
-                    let auxiliary_input = DKGSecondParty::first_auxiliary_input(
-                        first_round_output,
-                        public_key_share_and_proof,
-                        deserialized_event.first_round_session_id.bytes.to_vec(),
-                    );
-                    dkg_second_mpc_manager.push_new_mpc_instance(
-                        auxiliary_input,
-                        party,
-                        deserialized_event.session_id.bytes,
-                        deserialized_event.sender,
-                        deserialized_event.dwallet_cap_id.bytes,
-                    );
                 } else if event.type_ == CompletedDKGSecondRoundEvent::type_() {
                     let deserialized_event: CompletedDKGSecondRoundEvent =
                         bcs::from_bytes(&event.contents)?;
-                    dkg_second_mpc_manager
+                    bytes_mpc_manager
                         .finalize_mpc_instance(deserialized_event.session_id.bytes)?;
                     println!("created dwallet {:?}", deserialized_event.dwallet_id);
+                } else {
+                    match MPCParty::from_event(event)? {
+                        Some((party, auxiliary_input, session_ref)) => {
+                            bytes_mpc_manager.push_new_mpc_instance(
+                            auxiliary_input,
+                            party,
+                            session_ref.session_id,
+                            session_ref.event_emitter,
+                            session_ref.dwallet_cap_id,
+                            session_ref.mpc_round,
+                            );
+                        }
+                        None => {},
+                    };
                 }
             }
             Ok(())

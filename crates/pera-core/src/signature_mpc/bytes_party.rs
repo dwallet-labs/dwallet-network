@@ -1,13 +1,20 @@
 use std::collections::{HashMap, HashSet};
 use group::PartyID;
 use mpc::Advance;
-use twopc_mpc::dkg::decentralized_party::encryption_of_secret_key_share_round::AuxiliaryInput;
+use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::event::Event;
-use crate::signature_mpc;
+use pera_types::messages_signature_mpc::MPCRound;
 use crate::signature_mpc::auxiliary_inputs::{get_dkg_first_round_auxiliary_input, get_dkg_second_round_auxiliary_input};
 use crate::signature_mpc::mpc_events::{CreatedDKGSessionEvent, MPCEvent, StartDKGSecondRoundEvent};
 
 pub type PartyAuxiliaryInput = Vec<u8>;
+
+pub struct SessionRef {
+    pub session_id: ObjectID,
+    pub event_emitter: PeraAddress,
+    pub dwallet_cap_id: ObjectID,
+    pub mpc_round: MPCRound,
+}
 
 pub enum MPCParty {
     DefaultParty,
@@ -34,31 +41,43 @@ impl MPCParty {
     }
 
     // todo: implement from event to party
-    pub fn from_event(event: Event) -> anyhow::Result<(Self, PartyAuxiliaryInput)> {
+    pub fn from_event(event: &Event) -> anyhow::Result<Option<(Self, PartyAuxiliaryInput, SessionRef)>> {
         if event.type_ == CreatedDKGSessionEvent::type_() {
             let deserialized_event: CreatedDKGSessionEvent =
                 bcs::from_bytes(&event.contents)?;
-            return Ok((
+            return Ok(Some((
                 MPCParty::FirstDKGBytesParty(FirstDKGBytesParty { party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default() }),
-                get_dkg_first_round_auxiliary_input(deserialized_event.session_id.bytes.to_vec())
-            ));
+                get_dkg_first_round_auxiliary_input(deserialized_event.session_id.bytes.to_vec()),
+                SessionRef {
+                    session_id: deserialized_event.session_id.bytes,
+                    event_emitter: deserialized_event.sender,
+                    dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+                    mpc_round: MPCRound::DKGFirst,
+                },
+            )));
         } else if event.type_ == StartDKGSecondRoundEvent::type_() {
             let deserialized_event: StartDKGSecondRoundEvent =
                 bcs::from_bytes(&event.contents)?;
             let public_key_share_and_proof =
-                bcs::from_bytes(&deserialized_event.public_key_share_and_proof)?;
+                deserialized_event.public_key_share_and_proof;
             let first_round_output =
-                bcs::from_bytes(&deserialized_event.first_round_output)?;
-            return Ok((
+                deserialized_event.first_round_output;
+            return Ok(Some((
                 MPCParty::SecondDKGBytesParty(SecondDKGBytesParty { party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default() }),
                 get_dkg_second_round_auxiliary_input(
                     first_round_output,
                     public_key_share_and_proof,
                     deserialized_event.session_id.bytes.to_vec(),
                 ),
-            ));
+                SessionRef {
+                    session_id: deserialized_event.session_id.bytes,
+                    event_emitter: deserialized_event.sender,
+                    dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+                    mpc_round: MPCRound::DKGSecond,
+                },
+            )));
         }
-        Ok((MPCParty::DefaultParty, Vec::new()))
+        Ok(None)
     }
 }
 
