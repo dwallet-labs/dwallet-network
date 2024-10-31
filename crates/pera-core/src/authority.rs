@@ -177,7 +177,6 @@ use crate::signature_mpc::bytes_party::MPCParty;
 use crate::signature_mpc::dkg::{
     sample_witnesses, AsyncProtocol, AuxiliaryFirst, AuxiliarySecond, DKGFirstParty, DKGSecondParty,
 };
-use crate::signature_mpc::proof::{generate_language_public_parameters, Lang, ProofParty};
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;

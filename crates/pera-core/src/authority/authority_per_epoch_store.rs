@@ -79,7 +79,6 @@ use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_mpc;
 use crate::signature_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::signature_mpc::mpc_manager::SignatureMPCManager;
-use crate::signature_mpc::proof::ProofParty;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -342,8 +341,6 @@ pub struct AuthorityPerEpochStore {
     /// State machine managing Proof Signature MPC flows.
     pub bytes_party_manager:
         OnceCell<tokio::sync::Mutex<signature_mpc::mpc_bytes_manager::SignatureMPCManager>>,
-    // /// State machine managing DWallets DKG flows
-    // pub dwallet_dkg_init_manager: OnceCell<tokio::sync::Mutex<SignatureMPCManager<ProofParty>>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.

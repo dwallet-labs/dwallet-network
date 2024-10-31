@@ -1,7 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
 use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
-use crate::signature_mpc::proof::ProofParty;
 use anyhow::anyhow;
 use group::secp256k1::group_element::Value;
 use group::{secp256k1, GroupElement, PartyID};
