@@ -1294,13 +1294,12 @@ impl PeraNode {
         }
 
         epoch_store
-            .set_first_dkg_mpc_manager(SignatureMPCManager::new(
+            .set_first_dkg_mpc_manager(pera_core::signature_mpc::mpc_bytes_manager::SignatureMPCManager::new(
                 Arc::new(consensus_adapter.clone()),
                 Arc::downgrade(&epoch_store),
                 epoch_store.epoch(),
                 config.max_active_signature_mpc_instances,
                 epoch_store.committee().voting_rights.len(),
-                Flows::FirstDKG,
             ))
             .await?;
 

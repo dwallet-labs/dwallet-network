@@ -9,15 +9,16 @@ use serde::{Serialize, Deserialize};
 use twopc_mpc::dkg::decentralized_party::encryption_of_secret_key_share_round::AuxiliaryInput;
 
 pub enum MPCParty {
+    DefaultParty,
     FirstDKGBytesParty(FirstDKGBytesParty),
     // ... there will be more parties here
 }
 
+/// The default party is the party that is used when the party is not specified.
+/// We only implemented it to be able to use `mem::take` which requires that the type has `Default` implemented.
 impl Default for MPCParty {
     fn default() -> Self {
-        MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
-            party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default(),
-        })
+        MPCParty::DefaultParty
     }
 }
 
@@ -25,12 +26,13 @@ impl MPCParty {
     pub fn advance(self, messages: HashMap<PartyID, Vec<u8>>, auxiliary_input: Vec<u8>) -> twopc_mpc::Result<AdvanceResult> {
         match self {
             MPCParty::FirstDKGBytesParty(party) => party.advance(messages, auxiliary_input),
+            MPCParty::DefaultParty => Err(twopc_mpc::Error::InvalidParameters),
         }
     }
 }
 
 pub trait BytesParty : Sync + Send {
-    fn advance(self, messages: HashMap<PartyID, Vec<u8>>, auxiliary_input: Vec<u8>) -> twopc_mpc::Result<AdvanceResult>;
+    fn advance(self, messages: HashMap<PartyID, Vec<u8>>, auxiliary_input: Vec<u8>) -> Result<AdvanceResult, twopc_mpc::Error>;
 }
 
 pub enum AdvanceResult {
@@ -40,8 +42,9 @@ pub enum AdvanceResult {
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
-struct FirstDKGBytesParty {
-    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty,
+#[derive(Default)]
+pub struct FirstDKGBytesParty {
+    pub(crate) party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty,
 }
 
 impl BytesParty for FirstDKGBytesParty {
@@ -49,7 +52,7 @@ impl BytesParty for FirstDKGBytesParty {
         self,
         messages: HashMap<PartyID, Vec<u8>>,
         auxiliary_input: Vec<u8>,
-    ) -> twopc_mpc::Result<AdvanceResult> {
+    ) -> Result<AdvanceResult, twopc_mpc::Error> {
         let secp256k1_group_public_parameters =
             class_groups_constants::protocol_public_parameters().map_err(|_| twopc_mpc::Error::InvalidPublicParameters)?;
 
@@ -75,5 +78,4 @@ impl BytesParty for FirstDKGBytesParty {
         }
     }
 }
-
 

@@ -372,7 +372,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let is_valid_transaction = match mpc_round {
                             MPCRound::DKGFirst => {
                                 let mut signature_mpc_manager =
-                                    self.epoch_store.dkg_first_mpc_manager.get();
+                                    self.epoch_store.bytes_party_manager.get();
                                 match signature_mpc_manager {
                                     Some(mpc_manager) => {
                                         let signature_mpc_manager = mpc_manager.lock().await;

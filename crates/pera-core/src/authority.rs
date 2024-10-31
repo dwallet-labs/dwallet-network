@@ -181,6 +181,8 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::execution_config_utils::to_binary_config;
+use crate::signature_mpc;
+use crate::signature_mpc::bytes_party::MPCParty;
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -1560,14 +1562,18 @@ impl AuthorityState {
             TransactionEffects::V2(effects) => effects.status(),
         };
         if status.is_ok() {
-            let Some(mut dkg_first_mpc_manager) = epoch_store.dkg_first_mpc_manager.get() else {
-                return Ok(());
-            };
+            // let Some(mut dkg_first_mpc_manager) = epoch_store..get() else {
+            //     return Ok(());
+            // };
             let Some(mut dkg_second_mpc_manager) = epoch_store.dkg_second_mpc_manager.get() else {
                 return Ok(());
             };
-            let mut dkg_first_mpc_manager = dkg_first_mpc_manager.lock().await;
+            let Some(mut bytes_mpc_manager) = epoch_store.bytes_party_manager.get() else {
+                return Ok(());
+            };
+            // let mut dkg_first_mpc_manager = dkg_first_mpc_manager.lock().await;
             let mut dkg_second_mpc_manager = dkg_second_mpc_manager.lock().await;
+            let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
             for event in &inner_temporary_store.events.data {
                 if event.type_ == CreatedDKGSessionEvent::type_() {
                     let first_proof_party = DKGFirstParty::default();
@@ -1576,18 +1582,29 @@ impl AuthorityState {
                     let auxiliary = DKGFirstParty::first_auxiliary_input(
                         deserialized_event.session_id.bytes.to_vec(),
                     );
-                    dkg_first_mpc_manager.push_new_mpc_instance(
-                        auxiliary,
-                        first_proof_party,
+                    // dkg_first_mpc_manager.push_new_mpc_instance(
+                    //     auxiliary,
+                    //     first_proof_party,
+                    //     deserialized_event.session_id.bytes,
+                    //     deserialized_event.sender,
+                    //     deserialized_event.dwallet_cap_id.bytes,
+                    // );
+
+                    bytes_mpc_manager.push_new_mpc_instance(
+                        Vec::new(),
+                        MPCParty::FirstDKGBytesParty(signature_mpc::bytes_party::FirstDKGBytesParty{party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default()}),
                         deserialized_event.session_id.bytes,
                         deserialized_event.sender,
                         deserialized_event.dwallet_cap_id.bytes,
                     );
+
                 } else if event.type_ == CompletedDKGFirstRoundEvent::type_() {
                     let deserialized_event: CreatedDKGSessionEvent =
                         bcs::from_bytes(&event.contents)?;
-                    dkg_first_mpc_manager
-                        .finalize_mpc_instance(deserialized_event.session_id.bytes)?;
+                    // dkg_first_mpc_manager
+                    //     .finalize_mpc_instance(deserialized_event.session_id.bytes)?;
+
+                    bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?
                 } else if event.type_ == StartDKGSecondRoundEvent::type_() {
                     let party = DKGSecondParty::default();
                     let deserialized_event: StartDKGSecondRoundEvent =

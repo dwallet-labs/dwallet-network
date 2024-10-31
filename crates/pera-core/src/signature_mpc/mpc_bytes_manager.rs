@@ -14,6 +14,7 @@ use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::{ConsensusTransaction, Flows};
 
+use crate::signature_mpc::bytes_party::{AdvanceResult, MPCParty};
 use pera_types::committee::EpochId;
 use pera_types::messages_signature_mpc::MPCRound;
 use rand_core::OsRng;
@@ -31,7 +32,6 @@ use std::{io, mem};
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
-use crate::signature_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
 
 /// The message a validator can send to the other parties while running a signature MPC session.
 #[derive(Clone)]
@@ -98,10 +98,6 @@ impl SignatureMPCInstance {
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
     ) -> Self {
-        // let party = match party {
-        //     None => None
-        //     Some(party) => {}
-        // };
         Self {
             status,
             pending_messages: HashMap::new(),
@@ -111,7 +107,6 @@ impl SignatureMPCInstance {
             session_id,
             sender_address,
             dwallet_cap_id,
-            // _party: Some(_party.clone()),
             party: party,
             number_of_parties,
             auxiliary_input,
@@ -151,7 +146,7 @@ impl SignatureMPCInstance {
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                self.new_dwallet_mpc_output_message(output.into(), mpc_round)
+                self.new_dwallet_mpc_output_message(output.into(), MPCRound::DKGFirst)
             }
         };
 
@@ -218,15 +213,9 @@ impl SignatureMPCInstance {
             return Ok(());
         }
 
-        match bcs::from_bytes(&message.message) {
-            Ok(message) => {
-                self.pending_messages.insert(party_id, message);
-                Ok(())
-            }
-            Err(err) => Err(PeraError::ObjectDeserializationError {
-                error: err.to_string(),
-            }),
-        }
+        self.pending_messages.insert(party_id, message.message.clone());
+        Ok(())
+
     }
 
     /// Handles a message by either forwarding it to the instance or ignoring it if the instance is finished.
