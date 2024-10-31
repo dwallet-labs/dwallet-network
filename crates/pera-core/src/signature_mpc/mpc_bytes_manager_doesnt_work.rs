@@ -8,7 +8,7 @@ use group::{secp256k1, GroupElement, PartyID};
 use im::hashmap;
 use itertools::Itertools;
 use mpc::Advance;
-use mpc::{two_party::Round, AuxiliaryInput, Party};
+use mpc::{two_party::Round, AdvanceResult, AuxiliaryInput, Party};
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
@@ -31,7 +31,7 @@ use std::{io, mem};
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
-use crate::signature_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
+use crate::signature_mpc::bytes_party::BytesParty;
 
 /// The message a validator can send to the other parties while running a signature MPC session.
 #[derive(Clone)]
@@ -63,7 +63,7 @@ pub fn authority_name_to_party_id(
 /// A Signature MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-pub struct SignatureMPCInstance {
+pub struct SignatureMPCInstance{
     status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
@@ -78,13 +78,13 @@ pub struct SignatureMPCInstance {
     session_id: ObjectID,
     sender_address: PeraAddress,
     dwallet_cap_id: ObjectID,
+    party_without_option: Arc<dyn BytesParty>,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
-    // _party: Option<dyn BytesParty>,
-    party: MPCParty,
-    auxiliary_input: Vec<u8>,
+    party: Arc<dyn BytesParty>,
+    auxiliary_input: Option<Vec<u8>>,
 }
 
-impl SignatureMPCInstance {
+impl SignatureMPCInstance{
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -93,15 +93,15 @@ impl SignatureMPCInstance {
         sender_address: PeraAddress,
         dwallet_cap_id: ObjectID,
         number_of_parties: usize,
-        // _party: Arc<dyn BytesParty>,
-        party: MPCParty,
+        party: Option<Arc<dyn BytesParty>>,
+        party_without_option: Arc<dyn BytesParty>,
         status: MPCSessionStatus,
-        auxiliary_input: Vec<u8>,
+        auxiliary_input: Option<Vec<u8>>,
     ) -> Self {
-        // let party = match party {
-        //     None => None
-        //     Some(party) => {}
-        // };
+        let party = match party {
+            None => None,
+            Some(p) => Some(p.clone()),
+        };
         Self {
             status,
             pending_messages: HashMap::new(),
@@ -111,8 +111,8 @@ impl SignatureMPCInstance {
             session_id,
             sender_address,
             dwallet_cap_id,
-            // _party: Some(_party.clone()),
-            party: party,
+            party,
+            party_without_option,
             number_of_parties,
             auxiliary_input,
         }
@@ -127,11 +127,16 @@ impl SignatureMPCInstance {
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
     fn advance(&mut self, auxiliary_input: Vec<u8>, mpc_round: MPCRound) -> PeraResult {
-        let mut optional_party = mem::take(&mut self.party);
-
-        /// Gets the instance existing party or creates a new one if this is the first advance
+        // let optional_party = mem::take(&mut self.party);
+        //
+        // /// Gets the instance existing party or creates a new one if this is the first advance
+        // let party = if let Some(existing_party) = optional_party {
+        //      existing_party
+        // } else {
+        //     panic!("damn");
+        // };
         let advance_result =
-            match optional_party.advance(self.pending_messages.clone(), auxiliary_input) {
+            match party.advance(self.pending_messages.clone(), auxiliary_input) {
                 Ok(res) => res,
                 Err(e) => {
                     println!("Error: {:?}", e);
@@ -144,8 +149,7 @@ impl SignatureMPCInstance {
             AdvanceResult::Advance((message, party)) => {
                 self.status = MPCSessionStatus::Active;
                 self.pending_messages.clear();
-                // self._party = Some(party);
-                self.party = party;
+                self.party = Some(party);
                 self.new_signature_mpc_message(message)
             }
             AdvanceResult::Finalize(output) => {
@@ -177,7 +181,7 @@ impl SignatureMPCInstance {
         };
         Some(ConsensusTransaction::new_signature_mpc_message(
             epoch_store.name,
-            message,
+            bcs::to_bytes(&message).unwrap(),
             self.session_id.clone(),
         ))
     }
@@ -196,6 +200,7 @@ impl SignatureMPCInstance {
         if authority_name_to_party_id(epoch_store.name, &epoch_store).unwrap() != 3 {
             return None;
         }
+        let output = bcs::to_bytes(&output).unwrap();
         Some(ConsensusTransaction::new_dwallet_mpc_output(
             output,
             self.session_id.clone(),
@@ -319,7 +324,7 @@ impl SignatureMPCManager {
             return Ok(false);
         };
 
-        Ok(*stored_output == *output)
+        Ok(*stored_output == output)
     }
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
@@ -343,13 +348,13 @@ impl SignatureMPCManager {
         let auxiliary_inputs = ready_to_advance
             .iter()
             .map(|instance| instance.auxiliary_input.clone())
-            .collect::<Vec<Vec<u8>>>();
+            .collect();
 
         ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
             .enumerate()
-            .map(|(index, ref mut instance)| instance.advance(auxiliary_inputs[index].clone(), mpc_round))
+            .map(|(index, ref mut instance)| instance.advance(&auxiliary_inputs[index], mpc_round))
             .collect::<PeraResult<_>>()?;
         Ok(())
     }
@@ -380,8 +385,8 @@ impl SignatureMPCManager {
     /// Otherwise, adds the instance to the pending queue
     pub fn push_new_mpc_instance(
         &mut self,
-        auxiliary_input: Vec<u8>,
-        party: MPCParty,
+        auxiliary_input: Option<Vec<u8>>,
+        party: Arc<dyn BytesParty>,
         session_id: ObjectID,
         initiating_user: PeraAddress,
         dwallet_cap_id: ObjectID,
@@ -404,8 +409,7 @@ impl SignatureMPCManager {
             initiating_user,
             dwallet_cap_id,
             self.number_of_parties,
-            // party.clone(),
-            party,
+            Some(Arc::clone(&party)),
             MPCSessionStatus::Pending,
             auxiliary_input,
         );

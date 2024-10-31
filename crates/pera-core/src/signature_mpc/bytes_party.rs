@@ -1,16 +1,40 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::mem;
+use std::sync::{Arc, Mutex};
 use group::PartyID;
 use mpc::Advance;
+use once_cell::sync::OnceCell;
 use serde::{Serialize, Deserialize};
 use twopc_mpc::dkg::decentralized_party::encryption_of_secret_key_share_round::AuxiliaryInput;
 
-pub trait BytesParty : Sized + Sync + Send{
-    fn advance(self, messages: HashMap<PartyID, Vec<u8>>, auxiliary_input: Vec<u8>) -> twopc_mpc::Result<AdvanceResult<Self>>;
+pub enum MPCParty {
+    FirstDKGBytesParty(FirstDKGBytesParty),
+    // ... there will be more parties here
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub enum AdvanceResult<P: BytesParty> {
-    Advance((Vec<u8>, P)),
+impl Default for MPCParty {
+    fn default() -> Self {
+        MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
+            party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default(),
+        })
+    }
+}
+
+impl MPCParty {
+    pub fn advance(self, messages: HashMap<PartyID, Vec<u8>>, auxiliary_input: Vec<u8>) -> twopc_mpc::Result<AdvanceResult> {
+        match self {
+            MPCParty::FirstDKGBytesParty(party) => party.advance(messages, auxiliary_input),
+        }
+    }
+}
+
+pub trait BytesParty : Sync + Send {
+    fn advance(self, messages: HashMap<PartyID, Vec<u8>>, auxiliary_input: Vec<u8>) -> twopc_mpc::Result<AdvanceResult>;
+}
+
+pub enum AdvanceResult {
+    Advance((Vec<u8>, MPCParty)),
     Finalize(Vec<u8>),
 }
 
@@ -21,12 +45,15 @@ struct FirstDKGBytesParty {
 }
 
 impl BytesParty for FirstDKGBytesParty {
-    fn advance(self, messages: HashMap<PartyID, Vec<u8>>, auxiliary_input: Vec<u8>) -> twopc_mpc::Result<AdvanceResult<Self>> {
+    fn advance(
+        self,
+        messages: HashMap<PartyID, Vec<u8>>,
+        auxiliary_input: Vec<u8>,
+    ) -> twopc_mpc::Result<AdvanceResult> {
         let secp256k1_group_public_parameters =
             class_groups_constants::protocol_public_parameters().map_err(|_| twopc_mpc::Error::InvalidPublicParameters)?;
 
         let parties = (0..3).collect::<HashSet<PartyID>>();
-        // let session_id = commitment::CommitmentSizedNumber::from_be_slice(&session_id);
         let session_id = commitment::CommitmentSizedNumber::from_u8(8);
         let a = AuxiliaryInput {
             protocol_public_parameters: secp256k1_group_public_parameters,
@@ -37,15 +64,16 @@ impl BytesParty for FirstDKGBytesParty {
             session_id,
         };
 
-        // Todo: Remove this unwrap
         let messages = messages.into_iter().map(|(k, v)| (k, bcs::from_bytes(&v).unwrap())).collect();
+        let result = self.party.advance(messages, &a, &mut rand_core::OsRng)?; // todo: remove unwrap
 
-        let result = self.party.advance(messages, &a, &mut rand_core::OsRng)?;
         match result {
-            mpc::AdvanceResult::Advance((message, party)) => Ok(AdvanceResult::Advance((bcs::to_bytes(&message).unwrap(), FirstDKGBytesParty { party }))),
-            mpc::AdvanceResult::Finalize(message) => Ok(AdvanceResult::Finalize(bcs::to_bytes(&message).unwrap())),
+            mpc::AdvanceResult::Advance((message, new_party)) =>
+                Ok(AdvanceResult::Advance((bcs::to_bytes(&message).unwrap(), MPCParty::FirstDKGBytesParty(Self { party: new_party })))),
+            mpc::AdvanceResult::Finalize(output) =>
+                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output).unwrap())),
         }
     }
-
 }
+
 
