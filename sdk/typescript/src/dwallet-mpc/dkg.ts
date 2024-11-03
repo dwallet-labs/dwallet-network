@@ -1,8 +1,10 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+import { create_dkg_centralized_output } from '@dwallet-network/signature-mpc-wasm';
+
 import { bcs } from '../bcs';
-import type { PeraClient } from '../client/index.js';
-import type { Keypair } from '../cryptography/index.js';
+import { PeraClient } from '../client/index.js';
+import { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
 
 const packageId = '0x3';
@@ -102,14 +104,23 @@ export async function launchDKGSecondRound(
 				MoveEventType: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSecondDKGRoundEvent`,
 			},
 		});
-		if (
-			newEvents.data.length > 0 &&
-			newEvents.data[0].parsedJson?.session_id === sessionRef.objectId
-		) {
-			return await client.getObject({
-				id: newEvents.data[0].parsedJson?.dwallet_id,
-				options: { showContent: true },
-			});
+
+		if (newEvents.data.length > 0) {
+			let event = newEvents.data[0].parsedJson as { session_id: string; dwallet_id: string };
+			if (event.session_id === sessionRef.objectId) {
+				let dwallet = await client.getObject({
+					id: event.dwallet_id,
+					options: { showContent: true },
+				});
+
+				return dwallet.data?.content?.dataType === 'moveObject'
+					? (dwallet.data?.content?.fields as {
+							id: { id: string };
+							dwallet_cap_id: string;
+							output: number[];
+						})
+					: null;
+			}
 		}
 	}
 }
@@ -148,4 +159,37 @@ export async function fetchObjectBySessionId(
 		}
 		await new Promise((r) => setTimeout(r, 500));
 	}
+}
+
+export type CreatedDwallet = {
+	dwalletID: string;
+	centralizedDKGOutput: number[];
+	decentralizedDKGOutput: number[];
+	dwalletCapID: string;
+};
+
+export async function createDWallet(
+	keypair: Keypair,
+	client: PeraClient,
+): Promise<CreatedDwallet | null> {
+	const firstDKGOutput = await startFirstDKGSession(keypair, client);
+	let [publicKeyShareAndProof, centralizedOutput] = create_dkg_centralized_output(
+		Uint8Array.from(firstDKGOutput!.output),
+		firstDKGOutput?.session_id!.slice(2)!,
+	);
+	let dwallet = await launchDKGSecondRound(
+		keypair,
+		client,
+		publicKeyShareAndProof,
+		Uint8Array.from(firstDKGOutput!.output),
+		firstDKGOutput?.dwallet_cap_id!,
+		firstDKGOutput?.session_id!,
+	);
+
+	return {
+		dwalletID: dwallet?.id!.id!,
+		centralizedDKGOutput: centralizedOutput,
+		decentralizedDKGOutput: dwallet?.output!,
+		dwalletCapID: dwallet?.dwallet_cap_id!,
+	};
 }

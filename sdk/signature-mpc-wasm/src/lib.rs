@@ -11,8 +11,7 @@ use log::debug;
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(dkg_first_round_output: Vec<u8>, session_id: String) -> Result<JsValue, JsErr> {
     let (public_key_share_and_proof, centralized_output) = create_dkg_output(dkg_first_round_output, session_id).map_err(to_js_err)?;
-    // Ok(serde_wasm_bindgen::to_value(&(public_key_share_and_proof, centralized_output)).map_err(to_js_err)?)
-Ok(serde_wasm_bindgen::to_value(&(public_key_share_and_proof, centralized_output)).unwrap())
+    Ok(serde_wasm_bindgen::to_value(&(public_key_share_and_proof, centralized_output)).unwrap())
 }
 
 impl From<JsErr> for JsValue {
