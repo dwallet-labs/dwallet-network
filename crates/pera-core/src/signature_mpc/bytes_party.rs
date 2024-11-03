@@ -105,6 +105,8 @@ impl MPCParty {
     /// # Arguments
     ///
     /// * `event` - The event data to parse.
+    /// * `number_of_parties` - The total number of parties in the MPC session.
+    /// * `party_id` - The unique identifier for the party.
     ///
     /// # Returns
     ///
