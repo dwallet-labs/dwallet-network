@@ -29,7 +29,7 @@ use pera_rest_api::RestMetrics;
 use pera_types::base_types::ConciseableName;
 use pera_types::crypto::RandomnessRound;
 use pera_types::digests::ChainIdentifier;
-use pera_types::messages_consensus::{AuthorityCapabilitiesV2, Flows};
+use pera_types::messages_consensus::AuthorityCapabilitiesV2;
 use pera_types::pera_system_state::PeraSystemState;
 use prometheus::Registry;
 use std::collections::{BTreeSet, HashMap, HashSet};

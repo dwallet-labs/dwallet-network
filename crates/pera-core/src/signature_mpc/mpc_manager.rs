@@ -12,7 +12,7 @@ use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
 
-use crate::signature_mpc::bytes_party::{AdvanceResult, MPCParty};
+use crate::signature_mpc::bytes_party::{AdvanceResult, MPCParty, SessionInfo};
 use pera_types::committee::EpochId;
 use pera_types::messages_signature_mpc::MPCRound;
 use rand_core::OsRng;
@@ -73,13 +73,10 @@ pub struct SignatureMPCInstance {
     /// We can calculate the threshold and parties IDs (indexes) from it
     /// To calculate the parties IDs all we need to know is the number of parties, as the IDs are just the indexes of those parties. If there are 3 parties, the IDs are [0, 1, 2].
     number_of_parties: usize,
-    session_id: ObjectID,
-    sender_address: PeraAddress,
-    dwallet_cap_id: ObjectID,
+    session_info: SessionInfo,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: MPCParty,
     auxiliary_input: Vec<u8>,
-    mpc_round: MPCRound,
 }
 
 impl SignatureMPCInstance {
@@ -87,14 +84,11 @@ impl SignatureMPCInstance {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
         epoch: EpochId,
-        session_id: ObjectID,
-        sender_address: PeraAddress,
-        dwallet_cap_id: ObjectID,
         number_of_parties: usize,
         party: MPCParty,
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
-        mpc_round: MPCRound,
+        session_info: SessionInfo
     ) -> Self {
         Self {
             status,
@@ -102,13 +96,10 @@ impl SignatureMPCInstance {
             consensus_adapter: consensus_adapter.clone(),
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
-            session_id,
-            sender_address,
-            dwallet_cap_id,
             party,
             number_of_parties,
             auxiliary_input,
-            mpc_round,
+            session_info,
         }
     }
 
@@ -121,11 +112,11 @@ impl SignatureMPCInstance {
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
     fn advance(&mut self, auxiliary_input: Vec<u8>) -> PeraResult {
-        let mut optional_party = mem::take(&mut self.party);
+        let mut party = mem::take(&mut self.party);
 
         /// Gets the instance existing party or creates a new one if this is the first advance
         let advance_result =
-            match optional_party.advance(self.pending_messages.clone(), auxiliary_input) {
+            match party.advance(self.pending_messages.clone(), auxiliary_input) {
                 Ok(res) => res,
                 Err(e) => {
                     println!("Error: {:?}", e);
@@ -135,16 +126,16 @@ impl SignatureMPCInstance {
                 }
             };
         let msg = match advance_result {
-            AdvanceResult::Advance((message, party)) => {
+            AdvanceResult::Advance((message, new_party)) => {
                 self.status = MPCSessionStatus::Active;
                 self.pending_messages.clear();
-                self.party = party;
+                self.party = new_party;
                 self.new_signature_mpc_message(message)
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                self.new_dwallet_mpc_output_message(output.into(), self.mpc_round)
+                self.new_dwallet_mpc_output_message(output.into(), self.session_info.mpc_round)
             }
         };
 
@@ -171,7 +162,7 @@ impl SignatureMPCInstance {
         Some(ConsensusTransaction::new_signature_mpc_message(
             epoch_store.name,
             message,
-            self.session_id.clone(),
+            self.session_info.session_id.clone(),
         ))
     }
 
@@ -191,9 +182,9 @@ impl SignatureMPCInstance {
         }
         Some(ConsensusTransaction::new_dwallet_mpc_output(
             output,
-            self.session_id.clone(),
-            self.sender_address.clone(),
-            self.dwallet_cap_id.clone(),
+            self.session_info.session_id.clone(),
+            self.session_info.event_emitter.clone(),
+            self.session_info.dwallet_cap_id.clone(),
             mpc_round,
         ))
     }
@@ -364,11 +355,9 @@ impl SignatureMPCManager {
         &mut self,
         auxiliary_input: Vec<u8>,
         party: MPCParty,
-        session_id: ObjectID,
-        initiating_user: PeraAddress,
-        dwallet_cap_id: ObjectID,
-        mpc_round: MPCRound,
+        session_info: SessionInfo,
     ) {
+        let session_id = session_info.session_id.clone();
         if self.mpc_instances.contains_key(&session_id) {
             // This should never happen, as the session ID is a move UniqueID
             error!(
@@ -383,15 +372,12 @@ impl SignatureMPCManager {
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.epoch_id,
-            session_id.clone(),
-            initiating_user,
-            dwallet_cap_id,
             self.number_of_parties,
             // party.clone(),
             party,
             MPCSessionStatus::Pending,
             auxiliary_input,
-            mpc_round,
+            session_info,
         );
         if self.active_instances_counter > self.max_active_mpc_instances {
             self.pending_instances_queue.push_back(new_instance);

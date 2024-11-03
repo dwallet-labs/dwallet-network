@@ -1568,14 +1568,11 @@ impl AuthorityState {
                     println!("created dwallet {:?}", deserialized_event.dwallet_id);
                 } else {
                     match MPCParty::from_event(event)? {
-                        Some((party, auxiliary_input, session_ref)) => {
+                        Some((party, auxiliary_input, session_info)) => {
                             bytes_mpc_manager.push_new_mpc_instance(
                                 auxiliary_input,
                                 party,
-                                session_ref.session_id,
-                                session_ref.event_emitter,
-                                session_ref.dwallet_cap_id,
-                                session_ref.mpc_round,
+                                session_info,
                             );
                         }
                         None => {}
