@@ -328,16 +328,11 @@ impl SignatureMPCManager {
                 }
             })
             .collect::<Vec<&mut SignatureMPCInstance>>();
-        let auxiliary_inputs = ready_to_advance
-            .iter()
-            .map(|instance| instance.auxiliary_input.clone())
-            .collect::<Vec<Vec<u8>>>();
 
         ready_to_advance
             .par_iter_mut()
             // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
-            .enumerate()
-            .map(|(index, ref mut instance)| instance.advance(auxiliary_inputs[index].clone()))
+            .map(|ref mut instance| instance.advance(instance.auxiliary_input.clone()))
             .collect::<PeraResult<_>>()?;
         Ok(())
     }

@@ -160,9 +160,6 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
 use crate::signature_mpc;
 use crate::signature_mpc::bytes_party::MPCParty;
-use crate::signature_mpc::dkg::{
-    sample_witnesses, AsyncProtocol, AuxiliaryFirst, AuxiliarySecond, DKGFirstParty, DKGSecondParty,
-};
 use crate::signature_mpc::mpc_events::{
     CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGSessionEvent,
     CreatedProofMPCEvent, MPCEvent, StartDKGSecondRoundEvent,
