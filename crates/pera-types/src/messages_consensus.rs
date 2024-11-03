@@ -647,8 +647,3 @@ fn test_jwk_compatibility() {
     let id_bcs = bcs::to_bytes(&id).unwrap();
     assert_eq!(id_bcs, expected_id_bytes);
 }
-
-pub enum Flows {
-    FirstDKG,
-    SecondDKG,
-}

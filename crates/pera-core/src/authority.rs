@@ -161,8 +161,7 @@ use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo}
 use crate::signature_mpc;
 use crate::signature_mpc::bytes_party::MPCParty;
 use crate::signature_mpc::mpc_events::{
-    CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGSessionEvent,
-    CreatedProofMPCEvent, MPCEvent, StartDKGSecondRoundEvent,
+    CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGFirstRoundEvent, StartDKGSecondRoundEvent,
 };
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
@@ -1559,7 +1558,7 @@ impl AuthorityState {
             let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
             for event in &inner_temporary_store.events.data {
                 if event.type_ == CompletedDKGFirstRoundEvent::type_() {
-                    let deserialized_event: CreatedDKGSessionEvent =
+                    let deserialized_event: CreatedDKGFirstRoundEvent =
                         bcs::from_bytes(&event.contents)?;
                     bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?
                 } else if event.type_ == CompletedDKGSecondRoundEvent::type_() {

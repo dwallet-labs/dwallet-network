@@ -1,6 +1,5 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
-use crate::signature_mpc::mpc_events::{CreatedProofMPCEvent, MPCEvent};
 use anyhow::anyhow;
 use group::secp256k1::group_element::Value;
 use group::{secp256k1, GroupElement, PartyID};
@@ -11,7 +10,7 @@ use mpc::{two_party::Round, AuxiliaryInput, Party};
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
-use pera_types::messages_consensus::{ConsensusTransaction, Flows};
+use pera_types::messages_consensus::ConsensusTransaction;
 
 use crate::signature_mpc::bytes_party::{AdvanceResult, MPCParty};
 use pera_types::committee::EpochId;

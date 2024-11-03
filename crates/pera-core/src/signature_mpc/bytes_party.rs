@@ -6,7 +6,7 @@
 //! instances to the next round.
 
 use crate::signature_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
-use crate::signature_mpc::mpc_events::{CreatedDKGSessionEvent, MPCEvent, StartDKGSecondRoundEvent};
+use crate::signature_mpc::mpc_events::{CreatedDKGFirstRoundEvent, StartDKGSecondRoundEvent};
 use group::PartyID;
 use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::event::Event;
@@ -112,11 +112,9 @@ impl MPCParty {
     ///   and session info required to begin an MPC round.
     /// * `Ok(None)` if the event type does not correspond to any known MPC rounds.
     /// * `Err(anyhow::Error)` if parsing fails or if an error occurs.
-    pub fn from_event(
-        event: &Event,
-    ) -> anyhow::Result<Option<(Self, Vec<u8>, SessionInfo)>> {
-        if event.type_ == CreatedDKGSessionEvent::type_() {
-            let deserialized_event: CreatedDKGSessionEvent = bcs::from_bytes(&event.contents)?;
+    pub fn from_event(event: &Event) -> anyhow::Result<Option<(Self, Vec<u8>, SessionInfo)>> {
+        if event.type_ == CreatedDKGFirstRoundEvent::type_() {
+            let deserialized_event: CreatedDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
             return Ok(Some((
                 MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
                     party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default()
