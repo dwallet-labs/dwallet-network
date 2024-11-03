@@ -6,6 +6,8 @@ import { beforeAll, describe, it } from 'vitest';
 
 import { launchDKGSecondRound, startFirstDKGSession } from '../../src/signature-mpc/proof';
 import { setup, TestToolbox } from './utils/setup';
+import {Keypair} from "../../src/cryptography";
+import {PeraClient} from "../../src/client";
 
 describe('Test signature mpc', () => {
 	let toolbox: TestToolbox;
@@ -32,3 +34,30 @@ describe('Test signature mpc', () => {
 		);
 	});
 });
+
+export type CreatedDwallet = {
+	dwalletID: string;
+	centralizedDKGOutput: number[];
+	decentralizedDKGOutput: number[];
+	dwalletCapID: string;
+	secretKeyShare: number[];
+};
+
+export async function createDWallet(
+	keypair: Keypair,
+	client: PeraClient,
+): Promise<CreatedDwallet | null> {
+	const firstDKGOutput = await startFirstDKGSession(keypair, client);
+	let [publicKeyShareAndProof, _] = create_dkg_centralized_output(
+		Uint8Array.from(firstDKGOutput!.output),
+		firstDKGOutput?.session_id!.slice(2)!,
+	);
+	await launchDKGSecondRound(
+		keypair,
+		client,
+		publicKeyShareAndProof,
+		Uint8Array.from(firstDKGOutput!.output),
+		firstDKGOutput?.dwallet_cap_id!,
+		firstDKGOutput?.session_id!,
+	);
+}

@@ -86,13 +86,15 @@ export async function launchDKGSecondRound(
 		],
 	});
 
-	await client.signAndExecuteTransaction({
+	let res = await client.signAndExecuteTransaction({
 		signer: keypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
 		},
 	});
+	const sessionRef = res.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
+
 }
 
 export async function fetchObjectBySessionId(
