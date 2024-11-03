@@ -112,14 +112,18 @@ impl MPCParty {
     ///   and session info required to begin an MPC round.
     /// * `Ok(None)` if the event type does not correspond to any known MPC rounds.
     /// * `Err(anyhow::Error)` if parsing fails or if an error occurs.
-    pub fn from_event(event: &Event) -> anyhow::Result<Option<(Self, Vec<u8>, SessionInfo)>> {
+    pub fn from_event(
+        event: &Event,
+        number_of_parties: u16,
+        party_id: PartyID,
+    ) -> anyhow::Result<Option<(Self, Vec<u8>, SessionInfo)>> {
         if event.type_ == CreatedDKGFirstRoundEvent::type_() {
             let deserialized_event: CreatedDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
             return Ok(Some((
                 MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
                     party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default()
                 }),
-                FirstDKGBytesParty::generate_auxiliary_input(4, 1, deserialized_event.session_id.bytes.to_vec()),
+                FirstDKGBytesParty::generate_auxiliary_input(number_of_parties, party_id, deserialized_event.session_id.bytes.to_vec()),
                 SessionInfo {
                     session_id: deserialized_event.session_id.bytes,
                     event_emitter: deserialized_event.sender,

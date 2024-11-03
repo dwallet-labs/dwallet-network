@@ -88,7 +88,7 @@ impl SignatureMPCInstance {
         party: MPCParty,
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
-        session_info: SessionInfo
+        session_info: SessionInfo,
     ) -> Self {
         Self {
             status,
@@ -115,16 +115,15 @@ impl SignatureMPCInstance {
         let mut party = mem::take(&mut self.party);
 
         /// Gets the instance existing party or creates a new one if this is the first advance
-        let advance_result =
-            match party.advance(self.pending_messages.clone(), auxiliary_input) {
-                Ok(res) => res,
-                Err(e) => {
-                    println!("Error: {:?}", e);
-                    // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
-                    self.pending_messages.clear();
-                    return Ok(());
-                }
-            };
+        let advance_result = match party.advance(self.pending_messages.clone(), auxiliary_input) {
+            Ok(res) => res,
+            Err(e) => {
+                println!("Error: {:?}", e);
+                // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
+                self.pending_messages.clear();
+                return Ok(());
+            }
+        };
         let msg = match advance_result {
             AdvanceResult::Advance((message, new_party)) => {
                 self.status = MPCSessionStatus::Active;
@@ -256,7 +255,7 @@ pub struct SignatureMPCManager {
     pub epoch_id: EpochId,
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it
-    number_of_parties: usize,
+    pub number_of_parties: usize,
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon

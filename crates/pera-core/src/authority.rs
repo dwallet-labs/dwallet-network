@@ -161,8 +161,10 @@ use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo}
 use crate::signature_mpc;
 use crate::signature_mpc::bytes_party::MPCParty;
 use crate::signature_mpc::mpc_events::{
-    CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGFirstRoundEvent, StartDKGSecondRoundEvent,
+    CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGFirstRoundEvent,
+    StartDKGSecondRoundEvent,
 };
+use crate::signature_mpc::mpc_manager::authority_name_to_party_id;
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
@@ -1567,7 +1569,8 @@ impl AuthorityState {
                     bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
                     println!("created dwallet {:?}", deserialized_event.dwallet_id);
                 } else {
-                    match MPCParty::from_event(event)? {
+                    // match MPCParty::from_event(event, bytes_mpc_manager.number_of_parties, authority_name_to_party_id(epoch_store.name, &epoch_store)?)? {
+                    match MPCParty::from_event(event, 4, 1)? {
                         Some((party, auxiliary_input, session_info)) => {
                             bytes_mpc_manager.push_new_mpc_instance(
                                 auxiliary_input,
