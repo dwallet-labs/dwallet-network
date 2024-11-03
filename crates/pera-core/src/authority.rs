@@ -1539,7 +1539,7 @@ impl AuthorityState {
     }
 
     /// Handle the MPC signature events emitted from the transaction, if any.
-    /// The filtering to handle only signature-mpc related events happens within [`SignatureMPCManager::handle_mpc_events`] function.
+    /// The filtering to handle only dwallet-mpc related events happens within [`SignatureMPCManager::handle_mpc_events`] function.
     async fn handle_signature_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,

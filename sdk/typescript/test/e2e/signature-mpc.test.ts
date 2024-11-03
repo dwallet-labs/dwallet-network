@@ -4,10 +4,10 @@
 import { create_dkg_centralized_output } from '@dwallet-network/signature-mpc-wasm';
 import { beforeAll, describe, it } from 'vitest';
 
-import { launchDKGSecondRound, startFirstDKGSession } from '../../src/signature-mpc/proof';
+import { PeraClient } from '../../src/client';
+import { Keypair } from '../../src/cryptography';
+import { launchDKGSecondRound, startFirstDKGSession } from '../../src/dwallet-mpc/dkg';
 import { setup, TestToolbox } from './utils/setup';
-import {Keypair} from "../../src/cryptography";
-import {PeraClient} from "../../src/client";
 
 describe('Test signature mpc', () => {
 	let toolbox: TestToolbox;
@@ -24,7 +24,7 @@ describe('Test signature mpc', () => {
 			firstDKGOutput?.session_id!.slice(2)!,
 		);
 		console.log(publicKeyShareAndProof);
-		await launchDKGSecondRound(
+		let dwallet = await launchDKGSecondRound(
 			toolbox.keypair,
 			toolbox.client,
 			publicKeyShareAndProof,
@@ -32,6 +32,8 @@ describe('Test signature mpc', () => {
 			firstDKGOutput?.dwallet_cap_id!,
 			firstDKGOutput?.session_id!,
 		);
+
+		console.log(dwallet);
 	});
 });
 

@@ -102,8 +102,14 @@ export async function launchDKGSecondRound(
 				MoveEventType: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSecondDKGRoundEvent`,
 			},
 		});
-		if (newEvents.data.length > 0) {
-			console.log("hurray")
+		if (
+			newEvents.data.length > 0 &&
+			newEvents.data[0].parsedJson?.session_id === sessionRef.objectId
+		) {
+			return await client.getObject({
+				id: newEvents.data[0].parsedJson?.dwallet_id,
+				options: { showContent: true },
+			});
 		}
 	}
 }
