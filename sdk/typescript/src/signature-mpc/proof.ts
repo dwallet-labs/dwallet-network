@@ -95,6 +95,17 @@ export async function launchDKGSecondRound(
 	});
 	const sessionRef = res.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
 
+	for (;;) {
+		await new Promise((resolve) => setTimeout(resolve, 5000));
+		let newEvents = await client.queryEvents({
+			query: {
+				MoveEventType: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSecondDKGRoundEvent`,
+			},
+		});
+		if (newEvents.data.length > 0) {
+			console.log("hurray")
+		}
+	}
 }
 
 export async function fetchObjectBySessionId(
