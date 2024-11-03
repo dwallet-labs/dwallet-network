@@ -1,30 +1,6 @@
 DWallet
 	public struct
 	0x3::dwallet
-InitiateDKGSessionEvent
-	public struct
-	0x3::dwallet
-InitiateDKGSessionData
-	public struct
-	0x3::dwallet
-StartDKGSecondRoundEvent
-	public struct
-	0x3::dwallet
-DKGSecondRoundData
-	public struct
-	0x3::dwallet
-CompletedFirstDKGRoundData
-	public struct
-	0x3::dwallet
-CompletedSecondDKGRoundData
-	public struct
-	0x3::dwallet
-CompletedDKGRoundEvent
-	public struct
-	0x3::dwallet
-CompletedSecondDKGRoundEvent
-	public struct
-	0x3::dwallet
 DWalletCap
 	public struct
 	0x3::dwallet
@@ -33,18 +9,6 @@ create_dwallet
 	0x3::dwallet
 create_dwallet_cap
 	public(package) fun
-	0x3::dwallet
-launch_initiate_dkg_session
-	public fun
-	0x3::dwallet
-launch_dkg_second_round
-	public fun
-	0x3::dwallet
-create_first_dkg_round_output
-	public fun
-	0x3::dwallet
-create_second_dkg_round_output
-	public fun
 	0x3::dwallet
 Secp256K1
 	public struct

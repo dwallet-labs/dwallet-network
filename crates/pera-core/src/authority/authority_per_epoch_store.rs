@@ -336,8 +336,8 @@ pub struct AuthorityPerEpochStore {
     randomness_manager: OnceCell<tokio::sync::Mutex<RandomnessManager>>,
     randomness_reporter: OnceCell<RandomnessReporter>,
 
-    /// State machine managing Proof Signature MPC flows.
-    pub bytes_party_manager:
+    /// State machine managing Signature MPC flows.
+    pub mpc_manager:
         OnceCell<tokio::sync::Mutex<signature_mpc::mpc_manager::SignatureMPCManager>>,
 }
 
@@ -854,7 +854,7 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
-            bytes_party_manager: OnceCell::new(),
+            mpc_manager: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -929,7 +929,7 @@ impl AuthorityPerEpochStore {
         mut manager: signature_mpc::mpc_manager::SignatureMPCManager,
     ) -> PeraResult<()> {
         if self
-            .bytes_party_manager
+            .mpc_manager
             .set(tokio::sync::Mutex::new(manager))
             .is_err()
         {
@@ -3195,7 +3195,7 @@ impl AuthorityPerEpochStore {
         }
 
         // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
-        if let Some(signature_mpc_manager) = self.bytes_party_manager.get() {
+        if let Some(signature_mpc_manager) = self.mpc_manager.get() {
             let mut signature_mpc_manager = signature_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
             // todo: remove round
@@ -3596,7 +3596,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                let Some(signature_mpc_manager) = self.bytes_party_manager.get() else {
+                let Some(signature_mpc_manager) = self.mpc_manager.get() else {
                     // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
                     return Ok(ConsensusCertificateResult::Ignored);
                 };

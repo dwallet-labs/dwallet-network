@@ -8,8 +8,6 @@ use pera_types::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub const DWALLET_MODULE_NAME: &IdentStr = ident_str!("dwallet");
-
 pub const CREATED_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("CreatedDKGSessionEvent");
 pub const COMPLETED_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
