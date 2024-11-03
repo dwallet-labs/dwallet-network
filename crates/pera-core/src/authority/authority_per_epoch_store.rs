@@ -336,8 +336,8 @@ pub struct AuthorityPerEpochStore {
     randomness_manager: OnceCell<tokio::sync::Mutex<RandomnessManager>>,
     randomness_reporter: OnceCell<RandomnessReporter>,
 
-    /// State machine managing Signature MPC flows.
-    pub mpc_manager:
+    /// State machine managing DWallet MPC flows.
+    pub dwallet_mpc_manager:
         OnceCell<tokio::sync::Mutex<signature_mpc::mpc_manager::SignatureMPCManager>>,
 }
 
@@ -854,7 +854,7 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
-            mpc_manager: OnceCell::new(),
+            dwallet_mpc_manager: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -923,18 +923,18 @@ impl AuthorityPerEpochStore {
         result
     }
 
-    /// A function to initiate the proof MPC manager when a new epoch starts.
+    /// A function to initiate the Dwallet  MPC manager when a new epoch starts.
     pub async fn set_mpc_manager(
         &self,
         mut manager: signature_mpc::mpc_manager::SignatureMPCManager,
     ) -> PeraResult<()> {
         if self
-            .mpc_manager
+            .dwallet_mpc_manager
             .set(tokio::sync::Mutex::new(manager))
             .is_err()
         {
             error!(
-                "BUG: `set_signature_mpc_manager` called more than once; this should never happen"
+                "BUG: `set_dwallet_mpc_manager` called more than once; this should never happen"
             );
         }
         Ok(())
@@ -3194,12 +3194,12 @@ impl AuthorityPerEpochStore {
             }
         }
 
-        // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
-        if let Some(signature_mpc_manager) = self.mpc_manager.get() {
-            let mut signature_mpc_manager = signature_mpc_manager.lock().await;
+        // TODO (#250): Make sure the dwallet_mpc_manager is always initialized at this point.
+        if let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() {
+            let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
             // todo: remove round
-            signature_mpc_manager.handle_end_of_delivery().await?;
+            dwallet_mpc_manager.handle_end_of_delivery().await?;
         };
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
@@ -3596,12 +3596,12 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                let Some(signature_mpc_manager) = self.mpc_manager.get() else {
-                    // TODO (#250): Make sure the signature_mpc_manager is always initialized at this point.
+                let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() else {
+                    // TODO (#250): Make sure the dwallet_mpc_manager is always initialized at this point.
                     return Ok(ConsensusCertificateResult::Ignored);
                 };
-                let mut signature_mpc_manager = signature_mpc_manager.lock().await;
-                signature_mpc_manager.handle_message(message, *authority, *session_id)?;
+                let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
+                dwallet_mpc_manager.handle_message(message, *authority, *session_id)?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

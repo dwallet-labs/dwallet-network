@@ -1554,7 +1554,7 @@ impl AuthorityState {
             TransactionEffects::V2(effects) => effects.status(),
         };
         if status.is_ok() {
-            let Some(mut bytes_mpc_manager) = epoch_store.mpc_manager.get() else {
+            let Some(mut bytes_mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
                 return Ok(());
             };
             let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;

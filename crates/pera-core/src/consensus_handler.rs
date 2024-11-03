@@ -368,11 +368,11 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             authority_index, session_id
                         );
 
-                        let mut signature_mpc_manager = self.epoch_store.mpc_manager.get();
-                        let is_valid_transaction = match signature_mpc_manager {
+                        let mut dwallet_mpc_manager = self.epoch_store.dwallet_mpc_manager.get();
+                        let is_valid_transaction = match dwallet_mpc_manager {
                             Some(mpc_manager) => {
-                                let signature_mpc_manager = mpc_manager.lock().await;
-                                match signature_mpc_manager.try_verify_output(value, session_id) {
+                                let dwallet_mpc_manager = mpc_manager.lock().await;
+                                match dwallet_mpc_manager.try_verify_output(value, session_id) {
                                     Ok(is_valid) => is_valid,
                                     Err(e) => {
                                         error!(
