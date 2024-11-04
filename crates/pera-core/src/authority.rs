@@ -1567,20 +1567,12 @@ impl AuthorityState {
                     let deserialized_event: CompletedDKGSecondRoundEvent =
                         bcs::from_bytes(&event.contents)?;
                     bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
-                } else {
-                    MPCParty::from_event(
-                        event,
-                        bytes_mpc_manager.number_of_parties as u16,
-                        authority_name_to_party_id(epoch_store.name, &epoch_store)?,
-                    )?
-                    .and_then(|(party, auxiliary_input, session_info)| {
-                        bytes_mpc_manager.push_new_mpc_instance(
-                            auxiliary_input,
-                            party,
-                            session_info,
-                        );
-                        Some(())
-                    });
+                } else if let Some((party, auxiliary_input, session_info)) = MPCParty::from_event(
+                    event,
+                    bytes_mpc_manager.number_of_parties as u16,
+                    authority_name_to_party_id(epoch_store.name, &epoch_store)?,
+                )? {
+                    bytes_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
                 };
             }
         }
