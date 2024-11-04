@@ -47,7 +47,6 @@ pub const DEFAULT_COMMISSION_RATE: u64 = 200;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
-    #[serde(default)]
     /// The maximum number of active dwallet mpc instances allowed to run simultaneously
     #[serde(default = "default_max_mpc_protocol_messages_in_progress")]
     pub max_active_dwallet_mpc_instances: usize,
