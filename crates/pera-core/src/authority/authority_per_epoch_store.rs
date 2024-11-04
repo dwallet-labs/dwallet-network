@@ -3198,7 +3198,6 @@ impl AuthorityPerEpochStore {
         if let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() {
             let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously
-            // todo: remove round
             dwallet_mpc_manager.handle_end_of_delivery().await?;
         };
 
