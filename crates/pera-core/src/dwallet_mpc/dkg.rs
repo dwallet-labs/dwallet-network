@@ -159,15 +159,14 @@ impl SecondDKGBytesParty {
         first_round_output: Vec<u8>,
         centralized_party_public_key_share: Vec<u8>,
         session_id: Vec<u8>,
-    ) -> Vec<u8> {
+    ) -> anyhow::Result<Vec<u8>> {
         bcs::to_bytes(&DKGSecondParty::generate_auxiliary_input(
             number_of_parties,
             party_id,
-            bcs::from_bytes(&first_round_output).unwrap(), // remove unwrap
-            bcs::from_bytes(&centralized_party_public_key_share).unwrap(), // remove unwrap
+            bcs::from_bytes(&first_round_output)?,
+            bcs::from_bytes(&centralized_party_public_key_share)?,
             session_id,
-        ))
-        .unwrap()
+        )).map_err(|err| err.into())
     }
 }
 
