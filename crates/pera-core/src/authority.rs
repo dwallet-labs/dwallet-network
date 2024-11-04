@@ -1568,27 +1568,23 @@ impl AuthorityState {
                         bcs::from_bytes(&event.contents)?;
                     bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
                 } else {
-                    match MPCParty::from_event(
+                    MPCParty::from_event(
                         event,
                         bytes_mpc_manager.number_of_parties as u16,
                         authority_name_to_party_id(epoch_store.name, &epoch_store)?,
-                    )? {
-                        Some((party, auxiliary_input, session_info)) => {
-                            bytes_mpc_manager.push_new_mpc_instance(
-                                auxiliary_input,
-                                party,
-                                session_info,
-                            );
-                        }
-                        None => {}
-                    };
-                }
+                    )?
+                    .and_then(|(party, auxiliary_input, session_info)| {
+                        bytes_mpc_manager.push_new_mpc_instance(
+                            auxiliary_input,
+                            party,
+                            session_info,
+                        );
+                        Some(())
+                    });
+                };
             }
-            Ok(())
-        } else {
-            // If the transaction failed, we don't need to handle MPC events.
-            Ok(())
         }
+        Ok(())
     }
 
     fn update_metrics(
