@@ -154,7 +154,7 @@ use crate::dwallet_mpc::mpc_events::{
     CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGFirstRoundEvent,
     StartDKGSecondRoundEvent,
 };
-use crate::dwallet_mpc::mpc_manager::authority_name_to_party_id;
+use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
     CheckpointCache, ExecutionCacheCommit, ExecutionCacheReconfigAPI, ExecutionCacheWrite,

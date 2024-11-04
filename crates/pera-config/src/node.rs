@@ -43,6 +43,9 @@ pub const DEFAULT_VALIDATOR_GAS_PRICE: u64 = pera_types::transaction::DEFAULT_VA
 /// Default commission rate of 2%
 pub const DEFAULT_COMMISSION_RATE: u64 = 200;
 
+/// Default max number of active dwallet mpc instances allowed to run simultaneously
+pub const DEFAULT_MAX_ACTIVE_DWALLET_MPC_INSTANCES: usize = 3000;
+
 #[serde_as]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -293,7 +296,7 @@ fn default_key_pair() -> KeyPairWithPath {
 }
 
 pub fn default_max_mpc_protocol_messages_in_progress() -> usize {
-    3000
+    DEFAULT_MAX_ACTIVE_DWALLET_MPC_INSTANCES
 }
 
 fn default_metrics_address() -> SocketAddr {

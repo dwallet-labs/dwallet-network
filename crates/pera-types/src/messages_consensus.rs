@@ -497,6 +497,7 @@ impl ConsensusTransaction {
         }
     }
 
+    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_output(
         value: Vec<u8>,
         session_id: ObjectID,
