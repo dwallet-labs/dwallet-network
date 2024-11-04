@@ -76,7 +76,7 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
-use crate::signature_mpc;
+use crate::dwallet_mpc;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -101,7 +101,7 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::messages_signature_mpc::{MPCRound, SignatureMPCOutput};
+use pera_types::messages_dwallet_mpc::{MPCRound, SignatureMPCOutput};
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -338,7 +338,7 @@ pub struct AuthorityPerEpochStore {
 
     /// State machine managing DWallet MPC flows.
     pub dwallet_mpc_manager:
-        OnceCell<tokio::sync::Mutex<signature_mpc::mpc_manager::SignatureMPCManager>>,
+        OnceCell<tokio::sync::Mutex<dwallet_mpc::mpc_manager::SignatureMPCManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -926,7 +926,7 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the Dwallet  MPC manager when a new epoch starts.
     pub async fn set_mpc_manager(
         &self,
-        mut manager: signature_mpc::mpc_manager::SignatureMPCManager,
+        mut manager: dwallet_mpc::mpc_manager::SignatureMPCManager,
     ) -> PeraResult<()> {
         if self
             .dwallet_mpc_manager

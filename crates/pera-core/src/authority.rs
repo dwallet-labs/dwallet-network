@@ -158,13 +158,13 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::signature_mpc;
-use crate::signature_mpc::bytes_party::MPCParty;
-use crate::signature_mpc::mpc_events::{
+use crate::dwallet_mpc;
+use crate::dwallet_mpc::bytes_party::MPCParty;
+use crate::dwallet_mpc::mpc_events::{
     CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGFirstRoundEvent,
     StartDKGSecondRoundEvent,
 };
-use crate::signature_mpc::mpc_manager::authority_name_to_party_id;
+use crate::dwallet_mpc::mpc_manager::authority_name_to_party_id;
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;

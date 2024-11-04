@@ -1,6 +1,6 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
-import { create_dkg_centralized_output } from '@dwallet-network/signature-mpc-wasm';
+import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 
 import { bcs } from '../bcs';
 import { PeraClient } from '../client/index.js';

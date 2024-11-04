@@ -12,9 +12,9 @@ use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
 
-use crate::signature_mpc::bytes_party::{AdvanceResult, MPCParty, SessionInfo};
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, SessionInfo};
 use pera_types::committee::EpochId;
-use pera_types::messages_signature_mpc::MPCRound;
+use pera_types::messages_dwallet_mpc::MPCRound;
 use rand_core::OsRng;
 use rayon::prelude::*;
 use schemars::_private::NoSerialize;

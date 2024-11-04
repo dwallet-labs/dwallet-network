@@ -3,7 +3,7 @@
 //! It integrates both DKG parties (each representing a round in the DKG protocol) and
 //! implements the [`BytesParty`] trait for seamless interaction with other MPC components.
 
-use crate::signature_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
 use group::{secp256k1, PartyID, Samplable};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;
 use maurer::knowledge_of_discrete_log::PublicParameters;

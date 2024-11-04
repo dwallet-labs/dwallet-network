@@ -1293,7 +1293,7 @@ impl PeraNode {
 
         epoch_store
             .set_mpc_manager(
-                pera_core::signature_mpc::mpc_manager::SignatureMPCManager::new(
+                pera_core::dwallet_mpc::mpc_manager::SignatureMPCManager::new(
                     Arc::new(consensus_adapter.clone()),
                     Arc::downgrade(&epoch_store),
                     epoch_store.epoch(),

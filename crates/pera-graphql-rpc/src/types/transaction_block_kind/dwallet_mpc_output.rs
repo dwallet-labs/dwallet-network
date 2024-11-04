@@ -1,6 +1,6 @@
 use crate::types::base64::Base64;
 use async_graphql::Object;
-use pera_types::messages_signature_mpc::SignatureMPCOutput as NativeSignatureMPCOutput;
+use pera_types::messages_dwallet_mpc::SignatureMPCOutput as NativeSignatureMPCOutput;
 
 /// System transaction to store the output of signature mpc on-chain.
 #[derive(Clone, Eq, PartialEq)]

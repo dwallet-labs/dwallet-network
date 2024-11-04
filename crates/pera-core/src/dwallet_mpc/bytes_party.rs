@@ -5,12 +5,12 @@
 //! The `BytesParty` trait enables the MPC manager to seamlessly advance the `MPCParty`
 //! instances to the next round.
 
-use crate::signature_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
-use crate::signature_mpc::mpc_events::{CreatedDKGFirstRoundEvent, StartDKGSecondRoundEvent};
+use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
+use crate::dwallet_mpc::mpc_events::{CreatedDKGFirstRoundEvent, StartDKGSecondRoundEvent};
 use group::PartyID;
 use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::event::Event;
-use pera_types::messages_signature_mpc::MPCRound;
+use pera_types::messages_dwallet_mpc::MPCRound;
 use std::collections::HashMap;
 
 /// Trait defining the functionality to advance an MPC party to the next round.

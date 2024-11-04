@@ -6,7 +6,7 @@ use self::{
     end_of_epoch::ChangeEpochTransaction, genesis::GenesisTransaction,
     randomness_state_update::RandomnessStateUpdateTransaction,
 };
-use crate::types::transaction_block_kind::signature_mpc_output::SignatureMPCOutputTransaction;
+use crate::types::transaction_block_kind::dwallet_mpc_output::SignatureMPCOutputTransaction;
 use crate::types::transaction_block_kind::{
     authenticator_state_update::AuthenticatorStateUpdateTransaction,
     end_of_epoch::EndOfEpochTransaction, programmable::ProgrammableTransactionBlock,
@@ -20,7 +20,7 @@ pub(crate) mod end_of_epoch;
 pub(crate) mod genesis;
 pub(crate) mod programmable;
 pub(crate) mod randomness_state_update;
-mod signature_mpc_output;
+mod dwallet_mpc_output;
 
 /// The kind of transaction block, either a programmable transaction or a system transaction.
 #[derive(Union, PartialEq, Clone, Eq)]
