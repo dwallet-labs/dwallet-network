@@ -184,7 +184,7 @@ impl BytesParty for SecondDKGBytesParty {
             .collect();
         let result = self
             .party
-            .advance(messages, &auxiliary_input, &mut rand_core::OsRng)?; // todo: remove unwrap
+            .advance(messages, &auxiliary_input, &mut rand_core::OsRng)?;
 
         match result {
             mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
