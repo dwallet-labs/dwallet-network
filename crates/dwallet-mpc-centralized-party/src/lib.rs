@@ -22,7 +22,7 @@ pub fn create_dkg_output(
     session_id: String,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
     let decentralized_first_round_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareAndPublicKeyShare = bcs::from_bytes(&decentralized_first_round_output)?;
-    let public_parameters = class_groups_constants::protocol_public_parameters()?;
+    let public_parameters = class_groups_constants::protocol_public_parameters();
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
     let (public_key_share_and_proof, centralized_output) = DKGCentralizedParty::advance(
         decentralized_first_round_output,

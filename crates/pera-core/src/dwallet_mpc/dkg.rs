@@ -115,7 +115,7 @@ impl DKGFirstRound for DKGFirstParty {
         party_id: PartyID,
     ) -> Self::AuxiliaryInput {
         let secp256k1_group_public_parameters =
-            class_groups_constants::protocol_public_parameters().unwrap();
+            class_groups_constants::protocol_public_parameters();
 
         let parties = (0..number_of_parties).collect::<HashSet<PartyID>>();
         let session_id = commitment::CommitmentSizedNumber::from_le_slice(&session_id);
