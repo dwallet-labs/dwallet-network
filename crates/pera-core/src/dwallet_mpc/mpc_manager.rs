@@ -372,13 +372,14 @@ impl DWalletMPCManager {
             self.epoch_store.clone(),
             self.epoch_id,
             self.number_of_parties,
-            // party.clone(),
             party,
             MPCSessionStatus::Pending,
             auxiliary_input,
             session_info,
         );
-        if self.active_instances_counter > self.max_active_mpc_instances || !self.pending_instances_queue.is_empty() {
+        if self.active_instances_counter > self.max_active_mpc_instances
+            || !self.pending_instances_queue.is_empty()
+        {
             self.pending_instances_queue.push_back(new_instance);
             info!(
                 "Added MPCInstance to pending queue for session_id {:?}",
@@ -404,7 +405,14 @@ impl DWalletMPCManager {
         })?;
         if let MPCSessionStatus::Finalizing(output) = &instance.status {
             instance.status = MPCSessionStatus::Finished(output.clone());
-            self.active_instances_counter -= 1;
+            let pending_instance = self.pending_instances_queue.pop_front();
+            if let Some(mut instance) = pending_instance {
+                instance.status = MPCSessionStatus::FirstExecution;
+                self.mpc_instances
+                    .insert(instance.session_info.session_id, instance);
+            } else {
+                self.active_instances_counter -= 1;
+            }
             info!("Finalized MPCInstance for session_id {:?}", session_id);
             return Ok(());
         }
