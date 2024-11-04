@@ -83,18 +83,18 @@ impl DWalletMPCManager {
     /// Tries to verify that the received output for the MPC session matches the one generated locally.
     /// Returns true if the output is correct, false otherwise.
     pub fn try_verify_output(
-        &self,
+        &mut self,
         output: &Vec<u8>,
         session_id: &ObjectID,
     ) -> anyhow::Result<OutputVerificationResult> {
-        let Some(instance) = self.mpc_instances.get(session_id) else {
+        let Some(mut instance) = self.mpc_instances.get_mut(session_id) else {
             return Ok(OutputVerificationResult::Malicious);
         };
-        let MPCSessionStatus::Finalizing(stored_output) = &instance.status else {
+        let MPCSessionStatus::Finalizing(stored_output) = instance.status.clone() else {
             return Ok(OutputVerificationResult::Duplicate);
         };
-
         if *stored_output == *output {
+            instance.status = MPCSessionStatus::Finished(output.clone());
             return Ok(OutputVerificationResult::Valid);
         }
         Ok(OutputVerificationResult::Malicious)
@@ -196,6 +196,7 @@ impl DWalletMPCManager {
             session_id
         );
     }
+
 
     pub fn finalize_mpc_instance(&mut self, session_id: ObjectID) -> PeraResult {
         let mut instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
