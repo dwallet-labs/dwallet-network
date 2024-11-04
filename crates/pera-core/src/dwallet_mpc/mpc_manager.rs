@@ -94,7 +94,7 @@ impl DWalletMPCManager {
             return Ok(OutputVerificationResult::Duplicate);
         };
         if *stored_output == *output {
-            instance.status = MPCSessionStatus::Finished(output.clone());
+            self.finalize_mpc_instance(session_id.clone())?;
             return Ok(OutputVerificationResult::Valid);
         }
         Ok(OutputVerificationResult::Malicious)
@@ -196,7 +196,6 @@ impl DWalletMPCManager {
             session_id
         );
     }
-
 
     pub fn finalize_mpc_instance(&mut self, session_id: ObjectID) -> PeraResult {
         let mut instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {

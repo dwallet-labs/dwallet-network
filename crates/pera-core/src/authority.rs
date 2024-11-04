@@ -150,10 +150,7 @@ use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
 use crate::dwallet_mpc;
 use crate::dwallet_mpc::bytes_party::MPCParty;
-use crate::dwallet_mpc::mpc_events::{
-    CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGFirstRoundEvent,
-    StartDKGSecondRoundEvent,
-};
+use crate::dwallet_mpc::mpc_events::{CreatedDKGFirstRoundEvent, StartDKGSecondRoundEvent};
 use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
@@ -1561,15 +1558,7 @@ impl AuthorityState {
             };
             let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
             for event in &inner_temporary_store.events.data {
-                if event.type_ == CompletedDKGFirstRoundEvent::type_() {
-                    let deserialized_event: CreatedDKGFirstRoundEvent =
-                        bcs::from_bytes(&event.contents)?;
-                    bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?
-                } else if event.type_ == CompletedDKGSecondRoundEvent::type_() {
-                    let deserialized_event: CompletedDKGSecondRoundEvent =
-                        bcs::from_bytes(&event.contents)?;
-                    bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
-                } else if let Some((party, auxiliary_input, session_info)) = MPCParty::from_event(
+                if let Some((party, auxiliary_input, session_info)) = MPCParty::from_event(
                     event,
                     bytes_mpc_manager.number_of_parties as u16,
                     authority_name_to_party_id(epoch_store.name, &epoch_store)?,
