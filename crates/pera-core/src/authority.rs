@@ -144,7 +144,6 @@ pub use crate::checkpoints::checkpoint_executor::{
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
 use crate::dwallet_mpc::bytes_party::MPCParty;
-use crate::dwallet_mpc::mpc_events::{CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent};
 use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{

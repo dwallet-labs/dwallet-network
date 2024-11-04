@@ -66,7 +66,7 @@ impl DWalletMPCManager {
         output: &Vec<u8>,
         session_id: &ObjectID,
     ) -> anyhow::Result<OutputVerificationResult> {
-        let Some(mut instance) = self.mpc_instances.get_mut(session_id) else {
+        let Some(instance) = self.mpc_instances.get_mut(session_id) else {
             return Ok(OutputVerificationResult::Malicious);
         };
         let MPCSessionStatus::Finalizing(stored_output) = instance.status.clone() else {
