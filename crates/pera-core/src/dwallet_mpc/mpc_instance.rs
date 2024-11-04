@@ -138,7 +138,7 @@ impl DWalletMPCInstance {
         Some(ConsensusTransaction::new_dwallet_mpc_output(
             output,
             self.session_info.session_id.clone(),
-            self.session_info.event_emitter.clone(),
+            self.session_info.initiating_user_address.clone(),
             self.session_info.dwallet_cap_id.clone(),
             mpc_round,
         ))

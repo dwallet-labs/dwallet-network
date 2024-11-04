@@ -49,7 +49,7 @@ pub struct SessionInfo {
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The address of the user that initiated this session.
-    pub event_emitter: PeraAddress,
+    pub initiating_user_address: PeraAddress,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ObjectID,
     /// The current MPC round in the protocol.
@@ -128,7 +128,7 @@ impl MPCParty {
                 FirstDKGBytesParty::generate_auxiliary_input(number_of_parties, party_id, deserialized_event.session_id.bytes.to_vec()),
                 SessionInfo {
                     session_id: deserialized_event.session_id.bytes,
-                    event_emitter: deserialized_event.sender,
+                    initiating_user_address: deserialized_event.sender,
                     dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
                     mpc_round: MPCRound::DKGFirst,
                 },
@@ -147,7 +147,7 @@ impl MPCParty {
                 ),
                 SessionInfo {
                     session_id: deserialized_event.session_id.bytes,
-                    event_emitter: deserialized_event.sender,
+                    initiating_user_address: deserialized_event.sender,
                     dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
                     mpc_round: MPCRound::DKGSecond,
                 },
