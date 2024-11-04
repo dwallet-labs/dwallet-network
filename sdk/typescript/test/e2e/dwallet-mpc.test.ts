@@ -6,7 +6,7 @@ import { beforeAll, describe, it } from 'vitest';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { setup, TestToolbox } from './utils/setup';
 
-describe('Test signature mpc', () => {
+describe('Test dwallet mpc', () => {
 	let toolbox: TestToolbox;
 
 	beforeAll(async () => {

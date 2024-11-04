@@ -668,8 +668,8 @@ mod checked {
             TransactionKind::RandomnessStateUpdate(_) => {
                 panic!("RandomnessStateUpdate should not exist in v1");
             }
-            TransactionKind::SignatureMPCOutput(_) => {
-                panic!("SignatureMPCOutput should not exist in v1");
+            TransactionKind::DWalletMPCOutput(_) => {
+                panic!("DWalletMPCOutput should not exist in v1");
             }
         }?;
         temporary_store.check_execution_results_consistency()?;

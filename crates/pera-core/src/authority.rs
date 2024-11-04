@@ -1502,7 +1502,7 @@ impl AuthorityState {
         // Check if there are any MPC events emitted from this transaction and if so, send them to the MPC service.
         // Handle the MPC events here because there is access to the event, as the transaction has been just executed.
         let _ = self
-            .handle_signature_mpc_events(&inner_temporary_store, effects, epoch_store)
+            .handle_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await;
 
         // Allow testing what happens if we crash here.
@@ -1539,8 +1539,8 @@ impl AuthorityState {
     }
 
     /// Handle the MPC signature events emitted from the transaction, if any.
-    /// The filtering to handle only dwallet-mpc related events happens within [`SignatureMPCManager::handle_mpc_events`] function.
-    async fn handle_signature_mpc_events(
+    /// The filtering to handle only dwallet-mpc related events happens within [`DWalletMPCManager::handle_mpc_events`] function.
+    async fn handle_dwallet_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,

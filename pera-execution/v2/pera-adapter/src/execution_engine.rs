@@ -700,8 +700,8 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
-            TransactionKind::SignatureMPCOutput(_) => {
-                panic!("SignatureMPCOutput should not exist in v2");
+            TransactionKind::DWalletMPCOutput(_) => {
+                panic!("DWalletMPCOutput should not exist in v2");
             }
         }?;
         temporary_store.check_execution_results_consistency()?;

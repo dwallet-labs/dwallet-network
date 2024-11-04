@@ -352,13 +352,13 @@ impl std::str::FromStr for CheckpointDigest {
     }
 }
 
-/// Representation of a SignatureMPCMessage's digest
+/// Representation of a DWalletMPCMessage's digest
 #[derive(
     Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]
-pub struct SignatureMPCMessageDigest(pub Digest);
+pub struct DWalletMPCMessageDigest(pub Digest);
 
-impl SignatureMPCMessageDigest {
+impl DWalletMPCMessageDigest {
     pub const fn new(digest: [u8; 32]) -> Self {
         Self(Digest::new(digest))
     }
@@ -402,9 +402,9 @@ impl SignatureMPCMessageDigest {
     Deserialize,
     JsonSchema,
 )]
-pub struct SignatureMPCOutputDigest(pub Digest);
+pub struct DWalletMPCOutputDigest(pub Digest);
 
-impl SignatureMPCOutputDigest {
+impl DWalletMPCOutputDigest {
     pub const fn new(digest: [u8; 32]) -> Self {
         Self(Digest::new(digest))
     }
@@ -505,9 +505,9 @@ impl fmt::Debug for CheckpointContentsDigest {
     }
 }
 
-impl fmt::Debug for SignatureMPCMessageDigest {
+impl fmt::Debug for DWalletMPCMessageDigest {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("SignatureMPCDigest").field(&self.0).finish()
+        f.debug_tuple("DWalletMPCDigest").field(&self.0).finish()
     }
 }
 

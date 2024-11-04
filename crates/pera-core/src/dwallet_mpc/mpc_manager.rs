@@ -31,9 +31,9 @@ use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info};
 
-/// The message a validator can send to the other parties while running a signature MPC session.
+/// The message a validator can send to the other parties while running a dwallet MPC session.
 #[derive(Clone)]
-struct SignatureMPCMessage {
+struct DWalletMPCMessage {
     /// The serialized message
     message: Vec<u8>,
     /// The authority that sent the message
@@ -58,10 +58,10 @@ pub fn authority_name_to_party_id(
         })? as PartyID)
 }
 
-/// A Signature MPC session instance
+/// A DWallet MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-pub struct SignatureMPCInstance {
+pub struct DWalletMPCInstance {
     status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
@@ -79,7 +79,7 @@ pub struct SignatureMPCInstance {
     auxiliary_input: Vec<u8>,
 }
 
-impl SignatureMPCInstance {
+impl DWalletMPCInstance {
     fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -129,7 +129,7 @@ impl SignatureMPCInstance {
                 self.status = MPCSessionStatus::Active;
                 self.pending_messages.clear();
                 self.party = new_party;
-                self.new_signature_mpc_message(message)
+                self.new_dwallet_mpc_message(message)
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
@@ -154,11 +154,11 @@ impl SignatureMPCInstance {
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns None only if the epoch switched in the middle and was not available.
-    fn new_signature_mpc_message(&self, message: Vec<u8>) -> Option<ConsensusTransaction> {
+    fn new_dwallet_mpc_message(&self, message: Vec<u8>) -> Option<ConsensusTransaction> {
         let Ok(epoch_store) = self.epoch_store() else {
             return None;
         };
-        Some(ConsensusTransaction::new_signature_mpc_message(
+        Some(ConsensusTransaction::new_dwallet_mpc_message(
             epoch_store.name,
             message,
             self.session_info.session_id.clone(),
@@ -192,7 +192,7 @@ impl SignatureMPCInstance {
     /// and when we reach the end of delivery we will advance the instance if we have a threshold of messages.
     fn store_message(
         &mut self,
-        message: &SignatureMPCMessage,
+        message: &DWalletMPCMessage,
         epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> PeraResult<()> {
         let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
@@ -207,7 +207,7 @@ impl SignatureMPCInstance {
     }
 
     /// Handles a message by either forwarding it to the instance or ignoring it if the instance is finished.
-    fn handle_message(&mut self, message: SignatureMPCMessage) -> PeraResult<()> {
+    fn handle_message(&mut self, message: DWalletMPCMessage) -> PeraResult<()> {
         match self.status {
             MPCSessionStatus::Active => self.store_message(&message, self.epoch_store()?),
             MPCSessionStatus::Finalizing(_) | MPCSessionStatus::Finished(_) => {
@@ -220,9 +220,9 @@ impl SignatureMPCInstance {
 }
 
 /// Possible statuses of an MPC session:
-/// - Pending: The instance has been inserted after we reached [`SignatureMPCManager::max_active_mpc_instances`], so it's waiting
+/// - Pending: The instance has been inserted after we reached [`DWalletMPCManager::max_active_mpc_instances`], so it's waiting
 /// for some active instances to finish before it can be activated.
-/// - FirstExecution: The [`SignatureMPCInstance::party`] has not yet performed it's first advance. This status is needed
+/// - FirstExecution: The [`DWalletMPCInstance::party`] has not yet performed it's first advance. This status is needed
 /// so we will be able to filter those instances and advance them, despite they have not received [`threshold_number_of_parties`] messages.
 /// - Active: The session is currently running; new messages will be forwarded to the session.
 /// - Finalizing: The session is finished and pending on chain write; after receiving an output, it will be verified
@@ -243,10 +243,10 @@ enum MPCSessionStatus {
 /// - keeping track of all MPC instances,
 /// - executing all active instances, and
 /// - (de)activating instances.
-pub struct SignatureMPCManager {
-    mpc_instances: HashMap<ObjectID, SignatureMPCInstance>,
+pub struct DWalletMPCManager {
+    mpc_instances: HashMap<ObjectID, DWalletMPCInstance>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
-    pending_instances_queue: VecDeque<SignatureMPCInstance>,
+    pending_instances_queue: VecDeque<DWalletMPCInstance>,
     // TODO (#257): Make sure the counter is always in sync with the number of active instances.
     active_instances_counter: usize,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -259,9 +259,9 @@ pub struct SignatureMPCManager {
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
-unsafe impl Send for SignatureMPCInstance {}
+unsafe impl Send for DWalletMPCInstance {}
 
-impl SignatureMPCManager {
+impl DWalletMPCManager {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -316,7 +316,7 @@ impl SignatureMPCManager {
                     None
                 }
             })
-            .collect::<Vec<&mut SignatureMPCInstance>>();
+            .collect::<Vec<&mut DWalletMPCInstance>>();
 
         ready_to_advance
             .par_iter_mut()
@@ -342,7 +342,7 @@ impl SignatureMPCManager {
             // TODO (#261): Punish a validator that sends a message related to a non-existing mpc instance
             return Ok(());
         };
-        instance.handle_message(SignatureMPCMessage {
+        instance.handle_message(DWalletMPCMessage {
             message: message.to_vec(),
             authority: authority_name,
         })
@@ -367,7 +367,7 @@ impl SignatureMPCManager {
         }
 
         info!("Received start flow event for session ID {:?}", session_id);
-        let mut new_instance = SignatureMPCInstance::new(
+        let mut new_instance = DWalletMPCInstance::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.epoch_id,

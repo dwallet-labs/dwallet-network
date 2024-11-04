@@ -1293,11 +1293,11 @@ impl PeraNode {
 
         epoch_store
             .set_mpc_manager(
-                pera_core::dwallet_mpc::mpc_manager::SignatureMPCManager::new(
+                pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager::new(
                     Arc::new(consensus_adapter.clone()),
                     Arc::downgrade(&epoch_store),
                     epoch_store.epoch(),
-                    config.max_active_signature_mpc_instances,
+                    config.max_active_dwallet_mpc_instances,
                     epoch_store.committee().voting_rights.len(),
                 ),
             )

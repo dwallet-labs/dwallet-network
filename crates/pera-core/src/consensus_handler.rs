@@ -35,7 +35,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_dwallet_mpc::{MPCRound, SignatureMPCOutput};
+use pera_types::messages_dwallet_mpc::{MPCRound, DWalletMPCOutput};
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -355,7 +355,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
-                    if let ConsensusTransactionKind::SignatureMPCOutput(
+                    if let ConsensusTransactionKind::DWalletMPCOutput(
                         value,
                         session_id,
                         sender_address,
@@ -392,8 +392,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
 
                         if is_valid_transaction {
                             let transaction =
-                                VerifiedTransaction::new_signature_mpc_output_system_transaction(
-                                    SignatureMPCOutput {
+                                VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
+                                    DWalletMPCOutput {
                                         session_id: *session_id,
                                         sender_address: *sender_address,
                                         dwallet_cap_id: *dwallet_cap_id,
@@ -643,8 +643,8 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessStateUpdate(_, _) => "randomness_state_update",
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
-        ConsensusTransactionKind::SignatureMPCMessage(_, _, _) => "signature_mpc_message",
-        ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _, _) => "signature_mpc_statements",
+        ConsensusTransactionKind::DWalletMPCMessage(_, _, _) => "dwallet_mpc_message",
+        ConsensusTransactionKind::DWalletMPCOutput(_, _, _, _, _) => "dwallet_mpc_statements",
     }
 }
 

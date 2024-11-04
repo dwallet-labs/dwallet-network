@@ -101,7 +101,7 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::messages_dwallet_mpc::{MPCRound, SignatureMPCOutput};
+use pera_types::messages_dwallet_mpc::{MPCRound, DWalletMPCOutput};
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -338,7 +338,7 @@ pub struct AuthorityPerEpochStore {
 
     /// State machine managing DWallet MPC flows.
     pub dwallet_mpc_manager:
-        OnceCell<tokio::sync::Mutex<dwallet_mpc::mpc_manager::SignatureMPCManager>>,
+        OnceCell<tokio::sync::Mutex<dwallet_mpc::mpc_manager::DWalletMPCManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -926,7 +926,7 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the Dwallet  MPC manager when a new epoch starts.
     pub async fn set_mpc_manager(
         &self,
-        mut manager: dwallet_mpc::mpc_manager::SignatureMPCManager,
+        mut manager: dwallet_mpc::mpc_manager::DWalletMPCManager,
     ) -> PeraResult<()> {
         if self
             .dwallet_mpc_manager
@@ -2421,17 +2421,17 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _, _),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(_, _, _, _, _),
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, _),
+                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, _),
                 ..
             }) => {
                 if transaction.sender_authority() != *authority {
                     // TODO (#263): Mark the validator who sent this message as malicious
                     warn!(
-                        "SignatureMPCMessage authority {} does not match its author from consensus {}",
+                        "DWalletMPCMessage authority {} does not match its author from consensus {}",
                         authority, transaction.certificate_author_index
                     );
                     return None;
@@ -3390,7 +3390,7 @@ impl AuthorityPerEpochStore {
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCOutput(_, _, _, _, _),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(_, _, _, _, _),
                 ..
             }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -3593,7 +3593,7 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::SignatureMPCMessage(authority, message, session_id),
+                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
                 let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() else {
@@ -3700,7 +3700,7 @@ impl AuthorityPerEpochStore {
         // System transactions either contain a shared object or are proof MPC output transactions.
         let is_proof_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
-            TransactionKind::SignatureMPCOutput(_)
+            TransactionKind::DWalletMPCOutput(_)
         );
         assert!(system_transaction.contains_shared_object() || is_proof_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())

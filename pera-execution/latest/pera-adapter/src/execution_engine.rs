@@ -60,7 +60,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
-    use pera_types::messages_dwallet_mpc::{MPCRound, SignatureMPCOutput};
+    use pera_types::messages_dwallet_mpc::{MPCRound, DWalletMPCOutput};
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -718,8 +718,8 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
-            TransactionKind::SignatureMPCOutput(data) => {
-                let res = setup_and_execute_signature_mpc_output(
+            TransactionKind::DWalletMPCOutput(data) => {
+                let res = setup_and_execute_dwallet_mpc_output(
                     data,
                     temporary_store,
                     tx_ctx,
@@ -1102,8 +1102,8 @@ mod checked {
 
     /// Executes the transaction to store the final MPC output on chain, so it will be accessible to the initiating user.
     /// All the validators execute this TX locally, and if more than 2/3 of them did so the output is stored on chain.
-    fn setup_and_execute_signature_mpc_output(
-        data: SignatureMPCOutput,
+    fn setup_and_execute_dwallet_mpc_output(
+        data: DWalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
         tx_ctx: &mut TxContext,
         move_vm: &Arc<MoveVM>,

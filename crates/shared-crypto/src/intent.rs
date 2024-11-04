@@ -67,8 +67,8 @@ pub enum IntentScope {
     HeaderDigest = 6,      // Used for narwhal authority signature on header digest.
     BridgeEventUnused = 7, // for bridge purposes but it's currently not included in messages.
     ConsensusBlock = 8,    // Used for consensus authority signature on block's digest
-    SignatureMPCMessage = 9, // Used for an authority signature on a signature mpc message.
-    SignatureMPCOutput = 10, // Used for an authority signature on a signature mpc output.
+    DWalletMPCMessage = 9, // Used for an authority signature on a dwallet mpc message.
+    DWalletMPCOutput = 10, // Used for an authority signature on a dwallet mpc output.
 }
 
 impl TryFrom<u8> for IntentScope {
