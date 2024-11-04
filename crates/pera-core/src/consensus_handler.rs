@@ -370,7 +370,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         );
 
                         let mut dwallet_mpc_manager = self.epoch_store.dwallet_mpc_manager.get();
-                        let is_valid_transaction = match dwallet_mpc_manager {
+                        let output_verification_result = match dwallet_mpc_manager {
                             Some(mpc_manager) => {
                                 let dwallet_mpc_manager = mpc_manager.lock().await;
                                 match dwallet_mpc_manager.try_verify_output(value, session_id) {
@@ -390,7 +390,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 false
                             }
                         };
-                        match is_valid_transaction {
+                        match output_verification_result {
                             OutputVerificationResult::Valid => {
                                 let transaction =
                                     VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
@@ -419,9 +419,6 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             OutputVerificationResult::Malicious => {
                                 // TODO (#263): Mark and punish the validator that sent this malicious output
                             }
-                        }
-                        if is_valid_transaction {
-
                         }
                     }
 
