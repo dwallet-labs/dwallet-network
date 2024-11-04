@@ -415,6 +415,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "dwallet-mpc-wasm"
+version = "0.1.6"
+dependencies = [
+ "anyhow",
+ "bcs",
+ "console_error_panic_hook",
+ "console_log",
+ "dwallet-mpc",
+ "getrandom",
+ "log",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "thiserror",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "ecdsa"
 version = "0.16.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1217,24 +1235,6 @@ checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 dependencies = [
  "digest 0.10.7",
  "rand_core",
-]
-
-[[package]]
-name = "signature-mpc-wasm"
-version = "0.1.6"
-dependencies = [
- "anyhow",
- "bcs",
- "console_error_panic_hook",
- "console_log",
- "dwallet-mpc",
- "getrandom",
- "log",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
- "thiserror",
- "wasm-bindgen",
 ]
 
 [[package]]
