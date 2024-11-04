@@ -1555,6 +1555,8 @@ impl AuthorityState {
         };
         if status.is_ok() {
             let Some(mut bytes_mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
+                // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
+                // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are
                 return Ok(());
             };
             let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
