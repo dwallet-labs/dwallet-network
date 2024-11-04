@@ -1567,7 +1567,6 @@ impl AuthorityState {
                     let deserialized_event: CompletedDKGSecondRoundEvent =
                         bcs::from_bytes(&event.contents)?;
                     bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?;
-                    println!("created dwallet {:?}", deserialized_event.dwallet_id);
                 } else {
                     match MPCParty::from_event(
                         event,
