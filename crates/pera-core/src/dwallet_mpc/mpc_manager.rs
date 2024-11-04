@@ -148,7 +148,7 @@ impl DWalletMPCManager {
     }
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
-    /// Otherwise, adds the instance to the pending queue
+    /// and the pending instances queue is empty. Otherwise, adds the instance to the pending queue
     pub fn push_new_mpc_instance(
         &mut self,
         auxiliary_input: Vec<u8>,
