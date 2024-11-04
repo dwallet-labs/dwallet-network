@@ -27,7 +27,8 @@ use crate::object_runtime::ObjectRuntime;
 use crate::NativesCostTable;
 use signature_mpc::twopc_mpc_protocols;
 use signature_mpc::twopc_mpc_protocols::encrypt_user_share::{
-    encryption_of_discrete_log_public_parameters, verify_proof, DWalletPublicKeys,
+    encryption_of_discrete_log_public_parameters, parse_and_verify_secret_share, verify_proof,
+    DWalletPublicKeys,
 };
 use signature_mpc::twopc_mpc_protocols::{
     affine_point_to_public_key,
@@ -400,4 +401,22 @@ pub fn verify_signed_pubkeys(
                 .is_ok()
         )],
     ))
+}
+
+pub fn verify_public_user_share(
+    context: &mut NativeContext,
+    ty_args: Vec<Type>,
+    mut args: VecDeque<Value>,
+) -> PartialVMResult<NativeResult> {
+    debug_assert!(ty_args.is_empty());
+    debug_assert!(args.len() == 2);
+
+    let cost = context.gas_used();
+
+    let secret_share = pop_arg!(args, Vector).to_vec_u8()?;
+    let dkg_output = pop_arg!(args, Vector).to_vec_u8()?;
+
+    let is_matching = parse_and_verify_secret_share(&secret_share, &dkg_output)
+        .map_err(|_| PartialVMError::new(StatusCode::FAILED_TO_DESERIALIZE_ARGUMENT))?;
+    Ok(NativeResult::ok(cost, smallvec![Value::bool(is_matching)]))
 }

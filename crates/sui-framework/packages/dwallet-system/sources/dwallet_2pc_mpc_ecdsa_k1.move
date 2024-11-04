@@ -18,6 +18,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         create_dwallet_cap,
         create_encrypted_user_share,
         create_malicious_aggregator_sign_output,
+        create_public_user_share,
         create_sign_output,
         DWallet,
         DWalletCap,
@@ -47,6 +48,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
     const EEncryptUserShare: u64 = 6;
     const EInvalidDKGOutputSignature: u64 = 7;
     const EPublicKeyNotMatchSenderAddress: u64 = 8;
+    const EPublicUserShare: u64 = 9;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -225,6 +227,46 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
             secret_key_share_encryption_and_proof,
             ctx
         );
+    }
+
+    public fun create_public_dwallet(
+        output: DKGSessionOutput,
+        centralized_party_public_key_share_decommitment_and_proof: vector<u8>,
+        signed_public_shares: vector<u8>,
+        sender_pubkey: vector<u8>,
+        unencrypted_secret_key_share: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let DKGSessionOutput {
+            id,
+            session_id,
+            dwallet_cap_id,
+            commitment_to_centralized_party_secret_key_share,
+            secret_key_share_encryption_and_proof,
+        } = output;
+        object::delete(id);
+
+        // Native func.
+        // `public_key` is the ECDSA public key.
+        // Note that these function returns only after 2/3 or the validators reached concesus.
+        let (output, public_key) = dkg_verify_decommitment_and_proof_of_centralized_party_public_key_share(
+            commitment_to_centralized_party_secret_key_share,
+            secret_key_share_encryption_and_proof,
+            centralized_party_public_key_share_decommitment_and_proof,
+        );
+
+        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, public_key, ctx);
+        // save_public_user_share(&dwallet, unencrypted_secret_key_share, ctx);
+        save_public_user_share(
+            &dwallet,
+            signed_public_shares,
+            sender_pubkey,
+            unencrypted_secret_key_share,
+            ctx
+        );
+        // Create dwallet + make it immutable.
+        // Create dwallet +
+        transfer::public_freeze_object(dwallet);
     }
 
     /// Create a new Dwallet.
@@ -511,6 +553,45 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_public_key: vector<u8>,
     ): bool;
 
+
+    //todo(yuval): doc
+    public fun save_public_user_share(
+        dwallet: &DWallet<Secp256K1>,
+        signed_pubkeys: vector<u8>,
+        // _encryption_key: &EncryptionKey,
+        // _encrypted_secret_share_and_proof: vector<u8>,
+        sender_ed25519_pubkey: vector<u8>,
+        secret_key_share: vector<u8>,
+        ctx: &mut TxContext,
+    ) {
+        assert!(
+            verify_signed_pubkeys(&signed_pubkeys, &sender_ed25519_pubkey, &get_output(dwallet)),
+            EInvalidDKGOutputSignature
+        );
+        assert!(
+            ed2551_pubkey_to_sui_addr(sender_ed25519_pubkey) == tx_context::sender(ctx),
+            EPublicKeyNotMatchSenderAddress
+        );
+        
+        // todo(yuval): check if this verification is needed
+        // let is_valid = verify_encrypted_user_secret_share_secp256k1(
+        //     get_encryption_key(encryption_key),
+        //     encrypted_secret_share_and_proof,
+        //     get_output(dwallet),
+        // );
+
+        let is_valid = verify_public_user_share(get_output(dwallet), secret_key_share);
+
+        assert!(is_valid, EPublicUserShare);
+        create_public_user_share(
+            object::id(dwallet),
+            secret_key_share,
+            signed_pubkeys,
+            sender_ed25519_pubkey,
+            ctx
+        );
+    }
+
     /// Encrypt a user share with an AHE encryption key.
     public fun encrypt_user_share(
         dwallet: &DWallet<Secp256K1>,
@@ -551,6 +632,11 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_output: vector<u8>,
     ): bool;
 
+    #[allow(unused_function)]
+    native fun verify_public_user_share(
+        dkg_output: vector<u8>,
+        secret_share: vector<u8>,
+    ): bool;
 
     #[test_only]
     public(friend) fun create_mock_sign_data(presign_session_id: ID): SignData {

@@ -457,6 +457,19 @@ module dwallet_system::dwallet {
         sender_pubkey: vector<u8>,
     }
 
+    /// Public dWallet user share that is shared with the network.
+    struct PublicUserShare has key {
+        id: UID,
+        dwallet_id: ID,
+        public_share: vector<u8>,
+        signed_dwallet_pubkeys: vector<u8>,
+        sender_pubkey: vector<u8>,
+    }
+
+    public fun get_dwallet_id_from_public_user_share(public_user_share: &PublicUserShare): ID {
+        public_user_share.dwallet_id
+    }
+
     /// Owned object that holds all encrypted user shares for the dWallets the user has access to.
     /// These are those that were encrypted after the user created the dWallet or were sent to the user,
     /// and have been verified, re-signed, and re-encrypted by the user.
@@ -593,6 +606,23 @@ module dwallet_system::dwallet {
         key_owner: address,
     ): &ID {
         table::borrow(&encryption_key_holder.encryption_keys, key_owner)
+    }
+
+    public(friend) fun create_public_user_share(
+        dwallet_id: ID,
+        public_user_share: vector<u8>,
+        signed_dwallet_pubkeys: vector<u8>,
+        sender_pubkey: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let public_user_share = PublicUserShare {
+            id: object::new(ctx),
+            dwallet_id,
+            public_share: public_user_share,
+            signed_dwallet_pubkeys,
+            sender_pubkey,
+        };
+        transfer::freeze_object(public_user_share);
     }
 
     public(friend) fun create_encrypted_user_share(

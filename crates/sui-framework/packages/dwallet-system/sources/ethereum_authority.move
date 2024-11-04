@@ -8,20 +8,36 @@
 //
 
 module dwallet_system::ethereum_authority {
-	use std::string::String;
+    use std::string::String;
     use dwallet::object::{Self, UID};
     use dwallet::tx_context::TxContext;
-    use dwallet_system::dwallet::{DWallet,DWalletCap, MessageApproval};
+    use dwallet_system::dwallet::{
+        DWallet,
+        DWalletCap,
+        MessageApproval,
+        PublicUserShare
+    };
+    use dwallet_system::dwallet::{
+        get_dwallet_cap_id,
+        get_dwallet_id_from_public_user_share
+        };
     use dwallet_system::authority_binder;
     use dwallet_system::authority_binder::{ Authority };
     use dwallet_system::authority_binder::{ create_authority };
-	use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{Secp256K1};
+    use dwallet_system::dwallet_2pc_mpc_ecdsa_k1::{ Secp256K1 };
     use dwallet::tx_context;
     use dwallet::transfer;
 
     const ENetworkMismatch: u64 = 100;
     const EUpdateIrrelevant: u64 = 101;
     const EInvalidStateProof: u64 = 102;
+
+    // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
+    
+    const EInvalidDWalletCap: u64 = 100;
+    const EInvalidPublicUserShare: u64 = 101;
+
+    // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
 
     /// State verification response.
     struct StateVerificationResponse has copy, drop {
@@ -52,29 +68,37 @@ module dwallet_system::ethereum_authority {
     }
 
     /// Ethereum Smart Contract Config.
-	struct EthereumSmartContractConfig has store, key {
-		id: UID,
-		approved_tx_slot: u64,
+    struct EthereumSmartContractConfig has store, key {
+        id: UID,
+        approved_tx_slot: u64,
         network: vector<u8>,
-	}
+    }
 
     /// Creates an Ethereum Smart Contract Config.
-	public fun create_ethereum_smart_contract_config(approved_tx_slot: u64, network: vector<u8>, ctx: &mut TxContext) {
-		let config = EthereumSmartContractConfig {
-			id: object::new(ctx),
-			approved_tx_slot,
+    public fun create_ethereum_smart_contract_config(
+        approved_tx_slot: u64,
+        network: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let config = EthereumSmartContractConfig {
+            id: object::new(ctx),
+            approved_tx_slot,
             network,
-		};
-		transfer::transfer(config, tx_context::sender(ctx))
-	}
+        };
+        transfer::transfer(config, tx_context::sender(ctx))
+    }
 
     /// Get the approved transactions mapping slot of the Ethereum Smart Contract.
-    public fun get_contract_approved_tx_slot(config: &EthereumSmartContractConfig): u64 {
+    public fun get_contract_approved_tx_slot(
+        config: &EthereumSmartContractConfig
+    ): u64 {
         config.approved_tx_slot
     }
 
     /// Get the network of the Ethereum Smart Contract.
-    public fun get_network(config: &EthereumSmartContractConfig): vector<u8> {
+    public fun get_network(
+        config: &EthereumSmartContractConfig
+    ): vector<u8> {
         config.network
     }
 
@@ -85,7 +109,9 @@ module dwallet_system::ethereum_authority {
         name: String,
         unique_identifier: vector<u8>,
         config: EthereumSmartContractConfig,
+        authority_owner_dwallet: &DWallet<Secp256K1>,
         authority_owner_dwallet_cap: DWalletCap,
+        public_user_share: &PublicUserShare,
         state_bytes: vector<u8>,
         updates_vec: vector<u8>,
         finality_update: vector<u8>,
@@ -96,6 +122,19 @@ module dwallet_system::ethereum_authority {
         beacon_block_type: vector<u8>,
         ctx: &mut TxContext,
     ) {
+        assert!(
+            object::id(&authority_owner_dwallet_cap) == get_dwallet_cap_id(
+                authority_owner_dwallet
+            ),
+            EInvalidDWalletCap
+        );
+        assert!(
+            object::id(authority_owner_dwallet) == get_dwallet_id_from_public_user_share(
+                public_user_share
+            ),
+            EInvalidPublicUserShare
+        );
+
         let initial_state = create_initial_state(
             state_bytes,
             get_network(&config),
@@ -107,11 +146,9 @@ module dwallet_system::ethereum_authority {
             beacon_block_execution_payload,
             beacon_block_type,
             ctx,
-            );
+        );
 
-        let latest_state = authority_binder::create_latest_state(
-            object::id(&initial_state)
-            );
+        let latest_state = authority_binder::create_latest_state(object::id(&initial_state));
 
         transfer::freeze_object(initial_state);
 
@@ -121,6 +158,7 @@ module dwallet_system::ethereum_authority {
             latest_state,
             config,
             authority_owner_dwallet_cap,
+            public_user_share,
             ctx,
         );
     }
@@ -141,29 +179,29 @@ module dwallet_system::ethereum_authority {
         beacon_block_execution_payload: vector<u8>,
         beacon_block_type: vector<u8>,
         ctx: &mut TxContext
-        ): EthereumState {
-            let response = create_initial_eth_state_data(
-                state_bytes,
-                network,
-                updates_vec,
-                finality_update,
-                optimistic_update,
-                beacon_block,
-                beacon_block_body,
-                beacon_block_execution_payload,
-                beacon_block_type
-                );
+    ): EthereumState {
+        let response = create_initial_eth_state_data(
+            state_bytes,
+            network,
+            updates_vec,
+            finality_update,
+            optimistic_update,
+            beacon_block,
+            beacon_block_body,
+            beacon_block_execution_payload,
+            beacon_block_type
+        );
 
-            let state = EthereumState {
-                id: object::new(ctx),
-                data: response.data,
-                time_slot: response.time_slot,
-                state_root: response.state_root,
-                block_number: response.block_number,
-                network,
-            };
+        let state = EthereumState {
+            id: object::new(ctx),
+            data: response.data,
+            time_slot: response.time_slot,
+            state_root: response.state_root,
+            block_number: response.block_number,
+            network,
+        };
 
-            state
+        state
     }
 
     /// Verifies the new Ethereum state according to the provided updates,
@@ -194,7 +232,11 @@ module dwallet_system::ethereum_authority {
         );
 
         // Update state in Authority.
-        set_verified_authority_state(authority, current_state_from_authority, &updated_state);
+        set_verified_authority_state(
+            authority,
+            current_state_from_authority,
+            &updated_state
+        );
         transfer::freeze_object(updated_state);
     }
 
@@ -210,38 +252,38 @@ module dwallet_system::ethereum_authority {
         beacon_block_execution_payload: vector<u8>,
         beacon_block_type: vector<u8>,
         ctx: &mut TxContext
-        ): EthereumState {
-            let EthereumState {
-                id: _,
-                data,
-                time_slot: _,
-                state_root: _,
-                block_number: _,
-                network: _,
-            } = eth_state;
+    ): EthereumState {
+        let EthereumState {
+            id: _,
+            data,
+            time_slot: _,
+            state_root: _,
+            block_number: _,
+            network: _,
+        } = eth_state;
 
-            let response = verify_eth_state(
-                updates_vec,
-                finality_update,
-                optimistic_update,
-                *data,
-                beacon_block,
-                beacon_block_body,
-                beacon_block_execution_payload,
-                beacon_block_type
-                );
+        let response = verify_eth_state(
+            updates_vec,
+            finality_update,
+            optimistic_update,
+            *data,
+            beacon_block,
+            beacon_block_body,
+            beacon_block_execution_payload,
+            beacon_block_type
+        );
 
-            let new_state = EthereumState {
-                id: object::new(ctx),
-                data: response.data,
-                time_slot: response.time_slot,
-                state_root: response.state_root,
-                block_number: response.block_number,
-                network: response.network,
-            };
+        let new_state = EthereumState {
+            id: object::new(ctx),
+            data: response.data,
+            time_slot: response.time_slot,
+            state_root: response.state_root,
+            block_number: response.block_number,
+            network: response.network,
+        };
 
-            new_state
-        }
+        new_state
+    }
 
     /// Sets the latest state in the `Authority` object if the new state is
     /// valid and has a newer time slot.
@@ -250,14 +292,21 @@ module dwallet_system::ethereum_authority {
         current_state: &EthereumState,
         updated_state: &EthereumState,
     ) {
-        assert!(current_state.time_slot <= updated_state.time_slot, EUpdateIrrelevant);
-        assert!(current_state.network == updated_state.network, ENetworkMismatch);
+        assert!(
+            current_state.time_slot <= updated_state.time_slot,
+            EUpdateIrrelevant
+        );
+        assert!(
+            current_state.network == updated_state.network,
+            ENetworkMismatch
+        );
 
-        if (current_state.time_slot == updated_state.time_slot) {
-            return
-        };
+        if (current_state.time_slot == updated_state.time_slot) { return };
 
-        authority_binder::set_latest_id(authority, object::id(updated_state));
+        authority_binder::set_latest_id(
+            authority,
+            object::id(updated_state)
+        );
     }
 
     /// Verifies the provided proof using the `verify_message_proof` native function.
@@ -271,7 +320,9 @@ module dwallet_system::ethereum_authority {
         proof: vector<u8>,
     ): vector<MessageApproval> {
         let bind_to_authority = authority_binder::get_bind_to_authority(binder);
-        let contract_address = authority_binder::get_authority_owner_address(bind_to_authority);
+        let contract_address = authority_binder::get_authority_owner_address(
+            bind_to_authority
+        );
         let config = authority_binder::borrow_config(authority);
 
         let is_valid = verify_message_proof(
@@ -284,7 +335,7 @@ module dwallet_system::ethereum_authority {
         );
         assert!(is_valid, EInvalidStateProof);
 
-        authority_binder::approve_messages(binder, dwallet, vector[message])
+        authority_binder::approve_messages(authority, dwallet, vector[message])
     }
 
     /// Verify the Message inside the Storage Merkle Root.

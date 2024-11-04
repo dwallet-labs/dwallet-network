@@ -822,6 +822,11 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             make_native!(twopc_mpc::convert_signature_to_canonical_form),
         ),
         (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "verify_public_user_share",
+            make_native!(twopc_mpc::verify_public_user_share),
+        ),
+        (
             "dwallet",
             "ed2551_pubkey_to_sui_addr",
             make_native!(twopc_mpc::ed2551_pubkey_to_sui_addr),
