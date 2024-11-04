@@ -15,6 +15,10 @@ use sui_types::digests::TransactionDigest;
 // const SUI_FULLNODE_URL : &str = "https://fullnode.devnet.sui.io:443";
 const SUI_FULLNODE_URL: &str = "http://usw1a-tnt-rpc-0-3a5838e.testnet.sui.io:9000";
 
+// Note:
+// This is a service to get TX data from SUI,
+// a temporary solution because of Typescript serialization issues.
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let server_url = "0.0.0.0:6920";
