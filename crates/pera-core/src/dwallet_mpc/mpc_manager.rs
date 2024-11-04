@@ -30,6 +30,8 @@ pub struct DWalletMPCManager {
     pub number_of_parties: usize,
 }
 
+/// The possible results of verifying an incoming output for an MPC session.
+/// We need to differentiate between a duplicate & a malicious output, as the output can be sent twice by honest parties.
 pub enum OutputVerificationResult {
     Valid,
     Duplicate,
@@ -60,18 +62,18 @@ impl DWalletMPCManager {
     /// Tries to verify that the received output for the MPC session matches the one generated locally.
     /// Returns true if the output is correct, false otherwise.
     pub fn try_verify_output(
-        &self,
+        &mut self,
         output: &Vec<u8>,
         session_id: &ObjectID,
     ) -> anyhow::Result<OutputVerificationResult> {
-        let Some(instance) = self.mpc_instances.get(session_id) else {
+        let Some(mut instance) = self.mpc_instances.get_mut(session_id) else {
             return Ok(OutputVerificationResult::Malicious);
         };
-        let MPCSessionStatus::Finalizing(stored_output) = &instance.status else {
+        let MPCSessionStatus::Finalizing(stored_output) = instance.status.clone() else {
             return Ok(OutputVerificationResult::Duplicate);
         };
-
         if *stored_output == *output {
+            self.finalize_mpc_instance(session_id.clone())?;
             return Ok(OutputVerificationResult::Valid);
         }
         Ok(OutputVerificationResult::Malicious)
@@ -127,7 +129,7 @@ impl DWalletMPCManager {
     }
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
-    /// Otherwise, adds the instance to the pending queue
+    /// and the pending instances queue is empty. Otherwise, adds the instance to the pending queue
     pub fn push_new_mpc_instance(
         &mut self,
         auxiliary_input: Vec<u8>,
