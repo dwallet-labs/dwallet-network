@@ -31,7 +31,7 @@ jobs:
 
       - name: Build and Push dWallet Explorer Image
         run: |
-          ./docker/sui-light-client-tools/build.sh \
+          ./docker/light-client-tools/build.sh \
             --platform linux/amd64 \
             --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
             --push
