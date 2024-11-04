@@ -2,9 +2,6 @@ name: Build and Push dWallet Light-Client-Tools Image
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - sui-state-proofs
 
 jobs:
   build-and-push:
