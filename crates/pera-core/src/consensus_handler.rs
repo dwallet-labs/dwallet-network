@@ -389,7 +389,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             None => {
                                 // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
                                 error!("MPC manager was not initialized when verifying DWalletMPCOutput output from session {:?}", session_id);
-                                OutputVerificationResult::Malicious
+                                OutputVerificationResult::Duplicate
                             }
                         };
                         match output_verification_result {
