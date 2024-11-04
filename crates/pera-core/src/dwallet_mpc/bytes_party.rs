@@ -140,10 +140,10 @@ impl MPCParty {
                     party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default()
                 }),
                 SecondDKGBytesParty::generate_auxiliary_input(
-                    4, 1,
+                    number_of_parties, party_id,
                     deserialized_event.first_round_output,
                     deserialized_event.public_key_share_and_proof,
-                    deserialized_event.session_id.bytes.to_vec(),
+                    deserialized_event.first_round_session_id.bytes.to_vec(),
                 ),
                 SessionInfo {
                     session_id: deserialized_event.session_id.bytes,

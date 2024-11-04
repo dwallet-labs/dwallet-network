@@ -118,11 +118,11 @@ impl DKGFirstRound for DKGFirstParty {
             class_groups_constants::protocol_public_parameters().unwrap();
 
         let parties = (0..number_of_parties).collect::<HashSet<PartyID>>();
-        let session_id = commitment::CommitmentSizedNumber::from_u8(8);
+        let session_id = commitment::CommitmentSizedNumber::from_le_slice(&session_id);
         Self::AuxiliaryInput {
             protocol_public_parameters: secp256k1_group_public_parameters,
             party_id,
-            threshold: 2 * number_of_parties / 3 + 1,
+            threshold: ((number_of_parties * 2) + 2) / 3,
             number_of_parties,
             parties: parties.clone(),
             session_id,
@@ -160,7 +160,6 @@ impl SecondDKGBytesParty {
         centralized_party_public_key_share: Vec<u8>,
         session_id: Vec<u8>,
     ) -> Vec<u8> {
-        // let first_round_auxiliary_input = get_dkg_first_round_auxiliary_input(session_id.clone());
         bcs::to_bytes(&DKGSecondParty::generate_auxiliary_input(
             number_of_parties,
             party_id,
