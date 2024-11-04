@@ -51,6 +51,8 @@ pub struct DWalletMPCManager {
     pub number_of_parties: usize,
 }
 
+/// The possible results of verifying an incoming output for an MPC session.
+/// We need to differentiate between a duplicate & a malicious output, as the output can be sent twice by honest parties.
 pub enum OutputVerificationResult {
     Valid,
     Duplicate,
