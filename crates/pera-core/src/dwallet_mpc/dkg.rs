@@ -64,7 +64,7 @@ impl BytesParty for FirstDKGBytesParty {
             bcs::from_bytes(&auxiliary_input).map_err(|_| twopc_mpc::Error::InvalidParameters)?;
         let messages = messages
             .into_iter()
-            .map(|(k, v)| (k, bcs::from_bytes(&v).unwrap()))
+            .map(|(k, v)| (k, bcs::from_bytes(&v)?))
             .collect();
         let result = self
             .party
@@ -177,10 +177,10 @@ impl BytesParty for SecondDKGBytesParty {
         messages: HashMap<PartyID, Vec<u8>>,
         auxiliary_input: Vec<u8>,
     ) -> Result<AdvanceResult, twopc_mpc::Error> {
-        let auxiliary_input = bcs::from_bytes(&auxiliary_input).unwrap();
+        let auxiliary_input = bcs::from_bytes(&auxiliary_input)?;
         let messages = messages
             .into_iter()
-            .map(|(k, v)| (k, bcs::from_bytes(&v).unwrap()))
+            .map(|(k, v)| (k, bcs::from_bytes(&v)?))
             .collect();
         let result = self
             .party
@@ -268,21 +268,4 @@ fn generate_language_public_parameters<const REPETITIONS: usize>() -> ProofPubli
         secp256k1_group_public_parameters.clone(),
         secp256k1_group_public_parameters.generator,
     )
-}
-
-/// Create dummy witnesses for the dummy proof flow.
-fn sample_witnesses<const REPETITIONS: usize, Lang: Language<REPETITIONS>>(
-    language_public_parameters: &Lang::PublicParameters,
-    batch_size: usize,
-    rng: &mut impl CryptoRngCore,
-) -> Vec<Lang::WitnessSpaceGroupElement> {
-    iter::repeat_with(|| {
-        Lang::WitnessSpaceGroupElement::sample(
-            language_public_parameters.witness_space_public_parameters(),
-            rng,
-        )
-        .unwrap()
-    })
-    .take(batch_size)
-    .collect()
 }
