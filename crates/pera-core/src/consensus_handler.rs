@@ -47,6 +47,7 @@ use pera_types::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
+use crate::dwallet_mpc::mpc_manager::OutputVerificationResult;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -389,27 +390,38 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 false
                             }
                         };
-
-                        if is_valid_transaction {
-                            let transaction =
-                                VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
-                                    DWalletMPCOutput {
-                                        session_id: *session_id,
-                                        sender_address: *sender_address,
-                                        dwallet_cap_id: *dwallet_cap_id,
-                                        value: value.clone(),
-                                        mpc_round: mpc_round.clone(),
-                                    },
+                        match is_valid_transaction {
+                            OutputVerificationResult::Valid => {
+                                let transaction =
+                                    VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
+                                        DWalletMPCOutput {
+                                            session_id: *session_id,
+                                            sender_address: *sender_address,
+                                            dwallet_cap_id: *dwallet_cap_id,
+                                            value: value.clone(),
+                                            mpc_round: mpc_round.clone(),
+                                        },
+                                    );
+                                let transaction = VerifiedExecutableTransaction::new_system(
+                                    transaction,
+                                    self.epoch(),
                                 );
-                            let transaction = VerifiedExecutableTransaction::new_system(
-                                transaction,
-                                self.epoch(),
-                            );
-                            transactions.push((
-                                empty_bytes.as_slice(),
-                                SequencedConsensusTransactionKind::System(transaction),
-                                consensus_output.leader_author_index(),
-                            ));
+                                transactions.push((
+                                    empty_bytes.as_slice(),
+                                    SequencedConsensusTransactionKind::System(transaction),
+                                    consensus_output.leader_author_index(),
+                                ));
+                            },
+                            OutputVerificationResult::Duplicate => {
+                                // Ignore this output, as the same output may be submitted twice by non-malicious parties, due to Sui's inner implementation of the leader selection
+                                // mechanism.
+                            },
+                            OutputVerificationResult::Malicious => {
+                                // TODO (#263): Mark and punish the validator that sent this malicious output
+                            }
+                        }
+                        if is_valid_transaction {
+
                         }
                     }
 
