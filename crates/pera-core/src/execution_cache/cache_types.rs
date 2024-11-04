@@ -113,6 +113,12 @@ impl<I: Iterator> AssertOrdered<I> {
     }
 }
 
+impl<I: IntoIterator> From<I> for AssertOrdered<I::IntoIter> {
+    fn from(iter: I) -> Self {
+        Self::new(iter.into_iter())
+    }
+}
+
 impl<I: Iterator> Iterator for AssertOrdered<I>
 where
     I::Item: Ord + Copy,
