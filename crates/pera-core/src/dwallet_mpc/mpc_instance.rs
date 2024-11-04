@@ -1,7 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, SessionInfo};
-use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use group::PartyID;
 use pera_types::base_types::{AuthorityName, EpochId};
 use pera_types::error::{PeraError, PeraResult};
@@ -35,7 +34,6 @@ pub struct DWalletMPCInstance {
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it
     /// To calculate the parties IDs all we need to know is the number of parties, as the IDs are just the indexes of those parties. If there are 3 parties, the IDs are [0, 1, 2].
-    number_of_parties: usize,
     pub(crate) session_info: SessionInfo,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: MPCParty,
@@ -47,7 +45,6 @@ impl DWalletMPCInstance {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
         epoch: EpochId,
-        number_of_parties: usize,
         party: MPCParty,
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
@@ -60,7 +57,6 @@ impl DWalletMPCInstance {
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             party,
-            number_of_parties,
             auxiliary_input,
             session_info,
         }
@@ -75,9 +71,9 @@ impl DWalletMPCInstance {
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
     pub(crate) fn advance(&mut self, auxiliary_input: Vec<u8>) -> PeraResult {
-        let mut party = mem::take(&mut self.party);
+        let party = mem::take(&mut self.party);
 
-        /// Gets the instance existing party or creates a new one if this is the first advance
+        // Gets the instance existing party or creates a new one if this is the first advance
         let advance_result = match party.advance(self.pending_messages.clone(), auxiliary_input) {
             Ok(res) => res,
             Err(e) => {
@@ -104,8 +100,8 @@ impl DWalletMPCInstance {
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = Arc::clone(&self.epoch_store()?);
         if let Some(msg) = msg {
-            /// Spawns sending this message asynchronously the [`self.advance`] function will stay synchronous
-            /// and can be parallelized with Rayon.
+            // Spawns sending this message asynchronously the [`self.advance`] function will stay synchronous
+            // and can be parallelized with Rayon.
             tokio::spawn(async move {
                 let _ = consensus_adapter
                     .submit_to_consensus(&vec![msg], &epoch_store)

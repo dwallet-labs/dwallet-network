@@ -1,36 +1,15 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::{ConsensusAdapter, SubmitToConsensus};
-use anyhow::anyhow;
-use group::secp256k1::group_element::Value;
-use group::{secp256k1, GroupElement, PartyID};
-use im::hashmap;
-use itertools::Itertools;
-use mpc::Advance;
-use mpc::{two_party::Round, AuxiliaryInput, Party};
-use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
+use crate::consensus_adapter::SubmitToConsensus;
+use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::{PeraError, PeraResult};
-use pera_types::event::Event;
-use pera_types::messages_consensus::ConsensusTransaction;
 
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, SessionInfo};
+use crate::dwallet_mpc::bytes_party::{MPCParty, SessionInfo};
 use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus};
 use pera_types::committee::EpochId;
-use pera_types::messages_dwallet_mpc::MPCRound;
-use rand_core::OsRng;
 use rayon::prelude::*;
-use schemars::_private::NoSerialize;
-use serde::{Deserialize, Serialize};
-use std::cmp::PartialEq;
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::future::Future;
-use std::io::Write;
-use std::marker::PhantomData;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
-use std::time::Duration;
-use std::{io, mem};
-use tokio::sync::{mpsc, Mutex, RwLock};
-use tokio::time::sleep;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
@@ -133,7 +112,7 @@ impl DWalletMPCManager {
         authority_name: AuthorityName,
         session_id: ObjectID,
     ) -> PeraResult<()> {
-        let Some(mut instance) = self.mpc_instances.get_mut(&session_id) else {
+        let Some(instance) = self.mpc_instances.get_mut(&session_id) else {
             error!(
                 "received a message for instance {:?} which does not exist",
                 session_id
@@ -170,7 +149,6 @@ impl DWalletMPCManager {
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.epoch_id,
-            self.number_of_parties,
             party,
             MPCSessionStatus::Pending,
             auxiliary_input,
@@ -196,7 +174,7 @@ impl DWalletMPCManager {
     }
 
     pub fn finalize_mpc_instance(&mut self, session_id: ObjectID) -> PeraResult {
-        let mut instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
+        let instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
             PeraError::InvalidCommittee(format!(
                 "Received a finalize event for session ID {:?} that does not exist",
                 session_id

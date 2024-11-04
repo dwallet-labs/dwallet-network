@@ -4,15 +4,9 @@
 //! implements the [`BytesParty`] trait for seamless interaction with other MPC components.
 
 use crate::dwallet_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
-use group::{secp256k1, PartyID, Samplable};
-use homomorphic_encryption::AdditivelyHomomorphicDecryptionKey;
-use maurer::knowledge_of_discrete_log::PublicParameters;
-use maurer::Language;
+use group::PartyID;
 use mpc::{Advance, Party};
-use proof::GroupsPublicParametersAccessors;
-use rand_core::CryptoRngCore;
 use std::collections::{HashMap, HashSet};
-use std::iter;
 use twopc_mpc::dkg::Protocol;
 
 pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
@@ -66,7 +60,7 @@ impl BytesParty for FirstDKGBytesParty {
             .into_iter()
             .map(|(k, v)| {
                 let message =
-                    bcs::from_bytes(&v).map_err(|err| twopc_mpc::Error::InvalidParameters);
+                    bcs::from_bytes(&v).map_err(|_| twopc_mpc::Error::InvalidParameters);
                 return match message {
                     Ok(message) => Ok((k, message)),
                     Err(err) => Err(err),
@@ -190,7 +184,7 @@ impl BytesParty for SecondDKGBytesParty {
             .into_iter()
             .map(|(k, v)| {
                 let message =
-                    bcs::from_bytes(&v).map_err(|err| twopc_mpc::Error::InvalidParameters);
+                    bcs::from_bytes(&v).map_err(|_| twopc_mpc::Error::InvalidParameters);
                 return match message {
                     Ok(message) => Ok((k, message)),
                     Err(err) => Err(err),
@@ -263,24 +257,4 @@ impl DKGSecondRound for DKGSecondParty {
         )
             .into()
     }
-}
-
-/// The language used in the proof MPC flow.
-type Lang = maurer::knowledge_of_discrete_log::Language<secp256k1::Scalar, secp256k1::GroupElement>;
-
-/// The public parameters for the proof MPC flow.
-type ProofPublicParameters =
-    maurer::language::PublicParameters<{ maurer::SOUND_PROOFS_REPETITIONS }, Lang>;
-
-/// Generate the public parameters for the proof MPC flow.
-fn generate_language_public_parameters<const REPETITIONS: usize>() -> ProofPublicParameters {
-    let secp256k1_scalar_public_parameters = secp256k1::scalar::PublicParameters::default();
-
-    let secp256k1_group_public_parameters = secp256k1::group_element::PublicParameters::default();
-
-    PublicParameters::new::<secp256k1::Scalar, secp256k1::GroupElement>(
-        secp256k1_scalar_public_parameters,
-        secp256k1_group_public_parameters.clone(),
-        secp256k1_group_public_parameters.generator,
-    )
 }

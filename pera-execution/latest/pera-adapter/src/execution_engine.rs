@@ -8,7 +8,6 @@ mod checked {
 
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
-    use move_core_types::account_address::AccountAddress;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
         BALANCE_CREATE_REWARDS_FUNCTION_NAME, BALANCE_DESTROY_REBATES_FUNCTION_NAME,
@@ -719,7 +718,7 @@ mod checked {
                 Ok(Mode::empty_results())
             }
             TransactionKind::DWalletMPCOutput(data) => {
-                let res = setup_and_execute_dwallet_mpc_output(
+                let _ = setup_and_execute_dwallet_mpc_output(
                     data,
                     temporary_store,
                     tx_ctx,

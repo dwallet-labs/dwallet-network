@@ -101,7 +101,6 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound};
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
@@ -926,7 +925,7 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the Dwallet  MPC manager when a new epoch starts.
     pub async fn set_mpc_manager(
         &self,
-        mut manager: dwallet_mpc::mpc_manager::DWalletMPCManager,
+        manager: dwallet_mpc::mpc_manager::DWalletMPCManager,
     ) -> PeraResult<()> {
         if self
             .dwallet_mpc_manager
@@ -2425,7 +2424,7 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, _),
+                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, _, _),
                 ..
             }) => {
                 if transaction.sender_authority() != *authority {

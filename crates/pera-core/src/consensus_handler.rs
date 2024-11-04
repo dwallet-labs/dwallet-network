@@ -36,7 +36,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound};
+use pera_types::messages_dwallet_mpc::{DWalletMPCOutput};
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -371,7 +371,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             authority_index, session_id
                         );
 
-                        let mut dwallet_mpc_manager = self.epoch_store.dwallet_mpc_manager.get();
+                        let dwallet_mpc_manager = self.epoch_store.dwallet_mpc_manager.get();
                         let output_verification_result = match dwallet_mpc_manager {
                             Some(mpc_manager) => {
                                 let dwallet_mpc_manager = mpc_manager.lock().await;

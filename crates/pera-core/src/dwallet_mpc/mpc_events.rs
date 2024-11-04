@@ -1,7 +1,7 @@
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
 use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use pera_types::{
-    base_types::{ObjectID, PeraAddress},
+    base_types::{PeraAddress},
     id::ID,
     PERA_SYSTEM_ADDRESS,
 };

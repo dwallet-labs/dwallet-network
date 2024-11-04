@@ -14,7 +14,6 @@ use chrono::prelude::*;
 use fastcrypto::encoding::Base58;
 use fastcrypto::encoding::Encoding;
 use fastcrypto::hash::MultisetHash;
-use group::PartyID;
 use itertools::Itertools;
 use move_binary_format::binary_config::BinaryConfig;
 use move_binary_format::CompiledModule;
@@ -41,8 +40,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Write;
-use std::marker::PhantomData;
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
@@ -128,8 +125,6 @@ use pera_types::{
     PERA_SYSTEM_ADDRESS,
 };
 use pera_types::{is_system_package, TypeTag};
-use proof::aggregation::Instantiatable;
-use rand_core::OsRng;
 use shared_crypto::intent::{AppId, Intent, IntentMessage, IntentScope, IntentVersion};
 use typed_store::TypedStoreError;
 
@@ -148,12 +143,8 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc;
 use crate::dwallet_mpc::bytes_party::MPCParty;
-use crate::dwallet_mpc::mpc_events::{
-    CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGFirstRoundEvent,
-    StartDKGSecondRoundEvent,
-};
+use crate::dwallet_mpc::mpc_events::{CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent};
 use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
@@ -1554,7 +1545,7 @@ impl AuthorityState {
             TransactionEffects::V2(effects) => effects.status(),
         };
         if status.is_ok() {
-            let Some(mut bytes_mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
+            let Some(bytes_mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
                 // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
                 // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are
                 return Ok(());
@@ -1562,7 +1553,7 @@ impl AuthorityState {
             let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
             for event in &inner_temporary_store.events.data {
                 if event.type_ == CompletedDKGFirstRoundEvent::type_() {
-                    let deserialized_event: CreatedDKGFirstRoundEvent =
+                    let deserialized_event: CompletedDKGFirstRoundEvent =
                         bcs::from_bytes(&event.contents)?;
                     bytes_mpc_manager.finalize_mpc_instance(deserialized_event.session_id.bytes)?
                 } else if event.type_ == CompletedDKGSecondRoundEvent::type_() {
