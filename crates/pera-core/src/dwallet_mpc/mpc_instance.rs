@@ -24,6 +24,7 @@ pub struct DWalletMPCMessage {
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
 pub struct DWalletMPCInstance {
+    /// The status of the MPC instance
     pub(crate) status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
