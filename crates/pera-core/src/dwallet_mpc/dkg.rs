@@ -64,8 +64,15 @@ impl BytesParty for FirstDKGBytesParty {
             bcs::from_bytes(&auxiliary_input).map_err(|_| twopc_mpc::Error::InvalidParameters)?;
         let messages = messages
             .into_iter()
-            .map(|(k, v)| (k, bcs::from_bytes(&v)?))
-            .collect();
+            .map(|(k, v)| {
+                let message =
+                    bcs::from_bytes(&v).map_err(|err| twopc_mpc::Error::InvalidParameters);
+                match message {
+                    Ok(message) => return Ok((k, message)),
+                    Err(err) => return Err(err),
+                }
+            })
+            .collect::<Result<HashMap<_, _>, _>>()?;
         let result = self
             .party
             .advance(messages, &auxiliary_input, &mut rand_core::OsRng)?;
@@ -166,7 +173,8 @@ impl SecondDKGBytesParty {
             bcs::from_bytes(&first_round_output)?,
             bcs::from_bytes(&centralized_party_public_key_share)?,
             session_id,
-        )).map_err(|err| err.into())
+        ))
+        .map_err(|err| err.into())
     }
 }
 
@@ -176,10 +184,16 @@ impl BytesParty for SecondDKGBytesParty {
         messages: HashMap<PartyID, Vec<u8>>,
         auxiliary_input: Vec<u8>,
     ) -> Result<AdvanceResult, twopc_mpc::Error> {
-        let auxiliary_input = bcs::from_bytes(&auxiliary_input)?;
+        let auxiliary_input =
+            bcs::from_bytes(&auxiliary_input).map_err(|_| twopc_mpc::Error::InvalidParameters)?;
         let messages = messages
             .into_iter()
-            .map(|(k, v)| (k, bcs::from_bytes(&v)?))
+            .map(|(k, v)| {
+                (
+                    k,
+                    bcs::from_bytes(&v).map_err(|_| twopc_mpc::Error::InvalidParameters)?,
+                )
+            })
             .collect();
         let result = self
             .party

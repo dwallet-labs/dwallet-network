@@ -144,7 +144,7 @@ impl MPCParty {
                     deserialized_event.first_round_output,
                     deserialized_event.public_key_share_and_proof,
                     deserialized_event.first_round_session_id.bytes.to_vec(),
-                ),
+                )?,
                 SessionInfo {
                     session_id: deserialized_event.session_id.bytes,
                     initiating_user_address: deserialized_event.sender,
