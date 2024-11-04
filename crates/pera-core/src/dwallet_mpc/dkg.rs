@@ -67,9 +67,9 @@ impl BytesParty for FirstDKGBytesParty {
             .map(|(k, v)| {
                 let message =
                     bcs::from_bytes(&v).map_err(|err| twopc_mpc::Error::InvalidParameters);
-                match message {
-                    Ok(message) => return Ok((k, message)),
-                    Err(err) => return Err(err),
+                return match message {
+                    Ok(message) => Ok((k, message)),
+                    Err(err) => Err(err),
                 }
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
@@ -189,12 +189,14 @@ impl BytesParty for SecondDKGBytesParty {
         let messages = messages
             .into_iter()
             .map(|(k, v)| {
-                (
-                    k,
-                    bcs::from_bytes(&v).map_err(|_| twopc_mpc::Error::InvalidParameters)?,
-                )
+                let message =
+                    bcs::from_bytes(&v).map_err(|err| twopc_mpc::Error::InvalidParameters);
+                return match message {
+                    Ok(message) => Ok((k, message)),
+                    Err(err) => Err(err),
+                }
             })
-            .collect();
+            .collect::<Result<HashMap<_, _>, _>>()?;
         let result = self
             .party
             .advance(messages, &auxiliary_input, &mut rand_core::OsRng)?;
