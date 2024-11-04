@@ -84,7 +84,7 @@ impl BytesParty for FirstDKGBytesParty {
 
 /// A trait for generating auxiliary input for the initial round of the DKG protocol.
 ///
-/// This trait is implemented to resolve ambiguities that arise in the 2PC-MPC library
+/// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
 /// when accessing `mpc::Party::AuxiliaryInput`. It defines the parameters and logic
 /// necessary to initiate the first round of the DKG protocol,
 /// preparing the party with the essential session information and other contextual data.
@@ -200,7 +200,7 @@ impl BytesParty for SecondDKGBytesParty {
 
 /// A trait for generating auxiliary input for the last round of the DKG protocol.
 ///
-/// This trait is implemented to resolve ambiguities that arise in the 2PC-MPC library
+/// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
 /// when accessing `mpc::Party::AuxiliaryInput`. It defines the parameters and logic
 /// necessary to initiate the second round of the DKG protocol,
 /// preparing the party with the essential session information and other contextual data.
