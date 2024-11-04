@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 
 pub const CREATED_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartDKGSecondRoundEvent");
+pub const CREATED_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
+    ident_str!("CreatedDKGSessionEvent");
 
 /// Rust version of the Move [`pera_system::dwallet::CreatedDKGSessionEvent`] type.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
