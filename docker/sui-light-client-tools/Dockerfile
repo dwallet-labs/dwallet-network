@@ -24,11 +24,11 @@ RUN cargo build --profile ${PROFILE} \
 FROM debian:bullseye-slim AS runtime
 WORKDIR "$WORKDIR/lc"
 
-COPY --from=builder /sui/target/release/light-client-service /opt/lc/bin/light-client-service
-COPY --from=builder /sui/target/release/light-client-service /usr/local/bin
+COPY --from=builder /lc/target/release/light-client-service /opt/lc/bin/light-client-service
+COPY --from=builder /lc/target/release/light-client-service /usr/local/bin
 
-COPY --from=builder /sui/target/release/light-client /opt/lc/bin/light-client
-COPY --from=builder /sui/target/release/light-client /usr/local/bin
+COPY --from=builder /lc/target/release/light-client /opt/lc/bin/light-client
+COPY --from=builder /lc/target/release/light-client /usr/local/bin
 
 ARG BUILD_DATE
 ARG GIT_REVISION
