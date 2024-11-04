@@ -8,6 +8,7 @@ use std::{
     sync::Arc,
 };
 
+use crate::dwallet_mpc::mpc_manager::OutputVerificationResult;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -35,7 +36,7 @@ use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_dwallet_mpc::{MPCRound, DWalletMPCOutput};
+use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound};
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -47,7 +48,6 @@ use pera_types::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
-use crate::dwallet_mpc::mpc_manager::OutputVerificationResult;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -364,6 +364,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         mpc_round,
                     ) = &transaction.kind
                     {
+                        // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
+                        // to store its output on the blockchain, so it will be available for the initiating user.
                         info!(
                             "Received proof mpc output from authority {:?} for session {:?}",
                             authority_index, session_id
@@ -377,17 +379,17 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     Ok(is_valid) => is_valid,
                                     Err(e) => {
                                         error!(
-                                                    "Error verifying ProofMPCOutput output from session {:?} and party {:?}: {:?}",
+                                                    "Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",
                                                     session_id, authority_index, e
                                                 );
-                                        false
+                                        OutputVerificationResult::Malicious
                                     }
                                 }
                             }
                             None => {
                                 // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
-                                error!("MPC manager was not initialized when verifying ProofMPCOutput output from session {:?}", session_id);
-                                false
+                                error!("MPC manager was not initialized when verifying DWalletMPCOutput output from session {:?}", session_id);
+                                OutputVerificationResult::Malicious
                             }
                         };
                         match output_verification_result {
@@ -411,19 +413,16 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     SequencedConsensusTransactionKind::System(transaction),
                                     consensus_output.leader_author_index(),
                                 ));
-                            },
+                            }
                             OutputVerificationResult::Duplicate => {
                                 // Ignore this output, as the same output may be submitted twice by non-malicious parties, due to Sui's inner implementation of the leader selection
                                 // mechanism.
-                            },
+                            }
                             OutputVerificationResult::Malicious => {
                                 // TODO (#263): Mark and punish the validator that sent this malicious output
                             }
                         }
                     }
-
-                    // If we receive a ProofMPCOutput transaction, verify that it's valid & create a system transaction
-                    // to store its output on the blockchain, so it will be available for the initiating user.
 
                     if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
                         &transaction.kind

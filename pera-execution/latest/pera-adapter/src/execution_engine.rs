@@ -60,7 +60,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
-    use pera_types::messages_dwallet_mpc::{MPCRound, DWalletMPCOutput};
+    use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound};
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{

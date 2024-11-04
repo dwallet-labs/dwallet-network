@@ -148,6 +148,13 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
+use crate::dwallet_mpc;
+use crate::dwallet_mpc::bytes_party::MPCParty;
+use crate::dwallet_mpc::mpc_events::{
+    CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGFirstRoundEvent,
+    StartDKGSecondRoundEvent,
+};
+use crate::dwallet_mpc::mpc_manager::authority_name_to_party_id;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
     CheckpointCache, ExecutionCacheCommit, ExecutionCacheReconfigAPI, ExecutionCacheWrite,
@@ -158,13 +165,6 @@ use crate::metrics::LatencyObserver;
 use crate::metrics::RateTracker;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::overload_monitor::{overload_monitor_accept_tx, AuthorityOverloadInfo};
-use crate::dwallet_mpc;
-use crate::dwallet_mpc::bytes_party::MPCParty;
-use crate::dwallet_mpc::mpc_events::{
-    CompletedDKGFirstRoundEvent, CompletedDKGSecondRoundEvent, CreatedDKGFirstRoundEvent,
-    StartDKGSecondRoundEvent,
-};
-use crate::dwallet_mpc::mpc_manager::authority_name_to_party_id;
 use crate::stake_aggregator::StakeAggregator;
 use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject};
 use crate::subscription_handler::SubscriptionHandler;
@@ -1570,7 +1570,11 @@ impl AuthorityState {
                     println!("created dwallet {:?}", deserialized_event.dwallet_id);
                 } else {
                     // match MPCParty::from_event(event, 4, 1)? {
-                    match MPCParty::from_event(event, bytes_mpc_manager.number_of_parties as u16, authority_name_to_party_id(epoch_store.name, &epoch_store)?)? {
+                    match MPCParty::from_event(
+                        event,
+                        bytes_mpc_manager.number_of_parties as u16,
+                        authority_name_to_party_id(epoch_store.name, &epoch_store)?,
+                    )? {
                         Some((party, auxiliary_input, session_info)) => {
                             bytes_mpc_manager.push_new_mpc_instance(
                                 auxiliary_input,

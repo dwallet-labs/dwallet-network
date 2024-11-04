@@ -258,7 +258,7 @@ unsafe impl Send for DWalletMPCInstance {}
 pub enum OutputVerificationResult {
     Valid,
     Duplicate,
-    Malicious
+    Malicious,
 }
 
 impl DWalletMPCManager {
@@ -297,9 +297,9 @@ impl DWalletMPCManager {
         };
 
         if *stored_output == *output {
-            return Ok(OutputVerificationResult::Valid)
+            return Ok(OutputVerificationResult::Valid);
         }
-        return Ok(OutputVerificationResult::Malicious)
+        return Ok(OutputVerificationResult::Malicious);
     }
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.

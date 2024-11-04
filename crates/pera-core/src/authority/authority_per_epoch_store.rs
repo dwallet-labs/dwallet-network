@@ -67,6 +67,7 @@ use crate::consensus_handler::{
     SequencedConsensusTransactionKind, VerifiedSequencedConsensusTransaction,
 };
 use crate::consensus_manager::ConsensusManager;
+use crate::dwallet_mpc;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
     DkgStatus, RandomnessManager, RandomnessReporter, VersionedProcessedMessage,
@@ -76,7 +77,6 @@ use crate::epoch::reconfiguration::ReconfigState;
 use crate::execution_cache::ObjectCacheRead;
 use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
-use crate::dwallet_mpc;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use move_bytecode_utils::module_cache::SyncModuleCache;
@@ -101,7 +101,7 @@ use pera_types::messages_consensus::{
     check_total_jwk_size, AuthorityCapabilitiesV1, AuthorityCapabilitiesV2, ConsensusTransaction,
     ConsensusTransactionKey, ConsensusTransactionKind,
 };
-use pera_types::messages_dwallet_mpc::{MPCRound, DWalletMPCOutput};
+use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound};
 use pera_types::pera_system_state::epoch_start_pera_system_state::{
     EpochStartSystemState, EpochStartSystemStateTrait,
 };
