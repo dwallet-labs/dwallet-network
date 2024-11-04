@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-
+      - ci-lc-tools
 jobs:
   build-and-push:
     name: Build and Push Image
