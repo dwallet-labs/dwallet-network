@@ -372,7 +372,6 @@ impl DWalletMPCManager {
             self.epoch_store.clone(),
             self.epoch_id,
             self.number_of_parties,
-            // party.clone(),
             party,
             MPCSessionStatus::Pending,
             auxiliary_input,

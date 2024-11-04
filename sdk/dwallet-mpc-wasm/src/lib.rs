@@ -29,21 +29,6 @@ pub struct JsErr {
     display: String,
 }
 
-// impl<T: std::error::Error> From<T> for JsErr {
-//     fn from(err: T) -> Self {
-//         JsErr {
-//             display: format!("{}", err),
-//             message: err.to_string(),
-//         }
-//     }
-// }
-
-// impl From<JsErr> for JsValue {
-//     fn from(err: JsErr) -> Self {
-//         serde_wasm_bindgen::to_value(&err).unwrap()
-//     }
-// }
-
 // There is no way to implement From<anyhow::Error> for JsErr
 // since the current From<Error> is generic, and it results in a conflict.
 fn to_js_err(e: Error) -> JsErr {

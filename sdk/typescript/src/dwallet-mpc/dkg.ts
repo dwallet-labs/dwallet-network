@@ -8,28 +8,6 @@ import { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
 
 const packageId = '0x3';
-const dWalletProofMPCModuleName = 'proof';
-
-/**
- * Launches a proof MPC session by calling the `launch_proof_mpc_flow` function in the `proof` module.
- */
-export async function launchProofMPSession(keypair: Keypair, client: PeraClient) {
-	const tx = new Transaction();
-	tx.moveCall({
-		target: `${packageId}::${dWalletProofMPCModuleName}::launch_proof_mpc_flow`,
-		arguments: [],
-	});
-
-	await client.signAndExecuteTransaction({
-		signer: keypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-		},
-	});
-}
-
-let dwalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
 export async function startFirstDKGSession(keypair: Keypair, client: PeraClient) {
