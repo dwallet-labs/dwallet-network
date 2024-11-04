@@ -173,12 +173,6 @@ impl DWalletMPCInstance {
         output: Vec<u8>,
         mpc_round: MPCRound,
     ) -> Option<ConsensusTransaction> {
-        let Ok(epoch_store) = self.epoch_store() else {
-            return None;
-        };
-        if authority_name_to_party_id(epoch_store.name, &epoch_store).unwrap() != 3 {
-            return None;
-        }
         Some(ConsensusTransaction::new_dwallet_mpc_output(
             output,
             self.session_info.session_id.clone(),
@@ -261,6 +255,12 @@ pub struct DWalletMPCManager {
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
 unsafe impl Send for DWalletMPCInstance {}
 
+pub enum OutputVerificationResult {
+    Valid,
+    Duplicate,
+    Malicious
+}
+
 impl DWalletMPCManager {
     pub fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
@@ -288,15 +288,18 @@ impl DWalletMPCManager {
         &self,
         output: &Vec<u8>,
         session_id: &ObjectID,
-    ) -> anyhow::Result<bool> {
+    ) -> anyhow::Result<OutputVerificationResult> {
         let Some(instance) = self.mpc_instances.get(session_id) else {
-            return Ok(false);
+            return Ok(OutputVerificationResult::Malicious);
         };
         let MPCSessionStatus::Finalizing(stored_output) = &instance.status else {
-            return Ok(false);
+            return Ok(OutputVerificationResult::Duplicate);
         };
 
-        Ok(*stored_output == *output)
+        if *stored_output == *output {
+            return Ok(OutputVerificationResult::Valid)
+        }
+        return Ok(OutputVerificationResult::Malicious)
     }
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
