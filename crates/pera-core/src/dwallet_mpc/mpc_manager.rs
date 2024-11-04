@@ -378,7 +378,7 @@ impl DWalletMPCManager {
             auxiliary_input,
             session_info,
         );
-        if self.active_instances_counter > self.max_active_mpc_instances {
+        if self.active_instances_counter > self.max_active_mpc_instances || !self.pending_instances_queue.is_empty() {
             self.pending_instances_queue.push_back(new_instance);
             info!(
                 "Added MPCInstance to pending queue for session_id {:?}",
