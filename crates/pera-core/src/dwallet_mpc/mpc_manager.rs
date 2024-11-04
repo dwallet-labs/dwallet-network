@@ -173,12 +173,6 @@ impl DWalletMPCInstance {
         output: Vec<u8>,
         mpc_round: MPCRound,
     ) -> Option<ConsensusTransaction> {
-        let Ok(epoch_store) = self.epoch_store() else {
-            return None;
-        };
-        if authority_name_to_party_id(epoch_store.name, &epoch_store).unwrap() != 3 {
-            return None;
-        }
         Some(ConsensusTransaction::new_dwallet_mpc_output(
             output,
             self.session_info.session_id.clone(),
