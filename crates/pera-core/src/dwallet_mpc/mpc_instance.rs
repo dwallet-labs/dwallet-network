@@ -1,15 +1,15 @@
-use std::sync::{Arc, Weak};
-use pera_types::base_types::{AuthorityName, EpochId};
-use std::collections::HashMap;
-use pera_types::error::{PeraError, PeraResult};
-use std::mem;
-use group::PartyID;
-use pera_types::messages_consensus::ConsensusTransaction;
-use pera_types::messages_dwallet_mpc::MPCRound;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, SessionInfo};
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use group::PartyID;
+use pera_types::base_types::{AuthorityName, EpochId};
+use pera_types::error::{PeraError, PeraResult};
+use pera_types::messages_consensus::ConsensusTransaction;
+use pera_types::messages_dwallet_mpc::MPCRound;
+use std::collections::HashMap;
+use std::mem;
+use std::sync::{Arc, Weak};
 
 /// The message a validator can send to the other parties while running a dwallet MPC session.
 #[derive(Clone)]
@@ -35,7 +35,7 @@ pub struct DWalletMPCInstance {
     /// We can calculate the threshold and parties IDs (indexes) from it
     /// To calculate the parties IDs all we need to know is the number of parties, as the IDs are just the indexes of those parties. If there are 3 parties, the IDs are [0, 1, 2].
     number_of_parties: usize,
-    session_info: SessionInfo,
+    pub(crate) session_info: SessionInfo,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: MPCParty,
     pub(crate) auxiliary_input: Vec<u8>,
