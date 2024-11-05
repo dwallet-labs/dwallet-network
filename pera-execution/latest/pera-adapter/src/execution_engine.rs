@@ -49,6 +49,7 @@ mod checked {
     use pera_types::digests::{
         get_mainnet_chain_identifier, get_testnet_chain_identifier, ChainIdentifier,
     };
+    use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
     use pera_types::effects::TransactionEffects;
     use pera_types::error::{ExecutionError, ExecutionErrorKind};
     use pera_types::execution::is_certificate_denied;
@@ -58,6 +59,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
+    use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound};
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -134,6 +136,7 @@ mod checked {
         let is_epoch_change = transaction_kind.is_end_of_epoch_tx();
 
         let deny_cert = is_certificate_denied(&transaction_digest, certificate_deny_set);
+
         let (gas_cost_summary, execution_result) = execute_transaction::<Mode>(
             &mut temporary_store,
             transaction_kind,
@@ -297,6 +300,7 @@ mod checked {
 
         // We must charge object read here during transaction execution, because if this fails
         // we must still ensure an effect is committed and all objects versions incremented
+
         let result = gas_charger.charge_input_objects(temporary_store);
         let mut result = result.and_then(|()| {
             let mut execution_result = if deny_cert {
@@ -713,6 +717,19 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
+            TransactionKind::DWalletMPCOutput(data) => {
+                let _ = setup_and_execute_dwallet_mpc_output(
+                    data,
+                    temporary_store,
+                    tx_ctx,
+                    move_vm,
+                    gas_charger,
+                    protocol_config,
+                    metrics,
+                );
+
+                Ok(Mode::empty_results())
+            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)
@@ -1080,6 +1097,49 @@ mod checked {
             )
             .expect("Unable to generate randomness_state_create transaction!");
         builder
+    }
+
+    /// Executes the transaction to store the final MPC output on chain, so it will be accessible to the initiating user.
+    /// All the validators execute this TX locally, and if more than 2/3 of them did so the output is stored on chain.
+    fn setup_and_execute_dwallet_mpc_output(
+        data: DWalletMPCOutput,
+        temporary_store: &mut TemporaryStore<'_>,
+        tx_ctx: &mut TxContext,
+        move_vm: &Arc<MoveVM>,
+        gas_charger: &mut GasCharger,
+        protocol_config: &ProtocolConfig,
+        metrics: Arc<LimitsMetrics>,
+    ) -> Result<(), ExecutionError> {
+        let move_function_name = match data.mpc_round {
+            MPCRound::DKGFirst => "create_dkg_first_round_output",
+            MPCRound::DKGSecond => "create_dkg_second_round_output",
+        };
+        let pt = {
+            let mut builder = ProgrammableTransactionBuilder::new();
+            let res = builder.move_call(
+                PERA_SYSTEM_PACKAGE_ID.into(),
+                DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                ident_str!(move_function_name).to_owned(),
+                vec![],
+                vec![
+                    CallArg::Pure(data.sender_address.to_vec()),
+                    CallArg::Pure(data.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.value).unwrap()),
+                    CallArg::Pure(data.dwallet_cap_id.to_vec()),
+                ],
+            );
+            assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
+            builder.finish()
+        };
+        programmable_transactions::execution::execute::<execution_mode::System>(
+            protocol_config,
+            metrics,
+            move_vm,
+            temporary_store,
+            tx_ctx,
+            gas_charger,
+            pt,
+        )
     }
 
     fn setup_bridge_create(

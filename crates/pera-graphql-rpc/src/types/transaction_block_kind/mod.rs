@@ -6,6 +6,7 @@ use self::{
     end_of_epoch::ChangeEpochTransaction, genesis::GenesisTransaction,
     randomness_state_update::RandomnessStateUpdateTransaction,
 };
+use crate::types::transaction_block_kind::dwallet_mpc_output::DWalletMPCOutputTransaction;
 use crate::types::transaction_block_kind::{
     authenticator_state_update::AuthenticatorStateUpdateTransaction,
     end_of_epoch::EndOfEpochTransaction, programmable::ProgrammableTransactionBlock,
@@ -15,6 +16,7 @@ use pera_types::transaction::TransactionKind as NativeTransactionKind;
 
 pub(crate) mod authenticator_state_update;
 pub(crate) mod consensus_commit_prologue;
+mod dwallet_mpc_output;
 pub(crate) mod end_of_epoch;
 pub(crate) mod genesis;
 pub(crate) mod programmable;
@@ -30,6 +32,7 @@ pub(crate) enum TransactionBlockKind {
     AuthenticatorState(AuthenticatorStateUpdateTransaction),
     Randomness(RandomnessStateUpdateTransaction),
     EndOfEpoch(EndOfEpochTransaction),
+    DWalletMPCOutput(DWalletMPCOutputTransaction),
 }
 
 impl TransactionBlockKind {
@@ -71,6 +74,10 @@ impl TransactionBlockKind {
             }),
             K::RandomnessStateUpdate(rsu) => T::Randomness(RandomnessStateUpdateTransaction {
                 native: rsu,
+                checkpoint_viewed_at,
+            }),
+            K::DWalletMPCOutput(output) => T::DWalletMPCOutput(DWalletMPCOutputTransaction {
+                native: output,
                 checkpoint_viewed_at,
             }),
         }

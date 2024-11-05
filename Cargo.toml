@@ -65,9 +65,11 @@ exclude = [
     "external-crates/move/move-execution/v2/crates/move-stdlib-natives",
     "external-crates/move/move-execution/v2/crates/move-vm-runtime",
     "sdk/move-bytecode-template",
+    "sdk/dwallet-mpc-wasm",
 ]
 
 members = [
+    "crates/dwallet-mpc-centralized-party",
     "consensus/config",
     "consensus/core",
     "crates/anemo-benchmark",
@@ -196,6 +198,8 @@ members = [
     "pera-execution/v2/pera-adapter",
     "pera-execution/v2/pera-move-natives",
     "pera-execution/v2/pera-verifier",
+    "crates/dwallet-mpc-centralized-party",
+    "crates/class-groups-constants",
 ]
 
 [workspace.package]

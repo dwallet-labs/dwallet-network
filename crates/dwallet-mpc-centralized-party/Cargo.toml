@@ -1,0 +1,19 @@
+[package]
+name = "dwallet-mpc"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-dkg-changes", subdir = "mpc" }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-dkg-changes", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "class_groups", "paillier"] }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-dkg-changes", subdir = "commitment" }
+class_groups_constants = { path = "../class-groups-constants" }
+
+anyhow.workspace = true
+bcs.workspace = true
+rand_core = "0.6.4"
+hex = "0.4.3"
+log = "0.4.22"
+
+[lints]
+workspace = true

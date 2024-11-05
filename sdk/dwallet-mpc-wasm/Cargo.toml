@@ -1,0 +1,26 @@
+[package]
+name = "dwallet-mpc-wasm"
+authors = ["dWallet Labs, Ltd. <dev@dwalletlabs.com>"]
+description = "dwallet mpc in WASM"
+version = "0.1.6"
+edition = "2021"
+license = "BSD-3-Clause-Clear"
+publish = false
+
+[dependencies]
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+dwallet-mpc = { path = "../../crates/dwallet-mpc-centralized-party" }
+
+console_error_panic_hook = "0.1.7"
+log = "0.4.22"
+console_log = "1.0.0"
+wasm-bindgen = "0.2.92"
+getrandom = { version = "0.2", features = ["js"] }
+thiserror = "1.0"
+bcs = "0.1.6"
+serde-wasm-bindgen = "0.6.5"
+anyhow = "1.0.86"
+
+[lib]
+crate-type = ["cdylib"]
