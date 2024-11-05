@@ -65,7 +65,6 @@ mysten-metrics.workspace = true
 parking_lot.workspace = true
 pera-macros.workspace = true
 pera-enum-compat-util.workspace = true
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera_flow_code", features = ["parallel"] }
 
 fastcrypto = { workspace = true, features = ["copy_key"] }
 fastcrypto-tbls.workspace = true

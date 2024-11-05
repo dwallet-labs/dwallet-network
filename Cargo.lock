@@ -2533,10 +2533,10 @@ dependencies = [
  "criterion",
  "crypto-bigint 0.5.5",
  "crypto-primes",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "homomorphic_encryption",
  "maurer",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "num-bigint 0.4.6",
  "num-integer",
  "num-traits",
@@ -2553,7 +2553,7 @@ version = "1.32.2"
 dependencies = [
  "anyhow",
  "bcs",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "hex",
  "serde",
  "twopc_mpc",
@@ -2729,7 +2729,7 @@ version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes#b2034c1f0f7c3b17007c7cd542ef83c4c7c7197e"
 dependencies = [
  "crypto-bigint 0.5.5",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "merlin",
  "serde",
  "thiserror",
@@ -4016,7 +4016,7 @@ dependencies = [
  "commitment",
  "hex",
  "log",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "rand_core 0.6.4",
  "twopc_mpc",
 ]
@@ -4197,11 +4197,11 @@ dependencies = [
  "commitment",
  "crypto-bigint 0.5.5",
  "getrandom 0.2.15",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "homomorphic_encryption",
  "maurer",
  "merlin",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "proof",
  "serde",
  "serde_json",
@@ -5344,6 +5344,22 @@ dependencies = [
 
 [[package]]
 name = "group"
+version = "0.1.0"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera_flow_code#dce6b429fa1bed085c39ee22455133a6613b38cc"
+dependencies = [
+ "crypto-bigint 0.5.5",
+ "curve25519-dalek-ng",
+ "k256 0.13.3",
+ "serde",
+ "sha3 0.10.8",
+ "sha3 0.9.1",
+ "subtle",
+ "subtle-ng",
+ "thiserror",
+]
+
+[[package]]
+name = "group"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5dfbfb3a6cfbd390d5c9564ab283a0349b9b9fcd46a706c1eb10e0db70bfbac7"
@@ -5690,7 +5706,7 @@ source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-d
 dependencies = [
  "crypto-bigint 0.5.5",
  "getrandom 0.2.15",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rstest 0.22.0",
@@ -6957,10 +6973,10 @@ dependencies = [
  "criterion",
  "crypto-bigint 0.5.5",
  "getrandom 0.2.15",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "homomorphic_encryption",
  "merlin",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "proof",
  "rand_core 0.6.4",
  "rstest 0.22.0",
@@ -7969,11 +7985,26 @@ dependencies = [
  "crypto-bigint 0.5.5",
  "gcd",
  "getrandom 0.2.15",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rayon",
  "rstest 0.22.0",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "mpc"
+version = "0.1.0"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera_flow_code#dce6b429fa1bed085c39ee22455133a6613b38cc"
+dependencies = [
+ "crypto-bigint 0.5.5",
+ "gcd",
+ "getrandom 0.2.15",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera_flow_code)",
+ "rayon",
  "serde",
  "serde_json",
  "thiserror",
@@ -10264,7 +10295,7 @@ dependencies = [
  "fastcrypto-zkp",
  "fs_extra",
  "futures",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "homomorphic_encryption",
  "im",
  "indexmap 2.6.0",
@@ -10280,7 +10311,7 @@ dependencies = [
  "move-core-types",
  "move-package",
  "move-symbol-pool",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "mysten-common",
  "mysten-metrics",
  "mysten-network",
@@ -12257,6 +12288,7 @@ dependencies = [
  "move-vm-profiler",
  "move-vm-test-utils",
  "move-vm-types",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera_flow_code)",
  "mysten-metrics",
  "mysten-network",
  "narwhal-config",
@@ -13015,9 +13047,9 @@ dependencies = [
  "crypto-bigint 0.5.5",
  "curve25519-dalek-ng",
  "getrandom 0.2.15",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "merlin",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rstest 0.22.0",
@@ -16015,10 +16047,10 @@ source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-d
 dependencies = [
  "crypto-bigint 0.5.5",
  "crypto-primes",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "homomorphic_encryption",
  "merlin",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rstest 0.22.0",
@@ -16767,12 +16799,12 @@ dependencies = [
  "ecdsa 0.16.9",
  "enhanced_maurer",
  "getrandom 0.2.15",
- "group 0.1.0",
+ "group 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "homomorphic_encryption",
  "k256 0.13.3",
  "maurer",
  "merlin",
- "mpc",
+ "mpc 0.1.0 (git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes)",
  "proof",
  "rand 0.8.5",
  "rand_core 0.6.4",
