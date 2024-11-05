@@ -12,7 +12,7 @@ Additionally, it enables solutions such as fast, decentralized custody.
 The **dWallet module** is currently deployed on the **Sui Testnet** at:
 
 ```
-0xda072e51bf74040f2f99909595ef1db40fdc75071b92438bb9864f6c744c6736
+0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec
 ```
 
 Developers building on Sui should **import this module** within their own modules, as end-user applications will not
@@ -50,6 +50,7 @@ import {
 Then define the following constant to work against the dWallet Network Testnet & Sui Testnet:
 
 ```typescript
+// Note: This is a service to get TX data from SUI, a temporary solution.
 const serviceUrl = 'http://sui-testnet-light-client.testnet.dwallet.cloud/gettxdata';
 
 const dWalletNodeUrl = 'https://fullnode.alpha.testnet.dwallet.cloud';
@@ -58,7 +59,7 @@ const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
 
 const configObjectId = '0xf084273c85bfc3839be06bd51fed4ac48b0370f9e084d8f37c1d22407e61213b';
 
-const dWalletCapPackageSUI = '0xda072e51bf74040f2f99909595ef1db40fdc75071b92438bb9864f6c744c6736';
+const dWalletCapPackageInSUI = '0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec';
 ```
 
 ## Link a dWallet Capability on Sui to the Wrapped dWallet Capability on the dWallet Network
