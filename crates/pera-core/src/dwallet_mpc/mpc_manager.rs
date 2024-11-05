@@ -76,8 +76,8 @@ impl DWalletMPCManager {
             return Ok(OutputVerificationResult::Duplicate);
         };
         if *stored_output == *output
-            && sender_address.to_vec() == instance.session_info.initiating_user_address.to_vec() &&
-            dwallet_cap_id == &instance.session_info.dwallet_cap_id
+            && sender_address.to_vec() == instance.session_info.initiating_user_address.to_vec()
+            && dwallet_cap_id == &instance.session_info.dwallet_cap_id
         {
             self.finalize_mpc_instance(session_id.clone())?;
             return Ok(OutputVerificationResult::Valid);
