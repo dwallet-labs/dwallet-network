@@ -11,7 +11,6 @@ use crate::{
     object::Owner,
 };
 
-use mpc::PartyID;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fmt::Debug};
@@ -661,16 +660,6 @@ pub enum PeraError {
 
     #[error("The request did not contain a certificate")]
     NoCertificateProvidedError,
-
-    #[error(
-        "unauthorized aggregator: Party ID {party_id} (Session: {session_id:?}, Sender: {sender_address:?}). \
-        only the aggregator can send the output."
-    )]
-    NotAggregatorParty {
-        party_id: PartyID,
-        session_id: ObjectID,
-        sender_address: PeraAddress,
-    },
 
     #[error("mpc session with ID `{session_id:?}` was not found.")]
     MPCSessionNotFound { session_id: ObjectID },
