@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 
-import { bcs } from '../bcs';
-import { PeraClient } from '../client/index.js';
-import { Keypair } from '../cryptography/index.js';
+import { bcs } from '../bcs/index.js';
+import type { PeraClient } from '../client/index.js';
+import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
-import { getIdFromCallArg } from '../transactions/utils';
 
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
