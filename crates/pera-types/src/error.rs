@@ -11,6 +11,7 @@ use crate::{
     object::Owner,
 };
 
+use mpc::PartyID;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, fmt::Debug};
@@ -437,7 +438,7 @@ pub enum PeraError {
     #[error("Invalid DKG message size")]
     InvalidDkgMessageSize,
 
-    #[error("Unexpected message.")]
+    #[error("unexpected message")]
     UnexpectedMessage,
 
     // Move module publishing related errors
@@ -660,6 +661,19 @@ pub enum PeraError {
 
     #[error("The request did not contain a certificate")]
     NoCertificateProvidedError,
+
+    #[error(
+        "unauthorized aggregator: Party ID {party_id} (Session: {session_id:?}, Sender: {sender_address:?}). \
+        only the aggregator can send the output."
+    )]
+    NotAggregatorParty {
+        party_id: PartyID,
+        session_id: ObjectID,
+        sender_address: PeraAddress,
+    },
+
+    #[error("mpc session with ID `{session_id:?}` was not found.")]
+    MPCSessionNotFound { session_id: ObjectID },
 }
 
 #[repr(u64)]
@@ -779,6 +793,14 @@ impl From<UserInputError> for PeraError {
 impl From<PeraObjectResponseError> for PeraError {
     fn from(error: PeraObjectResponseError) -> Self {
         PeraError::PeraObjectResponseError { error }
+    }
+}
+
+impl From<bcs::Error> for PeraError {
+    fn from(err: bcs::Error) -> Self {
+        PeraError::ObjectDeserializationError {
+            error: err.to_string(),
+        }
     }
 }
 
