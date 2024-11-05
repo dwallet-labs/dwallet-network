@@ -375,7 +375,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let output_verification_result = match dwallet_mpc_manager {
                             Some(mpc_manager) => {
                                 let mut dwallet_mpc_manager = mpc_manager.lock().await;
-                                match dwallet_mpc_manager.try_verify_output(value, session_id) {
+                                match dwallet_mpc_manager.try_verify_output(value, session_id, sender_address, dwallet_cap_id) {
                                     Ok(is_valid) => is_valid,
                                     Err(e) => {
                                         error!(

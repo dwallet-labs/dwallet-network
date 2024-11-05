@@ -1,6 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::bytes_party::{MPCParty, SessionInfo};
@@ -66,6 +66,8 @@ impl DWalletMPCManager {
         &mut self,
         output: &Vec<u8>,
         session_id: &ObjectID,
+        sender_address: &PeraAddress,
+        dwallet_cap_id: &ObjectID,
     ) -> anyhow::Result<OutputVerificationResult> {
         let Some(instance) = self.mpc_instances.get_mut(session_id) else {
             return Ok(OutputVerificationResult::Malicious);
@@ -73,9 +75,10 @@ impl DWalletMPCManager {
         let MPCSessionStatus::Finalizing(stored_output) = instance.status.clone() else {
             return Ok(OutputVerificationResult::Duplicate);
         };
-        // TODO (#323): Verify that each field the aggregator sent is matching the event data
-        // instead of verifying only the output
-        if *stored_output == *output {
+        if *stored_output == *output
+            && sender_address.to_vec() == instance.session_info.initiating_user_address.to_vec() &&
+            dwallet_cap_id == &instance.session_info.dwallet_cap_id
+        {
             self.finalize_mpc_instance(session_id.clone())?;
             return Ok(OutputVerificationResult::Valid);
         }
