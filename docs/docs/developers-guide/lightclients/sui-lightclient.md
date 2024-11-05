@@ -23,9 +23,8 @@ To import the module, use the following configuration in your `Cargo.toml` file:
 dwallet_network = { git = "https://github.com/dwallet-labs/dwallet-network.git", subdir = "integrations/sui", rev = "main" }
 ```
 
-:::note  
-This module is in its early stages, so expect **breaking changes** and improvements over time.  
-:::
+**_NOTE:_** This module is in its early stages, so expect **breaking changes** and improvements over time.  
+
 
 ## Setup
 
@@ -33,17 +32,19 @@ First, we must set up the environment. Begin by importing the necessary function
 
 ```typescript
 import {SuiClient} from '@mysten/sui.js/client';
+import {bcs} from '@dwallet-network/dwallet.js/bcs'
 import {DWalletClient} from '@dwallet-network/dwallet.js/client';
 import {Ed25519Keypair} from '@dwallet-network/dwallet.js/keypairs/ed25519';
 import {requestSuiFromFaucetV0 as requestDwltFromFaucetV0} from '@dwallet-network/dwallet.js/faucet';
+import { TransactionBlock as TransactionBlockSUI } from '@mysten/sui.js/transactions'
 
 import {
-    createDWallet,
-    createSignMessages,
-    approveAndSign,
-    submitDWalletCreationProof,
-    submitTxStateProof,
-    recoveryIdKeccak256
+  createActiveEncryptionKeysTable,
+  createDWallet,
+  createPartialUserSignedMessages,
+  getOrCreateEncryptionKey,
+  submitDWalletCreationProof,
+  submitTxStateProof
 } from '@dwallet-network/dwallet.js/signature-mpc';
 ```
 
@@ -57,8 +58,13 @@ const dWalletNodeUrl = 'https://fullnode.alpha.testnet.dwallet.cloud';
 
 const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
 
+// Object ID of the Sui Light Client Config object in dWallet Network.
 const configObjectId = '0xf084273c85bfc3839be06bd51fed4ac48b0370f9e084d8f37c1d22407e61213b';
 
+// Object ID of the Sui Light Client Registry object in dWallet Network.
+const registryObjectId = '0xdc85edbdee2f2630d05464fa8740a19cdaf9c4e20aabb519ad9f174a3f2b44b9';
+
+// Address of the `CapWrapper` package in Sui.
 const dWalletCapPackageInSUI = '0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec';
 ```
 
@@ -66,7 +72,7 @@ const dWalletCapPackageInSUI = '0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d
 
 After [creating a dWallet](../getting-started/your-first-dwallet.md#create-a-dwallet), you should have ownership of the
 `DWalletCap` object, which grants full control over the dWallet.
-Extract the **dWallet Cap ID** from the output, as it will be required later:
+Extract the **dWallet Cap ID** and the **dWallet ID** from the output, as they will be required later:
 
 ```typescript
 const dkg = await createDWallet(keypair, client, encryptionKeyObj.encryptionKey, encryptionKeyObj.objectID);
@@ -74,7 +80,7 @@ const dkg = await createDWallet(keypair, client, encryptionKeyObj.encryptionKey,
 if (dkg == null) {
     throw new Error('createDWallet returned null');
 }
-let {dwalletCapId} = dkg;
+let {dwalletCapId, dWalletId} = dkg;
 ```
 
 To control this dWallet from a **Sui module**, you’ll use the `DWalletCap` object defined in the **Sui `dwallet_cap`
@@ -146,7 +152,7 @@ struct DWalletNetworkInitCapRequest has copy, drop {
 }
 ```
 
-### {#prove-cap}
+### Prove Cap
 
 To prove this event was created on the dWallet Network, call the `submitDWalletCreationProof()` function, which submits
 a state proof that the transaction ID on the Sui Testnet created a new `DWalletCap`.
@@ -159,6 +165,7 @@ await submitDWalletCreationProof(
     dwallet_client,
     sui_client,
     configObjectId,
+    registryObjectId,
     dwalletCapId,
     createCapTxId,
     serviceUrl,
@@ -186,13 +193,19 @@ For example, if we want to sign the message `"dWallets are coming... to Sui"`, w
 ```typescript
 let txb = new TransactionBlockSUI();
 
-const message = 'dWallets are coming... to Sui';
+const message: Uint8Array = new TextEncoder().encode(
+  'dWallets are coming... to Sui',
+)
 
-let signMsgArg = txb.pure(message);
+let signMsgArg = txb.pure(
+  bcs.vector(bcs.vector(bcs.u8())).serialize([messageSign]),
+)
+
 txb.moveCall({
     target: `${dWalletCapPackageSUI}::dwallet_cap::approve_message`,
     arguments: [cap, signMsgArg],
 });
+txb.transferObjects([cap], keyPair.toSuiAddress())
 
 txb.setGasBudget(10000000);
 
@@ -219,18 +232,20 @@ struct DWalletNetworkApproveRequest has copy, drop {
 }
 ```
 
-### {#submit-proof}
+### Submit Proof
 
 [Follow the steps to sign with a dWallet](../getting-started/your-first-dwallet.md#sign-a-message-using-your-dwallet).
 But we stop after creating the `signMessages` object.
-Next, we call the `submitTxStateProof()` function, which will take submit a state proof to the dWallet network that this
+Next, we call the `submitTxStateProof()` function, which will submit a state proof to the dWallet network that this
 transaction on Sui Testnet approved this message for signing.
 
 ```typescript
 let res = await submitTxStateProof(
     dwallet_client,
     sui_client,
+    dWalletId,
     configObjectId,
+    registryObjectId,
     capWrapperRef,
     signMessagesIdSHA256,
     approveMsgTxId,
