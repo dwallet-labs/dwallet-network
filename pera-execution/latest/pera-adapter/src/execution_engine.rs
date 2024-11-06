@@ -1099,8 +1099,11 @@ mod checked {
         builder
     }
 
-    /// Executes the transaction to store the final MPC output on chain, so it will be accessible to the initiating user.
-    /// All the validators execute this TX locally, and if more than 2/3 of them did so the output is stored on chain.
+    /// Executes the transaction to store the final MPC output on-chain,
+    /// making it accessible to the initiating user.
+    /// Each validator executes this transaction locally,
+    /// and if validators represent more than two-thirds of the voting power
+    /// "vote" to include it by executing it, the transaction is added to the block.
     fn setup_and_execute_dwallet_mpc_output(
         data: DWalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
