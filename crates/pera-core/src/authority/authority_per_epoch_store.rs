@@ -2416,6 +2416,10 @@ impl AuthorityPerEpochStore {
         // Signatures are verified as part of the consensus payload verification in PeraTxValidator
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                // This verification is intentionally left empty and always returns true,
+                // as the actual output verification is performed earlier,
+                // before it is replaced by the system transaction,
+                // via the [`DwalletMPCManager::try_verify_output`] function.
                 kind: ConsensusTransactionKind::UserTransaction(_certificate),
                 ..
             }) => {}
