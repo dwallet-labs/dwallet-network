@@ -356,6 +356,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
+                    // If we receive a `DwalletMPCOutput` transaction,
+                    // verify that it's valid and create a system transaction
+                    // to store its output on the blockchain,
+                    // so it will be available for the initiating user.
                     if let ConsensusTransactionKind::DWalletMPCOutput(
                         value,
                         session_id,
