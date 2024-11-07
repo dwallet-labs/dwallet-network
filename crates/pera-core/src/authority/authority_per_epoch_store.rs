@@ -2431,6 +2431,11 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(authority, _, _),
                 ..
             }) => {
+                // When sending an MPC message, the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used
+                // to identify the authority that sent the MPC message.
                 if transaction.sender_authority() != *authority {
                     // TODO (#263): Mark the validator who sent this message as malicious
                     warn!(
