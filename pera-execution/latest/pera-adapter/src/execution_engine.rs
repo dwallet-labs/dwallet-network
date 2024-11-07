@@ -5,7 +5,6 @@ pub use checked::*;
 
 #[pera_macros::with_checked_arithmetic]
 mod checked {
-
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
@@ -1113,9 +1112,46 @@ mod checked {
         protocol_config: &ProtocolConfig,
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
-        let move_function_name = match data.mpc_round {
-            MPCRound::DKGFirst => "create_dkg_first_round_output",
-            MPCRound::DKGSecond => "create_dkg_second_round_output",
+        let (move_function_name, args) = match data.session_info.mpc_round {
+            MPCRound::DKGFirst => (
+                "create_dkg_first_round_output",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                ],
+            ),
+            MPCRound::DKGSecond => (
+                "create_dkg_second_round_output",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                ],
+            ),
+            MPCRound::PresignFirst(dwallet_id, dkg_output) => (
+                "create_first_presign_round_output_and_launch_second_round",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&dkg_output).unwrap()),
+                ],
+            ),
+            MPCRound::PresignSecond(dwallet_id, _) => (
+                "create_second_presign_round_output",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                ],
+            ),
         };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
@@ -1124,12 +1160,7 @@ mod checked {
                 DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
                 ident_str!(move_function_name).to_owned(),
                 vec![],
-                vec![
-                    CallArg::Pure(data.sender_address.to_vec()),
-                    CallArg::Pure(data.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&data.value).unwrap()),
-                    CallArg::Pure(data.dwallet_cap_id.to_vec()),
-                ],
+                args,
             );
             assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
             builder.finish()

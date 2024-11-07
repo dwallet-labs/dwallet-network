@@ -1,12 +1,12 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, SessionInfo};
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty};
 use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
 use group::PartyID;
 use pera_types::base_types::{AuthorityName, EpochId};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::ConsensusTransaction;
-use pera_types::messages_dwallet_mpc::MPCRound;
+use pera_types::messages_dwallet_mpc::SessionInfo;
 use proof::aggregation::asynchronous::Error::{Consumer, InvalidStatement, ProofVerification};
 use std::collections::HashMap;
 use std::mem;
@@ -73,9 +73,9 @@ impl DWalletMPCInstance {
 
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    pub(crate) fn advance(&mut self, auxiliary_input: Vec<u8>) -> PeraResult {
+    pub(crate) fn advance(&mut self) -> PeraResult {
         let party = mem::take(&mut self.party);
-        let advance_result = party.advance(self.pending_messages.clone(), auxiliary_input.clone());
+        let advance_result = party.advance(self.pending_messages.clone(), self.auxiliary_input.clone());
         if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = advance_result {
             self.restart();
             return Err(PeraError::DWalletMPCMaliciousParties(malicious_parties));
@@ -90,7 +90,7 @@ impl DWalletMPCInstance {
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                self.new_dwallet_mpc_output_message(output.into(), self.session_info.mpc_round)
+                self.new_dwallet_mpc_output_message(output.into())
             }
         };
 
@@ -141,17 +141,10 @@ impl DWalletMPCInstance {
     /// Create a new consensus transaction with the flow result (output) to be sent to the other MPC parties.
     /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
     /// Only the aggregator party should send the output to the other parties.
-    fn new_dwallet_mpc_output_message(
-        &self,
-        output: Vec<u8>,
-        mpc_round: MPCRound,
-    ) -> Option<ConsensusTransaction> {
+    fn new_dwallet_mpc_output_message(&self, output: Vec<u8>) -> Option<ConsensusTransaction> {
         Some(ConsensusTransaction::new_dwallet_mpc_output(
             output,
-            self.session_info.session_id.clone(),
-            self.session_info.initiating_user_address.clone(),
-            self.session_info.dwallet_cap_id.clone(),
-            mpc_round,
+            self.session_info.clone(),
         ))
     }
 

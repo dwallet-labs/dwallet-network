@@ -3,11 +3,12 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
-use crate::dwallet_mpc::bytes_party::{MPCParty, SessionInfo};
+use crate::dwallet_mpc::bytes_party::MPCParty;
 use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus};
 use group::PartyID;
 use mpc::Error;
 use pera_types::committee::EpochId;
+use pera_types::messages_dwallet_mpc::SessionInfo;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
@@ -71,21 +72,20 @@ impl DWalletMPCManager {
     pub fn try_verify_output(
         &mut self,
         output: &Vec<u8>,
-        session_id: &ObjectID,
-        sender_address: &PeraAddress,
-        dwallet_cap_id: &ObjectID,
+        session_info: &SessionInfo,
     ) -> anyhow::Result<OutputVerificationResult> {
-        let Some(instance) = self.mpc_instances.get_mut(session_id) else {
+        let Some(instance) = self.mpc_instances.get_mut(&session_info.session_id) else {
             return Ok(OutputVerificationResult::Malicious);
         };
         let MPCSessionStatus::Finalizing(stored_output) = instance.status.clone() else {
             return Ok(OutputVerificationResult::Duplicate);
         };
         if *stored_output == *output
-            && sender_address.to_vec() == instance.session_info.initiating_user_address.to_vec()
-            && dwallet_cap_id == &instance.session_info.dwallet_cap_id
+            && session_info.initiating_user_address.to_vec()
+                == instance.session_info.initiating_user_address.to_vec()
+            && session_info.dwallet_cap_id == instance.session_info.dwallet_cap_id
         {
-            self.finalize_mpc_instance(session_id.clone())?;
+            self.finalize_mpc_instance(session_info.session_id.clone())?;
             return Ok(OutputVerificationResult::Valid);
         }
         Ok(OutputVerificationResult::Malicious)
@@ -113,7 +113,7 @@ impl DWalletMPCManager {
 
         let results: Vec<PeraResult> = ready_to_advance
             .par_iter_mut()
-            .map(|ref mut instance| instance.advance(instance.auxiliary_input.clone()))
+            .map(|ref mut instance| instance.advance())
             .collect();
         results
             .into_iter()

@@ -7,7 +7,7 @@ use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
 };
-use crate::messages_dwallet_mpc::MPCRound;
+use crate::messages_dwallet_mpc::SessionInfo;
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -287,7 +287,7 @@ pub enum ConsensusTransactionKind {
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
     DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, ObjectID, MPCRound),
+    DWalletMPCOutput(SessionInfo, Vec<u8>),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -498,25 +498,13 @@ impl ConsensusTransaction {
     }
 
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
-    pub fn new_dwallet_mpc_output(
-        value: Vec<u8>,
-        session_id: ObjectID,
-        sender_address: PeraAddress,
-        dwallet_cap_id: ObjectID,
-        mpc_round: MPCRound,
-    ) -> Self {
+    pub fn new_dwallet_mpc_output(output: Vec<u8>, session_info: SessionInfo) -> Self {
         let mut hasher = DefaultHasher::new();
-        value.hash(&mut hasher);
+        output.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCOutput(
-                value,
-                session_id,
-                sender_address,
-                dwallet_cap_id,
-                mpc_round,
-            ),
+            kind: ConsensusTransactionKind::DWalletMPCOutput(session_info, output),
         }
     }
 
@@ -598,18 +586,14 @@ impl ConsensusTransaction {
                     session_id.clone(),
                 )
             }
-            ConsensusTransactionKind::DWalletMPCOutput(
-                value,
-                session_id,
-                sender_address,
-                dwallet_cap_id,
-                _,
-            ) => ConsensusTransactionKey::DWalletMPCOutput(
-                value.clone(),
-                *session_id,
-                *sender_address,
-                *dwallet_cap_id,
-            ),
+            ConsensusTransactionKind::DWalletMPCOutput(session_info, output) => {
+                ConsensusTransactionKey::DWalletMPCOutput(
+                    output.clone(),
+                    session_info.session_id,
+                    session_info.initiating_user_address,
+                    session_info.dwallet_cap_id,
+                )
+            }
         }
     }
 
