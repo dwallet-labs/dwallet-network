@@ -1,6 +1,7 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { beforeAll, describe, it } from 'vitest';
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
@@ -24,6 +25,12 @@ describe('Test dwallet mpc', () => {
 		console.log(toolbox.keypair.toPeraAddress());
 		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
 		const presignOutput = await presign(toolbox.keypair, toolbox.client, dwallet!.dwalletID);
-		console.log(presignOutput);
+		create_sign_centralized_output(
+			Uint8Array.from(dwallet?.centralizedDKGOutput),
+			Uint8Array.from(presignOutput!.noncePublicShareAndEncryptionOfMaskedNonce),
+			Uint8Array.from([1, 2, 3, 4, 5]),
+			0,
+			dwallet?.dwalletID.slice(2)!,
+		);
 	});
 });
