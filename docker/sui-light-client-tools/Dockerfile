@@ -30,6 +30,10 @@ COPY --from=builder /lc/target/release/light-client-service /usr/local/bin
 COPY --from=builder /lc/target/release/light-client /opt/lc/bin/light-client
 COPY --from=builder /lc/target/release/light-client /usr/local/bin
 
+COPY --from=builder /lc/crates/sui-light-client/example_config/genesis_devnet.blob /opt/lc/config/genesis_devnet.blob
+COPY --from=builder /lc/crates/sui-light-client/example_config/genesis_mainnet.blob /opt/lc/config/genesis_mainnet.blob
+COPY --from=builder /lc/crates/sui-light-client/example_config/genesis_testnet.blob /opt/lc/config/genesis_testnet.blob
+
 ARG BUILD_DATE
 ARG GIT_REVISION
 LABEL build-date=$BUILD_DATE
