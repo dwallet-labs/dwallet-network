@@ -1489,8 +1489,10 @@ impl AuthorityState {
             effects_sig.as_ref(),
         )?;
 
-        // Check if there are any MPC events emitted from this transaction and if so, send them to the MPC service.
-        // Handle the MPC events here because there is access to the event, as the transaction has been just executed.
+        // Check if there are any MPC events emitted from this transaction
+        // and if so, send them to the MPC service.
+        // Handle the MPC events here because there is access to the
+        // event, as the transaction has been just executed.
         let _ = self
             .handle_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await;
@@ -1543,22 +1545,25 @@ impl AuthorityState {
             TransactionEffects::V1(effects) => effects.status(),
             TransactionEffects::V2(effects) => effects.status(),
         };
-        if status.is_ok() {
-            let Some(bytes_mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
-                // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
-                // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are
-                return Ok(());
+        if !status.is_ok() {
+            // TODO (#303): Decide what to do about a failed transaction with MPC events.
+            // If the transaction failed, we don't need to handle MPC events.
+            return Ok(());
+        }
+        let Some(bytes_mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
+            // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
+            // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are
+            return Ok(());
+        };
+        let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
+        for event in &inner_temporary_store.events.data {
+            if let Some((party, auxiliary_input, session_info)) = MPCParty::from_event(
+                event,
+                bytes_mpc_manager.number_of_parties as u16,
+                authority_name_to_party_id(epoch_store.name, &epoch_store)?,
+            )? {
+                bytes_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
             };
-            let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
-            for event in &inner_temporary_store.events.data {
-                if let Some((party, auxiliary_input, session_info)) = MPCParty::from_event(
-                    event,
-                    bytes_mpc_manager.number_of_parties as u16,
-                    authority_name_to_party_id(epoch_store.name, &epoch_store)?,
-                )? {
-                    bytes_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
-                };
-            }
         }
         Ok(())
     }
