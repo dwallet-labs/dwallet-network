@@ -3,11 +3,17 @@
 //! It integrates both DKG parties (each representing a round in the DKG protocol) and
 //! implements the [`BytesParty`] trait for seamless interaction with other MPC components.
 
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
+use std::collections::{HashMap, HashSet};
+
 use group::PartyID;
 use mpc::{Advance, Party};
-use std::collections::{HashMap, HashSet};
+use serde::de::DeserializeOwned;
 use twopc_mpc::dkg::Protocol;
+
+use pera_types::error::{PeraError, PeraResult};
+
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
+use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
 
 pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 pub type DKGFirstParty = <AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty;
@@ -48,27 +54,57 @@ impl FirstDKGBytesParty {
     }
 }
 
+/// Deserializes the messages received from other parties for the next advancement.
+/// Any value that fails to deserialize is considered to be sent by a malicious party.
+/// Returns the deserialized messages or an error including the IDs of the malicious parties.
+pub fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
+    messages: HashMap<PartyID, Vec<u8>>,
+) -> PeraResult<HashMap<PartyID, M>> {
+    let parsing_results: Vec<PeraResult<(PartyID, _)>> = messages
+        .iter()
+        .map(|(k, v)| {
+            let value =
+                bcs::from_bytes(&v).map_err(|_| PeraError::DWalletMPCMaliciousParties(vec![*k]))?;
+            Ok((*k, value))
+        })
+        .collect();
+    let malicious_parties: Vec<PartyID> = parsing_results
+        .clone()
+        .into_iter()
+        .filter_map(|result| {
+            if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = result {
+                Some(malicious_parties)
+            } else {
+                None
+            }
+        })
+        .flatten()
+        .collect();
+    if !malicious_parties.is_empty() {
+        return Err(PeraError::DWalletMPCMaliciousParties(malicious_parties));
+    }
+    parsing_results.into_iter().collect()
+}
+
 impl BytesParty for FirstDKGBytesParty {
     fn advance(
         self,
         messages: HashMap<PartyID, Vec<u8>>,
         auxiliary_input: Vec<u8>,
-    ) -> Result<AdvanceResult, twopc_mpc::Error> {
+    ) -> PeraResult<AdvanceResult> {
         let auxiliary_input =
-            bcs::from_bytes(&auxiliary_input).map_err(|_| twopc_mpc::Error::InvalidParameters)?;
-        let messages = messages
-            .into_iter()
-            .map(|(k, v)| {
-                let message = bcs::from_bytes(&v).map_err(|_| twopc_mpc::Error::InvalidParameters);
-                return match message {
-                    Ok(message) => Ok((k, message)),
-                    Err(err) => Err(err),
-                };
-            })
-            .collect::<Result<HashMap<_, _>, _>>()?;
+        // This is not a validator malicious behaviour, as the authority input is being sent by the initiating user.
+        // In this case this MPC session should be cancelled.
+            bcs::from_bytes(&auxiliary_input).map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
+
         let result = self
             .party
-            .advance(messages, &auxiliary_input, &mut rand_core::OsRng)?;
+            .advance(
+                deserialize_mpc_messages(messages)?,
+                &auxiliary_input,
+                &mut rand_core::OsRng,
+            )
+            .map_err(twopc_error_to_pera_error)?;
 
         match result {
             mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
@@ -176,22 +212,17 @@ impl BytesParty for SecondDKGBytesParty {
         self,
         messages: HashMap<PartyID, Vec<u8>>,
         auxiliary_input: Vec<u8>,
-    ) -> Result<AdvanceResult, twopc_mpc::Error> {
+    ) -> PeraResult<AdvanceResult> {
         let auxiliary_input =
-            bcs::from_bytes(&auxiliary_input).map_err(|_| twopc_mpc::Error::InvalidParameters)?;
-        let messages = messages
-            .into_iter()
-            .map(|(k, v)| {
-                let message = bcs::from_bytes(&v).map_err(|_| twopc_mpc::Error::InvalidParameters);
-                return match message {
-                    Ok(message) => Ok((k, message)),
-                    Err(err) => Err(err),
-                };
-            })
-            .collect::<Result<HashMap<_, _>, _>>()?;
+            bcs::from_bytes(&auxiliary_input).map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
         let result = self
             .party
-            .advance(messages, &auxiliary_input, &mut rand_core::OsRng)?;
+            .advance(
+                deserialize_mpc_messages(messages)?,
+                &auxiliary_input,
+                &mut rand_core::OsRng,
+            )
+            .map_err(twopc_error_to_pera_error)?;
 
         match result {
             mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((

@@ -5,10 +5,13 @@ use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::bytes_party::{MPCParty, SessionInfo};
 use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus};
+use group::PartyID;
+use mpc::Error;
 use pera_types::committee::EpochId;
 use rayon::prelude::*;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use tracing::log::warn;
 use tracing::{error, info};
 
 /// The `MPCService` is responsible for managing MPC instances:
@@ -28,6 +31,8 @@ pub struct DWalletMPCManager {
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it
     pub number_of_parties: usize,
+    /// A set of all the authorities that behaved maliciously at least once during the epoch. Any message/output from these authorities will be ignored.
+    pub malicious_actors: HashSet<AuthorityName>,
 }
 
 /// The possible results of verifying an incoming output for an MPC session.
@@ -56,6 +61,7 @@ impl DWalletMPCManager {
             max_active_mpc_instances,
             // TODO (#268): Take into account the validator's voting power
             number_of_parties,
+            malicious_actors: HashSet::new(),
         }
     }
 
@@ -87,7 +93,6 @@ impl DWalletMPCManager {
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
     /// We parallelize the advances with Rayon to speed up the process.
-    /// TODO (#263): Implement logic to mark and punish validators responsible for failed advances.
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
         let mut ready_to_advance = self
             .mpc_instances
@@ -106,12 +111,26 @@ impl DWalletMPCManager {
             })
             .collect::<Vec<&mut DWalletMPCInstance>>();
 
-        ready_to_advance
+        let results: Vec<PeraResult> = ready_to_advance
             .par_iter_mut()
-            // TODO (#263): Mark and punish the malicious validators that caused some advances to return None, a.k.a to fail
             .map(|ref mut instance| instance.advance(instance.auxiliary_input.clone()))
+            .collect();
+        results
+            .into_iter()
+            .map(|result| {
+                if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = result {
+                    return self.store_malicious_parties_by_indices(malicious_parties);
+                }
+                Ok(())
+            })
             .collect::<PeraResult<_>>()?;
         Ok(())
+    }
+
+    fn epoch_store(&self) -> PeraResult<Arc<AuthorityPerEpochStore>> {
+        self.epoch_store
+            .upgrade()
+            .ok_or(PeraError::EpochEnded(self.epoch_id))
     }
 
     /// Handles a message by forwarding it to the relevant MPC instance
@@ -122,18 +141,54 @@ impl DWalletMPCManager {
         authority_name: AuthorityName,
         session_id: ObjectID,
     ) -> PeraResult<()> {
+        if self.malicious_actors.contains(&authority_name) {
+            return Ok(());
+        }
         let Some(instance) = self.mpc_instances.get_mut(&session_id) else {
-            error!(
+            warn!(
                 "received a message for instance {:?} which does not exist",
                 session_id
             );
-            // TODO (#261): Punish a validator that sends a message related to a non-existing mpc instance
+            self.malicious_actors.insert(authority_name);
             return Ok(());
         };
-        instance.handle_message(DWalletMPCMessage {
+        let handle_message_response = instance.handle_message(DWalletMPCMessage {
             message: message.to_vec(),
             authority: authority_name,
-        })
+        });
+        if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) =
+            handle_message_response
+        {
+            self.store_malicious_parties_by_indices(malicious_parties)?;
+            return Ok(());
+        };
+        handle_message_response
+    }
+
+    /// Convert the indices of the malicious parties to their addresses and store them
+    /// in the malicious actors set
+    /// New messages from these parties will be ignored
+    fn store_malicious_parties_by_indices(
+        &mut self,
+        malicious_parties: Vec<PartyID>,
+    ) -> PeraResult {
+        let malicious_parties_names = malicious_parties
+            .into_iter()
+            .map(|party_id| {
+                Ok(self
+                    .epoch_store()?
+                    .committee()
+                    .authority_by_index(party_id as u32)
+                    .ok_or(PeraError::InvalidCommittee("".to_string()))?
+                    .clone())
+            })
+            .collect::<PeraResult<Vec<AuthorityName>>>()?;
+        warn!(
+            "found malicious parties while advancing, {:?}",
+            malicious_parties_names
+        );
+        self.malicious_actors.extend(malicious_parties_names);
+        Ok(())
     }
 
     /// Spawns a new MPC instance if the number of active instances is below the limit
@@ -209,4 +264,19 @@ impl DWalletMPCManager {
             session_id, instance.status
         )))
     }
+}
+
+/// Convert a `twopc_mpc::Error` to a `PeraError`.
+/// Needed this function and not a `From` implementation because when including the `twopc_mpc` crate
+/// as a dependency in the `pera-types` crate there are many conflicting implementations.
+pub fn twopc_error_to_pera_error(error: twopc_mpc::Error) -> PeraError {
+    let Ok(error): Result<mpc::Error, _> = error.try_into() else {
+        return PeraError::InternalDWalletMPCError;
+    };
+    return match error {
+        Error::UnresponsiveParties(parties)
+        | Error::InvalidMessage(parties)
+        | Error::MaliciousMessage(parties) => PeraError::DWalletMPCMaliciousParties(parties),
+        _ => PeraError::InternalDWalletMPCError,
+    };
 }

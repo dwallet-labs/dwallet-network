@@ -1,14 +1,17 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, SessionInfo};
+use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
 use group::PartyID;
 use pera_types::base_types::{AuthorityName, EpochId};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::MPCRound;
+use proof::aggregation::asynchronous::Error::{Consumer, InvalidStatement, ProofVerification};
 use std::collections::HashMap;
 use std::mem;
 use std::sync::{Arc, Weak};
+use twopc_mpc::Error;
 
 /// The message a validator can send to the other parties while running a dwallet MPC session.
 #[derive(Clone)]
@@ -72,18 +75,12 @@ impl DWalletMPCInstance {
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
     pub(crate) fn advance(&mut self, auxiliary_input: Vec<u8>) -> PeraResult {
         let party = mem::take(&mut self.party);
-
-        // Gets the instance existing party or creates a new one if this is the first advance
-        let advance_result = match party.advance(self.pending_messages.clone(), auxiliary_input) {
-            Ok(res) => res,
-            Err(e) => {
-                println!("Error: {:?}", e);
-                // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
-                self.pending_messages.clear();
-                return Ok(());
-            }
-        };
-        let msg = match advance_result {
+        let advance_result = party.advance(self.pending_messages.clone(), auxiliary_input.clone());
+        if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = advance_result {
+            self.restart();
+            return Err(PeraError::DWalletMPCMaliciousParties(malicious_parties));
+        }
+        let msg = match advance_result? {
             AdvanceResult::Advance((message, new_party)) => {
                 self.status = MPCSessionStatus::Active;
                 self.pending_messages.clear();
@@ -109,6 +106,23 @@ impl DWalletMPCInstance {
             });
         }
         Ok(())
+    }
+
+    fn restart(&mut self) {
+        self.pending_messages.clear();
+        self.status = MPCSessionStatus::FirstExecution;
+        self.party = match self.session_info.mpc_round {
+            MPCRound::DKGFirst => {
+                MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
+                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default(),
+                })
+            }
+            MPCRound::DKGSecond => {
+                MPCParty::SecondDKGBytesParty(SecondDKGBytesParty {
+                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default(),
+                })
+            }
+        };
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
@@ -150,10 +164,8 @@ impl DWalletMPCInstance {
     ) -> PeraResult<()> {
         let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
         if self.pending_messages.contains_key(&party_id) {
-            // TODO(#260): Punish an authority that sends multiple messages in the same round
-            return Ok(());
+            return Err(PeraError::DWalletMPCMaliciousParties(vec![party_id]));
         }
-
         self.pending_messages
             .insert(party_id, message.message.clone());
         Ok(())

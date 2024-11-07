@@ -2395,7 +2395,7 @@ impl AuthorityPerEpochStore {
     /// Important: This function can potentially be called in parallel and you can not rely on order of transactions to perform verification
     /// If this function return an error, transaction is skipped and is not passed to handle_consensus_transaction
     /// This function returns unit error and is responsible for emitting log messages for internal errors
-    fn verify_consensus_transaction(
+    async fn verify_consensus_transaction(
         &self,
         transaction: SequencedConsensusTransaction,
         skipped_consensus_txns: &IntCounter,
@@ -2437,11 +2437,16 @@ impl AuthorityPerEpochStore {
                 // This public key is later used
                 // to identify the authority that sent the MPC message.
                 if transaction.sender_authority() != *authority {
-                    // TODO (#263): Mark the validator who sent this message as malicious
+                    let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() else {
+                        error!("dwallet_mpc_manager is not initialized when verifying dwallet_mpc_message");
+                        return None;
+                    };
                     warn!(
                         "DWalletMPCMessage authority {} does not match its author from consensus {}",
                         authority, transaction.certificate_author_index
                     );
+                    let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
+                    dwallet_mpc_manager.malicious_actors.insert(*authority);
                     return None;
                 }
             }
@@ -2570,15 +2575,15 @@ impl AuthorityPerEpochStore {
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> PeraResult<Vec<VerifiedExecutableTransaction>> {
         // Split transactions into different types for processing.
-        let verified_transactions: Vec<_> = transactions
-            .into_iter()
-            .filter_map(|transaction| {
-                self.verify_consensus_transaction(
-                    transaction,
-                    &authority_metrics.skipped_consensus_txns,
-                )
-            })
-            .collect();
+        let mut verified_transactions: Vec<VerifiedSequencedConsensusTransaction> = vec![];
+        for tx in transactions {
+            if let Some(verified_tx) = self
+                .verify_consensus_transaction(tx, &authority_metrics.skipped_consensus_txns)
+                .await
+            {
+                verified_transactions.push(verified_tx);
+            }
+        }
         let mut system_transactions = Vec::with_capacity(verified_transactions.len());
         let mut current_commit_sequenced_consensus_transactions =
             Vec::with_capacity(verified_transactions.len());

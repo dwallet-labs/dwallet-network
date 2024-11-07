@@ -12243,6 +12243,7 @@ dependencies = [
  "fastcrypto",
  "fastcrypto-tbls",
  "fastcrypto-zkp",
+ "group 0.1.0",
  "im",
  "indexmap 2.6.0",
  "itertools 0.10.5",

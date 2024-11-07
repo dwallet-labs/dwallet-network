@@ -374,27 +374,38 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             "Received proof mpc output from authority {:?} for session {:?}",
                             authority_index, session_id
                         );
-
-                        let dwallet_mpc_manager = self.epoch_store.dwallet_mpc_manager.get();
-                        let output_verification_result = match dwallet_mpc_manager {
-                            Some(mpc_manager) => {
-                                mpc_manager.lock().await
-                                    .try_verify_output(
-                                    value,
-                                    session_id,
-                                    sender_address,
-                                    dwallet_cap_id,
-                                )
-                                    .unwrap_or_else(|e| {
-                                        // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
-                                        error!("error verifying DWalletMPCOutput for the session {:?} from party {:?}: {:?}",session_id, authority_index, e);
-                                        OutputVerificationResult::Malicious
-                                    })
-                            }
-                            None => {
-                                // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
-                                error!("MPC manager was not initialized when verifying DWalletMPCOutput output from session {:?}", session_id);
-                                OutputVerificationResult::Duplicate
+                        let Some(origin_authority) =
+                            self.committee.authority_pubkey_by_index(authority_index)
+                        else {
+                            error!(
+                                "Malicious output from unknown authority index {:?}",
+                                authority_index
+                            );
+                            return;
+                        };
+                        let Some(dwallet_mpc_manager) = self.epoch_store.dwallet_mpc_manager.get()
+                        else {
+                            error!("MPC manager was not initialized when verifying DWalletMPCOutput output from session {:?}", session_id);
+                            return;
+                        };
+                        let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
+                        if dwallet_mpc_manager
+                            .malicious_actors
+                            .contains(&origin_authority)
+                        {
+                            warn!(
+                                "Received output from malicious authority {:?} for session {:?}",
+                                authority_index, session_id
+                            );
+                            return;
+                        }
+                        let output_verification_result = match dwallet_mpc_manager
+                            .try_verify_output(value, session_id, sender_address, dwallet_cap_id)
+                        {
+                            Ok(is_valid) => is_valid,
+                            Err(e) => {
+                                error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_id, authority_index, e);
+                                OutputVerificationResult::Malicious
                             }
                         };
                         match output_verification_result {
@@ -424,13 +435,19 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 // mechanism.
                             }
                             OutputVerificationResult::Malicious => {
-                                // TODO (#263): Mark and punish the validator that sent this malicious output
+                                warn!(
+                                    "Received malicious output from authority index {:?}",
+                                    authority_index
+                                );
+                                dwallet_mpc_manager
+                                    .malicious_actors
+                                    .insert(origin_authority);
                             }
                         }
-                    }
-
-                    if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
-                        &transaction.kind
+                    } else if let ConsensusTransactionKind::RandomnessStateUpdate(
+                        randomness_round,
+                        _,
+                    ) = &transaction.kind
                     {
                         // These are deprecated and we should never see them. Log an error and eat the tx if one appears.
                         error!("BUG: saw deprecated RandomnessStateUpdate tx for commit round {round:?}, randomness round {randomness_round:?}")

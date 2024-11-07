@@ -5,7 +5,7 @@ version.workspace = true
 
 [dependencies]
 mpc = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-dkg-changes", subdir = "mpc" }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-dkg-changes", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "class_groups", "paillier"] }
+twopc_mpc.workspace = true
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-dkg-changes", subdir = "commitment" }
 class_groups_constants = { path = "../class-groups-constants" }
 
