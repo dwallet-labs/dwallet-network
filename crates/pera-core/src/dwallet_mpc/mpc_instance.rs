@@ -126,12 +126,12 @@ impl DWalletMPCInstance {
                     party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default(),
                 })
             }
-            MPCRound::PresignFirst(dwallet_id, dkg_output) => {
+            MPCRound::PresignFirst(_, _) => {
                 MPCParty::FirstPresignBytesParty(FirstPresignBytesParty {
                     party: PresignFirstParty::default(),
                 })
             }
-            MPCRound::PresignSecond(dwallet_id, first_round_output) => {
+            MPCRound::PresignSecond(_, _) => {
                 MPCParty::SecondPresignBytesParty(SecondPresignBytesParty {
                     party: PresignSecondParty::default(),
                 })
