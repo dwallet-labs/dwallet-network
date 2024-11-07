@@ -2,6 +2,9 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty};
 use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
+use crate::dwallet_mpc::presign::{
+    FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty,
+};
 use group::PartyID;
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::error::{PeraError, PeraResult};
@@ -12,7 +15,6 @@ use std::collections::HashMap;
 use std::mem;
 use std::sync::{Arc, Weak};
 use twopc_mpc::Error;
-use crate::dwallet_mpc::presign::{FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty};
 
 /// The message a validator can send to the other parties while running a dwallet MPC session.
 #[derive(Clone)]
@@ -76,7 +78,8 @@ impl DWalletMPCInstance {
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
     pub(crate) fn advance(&mut self) -> PeraResult {
         let party = mem::take(&mut self.party);
-        let advance_result = party.advance(self.pending_messages.clone(), self.auxiliary_input.clone());
+        let advance_result =
+            party.advance(self.pending_messages.clone(), self.auxiliary_input.clone());
         if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = advance_result {
             self.restart();
             return Err(PeraError::DWalletMPCMaliciousParties(malicious_parties));
