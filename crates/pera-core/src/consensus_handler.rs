@@ -379,7 +379,12 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let output_verification_result = match dwallet_mpc_manager {
                             Some(mpc_manager) => {
                                 mpc_manager.lock().await
-                                    .try_verify_output(value, session_id)
+                                    .try_verify_output(
+                                    value,
+                                    session_id,
+                                    sender_address,
+                                    dwallet_cap_id,
+                                )
                                     .unwrap_or_else(|e| {
                                         // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
                                         error!("error verifying DWalletMPCOutput for the session {:?} from party {:?}: {:?}",session_id, authority_index, e);
