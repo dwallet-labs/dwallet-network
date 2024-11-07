@@ -7,6 +7,9 @@ use crate::dwallet_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
 use group::PartyID;
 use mpc::{Advance, Party};
 use std::collections::{HashMap, HashSet};
+use pera_types::error::{PeraError, PeraResult};
+use crate::dwallet_mpc::dkg::deserialize_mpc_messages;
+use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
 
 pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 pub type PresignFirstParty =
@@ -56,23 +59,19 @@ impl BytesParty for FirstPresignBytesParty {
         self,
         messages: HashMap<PartyID, Vec<u8>>,
         auxiliary_input: Vec<u8>,
-    ) -> Result<AdvanceResult, twopc_mpc::Error> {
+    ) -> PeraResult<AdvanceResult> {
         let auxiliary_input =
-            bcs::from_bytes(&auxiliary_input).map_err(|_| twopc_mpc::Error::InvalidParameters)?;
-        let messages = messages
-            .into_iter()
-            .map(|(k, v)| {
-                let message = bcs::from_bytes(&v).map_err(|_| twopc_mpc::Error::InvalidParameters);
-                return match message {
-                    Ok(message) => Ok((k, message)),
-                    Err(err) => Err(err),
-                };
-            })
-            .collect::<Result<HashMap<_, _>, _>>()?;
+            // This is not a validator malicious behaviour, as the authority input is being sent by the initiating user.
+            // In this case this MPC session should be cancelled.
+            bcs::from_bytes(&auxiliary_input).map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
         let result = self
             .party
-            .advance(messages, &auxiliary_input, &mut rand_core::OsRng)?;
-
+            .advance(
+                deserialize_mpc_messages(messages)?,
+                &auxiliary_input,
+                &mut rand_core::OsRng,
+            )
+            .map_err(twopc_error_to_pera_error)?;
         match result {
             mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
                 bcs::to_bytes(&message).unwrap(),
@@ -170,23 +169,19 @@ impl BytesParty for SecondPresignBytesParty {
         self,
         messages: HashMap<PartyID, Vec<u8>>,
         auxiliary_input: Vec<u8>,
-    ) -> Result<AdvanceResult, twopc_mpc::Error> {
+    ) -> PeraResult<AdvanceResult> {
         let auxiliary_input =
-            bcs::from_bytes(&auxiliary_input).map_err(|_| twopc_mpc::Error::InvalidParameters)?;
-        let messages = messages
-            .into_iter()
-            .map(|(k, v)| {
-                let message = bcs::from_bytes(&v).map_err(|_| twopc_mpc::Error::InvalidParameters);
-                return match message {
-                    Ok(message) => Ok((k, message)),
-                    Err(err) => Err(err),
-                };
-            })
-            .collect::<Result<HashMap<_, _>, _>>()?;
+            // This is not a validator malicious behaviour, as the authority input is being sent by the initiating user.
+            // In this case this MPC session should be cancelled.
+            bcs::from_bytes(&auxiliary_input).map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
         let result = self
             .party
-            .advance(messages, &auxiliary_input, &mut rand_core::OsRng)?;
-
+            .advance(
+                deserialize_mpc_messages(messages)?,
+                &auxiliary_input,
+                &mut rand_core::OsRng,
+            )
+            .map_err(twopc_error_to_pera_error)?;
         match result {
             mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
                 bcs::to_bytes(&message).unwrap(),

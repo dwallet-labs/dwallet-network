@@ -380,7 +380,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         };
                         let Some(dwallet_mpc_manager) = self.epoch_store.dwallet_mpc_manager.get()
                         else {
-                            error!("MPC manager was not initialized when verifying DWalletMPCOutput output from session {:?}", session_id);
+                            error!("MPC manager was not initialized when verifying DWalletMPCOutput output from session {:?}", session_info.session_id);
                             return;
                         };
                         let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
@@ -390,7 +390,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         {
                             warn!(
                                 "Received output from malicious authority {:?} for session {:?}",
-                                authority_index, session_id
+                                authority_index, session_info.session_id
                             );
                             return;
                         }
@@ -399,7 +399,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         {
                             Ok(is_valid) => is_valid,
                             Err(e) => {
-                                error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_id, authority_index, e);
+                                error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                                 OutputVerificationResult::Malicious
                             }
                         };

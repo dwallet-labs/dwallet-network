@@ -3,15 +3,16 @@ use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty};
 use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
 use group::PartyID;
-use pera_types::base_types::{AuthorityName, EpochId};
+use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::ConsensusTransaction;
-use pera_types::messages_dwallet_mpc::SessionInfo;
+use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use proof::aggregation::asynchronous::Error::{Consumer, InvalidStatement, ProofVerification};
 use std::collections::HashMap;
 use std::mem;
 use std::sync::{Arc, Weak};
 use twopc_mpc::Error;
+use crate::dwallet_mpc::presign::{FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty};
 
 /// The message a validator can send to the other parties while running a dwallet MPC session.
 #[derive(Clone)]
@@ -111,7 +112,7 @@ impl DWalletMPCInstance {
     fn restart(&mut self) {
         self.pending_messages.clear();
         self.status = MPCSessionStatus::FirstExecution;
-        self.party = match self.session_info.mpc_round {
+        self.party = match &self.session_info.mpc_round {
             MPCRound::DKGFirst => {
                 MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
                     party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default(),
@@ -120,6 +121,16 @@ impl DWalletMPCInstance {
             MPCRound::DKGSecond => {
                 MPCParty::SecondDKGBytesParty(SecondDKGBytesParty {
                     party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default(),
+                })
+            }
+            MPCRound::PresignFirst(dwallet_id, dkg_output) => {
+                MPCParty::FirstPresignBytesParty(FirstPresignBytesParty {
+                    party: PresignFirstParty::default(),
+                })
+            }
+            MPCRound::PresignSecond(dwallet_id, first_round_output) => {
+                MPCParty::SecondPresignBytesParty(SecondPresignBytesParty {
+                    party: PresignSecondParty::default(),
                 })
             }
         };
