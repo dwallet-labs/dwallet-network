@@ -360,40 +360,29 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
-                    if let ConsensusTransactionKind::DWalletMPCOutput(
-                        value,
-                        session_id,
-                        sender_address,
-                        dwallet_cap_id,
-                        mpc_round,
-                    ) = &transaction.kind
+                    if let ConsensusTransactionKind::DWalletMPCOutput(session_info, output) =
+                        &transaction.kind
                     {
                         // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
                         // to store its output on the blockchain, so it will be available for the initiating user.
                         info!(
                             "Received proof mpc output from authority {:?} for session {:?}",
-                            authority_index, session_id
+                            authority_index, session_info.session_id
                         );
 
                         let dwallet_mpc_manager = self.epoch_store.dwallet_mpc_manager.get();
                         let output_verification_result = match dwallet_mpc_manager {
                             Some(mpc_manager) => {
-                                mpc_manager.lock().await
-                                    .try_verify_output(
-                                    value,
-                                    session_id,
-                                    sender_address,
-                                    dwallet_cap_id,
-                                )
-                                    .unwrap_or_else(|e| {
-                                        // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
-                                        error!("error verifying DWalletMPCOutput for the session {:?} from party {:?}: {:?}",session_id, authority_index, e);
-                                        OutputVerificationResult::Malicious
-                                    })
+                                let mut dwallet_mpc_manager = mpc_manager.lock().await;
+                                dwallet_mpc_manager.try_verify_output(output, &session_info).unwrap_or_else(|e| {
+                                    // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
+                                    error!("error verifying DWalletMPCOutput for the session {:?} from party {:?}: {:?}", session_info.session_id, authority_index, e);
+                                    OutputVerificationResult::Malicious
+                                })
                             }
                             None => {
                                 // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
-                                error!("MPC manager was not initialized when verifying DWalletMPCOutput output from session {:?}", session_id);
+                                error!("MPC manager was not initialized when verifying DWalletMPCOutput output from session {:?}", session_info.session_id);
                                 OutputVerificationResult::Duplicate
                             }
                         };
@@ -402,11 +391,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 let transaction =
                                     VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
                                         DWalletMPCOutput {
-                                            session_id: *session_id,
-                                            sender_address: *sender_address,
-                                            dwallet_cap_id: *dwallet_cap_id,
-                                            value: value.clone(),
-                                            mpc_round: mpc_round.clone(),
+                                            session_info: session_info.clone(),
+                                            output: output.clone(),
                                         },
                                     );
                                 let transaction = VerifiedExecutableTransaction::new_system(
@@ -656,8 +642,8 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessStateUpdate(_, _) => "randomness_state_update",
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
-        ConsensusTransactionKind::DWalletMPCMessage(_, _, _) => "dwallet_mpc_message",
-        ConsensusTransactionKind::DWalletMPCOutput(_, _, _, _, _) => "dwallet_mpc_output",
+        ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
+        ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
     }
 }
 

@@ -36,16 +36,13 @@ export async function launchDKGFirstRound(keypair: Keypair, client: PeraClient) 
 		client,
 	);
 
-	let firstRoundOutput =
-		firstRoundOutputObject?.dataType === 'moveObject'
-			? (firstRoundOutputObject.fields as {
-					output: number[];
-					dwallet_cap_id: string;
-					session_id: string;
-				})
-			: null;
-
-	return firstRoundOutput;
+	return firstRoundOutputObject?.dataType === 'moveObject'
+		? (firstRoundOutputObject.fields as {
+				output: number[];
+				dwallet_cap_id: string;
+				session_id: string;
+			})
+		: null;
 }
 
 export async function launchDKGSecondRound(

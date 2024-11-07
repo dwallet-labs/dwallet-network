@@ -6,12 +6,17 @@
 //! instances to the next round.
 
 use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
-use crate::dwallet_mpc::mpc_events::{StartDKGFirstRoundEvent, StartDKGSecondRoundEvent};
+use crate::dwallet_mpc::mpc_events::{
+    StartDKGFirstRoundEvent, StartDKGSecondRoundEvent, StartPresignFirstRoundEvent,
+    StartPresignSecondRoundEvent,
+};
+use crate::dwallet_mpc::presign::{
+    FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty,
+};
 use group::PartyID;
-use pera_types::base_types::{ObjectID, PeraAddress};
+use pera_types::base_types::ObjectID;
 use pera_types::event::Event;
-use pera_types::id::ID;
-use pera_types::messages_dwallet_mpc::MPCRound;
+use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::HashMap;
 
 /// Trait defining the functionality to advance an MPC party to the next round.
@@ -45,18 +50,6 @@ pub enum AdvanceResult {
     Finalize(Vec<u8>),
 }
 
-/// Holds information about the current MPC session.
-pub struct SessionInfo {
-    /// Unique identifier for the MPC session.
-    pub session_id: ObjectID,
-    /// The address of the user that initiated this session.
-    pub initiating_user_address: PeraAddress,
-    /// The `DWalletCap` object's ID associated with the `DWallet`.
-    pub dwallet_cap_id: ObjectID,
-    /// The current MPC round in the protocol.
-    pub mpc_round: MPCRound,
-}
-
 /// Enum representing the different parties used in the MPC manager.
 pub enum MPCParty {
     /// A placeholder party used as a default. Does not implement the `BytesParty` trait and should never be used.
@@ -65,6 +58,10 @@ pub enum MPCParty {
     FirstDKGBytesParty(FirstDKGBytesParty),
     /// The party used in the second round of the DKG protocol.
     SecondDKGBytesParty(SecondDKGBytesParty),
+    /// The party used in the first round of the presign protocol.
+    FirstPresignBytesParty(FirstPresignBytesParty),
+    /// The party used in the second round of the presign protocol.
+    SecondPresignBytesParty(SecondPresignBytesParty),
 }
 
 /// Default party implementation for `MPCParty`.
@@ -97,6 +94,8 @@ impl MPCParty {
         match self {
             MPCParty::FirstDKGBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::SecondDKGBytesParty(party) => party.advance(messages, auxiliary_input),
+            MPCParty::FirstPresignBytesParty(party) => party.advance(messages, auxiliary_input),
+            MPCParty::SecondPresignBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::DefaultParty => Err(twopc_mpc::Error::InvalidParameters),
         }
     }
@@ -151,6 +150,52 @@ impl MPCParty {
                     initiating_user_address: deserialized_event.sender,
                     dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
                     mpc_round: MPCRound::DKGSecond,
+                },
+            )));
+        } else if event.type_ == StartPresignFirstRoundEvent::type_() {
+            let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;
+            return Ok(Some((
+                MPCParty::FirstPresignBytesParty(FirstPresignBytesParty {
+                    party: PresignFirstParty::default(),
+                }),
+                FirstPresignBytesParty::generate_auxiliary_input(
+                    deserialized_event.session_id.bytes.to_vec(),
+                    number_of_parties,
+                    party_id,
+                    deserialized_event.dkg_output.clone(),
+                ),
+                SessionInfo {
+                    session_id: deserialized_event.session_id.bytes,
+                    initiating_user_address: deserialized_event.sender,
+                    dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+                    mpc_round: MPCRound::PresignFirst(
+                        deserialized_event.dwallet_id.bytes,
+                        deserialized_event.dkg_output,
+                    ),
+                },
+            )));
+        } else if event.type_ == StartPresignSecondRoundEvent::type_() {
+            let deserialized_event: StartPresignSecondRoundEvent =
+                bcs::from_bytes(&event.contents)?;
+            return Ok(Some((
+                MPCParty::SecondPresignBytesParty(SecondPresignBytesParty {
+                    party: PresignSecondParty::default(),
+                }),
+                SecondPresignBytesParty::generate_auxiliary_input(
+                    deserialized_event.first_round_session_id.bytes.to_vec(),
+                    number_of_parties,
+                    party_id,
+                    deserialized_event.dkg_output,
+                    deserialized_event.first_round_output.clone(),
+                ),
+                SessionInfo {
+                    session_id: deserialized_event.session_id.bytes,
+                    initiating_user_address: deserialized_event.sender,
+                    dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+                    mpc_round: MPCRound::PresignSecond(
+                        deserialized_event.dwallet_id.bytes,
+                        deserialized_event.first_round_output,
+                    ),
                 },
             )));
         }
