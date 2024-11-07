@@ -4015,9 +4015,12 @@ dependencies = [
  "class_groups_constants",
  "commitment",
  "hex",
+ "k256 0.13.3",
  "log",
  "mpc",
  "rand_core 0.6.4",
+ "sha2 0.10.8",
+ "sha3 0.10.8",
  "twopc_mpc",
 ]
 
