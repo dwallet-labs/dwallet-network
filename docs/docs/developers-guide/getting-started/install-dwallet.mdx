@@ -273,30 +273,54 @@ Select the appropriate tab to view the requirements for your system.
 
 </Tabs>
 
-## Install dWallet binaries from source {#install-dwallet-binaries-from-source}
-
-To install dWallet binaries, run the following command:
-
-```shell
-cargo install --locked --git https://github.com/dwallet-labs/dwallet-network.git --branch sign-ia-wasm dwallet
-```
-
-The installation process may take some time. You can monitor the progress in your terminal.
-If you encounter an error, ensure all prerequisites are up to date and try the command again.
-
 To update to the latest stable version of Rust:
 
 ```shell
 rustup update stable
 ```
 
+## Install dWallet binaries from source {#install-dwallet-binaries-from-source}
+
+To install dWallet binaries, run the following command:
+
+```shell
+git clone --branch sign-ia-wasm https://github.com/dwallet-labs/dwallet-network.git
+cd dwallet-network
+cargo install --locked --path crates/sui
+```
+
+The installation process may take some time. You can monitor the progress in your terminal.
+If you encounter an error, ensure all prerequisites are up to date and try the command again.
+
 The command installs dWallet components in the `~/.cargo/bin` folder.
+Make sure you have this directory in your system's `PATH` environment variable:
+
+```shell
+echo $PATH | grep ".cargo/bin"
+```
+
+To add this directory into $PATH:
+
+```shell
+# For ZSH:
+echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+# For Bash:
+echo 'export PATH="$HOME/.cargo/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+To check if the installation was successful, run the following command:
+
+```shell
+which dwallet
+# Expected output: `~/.cargo/bin/dwallet`
+dwallet --version
+# Expected output: `dwallet x.y.z-{hash}`
+```
+
 
 ## Upgrade dWallet binaries
 
 If you previously installed the dWallet binaries,
-you can update them to the most recent release with the same command you used to install them:
-
-```shell
-cargo install --locked --git https://github.com/dwallet-labs/dwallet-network.git --branch sign-ia-wasm dwallet
-```
+you can update them to the most recent by repeating the installation process above.
