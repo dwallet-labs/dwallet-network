@@ -378,17 +378,13 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         let dwallet_mpc_manager = self.epoch_store.dwallet_mpc_manager.get();
                         let output_verification_result = match dwallet_mpc_manager {
                             Some(mpc_manager) => {
-                                let mut dwallet_mpc_manager = mpc_manager.lock().await;
-                                match dwallet_mpc_manager.try_verify_output(value, session_id) {
-                                    Ok(is_valid) => is_valid,
-                                    Err(e) => {
-                                        error!(
-                                                    "Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",
-                                                    session_id, authority_index, e
-                                                );
+                                mpc_manager.lock().await
+                                    .try_verify_output(value, session_id)
+                                    .unwrap_or_else(|e| {
+                                        // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
+                                        error!("error verifying DWalletMPCOutput for the session {:?} from party {:?}: {:?}",session_id, authority_index, e);
                                         OutputVerificationResult::Malicious
-                                    }
-                                }
+                                    })
                             }
                             None => {
                                 // TODO (#250): Make sure that the MPC manager is initialized before MPC events emitted.
