@@ -5,7 +5,7 @@
 //! The `BytesParty` trait enables the MPC manager to seamlessly advance the `MPCParty`
 //! instances to the next round.
 
-use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
+use crate::dwallet_mpc::dkg::{deserialize_mpc_messages, AsyncProtocol, DKGFirstParty, DKGSecondParty, FirstDKGBytesParty, SecondDKGBytesParty};
 use crate::dwallet_mpc::mpc_events::{
     StartDKGFirstRoundEvent, StartDKGSecondRoundEvent, StartPresignFirstRoundEvent,
     StartPresignSecondRoundEvent,
@@ -19,6 +19,9 @@ use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::HashMap;
+use mpc::{Error, Party};
+use twopc_mpc::class_groups::EncryptionOfSecretKeyShareRoundParty;
+use crate::dwallet_mpc::mpc_manager::{mpc_error_to_pera_error, twopc_error_to_pera_error};
 
 /// Trait defining the functionality to advance an MPC party to the next round.
 ///
@@ -56,9 +59,9 @@ pub enum MPCParty {
     /// A placeholder party used as a default. Does not implement the `BytesParty` trait and should never be used.
     DefaultParty,
     /// The party used in the first round of the DKG protocol.
-    FirstDKGBytesParty(FirstDKGBytesParty),
+    FirstDKGBytesParty(DKGFirstParty),
     /// The party used in the second round of the DKG protocol.
-    SecondDKGBytesParty(SecondDKGBytesParty),
+    SecondDKGBytesParty(DKGSecondParty),
     /// The party used in the first round of the presign protocol.
     FirstPresignBytesParty(FirstPresignBytesParty),
     /// The party used in the second round of the presign protocol.
@@ -93,8 +96,32 @@ impl MPCParty {
         auxiliary_input: Vec<u8>,
     ) -> PeraResult<AdvanceResult> {
         match self {
-            MPCParty::FirstDKGBytesParty(party) => party.advance(messages, auxiliary_input),
-            MPCParty::SecondDKGBytesParty(party) => party.advance(messages, auxiliary_input),
+            MPCParty::FirstDKGBytesParty(party) => {
+                let aux = bcs::from_bytes(&auxiliary_input)?;
+                let a = advance::<DKGFirstParty>(party, messages, aux)?;
+                match a {
+                    mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
+                        message,
+                        MPCParty::FirstDKGBytesParty(new_party ),
+                    ))),
+                    mpc::AdvanceResult::Finalize(output) => {
+                        Ok(AdvanceResult::Finalize(output))
+                    }
+                }
+            }
+            MPCParty::SecondDKGBytesParty(party) => {
+                let aux = bcs::from_bytes(&auxiliary_input)?;
+                let a = advance::<DKGSecondParty>(party, messages, aux)?;
+                match a {
+                    mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
+                        message,
+                        MPCParty::SecondDKGBytesParty( new_party ),
+                    ))),
+                    mpc::AdvanceResult::Finalize(output) => {
+                        Ok(AdvanceResult::Finalize(output))
+                    }
+                }
+            }
             MPCParty::FirstPresignBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::SecondPresignBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::DefaultParty => Err(PeraError::InternalDWalletMPCError),
@@ -123,9 +150,9 @@ impl MPCParty {
         if event.type_ == StartDKGFirstRoundEvent::type_() {
             let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
             return Ok(Some((
-                MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
-                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default()
-                }),
+                MPCParty::FirstDKGBytesParty(
+                    <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default()
+                ),
                 FirstDKGBytesParty::generate_auxiliary_input(number_of_parties, party_id, deserialized_event.session_id.bytes.to_vec()),
                 SessionInfo {
                     session_id: deserialized_event.session_id.bytes,
@@ -137,9 +164,9 @@ impl MPCParty {
         } else if event.type_ == StartDKGSecondRoundEvent::type_() {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
             return Ok(Some((
-                MPCParty::SecondDKGBytesParty(SecondDKGBytesParty {
-                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default()
-                }),
+                MPCParty::SecondDKGBytesParty(
+                    <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default()
+                ),
                 SecondDKGBytesParty::generate_auxiliary_input(
                     number_of_parties, party_id,
                     deserialized_event.first_round_output,
@@ -202,4 +229,65 @@ impl MPCParty {
         }
         Ok(None)
     }
+}
+
+pub enum GeneralResult {
+    /// Contains the message to send to other parties and the next `MPCParty` to use.
+    Advance((Vec<u8>, )),
+    /// Indicates that the protocol has completed, containing the final output.
+    Finalize(Vec<u8>),
+}
+
+pub trait Test {
+    type A;
+}
+pub struct TestStruct;
+impl Test for TestStruct {
+    type A = ();
+}
+
+fn advance<P: mpc::Advance>(
+    party: P,
+    messages: HashMap<PartyID, Vec<u8>>,
+    auxiliary_input: P::AuxiliaryInput,
+) ->  PeraResult<mpc::AdvanceResult<Vec<u8>, P, Vec<u8>>> {
+    // let auxiliary_input =
+    //     // This is not a validator malicious behaviour, as the authority input is being sent by the initiating user.
+    //     // In this case this MPC session should be cancelled.
+    //     bcs::from_bytes(&auxiliary_input).map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
+
+     let res = party
+        .advance(
+            deserialize_mpc_messages(messages)?,
+            &auxiliary_input,
+            &mut rand_core::OsRng,
+        ).map_err(|error| {
+    let Ok(error): Result<mpc::Error, _> = error.try_into() else {
+        return PeraError::InternalDWalletMPCError;
+    };
+    return match error {
+        Error::UnresponsiveParties(parties)
+        | Error::InvalidMessage(parties)
+        | Error::MaliciousMessage(parties) => PeraError::DWalletMPCMaliciousParties(parties),
+        _ => PeraError::InternalDWalletMPCError,
+    };
+    }
+    )?;
+
+    Ok(match res {
+        mpc::AdvanceResult::Advance((msg, party)) => mpc::AdvanceResult::Advance((bcs::to_bytes(&msg)?, party)),
+        mpc::AdvanceResult::Finalize(output) => {
+            let output: P::OutputValue = output.into();
+            mpc::AdvanceResult::Finalize(bcs::to_bytes(&output)?) },
+    })
+
+    // match result {
+    //     mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
+    //         bcs::to_bytes(&message).unwrap(),
+    //         MPCParty::FirstDKGBytesParty(Self { party: new_party }),
+    //     ))),
+    //     mpc::AdvanceResult::Finalize(output) => {
+    //         Ok(AdvanceResult::Finalize(bcs::to_bytes(&output).unwrap()))
+    //     }
+    // }
 }

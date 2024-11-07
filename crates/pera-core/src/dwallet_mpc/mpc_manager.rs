@@ -280,3 +280,15 @@ pub fn twopc_error_to_pera_error(error: twopc_mpc::Error) -> PeraError {
         _ => PeraError::InternalDWalletMPCError,
     };
 }
+
+pub fn mpc_error_to_pera_error(error: mpc::Error) -> PeraError {
+    let Ok(error): Result<mpc::Error, _> = error.try_into() else {
+        return PeraError::InternalDWalletMPCError;
+    };
+    return match error {
+        Error::UnresponsiveParties(parties)
+        | Error::InvalidMessage(parties)
+        | Error::MaliciousMessage(parties) => PeraError::DWalletMPCMaliciousParties(parties),
+        _ => PeraError::InternalDWalletMPCError,
+    };
+}
