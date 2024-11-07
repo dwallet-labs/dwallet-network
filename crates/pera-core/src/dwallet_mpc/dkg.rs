@@ -124,7 +124,7 @@ impl BytesParty for FirstDKGBytesParty {
 /// when accessing `mpc::Party::AuxiliaryInput`. It defines the parameters and logic
 /// necessary to initiate the first round of the DKG protocol,
 /// preparing the party with the essential session information and other contextual data.
-trait DKGFirstRound: Party {
+trait DKGFirstPartyAuxiliaryInputGenerator: Party {
     /// Generates the auxiliary input required for the first round of the DKG protocol.
     ///
     /// # Arguments
@@ -144,7 +144,7 @@ trait DKGFirstRound: Party {
     ) -> Self::AuxiliaryInput;
 }
 
-impl DKGFirstRound for DKGFirstParty {
+impl DKGFirstPartyAuxiliaryInputGenerator for DKGFirstParty {
     fn generate_auxiliary_input(
         session_id: Vec<u8>,
         number_of_parties: u16,
@@ -242,7 +242,7 @@ impl BytesParty for SecondDKGBytesParty {
 /// when accessing `mpc::Party::AuxiliaryInput`. It defines the parameters and logic
 /// necessary to initiate the second round of the DKG protocol,
 /// preparing the party with the essential session information and other contextual data.
-trait DKGSecondRound: Party {
+trait DKGSecondPartyAuxiliaryInputGenerator: Party {
     /// Generates the auxiliary input required for the second round of the DKG protocol.
     ///
     /// # Arguments
@@ -266,7 +266,7 @@ trait DKGSecondRound: Party {
     ) -> Self::AuxiliaryInput;
 }
 
-impl DKGSecondRound for DKGSecondParty {
+impl DKGSecondPartyAuxiliaryInputGenerator for DKGSecondParty {
     fn generate_auxiliary_input(
         number_of_parties: u16,
         party_id: PartyID,
