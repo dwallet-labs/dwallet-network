@@ -15,6 +15,7 @@ use crate::dwallet_mpc::presign::{
 };
 use group::PartyID;
 use pera_types::base_types::ObjectID;
+use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::HashMap;
@@ -36,7 +37,7 @@ pub trait BytesParty: Sync + Send {
         self,
         messages: HashMap<PartyID, Vec<u8>>,
         auxiliary_input: Vec<u8>,
-    ) -> Result<AdvanceResult, twopc_mpc::Error>;
+    ) -> PeraResult<AdvanceResult>;
 }
 
 /// Represents the outcome of advancing an MPC party to the next round.
@@ -81,13 +82,13 @@ impl MPCParty {
         self,
         messages: HashMap<PartyID, Vec<u8>>,
         auxiliary_input: Vec<u8>,
-    ) -> Result<AdvanceResult, twopc_mpc::Error> {
+    ) -> PeraResult<AdvanceResult> {
         match self {
             MPCParty::FirstDKGBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::SecondDKGBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::FirstPresignBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::SecondPresignBytesParty(party) => party.advance(messages, auxiliary_input),
-            MPCParty::DefaultParty => Err(twopc_mpc::Error::InvalidParameters),
+            MPCParty::DefaultParty => Err(PeraError::InternalDWalletMPCError),
         }
     }
 

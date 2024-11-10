@@ -101,10 +101,10 @@ zeroize.workspace = true
 nonempty.workspace = true
 proof = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "proof", branch = "pera-dkg-changes" }
 maurer = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "maurer" , branch = "pera-dkg-changes", features = ["benchmarking"]}
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "pera-dkg-changes" }
+group.workspace = true
 tiresias = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "tiresias", branch = "pera-dkg-changes" }
 mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"] , branch = "pera-dkg-changes" }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "pera-dkg-changes" }
+twopc_mpc.workspace = true
 homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "pera-dkg-changes" }
 class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "class-groups", branch = "pera-dkg-changes" }
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "pera-dkg-changes" }
