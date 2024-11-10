@@ -168,10 +168,7 @@ impl DWalletMPCManager {
     /// Convert the indices of the malicious parties to their addresses and store them
     /// in the malicious actors set
     /// New messages from these parties will be ignored
-    fn flag_parties_as_malicious(
-        &mut self,
-        malicious_parties: Vec<PartyID>,
-    ) -> PeraResult {
+    fn flag_parties_as_malicious(&mut self, malicious_parties: Vec<PartyID>) -> PeraResult {
         let malicious_parties_names = malicious_parties
             .into_iter()
             .map(|party_id| {
