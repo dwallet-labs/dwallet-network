@@ -5,11 +5,11 @@ ARG GIT_REVISION
 ENV GIT_REVISION=$GIT_REVISION
 WORKDIR /lc
 
-# Install dependencies for building
+# Install dependencies for building.
 RUN apt-get update && apt-get install -y cmake clang ca-certificates
 
 # Cache dependencies
-# Copy only Cargo.toml and Cargo.lock for dependency installation and caching
+# Copy only Cargo.toml and Cargo.lock for dependency installation and caching.
 COPY Cargo.toml Cargo.lock ./
 COPY consensus consensus
 COPY crates crates
@@ -17,7 +17,7 @@ COPY sui-execution sui-execution
 COPY narwhal narwhal
 COPY external-crates external-crates
 
-# Final build of the application binaries
+# Final build of the application binaries.
 RUN cargo build --profile ${PROFILE} \
     --bin light-client-service \
     --bin light-client
