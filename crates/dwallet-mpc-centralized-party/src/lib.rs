@@ -66,7 +66,7 @@ pub fn message_digest(message: &[u8], hash_type: &Hash) -> secp256k1::Scalar {
             bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
         }
     }
-        .unwrap();
+    .unwrap();
     #[allow(clippy::useless_conversion)]
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
     U256::from(m).into()
@@ -84,19 +84,20 @@ pub fn create_sign_output(
     let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGOutput = bcs::from_bytes(&centralized_party_dkg_output)?;
     let presign_first_round_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare = bcs::from_bytes(&presign_first_round_output)?;
     let presign_second_round_output: (<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart, <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart) = bcs::from_bytes(&presign_second_round_output)?;
-    let presigns: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign = (presign_first_round_output, presign_second_round_output).into();
+    let presigns: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+        (presign_first_round_output, presign_second_round_output).into();
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
     let message = message_digest(&message, &hash.try_into()?);
     let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
 
-    let centralized_party_auxiliary_input =
-        (
-            message,
-            centralized_party_dkg_output.clone(),
-            presigns.clone(),
-            protocol_public_parameters.clone(),
-            session_id
-        ).into();
+    let centralized_party_auxiliary_input = (
+        message,
+        centralized_party_dkg_output.clone(),
+        presigns.clone(),
+        protocol_public_parameters.clone(),
+        session_id,
+    )
+        .into();
     let (sign_message, centralized_output) =
         SignCentralizedParty::advance((), &centralized_party_auxiliary_input, &mut OsRng)?;
     let sign_message = bcs::to_bytes(&sign_message)?;
