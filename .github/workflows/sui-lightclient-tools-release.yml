@@ -2,9 +2,6 @@ name: Build and Push dWallet Light-Client-Tools Image
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - sui-state-proofs
 
 jobs:
   build-and-push:
@@ -38,5 +35,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: sui-fork
+          # Image Tag.
           IMAGE_NAME: dwallet-light-client-tools
-          IMAGE_VERSION: v1.16.2
+          # Image Tag suffix.
+          IMAGE_VERSION: v1.16.3
