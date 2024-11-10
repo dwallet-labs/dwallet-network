@@ -8,6 +8,7 @@ module dwallet_system::sui_state_proof {
     use dwallet::bcs;
     use dwallet::event;
     use std::vector;
+    use std::debug;
 
     const EWrongEpochSubmitted: u64 = 0;
     const EWrongDWalletCapId: u64 = 1;
@@ -97,6 +98,7 @@ module dwallet_system::sui_state_proof {
             registry_id: object::uid_to_inner(&registry.id),
             epoch_committee_id: object::id(&first_committee),
         });
+        debug::print(&epoch_id_committee);
 
         transfer::share_object(registry);
         transfer::freeze_object(config);
@@ -109,12 +111,12 @@ module dwallet_system::sui_state_proof {
         new_checkpoint_summary: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        let (new_committee_verified_bytes, new_committee_epoch) = sui_state_proof_verify_committee(
+        let (new_committee_verified_bytes, current_committee_epoch) = sui_state_proof_verify_committee(
             prev_committee.committee,
             new_checkpoint_summary
         );
 
-        assert!(new_committee_epoch - 1 == registry.highest_epoch, EWrongEpochSubmitted);
+        assert!(current_committee_epoch - 1 == registry.highest_epoch, EWrongEpochSubmitted);
 
         let committee_new = EpochCommittee {
             id: object::new(ctx),

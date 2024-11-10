@@ -26,9 +26,11 @@ async function main() {
 
 		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
 
-		const dWalletCapPackageSUI =
+		const dWalletCapPackageInSUI =
 			'0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec';
 
+		// Objects in the dwallet network.
+		// TODO: fix this IDS.
 		const configObjectId = '0xd0508ac7ca7ff62e3e03bdf830e5f5bbc8425c7be52bea40738904098ba554f6';
 		const registryObjectId = '0xb388dfe5386b44415bff2a2f7c4926c7c76b38246ac78536e23fa0bf61f4d51a';
 
@@ -131,23 +133,23 @@ async function main() {
 		let dWalletCapArg3 = txb.pure(dwalletCapId3);
 
 		let [cap1] = txb.moveCall({
-			target: `${dWalletCapPackageSUI}::dwallet_cap::create_cap`,
+			target: `${dWalletCapPackageInSUI}::dwallet_cap::create_cap`,
 			arguments: [dWalletCapArg1],
 		});
 
 		let [cap2] = txb.moveCall({
-			target: `${dWalletCapPackageSUI}::dwallet_cap::create_cap`,
+			target: `${dWalletCapPackageInSUI}::dwallet_cap::create_cap`,
 			arguments: [dWalletCapArg2],
 		});
 		let [cap3] = txb.moveCall({
-			target: `${dWalletCapPackageSUI}::dwallet_cap::create_cap`,
+			target: `${dWalletCapPackageInSUI}::dwallet_cap::create_cap`,
 			arguments: [dWalletCapArg3],
 		});
 
 		let signMsgArg = txb.pure(bcs.vector(bcs.vector(bcs.u8())).serialize([messageSign]));
 
 		txb.moveCall({
-			target: `${dWalletCapPackageSUI}::dwallet_cap::approve_message`,
+			target: `${dWalletCapPackageInSUI}::dwallet_cap::approve_message`,
 			arguments: [cap1, signMsgArg],
 		});
 

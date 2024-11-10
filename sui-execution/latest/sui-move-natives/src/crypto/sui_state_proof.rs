@@ -21,6 +21,7 @@ use serde_json::Value as JsonValue;
 use sui_json::SuiJsonValue;
 
 use move_core_types::annotated_value::MoveTypeLayout;
+use tracing::{debug, info};
 
 pub const INVALID_TX: u64 = 0;
 pub const INVALID_CHECKPOINT_SUMMARY: u64 = 1;
@@ -104,9 +105,9 @@ pub fn sui_state_proof_verify_committee(
     let cost = context.gas_used();
 
     let checkpoint_summary_bytes = pop_arg!(args, Vec<u8>);
-    let prev_committee_bytes = pop_arg!(args, Vec<u8>);
+    let current_committee_bytes = pop_arg!(args, Vec<u8>);
 
-    let Ok(prev_committee) = bcs::from_bytes::<Committee>(&prev_committee_bytes) else {
+    let Ok(mut current_committee) = bcs::from_bytes::<Committee>(&current_committee_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_COMMITTEE));
     };
 
@@ -116,9 +117,19 @@ pub fn sui_state_proof_verify_committee(
         return Ok(NativeResult::err(cost, INVALID_CHECKPOINT_SUMMARY));
     };
 
-    match checkpoint_summary.clone().verify(&prev_committee) {
-        Ok(_) => (),
-        Err(_) => return Ok(NativeResult::err(cost, INVALID_TX)),
+    // There is a bug with try_into_verified() where if the committee is genesis committee,
+    // it will take the correct epoch number (==0), but it will fail against the checkpoint
+    // (==1).
+    if current_committee.epoch == 0 {
+        current_committee.epoch = 1;
+    }
+
+    if let Err(_) = checkpoint_summary.clone().verify(&current_committee) {
+        info!(
+            "error verifying checkpoint: epoch `{:?}`, committee epoch: `{}`",
+            checkpoint_summary.epoch, current_committee.epoch
+        );
+        return Ok(NativeResult::err(cost, INVALID_TX));
     }
 
     let next_committee_epoch;
@@ -141,7 +152,7 @@ pub fn sui_state_proof_verify_committee(
         cost,
         smallvec![
             Value::vector_u8(bcs::to_bytes(&next_committee_epoch).unwrap()),
-            Value::u64(prev_committee.epoch)
+            Value::u64(current_committee.epoch)
         ],
     ))
 }

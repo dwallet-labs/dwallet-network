@@ -216,7 +216,7 @@ impl TicTacToe {
             if status.is_err() {
                 eprintln!("{:?}", status);
             }
-            // Proceed to next turn.
+            // Proceed to the next turn.
             self.next_turn(
                 my_identity,
                 self.fetch_game_state(*game_state.info.object_id()).await?,
