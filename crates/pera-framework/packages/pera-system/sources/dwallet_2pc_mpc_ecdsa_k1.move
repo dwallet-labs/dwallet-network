@@ -4,7 +4,7 @@
 #[allow(unused_const)]
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
-    use pera_system::dwallet::{create_dwallet_cap, DWalletCap};
+    use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output};
     use pera::event;
 
     /// Represents the Secp256K1 DWallet type.
@@ -21,7 +21,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_cap_id: ID,
     }
 
-    // <<<<<<<<<<<<<<<<<<<<<<<< Events <<<<<<<<<<<<<<<<<<<<<<<<
     /// Event to start a `DKG` session, caught by the Validators.
     public struct StartDKGFirstRoundEvent has copy, drop {
         session_id: address,
@@ -29,13 +28,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_cap_id: ID,
     }
 
-    public struct CompletedFirstDKGRoundEvent has copy, drop {
-        session_id: ID,
-        sender: address,
-    }
-
-    /// Being emitted to start the validator's second DKG round
-    /// Each validators catch this event and start the second round of the DKG.
+    /// Event emitted to start the validator's second DKG round.
+    /// Each validator catches this event and starts the second round of the DKG.
     public struct StartDKGSecondRoundEvent has copy, drop {
         session_id: address,
         sender: address,
@@ -45,8 +39,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         first_round_session_id: ID,
     }
 
-    /// Being emitted when the second round of the DKG is completed.
-    /// Contains all the relevant data from that round.
+    /// Event emitted when the second round of the DKG is completed,
+    /// containing all relevant data from that round.
     public struct CompletedDKGSecondRoundEvent has copy, drop {
         session_id: ID,
         sender: address,
@@ -54,7 +48,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_id: ID,
         value: vector<u8>,
     }
-    // >>>>>>>>>>>>>>>>>>>>>>>> Events >>>>>>>>>>>>>>>>>>>>>>>>
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
@@ -67,7 +60,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Starts the first Distributed Key Generation (DKG) session. Two MPC sessions are required to
     /// create a Dwallet.
     /// Capabilities are used to control access to the Dwallet.
-    /// This function start the DKG proccess in the Validators.
+    /// This function starts the DKG process within Validators.
     public fun launch_dkg_first_round(
         ctx: &mut TxContext
     ): address {
@@ -83,9 +76,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_function)]
-    /// Create the first DKG MPC first round output, transfer it to the initiating user.
-    /// This function is called by blockchain itself.
-    /// Validtors call it, it's part of the blockchain logic.
+    /// Creates the output of the first round of the DKG MPC, transferring it to the initiating user.
+    /// This function is called by the blockchain itself.
+    /// Validators call it as part of the blockchain logic.
     fun create_dkg_first_round_output(
         sender: address,
         session_id: ID,
@@ -101,18 +94,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_cap_id,
         };
         transfer::transfer(output, sender);
-
-        let completed_proof_mpc_session_event = CompletedFirstDKGRoundEvent {
-            session_id: session_id,
-            sender: sender,
-        };
-
-        event::emit(completed_proof_mpc_session_event);
     }
 
-    /// Function to launch the second DKG round.
-    /// Emits an event with all the needed data.
-    /// Each validator then catches this event and starts the second round of the DKG.
+    /// Launches the second DKG round, emitting an event with all required data.
+    /// Each validator catches this event and starts the second round of the DKG.
     public fun launch_dkg_second_round(
         dwallet_cap: &DWalletCap,
         public_key_share_and_proof: vector<u8>,
@@ -133,9 +118,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id
     }
 
-    /// Create the second DKG MPC first output, which is the actual [`dwallet::DWallet`].
-    /// This function is called by blockchain itself.
-    /// Validtors call it, it's part of the blockchain logic.
+    /// Completes the second DKG MPC round by creating the actual [`dwallet::DWallet`].
+    /// This function is called by the blockchain itself.
+    /// Validators call it as part of the blockchain logic.
     public fun create_dkg_second_round_output(
         session_initiator: address,
         session_id: ID,
@@ -152,7 +137,160 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id: object::id(&dwallet),
             value: output,
         };
+
         transfer::public_freeze_object(dwallet);
         event::emit(completed_proof_mpc_session_event);
+    }
+
+    /// Event emitted to initiate a `Presign` session, caught by the Validators.
+    public struct StartPresignFirstRoundEvent has copy, drop {
+        session_id: ID,
+        sender: address,
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        dkg_output: vector<u8>,
+    }
+
+    /// Starts the first round of the presign session.
+    public fun launch_presign_first_round(
+        dwallet: &DWallet<Secp256K1>,
+        ctx: &mut TxContext
+    ) {
+        let session_id = tx_context::fresh_object_address(ctx);
+        let event = StartPresignFirstRoundEvent {
+            session_id: object::id_from_address(session_id),
+            sender: tx_context::sender(ctx),
+            dwallet_id: object::id(dwallet),
+            dwallet_cap_id: get_dwallet_cap_id<Secp256K1>(dwallet),
+            dkg_output: get_dwallet_output<Secp256K1>(dwallet),
+        };
+        event::emit(event);
+    }
+
+    /// Object to store the output of the first round of the presign session.
+    public struct PresignSessionOutput has key {
+        id: UID,
+        session_id: ID,
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        output: vector<u8>,
+    }
+
+    /// Creates the first presign round output and transfers it to the initiating user.
+    /// Validators call it as part of the blockchain logic.
+    /// This also triggers the second round of the presign session.
+    public fun create_first_presign_round_output_and_launch_second_round(
+        session_initiator: address,
+        session_id: ID,
+        first_round_output: vector<u8>,
+        dwallet_cap_id: ID,
+        dwallet_id: ID,
+        dkg_output: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+
+        let output = PresignSessionOutput {
+            id: object::new(ctx),
+            session_id,
+            dwallet_id,
+            dwallet_cap_id,
+            output: first_round_output,
+        };
+        transfer::transfer(output, session_initiator);
+        launch_presign_second_round(
+            session_initiator,
+            dwallet_id,
+            dkg_output,
+            dwallet_cap_id,
+            first_round_output,
+            session_id,
+            ctx
+        );
+    }
+
+    /// Event emitted to initiate the second round of a `Presign` session, caught by the Validators.
+    public struct StartPresignSecondRoundEvent has copy, drop {
+        session_id: ID,
+        sender: address,
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        dkg_output: vector<u8>,
+        first_round_output: vector<u8>,
+        first_round_session_id: ID,
+    }
+
+    /// Launches the second round of the presign session.
+    /// Validators catch this event and begin processing for the second round.
+    public fun launch_presign_second_round(
+        session_initiator: address,
+        dwallet_id: ID,
+        dkg_output: vector<u8>,
+        dwallet_cap_id: ID,
+        first_round_output: vector<u8>,
+        first_round_session_id: ID,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+
+        let session_id = tx_context::fresh_object_address(ctx);
+        let session_id = object::id_from_address(session_id);
+
+        let event = StartPresignSecondRoundEvent {
+            session_id,
+            sender: session_initiator,
+            dwallet_id,
+            dwallet_cap_id,
+            dkg_output,
+            first_round_output: first_round_output,
+            first_round_session_id: first_round_session_id,
+        };
+        event::emit(event);
+    }
+
+    /// Represents the presign result of a the second and final presign round.
+    public struct Presign has key {
+        id: UID,
+        session_id: ID,
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        presigns: vector<u8>,
+    }
+
+    /// Event emitted when the presign second round is completed.
+    public struct CompletedPresignEvent has copy, drop {
+        sender: address,
+        dwallet_id: ID,
+        presign_id: ID,
+    }
+
+    /// Completes the presign session by creating the output of the second presign round
+    /// and transferring it to the session initiator.
+    public fun create_second_presign_round_output(
+        session_initiator: address,
+        session_id: ID,
+        output: vector<u8>,
+        dwallet_cap_id: ID,
+        dwallet_id: ID,
+        ctx: &mut TxContext
+    ) {
+        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+
+        let output = Presign {
+            id: object::new(ctx),
+            session_id,
+            dwallet_id,
+            dwallet_cap_id,
+            presigns: output,
+        };
+
+        let event = CompletedPresignEvent {
+            sender: session_initiator,
+            dwallet_id,
+            presign_id: object::id(&output),
+        };
+
+        event::emit(event);
+        transfer::transfer(output, session_initiator);
     }
 }

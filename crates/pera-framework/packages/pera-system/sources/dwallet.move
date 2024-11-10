@@ -39,8 +39,16 @@ module pera_system::dwallet {
         let cap = DWalletCap {
             id: object::new(ctx),
         };
-        let id = object::id(&cap);
+    let id = object::id(&cap);
         transfer::transfer(cap, ctx.sender());
         id
+    }
+
+    public(package) fun get_dwallet_cap_id<T: drop>(dwallet: &DWallet<T>): ID {
+        dwallet.dwallet_cap_id
+    }
+
+    public(package) fun get_dwallet_output<T: drop>(dwallet: &DWallet<T>): vector<u8> {
+        dwallet.output
     }
 }

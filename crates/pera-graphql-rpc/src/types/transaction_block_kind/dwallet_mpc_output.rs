@@ -15,16 +15,22 @@ pub(crate) struct DWalletMPCOutputTransaction {
 impl DWalletMPCOutputTransaction {
     /// The output value of the dwallet mpc session
     async fn value(&self) -> Vec<u8> {
-        self.native.value.clone()
+        self.native.output.clone()
     }
 
     /// The session ID
     async fn session_id(&self) -> Base64 {
-        Base64::from(self.native.session_id.to_vec().as_slice())
+        Base64::from(self.native.session_info.session_id.to_vec().as_slice())
     }
 
     /// The address of the session initiator
     async fn sender_address(&self) -> Base64 {
-        Base64::from(self.native.sender_address.to_vec().as_slice())
+        Base64::from(
+            self.native
+                .session_info
+                .initiating_user_address
+                .to_vec()
+                .as_slice(),
+        )
     }
 }

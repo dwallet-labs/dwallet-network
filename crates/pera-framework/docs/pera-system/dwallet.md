@@ -8,6 +8,8 @@ title: Module `0x3::dwallet`
 -  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `create_dwallet_cap`](#0x3_dwallet_create_dwallet_cap)
+-  [Function `get_dwallet_cap_id`](#0x3_dwallet_get_dwallet_cap_id)
+-  [Function `get_dwallet_output`](#0x3_dwallet_get_dwallet_output)
 
 
 <pre><code><b>use</b> <a href="../pera-framework/object.md#0x2_object">0x2::object</a>;
@@ -147,9 +149,57 @@ The holder of this capability owns the <code><a href="dwallet.md#0x3_dwallet_DWa
     <b>let</b> cap = <a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
     };
-    <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&cap);
+<b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&cap);
     <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(cap, ctx.sender());
     id
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_get_dwallet_cap_id"></a>
+
+## Function `get_dwallet_cap_id`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_dwallet_cap_id">get_dwallet_cap_id</a>&lt;T: drop&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;): <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_dwallet_cap_id">get_dwallet_cap_id</a>&lt;T: drop&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;): ID {
+    <a href="dwallet.md#0x3_dwallet">dwallet</a>.dwallet_cap_id
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_get_dwallet_output"></a>
+
+## Function `get_dwallet_output`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_dwallet_output">get_dwallet_output</a>&lt;T: drop&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_get_dwallet_output">get_dwallet_output</a>&lt;T: drop&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <a href="dwallet.md#0x3_dwallet">dwallet</a>.output
 }
 </code></pre>
 
