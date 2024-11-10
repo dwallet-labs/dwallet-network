@@ -35,5 +35,7 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: sui-fork
+          # Image Tag.
           IMAGE_NAME: dwallet-light-client-tools
+          # Image Tag suffix.
           IMAGE_VERSION: v1.16.3
