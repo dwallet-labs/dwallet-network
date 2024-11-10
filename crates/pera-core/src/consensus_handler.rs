@@ -378,7 +378,11 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             );
                             return;
                         };
-                        let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await?;
+                        let Ok(mut dwallet_mpc_manager) =
+                            self.epoch_store.get_dwallet_mpc_manager().await
+                        else {
+                            return;
+                        };
                         if dwallet_mpc_manager
                             .malicious_actors
                             .contains(&origin_authority)
@@ -389,15 +393,12 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             );
                             return;
                         }
-                        let output_verification_result = match dwallet_mpc_manager
+                        let output_verification_result = dwallet_mpc_manager
                             .try_verify_output(output, &session_info)
-                        {
-                            Ok(is_valid) => is_valid,
-                            Err(e) => {
+                            .unwrap_or_else(|e| {
                                 error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                                 OutputVerificationResult::Malicious
-                            }
-                        };
+                            });
                         match output_verification_result {
                             OutputVerificationResult::Valid => {
                                 let transaction =

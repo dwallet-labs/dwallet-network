@@ -175,16 +175,15 @@ impl DWalletMPCManager {
         let malicious_parties_names = malicious_parties
             .into_iter()
             .map(|party_id| {
-                Ok(self
+                Ok(*self
                     .epoch_store()?
                     .committee()
                     .authority_by_index(party_id as u32)
-                    .ok_or(PeraError::InvalidCommittee("".to_string()))?
-                    .clone())
+                    .ok_or(PeraError::InvalidCommittee("".to_string()))?)
             })
             .collect::<PeraResult<Vec<AuthorityName>>>()?;
         warn!(
-            "found malicious parties while advancing, {:?}",
+            "flagged the following parties as malicious: {:?}",
             malicious_parties_names
         );
         self.malicious_actors.extend(malicious_parties_names);
