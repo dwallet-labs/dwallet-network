@@ -10,7 +10,6 @@ use crate::dwallet_mpc::mpc_events::{StartDKGFirstRoundEvent, StartDKGSecondRoun
 use group::PartyID;
 use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::event::Event;
-use pera_types::id::ID;
 use pera_types::messages_dwallet_mpc::MPCRound;
 use std::collections::HashMap;
 
@@ -79,16 +78,7 @@ impl Default for MPCParty {
 
 impl MPCParty {
     /// Advances the party to the next round by processing incoming messages and auxiliary input.
-    ///
-    /// # Arguments
-    ///
-    /// * `messages` - A hashmap of messages received from other parties, keyed by `PartyID`.
-    /// * `auxiliary_input` - A serialized vector containing additional data for the protocol.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(AdvanceResult)` on success, which can either advance the party or finalize the protocol.
-    /// * `Err(twopc_mpc::Error)` if an error occurs or if the `DefaultParty` variant is used.
+    /// Returns the next `MPCParty` to use or the final output if the protocol has completed.
     pub fn advance(
         self,
         messages: HashMap<PartyID, Vec<u8>>,
@@ -102,19 +92,7 @@ impl MPCParty {
     }
 
     /// Parses an `Event` to extract the corresponding `MPCParty`, auxiliary input, and session information.
-    ///
-    /// # Arguments
-    ///
-    /// * `event` - The event data to parse.
-    /// * `number_of_parties` - The total number of parties in the MPC session.
-    /// * `party_id` - The unique identifier for the party.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Some((MPCParty, Vec<u8>, SessionInfo)))` on success, containing the party, auxiliary input,
-    ///   and session info required to begin an MPC round.
-    /// * `Ok(None)` if the event type does not correspond to any known MPC rounds.
-    /// * `Err(anyhow::Error)` if parsing fails or if an error occurs.
+    /// When `Ok(None)` is returned the event type does not correspond to any known MPC rounds.
     pub fn from_event(
         event: &Event,
         number_of_parties: u16,
