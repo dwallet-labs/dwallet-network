@@ -142,7 +142,7 @@ pub fn sui_state_proof_verify_committee(
         let next_committee = next_epoch_committee.iter().cloned().collect();
         next_committee_epoch = Committee::new(
             checkpoint_summary.epoch().checked_add(1).unwrap(),
-            next_committee,                                   
+            next_committee,
         );
     } else {
         return Ok(NativeResult::err(cost, INVALID_TX));
@@ -152,7 +152,7 @@ pub fn sui_state_proof_verify_committee(
         cost,
         smallvec![
             Value::vector_u8(bcs::to_bytes(&next_committee_epoch).unwrap()),
-            Value::u64(current_committee.epoch)                                 
+            Value::u64(current_committee.epoch)
         ],
     ))
 }

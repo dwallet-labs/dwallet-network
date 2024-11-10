@@ -508,12 +508,13 @@ impl SuiTransactionBlockKind {
                     SignatureMPCOutputValue::Presign(o) => {
                         SuiDKGSignatureMPCOutputValue::Presign(o)
                     }
-                    SignatureMPCOutputValue::Sign { sigs, aggregator_public_key } => {
-                        SuiDKGSignatureMPCOutputValue::Sign {
-                            sigs,
-                            aggregator_public_key
-                        }
-                    }
+                    SignatureMPCOutputValue::Sign {
+                        sigs,
+                        aggregator_public_key,
+                    } => SuiDKGSignatureMPCOutputValue::Sign {
+                        sigs,
+                        aggregator_public_key,
+                    },
                 },
             }),
             TransactionKind::EndOfEpochTransaction(end_of_epoch_tx) => {
