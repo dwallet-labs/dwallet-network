@@ -69,11 +69,11 @@ module dwallet_system::sui_state_proof {
     ): (vector<u8>, vector<u8>);
 
     public fun init_module(
-        init_committee: vector<u8>, // 0
+        init_committee: vector<u8>,
         package_id: vector<u8>,
         init_cap_event_type_layout: vector<u8>,
         approve_event_type_layout: vector<u8>,
-        epoch_id_committee: u64, // 0
+        epoch_id_committee: u64,
         ctx: &mut TxContext) {
         let registry = StateProofRegistry {
             id: object::new(ctx),
@@ -94,9 +94,9 @@ module dwallet_system::sui_state_proof {
         };
 
         event::emit(EpochCommitteeSubmitted {
-            epoch: epoch_id_committee, // 0
+            epoch: epoch_id_committee,
             registry_id: object::uid_to_inner(&registry.id),
-            epoch_committee_id: object::id(&first_committee), // 0
+            epoch_committee_id: object::id(&first_committee),
         });
         debug::print(&epoch_id_committee);
 
@@ -107,30 +107,28 @@ module dwallet_system::sui_state_proof {
 
     public fun submit_new_state_committee(
         registry: &mut StateProofRegistry,
-        prev_committee: &EpochCommittee, // epoch = 0
-        new_checkpoint_summary: vector<u8>, // epoch = 1
+        prev_committee: &EpochCommittee,
+        new_checkpoint_summary: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        // 2 , 1
         let (new_committee_verified_bytes, new_committee_epoch) = sui_state_proof_verify_committee(
             prev_committee.committee,
             new_checkpoint_summary
         );
 
-        // 1 - 1 == 0
         assert!(new_committee_epoch - 1 == registry.highest_epoch, EWrongEpochSubmitted);
 
         let committee_new = EpochCommittee {
             id: object::new(ctx),
-            committee: new_committee_verified_bytes, // 2
+            committee: new_committee_verified_bytes,
         };
 
-        registry.highest_epoch = registry.highest_epoch + 1; // 1
+        registry.highest_epoch = registry.highest_epoch + 1;
 
         event::emit(EpochCommitteeSubmitted {
-            epoch: registry.highest_epoch, // 1
+            epoch: registry.highest_epoch,
             registry_id: object::uid_to_inner(&registry.id),
-            epoch_committee_id: object::id(&committee_new), // 2
+            epoch_committee_id: object::id(&committee_new),
         });
 
         transfer::freeze_object(committee_new);
