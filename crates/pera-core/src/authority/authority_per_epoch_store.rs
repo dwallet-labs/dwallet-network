@@ -2549,7 +2549,7 @@ impl AuthorityPerEpochStore {
         Some(VerifiedSequencedConsensusTransaction(transaction))
     }
 
-    async fn get_dwallet_mpc_manager(
+    pub async fn get_dwallet_mpc_manager(
         &self,
     ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCManager>> {
         let dwallet_mpc_manager = self.dwallet_mpc_manager.get();

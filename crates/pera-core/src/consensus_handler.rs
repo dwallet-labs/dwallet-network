@@ -378,12 +378,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             );
                             return;
                         };
-                        let Some(dwallet_mpc_manager) = self.epoch_store.dwallet_mpc_manager.get()
-                        else {
-                            error!("MPC manager was not initialized when verifying DWalletMPCOutput output from session {:?}", session_info.session_id);
-                            return;
-                        };
-                        let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
+                        let mut dwallet_mpc_manager = self.epoch_store.get_dwallet_mpc_manager().await?;
                         if dwallet_mpc_manager
                             .malicious_actors
                             .contains(&origin_authority)
