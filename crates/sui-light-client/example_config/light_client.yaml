@@ -2,10 +2,10 @@
 sui_full_node_url: "https://fullnode.testnet.sui.io:443"
 dwallet_full_node_url: "https://fullnode.alpha.testnet.dwallet.cloud:443"
 dwallet_faucet_url: "https://faucet.alpha.testnet.dwallet.cloud/gas"
-checkpoint_summary_dir: example_config
+checkpoint_summary_dir: example_config/
 genesis_filename: genesis_testnet.blob
 object_store_url: "https://checkpoints.testnet.sui.io"
 graphql_url: "https://sui-testnet.mystenlabs.com/graphql"
 sui_deployed_state_proof_package: "0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec"
-dwallet_network_registry_object_id: "0xd2503151a4c362f21df9e368fc5044526e912aeb4a16f63cf68492405b2d48c7"
-dwallet_network_config_object_id: "0x113a249fa53b29c63d195cc03075e59831fbf1e632c8b929d2626ac967bdfbe8"
+dwallet_network_registry_object_id: "0x4de2a30287ed40600b53c40bfb3eeae7ef4ecf9ba9a90df732c363318612f084"
+dwallet_network_config_object_id: "0xcc88a86628098c1472959ba6ad5e1c0fc0c1fd632b7ec21d265fb8efd5d55aea"
