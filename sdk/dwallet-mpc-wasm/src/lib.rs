@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::Error;
-use wasm_bindgen::JsValue;
-use wasm_bindgen::prelude::*;
-use serde::{Deserialize, Serialize};
 use dwallet_mpc::{create_dkg_output, create_sign_output};
-use log::debug;
+use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsValue;
 
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(dkg_first_round_output: Vec<u8>, session_id: String) -> Result<JsValue, JsErr> {
@@ -15,17 +14,9 @@ pub fn create_dkg_centralized_output(dkg_first_round_output: Vec<u8>, session_id
 }
 
 #[wasm_bindgen]
-pub fn create_sign_centralized_output(centralized_party_dkg_output: Vec<u8>, presign_first: Vec<u8>, presign: Vec<u8>, message: Vec<u8>, hash: u8, session_id: String) -> Result<JsValue, JsErr> {
-    console_error_panic_hook::set_once();
-    console_log::init_with_level(log::Level::Debug).expect("error initializing log");
-    let res = match create_sign_output(centralized_party_dkg_output, presign_first, presign, message, hash, session_id) {
-        Ok((sign_message, centralized_output)) => (sign_message, centralized_output),
-        Err(e) => {
-            debug!("Error: {}", e);
-            return Err(to_js_err(e));
-        }
-    };
-    Ok(serde_wasm_bindgen::to_value(&res).unwrap())
+pub fn create_sign_centralized_output(centralized_party_dkg_output: Vec<u8>, presign_first_round_output: Vec<u8>, presign_second_round_output: Vec<u8>, message: Vec<u8>, hash: u8, session_id: String) -> Result<JsValue, JsErr> {
+    let (sign_message, centralized_output) = create_sign_output(centralized_party_dkg_output, presign_first_round_output, presign_second_round_output, message, hash, session_id).map_err(to_js_err)?;
+    Ok(serde_wasm_bindgen::to_value(&(sign_message, centralized_output)).unwrap())
 }
 
 impl From<JsErr> for JsValue {

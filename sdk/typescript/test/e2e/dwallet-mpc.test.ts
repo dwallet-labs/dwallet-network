@@ -6,6 +6,7 @@ import { beforeAll, describe, it } from 'vitest';
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
+import { Hash } from '../../src/dwallet-mpc/sign';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test dwallet mpc', () => {
@@ -30,7 +31,7 @@ describe('Test dwallet mpc', () => {
 			Uint8Array.from(presignOutput!.encryptionOfMaskAndMaskedKeyShare),
 			Uint8Array.from(presignOutput!.noncePublicShareAndEncryptionOfMaskedNonce),
 			Uint8Array.from([1, 2, 3, 4, 5]),
-			0,
+			Hash.KECCAK256,
 			dwallet?.dwalletID.slice(2)!,
 		);
 		console.log(res);
