@@ -34,8 +34,7 @@ struct FaucetResponse {
 struct TransferredGasObject {
     amount: u64,
     // _id: String,
-    // #[serde(skip)]
-    // transfer_tx_digest: String,
+    // _transfer_tx_digest: String,
 }
 
 /// Return a dwallet client to interact with the APIs,

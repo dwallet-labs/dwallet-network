@@ -259,7 +259,7 @@ async fn download_checkpoint_summary(
                 .bytes()
                 .await
                 .context("Failed to read bytes from response")?;
-            
+
             println!("Downloaded checkpoint #{} data", checkpoint_number);
             Ok(bytes)
         }
