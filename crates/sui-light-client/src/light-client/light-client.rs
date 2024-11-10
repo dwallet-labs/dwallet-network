@@ -9,7 +9,8 @@ use move_core_types::{account_address::AccountAddress, identifier::Identifier};
 use object_store::path::Path;
 use object_store::ObjectStore;
 use sui_json_rpc_types::{
-    Coin, CoinPage, SuiObjectDataOptions, SuiTransactionBlockResponseOptions,
+    Coin, SuiObjectDataOptions, SuiTransactionBlockEffectsAPI, SuiTransactionBlockResponse,
+    SuiTransactionBlockResponseOptions,
 };
 
 use sui_json_rpc_types::{EventFilter, ObjectChange};
@@ -47,9 +48,11 @@ use sui_sdk::types::{
     transaction::{Command, ProgrammableMoveCall, Transaction, TransactionData},
 };
 
-use log::info;
+use crate::utils::fetch_or_request_coins;
 use object_store::parse_url;
+use reqwest::Client;
 use serde_json::json;
+use std::future::Future;
 use std::time::Duration;
 use std::{collections::HashMap, sync::Mutex};
 use url::Url;
@@ -58,6 +61,10 @@ const DWALLET_MODULE_ADDR: &str =
     "0x0000000000000000000000000000000000000000000000000000000000000003";
 const SUI_DWALLET_MODULE_NAME: &str = "dwallet_cap";
 const SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK: &str = "sui_state_proof";
+const GAS_BUDGET: u64 = 1_000_000_000;
+const DWALLET_COIN_TYPE: &str = "0x2::dwlt::DWLT";
+
+// todo(yuval): make this code work with .dwallet and not .sui.
 
 /// A light client for the Sui blockchain
 #[derive(Parser, Debug)]
@@ -137,6 +144,7 @@ struct Config {
 
     /// DWallet Faucet url.
     dwallet_faucet_url: String,
+
     /// Checkpoint summary directory
     checkpoint_summary_dir: PathBuf,
 
@@ -152,7 +160,7 @@ struct Config {
     /// SUI deployed state proof package.
     sui_deployed_state_proof_package: String,
 
-    /// Sui Light Client Registry(State) object ID in dWallet Network.
+    /// Sui Light Client Registry (State) object ID in dWallet Network.
     dwallet_network_registry_object_id: String,
 
     /// Sui Light Client Config object ID in dWallet Network.
@@ -228,56 +236,71 @@ async fn download_checkpoint_summary(
     checkpoint_number: u64,
 ) -> Result<CertifiedCheckpointSummary> {
     const MAX_RETRIES: u32 = 5;
-    let mut delay = 2000; // Start with 2 seconds delay
+    const INITIAL_DELAY: u64 = 2000;
+
+    retry_with_backoff(MAX_RETRIES, INITIAL_DELAY, || {
+        // Clone config for closure capture.
+        let config = config.clone();
+
+        async move {
+            let url =
+                Url::parse(&config.object_store_url).context("Failed to parse object store URL")?;
+
+            let (dyn_store, _store_path) =
+                parse_url(&url).context("Failed to parse URL into object store components")?;
+
+            let path = Path::from(format!("{}.chk", checkpoint_number));
+            let response = dyn_store
+                .get(&path)
+                .await
+                .context("Failed to download checkpoint data")?;
+
+            let bytes = response
+                .bytes()
+                .await
+                .context("Failed to read bytes from response")?;
+
+            let (_, blob) = bcs::from_bytes::<(u8, CheckpointData)>(&bytes)
+                .context("Failed to deserialize checkpoint data")?;
+
+            println!("Downloaded checkpoint #{} summary", checkpoint_number);
+            Ok(blob.checkpoint_summary)
+        }
+    })
+        .await
+}
+
+async fn retry_with_backoff<F, T>(
+    max_retries: u32,
+    initial_delay: u64,
+    operation: impl Fn() -> F,
+) -> Result<T>
+where
+    F: Future<Output = Result<T>>,
+{
     let mut attempt = 0;
+    let mut delay = initial_delay;
 
     loop {
-        // Download the checkpoint from the server
-        let url =
-            Url::parse(&config.object_store_url).context("Failed to parse object store URL")?;
-        let (dyn_store, _store_path) =
-            parse_url(&url).context("Failed to parse URL into object store components")?;
-        let path = Path::from(format!("{}.chk", checkpoint_number));
-        let response = dyn_store.get(&path).await;
-
-        match response {
-            Ok(response) => {
-                // Successfully got a response, process it
-                let bytes = response
-                    .bytes()
-                    .await
-                    .context("Failed to read bytes from response")?;
-                let (_, blob) = bcs::from_bytes::<(u8, CheckpointData)>(&bytes)
-                    .context("Failed to deserialize checkpoint data")?;
-
-                println!("Downloaded checkpoint #{} summary", checkpoint_number);
-                return Ok(blob.checkpoint_summary);
-            }
+        match operation().await {
+            Ok(result) => return Ok(result),
             Err(err) => {
-                match err {
-                    object_store::Error::NotFound { .. } => {
-                        // Increment the attempt counter
-                        attempt += 1;
-
-                        if attempt > MAX_RETRIES {
-                            return Err(anyhow!("Failed to download checkpoint summary after {} attempts due to NotFound error", MAX_RETRIES));
-                        }
-
-                        println!(
-                            "Attempt {}: Checkpoint not found. Retrying in {} ms...",
-                            attempt, delay
-                        );
-
-                        tokio::time::sleep(Duration::from_millis(delay)).await;
-                        delay *= 2;
-                        continue;
-                    }
-                    _ => {
-                        return Err(err).context(
-                            "Failed to download checkpoint summary due to an unexpected error",
-                        );
-                    }
+                attempt += 1;
+                if attempt > max_retries {
+                    return Err(anyhow!(
+                        "Operation failed after {} attempts: {}",
+                        max_retries,
+                        err
+                    ));
                 }
+
+                println!(
+                    "Attempt {} failed with error: {}. Retrying in {} ms...",
+                    attempt, err, delay
+                );
+
+                tokio::time::sleep(Duration::from_millis(delay)).await;
+                delay *= 2; // Exponential backoff
             }
         }
     }
@@ -290,8 +313,11 @@ async fn query_last_checkpoint_of_epoch(config: &Config, epoch_id: u64) -> Resul
         "variables": { "epochID": epoch_id }
     });
 
-    // Submit the query by POSTing to the GraphQL endpoint
-    let client = reqwest::Client::new();
+    // Submit the query by POSTing to the GraphQL endpoint.
+    let client = Client::builder()
+        // Ignore SSL certificate errors (This is a temp until SUI fix their cert).
+        .danger_accept_invalid_certs(true)
+        .build()?;
     let resp = client
         .post(&config.graphql_url)
         .header("Content-Type", "application/json")
@@ -347,7 +373,7 @@ async fn sync_checkpoint_list_to_latest(config: &Config) -> Result<()> {
         latest_checkpoint_in_network.epoch()
     );
 
-    // Sequentially record all the missing end of epoch checkpoints numbers
+    // Sequentially record all the missing end of epoch checkpoints numbers.
     while last_epoch_in_list + 1 < latest_checkpoint_in_network.epoch() {
         let target_epoch = last_epoch_in_list + 1;
         let target_last_checkpoint_number =
@@ -359,7 +385,7 @@ async fn sync_checkpoint_list_to_latest(config: &Config) -> Result<()> {
             .push(target_last_checkpoint_number);
         write_checkpoint_list(config, &checkpoints_list)?;
 
-        // Update
+        // Update.
         last_epoch_in_list = target_epoch;
 
         println!(
@@ -371,7 +397,7 @@ async fn sync_checkpoint_list_to_latest(config: &Config) -> Result<()> {
     Ok(())
 }
 
-async fn check_and_sync_checkpoints(config: &Config) -> Result<()> {
+async fn check_and_sync_checkpoints(config: &Config, active_addr: SuiAddress) -> Result<()> {
     println!("Syncing checkpoints to the latest");
     sync_checkpoint_list_to_latest(config)
         .await
@@ -383,7 +409,6 @@ async fn check_and_sync_checkpoints(config: &Config) -> Result<()> {
     println!("Checkpoints: {:?}", checkpoints_list.checkpoints);
 
     let genesis_committee = load_genesis_committee(config)?;
-    // genesis_committee.epoch = 1;
 
     // Retrieve the highest epoch ID that was registered on dWallet network.
     let latest_registered_epoch_in_dwallet = retrieve_highest_epoch_from_dwallet_network(config)
@@ -429,16 +454,16 @@ async fn check_and_sync_checkpoints(config: &Config) -> Result<()> {
 
         // Check if the checkpoint needs to be submitted to the dwallet network.
         if latest_registered_epoch_in_dwallet < summary.epoch() {
-            update_state_proof_registry_in_dwallet_network(config, &summary)
+            update_state_proof_registry_in_dwallet_network(config, &summary, active_addr)
                 .await
                 .context("Failed to update sui state proof registry in dwallet network")?;
         }
 
         // Extract the new committee information.
         if let Some(EndOfEpochData {
-            next_epoch_committee,
-            ..
-        }) = &summary.end_of_epoch_data
+                        next_epoch_committee,
+                        ..
+                    }) = &summary.end_of_epoch_data
         {
             let next_committee = next_epoch_committee.iter().cloned().collect();
             prev_committee = Committee::new(summary.epoch().saturating_add(1), next_committee);
@@ -473,25 +498,27 @@ fn verify_checkpoint(
 async fn update_state_proof_registry_in_dwallet_network(
     config: &Config,
     checkpoint_summary: &Envelope<CheckpointSummary, AuthorityQuorumSignInfo<true>>,
+    active_addr: SuiAddress,
 ) -> Result<()> {
     let dwallet_client = dwallet_client(config).await?;
-    let pt = submit_new_state_committee_tx(config, &dwallet_client, checkpoint_summary).await?;
+    let pt =
+        build_tx_submit_new_state_committee(config, &dwallet_client, checkpoint_summary).await?;
 
-    let (gas_budget, gas_price, sender) =
-        make_transaction_global_arguments(&dwallet_client).await?;
+    let gas_price = gas_price(&dwallet_client).await?;
+    let coins = fetch_or_request_coins(&dwallet_client, active_addr, GAS_BUDGET, config).await?;
+    println!("Coin Balance: {}", coins.balance);
 
-    let coin_gas = max_coin_for_addr(&dwallet_client, &sender, config).await?;
     let tx_data = TransactionData::new_programmable(
-        sender,
-        vec![coin_gas.object_ref()],
+        active_addr,
+        vec![coins.object_ref()],
         pt,
-        gas_budget,
+        GAS_BUDGET,
         gas_price,
     );
 
     let keystore = get_keystore()?;
     let signature = keystore
-        .sign_secure(&sender, &tx_data, Intent::sui_transaction())
+        .sign_secure(&active_addr, &tx_data, Intent::sui_transaction())
         .context("Failed to sign transaction")?;
 
     println!("Executing the transaction...");
@@ -504,14 +531,7 @@ async fn update_state_proof_registry_in_dwallet_network(
         )
         .await?;
 
-    if transaction_response.status_ok().is_some() {
-        println!("Transaction executed successfully");
-    } else {
-        println!(
-            "Transaction failed with status: {:?}",
-            transaction_response.errors
-        );
-    }
+    assert_transaction(&transaction_response).context("submit_new_state_committee tx error")?;
 
     let object_changes = transaction_response
         .object_changes
@@ -520,8 +540,6 @@ async fn update_state_proof_registry_in_dwallet_network(
     for (index, object_change) in object_changes.iter().enumerate() {
         println!("Object Change {}: {}", index + 1, object_change);
     }
-
-    // Print events
     for event in transaction_response.events.iter() {
         println!("Event Emitted: {}", event);
     }
@@ -534,25 +552,48 @@ async fn update_state_proof_registry_in_dwallet_network(
     Ok(())
 }
 
-async fn make_transaction_global_arguments(
-    dwallet_client: &SuiClient,
-) -> Result<(u64, u64, SuiAddress)> {
-    let gas_budget = 1_000_000_000;
+/// Assert that the transaction executed successfully, exit on errors.
+fn assert_transaction(transaction_response: &SuiTransactionBlockResponse) -> Result<()> {
+    if let Some(true) = transaction_response.status_ok() {
+        println!("Transaction executed successfully");
+        return Ok(());
+    }
+
+    // Collect all error messages from `transaction_response.errors`,
+    // `effects.status`, and `effects.errors`
+    let mut error_messages = Vec::new();
+
+    if !transaction_response.errors.is_empty() {
+        error_messages.push(format!(
+            "Transaction errors: {:?}",
+            transaction_response.errors
+        ));
+    }
+
+    if let Some(effects) = transaction_response.effects.as_ref() {
+        if effects.status().is_err() {
+            error_messages.push(format!("Effects status error: {:?}", effects.status()));
+        }
+    }
+    Err(anyhow!(error_messages.join("; ")))
+}
+
+async fn gas_price(dwallet_client: &SuiClient) -> Result<u64> {
     let gas_price = dwallet_client
         .read_api()
         .get_reference_gas_price()
         .await
         .context("Failed to retrieve gas price")?;
-    let keystore = get_keystore()?;
+    // let keystore = get_keystore()?;
+    //
+    // let sender = keystore
+    //     .addresses_with_alias()
+    //     .first()
+    //     .context("No addresses found in keystore")?
+    //     .0;
+    // println!("Sender Address: {}", sender);
 
-    let sender = keystore
-        .addresses_with_alias()
-        .first()
-        .context("No addresses found in keystore")?
-        .0;
-    println!("Sender Address: {}", sender);
-
-    Ok((gas_budget, gas_price, *sender))
+    Ok(gas_price)
 }
 
 fn get_keystore() -> Result<FileBasedKeystore> {
@@ -563,7 +604,7 @@ fn get_keystore() -> Result<FileBasedKeystore> {
     FileBasedKeystore::new(&keystore_path).context("Failed to load keystore")
 }
 
-async fn submit_new_state_committee_tx(
+async fn build_tx_submit_new_state_committee(
     config: &Config,
     dwallet_client: &SuiClient,
     summary: &Envelope<CheckpointSummary, AuthorityQuorumSignInfo<true>>,
@@ -617,62 +658,6 @@ async fn submit_new_state_committee_tx(
     };
     ptb.command(Command::MoveCall(Box::new(call)));
     Ok(ptb.finish())
-}
-
-async fn max_coin_for_addr(
-    dwallet_client: &SuiClient,
-    sender: &SuiAddress,
-    config: &Config,
-) -> Result<Coin> {
-    // Fetching the coin with the maximum balance.
-    let mut next_cursor = None;
-    let mut max_coin: Option<Coin> = None;
-
-    loop {
-        let coins = get_or_request_coins(&dwallet_client, sender, config).await?;
-
-        // Update max coin based on the current page data.
-        if let Some(new_max) = coins.data.into_iter().max_by_key(|coin| coin.balance) {
-            max_coin = Some(match max_coin {
-                Some(existing_max) if existing_max.balance > new_max.balance => existing_max,
-                _ => new_max,
-            });
-        }
-        // Break if there are no more pages.
-        if !coins.has_next_page {
-            break;
-        }
-        next_cursor = coins.next_cursor;
-    }
-
-    max_coin.context(format!(
-        "No coins found for the given sender address: {sender}"
-    ))
-}
-
-async fn get_or_request_coins(
-    dwallet_client: &SuiClient,
-    sender: &SuiAddress,
-    config: &Config,
-) -> Result<CoinPage> {
-    let coins = match dwallet_client
-        .coin_read_api()
-        .get_coins(*sender, None, None, None)
-        .await
-    {
-        Ok(coins) => coins,
-        Err(_) => {
-            let coin = utils::fetch_coin(&dwallet_client, sender).await?;
-            if coin.is_none() {
-                utils::request_tokens_from_faucet(*sender, &dwallet_client, config).await?;
-            }
-            dwallet_client
-                .coin_read_api()
-                .get_coins(*sender, None, None, None)
-                .await?
-        }
-    };
-    Ok(coins)
 }
 
 fn load_genesis_committee(config: &Config) -> Result<Committee> {
@@ -832,20 +817,25 @@ pub async fn main() -> Result<()> {
     let remote_package_store = RemotePackageStore::new(config.clone());
     let resolver = Resolver::new(remote_package_store);
 
-    let setup = utils::setup_for_write(&config)
+    let (dwallet_client, coins, active_addr) = utils::setup_for_write(&config, GAS_BUDGET)
         .await
         .context("Wallet setup failed")?;
 
-    let (dwallet_client, _, _) = setup;
-    // Handle commands
     match args.command {
         Some(SCommands::Init { ckp_id }) => {
-            init_light_client(&mut config, resolver, dwallet_client, ckp_id)
+            init_light_client(
+                &mut config,
+                resolver,
+                dwallet_client,
+                ckp_id,
+                coins,
+                active_addr,
+            )
                 .await
                 .context("Init Command Failed")?;
         }
         Some(SCommands::Sync {}) => {
-            check_and_sync_checkpoints(&config)
+            check_and_sync_checkpoints(&config, active_addr)
                 .await
                 .context("Sync Command Failed")?;
         }
@@ -870,12 +860,13 @@ async fn dwallet_client(config: &Config) -> Result<SuiClient> {
         .context("Failed to create dwallet client")
 }
 
-// todo(yuval): make this code work with .dwallet and not .sui.
 async fn init_light_client(
     config: &mut Config,
     resolver: Resolver<RemotePackageStore>,
     dwallet_client: SuiClient,
     ckp_id: u64,
+    coins: Coin,
+    active_addr: SuiAddress,
 ) -> Result<()> {
     let (next_committee, current_epoch) = init_by_checkpoint_id(&config, ckp_id).await?;
     println!(
@@ -887,29 +878,18 @@ async fn init_light_client(
         .await
         .context("init_module transaction failed")?;
 
-    let (gas_budget, gas_price, sender) =
-        make_transaction_global_arguments(&dwallet_client).await?;
-
     let keystore = get_keystore()?;
 
-    let coins = get_or_request_coins(&dwallet_client, &sender, &config).await?;
-
-    let coin_gas = coins
-        .data
-        .iter()
-        .max_by_key(|coin| coin.balance)
-        .context("No gas coins available")?;
-
     let tx_data = TransactionData::new_programmable(
-        sender,
-        vec![coin_gas.object_ref()],
+        active_addr,
+        vec![coins.object_ref()],
         pt,
-        gas_budget,
-        gas_price,
+        GAS_BUDGET,
+        gas_price(&dwallet_client).await?,
     );
 
     let signature = keystore
-        .sign_secure(&sender, &tx_data, Intent::sui_transaction())
+        .sign_secure(&active_addr, &tx_data, Intent::sui_transaction())
         .context("Failed to sign transaction")?;
 
     println!("Executing the transaction...");
@@ -923,14 +903,7 @@ async fn init_light_client(
         .await
         .context("Failed to execute `init_module` transaction")?;
 
-    if transaction_response.status_ok().is_some() {
-        println!("Transaction executed successfully");
-    } else {
-        println!(
-            "Transaction failed with status: {:?}",
-            transaction_response.errors
-        );
-    }
+    assert_transaction(&transaction_response).context("submit_new_state_committee tx error")?;
 
     println!(
         "Transaction executed with {} object changes:",
@@ -966,7 +939,6 @@ async fn init_light_client(
     // Update YAML config.
     config.dwallet_network_config_object_id = config_object_change.object_ref().0.to_string();
     config.dwallet_network_registry_object_id = registry_object_change.object_ref().0.to_string();
-
     Ok(())
 }
 
@@ -1066,7 +1038,8 @@ async fn init_by_checkpoint_id(
     if checkpoint_id == 0 {
         // Load the genesis committee.
         let mut genesis_committee = load_genesis_committee(config)?;
-        // genesis_committee.epoch = 1;
+        // todo(zeev): remove
+        genesis_committee.epoch = 1;
         return Ok((genesis_committee, 0));
     }
     let checkpoint_summary = download_checkpoint_summary(config, checkpoint_id)
