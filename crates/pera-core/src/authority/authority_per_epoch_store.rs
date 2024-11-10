@@ -2442,7 +2442,7 @@ impl AuthorityPerEpochStore {
                         "DWalletMPCMessage authority {} does not match its author from consensus {}",
                         authority, transaction.certificate_author_index
                     );
-                    if let Ok(manager) = self.get_dwallet_mpc_manager().await {
+                    if let Ok(mut manager) = self.get_dwallet_mpc_manager().await {
                         manager.malicious_actors.insert(authority.clone());
                     }
                     return None;
@@ -2549,7 +2549,9 @@ impl AuthorityPerEpochStore {
         Some(VerifiedSequencedConsensusTransaction(transaction))
     }
 
-    async fn get_dwallet_mpc_manager(&self) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCManager>> {
+    async fn get_dwallet_mpc_manager(
+        &self,
+    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCManager>> {
         let dwallet_mpc_manager = self.dwallet_mpc_manager.get();
         match dwallet_mpc_manager {
             Some(dwallet_mpc_manager) => Ok(dwallet_mpc_manager.lock().await),
@@ -3213,7 +3215,10 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-        self.get_dwallet_mpc_manager().await?.handle_end_of_delivery().await?;
+        self.get_dwallet_mpc_manager()
+            .await?
+            .handle_end_of_delivery()
+            .await?;
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
@@ -3609,7 +3614,11 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                self.get_dwallet_mpc_manager().await?.handle_message(message, *authority, *session_id)?;
+                self.get_dwallet_mpc_manager().await?.handle_message(
+                    message,
+                    *authority,
+                    *session_id,
+                )?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
