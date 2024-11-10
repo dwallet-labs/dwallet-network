@@ -15,7 +15,9 @@
 	"scripts": {
 		"start": "pnpm build && node dist/cjs/index.js",
 		"dev": "pnpm build --watch",
-		"build": "build-package"
+		"build": "build-package",
+		"prettier:check": "prettier -c --ignore-unknown .",
+		"prettier:fix": "prettier -w --ignore-unknown ."
 	},
 	"keywords": [],
 	"author": "",
@@ -27,6 +29,7 @@
 	},
 	"devDependencies": {
 		"@mysten/build-scripts": "workspace:*",
+		"prettier": "^3.0.0",
 		"typescript": "^5.4.5"
 	}
 }

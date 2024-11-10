@@ -26,6 +26,9 @@ RUN cargo build --profile ${PROFILE} \
 FROM debian:bullseye-slim AS runtime
 WORKDIR /opt/lc
 
+RUN apt-get update && apt-get install -y ca-certificates
+RUN update-ca-certificates
+
 # Copy binaries to /opt/lc/bin and add them to PATH.
 COPY --from=builder /lc/target/release/light-client-service /opt/lc/bin/light-client-service
 COPY --from=builder /lc/target/release/light-client /opt/lc/bin/light-client

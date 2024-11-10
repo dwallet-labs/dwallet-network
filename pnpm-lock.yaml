@@ -919,6 +919,9 @@ importers:
       '@mysten/build-scripts':
         specifier: workspace:*
         version: link:../../sdk/build-scripts
+      prettier:
+        specifier: ^3.0.0
+        version: 3.0.3
       typescript:
         specifier: ^5.4.5
         version: 5.6.3
@@ -3619,10 +3622,12 @@ packages:
   '@mysten/sui.js@0.51.2':
     resolution: {integrity: sha512-RRG/VHhVvkQlWqodFZagRxVDo3SbXh4e3xTBplhPNNyybugbWj/V+wGrNv5/KtxfVxHBw6jTCoB798ijqPBq7g==}
     engines: {node: '>=16'}
+    deprecated: This package has been renamed to @mysten/sui, please update to use the renamed package.
 
   '@mysten/sui.js@0.52.0':
     resolution: {integrity: sha512-oqfA0O/STWDJgnxvu07HsDRybG8yD3pfqAhADFawZTthbPdl6U01qJQVCzW7yf2OqG9AkYWHT+392rVcVjbcnw==}
     engines: {node: '>=16'}
+    deprecated: This package has been renamed to @mysten/sui, please update to use the renamed package.
 
   '@nanostores/react@0.7.1':
     resolution: {integrity: sha512-EXQg9N4MdI4eJQz/AZLIx3hxQ6BuBmV4Q55bCd5YCSgEOAW7tGTsIZxpRXxvxLXzflNvHTBvfrDNY38TlSVBkQ==}
@@ -6359,6 +6364,7 @@ packages:
 
   acorn-import-assertions@1.8.0:
     resolution: {integrity: sha512-m7VZ3jwz4eK6A4Vtt8Ew1/mNbP24u0FhdyfA7fSvnJR6LMdfOYnmuIrrJAgrYfYJ10F/otaHTtrtrtmHdMNzEw==}
+    deprecated: package has been renamed to acorn-import-attributes
     peerDependencies:
       acorn: ^8
 

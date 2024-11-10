@@ -14,7 +14,6 @@ import {
 	submitTxStateProof,
 } from '@dwallet-network/dwallet.js/signature-mpc';
 import { SuiClient } from '@mysten/sui.js/client';
-// import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
 import { TransactionBlock as TransactionBlockSUI } from '@mysten/sui.js/transactions';
 
 async function main() {
