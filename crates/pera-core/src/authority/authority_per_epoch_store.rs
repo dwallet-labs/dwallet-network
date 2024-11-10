@@ -68,6 +68,7 @@ use crate::consensus_handler::{
 };
 use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
     DkgStatus, RandomnessManager, RandomnessReporter, VersionedProcessedMessage,
@@ -2549,6 +2550,14 @@ impl AuthorityPerEpochStore {
             SequencedConsensusTransactionKind::System(_) => {}
         }
         Some(VerifiedSequencedConsensusTransaction(transaction))
+    }
+
+    async fn get_dwallet_mpc_manager(&self) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCManager>> {
+        let dwallet_mpc_manager = self.dwallet_mpc_manager.get()
+        match dwallet_mpc_manager {
+            Some(dwallet_mpc_manager) => Ok(dwallet_mpc_manager.lock().await),
+            None => Err(PeraError::from("DWalletMPCManager is not initialized")),
+        }
     }
 
     fn db_batch(&self) -> PeraResult<DBBatch> {
