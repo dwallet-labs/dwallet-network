@@ -119,7 +119,7 @@ impl DWalletMPCManager {
             .into_iter()
             .map(|result| {
                 if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = result {
-                    return self.store_malicious_parties_by_indices(malicious_parties);
+                    return self.flag_parties_as_malicious(malicious_parties);
                 }
                 Ok(())
             })
@@ -159,7 +159,7 @@ impl DWalletMPCManager {
         if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) =
             handle_message_response
         {
-            self.store_malicious_parties_by_indices(malicious_parties)?;
+            self.flag_parties_as_malicious(malicious_parties)?;
             return Ok(());
         };
         handle_message_response
@@ -168,7 +168,7 @@ impl DWalletMPCManager {
     /// Convert the indices of the malicious parties to their addresses and store them
     /// in the malicious actors set
     /// New messages from these parties will be ignored
-    fn store_malicious_parties_by_indices(
+    fn flag_parties_as_malicious(
         &mut self,
         malicious_parties: Vec<PartyID>,
     ) -> PeraResult {
