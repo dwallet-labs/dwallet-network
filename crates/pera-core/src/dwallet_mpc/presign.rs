@@ -23,18 +23,6 @@ pub struct FirstPresignBytesParty {
 impl FirstPresignBytesParty {
     /// Generates the auxiliary input required for the first Presign round.
     /// It is necessary for advancing the party to the next round of the Presign protocol.
-    ///
-    /// # Arguments
-    ///
-    /// * `number_of_parties` - The total number of participating parties.
-    /// * `party_id` - The ID of the current party.
-    /// * `session_id` - A unique identifier for the MPC session.
-    /// * `dkg_output` - The decentralized final output of the DKG protocol.
-    ///
-    /// # Returns
-    ///
-    /// A serialized vector containing the auxiliary input data required to advance
-    /// the party to the next round.
     pub(crate) fn generate_auxiliary_input(
         session_id: Vec<u8>,
         number_of_parties: u16,
@@ -133,19 +121,7 @@ pub struct SecondPresignBytesParty {
 impl SecondPresignBytesParty {
     /// Generates the auxiliary input required for the second Presign round.
     /// It is necessary for advancing the party to the next round of the Presign protocol.
-    ///
-    /// # Arguments
-    ///
-    /// * `number_of_parties` - The total number of participating parties.
-    /// * `party_id` - The ID of the current party.
-    /// * `first_round_output` - The output from the first round of the Presign protocol.
-    /// * `dkg_output` - The decentralized final output of the DKG protocol.
-    /// * `session_id` - A unique identifier for the MPC session.(session ID of the first round)
-    ///
-    /// # Returns
-    ///
-    /// A serialized vector containing the auxiliary input data required to advance
-    /// the party.
+    /// The `session_id` is the unique identifier for the MPC session from the first round.
     pub(crate) fn generate_auxiliary_input(
         session_id: Vec<u8>,
         number_of_parties: u16,
