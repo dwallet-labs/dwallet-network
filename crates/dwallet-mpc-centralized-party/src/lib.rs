@@ -78,17 +78,27 @@ pub fn message_digest(message: &[u8], hash_type: &Hash) -> secp256k1::Scalar {
 type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
 pub fn create_sign_output(
     centralized_party_dkg_output: Vec<u8>,
+    presign_first: Vec<u8>,
     presign: Vec<u8>,
     message: Vec<u8>,
     hash: u8,
     session_id: String,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
+    debug!("create_sign_output");
     let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGOutput = bcs::from_bytes(&centralized_party_dkg_output)?;
-    let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign = bcs::from_bytes(&presign)?;
+    debug!("presign first ");
+    let presign_first: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare = bcs::from_bytes(&presign_first)?;
+    debug!("presign second");
+    let presign_second: (<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart, <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart) = bcs::from_bytes(&presign)?;
+    let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign = (presign_first, presign_second).into();
+    debug!("session_id");
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
+    debug!("message_digest");
     let m = message_digest(&message, &hash.try_into()?);
+    debug!("protocol_public_parameters");
     let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
 
+    debug!("into");
     let centralized_party_auxiliary_input =
         (
             m,
@@ -97,6 +107,7 @@ pub fn create_sign_output(
             protocol_public_parameters.clone(),
             session_id
         ).into();
+    debug!("advance");
     let (sign_message, centralized_output) =
         SignCentralizedParty::advance((), &centralized_party_auxiliary_input, &mut OsRng)?;
     let sign_message = bcs::to_bytes(&sign_message)?;
