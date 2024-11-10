@@ -2575,6 +2575,7 @@ impl AuthorityPerEpochStore {
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> PeraResult<Vec<VerifiedExecutableTransaction>> {
         // Split transactions into different types for processing.
+        // TODO (#337): Replace with filter_map when async clusure get supported.
         let mut verified_transactions: Vec<VerifiedSequencedConsensusTransaction> = vec![];
         for tx in transactions {
             if let Some(verified_tx) = self
