@@ -7,7 +7,7 @@ ARG PROFILE=release
 ARG GIT_REVISION
 ENV GIT_REVISION=$GIT_REVISION
 WORKDIR "$WORKDIR/lc"
-RUN apt-get update && apt-get install -y cmake clang
+RUN apt-get update && apt-get install -y cmake clang && apt-get install -y ca-certificates
 
 COPY Cargo.toml Cargo.lock ./
 COPY consensus consensus
