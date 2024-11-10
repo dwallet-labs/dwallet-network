@@ -72,7 +72,15 @@ pub fn message_digest(message: &[u8], hash_type: &Hash) -> secp256k1::Scalar {
     U256::from(m).into()
 }
 
+///
 type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
+
+/// Executes the centralized phase of the Sign protocol, first part of the protocol
+///
+/// The [`create_sign_output`] function is called by the client (aka the centralized party).
+///
+/// The `session_id` is a unique identifier for the session, represented as a hexadecimal string.
+/// The `hash` must fit to the [`Hash`] enum.
 pub fn create_sign_output(
     centralized_party_dkg_output: Vec<u8>,
     presign_first_round_output: Vec<u8>,
