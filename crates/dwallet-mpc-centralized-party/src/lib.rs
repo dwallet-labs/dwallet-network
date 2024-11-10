@@ -1,8 +1,8 @@
+/// This crate contains the cryptographic logic for the centralized 2PC-MPC party
 use k256::ecdsa::hazmat::bits2field;
 use k256::ecdsa::signature::digest::{Digest, FixedOutput};
 use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
-/// This crate contains the cryptographic logic for the centralized 2PC-MPC party
 use mpc::two_party::Round;
 use rand_core::OsRng;
 use twopc_mpc::secp256k1;
