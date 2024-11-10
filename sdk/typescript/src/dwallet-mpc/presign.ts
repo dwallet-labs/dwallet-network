@@ -69,7 +69,7 @@ export async function presign(
 					outputObject?.data?.content?.dataType === 'moveObject'
 						? (outputObject.data?.content?.fields as {
 								id: { id: string };
-								output: number[];
+								presigns: number[];
 								session_id: string;
 							})
 						: null;
@@ -78,7 +78,7 @@ export async function presign(
 					presignFirstRoundOutputId: firstRoundOutputData!.id.id,
 					encryptionOfMaskAndMaskedKeyShare: firstRoundOutputData!.output,
 					presignSecondRoundOutputId: secondRoundOutputData!.id.id,
-					noncePublicShareAndEncryptionOfMaskedNonce: secondRoundOutputData!.output,
+					noncePublicShareAndEncryptionOfMaskedNonce: secondRoundOutputData!.presigns,
 				};
 			}
 		}
