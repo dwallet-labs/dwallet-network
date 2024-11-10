@@ -29,17 +29,6 @@ pub struct FirstDKGBytesParty {
 impl FirstDKGBytesParty {
     /// Generates the auxiliary input required for the first DKG round.
     /// It is necessary for advancing the party to the next round of the DKG protocol.
-    ///
-    /// # Arguments
-    ///
-    /// * `number_of_parties` - The total number of participating parties.
-    /// * `party_id` - The ID of the current party.
-    /// * `session_id` - A unique identifier for the MPC session.
-    ///
-    /// # Returns
-    ///
-    /// A serialized vector containing the auxiliary input data required to advance
-    /// the party to the next round.
     pub fn generate_auxiliary_input(
         number_of_parties: u16,
         party_id: PartyID,
@@ -126,17 +115,6 @@ impl BytesParty for FirstDKGBytesParty {
 /// preparing the party with the essential session information and other contextual data.
 trait DKGFirstPartyAuxiliaryInputGenerator: Party {
     /// Generates the auxiliary input required for the first round of the DKG protocol.
-    ///
-    /// # Arguments
-    ///
-    /// * `session_id` - A unique identifier for the current MPC session.
-    /// * `number_of_parties` - The total number of participating parties in the DKG session.
-    /// * `party_id` - The unique ID of the current party.
-    ///
-    /// # Returns
-    ///
-    /// A structured auxiliary input compatible with the DKG protocol's requirements,
-    /// enabling the party to correctly initiate and participate in the first round.
     fn generate_auxiliary_input(
         session_id: Vec<u8>,
         number_of_parties: u16,
@@ -176,19 +154,7 @@ pub struct SecondDKGBytesParty {
 impl SecondDKGBytesParty {
     /// Generates the auxiliary input required for the second DKG round.
     /// It is necessary for advancing the party to the next round of the DKG protocol.
-    ///
-    /// # Arguments
-    ///
-    /// * `number_of_parties` - The total number of participating parties.
-    /// * `party_id` - The ID of the current party.
-    /// * `first_round_output` - The output from the first round of the DKG protocol.
-    /// * `centralized_party_public_key_share` - The public key share of the centralized party.
-    /// * `session_id` - A unique identifier for the MPC session.
-    ///
-    /// # Returns
-    ///
-    /// A serialized vector containing the auxiliary input data required to advance
-    /// the party.
+    /// The `session_id` is the unique identifier for the MPC session from the first round
     pub fn generate_auxiliary_input(
         number_of_parties: u16,
         party_id: PartyID,
@@ -244,19 +210,7 @@ impl BytesParty for SecondDKGBytesParty {
 /// preparing the party with the essential session information and other contextual data.
 trait DKGSecondPartyAuxiliaryInputGenerator: Party {
     /// Generates the auxiliary input required for the second round of the DKG protocol.
-    ///
-    /// # Arguments
-    ///
-    /// * `number_of_parties` - The total number of participating parties in the DKG session.
-    /// * `party_id` - The unique ID of the current party.
-    /// * `first_round_output` - The output from the first round of the DKG protocol.
-    /// * `centralized_party_public_key_share` - The public key share of the centralized party.
-    /// * `session_id` - A unique identifier for the current MPC session.
-    ///
-    /// # Returns
-    ///
-    /// A structured auxiliary input compatible with the DKG protocol's requirements,
-    /// enabling the party to correctly initiate and participate in the second round.
+    /// The `session_id` is the unique identifier for the MPC session from the first round
     fn generate_auxiliary_input(
         number_of_parties: u16,
         party_id: PartyID,
