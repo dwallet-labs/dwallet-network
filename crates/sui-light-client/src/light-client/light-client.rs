@@ -70,7 +70,6 @@ const DWALLET_COIN_TYPE: &str = "0x2::dwlt::DWLT";
 // if not, run the sui light client from their repo and see if they have the same bug
 // if not, update the version to their latest version.
 
-
 /// A light client for the Sui blockchain
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -250,7 +249,6 @@ async fn download_checkpoint_summary(
         async move {
             let url =
                 Url::parse(&config.object_store_url).context("Failed to parse object store URL")?;
-
 
             let (dyn_store, _store_path) =
                 parse_url(&url).context("Failed to parse URL into object store components")?;
@@ -663,8 +661,8 @@ async fn build_tx_submit_new_state_committee(
 
     let call = ProgrammableMoveCall {
         package: ObjectID::from_hex_literal(DWALLET_MODULE_ADDR)?,
-        module: Identifier::new(SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK)?,
-        function: Identifier::new("submit_new_state_committee")?,
+        module: SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK.to_string(),
+        function: "submit_new_state_committee".to_string(),
         type_arguments: vec![],
         arguments: vec![
             registry_arg,
@@ -1032,11 +1030,8 @@ async fn build_init_module_tx(
     let init_module_call = ProgrammableMoveCall {
         package: ObjectID::from_hex_literal(DWALLET_MODULE_ADDR)
             .context("Failed to parse DWALLET_MODULE_ADDR as ObjectID")?,
-        module: Identifier::new(SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK).context(format!(
-            "Failed to create Identifier for module: {SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK}"
-        ))?,
-        function: Identifier::new("init_module")
-            .context("Failed to create Identifier for function init_module")?,
+        module: SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK.to_string(),
+        function: "init_module".to_string(),
         type_arguments: vec![],
         arguments: vec![
             init_committee_arg,

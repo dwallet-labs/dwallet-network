@@ -12,22 +12,22 @@ async-trait.workspace = true
 bcs.workspace = true
 bytes.workspace = true
 clap.workspace = true
-move-core-types = { git = "https://github.com/MystenLabs/sui", package = "move-core-types", rev = "f58faa4" }
+move-core-types = { git = "https://github.com/MystenLabs/sui", package = "move-core-types" }
 serde.workspace = true
 tokio = { workspace = true, features = ["full"] }
 serde_yaml.workspace = true
 serde_json.workspace = true
-sui-types = { git = "https://github.com/MystenLabs/sui", package = "sui-types", rev = "f58faa4" }
-sui-config = { git = "https://github.com/MystenLabs/sui", package = "sui-config", rev = "f58faa4" }
-sui-rest-api = { git = "https://github.com/MystenLabs/sui", package = "sui-rest-api", rev = "f58faa4" }
-sui-json = { git = "https://github.com/MystenLabs/sui", package = "sui-json", rev = "f58faa4" }
-sui-sdk = { git = "https://github.com/MystenLabs/sui", package = "sui-sdk", rev = "f58faa4" }
-sui-keys = { git = "https://github.com/MystenLabs/sui", package = "sui-keys", rev = "f58faa4" }
-shared-crypto = { git = "https://github.com/MystenLabs/sui", package = "shared-crypto", rev = "f58faa4" }
+sui-types = { git = "https://github.com/MystenLabs/sui", package = "sui-types" }
+sui-config = { git = "https://github.com/MystenLabs/sui", package = "sui-config" }
+sui-rest-api = { git = "https://github.com/MystenLabs/sui", package = "sui-rest-api" }
+sui-json = { git = "https://github.com/MystenLabs/sui", package = "sui-json" }
+sui-sdk = { git = "https://github.com/MystenLabs/sui", package = "sui-sdk" }
+sui-keys = { git = "https://github.com/MystenLabs/sui", package = "sui-keys" }
+shared-crypto = { git = "https://github.com/MystenLabs/sui", package = "shared-crypto" }
 
-move-binary-format = { git = "https://github.com/MystenLabs/sui", package = "move-binary-format", rev = "f58faa4" }
-sui-json-rpc-types = { git = "https://github.com/MystenLabs/sui", package = "sui-json-rpc-types", rev = "f58faa4" }
-sui-package-resolver = { git = "https://github.com/MystenLabs/sui", package = "sui-package-resolver", rev = "f58faa4" }
+move-binary-format = { git = "https://github.com/MystenLabs/sui", package = "move-binary-format" }
+sui-json-rpc-types = { git = "https://github.com/MystenLabs/sui", package = "sui-json-rpc-types" }
+sui-package-resolver = { git = "https://github.com/MystenLabs/sui", package = "sui-package-resolver" }
 
 
 axum.workspace = true
@@ -35,11 +35,12 @@ tracing-subscriber.workspace = true
 tracing.workspace = true
 futures.workspace = true
 reqwest.workspace = true
-object_store = { version = "0.11.1", features = ["aws", "gcp", "azure", "http"] }
-sui-data-ingestion-core = { git = "https://github.com/MystenLabs/sui", package = "sui-data-ingestion-core", rev = "f58faa4" }
+object_store.workspace = true
+
+sui-data-ingestion-core = { git = "https://github.com/MystenLabs/sui", package = "sui-data-ingestion-core" }
 backoff = { version = "0.4.0", features = ["tokio"] }
 
-sui-storage = { git = "https://github.com/MystenLabs/sui", package = "sui-storage", rev = "f58faa4" }
+sui-storage = { git = "https://github.com/MystenLabs/sui", package = "sui-storage" }
 url.workspace = true
 log = "0.4.22"
 
