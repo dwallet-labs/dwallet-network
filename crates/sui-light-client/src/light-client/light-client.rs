@@ -65,10 +65,6 @@ const GAS_BUDGET: u64 = 1_000_000_000;
 const DWALLET_COIN_TYPE: &str = "0x2::dwlt::DWLT";
 
 // todo(yuval): rename in .move file: epoch_committee_id -> new_epoch_committee_id.
-// todo(yuval): move to HTTP GET.
-// 1. If it's working - great.
-// if not, run the sui light client from their repo and see if they have the same bug
-// if not, update the version to their latest version.
 
 /// A light client for the Sui blockchain
 #[derive(Parser, Debug)]
