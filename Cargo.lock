@@ -229,8 +229,8 @@ dependencies = [
  "matchit 0.5.0",
  "pin-project-lite",
  "pkcs8 0.9.0",
- "quinn",
- "quinn-proto",
+ "quinn 0.10.2",
+ "quinn-proto 0.10.6",
  "rand 0.8.5",
  "rcgen",
  "ring 0.16.20",
@@ -264,8 +264,8 @@ dependencies = [
  "matchit 0.5.0",
  "pin-project-lite",
  "pkcs8 0.9.0",
- "quinn",
- "quinn-proto",
+ "quinn 0.10.2",
+ "quinn-proto 0.10.6",
  "rand 0.8.5",
  "rcgen",
  "ring 0.16.20",
@@ -1814,7 +1814,7 @@ dependencies = [
  "proc-macro2 1.0.87",
  "quote 1.0.37",
  "regex",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "shlex",
  "syn 2.0.79",
 ]
@@ -1836,7 +1836,7 @@ dependencies = [
  "proc-macro2 1.0.87",
  "quote 1.0.37",
  "regex",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "shlex",
  "syn 2.0.79",
  "which",
@@ -2424,6 +2424,12 @@ name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "cfg_aliases"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
 name = "chacha20"
@@ -6101,7 +6107,7 @@ dependencies = [
  "hyper 0.14.30",
  "log",
  "rustls 0.20.9",
- "rustls-native-certs",
+ "rustls-native-certs 0.6.3",
  "tokio",
  "tokio-rustls 0.23.4",
  "webpki-roots 0.22.6",
@@ -6118,7 +6124,7 @@ dependencies = [
  "hyper 0.14.30",
  "log",
  "rustls 0.21.12",
- "rustls-native-certs",
+ "rustls-native-certs 0.6.3",
  "tokio",
  "tokio-rustls 0.24.1",
  "webpki-roots 0.25.4",
@@ -6135,6 +6141,7 @@ dependencies = [
  "hyper 1.4.1",
  "hyper-util",
  "rustls 0.23.14",
+ "rustls-native-certs 0.8.0",
  "rustls-pki-types",
  "tokio",
  "tokio-rustls 0.26.0",
@@ -6567,6 +6574,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6672,7 +6688,7 @@ dependencies = [
  "jsonrpsee-core 0.16.2",
  "jsonrpsee-types 0.16.2",
  "pin-project",
- "rustls-native-certs",
+ "rustls-native-certs 0.6.3",
  "soketto",
  "thiserror",
  "tokio",
@@ -6694,7 +6710,7 @@ dependencies = [
  "http 0.2.12",
  "jsonrpsee-core 0.17.1",
  "pin-project",
- "rustls-native-certs",
+ "rustls-native-certs 0.6.3",
  "soketto",
  "thiserror",
  "tokio",
@@ -6722,7 +6738,7 @@ dependencies = [
  "jsonrpsee-types 0.16.2",
  "parking_lot 0.12.3",
  "rand 0.8.5",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "serde",
  "serde_json",
  "soketto",
@@ -6748,7 +6764,7 @@ dependencies = [
  "jsonrpsee-types 0.17.1",
  "parking_lot 0.12.3",
  "rand 0.8.5",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "serde",
  "serde_json",
  "soketto",
@@ -6769,7 +6785,7 @@ dependencies = [
  "hyper-rustls 0.23.2",
  "jsonrpsee-core 0.16.2",
  "jsonrpsee-types 0.16.2",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -9163,7 +9179,7 @@ dependencies = [
  "narwhal-types",
  "parking_lot 0.12.3",
  "prometheus",
- "quinn-proto",
+ "quinn-proto 0.10.6",
  "rand 0.8.5",
  "sui-macros 0.7.0",
  "tokio",
@@ -9894,14 +9910,45 @@ dependencies = [
  "itertools 0.11.0",
  "parking_lot 0.12.3",
  "percent-encoding",
- "quick-xml",
+ "quick-xml 0.30.0",
  "rand 0.8.5",
  "reqwest 0.11.27",
  "ring 0.16.20",
  "rustls-pemfile 1.0.4",
  "serde",
  "serde_json",
- "snafu",
+ "snafu 0.7.5",
+ "tokio",
+ "tracing",
+ "url",
+ "walkdir",
+]
+
+[[package]]
+name = "object_store"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6eb4c22c6154a1e759d7099f9ffad7cc5ef8245f9efbab4a41b92623079c82f3"
+dependencies = [
+ "async-trait",
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "futures",
+ "humantime",
+ "hyper 1.4.1",
+ "itertools 0.13.0",
+ "md-5 0.10.6",
+ "parking_lot 0.12.3",
+ "percent-encoding",
+ "quick-xml 0.36.2",
+ "rand 0.8.5",
+ "reqwest 0.12.8",
+ "ring 0.17.8",
+ "rustls-pemfile 2.2.0",
+ "serde",
+ "serde_json",
+ "snafu 0.8.5",
  "tokio",
  "tracing",
  "url",
@@ -11361,6 +11408,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.36.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f7649a7b4df05aed9ea7ec6f628c67c9953a43869b8bc50929569b2999d443fe"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
 name = "quinn"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11369,10 +11426,28 @@ dependencies = [
  "bytes",
  "futures-io",
  "pin-project-lite",
- "quinn-proto",
- "quinn-udp",
- "rustc-hash",
+ "quinn-proto 0.10.6",
+ "quinn-udp 0.4.1",
+ "rustc-hash 1.1.0",
  "rustls 0.21.12",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "quinn"
+version = "0.11.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8c7c5fdde3cdae7203427dc4f0a68fe0ed09833edc525a03456b153b79828684"
+dependencies = [
+ "bytes",
+ "pin-project-lite",
+ "quinn-proto 0.11.8",
+ "quinn-udp 0.5.7",
+ "rustc-hash 2.0.0",
+ "rustls 0.23.14",
+ "socket2 0.5.7",
  "thiserror",
  "tokio",
  "tracing",
@@ -11387,8 +11462,25 @@ dependencies = [
  "bytes",
  "rand 0.8.5",
  "ring 0.16.20",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "rustls 0.21.12",
+ "slab",
+ "thiserror",
+ "tinyvec",
+ "tracing",
+]
+
+[[package]]
+name = "quinn-proto"
+version = "0.11.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fadfaed2cd7f389d0161bb73eeb07b7b78f8691047a6f3e73caaeae55310a4a6"
+dependencies = [
+ "bytes",
+ "rand 0.8.5",
+ "ring 0.17.8",
+ "rustc-hash 2.0.0",
+ "rustls 0.23.14",
  "slab",
  "thiserror",
  "tinyvec",
@@ -11406,6 +11498,20 @@ dependencies = [
  "socket2 0.5.7",
  "tracing",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "quinn-udp"
+version = "0.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d5a626c6807713b15cac82a6acaccd6043c9a5408c24baae07611fec3f243da"
+dependencies = [
+ "cfg_aliases",
+ "libc",
+ "once_cell",
+ "socket2 0.5.7",
+ "tracing",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -11872,7 +11978,11 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
+ "quinn 0.11.5",
+ "rustls 0.23.14",
+ "rustls-native-certs 0.8.0",
  "rustls-pemfile 2.2.0",
+ "rustls-pki-types",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -11880,10 +11990,13 @@ dependencies = [
  "system-configuration 0.6.1",
  "tokio",
  "tokio-native-tls",
+ "tokio-rustls 0.26.0",
+ "tokio-util 0.7.12",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams",
  "web-sys",
  "windows-registry",
 ]
@@ -12365,6 +12478,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
+name = "rustc-hash"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "583034fd73374156e66797ed8e5b0d5690409c9226b22d87cb7f19821c05d152"
+
+[[package]]
 name = "rustc-hex"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12460,6 +12579,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "415d9944693cb90382053259f89fbb077ea730ad7273047ec63b19bc9b160ba8"
 dependencies = [
  "once_cell",
+ "ring 0.17.8",
  "rustls-pki-types",
  "rustls-webpki 0.102.8",
  "subtle",
@@ -12474,6 +12594,19 @@ checksum = "a9aace74cb666635c918e9c12bc0d348266037aa8eb599b5cba565709a8dff00"
 dependencies = [
  "openssl-probe",
  "rustls-pemfile 1.0.4",
+ "schannel",
+ "security-framework",
+]
+
+[[package]]
+name = "rustls-native-certs"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcaf18a4f2be7326cd874a5fa579fae794320a0f388d365dca7e480e55f83f8a"
+dependencies = [
+ "openssl-probe",
+ "rustls-pemfile 2.2.0",
+ "rustls-pki-types",
  "schannel",
  "security-framework",
 ]
@@ -13382,7 +13515,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4de37ad025c587a29e8f3f5605c00f70b98715ef90b9061a815b9e59e9042d6"
 dependencies = [
  "doc-comment",
- "snafu-derive",
+ "snafu-derive 0.7.5",
+]
+
+[[package]]
+name = "snafu"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "223891c85e2a29c3fe8fb900c1fae5e69c2e42415e3177752e8718475efa5019"
+dependencies = [
+ "snafu-derive 0.8.5",
 ]
 
 [[package]]
@@ -13395,6 +13537,18 @@ dependencies = [
  "proc-macro2 1.0.87",
  "quote 1.0.37",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "snafu-derive"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03c3c6b7927ffe7ecaa769ee0e3994da3b8cafc8f444578982c83ecb161af917"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2 1.0.87",
+ "quote 1.0.37",
+ "syn 2.0.79",
 ]
 
 [[package]]
@@ -13922,7 +14076,7 @@ dependencies = [
  "move-core-types 0.0.4",
  "mysten-metrics 0.7.0",
  "num_enum 0.6.1",
- "object_store",
+ "object_store 0.11.1",
  "parquet",
  "prometheus",
  "rocksdb",
@@ -13975,7 +14129,7 @@ dependencies = [
  "move-core-types 0.0.4",
  "move-package",
  "num_enum 0.6.1",
- "object_store",
+ "object_store 0.11.1",
  "prometheus",
  "rand 0.8.5",
  "serde",
@@ -14227,7 +14381,7 @@ dependencies = [
  "dirs 4.0.0",
  "fastcrypto 0.1.8",
  "narwhal-config 0.1.0 (git+https://github.com/MystenLabs/sui?rev=f58faa4)",
- "object_store",
+ "object_store 0.7.1",
  "once_cell",
  "prometheus",
  "rand 0.8.5",
@@ -14287,7 +14441,7 @@ dependencies = [
  "narwhal-types",
  "narwhal-worker",
  "num_cpus",
- "object_store",
+ "object_store 0.11.1",
  "once_cell",
  "parking_lot 0.12.3",
  "pprof",
@@ -14404,7 +14558,7 @@ dependencies = [
  "futures",
  "mysten-metrics 0.7.0 (git+https://github.com/MystenLabs/sui?rev=f58faa4)",
  "notify",
- "object_store",
+ "object_store 0.7.1",
  "prometheus",
  "serde",
  "serde_json",
@@ -15116,7 +15270,7 @@ dependencies = [
  "log",
  "move-binary-format 0.0.3 (git+https://github.com/MystenLabs/sui?rev=f58faa4)",
  "move-core-types 0.0.4 (git+https://github.com/MystenLabs/sui?rev=f58faa4)",
- "object_store",
+ "object_store 0.11.1",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
@@ -15988,7 +16142,7 @@ dependencies = [
  "indicatif",
  "integer-encoding",
  "num_enum 0.6.1",
- "object_store",
+ "object_store 0.11.1",
  "prometheus",
  "serde",
  "serde_json",
@@ -16097,7 +16251,7 @@ dependencies = [
  "mysten-metrics 0.7.0",
  "num_cpus",
  "num_enum 0.6.1",
- "object_store",
+ "object_store 0.11.1",
  "once_cell",
  "parking_lot 0.12.3",
  "percent-encoding",
@@ -16153,7 +16307,7 @@ dependencies = [
  "move-core-types 0.0.4 (git+https://github.com/MystenLabs/sui?rev=f58faa4)",
  "mysten-metrics 0.7.0 (git+https://github.com/MystenLabs/sui?rev=f58faa4)",
  "num_enum 0.6.1",
- "object_store",
+ "object_store 0.7.1",
  "parking_lot 0.12.3",
  "percent-encoding",
  "prometheus",
@@ -16347,7 +16501,7 @@ dependencies = [
  "narwhal-storage",
  "narwhal-types",
  "num_cpus",
- "object_store",
+ "object_store 0.11.1",
  "prometheus",
  "rocksdb",
  "ron",
@@ -17223,7 +17377,7 @@ dependencies = [
  "once_cell",
  "pbkdf2 0.11.0",
  "rand 0.8.5",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "sha2 0.10.8",
  "thiserror",
  "unicode-normalization",
@@ -19719,9 +19873,9 @@ dependencies = [
  "quanta 0.11.1",
  "quick-error 1.2.3",
  "quick-error 2.0.1",
- "quinn",
- "quinn-proto",
- "quinn-udp",
+ "quinn 0.10.2",
+ "quinn-proto 0.10.6",
+ "quinn-udp 0.4.1",
  "quote 0.6.13",
  "quote 1.0.37",
  "r2d2",
@@ -19769,7 +19923,7 @@ dependencies = [
  "russh-keys",
  "rust_decimal",
  "rustc-demangle",
- "rustc-hash",
+ "rustc-hash 1.1.0",
  "rustc-hex",
  "rustc_version",
  "rusticata-macros",
@@ -19778,7 +19932,7 @@ dependencies = [
  "rustix 0.38.37",
  "rustls 0.20.9",
  "rustls 0.21.12",
- "rustls-native-certs",
+ "rustls-native-certs 0.6.3",
  "rustls-pemfile 1.0.4",
  "rustls-webpki 0.101.7",
  "rustversion",

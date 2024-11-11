@@ -64,8 +64,12 @@ const SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK: &str = "sui_state_proof";
 const GAS_BUDGET: u64 = 1_000_000_000;
 const DWALLET_COIN_TYPE: &str = "0x2::dwlt::DWLT";
 
-// todo(yuval): make this code work with .dwallet and not .sui.
 // todo(yuval): rename in .move file: epoch_committee_id -> new_epoch_committee_id.
+// todo(yuval): move to HTTP GET.
+// 1. If it's working - great.
+// if not, run the sui light client from their repo and see if they have the same bug
+// if not, update the version to their latest version.
+
 
 /// A light client for the Sui blockchain
 #[derive(Parser, Debug)]
@@ -246,6 +250,7 @@ async fn download_checkpoint_summary(
         async move {
             let url =
                 Url::parse(&config.object_store_url).context("Failed to parse object store URL")?;
+
 
             let (dyn_store, _store_path) =
                 parse_url(&url).context("Failed to parse URL into object store components")?;
@@ -741,7 +746,7 @@ fn sui_state_proof_event_filter() -> Result<EventFilter> {
     })
 }
 
-/// This code is fetching the event emitted by `init_module`
+/// This code is fetching the event emitted by the module.
 ///     struct EpochCommitteeSubmitted has copy, drop {
 ///         epoch: u64,
 ///         registry_id: ID,
