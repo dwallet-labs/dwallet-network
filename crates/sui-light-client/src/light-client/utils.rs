@@ -1,11 +1,14 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use anyhow::bail;
+use anyhow::Result;
+use anyhow::{bail, Context};
 use futures::{future, stream::StreamExt};
+use std::path::PathBuf;
 use sui_config::{
     sui_config_dir, Config, PersistedConfig, SUI_CLIENT_CONFIG, SUI_KEYSTORE_FILENAME,
 };
+
 use sui_json_rpc_types::Coin;
 use sui_keys::keystore::{AccountKeystore, FileBasedKeystore};
 use sui_sdk::{
@@ -16,77 +19,56 @@ use tracing::info;
 
 use reqwest::Client;
 use serde_json::json;
-use shared_crypto::intent::Intent;
-use sui_sdk::types::{
-    base_types::SuiAddress,
-    crypto::SignatureScheme::ED25519,
-    digests::TransactionDigest,
-    programmable_transaction_builder::ProgrammableTransactionBuilder,
-    quorum_driver_types::ExecuteTransactionRequestType,
-    transaction::{Argument, Command, Transaction, TransactionData},
-};
+use sui_sdk::types::{base_types::SuiAddress, crypto::SignatureScheme::ED25519};
 
-use sui_sdk::{rpc_types::SuiTransactionBlockResponseOptions, SuiClient, SuiClientBuilder};
+use crate::{dwallet_client, DWALLET_COIN_TYPE};
+use sui_sdk::SuiClient;
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Debug)]
 struct FaucetResponse {
-    task: String,
     error: Option<String>,
+    #[serde(rename = "transferredGasObjects")]
+    transferred_gas_objects: Vec<TransferredGasObject>,
+}
+
+#[derive(serde::Deserialize, Debug)]
+struct TransferredGasObject {
+    amount: u64,
 }
 
 /// Return a dwallet client to interact with the APIs,
-/// the active address of the local wallet, and another address that can be used as a recipient.
+/// and the active address of the local wallet.
 ///
 /// By default, this function will set up a wallet locally if there isn't any, or reuse the
-/// existing one and its active address. This function should be used when two addresses are needed,
-/// e.g., transferring objects from one address to another.
+/// existing one and its active address.
 pub async fn setup_for_write(
     conf: &crate::Config,
-) -> Result<(SuiClient, SuiAddress, SuiAddress), anyhow::Error> {
+    required_balance: u64,
+) -> Result<(SuiClient, Coin, SuiAddress), anyhow::Error> {
     let (client, active_address) = setup_for_read(conf).await?;
-    // Make sure we have some DWLT on this address.
-    let coin = fetch_coin(&client, &active_address).await?;
-    if coin.is_none() {
-        request_tokens_from_faucet(active_address, &client, conf).await?;
-    }
-    let wallet = retrieve_wallet(conf).await?;
-    let addresses = wallet.get_addresses();
-    let addresses = addresses
-        .into_iter()
-        .filter(|address| address != &active_address)
-        .collect::<Vec<_>>();
-    let recipient = addresses
-        .first()
-        .expect("Cannot get the recipient address needed for writing operations. Aborting");
-
-    Ok((client, active_address, *recipient))
+    // Make sure we have a minimum necessary DWLT on the active address.
+    let coins = fetch_or_request_coins(&client, active_address, required_balance, conf).await?;
+    Ok((client, coins, active_address))
 }
 
-/// Return a dwallet client to interact with the APIs and an active address from the local wallet.
+/// Return a dwallet client to interact with the APIs and
+/// an active address from the local wallet.
 ///
-/// This function sets up a wallet in case there is no wallet locally,
-/// and ensures that the active address of the wallet has SUI on it.
-/// If there is no SUI owned by the active address, then it will request
-/// SUI from the faucet.
+/// This function sets up a wallet if there is no wallet locally.
 pub async fn setup_for_read(
-    conf: &crate::Config,
+    config: &crate::Config,
 ) -> Result<(SuiClient, SuiAddress), anyhow::Error> {
-    let client = SuiClientBuilder::default()
-        .build(&conf.dwallet_full_node_url)
-        .await?;
+    let client = dwallet_client(config).await?;
     println!("Dwallet testnet version is: {}", client.api_version());
-    let mut wallet = retrieve_wallet(conf).await?;
-    println!("{}", wallet.get_addresses().len());
-    assert!(wallet.get_addresses().len() >= 2);
+    let mut wallet = retrieve_wallet(config).await?;
     let active_address = wallet.active_address()?;
-
     println!("Wallet active address is: {active_address}");
     Ok((client, active_address))
 }
 
 /// Request tokens from the Faucet for the given address
 pub async fn request_tokens_from_faucet(
-    address: SuiAddress,
+    address: &SuiAddress,
     _sui_client: &SuiClient,
     conf: &crate::Config,
 ) -> Result<(), anyhow::Error> {
@@ -111,161 +93,48 @@ pub async fn request_tokens_from_faucet(
     );
     println!("Waiting for the faucet to complete the gas request...");
     let faucet_resp: FaucetResponse = resp.json().await?;
-    println!("Faucet request task id: {}", faucet_resp.task);
-
     if let Some(err) = faucet_resp.error {
         bail!("Faucet request was unsuccessful. Error is {err:?}")
-    } else {
-        Ok(())
     }
-
-    // println!("Faucet request task ID: {task_id}");
-    //
-    // let json_body = json![{
-    //     "GetBatchSendStatusRequest": {
-    //         "task_id": &task_id
-    //     }
-    // }];
-    //
-    // let mut coin_id = "".to_string();
-    //
-    // // Wait for the faucet to finish the batch of token requests.
-    // loop {
-    //     let resp = rest_client
-    //         .get("https://faucet.testnet.sui.io/v1/status")
-    //         .header("Content-Type", "application/json")
-    //         .json(&json_body)
-    //         .send()
-    //         .await?;
-    //     let text = resp.text().await?;
-    //     if text.contains("SUCCEEDED") {
-    //         let resp_json: serde_json::Value = serde_json::from_str(&text)?;
-    //
-    //         coin_id = <&str>::clone(
-    //             &resp_json
-    //                 .pointer("/status/transferred_gas_objects/sent/0/id")
-    //                 .unwrap()
-    //                 .as_str()
-    //                 .unwrap(),
-    //         )
-    //         .to_string();
-    //
-    //         break;
-    //     } else {
-    //         tokio::time::sleep(Duration::from_secs(1)).await;
-    //     }
-    // }
-    //
-    // // wait until the fullnode has the coin object, and check if it has the same owner
-    // loop {
-    //     let owner = sui_client
-    //         .read_api()
-    //         .get_object_with_options(
-    //             ObjectID::from_str(&coin_id)?,
-    //             SuiObjectDataOptions::new().with_owner(),
-    //         )
-    //         .await?;
-    //
-    //     if owner.owner().is_some() {
-    //         let owner_address = owner.owner().unwrap().get_owner_address()?;
-    //         if owner_address == address {
-    //             break;
-    //         }
-    //     } else {
-    //         tokio::time::sleep(Duration::from_secs(1)).await;
-    //     }
-    // }
-    // Ok(())
-}
-
-/// Return the coin owned by the address that has at least `5_000_000`
-/// otherwise returns None.
-pub async fn fetch_coin(
-    sui: &SuiClient,
-    sender: &SuiAddress,
-) -> Result<Option<Coin>, anyhow::Error> {
-    let coin_type = "0x2::dwlt::DWLT".to_string();
-    let coins_stream = sui
-        .coin_read_api()
-        .get_coins_stream(*sender, Some(coin_type));
-
-    let mut coins = coins_stream
-        .skip_while(|c| future::ready(c.balance < 5_000_000))
-        .boxed();
-    let coin = coins.next().await;
-    Ok(coin)
-}
-
-/// Return a transaction digest from a split coin + merge coins transaction
-pub async fn split_coin_digest(
-    sui: &SuiClient,
-    sender: &SuiAddress,
-    conf: &crate::Config,
-) -> Result<TransactionDigest, anyhow::Error> {
-    let coin = match fetch_coin(sui, sender).await? {
-        None => {
-            request_tokens_from_faucet(*sender, sui, conf).await?;
-            fetch_coin(sui, sender)
-                .await?
-                .expect("Supposed to get a coin with SUI, but didn't. Aborting")
-        }
-        Some(c) => c,
-    };
-
     println!(
-        "Address: {sender}. The selected coin for split is {} and has a balance of {}\n",
-        coin.coin_object_id, coin.balance
+        "Received: {} coins from the faucet for addr: {}",
+        faucet_resp.transferred_gas_objects[0].amount, address_str
     );
+    Ok(())
+}
 
-    // set the maximum gas budget
-    let max_gas_budget = 5_000_000;
+/// Return the coin owned by the address that has at least `required_balance`
+/// otherwise request coins from the faucet and return the coin.
+pub async fn fetch_or_request_coins(
+    dwallet_client: &SuiClient,
+    sender: SuiAddress,
+    required_balance: u64,
+    config: &crate::Config,
+) -> Result<Coin> {
+    let coin = coins_by_required_balance(dwallet_client, sender, required_balance).await;
+    if coin.is_none() {
+        println!("Insufficient balance, requesting tokens from faucet");
+        request_tokens_from_faucet(&sender, dwallet_client, config).await?;
+    }
+    let coin = coins_by_required_balance(dwallet_client, sender, required_balance).await;
+    coin.context(format!(
+        "Insufficient coin amount for operation, minium required balance: {}",
+        required_balance
+    ))
+}
 
-    // get the reference gas price from the network
-    let gas_price = sui.read_api().get_reference_gas_price().await?;
-
-    // now we programmatically build the transaction through several commands
-    let mut ptb = ProgrammableTransactionBuilder::new();
-    // first, we want to split the coin, and we specify how much SUI (in MIST) we want
-    // for the new coin
-    let split_coin_amount = ptb.pure(1000u64)?; // note that we need to specify the u64 type here
-    ptb.command(Command::SplitCoins(
-        Argument::GasCoin,
-        vec![split_coin_amount],
-    ));
-    // Now we want to merge the coins (so that we don't have many coins with very small values)
-    // observe here that we pass Argument::Result(0), which instructs the PTB to get
-    // the result from the previous command.
-    ptb.command(Command::MergeCoins(
-        Argument::GasCoin,
-        vec![Argument::Result(0)],
-    ));
-
-    // We finished constructing our PTB, and we need to call finish.
-    let builder = ptb.finish();
-
-    // Using the PTB that we just constructed, create the transaction data
-    // that we will submit to the network.
-    let tx_data = TransactionData::new_programmable(
-        *sender,
-        vec![coin.object_ref()],
-        builder,
-        max_gas_budget,
-        gas_price,
-    );
-
-    // sign & execute the transaction
-    let keystore = FileBasedKeystore::new(&sui_config_dir()?.join(SUI_KEYSTORE_FILENAME))?;
-    let signature = keystore.sign_secure(sender, &tx_data, Intent::sui_transaction())?;
-
-    let transaction_response = sui
-        .quorum_driver_api()
-        .execute_transaction_block(
-            Transaction::from_data(tx_data, vec![signature]),
-            SuiTransactionBlockResponseOptions::new(),
-            Some(ExecuteTransactionRequestType::WaitForLocalExecution),
-        )
-        .await?;
-    Ok(transaction_response.digest)
+async fn coins_by_required_balance(
+    dwallet_client: &SuiClient,
+    sender: SuiAddress,
+    required_balance: u64,
+) -> Option<Coin> {
+    let coins_stream = dwallet_client
+        .coin_read_api()
+        .get_coins_stream(sender, Some(DWALLET_COIN_TYPE.to_string()));
+    let mut coins = coins_stream
+        .skip_while(|c| future::ready(c.balance < required_balance))
+        .boxed();
+    coins.next().await
 }
 
 pub async fn retrieve_wallet(conf: &crate::Config) -> Result<WalletContext, anyhow::Error> {
