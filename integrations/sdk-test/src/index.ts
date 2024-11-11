@@ -16,24 +16,55 @@ import {
 import { SuiClient } from '@mysten/sui.js/client';
 import { TransactionBlock as TransactionBlockSUI } from '@mysten/sui.js/transactions';
 
+type NetworkConfig = {
+	lightClientTxDataService: string;
+	dWalletNodeUrl: string;
+	dWalletCapPackageInSUI: string;
+	suiRPCURL: string;
+	registryObjectId: string;
+	configObjectId: string;
+	faucetURL: string;
+};
+
+function getLocalConf(): NetworkConfig {
+	return {
+		lightClientTxDataService: 'http://localhost:6920/gettxdata',
+		dWalletNodeUrl: 'http://127.0.0.1:9000',
+		faucetURL: 'http://127.0.0.1:9123/gas',
+		dWalletCapPackageInSUI: '0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec',
+		suiRPCURL: 'https://fullnode.testnet.sui.io:443',
+		registryObjectId: '0x4de2a30287ed40600b53c40bfb3eeae7ef4ecf9ba9a90df732c363318612f084',
+		configObjectId: '0xcc88a86628098c1472959ba6ad5e1c0fc0c1fd632b7ec21d265fb8efd5d55aea',
+	};
+}
+
+function getTestNetConf(): NetworkConfig {
+	return {
+		lightClientTxDataService:
+			'https://lightclient-rest-server.alpha.testnet.dwallet.cloud/gettxdata',
+		dWalletNodeUrl: 'https://fullnode.alpha.testnet.dwallet.cloud',
+		faucetURL: 'https://faucet.alpha.testnet.dwallet.cloud/gas',
+		dWalletCapPackageInSUI: '0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec',
+		suiRPCURL: 'https://fullnode.testnet.sui.io:443',
+		registryObjectId: '0x4de2a30287ed40600b53c40bfb3eeae7ef4ecf9ba9a90df732c363318612f084',
+		configObjectId: '0xcc88a86628098c1472959ba6ad5e1c0fc0c1fd632b7ec21d265fb8efd5d55aea',
+	};
+}
+
 async function main() {
 	try {
-		const serviceUrl = 'http://localhost:6920/gettxdata'; // For local development
-		// const serviceUrl = 'http://sui-testnet-light-client.testnet.dwallet.cloud/gettxdata';
+		getLocalConf();
 
-		const dWalletNodeUrl = 'http://127.0.0.1:9000';
+		let {
+			configObjectId,
+			dWalletCapPackageInSUI,
+			dWalletNodeUrl,
+			lightClientTxDataService,
+			registryObjectId,
+			suiRPCURL,
+		} = getTestNetConf();
 
-		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
-
-		const dWalletCapPackageInSUI =
-			'0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec';
-
-		// Objects in the dwallet network.
-		// TODO: fix this IDS.
-		const configObjectId = '0xd0508ac7ca7ff62e3e03bdf830e5f5bbc8425c7be52bea40738904098ba554f6';
-		const registryObjectId = '0xb388dfe5386b44415bff2a2f7c4926c7c76b38246ac78536e23fa0bf61f4d51a';
-
-		const sui_client = new SuiClient({ url: suiTestnetURL });
+		const sui_client = new SuiClient({ url: suiRPCURL });
 		const dwallet_client = new DWalletClient({
 			transport: new SuiHTTPTransport({
 				url: dWalletNodeUrl,
@@ -45,39 +76,23 @@ async function main() {
 		const keyPair = Ed25519Keypair.deriveKeypairFromSeed(
 			'witch collapse practice feed shame open despair creek road again ice least',
 		);
-		// const keyPair2 = Ed25519Keypair.generate();
 
 		const address = keyPair.getPublicKey().toSuiAddress();
-		// const address2 = keyPair2.getPublicKey().toSuiAddress();
 
 		console.log('address', address);
-		// console.log('address2', address);
-
 		console.log('SUI address', keyPair.toSuiAddress());
-		// console.log('SUI address2', keyPair2.toSuiAddress());
 
 		await requestDwltFromFaucetV0({
 			host: 'http://127.0.0.1:9123/gas',
 			recipient: keyPair.getPublicKey().toSuiAddress(),
 		});
 
-		// await requestDwltFromFaucetV0({
-		// 	host: 'http://127.0.0.1:9123/gas',
-		// 	recipient: keyPair2.getPublicKey().toSuiAddress(),
-		// });
-
-		// await requestSuiFromFaucetV0({
-		// 	host: 'https://faucet.testnet.sui.io',
-		// 	recipient: keyPair.getPublicKey().toSuiAddress(),
-		// });
-
-		// sleep for 5 seconds
+		// Sleep for 5 seconds.
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 
 		console.log('creating dwallet');
 
 		const encryptionKeysHolder = await createActiveEncryptionKeysTable(dwallet_client, keyPair);
-		// const encryptionKeysHolder2 = await createActiveEncryptionKeysTable(dwallet_client, keyPair2);
 
 		let activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
 		let senderEncryptionKeyObj = await getOrCreateEncryptionKey(
@@ -85,13 +100,6 @@ async function main() {
 			dwallet_client,
 			activeEncryptionKeysTableID,
 		);
-
-		// let activeEncryptionKeysTableID2 = encryptionKeysHolder2.objectId;
-		// let senderEncryptionKeyObj2 = await getOrCreateEncryptionKey(
-		// 	keyPair2,
-		// 	dwallet_client,
-		// 	activeEncryptionKeysTableID2,
-		// );
 
 		const createdDwallet1 = await createDWallet(
 			keyPair,
@@ -193,7 +201,7 @@ async function main() {
 			registryObjectId,
 			dwalletCapId1,
 			createCapTxId,
-			serviceUrl,
+			lightClientTxDataService,
 			keyPair,
 		);
 		let resultFinal2 = await submitDWalletCreationProof(
@@ -203,7 +211,7 @@ async function main() {
 			registryObjectId,
 			dwalletCapId2,
 			createCapTxId,
-			serviceUrl,
+			lightClientTxDataService,
 			keyPair,
 		);
 
@@ -215,7 +223,7 @@ async function main() {
 			// @ts-ignore
 			dwalletCapId3,
 			createCapTxId,
-			serviceUrl,
+			lightClientTxDataService,
 			keyPair,
 		);
 
@@ -260,7 +268,7 @@ async function main() {
 				capWrapperRef,
 				signMessagesIdSHA256,
 				signTxId,
-				serviceUrl,
+				lightClientTxDataService,
 				keyPair,
 			);
 

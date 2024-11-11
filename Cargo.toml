@@ -379,10 +379,11 @@ ntest = "0.9.0"
 num-bigint = "0.4.4"
 num_cpus = "1.15.0"
 num_enum = "0.6.1"
-object_store = { version = "0.7", features = [
+object_store = { version = "0.11.1", features = [
     "aws",
     "gcp",
     "azure",
+    "http",
 ] }
 once_cell = "1.18.0"
 ouroboros = "0.17"
@@ -415,7 +416,7 @@ reqwest = { version = "0.11.20", default_features = false, features = [
     "json",
     "rustls-tls",
 ] }
-roaring = "0.10.1"
+roaring = "0.10.6"
 rocksdb = { version = "0.21.0", features = [
     "snappy",
     "lz4",

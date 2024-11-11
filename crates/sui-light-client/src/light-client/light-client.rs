@@ -64,7 +64,6 @@ const SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK: &str = "sui_state_proof";
 const GAS_BUDGET: u64 = 1_000_000_000;
 const DWALLET_COIN_TYPE: &str = "0x2::dwlt::DWLT";
 
-// todo(yuval): make this code work with .dwallet and not .sui.
 // todo(yuval): rename in .move file: epoch_committee_id -> new_epoch_committee_id.
 
 /// A light client for the Sui blockchain
@@ -658,8 +657,8 @@ async fn build_tx_submit_new_state_committee(
 
     let call = ProgrammableMoveCall {
         package: ObjectID::from_hex_literal(DWALLET_MODULE_ADDR)?,
-        module: Identifier::new(SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK)?,
-        function: Identifier::new("submit_new_state_committee")?,
+        module: SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK.to_string(),
+        function: "submit_new_state_committee".to_string(),
         type_arguments: vec![],
         arguments: vec![
             registry_arg,
@@ -741,7 +740,7 @@ fn sui_state_proof_event_filter() -> Result<EventFilter> {
     })
 }
 
-/// This code is fetching the event emitted by `init_module`
+/// This code is fetching the event emitted by the module.
 ///     struct EpochCommitteeSubmitted has copy, drop {
 ///         epoch: u64,
 ///         registry_id: ID,
@@ -1027,11 +1026,8 @@ async fn build_init_module_tx(
     let init_module_call = ProgrammableMoveCall {
         package: ObjectID::from_hex_literal(DWALLET_MODULE_ADDR)
             .context("Failed to parse DWALLET_MODULE_ADDR as ObjectID")?,
-        module: Identifier::new(SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK).context(format!(
-            "Failed to create Identifier for module: {SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK}"
-        ))?,
-        function: Identifier::new("init_module")
-            .context("Failed to create Identifier for function init_module")?,
+        module: SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK.to_string(),
+        function: "init_module".to_string(),
         type_arguments: vec![],
         arguments: vec![
             init_committee_arg,
