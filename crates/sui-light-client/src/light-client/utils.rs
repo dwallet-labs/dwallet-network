@@ -308,15 +308,9 @@ pub async fn retrieve_wallet(conf: &crate::Config) -> Result<WalletContext, anyh
             .0
     };
 
-    if keystore.addresses().len() < 2 {
-        keystore.generate_and_add_new_key(ED25519, None, None, None)?;
-    }
-
     client_config.active_address = Some(default_active_address);
     client_config.keystore = keystore.into();
     client_config.save(&wallet_conf)?;
 
-    let wallet = WalletContext::new(&wallet_conf, Some(std::time::Duration::from_secs(60)), None)?;
-
-    Ok(wallet)
+    WalletContext::new(&wallet_conf, Some(std::time::Duration::from_secs(60)), None)
 }

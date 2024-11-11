@@ -134,9 +134,10 @@
 		"ws": "^8.14.2"
 	},
 	"dependencies": {
-		"@lodestar/types": "^1.22.0",
+		"@dwallet-network/dwallet.js": "^0.50.1",
 		"@dwallet-network/eth-light-client-wasm": "workspace:*",
 		"@dwallet-network/signature-mpc-wasm": "workspace:*",
+		"@lodestar/types": "^1.22.0",
 		"@mysten/bcs": "0.11.1",
 		"@mysten/sui.js": "^0.51.2",
 		"@noble/curves": "^1.1.0",
