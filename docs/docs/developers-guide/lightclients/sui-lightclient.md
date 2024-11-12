@@ -4,10 +4,9 @@
 
 The **dWallet Network** leverages
 the [Sui Light Client](https://github.com/MystenLabs/sui/tree/main/crates/sui-light-client) to integrate seamlessly with
-the Sui Network, enabling trustless interactions between dWallets and Sui.
-This integration allows developers to enforce their dWallet logic within **Sui modules** on the Sui Mainnet, bringing
-**trustless and programmable assets**—including Bitcoin, Ethereum, and other Web3 assets—to Sui.
-Additionally, it enables solutions such as fast, decentralized custody.
+the Sui Network, enabling trustless interactions between dWallets and Sui. This integration allows developers to enforce
+dWallet logic within **Sui modules** on the Sui Network, bringing **trustless and programmable assets**—including
+Bitcoin, Ethereum, and other Web3 assets—to Sui. Additionally, it supports fast, decentralized custody solutions.
 
 The **dWallet module** is currently deployed on the **Sui Testnet** at:
 
@@ -16,26 +15,29 @@ The **dWallet module** is currently deployed on the **Sui Testnet** at:
 ```
 
 Developers building on Sui should **import this module** within their own modules, as end-user applications will not
-interact with it directly.
-To import the module, use the following configuration in your `Cargo.toml` file:
+interact with it directly. To import the module, use the following configuration in your `Cargo.toml` file:
 
 ```toml
 dwallet_network = { git = "https://github.com/dwallet-labs/dwallet-network.git", subdir = "integrations/sui", rev = "main" }
 ```
 
-**_NOTE:_** This module is in its early stages, so expect **breaking changes** and improvements over time.
+**_Note:_** This module is in its early stages, so expect **breaking changes** and improvements over time.
 
 ## Setup
 
-> Full Example can be found [here](https://github.com/dwallet-labs/dwallet-js-examples/blob/main/src/sui.ts)
+> A full example can be found [here](https://github.com/dwallet-labs/dwallet-js-examples/blob/main/src/sui.ts).
 
-First, we must set up the environment. Begin by importing the necessary functions:
+Start by setting up the environment and importing the necessary functions:
 
 ```typescript
-import {bcs} from '@dwallet-network/dwallet.js/bcs';
-import {DWalletClient, SuiHTTPTransport} from '@dwallet-network/dwallet.js/client';
-import {requestSuiFromFaucetV0 as requestDwltFromFaucetV0} from '@dwallet-network/dwallet.js/faucet';
-import {Ed25519Keypair} from '@dwallet-network/dwallet.js/keypairs/ed25519';
+import {bcs} from '@dwallet-network/dwallet.js/bcs'
+import {
+    DWalletClient,
+    OwnedObjectRef,
+    SuiHTTPTransport,
+} from '@dwallet-network/dwallet.js/client'
+import {requestSuiFromFaucetV0 as requestDwltFromFaucetV0} from '@dwallet-network/dwallet.js/faucet'
+import {Ed25519Keypair} from '@dwallet-network/dwallet.js/keypairs/ed25519'
 import {
     createActiveEncryptionKeysTable,
     createDWallet,
@@ -43,12 +45,12 @@ import {
     getOrCreateEncryptionKey,
     submitDWalletCreationProof,
     submitTxStateProof,
-} from '@dwallet-network/dwallet.js/signature-mpc';
-import {SuiClient} from '@mysten/sui.js/client';
-import {TransactionBlock as TransactionBlockSUI} from '@mysten/sui.js/transactions';
+} from '@dwallet-network/dwallet.js/signature-mpc'
+import {SuiClient} from '@mysten/sui.js/client'
+import {TransactionBlock as TransactionBlockSUI} from '@mysten/sui.js/transactions'
 ```
 
-Then define the following constant to work against the dWallet Network Testnet & Sui Testnet:
+Define the following constants to work with the dWallet Network Testnet & Sui Testnet:
 
 ```typescript
 type NetworkConfig = {
@@ -97,12 +99,12 @@ const {
 
 ## Link a dWallet Capability on Sui to the Wrapped dWallet Capability on the dWallet Network
 
-After [creating a dWallet](../getting-started/your-first-dwallet.md#create-a-dwallet), you should have ownership of the
-`DWalletCap` object, which grants full control over the dWallet.
-Extract the **dWallet Cap ID** from the output, as it will be required later:
+After [creating a dWallet](../getting-started/your-first-dwallet.md#create-a-dwallet), you’ll own the `DWalletCap`
+object, granting full control over the dWallet. Extract the **dWallet Cap ID** from the output, as it will be required
+later:
 
 ```typescript
-  const createdDWallet = await createDWallet(
+const createdDWallet = await createDWallet(
     keyPair,
     dwalletClient,
     senderEncryptionKeyObj.encryptionKey,
@@ -115,9 +117,8 @@ const dWalletCapID = createdDWallet.dwalletCapID
 ```
 
 To control this dWallet from a **Sui module**, you’ll use the `DWalletCap` object defined in the **Sui `dwallet_cap`
-module**.
-Ownership of this object grants complete control over the linked dWallet.
-Wrapping this object in your own module’s object can limit access, thereby controlling the linked dWallet indirectly.
+module**. Ownership of this object grants full control over the linked dWallet. Wrapping this object in your own module
+can limit access, allowing you to control the linked dWallet indirectly.
 
 Here’s the structure of the `DWalletCap` in **Move**:
 
@@ -134,7 +135,7 @@ struct DWalletCap has key, store {
 }
 ```
 
-To create a `DWalletCap` object, we need to call the `dwallet_cap::create_cap()` method on Sui:
+To create a `DWalletCap` object, call the `dwallet_cap::create_cap()` method on Sui:
 
 ```typescript
 async function buildCreateDWalletCapTx(
@@ -178,15 +179,15 @@ const createCapInInSuiTxID = createCapInSuiRes.digest
 
 ```
 
-### Prove dWallet Capability Creation to the dWallet Network
+## Prove dWallet Capability Creation to the dWallet Network
 
-Once you have executed the `dwallet_cap::create_cap` transaction on Sui with the transaction ID `createCapInInSuiTxID`,
-you can prove this action to the dWallet Network.
+After executing the `dwallet_cap::create_cap` transaction on Sui with the transaction ID `createCapInInSuiTxID`, you can
+prove this action to the dWallet Network.
 
-This transaction emits a **`DWalletNetworkInitCapRequest` event**, as follows:
+This transaction emits a **`DWalletNetworkInitCapRequest` event**:
 
 ```move
-// Emit an event to notify the initialization of a new dWallet capability.
+// Emit event to notify the initialization of a new dWallet capability.
 event::emit(DWalletNetworkInitCapRequest {
     // The object ID of the newly created `DWalletCap` object.
     cap_id: object::id(&cap),
@@ -195,14 +196,12 @@ event::emit(DWalletNetworkInitCapRequest {
 });
 ```
 
-### Prove Cap
+To prove on the dWallet Network that the `DWalletNetworkInitCapRequest` event was emitted, call the
+`submitDWalletCreationProof()` function, submitting a state proof that the Sui Network transaction created a new
+`DWalletCap`.
 
-To prove on the dWallet Network that `DWalletNetworkInitCapRequest` event was emitted, call the
-`submitDWalletCreationProof()` function, which submits a state proof that the transaction on the Sui Network created
-a new `DWalletCap`.
-
-> We use the output of the DKG process to extract the `DWalletCap` ID on the dWallet Network, allowing us to wrap it and
-> link it to the Sui capability.
+> The DKG process output allows us to extract the `DWalletCap` ID on the dWallet Network, enabling linking to the Sui
+> capability.
 
 ```typescript
 const createCapInSuiTxID = createCapInSuiRes.digest
@@ -229,8 +228,8 @@ console.log(
 )
 ```
 
-This will create a new `CapWrapper` object in dWallet Network, that wraps the `DWalletCap` and registers the
-corresponding `cap_id_sui` on Sui, thus forming the link between the two objects:
+This action creates a new `CapWrapper` object in the dWallet Network,
+wrapping the `DWalletCap` and registering the corresponding `cap_id_sui` on Sui, thus linking the two objects:
 
 ```sui move
 struct CapWrapper has key, store {
@@ -242,9 +241,8 @@ struct CapWrapper has key, store {
 
 ## Approve Message on Sui for Signing in dWallet Network
 
-Now that our dWallet is linked to a `DWalletCap` on Sui, its owner can use it to approve a message for signing.  
-For example, if we want to sign the message `"dWallets are coming... to Sui"`, we can call the
-`dwallet_cap::approve_message()` method on Sui:
+With the dWallet linked to a `DWalletCap` on Sui, the owner can approve a message for signing. For example, to sign the
+message `"dWallets are coming... to Sui"`, call the `dwallet_cap::approve_message()` method on Sui:
 
 ```typescript
 const message: Uint8Array = new TextEncoder().encode(
@@ -313,7 +311,7 @@ Next, call the `submitTxStateProof()` function, which will submit a state proof 
 transaction on Sui network approved this message for signing.
 
 ```typescript
-  const res = await submitTxStateProof(
+const res = await submitTxStateProof(
     dwalletClient,
     suiClient,
     createdDWallet.dwalletID,
@@ -324,11 +322,11 @@ transaction on Sui network approved this message for signing.
     approveMsgTxID,
     lightClientTxDataService,
     keyPair,
-)
-console.log('submitTxStateProof result', res)
+);
+console.log('submitTxStateProof result', res);
 ```
 
-This will generate a signature:
+This generates a signature:
 
 ```typescript
 res = {
