@@ -1,3 +1,9 @@
+/// The `sui_state_proof` module provides mechanisms to verify and link
+/// dWallet capabilities (`DWalletCap`) within to the Sui network.
+/// It includes structures and functions for state proofs, committee
+/// verification, and transaction-based proofing in a trustless manner
+/// using Sui's Light Client data.
+
 #[allow(unused_field)]
 module dwallet_system::sui_state_proof {
 
@@ -10,46 +16,85 @@ module dwallet_system::sui_state_proof {
     use std::vector;
     use std::debug;
 
+    /// Error code for incorrect epoch submission.
     const EWrongEpochSubmitted: u64 = 0;
+
+    /// Error code for mismatched DWalletCap ID.
     const EWrongDWalletCapId: u64 = 1;
+
+    /// Error code for incorrect number of DWalletCaps.
     const EWrongAmountOfDWalletCaps: u64 = 2;
 
+
+    /// Struct that keeps track of the highest verified epoch for a state proof.
     struct StateProofRegistry has key, store {
+        /// Unique identifier for the registry.
         id: UID,
+
+        /// Highest verified epoch in the registry.
         highest_epoch: u64,
     }
 
+    /// Configuration for state proof validation, containing references to event type layouts
+    /// and IDs needed for transaction-based proofs.
     struct StateProofConfig has key, store {
+        /// Unique identifier for the config.
         id: UID,
+
+        /// ID linking this config to the registry.
         registry_id: ID,
+
+        /// ID of the package on the Sui network.
         package_id: vector<u8>,
+
+        /// Layout for init cap event type.
         init_cap_event_type_layout: vector<u8>,
+
+        /// Layout for approval event type.
         approve_event_type_layout: vector<u8>,
     }
 
+    /// Holds information about a specific epoch committee.
     struct EpochCommittee has key, store {
+        /// Unique identifier for the committee.
         id: UID,
+
+        /// Serialized data for the committee.
         committee: vector<u8>,
     }
 
-
+    /// Event emitted when a new committee is submitted and verified.
     struct EpochCommitteeSubmitted has copy, drop {
+        /// Epoch number for the submission.
         epoch: u64,
+
+        /// ID linking to the StateProofRegistry.
         registry_id: ID,
+
+        /// ID of the newly submitted committee.
         epoch_committee_id: ID,
     }
 
+    /// A wrapper for `DWalletCap` that links it with an associated Sui capability ID.
     struct CapWrapper has key, store {
+        /// Unique identifier for the CapWrapper.
         id: UID,
+
+        /// ID of the Sui capability.
         cap_id_sui: ID,
+
+        /// The dWallet capability itself.
         cap: DWalletCap,
     }
 
+    /// Native function for verifying the committee state proof based on a previous committee.
     native fun sui_state_proof_verify_committee(
         prev_committee: vector<u8>,
         checkpoint_summary: vector<u8>
     ): (vector<u8>, u64);
 
+    /// Native function for linking a Sui capability to a dWallet capability,
+    /// based on the committee and event type layout.
     native fun sui_state_proof_verify_link_cap(
         committee: vector<u8>,
         checkpoint_summary: vector<u8>,
@@ -59,6 +104,8 @@ module dwallet_system::sui_state_proof {
         package_id: vector<u8>
     ): (vector<u8>, vector<u8>);
 
+    /// Native function for verifying a transaction as proof for dWallet
+    /// state, based on committee and layout configuration.
     native fun sui_state_proof_verify_transaction(
         committee: vector<u8>,
         checkpoint_summary: vector<u8>,
@@ -68,6 +115,17 @@ module dwallet_system::sui_state_proof {
         package_id: vector<u8>
     ): (vector<u8>, vector<u8>);
 
+    /// Initializes the module by creating a new `StateProofRegistry` and `StateProofConfig`,
+    /// setting the initial committee for state verification. Emits an event to record the
+    /// initial committee state, freezes necessary objects, and sets up the module context.
+    ///
+    /// # Parameters
+    /// - `init_committee`: Initial committee data as a vector of bytes.
+    /// - `package_id`: Unique package identifier.
+    /// - `init_cap_event_type_layout`: Type layout for initial capability event.
+    /// - `approve_event_type_layout`: Type layout for approval event.
+    /// - `epoch_id_committee`: Identifier for the initial epoch.
+    /// - `ctx`: Transaction context to create new objects.
     public fun init_module(
         init_committee: vector<u8>,
         package_id: vector<u8>,
@@ -105,6 +163,14 @@ module dwallet_system::sui_state_proof {
         transfer::freeze_object(first_committee);
     }
 
+    /// Submits a new state committee by verifying the previous committee data and incrementing
+    /// the epoch in `StateProofRegistry`. Emits an event to record the updated committee status.
+    ///
+    /// # Parameters
+    /// - `registry`: Mutable reference to `StateProofRegistry`.
+    /// - `prev_committee`: Previous `EpochCommittee` to verify.
+    /// - `new_checkpoint_summary`: Summary data of the new checkpoint.
+    /// - `ctx`: Transaction context to create a new committee object.
     public fun submit_new_state_committee(
         registry: &mut StateProofRegistry,
         prev_committee: &EpochCommittee,
@@ -134,6 +200,17 @@ module dwallet_system::sui_state_proof {
         transfer::freeze_object(committee_new);
     }
 
+    /// Creates a `CapWrapper` that links a `DWalletCap` to a Sui capability, verifying the linkage
+    /// through the current committee data and checkpoint summaries. Ensures the correct cap ID is used.
+    ///
+    /// # Parameters
+    /// - `config`: Configuration data from `StateProofConfig`.
+    /// - `dwallet_cap`: The `DWalletCap` to wrap.
+    /// - `committee`: Reference to the current `EpochCommittee`.
+    /// - `checkpoint_summary`: Summary data for the checkpoint.
+    /// - `checkpoint_contents`: Contents of the checkpoint.
+    /// - `transaction`: Transaction data associated with the checkpoint.
+    /// - `ctx`: Transaction context for object creation.
     public fun create_dwallet_wrapper(
         config: &StateProofConfig,
         dwallet_cap: DWalletCap,
@@ -171,6 +248,20 @@ module dwallet_system::sui_state_proof {
         transfer::share_object(wrapper);
     }
 
+    /// Verifies a transaction against the current committee and approved event type layout,
+    /// ensuring that each `DWalletCap` message receives an approval through a sequence of verifications.
+    /// Returns a vector of approved messages for each `DWalletCap`.
+    ///
+    /// # Parameters
+    /// - `config`: Configuration data from `StateProofConfig`.
+    /// - `cap_wrapper`: Reference to `CapWrapper` containing a wrapped `DWalletCap`.
+    /// - `committee`: Current committee data for verification.
+    /// - `checkpoint_summary`: Summary of the checkpoint to verify against.
+    /// - `checkpoint_contents`: Contents of the checkpoint.
+    /// - `transaction`: Transaction details to be verified.
+    ///
+    /// # Returns
+    /// - A vector of vectors, each containing `MessageApproval` objects representing approved messages.
     public fun transaction_state_proof(
         config: &StateProofConfig,
         cap_wrapper: &CapWrapper,

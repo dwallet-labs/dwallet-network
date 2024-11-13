@@ -238,7 +238,7 @@ pub fn sui_state_proof_verify_link_cap(
     let mut sui_cap_ids: Vec<SuiAddress> = Vec::new();
     let mut dwallet_cap_ids: Vec<SuiAddress> = Vec::new();
 
-    // Iterate over each event to process
+    // Iterate over each event to process.
     for event in tx_events {
         // Check if the event matches the desired type
         if event.type_.address.to_hex() == package_id_target.to_hex()

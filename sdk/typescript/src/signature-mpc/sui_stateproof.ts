@@ -23,16 +23,16 @@ type TxDataResponse = {
 
 export async function submitDWalletCreationProof(
 	dwallet_client: DWalletClient,
-	sui_client: SuiClient,
+	suiClient: SuiClient,
 	configObjectId: string,
 	registryObjectId: string,
 	dWalletCapId: string,
-	txId: string,
+	suiCreateCapTXID: string,
 	serviceUrl: string,
 	keypair: Keypair,
 ) {
-	let tx = await sui_client.getTransactionBlock({
-		digest: txId,
+	let tx = await suiClient.getTransactionBlock({
+		digest: suiCreateCapTXID,
 		options: {},
 	});
 
@@ -43,7 +43,7 @@ export async function submitDWalletCreationProof(
 	}
 
 	let { ckp_epoch_id, checkpoint_summary_bytes, checkpoint_contents_bytes, transaction_bytes } =
-		await queryTxData(txId, serviceUrl);
+		await queryTxData(suiCreateCapTXID, serviceUrl);
 	let txb = new TransactionBlock();
 
 	let dWalletCap = await getOwnedObject(dwallet_client, dWalletCapId);
@@ -183,7 +183,7 @@ export async function submitTxStateProof(
 	return await retrieveSignResult(dwallet_client, dWalletId);
 }
 
-// Function to query the Rust service
+// Function to query the Rust service.
 async function queryTxData(txId: string, url: string): Promise<TxDataResponse> {
 	const params = { tx_id: txId };
 
@@ -238,6 +238,7 @@ async function retrieveSignResult(client: DWalletClient, dWalletId: string): Pro
 	let eventData = reqEventFiltered[0].parsedJson! as SignOutputEventData;
 	return eventData.signatures;
 }
+
 async function retrieveEpochCommitteeIdByEpoch(
 	client: DWalletClient,
 	targetEpoch: number,

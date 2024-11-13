@@ -242,8 +242,6 @@ export const getActiveEncryptionKeyObjID = async (
 	const tx = new TransactionBlock();
 	const encryptionKeysHolder = tx.object(encryptionKeysHolderID);
 
-	console.log(keyOwnerAddress);
-
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::get_active_encryption_key`,
 		arguments: [encryptionKeysHolder, tx.pure(keyOwnerAddress)],

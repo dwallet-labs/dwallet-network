@@ -57,7 +57,9 @@ module dwallet_network::dwallet_cap {
 
         // Emit an event to notify the initialization of a new dWallet capability.
         event::emit(DWalletNetworkInitCapRequest {
+            // The object ID of the newly created `DWalletCap` object.
             cap_id: object::id(&cap),
+            // The object ID of the dWallet capability on the dWallet Network that you wish to control.
             dwallet_network_cap_id,
         });
 
