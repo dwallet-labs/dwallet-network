@@ -1,0 +1,70 @@
+name: Build and Push dWallet Faucet Image
+
+on:
+  workflow_dispatch:
+
+env:
+  ECR_REPOSITORY: sui-fork
+  IMAGE_NAME: dwallet-testnet-faucet
+  IMAGE_BASE_VERSION: v1.16.2
+
+jobs:
+  build-and-push:
+    name: Build and Push Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ECR_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_ECR_SECRET_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --update
+
+      - name: Get Latest Version from ECR
+        id: get-latest-version
+        run: |
+          # Fetch the latest patch version from the private ECR repository
+          latest_patch_version=$(aws ecr list-images \
+            --repository-name $ECR_REPOSITORY \
+            --query 'imageIds[*].imageTag' \
+            --output text | grep -oE "$IMAGE_NAME-$IMAGE_BASE_VERSION-[0-9]+" | sort -V | tail -n 1 | cut -d'-' -f4)
+
+          # Increment the patch version
+          new_patch_version=$((latest_patch_version + 1))
+          echo "New patch version to push: $new_patch_version"
+
+          # Set the new image version environment variable
+          echo "IMAGE_VERSION=${IMAGE_BASE_VERSION}-${new_patch_version}" >> $GITHUB_ENV
+        env:
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_BASE_VERSION: ${{ env.IMAGE_BASE_VERSION }}
+
+      - name: Build and Push dWallet Faucet Image
+        run: |
+          ./docker/sui-tools/build.sh \
+            --platform linux/amd64 \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
+            --push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_VERSION: ${{ env.IMAGE_VERSION }}

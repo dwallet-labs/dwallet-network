@@ -1,11 +1,19 @@
-name: Build and Push Sui Node Image
+name: Build and Push dWallet Node Images
 
 on:
   workflow_dispatch:
 
+env:
+  PRIVATE_ECR_REPOSITORY: sui-fork
+  PUBLIC_ECR_REPOSITORY: dwallet-network
+  PRIVATE_IMAGE_NAME: dwallet-testnet
+  PUBLIC_IMAGE_NAME: dwallet-testnet
+  PRIVATE_IMAGE_VERSION: v1.16.2
+  PUBLIC_IMAGE_VERSION: v1.16.2
+
 jobs:
   build-and-push:
-    name: Build
+    name: Build and Push Image to Private and Public ECR
     runs-on: ubuntu-latest
 
     steps:
@@ -32,37 +40,61 @@ jobs:
           unzip awscliv2.zip
           sudo ./aws/install --update
 
-      - name: Get Latest Version from ECR
+      - name: Get Latest Versions from ECR
         id: get-latest-version
         run: |
-          # Fetch the latest version number from the tag
-          latest_patch_version=$(aws ecr list-images \
-            --repository-name sui-fork \
+          # Get latest version for the private ECR repository
+          latest_private_patch_version=$(aws ecr list-images \
+            --repository-name $PRIVATE_ECR_REPOSITORY \
             --query 'imageIds[*].imageTag' \
-            --output text | grep -oE 'dwallet-testnet-v1.16.2-[0-9]+' | sort -V | tail -n 1 | cut -d'-' -f4)
+            --output text | grep -oE "$PRIVATE_IMAGE_NAME-$PRIVATE_IMAGE_VERSION-[0-9]+" | sort -V | tail -n 1 | cut -d'-' -f4)
 
-          # Print the patch version for debugging purposes
-          echo "Latest patch version: $latest_patch_version"
+          # Increment the private patch version
+          new_private_patch_version=$((latest_private_patch_version + 1))
+          echo "New private patch version to push: $new_private_patch_version"
+          echo "PRIVATE_IMAGE_VERSION=${PRIVATE_IMAGE_VERSION}-${new_private_patch_version}" >> $GITHUB_ENV
 
-          # Increment the patch version
-          new_patch_version=$((latest_patch_version + 1))
+          # Get latest version for the public ECR repository
+          latest_public_patch_version=$(aws ecr-public describe-images \
+            --repository-name $PUBLIC_ECR_REPOSITORY \
+            --query 'imageDetails[].imageTags' \
+            --output text | grep -oE "$PUBLIC_IMAGE_NAME-$PUBLIC_IMAGE_VERSION-[0-9]+" | sort -V | tail -n 1 | cut -d'-' -f4)
 
-          # Print the new version
-          echo "New patch version to push: $new_patch_version"
+          # Increment the public patch version
+          new_public_patch_version=$((latest_public_patch_version + 1))
+          echo "New public patch version to push: $new_public_patch_version"
+          echo "PUBLIC_IMAGE_VERSION=${PUBLIC_IMAGE_VERSION}-${new_public_patch_version}" >> $GITHUB_ENV
+        env:
+          PRIVATE_ECR_REPOSITORY: ${{ env.PRIVATE_ECR_REPOSITORY }}
+          PUBLIC_ECR_REPOSITORY: ${{ env.PUBLIC_ECR_REPOSITORY }}
+          PRIVATE_IMAGE_NAME: ${{ env.PRIVATE_IMAGE_NAME }}
+          PRIVATE_IMAGE_VERSION: ${{ env.PRIVATE_IMAGE_VERSION }}
+          PUBLIC_IMAGE_NAME: ${{ env.PUBLIC_IMAGE_NAME }}
+          PUBLIC_IMAGE_VERSION: ${{ env.PUBLIC_IMAGE_VERSION }}
 
-          # Save the new version to the GitHub environment for later use
-          echo "IMAGE_VERSION=v1.16.2-$new_patch_version" >> $GITHUB_ENV
-
-      - name: Build and Push Sui Node Image
+      - name: Build and Push to Private ECR
         run: |
           ./docker/sui-node/build.sh \
             --platform linux/amd64 \
-            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_NAME-$IMAGE_VERSION \
+            --tag $PRIVATE_ECR_REGISTRY/$PRIVATE_ECR_REPOSITORY:$PRIVATE_IMAGE_NAME-$PRIVATE_IMAGE_VERSION \
             --push
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sui-fork
-          # Image Tag.
-          IMAGE_NAME: dwallet-testnet
-          # Image Tag suffix.
-          IMAGE_VERSION: ${{ env.IMAGE_VERSION }}
+          PRIVATE_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          PRIVATE_ECR_REPOSITORY: ${{ env.PRIVATE_ECR_REPOSITORY }}
+          PRIVATE_IMAGE_NAME: ${{ env.PRIVATE_IMAGE_NAME }}
+          PRIVATE_IMAGE_VERSION: ${{ env.PRIVATE_IMAGE_VERSION }}
+
+      - name: Tag and Push to Public ECR
+        run: |
+          docker tag $PRIVATE_ECR_REGISTRY/$PRIVATE_ECR_REPOSITORY:$PRIVATE_IMAGE_NAME-$PRIVATE_IMAGE_VERSION \
+                     $PUBLIC_ECR_REGISTRY/$PUBLIC_ECR_REPOSITORY:$PUBLIC_IMAGE_NAME-$PUBLIC_IMAGE_VERSION
+          docker push $PUBLIC_ECR_REGISTRY/$PUBLIC_ECR_REPOSITORY:$PUBLIC_IMAGE_NAME-$PUBLIC_IMAGE_VERSION
+        env:
+          PRIVATE_ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          PUBLIC_ECR_REGISTRY: public.ecr.aws/your-public-registry-id
+          PRIVATE_ECR_REPOSITORY: ${{ env.PRIVATE_ECR_REPOSITORY }}
+          PUBLIC_ECR_REPOSITORY: ${{ env.PUBLIC_ECR_REPOSITORY }}
+          PRIVATE_IMAGE_NAME: ${{ env.PRIVATE_IMAGE_NAME }}
+          PUBLIC_IMAGE_NAME: ${{ env.PUBLIC_IMAGE_NAME }}
+          PRIVATE_IMAGE_VERSION: ${{ env.PRIVATE_IMAGE_VERSION }}
+          PUBLIC_IMAGE_VERSION: ${{ env.PUBLIC_IMAGE_VERSION }}
