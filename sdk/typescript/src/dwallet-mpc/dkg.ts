@@ -72,7 +72,13 @@ export async function launchDKGSecondRound(
 		},
 	});
 
+	const timeout = 5 * 60 * 1000; // 5 minutes in milliseconds
+	const startTime = Date.now();
+
 	for (;;) {
+		if (Date.now() - startTime > timeout) {
+			throw new Error('Timeout: Unable to fetch object within 5 minutes');
+		}
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		let newEvents = await client.queryEvents({
 			query: {
