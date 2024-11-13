@@ -41,7 +41,7 @@ export async function launchDKGFirstRound(keypair: Keypair, client: PeraClient) 
 				output: number[];
 				dwallet_cap_id: string;
 				session_id: string;
-			})
+		  })
 		: null;
 }
 
@@ -93,7 +93,7 @@ export async function launchDKGSecondRound(
 							id: { id: string };
 							dwallet_cap_id: string;
 							output: number[];
-						})
+					  })
 					: null;
 			}
 		}
@@ -107,7 +107,14 @@ export async function fetchObjectByCapID(
 	client: PeraClient,
 ) {
 	let cursor = null;
+	const timeout = 5 * 60 * 1000; // 5 minutes in milliseconds
+	const startTime = Date.now();
+
 	for (;;) {
+		if (Date.now() - startTime > timeout) {
+			throw new Error('Timeout: Unable to fetch object within 5 minutes');
+		}
+
 		const objects = await client.getOwnedObjects({
 			owner: keypair.toPeraAddress(),
 			cursor: cursor,
