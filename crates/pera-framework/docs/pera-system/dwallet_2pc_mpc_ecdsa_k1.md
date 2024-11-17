@@ -333,13 +333,13 @@ This function start the DKG proccess in the Validators.
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round">launch_dkg_first_round</a>(
     ctx: &<b>mut</b> TxContext
 ): <b>address</b> {
-    <b>let</b> cap_id = create_dwallet_cap(ctx);
+    <b>let</b> dwallet_cap_id = create_dwallet_cap(ctx);
     <b>let</b> sender = <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx);
     <b>let</b> session_id = <a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx);
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent">StartDKGFirstRoundEvent</a> {
         session_id,
         sender,
-        dwallet_cap_id: cap_id,
+        dwallet_cap_id,
     });
     session_id
 }
@@ -383,12 +383,10 @@ Validtors call it, it's part of the blockchain logic.
     };
     <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(output, sender);
 
-    <b>let</b> completed_proof_mpc_session_event = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedFirstDKGRoundEvent">CompletedFirstDKGRoundEvent</a> {
-        session_id: session_id,
-        sender: sender,
-    };
-
-    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(completed_proof_mpc_session_event);
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedFirstDKGRoundEvent">CompletedFirstDKGRoundEvent</a> {
+        session_id,
+        sender,
+    });
 }
 </code></pre>
 
@@ -445,7 +443,7 @@ Each validator then catches this event and starts the second round of the DKG.
 
 Create the second DKG MPC first output, which is the actual [<code><a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a></code>].
 This function is called by blockchain itself.
-Validtors call it, it's part of the blockchain logic.
+Validators call it, it's part of the blockchain logic.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)

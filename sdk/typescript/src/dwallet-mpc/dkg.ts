@@ -1,142 +1,226 @@
-// Copyright (c) dWallet Labs, Inc.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+// noinspection ES6PreferShortImport
+
 import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 
 import { bcs } from '../bcs/index.js';
-import type { PeraClient } from '../client/index.js';
+import type { MoveValue, PeraClient, PeraParsedData } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
 
-const packageId = '0x3';
-const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
+export const dWalletPackageID = '0x3';
+export const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
+const dWalletModuleName = 'dwallet';
+const dkgFirstRoundOutputMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutput`;
+const dwalletSecp256K1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::Secp256K1`;
+const dWalletMoveType = `${dWalletPackageID}::${dWalletModuleName}::DWallet<${dwalletSecp256K1MoveType}>`;
+const moveObjectDataType = 'moveObject';
+
+interface DKGFirstRoundOutputFields {
+	id: { id: string };
+	session_id: string;
+	dwallet_cap_id: string;
+	output: number[];
+
+	[key: string]: MoveValue;
+}
+
+export type DKGFirstRoundOutputMoveObj = {
+	dataType: typeof moveObjectDataType;
+	type: typeof dkgFirstRoundOutputMoveType;
+	fields: DKGFirstRoundOutputFields;
+	hasPublicTransfer: boolean;
+};
+
+interface CompletedDKGSecondRoundEvent {
+	session_id: string;
+	sender: string;
+	dwallet_cap_id: string;
+	dwallet_id: string;
+	value: Uint8Array;
+}
+
+interface DWallet {
+	id: { id: string };
+	session_id: string;
+	dwallet_cap_id: string;
+	output: number[];
+
+	[key: string]: MoveValue;
+}
+
+function isDKGFirstRoundOutputMoveObj(o?: PeraParsedData | null): o is DKGFirstRoundOutputMoveObj {
+	return (
+		o?.dataType === moveObjectDataType &&
+		o?.type === dkgFirstRoundOutputMoveType &&
+		'id' in o.fields &&
+		'session_id' in o.fields &&
+		'output' in o.fields &&
+		'dwallet_cap_id' in o.fields
+	);
+}
+
+interface Config {
+	keypair: Keypair;
+	client: PeraClient;
+}
 
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
  * The output of this function is being used to generate the input for the second round.
  */
-export async function launchDKGFirstRound(keypair: Keypair, client: PeraClient) {
+async function launchDKGFirstRound(c: Config) {
 	const tx = new Transaction();
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_first_round`,
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_first_round`,
 		arguments: [],
 	});
-	const result = await client.signAndExecuteTransaction({
-		signer: keypair,
+	const result = await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
 		},
 	});
-	const capRef = result.effects?.created?.[0].reference!;
-	await new Promise((resolve) => setTimeout(resolve, 5000));
-	let firstRoundOutputObject = await fetchObjectByCapID(
-		capRef.objectId,
-		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutput`,
-		keypair,
-		client,
-	);
-
-	let firstRoundOutput =
-		firstRoundOutputObject?.dataType === 'moveObject'
-			? (firstRoundOutputObject.fields as {
-					output: number[];
-					dwallet_cap_id: string;
-					session_id: string;
-				})
-			: null;
-
-	return firstRoundOutput;
+	const createdDwalletCapRef = result.effects?.created?.[0].reference;
+	if (!createdDwalletCapRef) {
+		throw new Error('CreateDwallet error: Failed to create dWallet capability');
+	}
+	let obj = await dkgFirstRoundOutputObject(createdDwalletCapRef.objectId, c);
+	return obj.fields;
 }
 
-export async function launchDKGSecondRound(
-	keypair: Keypair,
-	client: PeraClient,
-	publicKeyShareAndProof: Uint8Array,
-	firstRoundOutput: Uint8Array,
-	dwalletCapId: string,
-	firstRoundSessionId: string,
-) {
-	const tx = new Transaction();
-	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
-		arguments: [
-			tx.object(dwalletCapId),
-			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(firstRoundOutput)),
-			tx.pure.id(firstRoundSessionId),
-		],
-	});
+async function dWalletFromEvent(
+	c: Config,
+	firstRound: DKGFirstRoundOutputFields,
+	timeout: number = 10 * 60 * 1000,
+): Promise<DWallet> {
+	let cursor = null;
+	const startTime = Date.now();
 
-	await client.signAndExecuteTransaction({
-		signer: keypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-		},
-	});
-
-	for (;;) {
+	while (Date.now() - startTime < timeout) {
+		// Wait for 5 seconds between queries
 		await new Promise((resolve) => setTimeout(resolve, 5000));
-		let newEvents = await client.queryEvents({
+
+		// Query events with the current cursor.
+		const {
+			data: events,
+			nextCursor,
+			hasNextPage,
+		} = await c.client.queryEvents({
+			cursor,
 			query: {
-				MoveEventType: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedDKGSecondRoundEvent`,
+				MoveEventType: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedDKGSecondRoundEvent`,
 			},
 		});
 
-		if (newEvents.data.length > 0) {
-			let event = newEvents.data[0].parsedJson as { dwallet_cap_id: string; dwallet_id: string };
-			if (event.dwallet_cap_id === dwalletCapId) {
-				let dwallet = await client.getObject({
-					id: event.dwallet_id,
-					options: { showContent: true },
-				});
+		for (const eventData of events) {
+			const event = eventData.parsedJson as CompletedDKGSecondRoundEvent;
+			if (event.dwallet_cap_id !== firstRound.dwallet_cap_id) {
+				continue;
+			}
 
-				return dwallet.data?.content?.dataType === 'moveObject'
-					? (dwallet.data?.content?.fields as {
-							id: { id: string };
-							dwallet_cap_id: string;
-							output: number[];
-						})
-					: null;
+			// Fetch the dWallet object using the event's dwallet_id.
+			const dwalletResponse = await c.client.getObject({
+				id: event.dwallet_id,
+				options: { showContent: true },
+			});
+
+			// Check if the object is of the expected data type and cast it to DWallet.
+			if (
+				dwalletResponse.data?.content?.dataType === moveObjectDataType &&
+				// todo: validate this.
+				dwalletResponse.data?.content?.type === dWalletMoveType
+			) {
+				return dwalletResponse.data?.content?.fields as DWallet;
 			}
 		}
+
+		// Update cursor for pagination
+		cursor = hasNextPage ? nextCursor : null;
 	}
+	throw new Error(`timeout reached: Unable to create dWallet within ${timeout / 1000} seconds.`);
 }
 
-export async function fetchObjectByCapID(
-	capId: string,
-	type: string,
-	keypair: Keypair,
-	client: PeraClient,
+async function launchDKGSecondRound(
+	c: Config,
+	firstRound: DKGFirstRoundOutputFields,
+	publicKeyShareAndProof: Uint8Array,
 ) {
+	const tx = new Transaction();
+	tx.moveCall({
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
+		arguments: [
+			tx.object(firstRound.dwallet_cap_id),
+			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(firstRound.output)),
+			tx.pure.id(firstRound.session_id),
+		],
+	});
+
+	await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+	return await dWalletFromEvent(c, firstRound);
+}
+
+/**
+ * Fetches the DKGFirstRoundOutput object from the client.
+ * Since the object might not be available immediately,
+ * this function polls the client until the object is found, or a timeout is reached.
+ */
+async function dkgFirstRoundOutputObject(
+	dwalletCapID: string,
+	c: Config,
+	timeout: number = 10 * 60 * 1000,
+): Promise<DKGFirstRoundOutputMoveObj> {
 	let cursor = null;
-	for (;;) {
-		const objects = await client.getOwnedObjects({
-			owner: keypair.toPeraAddress(),
-			cursor: cursor,
+	const startTime = Date.now();
+
+	while (Date.now() - startTime < timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		await new Promise((r) => setTimeout(r, 1000));
+		const {
+			data: ownedObjects,
+			hasNextPage,
+			nextCursor,
+		} = await c.client.getOwnedObjects({
+			owner: c.keypair.toPeraAddress(),
+			cursor,
 		});
-		const objectsContent = await client.multiGetObjects({
-			ids: objects.data.map((o) => o.data?.objectId!),
+		const objectIds = ownedObjects.map((o) => o.data?.objectId).filter(Boolean) as string[];
+
+		if (objectIds.length === 0) {
+			await new Promise((r) => setTimeout(r, 500));
+			continue;
+		}
+
+		const objectsContent = await c.client.multiGetObjects({
+			ids: objectIds,
 			options: { showContent: true },
 		});
 
-		const objectsFiltered = objectsContent
+		// Find the first matching object with `moveObject` dataType and correct `dwalletCapID`
+		const match = objectsContent
 			.map((o) => o.data?.content)
-			.filter((o) => {
-				return (
-					// @ts-ignore
-					o?.dataType === 'moveObject' && o?.type === type && o.fields['dwallet_cap_id'] === capId
-				);
-			});
-		if (objectsFiltered.length > 0) {
-			return objectsFiltered[0];
-		} else if (objects.hasNextPage) {
-			cursor = objects.nextCursor;
-		} else {
-			cursor = null;
+			.find(
+				(o): o is DKGFirstRoundOutputMoveObj =>
+					isDKGFirstRoundOutputMoveObj(o) && o.fields.dwallet_cap_id === dwalletCapID,
+			);
+		if (match) return match;
+		if (hasNextPage) {
+			cursor = nextCursor;
 		}
-		await new Promise((r) => setTimeout(r, 500));
 	}
+
+	throw new Error(
+		`timeout reached: Unable to find DKGFirstRoundOutputObject within ${timeout / 1000} seconds.`,
+	);
 }
 
 export type CreatedDwallet = {
@@ -146,28 +230,24 @@ export type CreatedDwallet = {
 	dwalletCapID: string;
 };
 
-export async function createDWallet(
-	keypair: Keypair,
-	client: PeraClient,
-): Promise<CreatedDwallet | null> {
-	const firstDKGOutput = await launchDKGFirstRound(keypair, client);
+export async function createDWallet(keypair: Keypair, client: PeraClient): Promise<CreatedDwallet> {
+	let config: Config = {
+		keypair: keypair,
+		client: client,
+	};
+
+	const firstDKGOutput = await launchDKGFirstRound(config);
 	let [publicKeyShareAndProof, centralizedOutput] = create_dkg_centralized_output(
-		Uint8Array.from(firstDKGOutput!.output),
-		firstDKGOutput?.session_id!.slice(2)!,
+		Uint8Array.from(firstDKGOutput.output),
+		// Remove the 0x prefix.
+		firstDKGOutput.session_id.slice(2),
 	);
-	let dwallet = await launchDKGSecondRound(
-		keypair,
-		client,
-		publicKeyShareAndProof,
-		Uint8Array.from(firstDKGOutput!.output),
-		firstDKGOutput?.dwallet_cap_id!,
-		firstDKGOutput?.session_id!,
-	);
+	let dwallet = await launchDKGSecondRound(config, firstDKGOutput, publicKeyShareAndProof);
 
 	return {
-		dwalletID: dwallet?.id!.id!,
+		dwalletID: dwallet.id.id,
 		centralizedDKGOutput: centralizedOutput,
-		decentralizedDKGOutput: dwallet?.output!,
-		dwalletCapID: dwallet?.dwallet_cap_id!,
+		decentralizedDKGOutput: dwallet.output,
+		dwalletCapID: dwallet.dwallet_cap_id,
 	};
 }

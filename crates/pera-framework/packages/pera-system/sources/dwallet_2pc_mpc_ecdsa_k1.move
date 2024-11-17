@@ -1,7 +1,6 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-#[allow(unused_const)]
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
     use pera_system::dwallet::{create_dwallet_cap, DWalletCap};
@@ -71,13 +70,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun launch_dkg_first_round(
         ctx: &mut TxContext
     ): address {
-        let cap_id = create_dwallet_cap(ctx);
+        let dwallet_cap_id = create_dwallet_cap(ctx);
         let sender = tx_context::sender(ctx);
         let session_id = tx_context::fresh_object_address(ctx);
         event::emit(StartDKGFirstRoundEvent {
             session_id,
             sender,
-            dwallet_cap_id: cap_id,
+            dwallet_cap_id,
         });
         session_id
     }
@@ -102,12 +101,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         };
         transfer::transfer(output, sender);
 
-        let completed_proof_mpc_session_event = CompletedFirstDKGRoundEvent {
-            session_id: session_id,
-            sender: sender,
-        };
-
-        event::emit(completed_proof_mpc_session_event);
+        event::emit(CompletedFirstDKGRoundEvent {
+            session_id,
+            sender,
+        });
     }
 
     /// Function to launch the second DKG round.
@@ -135,7 +132,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     /// Create the second DKG MPC first output, which is the actual [`dwallet::DWallet`].
     /// This function is called by blockchain itself.
-    /// Validtors call it, it's part of the blockchain logic.
+    /// Validators call it, it's part of the blockchain logic.
     public fun create_dkg_second_round_output(
         session_initiator: address,
         session_id: ID,

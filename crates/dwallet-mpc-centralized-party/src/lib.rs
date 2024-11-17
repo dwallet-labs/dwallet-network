@@ -1,4 +1,4 @@
-/// This crate contains the cryptographic logic for the centralized 2PC-MPC party
+//! This crate contains the cryptographic logic for the centralized 2PC-MPC party.
 use mpc::two_party::Round;
 use rand_core::OsRng;
 
@@ -8,13 +8,13 @@ type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentr
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
 ///
 /// The [`create_dkg_output`] function is called by the client (aka the centralized party)
-/// and is responsible for generating and returning the public key share and its proof, as well as the
+/// and handles generating and returning the public key share and its proof, as well as the
 /// centralized DKG output. These values are necessary for the decentralized party to complete the final
 /// phase of the DKG protocol.
 ///
-/// * `decentralized_first_round_output` - A serialized byte vector representing the output of the
+/// * `decentralized_first_round_output` — A serialized byte vector representing the output of the
 ///   decentralized party from the first round.
-/// * `session_id` - A unique identifier for the session, represented as a hexadecimal string.
+/// * `session_id` — A unique identifier for the session, represented as a hexadecimal string.
 ///   Received from the `pera_system::dwallet_2pc_mpc_ecdsa_k1::launch_dkg_first_round` transaction.
 pub fn create_dkg_output(
     decentralized_first_round_output: Vec<u8>,
