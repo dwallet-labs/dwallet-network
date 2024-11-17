@@ -38,7 +38,7 @@ launch_dkg_second_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_dkg_second_round_output
-	public fun
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct

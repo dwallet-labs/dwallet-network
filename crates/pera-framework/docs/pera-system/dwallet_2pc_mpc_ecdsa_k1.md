@@ -2,15 +2,42 @@
 title: Module `0x3::dwallet_2pc_mpc_ecdsa_k1`
 ---
 
+This module handles the logic for creating and dWallets using the Secp256K1 signature scheme
+and the DKG process. It leverages validators to execute MPC (Multi-Party Computation)
+protocols to ensure trustless and decentralized wallet creation and key management.
 
 
+<a name="@Overview_0"></a>
+
+### Overview
+
+
+- **Secp256K1**: The cryptographic curve used for this implementation.
+- dWallets are created through two phases of DKG:
+1. The first phase outputs partial results for the user.
+2. The second phase generates the dWallet.
+- **Capabilities**: Access to dWallets is controlled via capabilities (<code>DWalletCap</code>).
+
+
+<a name="@Features_1"></a>
+
+### Features
+
+
+- Emit events for validators to coordinate DKG rounds.
+- Transfer intermediate results and final outputs to the initiating user.
+- Ensure secure and decentralized key generation and management.
+
+
+    -  [Overview](#@Overview_0)
+    -  [Features](#@Features_1)
 -  [Struct `Secp256K1`](#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1)
 -  [Resource `DKGFirstRoundOutput`](#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput)
 -  [Struct `StartDKGFirstRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent)
 -  [Struct `CompletedFirstDKGRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedFirstDKGRoundEvent)
 -  [Struct `StartDKGSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent)
 -  [Struct `CompletedDKGSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGSecondRoundEvent)
--  [Constants](#@Constants_0)
+-  [Constants](#@Constants_2)
 -  [Function `launch_dkg_first_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round)
 -  [Function `create_dkg_first_round_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output)
 -  [Function `launch_dkg_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_second_round)
@@ -30,7 +57,8 @@ title: Module `0x3::dwallet_2pc_mpc_ecdsa_k1`
 
 ## Struct `Secp256K1`
 
-Represents the Secp256K1 DWallet type.
+Represents the <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a></code> dWallet type.
+This struct is a phantom type that signifies the dWallet cryptographic scheme.
 
 
 <pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a> <b>has</b> drop
@@ -58,10 +86,9 @@ Represents the Secp256K1 DWallet type.
 
 ## Resource `DKGFirstRoundOutput`
 
-A struct to hold the output of the first round of the DKG.
-An instance of this struct is being transferred to the user that initiated the DKG after
-the first round is completed.
-The user can then use this output to start the second round of the DKG.
+Holds the output of the first DKG round.
+The first-round output is transferred to the user after the initial phase is completed.
+It is then used to initiate the second round of the DKG.
 
 
 <pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a> <b>has</b> key
@@ -107,7 +134,8 @@ The user can then use this output to start the second round of the DKG.
 
 ## Struct `StartDKGFirstRoundEvent`
 
-Event to start a <code>DKG</code> session, caught by the Validators.
+Event emitted to start the first DKG round.
+Validators catch this event to initiate the first round of the DKG.
 
 
 <pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent">StartDKGFirstRoundEvent</a> <b>has</b> <b>copy</b>, drop
@@ -147,6 +175,7 @@ Event to start a <code>DKG</code> session, caught by the Validators.
 
 ## Struct `CompletedFirstDKGRoundEvent`
 
+Event emitted when the first round of the DKG is completed.
 
 
 <pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedFirstDKGRoundEvent">CompletedFirstDKGRoundEvent</a> <b>has</b> <b>copy</b>, drop
@@ -166,7 +195,7 @@ Event to start a <code>DKG</code> session, caught by the Validators.
 
 </dd>
 <dt>
-<code>sender: <b>address</b></code>
+<code>initiator: <b>address</b></code>
 </dt>
 <dd>
 
@@ -180,8 +209,8 @@ Event to start a <code>DKG</code> session, caught by the Validators.
 
 ## Struct `StartDKGSecondRoundEvent`
 
-Being emitted to start the validator's second DKG round
-Each validators catch this event and start the second round of the DKG.
+Event emitted to start the second DKG round.
+Validators catch this event to start the second round of the DKG process.
 
 
 <pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent">StartDKGSecondRoundEvent</a> <b>has</b> <b>copy</b>, drop
@@ -239,8 +268,8 @@ Each validators catch this event and start the second round of the DKG.
 
 ## Struct `CompletedDKGSecondRoundEvent`
 
-Being emitted when the second round of the DKG is completed.
-Contains all the relevant data from that round.
+Event emitted when the second round of the DKG is completed.
+Contains all relevant data from the second DKG round.
 
 
 <pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGSecondRoundEvent">CompletedDKGSecondRoundEvent</a> <b>has</b> <b>copy</b>, drop
@@ -288,13 +317,14 @@ Contains all the relevant data from that round.
 
 </details>
 
-<a name="@Constants_0"></a>
+<a name="@Constants_2"></a>
 
 ## Constants
 
 
 <a name="0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress"></a>
 
+Error raised when the sender is not the system address.
 
 
 <pre><code><b>const</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 0;
@@ -304,6 +334,7 @@ Contains all the relevant data from that round.
 
 <a name="0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS"></a>
 
+System address for asserting system-level actions.
 
 
 <pre><code><b>const</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>: <b>address</b> = 0;
@@ -315,10 +346,10 @@ Contains all the relevant data from that round.
 
 ## Function `launch_dkg_first_round`
 
-Starts the first Distributed Key Generation (DKG) session. Two MPC sessions are required to
-create a Dwallet.
-Capabilities are used to control access to the Dwallet.
-This function start the DKG proccess in the Validators.
+Starts the first Distributed Key Generation (DKG) session.
+This function initializes the DKG process for creating a dWallet.
+It emits an event for validators to begin the first round of DKG.
+The dWallet capability (<code>DWalletCap</code>) is created and transferred to the user.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round">launch_dkg_first_round</a>(ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
@@ -330,9 +361,7 @@ This function start the DKG proccess in the Validators.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round">launch_dkg_first_round</a>(
-    ctx: &<b>mut</b> TxContext
-): <b>address</b> {
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round">launch_dkg_first_round</a>(ctx: &<b>mut</b> TxContext): <b>address</b> {
     <b>let</b> dwallet_cap_id = create_dwallet_cap(ctx);
     <b>let</b> sender = <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx);
     <b>let</b> session_id = <a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx);
@@ -353,12 +382,24 @@ This function start the DKG proccess in the Validators.
 
 ## Function `create_dkg_first_round_output`
 
-Create the first DKG MPC first round output, transfer it to the initiating user.
+Creates the output of the first DKG round.
+This function transfers the output to the initiating user and emits
+an event indicating the completion of the first round.
 This function is called by blockchain itself.
 Validtors call it, it's part of the blockchain logic.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(sender: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<a name="@Parameters_3"></a>
+
+##### Parameters
+
+- <code>initiator</code>: The address of the user who initiated the DKG session.
+- <code>session_id</code>: The ID of the current DKG session.
+- <code>output</code>: The raw output of the first DKG round.
+- <code>dwallet_cap_id</code>: The ID of the associated dWallet capability.
+
+
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -368,7 +409,7 @@ Validtors call it, it's part of the blockchain logic.
 
 
 <pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(
-    sender: <b>address</b>,
+    initiator: <b>address</b>,
     session_id: ID,
     output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     dwallet_cap_id: ID,
@@ -381,11 +422,11 @@ Validtors call it, it's part of the blockchain logic.
         output,
         dwallet_cap_id,
     };
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(output, sender);
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(output, initiator);
 
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedFirstDKGRoundEvent">CompletedFirstDKGRoundEvent</a> {
         session_id,
-        sender,
+        initiator,
     });
 }
 </code></pre>
@@ -398,9 +439,18 @@ Validtors call it, it's part of the blockchain logic.
 
 ## Function `launch_dkg_second_round`
 
-Function to launch the second DKG round.
-Emits an event with all the needed data.
-Each validator then catches this event and starts the second round of the DKG.
+Starts the second DKG round.
+Emits an event for validators to begin the second round of the DKG process.
+
+
+<a name="@Parameters_4"></a>
+
+##### Parameters
+
+- <code>dwallet_cap</code>: The capability for the associated dWallet.
+- <code>public_key_share_and_proof</code>: Public key share and proof from the first round.
+- <code>first_round_output</code>: Output from the first DKG round.
+- <code>first_round_session_id</code>: Session ID of the first DKG round.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_second_round">launch_dkg_second_round</a>(dwallet_cap: &<a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>, public_key_share_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <b>address</b>
@@ -420,15 +470,14 @@ Each validator then catches this event and starts the second round of the DKG.
     ctx: &<b>mut</b> TxContext
 ): <b>address</b> {
     <b>let</b> session_id = <a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx);
-    <b>let</b> created_proof_mpc_session_event = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent">StartDKGSecondRoundEvent</a> {
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent">StartDKGSecondRoundEvent</a> {
         session_id,
         sender: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
         first_round_output,
         public_key_share_and_proof,
         dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(dwallet_cap),
-        first_round_session_id
-    };
-    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(created_proof_mpc_session_event);
+        first_round_session_id,
+    });
     session_id
 }
 </code></pre>
@@ -441,12 +490,24 @@ Each validator then catches this event and starts the second round of the DKG.
 
 ## Function `create_dkg_second_round_output`
 
-Create the second DKG MPC first output, which is the actual [<code><a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a></code>].
+Completes the second DKG round and creates the final [<code>DWallet</code>].
+This function finalizes the DKG process and emits an event with all relevant data.
 This function is called by blockchain itself.
-Validators call it, it's part of the blockchain logic.
+Validtors call it, it's part of the blockchain logic.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<a name="@Parameters_5"></a>
+
+##### Parameters
+
+- <code>session_initiator</code>: The address of the user who initiated the DKG session.
+- <code>session_id</code>: The ID of the current DKG session.
+- <code>output</code>: The output of the second DKG round.
+- <code>dwallet_cap_id</code>: The ID of the associated dWallet capability.
+- <code>ctx</code>: The transaction context.
+
+
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(session_initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -455,24 +516,23 @@ Validators call it, it's part of the blockchain logic.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_second_round_output">create_dkg_second_round_output</a>(
     session_initiator: <b>address</b>,
     session_id: ID,
     output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     dwallet_cap_id: ID,
     ctx: &<b>mut</b> TxContext
 ) {
-    <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == @0x0, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>);
+    <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>);
     <b>let</b> <a href="dwallet.md#0x3_dwallet">dwallet</a> = <a href="dwallet.md#0x3_dwallet_create_dwallet">dwallet::create_dwallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(session_id, dwallet_cap_id, output, ctx);
-    <b>let</b> completed_proof_mpc_session_event = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGSecondRoundEvent">CompletedDKGSecondRoundEvent</a> {
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedDKGSecondRoundEvent">CompletedDKGSecondRoundEvent</a> {
         session_id,
         sender: session_initiator,
         dwallet_cap_id,
         dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&<a href="dwallet.md#0x3_dwallet">dwallet</a>),
         value: output,
-    };
+    });
     <a href="../pera-framework/transfer.md#0x2_transfer_public_freeze_object">transfer::public_freeze_object</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>);
-    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(completed_proof_mpc_session_event);
 }
 </code></pre>
 
