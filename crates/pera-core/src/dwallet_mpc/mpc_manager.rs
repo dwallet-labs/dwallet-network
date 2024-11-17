@@ -136,8 +136,7 @@ impl DWalletMPCManager {
             .collect::<Vec<&mut DWalletMPCInstance>>();
 
         let results: Vec<PeraResult<(ConsensusTransaction, Vec<PartyID>)>> = ready_to_advance
-            // .par_iter_mut()
-            .iter_mut()
+            .par_iter_mut()
             .map(|ref mut instance| instance.advance())
             .collect();
         let messages = results
