@@ -7,7 +7,7 @@ use crate::dwallet_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
 use crate::dwallet_mpc::dkg::deserialize_mpc_messages;
 use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
 use group::PartyID;
-use mpc::{Advance, Party};
+use mpc::{Advance, Party, WeightedThresholdAccessStructure};
 use pera_types::error::{PeraError, PeraResult};
 use std::collections::{HashMap, HashSet};
 
@@ -28,13 +28,13 @@ impl FirstPresignBytesParty {
     /// It is necessary for advancing the party to the next round of the Presign protocol.
     pub(crate) fn generate_auxiliary_input(
         session_id: Vec<u8>,
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         dkg_output: Vec<u8>,
     ) -> Vec<u8> {
         bcs::to_bytes(&PresignFirstParty::generate_auxiliary_input(
             session_id,
-            number_of_parties,
+            weighted_threshold_access_structure,
             party_id,
             dkg_output,
         ))
@@ -65,9 +65,14 @@ impl BytesParty for FirstPresignBytesParty {
                 bcs::to_bytes(&message).unwrap(),
                 MPCParty::FirstPresignBytesParty(Self { party: new_party }),
             ))),
-            mpc::AdvanceResult::Finalize(output) => {
-                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output).unwrap()))
-            }
+            mpc::AdvanceResult::Finalize(output) => Ok(AdvanceResult::Finalize(
+                bcs::to_bytes(&output).unwrap(),
+                vec![],
+            )),
+            mpc::AdvanceResult::FinalizeAsync(output) => Ok(AdvanceResult::Finalize(
+                bcs::to_bytes(&output.output).unwrap(),
+                output.malicious_parties,
+            )),
         }
     }
 }
@@ -81,7 +86,7 @@ impl BytesParty for FirstPresignBytesParty {
 pub trait PresignFirstRound: mpc::Party {
     fn generate_auxiliary_input(
         session_id: Vec<u8>,
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         dkg_output: Vec<u8>,
     ) -> Self::AuxiliaryInput;
@@ -90,22 +95,19 @@ pub trait PresignFirstRound: mpc::Party {
 impl PresignFirstRound for PresignFirstParty {
     fn generate_auxiliary_input(
         session_id: Vec<u8>,
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         dkg_output: Vec<u8>,
     ) -> Self::AuxiliaryInput {
         let secp256k1_group_public_parameters =
             class_groups_constants::protocol_public_parameters();
-
-        let parties = (0..number_of_parties).collect::<HashSet<PartyID>>();
         let session_id = commitment::CommitmentSizedNumber::from_le_slice(&session_id);
+
         Self::AuxiliaryInput {
+            weighted_threshold_access_structure,
             protocol_public_parameters: secp256k1_group_public_parameters.clone(),
             party_id,
-            threshold: ((number_of_parties * 2) + 2) / 3,
-            number_of_parties,
             dkg_output: bcs::from_bytes(&dkg_output).unwrap(), // todo: remove unwrap
-            parties: parties.clone(),
             session_id,
         }
     }
@@ -123,7 +125,7 @@ impl SecondPresignBytesParty {
     /// The `session_id` is the unique identifier for the MPC session from the first round.
     pub(crate) fn generate_auxiliary_input(
         session_id: Vec<u8>,
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         dkg_output: Vec<u8>,
         first_round_output: Vec<u8>,
@@ -131,7 +133,7 @@ impl SecondPresignBytesParty {
         let first_round_output = bcs::from_bytes(&first_round_output).unwrap();
         bcs::to_bytes(&PresignSecondParty::generate_auxiliary_input(
             session_id,
-            number_of_parties,
+            weighted_threshold_access_structure,
             party_id,
             dkg_output,
             first_round_output,
@@ -163,9 +165,14 @@ impl BytesParty for SecondPresignBytesParty {
                 bcs::to_bytes(&message).unwrap(),
                 MPCParty::SecondPresignBytesParty(Self { party: new_party }),
             ))),
-            mpc::AdvanceResult::Finalize(output) => {
-                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output).unwrap()))
-            }
+            mpc::AdvanceResult::Finalize(output) => Ok(AdvanceResult::Finalize(
+                bcs::to_bytes(&output).unwrap(),
+                vec![],
+            )),
+            mpc::AdvanceResult::FinalizeAsync(output) => Ok(AdvanceResult::Finalize(
+                bcs::to_bytes(&output.output).unwrap(),
+                output.malicious_parties,
+            )),
         }
     }
 }
@@ -176,10 +183,10 @@ impl BytesParty for SecondPresignBytesParty {
 /// when accessing `mpc::Party::AuxiliaryInput`. It defines the parameters and logic
 /// necessary to initiate the second round of the Presign protocol,
 /// preparing the party with the essential session information and other contextual data.
-pub trait PresignSecondRound: mpc::Party {
+pub trait PresignSecondRound: Party {
     fn generate_auxiliary_input(
         session_id: Vec<u8>,
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         dkg_output: Vec<u8>,
         first_round_output: <PresignFirstParty as Party>::Output,
@@ -189,14 +196,14 @@ pub trait PresignSecondRound: mpc::Party {
 impl PresignSecondRound for PresignSecondParty {
     fn generate_auxiliary_input(
         session_id: Vec<u8>,
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         dkg_output: Vec<u8>,
         first_round_output: <PresignFirstParty as Party>::Output,
     ) -> Self::AuxiliaryInput {
         let first_round_auxiliary_input = PresignFirstParty::generate_auxiliary_input(
             session_id,
-            number_of_parties,
+            weighted_threshold_access_structure,
             party_id,
             dkg_output,
         );

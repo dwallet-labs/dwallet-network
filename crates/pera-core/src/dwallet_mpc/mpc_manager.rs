@@ -4,10 +4,13 @@ use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::bytes_party::MPCParty;
-use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus};
+use crate::dwallet_mpc::mpc_instance::{
+    authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
+};
 use group::PartyID;
-use mpc::Error;
-use pera_types::committee::EpochId;
+use mpc::{Error, WeightedThresholdAccessStructure};
+use pera_types::committee::{EpochId, StakeUnit};
+use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -29,11 +32,10 @@ pub struct DWalletMPCManager {
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
     pub epoch_id: EpochId,
-    /// The total number of parties in the chain
-    /// We can calculate the threshold and parties IDs (indexes) from it
-    pub number_of_parties: usize,
     /// A set of all the authorities that behaved maliciously at least once during the epoch. Any message/output from these authorities will be ignored.
     pub malicious_actors: HashSet<AuthorityName>,
+    pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    pub weighted_parties: HashMap<PartyID, PartyID>,
 }
 
 /// The possible results of verifying an incoming output for an MPC session.
@@ -45,25 +47,40 @@ pub enum OutputVerificationResult {
 }
 
 impl DWalletMPCManager {
-    pub fn new(
+    pub fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Weak<AuthorityPerEpochStore>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
         epoch_id: EpochId,
         max_active_mpc_instances: usize,
-        number_of_parties: usize,
-    ) -> Self {
-        Self {
+    ) -> PeraResult<Self> {
+        let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
+            .committee()
+            .voting_rights
+            .iter()
+            .map(|(name, weight)| {
+                Ok((
+                    authority_name_to_party_id(name.clone(), &epoch_store)?,
+                    *weight as PartyID,
+                ))
+            })
+            .collect::<PeraResult<HashMap<PartyID, PartyID>>>()?;
+        let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
+            epoch_store.committee().quorum_threshold() as PartyID,
+            weighted_parties.clone(),
+        )
+        .map_err(|_| PeraError::InternalDWalletMPCError)?;
+        Ok(Self {
             mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
             consensus_adapter,
-            epoch_store,
+            epoch_store: Arc::downgrade(&epoch_store),
             epoch_id,
             max_active_mpc_instances,
-            // TODO (#268): Take into account the validator's voting power
-            number_of_parties,
             malicious_actors: HashSet::new(),
-        }
+            weighted_threshold_access_structure,
+            weighted_parties,
+        })
     }
 
     /// Tries to verify that the received output for the MPC session matches the one generated locally.
@@ -94,14 +111,21 @@ impl DWalletMPCManager {
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
     /// We parallelize the advances with Rayon to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
+        let threshold = self.epoch_store()?.committee().quorum_threshold();
         let mut ready_to_advance = self
             .mpc_instances
             .iter_mut()
             .filter_map(|(_, instance)| {
-                // TODO (#268): Take the voting power into account when dealing with the threshold
-                let threshold_number_of_parties = ((self.number_of_parties * 2) + 2) / 3;
+                let received_weight: PartyID = instance
+                    .pending_messages
+                    .keys()
+                    .map(|authority_index| {
+                        // should never be "or" as we receive messages only from known authorities
+                        self.weighted_parties.get(authority_index).unwrap_or(&0)
+                    })
+                    .sum();
                 if (instance.status == MPCSessionStatus::Active
-                    && instance.pending_messages.len() >= threshold_number_of_parties)
+                    && received_weight as StakeUnit >= threshold)
                     || (instance.status == MPCSessionStatus::FirstExecution)
                 {
                     Some(instance)
@@ -111,19 +135,27 @@ impl DWalletMPCManager {
             })
             .collect::<Vec<&mut DWalletMPCInstance>>();
 
-        let results: Vec<PeraResult> = ready_to_advance
-            .par_iter_mut()
+        let results: Vec<PeraResult<(ConsensusTransaction, Vec<PartyID>)>> = ready_to_advance
+            // .par_iter_mut()
+            .iter_mut()
             .map(|ref mut instance| instance.advance())
             .collect();
-        results
+        let messages = results
             .into_iter()
-            .map(|result| {
+            .filter_map(|result| {
                 if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = result {
-                    return self.flag_parties_as_malicious(malicious_parties);
+                    self.flag_parties_as_malicious(malicious_parties).ok()?;
+                    return None;
+                } else if let Ok((message, malicious_parties)) = result {
+                    self.flag_parties_as_malicious(malicious_parties).ok()?;
+                    return Some(message);
                 }
-                Ok(())
+                None
             })
-            .collect::<PeraResult<_>>()?;
+            .collect::<Vec<ConsensusTransaction>>();
+        self.consensus_adapter
+            .submit_to_consensus(&messages, &self.epoch_store()?)
+            .await?;
         Ok(())
     }
 
@@ -266,7 +298,7 @@ impl DWalletMPCManager {
 /// Needed this function and not a `From` implementation because when including the `twopc_mpc` crate
 /// as a dependency in the `pera-types` crate there are many conflicting implementations.
 pub fn twopc_error_to_pera_error(error: twopc_mpc::Error) -> PeraError {
-    let Ok(error): Result<mpc::Error, _> = error.try_into() else {
+    let Ok(error): Result<Error, _> = error.try_into() else {
         return PeraError::InternalDWalletMPCError;
     };
     return match error {
