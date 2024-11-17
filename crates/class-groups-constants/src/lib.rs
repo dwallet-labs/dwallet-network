@@ -1,5 +1,5 @@
 /// This module contains the secp256k1 constants for the class groups protocol.
-/// NOTE: This is a temporary solution until the class groups DKG is complete.
+/// NOTE: This is a temporary solution until the class groups encryption key DKG is complete.
 /// Todo (#312): Remove this module and use the class groups DKG to generate the constants.
 use group::secp256k1;
 

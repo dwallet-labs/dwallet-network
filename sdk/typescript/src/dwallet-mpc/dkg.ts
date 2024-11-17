@@ -26,7 +26,7 @@ interface DKGFirstRoundOutputFields {
 	[key: string]: MoveValue;
 }
 
-export type DKGFirstRoundOutputMoveObj = {
+type DKGFirstRoundOutputMoveObj = {
 	dataType: typeof moveObjectDataType;
 	type: typeof dkgFirstRoundOutputMoveType;
 	fields: DKGFirstRoundOutputFields;

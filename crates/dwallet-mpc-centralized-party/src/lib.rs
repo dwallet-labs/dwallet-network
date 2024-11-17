@@ -3,6 +3,8 @@ use mpc::two_party::Round;
 use rand_core::OsRng;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+
+/// Represents the centralized party in the DKG protocol.
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
 
 /// Executes the second phase of the DKG protocol, part of a three-phase DKG flow.
