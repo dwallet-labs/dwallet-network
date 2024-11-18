@@ -3,7 +3,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
-use crate::dwallet_mpc::bytes_party::{MPCParty, SessionInfo};
+use crate::dwallet_mpc::bytes_party::{MPCParty, MPCSessionInfo};
 use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus};
 use pera_types::committee::EpochId;
 use rayon::prelude::*;
@@ -136,19 +136,20 @@ impl DWalletMPCManager {
         })
     }
 
-    /// Spawns a new MPC instance if the number of active instances is below the limit
-    /// and the pending instances queue is empty. Otherwise, adds the instance to the pending queue
+    /// Spawns a new MPC instance if the number of active instances is below the limit,
+    /// and the pending instances queue is empty.
+    /// Otherwise, add the instance to the pending queue.
     pub fn push_new_mpc_instance(
         &mut self,
         auxiliary_input: Vec<u8>,
         party: MPCParty,
-        session_info: SessionInfo,
+        session_info: MPCSessionInfo,
     ) {
         let session_id = session_info.session_id.clone();
         if self.mpc_instances.contains_key(&session_id) {
-            // This should never happen, as the session ID is a move UniqueID
+            // This should never happen, as the session ID is a move UniqueID.
             error!(
-                "Received start flow event for session ID {:?} that already exists",
+                "received start flow event for session ID {:?} that already exists",
                 session_id
             );
             return;

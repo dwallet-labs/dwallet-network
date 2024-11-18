@@ -1,6 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, SessionInfo};
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, MPCSessionInfo};
 use group::PartyID;
 use pera_types::base_types::{AuthorityName, EpochId};
 use pera_types::error::{PeraError, PeraResult};
@@ -34,7 +34,7 @@ pub struct DWalletMPCInstance {
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it
     /// To calculate the parties IDs all we need to know is the number of parties, as the IDs are just the indexes of those parties. If there are 3 parties, the IDs are [0, 1, 2].
-    pub(crate) session_info: SessionInfo,
+    pub(crate) session_info: MPCSessionInfo,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: MPCParty,
     pub(crate) auxiliary_input: Vec<u8>,
@@ -48,7 +48,7 @@ impl DWalletMPCInstance {
         party: MPCParty,
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
-        session_info: SessionInfo,
+        session_info: MPCSessionInfo,
     ) -> Self {
         Self {
             status,
@@ -148,7 +148,7 @@ impl DWalletMPCInstance {
         message: &DWalletMPCMessage,
         epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> PeraResult<()> {
-        let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
+        let party_id = authority_name_to_party_id(&message.authority, &epoch_store)?;
         if self.pending_messages.contains_key(&party_id) {
             // TODO(#260): Punish an authority that sends multiple messages in the same round
             return Ok(());
@@ -196,16 +196,17 @@ pub enum MPCSessionStatus {
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
 unsafe impl Send for DWalletMPCInstance {}
 
-/// Convert a given authority name (address) to it's corresponding party ID.
-/// The party ID is the index of the authority in the committee.
+/// Convert a given authority name (address) to it's corresponding [`PartyID`].
+/// The [`PartyID`] is the index of the authority in the committee.
 pub fn authority_name_to_party_id(
-    authority_name: AuthorityName,
+    authority_name: &AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
 ) -> PeraResult<PartyID> {
     Ok(epoch_store
         .committee()
-        .authority_index(&authority_name)
-        // This should never happen, as the validator only accepts messages from committee members
+        .authority_index(authority_name)
+        // This should never happen, as the validator only
+        // accepts messages from committee members.
         .ok_or_else(|| {
             PeraError::InvalidCommittee(
                 "Received a dwallet MPC message from a validator that is not in the committee"

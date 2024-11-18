@@ -2,23 +2,24 @@
 //! This module wraps the various MPC parties, providing an interface
 //! to progress each party through the rounds of the MPC protocol as needed.
 //!
-//! The `BytesParty` trait enables the MPC manager to seamlessly advance the `MPCParty`
+//! The [`BytesParty`] trait enables the MPC manager to seamlessly advance the [`MPCParty`]
 //! instances to the next round.
-
 use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
 use crate::dwallet_mpc::mpc_events::{StartDKGFirstRoundEvent, StartDKGSecondRoundEvent};
+use anyhow::Error;
 use group::PartyID;
 use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::MPCRound;
 use std::collections::HashMap;
+use pera_types::error::PeraError;
 
 /// Trait defining the functionality to advance an MPC party to the next round.
 ///
 /// # Arguments
 ///
-/// * `messages` - A hashmap of messages received from other parties, keyed by `PartyID`.
-/// * `auxiliary_input` - A serialized vector of auxiliary input data.
+/// * `messages` — A hashmap of messages received from other parties, keyed by [`PartyID`].
+/// * `auxiliary_input` — A serialized vector of auxiliary input data.
 ///
 /// # Returns
 ///
@@ -33,24 +34,27 @@ pub trait BytesParty: Sync + Send {
     ) -> Result<AdvanceResult, twopc_mpc::Error>;
 }
 
+type MPCMessage = Vec<u8>;
+type MPCOutput = Vec<u8>;
+
 /// Represents the outcome of advancing an MPC party to the next round.
 ///
 /// This enum indicates whether the party should advance to the next round or
 /// finalize its protocol execution.
 pub enum AdvanceResult {
-    /// Contains the message to send to other parties and the next `MPCParty` to use.
-    Advance((Vec<u8>, MPCParty)),
+    /// Contains the message to send to other parties, and the next [`MPCParty`] to use.
+    Advance((MPCMessage, MPCParty)),
     /// Indicates that the protocol has completed, containing the final output.
-    Finalize(Vec<u8>),
+    Finalize(MPCOutput),
 }
 
 /// Holds information about the current MPC session.
-pub struct SessionInfo {
+pub struct MPCSessionInfo {
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
-    /// The address of the user that initiated this session.
+    /// The address of the user that initiated this MPC session.
     pub initiating_user_address: PeraAddress,
-    /// The `DWalletCap` object's ID associated with the `DWallet`.
+    /// The `DWalletCap` object's ID associated with the `DWallet` object.
     pub dwallet_cap_id: ObjectID,
     /// The current MPC round in the protocol.
     pub mpc_round: MPCRound,
@@ -58,7 +62,8 @@ pub struct SessionInfo {
 
 /// Enum representing the different parties used in the MPC manager.
 pub enum MPCParty {
-    /// A placeholder party used as a default. Does not implement the `BytesParty` trait and should never be used.
+    /// A placeholder party used as a default.
+    /// Does not implement the `BytesParty` trait and should never be used.
     DefaultParty,
     /// The party used in the first round of the DKG protocol.
     FirstDKGBytesParty(FirstDKGBytesParty),
@@ -68,7 +73,7 @@ pub enum MPCParty {
 
 /// Default party implementation for `MPCParty`.
 ///
-/// This variant allows the use of `mem::take`, which requires the `Default` trait.
+/// This variant allows using `mem::take`, which requires the `Default` trait.
 /// The `DefaultParty` variant is used when a specific party has not been set.
 impl Default for MPCParty {
     fn default() -> Self {
@@ -78,10 +83,10 @@ impl Default for MPCParty {
 
 impl MPCParty {
     /// Advances the party to the next round by processing incoming messages and auxiliary input.
-    /// Returns the next `MPCParty` to use or the final output if the protocol has completed.
+    /// Returns the next [`MPCParty`] to use, or the final output if the protocol has completed.
     pub fn advance(
         self,
-        messages: HashMap<PartyID, Vec<u8>>,
+        messages: HashMap<PartyID, MPCMessage>,
         auxiliary_input: Vec<u8>,
     ) -> Result<AdvanceResult, twopc_mpc::Error> {
         match self {
@@ -91,47 +96,75 @@ impl MPCParty {
         }
     }
 
-    /// Parses an `Event` to extract the corresponding `MPCParty`, auxiliary input, and session information.
-    /// When `Ok(None)` is returned the event type does not correspond to any known MPC rounds.
+    /// Parses an [`Event`] to extract the corresponding [`MPCParty`],
+    /// auxiliary input, and session information.
+    ///
+    /// Returns an error if the event type does not correspond to any known MPC rounds
+    /// or if deserialization fails.
     pub fn from_event(
         event: &Event,
         number_of_parties: u16,
         party_id: PartyID,
-    ) -> anyhow::Result<Option<(Self, Vec<u8>, SessionInfo)>> {
-        if event.type_ == StartDKGFirstRoundEvent::type_() {
-            let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
-            return Ok(Some((
-                MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
-                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default()
-                }),
-                FirstDKGBytesParty::generate_auxiliary_input(number_of_parties, party_id, deserialized_event.session_id.bytes.to_vec()),
-                SessionInfo {
-                    session_id: deserialized_event.session_id.bytes,
-                    initiating_user_address: deserialized_event.sender,
-                    dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-                    mpc_round: MPCRound::DKGFirst,
-                },
-            )));
-        } else if event.type_ == StartDKGSecondRoundEvent::type_() {
-            let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            return Ok(Some((
-                MPCParty::SecondDKGBytesParty(SecondDKGBytesParty {
-                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default()
-                }),
-                SecondDKGBytesParty::generate_auxiliary_input(
-                    number_of_parties, party_id,
-                    deserialized_event.first_round_output,
-                    deserialized_event.public_key_share_and_proof,
-                    deserialized_event.first_round_session_id.bytes.to_vec(),
-                )?,
-                SessionInfo {
-                    session_id: ObjectID::from(deserialized_event.session_id),
-                    initiating_user_address: deserialized_event.sender,
-                    dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-                    mpc_round: MPCRound::DKGSecond,
-                },
-            )));
+    ) -> anyhow::Result<(MPCParty, Vec<u8>, MPCSessionInfo)> {
+        match &event.type_ {
+            t if t == &StartDKGFirstRoundEvent::type_() => {
+                let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
+                Self::dkg_first_party(number_of_parties, party_id, deserialized_event)
+            }
+            t if t == &StartDKGSecondRoundEvent::type_() => {
+                let deserialized_event: StartDKGSecondRoundEvent =
+                    bcs::from_bytes(&event.contents)?;
+                Self::dkg_second_party(number_of_parties, party_id, deserialized_event)
+            }
+            _ => Err(PeraError::NonMPCEvent.into()),
         }
-        Ok(None)
+    }
+
+    fn dkg_second_party(
+        number_of_parties: u16,
+        party_id: PartyID,
+        deserialized_event: StartDKGSecondRoundEvent,
+    ) -> Result<(MPCParty, Vec<u8>, MPCSessionInfo), Error> {
+        Ok((
+            MPCParty::SecondDKGBytesParty(SecondDKGBytesParty {
+                party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default(),
+            }),
+            SecondDKGBytesParty::generate_auxiliary_input(
+                number_of_parties,
+                party_id,
+                deserialized_event.first_round_output,
+                deserialized_event.public_key_share_and_proof,
+                deserialized_event.first_round_session_id.bytes.to_vec(),
+            )?,
+            MPCSessionInfo {
+                session_id: ObjectID::from(deserialized_event.session_id),
+                initiating_user_address: deserialized_event.sender,
+                dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+                mpc_round: MPCRound::DKGSecond,
+            },
+        ))
+    }
+
+    fn dkg_first_party(
+        number_of_parties: u16,
+        party_id: PartyID,
+        deserialized_event: StartDKGFirstRoundEvent,
+    ) -> Result<(MPCParty, Vec<u8>, MPCSessionInfo), Error> {
+        Ok((
+            MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
+                party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default(),
+            }),
+            FirstDKGBytesParty::generate_auxiliary_input(
+                number_of_parties,
+                party_id,
+                deserialized_event.session_id.bytes.to_vec(),
+            ),
+            MPCSessionInfo {
+                session_id: deserialized_event.session_id.bytes,
+                initiating_user_address: deserialized_event.sender,
+                dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+                mpc_round: MPCRound::DKGFirst,
+            },
+        ))
     }
 }

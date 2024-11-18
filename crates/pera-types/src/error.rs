@@ -661,8 +661,11 @@ pub enum PeraError {
     #[error("The request did not contain a certificate")]
     NoCertificateProvidedError,
 
-    #[error("mpc session with ID `{session_id:?}` was not found.")]
+    #[error("mpc session with ID `{session_id:?}` was not found")]
     MPCSessionNotFound { session_id: ObjectID },
+
+    #[error("non MPC event")]
+    NonMPCEvent,
 }
 
 #[repr(u64)]

@@ -1494,8 +1494,12 @@ impl AuthorityState {
         // Handle the MPC events here because there is access to the
         // event, as the transaction has been just executed.
         let _ = self
-            .handle_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
-            .await;
+            .filter_mpc_events(&inner_temporary_store, effects, epoch_store)
+            .await
+            .tap_err(|e| {
+                error!("MPC protocol error: {e}");
+                println!("MPC protocol error: {e}");
+            });
 
         // Allow testing what happens if we crash here.
         fail_point_async!("crash");
@@ -1530,9 +1534,8 @@ impl AuthorityState {
         Ok(())
     }
 
-    /// Handle the MPC signature events emitted from the transaction, if any.
-    /// The filtering to handle only dwallet-mpc related events happens within [`DWalletMPCManager::handle_mpc_events`] function.
-    async fn handle_dwallet_mpc_events(
+    /// Filters the MPC events emitted from the transaction, if any.
+    async fn filter_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,
@@ -1550,20 +1553,35 @@ impl AuthorityState {
             // If the transaction failed, we don't need to handle MPC events.
             return Ok(());
         }
-        let Some(bytes_mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
-            // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
+        let Some(mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
+            // This function is being executed for all events, some events are being emitted
+            // before the MPC manager is initialized.
             // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are
             return Ok(());
         };
-        let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
+        let mut mpc_manager = mpc_manager.lock().await;
         for event in &inner_temporary_store.events.data {
-            if let Some((party, auxiliary_input, session_info)) = MPCParty::from_event(
+            match MPCParty::from_event(
                 event,
-                bytes_mpc_manager.number_of_parties as u16,
-                authority_name_to_party_id(epoch_store.name, &epoch_store)?,
-            )? {
-                bytes_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
-            };
+                mpc_manager.number_of_parties as u16,
+                authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
+            ) {
+                Ok((party, auxiliary_input, session_info)) => {
+                    mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
+                }
+                Err(err)
+                    if matches!(
+                        err.downcast_ref::<PeraError>(),
+                        Some(PeraError::NonMPCEvent)
+                    ) =>
+                {
+                    // Ignore NonMPCEvent errors.
+                }
+                Err(err) => {
+                    // Log other errors and continue.
+                    error!(?err, "error processing MPC event");
+                }
+            }
         }
         Ok(())
     }

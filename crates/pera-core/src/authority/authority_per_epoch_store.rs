@@ -336,6 +336,7 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing DWallet MPC flows.
+    /// todo(zeev): why is is a mutex?
     pub dwallet_mpc_manager:
         OnceCell<tokio::sync::Mutex<dwallet_mpc::mpc_manager::DWalletMPCManager>>,
 }
