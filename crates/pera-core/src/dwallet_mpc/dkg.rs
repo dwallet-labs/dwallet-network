@@ -8,6 +8,7 @@ use group::PartyID;
 use mpc::{Advance, Party};
 use std::collections::{HashMap, HashSet};
 use twopc_mpc::dkg::Protocol;
+use crate::dwallet_mpc::mpc_instance::DWalletMPCMessage;
 
 pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 pub type DKGFirstParty = <AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty;
@@ -40,8 +41,8 @@ impl FirstDKGBytesParty {
 impl BytesParty for FirstDKGBytesParty {
     fn advance(
         self,
-        messages: HashMap<PartyID, Vec<u8>>,
-        auxiliary_input: Vec<u8>,
+        messages: HashMap<PartyID, MPCMess>,
+        auxiliary_input: &Vec<u8>,
     ) -> Result<AdvanceResult, twopc_mpc::Error> {
         let auxiliary_input =
             bcs::from_bytes(&auxiliary_input).map_err(|_| twopc_mpc::Error::InvalidParameters)?;

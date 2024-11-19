@@ -1570,6 +1570,7 @@ impl AuthorityState {
                     mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
                 }
                 Err(err)
+                    // None MPC event, ignore.
                     if matches!(
                         err.downcast_ref::<PeraError>(),
                         Some(PeraError::NonMPCEvent)

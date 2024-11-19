@@ -1,6 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, MPCSessionInfo};
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCMessage, MPCOutput, MPCParty, MPCSessionInfo};
 use group::PartyID;
 use pera_types::base_types::{AuthorityName, EpochId};
 use pera_types::error::{PeraError, PeraResult};
@@ -10,24 +10,25 @@ use std::collections::HashMap;
 use std::mem;
 use std::sync::{Arc, Weak};
 
-/// The message a validator can send to the other parties while running a dwallet MPC session.
+/// The message a Validator can send to the other parties while
+/// running a dWallet MPC session.
 #[derive(Clone)]
 pub struct DWalletMPCMessage {
-    /// The serialized message
-    pub(crate) message: Vec<u8>,
-    /// The authority that sent the message
+    /// The serialized message.
+    pub(crate) message: MPCMessage,
+    /// The authority (Validator) that sent the message.
     pub(crate) authority: AuthorityName,
 }
 
-/// A DWallet MPC session instance
-/// It keeps track of the status of the session, the channel to send messages to the instance,
+/// A dWallet MPC session instance
+/// It keeps track of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
 pub struct DWalletMPCInstance {
-    /// The status of the MPC instance
+    /// The status of the MPC instance.
     pub(crate) status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the instance
-    /// We need to accumulate threshold of those before advancing the instance
-    pub(crate) pending_messages: HashMap<PartyID, Vec<u8>>,
+    /// We need to accumulate the threshold of those before advancing the instance.
+    pub(crate) pending_messages: HashMap<PartyID, MPCMessage>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
@@ -70,7 +71,7 @@ impl DWalletMPCInstance {
 
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    pub(crate) fn advance(&mut self, auxiliary_input: Vec<u8>) -> PeraResult {
+    pub(crate) fn advance(&mut self, auxiliary_input: &Vec<u8>) -> PeraResult {
         let party = mem::take(&mut self.party);
 
         // Gets the instance existing party or creates a new one if this is the first advance
@@ -189,8 +190,9 @@ pub enum MPCSessionStatus {
     Pending,
     FirstExecution,
     Active,
-    Finalizing(Vec<u8>),
-    Finished(Vec<u8>),
+    // todo(zeev): output.
+    Finalizing(MPCOutput),
+    Finished(MPCOutput),
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon

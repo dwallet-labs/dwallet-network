@@ -14,19 +14,20 @@ use pera_types::messages_dwallet_mpc::MPCRound;
 use std::collections::HashMap;
 use pera_types::error::PeraError;
 
-/// Trait defining the functionality to advance an MPC party to the next round.
-///
-/// # Arguments
-///
-/// * `messages` — A hashmap of messages received from other parties, keyed by [`PartyID`].
-/// * `auxiliary_input` — A serialized vector of auxiliary input data.
-///
-/// # Returns
-///
-/// * `Ok(AdvanceResult)` on success, which represents either advancement to the next round
-///   or the finalization of the protocol.
-/// * `Err(twopc_mpc::Error)` if an error occurs.
+
 pub trait BytesParty: Sync + Send {
+    /// Trait defining the functionality to advance an MPC party to the next round.
+    ///
+    /// # Arguments
+    ///
+    /// * `messages` — A hashmap of messages received from other parties, keyed by [`PartyID`].
+    /// * `auxiliary_input` — A serialized vector of auxiliary input data.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(AdvanceResult)` on success, which represents either advancement to the next round
+    ///   or the finalization of the protocol.
+    /// * `Err(twopc_mpc::Error)` if an error occurs.
     fn advance(
         self,
         messages: HashMap<PartyID, Vec<u8>>,
@@ -34,8 +35,8 @@ pub trait BytesParty: Sync + Send {
     ) -> Result<AdvanceResult, twopc_mpc::Error>;
 }
 
-type MPCMessage = Vec<u8>;
-type MPCOutput = Vec<u8>;
+pub type MPCMessage = Vec<u8>;
+pub type MPCOutput = Vec<u8>;
 
 /// Represents the outcome of advancing an MPC party to the next round.
 ///
@@ -87,7 +88,7 @@ impl MPCParty {
     pub fn advance(
         self,
         messages: HashMap<PartyID, MPCMessage>,
-        auxiliary_input: Vec<u8>,
+        auxiliary_input: &Vec<u8>,
     ) -> Result<AdvanceResult, twopc_mpc::Error> {
         match self {
             MPCParty::FirstDKGBytesParty(party) => party.advance(messages, auxiliary_input),

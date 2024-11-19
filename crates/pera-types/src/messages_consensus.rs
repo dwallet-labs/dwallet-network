@@ -286,7 +286,9 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
+    // MPC Message — part of the protocol.
     DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    // MPC Output — final output of the MPC session.
     DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, ObjectID, MPCRound),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.

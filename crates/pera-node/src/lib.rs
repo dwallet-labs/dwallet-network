@@ -1291,8 +1291,9 @@ impl PeraNode {
             }
         }
 
+        // Start the dWallet MPC manager on epoch start.
         epoch_store
-            .set_mpc_manager(pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager::new(
+            .set_dwallet_mpc_manager(pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager::new(
                 Arc::new(consensus_adapter.clone()),
                 Arc::downgrade(&epoch_store),
                 epoch_store.epoch(),
