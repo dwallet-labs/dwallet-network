@@ -21,7 +21,11 @@ serde_yaml.workspace = true
 tempfile.workspace = true
 tracing.workspace = true
 prometheus.workspace = true
-
+twopc_mpc.workspace = true
+group.workspace = true
+mpc.workspace = true
+class_groups_constants = { path = "../class-groups-constants" }
+class_groups.workspace = true
 move-bytecode-utils.workspace = true
 narwhal-config.workspace = true
 shared-crypto.workspace = true

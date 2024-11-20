@@ -5,16 +5,17 @@
 //! The `BytesParty` trait enables the MPC manager to seamlessly advance the `MPCParty`
 //! instances to the next round.
 
-use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
+use crate::dwallet_mpc::dkg::{FirstDKGBytesParty, SecondDKGBytesParty};
 use crate::dwallet_mpc::mpc_events::{
     StartDKGFirstRoundEvent, StartDKGSecondRoundEvent, StartPresignFirstRoundEvent,
-    StartPresignSecondRoundEvent,
+    StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
+use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::presign::{
     FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty,
 };
+use crate::dwallet_mpc::sign::{SignBytesParty, SignFirstParty};
 use group::PartyID;
-use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
@@ -64,6 +65,8 @@ pub enum MPCParty {
     FirstPresignBytesParty(FirstPresignBytesParty),
     /// The party used in the second round of the presign protocol.
     SecondPresignBytesParty(SecondPresignBytesParty),
+    /// The party used in the sign protocol.
+    SignBytesParty(SignBytesParty),
 }
 
 /// Default party implementation for `MPCParty`.
@@ -89,6 +92,7 @@ impl MPCParty {
             MPCParty::SecondDKGBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::FirstPresignBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::SecondPresignBytesParty(party) => party.advance(messages, auxiliary_input),
+            MPCParty::SignBytesParty(party) => party.advance(messages, auxiliary_input),
             MPCParty::DefaultParty => Err(PeraError::InternalDWalletMPCError),
         }
     }
@@ -96,10 +100,13 @@ impl MPCParty {
     /// Parses an `Event` to extract the corresponding `MPCParty`, auxiliary input, and session information.
     /// When `Ok(None)` is returned the event type does not correspond to any known MPC rounds.
     pub fn from_event(
+        dwallet_mpc_manager: &DWalletMPCManager,
         event: &Event,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
-    ) -> anyhow::Result<Option<(Self, Vec<u8>, SessionInfo)>> {
+    ) -> PeraResult<Option<(Self, Vec<u8>, SessionInfo)>> {
+        let weighted_threshold_access_structure = dwallet_mpc_manager
+            .weighted_threshold_access_structure
+            .clone();
         if event.type_ == StartDKGFirstRoundEvent::type_() {
             let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
             return Ok(Some((
@@ -121,7 +128,8 @@ impl MPCParty {
                     party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default()
                 }),
                 SecondDKGBytesParty::generate_auxiliary_input(
-                    weighted_threshold_access_structure, party_id,
+                    weighted_threshold_access_structure,
+                    party_id,
                     deserialized_event.first_round_output,
                     deserialized_event.public_key_share_and_proof,
                     deserialized_event.first_round_session_id.bytes.to_vec(),
@@ -144,7 +152,7 @@ impl MPCParty {
                     weighted_threshold_access_structure,
                     party_id,
                     deserialized_event.dkg_output.clone(),
-                ),
+                )?,
                 SessionInfo {
                     session_id: deserialized_event.session_id.bytes,
                     initiating_user_address: deserialized_event.sender,
@@ -168,7 +176,7 @@ impl MPCParty {
                     party_id,
                     deserialized_event.dkg_output,
                     deserialized_event.first_round_output.clone(),
-                ),
+                )?,
                 SessionInfo {
                     session_id: deserialized_event.session_id.bytes,
                     initiating_user_address: deserialized_event.sender,
@@ -179,7 +187,37 @@ impl MPCParty {
                     ),
                 },
             )));
+        } else if event.type_ == StartSignRoundEvent::type_() {
+            let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)
+                .map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
+            let decryption_key_share = dwallet_mpc_manager.get_decryption_share()?;
+            let party = SignFirstParty::from(HashMap::from([(party_id, decryption_key_share)]));
+            return Ok(Some((
+                MPCParty::SignBytesParty(SignBytesParty { party }),
+                SignBytesParty::generate_auxiliary_input(
+                    deserialized_event.presign_session_id.bytes.to_vec(),
+                    weighted_threshold_access_structure,
+                    party_id,
+                    deserialized_event.dkg_output,
+                    deserialized_event.hashed_message.clone(),
+                    deserialized_event.presign.clone(),
+                    deserialized_event.centralized_signed_message.clone(),
+                    dwallet_mpc_manager
+                        .node_config
+                        .dwallet_mpc_decryption_shares_public_parameters
+                        .clone()
+                        .ok_or_else(|| PeraError::InternalDWalletMPCError)?,
+                )?,
+                SessionInfo {
+                    session_id: deserialized_event.session_id.bytes,
+                    initiating_user_address: deserialized_event.sender,
+                    dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+                    mpc_round: MPCRound::Sign(party_id),
+                },
+            )));
         }
         Ok(None)
     }
 }
+
+pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;

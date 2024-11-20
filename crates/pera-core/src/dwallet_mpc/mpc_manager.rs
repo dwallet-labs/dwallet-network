@@ -8,7 +8,9 @@ use crate::dwallet_mpc::mpc_instance::{
     authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
 };
 use group::PartyID;
+use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
+use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::SessionInfo;
@@ -17,6 +19,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use tracing::log::warn;
 use tracing::{error, info};
+use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
@@ -29,6 +32,7 @@ pub struct DWalletMPCManager {
     // TODO (#257): Make sure the counter is always in sync with the number of active instances.
     active_instances_counter: usize,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
+    pub node_config: NodeConfig,
     pub epoch_store: Weak<AuthorityPerEpochStore>,
     pub max_active_mpc_instances: usize,
     pub epoch_id: EpochId,
@@ -51,7 +55,7 @@ impl DWalletMPCManager {
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         epoch_id: EpochId,
-        max_active_mpc_instances: usize,
+        node_config: NodeConfig,
     ) -> PeraResult<Self> {
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
@@ -76,11 +80,44 @@ impl DWalletMPCManager {
             consensus_adapter,
             epoch_store: Arc::downgrade(&epoch_store),
             epoch_id,
-            max_active_mpc_instances,
+            max_active_mpc_instances: node_config.max_active_dwallet_mpc_instances,
+            node_config,
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
             weighted_parties,
         })
+    }
+
+    pub fn get_decryption_share(
+        &self,
+    ) -> PeraResult<twopc_mpc::secp256k1::class_groups::DecryptionKeyShare> {
+        let party_id = authority_name_to_party_id(
+            self.epoch_store()?.name.clone(),
+            &self.epoch_store()?.clone(),
+        )?;
+        let try_this = self
+            .node_config
+            .dwallet_mpc_class_groups_decryption_shares
+            .clone()
+            .ok_or(PeraError::InternalDWalletMPCError)?
+            .get(&party_id);
+        let share = DecryptionKeyShare::new(
+            party_id,
+            self.node_config
+                .dwallet_mpc_class_groups_decryption_shares
+                .clone()
+                .ok_or(PeraError::InternalDWalletMPCError)?
+                .get(&party_id)
+                .ok_or(PeraError::InternalDWalletMPCError)?
+                .clone(),
+            &self
+                .node_config
+                .dwallet_mpc_decryption_shares_public_parameters
+                .clone()
+                .unwrap(),
+        )
+        .map_err(|e| twopc_error_to_pera_error(e.into()))?;
+        Ok(share)
     }
 
     /// Tries to verify that the received output for the MPC session matches the one generated locally.
@@ -136,8 +173,7 @@ impl DWalletMPCManager {
             .collect::<Vec<&mut DWalletMPCInstance>>();
 
         let results: Vec<PeraResult<(ConsensusTransaction, Vec<PartyID>)>> = ready_to_advance
-            // .par_iter_mut()
-            .iter_mut()
+            .par_iter_mut()
             .map(|ref mut instance| instance.advance())
             .collect();
         let messages = results
@@ -226,7 +262,7 @@ impl DWalletMPCManager {
         auxiliary_input: Vec<u8>,
         party: MPCParty,
         session_info: SessionInfo,
-    ) {
+    ) -> PeraResult {
         let session_id = session_info.session_id.clone();
         if self.mpc_instances.contains_key(&session_id) {
             // This should never happen, as the session ID is a move UniqueID
@@ -234,10 +270,15 @@ impl DWalletMPCManager {
                 "Received start flow event for session ID {:?} that already exists",
                 session_id
             );
-            return;
+            return Ok(());
         }
 
         info!("Received start flow event for session ID {:?}", session_id);
+        let party_id = self
+            .epoch_store()?
+            .committee()
+            .authority_index(&self.epoch_store()?.name)
+            .unwrap();
         let mut new_instance = DWalletMPCInstance::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
@@ -246,6 +287,7 @@ impl DWalletMPCManager {
             MPCSessionStatus::Pending,
             auxiliary_input,
             session_info,
+            self.get_decryption_share()?,
         );
         // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
         if self.active_instances_counter > self.max_active_mpc_instances
@@ -256,7 +298,7 @@ impl DWalletMPCManager {
                 "Added MPCInstance to pending queue for session_id {:?}",
                 session_id
             );
-            return;
+            return Ok(());
         }
         new_instance.status = MPCSessionStatus::FirstExecution;
         self.mpc_instances.insert(session_id.clone(), new_instance);
@@ -265,6 +307,7 @@ impl DWalletMPCManager {
             "Added MPCInstance to MPC manager for session_id {:?}",
             session_id
         );
+        Ok(())
     }
 
     pub fn finalize_mpc_instance(&mut self, session_id: ObjectID) -> PeraResult {

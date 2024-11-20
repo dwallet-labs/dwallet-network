@@ -4,7 +4,7 @@ edition = "2021"
 version.workspace = true
 
 [dependencies]
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "new-pera-api", subdir = "mpc" }
+mpc.workspace = true
 twopc_mpc.workspace = true
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "new-pera-api", subdir = "commitment" }
 class_groups_constants = { path = "../class-groups-constants" }

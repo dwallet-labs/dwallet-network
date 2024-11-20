@@ -6,8 +6,10 @@ title: Module `0x3::dwallet`
 
 -  [Resource `DWallet`](#0x3_dwallet_DWallet)
 -  [Resource `DWalletCap`](#0x3_dwallet_DWalletCap)
+-  [Struct `MessageApproval`](#0x3_dwallet_MessageApproval)
 -  [Function `create_dwallet`](#0x3_dwallet_create_dwallet)
 -  [Function `create_dwallet_cap`](#0x3_dwallet_create_dwallet_cap)
+-  [Function `approve_messages`](#0x3_dwallet_approve_messages)
 -  [Function `get_dwallet_cap_id`](#0x3_dwallet_get_dwallet_cap_id)
 -  [Function `get_dwallet_output`](#0x3_dwallet_get_dwallet_output)
 
@@ -93,6 +95,41 @@ title: Module `0x3::dwallet`
 
 </details>
 
+<a name="0x3_dwallet_MessageApproval"></a>
+
+## Struct `MessageApproval`
+
+<code><a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a></code> represents a message that was approved.
+Bound to a <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code>.
+
+
+<pre><code><b>struct</b> <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a> <b>has</b> drop, store
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="0x3_dwallet_create_dwallet"></a>
 
 ## Function `create_dwallet`
@@ -152,6 +189,45 @@ The holder of this capability owns the <code><a href="dwallet.md#0x3_dwallet_DWa
 <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&cap);
     <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(cap, ctx.sender());
     id
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_approve_messages"></a>
+
+## Function `approve_messages`
+
+Create a set of message approvals.
+The messages must be approved in the same order as they were created.
+The messages must be approved by the same <code>dwallet_cap_id</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_approve_messages">approve_messages</a>(dwallet_cap: &<a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">dwallet::MessageApproval</a>&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet.md#0x3_dwallet_approve_messages">approve_messages</a>(
+    dwallet_cap: &<a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a>,
+    <b>mut</b> messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt; {
+    <b>let</b> dwallet_cap_id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(dwallet_cap);
+    <b>let</b> <b>mut</b> message_approvals = <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>&lt;<a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a>&gt;();
+    <b>while</b> (<a href="../move-stdlib/vector.md#0x1_vector_length">vector::length</a>(&messages) &gt; 0) {
+        <b>let</b> message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> messages);
+        <a href="../move-stdlib/vector.md#0x1_vector_push_back">vector::push_back</a>(&<b>mut</b> message_approvals, <a href="dwallet.md#0x3_dwallet_MessageApproval">MessageApproval</a> {
+            dwallet_cap_id,
+            message,
+        });
+    };
+    message_approvals
 }
 </code></pre>
 

@@ -9,7 +9,10 @@ group.workspace = true
 serde = "1.0.210"
 bcs = "0.1.6"
 hex = "0.4.3"
+class_groups.workspace = true
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "new-pera-api", subdir = "homomorphic-encryption" }
 anyhow = "1.0.90"
+base64 = "0.22.1"
 
 [lints]
 workspace = true

@@ -1297,7 +1297,7 @@ impl PeraNode {
                 Arc::new(consensus_adapter.clone()),
                 Arc::clone(&epoch_store),
                 epoch_store.epoch(),
-                config.max_active_dwallet_mpc_instances,
+                config.clone(),
             )?)
             .await?;
 

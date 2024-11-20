@@ -75,6 +75,7 @@ where
             .provider
             .get_transaction_receipt(tx_hash)
             .await
+            .map_err(anyhow::Error::from)
             .map_err(BridgeError::from)?
             .ok_or(BridgeError::TxNotFound)?;
         let receipt_block_num = receipt.block_number.ok_or(BridgeError::ProviderError(
@@ -113,9 +114,12 @@ where
             self.provider
                 .request("eth_getBlockByNumber", ("finalized", false))
                 .await;
-        let block = block?.ok_or(BridgeError::TransientProviderError(
-            "Provider fails to return last finalized block".into(),
-        ))?;
+        let block =
+            block
+                .map_err(anyhow::Error::from)?
+                .ok_or(BridgeError::TransientProviderError(
+                    "Provider fails to return last finalized block".into(),
+                ))?;
         let number = block.number.ok_or(BridgeError::TransientProviderError(
             "Provider returns block without number".into(),
         ))?;
@@ -139,6 +143,7 @@ where
             // TODO use get_logs_paginated?
             .get_logs(&filter)
             .await
+            .map_err(anyhow::Error::from)
             .map_err(BridgeError::from)
             .tap_err(|e| {
                 tracing::error!(
@@ -189,6 +194,7 @@ where
             .provider
             .get_logs(&filter)
             .await
+            .map_err(anyhow::Error::from)
             .map_err(BridgeError::from)
             .tap_err(|e| {
                 tracing::error!(
@@ -236,6 +242,7 @@ where
             .provider
             .get_transaction_receipt(tx_hash)
             .await
+            .map_err(anyhow::Error::from)
             .map_err(BridgeError::from)?
             .ok_or(BridgeError::ProviderError(format!(
                 "Provide cannot find eth transaction for log: {:?})",

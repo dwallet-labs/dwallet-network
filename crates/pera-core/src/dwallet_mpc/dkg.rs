@@ -3,7 +3,7 @@
 //! It integrates both DKG parties (each representing a round in the DKG protocol) and
 //! implements the [`BytesParty`] trait for seamless interaction with other MPC components.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use group::PartyID;
 use mpc::{Advance, Party, WeightedThresholdAccessStructure};
@@ -12,10 +12,9 @@ use twopc_mpc::dkg::Protocol;
 
 use pera_types::error::{PeraError, PeraResult};
 
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, AsyncProtocol, BytesParty, MPCParty};
 use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
 
-pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 pub type DKGFirstParty = <AsyncProtocol as Protocol>::EncryptionOfSecretKeyShareRoundParty;
 pub type DKGSecondParty = <AsyncProtocol as Protocol>::ProofVerificationRoundParty;
 
@@ -120,7 +119,7 @@ impl BytesParty for FirstDKGBytesParty {
 /// when accessing `mpc::Party::AuxiliaryInput`. It defines the parameters and logic
 /// necessary to initiate the first round of the DKG protocol,
 /// preparing the party with the essential session information and other contextual data.
-trait DKGFirstPartyAuxiliaryInputGenerator: Party {
+pub trait DKGFirstPartyAuxiliaryInputGenerator: Party {
     /// Generates the auxiliary input required for the first round of the DKG protocol.
     fn generate_auxiliary_input(
         session_id: Vec<u8>,
@@ -165,15 +164,16 @@ impl SecondDKGBytesParty {
         first_round_output: Vec<u8>,
         centralized_party_public_key_share: Vec<u8>,
         session_id: Vec<u8>,
-    ) -> anyhow::Result<Vec<u8>> {
-        bcs::to_bytes(&DKGSecondParty::generate_auxiliary_input(
+    ) -> PeraResult<Vec<u8>> {
+        Ok(bcs::to_bytes(&DKGSecondParty::generate_auxiliary_input(
             weighted_threshold_access_structure,
             party_id,
-            bcs::from_bytes(&first_round_output)?,
-            bcs::from_bytes(&centralized_party_public_key_share)?,
+            bcs::from_bytes(&first_round_output)
+                .map_err(|_| PeraError::DWalletMPCInvalidUserInput)?,
+            bcs::from_bytes(&centralized_party_public_key_share)
+                .map_err(|_| PeraError::DWalletMPCInvalidUserInput)?,
             session_id,
-        ))
-        .map_err(|err| err.into())
+        ))?)
     }
 }
 
@@ -196,15 +196,14 @@ impl BytesParty for SecondDKGBytesParty {
 
         match result {
             mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
-                bcs::to_bytes(&message).unwrap(),
+                bcs::to_bytes(&message)?,
                 MPCParty::SecondDKGBytesParty(Self { party: new_party }),
             ))),
-            mpc::AdvanceResult::Finalize(output) => Ok(AdvanceResult::Finalize(
-                bcs::to_bytes(&output).unwrap(),
-                vec![],
-            )),
+            mpc::AdvanceResult::Finalize(output) => {
+                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output)?, vec![]))
+            }
             mpc::AdvanceResult::FinalizeAsync(output) => Ok(AdvanceResult::Finalize(
-                bcs::to_bytes(&output.output).unwrap(),
+                bcs::to_bytes(&output.output)?,
                 output.malicious_parties,
             )),
         }

@@ -33,6 +33,10 @@ pera-keys.workspace = true
 pera-protocol-config.workspace = true
 pera-types.workspace = true
 
+twopc_mpc.workspace = true
+class_groups.workspace = true
+mpc.workspace = true
+
 [dev-dependencies]
 insta.workspace = true
 tempfile.workspace = true

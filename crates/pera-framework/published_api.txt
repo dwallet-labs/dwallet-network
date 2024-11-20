@@ -4,11 +4,17 @@ DWallet
 DWalletCap
 	public struct
 	0x3::dwallet
+MessageApproval
+	public struct
+	0x3::dwallet
 create_dwallet
 	public(package) fun
 	0x3::dwallet
 create_dwallet_cap
 	public(package) fun
+	0x3::dwallet
+approve_messages
+	public fun
 	0x3::dwallet
 get_dwallet_cap_id
 	public(package) fun
@@ -46,6 +52,12 @@ Presign
 CompletedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartSignEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+SignOutput
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -68,6 +80,12 @@ launch_presign_second_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_second_presign_round_output
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+sign
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_sign_output
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
