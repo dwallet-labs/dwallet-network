@@ -884,16 +884,19 @@ pub struct ProtocolConfig {
     /// protocol.
     random_beacon_reduction_allowed_delta: Option<u16>,
 
-    /// === Tendermint light client ===
-    tendermint_state_proof_cost_base: Option<u64>,
-    tendermint_verify_lc_cost_base: Option<u64>,
-    tendermint_extract_consensus_state_base: Option<u64>,
     // eth_dwallet::verify_eth_state_cost_base.
     verify_eth_state_cost_base: Option<u64>,
     // eth_dwallet::verify_message_proof_cost_base.
     verify_message_proof_cost_base: Option<u64>,
     // eth_dwallet::create_initial_eth_state_data_cost_base.
     create_initial_eth_state_data_cost_base: Option<u64>,
+
+    // authority_binder::create_authority_ack_transaction_cost_base.
+    create_authority_ack_transaction_cost_base: Option<u64>,
+    /// === Tendermint light client ===
+    tendermint_state_proof_cost_base: Option<u64>,
+    tendermint_verify_lc_cost_base: Option<u64>,
+    tendermint_extract_consensus_state_base: Option<u64>,
 }
 
 // feature flags
@@ -1500,6 +1503,7 @@ impl ProtocolConfig {
             verify_message_proof_cost_base: None,
             create_initial_eth_state_data_cost_base: None,
 
+            create_authority_ack_transaction_cost_base: None,
             // When adding a new constant, set it to None in the earliest version, like this:
             // new_constant: None,
 
@@ -1784,6 +1788,8 @@ impl ProtocolConfig {
                     cfg.verify_eth_state_cost_base = Some(52);
                     cfg.verify_message_proof_cost_base = Some(52);
                     cfg.create_initial_eth_state_data_cost_base = Some(52);
+
+                    cfg.create_authority_ack_transaction_cost_base = Some(52);
                 }
                 // Use this template when making changes:
                 //

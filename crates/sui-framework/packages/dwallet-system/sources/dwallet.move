@@ -62,7 +62,7 @@ module dwallet_system::dwallet {
 
     /// `MessageApproval` represents a message that was approved.
     /// Bound to a `DWalletCap`.
-    struct MessageApproval has store {
+    struct MessageApproval has store, drop {
         dwallet_cap_id: ID,
         message: vector<u8>,
     }

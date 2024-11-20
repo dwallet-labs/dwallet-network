@@ -15,6 +15,8 @@ smallvec.workspace = true
 helios.workspace = true
 ethers.workspace = true
 serde_json.workspace = true
+serde.workspace = true
+
 fastcrypto-zkp.workspace = true
 fastcrypto.workspace = true
 move-binary-format.workspace = true
@@ -28,8 +30,9 @@ sui-protocol-config.workspace = true
 sui-types.workspace = true
 workspace-hack.workspace = true
 tracing.workspace = true
+sui-json.workspace = true
+ssz-rs = { package = "ssz_rs", version = "0.9.0" }
 ibc.workspace = true
 tendermint.workspace = true
 tendermint-light-client-verifier.workspace = true
 prost.workspace = true
-sui-json.workspace = true

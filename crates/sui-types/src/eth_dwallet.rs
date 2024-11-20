@@ -21,6 +21,7 @@ pub const APPROVE_MESSAGE_FUNC_NAME: &IdentStr = ident_str!("approve_message");
 pub struct EthereumDWalletCap {
     pub id: UID,
     pub dwallet_cap_id: ID,
+    pub latest_ethereum_state_id: ObjectID,
 }
 
 /// Rust version of the Move [`sui_system::ethereum_state::LatestEthereumState`] type.
@@ -40,6 +41,7 @@ pub struct EthereumStateObject {
     pub id: UID,
     pub data: Vec<u8>,
     pub time_slot: u64,
-    pub state_root: Vec<u8>,
     pub latest_ethereum_state_id: ObjectID,
+    pub state_root: Vec<u8>,
+    pub block_number: u64,
 }

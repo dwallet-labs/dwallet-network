@@ -148,12 +148,12 @@ pub enum SuiClientCommands {
         )]
         type_args: Vec<TypeTag>,
         /// Simplified ordered args like in the function syntax
-        /// ObjectIDs, Addresses must be hex strings
+        /// ObjectIDs, Addresses must be hex strings.
         #[clap(long, num_args(1..))]
         args: Vec<SuiJsonValue>,
-        /// ID of the gas object for gas payment, in 20 bytes Hex string
+        /// ID of the gas object for gas payment, in 20 bytes Hex string.
         #[clap(long)]
-        /// If not provided, a gas object with at least gas_budget value will be selected
+        /// If not provided, a gas object with at least `gas_budget` value will be selected.
         #[clap(long)]
         gas: Option<ObjectID>,
         /// Gas budget for this call
@@ -222,7 +222,7 @@ pub enum SuiClientCommands {
         #[clap(long)]
         coin_to_merge: ObjectID,
         /// The address of the gas object for gas payment.
-        /// If not provided, a gas object with at least gas_budget value will be selected.
+        /// If not provided, a gas object with at least `gas_budget` value will be selected.
         #[clap(long)]
         gas: Option<ObjectID>,
         /// Gas budget for this call
@@ -1394,6 +1394,7 @@ impl SuiClientCommands {
                     eth_dwallet_cap_id,
                     message,
                     dwallet_id,
+                    network,
                     gas,
                     gas_budget,
                     serialize_unsigned_transaction,
@@ -1404,6 +1405,7 @@ impl SuiClientCommands {
                         eth_dwallet_cap_id,
                         message,
                         dwallet_id,
+                        network,
                         gas,
                         gas_budget,
                         serialize_unsigned_transaction,
@@ -1430,7 +1432,7 @@ impl SuiClientCommands {
                 }
                 EthClientCommands::InitEthState {
                     network,
-                    rpc,
+                    consensus_rpc,
                     contract_address,
                     contract_approved_tx_slot,
                     gas,
@@ -1440,7 +1442,7 @@ impl SuiClientCommands {
                 } => {
                     init_ethereum_state(
                         network,
-                        rpc,
+                        consensus_rpc,
                         contract_address,
                         contract_approved_tx_slot,
                         context,
