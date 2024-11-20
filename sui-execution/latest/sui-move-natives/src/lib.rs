@@ -40,6 +40,7 @@ use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostPar
 use crate::crypto::{sui_state_proof, twopc_mpc, zklogin};
 use crate::eth_state_proof::EthDWalletCostParams;
 use better_any::{Tid, TidAble};
+use light_client::tendermint_lc::TendermintLightClientCostParams;
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
 use move_core_types::{
     annotated_value as A,
@@ -67,6 +68,7 @@ mod crypto;
 mod dynamic_field;
 mod eth_state_proof;
 mod event;
+mod light_client;
 mod object;
 pub mod object_runtime;
 mod test_scenario;
@@ -165,6 +167,13 @@ pub struct NativesCostTable {
 
     // Authority Binder
     pub authority_binder: AuthorityBinderCostParams,
+    // tendermint light client
+    pub tendermint_light_client_cost_params: TendermintLightClientCostParams,
+    // Sui State Proof
+    pub sui_state_proof_cost_params: SuiStateProofCostParams,
+
+    // eth state proof
+    pub eth_state_proof: EthDWalletCostParams,
 }
 
 impl NativesCostTable {
@@ -546,6 +555,27 @@ impl NativesCostTable {
                     .create_authority_ack_transaction_cost_base()
                     .into(),
             },
+            tendermint_light_client_cost_params: TendermintLightClientCostParams {
+                tendermint_state_proof_cost_base: protocol_config.tendermint_state_proof_cost_base().into(),
+                tendermint_verify_lc_cost_base: protocol_config.tendermint_verify_lc_cost_base().into(),
+                tendermint_extract_consensus_state_base: protocol_config.tendermint_extract_consensus_state_base().into()
+            },
+            eth_state_proof: EthDWalletCostParams {
+                verify_eth_state_cost_base: protocol_config
+                    .verify_eth_state_cost_base()
+                    .into(),
+                verify_message_proof_cost_base: protocol_config
+                    .verify_message_proof_cost_base()
+                    .into(),
+                create_initial_eth_state_data_cost_base: protocol_config
+                    .create_initial_eth_state_data_cost_base()
+                    .into(),
+            },
+            sui_state_proof_cost_params: SuiStateProofCostParams {
+                sui_state_proof_verify_committee_cost_base: protocol_config.sui_state_proof_verify_committee_cost_base().into(),
+                sui_state_proof_verify_link_cap_base: protocol_config.sui_state_proof_verify_link_cap_base().into(),
+                sui_state_proof_verify_transaction_base: protocol_config.sui_state_proof_verify_transaction_base().into(),
+            },
         }
     }
 }
@@ -819,6 +849,36 @@ pub fn all_natives(silent: bool) -> NativeFunctionTable {
             "authority_binder",
             "create_authority_ack_transaction",
             make_native!(authority_binder::create_authority_ack_transaction),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_state_proof",
+            make_native!(light_client::tendermint_lc::tendermint_state_proof),
+        ),
+        (
+            "tendermint_lc",
+            "tendermint_verify_lc",
+            make_native!(light_client::tendermint_lc::tendermint_verify_lc),
+        ),
+        (
+            "tendermint_lc",
+            "extract_consensus_state",
+            make_native!(light_client::tendermint_lc::extract_consensus_state),
+        ),
+        (
+            "ethereum_state",
+            "verify_eth_state",
+            make_native!(eth_state_proof::verify_eth_state),
+        ),
+        (
+            "eth_dwallet",
+            "verify_message_proof",
+            make_native!(eth_state_proof::verify_message_proof),
+        ),
+        (
+            "ethereum_state",
+            "create_initial_eth_state_data",
+            make_native!(eth_state_proof::create_initial_eth_state_data),
         ),
     ];
     sui_system_natives

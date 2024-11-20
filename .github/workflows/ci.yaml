@@ -6,6 +6,9 @@ on:
       - main
       - new-main
   pull_request:
+    branches: 
+      - develop
+
   workflow_dispatch:
 
 concurrency:
