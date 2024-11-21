@@ -5,16 +5,10 @@
 //! They include utility functions for detecting and comparing the event types.
 
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
-use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
+use pera_types::dwallet_mpc::{DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME};
 use pera_types::{base_types::PeraAddress, id::ID, PERA_SYSTEM_ADDRESS};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-
-/// Name of the Move struct for the `StartDKGFirstRoundEvent`.
-pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartDKGFirstRoundEvent");
-
-/// Name of the Move struct for the `StartDKGSecondRoundEvent`.
-pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartDKGSecondRoundEvent");
 
 /// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]

@@ -352,7 +352,7 @@ impl std::str::FromStr for CheckpointDigest {
     }
 }
 
-/// Representation of a DWalletMPCMessage's digest
+/// Representation of a DWalletMPCMessage's digest.
 #[derive(
     Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, JsonSchema,
 )]

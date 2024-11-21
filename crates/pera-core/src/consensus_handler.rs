@@ -356,6 +356,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
+
                     // If we receive a `DwalletMPCOutput` transaction,
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
@@ -368,16 +369,15 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         mpc_round,
                     ) = &transaction.kind
                     {
-                        // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
-                        // to store its output on the blockchain, so it will be available for the initiating user.
                         info!(
-                            "Received proof mpc output from authority {:?} for session {:?}",
+                            "Received proof dwallet mpc output from authority {:?} for session {:?}",
                             authority_index, session_id
                         );
 
                         let dwallet_mpc_manager = self.epoch_store.dwallet_mpc_manager.get();
                         let output_verification_result = match dwallet_mpc_manager {
                             Some(mpc_manager) => {
+                                // todo(zeev): channels, readonly, etc...
                                 mpc_manager.lock().await
                                     .try_verify_output(
                                     value,
@@ -403,7 +403,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
                                         DWalletMPCOutput {
                                             session_id: *session_id,
-                                            sender_address: *sender_address,
+                                            initiating_address: *sender_address,
                                             dwallet_cap_id: *dwallet_cap_id,
                                             value: value.clone(),
                                             mpc_round: mpc_round.clone(),

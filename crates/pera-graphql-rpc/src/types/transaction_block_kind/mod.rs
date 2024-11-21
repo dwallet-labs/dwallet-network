@@ -76,8 +76,8 @@ impl TransactionBlockKind {
                 native: rsu,
                 checkpoint_viewed_at,
             }),
-            K::DWalletMPCOutput(output) => T::DWalletMPCOutput(DWalletMPCOutputTransaction {
-                native: output,
+            K::DWalletMPCOutput(dwallet_mpc_output) => T::DWalletMPCOutput(DWalletMPCOutputTransaction {
+                native: dwallet_mpc_output,
                 checkpoint_viewed_at,
             }),
         }

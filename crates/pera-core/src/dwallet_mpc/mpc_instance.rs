@@ -1,6 +1,8 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCMessage, MPCOutput, MPCParty, MPCSessionInfo};
+use crate::dwallet_mpc::bytes_party::{
+    AdvanceResult, MPCParty, MPCSessionInfo,
+};
 use group::PartyID;
 use pera_types::base_types::{AuthorityName, EpochId};
 use pera_types::error::{PeraError, PeraResult};
@@ -9,40 +11,87 @@ use pera_types::messages_dwallet_mpc::MPCRound;
 use std::collections::HashMap;
 use std::mem;
 use std::sync::{Arc, Weak};
+use tracing::warn;
+use pera_types::dwallet_mpc::{MPCMessage, MPCOutput};
 
 /// The message a Validator can send to the other parties while
 /// running a dWallet MPC session.
 #[derive(Clone)]
 pub struct DWalletMPCMessage {
     /// The serialized message.
-    pub(crate) message: MPCMessage,
+    pub(super) message: MPCMessage,
     /// The authority (Validator) that sent the message.
-    pub(crate) authority: AuthorityName,
+    pub(super) authority: AuthorityName,
 }
+// todo(zeev): rename all instance to session.
+
+/// Possible statuses of an MPC Session:
+///
+/// - `Pending`:
+///   The instance is queued because the maximum number of active MPC instances
+///   [`DWalletMPCManager::max_active_mpc_instances`] has been reached.
+///   It is waiting for active instances to complete before activation.
+///
+/// - `FirstExecution`:
+///   Indicates that the [`DWalletMPCInstance::party`] has not yet performed its
+///   first advance.
+///   This status ensures these instances can be filtered and
+///   advanced, even if they have not received the `threshold_number_of_parties`
+///   messages.
+///
+/// - `Active`:
+///   The session is currently running, and new messages are forwarded to it
+///   for processing.
+///
+/// - `Finalizing`:
+///   The session has completed execution and is awaiting processing in the Move VM.
+///   Once an output is received, it will be verified against the local result.
+///   If they match, the status transitions to `Finished`.
+///   This prevents the same output from being written to the chain multiple times.
+///
+/// - `Finished`:
+///   The session has been removed from the active instances.
+///   Incoming messages are no longer forwarded to the session,
+///   but they are not flagged as malicious.
+#[derive(Clone, PartialEq, Debug)]
+pub enum MPCSessionStatus {
+    Pending,
+    FirstExecution,
+    Active,
+    Finalizing(MPCOutput),
+    Finished(MPCOutput),
+}
+
+/// Needed to be able to iterate over a vector of generic MPCInstances with Rayon.
+unsafe impl Send for DWalletMPCInstance {}
 
 /// A dWallet MPC session instance
 /// It keeps track of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
 pub struct DWalletMPCInstance {
     /// The status of the MPC instance.
-    pub(crate) status: MPCSessionStatus,
+    pub(super) status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate the threshold of those before advancing the instance.
-    pub(crate) pending_messages: HashMap<PartyID, MPCMessage>,
+    pub(super) pending_messages: HashMap<PartyID, MPCMessage>,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
-    /// The total number of parties in the chain
-    /// We can calculate the threshold and parties IDs (indexes) from it
-    /// To calculate the parties IDs all we need to know is the number of parties, as the IDs are just the indexes of those parties. If there are 3 parties, the IDs are [0, 1, 2].
-    pub(crate) session_info: MPCSessionInfo,
-    /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
+    /// The total number of parties in the chain.
+    /// We can calculate the threshold and party IDs (indexes) from it.
+    /// To calculate the party IDs, all we need to know is the number of parties,
+    /// as the IDs are just the indexes of those parties.
+    /// If there are three parties, the IDs are [0, 1, 2].
+    pub(super) session_info: MPCSessionInfo,
+    /// The MPC party being used to run the MPC cryptographic steps.
+    /// Party in here is not a Validator, but a cryptographic party.
     party: MPCParty,
-    pub(crate) auxiliary_input: Vec<u8>,
+    pub(super) auxiliary_input: Vec<u8>,
 }
+// todo(zeev): rename to DwalletMPCSession.
 
 impl DWalletMPCInstance {
-    pub(crate) fn new(
+    pub(super) fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
         epoch: EpochId,
@@ -69,81 +118,94 @@ impl DWalletMPCInstance {
             .ok_or(PeraError::EpochEnded(self.epoch_id))
     }
 
-    /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
-    /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    pub(crate) fn advance(&mut self, auxiliary_input: &Vec<u8>) -> PeraResult {
+    /// Advances the MPC instance and optionally return a message the validator wants
+    /// to send to the other MPC parties.
+    /// Uses the existing party if it exists,
+    /// otherwise creates a new one, as this is the first advance.
+    pub(super) fn advance(&mut self) -> PeraResult {
+        // Take ownership of the MPCParty since advance() moves it because of the underline API.
         let party = mem::take(&mut self.party);
 
-        // Gets the instance existing party or creates a new one if this is the first advance
-        let advance_result = match party.advance(self.pending_messages.clone(), auxiliary_input) {
-            Ok(res) => res,
-            Err(e) => {
-                println!("Error: {:?}", e);
-                // TODO (#263): Mark and punish the malicious validators that caused this advance to fail
+        let advance_result = party
+            .advance(self.pending_messages.clone(), &self.auxiliary_input)
+            .map_err(|e| {
+                warn!("MPCParty advance() error: {:?}", e);
+                // TODO (#263): Mark and punish the malicious validators
+                // TODO (#263): that caused this advance to fail
                 self.pending_messages.clear();
-                return Ok(());
-            }
-        };
+                return PeraError::MPCSessionError {
+                    session_id: self.session_info.session_id.clone(),
+                    message: format!("failed to advance the MPC party: {:?}", e),
+                };
+            })?;
+
         let msg = match advance_result {
             AdvanceResult::Advance((message, new_party)) => {
                 self.status = MPCSessionStatus::Active;
                 self.pending_messages.clear();
                 self.party = new_party;
                 self.new_dwallet_mpc_message(message)
+                    .map_err(|e| PeraError::MPCSessionError {
+                        session_id: self.session_info.session_id.clone(),
+                        message: format!(
+                            "failed to create a new MPC message on advance(): {:?}",
+                            e
+                        ),
+                    })
             }
             AdvanceResult::Finalize(output) => {
                 // TODO (#238): Verify the output and write it to the chain
-                self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                self.new_dwallet_mpc_output_message(output.into(), self.session_info.mpc_round)
+                self.status = MPCSessionStatus::Finalizing(output.clone());
+                Ok(self.new_dwallet_mpc_output_message(output, self.session_info.mpc_round))
             }
-        };
+        }?;
 
         let consensus_adapter = Arc::clone(&self.consensus_adapter);
         let epoch_store = Arc::clone(&self.epoch_store()?);
-        if let Some(msg) = msg {
-            // Spawns sending this message asynchronously the [`self.advance`] function will stay synchronous
-            // and can be parallelized with Rayon.
-            tokio::spawn(async move {
-                let _ = consensus_adapter
-                    .submit_to_consensus(&vec![msg], &epoch_store)
-                    .await;
-            });
-        }
+
+        // Spawns sending this message asynchronously the
+        // [`self.advance`] function will stay synchronous
+        // and can be parallelized with `Rayon`.
+        tokio::spawn(async move {
+            let _ = consensus_adapter
+                .submit_to_consensus(&vec![msg], &epoch_store)
+                .await;
+        });
         Ok(())
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
-    /// Returns None only if the epoch switched in the middle and was not available.
-    fn new_dwallet_mpc_message(&self, message: Vec<u8>) -> Option<ConsensusTransaction> {
-        let Ok(epoch_store) = self.epoch_store() else {
-            return None;
-        };
-        Some(ConsensusTransaction::new_dwallet_mpc_message(
+    /// Returns `None` only if the epoch switched in the middle and was not available.
+    fn new_dwallet_mpc_message(&self, message: Vec<u8>) -> PeraResult<ConsensusTransaction> {
+        let epoch_store = self.epoch_store()?;
+        Ok(ConsensusTransaction::new_dwallet_mpc_message(
             epoch_store.name,
             message,
             self.session_info.session_id.clone(),
         ))
     }
 
-    /// Create a new consensus transaction with the flow result (output) to be sent to the other MPC parties.
-    /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
-    /// Only the aggregator party should send the output to the other parties.
+    /// Create a new consensus transaction with the flow result (output) to be sent
+    /// to the other MPC parties.
     fn new_dwallet_mpc_output_message(
         &self,
-        output: Vec<u8>,
+        output: MPCOutput,
         mpc_round: MPCRound,
-    ) -> Option<ConsensusTransaction> {
-        Some(ConsensusTransaction::new_dwallet_mpc_output(
+    ) -> ConsensusTransaction {
+        // todo(zeev): create an issue to make sure that we don't send this message between epochs.
+        ConsensusTransaction::new_dwallet_mpc_output(
             output,
-            self.session_info.session_id.clone(),
-            self.session_info.initiating_user_address.clone(),
-            self.session_info.dwallet_cap_id.clone(),
+            self.session_info.session_id,
+            self.session_info.initiating_user_address,
+            self.session_info.dwallet_cap_id,
             mpc_round,
-        ))
+        )
     }
 
-    /// Stores a message in the pending messages map. The code stores every new message it receives for that instance,
-    /// and when we reach the end of delivery we will advance the instance if we have a threshold of messages.
+    /// Stores a message in the pending messages map.
+    /// The code stores every new message it receives for that session,
+    /// and when we reach the end of delivery,
+    /// we will advance the session if we have a threshold of messages.
     fn store_message(
         &mut self,
         message: &DWalletMPCMessage,
@@ -160,43 +222,17 @@ impl DWalletMPCInstance {
         Ok(())
     }
 
-    /// Handles a message by either forwarding it to the instance or ignoring it if the instance is finished.
-    pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> PeraResult<()> {
-        match self.status {
-            MPCSessionStatus::Active => self.store_message(&message, self.epoch_store()?),
+    /// Handles a message by either forwarding it to the session
+    /// or ignoring it if the session was finished.
+    pub(super) fn handle_message(&mut self, message: DWalletMPCMessage) -> PeraResult<()> {
+        if let MPCSessionStatus::Active = self.status {
+            self.store_message(&message, self.epoch_store()?)
+        } else {
             // TODO (#263): Check for malicious messages also after the instance is finished
-            MPCSessionStatus::Finalizing(_) | MPCSessionStatus::Finished(_) => {
-                // Do nothing
-                Ok(())
-            }
-            _ => Ok(()),
+            Ok(())
         }
     }
 }
-
-/// Possible statuses of an MPC session:
-/// - Pending: The instance has been inserted after we reached [`DWalletMPCManager::max_active_mpc_instances`], so it's waiting
-/// for some active instances to finish before it can be activated.
-/// - FirstExecution: The [`DWalletMPCInstance::party`] has not yet performed it's first advance. This status is needed
-/// so we will be able to filter those instances and advance them, despite they have not received [`threshold_number_of_parties`] messages.
-/// - Active: The session is currently running; new messages will be forwarded to the session.
-/// - Finalizing: The session is finished and pending on chain write; after receiving an output, it will be verified
-/// against the local one, and if they match the status will be changed to Finished.
-/// This is needed so we won't write the same output twice to the chain.
-/// - Finished: The session removed from active instances; incoming messages will not be forwarded,
-/// but will not be marked as malicious.
-#[derive(Clone, PartialEq, Debug)]
-pub enum MPCSessionStatus {
-    Pending,
-    FirstExecution,
-    Active,
-    // todo(zeev): output.
-    Finalizing(MPCOutput),
-    Finished(MPCOutput),
-}
-
-/// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
-unsafe impl Send for DWalletMPCInstance {}
 
 /// Convert a given authority name (address) to it's corresponding [`PartyID`].
 /// The [`PartyID`] is the index of the authority in the committee.

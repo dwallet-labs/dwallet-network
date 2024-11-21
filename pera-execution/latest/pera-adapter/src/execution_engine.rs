@@ -1101,9 +1101,10 @@ mod checked {
 
     /// Executes the transaction to store the final MPC output on-chain,
     /// making it accessible to the initiating user.
-    /// Each validator executes this transaction locally,
-    /// and if validators represent more than two-thirds of the voting power
-    /// "vote" to include it by executing it, the transaction is added to the block.
+    /// Each validator executes this transaction locally.
+    /// If validators holding more than two-thirds of the voting power
+    /// "vote" to include it by successfully executing the transaction,
+    /// it is added to the block.
     fn setup_and_execute_dwallet_mpc_output(
         data: DWalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
@@ -1113,6 +1114,8 @@ mod checked {
         protocol_config: &ProtocolConfig,
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
+        // ident_str requires a 'static str, 
+        // which is why we can't use the Display trait here.
         let move_function_name = match data.mpc_round {
             MPCRound::DKGFirst => "create_dkg_first_round_output",
             MPCRound::DKGSecond => "create_dkg_second_round_output",
@@ -1125,13 +1128,17 @@ mod checked {
                 ident_str!(move_function_name).to_owned(),
                 vec![],
                 vec![
-                    CallArg::Pure(data.sender_address.to_vec()),
+                    CallArg::Pure(data.initiating_address.to_vec()),
                     CallArg::Pure(data.session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.value).unwrap()),
                     CallArg::Pure(data.dwallet_cap_id.to_vec()),
                 ],
             );
-            assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
+            assert_invariant!(
+                res.is_ok(),
+                "Unable to generate dwallet mpc transaction, for: {}",
+                move_function_name
+            );
             builder.finish()
         };
         programmable_transactions::execution::execute::<execution_mode::System>(

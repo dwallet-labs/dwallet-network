@@ -70,7 +70,8 @@ pub type PeraEpochId = BigInt<u64>;
 pub struct PeraTransactionBlockResponseQuery {
     /// If None, no filter will be applied
     pub filter: Option<TransactionFilter>,
-    /// config which fields to include in the response, by default only digest is included
+    /// Configure which fields to include in the response,
+    /// by default, only digest is included.
     pub options: Option<PeraTransactionBlockResponseOptions>,
 }
 
@@ -408,7 +409,6 @@ pub enum PeraTransactionBlockKind {
     EndOfEpochTransaction(PeraEndOfEpochTransaction),
     ConsensusCommitPrologueV2(PeraConsensusCommitPrologueV2),
     ConsensusCommitPrologueV3(PeraConsensusCommitPrologueV3),
-    // .. more transaction types go here
     DWalletMPCOutput(PeraDWalletMPCOutput),
 }
 
@@ -465,7 +465,7 @@ impl Display for PeraTransactionBlockKind {
                 writeln!(writer, "Transaction Kind: End of Epoch Transaction")?;
             }
             Self::DWalletMPCOutput(_) => {
-                writeln!(writer, "Transaction Kind: dwallet mpc Output")?;
+                writeln!(writer, "Transaction Kind: dWallet MPC Output")?;
             }
         }
         write!(f, "{}", writer)
@@ -567,7 +567,7 @@ impl PeraTransactionBlockKind {
             TransactionKind::DWalletMPCOutput(output) => {
                 Self::DWalletMPCOutput(PeraDWalletMPCOutput {
                     session_id: output.session_id,
-                    sender_address: output.sender_address,
+                    sender_address: output.initiating_address,
                     value: output.value,
                 })
             }
@@ -673,7 +673,7 @@ impl PeraTransactionBlockKind {
             TransactionKind::DWalletMPCOutput(output) => {
                 Self::DWalletMPCOutput(PeraDWalletMPCOutput {
                     session_id: output.session_id,
-                    sender_address: output.sender_address,
+                    sender_address: output.initiating_address,
                     value: output.value,
                 })
             }

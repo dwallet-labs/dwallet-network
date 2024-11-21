@@ -294,7 +294,8 @@ pub enum TransactionKind {
     ConsensusCommitPrologueV3(ConsensusCommitPrologueV3),
 
     /// A transaction with the output of the dwallet MPC flow.
-    /// Used to send the output of the dwallet MPC flow to the other validators so they will be able to
+    /// Used to send the output of the dwallet MPC flow 
+    /// to the other validators, so they will be able to
     /// create a system transaction that writes it to the chain
     DWalletMPCOutput(DWalletMPCOutput),
     // .. more transaction types go here

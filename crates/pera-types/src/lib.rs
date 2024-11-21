@@ -41,6 +41,8 @@ pub mod deny_list_v1;
 pub mod deny_list_v2;
 pub mod digests;
 pub mod display;
+pub mod dwallet_mpc;
+pub mod dwallet_mpc_error;
 pub mod dynamic_field;
 pub mod effects;
 pub mod epoch_data;
@@ -85,14 +87,12 @@ pub mod traffic_control;
 pub mod transaction;
 pub mod transaction_executor;
 pub mod transfer;
-pub mod versioned;
-pub mod zk_login_authenticator;
-pub mod zk_login_util;
-
-pub mod dwallet_mpc;
 #[cfg(any(test, feature = "test-utils"))]
 #[path = "./unit_tests/utils.rs"]
 pub mod utils;
+pub mod versioned;
+pub mod zk_login_authenticator;
+pub mod zk_login_util;
 
 macro_rules! built_in_ids {
     ($($addr:ident / $id:ident = $init:expr);* $(;)?) => {

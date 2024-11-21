@@ -2415,16 +2415,14 @@ impl AuthorityPerEpochStore {
         // Signatures are verified as part of the consensus payload verification in PeraTxValidator.
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                // This verification is intentionally left empty and always returns true,
-                // as the actual output verification is performed earlier,
-                // before it is replaced by the system transaction,
-                // via the [`DwalletMPCManager::try_verify_output`] function.
                 kind: ConsensusTransactionKind::UserTransaction(_certificate),
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                // This verification is intentionally left empty,
-                // it is verified later in the DwalletMPCManager.
+                // This verification is intentionally left empty and always returns true,
+                // as the actual output verification is performed earlier,
+                // before it is replaced by the system transaction,
+                // via the [`DwalletMPCManager::try_verify_output`] function.
                 kind: ConsensusTransactionKind::DWalletMPCOutput(_, _, _, _, _),
                 ..
             }) => {}
@@ -3606,7 +3604,9 @@ impl AuthorityPerEpochStore {
             }) => {
                 // Pass an MPC message from concesus to the DWallet MPC manager.
                 let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() else {
-                    warn!("Ignoring DWalletMPCMessage because dwallet_mpc_manager is not initialized");
+                    warn!(
+                        "Ignoring DWalletMPCMessage because dwallet_mpc_manager is not initialized"
+                    );
                     // TODO (#250): Make sure the dwallet_mpc_manager is always initialized at this point.
                     return Ok(ConsensusCertificateResult::Ignored);
                 };
@@ -3710,7 +3710,6 @@ impl AuthorityPerEpochStore {
 
         // System transactions either contain a shared object
         // or are dwallet MPC output transactions.
-        // This check is 
         let is_dwallet_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
             TransactionKind::DWalletMPCOutput(_)

@@ -31,7 +31,7 @@ pub struct DWalletMPCManager {
     epoch_id: EpochId,
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it.
-    number_of_parties: usize,
+    pub number_of_parties: usize,
 }
 
 /// The possible results of verifying an incoming output for an MPC session.
@@ -112,8 +112,8 @@ impl DWalletMPCManager {
                 {
                     // TODO (#263): Mark and punish the malicious validators
                     // TODO (#263): that caused some advances to fail
-                    instance.advance(&instance.auxiliary_input).map_err(|e| {
-                        warn!(?e, "Failed to advance MPC instance" {instance.session_info});
+                    instance.advance().map_err(|e| {
+                        warn!(?e, "failed to advance MPC instance: {:?}", instance.session_info);
                         e
                     })?;
                 }
@@ -121,8 +121,8 @@ impl DWalletMPCManager {
             })
     }
 
-    /// Handles a message by forwarding it to the relevant MPC instance
-    /// If the instance does not exist, punish the sender.
+    /// Handles a message by forwarding it to the relevant MPC session
+    /// If the session does not exist, punish the sender.
     pub fn handle_message(
         &mut self,
         message: &[u8],
