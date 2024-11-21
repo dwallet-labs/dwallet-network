@@ -2,7 +2,6 @@
 //!
 //! It integrates both DKG parties (each representing a round in the DKG protocol) and
 //! implements the [`BytesParty`] trait for seamless interaction with other MPC components.
-use crate::dwallet_mpc::bytes_party::BytesParty;
 use group::PartyID;
 use mpc::{Advance, Party};
 use std::collections::{HashMap, HashSet};
@@ -16,8 +15,9 @@ pub type DKGSecondParty = <AsyncProtocol as Protocol>::ProofVerificationRoundPar
 
 /// A trait for generating auxiliary input for the initial round of the DKG protocol.
 ///
-/// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
-/// when accessing `mpc::Party::AuxiliaryInput`. It defines the parameters and logic
+/// This trait is implemented to resolve compiler type ambiguities that arise in
+/// the 2PC-MPC library when accessing `mpc::Party::AuxiliaryInput`.
+/// It defines the parameters and logic
 /// necessary to initiate the first round of the DKG protocol,
 /// preparing the party with the essential session information and other contextual data.
 pub(super) trait DKGFirstPartyAuxiliaryInputGenerator: Party {
@@ -44,7 +44,7 @@ pub(super) trait DKGSecondPartyAuxiliaryInputGenerator: Party {
         party_id: PartyID,
         first_round_output: Vec<u8>,
         centralized_party_public_key_share: Vec<u8>,
-        session_is: Vec<u8>,
+        session_id: Vec<u8>,
     ) -> Vec<u8>;
 }
 

@@ -3202,6 +3202,7 @@ impl AuthorityPerEpochStore {
         }
 
         // TODO (#250): Make sure the dwallet_mpc_manager is always initialized at this point.
+        // todo(zeev): this is really bad, this lock kills the concensus.
         if let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() {
             let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
             // TODO (#282): Process the end of delivery asynchronously

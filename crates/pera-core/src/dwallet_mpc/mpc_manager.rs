@@ -9,6 +9,7 @@ use pera_types::committee::EpochId;
 use rayon::prelude::*;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
+use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
 
 /// The [`DWalletMPCManager`] manages MPC instances:
@@ -103,25 +104,23 @@ impl DWalletMPCManager {
         let threshold_number_of_parties = ((self.number_of_parties * 2) + 2) / 3;
 
         // Process instances in parallel, advancing only those that meet the criteria.
-        self.mpc_instances
-            .par_iter_mut()
-            .try_for_each(|(_, instance)| {
-                if instance.status == MPCSessionStatus::FirstExecution
-                    || (instance.status == MPCSessionStatus::Active
-                        && instance.pending_messages.len() >= threshold_number_of_parties)
-                {
-                    // TODO (#263): Mark and punish the malicious validators
-                    // TODO (#263): that caused some advances to fail
-                    instance.advance().map_err(|e| {
-                        warn!(
-                            ?e,
-                            "failed to advance MPC instance: {:?}", instance.session_info
-                        );
-                        e
-                    })?;
-                }
-                Ok(())
-            })
+        self.mpc_instances.iter_mut().try_for_each(|(_, instance)| {
+            if instance.status == MPCSessionStatus::FirstExecution
+                || (instance.status == MPCSessionStatus::Active
+                    && instance.pending_messages.len() >= threshold_number_of_parties)
+            {
+                // TODO (#263): Mark and punish the malicious validators
+                // TODO (#263): that caused some advances to fail
+                instance.advance().map_err(|e| {
+                    warn!(
+                        ?e,
+                        "failed to advance MPC instance: {:?}", instance.session_info
+                    );
+                    e
+                })?;
+            }
+            Ok(())
+        })
     }
 
     /// Handles a message by forwarding it to the relevant MPC session

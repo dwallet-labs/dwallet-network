@@ -165,9 +165,12 @@ impl DWalletMPCInstance {
         // [`self.advance`] function will stay synchronous
         // and can be parallelized with `Rayon`.
         tokio::spawn(async move {
-            let _ = consensus_adapter
+            if let Err(e) = consensus_adapter
                 .submit_to_consensus(&vec![msg], &epoch_store)
-                .await;
+                .await
+            {
+                warn!("Failed to submit an MPC message to consensus: {:?}", e);
+            }
         });
         Ok(())
     }

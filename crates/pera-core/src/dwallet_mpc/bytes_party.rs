@@ -1,11 +1,8 @@
 //! The `bytes_party` module defines the API for managing MPC parties within the MPC manager.
 //! This module wraps the various MPC parties, providing an interface
 //! to progress each party through the rounds of the MPC protocol as needed.
-//!
-//! The [`BytesParty`] trait enables the MPC manager to seamlessly advance the [`MPCParty`]
-//! instances to the next round.
 use crate::dwallet_mpc::dkg::{
-    advance, AsyncProtocol, DKGFirstParty, DKGFirstPartyAuxiliaryInputGenerator, DKGSecondParty,
+    advance, DKGFirstParty, DKGFirstPartyAuxiliaryInputGenerator, DKGSecondParty,
     DKGSecondPartyAuxiliaryInputGenerator,
 };
 use crate::dwallet_mpc::mpc_events::{StartDKGFirstRoundEvent, StartDKGSecondRoundEvent};
@@ -17,27 +14,6 @@ use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::MPCRound;
 use std::collections::HashMap;
-
-pub trait BytesParty: Sync + Send {
-    /// Trait defining the functionality to advance an MPC party to the next round.
-    ///
-    /// # Arguments
-    ///
-    /// * `messages` — A hashmap of messages received from other parties, keyed by [`PartyID`].
-    /// * `auxiliary_input` — A serialized vector of auxiliary input data.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(AdvanceResult)` on success, which represents either advancement to the next round
-    ///   or the finalization of the protocol.
-    /// * `Err(twopc_mpc::Error)` if an error occurs.
-    fn advance(
-        self,
-        // todo(zeev): maybe change this one also to ref.
-        messages: HashMap<PartyID, MPCMessage>,
-        auxiliary_input: &[u8],
-    ) -> Result<AdvanceResult, twopc_mpc::Error>;
-}
 
 /// Represents the outcome of advancing an MPC party to the next round.
 ///
