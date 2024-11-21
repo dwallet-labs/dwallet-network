@@ -665,7 +665,10 @@ pub enum PeraError {
     MPCSessionNotFound { session_id: ObjectID },
 
     #[error("mpc session with ID `{session_id:?}`, failed: {message}")]
-    MPCSessionError { session_id: ObjectID, message: String },
+    MPCSessionError {
+        session_id: ObjectID,
+        message: String,
+    },
 
     #[error("non MPC event")]
     NonMPCEvent,

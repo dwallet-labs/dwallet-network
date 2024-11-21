@@ -113,7 +113,10 @@ impl DWalletMPCManager {
                     // TODO (#263): Mark and punish the malicious validators
                     // TODO (#263): that caused some advances to fail
                     instance.advance().map_err(|e| {
-                        warn!(?e, "failed to advance MPC instance: {:?}", instance.session_info);
+                        warn!(
+                            ?e,
+                            "failed to advance MPC instance: {:?}", instance.session_info
+                        );
                         e
                     })?;
                 }
@@ -162,7 +165,10 @@ impl DWalletMPCManager {
             return;
         }
 
-        info!("Received start flow MPC event for session ID {:?}", session_id);
+        info!(
+            "Received start flow MPC event for session ID {:?}",
+            session_id
+        );
         let mut new_instance = DWalletMPCInstance::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
@@ -174,8 +180,7 @@ impl DWalletMPCManager {
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
-        if self.active_instances_counter > self.max_active_mpc_instances
-        {
+        if self.active_instances_counter > self.max_active_mpc_instances {
             self.pending_instances_queue.push_back(new_instance);
             info!(
                 "Added MPCInstance to pending queue for session_id {:?}",

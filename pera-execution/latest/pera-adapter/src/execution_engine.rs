@@ -1114,7 +1114,7 @@ mod checked {
         protocol_config: &ProtocolConfig,
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
-        // ident_str requires a 'static str, 
+        // ident_str requires a 'static str,
         // which is why we can't use the Display trait here.
         let move_function_name = match data.mpc_round {
             MPCRound::DKGFirst => "create_dkg_first_round_output",

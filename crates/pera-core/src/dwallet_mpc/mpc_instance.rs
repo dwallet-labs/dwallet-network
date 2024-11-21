@@ -1,10 +1,9 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::bytes_party::{
-    AdvanceResult, MPCParty, MPCSessionInfo,
-};
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty, MPCSessionInfo};
 use group::PartyID;
 use pera_types::base_types::{AuthorityName, EpochId};
+use pera_types::dwallet_mpc::{MPCMessage, MPCOutput};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::MPCRound;
@@ -12,7 +11,6 @@ use std::collections::HashMap;
 use std::mem;
 use std::sync::{Arc, Weak};
 use tracing::warn;
-use pera_types::dwallet_mpc::{MPCMessage, MPCOutput};
 
 /// The message a Validator can send to the other parties while
 /// running a dWallet MPC session.
