@@ -675,6 +675,9 @@ pub enum PeraError {
 
     #[error("malicious parties have been detected")]
     DWalletMPCMaliciousParties(Vec<PartyID>),
+
+    #[error("None MPC event found")]
+    NonMPCEvent,
 }
 
 #[repr(u64)]

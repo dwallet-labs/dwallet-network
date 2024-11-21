@@ -12,12 +12,12 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, AsyncProtocol, MPCParty};
-use crate::dwallet_mpc::dkg::{FirstDKGBytesParty, SecondDKGBytesParty};
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty};
+use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
 use crate::dwallet_mpc::presign::{
-    FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty,
+    PresignFirstParty, PresignSecondParty,
 };
-use crate::dwallet_mpc::sign::{SignBytesParty, SignFirstParty};
+use crate::dwallet_mpc::sign::SignFirstParty;
 
 /// The message a validator can send to the other parties while running a dwallet MPC session.
 #[derive(Clone)]
@@ -88,14 +88,16 @@ impl DWalletMPCInstance {
         let pending_messages = self.pending_messages.clone();
         self.pending_messages.clear();
         self.status = MPCSessionStatus::Active;
-        let advance_result = party.advance(pending_messages, self.auxiliary_input.clone());
+        let advance_result = party.advance(pending_messages, &self.auxiliary_input.clone());
+
         if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = advance_result {
             self.restart();
             return Err(PeraError::DWalletMPCMaliciousParties(malicious_parties));
         } else if advance_result.is_err() {
             self.status = MPCSessionStatus::Failed;
         }
-        return match advance_result? {
+
+        match advance_result? {
             AdvanceResult::Advance((message, new_party)) => {
                 self.party = new_party;
                 Ok((
@@ -104,46 +106,44 @@ impl DWalletMPCInstance {
                     vec![],
                 ))
             }
-            AdvanceResult::Finalize(output, malicious_parties) => {
+            AdvanceResult::Finalize(output) => {
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
                 Ok((
                     self.new_dwallet_mpc_output_message(output)
                         .ok_or(PeraError::InternalDWalletMPCError)?,
-                    malicious_parties,
+                    vec![],
                 ))
             }
-        };
+            AdvanceResult::FinalizeAsync(output) => {
+                self.status = MPCSessionStatus::Finalizing(output.output.clone().into());
+                Ok((
+                    self.new_dwallet_mpc_output_message(output.output)
+                        .ok_or(PeraError::InternalDWalletMPCError)?,
+                    output.malicious_parties,
+                ))
+            }
+        }
     }
 
     fn restart(&mut self) {
         self.status = MPCSessionStatus::FirstExecution;
         self.party = match &self.session_info.mpc_round {
             MPCRound::DKGFirst => {
-                MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
-                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default(),
-                })
+                MPCParty::FirstDKGBytesParty(DKGFirstParty::default())
             }
             MPCRound::DKGSecond => {
-                MPCParty::SecondDKGBytesParty(SecondDKGBytesParty {
-                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default(),
-                })
+                MPCParty::SecondDKGBytesParty(DKGSecondParty::default())
             }
             MPCRound::PresignFirst(_, _) => {
-                MPCParty::FirstPresignBytesParty(FirstPresignBytesParty {
-                    party: PresignFirstParty::default(),
-                })
+                MPCParty::FirstPresignBytesParty(PresignFirstParty::default())
             }
             MPCRound::PresignSecond(_, _) => {
-                MPCParty::SecondPresignBytesParty(SecondPresignBytesParty {
-                    party: PresignSecondParty::default(),
-                })
+                MPCParty::SecondPresignBytesParty(PresignSecondParty::default())
             }
             MPCRound::Sign(party_id) => {
                 let shares: HashMap<PartyID, DecryptionKeyShare> = [(*party_id, self.decryption_share.clone())].into_iter().collect();
                 let party = SignFirstParty::from(shares);
-                MPCParty::SignBytesParty(SignBytesParty {
-                    party
-                })
+                MPCParty::SignBytesParty(party)
             }
         };
     }

@@ -1559,11 +1559,11 @@ impl AuthorityState {
         let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
         for event in &inner_temporary_store.events.data {
             let res = MPCParty::from_event(
-                &dwallet_mpc_manager,
                 event,
+                &dwallet_mpc_manager,
                 authority_name_to_party_id(epoch_store.name, &epoch_store)?,
             );
-            if let Some((party, auxiliary_input, session_info)) = res? {
+            if let Ok((party, auxiliary_input, session_info)) = res {
                 dwallet_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info)?;
             };
         }
