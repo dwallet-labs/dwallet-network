@@ -70,8 +70,8 @@ impl MPCParty {
     ) -> DwalletMPCResult<AdvanceResult> {
         match self {
             MPCParty::FirstDKGBytesParty(party) => {
-                let aux = bcs::from_bytes(&auxiliary_input)
-                    .map_err(|e| DwalletMPCError::BcsError(e))?;
+                let aux =
+                    bcs::from_bytes(&auxiliary_input).map_err(|e| DwalletMPCError::BcsError(e))?;
                 let a = advance::<DKGFirstParty>(party, messages, aux)?;
                 match a {
                     mpc::AdvanceResult::Advance((message, new_party)) => Ok(
@@ -81,8 +81,8 @@ impl MPCParty {
                 }
             }
             MPCParty::SecondDKGBytesParty(party) => {
-                let aux = bcs::from_bytes(&auxiliary_input)
-                    .map_err(|e| DwalletMPCError::BcsError(e))?;
+                let aux =
+                    bcs::from_bytes(&auxiliary_input).map_err(|e| DwalletMPCError::BcsError(e))?;
                 let a = advance::<DKGSecondParty>(party, messages, aux)?;
                 match a {
                     mpc::AdvanceResult::Advance((message, new_party)) => Ok(
@@ -107,13 +107,13 @@ impl MPCParty {
     ) -> DwalletMPCResult<(MPCParty, Vec<u8>, MPCSessionInfo)> {
         match &event.type_ {
             t if t == &StartDKGFirstRoundEvent::type_() => {
-                let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)
-                    .map_err(|e| DwalletMPCError::BcsError(e))?;
+                let deserialized_event: StartDKGFirstRoundEvent =
+                    bcs::from_bytes(&event.contents).map_err(|e| DwalletMPCError::BcsError(e))?;
                 Self::dkg_first_party(number_of_parties, party_id, deserialized_event)
             }
             t if t == &StartDKGSecondRoundEvent::type_() => {
-                let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)
-                    .map_err(|e| DwalletMPCError::BcsError(e))?;
+                let deserialized_event: StartDKGSecondRoundEvent =
+                    bcs::from_bytes(&event.contents).map_err(|e| DwalletMPCError::BcsError(e))?;
                 Self::dkg_second_party(number_of_parties, party_id, deserialized_event)
             }
             _ => Err(DwalletMPCError::NonMPCEvent),

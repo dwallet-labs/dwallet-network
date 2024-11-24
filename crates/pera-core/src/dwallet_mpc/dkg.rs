@@ -87,11 +87,10 @@ impl DKGSecondPartyAuxiliaryInputGenerator for DKGSecondParty {
             number_of_parties,
             party_id,
         )?;
-        let first_aux = bcs::from_bytes(&first_round_aux_buf)
-            .map_err(|e| DwalletMPCError::BcsError(e))?;
+        let first_aux =
+            bcs::from_bytes(&first_round_aux_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
         let first_round_output: <DKGFirstParty as Party>::Output =
-            bcs::from_bytes(&first_round_output_buf)
-                .map_err(|e| DwalletMPCError::BcsError(e))?;
+            bcs::from_bytes(&first_round_output_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
         let centralized_party_public_key_share: <AsyncProtocol as Protocol>::PublicKeyShareAndProof =
             bcs::from_bytes(&centralized_party_public_key_share_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
 
@@ -113,8 +112,7 @@ pub(super) fn advance<P: Advance>(
     let messages = messages
         .into_iter()
         .map(|(pid, msg)| {
-            let message =
-                bcs::from_bytes(&msg).map_err(|e| DwalletMPCError::BcsError(e));
+            let message = bcs::from_bytes(&msg).map_err(|e| DwalletMPCError::BcsError(e));
             return match message {
                 Ok(message) => Ok((pid, message)),
                 Err(err) => Err(err),
@@ -124,9 +122,7 @@ pub(super) fn advance<P: Advance>(
 
     let res = party
         .advance(messages, &auxiliary_input, &mut rand_core::OsRng)
-        .map_err(|error| {
-            DwalletMPCError::AdvanceError(format!("{:?}", error))
-        })?;
+        .map_err(|error| DwalletMPCError::AdvanceError(format!("{:?}", error)))?;
 
     Ok(match res {
         mpc::AdvanceResult::Advance((msg, party)) => mpc::AdvanceResult::Advance((
@@ -136,8 +132,7 @@ pub(super) fn advance<P: Advance>(
         mpc::AdvanceResult::Finalize(output) => {
             let output: P::OutputValue = output.into();
             mpc::AdvanceResult::Finalize(
-                bcs::to_bytes(&output)
-                    .map_err(|e| DwalletMPCError::BcsError(e))?,
+                bcs::to_bytes(&output).map_err(|e| DwalletMPCError::BcsError(e))?,
             )
         }
     })
