@@ -53,7 +53,7 @@ use std::sync::Arc;
 use std::{fs, io};
 use tempfile::tempdir;
 use tracing;
-use tracing::info;
+use tracing::{info, warn};
 
 const CONCURRENCY_LIMIT: usize = 30;
 const DEFAULT_EPOCH_DURATION_MS: u64 = 60_000;
@@ -814,10 +814,17 @@ async fn start(
     loop {
         loop_index += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
+            // get the highest executed checkpoint
             if loop_index == 3 && node_index == 3 {
+                warn!("Stopping node 3");
                 node.stop();
             } else if loop_index == 25 && node_index == 3 {
+                warn!("Starting node 3");
                 node.start().await?;
+            }
+            if let Some(handle) = node.get_node_handle() {
+                let sequence = handle.inner().state().get_latest_checkpoint_sequence_number();
+                info!(?sequence, ?node_index);
             }
             if let Err(err) = node.health_check(true).await {
                 unhealthy_cnt += 1;
