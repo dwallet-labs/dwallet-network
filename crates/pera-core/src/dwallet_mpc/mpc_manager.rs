@@ -220,9 +220,6 @@ impl DWalletMPCManager {
         authority_name: AuthorityName,
         session_id: ObjectID,
     ) -> PeraResult<()> {
-        if self.malicious_actors.contains(&authority_name) {
-            return Ok(());
-        }
         let Some(instance) = self.mpc_instances.get_mut(&session_id) else {
             warn!(
                 "received a message for instance {:?} which does not exist",
