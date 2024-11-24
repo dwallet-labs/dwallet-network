@@ -235,12 +235,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
 
         let round = consensus_output.leader_round();
-        if authority_name_to_party_id(&self.epoch_store.name, &self.epoch_store).unwrap() == 3 {
-            info!(
+        warn!(
                 "Received consensus output for round {}",
                 round,
             );
-        }
 
         // TODO: Remove this once narwhal is deprecated. For now mysticeti will not return
         // more than one leader per round so we are not in danger of ignoring any commits.
