@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
 use group::PartyID;
+use im::HashSet;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
@@ -42,7 +43,8 @@ pub struct DWalletMPCInstance {
     pub(crate) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
     decryption_share: DecryptionKeyShare,
-    pub outputs: HashMap<AuthorityName, Vec<u8>>
+    pub outputs: HashMap<Vec<u8>, HashSet<AuthorityName>>,
+    pub authorities_that_sent_output: HashSet<AuthorityName>,
 }
 
 impl DWalletMPCInstance {
@@ -65,6 +67,7 @@ impl DWalletMPCInstance {
             session_info,
             decryption_share,
             outputs: HashMap::new(),
+            authorities_that_sent_output: HashSet::new(),
         }
     }
 
@@ -184,13 +187,19 @@ impl DWalletMPCInstance {
         output: Vec<u8>,
         origin_authority: AuthorityName,
     ) -> PeraResult<()> {
-        if self.outputs.contains_key(&origin_authority) {
+        if self.authorities_that_sent_output.contains_key(&origin_authority) {
             return Err(PeraError::DWalletMPCMaliciousParties(vec![authority_name_to_party_id(
                 &origin_authority,
                 &self.epoch_store()?,
             )?]));
         }
-        self.outputs.insert(origin_authority, output);
+        if self.outputs.contains_key(&output) {
+            self.outputs.get_mut(&output).unwrap().insert(origin_authority);
+        } else {
+            let mut authorities = HashSet::new();
+            authorities.insert(origin_authority);
+            self.outputs.insert(output, authorities);
+        }
         Ok(())
     }
 

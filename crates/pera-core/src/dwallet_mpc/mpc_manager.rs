@@ -141,6 +141,7 @@ impl DWalletMPCManager {
         };
         instance.store_output(output.clone(), origin_authority)?;
 
+
         if *stored_output == *output
             && session_info.initiating_user_address.to_vec()
                 == instance.session_info.initiating_user_address.to_vec()
