@@ -10,10 +10,6 @@ import { presign } from '../../src/dwallet-mpc/presign';
 import { Hash, signMessageTransactionCall } from '../../src/dwallet-mpc/sign';
 import { setup, TestToolbox } from './utils/setup';
 
-function encodeBase64(bytes: Uint8Array): string {
-	return btoa(String.fromCharCode(...bytes));
-}
-
 describe('Test dwallet mpc', () => {
 	let toolbox: TestToolbox;
 

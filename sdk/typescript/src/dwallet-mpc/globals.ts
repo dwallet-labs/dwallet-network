@@ -12,7 +12,14 @@ export async function fetchObjectBySessionId(
 	client: PeraClient,
 ) {
 	let cursor = null;
+	const timeout = 5 * 60 * 1000; // 5 minutes in milliseconds
+	const startTime = Date.now();
+
 	for (;;) {
+		if (Date.now() - startTime > timeout) {
+			throw new Error('Timeout: Unable to fetch object within 5 minutes');
+		}
+
 		const objects = await client.getOwnedObjects({
 			owner: keypair.toPeraAddress(),
 			cursor: cursor,
