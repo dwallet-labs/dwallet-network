@@ -805,13 +805,20 @@ async fn start(
             config,
         });
 
-        start_faucet(app_state, CONCURRENCY_LIMIT, &prometheus_registry).await?;
+        tokio::spawn(start_faucet(app_state, CONCURRENCY_LIMIT, prometheus_registry));
     }
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(3));
     let mut unhealthy_cnt = 0;
+    let mut loop_index = 0;
     loop {
-        for node in swarm.validator_nodes() {
+        loop_index += 1;
+        for (node_index, node) in swarm.validator_nodes().enumerate() {
+            if loop_index == 3 && node_index == 3 {
+                node.stop().await?;
+            } else if loop_index = 25 && node_index == 3 {
+                node.start().await?;
+            }
             if let Err(err) = node.health_check(true).await {
                 unhealthy_cnt += 1;
                 if unhealthy_cnt > 3 {

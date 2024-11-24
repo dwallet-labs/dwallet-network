@@ -36,7 +36,7 @@ use crate::faucet::Faucet;
 pub async fn start_faucet(
     app_state: Arc<AppState>,
     concurrency_limit: usize,
-    prometheus_registry: &Registry,
+    prometheus_registry: Registry,
 ) -> Result<(), anyhow::Error> {
     // TODO: restrict access if needed
     let cors = CorsLayer::new()
