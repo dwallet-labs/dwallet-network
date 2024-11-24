@@ -1,214 +1,57 @@
 //! This module provides a wrapper around the Presign protocol from the 2PC-MPC library.
 //!
-//! It integrates both Presign parties (each representing a round in the Presign protocol) and
-//! implements the [`BytesParty`] trait for seamless interaction with other MPC components.
+//! It integrates both Presign parties (each representing a round in the Presign protocol)
+use pera_types::error::PeraResult;
+use crate::dwallet_mpc::mpc_party::AsyncProtocol;
 
-use std::collections::HashMap;
-
-use group::PartyID;
-use mpc::{Advance, Party, WeightedThresholdAccessStructure};
-
-use pera_types::error::{PeraError, PeraResult};
-
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, AsyncProtocol, BytesParty, MPCParty};
-use crate::dwallet_mpc::dkg::deserialize_mpc_messages;
-use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
-
-pub type PresignFirstParty =
+pub(super) type PresignFirstParty =
     <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShareRoundParty;
-pub type PresignSecondParty = <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceShareRoundParty;
+pub(super) type PresignSecondParty = <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceShareRoundParty;
 
-/// A wrapper for the first round of the Presign protocol.
-///
-/// This struct represents the initial round of the Presign protocol.
-pub struct FirstPresignBytesParty {
-    pub party: PresignFirstParty,
-}
-
-impl FirstPresignBytesParty {
-    /// Generates the auxiliary input required for the first Presign round.
-    /// It is necessary for advancing the party to the next round of the Presign protocol.
-    pub(crate) fn generate_auxiliary_input(
-        session_id: Vec<u8>,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        party_id: PartyID,
-        dkg_output: Vec<u8>,
-    ) -> PeraResult<Vec<u8>> {
-        Ok(bcs::to_bytes(
-            &PresignFirstParty::generate_auxiliary_input(
-                session_id,
-                weighted_threshold_access_structure,
-                party_id,
-                dkg_output,
-            )?,
-        )?)
-    }
-}
-
-impl BytesParty for FirstPresignBytesParty {
-    fn advance(
-        self,
-        messages: HashMap<PartyID, Vec<u8>>,
-        auxiliary_input: Vec<u8>,
-    ) -> PeraResult<AdvanceResult> {
-        let auxiliary_input =
-            // This is not a validator malicious behaviour, as the authority input is being sent by the initiating user.
-            // In this case this MPC session should be cancelled.
-            bcs::from_bytes(&auxiliary_input).map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
-        let result = self
-            .party
-            .advance(
-                deserialize_mpc_messages(messages)?,
-                &auxiliary_input,
-                &mut rand_core::OsRng,
-            )
-            .map_err(twopc_error_to_pera_error)?;
-        match result {
-            mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
-                bcs::to_bytes(&message)?,
-                MPCParty::FirstPresignBytesParty(Self { party: new_party }),
-            ))),
-            mpc::AdvanceResult::Finalize(output) => {
-                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output)?, vec![]))
-            }
-            mpc::AdvanceResult::FinalizeAsync(output) => Ok(AdvanceResult::Finalize(
-                bcs::to_bytes(&output.output)?,
-                output.malicious_parties,
-            )),
-        }
-    }
-}
-
-/// A trait for generating auxiliary input for the initial round of the Presign protocol.
+/// A trait for generating the public input for the initial round of the Presign protocol.
 ///
 /// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
-/// when accessing `mpc::Party::AuxiliaryInput`. It defines the parameters and logic
-/// necessary to initiate the first round of the DKG protocol,
-/// preparing the party with the essential session information and other contextual data.
-pub trait PresignFirstRound: mpc::Party {
-    fn generate_auxiliary_input(
-        session_id: Vec<u8>,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        party_id: PartyID,
-        dkg_output: Vec<u8>,
-    ) -> PeraResult<Self::AuxiliaryInput>;
+/// when accessing `mpc::Party::PublicInput`.
+pub(super) trait PresignFirstPartyPublicInputGenerator: mpc::Party {
+    fn generate_public_input(dkg_output: Vec<u8>) -> PeraResult<Vec<u8>>;
 }
 
-impl PresignFirstRound for PresignFirstParty {
-    fn generate_auxiliary_input(
-        session_id: Vec<u8>,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        party_id: PartyID,
+/// A trait for generating the public input for the last round of the Presign protocol.
+///
+/// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
+/// when accessing `mpc::Party::PublicInput`.
+pub(super) trait PresignSecondPartyPublicInputGenerator: mpc::Party {
+    fn generate_public_input(
         dkg_output: Vec<u8>,
-    ) -> PeraResult<Self::AuxiliaryInput> {
-        let secp256k1_group_public_parameters =
-            class_groups_constants::protocol_public_parameters();
-        let session_id = commitment::CommitmentSizedNumber::from_le_slice(&session_id);
+        first_round_output: Vec<u8>,
+    ) -> PeraResult<Vec<u8>>;
+}
 
-        Ok(Self::AuxiliaryInput {
-            weighted_threshold_access_structure,
-            protocol_public_parameters: secp256k1_group_public_parameters.clone(),
-            party_id,
+impl PresignFirstPartyPublicInputGenerator for PresignFirstParty {
+    fn generate_public_input(dkg_output: Vec<u8>) -> PeraResult<Vec<u8>> {
+        let pub_input = Self::PublicInput {
+            protocol_public_parameters: class_groups_constants::protocol_public_parameters(),
             dkg_output: bcs::from_bytes(&dkg_output)?,
-            session_id,
-        })
+        };
+        Ok(bcs::to_bytes(&pub_input)?)
     }
 }
 
-/// A wrapper for the second round of the Presign protocol.
-///
-/// This struct represents the final round of the Presign protocol.
-pub struct SecondPresignBytesParty {
-    pub party: PresignSecondParty,
-}
-impl SecondPresignBytesParty {
-    /// Generates the auxiliary input required for the second Presign round.
-    /// It is necessary for advancing the party to the next round of the Presign protocol.
-    /// The `session_id` is the unique identifier for the MPC session from the first round.
-    pub(crate) fn generate_auxiliary_input(
-        session_id: Vec<u8>,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        party_id: PartyID,
+impl PresignSecondPartyPublicInputGenerator for PresignSecondParty {
+    fn generate_public_input(
         dkg_output: Vec<u8>,
         first_round_output: Vec<u8>,
     ) -> PeraResult<Vec<u8>> {
-        let first_round_output = bcs::from_bytes(&first_round_output)?;
-        Ok(bcs::to_bytes(
-            &PresignSecondParty::generate_auxiliary_input(
-                session_id,
-                weighted_threshold_access_structure,
-                party_id,
+        let first_round_public_input =
+            <PresignFirstParty as PresignFirstPartyPublicInputGenerator>::generate_public_input(
                 dkg_output,
-                first_round_output,
-            )?,
-        )?)
-    }
-}
-
-impl BytesParty for SecondPresignBytesParty {
-    fn advance(
-        self,
-        messages: HashMap<PartyID, Vec<u8>>,
-        auxiliary_input: Vec<u8>,
-    ) -> PeraResult<AdvanceResult> {
-        let auxiliary_input =
-            // This is not a validator malicious behaviour, as the authority input is being sent by the initiating user.
-            // In this case this MPC session should be cancelled.
-            bcs::from_bytes(&auxiliary_input).map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
-        let result = self
-            .party
-            .advance(
-                deserialize_mpc_messages(messages)?,
-                &auxiliary_input,
-                &mut rand_core::OsRng,
-            )
-            .map_err(twopc_error_to_pera_error)?;
-        match result {
-            mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
-                bcs::to_bytes(&message)?,
-                MPCParty::SecondPresignBytesParty(Self { party: new_party }),
-            ))),
-            mpc::AdvanceResult::Finalize(output) => {
-                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output)?, vec![]))
-            }
-            mpc::AdvanceResult::FinalizeAsync(output) => Ok(AdvanceResult::Finalize(
-                bcs::to_bytes(&output.output)?,
-                output.malicious_parties,
-            )),
-        }
-    }
-}
-
-/// A trait for generating auxiliary input for the last round of the Presign protocol.
-///
-/// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
-/// when accessing `mpc::Party::AuxiliaryInput`. It defines the parameters and logic
-/// necessary to initiate the second round of the Presign protocol,
-/// preparing the party with the essential session information and other contextual data.
-pub trait PresignSecondRound: Party {
-    fn generate_auxiliary_input(
-        session_id: Vec<u8>,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        party_id: PartyID,
-        dkg_output: Vec<u8>,
-        first_round_output: <PresignFirstParty as Party>::Output,
-    ) -> PeraResult<Self::AuxiliaryInput>;
-}
-
-impl PresignSecondRound for PresignSecondParty {
-    fn generate_auxiliary_input(
-        session_id: Vec<u8>,
-        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-        party_id: PartyID,
-        dkg_output: Vec<u8>,
-        first_round_output: <PresignFirstParty as Party>::Output,
-    ) -> PeraResult<Self::AuxiliaryInput> {
-        let first_round_auxiliary_input = PresignFirstParty::generate_auxiliary_input(
-            session_id,
-            weighted_threshold_access_structure,
-            party_id,
-            dkg_output,
-        )?;
-        Ok((first_round_auxiliary_input, first_round_output.clone()).into())
+            )?;
+        let first_round_public_input: <PresignFirstParty as mpc::Party>::PublicInput =
+            bcs::from_bytes(&first_round_public_input)?;
+        let first_round_output: <PresignFirstParty as mpc::Party>::PublicOutput =
+            bcs::from_bytes(&first_round_output)?;
+        let input: Self::PublicInput =
+            (first_round_public_input, first_round_output.clone()).into();
+        Ok(bcs::to_bytes(&input)?)
     }
 }

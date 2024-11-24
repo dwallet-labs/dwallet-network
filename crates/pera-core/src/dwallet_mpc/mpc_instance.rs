@@ -1,23 +1,17 @@
 use std::collections::HashMap;
-use std::mem;
 use std::sync::{Arc, Weak};
 
 use group::PartyID;
+use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 use pera_types::base_types::{AuthorityName, EpochId};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::ConsensusTransaction;
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::SessionInfo;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, AsyncProtocol, MPCParty};
-use crate::dwallet_mpc::dkg::{FirstDKGBytesParty, SecondDKGBytesParty};
-use crate::dwallet_mpc::presign::{
-    FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty,
-};
-use crate::dwallet_mpc::sign::{SignBytesParty, SignFirstParty};
+use crate::dwallet_mpc::mpc_party::MPCParty;
 
 /// The message a validator can send to the other parties while running a dwallet MPC session.
 #[derive(Clone)]
@@ -36,8 +30,7 @@ pub struct DWalletMPCInstance {
     pub(crate) status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
-    pub(crate) pending_messages: HashMap<PartyID, Vec<u8>>,
-    consensus_adapter: Arc<dyn SubmitToConsensus>,
+    pub(crate) pending_messages: Vec<HashMap<PartyID, Vec<u8>>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     /// The total number of parties in the chain
@@ -46,14 +39,13 @@ pub struct DWalletMPCInstance {
     pub(crate) session_info: SessionInfo,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: MPCParty,
-    pub(crate) auxiliary_input: Vec<u8>,
+    pub(crate) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
     decryption_share: DecryptionKeyShare,
 }
 
 impl DWalletMPCInstance {
     pub(crate) fn new(
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
         epoch: EpochId,
         party: MPCParty,
@@ -64,12 +56,11 @@ impl DWalletMPCInstance {
     ) -> Self {
         Self {
             status,
-            pending_messages: HashMap::new(),
-            consensus_adapter: consensus_adapter.clone(),
+            pending_messages: Vec::new(),
             epoch_store: epoch_store.clone(),
             epoch_id: epoch,
             party,
-            auxiliary_input,
+            public_input: auxiliary_input,
             session_info,
             decryption_share,
         }
@@ -83,69 +74,64 @@ impl DWalletMPCInstance {
 
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    pub(crate) fn advance(&mut self) -> PeraResult<(ConsensusTransaction, Vec<PartyID>)> {
-        let party = mem::take(&mut self.party);
+    pub(crate) fn advance(
+        &mut self,
+        weighted_threshold_access: &WeightedThresholdAccessStructure,
+        party_id: PartyID,
+    ) -> PeraResult<(ConsensusTransaction, Vec<PartyID>)> {
         let pending_messages = self.pending_messages.clone();
-        self.pending_messages.clear();
-        self.status = MPCSessionStatus::Active;
-        let advance_result = party.advance(pending_messages, self.auxiliary_input.clone());
+        let (status, round) = match self.status {
+            MPCSessionStatus::Pending | MPCSessionStatus::FirstExecution => {
+                (MPCSessionStatus::Active(0), 0)
+            }
+            MPCSessionStatus::Active(round) => (MPCSessionStatus::Active(round + 1), round + 1),
+            _ => return Err(PeraError::InternalDWalletMPCError),
+        };
+        self.status = status;
+        let advance_result = self.party.advance(
+            pending_messages,
+            self.session_info.mpc_session_id,
+            party_id,
+            weighted_threshold_access,
+            self.public_input.clone(),
+        );
+
         if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = advance_result {
             self.restart();
             return Err(PeraError::DWalletMPCMaliciousParties(malicious_parties));
         } else if advance_result.is_err() {
             self.status = MPCSessionStatus::Failed;
         }
-        return match advance_result? {
-            AdvanceResult::Advance((message, new_party)) => {
-                self.party = new_party;
+
+        match advance_result? {
+            AsynchronousRoundResult::Advance {
+                malicious_parties,
+                message,
+            } => {
+                self.pending_messages.insert(round, HashMap::new());
                 Ok((
                     self.new_dwallet_mpc_message(message)
-                        .ok_or(PeraError::InternalDWalletMPCError)?,
-                    vec![],
-                ))
-            }
-            AdvanceResult::Finalize(output, malicious_parties) => {
-                self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                Ok((
-                    self.new_dwallet_mpc_output_message(output)
                         .ok_or(PeraError::InternalDWalletMPCError)?,
                     malicious_parties,
                 ))
             }
-        };
+            AsynchronousRoundResult::Finalize {
+                malicious_parties,
+                private_output: _,
+                public_output,
+            } => {
+                self.status = MPCSessionStatus::Finalizing(public_output.clone().into());
+                Ok((
+                    self.new_dwallet_mpc_output_message(public_output)
+                        .ok_or(PeraError::InternalDWalletMPCError)?,
+                    malicious_parties,
+                ))
+            }
+        }
     }
 
     fn restart(&mut self) {
         self.status = MPCSessionStatus::FirstExecution;
-        self.party = match &self.session_info.mpc_round {
-            MPCRound::DKGFirst => {
-                MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
-                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default(),
-                })
-            }
-            MPCRound::DKGSecond => {
-                MPCParty::SecondDKGBytesParty(SecondDKGBytesParty {
-                    party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default(),
-                })
-            }
-            MPCRound::PresignFirst(_, _) => {
-                MPCParty::FirstPresignBytesParty(FirstPresignBytesParty {
-                    party: PresignFirstParty::default(),
-                })
-            }
-            MPCRound::PresignSecond(_, _) => {
-                MPCParty::SecondPresignBytesParty(SecondPresignBytesParty {
-                    party: PresignSecondParty::default(),
-                })
-            }
-            MPCRound::Sign(party_id) => {
-                let shares: HashMap<PartyID, DecryptionKeyShare> = [(*party_id, self.decryption_share.clone())].into_iter().collect();
-                let party = SignFirstParty::from(shares);
-                MPCParty::SignBytesParty(SignBytesParty {
-                    party
-                })
-            }
-        };
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
@@ -175,22 +161,24 @@ impl DWalletMPCInstance {
     /// and when we reach the end of delivery we will advance the instance if we have a threshold of messages.
     fn store_message(
         &mut self,
+        round: usize,
         message: &DWalletMPCMessage,
         epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> PeraResult<()> {
-        let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
-        if self.pending_messages.contains_key(&party_id) {
+        let party_id = authority_name_to_party_id(&message.authority, &epoch_store)?;
+        if self.pending_messages[round].contains_key(&party_id) {
             return Err(PeraError::DWalletMPCMaliciousParties(vec![party_id]));
         }
-        self.pending_messages
-            .insert(party_id, message.message.clone());
+        self.pending_messages[round].insert(party_id, message.message.clone());
         Ok(())
     }
 
     /// Handles a message by either forwarding it to the instance or ignoring it if the instance is finished.
     pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> PeraResult<()> {
         match self.status {
-            MPCSessionStatus::Active => self.store_message(&message, self.epoch_store()?),
+            MPCSessionStatus::Active(round) => {
+                self.store_message(round, &message, self.epoch_store()?)
+            }
             // TODO (#263): Check for malicious messages also after the instance is finished
             MPCSessionStatus::Finalizing(_) | MPCSessionStatus::Finished(_) => {
                 // Do nothing
@@ -216,7 +204,7 @@ impl DWalletMPCInstance {
 pub enum MPCSessionStatus {
     Pending,
     FirstExecution,
-    Active,
+    Active(usize),
     Finalizing(Vec<u8>),
     Finished(Vec<u8>),
     Failed,
@@ -228,12 +216,12 @@ unsafe impl Send for DWalletMPCInstance {}
 /// Convert a given authority name (address) to it's corresponding party ID.
 /// The party ID is the index of the authority in the committee.
 pub fn authority_name_to_party_id(
-    authority_name: AuthorityName,
+    authority_name: &AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
 ) -> PeraResult<PartyID> {
     Ok(epoch_store
         .committee()
-        .authority_index(&authority_name)
+        .authority_index(authority_name)
         // This should never happen, as the validator only accepts messages from committee members
         .ok_or_else(|| {
             PeraError::InvalidCommittee(

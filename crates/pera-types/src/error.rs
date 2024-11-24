@@ -14,7 +14,6 @@ use crate::{
 use group::PartyID;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::hash::Hash;
 use std::{collections::BTreeMap, fmt::Debug};
 use strum_macros::{AsRefStr, IntoStaticStr};
@@ -675,6 +674,9 @@ pub enum PeraError {
 
     #[error("malicious parties have been detected")]
     DWalletMPCMaliciousParties(Vec<PartyID>),
+
+    #[error("None MPC event found")]
+    NonMPCEvent,
 }
 
 #[repr(u64)]

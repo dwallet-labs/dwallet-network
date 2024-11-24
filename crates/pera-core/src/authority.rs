@@ -14,13 +14,11 @@ use chrono::prelude::*;
 use fastcrypto::encoding::Base58;
 use fastcrypto::encoding::Encoding;
 use fastcrypto::hash::MultisetHash;
-use group::PartyID;
 use itertools::Itertools;
 use move_binary_format::binary_config::BinaryConfig;
 use move_binary_format::CompiledModule;
 use move_core_types::annotated_value::MoveStructLayout;
 use move_core_types::language_storage::ModuleId;
-use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::{TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX};
 use parking_lot::Mutex;
 use pera_config::node::{AuthorityOverloadConfig, StateDebugDumpConfig};
@@ -145,8 +143,8 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::bytes_party::MPCParty;
 use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
+use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
     CheckpointCache, ExecutionCacheCommit, ExecutionCacheReconfigAPI, ExecutionCacheWrite,
@@ -1559,11 +1557,11 @@ impl AuthorityState {
         let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
         for event in &inner_temporary_store.events.data {
             let res = MPCParty::from_event(
-                &dwallet_mpc_manager,
                 event,
-                authority_name_to_party_id(epoch_store.name, &epoch_store)?,
+                &dwallet_mpc_manager,
+                authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
             );
-            if let Some((party, auxiliary_input, session_info)) = res? {
+            if let Ok((party, auxiliary_input, session_info)) = res {
                 dwallet_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info)?;
             };
         }

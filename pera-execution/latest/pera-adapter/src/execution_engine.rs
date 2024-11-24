@@ -256,7 +256,7 @@ mod checked {
             0,
         );
         let mut gas_charger = GasCharger::new_unmetered(tx_context.digest());
-        let res = programmable_transactions::execution::execute::<execution_mode::Genesis>(
+        let _ = programmable_transactions::execution::execute::<execution_mode::Genesis>(
             protocol_config,
             metrics,
             move_vm,
@@ -265,7 +265,6 @@ mod checked {
             &mut gas_charger,
             pt,
         );
-        let res = res?;
         temporary_store.update_object_version_and_prev_tx();
         Ok(temporary_store.into_inner())
     }

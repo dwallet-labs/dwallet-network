@@ -1,12 +1,12 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
+use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::{PeraError, PeraResult};
 
-use crate::dwallet_mpc::bytes_party::MPCParty;
 use crate::dwallet_mpc::mpc_instance::{
     authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
 };
+use crate::dwallet_mpc::mpc_party::MPCParty;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
@@ -26,6 +26,7 @@ use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 /// - executing all active instances, and
 /// - (de)activating instances.
 pub struct DWalletMPCManager {
+    party_id: PartyID,
     mpc_instances: HashMap<ObjectID, DWalletMPCInstance>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
     pending_instances_queue: VecDeque<DWalletMPCInstance>,
@@ -63,7 +64,7 @@ impl DWalletMPCManager {
             .iter()
             .map(|(name, weight)| {
                 Ok((
-                    authority_name_to_party_id(name.clone(), &epoch_store)?,
+                    authority_name_to_party_id(&name, &epoch_store)?,
                     *weight as PartyID,
                 ))
             })
@@ -78,6 +79,7 @@ impl DWalletMPCManager {
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
             consensus_adapter,
+            party_id: authority_name_to_party_id(&epoch_store.name.clone(), &epoch_store.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
             epoch_id,
             max_active_mpc_instances: node_config.max_active_dwallet_mpc_instances,
@@ -91,11 +93,9 @@ impl DWalletMPCManager {
     pub fn get_decryption_share(
         &self,
     ) -> PeraResult<twopc_mpc::secp256k1::class_groups::DecryptionKeyShare> {
-        let party_id = authority_name_to_party_id(
-            self.epoch_store()?.name.clone(),
-            &self.epoch_store()?.clone(),
-        )?;
-        let try_this = self
+        let party_id =
+            authority_name_to_party_id(&self.epoch_store()?.name, &self.epoch_store()?.clone())?;
+        let _ = self
             .node_config
             .dwallet_mpc_class_groups_decryption_shares
             .clone()
@@ -153,15 +153,19 @@ impl DWalletMPCManager {
             .mpc_instances
             .iter_mut()
             .filter_map(|(_, instance)| {
-                let received_weight: PartyID = instance
-                    .pending_messages
-                    .keys()
-                    .map(|authority_index| {
-                        // should never be "or" as we receive messages only from known authorities
-                        self.weighted_parties.get(authority_index).unwrap_or(&0)
-                    })
-                    .sum();
-                if (instance.status == MPCSessionStatus::Active
+                let received_weight: PartyID =
+                    if let MPCSessionStatus::Active(round) = instance.status {
+                        instance.pending_messages[round]
+                            .keys()
+                            .map(|authority_index| {
+                                // should never be "or" as we receive messages only from known authorities
+                                self.weighted_parties.get(authority_index).unwrap_or(&0)
+                            })
+                            .sum()
+                    } else {
+                        0
+                    };
+                if (matches!(instance.status, MPCSessionStatus::Active(_))
                     && received_weight as StakeUnit >= threshold)
                     || (instance.status == MPCSessionStatus::FirstExecution)
                 {
@@ -174,7 +178,9 @@ impl DWalletMPCManager {
 
         let results: Vec<PeraResult<(ConsensusTransaction, Vec<PartyID>)>> = ready_to_advance
             .par_iter_mut()
-            .map(|ref mut instance| instance.advance())
+            .map(|ref mut instance| {
+                instance.advance(&self.weighted_threshold_access_structure, self.party_id)
+            })
             .collect();
         let messages = results
             .into_iter()
@@ -274,13 +280,7 @@ impl DWalletMPCManager {
         }
 
         info!("Received start flow event for session ID {:?}", session_id);
-        let party_id = self
-            .epoch_store()?
-            .committee()
-            .authority_index(&self.epoch_store()?.name)
-            .unwrap();
         let mut new_instance = DWalletMPCInstance::new(
-            Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.epoch_id,
             party,
@@ -340,14 +340,11 @@ impl DWalletMPCManager {
 /// Convert a `twopc_mpc::Error` to a `PeraError`.
 /// Needed this function and not a `From` implementation because when including the `twopc_mpc` crate
 /// as a dependency in the `pera-types` crate there are many conflicting implementations.
-pub fn twopc_error_to_pera_error(error: twopc_mpc::Error) -> PeraError {
-    let Ok(error): Result<Error, _> = error.try_into() else {
-        return PeraError::InternalDWalletMPCError;
-    };
-    return match error {
+pub fn twopc_error_to_pera_error(error: mpc::Error) -> PeraError {
+    match error {
         Error::UnresponsiveParties(parties)
         | Error::InvalidMessage(parties)
         | Error::MaliciousMessage(parties) => PeraError::DWalletMPCMaliciousParties(parties),
         _ => PeraError::InternalDWalletMPCError,
-    };
+    }
 }

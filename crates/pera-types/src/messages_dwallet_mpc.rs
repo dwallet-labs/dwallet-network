@@ -44,6 +44,7 @@ impl Message for DWalletMPCOutput {
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
+    pub mpc_session_id: ObjectID,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The address of the user that initiated this session.
