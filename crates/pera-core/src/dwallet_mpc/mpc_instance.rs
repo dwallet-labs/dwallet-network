@@ -7,6 +7,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 use pera_types::base_types::{AuthorityName, EpochId};
+use pera_types::committee::StakeUnit;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::SessionInfo;
@@ -180,6 +181,15 @@ impl DWalletMPCInstance {
         }
         self.pending_messages[round].insert(party_id, message.message.clone());
         Ok(())
+    }
+
+    pub fn output_score(&self, output: &Vec<u8>) -> PeraResult<u64> {
+        let mut score = 0;
+        let indexed_voting_rights: HashMap<AuthorityName, StakeUnit> = self.epoch_store()?.committee().voting_rights.iter().collect();
+        for authority in self.outputs.get(&output).unwrap_or(&HashSet::new()) {
+            score += indexed_voting_rights.get(authority).unwrap();
+        }
+        Ok(score)
     }
 
     pub fn store_output(

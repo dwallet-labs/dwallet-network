@@ -136,21 +136,15 @@ impl DWalletMPCManager {
         let Some(mut instance) = self.mpc_instances.get_mut(&session_info.session_id) else {
             return Ok(OutputVerificationResult::Malicious);
         };
-        let MPCSessionStatus::Finalizing(stored_output) = instance.status.clone() else {
+        let MPCSessionStatus::Finalizing(_) = instance.status.clone() else {
             return Ok(OutputVerificationResult::Duplicate);
         };
         instance.store_output(output.clone(), origin_authority)?;
-
-
-        if *stored_output == *output
-            && session_info.initiating_user_address.to_vec()
-                == instance.session_info.initiating_user_address.to_vec()
-            && session_info.dwallet_cap_id == instance.session_info.dwallet_cap_id
-        {
+        if instance.output_score(output)? > self.epoch_store()?.committee().quorum_threshold() {
             self.finalize_mpc_instance(session_info.session_id.clone())?;
             return Ok(OutputVerificationResult::Valid);
         }
-        Ok(OutputVerificationResult::Malicious)
+        Ok(OutputVerificationResult::Duplicate)
     }
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
