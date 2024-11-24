@@ -236,7 +236,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
 
         let round = consensus_output.leader_round();
         if authority_name_to_party_id(&self.epoch_store.name, &self.epoch_store).unwrap() == 3 {
-            info!(
+            warn!(
                 "Received consensus output for round {}",
                 round,
             );
