@@ -818,7 +818,7 @@ async fn start(
             if loop_index == 3 && node_index == 3 {
                 warn!("Stopping node 3");
                 node.stop();
-            } else if loop_index == 25 && node_index == 3 {
+            } else if loop_index == 10 && node_index == 3 {
                 warn!("Starting node 3");
                 node.start().await?;
             }
