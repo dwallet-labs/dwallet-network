@@ -119,7 +119,7 @@ impl Debug for ConsensusTransactionKey {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
             }
             Self::DWalletMPCMessage(name, _, _) => {
-                write!(f, "DWalletMPCMessage({:?})", name.concise(), )
+                write!(f, "DWalletMPCMessage({:?})", name.concise(),)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
             Self::CapabilityNotification(name, generation) => write!(
@@ -269,10 +269,10 @@ impl AuthorityCapabilitiesV2 {
             authority,
             generation,
             supported_protocol_versions:
-            SupportedProtocolVersionsWithHashes::from_supported_versions(
-                supported_protocol_versions,
-                chain,
-            ),
+                SupportedProtocolVersionsWithHashes::from_supported_versions(
+                    supported_protocol_versions,
+                    chain,
+                ),
             available_system_packages,
         }
     }
@@ -499,7 +499,11 @@ impl ConsensusTransaction {
     }
 
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
-    pub fn new_dwallet_mpc_output(authority: AuthorityName, output: Vec<u8>, session_info: SessionInfo) -> Self {
+    pub fn new_dwallet_mpc_output(
+        authority: AuthorityName,
+        output: Vec<u8>,
+        session_info: SessionInfo,
+    ) -> Self {
         let mut hasher = DefaultHasher::new();
         output.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();

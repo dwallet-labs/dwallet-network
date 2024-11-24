@@ -8,6 +8,7 @@ use std::{
     sync::Arc,
 };
 
+use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::OutputVerificationResult;
 use crate::{
     authority::{
@@ -48,7 +49,6 @@ use pera_types::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace_span, warn};
-use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -235,10 +235,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
 
         let round = consensus_output.leader_round();
-        warn!(
-                "Received consensus output for round {}",
-                round,
-            );
+        warn!("Received consensus output for round {}", round,);
 
         // TODO: Remove this once narwhal is deprecated. For now mysticeti will not return
         // more than one leader per round so we are not in danger of ignoring any commits.
@@ -365,8 +362,11 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
-                    if let ConsensusTransactionKind::DWalletMPCOutput(origin_authority, session_info, output) =
-                        &transaction.kind
+                    if let ConsensusTransactionKind::DWalletMPCOutput(
+                        origin_authority,
+                        session_info,
+                        output,
+                    ) = &transaction.kind
                     {
                         // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
                         // to store its output on the blockchain, so it will be available for the initiating user.
@@ -376,18 +376,18 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         );
                         let Some(origin_authority) =
                             self.committee.authority_pubkey_by_index(authority_index)
-                            else {
-                                error!(
+                        else {
+                            error!(
                                 "Malicious output from unknown authority index {:?}",
                                 authority_index
                             );
-                                return;
-                            };
+                            return;
+                        };
                         let Ok(mut dwallet_mpc_manager) =
                             self.epoch_store.get_dwallet_mpc_manager().await
-                            else {
-                                return;
-                            };
+                        else {
+                            return;
+                        };
                         if dwallet_mpc_manager
                             .malicious_actors
                             .contains(&origin_authority)
@@ -475,7 +475,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             let mut processed_set = HashSet::new();
 
             for (seq, (serialized, transaction, cert_origin)) in
-            transactions.into_iter().enumerate()
+                transactions.into_iter().enumerate()
             {
                 // In process_consensus_transactions_and_commit_boundary(), we will add a system consensus commit
                 // prologue transaction, which will be the first transaction in this consensus commit batch.
@@ -822,21 +822,21 @@ impl SequencedConsensusTransaction {
             return false;
         }
         let SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::UserTransaction(certificate),
-                                                            ..
-                                                        }) = &self.transaction
-            else {
-                return false;
-            };
+            kind: ConsensusTransactionKind::UserTransaction(certificate),
+            ..
+        }) = &self.transaction
+        else {
+            return false;
+        };
         certificate.transaction_data().uses_randomness()
     }
 
     pub fn as_shared_object_txn(&self) -> Option<&SenderSignedData> {
         match &self.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::UserTransaction(certificate),
-                                                            ..
-                                                        }) if certificate.contains_shared_object() => Some(certificate.data()),
+                kind: ConsensusTransactionKind::UserTransaction(certificate),
+                ..
+            }) if certificate.contains_shared_object() => Some(certificate.data()),
             SequencedConsensusTransactionKind::System(txn) if txn.contains_shared_object() => {
                 Some(txn.data())
             }
@@ -1039,7 +1039,7 @@ mod tests {
             let transaction_bytes: Vec<u8> = bcs::to_bytes(
                 &ConsensusTransaction::new_certificate_message(&state.name, transaction.clone()),
             )
-                .unwrap();
+            .unwrap();
 
             let batch = Batch::new(vec![transaction_bytes], latest_protocol_config);
 
@@ -1061,7 +1061,7 @@ mod tests {
                 header.into(),
                 vec![],
             )
-                .unwrap();
+            .unwrap();
 
             certificates.push(certificate);
         }

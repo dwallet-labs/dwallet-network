@@ -80,6 +80,7 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
+use chrono::Utc;
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -112,7 +113,6 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use chrono::Utc;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -338,8 +338,7 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing DWallet MPC flows.
-    pub dwallet_mpc_manager:
-        OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
+    pub dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -3218,7 +3217,9 @@ impl AuthorityPerEpochStore {
 
         self.get_dwallet_mpc_manager()
             .await?
-            .handle_end_of_delivery((consensus_commit_info.timestamp + 1_000) / 1_000 < current_timestamp as u64)
+            .handle_end_of_delivery(
+                (consensus_commit_info.timestamp + 1_000) / 1_000 < current_timestamp as u64,
+            )
             .await?;
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
@@ -3615,7 +3616,6 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
-
                 self.get_dwallet_mpc_manager().await?.handle_message(
                     message,
                     *authority,

@@ -185,8 +185,14 @@ impl DWalletMPCInstance {
 
     pub fn output_score(&self, output: &Vec<u8>) -> PeraResult<u64> {
         let mut score = 0;
-        let indexed_voting_rights: HashMap<AuthorityName, StakeUnit> = self.epoch_store()?.committee().voting_rights.iter().collect();
-        for authority in self.outputs.get(&output).unwrap_or(&HashSet::new()) {
+        let indexed_voting_rights: HashMap<AuthorityName, StakeUnit> = self
+            .epoch_store()?
+            .committee()
+            .voting_rights
+            .clone()
+            .into_iter()
+            .collect();
+        for authority in self.outputs.get(output).unwrap_or(&HashSet::new()) {
             score += indexed_voting_rights.get(authority).unwrap();
         }
         Ok(score)
@@ -197,14 +203,19 @@ impl DWalletMPCInstance {
         output: Vec<u8>,
         origin_authority: AuthorityName,
     ) -> PeraResult<()> {
-        if self.authorities_that_sent_output.contains_key(&origin_authority) {
-            return Err(PeraError::DWalletMPCMaliciousParties(vec![authority_name_to_party_id(
-                &origin_authority,
-                &self.epoch_store()?,
-            )?]));
+        if self
+            .authorities_that_sent_output
+            .contains(&origin_authority)
+        {
+            return Err(PeraError::DWalletMPCMaliciousParties(vec![
+                authority_name_to_party_id(&origin_authority, &*self.epoch_store()?)?,
+            ]));
         }
         if self.outputs.contains_key(&output) {
-            self.outputs.get_mut(&output).unwrap().insert(origin_authority);
+            self.outputs
+                .get_mut(&output)
+                .unwrap()
+                .insert(origin_authority);
         } else {
             let mut authorities = HashSet::new();
             authorities.insert(origin_authority);

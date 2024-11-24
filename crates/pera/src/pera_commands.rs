@@ -805,7 +805,11 @@ async fn start(
             config,
         });
 
-        tokio::spawn(start_faucet(app_state, CONCURRENCY_LIMIT, prometheus_registry));
+        tokio::spawn(start_faucet(
+            app_state,
+            CONCURRENCY_LIMIT,
+            prometheus_registry,
+        ));
     }
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(3));
@@ -823,7 +827,10 @@ async fn start(
                 node.start().await?;
             }
             if let Some(handle) = node.get_node_handle() {
-                let sequence = handle.inner().state().get_latest_checkpoint_sequence_number();
+                let sequence = handle
+                    .inner()
+                    .state()
+                    .get_latest_checkpoint_sequence_number();
                 info!(?sequence, ?node_index);
             }
             if let Err(err) = node.health_check(true).await {
