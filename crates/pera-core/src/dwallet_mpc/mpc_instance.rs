@@ -151,7 +151,11 @@ impl DWalletMPCInstance {
     /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
     /// Only the aggregator party should send the output to the other parties.
     fn new_dwallet_mpc_output_message(&self, output: Vec<u8>) -> Option<ConsensusTransaction> {
+        let Ok(epoch_store) = self.epoch_store() else {
+            return None;
+        };
         Some(ConsensusTransaction::new_dwallet_mpc_output(
+            epoch_store.name,
             output,
             self.session_info.clone(),
         ))

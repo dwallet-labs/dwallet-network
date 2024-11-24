@@ -17,6 +17,7 @@ use pera_types::messages_dwallet_mpc::SessionInfo;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use fastcrypto::traits::KeyPair;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
@@ -58,6 +59,9 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
+        let keypair_name = node_config.protocol_key_pair.authority_keypair().public().pubkey.to_bytes();
+        let name = epoch_store.name;
+
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights

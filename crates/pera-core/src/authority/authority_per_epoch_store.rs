@@ -338,7 +338,7 @@ pub struct AuthorityPerEpochStore {
 
     /// State machine managing DWallet MPC flows.
     pub dwallet_mpc_manager:
-        OnceCell<tokio::sync::Mutex<dwallet_mpc::mpc_manager::DWalletMPCManager>>,
+        OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -2590,6 +2590,7 @@ impl AuthorityPerEpochStore {
                 verified_transactions.push(verified_tx);
             }
         }
+
         let mut system_transactions = Vec::with_capacity(verified_transactions.len());
         let mut current_commit_sequenced_consensus_transactions =
             Vec::with_capacity(verified_transactions.len());
@@ -3611,6 +3612,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
+
                 self.get_dwallet_mpc_manager().await?.handle_message(
                     message,
                     *authority,
