@@ -112,6 +112,7 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use chrono::Utc;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -3213,9 +3214,11 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
+        let current_timestamp = Utc::now().timestamp();
+
         self.get_dwallet_mpc_manager()
             .await?
-            .handle_end_of_delivery()
+            .handle_end_of_delivery(consensus_commit_info.timestamp + 60_000 > current_timestamp as u64)
             .await?;
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();

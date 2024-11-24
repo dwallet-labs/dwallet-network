@@ -151,7 +151,7 @@ impl DWalletMPCManager {
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
     /// We parallelize the advances with Rayon to speed up the process.
-    pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
+    pub async fn handle_end_of_delivery(&mut self, is_syncing: bool) -> PeraResult {
         let threshold = self.epoch_store()?.committee().quorum_threshold();
         let mut ready_to_advance = self
             .mpc_instances
