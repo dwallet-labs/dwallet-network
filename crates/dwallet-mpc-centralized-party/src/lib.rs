@@ -4,7 +4,7 @@ use anyhow::Context;
 use mpc::two_party::Round;
 use rand_core::OsRng;
 
-type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 /// Represents the centralized party in the DKG protocol.
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;

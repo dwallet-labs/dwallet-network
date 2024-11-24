@@ -14,7 +14,6 @@ bcs.workspace = true
 rand_core = "0.6.4"
 hex = "0.4.3"
 log = "0.4.22"
-pera-types.workspace = true
 
 
 [lints]

@@ -4017,7 +4017,6 @@ dependencies = [
  "hex",
  "log",
  "mpc",
- "pera-types",
  "rand_core 0.6.4",
  "twopc_mpc",
 ]
