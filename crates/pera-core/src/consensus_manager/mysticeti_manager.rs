@@ -188,7 +188,16 @@ impl ConsensusManagerTrait for MysticetiManager {
         self.client.set(client);
 
         // spin up the new mysticeti consensus handler to listen for committed sub dags
-        let handler = MysticetiConsensusHandler::new(consensus_handler, commit_receiver, monitor);
+        let handler = MysticetiConsensusHandler::new(consensus_handler, commit_receiver, monitor, spawn_monitored_task!(async move {
+            // TODO: pause when execution is overloaded, so consensus can detect the backpressure.
+            while let Some(consensus_output) = receiver.recv().await {
+                let commit_index = consensus_output.commit_ref.index;
+                consensus_handler
+                    .handle_consensus_output_internal(consensus_output)
+                    .await;
+                commit_consumer_monitor.set_highest_handled_commit(commit_index);
+            }
+        }));
         let mut consensus_handler = self.consensus_handler.lock().await;
         *consensus_handler = Some(handler);
     }

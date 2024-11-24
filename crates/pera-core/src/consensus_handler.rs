@@ -586,18 +586,9 @@ impl MysticetiConsensusHandler {
     pub fn new(
         mut consensus_handler: ConsensusHandler<CheckpointService>,
         mut receiver: UnboundedReceiver<consensus_core::CommittedSubDag>,
-        commit_consumer_monitor: Arc<CommitConsumerMonitor>,
+        commit_consumer_monitor: Arc<CommitConsumerMonitor>, handle1: JoinHandle<()>,
     ) -> Self {
-        let handle = spawn_monitored_task!(async move {
-            // TODO: pause when execution is overloaded, so consensus can detect the backpressure.
-            while let Some(consensus_output) = receiver.recv().await {
-                let commit_index = consensus_output.commit_ref.index;
-                consensus_handler
-                    .handle_consensus_output_internal(consensus_output)
-                    .await;
-                commit_consumer_monitor.set_highest_handled_commit(commit_index);
-            }
-        });
+        let handle = handle1;
         Self {
             handle: Some(handle),
         }
