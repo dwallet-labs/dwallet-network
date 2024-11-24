@@ -35,8 +35,7 @@ tracing-subscriber.workspace = true
 tracing.workspace = true
 futures.workspace = true
 reqwest.workspace = true
-object_store.workspace = true
-
+object_store = { version = "0.11.1", features = ["aws", "gcp", "azure", "http"] }
 sui-data-ingestion-core = { git = "https://github.com/MystenLabs/sui", package = "sui-data-ingestion-core" }
 backoff = { version = "0.4.0", features = ["tokio"] }
 

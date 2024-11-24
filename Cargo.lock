@@ -10096,6 +10096,36 @@ dependencies = [
 
 [[package]]
 name = "object_store"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f930c88a43b1c3f6e776dfe495b4afab89882dbc81530c632db2ed65451ebcb4"
+dependencies = [
+ "async-trait",
+ "base64 0.21.7",
+ "bytes",
+ "chrono",
+ "futures",
+ "humantime",
+ "hyper 0.14.30",
+ "itertools 0.11.0",
+ "parking_lot 0.12.3",
+ "percent-encoding",
+ "quick-xml 0.30.0",
+ "rand 0.8.5",
+ "reqwest 0.11.27",
+ "ring 0.16.20",
+ "rustls-pemfile 1.0.4",
+ "serde",
+ "serde_json",
+ "snafu 0.7.5",
+ "tokio",
+ "tracing",
+ "url",
+ "walkdir",
+]
+
+[[package]]
+name = "object_store"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6da452820c715ce78221e8202ccc599b4a52f3e1eb3eedb487b680c81a8e3f3"
@@ -10111,7 +10141,7 @@ dependencies = [
  "md-5 0.10.6",
  "parking_lot 0.12.3",
  "percent-encoding",
- "quick-xml",
+ "quick-xml 0.36.2",
  "rand 0.8.5",
  "reqwest 0.12.8",
  "ring 0.17.8",
@@ -10142,7 +10172,7 @@ dependencies = [
  "md-5 0.10.6",
  "parking_lot 0.12.3",
  "percent-encoding",
- "quick-xml",
+ "quick-xml 0.36.2",
  "rand 0.8.5",
  "reqwest 0.12.8",
  "ring 0.17.8",
@@ -11741,6 +11771,16 @@ checksum = "a993555f31e5a609f617c12db6250dedcac1b0a85076912c436e6fc9b2c8e6a3"
 
 [[package]]
 name = "quick-xml"
+version = "0.30.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eff6510e86862b57b210fd8cbe8ed3f0d7d600b9c2863cd4549a2e033c66e956"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
+name = "quick-xml"
 version = "0.36.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7649a7b4df05aed9ea7ec6f628c67c9953a43869b8bc50929569b2999d443fe"
@@ -12286,10 +12326,12 @@ dependencies = [
  "system-configuration 0.5.1",
  "tokio",
  "tokio-rustls 0.24.1",
+ "tokio-util 0.7.12",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams",
  "web-sys",
  "webpki-roots 0.25.4",
  "winreg",
@@ -14453,7 +14495,7 @@ dependencies = [
  "move-core-types 0.0.4",
  "mysten-metrics 0.7.0",
  "num_enum 0.6.1",
- "object_store 0.11.1",
+ "object_store 0.7.1",
  "parquet",
  "prometheus",
  "rocksdb",
@@ -14506,7 +14548,7 @@ dependencies = [
  "move-core-types 0.0.4",
  "move-package",
  "num_enum 0.6.1",
- "object_store 0.11.1",
+ "object_store 0.7.1",
  "prometheus",
  "rand 0.8.5",
  "serde",
@@ -14821,7 +14863,7 @@ dependencies = [
  "narwhal-types",
  "narwhal-worker",
  "num_cpus",
- "object_store 0.11.1",
+ "object_store 0.7.1",
  "once_cell",
  "parking_lot 0.12.3",
  "pprof",
@@ -16536,7 +16578,7 @@ dependencies = [
  "indicatif",
  "integer-encoding",
  "num_enum 0.6.1",
- "object_store 0.11.1",
+ "object_store 0.7.1",
  "prometheus",
  "serde",
  "serde_json",
@@ -16645,7 +16687,7 @@ dependencies = [
  "mysten-metrics 0.7.0",
  "num_cpus",
  "num_enum 0.6.1",
- "object_store 0.11.1",
+ "object_store 0.7.1",
  "once_cell",
  "parking_lot 0.12.3",
  "percent-encoding",
@@ -16894,7 +16936,7 @@ dependencies = [
  "narwhal-storage",
  "narwhal-types",
  "num_cpus",
- "object_store 0.11.1",
+ "object_store 0.7.1",
  "prometheus",
  "rocksdb",
  "ron",
