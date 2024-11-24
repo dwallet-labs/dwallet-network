@@ -235,7 +235,12 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
 
         let round = consensus_output.leader_round();
-        warn!("received consensus output for round {}", round);
+        if authority_name_to_party_id(&self.epoch_store.name, &self.epoch_store).unwrap() == 3 {
+            info!(
+                "Received consensus output for round {}",
+                round,
+            );
+        }
 
         // TODO: Remove this once narwhal is deprecated. For now mysticeti will not return
         // more than one leader per round so we are not in danger of ignoring any commits.
@@ -587,9 +592,18 @@ impl MysticetiConsensusHandler {
     pub fn new(
         mut consensus_handler: ConsensusHandler<CheckpointService>,
         mut receiver: UnboundedReceiver<consensus_core::CommittedSubDag>,
-        commit_consumer_monitor: Arc<CommitConsumerMonitor>, handle1: JoinHandle<()>,
+        commit_consumer_monitor: Arc<CommitConsumerMonitor>,
     ) -> Self {
-        let handle = handle1;
+        let handle = spawn_monitored_task!(async move {
+            // TODO: pause when execution is overloaded, so consensus can detect the backpressure.
+            while let Some(consensus_output) = receiver.recv().await {
+                let commit_index = consensus_output.commit_ref.index;
+                consensus_handler
+                    .handle_consensus_output_internal(consensus_output)
+                    .await;
+                commit_consumer_monitor.set_highest_handled_commit(commit_index);
+            }
+        });
         Self {
             handle: Some(handle),
         }
