@@ -42,7 +42,7 @@ export async function presign(
 					id: { id: string };
 					output: number[];
 					session_id: string;
-			  })
+				})
 			: null;
 
 	const timeout = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -78,7 +78,7 @@ export async function presign(
 								id: { id: string };
 								presigns: number[];
 								session_id: string;
-						  })
+							})
 						: null;
 
 				return {
