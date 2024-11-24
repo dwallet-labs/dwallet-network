@@ -86,6 +86,7 @@ export async function presign(
 					encryptionOfMaskAndMaskedKeyShare: firstRoundOutputData!.output,
 					presignSecondRoundOutputId: secondRoundOutputData!.id.id,
 					noncePublicShareAndEncryptionOfMaskedNonce: secondRoundOutputData!.presigns,
+					presignFirstRoundSessionId: firstRoundOutputData!.session_id,
 				};
 			}
 		}
@@ -97,4 +98,5 @@ export type PresignOutput = {
 	encryptionOfMaskAndMaskedKeyShare: number[];
 	presignSecondRoundOutputId: string;
 	noncePublicShareAndEncryptionOfMaskedNonce: number[];
+	presignFirstRoundSessionId: string;
 };

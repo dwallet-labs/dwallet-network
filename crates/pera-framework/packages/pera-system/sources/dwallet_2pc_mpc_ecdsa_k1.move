@@ -293,4 +293,59 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         event::emit(event);
         transfer::transfer(output, session_initiator);
     }
+
+    /// Event emitted by the user to start the signing process.
+    public struct StartSignEvent has copy, drop {
+        session_id: ID,
+        presign_session_id: ID,
+        sender: address,
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        dkg_output: vector<u8>,
+        hashed_message: vector<u8>,
+        presign: vector<u8>,
+        centralized_signed_message: vector<u8>,
+    }
+
+    /// Starts the signing process.
+    public fun sign(
+        hashed_message: vector<u8>,
+        presign: vector<u8>,
+        dkg_output: vector<u8>,
+        centralized_signed_message: vector<u8>,
+        presign_session_id: ID,
+        ctx: &mut TxContext
+    ) {
+        let id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        let event = StartSignEvent {
+            session_id: id,
+            presign_session_id,
+            sender: tx_context::sender(ctx),
+            dwallet_id: id,
+            dwallet_cap_id: id,
+            presign,
+            centralized_signed_message,
+            dkg_output,
+            hashed_message
+        };
+        event::emit(event);
+    }
+
+    /// Object representing the output of the signing process.
+    public struct SignOutput has key {
+        id: UID,
+        session_id: ID,
+        output: vector<u8>,
+    }
+
+    /// Creates the output of the signing process and transfers it to the initiating user.
+    public fun create_sign_output(initiating_user: address, session_id: ID, output: vector<u8>, ctx: &mut TxContext) {
+        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
+        let output = SignOutput {
+            id: object::new(ctx),
+            session_id,
+            output,
+        };
+        transfer::transfer(output, initiating_user);
+    }
 }

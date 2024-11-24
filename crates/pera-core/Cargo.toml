@@ -103,13 +103,14 @@ proof = { git = "https://github.com/dwallet-labs/cryptography-private", subdir =
 maurer = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "maurer" , branch = "new-pera-api", features = ["benchmarking"]}
 group.workspace = true
 tiresias = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "tiresias", branch = "new-pera-api" }
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"] , branch = "new-pera-api" }
+mpc.workspace = true
 twopc_mpc.workspace = true
 homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "new-pera-api" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "class-groups", branch = "new-pera-api" }
+class_groups.workspace = true
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "new-pera-api" }
 class_groups_constants = {path = "../class-groups-constants"}
 rand_core = "0.6.4"
+crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }
 
 [dev-dependencies]
 clap.workspace = true

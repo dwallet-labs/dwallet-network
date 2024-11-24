@@ -42,6 +42,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
 
 [[package]]
+name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
 name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -190,7 +196,7 @@ checksum = "1462739cb27611015575c0c11df5df7601141071f07518d56fcc1be504cbec97"
 [[package]]
 name = "class_groups"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
  "commitment",
  "criterion",
@@ -217,9 +223,12 @@ name = "class_groups_constants"
 version = "1.32.2"
 dependencies = [
  "anyhow",
+ "base64",
  "bcs",
+ "class_groups",
  "group 0.1.0",
  "hex",
+ "homomorphic_encryption",
  "serde",
  "twopc_mpc",
 ]
@@ -236,33 +245,13 @@ dependencies = [
 [[package]]
 name = "commitment"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
  "crypto-bigint",
  "group 0.1.0",
  "merlin",
  "serde",
  "thiserror",
-]
-
-[[package]]
-name = "console_error_panic_hook"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a06aeb73f470f66dcdbf7223caeebb85984942f22f1adb2a088cf9668146bbbc"
-dependencies = [
- "cfg-if",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "console_log"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be8aed40e4edbf4d3b4431ab260b63fdc40f5780a4766824329ea0f1eefe3c0f"
-dependencies = [
- "log",
- "web-sys",
 ]
 
 [[package]]
@@ -319,6 +308,31 @@ name = "critical-section"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "790eea4361631c5e7d22598ecd5723ff611904e3344ce8720784c93e3d83d40b"
+
+[[package]]
+name = "crossbeam-deque"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "613f8cc01fe9cf1a3eb3d7f488fd2fa8388403e97039e2f73692932e291a770d"
+dependencies = [
+ "crossbeam-epoch",
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-epoch"
+version = "0.9.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b82ac4a3c2ca9c3460964f020e1402edd5753411d7737aa39c3714ad1b5420e"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
+name = "crossbeam-utils"
+version = "0.8.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22ec99545bb0ed0ea7bb9b8e1e9122ea386ff8a48c0922e43f36d45ab09e0e80"
 
 [[package]]
 name = "crunchy"
@@ -428,8 +442,6 @@ version = "0.1.6"
 dependencies = [
  "anyhow",
  "bcs",
- "console_error_panic_hook",
- "console_log",
  "dwallet-mpc",
  "getrandom",
  "log",
@@ -484,7 +496,7 @@ dependencies = [
 [[package]]
 name = "enhanced_maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -651,7 +663,7 @@ checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 [[package]]
 name = "group"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
  "crypto-bigint",
  "curve25519-dalek-ng",
@@ -716,7 +728,7 @@ dependencies = [
 [[package]]
 name = "homomorphic_encryption"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
  "crypto-bigint",
  "getrandom",
@@ -810,7 +822,7 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 [[package]]
 name = "maurer"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
  "commitment",
  "crypto-bigint",
@@ -845,7 +857,7 @@ dependencies = [
 [[package]]
 name = "mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
  "criterion",
  "crypto-bigint",
@@ -854,6 +866,7 @@ dependencies = [
  "group 0.1.0",
  "rand",
  "rand_core",
+ "rayon",
  "rstest",
  "serde",
  "serde_json",
@@ -969,7 +982,7 @@ dependencies = [
 [[package]]
 name = "proof"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
  "bulletproofs",
  "commitment",
@@ -1025,6 +1038,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "rayon"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b418a60154510ca1a002a752ca9714984e21e4241e804d32555251faf8b78ffa"
+dependencies = [
+ "either",
+ "rayon-core",
+]
+
+[[package]]
+name = "rayon-core"
+version = "1.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1465873a3dfdaa8ae7cb14b4383657caab0b3e8a0aa9ae8e04b044854c8dfce2"
+dependencies = [
+ "crossbeam-deque",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -1324,7 +1357,7 @@ dependencies = [
 [[package]]
 name = "tiresias"
 version = "0.2.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
  "crypto-bigint",
  "crypto-primes",
@@ -1360,8 +1393,10 @@ dependencies = [
 [[package]]
 name = "twopc_mpc"
 version = "0.1.0"
-source = "git+https://github.com/dwallet-labs/cryptography-private?rev=4f5dc57ed3e15fb2746ea95c5e287f149141c78a#4f5dc57ed3e15fb2746ea95c5e287f149141c78a"
+source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#bfc9089aee4e93ae727175edbf1a98de626eb752"
 dependencies = [
+ "base64",
+ "bcs",
  "class_groups",
  "commitment",
  "criterion",
@@ -1473,16 +1508,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65fc09f10666a9f147042251e0dda9c18f166ff7de300607007e96bdebc1068d"
-
-[[package]]
-name = "web-sys"
-version = "0.3.72"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6488b90108c040df0fe62fa815cbdee25124641df01814dd7282749234c6112"
-dependencies = [
- "js-sys",
- "wasm-bindgen",
-]
 
 [[package]]
 name = "winapi-util"

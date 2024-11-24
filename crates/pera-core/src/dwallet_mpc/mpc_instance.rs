@@ -3,7 +3,7 @@ use std::mem;
 use std::sync::{Arc, Weak};
 
 use group::PartyID;
-use tracing::error;
+use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 use pera_types::base_types::{AuthorityName, EpochId};
 use pera_types::error::{PeraError, PeraResult};
@@ -12,11 +12,12 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty};
-use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesParty};
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, AsyncProtocol, MPCParty};
+use crate::dwallet_mpc::dkg::{FirstDKGBytesParty, SecondDKGBytesParty};
 use crate::dwallet_mpc::presign::{
     FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty,
 };
+use crate::dwallet_mpc::sign::{SignBytesParty, SignFirstParty};
 
 /// The message a validator can send to the other parties while running a dwallet MPC session.
 #[derive(Clone)]
@@ -46,6 +47,8 @@ pub struct DWalletMPCInstance {
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: MPCParty,
     pub(crate) auxiliary_input: Vec<u8>,
+    /// The decryption share of the party for mpc sign sessions
+    decryption_share: DecryptionKeyShare,
 }
 
 impl DWalletMPCInstance {
@@ -57,6 +60,7 @@ impl DWalletMPCInstance {
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
         session_info: SessionInfo,
+        decryption_share: DecryptionKeyShare,
     ) -> Self {
         Self {
             status,
@@ -67,6 +71,7 @@ impl DWalletMPCInstance {
             party,
             auxiliary_input,
             session_info,
+            decryption_share,
         }
     }
 
@@ -90,22 +95,22 @@ impl DWalletMPCInstance {
         } else if advance_result.is_err() {
             self.status = MPCSessionStatus::Failed;
         }
-        match advance_result? {
+        return match advance_result? {
             AdvanceResult::Advance((message, new_party)) => {
                 self.party = new_party;
-                return Ok((
+                Ok((
                     self.new_dwallet_mpc_message(message)
                         .ok_or(PeraError::InternalDWalletMPCError)?,
                     vec![],
-                ));
+                ))
             }
             AdvanceResult::Finalize(output, malicious_parties) => {
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                return Ok((
+                Ok((
                     self.new_dwallet_mpc_output_message(output)
                         .ok_or(PeraError::InternalDWalletMPCError)?,
                     malicious_parties,
-                ));
+                ))
             }
         };
     }
@@ -131,6 +136,13 @@ impl DWalletMPCInstance {
             MPCRound::PresignSecond(_, _) => {
                 MPCParty::SecondPresignBytesParty(SecondPresignBytesParty {
                     party: PresignSecondParty::default(),
+                })
+            }
+            MPCRound::Sign(party_id) => {
+                let shares: HashMap<PartyID, DecryptionKeyShare> = [(*party_id, self.decryption_share.clone())].into_iter().collect();
+                let party = SignFirstParty::from(shares);
+                MPCParty::SignBytesParty(SignBytesParty {
+                    party
                 })
             }
         };
@@ -167,7 +179,7 @@ impl DWalletMPCInstance {
         epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> PeraResult<()> {
         let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
-        if self.pending_messages.contains_key(&(party_id) as &PartyID) {
+        if self.pending_messages.contains_key(&party_id) {
             return Err(PeraError::DWalletMPCMaliciousParties(vec![party_id]));
         }
         self.pending_messages

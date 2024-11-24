@@ -1186,7 +1186,6 @@ impl AuthorityState {
             epoch_store,
         )
         .await
-        .tap_err(|e| info!(?tx_digest, "process_certificate failed: {e}"))
     }
 
     pub fn read_objects_for_execution(
@@ -1539,7 +1538,7 @@ impl AuthorityState {
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,
         epoch_store: &Arc<AuthorityPerEpochStore>,
-    ) -> anyhow::Result<()> {
+    ) -> PeraResult {
         if !self.is_validator(epoch_store) {
             return Ok(());
         }
@@ -1559,14 +1558,13 @@ impl AuthorityState {
         };
         let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
         for event in &inner_temporary_store.events.data {
-            if let Some((party, auxiliary_input, session_info)) = MPCParty::from_event(
+            let res = MPCParty::from_event(
+                &dwallet_mpc_manager,
                 event,
-                dwallet_mpc_manager
-                    .weighted_threshold_access_structure
-                    .clone(),
                 authority_name_to_party_id(epoch_store.name, &epoch_store)?,
-            )? {
-                dwallet_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
+            );
+            if let Some((party, auxiliary_input, session_info)) = res? {
+                dwallet_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info)?;
             };
         }
         Ok(())

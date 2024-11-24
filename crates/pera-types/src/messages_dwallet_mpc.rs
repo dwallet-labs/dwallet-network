@@ -2,6 +2,7 @@ use crate::base_types::{ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::message_envelope::Message;
+use group::PartyID;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
@@ -17,6 +18,9 @@ pub enum MPCRound {
     /// The second round of the presign protocol.
     /// Contains the `ObjectId` of the dwallet object and the presign first round output.
     PresignSecond(ObjectID, Vec<u8>),
+    /// The first round of the sign protocol.
+    /// Contains the party id associated with the decryption share.
+    Sign(PartyID),
 }
 
 /// The content of the system transaction that stores the MPC session output on chain.

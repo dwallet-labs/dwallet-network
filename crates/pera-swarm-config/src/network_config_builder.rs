@@ -1,10 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::path::PathBuf;
-use std::time::Duration;
-use std::{num::NonZeroUsize, path::Path, sync::Arc};
-
+use group::PartyID;
 use pera_config::genesis::{TokenAllocation, TokenDistributionScheduleBuilder};
 use pera_config::node::AuthorityOverloadConfig;
 use pera_macros::nondeterministic;
@@ -15,6 +12,11 @@ use pera_types::object::Object;
 use pera_types::supported_protocol_versions::SupportedProtocolVersions;
 use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
 use rand::rngs::OsRng;
+use std::path::PathBuf;
+use std::time::Duration;
+use std::{num::NonZeroUsize, path::Path, sync::Arc};
+// todo (#348): Use real shares
+use twopc_mpc::sign::get_hardcoded_blockchain_secret_shares;
 
 use crate::genesis_config::{AccountConfig, ValidatorGenesisConfigBuilder, DEFAULT_GAS_AMOUNT};
 use crate::genesis_config::{GenesisConfig, ValidatorGenesisConfig};
@@ -308,10 +310,21 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 // this same committee.
                 let (_, keys) = Committee::new_simple_test_committee_of_size(size.into());
 
+                // todo (#348): Use real shares
+                let (mut decryption_key_shares, decryption_key_share_public_parameters) =
+                    get_hardcoded_blockchain_secret_shares();
+
                 keys.into_iter()
                     .map(|authority_key| {
                         let mut builder = ValidatorGenesisConfigBuilder::new()
-                            .with_protocol_key_pair(authority_key);
+                            .with_protocol_key_pair(authority_key)
+                            .with_dwallet_mpc_class_groups_public_parameters(
+                                decryption_key_share_public_parameters.clone(),
+                            )
+                            // todo (#348): Update the system to ensure that each validator saves only their own decryption share
+                            .with_dwallet_mpc_class_groups_decryption_shares(
+                                decryption_key_shares.clone(),
+                            );
                         if let Some(rgp) = self.reference_gas_price {
                             builder = builder.with_gas_price(rgp);
                         }

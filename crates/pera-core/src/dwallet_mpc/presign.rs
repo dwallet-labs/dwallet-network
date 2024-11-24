@@ -3,15 +3,17 @@
 //! It integrates both Presign parties (each representing a round in the Presign protocol) and
 //! implements the [`BytesParty`] trait for seamless interaction with other MPC components.
 
-use crate::dwallet_mpc::bytes_party::{AdvanceResult, BytesParty, MPCParty};
-use crate::dwallet_mpc::dkg::deserialize_mpc_messages;
-use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
+use std::collections::HashMap;
+
 use group::PartyID;
 use mpc::{Advance, Party, WeightedThresholdAccessStructure};
-use pera_types::error::{PeraError, PeraResult};
-use std::collections::{HashMap, HashSet};
 
-pub type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+use pera_types::error::{PeraError, PeraResult};
+
+use crate::dwallet_mpc::bytes_party::{AdvanceResult, AsyncProtocol, BytesParty, MPCParty};
+use crate::dwallet_mpc::dkg::deserialize_mpc_messages;
+use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
+
 pub type PresignFirstParty =
     <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShareRoundParty;
 pub type PresignSecondParty = <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceShareRoundParty;
@@ -31,14 +33,15 @@ impl FirstPresignBytesParty {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         dkg_output: Vec<u8>,
-    ) -> Vec<u8> {
-        bcs::to_bytes(&PresignFirstParty::generate_auxiliary_input(
-            session_id,
-            weighted_threshold_access_structure,
-            party_id,
-            dkg_output,
-        ))
-        .unwrap()
+    ) -> PeraResult<Vec<u8>> {
+        Ok(bcs::to_bytes(
+            &PresignFirstParty::generate_auxiliary_input(
+                session_id,
+                weighted_threshold_access_structure,
+                party_id,
+                dkg_output,
+            )?,
+        )?)
     }
 }
 
@@ -62,15 +65,14 @@ impl BytesParty for FirstPresignBytesParty {
             .map_err(twopc_error_to_pera_error)?;
         match result {
             mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
-                bcs::to_bytes(&message).unwrap(),
+                bcs::to_bytes(&message)?,
                 MPCParty::FirstPresignBytesParty(Self { party: new_party }),
             ))),
-            mpc::AdvanceResult::Finalize(output) => Ok(AdvanceResult::Finalize(
-                bcs::to_bytes(&output).unwrap(),
-                vec![],
-            )),
+            mpc::AdvanceResult::Finalize(output) => {
+                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output)?, vec![]))
+            }
             mpc::AdvanceResult::FinalizeAsync(output) => Ok(AdvanceResult::Finalize(
-                bcs::to_bytes(&output.output).unwrap(),
+                bcs::to_bytes(&output.output)?,
                 output.malicious_parties,
             )),
         }
@@ -89,7 +91,7 @@ pub trait PresignFirstRound: mpc::Party {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         dkg_output: Vec<u8>,
-    ) -> Self::AuxiliaryInput;
+    ) -> PeraResult<Self::AuxiliaryInput>;
 }
 
 impl PresignFirstRound for PresignFirstParty {
@@ -98,18 +100,18 @@ impl PresignFirstRound for PresignFirstParty {
         weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         dkg_output: Vec<u8>,
-    ) -> Self::AuxiliaryInput {
+    ) -> PeraResult<Self::AuxiliaryInput> {
         let secp256k1_group_public_parameters =
             class_groups_constants::protocol_public_parameters();
         let session_id = commitment::CommitmentSizedNumber::from_le_slice(&session_id);
 
-        Self::AuxiliaryInput {
+        Ok(Self::AuxiliaryInput {
             weighted_threshold_access_structure,
             protocol_public_parameters: secp256k1_group_public_parameters.clone(),
             party_id,
-            dkg_output: bcs::from_bytes(&dkg_output).unwrap(), // todo: remove unwrap
+            dkg_output: bcs::from_bytes(&dkg_output)?,
             session_id,
-        }
+        })
     }
 }
 
@@ -129,16 +131,17 @@ impl SecondPresignBytesParty {
         party_id: PartyID,
         dkg_output: Vec<u8>,
         first_round_output: Vec<u8>,
-    ) -> Vec<u8> {
-        let first_round_output = bcs::from_bytes(&first_round_output).unwrap();
-        bcs::to_bytes(&PresignSecondParty::generate_auxiliary_input(
-            session_id,
-            weighted_threshold_access_structure,
-            party_id,
-            dkg_output,
-            first_round_output,
-        ))
-        .unwrap()
+    ) -> PeraResult<Vec<u8>> {
+        let first_round_output = bcs::from_bytes(&first_round_output)?;
+        Ok(bcs::to_bytes(
+            &PresignSecondParty::generate_auxiliary_input(
+                session_id,
+                weighted_threshold_access_structure,
+                party_id,
+                dkg_output,
+                first_round_output,
+            )?,
+        )?)
     }
 }
 
@@ -162,15 +165,14 @@ impl BytesParty for SecondPresignBytesParty {
             .map_err(twopc_error_to_pera_error)?;
         match result {
             mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
-                bcs::to_bytes(&message).unwrap(),
+                bcs::to_bytes(&message)?,
                 MPCParty::SecondPresignBytesParty(Self { party: new_party }),
             ))),
-            mpc::AdvanceResult::Finalize(output) => Ok(AdvanceResult::Finalize(
-                bcs::to_bytes(&output).unwrap(),
-                vec![],
-            )),
+            mpc::AdvanceResult::Finalize(output) => {
+                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output)?, vec![]))
+            }
             mpc::AdvanceResult::FinalizeAsync(output) => Ok(AdvanceResult::Finalize(
-                bcs::to_bytes(&output.output).unwrap(),
+                bcs::to_bytes(&output.output)?,
                 output.malicious_parties,
             )),
         }
@@ -190,7 +192,7 @@ pub trait PresignSecondRound: Party {
         party_id: PartyID,
         dkg_output: Vec<u8>,
         first_round_output: <PresignFirstParty as Party>::Output,
-    ) -> Self::AuxiliaryInput;
+    ) -> PeraResult<Self::AuxiliaryInput>;
 }
 
 impl PresignSecondRound for PresignSecondParty {
@@ -200,13 +202,13 @@ impl PresignSecondRound for PresignSecondParty {
         party_id: PartyID,
         dkg_output: Vec<u8>,
         first_round_output: <PresignFirstParty as Party>::Output,
-    ) -> Self::AuxiliaryInput {
+    ) -> PeraResult<Self::AuxiliaryInput> {
         let first_round_auxiliary_input = PresignFirstParty::generate_auxiliary_input(
             session_id,
             weighted_threshold_access_structure,
             party_id,
             dkg_output,
-        );
-        (first_round_auxiliary_input, first_round_output.clone()).into()
+        )?;
+        Ok((first_round_auxiliary_input, first_round_output.clone()).into())
     }
 }

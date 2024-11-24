@@ -14,6 +14,8 @@ title: Module `0x3::dwallet_2pc_mpc_ecdsa_k1`
 -  [Struct `StartPresignSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignSecondRoundEvent)
 -  [Resource `Presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign)
 -  [Struct `CompletedPresignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedPresignEvent)
+-  [Struct `StartSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent)
+-  [Resource `SignOutput`](#0x3_dwallet_2pc_mpc_ecdsa_k1_SignOutput)
 -  [Constants](#@Constants_0)
 -  [Function `launch_dkg_first_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round)
 -  [Function `create_dkg_first_round_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output)
@@ -23,6 +25,8 @@ title: Module `0x3::dwallet_2pc_mpc_ecdsa_k1`
 -  [Function `create_first_presign_round_output_and_launch_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_first_presign_round_output_and_launch_second_round)
 -  [Function `launch_presign_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round)
 -  [Function `create_second_presign_round_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_second_presign_round_output)
+-  [Function `sign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_sign)
+-  [Function `create_sign_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_sign_output)
 
 
 <pre><code><b>use</b> <a href="../pera-framework/event.md#0x2_event">0x2::event</a>;
@@ -523,6 +527,120 @@ Event emitted when the presign second round is completed.
 
 </details>
 
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent"></a>
+
+## Struct `StartSignEvent`
+
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a> <b>has</b> <b>copy</b>, drop
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>presign_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>sender: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>hashed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>centralized_signed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_SignOutput"></a>
+
+## Resource `SignOutput`
+
+
+
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignOutput">SignOutput</a> <b>has</b> key
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
 <a name="@Constants_0"></a>
 
 ## Constants
@@ -890,6 +1008,79 @@ and transferring it to the session initiator.
 
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="../pera-framework/event.md#0x2_event">event</a>);
     <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(output, session_initiator);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_sign"></a>
+
+## Function `sign`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_sign">sign</a>(hashed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, centralized_signed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, presign_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_sign">sign</a>(
+    hashed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    presign: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    centralized_signed_message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    presign_session_id: ID,
+    ctx: &<b>mut</b> TxContext
+) {
+    <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
+    <b>let</b> <a href="../pera-framework/event.md#0x2_event">event</a> = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a> {
+        session_id: id,
+        presign_session_id,
+        sender: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
+        dwallet_id: id,
+        dwallet_cap_id: id,
+        presign,
+        centralized_signed_message,
+        dkg_output,
+        hashed_message
+    };
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="../pera-framework/event.md#0x2_event">event</a>);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_create_sign_output"></a>
+
+## Function `create_sign_output`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_sign_output">create_sign_output</a>(initiating_user: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_sign_output">create_sign_output</a>(initiating_user: <b>address</b>, session_id: ID, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> TxContext) {
+    <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == @0x0, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>);
+    <b>let</b> output = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SignOutput">SignOutput</a> {
+        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+        session_id,
+        output,
+    };
+    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(output, initiating_user);
 }
 </code></pre>
 

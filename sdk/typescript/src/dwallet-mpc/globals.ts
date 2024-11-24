@@ -2,6 +2,7 @@ import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 
 export const packageId = '0x3';
+export const dWalletModuleName = 'dwallet';
 export const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
 export async function fetchObjectBySessionId(
