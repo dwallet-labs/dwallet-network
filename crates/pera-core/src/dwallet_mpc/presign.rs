@@ -1,8 +1,8 @@
 //! This module provides a wrapper around the Presign protocol from the 2PC-MPC library.
 //!
 //! It integrates both Presign parties (each representing a round in the Presign protocol)
-use pera_types::error::PeraResult;
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
+use pera_types::error::PeraResult;
 
 pub(super) type PresignFirstParty =
     <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShareRoundParty;

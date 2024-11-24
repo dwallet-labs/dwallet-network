@@ -1,8 +1,9 @@
-use twopc_mpc::dkg::Protocol;
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
 use pera_types::error::PeraResult;
+use twopc_mpc::dkg::Protocol;
 
-pub(super) type SignFirstParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
+pub(super) type SignFirstParty =
+    <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
 pub(super) type SignPublicInput =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedPartyPublicInput;
 
@@ -30,8 +31,12 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
     ) -> PeraResult<Vec<u8>> {
         let auxiliary = SignPublicInput::from((
             class_groups_constants::protocol_public_parameters(),
-            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::Message>(&hashed_message)?,
-            bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(&dkg_output)?,
+            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::Message>(
+                &hashed_message,
+            )?,
+            bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
+                &dkg_output,
+            )?,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign>(&presign)?,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage>(
                 &centralized_signed_message,

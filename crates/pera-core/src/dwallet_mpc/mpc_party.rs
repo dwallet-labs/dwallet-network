@@ -23,7 +23,6 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 
-
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 /// Enum representing the different parties used in the MPC manager.
