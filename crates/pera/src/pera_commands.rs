@@ -810,13 +810,13 @@ async fn start(
 
     let mut interval = tokio::time::interval(std::time::Duration::from_secs(3));
     let mut unhealthy_cnt = 0;
-    let mut loop_index = 0;
+    let mut loop_index: usize = 0;
     loop {
         loop_index += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
             if loop_index == 3 && node_index == 3 {
-                node.stop().await?;
-            } else if loop_index = 25 && node_index == 3 {
+                node.stop();
+            } else if loop_index == 25 && node_index == 3 {
                 node.start().await?;
             }
             if let Err(err) = node.health_check(true).await {
