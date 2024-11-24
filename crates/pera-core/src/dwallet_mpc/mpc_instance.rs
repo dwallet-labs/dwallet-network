@@ -1,3 +1,15 @@
+use std::collections::HashMap;
+use std::mem;
+use std::sync::{Arc, Weak};
+
+use group::PartyID;
+use tracing::error;
+
+use pera_types::base_types::{AuthorityName, EpochId};
+use pera_types::error::{PeraError, PeraResult};
+use pera_types::messages_consensus::ConsensusTransaction;
+use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::bytes_party::{AdvanceResult, MPCParty};
@@ -5,16 +17,6 @@ use crate::dwallet_mpc::dkg::{AsyncProtocol, FirstDKGBytesParty, SecondDKGBytesP
 use crate::dwallet_mpc::presign::{
     FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty,
 };
-use group::PartyID;
-use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
-use pera_types::error::{PeraError, PeraResult};
-use pera_types::messages_consensus::ConsensusTransaction;
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
-use proof::aggregation::asynchronous::Error::{Consumer, InvalidStatement, ProofVerification};
-use std::collections::HashMap;
-use std::mem;
-use std::sync::{Arc, Weak};
-use twopc_mpc::Error;
 
 /// The message a validator can send to the other parties while running a dwallet MPC session.
 #[derive(Clone)]
@@ -76,44 +78,39 @@ impl DWalletMPCInstance {
 
     /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
     /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
-    pub(crate) fn advance(&mut self) -> PeraResult {
+    pub(crate) fn advance(&mut self) -> PeraResult<(ConsensusTransaction, Vec<PartyID>)> {
         let party = mem::take(&mut self.party);
-        let advance_result =
-            party.advance(self.pending_messages.clone(), self.auxiliary_input.clone());
+        let pending_messages = self.pending_messages.clone();
+        self.pending_messages.clear();
+        self.status = MPCSessionStatus::Active;
+        let advance_result = party.advance(pending_messages, self.auxiliary_input.clone());
         if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = advance_result {
             self.restart();
             return Err(PeraError::DWalletMPCMaliciousParties(malicious_parties));
+        } else if advance_result.is_err() {
+            self.status = MPCSessionStatus::Failed;
         }
-        let msg = match advance_result? {
+        match advance_result? {
             AdvanceResult::Advance((message, new_party)) => {
-                self.status = MPCSessionStatus::Active;
-                self.pending_messages.clear();
                 self.party = new_party;
-                self.new_dwallet_mpc_message(message)
+                return Ok((
+                    self.new_dwallet_mpc_message(message)
+                        .ok_or(PeraError::InternalDWalletMPCError)?,
+                    vec![],
+                ));
             }
-            AdvanceResult::Finalize(output) => {
-                // TODO (#238): Verify the output and write it to the chain
+            AdvanceResult::Finalize(output, malicious_parties) => {
                 self.status = MPCSessionStatus::Finalizing(output.clone().into());
-                self.new_dwallet_mpc_output_message(output.into())
+                return Ok((
+                    self.new_dwallet_mpc_output_message(output)
+                        .ok_or(PeraError::InternalDWalletMPCError)?,
+                    malicious_parties,
+                ));
             }
         };
-
-        let consensus_adapter = Arc::clone(&self.consensus_adapter);
-        let epoch_store = Arc::clone(&self.epoch_store()?);
-        if let Some(msg) = msg {
-            // Spawns sending this message asynchronously the [`self.advance`] function will stay synchronous
-            // and can be parallelized with Rayon.
-            tokio::spawn(async move {
-                let _ = consensus_adapter
-                    .submit_to_consensus(&vec![msg], &epoch_store)
-                    .await;
-            });
-        }
-        Ok(())
     }
 
     fn restart(&mut self) {
-        self.pending_messages.clear();
         self.status = MPCSessionStatus::FirstExecution;
         self.party = match &self.session_info.mpc_round {
             MPCRound::DKGFirst => {
@@ -170,7 +167,7 @@ impl DWalletMPCInstance {
         epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> PeraResult<()> {
         let party_id = authority_name_to_party_id(message.authority, &epoch_store)?;
-        if self.pending_messages.contains_key(&party_id) {
+        if self.pending_messages.contains_key(&(party_id) as &PartyID) {
             return Err(PeraError::DWalletMPCMaliciousParties(vec![party_id]));
         }
         self.pending_messages
@@ -210,6 +207,7 @@ pub enum MPCSessionStatus {
     Active,
     Finalizing(Vec<u8>),
     Finished(Vec<u8>),
+    Failed,
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
@@ -230,5 +228,7 @@ pub fn authority_name_to_party_id(
                 "Received a dwallet MPC message from a validator that is not in the committee"
                     .to_string(),
             )
-        })? as PartyID)
+        })? as PartyID
+        // Need to add 1 because the authority index is 0-based, and the twopc_mpc library uses 1-based party IDs
+        + 1)
 }

@@ -924,10 +924,7 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the Dwallet  MPC manager when a new epoch starts.
-    pub async fn set_mpc_manager(
-        &self,
-        manager: dwallet_mpc::mpc_manager::DWalletMPCManager,
-    ) -> PeraResult<()> {
+    pub async fn set_dwallet_mpc_manager(&self, manager: DWalletMPCManager) -> PeraResult<()> {
         if self
             .dwallet_mpc_manager
             .set(tokio::sync::Mutex::new(manager))

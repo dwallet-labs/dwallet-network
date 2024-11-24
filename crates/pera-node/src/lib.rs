@@ -212,6 +212,7 @@ mod simulator {
 use simulator::*;
 
 use pera_core::consensus_handler::ConsensusHandlerInitializer;
+use pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use pera_core::safe_client::SafeClientMetricsBase;
 use pera_core::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::execution_config_utils::to_binary_config;
@@ -1292,13 +1293,12 @@ impl PeraNode {
         }
 
         epoch_store
-            .set_mpc_manager(pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager::new(
+            .set_dwallet_mpc_manager(DWalletMPCManager::try_new(
                 Arc::new(consensus_adapter.clone()),
-                Arc::downgrade(&epoch_store),
+                Arc::clone(&epoch_store),
                 epoch_store.epoch(),
                 config.max_active_dwallet_mpc_instances,
-                epoch_store.committee().voting_rights.len(),
-            ))
+            )?)
             .await?;
 
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(

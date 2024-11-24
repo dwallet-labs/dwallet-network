@@ -19,13 +19,15 @@ describe('Test dwallet mpc', () => {
 	it('should create DWallet', async () => {
 		console.log(toolbox.keypair.toPeraAddress());
 		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		console.log(dwallet);
+		console.log({ dwallet });
 	});
 
 	it('should create presign', async () => {
 		console.log(toolbox.keypair.toPeraAddress());
 		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
+		console.log({ dwallet });
 		const presignOutput = await presign(toolbox.keypair, toolbox.client, dwallet!.dwalletID);
+		console.log({ presign });
 		const res = create_sign_centralized_output(
 			Uint8Array.from(dwallet?.centralizedDKGOutput!),
 			Uint8Array.from(presignOutput!.encryptionOfMaskAndMaskedKeyShare),

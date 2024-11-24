@@ -14,11 +14,13 @@ use chrono::prelude::*;
 use fastcrypto::encoding::Base58;
 use fastcrypto::encoding::Encoding;
 use fastcrypto::hash::MultisetHash;
+use group::PartyID;
 use itertools::Itertools;
 use move_binary_format::binary_config::BinaryConfig;
 use move_binary_format::CompiledModule;
 use move_core_types::annotated_value::MoveStructLayout;
 use move_core_types::language_storage::ModuleId;
+use mpc::WeightedThresholdAccessStructure;
 use mysten_metrics::{TX_TYPE_SHARED_OBJ_TX, TX_TYPE_SINGLE_WRITER_TX};
 use parking_lot::Mutex;
 use pera_config::node::{AuthorityOverloadConfig, StateDebugDumpConfig};
@@ -1550,19 +1552,21 @@ impl AuthorityState {
             // If the transaction failed, we don't need to handle MPC events.
             return Ok(());
         }
-        let Some(bytes_mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
+        let Some(dwallet_mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
             // This function is being executed for all events, some events are being emitted before the MPC manager is initialized.
             // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are
             return Ok(());
         };
-        let mut bytes_mpc_manager = bytes_mpc_manager.lock().await;
+        let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
         for event in &inner_temporary_store.events.data {
             if let Some((party, auxiliary_input, session_info)) = MPCParty::from_event(
                 event,
-                bytes_mpc_manager.number_of_parties as u16,
+                dwallet_mpc_manager
+                    .weighted_threshold_access_structure
+                    .clone(),
                 authority_name_to_party_id(epoch_store.name, &epoch_store)?,
             )? {
-                bytes_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
+                dwallet_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
             };
         }
         Ok(())

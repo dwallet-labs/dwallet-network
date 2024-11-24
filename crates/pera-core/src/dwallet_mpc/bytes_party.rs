@@ -14,6 +14,7 @@ use crate::dwallet_mpc::presign::{
     FirstPresignBytesParty, PresignFirstParty, PresignSecondParty, SecondPresignBytesParty,
 };
 use group::PartyID;
+use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
@@ -48,7 +49,7 @@ pub enum AdvanceResult {
     /// Contains the message to send to other parties and the next `MPCParty` to use.
     Advance((Vec<u8>, MPCParty)),
     /// Indicates that the protocol has completed, containing the final output.
-    Finalize(Vec<u8>),
+    Finalize(Vec<u8>, Vec<PartyID>),
 }
 
 /// Enum representing the different parties used in the MPC manager.
@@ -96,7 +97,7 @@ impl MPCParty {
     /// When `Ok(None)` is returned the event type does not correspond to any known MPC rounds.
     pub fn from_event(
         event: &Event,
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
     ) -> anyhow::Result<Option<(Self, Vec<u8>, SessionInfo)>> {
         if event.type_ == StartDKGFirstRoundEvent::type_() {
@@ -105,7 +106,7 @@ impl MPCParty {
                 MPCParty::FirstDKGBytesParty(FirstDKGBytesParty {
                     party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareRoundParty::default()
                 }),
-                FirstDKGBytesParty::generate_auxiliary_input(number_of_parties, party_id, deserialized_event.session_id.bytes.to_vec()),
+                FirstDKGBytesParty::generate_auxiliary_input(weighted_threshold_access_structure, party_id, deserialized_event.session_id.bytes.to_vec()),
                 SessionInfo {
                     session_id: deserialized_event.session_id.bytes,
                     initiating_user_address: deserialized_event.sender,
@@ -120,7 +121,7 @@ impl MPCParty {
                     party: <AsyncProtocol as twopc_mpc::dkg::Protocol>::ProofVerificationRoundParty::default()
                 }),
                 SecondDKGBytesParty::generate_auxiliary_input(
-                    number_of_parties, party_id,
+                    weighted_threshold_access_structure, party_id,
                     deserialized_event.first_round_output,
                     deserialized_event.public_key_share_and_proof,
                     deserialized_event.first_round_session_id.bytes.to_vec(),
@@ -140,7 +141,7 @@ impl MPCParty {
                 }),
                 FirstPresignBytesParty::generate_auxiliary_input(
                     deserialized_event.session_id.bytes.to_vec(),
-                    number_of_parties,
+                    weighted_threshold_access_structure,
                     party_id,
                     deserialized_event.dkg_output.clone(),
                 ),
@@ -163,7 +164,7 @@ impl MPCParty {
                 }),
                 SecondPresignBytesParty::generate_auxiliary_input(
                     deserialized_event.first_round_session_id.bytes.to_vec(),
-                    number_of_parties,
+                    weighted_threshold_access_structure,
                     party_id,
                     deserialized_event.dkg_output,
                     deserialized_event.first_round_output.clone(),

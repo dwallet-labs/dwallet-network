@@ -6,7 +6,7 @@
 use std::collections::{HashMap, HashSet};
 
 use group::PartyID;
-use mpc::{Advance, Party};
+use mpc::{Advance, Party, WeightedThresholdAccessStructure};
 use serde::de::DeserializeOwned;
 use twopc_mpc::dkg::Protocol;
 
@@ -30,14 +30,14 @@ impl FirstDKGBytesParty {
     /// Generates the auxiliary input required for the first DKG round.
     /// It is necessary for advancing the party to the next round of the DKG protocol.
     pub fn generate_auxiliary_input(
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         session_id: Vec<u8>,
     ) -> Vec<u8> {
         bcs::to_bytes(&DKGFirstParty::generate_auxiliary_input(
             session_id,
-            number_of_parties,
             party_id,
+            weighted_threshold_access_structure,
         ))
         .unwrap()
     }
@@ -96,13 +96,20 @@ impl BytesParty for FirstDKGBytesParty {
             .map_err(twopc_error_to_pera_error)?;
 
         match result {
-            mpc::AdvanceResult::Advance((message, new_party)) => Ok(AdvanceResult::Advance((
-                bcs::to_bytes(&message).unwrap(),
-                MPCParty::FirstDKGBytesParty(Self { party: new_party }),
-            ))),
-            mpc::AdvanceResult::Finalize(output) => {
-                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output).unwrap()))
+            mpc::AdvanceResult::Advance((message, new_party)) => {
+                return Ok(AdvanceResult::Advance((
+                    bcs::to_bytes(&message).unwrap(),
+                    MPCParty::FirstDKGBytesParty(Self { party: new_party }),
+                )));
             }
+            mpc::AdvanceResult::Finalize(output) => Ok(AdvanceResult::Finalize(
+                bcs::to_bytes(&output).unwrap(),
+                vec![],
+            )),
+            mpc::AdvanceResult::FinalizeAsync(output) => Ok(AdvanceResult::Finalize(
+                bcs::to_bytes(&output.output).unwrap(),
+                output.malicious_parties,
+            )),
         }
     }
 }
@@ -117,28 +124,25 @@ trait DKGFirstPartyAuxiliaryInputGenerator: Party {
     /// Generates the auxiliary input required for the first round of the DKG protocol.
     fn generate_auxiliary_input(
         session_id: Vec<u8>,
-        number_of_parties: u16,
         party_id: PartyID,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     ) -> Self::AuxiliaryInput;
 }
 
 impl DKGFirstPartyAuxiliaryInputGenerator for DKGFirstParty {
     fn generate_auxiliary_input(
         session_id: Vec<u8>,
-        number_of_parties: u16,
         party_id: PartyID,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     ) -> Self::AuxiliaryInput {
         let secp256k1_group_public_parameters =
             class_groups_constants::protocol_public_parameters();
-        let parties = (0..number_of_parties).collect::<HashSet<PartyID>>();
         let session_id = commitment::CommitmentSizedNumber::from_le_slice(&session_id);
+
         Self::AuxiliaryInput {
             protocol_public_parameters: secp256k1_group_public_parameters,
             party_id,
-            // TODO (#268): Take the voting power into account when dealing with the threshold
-            threshold: ((number_of_parties * 2) + 2) / 3,
-            number_of_parties,
-            parties: parties.clone(),
+            weighted_threshold_access_structure,
             session_id,
         }
     }
@@ -156,14 +160,14 @@ impl SecondDKGBytesParty {
     /// It is necessary for advancing the party to the next round of the DKG protocol.
     /// The `session_id` is the unique identifier for the MPC session from the first round
     pub fn generate_auxiliary_input(
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         first_round_output: Vec<u8>,
         centralized_party_public_key_share: Vec<u8>,
         session_id: Vec<u8>,
     ) -> anyhow::Result<Vec<u8>> {
         bcs::to_bytes(&DKGSecondParty::generate_auxiliary_input(
-            number_of_parties,
+            weighted_threshold_access_structure,
             party_id,
             bcs::from_bytes(&first_round_output)?,
             bcs::from_bytes(&centralized_party_public_key_share)?,
@@ -195,9 +199,14 @@ impl BytesParty for SecondDKGBytesParty {
                 bcs::to_bytes(&message).unwrap(),
                 MPCParty::SecondDKGBytesParty(Self { party: new_party }),
             ))),
-            mpc::AdvanceResult::Finalize(output) => {
-                Ok(AdvanceResult::Finalize(bcs::to_bytes(&output).unwrap()))
-            }
+            mpc::AdvanceResult::Finalize(output) => Ok(AdvanceResult::Finalize(
+                bcs::to_bytes(&output).unwrap(),
+                vec![],
+            )),
+            mpc::AdvanceResult::FinalizeAsync(output) => Ok(AdvanceResult::Finalize(
+                bcs::to_bytes(&output.output).unwrap(),
+                output.malicious_parties,
+            )),
         }
     }
 }
@@ -212,7 +221,7 @@ trait DKGSecondPartyAuxiliaryInputGenerator: Party {
     /// Generates the auxiliary input required for the second round of the DKG protocol.
     /// The `session_id` is the unique identifier for the MPC session from the first round
     fn generate_auxiliary_input(
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         first_round_output: <DKGFirstParty as Party>::Output,
         centralized_party_public_key_share: <AsyncProtocol as Protocol>::PublicKeyShareAndProof,
@@ -222,7 +231,7 @@ trait DKGSecondPartyAuxiliaryInputGenerator: Party {
 
 impl DKGSecondPartyAuxiliaryInputGenerator for DKGSecondParty {
     fn generate_auxiliary_input(
-        number_of_parties: u16,
+        weighted_threshold_access_structure: WeightedThresholdAccessStructure,
         party_id: PartyID,
         first_round_output: <DKGFirstParty as Party>::Output,
         centralized_party_public_key_share: <AsyncProtocol as Protocol>::PublicKeyShareAndProof,
@@ -230,8 +239,8 @@ impl DKGSecondPartyAuxiliaryInputGenerator for DKGSecondParty {
     ) -> Self::AuxiliaryInput {
         let first_round_auxiliary_input = DKGFirstParty::generate_auxiliary_input(
             session_id.clone(),
-            number_of_parties,
             party_id,
+            weighted_threshold_access_structure,
         );
         (
             first_round_auxiliary_input,
