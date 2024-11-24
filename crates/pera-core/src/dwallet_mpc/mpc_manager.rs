@@ -4,7 +4,7 @@ use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::bytes_party::{MPCParty, MPCSessionInfo};
-use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, DWalletMPCMessage};
+use crate::dwallet_mpc::mpc_instance::{DWalletMPCSession, DWalletMPCMessage};
 use anyhow::Context;
 use pera_types::committee::EpochId;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -21,10 +21,10 @@ use pera_types::dwallet_mpc::MPCSessionStatus;
 /// — (De)activating instances.
 pub struct DWalletMPCManager {
     /// Holds the active MPC instances, cleaned every epoch switch.
-    mpc_instances: HashMap<ObjectID, DWalletMPCInstance>,
+    mpc_instances: HashMap<ObjectID, DWalletMPCSession>,
     /// Used to keep track of the order in which pending instances are received,
     /// so they are activated in order of arrival.
-    pending_instances_queue: VecDeque<DWalletMPCInstance>,
+    pending_instances_queue: VecDeque<DWalletMPCSession>,
     // TODO (#257): Make sure the counter is always in sync with the number of active instances.
     /// Keep track of the active instances to avoid exceeding the limit.
     /// We can't use the length of `mpc_instances` since it is never cleaned.
@@ -100,7 +100,7 @@ impl DWalletMPCManager {
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
     /// TODO (#263): Implement logic to mark and punish validators responsible for failed advances.
-    pub async fn handle_end_of_delivery(&mut self) -> anyhow::Result<()> {
+    pub async fn handle_end_of_delivery(&mut self) -> DwalletMPCResult<()> {
         // TODO (#268): Take the voting power into account when dealing with the threshold
         // The math here will be removed soon,
         // it is just a constant from the paper.
@@ -171,7 +171,7 @@ impl DWalletMPCManager {
             "Received start flow MPC event for session ID {:?}",
             session_id
         );
-        let mut new_instance = DWalletMPCInstance::new(
+        let mut new_instance = DWalletMPCSession::new(
             Arc::clone(&self.consensus_adapter),
             self.epoch_store.clone(),
             self.epoch_id,

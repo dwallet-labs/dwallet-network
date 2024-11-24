@@ -712,12 +712,6 @@ impl From<DwalletMPCError> for PeraError {
     }
 }
 
-impl From<anyhow::Error> for PeraError {
-    fn from(err: anyhow::Error) -> Self {
-        PeraError::Unknown(err.to_string()) // or map it to a more specific error
-    }
-}
-
 impl From<Status> for PeraError {
     fn from(status: Status) -> Self {
         if status.message() == "Too many requests" {

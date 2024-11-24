@@ -26,12 +26,12 @@ pub struct DWalletMPCMessage {
 // todo(zeev): rename all instance to session.
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon.
-unsafe impl Send for DWalletMPCInstance {}
+unsafe impl Send for DWalletMPCSession {}
 
 /// A dWallet MPC session instance
 /// It keeps track of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-pub struct DWalletMPCInstance {
+pub struct DWalletMPCSession {
     /// The status of the MPC instance.
     pub(super) status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the instance
@@ -53,7 +53,7 @@ pub struct DWalletMPCInstance {
 }
 // todo(zeev): rename to DwalletMPCSession.
 
-impl DWalletMPCInstance {
+impl DWalletMPCSession {
     pub(super) fn new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Weak<AuthorityPerEpochStore>,
