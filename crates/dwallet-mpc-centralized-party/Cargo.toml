@@ -8,12 +8,15 @@ mpc = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "
 twopc_mpc.workspace = true
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-dkg-changes", subdir = "commitment" }
 class_groups_constants = { path = "../class-groups-constants" }
+k256 = { git = 'https://github.com/ycscaly/elliptic-curves.git', branch = "13.3-fixed", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
 
 anyhow.workspace = true
 bcs.workspace = true
 rand_core = "0.6.4"
 hex = "0.4.3"
 log = "0.4.22"
+sha2 = "0.10.8"
+sha3 = "0.10.8"
 
 [lints]
 workspace = true

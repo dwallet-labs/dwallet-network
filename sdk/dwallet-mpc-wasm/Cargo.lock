@@ -192,6 +192,7 @@ name = "class_groups"
 version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-dkg-changes#b2034c1f0f7c3b17007c7cd542ef83c4c7c7197e"
 dependencies = [
+ "criterion",
  "crypto-bigint",
  "crypto-primes",
  "group 0.1.0",
@@ -203,6 +204,7 @@ dependencies = [
  "num-traits",
  "rand",
  "rand_core",
+ "rstest",
  "serde",
  "thiserror",
 ]
@@ -408,9 +410,12 @@ dependencies = [
  "class_groups_constants",
  "commitment",
  "hex",
+ "k256",
  "log",
  "mpc",
  "rand_core",
+ "sha2",
+ "sha3 0.10.8",
  "twopc_mpc",
 ]
 
@@ -965,12 +970,16 @@ source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-d
 dependencies = [
  "bulletproofs",
  "commitment",
+ "criterion",
  "crypto-bigint",
  "curve25519-dalek-ng",
  "getrandom",
  "group 0.1.0",
  "merlin",
  "mpc",
+ "rand",
+ "rand_core",
+ "rstest",
  "serde",
  "serde_json",
  "thiserror",
@@ -1352,16 +1361,21 @@ source = "git+https://github.com/dwallet-labs/cryptography-private?branch=pera-d
 dependencies = [
  "class_groups",
  "commitment",
+ "criterion",
  "crypto-bigint",
+ "ecdsa",
  "enhanced_maurer",
  "getrandom",
  "group 0.1.0",
  "homomorphic_encryption",
+ "k256",
  "maurer",
  "merlin",
  "mpc",
  "proof",
+ "rand",
  "rand_core",
+ "rstest",
  "serde",
  "serde_json",
  "thiserror",

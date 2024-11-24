@@ -1,6 +1,11 @@
 /// This crate contains the cryptographic logic for the centralized 2PC-MPC party
+use k256::ecdsa::hazmat::bits2field;
+use k256::ecdsa::signature::digest::{Digest, FixedOutput};
+use k256::elliptic_curve::ops::Reduce;
+use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
 use rand_core::OsRng;
+use twopc_mpc::secp256k1;
 
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
@@ -34,4 +39,78 @@ pub fn create_dkg_output(
     let centralized_output = bcs::to_bytes(&centralized_output)?;
 
     Ok((public_key_share_and_proof, centralized_output))
+}
+
+#[derive(Clone, Debug)]
+pub enum Hash {
+    KECCAK256 = 0,
+    SHA256 = 1,
+}
+
+impl TryFrom<u8> for Hash {
+    type Error = anyhow::Error;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Hash::KECCAK256),
+            1 => Ok(Hash::SHA256),
+            _ => Err(anyhow::Error::msg("Invalid value for Hash enum")),
+        }
+    }
+}
+
+pub fn message_digest(message: &[u8], hash_type: &Hash) -> secp256k1::Scalar {
+    let hash = match hash_type {
+        Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
+            &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
+        ),
+        Hash::SHA256 => {
+            bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
+        }
+    }
+    .unwrap();
+    #[allow(clippy::useless_conversion)]
+    let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
+    U256::from(m).into()
+}
+
+///
+type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
+
+/// Executes the centralized phase of the Sign protocol, first part of the protocol
+///
+/// The [`create_sign_output`] function is called by the client (aka the centralized party).
+///
+/// The `session_id` is a unique identifier for the session, represented as a hexadecimal string.
+/// The `hash` must fit to the [`Hash`] enum.
+pub fn create_sign_output(
+    centralized_party_dkg_output: Vec<u8>,
+    presign_first_round_output: Vec<u8>,
+    presign_second_round_output: Vec<u8>,
+    message: Vec<u8>,
+    hash: u8,
+    session_id: String,
+) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
+    let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGOutput = bcs::from_bytes(&centralized_party_dkg_output)?;
+    let presign_first_round_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare = bcs::from_bytes(&presign_first_round_output)?;
+    let presign_second_round_output: (<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart, <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart) = bcs::from_bytes(&presign_second_round_output)?;
+    let presigns: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+        (presign_first_round_output, presign_second_round_output).into();
+    let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
+    let message = message_digest(&message, &hash.try_into()?);
+    let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
+
+    let centralized_party_auxiliary_input = (
+        message,
+        centralized_party_dkg_output.clone(),
+        presigns.clone(),
+        protocol_public_parameters.clone(),
+        session_id,
+    )
+        .into();
+    let (sign_message, centralized_output) =
+        SignCentralizedParty::advance((), &centralized_party_auxiliary_input, &mut OsRng)?;
+    let sign_message = bcs::to_bytes(&sign_message)?;
+    let centralized_output = bcs::to_bytes(&centralized_output)?;
+    Ok((sign_message, centralized_output))
 }
