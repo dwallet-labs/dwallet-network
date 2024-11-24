@@ -1,4 +1,6 @@
 //! This crate contains the cryptographic logic for the centralized 2PC-MPC party.
+
+use anyhow::Context;
 use mpc::two_party::Round;
 use rand_core::OsRng;
 
@@ -18,6 +20,7 @@ type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentr
 ///   decentralized party from the first round.
 /// * `session_id` — A unique identifier for the session, represented as a hexadecimal string.
 ///   Received from the `pera_system::dwallet_2pc_mpc_ecdsa_k1::launch_dkg_first_round` transaction.
+/// todo(zeev): move this? why is it here?
 pub fn create_dkg_output(
     decentralized_first_round_output: Vec<u8>,
     session_id: String,
@@ -30,7 +33,8 @@ pub fn create_dkg_output(
         decentralized_first_round_output,
         &(public_parameters, session_id).into(),
         &mut OsRng,
-    )?;
+    )
+    .context("advance() failed on the DKGCentralizedParty")?;
 
     let public_key_share_and_proof = bcs::to_bytes(&public_key_share_and_proof)?;
     let centralized_output = bcs::to_bytes(&centralized_output)?;

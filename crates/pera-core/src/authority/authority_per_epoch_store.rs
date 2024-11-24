@@ -3603,7 +3603,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                // Pass an MPC message from concesus to the DWallet MPC manager.
+                // Pass an MPC message from consensus to the DWallet MPC manager.
                 let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() else {
                     warn!(
                         "Ignoring DWalletMPCMessage because dwallet_mpc_manager is not initialized"

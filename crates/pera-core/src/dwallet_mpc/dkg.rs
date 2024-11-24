@@ -4,6 +4,8 @@
 //! implements the [`BytesParty`] trait for seamless interaction with other MPC components.
 use group::PartyID;
 use mpc::{Advance, Party};
+use pera_types::dwallet_mpc::{MPCMessage, MPCOutput};
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::collections::{HashMap, HashSet};
 use twopc_mpc::dkg::Protocol;
 
@@ -26,7 +28,7 @@ pub(super) trait DKGFirstPartyAuxiliaryInputGenerator: Party {
         session_id: Vec<u8>,
         number_of_parties: u16,
         party_id: PartyID,
-    ) -> Vec<u8>;
+    ) -> DwalletMPCResult<Vec<u8>>;
 }
 
 /// A trait for generating auxiliary input for the last round of the DKG protocol.
@@ -45,7 +47,7 @@ pub(super) trait DKGSecondPartyAuxiliaryInputGenerator: Party {
         first_round_output: Vec<u8>,
         centralized_party_public_key_share: Vec<u8>,
         session_id: Vec<u8>,
-    ) -> Vec<u8>;
+    ) -> DwalletMPCResult<Vec<u8>>;
 }
 
 //noinspection RsSuperTraitIsNotImplemented
@@ -54,7 +56,7 @@ impl DKGFirstPartyAuxiliaryInputGenerator for DKGFirstParty {
         session_id: Vec<u8>,
         number_of_parties: u16,
         party_id: PartyID,
-    ) -> Vec<u8> {
+    ) -> DwalletMPCResult<Vec<u8>> {
         let secp256k1_group_public_parameters =
             class_groups_constants::protocol_public_parameters();
         let parties = (0..number_of_parties).collect::<HashSet<PartyID>>();
@@ -68,7 +70,7 @@ impl DKGFirstPartyAuxiliaryInputGenerator for DKGFirstParty {
             parties: parties.clone(),
             session_id,
         };
-        bcs::to_bytes(&aux).unwrap()
+        bcs::to_bytes(&aux).map_err(|e| DwalletMPCError::BcsError(e))
     }
 }
 
@@ -79,17 +81,19 @@ impl DKGSecondPartyAuxiliaryInputGenerator for DKGSecondParty {
         first_round_output_buf: Vec<u8>,
         centralized_party_public_key_share_buf: Vec<u8>,
         session_id: Vec<u8>,
-    ) -> Vec<u8> {
+    ) -> DwalletMPCResult<Vec<u8>> {
         let first_round_aux_buf = DKGFirstParty::generate_auxiliary_input(
             session_id.clone(),
             number_of_parties,
             party_id,
-        );
-        let first_aux = bcs::from_bytes(&first_round_aux_buf).unwrap();
+        )?;
+        let first_aux = bcs::from_bytes(&first_round_aux_buf)
+            .map_err(|e| DwalletMPCError::BcsError(e))?;
         let first_round_output: <DKGFirstParty as Party>::Output =
-            bcs::from_bytes(&first_round_output_buf).unwrap();
+            bcs::from_bytes(&first_round_output_buf)
+                .map_err(|e| DwalletMPCError::BcsError(e))?;
         let centralized_party_public_key_share: <AsyncProtocol as Protocol>::PublicKeyShareAndProof =
-            bcs::from_bytes(&centralized_party_public_key_share_buf).unwrap();
+            bcs::from_bytes(&centralized_party_public_key_share_buf).map_err(|e| DwalletMPCError::BcsError(e))?;
 
         let aux: Self::AuxiliaryInput = (
             first_aux,
@@ -97,43 +101,44 @@ impl DKGSecondPartyAuxiliaryInputGenerator for DKGSecondParty {
             centralized_party_public_key_share,
         )
             .into();
-        bcs::to_bytes(&aux).unwrap()
+        bcs::to_bytes(&aux).map_err(|e| DwalletMPCError::BcsError(e))
     }
 }
 
 pub(super) fn advance<P: Advance>(
     party: P,
-    messages: HashMap<PartyID, Vec<u8>>,
+    messages: HashMap<PartyID, MPCMessage>,
     auxiliary_input: P::AuxiliaryInput,
-) -> Result<mpc::AdvanceResult<Vec<u8>, P, Vec<u8>>, twopc_mpc::Error> {
+) -> DwalletMPCResult<mpc::AdvanceResult<MPCMessage, P, MPCOutput>> {
     let messages = messages
         .into_iter()
-        .map(|(k, v)| {
-            let message = bcs::from_bytes(&v).map_err(|_| twopc_mpc::Error::InvalidParameters);
+        .map(|(pid, msg)| {
+            let message =
+                bcs::from_bytes(&msg).map_err(|e| DwalletMPCError::BcsError(e));
             return match message {
-                Ok(message) => Ok((k, message)),
+                Ok(message) => Ok((pid, message)),
                 Err(err) => Err(err),
             };
         })
-        .collect::<Result<HashMap<_, _>, _>>()?;
+        .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
 
     let res = party
         .advance(messages, &auxiliary_input, &mut rand_core::OsRng)
-        .unwrap();
-    // .map_err(|error| {
-    //     let Ok(error): Result<mpc::Error, _> = error.try_into() else {
-    //         return PeraError::NonMPCEvent;
-    //     };
-    //     return PeraError::NonMPCEvent;
-    // })?;
+        .map_err(|error| {
+            DwalletMPCError::AdvanceError(format!("{:?}", error))
+        })?;
 
     Ok(match res {
-        mpc::AdvanceResult::Advance((msg, party)) => {
-            mpc::AdvanceResult::Advance((bcs::to_bytes(&msg).unwrap(), party))
-        }
+        mpc::AdvanceResult::Advance((msg, party)) => mpc::AdvanceResult::Advance((
+            bcs::to_bytes(&msg).map_err(|e| DwalletMPCError::BcsError(e))?,
+            party,
+        )),
         mpc::AdvanceResult::Finalize(output) => {
             let output: P::OutputValue = output.into();
-            mpc::AdvanceResult::Finalize(bcs::to_bytes(&output).unwrap())
+            mpc::AdvanceResult::Finalize(
+                bcs::to_bytes(&output)
+                    .map_err(|e| DwalletMPCError::BcsError(e))?,
+            )
         }
     })
 }

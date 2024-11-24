@@ -164,6 +164,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
+use pera_types::dwallet_mpc_error::DwalletMPCError;
 use pera_types::execution_config_utils::to_binary_config;
 
 #[cfg(test)]
@@ -1498,7 +1499,6 @@ impl AuthorityState {
             .await
             .tap_err(|e| {
                 error!("MPC protocol error: {e}");
-                println!("MPC protocol error: {e}");
             });
 
         // Allow testing what happens if we crash here.
@@ -1559,6 +1559,7 @@ impl AuthorityState {
             // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are
             return Ok(());
         };
+        // todo(zeev): remove all locks, use async.
         let mut mpc_manager = mpc_manager.lock().await;
         for event in &inner_temporary_store.events.data {
             match MPCParty::from_event(
@@ -1572,8 +1573,8 @@ impl AuthorityState {
                 Err(err)
                     // None MPC event, ignore.
                     if matches!(
-                        err.downcast_ref::<PeraError>(),
-                        Some(PeraError::NonMPCEvent)
+                        err,
+                        DwalletMPCError::NonMPCEvent,
                     ) =>
                 {
                     // Ignore NonMPCEvent errors.

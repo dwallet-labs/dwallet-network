@@ -4,7 +4,6 @@
 use dwallet_mpc::create_dkg_output;
 use wasm_bindgen::prelude::*;
 
-// Define the function to be exposed to JavaScript.
 #[wasm_bindgen]
 pub fn create_dkg_centralized_output(
     dkg_first_round_output: Vec<u8>,

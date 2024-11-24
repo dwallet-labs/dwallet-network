@@ -40,6 +40,7 @@ macro_rules! fp_ensure {
 use crate::digests::TransactionEventsDigest;
 use crate::execution_status::{CommandIndex, ExecutionFailureStatus};
 pub(crate) use fp_ensure;
+use crate::dwallet_mpc_error::DwalletMPCError;
 
 #[macro_export]
 macro_rules! exit_main {
@@ -661,17 +662,8 @@ pub enum PeraError {
     #[error("The request did not contain a certificate")]
     NoCertificateProvidedError,
 
-    #[error("mpc session with ID `{session_id:?}` was not found")]
-    MPCSessionNotFound { session_id: ObjectID },
-
-    #[error("mpc session with ID `{session_id:?}`, failed: {message}")]
-    MPCSessionError {
-        session_id: ObjectID,
-        message: String,
-    },
-
-    #[error("non MPC event")]
-    NonMPCEvent,
+    #[error("dWallet MPC Error: {0}")]
+    DwalletMPCError(String),
 }
 
 #[repr(u64)]
@@ -711,6 +703,18 @@ impl From<pera_protocol_config::Error> for PeraError {
 impl From<ExecutionError> for PeraError {
     fn from(error: ExecutionError) -> Self {
         PeraError::ExecutionError(error.to_string())
+    }
+}
+
+impl From<DwalletMPCError> for PeraError {
+    fn from(error: DwalletMPCError) -> Self {
+        PeraError::DwalletMPCError(error.to_string())
+    }
+}
+
+impl From<anyhow::Error> for PeraError {
+    fn from(err: anyhow::Error) -> Self {
+        PeraError::Unknown(err.to_string()) // or map it to a more specific error
     }
 }
 

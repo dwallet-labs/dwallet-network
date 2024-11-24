@@ -10,7 +10,7 @@ use anyhow::Error;
 use group::PartyID;
 use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::dwallet_mpc::{MPCMessage, MPCOutput};
-use pera_types::error::{PeraError, PeraResult};
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::MPCRound;
 use std::collections::HashMap;
@@ -39,7 +39,7 @@ pub struct MPCSessionInfo {
     pub mpc_round: MPCRound,
 }
 
-/// Enum representing the different parties used in the MPC manager.
+/// Enum representing the different parties used in the MPC process.
 pub enum MPCParty {
     /// A placeholder party used as a default.
     /// Does not implement the `BytesParty` trait and should never be used.
@@ -60,7 +60,6 @@ impl Default for MPCParty {
     }
 }
 
-// todo(zeev): replace all errors with DWalletMPCError, anyhow and from...
 impl MPCParty {
     /// Advances the party to the next round by processing incoming messages and auxiliary input.
     /// Returns the next [`MPCParty`] to use, or the final output if the protocol has completed.
@@ -68,10 +67,11 @@ impl MPCParty {
         self,
         messages: HashMap<PartyID, MPCMessage>,
         auxiliary_input: &[u8],
-    ) -> Result<AdvanceResult, twopc_mpc::Error> {
+    ) -> DwalletMPCResult<AdvanceResult> {
         match self {
             MPCParty::FirstDKGBytesParty(party) => {
-                let aux = bcs::from_bytes(&auxiliary_input).unwrap();
+                let aux = bcs::from_bytes(&auxiliary_input)
+                    .map_err(|e| DwalletMPCError::BcsError(e))?;
                 let a = advance::<DKGFirstParty>(party, messages, aux)?;
                 match a {
                     mpc::AdvanceResult::Advance((message, new_party)) => Ok(
@@ -81,7 +81,8 @@ impl MPCParty {
                 }
             }
             MPCParty::SecondDKGBytesParty(party) => {
-                let aux = bcs::from_bytes(&auxiliary_input).unwrap();
+                let aux = bcs::from_bytes(&auxiliary_input)
+                    .map_err(|e| DwalletMPCError::BcsError(e))?;
                 let a = advance::<DKGSecondParty>(party, messages, aux)?;
                 match a {
                     mpc::AdvanceResult::Advance((message, new_party)) => Ok(
@@ -90,7 +91,7 @@ impl MPCParty {
                     mpc::AdvanceResult::Finalize(output) => Ok(AdvanceResult::Finalize(output)),
                 }
             }
-            MPCParty::DefaultParty => Err(twopc_mpc::Error::InvalidParameters),
+            MPCParty::DefaultParty => Err(DwalletMPCError::InvalidMPCPartyType),
         }
     }
 
@@ -103,18 +104,19 @@ impl MPCParty {
         event: &Event,
         number_of_parties: u16,
         party_id: PartyID,
-    ) -> anyhow::Result<(MPCParty, Vec<u8>, MPCSessionInfo)> {
+    ) -> DwalletMPCResult<(MPCParty, Vec<u8>, MPCSessionInfo)> {
         match &event.type_ {
             t if t == &StartDKGFirstRoundEvent::type_() => {
-                let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
+                let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)
+                    .map_err(|e| DwalletMPCError::BcsError(e))?;
                 Self::dkg_first_party(number_of_parties, party_id, deserialized_event)
             }
             t if t == &StartDKGSecondRoundEvent::type_() => {
-                let deserialized_event: StartDKGSecondRoundEvent =
-                    bcs::from_bytes(&event.contents)?;
+                let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)
+                    .map_err(|e| DwalletMPCError::BcsError(e))?;
                 Self::dkg_second_party(number_of_parties, party_id, deserialized_event)
             }
-            _ => Err(PeraError::NonMPCEvent.into()),
+            _ => Err(DwalletMPCError::NonMPCEvent),
         }
     }
 
@@ -122,7 +124,7 @@ impl MPCParty {
         number_of_parties: u16,
         party_id: PartyID,
         deserialized_event: StartDKGSecondRoundEvent,
-    ) -> Result<(MPCParty, Vec<u8>, MPCSessionInfo), Error> {
+    ) -> DwalletMPCResult<(MPCParty, Vec<u8>, MPCSessionInfo)> {
         Ok((
             MPCParty::SecondDKGBytesParty(DKGSecondParty::default()),
             <DKGSecondParty as DKGSecondPartyAuxiliaryInputGenerator>::generate_auxiliary_input(
@@ -131,7 +133,7 @@ impl MPCParty {
                 deserialized_event.first_round_output,
                 deserialized_event.public_key_share_and_proof,
                 deserialized_event.first_round_session_id.bytes.to_vec(),
-            ),
+            )?,
             MPCSessionInfo {
                 session_id: ObjectID::from(deserialized_event.session_id),
                 initiating_user_address: deserialized_event.sender,
@@ -145,14 +147,14 @@ impl MPCParty {
         number_of_parties: u16,
         party_id: PartyID,
         deserialized_event: StartDKGFirstRoundEvent,
-    ) -> Result<(MPCParty, Vec<u8>, MPCSessionInfo), Error> {
+    ) -> DwalletMPCResult<(MPCParty, Vec<u8>, MPCSessionInfo)> {
         Ok((
             MPCParty::FirstDKGBytesParty(DKGFirstParty::default()),
             DKGFirstParty::generate_auxiliary_input(
                 deserialized_event.session_id.bytes.to_vec(),
                 number_of_parties,
                 party_id,
-            ),
+            )?,
             MPCSessionInfo {
                 session_id: deserialized_event.session_id.bytes,
                 initiating_user_address: deserialized_event.sender,

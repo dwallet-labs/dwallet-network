@@ -4,13 +4,16 @@ use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::bytes_party::{MPCParty, MPCSessionInfo};
-use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus};
+use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, DWalletMPCMessage};
+use anyhow::Context;
 use pera_types::committee::EpochId;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use rayon::prelude::*;
 use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Weak};
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
+use pera_types::dwallet_mpc::MPCSessionStatus;
 
 /// The [`DWalletMPCManager`] manages MPC instances:
 /// — Keeping track of all MPC instances,
@@ -76,7 +79,7 @@ impl DWalletMPCManager {
         session_id: &ObjectID,
         sender_address: &PeraAddress,
         dwallet_cap_id: &ObjectID,
-    ) -> anyhow::Result<OutputVerificationResult> {
+    ) -> DwalletMPCResult<OutputVerificationResult> {
         let Some(instance) = self.mpc_instances.get(session_id) else {
             return Ok(OutputVerificationResult::Malicious);
         };
@@ -97,7 +100,7 @@ impl DWalletMPCManager {
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
     /// TODO (#263): Implement logic to mark and punish validators responsible for failed advances.
-    pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
+    pub async fn handle_end_of_delivery(&mut self) -> anyhow::Result<()> {
         // TODO (#268): Take the voting power into account when dealing with the threshold
         // The math here will be removed soon,
         // it is just a constant from the paper.
@@ -130,7 +133,7 @@ impl DWalletMPCManager {
         message: &[u8],
         authority_name: AuthorityName,
         session_id: ObjectID,
-    ) -> PeraResult<()> {
+    ) -> DwalletMPCResult<()> {
         let Some(instance) = self.mpc_instances.get_mut(&session_id) else {
             error!(
                 "received a message for instance {:?} which does not exist",
@@ -196,13 +199,11 @@ impl DWalletMPCManager {
         );
     }
 
-    fn finalize_mpc_instance(&mut self, session_id: &ObjectID) -> PeraResult {
-        let instance = self.mpc_instances.get_mut(session_id).ok_or_else(|| {
-            PeraError::InvalidCommittee(format!(
-                "received a `Finalize` event for session ID `{:?}` that does not exist",
-                session_id
-            ))
-        })?;
+    fn finalize_mpc_instance(&mut self, session_id: &ObjectID) -> DwalletMPCResult<()> {
+        let instance = self
+            .mpc_instances
+            .get_mut(session_id)
+            .ok_or_else(|| DwalletMPCError::FinalizeEventSessionNotFound(*session_id))?;
         if let MPCSessionStatus::Finalizing(output) = &instance.status {
             instance.status = MPCSessionStatus::Finished(output.clone());
             let pending_instance = self.pending_instances_queue.pop_front();
@@ -216,9 +217,9 @@ impl DWalletMPCManager {
             info!("Finalized MPCInstance for session_id {:?}", session_id);
             return Ok(());
         }
-        Err(PeraError::Unknown(format!(
-            "received a `Finalize` event for session ID `{:?}` that is not in the finalizing state; current state: {:?}",
-            session_id, instance.status
-        )))
+        Err(DwalletMPCError::InvalidFinalizeState {
+            session_id: *session_id,
+            status: instance.status.clone(),
+        })
     }
 }

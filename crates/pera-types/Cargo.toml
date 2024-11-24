@@ -55,6 +55,7 @@ move-vm-types.workspace = true
 move-vm-profiler.workspace = true
 num-traits = "0.2.18"
 num-bigint = { version = "0.4", default-features = false, features = ["rand"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "pera-dkg-changes" }
 
 narwhal-config.workspace = true
 narwhal-crypto.workspace = true
