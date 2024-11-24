@@ -365,7 +365,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
-                    if let ConsensusTransactionKind::DWalletMPCOutput(_, session_info, output) =
+                    if let ConsensusTransactionKind::DWalletMPCOutput(origin_authority, session_info, output) =
                         &transaction.kind
                     {
                         // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
@@ -400,7 +400,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         }
 
                         let output_verification_result = dwallet_mpc_manager
-                            .try_verify_output(output, &session_info)
+                            .try_verify_output(origin_authority, output, &session_info)
                             .unwrap_or_else(|e| {
                                 error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                                 OutputVerificationResult::Malicious

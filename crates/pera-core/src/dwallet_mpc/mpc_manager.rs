@@ -129,15 +129,18 @@ impl DWalletMPCManager {
     // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
     pub fn try_verify_output(
         &mut self,
+        origin_authority: AuthorityName,
         output: &Vec<u8>,
         session_info: &SessionInfo,
-    ) -> anyhow::Result<OutputVerificationResult> {
-        let Some(instance) = self.mpc_instances.get_mut(&session_info.session_id) else {
+    ) -> PeraResult<OutputVerificationResult> {
+        let Some(mut instance) = self.mpc_instances.get_mut(&session_info.session_id) else {
             return Ok(OutputVerificationResult::Malicious);
         };
         let MPCSessionStatus::Finalizing(stored_output) = instance.status.clone() else {
             return Ok(OutputVerificationResult::Duplicate);
         };
+        instance.store_output(output.clone(), origin_authority)?;
+
         if *stored_output == *output
             && session_info.initiating_user_address.to_vec()
                 == instance.session_info.initiating_user_address.to_vec()

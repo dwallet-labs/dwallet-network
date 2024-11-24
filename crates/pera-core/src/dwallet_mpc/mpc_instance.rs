@@ -42,6 +42,7 @@ pub struct DWalletMPCInstance {
     pub(crate) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
     decryption_share: DecryptionKeyShare,
+    pub outputs: HashMap<AuthorityName, Vec<u8>>
 }
 
 impl DWalletMPCInstance {
@@ -63,6 +64,7 @@ impl DWalletMPCInstance {
             public_input: auxiliary_input,
             session_info,
             decryption_share,
+            outputs: HashMap::new(),
         }
     }
 
@@ -174,6 +176,21 @@ impl DWalletMPCInstance {
             return Err(PeraError::DWalletMPCMaliciousParties(vec![party_id]));
         }
         self.pending_messages[round].insert(party_id, message.message.clone());
+        Ok(())
+    }
+
+    pub fn store_output(
+        &mut self,
+        output: Vec<u8>,
+        origin_authority: AuthorityName,
+    ) -> PeraResult<()> {
+        if self.outputs.contains_key(&origin_authority) {
+            return Err(PeraError::DWalletMPCMaliciousParties(vec![authority_name_to_party_id(
+                &origin_authority,
+                &self.epoch_store()?,
+            )?]));
+        }
+        self.outputs.insert(origin_authority, output);
         Ok(())
     }
 
