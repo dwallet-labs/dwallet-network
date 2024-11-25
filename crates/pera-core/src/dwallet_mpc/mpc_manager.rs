@@ -58,6 +58,7 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
+        let keypair = "mock keypair".to_string();
 
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
