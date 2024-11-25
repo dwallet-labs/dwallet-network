@@ -157,6 +157,12 @@ impl DWalletMPCManager {
     pub async fn handle_end_of_delivery(&mut self, is_syncing: bool) -> PeraResult {
         self.active_instances_counter += 1;
         if is_syncing {
+            error!(
+                "dwallet mpc manager Active instances counter: {}",
+                self.active_instances_counter
+            );
+        }
+        if is_syncing {
             return Ok(());
         }
         let threshold = self.epoch_store()?.committee().quorum_threshold();

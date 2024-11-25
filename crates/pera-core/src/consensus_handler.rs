@@ -29,6 +29,7 @@ use crate::{
 };
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
+use chrono::Utc;
 use consensus_core::CommitConsumerMonitor;
 use lru::LruCache;
 use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
@@ -233,9 +234,13 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .consensus_order_end_of_epoch_last());
 
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
-
+        let current_timestamp_in_seconds = Utc::now().timestamp();
         let round = consensus_output.leader_round();
-        // warn!("Received consensus output for round {}", round,);
+        let is_old_round_data = (consensus_output.commit_timestamp_ms() + 1_000) / 1_000
+            < current_timestamp_in_seconds as u64;
+        if is_old_round_data {
+            error!("Received consensus output for round {}", round,);
+        }
 
         // TODO: Remove this once narwhal is deprecated. For now mysticeti will not return
         // more than one leader per round so we are not in danger of ignoring any commits.

@@ -3216,7 +3216,7 @@ impl AuthorityPerEpochStore {
             }
         }
         let current_timestamp_in_seconds = Utc::now().timestamp();
-        let is_old_round_data = (consensus_commit_info.timestamp + 300_000) / 1_000
+        let is_old_round_data = (consensus_commit_info.timestamp + 1_000) / 1_000
             < current_timestamp_in_seconds as u64;
         self.get_dwallet_mpc_manager()
             .await?
