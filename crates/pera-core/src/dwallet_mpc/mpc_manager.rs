@@ -21,6 +21,8 @@ use std::sync::{Arc, Weak};
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use typed_store::Map;
+use crate::epoch::randomness::SINGLETON_KEY;
 
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
@@ -59,13 +61,18 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
-        let keypair_name = node_config
-            .protocol_key_pair
-            .authority_keypair()
-            .public()
-            .pubkey
-            .to_bytes();
-        let name = epoch_store.name;
+        let tables = match epoch_store.tables() {
+            Ok(tables) => tables,
+            Err(_) => {
+                error!("could not construct RandomnessManager: AuthorityPerEpochStore tables already gone");
+                return Err(PeraError::EpochEnded(epoch_id));
+            }
+        };
+
+        let active_counter = tables
+            .dwallet_mpc_active_instances_counter
+            .get(&SINGLETON_KEY)
+            .expect("typed_store should not fail");
 
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
@@ -83,10 +90,11 @@ impl DWalletMPCManager {
             weighted_parties.clone(),
         )
         .map_err(|_| PeraError::InternalDWalletMPCError)?;
+        let active_instances_counter = active_counter.unwrap_or(0);
         Ok(Self {
             mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
-            active_instances_counter: 0,
+            active_instances_counter: active_instances_counter as usize,
             consensus_adapter,
             party_id: authority_name_to_party_id(&epoch_store.name.clone(), &epoch_store.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),

@@ -827,7 +827,7 @@ async fn start(
                 error!(?sum);
                 error!("Stopping node 3");
                 node.stop();
-            } else if loop_index == 7203 && node_index == 3 {
+            } else if loop_index == 9 && node_index == 3 {
                 error!("Starting node 3");
                 node.start().await?;
             }
