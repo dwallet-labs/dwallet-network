@@ -1,4 +1,4 @@
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, ConsensusCommitOutput};
 use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::{PeraError, PeraResult};
@@ -7,6 +7,7 @@ use crate::dwallet_mpc::mpc_instance::{
     authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
 };
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use fastcrypto::traits::KeyPair;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
@@ -20,6 +21,8 @@ use std::sync::{Arc, Weak};
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use typed_store::Map;
+use crate::epoch::randomness::SINGLETON_KEY;
 
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
@@ -58,6 +61,19 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
+        let tables = match epoch_store.tables() {
+            Ok(tables) => tables,
+            Err(_) => {
+                error!("could not construct RandomnessManager: AuthorityPerEpochStore tables already gone");
+                return Err(PeraError::EpochEnded(epoch_id));
+            }
+        };
+
+        let active_counter = tables
+            .dwallet_mpc_active_instances_counter
+            .get(&SINGLETON_KEY)
+            .expect("typed_store should not fail");
+
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
@@ -74,10 +90,11 @@ impl DWalletMPCManager {
             weighted_parties.clone(),
         )
         .map_err(|_| PeraError::InternalDWalletMPCError)?;
+        let active_instances_counter = active_counter.unwrap_or(0);
         Ok(Self {
             mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
-            active_instances_counter: 0,
+            active_instances_counter: active_instances_counter as usize,
             consensus_adapter,
             party_id: authority_name_to_party_id(&epoch_store.name.clone(), &epoch_store.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
@@ -125,29 +142,38 @@ impl DWalletMPCManager {
     // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
     pub fn try_verify_output(
         &mut self,
+        origin_authority: AuthorityName,
         output: &Vec<u8>,
         session_info: &SessionInfo,
-    ) -> anyhow::Result<OutputVerificationResult> {
-        let Some(instance) = self.mpc_instances.get_mut(&session_info.session_id) else {
+    ) -> PeraResult<OutputVerificationResult> {
+        let Some(mut instance) = self.mpc_instances.get_mut(&session_info.session_id) else {
             return Ok(OutputVerificationResult::Malicious);
         };
-        let MPCSessionStatus::Finalizing(stored_output) = instance.status.clone() else {
+        let MPCSessionStatus::Finalizing(_) = instance.status.clone() else {
             return Ok(OutputVerificationResult::Duplicate);
         };
-        if *stored_output == *output
-            && session_info.initiating_user_address.to_vec()
-                == instance.session_info.initiating_user_address.to_vec()
-            && session_info.dwallet_cap_id == instance.session_info.dwallet_cap_id
-        {
+        instance.store_output(output.clone(), origin_authority)?;
+        if instance.output_score(output)? > self.epoch_store()?.committee().quorum_threshold() {
             self.finalize_mpc_instance(session_info.session_id.clone())?;
             return Ok(OutputVerificationResult::Valid);
         }
-        Ok(OutputVerificationResult::Malicious)
+        Ok(OutputVerificationResult::Duplicate)
     }
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
     /// We parallelize the advances with Rayon to speed up the process.
-    pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
+    pub async fn handle_end_of_delivery(&mut self, is_syncing: bool, output: &mut ConsensusCommitOutput) -> PeraResult {
+        output.set_dwallet_mpc_active_instances_counter(self.active_instances_counter as u64);
+        self.active_instances_counter += 1;
+        if is_syncing {
+            error!(
+                "dwallet mpc manager Active instances counter: {}",
+                self.active_instances_counter
+            );
+        }
+        if is_syncing {
+            return Ok(());
+        }
         let threshold = self.epoch_store()?.committee().quorum_threshold();
         let mut ready_to_advance = self
             .mpc_instances
@@ -195,6 +221,7 @@ impl DWalletMPCManager {
                 None
             })
             .collect::<Vec<ConsensusTransaction>>();
+
         self.consensus_adapter
             .submit_to_consensus(&messages, &self.epoch_store()?)
             .await?;
@@ -215,9 +242,6 @@ impl DWalletMPCManager {
         authority_name: AuthorityName,
         session_id: ObjectID,
     ) -> PeraResult<()> {
-        if self.malicious_actors.contains(&authority_name) {
-            return Ok(());
-        }
         let Some(instance) = self.mpc_instances.get_mut(&session_id) else {
             warn!(
                 "received a message for instance {:?} which does not exist",

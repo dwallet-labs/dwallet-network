@@ -8,6 +8,7 @@ use std::{
     sync::Arc,
 };
 
+use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::OutputVerificationResult;
 use crate::{
     authority::{
@@ -28,6 +29,7 @@ use crate::{
 };
 use arc_swap::ArcSwap;
 use async_trait::async_trait;
+use chrono::Utc;
 use consensus_core::CommitConsumerMonitor;
 use lru::LruCache;
 use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
@@ -232,8 +234,13 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .consensus_order_end_of_epoch_last());
 
         let last_committed_round = self.last_consensus_stats.index.last_committed_round;
-
+        let current_timestamp_in_seconds = Utc::now().timestamp();
         let round = consensus_output.leader_round();
+        let is_old_round_data = (consensus_output.commit_timestamp_ms() + 1_000) / 1_000
+            < current_timestamp_in_seconds as u64;
+        if is_old_round_data {
+            error!("Received consensus output for round {}", round,);
+        }
 
         // TODO: Remove this once narwhal is deprecated. For now mysticeti will not return
         // more than one leader per round so we are not in danger of ignoring any commits.
@@ -360,8 +367,11 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
-                    if let ConsensusTransactionKind::DWalletMPCOutput(session_info, output) =
-                        &transaction.kind
+                    if let ConsensusTransactionKind::DWalletMPCOutput(
+                        origin_authority,
+                        session_info,
+                        output,
+                    ) = &transaction.kind
                     {
                         // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
                         // to store its output on the blockchain, so it will be available for the initiating user.
@@ -393,8 +403,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             );
                             return;
                         }
+
                         let output_verification_result = dwallet_mpc_manager
-                            .try_verify_output(output, &session_info)
+                            .try_verify_output(origin_authority, output, &session_info)
                             .unwrap_or_else(|e| {
                                 error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                                 OutputVerificationResult::Malicious

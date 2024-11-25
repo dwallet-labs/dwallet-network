@@ -80,6 +80,7 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
+use chrono::Utc;
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -337,8 +338,7 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing DWallet MPC flows.
-    pub dwallet_mpc_manager:
-        OnceCell<tokio::sync::Mutex<dwallet_mpc::mpc_manager::DWalletMPCManager>>,
+    pub dwallet_mpc_manager: OnceCell<tokio::sync::Mutex<DWalletMPCManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -562,6 +562,8 @@ pub struct AuthorityEpochTables {
     pub(crate) randomness_highest_completed_round: DBMap<u64, RandomnessRound>,
     /// Holds the timestamp of the most recently generated round of randomness.
     pub(crate) randomness_last_round_timestamp: DBMap<u64, TimestampMs>,
+
+    pub dwallet_mpc_active_instances_counter: DBMap<u64, u64>
 }
 
 fn signed_transactions_table_default_config() -> DBOptions {
@@ -2590,6 +2592,7 @@ impl AuthorityPerEpochStore {
                 verified_transactions.push(verified_tx);
             }
         }
+
         let mut system_transactions = Vec::with_capacity(verified_transactions.len());
         let mut current_commit_sequenced_consensus_transactions =
             Vec::with_capacity(verified_transactions.len());
@@ -3212,9 +3215,12 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
+        let current_timestamp_in_seconds = Utc::now().timestamp();
+        let is_old_round_data = (consensus_commit_info.timestamp + 1_000) / 1_000
+            < current_timestamp_in_seconds as u64;
         self.get_dwallet_mpc_manager()
             .await?
-            .handle_end_of_delivery()
+            .handle_end_of_delivery(is_old_round_data, output)
             .await?;
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
@@ -4061,6 +4067,9 @@ pub(crate) struct ConsensusCommitOutput {
     // jwk state
     pending_jwks: BTreeSet<(AuthorityName, JwkId, JWK)>,
     active_jwks: BTreeSet<(u64, (JwkId, JWK))>,
+
+    // dwallet mpc state
+    dwallet_mpc_active_instances_counter: u64,
 }
 
 impl ConsensusCommitOutput {
@@ -4126,6 +4135,10 @@ impl ConsensusCommitOutput {
         self.pending_checkpoints.push(checkpoint);
     }
 
+    pub fn set_dwallet_mpc_active_instances_counter(&mut self, new_value: u64) {
+        self.dwallet_mpc_active_instances_counter = new_value;
+    }
+
     pub fn reserve_next_randomness_round(
         &mut self,
         next_randomness_round: RandomnessRound,
@@ -4166,6 +4179,7 @@ impl ConsensusCommitOutput {
         batch: &mut DBBatch,
     ) -> PeraResult {
         let tables = epoch_store.tables()?;
+        batch.insert_batch(&tables.dwallet_mpc_active_instances_counter, [(SINGLETON_KEY, self.dwallet_mpc_active_instances_counter)])?;
         batch.insert_batch(
             &tables.consensus_message_processed,
             self.consensus_messages_processed
