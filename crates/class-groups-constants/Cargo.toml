@@ -10,7 +10,7 @@ serde = "1.0.210"
 bcs = "0.1.6"
 hex = "0.4.3"
 class_groups.workspace = true
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "b050607a7cb3bc29301fdeba8ac31b8ddc72be19", subdir = "homomorphic-encryption" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "1f39b54d367fd764bf83cf3c891db97f064d19f5", subdir = "homomorphic-encryption" }
 anyhow = "1.0.90"
 base64 = "0.22.1"
 
