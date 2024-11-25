@@ -58,6 +58,7 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
+
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
