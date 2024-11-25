@@ -99,15 +99,15 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
-proof = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "proof", rev = "1f39b54d367fd764bf83cf3c891db97f064d19f5" }
-maurer = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "maurer" , rev = "1f39b54d367fd764bf83cf3c891db97f064d19f5", features = ["benchmarking"]}
+proof = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "proof", rev = "ba75531aaed96a3546839189edd8f1fd77f27779" }
+maurer = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "maurer" , rev = "ba75531aaed96a3546839189edd8f1fd77f27779", features = ["benchmarking"]}
 group.workspace = true
-tiresias = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "tiresias", rev = "1f39b54d367fd764bf83cf3c891db97f064d19f5" }
+tiresias = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "tiresias", rev = "ba75531aaed96a3546839189edd8f1fd77f27779" }
 mpc.workspace = true
 twopc_mpc.workspace = true
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "1f39b54d367fd764bf83cf3c891db97f064d19f5" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "ba75531aaed96a3546839189edd8f1fd77f27779" }
 class_groups.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", rev = "1f39b54d367fd764bf83cf3c891db97f064d19f5" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", rev = "ba75531aaed96a3546839189edd8f1fd77f27779" }
 class_groups_constants = {path = "../class-groups-constants"}
 rand_core = "0.6.4"
 crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }
