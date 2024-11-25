@@ -1,4 +1,4 @@
-use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use crate::authority::authority_per_epoch_store::{AuthorityPerEpochStore, ConsensusCommitOutput};
 use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::{PeraError, PeraResult};
@@ -154,7 +154,8 @@ impl DWalletMPCManager {
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
     /// We parallelize the advances with Rayon to speed up the process.
-    pub async fn handle_end_of_delivery(&mut self, is_syncing: bool) -> PeraResult {
+    pub async fn handle_end_of_delivery(&mut self, is_syncing: bool, output: &mut ConsensusCommitOutput) -> PeraResult {
+        output.set_dwallet_mpc_active_instances_counter(self.active_instances_counter as u64);
         self.active_instances_counter += 1;
         if is_syncing {
             error!(

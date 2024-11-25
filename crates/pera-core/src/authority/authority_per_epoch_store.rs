@@ -563,7 +563,7 @@ pub struct AuthorityEpochTables {
     /// Holds the timestamp of the most recently generated round of randomness.
     pub(crate) randomness_last_round_timestamp: DBMap<u64, TimestampMs>,
 
-    pub dwallet_mpc_manager_state: DBMap<usize, usize>
+    pub dwallet_mpc_active_instances_counter: DBMap<u64, u64>
 }
 
 fn signed_transactions_table_default_config() -> DBOptions {
@@ -3220,7 +3220,7 @@ impl AuthorityPerEpochStore {
             < current_timestamp_in_seconds as u64;
         self.get_dwallet_mpc_manager()
             .await?
-            .handle_end_of_delivery(is_old_round_data)
+            .handle_end_of_delivery(is_old_round_data, output)
             .await?;
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
@@ -4067,6 +4067,9 @@ pub(crate) struct ConsensusCommitOutput {
     // jwk state
     pending_jwks: BTreeSet<(AuthorityName, JwkId, JWK)>,
     active_jwks: BTreeSet<(u64, (JwkId, JWK))>,
+
+    // dwallet mpc state
+    dwallet_mpc_active_instances_counter: u64,
 }
 
 impl ConsensusCommitOutput {
@@ -4132,6 +4135,10 @@ impl ConsensusCommitOutput {
         self.pending_checkpoints.push(checkpoint);
     }
 
+    pub fn set_dwallet_mpc_active_instances_counter(&mut self, new_value: u64) {
+        self.dwallet_mpc_active_instances_counter = new_value;
+    }
+
     pub fn reserve_next_randomness_round(
         &mut self,
         next_randomness_round: RandomnessRound,
@@ -4172,6 +4179,7 @@ impl ConsensusCommitOutput {
         batch: &mut DBBatch,
     ) -> PeraResult {
         let tables = epoch_store.tables()?;
+        batch.insert_batch(&tables.dwallet_mpc_active_instances_counter, [(SINGLETON_KEY, self.dwallet_mpc_active_instances_counter)])?;
         batch.insert_batch(
             &tables.consensus_message_processed,
             self.consensus_messages_processed
