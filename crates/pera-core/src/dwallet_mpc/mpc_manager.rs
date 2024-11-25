@@ -18,11 +18,14 @@ use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof;
-use fastcrypto::traits::KeyPair;
+use fastcrypto::groups::bls12381;
+use fastcrypto::traits::{KeyPair, ToFromBytes};
+use maurer::fischlin::Proof;
 use rand_core::{OsRng, SeedableRng};
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use pera_types::crypto::AuthorityKeyPair;
 
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
@@ -61,10 +64,22 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
-        let seed = node_config.protocol_key_pair.authority_keypair();
-        .private().bytes;
+        let seed =
+            node_config.protocol_key_pair()
+                .copy()
+                .private()
+                .as_bytes()
+                .try_into()
+                .expect("key length should match");
         let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
-        let (proof, keypair) = generate_secret_share_sized_keypair_and_proof(&mut OsRng).unwrap();
+        let res= generate_secret_share_sized_keypair_and_proof(&mut OsRng).map_err(|e| twopc_error_to_pera_error(e.into()));
+        // let res= generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| twopc_error_to_pera_error(e.into()));
+        let (proof, keypair) = match res {
+            Ok((proof, keypair) ) => (proof, keypair),
+            Err(e) => {
+                return Err(e);
+            },
+        };
 
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
