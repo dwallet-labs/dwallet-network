@@ -818,14 +818,13 @@ async fn start(
     loop {
         loop_index += 1;
         for (node_index, node) in swarm.validator_nodes().enumerate() {
-            // get the highest executed checkpoint
-            // if loop_index == 3 && node_index == 3 {
-            //     warn!("Stopping node 3");
-            //     node.stop();
-            // } else if loop_index == 203 && node_index == 3 {
-            //     warn!("Starting node 3");
-            //     node.start().await?;
-            // }
+            if loop_index == 3 && node_index == 3 {
+                warn!("Stopping node 3");
+                node.stop();
+            } else if loop_index == 6 && node_index == 3 {
+                warn!("Starting node 3");
+                node.start().await?;
+            }
             if let Some(handle) = node.get_node_handle() {
                 let sequence = handle
                     .inner()

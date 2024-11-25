@@ -562,6 +562,8 @@ pub struct AuthorityEpochTables {
     pub(crate) randomness_highest_completed_round: DBMap<u64, RandomnessRound>,
     /// Holds the timestamp of the most recently generated round of randomness.
     pub(crate) randomness_last_round_timestamp: DBMap<u64, TimestampMs>,
+
+    pub dwallet_mpc_manager_state: DBMap<usize, usize>
 }
 
 fn signed_transactions_table_default_config() -> DBOptions {
@@ -3213,13 +3215,12 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-        let current_timestamp = Utc::now().timestamp();
-
+        let current_timestamp_in_seconds = Utc::now().timestamp();
+        let is_old_round_data = (consensus_commit_info.timestamp + 300_000) / 1_000
+            < current_timestamp_in_seconds as u64;
         self.get_dwallet_mpc_manager()
             .await?
-            .handle_end_of_delivery(
-                (consensus_commit_info.timestamp + 300_000) / 1_000 < current_timestamp as u64,
-            )
+            .handle_end_of_delivery(is_old_round_data)
             .await?;
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
