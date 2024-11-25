@@ -18,7 +18,8 @@ use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
 use class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof;
-use rand_core::OsRng;
+use fastcrypto::traits::KeyPair;
+use rand_core::{OsRng, SeedableRng};
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
@@ -60,6 +61,9 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
+        let seed = node_config.protocol_key_pair.authority_keypair();
+        .private().bytes;
+        let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
         let (proof, keypair) = generate_secret_share_sized_keypair_and_proof(&mut OsRng).unwrap();
 
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
