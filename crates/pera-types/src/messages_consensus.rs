@@ -288,6 +288,7 @@ pub enum ConsensusTransactionKind {
     NewJWKFetched(AuthorityName, JwkId, JWK),
     DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
     DWalletMPCOutput(SessionInfo, Vec<u8>),
+    PeraNetworkDkgMessage(AuthorityName, Vec<u8>, Vec<u8>),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -307,6 +308,7 @@ impl ConsensusTransactionKind {
             self,
             ConsensusTransactionKind::RandomnessDkgMessage(_, _)
                 | ConsensusTransactionKind::RandomnessDkgConfirmation(_, _)
+            | ConsensusTransactionKind::PeraNetworkDkgMessage(_,_,_)
         )
     }
 }
@@ -507,7 +509,19 @@ impl ConsensusTransaction {
             kind: ConsensusTransactionKind::DWalletMPCOutput(session_info, output),
         }
     }
-
+    pub fn new_pera_network_dkg_message(
+        authority: AuthorityName,
+        encryption_key: Vec<u8>,
+        proof: Vec<u8>,
+    ) -> Self {
+        let mut hasher = DefaultHasher::new();
+        encryption_key.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, encryption_key, proof),
+        }
+    }
     pub fn new_randomness_dkg_message(
         authority: AuthorityName,
         versioned_message: &VersionedDkgMessage,
@@ -593,6 +607,9 @@ impl ConsensusTransaction {
                     session_info.initiating_user_address,
                     session_info.dwallet_cap_id,
                 )
+            }
+            ConsensusTransactionKind::PeraNetworkDkgMessage(authority, _, _) => {
+                ConsensusTransactionKey::RandomnessDkgMessage(*authority)
             }
         }
     }

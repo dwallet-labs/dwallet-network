@@ -2446,6 +2446,21 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, _, _),
+                ..
+            }) => {
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "DWalletMPCMessage authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    if let Ok(mut manager) = self.get_dwallet_mpc_manager().await {
+                        manager.malicious_actors.insert(authority.clone());
+                    }
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::CheckpointSignature(data),
                 ..
             }) => {
@@ -3605,6 +3620,13 @@ impl AuthorityPerEpochStore {
                         authority.concise()
                     );
                 }
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::PeraNetworkDkgMessage(_, _, _),
+                ..
+            }) => {
+                // todo (yael): handle message
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

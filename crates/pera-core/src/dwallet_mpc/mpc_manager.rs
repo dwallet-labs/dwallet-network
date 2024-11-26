@@ -58,12 +58,7 @@ pub enum OutputVerificationResult {
 }
 
 impl DWalletMPCManager {
-    pub async fn try_new(
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        epoch_id: EpochId,
-        node_config: NodeConfig,
-    ) -> PeraResult<Self> {
+    async fn start_dkg(consensus_adapter: Arc<dyn SubmitToConsensus>, node_config: NodeConfig, epoch_store: Arc<AuthorityPerEpochStore>, epoch_id: EpochId) -> PeraResult {
         let seed = node_config
             .protocol_key_pair()
             .copy()
@@ -74,19 +69,24 @@ impl DWalletMPCManager {
         let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
         let (proof, keypair) = generate_secret_share_sized_keypair_and_proof(&mut rng)
             .map_err(|err| twopc_error_to_pera_error(err.into()))?;
-        let dkg_instance = DWalletMPCInstance::new(
-            Arc::downgrade(&epoch_store),
-            epoch_id,
-            ,
-            MPCSessionStatus::FirstExecution,
-            vec![],
-            SessionInfo {
-                session_id: ObjectID::new(),
-                initiating_user_address: vec![],
-                dwallet_cap_id: 0,
-            },
-            DecryptionKeyShare::new(0, bls12381::SecretKey::random(&mut OsRng), &proof),
-        )
+
+        // todo (yael): use only encryption key from the keypair
+        let transaction = ConsensusTransaction::new_pera_network_dkg_message(
+            epoch_store.name,
+            bcs::to_bytes(&keypair)?,
+            bcs::to_bytes(&proof)?,
+        );
+        consensus_adapter.submit_to_consensus(&vec![transaction], &epoch_store).await?;
+        Ok(())
+    }
+
+    pub async fn try_new(
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        epoch_id: EpochId,
+        node_config: NodeConfig,
+    ) -> PeraResult<Self> {
+        DWalletMPCManager::start_dkg(consensus_adapter.clone(), node_config.clone(), epoch_store.clone(), epoch_id).await?;
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
