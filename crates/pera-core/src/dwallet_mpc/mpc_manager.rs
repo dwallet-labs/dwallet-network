@@ -31,6 +31,22 @@ use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 use consensus_config::ProtocolKeyPair;
 
+// type ClassGroupsKeyPairAndProof = (maurer::fischlin::Proof::<
+//     { maurer::fischlin::UC_PROOFS_REPETITIONS },
+//     maurer::knowledge_of_discrete_log::FischlinLanguage<
+//         { maurer::fischlin::UC_PROOFS_REPETITIONS },
+//         group::bounded_natural_numbers_group::GroupElement<
+//             { class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS },
+//         >,
+//         EquivalenceClass<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>,
+//     >,
+//     PhantomData<()>>, CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>);
+
+type ClassGroupsKeyPairAndProof = (String, String);
+fn mock_keypair_generation() -> ClassGroupsKeyPairAndProof {
+    (String::from("yael"), String::from("abergel"))
+}
+
 pub struct NetworkDkg {
     status: MPCSessionStatus,
     epoch_id: EpochId,
@@ -59,9 +75,10 @@ impl NetworkDkg {
 
     pub async fn start(&mut self) -> PeraResult<ClassGroupsKeyPairAndProof> {
         let mut rng = rand_chacha::ChaCha20Rng::from_seed(self.authority_private_key);
-        let (proof, keypair) = generate_secret_share_sized_keypair_and_proof(&mut rng)
-            .map_err(|err| twopc_error_to_pera_error(err.into()))?;
+        // let (proof, keypair) = generate_secret_share_sized_keypair_and_proof(&mut rng)
+        //     .map_err(|err| twopc_error_to_pera_error(err.into()))?;
 
+        let (proof, keypair) = mock_keypair_generation();
         // todo (yael): use only encryption key from the keypair
         let transaction = ConsensusTransaction::new_pera_network_dkg_message(
             self.epoch_store.name,
@@ -130,17 +147,6 @@ pub struct DWalletMPCManager {
     class_groups_keypair_and_proof: OnceCell<ClassGroupsKeyPairAndProof>,
     pub network_dkg: NetworkDkg,
 }
-
-type ClassGroupsKeyPairAndProof = (maurer::fischlin::Proof::<
-    { maurer::fischlin::UC_PROOFS_REPETITIONS },
-    maurer::knowledge_of_discrete_log::FischlinLanguage<
-        { maurer::fischlin::UC_PROOFS_REPETITIONS },
-        group::bounded_natural_numbers_group::GroupElement<
-            { class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS },
-        >,
-        EquivalenceClass<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>,
-    >,
-    PhantomData<()>>, CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>);
 
 /// The possible results of verifying an incoming output for an MPC session.
 /// We need to differentiate between a duplicate & a malicious output, as the output can be sent twice by honest parties.

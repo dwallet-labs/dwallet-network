@@ -2566,7 +2566,12 @@ impl AuthorityPerEpochStore {
     ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCManager>> {
         let dwallet_mpc_manager = self.dwallet_mpc_manager.get();
         match dwallet_mpc_manager {
-            Some(dwallet_mpc_manager) => Ok(dwallet_mpc_manager.lock().await),
+            Some(dwallet_mpc_manager) => {
+                if dwallet_mpc_manager.lock().network_dkg.status() != crate::dwallet_mpc::mpc_instance::MPCSessionStatus::Finished(0) {
+                    return Err(PeraError::from("DWalletMPCManager is not finished"));
+                }
+                Ok(dwallet_mpc_manager.lock().await)
+            },
             None => Err(PeraError::from("DWalletMPCManager is not initialized")),
         }
     }
