@@ -143,10 +143,12 @@ pub struct StartSignRoundEvent {
     pub dwallet_cap_id: ID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
-    /// Presign first round output
+    /// Hashed messages to sign
     pub hashed_message: Vec<u8>,
-    /// Unique identifier for the first Presign round session.
-    pub presign: Vec<u8>,
+    /// Presign first round output, required for the MPC Sign session
+    pub presign_first_round_output: Vec<u8>,
+    /// Presign second round output, required for the MPC Sign session
+    pub presign_second_round_output: Vec<u8>,
     /// Centralized signed message
     pub centralized_signed_message: Vec<u8>,
 }

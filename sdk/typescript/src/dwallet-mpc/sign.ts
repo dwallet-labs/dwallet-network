@@ -9,21 +9,23 @@ export enum Hash {
 	SHA256 = 1,
 }
 
-export async function signMessageTransactionCall(
+export async function signMockCall(
 	keypair: Keypair,
 	client: PeraClient,
 	hashedMessage: Uint8Array,
-	presign: Uint8Array,
+	presignFirstRound: Uint8Array,
+	presignSecondRound: Uint8Array,
 	dkgOutput: Uint8Array,
 	centralizedSignedMessage: Uint8Array,
 	presignFirstRoundSessionId: string,
 ) {
 	const tx = new Transaction();
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`,
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::mock_sign`,
 		arguments: [
 			tx.pure(bcs.vector(bcs.u8()).serialize(hashedMessage)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(presign)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(presignFirstRound)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(presignSecondRound)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(dkgOutput)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
 			tx.pure.id(presignFirstRoundSessionId),
@@ -39,9 +41,48 @@ export async function signMessageTransactionCall(
 	});
 
 	const eventData = res.events?.at(0)?.parsedJson as { session_id: string };
+	return await fetchSignObjects(keypair, client, eventData.session_id);
+}
 
+export async function signMessageTransactionCall(
+	keypair: Keypair,
+	client: PeraClient,
+	dwalletCapId: string,
+	hashedMessage: Uint8Array,
+	dwalletId: string,
+	presignFirstRoundId: string,
+	presignSecondRoundId: string,
+	centralizedSignedMessage: Uint8Array,
+	presignSessionId: string,
+) {
+	const tx = new Transaction();
+	tx.moveCall({
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`,
+		arguments: [
+			tx.object(dwalletCapId),
+			tx.pure(bcs.vector(bcs.u8()).serialize(hashedMessage)),
+			tx.object(dwalletId),
+			tx.object(presignFirstRoundId),
+			tx.object(presignSecondRoundId),
+			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
+			tx.object(presignSessionId),
+		],
+	});
+
+	let res = await client.signAndExecuteTransaction({
+		signer: keypair,
+		transaction: tx,
+		options: {
+			showEvents: true,
+		},
+	});
+
+	const eventData = res.events?.at(0)?.parsedJson as { session_id: string };
+	return await fetchSignObjects(keypair, client, eventData.session_id);
+}
+export async function fetchSignObjects(keypair: Keypair, client: PeraClient, session_id: string) {
 	let signOutput = await fetchObjectBySessionId(
-		eventData.session_id,
+		session_id,
 		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignOutput`,
 		keypair,
 		client,

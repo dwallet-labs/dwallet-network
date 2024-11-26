@@ -4,17 +4,11 @@ DWallet
 DWalletCap
 	public struct
 	0x3::dwallet
-MessageApproval
-	public struct
-	0x3::dwallet
 create_dwallet
 	public(package) fun
 	0x3::dwallet
 create_dwallet_cap
 	public(package) fun
-	0x3::dwallet
-approve_messages
-	public fun
 	0x3::dwallet
 get_dwallet_cap_id
 	public(package) fun
@@ -83,6 +77,9 @@ create_second_presign_round_output
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 sign
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+mock_sign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_sign_output

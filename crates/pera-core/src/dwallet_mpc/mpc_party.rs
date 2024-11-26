@@ -238,7 +238,8 @@ impl MPCParty {
             <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
                 deserialized_event.dkg_output,
                 deserialized_event.hashed_message.clone(),
-                deserialized_event.presign.clone(),
+                deserialized_event.presign_first_round_output.clone(),
+                deserialized_event.presign_second_round_output.clone(),
                 deserialized_event.centralized_signed_message.clone(),
                 dwallet_mpc_manager
                     .node_config
@@ -251,7 +252,7 @@ impl MPCParty {
                 session_id: deserialized_event.session_id.bytes,
                 initiating_user_address: deserialized_event.sender,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-                mpc_round: MPCRound::Sign(party_id),
+                mpc_round: MPCRound::Sign(party_id, deserialized_event.dwallet_id.bytes),
             },
         ))
     }
