@@ -2567,10 +2567,11 @@ impl AuthorityPerEpochStore {
         let dwallet_mpc_manager = self.dwallet_mpc_manager.get();
         match dwallet_mpc_manager {
             Some(dwallet_mpc_manager) => {
-                if dwallet_mpc_manager.lock().network_dkg.status() != crate::dwallet_mpc::mpc_instance::MPCSessionStatus::Finished(0) {
+                let dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
+                if matches!(dwallet_mpc_manager.network_dkg.status(), crate::dwallet_mpc::mpc_instance::MPCSessionStatus::Finished(_)) {
                     return Err(PeraError::from("DWalletMPCManager is not finished"));
                 }
-                Ok(dwallet_mpc_manager.lock().await)
+                Ok(dwallet_mpc_manager)
             },
             None => Err(PeraError::from("DWalletMPCManager is not initialized")),
         }
