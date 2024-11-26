@@ -22,7 +22,10 @@ use pera_types::messages_dwallet_mpc::SessionInfo;
 use rand_core::{OsRng, SeedableRng};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::marker::PhantomData;
 use std::sync::{Arc, Weak};
+use class_groups::{CompactIbqf, EquivalenceClass};
+use once_cell::sync::OnceCell;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
@@ -47,7 +50,19 @@ pub struct DWalletMPCManager {
     pub malicious_actors: HashSet<AuthorityName>,
     pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub weighted_parties: HashMap<PartyID, PartyID>,
+    class_groups_keypair_and_proof: OnceCell<ClassGroupsKeyPairAndProof>,
 }
+
+type ClassGroupsKeyPairAndProof = (maurer::fischlin::Proof::<
+    { maurer::fischlin::UC_PROOFS_REPETITIONS },
+    maurer::knowledge_of_discrete_log::FischlinLanguage<
+        { maurer::fischlin::UC_PROOFS_REPETITIONS },
+        group::bounded_natural_numbers_group::GroupElement<
+            { class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS },
+        >,
+        EquivalenceClass<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>,
+    >,
+    PhantomData<()>>, CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>);
 
 /// The possible results of verifying an incoming output for an MPC session.
 /// We need to differentiate between a duplicate & a malicious output, as the output can be sent twice by honest parties.
@@ -58,7 +73,7 @@ pub enum OutputVerificationResult {
 }
 
 impl DWalletMPCManager {
-    async fn start_dkg(consensus_adapter: Arc<dyn SubmitToConsensus>, node_config: NodeConfig, epoch_store: Arc<AuthorityPerEpochStore>, epoch_id: EpochId) -> PeraResult {
+    async fn start_dkg(consensus_adapter: Arc<dyn SubmitToConsensus>, node_config: NodeConfig, epoch_store: Arc<AuthorityPerEpochStore>,) -> PeraResult<ClassGroupsKeyPairAndProof> {
         let seed = node_config
             .protocol_key_pair()
             .copy()
@@ -77,7 +92,7 @@ impl DWalletMPCManager {
             bcs::to_bytes(&proof)?,
         );
         consensus_adapter.submit_to_consensus(&vec![transaction], &epoch_store).await?;
-        Ok(())
+        Ok((proof, keypair))
     }
 
     pub async fn try_new(
@@ -86,7 +101,7 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
-        DWalletMPCManager::start_dkg(consensus_adapter.clone(), node_config.clone(), epoch_store.clone(), epoch_id).await?;
+        let (proof, keypair) = DWalletMPCManager::start_dkg(consensus_adapter.clone(), node_config.clone(), epoch_store.clone()).await?;
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
@@ -116,6 +131,7 @@ impl DWalletMPCManager {
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
             weighted_parties,
+            class_groups_keypair_and_proof: OnceCell::from((proof, keypair))
         })
     }
 
