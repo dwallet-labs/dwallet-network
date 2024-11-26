@@ -7,25 +7,25 @@ use crate::dwallet_mpc::mpc_instance::{
     authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
 };
 use crate::dwallet_mpc::mpc_party::MPCParty;
-use group::PartyID;
-use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{Error, WeightedThresholdAccessStructure};
-use pera_config::NodeConfig;
-use pera_types::committee::{EpochId, StakeUnit};
-use pera_types::messages_consensus::ConsensusTransaction;
-use pera_types::messages_dwallet_mpc::SessionInfo;
-use rayon::prelude::*;
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::{Arc, Weak};
 use class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof;
 use fastcrypto::groups::bls12381;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
+use group::PartyID;
+use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use maurer::fischlin::Proof;
+use mpc::{Error, WeightedThresholdAccessStructure};
+use pera_config::NodeConfig;
+use pera_types::committee::{EpochId, StakeUnit};
+use pera_types::crypto::AuthorityKeyPair;
+use pera_types::messages_consensus::ConsensusTransaction;
+use pera_types::messages_dwallet_mpc::SessionInfo;
 use rand_core::{OsRng, SeedableRng};
+use rayon::prelude::*;
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::sync::{Arc, Weak};
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
-use pera_types::crypto::AuthorityKeyPair;
 
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
@@ -58,29 +58,35 @@ pub enum OutputVerificationResult {
 }
 
 impl DWalletMPCManager {
-    pub fn try_new(
+    pub async fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
-        let seed =
-            node_config.protocol_key_pair()
-                .copy()
-                .private()
-                .as_bytes()
-                .try_into()
-                .expect("key length should match");
+        let seed = node_config
+            .protocol_key_pair()
+            .copy()
+            .private()
+            .as_bytes()
+            .try_into()
+            .expect("key length should match");
         let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
-        let res= generate_secret_share_sized_keypair_and_proof(&mut OsRng).map_err(|e| twopc_error_to_pera_error(e.into()));
-        // let res= generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| twopc_error_to_pera_error(e.into()));
-        let (proof, keypair) = match res {
-            Ok((proof, keypair) ) => (proof, keypair),
-            Err(e) => {
-                return Err(e);
+        let (proof, keypair) = generate_secret_share_sized_keypair_and_proof(&mut rng)
+            .map_err(|err| twopc_error_to_pera_error(err.into()))?;
+        let dkg_instance = DWalletMPCInstance::new(
+            Arc::downgrade(&epoch_store),
+            epoch_id,
+            ,
+            MPCSessionStatus::FirstExecution,
+            vec![],
+            SessionInfo {
+                session_id: ObjectID::new(),
+                initiating_user_address: vec![],
+                dwallet_cap_id: 0,
             },
-        };
-
+            DecryptionKeyShare::new(0, bls12381::SecretKey::random(&mut OsRng), &proof),
+        )
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
