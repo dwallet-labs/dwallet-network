@@ -29,6 +29,83 @@ use once_cell::sync::OnceCell;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use consensus_config::ProtocolKeyPair;
+
+pub struct NetworkDkg {
+    status: MPCSessionStatus,
+    epoch_id: EpochId,
+    epoch_store: Arc<AuthorityPerEpochStore>,
+    authority_private_key: [u8; 32],
+    consensus_adapter: Arc<dyn SubmitToConsensus>,
+    secret_key_share_sized_encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsKeyPairAndProof>,
+}
+
+impl NetworkDkg {
+    fn new(
+        epoch_id: EpochId,
+        epoch_store: Arc<AuthorityPerEpochStore>,
+        authority_private_key: [u8; 32],
+        consensus_adapter: Arc<dyn SubmitToConsensus>,
+    ) -> Self {
+        Self {
+            status: MPCSessionStatus::FirstExecution,
+            epoch_id,
+            epoch_store,
+            authority_private_key,
+            consensus_adapter,
+            secret_key_share_sized_encryption_keys_and_proofs: HashMap::new(),
+        }
+    }
+
+    pub async fn start(&mut self) -> PeraResult<ClassGroupsKeyPairAndProof> {
+        let mut rng = rand_chacha::ChaCha20Rng::from_seed(self.authority_private_key);
+        let (proof, keypair) = generate_secret_share_sized_keypair_and_proof(&mut rng)
+            .map_err(|err| twopc_error_to_pera_error(err.into()))?;
+
+        // todo (yael): use only encryption key from the keypair
+        let transaction = ConsensusTransaction::new_pera_network_dkg_message(
+            self.epoch_store.name,
+            bcs::to_bytes(&keypair)?,
+            bcs::to_bytes(&proof)?,
+        );
+        self.consensus_adapter.submit_to_consensus(&vec![transaction], &self.epoch_store).await?;
+        self.status = MPCSessionStatus::Active(0);
+        Ok((proof, keypair))
+    }
+
+    pub fn handle_message(&mut self, proof: &[u8], encryption_key: &[u8], authority_name: AuthorityName) -> PeraResult {
+        if matches!(self.status, MPCSessionStatus::FirstExecution |  MPCSessionStatus::Active(_)) {
+            return Err(PeraError::InternalDWalletMPCError); // todo (yael): return error
+        }
+
+        let authority_id = authority_name_to_party_id(&authority_name, &self.epoch_store)?;
+        if self.secret_key_share_sized_encryption_keys_and_proofs.contains_key(&authority_id) {
+            return Err(PeraError::InternalDWalletMPCError);
+        }
+
+        let proof = bcs::from_bytes(proof)?;
+        let encryption_key = bcs::from_bytes(encryption_key)?;
+        self.secret_key_share_sized_encryption_keys_and_proofs.insert(authority_id, (proof, encryption_key));
+        Ok(())
+    }
+
+    fn advance(&mut self) -> PeraResult {
+        if self.secret_key_share_sized_encryption_keys_and_proofs.len() != self.epoch_store.committee().voting_rights.len() {
+            return Ok(()); // todo (yael): return error
+        }
+        // todo (yael): implement the rest of the DKG protocol
+        Ok(())
+    }
+
+    fn finalize(&mut self) -> PeraResult {
+        // todo (yael): implement the rest of the DKG protocol
+        Ok(())
+    }
+
+    pub fn status(&self) -> &MPCSessionStatus {
+        &self.status
+    }
+}
 
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
@@ -51,6 +128,7 @@ pub struct DWalletMPCManager {
     pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub weighted_parties: HashMap<PartyID, PartyID>,
     class_groups_keypair_and_proof: OnceCell<ClassGroupsKeyPairAndProof>,
+    pub network_dkg: NetworkDkg,
 }
 
 type ClassGroupsKeyPairAndProof = (maurer::fischlin::Proof::<
@@ -73,35 +151,19 @@ pub enum OutputVerificationResult {
 }
 
 impl DWalletMPCManager {
-    async fn start_dkg(consensus_adapter: Arc<dyn SubmitToConsensus>, node_config: NodeConfig, epoch_store: Arc<AuthorityPerEpochStore>,) -> PeraResult<ClassGroupsKeyPairAndProof> {
-        let seed = node_config
-            .protocol_key_pair()
-            .copy()
-            .private()
-            .as_bytes()
-            .try_into()
-            .expect("key length should match");
-        let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
-        let (proof, keypair) = generate_secret_share_sized_keypair_and_proof(&mut rng)
-            .map_err(|err| twopc_error_to_pera_error(err.into()))?;
-
-        // todo (yael): use only encryption key from the keypair
-        let transaction = ConsensusTransaction::new_pera_network_dkg_message(
-            epoch_store.name,
-            bcs::to_bytes(&keypair)?,
-            bcs::to_bytes(&proof)?,
-        );
-        consensus_adapter.submit_to_consensus(&vec![transaction], &epoch_store).await?;
-        Ok((proof, keypair))
-    }
-
     pub async fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
-        let (proof, keypair) = DWalletMPCManager::start_dkg(consensus_adapter.clone(), node_config.clone(), epoch_store.clone()).await?;
+        let mut network_dkg = NetworkDkg::new(
+            epoch_id,
+            epoch_store.clone(),
+            node_config.protocol_key_pair().copy().private().as_bytes().try_into().expect("key length should match"),
+            consensus_adapter.clone()
+        );
+        let (proof, keypair) = network_dkg.start().await?;
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
@@ -117,7 +179,7 @@ impl DWalletMPCManager {
             epoch_store.committee().quorum_threshold() as PartyID,
             weighted_parties.clone(),
         )
-        .map_err(|_| PeraError::InternalDWalletMPCError)?;
+            .map_err(|_| PeraError::InternalDWalletMPCError)?;
         Ok(Self {
             mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
@@ -131,7 +193,8 @@ impl DWalletMPCManager {
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
             weighted_parties,
-            class_groups_keypair_and_proof: OnceCell::from((proof, keypair))
+            class_groups_keypair_and_proof: OnceCell::from((proof, keypair)),
+            network_dkg,
         })
     }
 
@@ -161,7 +224,7 @@ impl DWalletMPCManager {
                 .clone()
                 .unwrap(),
         )
-        .map_err(|e| twopc_error_to_pera_error(e.into()))?;
+            .map_err(|e| twopc_error_to_pera_error(e.into()))?;
         Ok(share)
     }
 
@@ -181,7 +244,7 @@ impl DWalletMPCManager {
         };
         if *stored_output == *output
             && session_info.initiating_user_address.to_vec()
-                == instance.session_info.initiating_user_address.to_vec()
+            == instance.session_info.initiating_user_address.to_vec()
             && session_info.dwallet_cap_id == instance.session_info.dwallet_cap_id
         {
             self.finalize_mpc_instance(session_info.session_id.clone())?;
