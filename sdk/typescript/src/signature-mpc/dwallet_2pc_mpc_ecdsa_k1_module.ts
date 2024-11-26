@@ -34,7 +34,133 @@ export type CreatedDwallet = {
 	dwalletCapID: string;
 	secretKeyShare: number[];
 	encryptedSecretShareObjID: string;
+	dWalletBinderID: string;
 };
+
+export async function createVirginBoundDWallet(
+	encryptionKey: Uint8Array,
+	encryptionKeyObjId: string,
+	bindToAuthorityId: string,
+	keypair: Keypair,
+	client: DWalletClient,
+): Promise<CreatedDwallet | null> {
+	const resultDKG = initiate_dkg();
+
+	const commitmentToSecretKeyShare = resultDKG['commitment_to_secret_key_share'];
+	const decommitmentRoundPartyState = resultDKG['decommitment_round_party_state'];
+
+	const tx = new TransactionBlock();
+	tx.moveCall({
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_virgin_bound_dkg_session`,
+		arguments: [tx.pure(commitmentToSecretKeyShare), tx.object(bindToAuthorityId)],
+	});
+
+	const result = await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+
+	const sessionRef = result.effects?.created?.filter((o) => o.owner === 'Immutable')[0].reference!;
+	const dWalletBinderId = result.effects?.created?.filter(
+		(o) =>
+			typeof o.owner === 'object' &&
+			'Shared' in o.owner &&
+			o.owner.Shared.initial_shared_version !== undefined,
+	)[0]?.reference!.objectId!;
+
+	const sessionOutput = await fetchObjectBySessionId(
+		sessionRef.objectId,
+		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::DKGSessionOutput`,
+		keypair,
+		client,
+	);
+	const sessionOutputFields =
+		sessionOutput?.dataType === 'moveObject'
+			? (sessionOutput.fields as {
+					id: { id: string };
+					secret_key_share_encryption_and_proof: number[];
+			  })
+			: null;
+
+	if (sessionOutputFields) {
+		const final = finalize_dkg(
+			decommitmentRoundPartyState,
+			Uint8Array.from(sessionOutputFields.secret_key_share_encryption_and_proof),
+			encryptionKey,
+		);
+		let serializedPubKeys = serialized_pubkeys_from_centralized_dkg_output(final['dkg_output']);
+		const txFinal = new TransactionBlock();
+		txFinal.moveCall({
+			target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_dwallet`,
+			arguments: [
+				txFinal.object(sessionOutputFields.id.id),
+				txFinal.pure(final['public_key_share_decommitment_and_proof']),
+				txFinal.pure(encryptionKeyObjId),
+				txFinal.pure(final['encrypted_user_share_and_proof']),
+				txFinal.pure([...(await keypair.sign(serializedPubKeys))]),
+				txFinal.pure([...keypair.getPublicKey().toRawBytes()]),
+			],
+		});
+		const signResult = await client.signAndExecuteTransactionBlock({
+			signer: keypair,
+			transactionBlock: txFinal,
+			options: {
+				showEffects: true,
+			},
+		});
+
+		let dwalletRef = signResult.effects?.created?.filter((o) => {
+			return o.owner === 'Immutable';
+		})[0].reference!;
+		let encryptedShareRef = signResult.effects?.created?.filter((o) => o.owner === 'Immutable')[1]
+			.reference!;
+
+		let dwalletObject = await client.getObject({
+			id: dwalletRef.objectId,
+			options: { showContent: true },
+		});
+		let dwalletObjectFields =
+			dwalletObject.data?.content?.dataType === 'moveObject'
+				? (dwalletObject.data?.content?.fields as {
+						dwallet_cap_id: string;
+						output: number[];
+				  })
+				: null;
+		if (!dwalletObjectFields?.dwallet_cap_id) {
+			// This may happen as the order of the created objects is not guaranteed,
+			// and we can't know the object type from the reference.
+			let tempRef = dwalletRef;
+			dwalletRef = encryptedShareRef;
+			encryptedShareRef = tempRef;
+			dwalletObject = await client.getObject({
+				id: dwalletRef.objectId,
+				options: { showContent: true },
+			});
+			dwalletObjectFields =
+				dwalletObject.data?.content?.dataType === 'moveObject'
+					? (dwalletObject.data?.content?.fields as {
+							dwallet_cap_id: string;
+							output: number[];
+					  })
+					: null;
+		}
+		await saveEncryptedUserShare(client, keypair, encryptionKeyObjId, encryptedShareRef.objectId);
+		return dwalletObjectFields
+			? {
+					dwalletID: dwalletRef?.objectId!,
+					centralizedDKGOutput: final['dkg_output'],
+					decentralizedDKGOutput: dwalletObjectFields.output,
+					dwalletCapID: dwalletObjectFields.dwallet_cap_id,
+					secretKeyShare: final['secret_key_share'],
+					encryptedSecretShareObjID: encryptedShareRef.objectId!,
+					dWalletBinderID: dWalletBinderId,
+			  }
+			: null;
+	}
+}
 
 export async function createDWallet(
 	keypair: Keypair,
@@ -158,6 +284,7 @@ export type DWallet = {
 	dwalletID: string;
 	decentralizedDKGOutput: number[];
 	dwalletCapID: string;
+	publicKey: number[];
 };
 
 export async function createPartialUserSignedMessages(

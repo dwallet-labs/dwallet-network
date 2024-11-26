@@ -14,6 +14,7 @@ import type { SuiObjectRef } from '../types/index.js';
 import type { DWallet } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import type { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share.js';
 import { fetchOwnedObjectByType } from './utils.js';
+import { getSharedObjectRefById } from "../utils/sui-types";
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -37,6 +38,7 @@ export const getDwalletByObjID = async (
 			? (dwalletObject.data?.content?.fields as {
 					dwallet_cap_id: string;
 					output: number[];
+					public_key: number[];
 			  })
 			: null;
 
@@ -45,6 +47,7 @@ export const getDwalletByObjID = async (
 				dwalletID: dwalletObjID,
 				decentralizedDKGOutput: dwalletObjectFields.output,
 				dwalletCapID: dwalletObjectFields.dwallet_cap_id,
+				publicKey: dwalletObjectFields.public_key,
 		  }
 		: null;
 };
@@ -58,7 +61,7 @@ export function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
 }
 
 export async function approveAndSign(
-	dwalletCapId: string,
+	authorityId: string,
 	signMessagesId: string,
 	messages: Uint8Array[],
 	dwalletID: string,
@@ -67,13 +70,22 @@ export async function approveAndSign(
 	client: DWalletClient,
 ) {
 	const tx = new TransactionBlock();
+	const authoritySharedObjRef = await getSharedObjectRefById(authorityId, client);
 	const [messageApprovals] = tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::approve_messages`,
+		target: `${packageId}::sui_state_proof::approve_messages_with_authority`,
 		arguments: [
-			tx.object(dwalletCapId),
+			tx.sharedObjectRef(authoritySharedObjRef),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
 		],
 	});
+
+	// const [messageApprovals] = tx.moveCall({
+	// 	target: `${packageId}::${dWalletModuleName}::approve_messages`,
+	// 	arguments: [
+	// 		tx.object(dwalletCapId),
+	// 		tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
+	// 	],
+	// });
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::sign`,
 		typeArguments: [

@@ -12,6 +12,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
+import { getObjectRefById, getSharedObjectRefById } from '../utils/sui-types.js';
 import {
 	getBeaconBlockData,
 	getBootstrapData,
@@ -20,80 +21,43 @@ import {
 	getProof,
 	getUpdates,
 } from './rpc.js';
-import { getEthereumStateById, getLatestEthereumStateById, stringToArrayU8Bcs } from './utils.js';
+import type { EthereumState } from './utils.js';
+import {
+	getAuthorityByID,
+	getDWalletBinderByID,
+	getEthereumStateById,
+	stringToArrayU8Bcs,
+} from './utils.js';
 
 const packageId = '0x3';
-const ethDWalletModuleName = 'eth_dwallet';
-const ethereumStateModuleName = 'ethereum_state';
+const ethereumStateModuleName = 'ethereum_authority';
 
 /**
- * Connects a dWallet to be controlled by an Ethereum smart contract.
+ * Creates a new Ethereum authority.
  *
- * This function links a dWallet within the dWallet blockchain environment to an Ethereum smart contract.
- * By creating an Ethereum dWallet capability, it allows the dWallet to interact with Ethereum transactions
- * and be managed through the specified smart contract.
+ * This function constructs a transaction block to call the `create_ethereum_authority`
+ * function in the Ethereum state module.
  *
- * **Arguments**
- * @param {string} dwalletCapId - The ObjectID of the dWallet capability.
- * @param {string} latestEthereumStateId - The ObjectID of the latest Ethereum state.
+ * @param {string} authorityName - The name of the Ethereum authority.
+ * @param {string} chainIdentifier - The chain identifier for the Ethereum network.
+ * @param {string} configObjID - The ObjectID of the configuration object.
+ * @param {string} authorityOwnerDWalletCapID - The ObjectID of the authority owner dWallet capability.
+ * @param {string} network - The network identifier (e.g., 'mainnet', 'holesky').
+ * @param {string} rpc - The Ethereum RPC endpoint.
  * @param {Keypair} keypair - The keypair used to sign the transaction.
  * @param {DWalletClient} client - The dWallet client instance.
+ * @returns The ObjectID of the created Ethereum authority.
+ * @throws Will throw an error if the network is invalid or if the transaction fails to verify the Ethereum state.
  */
-export const createEthereumDWallet = async (
-	dwalletCapId: string,
-	latestEthereumStateId: string,
-	keypair: Keypair,
-	client: DWalletClient,
-) => {
-	const tx = new TransactionBlock();
-	tx.moveCall({
-		target: `${packageId}::${ethDWalletModuleName}::create_eth_dwallet_cap`,
-		arguments: [tx.object(dwalletCapId), tx.object(latestEthereumStateId)],
-	});
-
-	let result = await client.signAndExecuteTransactionBlock({
-		signer: keypair,
-		transactionBlock: tx,
-		options: { showEffects: true },
-	});
-
-	if (result.effects?.status.status !== 'success') {
-		throw new Error(
-			'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(result.effects),
-		);
-	}
-
-	return result.effects?.created?.at(0)?.reference.objectId;
-};
-
-/**
- * Initializes a shared LatestEthereumState object in the dWallet network with the given checkpoint.
- *
- * This function should only be called once to initialize the Ethereum state. After the state is initialized,
- * the Ethereum state object ID is saved, and the state is updated whenever a new state is successfully verified.
- *
- * **Logic**
- * 1. **Select Checkpoint**: Determines the initial checkpoint based on the specified Ethereum network.
- * 2. **Fetch Bootstrap Data**: Retrieves the bootstrap data required to initialize the Ethereum light client state.
- * 3. **Initialize State**: Uses the bootstrap data to initialize the Ethereum light client state in BCS format.
- * 4. **Fetch Updates**: Retrieves updates from the Ethereum consensus RPC since the initial sync period.
- * 5. **Prepare Transaction**: Constructs a transaction to call the `init_state` function in the Ethereum state module,
- *    providing the necessary arguments such as the state bytes, network, contract address, and updates.
- * 6. **Execute Transaction**: Signs and executes the transaction to initialize the Ethereum state on the dWallet network.
- *
- * **Arguments**
- * @param {string} network - The Ethereum network to initialize (e.g., 'mainnet' or 'holesky').
- * @param {string} rpc - The Ethereum consensus RPC endpoint.
- * @param {string} contractAddress - The address of the Ethereum smart contract.
- * @param {number} contractApprovedTxSlot - The slot of the data structure that holds approved transactions in the Ethereum smart contract.
- * @param {Keypair} keypair - The keypair used to sign the transaction.
- * @param {DWalletClient} client - The dWallet client instance.
- */
-export const initEthereumState = async (
+export const createEthereumAuthority = async (
+	authorityName: string,
+	chainIdentifier: string,
+	configObjID: string,
+	authorityOwnerDWalletCapID: string,
+	// authorityOwnerPublicUserShareObjId: string,
+	// authorityOwnerDWalletId: string,
 	network: string,
 	rpc: string,
-	contractAddress: string,
-	contractApprovedTxSlot: number,
 	keypair: Keypair,
 	client: DWalletClient,
 ) => {
@@ -104,7 +68,7 @@ export const initEthereumState = async (
 			break;
 		}
 		case 'holesky': {
-			checkpoint = '0x089ad025c4a629091ea8ff20ba34f3eaf5b2c690f1a9e2c29a64022d95ddf1a4';
+			checkpoint = '0xee03ed879959b9bc880bffaa91f7f1f3888f70030ae5a6c36604edb9d34e518d';
 			break;
 		}
 		default: {
@@ -145,17 +109,23 @@ export const initEthereumState = async (
 		beaconBlockData.blockExecutionPayloadJsonString,
 	);
 
-	let contractAddressArrayU8 = ethers.getBytes(contractAddress);
-	let contractAddressBcs = bcs.vector(bcs.u8()).serialize(contractAddressArrayU8);
-
+	let chainIdentifierBcs = stringToArrayU8Bcs(chainIdentifier);
+	// let authorityOwnerPublicUserShareObjRef = await getObjectRefById(
+	// 	client,
+	// 	authorityOwnerPublicUserShareObjId,
+	// );
+	// let authorityOwnerDWalletObjRef = await getObjectRefById(client, authorityOwnerDWalletId);
 	const tx = new TransactionBlock();
 	tx.moveCall({
-		target: `${packageId}::${ethereumStateModuleName}::init_state`,
+		target: `${packageId}::${ethereumStateModuleName}::create_ethereum_authority`,
 		arguments: [
+			tx.pure.string(authorityName),
+			tx.pure(chainIdentifierBcs),
+			tx.object(configObjID),
+			// tx.objectRef(authorityOwnerDWalletObjRef),
+			tx.object(authorityOwnerDWalletCapID),
+			// tx.objectRef(authorityOwnerPublicUserShareObjRef),
 			tx.pure(stateBcs),
-			tx.pure(network),
-			tx.pure(contractAddressBcs),
-			tx.pure.u64(contractApprovedTxSlot),
 			tx.pure(updatesBcs),
 			tx.pure(finalityUpdateBcs),
 			tx.pure(optimisticUpdateBcs),
@@ -164,6 +134,53 @@ export const initEthereumState = async (
 			tx.pure(beaconBlockExecutionPayloadBcs),
 			tx.pure(beaconBlockTypeBcs),
 		],
+	});
+
+	let result = await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: { showEffects: true },
+	});
+
+	if (result.effects?.status.status !== 'success') {
+		throw new Error(
+			'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(result.effects),
+		);
+	}
+
+	return result.effects?.created?.filter(
+		(o) =>
+			typeof o.owner === 'object' &&
+			'Shared' in o.owner &&
+			o.owner.Shared.initial_shared_version !== undefined,
+	)[0].reference.objectId!;
+};
+
+/**
+ * Creates a new Ethereum smart contract configuration.
+ *
+ * This function constructs a transaction block to call the `create_ethereum_smart_contract_config`
+ * function in the Ethereum state module.
+ *
+ * @param {number} contractApprovedTxSlot - The slot number of the approved transaction.
+ * @param {string} network - The network identifier (e.g., 'mainnet', 'holesky').
+ * @param {Keypair} keypair - The keypair used to sign the transaction.
+ * @param {DWalletClient} client - The dWallet client instance.
+ * @returns The ObjectID of the created Ethereum smart contract configuration.
+ * @throws Will throw an error if the transaction fails to verify the Ethereum state.
+ */
+export const createEthereumSmartContractConfig = async (
+	contractApprovedTxSlot: number,
+	network: string,
+	keypair: Keypair,
+	client: DWalletClient,
+) => {
+	let networkBcs = stringToArrayU8Bcs(network);
+
+	const tx = new TransactionBlock();
+	tx.moveCall({
+		target: `${packageId}::${ethereumStateModuleName}::create_ethereum_smart_contract_config`,
+		arguments: [tx.pure.u64(contractApprovedTxSlot), tx.pure(networkBcs)],
 		typeArguments: [],
 	});
 
@@ -173,13 +190,92 @@ export const initEthereumState = async (
 		options: { showEffects: true },
 	});
 
-	return result.effects?.created?.filter(
-		(o) =>
-			typeof o.owner === 'object' &&
-			'Shared' in o.owner &&
-			o.owner.Shared.initial_shared_version !== undefined,
-	)[0];
+	if (result.effects?.status.status !== 'success') {
+		throw new Error(
+			'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(result.effects),
+		);
+	}
+
+	return result.effects?.created?.at(0)?.reference?.objectId!;
 };
+
+/**
+ * Updates the Ethereum authority state.
+ *
+ * This function fetches the latest updates from the Ethereum network and updates the state
+ * of the Ethereum authority. It constructs a transaction block to call the
+ * `update_authority_state` function in the Ethereum state module.
+ *
+ * @param {string} authorityId - The ObjectID of the Ethereum authority.
+ * @param {EthereumState} currentEthereumStateObj - The current Ethereum state object.
+ * @param {string} consensusRpc - The Ethereum consensus RPC endpoint.
+ * @param {DWalletClient} client - The dWallet client instance.
+ * @param {Keypair} keypair - The keypair used to sign the transaction.
+ * @throws Will throw an error if the transaction fails to verify the Ethereum state.
+ */
+async function updateEthereumAuthorityState(
+	authorityId: string,
+	currentEthereumStateObj: EthereumState,
+	consensusRpc: string,
+	client: DWalletClient,
+	keypair: Keypair,
+) {
+	let currentEthereumStateData = currentEthereumStateObj?.data as number[];
+	let currentEthereumStateArrayU8 = Uint8Array.from(currentEthereumStateData);
+
+	let syncPeriod = get_current_period(currentEthereumStateArrayU8);
+
+	let updatesResponseJson = await getUpdates(consensusRpc, syncPeriod);
+	let updatesJson = JSON.stringify(updatesResponseJson.map((update: any) => update['data']));
+	let updatesBcs = stringToArrayU8Bcs(updatesJson);
+
+	let finalityUpdateResponseJson = await getFinalityUpdate(consensusRpc);
+	let finalityUpdateJson = JSON.stringify(finalityUpdateResponseJson['data']);
+	let finalityUpdateBcs = stringToArrayU8Bcs(finalityUpdateJson);
+
+	let optimisticUpdateResponse = await getOptimisticUpdate(consensusRpc);
+	let optimisticUpdateJson = JSON.stringify(optimisticUpdateResponse['data']);
+	let optimisticUpdateBcs = stringToArrayU8Bcs(optimisticUpdateJson);
+
+	let beaconBlockData = await getBeaconBlockData(consensusRpc, finalityUpdateResponseJson);
+	let beaconBlockTypeBcs = stringToArrayU8Bcs(beaconBlockData.blockType);
+	let beaconBlockBcs = stringToArrayU8Bcs(beaconBlockData.blockJsonString);
+	let beaconBlockBodyBcs = stringToArrayU8Bcs(beaconBlockData.blockBodyJsonString);
+	let beaconBlockExecutionPayloadBcs = stringToArrayU8Bcs(
+		beaconBlockData.blockExecutionPayloadJsonString,
+	);
+
+	let authoritySharedObjectRef = await getSharedObjectRefById(authorityId, client, true);
+
+	const tx = new TransactionBlock();
+	tx.moveCall({
+		target: `${packageId}::${ethereumStateModuleName}::update_authority_state`,
+		arguments: [
+			tx.sharedObjectRef(authoritySharedObjectRef),
+			// todo(yuval): update object to only be `id` and not `id.id`
+			tx.object(currentEthereumStateObj.id),
+			tx.pure(updatesBcs),
+			tx.pure(finalityUpdateBcs),
+			tx.pure(optimisticUpdateBcs),
+			tx.pure(beaconBlockBcs),
+			tx.pure(beaconBlockBodyBcs),
+			tx.pure(beaconBlockExecutionPayloadBcs),
+			tx.pure(beaconBlockTypeBcs),
+		],
+	});
+
+	let txResult = await client.signAndExecuteTransactionBlock({
+		signer: keypair,
+		transactionBlock: tx,
+		options: { showEffects: true },
+	});
+
+	if (txResult.effects?.status.status !== 'success') {
+		throw new Error(
+			'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(txResult.effects),
+		);
+	}
+}
 
 /**
  * Approves an Ethereum transaction for a given dWallet.
@@ -198,33 +294,36 @@ export const initEthereumState = async (
  * 7. **Send Transaction**: Constructs the transaction data, including the proof and dWallet ID, and executes it.
  *
  * **Arguments**
- * @param {string} ethDwalletCapId - The ObjectID of the Ethereum dWallet capability, representing the link between the dWallet and Ethereum.
+ * @param {string} authorityId - The ObjectID of the Ethereum authority.
  * @param {string} message - The Ethereum transaction message to be approved.
  * @param {string} dWalletID - The ObjectID of the dWallet to which the transaction belongs.
- * @param {string} latestStateObjectID - The ObjectID of the latest Ethereum state.
+ * @param {string} dwalletBinderId - The ObjectID of the dWallet binder.
  * @param {string} executionRpc - The Ethereum execution RPC endpoint.
  * @param {string} consensusRpc - The Ethereum consensus RPC endpoint.
  * @param {Keypair} keypair - The keypair used to sign the transaction.
  * @param {DWalletClient} client - The dWallet client instance.
+ * @returns The result of the message approval transaction.
+ * @throws Will throw an error if the transaction fails to verify the Ethereum state.
  */
 export const approveEthereumMessage = async (
-	ethDwalletCapId: string,
+	authorityId: string,
+	dwalletBinderId: string,
 	message: string,
 	dWalletID: string,
-	latestStateObjectID: string,
 	executionRpc: string,
 	consensusRpc: string,
 	keypair: Keypair,
 	client: DWalletClient,
 ) => {
-	let latestEthereumStateObj = await getLatestEthereumStateById(client, latestStateObjectID);
-	let currentEthereumStateID = latestEthereumStateObj?.eth_state_id as string;
+	let authorityObj = await getAuthorityByID(authorityId, client);
+	let currentEthereumStateID = authorityObj?.latest.id as string;
 	let currentEthereumStateObj = await getEthereumStateById(client, currentEthereumStateID);
-	let currentEthereumStateData = currentEthereumStateObj?.data as number[];
-	let currentEthereumStateArrayU8 = Uint8Array.from(currentEthereumStateData);
 
-	let dataSlot = latestEthereumStateObj?.eth_smart_contract_slot as number;
-	let contractAddress = latestEthereumStateObj?.eth_smart_contract_address as number[];
+	let dwalletBinderObj = await getDWalletBinderByID(dwalletBinderId, client);
+	let bindToAuthorityObj = dwalletBinderObj?.bind_to_authority;
+
+	let dataSlot = authorityObj?.config.approved_tx_slot as number;
+	let contractAddress = bindToAuthorityObj?.owner as number[];
 	let contractAddressArrayU8 = Uint8Array.from(contractAddress);
 	let contractAddressString = ethers.hexlify(contractAddressArrayU8);
 
@@ -250,59 +349,17 @@ export const approveEthereumMessage = async (
 
 	// If the proof has failed, then we need to update the state and try again.
 	if (!successful_proof) {
-		let syncPeriod = get_current_period(currentEthereumStateArrayU8);
-
-		let updatesResponseJson = await getUpdates(consensusRpc, syncPeriod);
-		let updatesJson = JSON.stringify(updatesResponseJson.map((update: any) => update['data']));
-		let updatesBcs = stringToArrayU8Bcs(updatesJson);
-
-		let finalityUpdateResponseJson = await getFinalityUpdate(consensusRpc);
-		let finalityUpdateJson = JSON.stringify(finalityUpdateResponseJson['data']);
-		let finalityUpdateBcs = stringToArrayU8Bcs(finalityUpdateJson);
-
-		let optimisticUpdateResponse = await getOptimisticUpdate(consensusRpc);
-		let optimisticUpdateJson = JSON.stringify(optimisticUpdateResponse['data']);
-		let optimisticUpdateBcs = stringToArrayU8Bcs(optimisticUpdateJson);
-
-		let beaconBlockData = await getBeaconBlockData(consensusRpc, finalityUpdateResponseJson);
-		let beaconBlockTypeBcs = stringToArrayU8Bcs(beaconBlockData.blockType);
-		let beaconBlockBcs = stringToArrayU8Bcs(beaconBlockData.blockJsonString);
-		let beaconBlockBodyBcs = stringToArrayU8Bcs(beaconBlockData.blockBodyJsonString);
-		let beaconBlockExecutionPayloadBcs = stringToArrayU8Bcs(
-			beaconBlockData.blockExecutionPayloadJsonString,
+		await updateEthereumAuthorityState(
+			authorityId,
+			currentEthereumStateObj!,
+			consensusRpc,
+			client,
+			keypair,
 		);
 
-		const tx = new TransactionBlock();
-		tx.moveCall({
-			target: `${packageId}::${ethereumStateModuleName}::verify_new_state`,
-			arguments: [
-				tx.pure(updatesBcs),
-				tx.pure(finalityUpdateBcs),
-				tx.pure(optimisticUpdateBcs),
-				tx.object(latestStateObjectID),
-				tx.object(currentEthereumStateID),
-				tx.pure(beaconBlockBcs),
-				tx.pure(beaconBlockBodyBcs),
-				tx.pure(beaconBlockExecutionPayloadBcs),
-				tx.pure(beaconBlockTypeBcs),
-			],
-		});
-
-		let txResult = await client.signAndExecuteTransactionBlock({
-			signer: keypair,
-			transactionBlock: tx,
-			options: { showEffects: true },
-		});
-
-		if (txResult.effects?.status.status !== 'success') {
-			throw new Error(
-				'Failed to verify Ethereum state. Transaction effects: ' + JSON.stringify(txResult.effects),
-			);
-		}
-
 		// Get the latest Ethereum state again, to get the updated state after it is verified.
-		latestEthereumStateObj = await getLatestEthereumStateById(client, latestStateObjectID);
-		currentEthereumStateID = latestEthereumStateObj?.eth_state_id as string;
+		authorityObj = await getAuthorityByID(authorityId, client);
+		currentEthereumStateID = authorityObj?.latest.id as string;
 		currentEthereumStateObj = await getEthereumStateById(client, currentEthereumStateID);
 
 		// Get the proof again, using the updated state.
@@ -316,25 +373,27 @@ export const approveEthereumMessage = async (
 		);
 	}
 
+	let dWalletBinderSharedObjectRef = await getSharedObjectRefById(dwalletBinderId, client);
+	let authoritySharedObjectRef = await getSharedObjectRefById(authorityId, client);
 	let proofBcs = stringToArrayU8Bcs(JSON.stringify(proof));
 	let messageBcs = stringToArrayU8Bcs(message);
 
-	const tx2 = new TransactionBlock();
-	const [messageApprovals] = tx2.moveCall({
-		target: `${packageId}::${ethDWalletModuleName}::approve_message`,
+	const tx = new TransactionBlock();
+	const [messageApprovals] = tx.moveCall({
+		target: `${packageId}::${ethereumStateModuleName}::approve_message`,
 		arguments: [
-			tx2.object(ethDwalletCapId),
-			tx2.pure(messageBcs),
-			tx2.object(dWalletID),
-			tx2.object(latestStateObjectID),
-			tx2.object(currentEthereumStateID),
-			tx2.pure(proofBcs),
+			tx.sharedObjectRef(authoritySharedObjectRef),
+			tx.sharedObjectRef(dWalletBinderSharedObjectRef),
+			tx.object(currentEthereumStateID),
+			tx.pure(messageBcs),
+			tx.object(dWalletID),
+			tx.pure(proofBcs),
 		],
 	});
 
 	let txResult = await client.signAndExecuteTransactionBlock({
 		signer: keypair,
-		transactionBlock: tx2,
+		transactionBlock: tx,
 		options: { showEffects: true },
 	});
 

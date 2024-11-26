@@ -5,6 +5,17 @@ import { ethers } from 'ethers';
 import { bcs } from '../bcs/index.js';
 import type { DWalletClient } from '../client/index.js';
 
+/// The `EthereumState` Move object fields.
+export type EthereumState = {
+	id: string;
+	data: number[];
+	time_slot: number;
+	authority_binder_id: string;
+	state_root: number[];
+	block_number: number;
+	network: number[];
+};
+
 /**
  * Calculates the key for a given message and dWallet ID.
  * In the smart contract, the key is calculated by hashing the message and the dWallet ID together.
@@ -52,32 +63,54 @@ export function calculateMessageStorageSlot(
 	return calculateMappingSlotForKey(key, dataSlot);
 }
 
-/**
- * Retrieves the latest Ethereum state object by its ID.
- *
- * @param {DWalletClient} client - The dWallet client instance.
- * @param {string} latestStateObjectId - The ObjectID of the latest Ethereum state.
- * @returns An object containing the latest Ethereum state fields, or null if not found.
- */
-export const getLatestEthereumStateById = async (
-	client: DWalletClient,
-	latestStateObjectId: string,
-) => {
-	let latestEthereumStateResponse = await client.getObject({
-		id: latestStateObjectId,
+export const getDWalletBinderByID = async (binderID: string, client: DWalletClient) => {
+	let authorityBinderResponse = await client.getObject({
+		id: binderID,
 		options: { showContent: true },
 	});
 
-	return latestEthereumStateResponse.data?.content?.dataType === 'moveObject'
-		? (latestEthereumStateResponse.data?.content?.fields as unknown as {
-				id: string;
-				eth_state_id: string;
-				time_slot: bigint;
-				eth_smart_contract_address: number[];
-				eth_smart_contract_slot: number;
-				network: string;
-		  })
-		: null;
+	if (authorityBinderResponse.data?.content?.dataType === 'moveObject') {
+		const fields = authorityBinderResponse.data?.content?.fields as any;
+
+		return {
+			id: fields.id.id,
+			dwallet_cap: parseNestedStruct(fields.dwallet_cap),
+			bind_to_authority: parseNestedStruct(fields.bind_to_authority),
+			virgin_bound: fields.virgin_bound,
+		};
+	}
+	return null;
+};
+
+/**
+ * Retrieves an Ethereum authority object by its ID.
+ *
+ * This function fetches the Ethereum authority object from the dWallet client using the provided authority ID.
+ * It then parses the fields of the object and returns them in a structured format.
+ *
+ * @param {string} authorityID - The ObjectID of the Ethereum authority.
+ * @param {DWalletClient} client - The dWallet client instance.
+ * @returns An object containing the parsed fields of the Ethereum authority, or null if not found.
+ */
+export const getAuthorityByID = async (authorityID: string, client: DWalletClient) => {
+	let authorityResponse = await client.getObject({
+		id: authorityID,
+		options: { showContent: true },
+	});
+
+	if (authorityResponse.data?.content?.dataType === 'moveObject') {
+		const fields = authorityResponse.data?.content?.fields as any;
+
+		return {
+			id: fields.id.id,
+			name: fields.name,
+			unique_identifier: fields.unique_identifier,
+			latest: parseNestedStruct(fields.latest),
+			config: parseNestedStruct(fields.config),
+			authority_owner_dwallet_cap: parseNestedStruct(fields.authority_owner_dwallet_cap),
+		};
+	}
+	return null;
 };
 
 /**
@@ -97,14 +130,7 @@ export const getEthereumStateById = async (
 	});
 
 	return currentEthereumStateResponse.data?.content?.dataType === 'moveObject'
-		? (currentEthereumStateResponse.data?.content?.fields as unknown as {
-				id: string;
-				data: number[];
-				time_slot: number;
-				latest_ethereum_state_id: string;
-				state_root: number[];
-				block_number: number;
-		  })
+		? (currentEthereumStateResponse.data?.content?.fields as EthereumState)
 		: null;
 };
 
@@ -169,3 +195,19 @@ export function keysToSnakeCase(obj: any): any {
 function camelToSnake(key: string): string {
 	return key.replace(/([A-Z])/g, (letter) => `_${letter.toLowerCase()}`);
 }
+
+// Helper function to parse nested structs
+const parseNestedStruct = (data: any): any => {
+	if (data?.fields) {
+		let parsedData: any = {};
+		for (const key in data.fields) {
+			if (typeof data.fields[key] === 'object' && data.fields[key] !== null) {
+				parsedData[key] = parseNestedStruct(data.fields[key]);
+			} else {
+				parsedData[key] = data.fields[key];
+			}
+		}
+		return parsedData;
+	}
+	return data;
+};

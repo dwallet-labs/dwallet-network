@@ -27,7 +27,7 @@ export const DEFAULT_RECIPIENT =
 	'0x0c567ffdf8162cb6d51af74be0199443b92e823d4ba6ced24de5c6c463797d46';
 export const DEFAULT_RECIPIENT_2 =
 	'0xbb967ddbebfee8c40d8fdd2c24cb02452834cd3a7061d18564448f900eb9e66d';
-export const DEFAULT_GAS_BUDGET = 10000000;
+export const DEFAULT_GAS_BUDGET = 10_000_000;
 export const DEFAULT_SEND_AMOUNT = 1000;
 
 export class TestToolbox {
@@ -64,8 +64,22 @@ export function getClient(): DWalletClient {
 	});
 }
 
-export async function setup() {
-	const keypair = Ed25519Keypair.generate();
+//todo(yuval): remove this
+function fromB64(base64String: string): Uint8Array {
+	return Uint8Array.from(atob(base64String), (char) => char.charCodeAt(0));
+}
+
+export async function setup(isRandom: boolean) {
+	// const keypair = Ed25519Keypair.generate();
+	const PRIVATE_KEY_SIZE = 32;
+	const key = 'AEoBv2qpRIJ3N6JInfoQGj0tqYkbIGkho3mMQPYjm2Yt';
+	const raw = fromB64(key);
+	if (raw[0] !== 0 || raw.length !== PRIVATE_KEY_SIZE + 1) {
+		throw new Error('invalid key');
+	}
+
+	const keypair = isRandom ? Ed25519Keypair.generate() : Ed25519Keypair.fromSecretKey(raw.slice(1));
+
 	const address = keypair.getPublicKey().toSuiAddress();
 	return setupWithFundedAddress(keypair, address);
 }

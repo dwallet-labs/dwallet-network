@@ -20,7 +20,6 @@ use sui_types::base_types::SuiAddress;
 use sui_types::committee;
 use sui_types::crypto::AuthorityPublicKeyBytes;
 use sui_types::messages_checkpoint::CheckpointSequenceNumber;
-// use sui_types::effects::ObjectChange;
 use sui_types::object::{self, MoveObject};
 use sui_types::transaction::ObjectArg;
 use sui_types::{
@@ -184,7 +183,7 @@ fn read_checkpoint_general(
     config: &Config,
     seq: u64,
     path: Option<&str>,
-) -> anyhow::Result<Envelope<CheckpointSummary, AuthorityQuorumSignInfo<true>>> {
+) -> Result<Envelope<CheckpointSummary, AuthorityQuorumSignInfo<true>>> {
     // Read the resulting file and parse the yaml checkpoint list
     let mut checkpoint_path = config.checkpoint_summary_dir.clone();
     if let Some(path) = path {
@@ -201,7 +200,7 @@ fn read_checkpoint_general(
 fn write_checkpoint(
     config: &Config,
     summary: &Envelope<CheckpointSummary, AuthorityQuorumSignInfo<true>>,
-) -> anyhow::Result<()> {
+) -> Result<()> {
     write_checkpoint_general(config, summary, None)
 }
 
@@ -1021,7 +1020,7 @@ pub async fn main() {
                 )
                 .unwrap(),
                 module: Identifier::new("sui_state_proof").expect("can't create identifier"),
-                function: Identifier::new("init_module").expect("can't create identifier"),
+                function: Identifier::new("create_sui_authority").expect("can't create identifier"),
                 type_arguments: vec![],
                 arguments: vec![
                     init_committee_arg,

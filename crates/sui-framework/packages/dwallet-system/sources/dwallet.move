@@ -24,7 +24,7 @@ module dwallet_system::dwallet {
     friend dwallet_system::dwallet_ecdsa_k1_tests;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
-    const EMesssageApprovalDWalletMismatch: u64 = 1;
+    // const EMesssageApprovalDWalletMismatch: u64 = 1;
     const EInvalidEncryptionKeyScheme: u64 = 2;
     const EInvalidEncryptionKeyOwner: u64 = 3;
     const EInvalidEncryptionKeySignature: u64 = 4;
@@ -338,15 +338,18 @@ module dwallet_system::dwallet {
         object::delete(id);
         let messages_len: u64 = vector::length(&messages);
         let approval_len: u64 = vector::length(&message_approvals);
-        assert!(messages_len == approval_len, EMesssageApprovalDWalletMismatch);
+        assert!(messages_len == approval_len, 1);
+        // assert!(messages_len == approval_len, EMesssageApprovalDWalletMismatch);
 
         let i: u64 = 0;
         while (i < messages_len) {
             let message_approval = vector::pop_back(&mut message_approvals);
             let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
-            assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
+            assert!(dwallet_cap_id == message_approval_dwallet_cap_id, 2);
+            // assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
             let message = vector::borrow(&messages, i);
-            assert!(message == &approved_message, EMesssageApprovalDWalletMismatch);
+            assert!(message == &approved_message, 3);
+            // assert!(message == &approved_message, EMesssageApprovalDWalletMismatch);
             i = i + 1;
         };
 

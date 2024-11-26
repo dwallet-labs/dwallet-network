@@ -28,6 +28,7 @@ move-vm-runtime = { path = "../../../external-crates/move/crates/move-vm-runtime
 
 sui-protocol-config.workspace = true
 sui-types.workspace = true
+sui-sdk.workspace = true
 workspace-hack.workspace = true
 tracing.workspace = true
 sui-json.workspace = true

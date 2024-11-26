@@ -4,24 +4,31 @@
 // import { recovery_id_keccak256 } from '@dwallet-network/signature-mpc-wasm';
 
 import { recovery_id_keccak256 as recoveryIdKeccak256 } from '@dwallet-network/signature-mpc-wasm';
-import { ethers, hexlify, keccak256, Signature, SigningKey } from 'ethers';
+import { recovery_id_sha256 as recoveryIdSha256 } from '@dwallet-network/signature-mpc-wasm';
+import { SuiClient } from '@mysten/sui.js/client';
+import { TransactionBlock } from '@mysten/sui.js/transactions';
+import { ethers, SigningKey } from 'ethers';
 import { assert, beforeAll, describe, it } from 'vitest';
 
 import {
 	createAuthorityEIP712Acknowledgement,
 	createBindToAuthority,
-	setBindToAuthority,
+	sendSuiBindingTransaction,
 } from '../../src/authority-binder';
-import {
-	createEthereumAuthority,
-	createEthereumSmartContractConfig,
-} from '../../src/eth-light-client';
+import { requestSuiFromFaucetV0 } from '../../src/faucet';
 import {
 	approveAndSign,
+	// approveAndSign,
+	// approveAndSignWithBinder,
+	approveMessageInSui,
 	createActiveEncryptionKeysTable,
 	createDWallet,
+	createPartialUserSignedMessages,
+	createSuiDWalletCap,
 	createVirginBoundDWallet,
 	getDwalletByObjID,
+	submitDWalletCreationProof,
+	submitTxStateProof,
 } from '../../src/signature-mpc';
 import { getOrCreateEncryptionKey } from '../../src/signature-mpc/encrypt_user_share';
 import { presignWithDWalletID } from '../../src/signature-mpc/sign';
@@ -33,16 +40,22 @@ describe('Test Ethereum Light Client', () => {
 	let activeEncryptionKeysTableID: string;
 
 	const packageId = '0x3';
-	const ethereumStateModuleName = 'ethereum_authority';
+	const suiStateModuleName = 'sui_state_proof';
+	const dWalletCapPackageSUI = '0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec';
 
 	beforeAll(async () => {
-		toolbox = await setup();
-		authorityToolbox = await setup();
+		toolbox = await setup(false);
+		authorityToolbox = await setup(false);
 		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
 			toolbox.client,
 			toolbox.keypair,
 		);
 		activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
+		// let reciepient = toolbox.keypair.toSuiAddress();
+		// await requestSuiFromFaucetV0({
+		// 	host: 'https://faucet.testnet.sui.io',
+		// 	recipient: toolbox.keypair.toSuiAddress(),
+		// });
 	});
 
 	it('should init the state, create ethereum dwallet, and verify a message', async () => {
@@ -65,71 +78,113 @@ describe('Test Ethereum Light Client', () => {
 			authorityEncryptionKeyObj.encryptionKey,
 			authorityEncryptionKeyObj.objectID,
 		);
-		const authorityOwnerDWalletCapID = authorityOwnerDWallet?.dwalletCapID!;
 
-		const contractAddress2 = '0x4a22eaef6ba256D46Fb7935B1bdAd8cEb454EFCd';
+		const serviceUrl = 'http://localhost:6920/gettxdata';
+		// const contractAddress2 = '0x4a22eaef6ba256D46Fb7935B1bdAd8cEb454EFCd';
 		const contractAddress = '0xEd34EE41cA84042b619E9AEBF6175bB4a0069a05'; // remix IDE address
 		const domainName = 'dWalletAuthenticator';
 		const domainVersion = '1.0.0';
 		const virginBound = true;
-		const authorityName = 'Ethereum_Holesky';
-		const chainIdentifier = '17000';
-		const network = 'holesky';
-		const consensusRpc = 'http://unstable.holesky.beacon-api.nimbus.team';
-		const contractApprovedTxSlot = 2;
-		// const executionRpc = 'https://eth-holesky.g.alchemy.com/v2/KxdGyszqQHA3rcEpy44FqOH1hhx7vq8g';
-		const executionRpc = 'http://localhost:8545';
+		const chainIdentifier = '0x55740dca4b9cedc152ec045f5184f58dea8f740fe1622bb9c416fb62a91095fd';
 
-		let configId = await createEthereumSmartContractConfig(
-			contractApprovedTxSlot,
-			network,
-			authorityToolbox.keypair,
-			authorityToolbox.client,
-		);
+		let authorityId = '0xfaacfd76aab0de938473de461b90a79f8a2d30f4b0c5a40cbd3e604821292d47';
 
-		// create authority
-		let authorityId = await createEthereumAuthority(
-			authorityName,
-			chainIdentifier,
-			configId,
-			authorityOwnerDWalletCapID,
-			network,
-			consensusRpc,
-			authorityToolbox.keypair,
-			authorityToolbox.client,
-		);
-
-		let configType = `${packageId}::${ethereumStateModuleName}::EthereumSmartContractConfig`;
 		// create bind to authority
+		let configType = `${packageId}::${suiStateModuleName}::StateProofConfig`;
 		let bindToAuthorityId = await createBindToAuthority(
 			authorityId,
 			contractAddress,
 			0,
 			configType,
-			authorityToolbox.keypair,
-			authorityToolbox.client,
+			toolbox.keypair,
+			toolbox.client,
 		);
 
 		await new Promise((r) => setTimeout(r, 2000));
 
-		// create virgin ethereum dwallet
+		// create virgin ethereum dwallet for user
 		const virginEthDwallet = await createVirginBoundDWallet(
-			authorityEncryptionKeyObj.encryptionKey,
-			authorityEncryptionKeyObj.objectID,
+			encryptionKeyObj.encryptionKey,
+			encryptionKeyObj.objectID,
 			bindToAuthorityId,
-			authorityToolbox.keypair,
-			authorityToolbox.client,
+			toolbox.keypair,
+			toolbox.client,
 		);
 
 		const virginEthDwalletId = virginEthDwallet?.dwalletID!;
 		const dWalletBinderId = virginEthDwallet?.dWalletBinderID!;
 		const virginEthDwalletCapId = virginEthDwallet?.dwalletCapID!;
 
+		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
+		let suiClient = new SuiClient({ url: suiTestnetURL });
+		// create sui dwallet cap
+		let { createDWalletTxDigest, suiDWalletCapId } = await createSuiDWalletCap(
+			virginEthDwalletCapId,
+			dWalletCapPackageSUI,
+			suiClient,
+			toolbox.keypair,
+		);
+
+		await new Promise((r) => setTimeout(r, 6000));
+
+		const messageToSign = 'dWallets are coming...';
+		let approveTxDigest = await approveMessageInSui(
+			suiDWalletCapId,
+			messageToSign,
+			dWalletCapPackageSUI,
+			suiClient,
+			toolbox.keypair,
+		);
+		// link dwallet to Sui dwallet cap in dwallet network
+		await submitDWalletCreationProof(
+			toolbox.client,
+			suiClient,
+			authorityId,
+			dWalletBinderId,
+			createDWalletTxDigest,
+			serviceUrl,
+			toolbox.keypair,
+		);
+
+		// partial sign same message with dwallet
+		const messageEncoded = new TextEncoder().encode(messageToSign);
+		// const messageEncoded = ethers.getBytes(messageToSign);
+		const signMessagesIdSHA256 = await createPartialUserSignedMessages(
+			virginEthDwallet?.dwalletID!,
+			virginEthDwallet?.decentralizedDKGOutput!,
+			new Uint8Array(virginEthDwallet?.secretKeyShare!),
+			[messageEncoded],
+			'SHA256',
+			toolbox.keypair,
+			toolbox.client,
+		);
+		console.log('created signMessages');
+
+		if (signMessagesIdSHA256 == null) {
+			throw new Error('createSignMessages returned null');
+		}
+
+		// submit tx state proof to dwallet -> Message Approval
+		let res = await submitTxStateProof(
+			authorityToolbox.client,
+			suiClient,
+			authorityId,
+			dWalletBinderId,
+			signMessagesIdSHA256,
+			approveTxDigest,
+			virginEthDwallet?.dwalletID!,
+			serviceUrl,
+			authorityToolbox.keypair,
+		);
+
+		// create sponsored transaction for binding
+
 		let transactionHash = await createAuthorityEIP712Acknowledgement(
 			dWalletBinderId,
 			true,
 			chainIdentifier,
-			'Number', // Chain ID type
+			'HexString', // Chain ID type
+			'Sui', // Chain Type
 			domainName,
 			domainVersion,
 			authorityToolbox.keypair,
@@ -137,31 +192,29 @@ describe('Test Ethereum Light Client', () => {
 		);
 		assert(transactionHash !== undefined);
 
+		// sign the transaction using the authority keypair, then send to sui for validation.
+
+		// raw bytes
 		const message: Uint8Array = ethers.getBytes(transactionHash);
 		// sign the transaction hash
 		let presignObjID = await presignWithDWalletID(
 			authorityToolbox.client,
 			authorityToolbox.keypair,
-			virginEthDwalletId,
+			authorityOwnerDWallet?.dwalletID!,
 			message,
-			'KECCAK256',
+			'SHA256',
 			activeEncryptionKeysTableID,
 		);
+		// todo(yuval): this function is modified. need to create a new one instead.
 		let signatures = await approveAndSign(
-			dWalletBinderId,
+			authorityId,
 			presignObjID!,
 			[message],
-			virginEthDwalletId,
-			'KECCAK256',
+			authorityOwnerDWallet?.dwalletID!,
+			'SHA256',
 			authorityToolbox.keypair,
 			authorityToolbox.client,
 		);
-		console.log(`dwallet binder id: ` + dWalletBinderId);
-		console.log(`dwallet cap id: ` + virginEthDwallet?.dwalletCapID!);
-		console.log(`bind to authority id: ` + bindToAuthorityId);
-		console.log(`virgin bound:` + virginBound);
-		console.log(`nonce:` + 123);
-		let sig = Buffer.from(signatures[0]!).toString('hex');
 
 		const dwalletObj = await getDwalletByObjID(
 			authorityToolbox.client,
@@ -169,10 +222,38 @@ describe('Test Ethereum Light Client', () => {
 		);
 		const publicKey = Buffer.from(dwalletObj?.publicKey!);
 
-		let recoveryId = recoveryIdKeccak256(publicKey, message, signatures[0]!);
-		recoveryId += 27;
+		// let publicKey = Buffer.from(authorityToolbox.keypair.getPublicKey().toRawBytes());
+		let recoveryId = recoveryIdSha256(publicKey, message, signatures[0]!);
+		let signature = new Uint8Array([...signatures[0], recoveryId]);
+		// let sigHex = Buffer.from(signature).toString('hex');
 
-		const signature = '0x' + sig + recoveryId.toString(16);
+		await sendSuiBindingTransaction(
+			dWalletBinderId,
+			virginEthDwalletCapId,
+			message,
+			signature,
+			publicKey,
+			authorityToolbox.keypair,
+			authorityToolbox.client,
+		);
+
+		console.log(`dwallet binder id: ` + dWalletBinderId);
+		console.log(`dwallet cap id: ` + virginEthDwallet?.dwalletCapID!);
+		console.log(`bind to authority id: ` + bindToAuthorityId);
+		console.log(`virgin bound:` + virginBound);
+		console.log(`nonce:` + 123);
+		let sig = Buffer.from(signatures[0]!).toString('hex');
+
+		// const dwalletObj = await getDwalletByObjID(
+		// 	authorityToolbox.client,
+		// 	virginEthDwallet?.dwalletID!,
+		// );
+		// const publicKey = Buffer.from(dwalletObj?.publicKey!);
+
+		// let recoveryId = recoveryIdKeccak256(publicKey, message, signatures[0]!);
+		// recoveryId += 27;
+
+		// const signature = '0x' + sig + recoveryId.toString(16);
 		let ethereumAddress = deriveEthereumAddress(publicKey);
 
 		// send the signed transaction hash to the Ethereum network
