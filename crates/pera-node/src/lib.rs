@@ -1298,7 +1298,7 @@ impl PeraNode {
                 Arc::clone(&epoch_store),
                 epoch_store.epoch(),
                 config.clone(),
-            )?)
+            ).await?)
             .await?;
 
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(
