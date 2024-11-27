@@ -98,6 +98,7 @@ pub enum ConsensusTransactionKey {
     /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
     /// [`ObjectID`] is the session ID.
     DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    NetworkDkgMessage(AuthorityName),
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
@@ -155,6 +156,9 @@ impl Debug for ConsensusTransactionKey {
                     "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
                     value, session_id, sender_address, dwallet_cap_id
                 )
+            }
+            ConsensusTransactionKey::NetworkDkgMessage(name) => {
+                write!(f, "NetworkDkgMessage {:?}", name)
             }
         }
     }
@@ -308,7 +312,7 @@ impl ConsensusTransactionKind {
             self,
             ConsensusTransactionKind::RandomnessDkgMessage(_, _)
                 | ConsensusTransactionKind::RandomnessDkgConfirmation(_, _)
-            | ConsensusTransactionKind::PeraNetworkDkgMessage(_,_,_)
+            // | ConsensusTransactionKind::PeraNetworkDkgMessage(_,_,_)
         )
     }
 }
@@ -609,7 +613,7 @@ impl ConsensusTransaction {
                 )
             }
             ConsensusTransactionKind::PeraNetworkDkgMessage(authority, _, _) => {
-                ConsensusTransactionKey::RandomnessDkgMessage(*authority)
+                ConsensusTransactionKey::NetworkDkgMessage(*authority)
             }
         }
     }

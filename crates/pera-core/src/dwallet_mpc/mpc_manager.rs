@@ -91,7 +91,7 @@ impl NetworkDkg {
     }
 
     pub fn handle_message(&mut self, proof: &[u8], encryption_key: &[u8], authority_name: AuthorityName) -> PeraResult {
-        if matches!(self.status, MPCSessionStatus::FirstExecution |  MPCSessionStatus::Active(_)) {
+        if !matches!(self.status, MPCSessionStatus::FirstExecution |  MPCSessionStatus::Active(_)) {
             return Err(PeraError::InternalDWalletMPCError); // todo (yael): return error
         }
 
@@ -206,7 +206,7 @@ impl DWalletMPCManager {
 
     pub fn get_decryption_share(
         &self,
-    ) -> PeraResult<twopc_mpc::secp256k1::class_groups::DecryptionKeyShare> {
+    ) -> PeraResult<DecryptionKeyShare> {
         let party_id =
             authority_name_to_party_id(&self.epoch_store()?.name, &self.epoch_store()?.clone())?;
         let _ = self
