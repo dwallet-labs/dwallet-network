@@ -4,7 +4,7 @@
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
-import { dWallet2PCMPCECDSAK1ModuleName, fetchObjectBySessionId, packageId } from './globals.js';
+import { dWallet2PCMPCECDSAK1ModuleName, packageId } from './globals.js';
 
 export async function presign(
 	keypair: Keypair,
