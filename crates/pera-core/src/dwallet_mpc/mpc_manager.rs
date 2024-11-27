@@ -25,13 +25,14 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::marker::PhantomData;
 use std::sync::{Arc, Weak};
 use class_groups::{CompactIbqf, EquivalenceClass};
+use crypto_bigint::Uint;
 use once_cell::sync::OnceCell;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 use consensus_config::ProtocolKeyPair;
 
-// type ClassGroupsKeyPairAndProof = (maurer::fischlin::Proof::<
+// type ClassGroupsEncryptionKeyAndProof = (maurer::fischlin::Proof::<
 //     { maurer::fischlin::UC_PROOFS_REPETITIONS },
 //     maurer::knowledge_of_discrete_log::FischlinLanguage<
 //         { maurer::fischlin::UC_PROOFS_REPETITIONS },
@@ -42,9 +43,9 @@ use consensus_config::ProtocolKeyPair;
 //     >,
 //     PhantomData<()>>, CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>);
 
-type ClassGroupsKeyPairAndProof = (String, String);
-fn mock_keypair_generation() -> ClassGroupsKeyPairAndProof {
-    (String::from("yael"), String::from("abergel"))
+type ClassGroupsEncryptionKeyAndProof = (String, String);
+fn mock_keypair_generation() -> (ClassGroupsEncryptionKeyAndProof, Uint<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>) {
+    ((String::from("yael"), String::from("abergel")), Uint::from_u8(0))
 }
 
 pub struct NetworkDkg {
@@ -53,7 +54,8 @@ pub struct NetworkDkg {
     epoch_store: Arc<AuthorityPerEpochStore>,
     authority_private_key: [u8; 32],
     consensus_adapter: Arc<dyn SubmitToConsensus>,
-    secret_key_share_sized_encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsKeyPairAndProof>,
+    secret_key_share_sized_encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
+    decryption_key: Uint<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>,
 }
 
 impl NetworkDkg {
@@ -70,24 +72,25 @@ impl NetworkDkg {
             authority_private_key,
             consensus_adapter,
             secret_key_share_sized_encryption_keys_and_proofs: HashMap::new(),
+            decryption_key: Uint::from_u8(0),
         }
     }
 
-    pub async fn start(&mut self) -> PeraResult<ClassGroupsKeyPairAndProof> {
+    pub async fn start(&mut self) -> PeraResult<ClassGroupsEncryptionKeyAndProof> {
         let mut rng = rand_chacha::ChaCha20Rng::from_seed(self.authority_private_key);
-        // let (proof, keypair) = generate_secret_share_sized_keypair_and_proof(&mut rng)
+        // let ((proof, encryption_key), decryption_key) = generate_secret_share_sized_keypair_and_proof(&mut rng)
         //     .map_err(|err| twopc_error_to_pera_error(err.into()))?;
 
-        let (proof, keypair) = mock_keypair_generation();
-        // todo (yael): use only encryption key from the keypair
+        let ((proof, encryption_key), decryption_key) = mock_keypair_generation();
+        self.decryption_key = decryption_key;
         let transaction = ConsensusTransaction::new_pera_network_dkg_message(
             self.epoch_store.name,
-            bcs::to_bytes(&keypair)?,
+            bcs::to_bytes(&encryption_key)?,
             bcs::to_bytes(&proof)?,
         );
         self.consensus_adapter.submit_to_consensus(&vec![transaction], &self.epoch_store).await?;
         self.status = MPCSessionStatus::Active(0);
-        Ok((proof, keypair))
+        Ok((proof, encryption_key))
     }
 
     pub fn handle_message(&mut self, proof: &[u8], encryption_key: &[u8], authority_name: AuthorityName) -> PeraResult {
@@ -103,6 +106,8 @@ impl NetworkDkg {
         let proof = bcs::from_bytes(proof)?;
         let encryption_key = bcs::from_bytes(encryption_key)?;
         self.secret_key_share_sized_encryption_keys_and_proofs.insert(authority_id, (proof, encryption_key));
+
+        // advance the message
         Ok(())
     }
 
@@ -110,6 +115,12 @@ impl NetworkDkg {
         if self.secret_key_share_sized_encryption_keys_and_proofs.len() != self.epoch_store.committee().voting_rights.len() {
             return Ok(()); // todo (yael): return error
         }
+
+        // initiate the party
+        // initiate the public input
+        // advance the protocol
+        // finalize the protocol
+
         // todo (yael): implement the rest of the DKG protocol
         Ok(())
     }
@@ -144,7 +155,7 @@ pub struct DWalletMPCManager {
     pub malicious_actors: HashSet<AuthorityName>,
     pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub weighted_parties: HashMap<PartyID, PartyID>,
-    class_groups_keypair_and_proof: OnceCell<ClassGroupsKeyPairAndProof>,
+    class_groups_keypair_and_proof: OnceCell<ClassGroupsEncryptionKeyAndProof>,
     pub network_dkg: NetworkDkg,
 }
 
