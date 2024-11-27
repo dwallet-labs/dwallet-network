@@ -312,7 +312,7 @@ impl ConsensusTransactionKind {
             self,
             ConsensusTransactionKind::RandomnessDkgMessage(_, _)
                 | ConsensusTransactionKind::RandomnessDkgConfirmation(_, _)
-            // | ConsensusTransactionKind::PeraNetworkDkgMessage(_,_,_)
+                | ConsensusTransactionKind::PeraNetworkDkgMessage(_,_,_)
         )
     }
 }

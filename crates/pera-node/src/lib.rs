@@ -1589,6 +1589,7 @@ impl PeraNode {
             }
 
             // Safe to call because we are in the middle of reconfiguration.
+            // note (yael)
             let latest_system_state = self
                 .state
                 .get_object_cache_reader()

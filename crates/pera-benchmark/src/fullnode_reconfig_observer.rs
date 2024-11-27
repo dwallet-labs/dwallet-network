@@ -80,7 +80,7 @@ impl ReconfigObserver<NetworkAuthorityClient> for FullNodeReconfigObserver {
                             self.auth_agg_metrics.clone(),
                             Arc::new(HashMap::new()),
                         );
-                        quorum_driver.update_validators(Arc::new(auth_agg)).await
+                        quorum_driver.update_validators(Arc::new(auth_agg)).await  // note (yael): seems like where the validators are being updated for the new epoch
                     } else {
                         trace!(
                             epoch_id,

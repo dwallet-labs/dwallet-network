@@ -71,6 +71,7 @@ impl ReconfigObserver<NetworkAuthorityClient> for OnsiteReconfigObserver {
                     let epoch_start_state = system_state.into_epoch_start_state();
                     let committee = epoch_start_state.get_pera_committee();
                     info!("Got reconfig message. New committee: {}", committee);
+                    // note (yael): also here
                     if committee.epoch() > quorum_driver.current_epoch() {
                         let new_auth_agg = quorum_driver
                             .authority_aggregator()

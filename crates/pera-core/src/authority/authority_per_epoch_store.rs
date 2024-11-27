@@ -2568,7 +2568,7 @@ impl AuthorityPerEpochStore {
         match dwallet_mpc_manager {
             Some(dwallet_mpc_manager) => {
                 let dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
-                if matches!(dwallet_mpc_manager.network_dkg.status(), dwallet_mpc::mpc_instance::MPCSessionStatus::Finished(_)) {
+                if matches!(dwallet_mpc_manager.network_dkg.status(), dwallet_mpc::mpc_instance::MPCSessionStatus::Finished(_)) { // todo (yael): fix this
                     return Err(PeraError::from("DWalletMPCManager is not finished"));
                 }
                 Ok(dwallet_mpc_manager)
