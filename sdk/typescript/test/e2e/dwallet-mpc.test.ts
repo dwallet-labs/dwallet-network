@@ -2,56 +2,126 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
-import { beforeAll, describe, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
+import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
-import { mockedDWallet, mockedPresign } from '../../src/dwallet-mpc/mock';
+import { Config } from '../../src/dwallet-mpc/globals';
 import { presign } from '../../src/dwallet-mpc/presign';
 import { Hash, signMessageTransactionCall } from '../../src/dwallet-mpc/sign';
+import { Ed25519Keypair } from '../../src/keypairs/ed25519';
+import { mockedDWallet, mockedPresign } from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
-describe('Test dwallet mpc', () => {
+describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
 
-	beforeAll(async () => {
+	beforeEach(async () => {
 		toolbox = await setup();
+		console.log('Address', toolbox.keypair.toPeraAddress());
 	});
 
-	it('should create DWallet', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		console.log(dwallet);
+	it('should create a dWallet (DKG)', async () => {
+		const pollRef = { value: true };
+		void printOwnedObjects(toolbox.keypair, toolbox.client, pollRef);
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 5 * 60 * 1000,
+		};
+		const dWallet = await createDWallet(conf);
+		expect(dWallet).toBeDefined();
+		pollRef.value = false;
+		console.log({ dWallet });
 	});
 
-	it('should create presign', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		console.log({ dwallet });
-		const presignOutput = await presign(toolbox.keypair, toolbox.client, dwallet!.dwalletID);
+	it('should run a presign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 5 * 60 * 1000,
+		};
+		const dWallet = await createDWallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput = await presign(conf, dWallet.dwalletID);
+		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
 	});
 
 	it('should sign a message successfully ', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		const [sign_msg, _, fullPresigns, hash_msg] = create_sign_centralized_output(
+		const message = Uint8Array.from([1, 2, 3, 4, 5]);
+		const [sign_msg, _, fullPresigns, msg_hash] = create_sign_centralized_output(
 			Uint8Array.from(mockedDWallet.centralizedDKGOutput),
 			Uint8Array.from(mockedPresign.firstRoundOutput),
 			Uint8Array.from(mockedPresign.secondRoundOutput),
-			Uint8Array.from([1, 2, 3, 4, 5]),
+			message,
 			Hash.SHA256,
+			// slice(2) Removes the 0x prefix.
 			mockedPresign.firstRoundSessionID.slice(2)!,
 		);
-
-		let res = await signMessageTransactionCall(
-			toolbox.keypair,
-			toolbox.client,
-			hash_msg,
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 5 * 60 * 1000,
+		};
+		let signOutput = await signMessageTransactionCall(
+			conf,
+			msg_hash,
 			fullPresigns,
 			mockedDWallet.decentralizedDKGOutput,
 			sign_msg,
 			mockedPresign.firstRoundSessionID,
 		);
-
-		console.log(res);
+		expect(signOutput).toBeDefined();
+		console.log({ signOutput });
 	});
 });
+
+async function printOwnedObjects(
+	keypair: Ed25519Keypair,
+	client: PeraClient,
+	poll: { value: boolean },
+) {
+	type MoveObjectContent = {
+		dataType: 'moveObject';
+		fields: MoveStruct;
+		hasPublicTransfer: boolean;
+		type: string;
+	};
+
+	let cursor = null;
+
+	while (poll.value) {
+		await new Promise((r) => setTimeout(r, 3000));
+		const {
+			data: ownedObjects,
+			hasNextPage,
+			nextCursor,
+		} = await client.getOwnedObjects({
+			owner: keypair.toPeraAddress(),
+			cursor,
+		});
+		const objectIds = ownedObjects.map((o) => o.data?.objectId).filter(Boolean) as string[];
+
+		if (objectIds.length === 0) {
+			continue;
+		}
+
+		const objectsContent = await client.multiGetObjects({
+			ids: objectIds,
+			options: { showContent: true },
+		});
+
+		objectsContent.forEach((o) => {
+			if ((o.data?.content as MoveObjectContent)?.type !== '0x2::coin::Coin<0x2::pera::PERA>') {
+				console.log(o);
+			}
+		});
+		if (hasNextPage) {
+			cursor = nextCursor;
+		}
+	}
+
+	console.log('Stopped polling');
+}

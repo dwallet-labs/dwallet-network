@@ -20,7 +20,7 @@ pub struct StartDKGFirstRoundEvent {
     /// Unique identifier for the MPC session.
     pub session_id: ID,
     /// The address of the user that initiated this session.
-    pub sender: PeraAddress,
+    pub initiator: PeraAddress,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
 }
@@ -44,14 +44,14 @@ pub struct StartDKGSecondRoundEvent {
     /// Unique identifier for the MPC session.
     pub session_id: PeraAddress,
     /// The address of the user that initiated this session.
-    pub sender: PeraAddress,
+    pub initiator: PeraAddress,
     /// The DKG first decentralized round output
     pub first_round_output: Vec<u8>,
     /// The DKG centralized round output
     pub public_key_share_and_proof: Vec<u8>,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
-    /// Unique identifier for the first DKG round session.
+    /// The unique identifier for the first DKG round session.
     pub first_round_session_id: ID,
 }
 
@@ -74,7 +74,7 @@ pub struct StartPresignFirstRoundEvent {
     /// Unique identifier for the MPC session.
     pub session_id: ID,
     /// The address of the user that initiated this session.
-    pub sender: PeraAddress,
+    pub initiator: PeraAddress,
     /// The `DWallet` object's ID associated with the dkg output.
     pub dwallet_id: ID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
@@ -102,7 +102,7 @@ pub struct StartPresignSecondRoundEvent {
     /// Unique identifier for the MPC session.
     pub session_id: ID,
     /// The address of the user that initiated this session.
-    pub sender: PeraAddress,
+    pub initiator: PeraAddress,
     /// The `DWallet` object's ID associated with the dkg output.
     pub dwallet_id: ID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
@@ -136,7 +136,7 @@ pub struct StartSignRoundEvent {
     /// Unique identifier for the MPC session.
     pub presign_session_id: ID,
     /// The address of the user that initiated this session.
-    pub sender: PeraAddress,
+    pub initiator: PeraAddress,
     /// The `DWallet` object's ID associated with the dkg output.
     pub dwallet_id: ID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.

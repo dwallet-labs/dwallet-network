@@ -40,7 +40,7 @@ pub struct DWalletMPCInstance {
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     party: MPCParty,
     pub(crate) public_input: Vec<u8>,
-    /// The decryption share of the party for mpc sign sessions
+    /// The decryption share of the party for mpc sign sessions.
     decryption_share: DecryptionKeyShare,
 }
 

@@ -7,7 +7,7 @@ use mpc::two_party::Round;
 use rand_core::OsRng;
 use twopc_mpc::secp256k1;
 
-type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
 type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
 

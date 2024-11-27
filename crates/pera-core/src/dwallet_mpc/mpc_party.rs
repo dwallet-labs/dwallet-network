@@ -161,7 +161,7 @@ impl MPCParty {
             SessionInfo {
                 mpc_session_id: deserialized_event.first_round_session_id.bytes,
                 session_id: ObjectID::from(deserialized_event.session_id),
-                initiating_user_address: deserialized_event.sender,
+                initiating_user_address: deserialized_event.initiator,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
                 mpc_round: MPCRound::DKGSecond,
             },
@@ -177,7 +177,7 @@ impl MPCParty {
             SessionInfo {
                 mpc_session_id: deserialized_event.session_id.bytes,
                 session_id: deserialized_event.session_id.bytes,
-                initiating_user_address: deserialized_event.sender,
+                initiating_user_address: deserialized_event.initiator,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
                 mpc_round: MPCRound::DKGFirst,
             },
@@ -195,7 +195,7 @@ impl MPCParty {
             SessionInfo {
                 mpc_session_id: deserialized_event.session_id.bytes,
                 session_id: deserialized_event.session_id.bytes,
-                initiating_user_address: deserialized_event.sender,
+                initiating_user_address: deserialized_event.initiator,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
                 mpc_round: MPCRound::PresignFirst(
                     deserialized_event.dwallet_id.bytes,
@@ -217,7 +217,7 @@ impl MPCParty {
             SessionInfo {
                 mpc_session_id: deserialized_event.first_round_session_id.bytes,
                 session_id: deserialized_event.session_id.bytes,
-                initiating_user_address: deserialized_event.sender,
+                initiating_user_address: deserialized_event.initiator,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
                 mpc_round: MPCRound::PresignSecond(
                     deserialized_event.dwallet_id.bytes,
@@ -249,7 +249,7 @@ impl MPCParty {
             SessionInfo {
                 mpc_session_id: deserialized_event.presign_session_id.bytes,
                 session_id: deserialized_event.session_id.bytes,
-                initiating_user_address: deserialized_event.sender,
+                initiating_user_address: deserialized_event.initiator,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
                 mpc_round: MPCRound::Sign(party_id),
             },
