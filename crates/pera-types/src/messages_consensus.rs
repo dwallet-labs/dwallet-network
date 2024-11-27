@@ -98,7 +98,7 @@ pub enum ConsensusTransactionKey {
     /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
     /// [`ObjectID`] is the session ID.
     DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    NetworkDkgMessage(AuthorityName),
+    NetworkDkgMessage(AuthorityName, Vec<u8>),
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
@@ -157,7 +157,7 @@ impl Debug for ConsensusTransactionKey {
                     value, session_id, sender_address, dwallet_cap_id
                 )
             }
-            ConsensusTransactionKey::NetworkDkgMessage(name) => {
+            ConsensusTransactionKey::NetworkDkgMessage(name, _) => {
                 write!(f, "NetworkDkgMessage {:?}", name)
             }
         }
@@ -292,7 +292,7 @@ pub enum ConsensusTransactionKind {
     NewJWKFetched(AuthorityName, JwkId, JWK),
     DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
     DWalletMPCOutput(SessionInfo, Vec<u8>),
-    PeraNetworkDkgMessage(AuthorityName, Vec<u8>, Vec<u8>),
+    PeraNetworkDkgMessage(AuthorityName, Vec<u8>),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -312,7 +312,7 @@ impl ConsensusTransactionKind {
             self,
             ConsensusTransactionKind::RandomnessDkgMessage(_, _)
                 | ConsensusTransactionKind::RandomnessDkgConfirmation(_, _)
-                | ConsensusTransactionKind::PeraNetworkDkgMessage(_,_,_)
+                | ConsensusTransactionKind::PeraNetworkDkgMessage(_, _)
         )
     }
 }
@@ -515,15 +515,14 @@ impl ConsensusTransaction {
     }
     pub fn new_pera_network_dkg_message(
         authority: AuthorityName,
-        encryption_key: Vec<u8>,
-        proof: Vec<u8>,
+        message: Vec<u8>,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
-        encryption_key.hash(&mut hasher);
+        message.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, encryption_key, proof),
+            kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message),
         }
     }
     pub fn new_randomness_dkg_message(
@@ -612,8 +611,8 @@ impl ConsensusTransaction {
                     session_info.dwallet_cap_id,
                 )
             }
-            ConsensusTransactionKind::PeraNetworkDkgMessage(authority, _, _) => {
-                ConsensusTransactionKey::NetworkDkgMessage(*authority)
+            ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message) => {
+                ConsensusTransactionKey::NetworkDkgMessage(*authority, message.clone())
             }
         }
     }

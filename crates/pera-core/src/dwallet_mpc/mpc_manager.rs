@@ -1,6 +1,6 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::mpc_instance::{
@@ -23,10 +23,12 @@ use rand_core::{OsRng, SeedableRng};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::marker::PhantomData;
+use std::str::FromStr;
 use std::sync::{Arc, Weak};
 use class_groups::{CompactIbqf, EquivalenceClass};
 use crypto_bigint::Uint;
 use once_cell::sync::OnceCell;
+use serde::{Deserialize, Serialize};
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
@@ -48,6 +50,15 @@ fn mock_keypair_generation() -> (ClassGroupsEncryptionKeyAndProof, Uint<{ class_
     ((String::from("yael"), String::from("abergel")), Uint::from_u8(0))
 }
 
+pub type DKGMessage = String;
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum NetworkDkgMessage {
+    EncryptionKeyAndProof(ClassGroupsEncryptionKeyAndProof),
+    Message(DKGMessage),
+    Output(Vec<u8>),
+}
+
 pub struct NetworkDkg {
     status: MPCSessionStatus,
     epoch_id: EpochId,
@@ -55,6 +66,7 @@ pub struct NetworkDkg {
     authority_private_key: [u8; 32],
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     secret_key_share_sized_encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
+    messages: Vec<HashMap<PartyID, DKGMessage>>,
     decryption_key: Uint<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>,
 }
 
@@ -73,6 +85,7 @@ impl NetworkDkg {
             consensus_adapter,
             secret_key_share_sized_encryption_keys_and_proofs: HashMap::new(),
             decryption_key: Uint::from_u8(0),
+            messages: Vec::new(),
         }
     }
 
@@ -82,50 +95,106 @@ impl NetworkDkg {
         //     .map_err(|err| twopc_error_to_pera_error(err.into()))?;
 
         let ((proof, encryption_key), decryption_key) = mock_keypair_generation();
+        let message = NetworkDkgMessage::EncryptionKeyAndProof((proof.clone(), encryption_key.clone()));
         self.decryption_key = decryption_key;
         let transaction = ConsensusTransaction::new_pera_network_dkg_message(
             self.epoch_store.name,
-            bcs::to_bytes(&encryption_key)?,
-            bcs::to_bytes(&proof)?,
+            bcs::to_bytes(&message)?,
         );
         self.consensus_adapter.submit_to_consensus(&vec![transaction], &self.epoch_store).await?;
-        self.status = MPCSessionStatus::Active(0);
         Ok((proof, encryption_key))
     }
 
-    pub fn handle_message(&mut self, proof: &[u8], encryption_key: &[u8], authority_name: AuthorityName) -> PeraResult {
-        if !matches!(self.status, MPCSessionStatus::FirstExecution |  MPCSessionStatus::Active(_)) {
-            return Err(PeraError::InternalDWalletMPCError); // todo (yael): return error
-        }
-
+    async fn handle_encryption_key_and_proof(
+        &mut self,
+        authority_name: AuthorityName,
+        encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
+    ) -> PeraResult {
+        let (encryption_key, proof) = encryption_key_and_proof;
         let authority_id = authority_name_to_party_id(&authority_name, &self.epoch_store)?;
         if self.secret_key_share_sized_encryption_keys_and_proofs.contains_key(&authority_id) {
             return Err(PeraError::InternalDWalletMPCError);
         }
-
-        let proof = bcs::from_bytes(proof)?;
-        let encryption_key = bcs::from_bytes(encryption_key)?;
         self.secret_key_share_sized_encryption_keys_and_proofs.insert(authority_id, (proof, encryption_key));
-
-        // advance the message
+        if self.secret_key_share_sized_encryption_keys_and_proofs.len() == self.epoch_store.committee().voting_rights.len() {
+            self.advance().await?;
+        }
         Ok(())
     }
 
-    fn advance(&mut self) -> PeraResult {
-        if self.secret_key_share_sized_encryption_keys_and_proofs.len() != self.epoch_store.committee().voting_rights.len() {
-            return Ok(()); // todo (yael): return error
+    async fn store_message( // todo (yael): change the name of the function as it also advances the protocol
+        &mut self,
+        authority_name: AuthorityName,
+        message: DKGMessage,
+    ) -> PeraResult {
+        if self.messages.is_empty() && self.status == MPCSessionStatus::FirstExecution {
+            self.messages.push(HashMap::new());
+            self.status = MPCSessionStatus::Active(0);
         }
 
+        let round = if let MPCSessionStatus::Active(round) = self.status {
+            round
+        } else {
+            return Err(PeraError::InternalDWalletMPCError);
+        };
+
+        let authority_id = authority_name_to_party_id(&authority_name, &self.epoch_store)?;
+        if self.messages[round].contains_key(&authority_id) {
+            return Err(PeraError::InternalDWalletMPCError);
+        }
+        self.messages[round].insert(authority_id, message);
+        if self.messages[round].len() == self.epoch_store.committee().voting_rights.len() {
+            self.advance().await?;
+        }
+        Ok(())
+    }
+
+    pub async fn handle_message(&mut self, message: &[u8], authority_name: AuthorityName) -> PeraResult {
+        if !matches!(self.status, MPCSessionStatus::FirstExecution |  MPCSessionStatus::Active(_) | MPCSessionStatus::Finalizing(_)) {
+            return Err(PeraError::InternalDWalletMPCError); // todo (yael): return error
+        }
+
+        let message: NetworkDkgMessage = bcs::from_bytes(message)?;
+        match message {
+            NetworkDkgMessage::EncryptionKeyAndProof(message) => {
+                self.handle_encryption_key_and_proof(authority_name, message).await?;
+            }
+            NetworkDkgMessage::Message(message) => {
+                self.store_message(authority_name, message).await?;
+            }
+            NetworkDkgMessage::Output(output) => {
+                // self.handle_output(authority_name, output)?;
+                // todo (yael): publish public input as object
+            }
+        }
+        Ok(())
+    }
+
+    async fn advance(&mut self) -> PeraResult {
         // initiate the party
         // initiate the public input
         // advance the protocol
         // finalize the protocol
+        let message = NetworkDkgMessage::Message("hopa".to_string());
+        let transaction = ConsensusTransaction::new_pera_network_dkg_message(
+            self.epoch_store.name,
+            bcs::to_bytes(&message)?,
+        );
+        self.consensus_adapter.submit_to_consensus(&vec![transaction], &self.epoch_store).await?;
 
-        // todo (yael): implement the rest of the DKG protocol
-        Ok(())
-    }
+        // return error if status is active with value 3
+        if self.status == MPCSessionStatus::FirstExecution {
+            self.status = MPCSessionStatus::Active(0);
+            self.messages.push(HashMap::new());
+        } else if let MPCSessionStatus::Active(round) = self.status {
+            if round == 3 { // this should be finalized result from the real advance function
+                self.status = MPCSessionStatus::Finalizing(vec![0]);
+            } else {
+                self.status = MPCSessionStatus::Active(round + 1);
+                self.messages.push(HashMap::new());
+            }
+        }
 
-    fn finalize(&mut self) -> PeraResult {
         // todo (yael): implement the rest of the DKG protocol
         Ok(())
     }

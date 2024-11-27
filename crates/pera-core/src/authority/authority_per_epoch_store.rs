@@ -2446,7 +2446,7 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, _, _),
+                kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, _),
                 ..
             }) => {
                 if transaction.sender_authority() != *authority {
@@ -3629,14 +3629,13 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, proof, encryption_key),
+                kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message),
                 ..
             }) => {
                 self.get_dwallet_mpc_manager().await?.network_dkg.handle_message(
-                    proof,
-                    encryption_key,
+                    message,
                     *authority,
-                )?;
+                ).await?;
                 // todo (yael): handle message
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
