@@ -17,7 +17,7 @@ export async function presign(
 		arguments: [tx.object(dwalletId)],
 	});
 
-	const res = await client.signAndExecuteTransaction({
+	await client.signAndExecuteTransaction({
 		signer: keypair,
 		transaction: tx,
 		options: {
@@ -26,31 +26,12 @@ export async function presign(
 		},
 	});
 
-	const initEvent = res.events?.at(0)?.parsedJson as { session_id: string };
-
-	await new Promise((resolve) => setTimeout(resolve, 5000));
-	let firstRoundOutputObject = await fetchObjectBySessionId(
-		initEvent.session_id,
-		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::PresignSessionOutput`,
-		keypair,
-		client,
-	);
-
-	let firstRoundOutputData =
-		firstRoundOutputObject?.dataType === 'moveObject'
-			? (firstRoundOutputObject.fields as {
-					id: { id: string };
-					output: number[];
-					session_id: string;
-				})
-			: null;
-
-	const timeout = 5 * 60 * 1000; // 5 minutes in milliseconds
+	const timeout = 8 * 60 * 1000; // 5 minutes in milliseconds
 	const startTime = Date.now();
 
 	for (;;) {
 		if (Date.now() - startTime > timeout) {
-			throw new Error('Timeout: Unable to fetch object within 5 minutes');
+			throw new Error('Timeout: Unable to fetch object, reached timeout');
 		}
 
 		await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -76,17 +57,18 @@ export async function presign(
 					outputObject?.data?.content?.dataType === 'moveObject'
 						? (outputObject.data?.content?.fields as {
 								id: { id: string };
-								presigns: number[];
+								first_round_session_id: string;
+								first_round_output: number[];
+								second_round_output: number[];
 								session_id: string;
 							})
 						: null;
 
 				return {
-					presignFirstRoundOutputId: firstRoundOutputData!.id.id,
-					encryptionOfMaskAndMaskedKeyShare: firstRoundOutputData!.output,
-					presignSecondRoundOutputId: secondRoundOutputData!.id.id,
-					noncePublicShareAndEncryptionOfMaskedNonce: secondRoundOutputData!.presigns,
-					presignFirstRoundSessionId: firstRoundOutputData!.session_id,
+					id: secondRoundOutputData!.id.id,
+					firstRoundOutput: secondRoundOutputData!.first_round_output,
+					secondRoundOutput: secondRoundOutputData!.second_round_output,
+					sessionId: secondRoundOutputData!.first_round_session_id,
 				};
 			}
 		}
@@ -94,9 +76,8 @@ export async function presign(
 }
 
 export type PresignOutput = {
-	presignFirstRoundOutputId: string;
-	encryptionOfMaskAndMaskedKeyShare: number[];
-	presignSecondRoundOutputId: string;
-	noncePublicShareAndEncryptionOfMaskedNonce: number[];
-	presignFirstRoundSessionId: string;
+	id: string;
+	firstRoundOutput: number[];
+	secondRoundOutput: number[];
+	sessionId: string;
 };

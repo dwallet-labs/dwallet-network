@@ -40,11 +40,11 @@ describe('Test dwallet mpc', () => {
 
 		const [sign_msg, _, hash_msg] = create_sign_centralized_output(
 			Uint8Array.from(dwallet?.centralizedDKGOutput!),
-			Uint8Array.from(presignOutput?.encryptionOfMaskAndMaskedKeyShare!),
-			Uint8Array.from(presignOutput?.noncePublicShareAndEncryptionOfMaskedNonce!),
+			Uint8Array.from(presignOutput?.firstRoundOutput!),
+			Uint8Array.from(presignOutput?.secondRoundOutput!),
 			Uint8Array.from([1, 2, 3, 4, 5]),
 			Hash.SHA256,
-			presignOutput?.presignFirstRoundOutputId.slice(2)!,
+			presignOutput?.sessionId.slice(2)!,
 		);
 
 		let res = await signMessageTransactionCall(
@@ -53,10 +53,9 @@ describe('Test dwallet mpc', () => {
 			dwallet?.dwalletCapID!,
 			hash_msg,
 			dwallet?.dwalletID!,
-			presignOutput?.presignFirstRoundOutputId!,
-			presignOutput?.presignSecondRoundOutputId!,
+			presignOutput?.id!,
 			sign_msg,
-			presignOutput?.presignFirstRoundSessionId!,
+			presignOutput?.sessionId!,
 		);
 
 		console.log(res);

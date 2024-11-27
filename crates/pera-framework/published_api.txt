@@ -34,9 +34,6 @@ CompletedDKGSecondRoundEvent
 StartPresignFirstRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-PresignSessionOutput
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartPresignSecondRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -65,9 +62,6 @@ create_dkg_second_round_output
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_presign_first_round
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_first_presign_round_output_and_launch_second_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_presign_second_round

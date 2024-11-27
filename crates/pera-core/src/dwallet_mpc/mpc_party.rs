@@ -15,7 +15,7 @@ use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use anyhow::Error;
 use commitment::CommitmentSizedNumber;
 use group::PartyID;
-use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
+use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::ObjectID;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
