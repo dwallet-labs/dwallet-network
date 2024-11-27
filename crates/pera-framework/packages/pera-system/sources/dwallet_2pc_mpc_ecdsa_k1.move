@@ -51,6 +51,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     const ENotSystemAddress: u64 = 0;
+    const EInvalidParams: u64 = 1;
     // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
@@ -167,48 +168,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         event::emit(event);
     }
 
-    /// Object to store the output of the first round of the presign session.
-    public struct PresignSessionOutput has key {
-        id: UID,
-        session_id: ID,
-        dwallet_id: ID,
-        dwallet_cap_id: ID,
-        output: vector<u8>,
-    }
-
-    /// Creates the first presign round output and transfers it to the initiating user.
-    /// Validators call it as part of the blockchain logic.
-    /// This also triggers the second round of the presign session.
-    public fun create_first_presign_round_output_and_launch_second_round(
-        session_initiator: address,
-        session_id: ID,
-        first_round_output: vector<u8>,
-        dwallet_cap_id: ID,
-        dwallet_id: ID,
-        dkg_output: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
-
-        let output = PresignSessionOutput {
-            id: object::new(ctx),
-            session_id,
-            dwallet_id,
-            dwallet_cap_id,
-            output: first_round_output,
-        };
-        transfer::transfer(output, session_initiator);
-        launch_presign_second_round(
-            session_initiator,
-            dwallet_id,
-            dkg_output,
-            dwallet_cap_id,
-            first_round_output,
-            session_id,
-            ctx
-        );
-    }
-
     /// Event emitted to initiate the second round of a `Presign` session, caught by the Validators.
     public struct StartPresignSecondRoundEvent has copy, drop {
         session_id: ID,
@@ -254,7 +213,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id: ID,
         dwallet_id: ID,
         dwallet_cap_id: ID,
-        presigns: vector<u8>,
+        first_round_session_id: ID,
+        first_round_output: vector<u8>,
+        second_round_output: vector<u8>,
     }
 
     /// Event emitted when the presign second round is completed.
@@ -269,7 +230,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun create_second_presign_round_output(
         session_initiator: address,
         session_id: ID,
-        output: vector<u8>,
+        first_round_session_id: ID,
+        first_round_output: vector<u8>,
+        second_round_output: vector<u8>,
         dwallet_cap_id: ID,
         dwallet_id: ID,
         ctx: &mut TxContext
@@ -279,9 +242,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let output = Presign {
             id: object::new(ctx),
             session_id,
+            first_round_session_id,
             dwallet_id,
             dwallet_cap_id,
-            presigns: output,
+            first_round_output,
+            second_round_output,
         };
 
         let event = CompletedPresignEvent {
@@ -303,13 +268,44 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_cap_id: ID,
         dkg_output: vector<u8>,
         hashed_message: vector<u8>,
-        presign: vector<u8>,
+        presign_first_round_output: vector<u8>,
+        presign_second_round_output: vector<u8>,
         centralized_signed_message: vector<u8>,
     }
 
-    /// Starts the signing process.
+/// Starts the signing process.
     public fun sign(
+        dwallet_cap: &DWalletCap,
         hashed_message: vector<u8>,
+        dwallet: &DWallet<Secp256K1>,
+        presign: &Presign,
+        centralized_signed_message: vector<u8>,
+        presign_session_id: ID,
+        ctx: &mut TxContext
+    ) {
+        assert!(object::id(dwallet_cap) == get_dwallet_cap_id<Secp256K1>(dwallet), EInvalidParams);
+        assert!(object::id(dwallet) == presign.dwallet_id, EInvalidParams);
+
+        let id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        let event = StartSignEvent {
+            session_id: id,
+            presign_session_id,
+            sender: tx_context::sender(ctx),
+            dwallet_id: object::id(dwallet),
+            dwallet_cap_id: object::id(dwallet_cap),
+            presign_first_round_output: presign.first_round_output,
+            presign_second_round_output: presign.second_round_output,
+            centralized_signed_message,
+            dkg_output: get_dwallet_output<Secp256K1>(dwallet),
+            hashed_message
+        };
+        event::emit(event);
+    }
+
+    /// Todo: Remove this function
+    public fun mock_sign(
+        hashed_message: vector<u8>,
+        presign_first_round_output: vector<u8>,
         presign: vector<u8>,
         dkg_output: vector<u8>,
         centralized_signed_message: vector<u8>,
@@ -323,7 +319,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             sender: tx_context::sender(ctx),
             dwallet_id: id,
             dwallet_cap_id: id,
-            presign,
+            presign_first_round_output,
+            presign_second_round_output: presign,
             centralized_signed_message,
             dkg_output,
             hashed_message
@@ -335,15 +332,17 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public struct SignOutput has key {
         id: UID,
         session_id: ID,
+        dwallet_id: ID,
         output: vector<u8>,
     }
 
     /// Creates the output of the signing process and transfers it to the initiating user.
-    public fun create_sign_output(initiating_user: address, session_id: ID, output: vector<u8>, ctx: &mut TxContext) {
+    public fun create_sign_output(dwallet_id: ID, initiating_user: address, session_id: ID, output: vector<u8>, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         let output = SignOutput {
             id: object::new(ctx),
             session_id,
+            dwallet_id,
             output,
         };
         transfer::transfer(output, initiating_user);

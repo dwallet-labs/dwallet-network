@@ -16,11 +16,11 @@ pub enum MPCRound {
     /// Contains the `ObjectId` of the dwallet object and the dkg decentralized output.
     PresignFirst(ObjectID, Vec<u8>),
     /// The second round of the presign protocol.
-    /// Contains the `ObjectId` of the dwallet object and the presign first round output.
+    /// Contains the `ObjectId` of the dwallet object and the presign rounds outputs.
     PresignSecond(ObjectID, Vec<u8>),
     /// The first round of the sign protocol.
-    /// Contains the party id associated with the decryption share.
-    Sign(PartyID),
+    /// Contains the party id associated with the decryption share and the `ObjectId` of the dwallet to sign with.
+    Sign(PartyID, ObjectID),
 }
 
 /// The content of the system transaction that stores the MPC session output on chain.
@@ -44,6 +44,7 @@ impl Message for DWalletMPCOutput {
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
+    pub mpc_session_id: ObjectID,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The address of the user that initiated this session.

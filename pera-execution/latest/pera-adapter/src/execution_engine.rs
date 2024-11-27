@@ -256,7 +256,7 @@ mod checked {
             0,
         );
         let mut gas_charger = GasCharger::new_unmetered(tx_context.digest());
-        let res = programmable_transactions::execution::execute::<execution_mode::Genesis>(
+        let _ = programmable_transactions::execution::execute::<execution_mode::Genesis>(
             protocol_config,
             metrics,
             move_vm,
@@ -265,7 +265,6 @@ mod checked {
             &mut gas_charger,
             pt,
         );
-        let res = res?;
         temporary_store.update_object_version_and_prev_tx();
         Ok(temporary_store.into_inner())
     }
@@ -1133,29 +1132,32 @@ mod checked {
                 ],
             ),
             MPCRound::PresignFirst(dwallet_id, dkg_output) => (
-                "create_first_presign_round_output_and_launch_second_round",
+                "launch_presign_second_round",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
-                    CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&dkg_output).unwrap()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
                 ],
             ),
-            MPCRound::PresignSecond(dwallet_id, _) => (
+            MPCRound::PresignSecond(dwallet_id, first_round_output) => (
                 "create_second_presign_round_output",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(data.session_info.mpc_session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&first_round_output).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
                     CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                 ],
             ),
-            MPCRound::Sign(_) => (
+            MPCRound::Sign(_, dwallet_id) => (
                 "create_sign_output",
                 vec![
+                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
