@@ -2568,9 +2568,6 @@ impl AuthorityPerEpochStore {
         match dwallet_mpc_manager {
             Some(dwallet_mpc_manager) => {
                 let dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
-                if matches!(dwallet_mpc_manager.network_dkg.status(), dwallet_mpc::mpc_instance::MPCSessionStatus::Finished(_)) { // todo (yael): fix this
-                    return Err(PeraError::from("DWalletMPCManager is not finished"));
-                }
                 Ok(dwallet_mpc_manager)
             },
             None => Err(PeraError::from("DWalletMPCManager is not initialized")),
@@ -3632,7 +3629,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message),
                 ..
             }) => {
-                self.get_dwallet_mpc_manager().await?.network_dkg.handle_message(
+                self.get_dwallet_mpc_manager().await?.handle_message(
                     message,
                     *authority,
                 ).await?;

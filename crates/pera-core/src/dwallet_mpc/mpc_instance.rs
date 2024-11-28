@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
 use group::PartyID;
+use move_core_types::effects::Op;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
@@ -41,7 +42,7 @@ pub struct DWalletMPCInstance {
     party: MPCParty,
     pub(crate) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
-    decryption_share: DecryptionKeyShare,
+    decryption_share: Option<DecryptionKeyShare>,
 }
 
 impl DWalletMPCInstance {
@@ -52,7 +53,7 @@ impl DWalletMPCInstance {
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
         session_info: SessionInfo,
-        decryption_share: DecryptionKeyShare,
+        decryption_share: Option<DecryptionKeyShare>,
     ) -> Self {
         Self {
             status,

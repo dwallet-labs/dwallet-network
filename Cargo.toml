@@ -245,10 +245,10 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(msim)', 'cfg(fail_points)'
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"] , rev = "479bb9fc5280a7d267dff9d6f62e97e0cf2d0644" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "479bb9fc5280a7d267dff9d6f62e97e0cf2d0644", subdir = "class-groups", features = ["default", "threshold"] }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev = "479bb9fc5280a7d267dff9d6f62e97e0cf2d0644" }
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "479bb9fc5280a7d267dff9d6f62e97e0cf2d0644" }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"] , rev = "d96da80f3397a433995755aa3eb8ab782ee139fb" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "d96da80f3397a433995755aa3eb8ab782ee139fb", subdir = "class-groups", features = ["default", "threshold"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev = "d96da80f3397a433995755aa3eb8ab782ee139fb" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "d96da80f3397a433995755aa3eb8ab782ee139fb" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"

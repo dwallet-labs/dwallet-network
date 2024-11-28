@@ -5,3 +5,4 @@ pub mod mpc_manager;
 pub mod mpc_party;
 mod presign;
 mod sign;
+mod network_dkg;

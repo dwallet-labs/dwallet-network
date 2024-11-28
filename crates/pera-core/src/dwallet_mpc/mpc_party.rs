@@ -22,6 +22,8 @@ use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use class_groups::dkg::{RistrettoParty, Secp256k1Party};
+use crypto_bigint::Uint;
 
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -37,6 +39,9 @@ pub enum MPCParty {
     SecondPresignBytesParty,
     /// The party used in the sign protocol.
     SignBytesParty(HashMap<PartyID, twopc_mpc::secp256k1::class_groups::DecryptionKeyShare>),
+
+    NetworkDkgSecp256k1Party(Secp256k1Party::PrivateInput),
+    NetworkDkgRistrettoParty(RistrettoParty::PrivateInput),
 }
 
 impl MPCParty {
@@ -105,6 +110,28 @@ impl MPCParty {
                     messages,
                     public_input,
                     decryption_key_share.clone(),
+                )
+            }
+            MPCParty::NetworkDkgSecp256k1Party(secret_key) => {
+                let public_input = bcs::from_bytes(&public_input)?;
+                advance::<Secp256k1Party>(
+                    session_id,
+                    party_id,
+                    access_threshold,
+                    messages,
+                    public_input,
+                    secret_key.clone(),
+                )
+            }
+            MPCParty::NetworkDkgRistrettoParty(secret_key) => {
+                let public_input = bcs::from_bytes(&public_input)?;
+                advance::<RistrettoParty>(
+                    session_id,
+                    party_id,
+                    access_threshold,
+                    messages,
+                    public_input,
+                    secret_key.clone(),
                 )
             }
         }

@@ -21,6 +21,8 @@ pub enum MPCRound {
     /// The first round of the sign protocol.
     /// Contains the party id associated with the decryption share.
     Sign(PartyID),
+
+    NetworkDkg,
 }
 
 /// The content of the system transaction that stores the MPC session output on chain.

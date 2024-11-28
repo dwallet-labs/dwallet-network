@@ -6,7 +6,7 @@ version.workspace = true
 [dependencies]
 mpc.workspace = true
 twopc_mpc.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "479bb9fc5280a7d267dff9d6f62e97e0cf2d0644", subdir = "commitment" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "d96da80f3397a433995755aa3eb8ab782ee139fb", subdir = "commitment" }
 class_groups_constants = { path = "../class-groups-constants" }
 k256 = { git = 'https://github.com/ycscaly/elliptic-curves.git', branch = "13.3-fixed", features = ["arithmetic", "critical-section", "precomputed-tables", "serde", "ecdsa", "hash2curve", "alloc"], default-features = false }
 
