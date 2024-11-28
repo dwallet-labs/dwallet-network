@@ -6,7 +6,7 @@ import { bcs } from '../bcs/index.js';
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
-import { dWalletModuleName } from './globals';
+import { dWalletModuleName } from './globals.ts';
 
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';

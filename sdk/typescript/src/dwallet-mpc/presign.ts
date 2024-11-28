@@ -26,7 +26,7 @@ export async function presign(
 		},
 	});
 
-	const timeout = 8 * 60 * 1000; // 5 minutes in milliseconds
+	const timeout = 15 * 60 * 1000; // 5 minutes in milliseconds
 	const startTime = Date.now();
 
 	for (;;) {
