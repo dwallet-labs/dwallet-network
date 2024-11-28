@@ -237,6 +237,7 @@ impl DWalletMPCManager {
                 None
             })
             .collect::<Vec<ConsensusTransaction>>();
+        // Need to send the messages one by one so the consensus adapter won't think they are a [soft bundle](https://github.com/sui-foundation/sips/pull/19)
         for message in messages {
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
