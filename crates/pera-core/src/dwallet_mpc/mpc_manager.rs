@@ -34,7 +34,6 @@ use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 use consensus_config::ProtocolKeyPair;
 use crate::dwallet_mpc::network_dkg::{new_dkg_ristretto_instance, new_dkg_secp256k1_instance, ClassGroupsEncryptionKeyAndProof, NetworkDkg};
 
-
 enum ManagerState {
     WaitingForDkgCompletion,
     Active,
@@ -60,7 +59,7 @@ pub struct DWalletMPCManager {
     pub malicious_actors: HashSet<AuthorityName>,
     pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub weighted_parties: HashMap<PartyID, PartyID>,
-    class_groups_keypair_and_proof: OnceCell<ClassGroupsEncryptionKeyAndProof>,
+    pub network_dkg: NetworkDkg,
     manager_state: ManagerState,
 }
 
@@ -79,13 +78,15 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
+        let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
         let mut network_dkg = NetworkDkg::new(
             epoch_id,
             epoch_store.clone(),
             node_config.protocol_key_pair().copy().private().as_bytes().try_into().expect("key length should match"),
-            consensus_adapter.clone()
+            consensus_adapter.clone(),
+            party_id,
         );
-        let (proof, keypair) = network_dkg.start().await?;
+        network_dkg.start().await?;
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
@@ -108,7 +109,7 @@ impl DWalletMPCManager {
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
             consensus_adapter,
-            party_id: authority_name_to_party_id(&epoch_store.name.clone(), &epoch_store.clone())?,
+            party_id,
             epoch_store: Arc::downgrade(&epoch_store),
             epoch_id,
             max_active_mpc_instances: node_config.max_active_dwallet_mpc_instances,
@@ -116,7 +117,7 @@ impl DWalletMPCManager {
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
             weighted_parties,
-            class_groups_keypair_and_proof: OnceCell::from((proof, keypair)),
+            network_dkg,
             manager_state: ManagerState::WaitingForDkgCompletion,
         })
     }
@@ -318,7 +319,7 @@ impl DWalletMPCManager {
             MPCSessionStatus::Pending,
             auxiliary_input,
             session_info,
-            self.get_decryption_share()?,
+            Some(self.get_decryption_share()?),
         );
         // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
         if self.active_instances_counter > self.max_active_mpc_instances

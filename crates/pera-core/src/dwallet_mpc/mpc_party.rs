@@ -40,8 +40,8 @@ pub enum MPCParty {
     /// The party used in the sign protocol.
     SignBytesParty(HashMap<PartyID, twopc_mpc::secp256k1::class_groups::DecryptionKeyShare>),
 
-    NetworkDkgSecp256k1Party(Secp256k1Party::PrivateInput),
-    NetworkDkgRistrettoParty(RistrettoParty::PrivateInput),
+    NetworkDkgSecp256k1Party(<Secp256k1Party as mpc::AsynchronouslyAdvanceable>::PrivateInput),
+    NetworkDkgRistrettoParty(<RistrettoParty as mpc::AsynchronouslyAdvanceable>::PrivateInput),
 }
 
 impl MPCParty {

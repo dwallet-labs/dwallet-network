@@ -3629,7 +3629,7 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message),
                 ..
             }) => {
-                self.get_dwallet_mpc_manager().await?.handle_message(
+                self.get_dwallet_mpc_manager().await?.network_dkg.handle_message(
                     message,
                     *authority,
                 ).await?;

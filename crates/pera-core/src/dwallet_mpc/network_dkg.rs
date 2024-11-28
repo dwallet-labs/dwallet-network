@@ -1,14 +1,11 @@
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use std::sync::Arc;
 use std::collections::HashMap;
-use std::marker::PhantomData;
-use class_groups::dkg::{RistrettoParty, Secp256k1Party};
 use group::PartyID;
 use crypto_bigint::Uint;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use jsonrpsee::core::Serialize;
 use serde::Deserialize;
-use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::{ConsensusTransaction, ConsensusTransactionKind};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -22,10 +19,18 @@ const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(0);
 const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(1);
 
 
+pub type DecryptionKey = Uint<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>;
+pub type EncryptionKey = CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>;
+pub type Proof = KnowledgeOfDiscreteLogUCProof;
+
+// pub type DecryptionKey = Vec<u8>;
+// pub type EncryptionKey = Vec<u8>;
+// pub type Proof = Vec<u8>;
+
 pub fn new_dkg_secp256k1_instance(
     epoch_id: EpochId,
     epoch_store: Arc<AuthorityPerEpochStore>,
-    authority_private_key: Uint<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>,
+    authority_private_key: DecryptionKey,
 ) -> DWalletMPCInstance {
     DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
@@ -47,7 +52,7 @@ pub fn new_dkg_secp256k1_instance(
 pub fn new_dkg_ristretto_instance(
     epoch_id: EpochId,
     epoch_store: Arc<AuthorityPerEpochStore>,
-    authority_private_key: Uint<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>,
+    authority_private_key: DecryptionKey,
 ) -> DWalletMPCInstance {
     DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
@@ -69,39 +74,38 @@ pub fn new_dkg_ristretto_instance(
 fn generate_secp256k1_dkg_party_public_input(
     secret_key_share_sized_encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
 ) -> Vec<u8> {
-    let public_input = Secp256k1Party::PublicInput::new(
-        &(),
-        (),
-        (),
-        Parameters {},
-        secret_key_share_sized_encryption_keys_and_proofs,
-    ).unwrap();
-    bcs::to_bytes(&public_input).unwrap()
+    // let public_input = Secp256k1Party::PublicInput::new(
+    //     &(),
+    //     (),
+    //     (),
+    //     (),
+    //     secret_key_share_sized_encryption_keys_and_proofs,
+    // ).unwrap();
+    // bcs::to_bytes(&public_input).unwrap()
+    Vec::new()
 }
 
 fn generate_ristretto_dkg_party_public_input(
     secret_key_share_sized_encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsEncryptionKeyAndProof>,
 ) -> Vec<u8> {
-    let public_input = RistrettoParty::PublicInput::new(
-        &(),
-        (),
-        (),
-        Parameters {},
-        secret_key_share_sized_encryption_keys_and_proofs,
-    ).unwrap();
-    bcs::to_bytes(&public_input).unwrap()
+    // let public_input = RistrettoParty::PublicInput::new(
+    //     &(),
+    //     (),
+    //     (),
+    //     Parameters {},
+    //     secret_key_share_sized_encryption_keys_and_proofs,
+    // ).unwrap();
+    // bcs::to_bytes(&public_input).unwrap()
+    Vec::new()
 }
 
 use class_groups::dkg::proof_helpers::{generate_secret_share_sized_keypair_and_proof, KnowledgeOfDiscreteLogUCProof};
-use class_groups::{CompactIbqf, EquivalenceClass};
+use class_groups::{CompactIbqf};
+use mpc::WeightedThresholdAccessStructure;
+use rand_core::SeedableRng;
+use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
 
-type ClassGroupsEncryptionKeyAndProof = (CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>, KnowledgeOfDiscreteLogUCProof);
-
-// pub type ClassGroupsEncryptionKeyAndProof = (String, String);
-
-fn mock_keypair_generation() -> (ClassGroupsEncryptionKeyAndProof, Uint<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>) {
-    ((String::from("yael"), String::from("abergel")), Uint::from_u8(0))
-}
+pub(crate) type ClassGroupsEncryptionKeyAndProof = (EncryptionKey, Proof);
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum KeyTypes {
@@ -149,13 +153,15 @@ impl NetworkDkg {
         }
     }
 
-    pub async fn start(&mut self) -> PeraResult<ClassGroupsEncryptionKeyAndProof> {
+    pub async fn start(&mut self) -> PeraResult<> {
         let mut rng = rand_chacha::ChaCha20Rng::from_seed(self.authority_private_key);
-        // let ((proof, encryption_key), decryption_key) = generate_secret_share_sized_keypair_and_proof(&mut rng)
-        //     .map_err(|err| twopc_error_to_pera_error(err.into()))?;
+        let (decryption_key, proof, encryption_key) = generate_secret_share_sized_keypair_and_proof(&mut rng)
+            .map_err(|err| twopc_error_to_pera_error(err.into()))?;
 
-        let ((proof, encryption_key), decryption_key) = mock_keypair_generation();
-        let message = NetworkDkgMessage::EncryptionKeyAndProof((proof.clone(), encryption_key.clone()));
+        // let (decryption_key, proof, encryption_key) = (Uint::from_u8(0), Vec::new(), Vec::new());
+
+        // let ((proof, encryption_key), decryption_key) = mock_keypair_generation();
+        let message = NetworkDkgMessage::EncryptionKeyAndProof((encryption_key.clone(), proof.clone()));
         self.decryption_key = decryption_key;
         let transaction = ConsensusTransaction::new_pera_network_dkg_message(
             self.epoch_store.name,
@@ -167,12 +173,12 @@ impl NetworkDkg {
             self.epoch_id,
             self.epoch_store.clone(),
             self.decryption_key.clone(),
-        )?;
+        );
         let dkg_ristretto_instance = new_dkg_ristretto_instance(
             self.epoch_id,
             self.epoch_store.clone(),
             self.decryption_key.clone(),
-        )?;
+        );
 
         self.mpc_instances = HashMap::from(
             [
@@ -181,7 +187,7 @@ impl NetworkDkg {
             ]
         );
 
-        Ok((proof, encryption_key))
+        Ok(())
     }
 
     async fn handle_encryption_key_and_proof(
@@ -196,13 +202,15 @@ impl NetworkDkg {
         }
         self.secret_key_share_sized_encryption_keys_and_proofs.insert(authority_id, (encryption_key, proof));
         if self.secret_key_share_sized_encryption_keys_and_proofs.len() == self.epoch_store.committee().voting_rights.len() {
-            let secp256k1_instance = self.mpc_instances.get_mut(&SECP256K1_DKG_SESSION_ID).unwrap();
+            let mut secp256k1_instance = self.mpc_instances.remove(&SECP256K1_DKG_SESSION_ID).unwrap();
             secp256k1_instance.public_input = generate_secp256k1_dkg_party_public_input(self.secret_key_share_sized_encryption_keys_and_proofs.clone());
-            self.advance(secp256k1_instance, authority_name, KeyTypes::Secp256k1).await?;
+            self.advance(&mut secp256k1_instance, authority_name, KeyTypes::Secp256k1).await?;
+            self.mpc_instances.insert(secp256k1_instance.session_info.session_id.clone(), secp256k1_instance);
 
-            let ristretto_instance = self.mpc_instances.get_mut(&RISTRETTO_DKG_SESSION_ID).unwrap();
+            let mut ristretto_instance = self.mpc_instances.remove(&RISTRETTO_DKG_SESSION_ID).unwrap();
             ristretto_instance.public_input = generate_ristretto_dkg_party_public_input(self.secret_key_share_sized_encryption_keys_and_proofs.clone());
-            self.advance(ristretto_instance, authority_name, KeyTypes::Ristretto).await?;
+            self.advance(&mut ristretto_instance, authority_name, KeyTypes::Ristretto).await?;
+            self.mpc_instances.insert(ristretto_instance.session_info.session_id.clone(), ristretto_instance);
         }
         Ok(())
     }
@@ -219,9 +227,9 @@ impl NetworkDkg {
             }
             NetworkDkgMessage::Message(key_type, message) => {
                 let message = DWalletMPCMessage { authority: authority_name, message };
-                let instance = match key_type {
-                    KeyTypes::Secp256k1 => self.mpc_instances.get_mut(&SECP256K1_DKG_SESSION_ID).unwrap(),
-                    KeyTypes::Ristretto => self.mpc_instances.get_mut(&RISTRETTO_DKG_SESSION_ID).unwrap(),
+                let mut instance = match key_type {
+                    KeyTypes::Secp256k1 => self.mpc_instances.remove(&SECP256K1_DKG_SESSION_ID).unwrap(),
+                    KeyTypes::Ristretto => self.mpc_instances.remove(&RISTRETTO_DKG_SESSION_ID).unwrap(),
                 };
                 instance.handle_message(message)?;
                 let round = if let MPCSessionStatus::Active(round) = instance.status {
@@ -230,8 +238,9 @@ impl NetworkDkg {
                     return Err(PeraError::InternalDWalletMPCError);
                 };
                 if instance.pending_messages[round].len() == self.epoch_store.committee().voting_rights.len() {
-                    self.advance(instance, authority_name, key_type).await?;
+                    self.advance(&mut instance, authority_name, key_type).await?;
                 }
+                self.mpc_instances.insert(instance.session_info.session_id.clone(), instance);
             }
             NetworkDkgMessage::Output(output) => {
                 // finalize the instance
@@ -242,7 +251,23 @@ impl NetworkDkg {
     }
 
     async fn advance(&mut self, instance: &mut DWalletMPCInstance, authority_name: AuthorityName, key_type: KeyTypes) -> PeraResult {
-        let (transaction, malicious_parties) = instance.advance(&(), self.party_id)?;
+        let weighted_parties: HashMap<PartyID, PartyID> = self.epoch_store
+            .committee()
+            .voting_rights
+            .iter()
+            .map(|(name, weight)| {
+                Ok((
+                    authority_name_to_party_id(&name, &self.epoch_store)?,
+                    *weight as PartyID,
+                ))
+            })
+            .collect::<PeraResult<HashMap<PartyID, PartyID>>>()?;
+        let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
+            self.epoch_store.committee().voting_rights.len() as PartyID,
+            weighted_parties.clone(),
+        )
+            .map_err(|_| PeraError::InternalDWalletMPCError)?;
+        let (transaction, malicious_parties) = instance.advance(&weighted_threshold_access_structure, self.party_id)?;
         // todo (yael): handle malicious parties
         // convert transaction
         let transaction = match transaction.kind {
