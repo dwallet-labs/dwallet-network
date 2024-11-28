@@ -1163,7 +1163,7 @@ Starts the signing process.
     <b>while</b> (i &lt; messages_len) {
         <b>let</b> message_approval = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> message_approvals);
         <b>let</b> (message_approval_dwallet_cap_id, approved_message) = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_remove_message_approval">remove_message_approval</a>(message_approval);
-        <b>assert</b>!(dwallet_cap_id == message_approval_dwallet_cap_id, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EMesssageApprovalDWalletMismatch">EMesssageApprovalDWalletMismatch</a>);
+        <b>assert</b>!(get_dwallet_cap_id(<a href="dwallet.md#0x3_dwallet">dwallet</a>) == message_approval_dwallet_cap_id, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EMesssageApprovalDWalletMismatch">EMesssageApprovalDWalletMismatch</a>);
         <b>let</b> message = <a href="../move-stdlib/vector.md#0x1_vector_borrow">vector::borrow</a>(&hashed_messages, i);
         <b>assert</b>!(message == &approved_message, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EMesssageApprovalDWalletMismatch">EMesssageApprovalDWalletMismatch</a>);
         i = i + 1;

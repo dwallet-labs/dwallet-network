@@ -341,7 +341,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         while (i < messages_len) {
             let message_approval = vector::pop_back(&mut message_approvals);
             let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
-            assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
+            assert!(get_dwallet_cap_id(dwallet) == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
             let message = vector::borrow(&hashed_messages, i);
             assert!(message == &approved_message, EMesssageApprovalDWalletMismatch);
             i = i + 1;
