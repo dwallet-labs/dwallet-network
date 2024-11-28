@@ -1,6 +1,6 @@
 use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
 use std::sync::Arc;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use group::PartyID;
 use crypto_bigint::Uint;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -26,6 +26,15 @@ pub type Proof = KnowledgeOfDiscreteLogUCProof;
 // pub type DecryptionKey = Vec<u8>;
 // pub type EncryptionKey = Vec<u8>;
 // pub type Proof = Vec<u8>;
+
+
+pub enum DkgState {
+    Init,
+    Advance,
+    Finalize(Vec<u8>, HashSet<PartyID>, HashSet<PartyID>),
+    Completed(Vec<u8>, HashSet<PartyID>, HashSet<PartyID>),
+}
+
 
 pub fn new_dkg_secp256k1_instance(
     epoch_id: EpochId,
@@ -121,7 +130,7 @@ pub enum NetworkDkgMessage {
 }
 
 pub struct NetworkDkg {
-    status: MPCSessionStatus,
+    status: DkgState,
     epoch_id: EpochId,
     epoch_store: Arc<AuthorityPerEpochStore>,
     authority_private_key: [u8; 32],
@@ -141,7 +150,7 @@ impl NetworkDkg {
         party_id: PartyID,
     ) -> Self {
         Self {
-            status: MPCSessionStatus::FirstExecution,
+            status: DkgState::Init,
             epoch_id,
             epoch_store,
             authority_private_key,
@@ -195,6 +204,9 @@ impl NetworkDkg {
         authority_name: AuthorityName,
         encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
     ) -> PeraResult {
+        if !matches!(self.status, DkgState::Init) {
+            return Err(PeraError::InternalDWalletMPCError); // todo (yael): return error
+        }
         let (encryption_key, proof) = encryption_key_and_proof;
         let authority_id = authority_name_to_party_id(&authority_name, &self.epoch_store)?;
         if self.secret_key_share_sized_encryption_keys_and_proofs.contains_key(&authority_id) {
@@ -211,12 +223,14 @@ impl NetworkDkg {
             ristretto_instance.public_input = generate_ristretto_dkg_party_public_input(self.secret_key_share_sized_encryption_keys_and_proofs.clone());
             self.advance(&mut ristretto_instance, authority_name, KeyTypes::Ristretto).await?;
             self.mpc_instances.insert(ristretto_instance.session_info.session_id.clone(), ristretto_instance);
+
+            self.status = DkgState::Advance;
         }
         Ok(())
     }
 
     pub async fn handle_message(&mut self, message: &[u8], authority_name: AuthorityName) -> PeraResult {
-        if !matches!(self.status, MPCSessionStatus::FirstExecution |  MPCSessionStatus::Active(_) | MPCSessionStatus::Finalizing(_)) {
+        if matches!(self.status, DkgState::Completed(_, _, _)) {
             return Err(PeraError::InternalDWalletMPCError); // todo (yael): return error
         }
 
@@ -243,8 +257,33 @@ impl NetworkDkg {
                 self.mpc_instances.insert(instance.session_info.session_id.clone(), instance);
             }
             NetworkDkgMessage::Output(output) => {
-                // finalize the instance
-                //return status completed
+                let (self_output, valid_parties, malicious_parties) = match &self.status {
+                    DkgState::Finalize(self_output, valid_parties, malicious_parties) => (self_output, valid_parties, malicious_parties),
+                    _ => return Err(PeraError::InternalDWalletMPCError),
+                };
+
+                let party_id = &authority_name_to_party_id(&authority_name, &self.epoch_store)?;
+                if malicious_parties.contains(party_id) || valid_parties.contains(party_id){
+                    // ignore the message
+                    return Ok(());
+                }
+
+                if *self_output == output.clone() {
+                    let mut valid_parties = valid_parties.clone();
+                    valid_parties.insert(*party_id);
+                    self.status = DkgState::Finalize(output.clone(), valid_parties.clone(), malicious_parties.clone());
+                    if valid_parties.len() == self.epoch_store.committee().voting_rights.len() { // fix this to threshold
+                        self.status = DkgState::Completed(output.clone(), valid_parties.clone(), malicious_parties.clone());
+                    }
+                    // call system transaction
+                } else {
+                    let mut malicious_parties = malicious_parties.clone();
+                    malicious_parties.insert(*party_id);
+                    self.status = DkgState::Finalize(output.clone(), valid_parties.clone(), malicious_parties.clone());
+                    if malicious_parties.len() == self.epoch_store.committee().voting_rights.len() { // fix this to 1/3 + 1
+                        panic!("Failed to complete DKG");
+                    }
+                }
             }
         }
         Ok(())
@@ -269,7 +308,6 @@ impl NetworkDkg {
             .map_err(|_| PeraError::InternalDWalletMPCError)?;
         let (transaction, malicious_parties) = instance.advance(&weighted_threshold_access_structure, self.party_id)?;
         // todo (yael): handle malicious parties
-        // convert transaction
         let transaction = match transaction.kind {
             ConsensusTransactionKind::DWalletMPCMessage(_, message, _) => {
                 let message = NetworkDkgMessage::Message(key_type, message);
@@ -279,6 +317,7 @@ impl NetworkDkg {
                 )
             }
             ConsensusTransactionKind::DWalletMPCOutput(_, message) => {
+                self.status = DkgState::Finalize(message.clone(), HashSet::new(), HashSet::from(malicious_parties));
                 let message = NetworkDkgMessage::Output(message);
                 ConsensusTransaction::new_pera_network_dkg_message(
                     self.epoch_store.name,
@@ -294,7 +333,7 @@ impl NetworkDkg {
         Ok(())
     }
 
-    pub fn status(&self) -> &MPCSessionStatus {
+    pub fn status(&self) -> &DkgState {
         &self.status
     }
 }
