@@ -1147,22 +1147,25 @@ mod checked {
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(data.session_info.mpc_session_id.to_vec()),
+                    CallArg::Pure(data.session_info.flow_session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&first_round_output).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
                     CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                 ],
             ),
-            MPCRound::Sign(_, dwallet_id) => (
-                "create_sign_output",
-                vec![
-                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
-                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
-                    CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                ],
-            ),
+            MPCRound::Sign(..) => {
+                let MPCRound::Sign(_, batch_session_id, _) = data.session_info.mpc_round else {
+                    unreachable!("MPCRound is not sign for a sign session")
+                };
+                (
+                    "create_sign_output",
+                    vec![
+                        CallArg::Pure(data.output.clone()),
+                        CallArg::Pure(bcs::to_bytes(&batch_session_id).unwrap()),
+                    ],
+                )
+            }
         };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();

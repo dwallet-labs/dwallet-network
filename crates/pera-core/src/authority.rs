@@ -143,8 +143,10 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
+use crate::dwallet_mpc::mpc_events::{StartBatchedSignEvent, StartDKGFirstRoundEvent};
 use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::sign::BatchedSignSession;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
     CheckpointCache, ExecutionCacheCommit, ExecutionCacheReconfigAPI, ExecutionCacheWrite,
@@ -1556,14 +1558,35 @@ impl AuthorityState {
         };
         let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
         for event in &inner_temporary_store.events.data {
-            let res = MPCParty::from_event(
-                event,
-                &dwallet_mpc_manager,
-                authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
-            );
-            if let Ok((party, auxiliary_input, session_info)) = res {
-                dwallet_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info)?;
-            };
+            if event.type_ == StartBatchedSignEvent::type_() {
+                let deserialized_event: StartBatchedSignEvent = bcs::from_bytes(&event.contents)?;
+                let mut seen = HashSet::new();
+                let messages_without_duplicates = deserialized_event
+                    .hashed_messages
+                    .into_iter()
+                    .filter(|x| seen.insert(x.clone()))
+                    .collect();
+                dwallet_mpc_manager.batched_sign_sessions.insert(
+                    deserialized_event.session_id.bytes,
+                    BatchedSignSession {
+                        hashed_msg_to_signature: HashMap::new(),
+                        ordered_messages: messages_without_duplicates,
+                    },
+                );
+            } else {
+                let res = MPCParty::from_event(
+                    event,
+                    &dwallet_mpc_manager,
+                    authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
+                );
+                if let Ok((party, auxiliary_input, session_info)) = res {
+                    dwallet_mpc_manager.push_new_mpc_instance(
+                        auxiliary_input,
+                        party,
+                        session_info,
+                    )?;
+                };
+            }
         }
         Ok(())
     }

@@ -1,19 +1,21 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::mpc_instance::{
     authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
 };
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::sign::BatchedSignSession;
+use anyhow::anyhow;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::messages_consensus::ConsensusTransaction;
-use pera_types::messages_dwallet_mpc::SessionInfo;
+use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
@@ -27,6 +29,7 @@ use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 /// - (de)activating instances.
 pub struct DWalletMPCManager {
     party_id: PartyID,
+    pub batched_sign_sessions: HashMap<ObjectID, BatchedSignSession>,
     mpc_instances: HashMap<ObjectID, DWalletMPCInstance>,
     /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
     pending_instances_queue: VecDeque<DWalletMPCInstance>,
@@ -46,6 +49,10 @@ pub struct DWalletMPCManager {
 /// The possible results of verifying an incoming output for an MPC session.
 /// We need to differentiate between a duplicate & a malicious output, as the output can be sent twice by honest parties.
 pub enum OutputVerificationResult {
+    /// When working on a batch, e.g. signing on a batch of messages, we write the output to the chain only once - when the entire batch is ready.
+    ValidWithNewOutput(Vec<u8>),
+    /// When the output is correct but not all the MPC flows in the batch have been completed.
+    ValidWithoutOutput,
     Valid,
     Duplicate,
     Malicious,
@@ -87,6 +94,7 @@ impl DWalletMPCManager {
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
             weighted_parties,
+            batched_sign_sessions: HashMap::new(),
         })
     }
 
@@ -139,8 +147,42 @@ impl DWalletMPCManager {
                 == instance.session_info.initiating_user_address.to_vec()
             && session_info.dwallet_cap_id == instance.session_info.dwallet_cap_id
         {
+            let mpc_round = &instance.session_info.mpc_round.clone();
             self.finalize_mpc_instance(session_info.session_id.clone())?;
-            return Ok(OutputVerificationResult::Valid);
+            return if let MPCRound::Sign(_, batch_session_id, hashed_message) = mpc_round {
+                let batched_sign_session = self
+                    .batched_sign_sessions
+                    .get_mut(batch_session_id)
+                    .ok_or(anyhow!(
+                        "failed to find batch for session id {}",
+                        batch_session_id
+                    ))?;
+                batched_sign_session
+                    .hashed_msg_to_signature
+                    .insert(hashed_message.clone(), output.clone());
+                if batched_sign_session.hashed_msg_to_signature.values().len()
+                    == batched_sign_session.ordered_messages.len()
+                {
+                    let new_output: Vec<Vec<u8>> = batched_sign_session
+                        .ordered_messages
+                        .iter()
+                        .map(|msg| {
+                            Ok(batched_sign_session
+                                .hashed_msg_to_signature
+                                .get(msg)
+                                .ok_or(anyhow!("failed to find message in batch {:?}", msg))?
+                                .clone())
+                        })
+                        .collect::<anyhow::Result<Vec<Vec<u8>>>>()?;
+                    Ok(OutputVerificationResult::ValidWithNewOutput(
+                        bcs::to_bytes(&new_output).unwrap(),
+                    ))
+                } else {
+                    Ok(OutputVerificationResult::ValidWithoutOutput)
+                }
+            } else {
+                Ok(OutputVerificationResult::Valid)
+            };
         }
         Ok(OutputVerificationResult::Malicious)
     }
@@ -195,9 +237,11 @@ impl DWalletMPCManager {
                 None
             })
             .collect::<Vec<ConsensusTransaction>>();
-        self.consensus_adapter
-            .submit_to_consensus(&messages, &self.epoch_store()?)
-            .await?;
+        for message in messages {
+            self.consensus_adapter
+                .submit_to_consensus(&vec![message], &self.epoch_store()?)
+                .await?;
+        }
         Ok(())
     }
 

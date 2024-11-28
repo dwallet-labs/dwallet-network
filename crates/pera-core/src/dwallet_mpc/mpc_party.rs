@@ -16,10 +16,12 @@ use anyhow::Error;
 use commitment::CommitmentSizedNumber;
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
-use pera_types::base_types::ObjectID;
+use pera_types::base_types::{ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+use pera_types::PERA_SYSTEM_ADDRESS;
+use rand_core::OsRng;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 
@@ -141,8 +143,9 @@ impl MPCParty {
                 Self::presign_second_party(deserialized_event)
             }
             t if t == &StartSignRoundEvent::type_() => {
-                let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)
-                    .map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
+                let res = bcs::from_bytes(&event.contents);
+                let deserialized_event: StartSignRoundEvent =
+                    res.map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
                 Self::sign_party(party_id, deserialized_event, dwallet_mpc_manager)
             }
             _ => Err(PeraError::NonMPCEvent.into()),
@@ -159,7 +162,7 @@ impl MPCParty {
                 deserialized_event.public_key_share_and_proof,
             ),
             SessionInfo {
-                mpc_session_id: deserialized_event.first_round_session_id.bytes,
+                flow_session_id: deserialized_event.first_round_session_id.bytes,
                 session_id: ObjectID::from(deserialized_event.session_id),
                 initiating_user_address: deserialized_event.sender,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
@@ -175,7 +178,7 @@ impl MPCParty {
             MPCParty::FirstDKGBytesParty,
             <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(),
             SessionInfo {
-                mpc_session_id: deserialized_event.session_id.bytes,
+                flow_session_id: deserialized_event.session_id.bytes,
                 session_id: deserialized_event.session_id.bytes,
                 initiating_user_address: deserialized_event.sender,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
@@ -193,7 +196,7 @@ impl MPCParty {
                 deserialized_event.dkg_output.clone(),
             )?,
             SessionInfo {
-                mpc_session_id: deserialized_event.session_id.bytes,
+                flow_session_id: deserialized_event.session_id.bytes,
                 session_id: deserialized_event.session_id.bytes,
                 initiating_user_address: deserialized_event.sender,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
@@ -215,7 +218,7 @@ impl MPCParty {
                 deserialized_event.first_round_output.clone(),
             )?,
             SessionInfo {
-                mpc_session_id: deserialized_event.first_round_session_id.bytes,
+                flow_session_id: deserialized_event.first_round_session_id.bytes,
                 session_id: deserialized_event.session_id.bytes,
                 initiating_user_address: deserialized_event.sender,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
@@ -248,11 +251,15 @@ impl MPCParty {
                     .ok_or_else(|| PeraError::InternalDWalletMPCError)?,
             )?,
             SessionInfo {
-                mpc_session_id: deserialized_event.presign_session_id.bytes,
+                flow_session_id: deserialized_event.presign_session_id.bytes,
                 session_id: deserialized_event.session_id.bytes,
                 initiating_user_address: deserialized_event.sender,
                 dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-                mpc_round: MPCRound::Sign(party_id, deserialized_event.dwallet_id.bytes),
+                mpc_round: MPCRound::Sign(
+                    party_id,
+                    deserialized_event.batched_session_id.bytes,
+                    deserialized_event.hashed_message,
+                ),
             },
         ))
     }

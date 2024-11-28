@@ -6,6 +6,7 @@ import { bcs } from '../bcs/index.js';
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
+import { dWalletModuleName } from './globals';
 
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
@@ -154,6 +155,30 @@ export type CreatedDwallet = {
 	centralizedDKGOutput: number[];
 	decentralizedDKGOutput: number[];
 	dwalletCapID: string;
+};
+
+export const approveMessages = async (
+	client: PeraClient,
+	keypair: Keypair,
+	dwalletCapId: string,
+	messages: Uint8Array[],
+) => {
+	const tx = new Transaction();
+	const [messageApprovals] = tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::approve_messages`,
+		arguments: [
+			tx.object(dwalletCapId),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
+		],
+	});
+	tx.transferObjects([messageApprovals], keypair.toPeraAddress());
+	return await client.signAndExecuteTransaction({
+		signer: keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+		},
+	});
 };
 
 export async function createDWallet(

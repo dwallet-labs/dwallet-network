@@ -12,7 +12,7 @@ export async function fetchObjectBySessionId(
 	client: PeraClient,
 ) {
 	let cursor = null;
-	const timeout = 5 * 60 * 1000; // 5 minutes in milliseconds
+	const timeout = 15 * 60 * 1000; // 15 minutes in milliseconds
 	const startTime = Date.now();
 
 	for (;;) {
@@ -49,3 +49,38 @@ export async function fetchObjectBySessionId(
 		await new Promise((r) => setTimeout(r, 500));
 	}
 }
+
+export const getEventByTypeAndSessionId = async (
+	client: PeraClient,
+	eventType: string,
+	session_id: string,
+) => {
+	const tenMinutesInMillis = 10 * 60 * 1000;
+	const startTime = Date.now();
+
+	for (;;) {
+		if (Date.now() - startTime > tenMinutesInMillis) {
+			throw new Error('Timeout: Unable to fetch object within 10 minutes');
+		}
+		await new Promise((resolve) => setTimeout(resolve, 5_000));
+		let newEvents = await client.queryEvents({
+			query: {
+				TimeRange: {
+					startTime: (Date.now() - tenMinutesInMillis).toString(),
+					endTime: Date.now().toString(),
+				},
+			},
+		});
+		let matchingEvent = newEvents.data.find(
+			(event) =>
+				(
+					event.parsedJson as {
+						session_id: string;
+					}
+				).session_id === session_id && event.type === eventType,
+		);
+		if (matchingEvent) {
+			return matchingEvent.parsedJson;
+		}
+	}
+};

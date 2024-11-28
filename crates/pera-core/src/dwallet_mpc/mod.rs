@@ -4,4 +4,4 @@ pub mod mpc_instance;
 pub mod mpc_manager;
 pub mod mpc_party;
 mod presign;
-mod sign;
+pub mod sign;

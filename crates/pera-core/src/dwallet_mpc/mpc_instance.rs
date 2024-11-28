@@ -90,7 +90,7 @@ impl DWalletMPCInstance {
         self.status = status;
         let advance_result = self.party.advance(
             pending_messages,
-            self.session_info.mpc_session_id,
+            self.session_info.flow_session_id,
             party_id,
             weighted_threshold_access,
             self.public_input.clone(),

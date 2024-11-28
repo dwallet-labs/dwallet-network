@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
+import { bcs } from '@mysten/bcs';
 import { beforeAll, describe, it } from 'vitest';
 
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
@@ -37,12 +38,13 @@ describe('Test dwallet mpc', () => {
 		console.log({ dwallet });
 		const presignOutput = await presign(toolbox.keypair, toolbox.client, dwallet!.dwalletID);
 		console.log({ presignOutput });
-
-		const [sign_msg, _, hash_msg] = create_sign_centralized_output(
+		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
+		let bcsMessages = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
+		const [signed_messages, hashed_messages] = create_sign_centralized_output(
 			Uint8Array.from(dwallet?.centralizedDKGOutput!),
 			Uint8Array.from(presignOutput?.firstRoundOutput!),
 			Uint8Array.from(presignOutput?.secondRoundOutput!),
-			Uint8Array.from([1, 2, 3, 4, 5]),
+			bcsMessages,
 			Hash.SHA256,
 			presignOutput?.sessionId.slice(2)!,
 		);
@@ -51,23 +53,25 @@ describe('Test dwallet mpc', () => {
 			toolbox.keypair,
 			toolbox.client,
 			dwallet?.dwalletCapID!,
-			hash_msg,
+			hashed_messages,
 			dwallet?.dwalletID!,
 			presignOutput?.id!,
-			sign_msg,
+			signed_messages,
 			presignOutput?.sessionId!,
 		);
 
 		console.log(res);
-	});
+	}, 10_000_000);
 
 	it('should sign a message successfully with mock ', async () => {
 		console.log(toolbox.keypair.toPeraAddress());
-		const [sign_msg, _, hash_msg] = create_sign_centralized_output(
+		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
+		let bcsMessages = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
+		const [centralizely_signed_messages, hashed_messages] = create_sign_centralized_output(
 			Uint8Array.from(mockedDWallet.centralizedDKGOutput),
 			Uint8Array.from(mockedPresign.firstRoundOutput),
 			Uint8Array.from(mockedPresign.secondRoundOutput),
-			Uint8Array.from([1, 2, 3, 4, 5]),
+			bcsMessages,
 			Hash.SHA256,
 			mockedPresign.firstRoundSessionID.slice(2)!,
 		);
@@ -75,14 +79,24 @@ describe('Test dwallet mpc', () => {
 		let res = await signMockCall(
 			toolbox.keypair,
 			toolbox.client,
-			hash_msg,
+			hashed_messages,
 			mockedPresign.firstRoundOutput,
 			mockedPresign.secondRoundOutput,
 			mockedDWallet.decentralizedDKGOutput,
-			sign_msg,
+			centralizely_signed_messages,
 			mockedPresign.firstRoundSessionID,
 		);
 
-		console.log(res);
+		console.log({ res });
 	});
+
+	// it('should approve messages', () => {
+	// 	const tx = new Transaction();
+	// 	const [cap] = tx.moveCall({
+	// 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_dkg_session`,
+	// 		arguments: [tx.pure(commitmentToSecretKeyShare)],
+	// 	});
+	// 	tx.transferObjects([cap], keypair.toSuiAddress());
+	// 	let res = await approveMessages(toolbox.keypair, toolbox.client, );
+	// });
 });
