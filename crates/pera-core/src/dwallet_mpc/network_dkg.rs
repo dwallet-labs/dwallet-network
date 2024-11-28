@@ -234,8 +234,8 @@ impl NetworkDkg {
                 }
             }
             NetworkDkgMessage::Output(output) => {
-                // self.handle_output(authority_name, output)?;
-                // todo (yael): publish public input as object
+                // finalize the instance
+                //return status completed
             }
         }
         Ok(())
