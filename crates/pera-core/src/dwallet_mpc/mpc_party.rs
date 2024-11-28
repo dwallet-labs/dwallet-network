@@ -143,9 +143,8 @@ impl MPCParty {
                 Self::presign_second_party(deserialized_event)
             }
             t if t == &StartSignRoundEvent::type_() => {
-                let res = bcs::from_bytes(&event.contents);
-                let deserialized_event: StartSignRoundEvent =
-                    res.map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
+                let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)
+                    .map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
                 Self::sign_party(party_id, deserialized_event, dwallet_mpc_manager)
             }
             _ => Err(PeraError::NonMPCEvent.into()),
