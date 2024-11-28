@@ -49,7 +49,7 @@ describe('Test dwallet mpc', () => {
 			presignOutput?.sessionId.slice(2)!,
 		);
 
-		let res = await signMessageTransactionCall(
+		let response = await signMessageTransactionCall(
 			toolbox.keypair,
 			toolbox.client,
 			dwallet?.dwalletCapID!,
@@ -60,7 +60,7 @@ describe('Test dwallet mpc', () => {
 			presignOutput?.sessionId!,
 		);
 
-		console.log(res);
+		console.log({ response });
 	}, 10_000_000);
 
 	it('should sign a message successfully with mock ', async () => {
@@ -76,7 +76,7 @@ describe('Test dwallet mpc', () => {
 			mockedPresign.firstRoundSessionID.slice(2)!,
 		);
 
-		let res = await signMockCall(
+		let response = await signMockCall(
 			toolbox.keypair,
 			toolbox.client,
 			hashed_messages,
@@ -86,17 +86,6 @@ describe('Test dwallet mpc', () => {
 			centralizely_signed_messages,
 			mockedPresign.firstRoundSessionID,
 		);
-
-		console.log({ res });
+		console.log({ response });
 	});
-
-	// it('should approve messages', () => {
-	// 	const tx = new Transaction();
-	// 	const [cap] = tx.moveCall({
-	// 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_dkg_session`,
-	// 		arguments: [tx.pure(commitmentToSecretKeyShare)],
-	// 	});
-	// 	tx.transferObjects([cap], keypair.toSuiAddress());
-	// 	let res = await approveMessages(toolbox.keypair, toolbox.client, );
-	// });
 });
