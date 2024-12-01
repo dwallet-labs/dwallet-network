@@ -28,6 +28,7 @@ pub type Proof = KnowledgeOfDiscreteLogUCProof;
 // pub type Proof = Vec<u8>;
 
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum DkgState {
     Init,
     Advance,
@@ -235,6 +236,7 @@ impl NetworkDkg {
         }
 
         let message: NetworkDkgMessage = bcs::from_bytes(message)?;
+
         match message {
             NetworkDkgMessage::EncryptionKeyAndProof(message) => {
                 self.handle_encryption_key_and_proof(authority_name, message).await?;
@@ -257,7 +259,7 @@ impl NetworkDkg {
                 self.mpc_instances.insert(instance.session_info.session_id.clone(), instance);
             }
             NetworkDkgMessage::Output(output) => {
-                let (self_output, valid_parties, malicious_parties) = match &self.status {
+                let (self_output, valid_parties, malicious_parties) = match self.status.clone() {
                     DkgState::Finalize(self_output, valid_parties, malicious_parties) => (self_output, valid_parties, malicious_parties),
                     _ => return Err(PeraError::InternalDWalletMPCError),
                 };
@@ -317,7 +319,7 @@ impl NetworkDkg {
                 )
             }
             ConsensusTransactionKind::DWalletMPCOutput(_, message) => {
-                self.status = DkgState::Finalize(message.clone(), HashSet::new(), HashSet::from(malicious_parties));
+                self.status = DkgState::Finalize(message.clone(), HashSet::new(), HashSet::new());// ::from(malicious_parties));
                 let message = NetworkDkgMessage::Output(message);
                 ConsensusTransaction::new_pera_network_dkg_message(
                     self.epoch_store.name,
