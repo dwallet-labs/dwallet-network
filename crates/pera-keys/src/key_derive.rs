@@ -209,13 +209,13 @@ pub fn generate_new_class_groups_keypair_and_proof(path: Option<String>) -> Resu
     let bls12381 = read_authority_keypair_from_file(path.unwrap()).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
     let class_groups_seed = bls12381.copy().private().as_bytes().try_into().expect("Should have been able to convert");
     let mut rng = rand_chacha::ChaCha20Rng::from_seed(class_groups_seed);
-    let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
-    let keypair: ClassGroupsKeyPairAndProof = (
-        bcs::to_bytes(&decryption_key).unwrap(),
-        bcs::to_bytes(&proof).unwrap(),
-        bcs::to_bytes(&encryption_key).unwrap(),
-    );
-    Ok((bls12381.public().into(), keypair))
+    // let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
+    // let keypair: ClassGroupsKeyPairAndProof = (
+    //     bcs::to_bytes(&decryption_key).unwrap(),
+    //     bcs::to_bytes(&proof).unwrap(),
+    //     bcs::to_bytes(&encryption_key).unwrap(),
+    // );
+    Ok((bls12381.public().into(), (bls12381.public().to_string(), bls12381.public().to_string(), bls12381.public().to_string())))
 }
 
 fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
