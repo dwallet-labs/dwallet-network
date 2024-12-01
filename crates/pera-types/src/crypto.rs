@@ -1667,6 +1667,7 @@ pub enum SignatureScheme {
     MultiSig,
     ZkLoginAuthenticator,
     PasskeyAuthenticator,
+    ClassGroups,
 }
 
 impl SignatureScheme {
@@ -1679,6 +1680,7 @@ impl SignatureScheme {
             SignatureScheme::BLS12381 => 0x04, // This is currently not supported for user Pera Address.
             SignatureScheme::ZkLoginAuthenticator => 0x05,
             SignatureScheme::PasskeyAuthenticator => 0x06,
+            SignatureScheme::ClassGroups => 0x07,
         }
     }
 
@@ -1698,6 +1700,7 @@ impl SignatureScheme {
             0x04 => Ok(SignatureScheme::BLS12381),
             0x05 => Ok(SignatureScheme::ZkLoginAuthenticator),
             0x06 => Ok(SignatureScheme::PasskeyAuthenticator),
+            0x07 => Ok(SignatureScheme::ClassGroups),
             _ => Err(PeraError::KeyConversionError(
                 "Invalid key scheme".to_string(),
             )),

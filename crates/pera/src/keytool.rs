@@ -21,11 +21,8 @@ use fastcrypto_zkp::bn254::zk_login_api::ZkLoginEnv;
 use im::hashmap::HashMap as ImHashMap;
 use json_to_table::{json_to_table, Orientation};
 use num_bigint::BigUint;
-use pera_keys::key_derive::generate_new_key;
-use pera_keys::keypair_file::{
-    read_authority_keypair_from_file, read_keypair_from_file, write_authority_keypair_to_file,
-    write_keypair_to_file,
-};
+use pera_keys::key_derive::{generate_new_class_groups_keypair_and_proof, generate_new_key};
+use pera_keys::keypair_file::{read_authority_keypair_from_file, read_keypair_from_file, write_authority_keypair_to_file, write_class_groups_keypair_and_proof_to_file, write_keypair_to_file};
 use pera_keys::keystore::{AccountKeystore, Keystore};
 use pera_types::base_types::PeraAddress;
 use pera_types::committee::EpochId;
@@ -52,6 +49,7 @@ use shared_crypto::intent::{Intent, IntentMessage, IntentScope, PersonalMessage}
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
 use tabled::builder::Builder;
 use tabled::settings::Rotate;
@@ -111,7 +109,7 @@ pub enum KeyToolCommand {
     /// Use `pera client new-address` if you want to generate and save the key into pera.keystore.
     Generate {
         key_scheme: SignatureScheme,
-        derivation_path: Option<DerivationPath>,
+        derivation_path: Option<String>,
         word_length: Option<String>,
     },
 
@@ -600,7 +598,29 @@ impl KeyToolCommand {
                         peer_id: None,
                     })
                 }
+                SignatureScheme::ClassGroups => {
+                    let (pera_address, kp) =
+                        generate_new_class_groups_keypair_and_proof(
+                            derivation_path,
+                        )?;
+                    let file_name = format!("class-groups-{pera_address}.key");
+                    let _kp = bcs::to_bytes(&kp)?;
+                    write_class_groups_keypair_and_proof_to_file(&_kp, file_name)?;
+                    CommandOutput::Generate(Key {
+                        alias: None,
+                        pera_address,
+                        public_base64_key: "test".to_string(),
+                        key_scheme: key_scheme.to_string(),
+                        flag: SignatureScheme::ClassGroups.flag(),
+                        mnemonic: None,
+                        peer_id: None,
+                    })
+                }
                 _ => {
+                    let derivation_path: Option<DerivationPath> = match derivation_path {
+                        None => None,
+                        Some(p) => Some(DerivationPath::from_str(&p)?),
+                    };
                     let (pera_address, skp, _scheme, phrase) =
                         generate_new_key(key_scheme, derivation_path, word_length)?;
                     let file = format!("{pera_address}.key");
