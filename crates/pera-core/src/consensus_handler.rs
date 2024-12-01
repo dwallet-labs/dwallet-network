@@ -8,6 +8,32 @@ use std::{
     sync::Arc,
 };
 
+use arc_swap::ArcSwap;
+use async_trait::async_trait;
+use lru::LruCache;
+use serde::{Deserialize, Serialize};
+use tracing::{debug, error, info, instrument, trace_span, warn};
+
+use consensus_core::CommitConsumerMonitor;
+use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
+use narwhal_config::Committee;
+use narwhal_executor::{ExecutionIndices, ExecutionState};
+use narwhal_types::ConsensusOutput;
+use pera_macros::{fail_point_async, fail_point_if};
+use pera_protocol_config::ProtocolConfig;
+use pera_types::executable_transaction::CertificateProof;
+use pera_types::message_envelope::VerifiedEnvelope;
+use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, SessionInfo};
+use pera_types::{
+    authenticator_state::ActiveJwk,
+    base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
+    digests::ConsensusCommitDigest,
+    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
+    messages_consensus::{ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind},
+    pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
+    transaction::{SenderSignedData, VerifiedTransaction},
+};
+
 use crate::dwallet_mpc::mpc_manager::OutputVerificationResult;
 use crate::{
     authority::{
@@ -26,28 +52,6 @@ use crate::{
     scoring_decision::update_low_scoring_authorities,
     transaction_manager::TransactionManager,
 };
-use arc_swap::ArcSwap;
-use async_trait::async_trait;
-use consensus_core::CommitConsumerMonitor;
-use lru::LruCache;
-use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
-use narwhal_config::Committee;
-use narwhal_executor::{ExecutionIndices, ExecutionState};
-use narwhal_types::ConsensusOutput;
-use pera_macros::{fail_point_async, fail_point_if};
-use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_dwallet_mpc::DWalletMPCOutput;
-use pera_types::{
-    authenticator_state::ActiveJwk,
-    base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
-    digests::ConsensusCommitDigest,
-    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
-    messages_consensus::{ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind},
-    pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
-    transaction::{SenderSignedData, VerifiedTransaction},
-};
-use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, instrument, trace_span, warn};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -400,27 +404,27 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 OutputVerificationResult::Malicious
                             });
                         match output_verification_result {
-                            OutputVerificationResult::Valid => {
-                                let transaction =
-                                    VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
-                                        DWalletMPCOutput {
-                                            session_info: session_info.clone(),
-                                            output: output.clone(),
-                                        },
-                                    );
-                                let transaction = VerifiedExecutableTransaction::new_system(
-                                    transaction,
-                                    self.epoch(),
-                                );
+                            OutputVerificationResult::ValidWithNewOutput(new_output) => {
+                                let transaction = self.create_system_tx(session_info, &new_output);
                                 transactions.push((
                                     empty_bytes.as_slice(),
                                     SequencedConsensusTransactionKind::System(transaction),
                                     consensus_output.leader_author_index(),
                                 ));
                             }
-                            OutputVerificationResult::Duplicate => {
+                            OutputVerificationResult::Valid => {
+                                let transaction = self.create_system_tx(session_info, output);
+                                transactions.push((
+                                    empty_bytes.as_slice(),
+                                    SequencedConsensusTransactionKind::System(transaction),
+                                    consensus_output.leader_author_index(),
+                                ));
+                            }
+                            OutputVerificationResult::ValidWithoutOutput
+                            | OutputVerificationResult::Duplicate => {
                                 // Ignore this output, as the same output may be submitted twice by non-malicious parties, due to Sui's inner implementation of the leader selection
                                 // mechanism.
+                                // If the output is valid without output, then the batch is not yet ready, and we should write nothing to the chain.
                             }
                             OutputVerificationResult::Malicious => {
                                 warn!(
@@ -539,6 +543,20 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         self.transaction_scheduler
             .schedule(transactions_to_schedule)
             .await;
+    }
+
+    fn create_system_tx(
+        &self,
+        session_info: &SessionInfo,
+        output: &Vec<u8>,
+    ) -> VerifiedEnvelope<SenderSignedData, CertificateProof> {
+        let transaction =
+            VerifiedTransaction::new_dwallet_mpc_output_system_transaction(DWalletMPCOutput {
+                session_info: session_info.clone(),
+                output: output.clone(),
+            });
+        let transaction = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
+        transaction
     }
 }
 
@@ -955,6 +973,8 @@ impl ConsensusCommitInfo {
 mod tests {
     use std::collections::BTreeSet;
 
+    use prometheus::Registry;
+
     use narwhal_config::AuthorityIdentifier;
     use narwhal_test_utils::latest_protocol_version;
     use narwhal_types::{Batch, Certificate, CommittedSubDag, HeaderV1Builder, ReputationScores};
@@ -972,9 +992,7 @@ mod tests {
             CertifiedTransaction, SenderSignedData, TransactionData, TransactionDataAPI,
         },
     };
-    use prometheus::Registry;
 
-    use super::*;
     use crate::{
         authority::{
             authority_per_epoch_store::ConsensusStatsAPI,
@@ -984,6 +1002,8 @@ mod tests {
         consensus_adapter::consensus_tests::{test_certificates, test_gas_objects},
         post_consensus_tx_reorder::PostConsensusTxReorder,
     };
+
+    use super::*;
 
     #[tokio::test]
     pub async fn test_consensus_handler() {

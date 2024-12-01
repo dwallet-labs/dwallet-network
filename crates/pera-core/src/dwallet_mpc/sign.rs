@@ -1,5 +1,6 @@
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
 use pera_types::error::PeraResult;
+use std::collections::HashMap;
 use twopc_mpc::dkg::Protocol;
 
 pub(super) type SignFirstParty =
@@ -53,4 +54,12 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
 
         Ok(bcs::to_bytes(&auxiliary)?)
     }
+}
+
+/// A struct to hold the batched sign session data.
+pub struct BatchedSignSession {
+    /// A map that contains the ready signatures, indexed by their hashed message. When this map contains all the hashed messages, the batched sign session is ready to be written to the chain.
+    pub hashed_msg_to_signature: HashMap<Vec<u8>, Vec<u8>>,
+    /// A list of all the messages that need to be signed, in the order they were received. The output list of signatures will be written to the chain in the same order.
+    pub ordered_messages: Vec<Vec<u8>>,
 }

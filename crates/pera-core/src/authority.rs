@@ -52,7 +52,7 @@ use std::{
 };
 use tap::{TapFallible, TapOptional};
 use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::{mpsc, oneshot, RwLock};
+use tokio::sync::{mpsc, oneshot, MutexGuard, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info, instrument, warn, Instrument};
 
@@ -143,8 +143,11 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
+use crate::dwallet_mpc::mpc_events::{StartBatchedSignEvent, StartDKGFirstRoundEvent};
 use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::sign::BatchedSignSession;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
     CheckpointCache, ExecutionCacheCommit, ExecutionCacheReconfigAPI, ExecutionCacheWrite,
@@ -1556,12 +1559,14 @@ impl AuthorityState {
         };
         let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
         for event in &inner_temporary_store.events.data {
-            let res = MPCParty::from_event(
+            if dwallet_mpc_manager.check_for_batched_sign_event(&event)? {
+                continue;
+            }
+            if let Ok((party, auxiliary_input, session_info)) = MPCParty::from_event(
                 event,
                 &dwallet_mpc_manager,
                 authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
-            );
-            if let Ok((party, auxiliary_input, session_info)) = res {
+            ) {
                 dwallet_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info)?;
             };
         }
