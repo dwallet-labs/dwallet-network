@@ -16,7 +16,7 @@ import {
 
 const dkgFirstRoundOutputMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutput`;
 const dwalletSecp256K1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::Secp256K1`;
-const dWalletMoveType = `${dWalletPackageID}::${dWalletModuleName}::DWallet<${dwalletSecp256K1MoveType}>`;
+export const dWalletMoveType = `${dWalletPackageID}::${dWalletModuleName}::DWallet<${dwalletSecp256K1MoveType}>`;
 const completedDKGSecondRoundEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedDKGSecondRoundEvent`;
 
 interface DKGFirstRoundOutput {
@@ -34,15 +34,16 @@ interface CompletedDKGSecondRoundEvent {
 	value: number[];
 }
 
-interface DWallet {
+// The Move type.
+export interface DWallet {
 	id: { id: string };
 	session_id: string;
 	dwallet_cap_id: string;
 	output: number[];
 }
 
-interface CreatedDwallet {
-	dwalletID: string;
+export interface CreatedDwallet {
+	id: string;
 	centralizedDKGOutput: number[];
 	decentralizedDKGOutput: number[];
 	dwalletCapID: string;
@@ -58,7 +59,7 @@ export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 	let dwallet = await launchDKGSecondRound(conf, dkgFirstRoundOutput, publicKeyShareAndProof);
 
 	return {
-		dwalletID: dwallet.id.id,
+		id: dwallet.id.id,
 		centralizedDKGOutput: centralizedOutput,
 		decentralizedDKGOutput: dwallet.output,
 		dwalletCapID: dwallet.dwallet_cap_id,
@@ -175,6 +176,10 @@ async function dkgFirstRoundOutputObject(
 	);
 }
 
+export function isDWallet(obj: any): obj is DWallet {
+	return obj && 'id' in obj && 'session_id' in obj && 'dwallet_cap_id' in obj && 'output' in obj;
+}
+
 async function dWalletFromEvent(conf: Config, firstRound: DKGFirstRoundOutput): Promise<DWallet> {
 	function isCompletedDKGSecondRoundEvent(event: any): event is CompletedDKGSecondRoundEvent {
 		return (
@@ -185,10 +190,6 @@ async function dWalletFromEvent(conf: Config, firstRound: DKGFirstRoundOutput): 
 			event.dwallet_id &&
 			Array.isArray(event.value)
 		);
-	}
-
-	function isDWallet(obj: any): obj is DWallet {
-		return obj && 'id' in obj && 'session_id' in obj && 'dwallet_cap_id' in obj && 'output' in obj;
 	}
 
 	return fetchObjectFromEvent<CompletedDKGSecondRoundEvent, DWallet>({

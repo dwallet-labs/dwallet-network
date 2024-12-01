@@ -69,21 +69,17 @@ module pera_system::dwallet {
     /// Create a new [`DWalletCap`] object.
     ///
     /// The holder of the `DWalletCap` has control and ownership over
-    /// the associated `DWallet`. This function creates the capability
-    /// object and transfers it to the sender's address.
+    /// the associated `DWallet`.
     ///
     /// ### Parameters
     /// - `ctx`: A mutable transaction context used to create the `DWalletCap` object.
     ///
     /// ### Returns
-    /// The ID of the newly created `DWalletCap` object.
-    public(package) fun create_dwallet_cap(ctx: &mut TxContext): ID {
-        let cap = DWalletCap {
+    /// The newly created `DWalletCap` object.
+    public(package) fun create_dwallet_cap(ctx: &mut TxContext): DWalletCap {
+        DWalletCap {
             id: object::new(ctx),
-        };
-        let id = object::id(&cap);
-        transfer::transfer(cap, ctx.sender());
-        id
+        }
     }
 
     /// Retrieve the ID of the `DWalletCap` associated with a given dWallet.

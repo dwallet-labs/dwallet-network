@@ -10,7 +10,7 @@ import { Config } from '../../src/dwallet-mpc/globals';
 import { presign } from '../../src/dwallet-mpc/presign';
 import { Hash, signMessageTransactionCall } from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
-import { mockedDWallet, mockedPresign } from './utils/dwallet';
+import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
 describe('Test dWallet MPC', () => {
@@ -35,47 +35,133 @@ describe('Test dWallet MPC', () => {
 		console.log({ dWallet });
 	});
 
-	it('should run a presign', async () => {
+	it('should run Presign', async () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 5 * 60 * 1000,
+			timeout: 10 * 60 * 1000,
 		};
-		const dWallet = await createDWallet(conf);
+		const dWallet = await mockCreateDwallet(conf);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput = await presign(conf, dWallet.dwalletID);
+		const presignOutput = await presign(conf, dWallet.id);
 		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
 	});
 
-	it('should sign a message successfully ', async () => {
-		const message = Uint8Array.from([1, 2, 3, 4, 5]);
-		const [sign_msg, _, fullPresigns, msg_hash] = create_sign_centralized_output(
-			Uint8Array.from(mockedDWallet.centralizedDKGOutput),
-			Uint8Array.from(mockedPresign.firstRoundOutput),
-			Uint8Array.from(mockedPresign.secondRoundOutput),
-			message,
-			Hash.SHA256,
-			// slice(2) Removes the 0x prefix.
-			mockedPresign.firstRoundSessionID.slice(2)!,
-		);
+	it('should run DKG+Presign', async () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
-			timeout: 5 * 60 * 1000,
+			timeout: 10 * 60 * 1000,
 		};
+		const dWallet = await createDWallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput = await presign(conf, dWallet.id);
+		expect(presignOutput).toBeDefined();
+		console.log({ presignOutput });
+	});
+
+	it('should run Sign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await mockCreateDwallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput = await mockCreatePresign(conf, dWallet);
+		expect(presignOutput).toBeDefined();
+		console.log({ presignOutput });
+		const message = Uint8Array.from([1, 2, 3, 4, 5]);
+		const [centralizedSignMsg, _, hashedMsg] = create_sign_centralized_output(
+			Uint8Array.from(dWallet.centralizedDKGOutput),
+			Uint8Array.from(presignOutput.first_round_output),
+			Uint8Array.from(presignOutput.second_round_output),
+			message,
+			Hash.SHA256,
+			presignOutput.first_round_session_id.slice(2),
+		);
+		console.log('Signing message');
 		let signOutput = await signMessageTransactionCall(
 			conf,
-			msg_hash,
-			fullPresigns,
-			mockedDWallet.decentralizedDKGOutput,
-			sign_msg,
-			mockedPresign.firstRoundSessionID,
+			dWallet.dwalletCapID,
+			hashedMsg,
+			dWallet.id,
+			presignOutput.id.id,
+			centralizedSignMsg,
+			presignOutput.first_round_session_id,
 		);
 		expect(signOutput).toBeDefined();
 		console.log({ signOutput });
 	});
+
+	it('Full flow: DKG, Presign, Sign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await createDWallet(conf);
+		expect(dWallet).toBeDefined();
+		const presignOutput = await presign(conf, dWallet.id);
+		expect(presignOutput).toBeDefined();
+
+		const message = Uint8Array.from([1, 2, 3, 4, 5]);
+		const [centralizedSignMsg, _, hashedMsg] = create_sign_centralized_output(
+			Uint8Array.from(dWallet.centralizedDKGOutput),
+			Uint8Array.from(presignOutput.firstRoundOutput),
+			Uint8Array.from(presignOutput.secondRoundOutput),
+			message,
+			Hash.SHA256,
+			presignOutput.firstRoundSessionID.slice(2),
+		);
+
+		console.log('Signing message');
+		let signOutput = await signMessageTransactionCall(
+			conf,
+			dWallet.dwalletCapID,
+			hashedMsg,
+			dWallet.id,
+			presignOutput.secondRoundOutputID,
+			centralizedSignMsg,
+			presignOutput.firstRoundSessionID,
+		);
+		expect(signOutput).toBeDefined();
+		console.log({ signOutput });
+	});
+
+	// it('should sign a message successfully with mock ', async () => {
+	// 	const [sign_msg, _, hash_msg] = create_sign_centralized_output(
+	// 		Uint8Array.from(mockedDWallet.centralizedDKGOutput),
+	// 		Uint8Array.from(mockedPresign.firstRoundOutput),
+	// 		Uint8Array.from(mockedPresign.secondRoundOutput),
+	// 		Uint8Array.from([1, 2, 3, 4, 5]),
+	// 		Hash.SHA256,
+	// 		mockedPresign.firstRoundSessionID.slice(2)!,
+	// 	);
+	//
+	// 	// todo(zeev): move to beforeEach
+	// 	let conf: Config = {
+	// 		keypair: toolbox.keypair,
+	// 		client: toolbox.client,
+	// 		timeout: 5 * 60 * 1000,
+	// 	};
+	//
+	// 	let res = await signMockCall(
+	// 		conf,
+	// 		hash_msg,
+	// 		mockedPresign.firstRoundOutput,
+	// 		mockedPresign.secondRoundOutput,
+	// 		mockedDWallet.decentralizedDKGOutput,
+	// 		sign_msg,
+	// 		mockedPresign.firstRoundSessionID,
+	// 	);
+	//
+	// 	console.log(res);
+	// });
 });
 
 async function printOwnedObjects(

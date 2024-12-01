@@ -8,7 +8,6 @@ import type { Keypair } from '../cryptography/index.js';
 export const packageId = '0x3';
 export const dWalletModuleName = 'dwallet';
 export const dWalletPackageID = '0x3';
-export const moveObjectDataType = 'moveObject';
 export const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
 export interface Config {
@@ -27,7 +26,7 @@ export async function fetchObjectBySessionId(sessionId: string, type: string, c:
 
 	while (Date.now() - startTime < c.timeout) {
 		// Wait for a bit before polling again, objects might not be available immediately.
-		await new Promise((r) => setTimeout(r, 1000));
+		await new Promise((r) => setTimeout(r, 5000));
 		const {
 			data: ownedObjects,
 			hasNextPage,
@@ -112,6 +111,7 @@ export async function fetchObjectFromEvent<TEvent, TObject>({
 			}
 
 			if (!filterEvent(event)) {
+				console.log({ event });
 				continue;
 			}
 

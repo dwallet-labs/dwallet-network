@@ -38,7 +38,6 @@ ownership and control over a corresponding <code><a href="dwallet.md#0x3_dwallet
 
 
 <pre><code><b>use</b> <a href="../pera-framework/object.md#0x2_object">0x2::object</a>;
-<b>use</b> <a href="../pera-framework/transfer.md#0x2_transfer">0x2::transfer</a>;
 <b>use</b> <a href="../pera-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 </code></pre>
 
@@ -194,8 +193,7 @@ A new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object
 Create a new [<code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code>] object.
 
 The holder of the <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> has control and ownership over
-the associated <code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>. This function creates the capability
-object and transfers it to the sender's address.
+the associated <code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>.
 
 
 <a name="@Parameters_6"></a>
@@ -209,10 +207,10 @@ object and transfers it to the sender's address.
 
 ##### Returns
 
-The ID of the newly created <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> object.
+The newly created <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a></code> object.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet_cap">create_dwallet_cap</a>(ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet_cap">create_dwallet_cap</a>(ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWalletCap">dwallet::DWalletCap</a>
 </code></pre>
 
 
@@ -221,13 +219,10 @@ The ID of the newly created <code><a href="dwallet.md#0x3_dwallet_DWalletCap">DW
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet_cap">create_dwallet_cap</a>(ctx: &<b>mut</b> TxContext): ID {
-    <b>let</b> cap = <a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a> {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet_cap">create_dwallet_cap</a>(ctx: &<b>mut</b> TxContext): <a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a> {
+    <a href="dwallet.md#0x3_dwallet_DWalletCap">DWalletCap</a> {
         id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
-    };
-    <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(&cap);
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(cap, ctx.sender());
-    id
+    }
 }
 </code></pre>
 

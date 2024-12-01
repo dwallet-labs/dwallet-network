@@ -28,7 +28,7 @@ pub fn create_sign_centralized_output(
     hash: u8,
     session_id: String,
 ) -> Result<JsValue, JsError> {
-    let (sign_message, centralized_output, presign, hash_msg) = create_sign_output(
+    let (sign_message, centralized_output, hash_msg) = create_sign_output(
         centralized_party_dkg_output,
         presign_first_round_output,
         presign_second_round_output,
@@ -38,6 +38,6 @@ pub fn create_sign_centralized_output(
     )
     .map_err(|e| JsError::new(&e.to_string()))?;
 
-    serde_wasm_bindgen::to_value(&(sign_message, centralized_output, presign, hash_msg))
+    serde_wasm_bindgen::to_value(&(sign_message, centralized_output, hash_msg))
         .map_err(|e| JsError::new(&e.to_string()))
 }

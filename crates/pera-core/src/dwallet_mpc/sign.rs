@@ -15,7 +15,8 @@ pub(super) trait SignPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
         dkg_output: Vec<u8>,
         hashed_message: Vec<u8>,
-        presign: Vec<u8>,
+        presign_first_round_output: Vec<u8>,
+        presign_second_round_output: Vec<u8>,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> PeraResult<Vec<u8>>;
@@ -25,10 +26,16 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
     fn generate_public_input(
         dkg_output: Vec<u8>,
         hashed_message: Vec<u8>,
-        presign: Vec<u8>,
+        presign_first_round_output: Vec<u8>,
+        presign_second_round_output: Vec<u8>,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> PeraResult<Vec<u8>> {
+        let presign_first_round_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare = bcs::from_bytes(&presign_first_round_output)?;
+        let presign_second_round_output: (<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart, <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart) = bcs::from_bytes(&presign_second_round_output)?;
+        let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+            (presign_first_round_output, presign_second_round_output).into();
+
         let auxiliary = SignPublicInput::from((
             class_groups_constants::protocol_public_parameters(),
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::Message>(
@@ -37,7 +44,7 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
             bcs::from_bytes::<<AsyncProtocol as Protocol>::DecentralizedPartyDKGOutput>(
                 &dkg_output,
             )?,
-            bcs::from_bytes::<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign>(&presign)?,
+            presign,
             bcs::from_bytes::<<AsyncProtocol as twopc_mpc::sign::Protocol>::SignMessage>(
                 &centralized_signed_message,
             )?,

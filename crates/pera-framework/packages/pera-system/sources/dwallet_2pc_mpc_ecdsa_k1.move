@@ -37,22 +37,15 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_cap_id: ID,
     }
 
-    /// Object to store the output of the first round of the presign session.
-    public struct PresignSessionOutput has key {
-        id: UID,
-        session_id: ID,
-        dwallet_id: ID,
-        dwallet_cap_id: ID,
-        output: vector<u8>,
-    }
-
     /// Represents the presign result of a the second and final presign round.
-    public struct Presign has key {
+    public struct Presign has key, store {
         id: UID,
         session_id: ID,
         dwallet_id: ID,
         dwallet_cap_id: ID,
-        presigns: vector<u8>,
+        first_round_session_id: ID,
+        first_round_output: vector<u8>,
+        second_round_output: vector<u8>,
     }
 
     /// Event emitted to start the first DKG round.
@@ -120,7 +113,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_cap_id: ID,
         dkg_output: vector<u8>,
         hashed_message: vector<u8>,
-        presign: vector<u8>,
+        presign_first_round_output: vector<u8>,
+        presign_second_round_output: vector<u8>,
         centralized_signed_message: vector<u8>,
     }
 
@@ -129,12 +123,15 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public struct SignOutput has key {
         id: UID,
         session_id: ID,
+        dwallet_id: ID,
         output: vector<u8>,
     }
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     /// Error raised when the sender is not the system address.
     const ENotSystemAddress: u64 = 0;
+    const EDwalletCapMismatch: u64 = 1;
+    const EDwalletMismatch: u64 = 2;
     // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
@@ -143,11 +140,26 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     // >>>>>>>>>>>>>>>>>>>>>>>> Constants >>>>>>>>>>>>>>>>>>>>>>>>
 
     /// Starts the first Distributed Key Generation (DKG) session.
-    /// This function initializes the DKG process for creating a dWallet.
-    /// It emits an event for validators to begin the first round of DKG.
-    /// The dWallet capability (`DWalletCap`) is created and transferred to the user.
-    public fun launch_dkg_first_round(ctx: &mut TxContext): address {
-        let dwallet_cap_id = create_dwallet_cap(ctx);
+    ///
+    /// This function creates a new `DWalletCap` object,
+    /// transfers it to the session initiator,
+    /// and emits a `StartDKGFirstRoundEvent` to signal
+    /// the beginning of the DKG process.
+    ///
+    /// ### Effects
+    /// - Generates a new `DWalletCap` object.
+    /// - Transfers the `DWalletCap` to the session initiator (`ctx.sender`).
+    /// - Emits a `StartDKGFirstRoundEvent`.
+    ///
+    /// ### Emits
+    /// - `StartDKGFirstRoundEvent`:
+    ///   - `session_id`: The generated session ID.
+    ///   - `initiator`: The address of the transaction sender.
+    ///   - `dwallet_cap_id`: The ID of the created `DWalletCap`.
+    public fun launch_dkg_first_round(ctx: &mut TxContext) {
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let dwallet_cap_id = object::id(&dwallet_cap);
+        transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
         let initiator = tx_context::sender(ctx);
         let session_id = tx_context::fresh_object_address(ctx);
         event::emit(StartDKGFirstRoundEvent {
@@ -155,20 +167,29 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             initiator,
             dwallet_cap_id,
         });
-        session_id
     }
 
     /// Creates the output of the first DKG round.
-    /// This function transfers the output to the initiating user and emits
-    /// an event indicating the completion of the first round.
+    ///
+    /// This function transfers the output of the first DKG round
+    /// to the session initiator and ensures it is securely linked
+    /// to the `DWalletCap` of the session.
     /// This function is called by blockchain itself.
     /// Validtors call it, it's part of the blockchain logic.
     ///
+    /// ### Effects
+    /// - Transfers the output of the first round to the initiator.
+    /// - Emits necessary metadata and links it to the associated session.
+    ///
     /// ### Parameters
     /// - `initiator`: The address of the user who initiated the DKG session.
-    /// - `session_id`: The ID of the current DKG session.
-    /// - `output`: The raw output of the first DKG round.
-    /// - `dwallet_cap_id`: The ID of the associated dWallet capability.
+    /// - `session_id`: The ID of the DKG session.
+    /// - `output`: The output data from the first round.
+    /// - `dwallet_cap_id`: The ID of the associated `DWalletCap`.
+    /// - `ctx`: The transaction context.
+    ///
+    /// ### Panics
+    /// - Panics with `ENotSystemAddress` if the sender is not the system address.
     #[allow(unused_function)]
     fun create_dkg_first_round_output(
         initiator: address,
@@ -222,7 +243,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Parameters
     /// - `initiator`: The address of the user who initiated the DKG session.
     /// - `session_id`: The ID of the current DKG session.
-    /// - `output`: The output of the second DKG round.
+    /// - `output`: The decentrelaized output of the second DKG round.
     /// - `dwallet_cap_id`: The ID of the associated dWallet capability.
     /// - `ctx`: The transaction context.
     #[allow(unused_function)]
@@ -289,17 +310,24 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     /// Starts the first round of the presign session for a specified dWallet.
     ///
-    /// This function emits a `StartPresignFirstRoundEvent`, which is caught by validators
-    /// to initiate the presign process.
+    /// This function emits a `StartPresignFirstRoundEvent`, which signals validators
+    /// to begin processing the first round of the presign process.
     ///
-    /// ### Parameters
-    /// - `dwallet`: A reference to the [`DWallet`] object of type `Secp256K1` for
-    ///    which the presign session is being initiated.
-    /// - `ctx`: The mutable transaction context used to create and emit the event.
+    /// ### Effects
+    /// - Links the presign session to the specified dWallet.
+    /// - Emits a `StartPresignFirstRoundEvent` with relevant details.
     ///
     /// ### Emits
-    /// - `StartPresignFirstRoundEvent`: Includes session ID, initiator address, dWallet ID,
-    ///    dWallet capability ID, and DKG output.
+    /// - `StartPresignFirstRoundEvent`:
+    ///   - `session_id`: The unique ID of the presign session.
+    ///   - `initiator`: The address of the session initiator.
+    ///   - `dwallet_id`: The ID of the linked dWallet.
+    ///   - `dwallet_cap_id`: The capability ID of the linked dWallet.
+    ///   - `dkg_output`: The DKG process output linked to this dWallet.
+    ///
+    /// ### Parameters
+    /// - `dwallet`: A reference to the target dWallet.
+    /// - `ctx`: The mutable transaction context.
     public fun launch_presign_first_round(
         dwallet: &DWallet<Secp256K1>,
         ctx: &mut TxContext
@@ -312,60 +340,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_cap_id: get_dwallet_cap_id<Secp256K1>(dwallet),
             dkg_output: get_dwallet_output<Secp256K1>(dwallet),
         });
-    }
-
-    /// Creates the first presign round output and initiates the
-    /// second presign round.
-    ///
-    /// This function is called by validators as part of the blockchain logic.
-    /// It creates the output for the first presign round, transfers it to the initiating user,
-    /// and then emits an event to launch the second presign round.
-    ///
-    /// ### Parameters
-    /// - `initiator`: The address of the user who initiated the session.
-    /// - `session_id`: The session ID of the current presign session.
-    /// - `first_round_output`: The output data generated in the first round of the presign session.
-    /// - `dwallet_cap_id`: The ID of the associated `DWalletCap` for the dWallet.
-    /// - `dwallet_id`: The ID of the associated dWallet.
-    /// - `dkg_output`: The output data from the DKG process.
-    /// - `ctx`: The transaction context used to handle state updates and object creation.
-    ///
-    /// ### Effects
-    /// - Creates a `PresignSessionOutput` object and transfers it to the `initiator`.
-    /// - Emits a `StartPresignSecondRoundEvent` to indicate the beginning of the second presign round.
-    /// - Asserts that the caller is the system address for security purposes.
-    ///
-    /// ### Panics
-    /// - Panics with `ENotSystemAddress` if the sender of the transaction is not the system address.
-    #[allow(unused_function)]
-    fun create_first_presign_round_output_and_launch_second_round(
-        initiator: address,
-        session_id: ID,
-        first_round_output: vector<u8>,
-        dwallet_cap_id: ID,
-        dwallet_id: ID,
-        dkg_output: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
-
-        let output = PresignSessionOutput {
-            id: object::new(ctx),
-            session_id,
-            dwallet_id,
-            dwallet_cap_id,
-            output: first_round_output,
-        };
-        transfer::transfer(output, initiator);
-        launch_presign_second_round(
-            initiator,
-            dwallet_id,
-            dkg_output,
-            dwallet_cap_id,
-            first_round_output,
-            session_id,
-            ctx
-        );
     }
 
     /// Launches the second round of the presign session.
@@ -388,6 +362,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Emits
     /// - `StartPresignSecondRoundEvent`: Includes session ID, initiator address, dWallet ID, dWallet capability ID,
     ///   DKG output, first round output, and first round session ID.
+    #[allow(unused_function)]
     fun launch_presign_second_round(
         initiator: address,
         dwallet_id: ID,
@@ -410,31 +385,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_output,
             first_round_session_id,
         });
-    }
-
-
-    #[test_only]
-    /// Call the underlying `create_first_presign_round_output_and_launch_second_round`.
-    /// This function is intended for testing purposes only and should not be used in production.
-    /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_only
-    public fun create_first_presign_round_output_and_launch_second_round_for_testing(
-        initiator: address,
-        session_id: ID,
-        first_round_output: vector<u8>,
-        dwallet_cap_id: ID,
-        dwallet_id: ID,
-        dkg_output: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        create_first_presign_round_output_and_launch_second_round(
-            initiator,
-            session_id,
-            first_round_output,
-            dwallet_cap_id,
-            dwallet_id,
-            dkg_output,
-            ctx
-        );
     }
 
     #[test_only]
@@ -489,7 +439,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     fun create_second_presign_round_output(
         initiator: address,
         session_id: ID,
-        output: vector<u8>,
+        first_round_session_id: ID,
+        first_round_output: vector<u8>,
+        second_round_output: vector<u8>,
         dwallet_cap_id: ID,
         dwallet_id: ID,
         ctx: &mut TxContext
@@ -499,9 +451,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let output = Presign {
             id: object::new(ctx),
             session_id,
+            first_round_session_id,
             dwallet_id,
             dwallet_cap_id,
-            presigns: output,
+            first_round_output,
+            second_round_output,
         };
 
         event::emit(CompletedPresignEvent {
@@ -519,7 +473,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun create_second_presign_round_output_for_testing(
         initiator: address,
         session_id: ID,
-        output: vector<u8>,
+        first_round_session_id: ID,
+        first_round_output: vector<u8>,
+        second_round_output: vector<u8>,
         dwallet_cap_id: ID,
         dwallet_id: ID,
         ctx: &mut TxContext
@@ -527,41 +483,63 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         create_second_presign_round_output(
             initiator,
             session_id,
-            output,
+            first_round_session_id,
+            first_round_output,
+            second_round_output,
             dwallet_cap_id,
             dwallet_id,
             ctx
         );
     }
 
-    /// Starts the signing process by emitting a `StartSignEvent`.
+    /// Initiates the signing process for a given dWallet.
+    ///
+    /// This function emits a `StartSignEvent`, providing all necessary
+    /// metadata and ensuring the integrity of the signing process.
+    /// It validates the linkage between the `DWallet`, `DWalletCap`, and `Presign`.
+    ///
+    /// ### Effects
+    /// - Validates the linkage between dWallet components.
+    /// - Emits a `StartSignEvent` with the hashed message, presign outputs,
+    ///   and additional metadata.
+    ///
+    /// ### Emits
+    /// - `StartSignEvent`:
+    ///   - Includes session details, hashed message, presign outputs,
+    ///     and DKG output.
     ///
     /// ### Parameters
-    /// - `hashed_message`: The hashed message to be signed.
-    /// - `presign`: The presign output from the presign round.
-    /// - `dkg_output`: The output from the DKG process.
-    /// - `centralized_signed_message`: A message signed in a centralized manner (optional in hybrid modes).
-    /// - `presign_session_id`: The session ID of the presign session.
-    /// - `ctx`: The transaction context.
+    /// - `dwallet_cap`: The capability associated with the dWallet.
+    /// - `hashed_message`: The message to be signed (already hashed).
+    /// - `dwallet`: The dWallet object.
+    /// - `presign`: The presign object containing intermediate outputs.
+    /// - `centralized_signed_message`: Optionally includes a centralized signature.
+    /// - `presign_session_id`: The session ID of the presign process.
+    /// - `ctx`: The mutable transaction context.
     public fun sign(
+        dwallet_cap: &DWalletCap,
         hashed_message: vector<u8>,
-        presign: vector<u8>,
-        dkg_output: vector<u8>,
+        dwallet: &DWallet<Secp256K1>,
+        presign: &Presign,
         centralized_signed_message: vector<u8>,
         presign_session_id: ID,
         ctx: &mut TxContext
     ) {
+        assert!(object::id(dwallet_cap) == get_dwallet_cap_id<Secp256K1>(dwallet), EDwalletCapMismatch);
+        assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
+
         let id = object::id_from_address(tx_context::fresh_object_address(ctx));
         event::emit(StartSignEvent {
             session_id: id,
             presign_session_id,
             initiator: tx_context::sender(ctx),
-            dwallet_id: id,
-            dwallet_cap_id: id,
-            presign,
+            dwallet_id: object::id(dwallet),
+            dwallet_cap_id: object::id(dwallet_cap),
+            presign_first_round_output: presign.first_round_output,
+            presign_second_round_output: presign.second_round_output,
             centralized_signed_message,
-            dkg_output,
-            hashed_message,
+            dkg_output: get_dwallet_output<Secp256K1>(dwallet),
+            hashed_message
         });
     }
 
@@ -576,6 +554,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - `ctx`: The transaction context.
     #[allow(unused_function)]
     fun create_sign_output(
+        dwallet_id: ID,
         initiator: address,
         session_id: ID,
         output: vector<u8>,
@@ -585,6 +564,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let output = SignOutput {
             id: object::new(ctx),
             session_id,
+            dwallet_id,
             output,
         };
         transfer::transfer(output, initiator);
@@ -595,12 +575,70 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// This function is intended for testing purposes only and should not be used in production.
     /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_only
     public fun create_sign_output_for_testing(
+        dwallet_id: ID,
         initiator: address,
         session_id: ID,
         output: vector<u8>,
         ctx: &mut TxContext
     ) {
-        create_sign_output(initiator, session_id, output, ctx);
+        create_sign_output(
+            dwallet_id,
+            initiator,
+            session_id,
+            output,
+            ctx
+        );
     }
 
+    /// Generates a mock `DWallet<Secp256K1>` object for testing purposes.
+    ///
+    /// This function creates a dWallet object with random data,
+    /// useful for testing or initialization in non-production environments.
+    ///
+    /// ### Parameters
+    /// - `ctx`: The transaction context for generating IDs and objects.
+    /// - `dwallet_cap_id`: The ID of the capability associated with the mock dWallet.
+    /// - `dkg_output`: The decentralized DKG output.
+    ///
+    /// ### Effects
+    /// - Creates and initializes a `DWallet<Secp256K1>` object.
+    /// - Links the dWallet to the provided capability.
+    ///
+    /// ### Returns
+    /// - `DWallet<Secp256K1>`: A mock dWallet object.
+    public fun create_mock_dwallet(
+        dkg_output: vector<u8>,
+        ctx: &mut TxContext
+    ): DWallet<Secp256K1> {
+        let dwallet_cap = create_dwallet_cap(ctx);
+        let dwallet_cap_id = object::id(&dwallet_cap);
+        transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
+        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, ctx)
+    }
+
+    /// Generates a new mock `Presign` object with random IDs and data.
+    /// This function is useful for testing or initializing Presign objects.
+    public fun create_mock_presign(
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        first_round_output: vector<u8>,
+        second_round_output: vector<u8>,
+        first_round_session_id: ID,
+        ctx: &mut TxContext,
+    ): Presign {
+        let id = object::new(ctx);
+        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+
+        // Create and return the Presign object.
+        Presign {
+            id,
+            session_id,
+            dwallet_id,
+            dwallet_cap_id,
+            first_round_session_id,
+            first_round_output,
+            second_round_output,
+        }
+    }
 }
