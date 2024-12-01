@@ -605,7 +605,7 @@ impl KeyToolCommand {
                         )?;
                     let file_name = format!("class-groups-{pera_address}.key");
                     let _kp = bcs::to_bytes(&kp)?;
-                    write_class_groups_keypair_and_proof_to_file(&_kp, file_name)?;
+                    // write_class_groups_keypair_and_proof_to_file(&_kp, file_name)?;
                     CommandOutput::Generate(Key {
                         alias: None,
                         pera_address,

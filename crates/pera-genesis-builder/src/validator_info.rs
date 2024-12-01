@@ -4,10 +4,7 @@
 use anyhow::bail;
 use fastcrypto::traits::ToFromBytes;
 use pera_types::base_types::PeraAddress;
-use pera_types::crypto::{
-    verify_proof_of_possession, AuthorityPublicKey, AuthorityPublicKeyBytes, AuthoritySignature,
-    NetworkPublicKey,
-};
+use pera_types::crypto::{verify_proof_of_possession, AuthorityPublicKey, AuthorityPublicKeyBytes, AuthoritySignature, ClassGroupsPublicKeyAndProof, NetworkPublicKey};
 use pera_types::multiaddr::Multiaddr;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -21,6 +18,7 @@ const MAX_VALIDATOR_METADATA_LENGTH: usize = 256;
 pub struct ValidatorInfo {
     pub name: String,
     pub account_address: PeraAddress,
+    pub class_groups_keypair_and_proof: ClassGroupsPublicKeyAndProof,
     pub protocol_key: AuthorityPublicKeyBytes,
     pub worker_key: NetworkPublicKey,
     pub network_key: NetworkPublicKey,

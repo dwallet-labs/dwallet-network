@@ -13,10 +13,7 @@ use pera_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
 use pera_config::{local_ip_utils, Config};
 use pera_genesis_builder::validator_info::{GenesisValidatorInfo, ValidatorInfo};
 use pera_types::base_types::PeraAddress;
-use pera_types::crypto::{
-    generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,
-    AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey, PeraKeyPair, PublicKey,
-};
+use pera_types::crypto::{generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, AuthorityPublicKeyBytes, ClassGroupsKeyPairAndProof, ClassGroupsPublicKeyAndProof, NetworkKeyPair, NetworkPublicKey, PeraKeyPair, PublicKey};
 use pera_types::multiaddr::Multiaddr;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
@@ -39,6 +36,7 @@ pub struct ValidatorGenesisConfig {
     #[serde(default)]
     pub dwallet_mpc_class_groups_decryption_shares:
         Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
+    pub class_groups_keypair_and_proof: ClassGroupsKeyPairAndProof,
     #[serde(default = "default_bls12381_key_pair")]
     pub key_pair: AuthorityKeyPair,
     #[serde(default = "default_ed25519_key_pair")]
@@ -71,9 +69,11 @@ impl ValidatorGenesisConfig {
         let network_key: NetworkPublicKey = self.network_key_pair.public().clone();
         let worker_key: NetworkPublicKey = self.worker_key_pair.public().clone();
         let network_address = self.network_address.clone();
+        let class_groups_public_key_and_proof = (self.class_groups_keypair_and_proof.clone().1, self.class_groups_keypair_and_proof.clone().2);
 
         let info = ValidatorInfo {
             name,
+            class_groups_keypair_and_proof: class_groups_public_key_and_proof,
             protocol_key,
             worker_key,
             network_key,
@@ -224,6 +224,7 @@ impl ValidatorGenesisConfigBuilder {
             dwallet_mpc_class_groups_public_parameters: self
                 .dwallet_mpc_class_groups_public_parameters,
             dwallet_mpc_class_groups_decryption_shares: self.dwallet_mpc_decryption_shares,
+            class_groups_keypair_and_proof: x
             key_pair: protocol_key_pair,
             worker_key_pair,
             account_key_pair: account_key_pair.into(),

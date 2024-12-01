@@ -12,11 +12,11 @@ pub type ClassGroupsKeyPairAndProof = (String, String, String);
 
 /// Write Base64 encoded `flag || privkey` to file.
 pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path>>(
-    keypair: &Vec<u8>,
+    keypair: &ClassGroupsKeyPairAndProof,
     path: P,
 ) -> anyhow::Result<()> {
-    // let contents = keypair.encode_base64();
-    let contents = Base64::encode(keypair);
+    let serialized = serde_json::to_vec(&keypair).expect("Failed to serialize");
+    let contents = Base64::encode(serialized);
     std::fs::write(path, contents)?;
     Ok(())
 }
@@ -39,6 +39,15 @@ pub fn write_authority_keypair_to_file<P: AsRef<std::path::Path>>(
     let contents = keypair.encode_base64();
     std::fs::write(path, contents)?;
     Ok(())
+}
+
+pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
+    path: P,
+) -> anyhow::Result<ClassGroupsKeyPairAndProof> {
+    let contents = std::fs::read_to_string(path)?;
+    let decoded = Base64::decode(contents.as_str().trim()).map_err(|e| anyhow!(e))?;
+    let keypair: ClassGroupsKeyPairAndProof = serde_json::from_slice(&decoded)?;
+    Ok(keypair)
 }
 
 /// Read from file as Base64 encoded `privkey` and return a AuthorityKeyPair.

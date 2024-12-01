@@ -75,6 +75,9 @@ pub type AccountKeyPair = Ed25519KeyPair;
 pub type AccountPublicKey = Ed25519PublicKey;
 pub type AccountPrivateKey = Ed25519PrivateKey;
 
+pub type ClassGroupsPublicKeyAndProof = (String, String);
+pub type ClassGroupsKeyPairAndProof = (String, String, String);
+
 pub type NetworkKeyPair = Ed25519KeyPair;
 pub type NetworkPublicKey = Ed25519PublicKey;
 pub type NetworkPrivateKey = Ed25519PrivateKey;
