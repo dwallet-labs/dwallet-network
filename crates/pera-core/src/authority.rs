@@ -1559,7 +1559,7 @@ impl AuthorityState {
         };
         let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
         for event in &inner_temporary_store.events.data {
-            Self::handle_batched_sign_event(&mut dwallet_mpc_manager, &event)?;
+            Self::check_for_batched_sign_event(&mut dwallet_mpc_manager, &event)?;
             let res = MPCParty::from_event(
                 event,
                 &dwallet_mpc_manager,
@@ -1572,7 +1572,7 @@ impl AuthorityState {
         Ok(())
     }
 
-    pub fn handle_batched_sign_event(
+    pub fn check_for_batched_sign_event(
         dwallet_mpc_manager: &mut MutexGuard<DWalletMPCManager>,
         event: &&Event,
     ) -> PeraResult {
