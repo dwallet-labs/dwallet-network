@@ -114,24 +114,24 @@ impl MPCParty {
             }
             MPCParty::NetworkDkgSecp256k1Party(secret_key) => {
                 let public_input = bcs::from_bytes(&public_input)?;
-                advance::<Secp256k1Party>(
+                advance::<PresignSecondParty>(
                     session_id,
                     party_id,
                     access_threshold,
                     messages,
                     public_input,
-                    secret_key.clone(),
+                    (), // secret_key.clone(),
                 )
             }
             MPCParty::NetworkDkgRistrettoParty(secret_key) => {
                 let public_input = bcs::from_bytes(&public_input)?;
-                advance::<RistrettoParty>(
+                advance::<PresignSecondParty>(
                     session_id,
                     party_id,
                     access_threshold,
                     messages,
                     public_input,
-                    secret_key.clone(),
+                    (),//secret_key.clone(),
                 )
             }
         }

@@ -87,7 +87,6 @@ struct AppState {
 }
 
 pub async fn run_admin_server(node: Arc<PeraNode>, port: u16, tracing_handle: TracingHandle) {
-pub async fn run_admin_server(node: Arc<PeraNode>, port: u16, tracing_handle: TracingHandle) {
     let filter = tracing_handle.get_log().unwrap();
 
     let app_state = AppState {
