@@ -99,15 +99,15 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
-proof = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "proof", branch = "new-pera-api" }
-maurer = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "maurer" , branch = "new-pera-api", features = ["benchmarking"]}
+proof = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "proof", rev = "5915cb64d26fa68a79cecfd2b57195c5f8aa42ee" }
+maurer = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "maurer" , rev = "5915cb64d26fa68a79cecfd2b57195c5f8aa42ee", features = ["benchmarking"]}
 group.workspace = true
-tiresias = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "tiresias", branch = "new-pera-api" }
+tiresias = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "tiresias", rev = "5915cb64d26fa68a79cecfd2b57195c5f8aa42ee" }
 mpc.workspace = true
 twopc_mpc.workspace = true
-homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "new-pera-api" }
+homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", rev = "5915cb64d26fa68a79cecfd2b57195c5f8aa42ee" }
 class_groups.workspace = true
-commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "new-pera-api" }
+commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", rev = "5915cb64d26fa68a79cecfd2b57195c5f8aa42ee" }
 class_groups_constants = {path = "../class-groups-constants"}
 rand_core = "0.6.4"
 crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }
