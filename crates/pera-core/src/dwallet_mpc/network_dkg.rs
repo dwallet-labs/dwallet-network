@@ -92,7 +92,7 @@ fn generate_secp256k1_dkg_party_public_input(
     //     secret_key_share_sized_encryption_keys_and_proofs,
     // ).unwrap();
     // bcs::to_bytes(&public_input).unwrap()
-    Vec::new()
+    <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
 fn generate_ristretto_dkg_party_public_input(
@@ -106,13 +106,15 @@ fn generate_ristretto_dkg_party_public_input(
     //     secret_key_share_sized_encryption_keys_and_proofs,
     // ).unwrap();
     // bcs::to_bytes(&public_input).unwrap()
-    Vec::new()
+    <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
+
 }
 
 use class_groups::dkg::proof_helpers::{generate_secret_share_sized_keypair_and_proof, KnowledgeOfDiscreteLogUCProof};
 use class_groups::{CompactIbqf};
 use mpc::WeightedThresholdAccessStructure;
 use rand_core::SeedableRng;
+use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
 
 pub(crate) type ClassGroupsEncryptionKeyAndProof = (EncryptionKey, Proof);
@@ -321,9 +323,11 @@ impl NetworkDkg {
             ConsensusTransactionKind::DWalletMPCOutput(_, message) => {
                 self.status = DkgState::Finalize(message.clone(), HashSet::new(), HashSet::new());// ::from(malicious_parties));
                 let message = NetworkDkgMessage::Output(message);
-                ConsensusTransaction::new_pera_network_dkg_message(
-                    self.epoch_store.name,
+                // todo (yael): save both authority name and party id to encrypted decryption share
+                // every party will have both network party id from committee and authority name
+                ConsensusTransaction::new_dwallet_mpc_output(
                     bcs::to_bytes(&message)?,
+                    instance.session_info.clone(),
                 )
             }
             _ => {

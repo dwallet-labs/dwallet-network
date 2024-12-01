@@ -348,4 +348,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         };
         transfer::transfer(output, initiating_user);
     }
+
+    public fun create_encrypted_decryption_key_shares(ctx: &mut TxContext) {}
 }
