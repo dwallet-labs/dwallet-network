@@ -112,8 +112,6 @@ impl MPCParty {
         }
     }
 
-
-
     /// Parses an [`Event`] to extract the corresponding [`MPCParty`],
     /// auxiliary input, and session information.
     ///
