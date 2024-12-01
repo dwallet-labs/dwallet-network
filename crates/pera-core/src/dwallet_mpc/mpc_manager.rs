@@ -3,6 +3,7 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
+use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::mpc_instance::{
     authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
 };
@@ -14,11 +15,13 @@ use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
+use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
@@ -185,6 +188,29 @@ impl DWalletMPCManager {
             };
         }
         Ok(OutputVerificationResult::Malicious)
+    }
+
+    /// Checks & handles a batched sign event, if the current event is a batched sign event.
+    /// Returns true if the event is a batched sign event, false otherwise.
+    pub fn check_for_batched_sign_event(&mut self, event: &Event) -> PeraResult<bool> {
+        if event.type_ == StartBatchedSignEvent::type_() {
+            let deserialized_event: StartBatchedSignEvent = bcs::from_bytes(&event.contents)?;
+            let mut seen = HashSet::new();
+            let messages_without_duplicates = deserialized_event
+                .hashed_messages
+                .into_iter()
+                .filter(|x| seen.insert(x.clone()))
+                .collect();
+            self.batched_sign_sessions.insert(
+                deserialized_event.session_id.bytes,
+                BatchedSignSession {
+                    hashed_msg_to_signature: HashMap::new(),
+                    ordered_messages: messages_without_duplicates,
+                },
+            );
+            return Ok(true);
+        }
+        Ok(false)
     }
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
