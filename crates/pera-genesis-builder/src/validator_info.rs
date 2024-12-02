@@ -18,7 +18,7 @@ const MAX_VALIDATOR_METADATA_LENGTH: usize = 256;
 pub struct ValidatorInfo {
     pub name: String,
     pub account_address: PeraAddress,
-    pub class_groups_keypair_and_proof: ClassGroupsPublicKeyAndProof,
+    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProof,
     pub protocol_key: AuthorityPublicKeyBytes,
     pub worker_key: NetworkPublicKey,
     pub network_key: NetworkPublicKey,

@@ -34,6 +34,7 @@ pera-macros.workspace = true
 pera-protocol-config.workspace = true
 pera-types.workspace = true
 pera-genesis-builder.workspace = true
+rand_chacha = "0.3.1"
 
 [target.'cfg(msim)'.dependencies]
 pera-simulator.workspace = true

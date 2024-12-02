@@ -73,7 +73,7 @@ impl ValidatorGenesisConfig {
 
         let info = ValidatorInfo {
             name,
-            class_groups_keypair_and_proof: class_groups_public_key_and_proof,
+            class_groups_public_key_and_proof: class_groups_public_key_and_proof,
             protocol_key,
             worker_key,
             network_key,
@@ -184,7 +184,8 @@ impl ValidatorGenesisConfigBuilder {
         let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);
 
-        // let rng = protocol_key_pair.copy().private().as_bytes().try_into().expect("Invalid key length");
+        // let seed = protocol_key_pair.copy().private().as_bytes().try_into().expect("Invalid key length");
+        // let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed.clone());
         // let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
         let class_groups_keypair_and_proof = ("decryption_key".to_string(), "proof".to_string(), "encryption_key".to_string());
 

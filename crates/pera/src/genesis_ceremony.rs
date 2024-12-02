@@ -151,7 +151,7 @@ pub fn run(cmd: Ceremony) -> Result<()> {
                     description,
                     image_url,
                     project_url,
-                    class_groups_keypair_and_proof: (class_groups_keypair_and_proof.1, class_groups_keypair_and_proof.2),
+                    class_groups_public_key_and_proof: (class_groups_keypair_and_proof.1, class_groups_keypair_and_proof.2),
                 },
                 pop,
             );
@@ -302,6 +302,7 @@ mod test {
                     description: String::new(),
                     image_url: String::new(),
                     project_url: String::new(),
+                    class_groups_public_key_and_proof: ("".to_string(), "".to_string()),
                 };
                 let key_file = dir.path().join(format!("{}-0.key", info.name));
                 write_authority_keypair_to_file(&keypair, &key_file).unwrap();

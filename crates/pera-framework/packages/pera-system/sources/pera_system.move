@@ -110,6 +110,7 @@ module pera_system::pera_system {
         pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
+        class_groups_pubkey_and_proof_bytes: vector<u8>
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -128,6 +129,7 @@ module pera_system::pera_system {
             pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
+            class_groups_pubkey_and_proof_bytes,
             proof_of_possession,
             name,
             description,
