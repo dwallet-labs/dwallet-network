@@ -8,6 +8,7 @@ use crate::transaction_deny_config::TransactionDenyConfig;
 use crate::Config;
 use anyhow::Result;
 use consensus_config::Parameters as ConsensusParameters;
+use mpc::PartyID;
 use narwhal_config::Parameters as NarwhalParameters;
 use once_cell::sync::OnceCell;
 use pera_keys::keypair_file::{read_authority_keypair_from_file, read_keypair_from_file};
@@ -23,7 +24,7 @@ use pera_types::traffic_control::{PolicyConfig, RemoteFirewallConfig};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::net::SocketAddr;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
@@ -33,6 +34,7 @@ use std::time::Duration;
 use pera_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use pera_types::multiaddr::Multiaddr;
 use tracing::info;
+use twopc_mpc::secp256k1::class_groups::DecryptionSharePublicParameters;
 
 // Default max number of concurrent requests served
 pub const DEFAULT_GRPC_CONCURRENCY_LIMIT: usize = 20000000000;
@@ -52,7 +54,7 @@ pub const DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS: usize = 3000;
 pub struct NodeConfig {
     /// The maximum number of active dWallet MPC sessions allowed to run simultaneously.
     #[serde(default = "default_max_mpc_protocol_sessions_in_progress")]
-    pub max_active_dwallet_mpc_instances: usize,
+    pub max_active_dwallet_mpc_sessions: usize,
     #[serde(default = "default_authority_key_pair")]
     pub protocol_key_pair: AuthorityKeyPairWithPath,
     #[serde(default = "default_key_pair")]
