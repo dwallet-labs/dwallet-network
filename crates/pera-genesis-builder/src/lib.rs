@@ -1208,7 +1208,8 @@ pub fn generate_genesis_system_object(
 
     // update the value of the clock to match the chain start time
     {
-        let object = written.get_mut(&pera_types::PERA_CLOCK_OBJECT_ID).unwrap();
+        let object = written.get_mut(&pera_types::PERA_CLOCK_OBJECT_ID);
+        let object = object.unwrap();
         object
             .data
             .try_as_move_mut()

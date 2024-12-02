@@ -251,7 +251,7 @@ async fn init_genesis(
             description: String::new(),
             image_url: String::new(),
             project_url: String::new(),
-            class_groups_public_key_and_proof: ("".to_string(), "".to_string()),
+            class_groups_public_key_and_proof: [1, 2, 3, 4, 5]// ("".to_string(), "".to_string()),
         };
         let pop = generate_proof_of_possession(&key_pair, (&account_key_pair.public()).into());
         builder = builder.add_validator(validator_info, pop);

@@ -67,7 +67,7 @@ impl DWalletMPCManager {
         node_config: NodeConfig,
     ) -> PeraResult<Self> {
 
-        let res = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut OsRng);
+        // let res = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut OsRng);
 
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()

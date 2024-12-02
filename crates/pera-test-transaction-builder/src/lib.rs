@@ -222,6 +222,7 @@ impl TestTransactionBuilder {
                 CallArg::Pure(bcs::to_bytes(&validator.protocol_public_key).unwrap()),
                 CallArg::Pure(bcs::to_bytes(&validator.network_public_key).unwrap()),
                 CallArg::Pure(bcs::to_bytes(&validator.worker_public_key).unwrap()),
+                CallArg::Pure(bcs::to_bytes(&validator.class_groups_pubkey_and_proof).unwrap()),
                 CallArg::Pure(bcs::to_bytes(&validator.proof_of_possession).unwrap()),
                 CallArg::Pure(bcs::to_bytes(validator.name.as_bytes()).unwrap()),
                 CallArg::Pure(bcs::to_bytes(validator.description.as_bytes()).unwrap()),

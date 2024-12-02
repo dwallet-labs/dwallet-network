@@ -320,7 +320,7 @@ impl PeraValidatorCommand {
                 let validator_info = GenesisValidatorInfo {
                     info: pera_genesis_builder::validator_info::ValidatorInfo {
                         name,
-                        class_groups_public_key_and_proof: (class_groups_keypair_and_proof.1, class_groups_keypair_and_proof.2),
+                        class_groups_public_key_and_proof: [1,2,3,4,5],//(class_groups_keypair_and_proof.1, class_groups_keypair_and_proof.2),
                         protocol_key: keypair.public().into(),
                         worker_key: worker_keypair.public().clone(),
                         account_address: PeraAddress::from(&account_keypair.public()),
@@ -376,6 +376,9 @@ impl PeraValidatorCommand {
                     ),
                     CallArg::Pure(
                         bcs::to_bytes(&validator.worker_key().as_bytes().to_vec()).unwrap(),
+                    ),
+                    CallArg::Pure(
+                        bcs::to_bytes(&validator.class_groups_public_key_and_proof).unwrap(),
                     ),
                     CallArg::Pure(
                         bcs::to_bytes(&validator_info.proof_of_possession.as_ref().to_vec())

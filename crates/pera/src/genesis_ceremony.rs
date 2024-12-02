@@ -151,7 +151,7 @@ pub fn run(cmd: Ceremony) -> Result<()> {
                     description,
                     image_url,
                     project_url,
-                    class_groups_public_key_and_proof: (class_groups_keypair_and_proof.1, class_groups_keypair_and_proof.2),
+                    class_groups_public_key_and_proof: [1, 2, 3, 4, 5], // (class_groups_keypair_and_proof.1, class_groups_keypair_and_proof.2),
                 },
                 pop,
             );

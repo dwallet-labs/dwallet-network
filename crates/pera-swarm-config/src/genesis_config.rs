@@ -73,7 +73,7 @@ impl ValidatorGenesisConfig {
 
         let info = ValidatorInfo {
             name,
-            class_groups_public_key_and_proof: class_groups_public_key_and_proof,
+            class_groups_public_key_and_proof: [1, 2, 3, 4, 5],
             protocol_key,
             worker_key,
             network_key,
