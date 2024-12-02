@@ -120,7 +120,7 @@ impl DWalletMPCInstance {
                 private_output: _,
                 public_output,
             } => {
-                self.status = MPCSessionStatus::Finalizing(public_output.clone().into());
+                self.status = MPCSessionStatus::Finished(public_output.clone().into());
                 Ok((
                     self.new_dwallet_mpc_output_message(public_output)
                         .ok_or(PeraError::InternalDWalletMPCError)?,
@@ -151,7 +151,11 @@ impl DWalletMPCInstance {
     /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
     /// Only the aggregator party should send the output to the other parties.
     fn new_dwallet_mpc_output_message(&self, output: Vec<u8>) -> Option<ConsensusTransaction> {
+        let Ok(epoch_store) = self.epoch_store() else {
+            return None;
+        };
         Some(ConsensusTransaction::new_dwallet_mpc_output(
+            epoch_store.name,
             output,
             self.session_info.clone(),
         ))
@@ -180,7 +184,7 @@ impl DWalletMPCInstance {
                 self.store_message(round, &message, self.epoch_store()?)
             }
             // TODO (#263): Check for malicious messages also after the instance is finished
-            MPCSessionStatus::Finalizing(_) | MPCSessionStatus::Finished(_) => {
+            MPCSessionStatus::Finished(_) => {
                 // Do nothing
                 Ok(())
             }
@@ -195,9 +199,6 @@ impl DWalletMPCInstance {
 /// - FirstExecution: The [`DWalletMPCInstance::party`] has not yet performed it's first advance. This status is needed
 /// so we will be able to filter those instances and advance them, despite they have not received [`threshold_number_of_parties`] messages.
 /// - Active: The session is currently running; new messages will be forwarded to the session.
-/// - Finalizing: The session is finished and pending on chain write; after receiving an output, it will be verified
-/// against the local one, and if they match the status will be changed to Finished.
-/// This is needed so we won't write the same output twice to the chain.
 /// - Finished: The session removed from active instances; incoming messages will not be forwarded,
 /// but will not be marked as malicious.
 #[derive(Clone, PartialEq, Debug)]
@@ -205,7 +206,6 @@ pub enum MPCSessionStatus {
     Pending,
     FirstExecution,
     Active(usize),
-    Finalizing(Vec<u8>),
     Finished(Vec<u8>),
     Failed,
 }

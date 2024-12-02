@@ -16,7 +16,7 @@ use pera_types::transaction::TransactionKind as NativeTransactionKind;
 
 pub(crate) mod authenticator_state_update;
 pub(crate) mod consensus_commit_prologue;
-mod dwallet_mpc_output;
+pub mod dwallet_mpc_output;
 pub(crate) mod end_of_epoch;
 pub(crate) mod genesis;
 pub(crate) mod programmable;

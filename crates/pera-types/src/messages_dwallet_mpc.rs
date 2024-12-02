@@ -19,9 +19,10 @@ pub enum MPCRound {
     /// Contains the `ObjectId` of the dwallet object and the presign first round output.
     PresignSecond(ObjectID, Vec<u8>),
     /// The first round of the sign protocol.
-    /// Contains the party id associated with the decryption share, the object ID of the
-    /// batched sign session & the hashed message that is being signed.
-    Sign(PartyID, ObjectID, Vec<u8>),
+    /// Contains the object ID of the batched sign session & the hashed message that is being signed.
+    Sign(ObjectID, Vec<u8>),
+    /// A batched sign session, contains the list of messages that are being signed.
+    BatchedSign(Vec<Vec<u8>>),
 }
 
 /// The content of the system transaction that stores the MPC session output on chain.
@@ -52,6 +53,7 @@ pub struct SessionInfo {
     /// The address of the user that initiated this session.
     pub initiating_user_address: PeraAddress,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
+    // TODO (#365): Remove DWallet cap ID from the [`SessionInfo`] struct and move it to the DKG second [`MPCRound`]
     pub dwallet_cap_id: ObjectID,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.

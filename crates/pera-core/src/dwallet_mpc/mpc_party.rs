@@ -3,8 +3,8 @@ use crate::dwallet_mpc::dkg::{
     DKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_events::{
-    StartDKGFirstRoundEvent, StartDKGSecondRoundEvent, StartPresignFirstRoundEvent,
-    StartPresignSecondRoundEvent, StartSignRoundEvent,
+    StartBatchedSignEvent, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent,
+    StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::{twopc_error_to_pera_error, DWalletMPCManager};
 use crate::dwallet_mpc::presign::{
@@ -112,6 +112,55 @@ impl MPCParty {
         }
     }
 
+    /// Parses the session info from the event and returns it.
+    /// Return `None` if the event is not a DWallet MPC event.
+    pub fn session_info_from_event(
+        event: &Event,
+        party_id: PartyID,
+    ) -> anyhow::Result<Option<SessionInfo>> {
+        match &event.type_ {
+            t if t == &StartDKGFirstRoundEvent::type_() => {
+                let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;
+                Ok(Some(Self::dkg_first_party_session_info(deserialized_event)))
+            }
+            t if t == &StartDKGSecondRoundEvent::type_() => {
+                let deserialized_event: StartDKGSecondRoundEvent =
+                    bcs::from_bytes(&event.contents)?;
+                Ok(Some(Self::dkg_second_party_session_info(
+                    &deserialized_event,
+                )))
+            }
+            t if t == &StartPresignFirstRoundEvent::type_() => {
+                let deserialized_event: StartPresignFirstRoundEvent =
+                    bcs::from_bytes(&event.contents)?;
+                Ok(Some(Self::presign_first_party_session_info(
+                    deserialized_event,
+                )))
+            }
+            t if t == &StartPresignSecondRoundEvent::type_() => {
+                let deserialized_event: StartPresignSecondRoundEvent =
+                    bcs::from_bytes(&event.contents)?;
+                Ok(Some(Self::presign_second_party_session_info(
+                    &deserialized_event,
+                )))
+            }
+            t if t == &StartSignRoundEvent::type_() => {
+                let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)
+                    .map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
+                Ok(Some(Self::sign_party_session_info(
+                    &deserialized_event,
+                    party_id,
+                )))
+            }
+            t if t == &StartBatchedSignEvent::type_() => {
+                let deserialized_event: StartBatchedSignEvent = bcs::from_bytes(&event.contents)
+                    .map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
+                Ok(Some(Self::batched_sign_session_info(&deserialized_event)))
+            }
+            _ => Ok(None),
+        }
+    }
+
     /// Parses an [`Event`] to extract the corresponding [`MPCParty`],
     /// auxiliary input, and session information.
     ///
@@ -157,17 +206,21 @@ impl MPCParty {
         Ok((
             MPCParty::SecondDKGBytesParty,
             DKGSecondParty::generate_public_input(
-                deserialized_event.first_round_output,
-                deserialized_event.public_key_share_and_proof,
+                deserialized_event.first_round_output.clone(),
+                deserialized_event.public_key_share_and_proof.clone(),
             ),
-            SessionInfo {
-                flow_session_id: deserialized_event.first_round_session_id.bytes,
-                session_id: ObjectID::from(deserialized_event.session_id),
-                initiating_user_address: deserialized_event.sender,
-                dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-                mpc_round: MPCRound::DKGSecond,
-            },
+            Self::dkg_second_party_session_info(&deserialized_event),
         ))
+    }
+
+    fn dkg_second_party_session_info(deserialized_event: &StartDKGSecondRoundEvent) -> SessionInfo {
+        SessionInfo {
+            flow_session_id: deserialized_event.first_round_session_id.bytes,
+            session_id: ObjectID::from(deserialized_event.session_id),
+            initiating_user_address: deserialized_event.sender,
+            dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+            mpc_round: MPCRound::DKGSecond,
+        }
     }
 
     fn dkg_first_party(
@@ -176,14 +229,18 @@ impl MPCParty {
         Ok((
             MPCParty::FirstDKGBytesParty,
             <DKGFirstParty as DKGFirstPartyPublicInputGenerator>::generate_public_input(),
-            SessionInfo {
-                flow_session_id: deserialized_event.session_id.bytes,
-                session_id: deserialized_event.session_id.bytes,
-                initiating_user_address: deserialized_event.sender,
-                dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-                mpc_round: MPCRound::DKGFirst,
-            },
+            Self::dkg_first_party_session_info(deserialized_event),
         ))
+    }
+
+    fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
+        SessionInfo {
+            flow_session_id: deserialized_event.session_id.bytes,
+            session_id: deserialized_event.session_id.bytes,
+            initiating_user_address: deserialized_event.sender,
+            dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+            mpc_round: MPCRound::DKGFirst,
+        }
     }
 
     fn presign_first_party(
@@ -194,17 +251,23 @@ impl MPCParty {
             <PresignFirstParty as PresignFirstPartyPublicInputGenerator>::generate_public_input(
                 deserialized_event.dkg_output.clone(),
             )?,
-            SessionInfo {
-                flow_session_id: deserialized_event.session_id.bytes,
-                session_id: deserialized_event.session_id.bytes,
-                initiating_user_address: deserialized_event.sender,
-                dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-                mpc_round: MPCRound::PresignFirst(
-                    deserialized_event.dwallet_id.bytes,
-                    deserialized_event.dkg_output,
-                ),
-            },
+            Self::presign_first_party_session_info(deserialized_event),
         ))
+    }
+
+    fn presign_first_party_session_info(
+        deserialized_event: StartPresignFirstRoundEvent,
+    ) -> SessionInfo {
+        SessionInfo {
+            flow_session_id: deserialized_event.session_id.bytes,
+            session_id: deserialized_event.session_id.bytes,
+            initiating_user_address: deserialized_event.sender,
+            dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+            mpc_round: MPCRound::PresignFirst(
+                deserialized_event.dwallet_id.bytes,
+                deserialized_event.dkg_output,
+            ),
+        }
     }
 
     fn presign_second_party(
@@ -213,20 +276,26 @@ impl MPCParty {
         Ok((
             MPCParty::SecondPresignBytesParty,
             <PresignSecondParty as PresignSecondPartyPublicInputGenerator>::generate_public_input(
-                deserialized_event.dkg_output,
+                deserialized_event.dkg_output.clone(),
                 deserialized_event.first_round_output.clone(),
             )?,
-            SessionInfo {
-                flow_session_id: deserialized_event.first_round_session_id.bytes,
-                session_id: deserialized_event.session_id.bytes,
-                initiating_user_address: deserialized_event.sender,
-                dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-                mpc_round: MPCRound::PresignSecond(
-                    deserialized_event.dwallet_id.bytes,
-                    deserialized_event.first_round_output,
-                ),
-            },
+            Self::presign_second_party_session_info(&deserialized_event),
         ))
+    }
+
+    fn presign_second_party_session_info(
+        deserialized_event: &StartPresignSecondRoundEvent,
+    ) -> SessionInfo {
+        SessionInfo {
+            flow_session_id: deserialized_event.first_round_session_id.bytes,
+            session_id: deserialized_event.session_id.bytes,
+            initiating_user_address: deserialized_event.sender,
+            dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+            mpc_round: MPCRound::PresignSecond(
+                deserialized_event.dwallet_id.bytes,
+                deserialized_event.first_round_output.clone(),
+            ),
+        }
     }
 
     fn sign_party(
@@ -238,7 +307,7 @@ impl MPCParty {
         Ok((
             MPCParty::SignBytesParty(HashMap::from([(party_id, decryption_key_share)])),
             <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
-                deserialized_event.dkg_output,
+                deserialized_event.dkg_output.clone(),
                 deserialized_event.hashed_message.clone(),
                 deserialized_event.presign_first_round_output.clone(),
                 deserialized_event.presign_second_round_output.clone(),
@@ -249,18 +318,36 @@ impl MPCParty {
                     .clone()
                     .ok_or_else(|| PeraError::InternalDWalletMPCError)?,
             )?,
-            SessionInfo {
-                flow_session_id: deserialized_event.presign_session_id.bytes,
-                session_id: deserialized_event.session_id.bytes,
-                initiating_user_address: deserialized_event.sender,
-                dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-                mpc_round: MPCRound::Sign(
-                    party_id,
-                    deserialized_event.batched_session_id.bytes,
-                    deserialized_event.hashed_message,
-                ),
-            },
+            Self::sign_party_session_info(&deserialized_event, party_id),
         ))
+    }
+
+    fn sign_party_session_info(
+        deserialized_event: &StartSignRoundEvent,
+        party_id: PartyID,
+    ) -> SessionInfo {
+        SessionInfo {
+            flow_session_id: deserialized_event.presign_session_id.bytes,
+            session_id: deserialized_event.session_id.bytes,
+            initiating_user_address: deserialized_event.sender,
+            dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
+            mpc_round: MPCRound::Sign(
+                deserialized_event.batched_session_id.bytes,
+                deserialized_event.hashed_message.clone(),
+            ),
+        }
+    }
+
+    fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> SessionInfo {
+        SessionInfo {
+            flow_session_id: deserialized_event.session_id.bytes,
+            session_id: deserialized_event.session_id.bytes,
+            initiating_user_address: deserialized_event.initiating_user,
+            // Dummy ID is the dwallet cap is not relevant in the batched sign flow.
+            // TODO (#365): Remove the DWallet cap from the session info
+            dwallet_cap_id: deserialized_event.session_id.bytes,
+            mpc_round: MPCRound::BatchedSign(deserialized_event.hashed_messages.clone()),
+        }
     }
 }
 

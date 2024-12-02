@@ -1154,8 +1154,8 @@ mod checked {
                     CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                 ],
             ),
-            MPCRound::Sign(..) => {
-                let MPCRound::Sign(_, batch_session_id, _) = data.session_info.mpc_round else {
+            MPCRound::Sign(..) | MPCRound::BatchedSign(..) => {
+                let MPCRound::Sign(batch_session_id, _) = data.session_info.mpc_round else {
                     unreachable!("MPCRound is not sign for a sign session")
                 };
                 (

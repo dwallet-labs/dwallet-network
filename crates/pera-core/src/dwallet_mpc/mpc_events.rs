@@ -1,5 +1,8 @@
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
+use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
+use pera_types::error::PeraError;
+use pera_types::event::Event;
 use pera_types::{base_types::PeraAddress, id::ID, PERA_SYSTEM_ADDRESS};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -177,7 +180,7 @@ pub struct StartBatchedSignEvent {
     pub session_id: ID,
     /// An ordered list without duplicates of the messages we need to sign on.
     pub hashed_messages: Vec<Vec<u8>>,
-    initiating_user: PeraAddress,
+    pub initiating_user: PeraAddress,
 }
 
 impl StartBatchedSignEvent {
