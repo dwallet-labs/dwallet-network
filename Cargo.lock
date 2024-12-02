@@ -2555,13 +2555,9 @@ dependencies = [
 name = "class_groups_constants"
 version = "1.32.2"
 dependencies = [
- "anyhow",
  "base64 0.22.1",
  "bcs",
- "class_groups",
  "group 0.1.0",
- "hex",
- "homomorphic_encryption",
  "serde",
  "twopc_mpc",
 ]
