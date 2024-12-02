@@ -1300,6 +1300,7 @@ useful for testing or initialization in non-production environments.
 
 - <code>ctx</code>: The transaction context for generating IDs and objects.
 - <code>dwallet_cap_id</code>: The ID of the capability associated with the mock dWallet.
+- <code>dkg_output</code>: The decentralized DKG output.
 
 
 <a name="@Effects_25"></a>
