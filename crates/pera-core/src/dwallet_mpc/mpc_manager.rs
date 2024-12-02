@@ -82,7 +82,7 @@ impl DWalletMPCManager {
             party_id: authority_name_to_party_id(&epoch_store.name.clone(), &epoch_store.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
             epoch_id,
-            max_active_mpc_instances: node_config.max_active_dwallet_mpc_instances,
+            max_active_mpc_instances: node_config.max_active_dwallet_mpc_sessions,
             node_config,
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
