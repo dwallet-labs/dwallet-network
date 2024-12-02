@@ -18,9 +18,7 @@ use pera_types::{
 };
 use std::path::PathBuf;
 
-use pera_keys::keypair_file::{
-    read_authority_keypair_from_file, read_keypair_from_file, read_network_keypair_from_file,
-};
+use pera_keys::keypair_file::{read_authority_keypair_from_file, read_class_groups_from_file, read_keypair_from_file, read_network_keypair_from_file};
 
 use crate::genesis_inspector::examine_genesis_checkpoint;
 
@@ -59,6 +57,8 @@ pub enum CeremonyCommand {
         account_key_file: PathBuf,
         #[clap(long)]
         network_key_file: PathBuf,
+        #[clap(long)]
+        class_groups_key_file: PathBuf,
         #[clap(long)]
         network_address: Multiaddr,
         #[clap(long)]
@@ -119,6 +119,7 @@ pub fn run(cmd: Ceremony) -> Result<()> {
             worker_key_file,
             account_key_file,
             network_key_file,
+            class_groups_key_file,
             network_address,
             p2p_address,
             narwhal_primary_address,
@@ -132,6 +133,7 @@ pub fn run(cmd: Ceremony) -> Result<()> {
             let account_keypair: PeraKeyPair = read_keypair_from_file(account_key_file)?;
             let worker_keypair: NetworkKeyPair = read_network_keypair_from_file(worker_key_file)?;
             let network_keypair: NetworkKeyPair = read_network_keypair_from_file(network_key_file)?;
+            let class_groups_keypair_and_proof = read_class_groups_from_file(class_groups_key_file)?;
             let pop = generate_proof_of_possession(&keypair, (&account_keypair.public()).into());
             builder = builder.add_validator(
                 pera_genesis_builder::validator_info::ValidatorInfo {
@@ -149,6 +151,7 @@ pub fn run(cmd: Ceremony) -> Result<()> {
                     description,
                     image_url,
                     project_url,
+                    class_groups_keypair_and_proof: (class_groups_keypair_and_proof.1, class_groups_keypair_and_proof.2),
                 },
                 pop,
             );

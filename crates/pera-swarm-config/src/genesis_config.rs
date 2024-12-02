@@ -6,7 +6,7 @@ use std::net::{IpAddr, SocketAddr};
 
 use anyhow::Result;
 use class_groups::SecretKeyShareSizedNumber;
-use fastcrypto::traits::KeyPair;
+use fastcrypto::traits::{KeyPair, ToFromBytes};
 use group::PartyID;
 use pera_config::genesis::{GenesisCeremonyParameters, TokenAllocation};
 use pera_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
@@ -184,6 +184,10 @@ impl ValidatorGenesisConfigBuilder {
         let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);
 
+        // let rng = protocol_key_pair.copy().private().as_bytes().try_into().expect("Invalid key length");
+        // let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
+        let class_groups_keypair_and_proof = ("decryption_key".to_string(), "proof".to_string(), "encryption_key".to_string());
+
         let (
             network_address,
             p2p_address,
@@ -224,7 +228,7 @@ impl ValidatorGenesisConfigBuilder {
             dwallet_mpc_class_groups_public_parameters: self
                 .dwallet_mpc_class_groups_public_parameters,
             dwallet_mpc_class_groups_decryption_shares: self.dwallet_mpc_decryption_shares,
-            class_groups_keypair_and_proof: x
+            class_groups_keypair_and_proof,
             key_pair: protocol_key_pair,
             worker_key_pair,
             account_key_pair: account_key_pair.into(),
