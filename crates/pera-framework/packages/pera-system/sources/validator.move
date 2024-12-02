@@ -85,6 +85,8 @@ module pera_system::validator {
         network_pubkey_bytes: vector<u8>,
         /// The public key bytes correstponding to the Narwhal Worker
         worker_pubkey_bytes: vector<u8>,
+        /// The public key and proof bytes for the network dkg protocol
+        class_groups_pubkey_and_proof_bytes: vector<u8>,
         /// This is a proof that the validator has ownership of the private key
         proof_of_possession: vector<u8>,
         /// A unique human-readable name of this validator.
@@ -165,6 +167,7 @@ module pera_system::validator {
         protocol_pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
+        class_groups_pubkey_and_proof_bytes: vector<u8>,
         proof_of_possession: vector<u8>,
         name: String,
         description: String,
@@ -181,6 +184,7 @@ module pera_system::validator {
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
+            class_groups_pubkey_and_proof_bytes,
             proof_of_possession,
             name,
             description,
@@ -208,6 +212,7 @@ module pera_system::validator {
         protocol_pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
+        class_groups_pubkey_and_proof_bytes: vector<u8>,
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -240,6 +245,7 @@ module pera_system::validator {
             protocol_pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
+            class_groups_pubkey_and_proof_bytes,
             proof_of_possession,
             name.to_ascii_string().to_string(),
             description.to_ascii_string().to_string(),
@@ -835,6 +841,7 @@ module pera_system::validator {
 
     /// Aborts if validator metadata is valid
     public fun validate_metadata(metadata: &ValidatorMetadata) {
+        // todo (yael): add key validation
         validate_metadata_bcs(bcs::to_bytes(metadata));
     }
 

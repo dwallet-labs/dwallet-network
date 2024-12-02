@@ -27,6 +27,7 @@ module pera_system::genesis {
 
         network_public_key: vector<u8>,
         worker_public_key: vector<u8>,
+        class_groups_pubkey_and_proof: vector<u8>,
 
         network_address: vector<u8>,
         p2p_address: vector<u8>,
@@ -112,6 +113,7 @@ module pera_system::genesis {
                 proof_of_possession,
                 network_public_key,
                 worker_public_key,
+                class_groups_pubkey_and_proof,
                 network_address,
                 p2p_address,
                 primary_address,
@@ -123,6 +125,7 @@ module pera_system::genesis {
                 protocol_public_key,
                 network_public_key,
                 worker_public_key,
+                class_groups_pubkey_and_proof,
                 proof_of_possession,
                 name,
                 description,
