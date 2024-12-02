@@ -923,16 +923,14 @@ impl AuthorityPerEpochStore {
         result
     }
 
-    /// A function to initiate the Dwallet  MPC manager when a new epoch starts.
+    /// A function to initiate the [`DWalletMPCManager`] when a new epoch starts.
     pub async fn set_dwallet_mpc_manager(&self, manager: DWalletMPCManager) -> PeraResult<()> {
         if self
             .dwallet_mpc_manager
             .set(tokio::sync::Mutex::new(manager))
             .is_err()
         {
-            error!(
-                "BUG: `set_dwallet_mpc_manager` called more than once; this should never happen"
-            );
+            error!("`set_dwallet_mpc_manager` called more than once; this should never happen");
         }
         Ok(())
     }
@@ -2411,17 +2409,17 @@ impl AuthorityPerEpochStore {
             skipped_consensus_txns.inc();
             return None;
         }
-        // Signatures are verified as part of the consensus payload verification in PeraTxValidator
+        // Signatures are verified as part of the consensus payload verification in PeraTxValidator.
         match &transaction.transaction {
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::UserTransaction(_certificate),
+                ..
+            }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 // This verification is intentionally left empty and always returns true,
                 // as the actual output verification is performed earlier,
                 // before it is replaced by the system transaction,
                 // via the [`DwalletMPCManager::try_verify_output`] function.
-                kind: ConsensusTransactionKind::UserTransaction(_certificate),
-                ..
-            }) => {}
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(..),
                 ..
             }) => {}
@@ -2580,7 +2578,7 @@ impl AuthorityPerEpochStore {
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> PeraResult<Vec<VerifiedExecutableTransaction>> {
         // Split transactions into different types for processing.
-        // TODO (#337): Replace with filter_map when async clusure get supported.
+        // TODO (#337): Replace with filter_map when async closure get supported.
         let mut verified_transactions: Vec<VerifiedSequencedConsensusTransaction> = vec![];
         for tx in transactions {
             if let Some(verified_tx) = self
@@ -3711,12 +3709,13 @@ impl AuthorityPerEpochStore {
             return ConsensusCertificateResult::IgnoredSystem;
         }
 
-        // System transactions either contain a shared object or are proof MPC output transactions.
-        let is_proof_mpc_output = matches!(
+        // System transactions either contain a shared object
+        // or are dWallet MPC output transactions.
+        let is_dwallet_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
             TransactionKind::DWalletMPCOutput(_)
         );
-        assert!(system_transaction.contains_shared_object() || is_proof_mpc_output);
+        assert!(system_transaction.contains_shared_object() || is_dwallet_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())
     }
 

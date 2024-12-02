@@ -180,9 +180,12 @@ impl TryFrom<&TokensDepositedFilter> for EthToPeraTokenBridgeV1 {
     fn try_from(event: &TokensDepositedFilter) -> BridgeResult<Self> {
         Ok(Self {
             nonce: event.nonce,
-            pera_chain_id: BridgeChainId::try_from(event.destination_chain_id)?,
-            eth_chain_id: BridgeChainId::try_from(event.source_chain_id)?,
-            pera_address: PeraAddress::from_bytes(event.recipient_address.as_ref())?,
+            pera_chain_id: BridgeChainId::try_from(event.destination_chain_id)
+                .map_err(anyhow::Error::from)?,
+            eth_chain_id: BridgeChainId::try_from(event.source_chain_id)
+                .map_err(anyhow::Error::from)?,
+            pera_address: PeraAddress::from_bytes(event.recipient_address.as_ref())
+                .map_err(anyhow::Error::from)?,
             eth_address: event.sender_address,
             token_id: event.token_id,
             pera_adjusted_amount: event.pera_adjusted_amount,
