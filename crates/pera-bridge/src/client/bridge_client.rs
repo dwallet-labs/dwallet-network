@@ -181,8 +181,7 @@ impl BridgeClient {
             .get(url)
             .header(reqwest::header::ACCEPT, APPLICATION_JSON)
             .send()
-            .await
-            .map_err(anyhow::Error::from)?
+            .await?
             .error_for_status()
             .is_ok())
     }
@@ -199,24 +198,22 @@ impl BridgeClient {
             .base_url
             .clone()
             .unwrap()
-            .join(&Self::bridge_action_to_path(&action))
-            .map_err(anyhow::Error::from)?;
+            .join(&Self::bridge_action_to_path(&action))?;
         let resp = self
             .inner
             .get(url)
             .header(reqwest::header::ACCEPT, APPLICATION_JSON)
             .send()
-            .await
-            .map_err(anyhow::Error::from)?;
+            .await?;
         if !resp.status().is_success() {
             let error_status = format!("{:?}", resp.error_for_status_ref());
             return Err(BridgeError::RestAPIError(format!(
                 "request_sign_bridge_action failed with status {:?}: {:?}",
                 error_status,
-                resp.text().await.map_err(anyhow::Error::from)?
+                resp.text().await?
             )));
         }
-        let signed_bridge_action = resp.json().await.map_err(anyhow::Error::from)?;
+        let signed_bridge_action = resp.json().await?;
         verify_signed_bridge_action(
             &action,
             signed_bridge_action,
