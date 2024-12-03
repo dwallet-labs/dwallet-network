@@ -113,6 +113,7 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
+use pera_mpc_types::ClassGroupsPublicKeyAndProof;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
 
@@ -1006,10 +1007,12 @@ impl AuthorityPerEpochStore {
 
     pub fn active_validators_class_groups_public_keys_and_proofs(
         &self,
-    ) -> HashMap<AuthorityName, Vec<u8>> {
+    ) -> PeraResult<HashMap<AuthorityName, ClassGroupsPublicKeyAndProof>> {
         match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => {
-                data.get_active_validators_class_groups_public_key_and_proof()
+                Ok(data.get_active_validators_class_groups_public_key_and_proof().iter().map(|(k, v)| {
+                    (*k, bcs::from_bytes(v).unwrap())
+                }).collect())
             }
         }
     }

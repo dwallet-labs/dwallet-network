@@ -52,6 +52,7 @@ use shared_crypto::intent::{Intent, IntentMessage, IntentScope, PersonalMessage}
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
 use tabled::builder::Builder;
 use tabled::settings::Rotate;

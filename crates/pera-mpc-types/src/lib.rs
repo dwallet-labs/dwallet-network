@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 // currently using dummy type for the proof as it has no default implemented yet
 pub type MockProof = Vec<u8>;
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
-pub type ClassGroupsPublicKeyAndProof = (
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassGroupsPublicKeyAndProof(
     class_groups::CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>,
     MockProof,
 );
@@ -23,7 +25,7 @@ impl ClassGroupsKeyPairAndProof {
     }
 
     pub fn public(&self) -> ClassGroupsPublicKeyAndProof {
-        (self.1.clone(), self.2.clone())
+        ClassGroupsPublicKeyAndProof(self.1.clone(), self.2.clone())
     }
 }
 
