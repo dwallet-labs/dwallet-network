@@ -165,7 +165,7 @@ impl GenesisValidatorInfo {
             bail!("proof of possession is incorrect: {e}");
         }
 
-        // Todo (#): verify the class groups proof once ready
+        // Todo (#369): Verify also the class groups proof once the crypto lib is ready
 
         Ok(())
     }
