@@ -193,11 +193,7 @@ pub fn generate_new_class_groups_keypair_and_proof(
     let path = path.ok_or_else(|| anyhow!("Path to keypair file not provided"))?;
     let bls12381 = read_authority_keypair_from_file(path)
         .map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
-    let class_groups_seed = bls12381
-        .copy()
-        .private()
-        .as_bytes()
-        .try_into()?;
+    let class_groups_seed = bls12381.copy().private().as_bytes().try_into()?;
     let keypair_and_proof = generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
     // Todo (#369): let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut class_groups_seed).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
     Ok((bls12381.public().into(), keypair_and_proof))

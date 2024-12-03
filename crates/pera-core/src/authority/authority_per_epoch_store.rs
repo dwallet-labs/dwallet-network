@@ -90,6 +90,7 @@ use mysten_metrics::monitored_scope;
 use narwhal_types::{Round, TimestampMs};
 use pera_execution::{self, Executor};
 use pera_macros::fail_point;
+use pera_mpc_types::ClassGroupsPublicKeyAndProof;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
 use pera_types::effects::TransactionEffects;
@@ -113,7 +114,6 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
-use pera_mpc_types::ClassGroupsPublicKeyAndProof;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
 
@@ -1011,17 +1011,16 @@ impl AuthorityPerEpochStore {
         &self,
     ) -> PeraResult<HashMap<AuthorityName, ClassGroupsPublicKeyAndProof>> {
         Ok(match self.epoch_start_state() {
-            EpochStartSystemState::V1(data) => {
-                data.get_active_validators_class_groups_public_key_and_proof()
-                    .iter()
-                    .map(|(k, v)| {
-                        Ok::<(AuthorityName, ClassGroupsPublicKeyAndProof), PeraError>((
-                            *k,
-                            bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(v)?,
-                        ))
-                    })
-                    .collect::<Result<HashMap<_, _>, _>>()?
-            }
+            EpochStartSystemState::V1(data) => data
+                .get_active_validators_class_groups_public_key_and_proof()
+                .iter()
+                .map(|(k, v)| {
+                    Ok::<(AuthorityName, ClassGroupsPublicKeyAndProof), PeraError>((
+                        *k,
+                        bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(v)?,
+                    ))
+                })
+                .collect::<Result<HashMap<_, _>, _>>()?,
         })
     }
 
