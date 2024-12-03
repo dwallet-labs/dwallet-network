@@ -219,6 +219,7 @@ pub fn authority_name_to_party_id(
     authority_name: &AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
 ) -> PeraResult<PartyID> {
+    let just_for_test = epoch_store.active_validators_class_groups_public_keys_and_proofs();
     Ok(epoch_store
         .committee()
         .authority_index(authority_name)
