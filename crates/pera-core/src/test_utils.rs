@@ -1,6 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use crate::authority::{test_authority_builder::TestAuthorityBuilder, AuthorityState};
+use crate::authority_aggregator::{AuthorityAggregator, AuthorityAggregatorBuilder, TimeoutConfig};
+use crate::state_accumulator::StateAccumulator;
+use crate::test_authority_clients::LocalAuthorityClient;
 use fastcrypto::hash::MultisetHash;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use futures::future::join_all;
@@ -13,9 +17,13 @@ use pera_framework::BuiltInFramework;
 use pera_genesis_builder::validator_info::ValidatorInfo;
 use pera_macros::nondeterministic;
 use pera_move_build::{BuildConfig, CompiledPackage, PeraPackageHooks};
+use pera_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
 use pera_protocol_config::ProtocolConfig;
 use pera_types::base_types::{random_object_ref, ObjectID};
-use pera_types::crypto::{generate_proof_of_possession, get_key_pair, AccountKeyPair, AuthorityPublicKeyBytes, NetworkKeyPair, PeraKeyPair};
+use pera_types::crypto::{
+    generate_proof_of_possession, get_key_pair, AccountKeyPair, AuthorityPublicKeyBytes,
+    NetworkKeyPair, PeraKeyPair,
+};
 use pera_types::crypto::{AuthorityKeyPair, Signer};
 use pera_types::effects::{SignedTransactionEffects, TestEffectsBuilder};
 use pera_types::error::PeraError;
@@ -41,11 +49,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
 use tracing::{info, warn};
-use pera_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
-use crate::authority::{test_authority_builder::TestAuthorityBuilder, AuthorityState};
-use crate::authority_aggregator::{AuthorityAggregator, AuthorityAggregatorBuilder, TimeoutConfig};
-use crate::state_accumulator::StateAccumulator;
-use crate::test_authority_clients::LocalAuthorityClient;
 
 const WAIT_FOR_TX_TIMEOUT: Duration = Duration::from_secs(15);
 
@@ -234,7 +237,8 @@ async fn init_genesis(
         let account_key_pair: PeraKeyPair = get_key_pair::<AccountKeyPair>().1.into();
         let network_key_pair: NetworkKeyPair = get_key_pair().1;
         let class_groups_seed = key_pair.copy().private().as_bytes().try_into().unwrap();
-        let class_groups_key_pair_and_proof = generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
+        let class_groups_key_pair_and_proof =
+            generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
         let validator_info = ValidatorInfo {
             name: format!("validator-{i}"),
             protocol_key: authority_name,

@@ -4,6 +4,7 @@
 use anyhow::anyhow;
 use bip32::{ChildNumber, DerivationPath, XPrv};
 
+use crate::keypair_file::read_authority_keypair_from_file;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::secp256r1::{Secp256r1KeyPair, Secp256r1PrivateKey};
@@ -12,15 +13,16 @@ use fastcrypto::{
     secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
     traits::{KeyPair, ToFromBytes},
 };
-use rand_chacha::rand_core::SeedableRng;
+use pera_mpc_types::{
+    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
+};
 use pera_types::{
     base_types::PeraAddress,
     crypto::{PeraKeyPair, SignatureScheme},
     error::PeraError,
 };
+use rand_chacha::rand_core::SeedableRng;
 use slip10_ed25519::derive_ed25519_private_key;
-use pera_mpc_types::{generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof};
-use crate::keypair_file::read_authority_keypair_from_file;
 
 pub const DERIVATION_PATH_COIN_TYPE: u32 = 784;
 pub const DERVIATION_PATH_PURPOSE_ED25519: u32 = 44;
@@ -64,10 +66,9 @@ pub fn derive_key_pair_from_path(
             );
             Ok((kp.public().into(), PeraKeyPair::Secp256r1(kp)))
         }
-        SignatureScheme::ClassGroups =>
-            Err(PeraError::UnsupportedFeatureError {
-                error: format!("key derivation should be from file{:?}", key_scheme),
-            }),
+        SignatureScheme::ClassGroups => Err(PeraError::UnsupportedFeatureError {
+            error: format!("key derivation should be from file{:?}", key_scheme),
+        }),
         SignatureScheme::BLS12381
         | SignatureScheme::MultiSig
         | SignatureScheme::ZkLoginAuthenticator
@@ -90,7 +91,7 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_ED25519, true).ok()
                             && Some(coin_type)
-                            == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
+                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
                             && account.is_hardened()
                             && change.is_hardened()
                             && address.is_hardened()
@@ -106,8 +107,8 @@ pub fn validate_path(
                 None => Ok(format!(
                     "m/{DERVIATION_PATH_PURPOSE_ED25519}'/{DERIVATION_PATH_COIN_TYPE}'/0'/0'/0'"
                 )
-                    .parse()
-                    .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
+                .parse()
+                .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
             }
         }
         SignatureScheme::Secp256k1 => {
@@ -118,7 +119,7 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_SECP256K1, true).ok()
                             && Some(coin_type)
-                            == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
+                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
                             && account.is_hardened()
                             && !change.is_hardened()
                             && !address.is_hardened()
@@ -134,8 +135,8 @@ pub fn validate_path(
                 None => Ok(format!(
                     "m/{DERVIATION_PATH_PURPOSE_SECP256K1}'/{DERIVATION_PATH_COIN_TYPE}'/0'/0/0"
                 )
-                    .parse()
-                    .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
+                .parse()
+                .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
             }
         }
         SignatureScheme::Secp256r1 => {
@@ -146,7 +147,7 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_SECP256R1, true).ok()
                             && Some(coin_type)
-                            == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
+                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
                             && account.is_hardened()
                             && !change.is_hardened()
                             && !address.is_hardened()
@@ -162,15 +163,17 @@ pub fn validate_path(
                 None => Ok(format!(
                     "m/{DERVIATION_PATH_PURPOSE_SECP256R1}'/{DERIVATION_PATH_COIN_TYPE}'/0'/0/0"
                 )
-                    .parse()
-                    .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
+                .parse()
+                .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
             }
         }
         SignatureScheme::ClassGroups => {
             // todo (yael): derive key from BLS12-381
             // validate path by pattern: "bla-0xSomeHex.key"
             match path {
-                None => Err(PeraError::SignatureKeyGenError("Missing BLS12381 key-pair path".to_string())),
+                None => Err(PeraError::SignatureKeyGenError(
+                    "Missing BLS12381 key-pair path".to_string(),
+                )),
                 Some(p) => {
                     let p_s = p.to_string();
                     if p_s.ends_with(".key") && p_s.starts_with("bla-0x") {
@@ -203,9 +206,17 @@ pub fn generate_new_key(
     }
 }
 
-pub fn generate_new_class_groups_keypair_and_proof(path: Option<String>) -> Result<(PeraAddress, ClassGroupsKeyPairAndProof), anyhow::Error> {
-    let bls12381 = read_authority_keypair_from_file(path.unwrap()).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
-    let class_groups_seed = bls12381.copy().private().as_bytes().try_into().expect("Should have been able to convert");
+pub fn generate_new_class_groups_keypair_and_proof(
+    path: Option<String>,
+) -> Result<(PeraAddress, ClassGroupsKeyPairAndProof), anyhow::Error> {
+    let bls12381 = read_authority_keypair_from_file(path.unwrap())
+        .map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
+    let class_groups_seed = bls12381
+        .copy()
+        .private()
+        .as_bytes()
+        .try_into()
+        .expect("Should have been able to convert");
     let keypair_and_proof = generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
     // let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
     Ok((bls12381.public().into(), keypair_and_proof))

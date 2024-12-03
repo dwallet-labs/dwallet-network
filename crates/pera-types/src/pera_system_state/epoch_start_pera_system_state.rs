@@ -103,10 +103,17 @@ pub struct EpochStartSystemStateV1 {
 }
 
 impl EpochStartSystemStateV1 {
-    pub fn get_active_validators_class_groups_public_key_and_proof(&self) -> HashMap<AuthorityName, Vec<u8>> {
+    pub fn get_active_validators_class_groups_public_key_and_proof(
+        &self,
+    ) -> HashMap<AuthorityName, Vec<u8>> {
         self.active_validators
             .iter()
-            .map(|validator| (validator.authority_name().clone(), validator.class_groups_public_key_and_proof.clone()))
+            .map(|validator| {
+                (
+                    validator.authority_name().clone(),
+                    validator.class_groups_public_key_and_proof.clone(),
+                )
+            })
             .collect()
     }
 

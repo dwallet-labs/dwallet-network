@@ -33,13 +33,15 @@ use fastcrypto::{
     encoding::{Base64, Encoding},
     traits::KeyPair,
 };
-use rand_chacha::rand_core::SeedableRng;
 use pera_bridge::pera_client::PeraClient as PeraBridgeClient;
 use pera_bridge::pera_transaction_builder::{
     build_committee_register_transaction, build_committee_update_url_transaction,
 };
 use pera_json_rpc_types::{
     PeraObjectDataOptions, PeraTransactionBlockResponse, PeraTransactionBlockResponseOptions,
+};
+use pera_keys::keypair_file::{
+    read_class_groups_from_file, write_class_groups_keypair_and_proof_to_file,
 };
 use pera_keys::{
     key_derive::generate_new_key,
@@ -49,6 +51,7 @@ use pera_keys::{
     },
 };
 use pera_keys::{keypair_file::read_key, keystore::AccountKeystore};
+use pera_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
 use pera_sdk::wallet_context::WalletContext;
 use pera_sdk::PeraClient;
 use pera_types::crypto::{
@@ -57,8 +60,6 @@ use pera_types::crypto::{
 use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, PeraKeyPair, SignatureScheme};
 use pera_types::transaction::{CallArg, ObjectArg, Transaction, TransactionData};
 use serde::Serialize;
-use pera_keys::keypair_file::{read_class_groups_from_file, write_class_groups_keypair_and_proof_to_file};
-use pera_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
 use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 
 #[path = "unit_tests/validator_tests.rs"]
@@ -301,16 +302,32 @@ impl PeraValidatorCommand {
                 let worker_key_file_name = dir.join("worker.key");
                 let class_groups_key_file_name = dir.join("class_groups.key");
                 make_key_files(protocol_key_file_name.clone(), true, None, None)?;
-                make_key_files(account_key_file_name.clone(), false, Some(account_key), None)?;
+                make_key_files(
+                    account_key_file_name.clone(),
+                    false,
+                    Some(account_key),
+                    None,
+                )?;
                 make_key_files(network_key_file_name.clone(), false, None, None)?;
                 make_key_files(worker_key_file_name.clone(), false, None, None)?;
 
                 let keypair: AuthorityKeyPair =
                     read_authority_keypair_from_file(protocol_key_file_name)?;
 
-                let private_key_seed = keypair.copy().private().as_bytes().try_into().expect("Should have been able to convert");
-                make_key_files(class_groups_key_file_name.clone(), false, None, Some(private_key_seed))?;
-                let class_groups_keypair_and_proof = read_class_groups_from_file(class_groups_key_file_name)?;
+                let private_key_seed = keypair
+                    .copy()
+                    .private()
+                    .as_bytes()
+                    .try_into()
+                    .expect("Should have been able to convert");
+                make_key_files(
+                    class_groups_key_file_name.clone(),
+                    false,
+                    None,
+                    Some(private_key_seed),
+                )?;
+                let class_groups_keypair_and_proof =
+                    read_class_groups_from_file(class_groups_key_file_name)?;
 
                 let account_keypair: PeraKeyPair = read_keypair_from_file(account_key_file_name)?;
                 let worker_keypair: NetworkKeyPair =
@@ -322,7 +339,8 @@ impl PeraValidatorCommand {
                 let validator_info = GenesisValidatorInfo {
                     info: pera_genesis_builder::validator_info::ValidatorInfo {
                         name,
-                        class_groups_public_key_and_proof: class_groups_keypair_and_proof.public_bytes(),
+                        class_groups_public_key_and_proof: class_groups_keypair_and_proof
+                            .public_bytes(),
                         protocol_key: keypair.public().into(),
                         worker_key: worker_keypair.public().clone(),
                         account_address: PeraAddress::from(&account_keypair.public()),
@@ -379,9 +397,7 @@ impl PeraValidatorCommand {
                     CallArg::Pure(
                         bcs::to_bytes(&validator.worker_key().as_bytes().to_vec()).unwrap(),
                     ),
-                    CallArg::Pure(
-                        bcs::to_bytes(&validator.class_groups_public_key_and_proof)?,
-                    ),
+                    CallArg::Pure(bcs::to_bytes(&validator.class_groups_public_key_and_proof)?),
                     CallArg::Pure(
                         bcs::to_bytes(&validator_info.proof_of_possession.as_ref().to_vec())
                             .unwrap(),

@@ -22,7 +22,10 @@ use im::hashmap::HashMap as ImHashMap;
 use json_to_table::{json_to_table, Orientation};
 use num_bigint::BigUint;
 use pera_keys::key_derive::{generate_new_class_groups_keypair_and_proof, generate_new_key};
-use pera_keys::keypair_file::{read_authority_keypair_from_file, read_keypair_from_file, write_authority_keypair_to_file, write_class_groups_keypair_and_proof_to_file, write_keypair_to_file};
+use pera_keys::keypair_file::{
+    read_authority_keypair_from_file, read_keypair_from_file, write_authority_keypair_to_file,
+    write_class_groups_keypair_and_proof_to_file, write_keypair_to_file,
+};
 use pera_keys::keystore::{AccountKeystore, Keystore};
 use pera_types::base_types::PeraAddress;
 use pera_types::committee::EpochId;
@@ -49,7 +52,6 @@ use shared_crypto::intent::{Intent, IntentMessage, IntentScope, PersonalMessage}
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::sync::Arc;
 use tabled::builder::Builder;
 use tabled::settings::Rotate;
@@ -600,9 +602,7 @@ impl KeyToolCommand {
                 }
                 SignatureScheme::ClassGroups => {
                     let (pera_address, kp) =
-                        generate_new_class_groups_keypair_and_proof(
-                            derivation_path,
-                        )?;
+                        generate_new_class_groups_keypair_and_proof(derivation_path)?;
                     let file_name = format!("class-groups-{pera_address}.key");
                     let _kp = bcs::to_bytes(&kp)?;
                     // write_class_groups_keypair_and_proof_to_file(&_kp, file_name)?;

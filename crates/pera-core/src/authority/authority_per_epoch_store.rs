@@ -1004,9 +1004,13 @@ impl AuthorityPerEpochStore {
         self.epoch_start_configuration.epoch_start_state()
     }
 
-    pub fn active_validators_class_groups_public_keys_and_proofs(&self) -> HashMap<AuthorityName, Vec<u8>> {
+    pub fn active_validators_class_groups_public_keys_and_proofs(
+        &self,
+    ) -> HashMap<AuthorityName, Vec<u8>> {
         match self.epoch_start_state() {
-            EpochStartSystemState::V1(data) => data.get_active_validators_class_groups_public_key_and_proof(),
+            EpochStartSystemState::V1(data) => {
+                data.get_active_validators_class_groups_public_key_and_proof()
+            }
         }
     }
 

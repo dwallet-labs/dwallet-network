@@ -199,7 +199,8 @@ members = [
     "pera-execution/v2/pera-move-natives",
     "pera-execution/v2/pera-verifier",
     "crates/dwallet-mpc-centralized-party",
-    "crates/class-groups-constants", "crates/pera-mpc-types",
+    "crates/class-groups-constants",
+    "crates/pera-mpc-types",
 ]
 
 [workspace.package]
