@@ -4,10 +4,11 @@
 use anyhow::bail;
 use fastcrypto::traits::ToFromBytes;
 use pera_types::base_types::PeraAddress;
-use pera_types::crypto::{verify_proof_of_possession, AuthorityPublicKey, AuthorityPublicKeyBytes, AuthoritySignature, ClassGroupsPublicKeyAndProof, ClassGroupsPublicKeyAndProofBytes, NetworkPublicKey};
+use pera_types::crypto::{verify_proof_of_possession, AuthorityPublicKey, AuthorityPublicKeyBytes, AuthoritySignature, NetworkPublicKey};
 use pera_types::multiaddr::Multiaddr;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
+use pera_mpc_types::ClassGroupsPublicKeyAndProofBytes;
 
 const MAX_VALIDATOR_METADATA_LENGTH: usize = 256;
 
@@ -160,6 +161,8 @@ impl GenesisValidatorInfo {
         ) {
             bail!("proof of possession is incorrect: {e}");
         }
+
+        // Todo (#): verify the class groups proof once ready
 
         Ok(())
     }

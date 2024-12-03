@@ -1,0 +1,13 @@
+[package]
+name = "pera-mpc-types"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+class_groups.workspace = true
+crypto-bigint = "0.5.5"
+bcs.workspace = true
+serde.workspace = true
+
+[lints]
+workspace = true

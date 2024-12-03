@@ -151,7 +151,7 @@ pub fn run(cmd: Ceremony) -> Result<()> {
                     description,
                     image_url,
                     project_url,
-                    class_groups_public_key_and_proof: [1, 2, 3, 4, 5], // (class_groups_keypair_and_proof.1, class_groups_keypair_and_proof.2),
+                    class_groups_public_key_and_proof: class_groups_keypair_and_proof.public_bytes(),
                 },
                 pop,
             );
@@ -265,13 +265,13 @@ fn check_protocol_version(builder: &Builder, protocol_version: ProtocolVersion) 
 mod test {
     use super::*;
     use anyhow::Result;
+    use fastcrypto::traits::ToFromBytes;
     use pera_config::local_ip_utils;
     use pera_genesis_builder::validator_info::ValidatorInfo;
-    use pera_keys::keypair_file::{write_authority_keypair_to_file, write_keypair_to_file};
+    use pera_keys::keypair_file::{write_authority_keypair_to_file, write_class_groups_keypair_and_proof_to_file, write_keypair_to_file};
     use pera_macros::nondeterministic;
-    use pera_types::crypto::{
-        get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, PeraKeyPair,
-    };
+    use pera_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
+    use pera_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, PeraKeyPair};
 
     #[test]
     #[cfg_attr(msim, ignore)]
@@ -287,12 +287,15 @@ mod test {
                     get_key_pair_from_rng(&mut rand::rngs::OsRng).1;
                 let account_keypair: AccountKeyPair =
                     get_key_pair_from_rng(&mut rand::rngs::OsRng).1;
+                let class_groups_seed = keypair.copy().private().as_bytes().try_into().expect("Should have been able to convert");
+                let class_groups_keypair_and_proof = generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
                 let info = ValidatorInfo {
                     name: format!("validator-{i}"),
                     protocol_key: keypair.public().into(),
                     worker_key: worker_keypair.public().clone(),
                     account_address: PeraAddress::from(account_keypair.public()),
                     network_key: network_keypair.public().clone(),
+                    class_groups_public_key_and_proof: class_groups_keypair_and_proof.public_bytes(),
                     gas_price: pera_config::node::DEFAULT_VALIDATOR_GAS_PRICE,
                     commission_rate: pera_config::node::DEFAULT_COMMISSION_RATE,
                     network_address: local_ip_utils::new_local_tcp_address_for_testing(),
@@ -302,7 +305,6 @@ mod test {
                     description: String::new(),
                     image_url: String::new(),
                     project_url: String::new(),
-                    class_groups_public_key_and_proof: ("".to_string(), "".to_string()),
                 };
                 let key_file = dir.path().join(format!("{}-0.key", info.name));
                 write_authority_keypair_to_file(&keypair, &key_file).unwrap();
@@ -319,11 +321,15 @@ mod test {
                 write_keypair_to_file(&PeraKeyPair::Ed25519(account_keypair), &account_key_file)
                     .unwrap();
 
+                let class_groups_key_file = dir.path().join(format!("{}-3.key", info.name));
+                write_class_groups_keypair_and_proof_to_file(&class_groups_keypair_and_proof, &class_groups_key_file).unwrap();
+
                 (
                     key_file,
                     worker_key_file,
                     network_key_file,
                     account_key_file,
+                    class_groups_key_file,
                     info,
                 )
             })
@@ -338,7 +344,7 @@ mod test {
         command.run()?;
 
         // Add the validators
-        for (key_file, worker_key_file, network_key_file, account_key_file, validator) in
+        for (key_file, worker_key_file, network_key_file, account_key_file,class_groups_key_file, validator) in
             &validators
         {
             let command = Ceremony {
@@ -357,6 +363,7 @@ mod test {
                     description: String::new(),
                     image_url: String::new(),
                     project_url: String::new(),
+                    class_groups_key_file: class_groups_key_file.clone(),
                 },
             };
             command.run()?;
@@ -378,7 +385,7 @@ mod test {
         command.run()?;
 
         // Have all the validators verify and sign genesis
-        for (key, _worker_key, _network_key, _account_key, _validator) in &validators {
+        for (key, _worker_key, _network_key, _account_key, class_groups_key_file, _validator) in &validators {
             let command = Ceremony {
                 path: Some(dir.path().into()),
                 protocol_version: None,

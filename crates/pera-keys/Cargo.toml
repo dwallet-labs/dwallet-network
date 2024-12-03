@@ -22,6 +22,7 @@ regex.workspace = true
 class_groups.workspace = true
 rand_chacha = "0.3.1"
 bcs.workspace = true
+pera-mpc-types.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

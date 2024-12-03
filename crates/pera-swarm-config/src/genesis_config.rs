@@ -13,13 +13,14 @@ use pera_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
 use pera_config::{local_ip_utils, Config};
 use pera_genesis_builder::validator_info::{GenesisValidatorInfo, ValidatorInfo};
 use pera_types::base_types::PeraAddress;
-use pera_types::crypto::{generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, AuthorityPublicKeyBytes, ClassGroupsKeyPairAndProof, ClassGroupsPublicKeyAndProof, NetworkKeyPair, NetworkPublicKey, PeraKeyPair, PublicKey};
+use pera_types::crypto::{generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, AuthorityPublicKeyBytes, NetworkKeyPair, NetworkPublicKey, PeraKeyPair, PublicKey};
 use pera_types::multiaddr::Multiaddr;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 pub use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, DecryptionSharePublicParameters};
 use twopc_mpc::sign;
+use pera_mpc_types::{generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof, ClassGroupsPublicKeyAndProof};
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]
@@ -69,11 +70,11 @@ impl ValidatorGenesisConfig {
         let network_key: NetworkPublicKey = self.network_key_pair.public().clone();
         let worker_key: NetworkPublicKey = self.worker_key_pair.public().clone();
         let network_address = self.network_address.clone();
-        let class_groups_public_key_and_proof = (self.class_groups_keypair_and_proof.clone().1, self.class_groups_keypair_and_proof.clone().2);
+        let class_groups_public_key_and_proof = self.class_groups_keypair_and_proof.public_bytes();
 
         let info = ValidatorInfo {
             name,
-            class_groups_public_key_and_proof: [1, 2, 3, 4, 5],
+            class_groups_public_key_and_proof,
             protocol_key,
             worker_key,
             network_key,
@@ -184,10 +185,8 @@ impl ValidatorGenesisConfigBuilder {
         let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);
 
-        // let seed = protocol_key_pair.copy().private().as_bytes().try_into().expect("Invalid key length");
-        // let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed.clone());
-        // let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
-        let class_groups_keypair_and_proof = ("decryption_key".to_string(), "proof".to_string(), "encryption_key".to_string());
+        let seed = protocol_key_pair.copy().private().as_bytes().try_into().expect("Invalid key length");
+        let class_groups_keypair_and_proof = generate_class_groups_keypair_and_proof_from_seed(seed);
 
         let (
             network_address,

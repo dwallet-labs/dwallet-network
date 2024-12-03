@@ -76,6 +76,7 @@ pera-replay.workspace = true
 pera-transaction-builder.workspace = true
 move-binary-format.workspace = true
 test-cluster.workspace = true
+pera-mpc-types.workspace = true
 
 fastcrypto.workspace = true
 fastcrypto-zkp.workspace = true

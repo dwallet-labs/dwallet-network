@@ -199,7 +199,7 @@ members = [
     "pera-execution/v2/pera-move-natives",
     "pera-execution/v2/pera-verifier",
     "crates/dwallet-mpc-centralized-party",
-    "crates/class-groups-constants",
+    "crates/class-groups-constants", "crates/pera-mpc-types",
 ]
 
 [workspace.package]
@@ -637,6 +637,7 @@ pera-metric-checker = { path = "crates/pera-metric-checker" }
 pera-move = { path = "crates/pera-move" }
 pera-move-build = { path = "crates/pera-move-build" }
 pera-move-lsp = { path = "crates/pera-move-lsp" }
+pera-mpc-types = { path = "crates/pera-mpc-types" }
 pera-network = { path = "crates/pera-network" }
 pera-node = { path = "crates/pera-node" }
 pera-open-rpc = { path = "crates/pera-open-rpc" }

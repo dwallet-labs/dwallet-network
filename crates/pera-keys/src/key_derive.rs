@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use std::fs;
 use anyhow::anyhow;
 use bip32::{ChildNumber, DerivationPath, XPrv};
 
@@ -13,7 +12,6 @@ use fastcrypto::{
     secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
     traits::{KeyPair, ToFromBytes},
 };
-use fastcrypto::bls12381::min_pk::BLS12381KeyPair;
 use rand_chacha::rand_core::SeedableRng;
 use pera_types::{
     base_types::PeraAddress,
@@ -21,8 +19,8 @@ use pera_types::{
     error::PeraError,
 };
 use slip10_ed25519::derive_ed25519_private_key;
-use pera_types::crypto::SignatureScheme::BLS12381;
-use crate::keypair_file::{read_authority_keypair_from_file, ClassGroupsKeyPairAndProof};
+use pera_mpc_types::{generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof};
+use crate::keypair_file::read_authority_keypair_from_file;
 
 pub const DERIVATION_PATH_COIN_TYPE: u32 = 784;
 pub const DERVIATION_PATH_PURPOSE_ED25519: u32 = 44;
@@ -208,14 +206,9 @@ pub fn generate_new_key(
 pub fn generate_new_class_groups_keypair_and_proof(path: Option<String>) -> Result<(PeraAddress, ClassGroupsKeyPairAndProof), anyhow::Error> {
     let bls12381 = read_authority_keypair_from_file(path.unwrap()).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
     let class_groups_seed = bls12381.copy().private().as_bytes().try_into().expect("Should have been able to convert");
-    let mut rng = rand_chacha::ChaCha20Rng::from_seed(class_groups_seed);
+    let keypair_and_proof = generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
     // let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
-    // let keypair: ClassGroupsKeyPairAndProof = (
-    //     bcs::to_bytes(&decryption_key).unwrap(),
-    //     bcs::to_bytes(&proof).unwrap(),
-    //     bcs::to_bytes(&encryption_key).unwrap(),
-    // );
-    Ok((bls12381.public().into(), (bls12381.public().to_string(), bls12381.public().to_string(), bls12381.public().to_string())))
+    Ok((bls12381.public().into(), keypair_and_proof))
 }
 
 fn parse_word_length(s: Option<String>) -> Result<MnemonicType, anyhow::Error> {
