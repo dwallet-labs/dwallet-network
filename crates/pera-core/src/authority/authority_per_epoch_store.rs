@@ -1008,13 +1008,19 @@ impl AuthorityPerEpochStore {
     pub fn active_validators_class_groups_public_keys_and_proofs(
         &self,
     ) -> PeraResult<HashMap<AuthorityName, ClassGroupsPublicKeyAndProof>> {
-        match self.epoch_start_state() {
+        Ok(match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => {
-                Ok(data.get_active_validators_class_groups_public_key_and_proof().iter().map(|(k, v)| {
-                    (*k, bcs::from_bytes(v).unwrap())
-                }).collect())
+                data.get_active_validators_class_groups_public_key_and_proof()
+                    .iter()
+                    .map(|(k, v)| {
+                        Ok::<(AuthorityName, ClassGroupsPublicKeyAndProof), PeraError>((
+                            *k,
+                            bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(v)?,
+                        ))
+                    })
+                    .collect::<Result<HashMap<_, _>, _>>()?
             }
-        }
+        })
     }
 
     pub fn get_chain_identifier(&self) -> ChainIdentifier {
