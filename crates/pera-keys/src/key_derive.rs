@@ -67,10 +67,8 @@ pub fn derive_key_pair_from_path(
             );
             Ok((kp.public().into(), PeraKeyPair::Secp256r1(kp)))
         }
-        SignatureScheme::ClassGroups => Err(PeraError::UnsupportedFeatureError {
-            error: format!("key derivation should be from file{:?}", key_scheme),
-        }),
-        SignatureScheme::BLS12381
+        SignatureScheme::ClassGroups
+        | SignatureScheme::BLS12381
         | SignatureScheme::MultiSig
         | SignatureScheme::ZkLoginAuthenticator
         | SignatureScheme::PasskeyAuthenticator => Err(PeraError::UnsupportedFeatureError {
