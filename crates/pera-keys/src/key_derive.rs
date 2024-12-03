@@ -88,7 +88,7 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_ED25519, true).ok()
                             && Some(coin_type)
-                            == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
+                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
                             && account.is_hardened()
                             && change.is_hardened()
                             && address.is_hardened()
@@ -104,8 +104,8 @@ pub fn validate_path(
                 None => Ok(format!(
                     "m/{DERVIATION_PATH_PURPOSE_ED25519}'/{DERIVATION_PATH_COIN_TYPE}'/0'/0'/0'"
                 )
-                    .parse()
-                    .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
+                .parse()
+                .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
             }
         }
         SignatureScheme::Secp256k1 => {
@@ -116,7 +116,7 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_SECP256K1, true).ok()
                             && Some(coin_type)
-                            == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
+                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
                             && account.is_hardened()
                             && !change.is_hardened()
                             && !address.is_hardened()
@@ -132,8 +132,8 @@ pub fn validate_path(
                 None => Ok(format!(
                     "m/{DERVIATION_PATH_PURPOSE_SECP256K1}'/{DERIVATION_PATH_COIN_TYPE}'/0'/0/0"
                 )
-                    .parse()
-                    .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
+                .parse()
+                .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
             }
         }
         SignatureScheme::Secp256r1 => {
@@ -144,7 +144,7 @@ pub fn validate_path(
                         if Some(purpose)
                             == ChildNumber::new(DERVIATION_PATH_PURPOSE_SECP256R1, true).ok()
                             && Some(coin_type)
-                            == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
+                                == ChildNumber::new(DERIVATION_PATH_COIN_TYPE, true).ok()
                             && account.is_hardened()
                             && !change.is_hardened()
                             && !address.is_hardened()
@@ -160,8 +160,8 @@ pub fn validate_path(
                 None => Ok(format!(
                     "m/{DERVIATION_PATH_PURPOSE_SECP256R1}'/{DERIVATION_PATH_COIN_TYPE}'/0'/0/0"
                 )
-                    .parse()
-                    .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
+                .parse()
+                .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
             }
         }
         SignatureScheme::ClassGroups
