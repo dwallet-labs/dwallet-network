@@ -34,7 +34,7 @@ use pera_types::{
     transaction::{SenderSignedData, VerifiedTransaction},
 };
 
-use crate::dwallet_mpc::mpc_manager::OutputVerificationResult;
+use crate::dwallet_mpc::mpc_outputs_manager::OutputVerificationResult;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -364,8 +364,11 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
-                    if let ConsensusTransactionKind::DWalletMPCOutput(session_info, output) =
-                        &transaction.kind
+                    if let ConsensusTransactionKind::DWalletMPCOutput(
+                        authority,
+                        session_info,
+                        output,
+                    ) = &transaction.kind
                     {
                         // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
                         // to store its output on the blockchain, so it will be available for the initiating user.
@@ -382,29 +385,21 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             );
                             return;
                         };
-                        let Ok(mut dwallet_mpc_manager) =
-                            self.epoch_store.get_dwallet_mpc_manager().await
+
+                        let Ok(mut dwallet_outputs_manager) =
+                            self.epoch_store.get_dwallet_mpc_outputs_manager().await
                         else {
                             return;
                         };
-                        if dwallet_mpc_manager
-                            .malicious_actors
-                            .contains(&origin_authority)
-                        {
-                            warn!(
-                                "Received output from malicious authority {:?} for session {:?}",
-                                authority_index, session_info.session_id
-                            );
-                            return;
-                        }
-                        let output_verification_result = dwallet_mpc_manager
-                            .try_verify_output(output, &session_info)
+
+                        let output_verification_result = dwallet_outputs_manager
+                            .try_verify_output(output, &session_info, origin_authority)
                             .unwrap_or_else(|e| {
                                 error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                                 OutputVerificationResult::Malicious
                             });
                         match output_verification_result {
-                            OutputVerificationResult::ValidWithNewOutput(new_output) => {
+                            OutputVerificationResult::ValidWithNewOutput(new_output, _) => {
                                 let transaction = self.create_system_tx(session_info, &new_output);
                                 transactions.push((
                                     empty_bytes.as_slice(),
@@ -412,7 +407,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     consensus_output.leader_author_index(),
                                 ));
                             }
-                            OutputVerificationResult::Valid => {
+                            OutputVerificationResult::Valid(_) => {
                                 let transaction = self.create_system_tx(session_info, output);
                                 transactions.push((
                                     empty_bytes.as_slice(),
@@ -420,20 +415,12 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     consensus_output.leader_author_index(),
                                 ));
                             }
-                            OutputVerificationResult::ValidWithoutOutput
-                            | OutputVerificationResult::Duplicate => {
+                            OutputVerificationResult::ValidWithoutOutput(_)
+                            | OutputVerificationResult::Duplicate
+                            | OutputVerificationResult::Malicious => {
                                 // Ignore this output, as the same output may be submitted twice by non-malicious parties, due to Sui's inner implementation of the leader selection
                                 // mechanism.
                                 // If the output is valid without output, then the batch is not yet ready, and we should write nothing to the chain.
-                            }
-                            OutputVerificationResult::Malicious => {
-                                warn!(
-                                    "Received malicious output from authority index {:?}",
-                                    authority_index
-                                );
-                                dwallet_mpc_manager
-                                    .malicious_actors
-                                    .insert(origin_authority);
                             }
                         }
                     } else if let ConsensusTransactionKind::RandomnessStateUpdate(

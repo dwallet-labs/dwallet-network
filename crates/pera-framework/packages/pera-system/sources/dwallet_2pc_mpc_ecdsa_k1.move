@@ -420,7 +420,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         };
     }
 
-    /// Creates the output of the signing process and transfers it to the initiating user.
+    /// Emit event with the MPC Sign protocol output. 
+    /// The initiating user should consume the emitted event.
     public fun create_sign_output(signed_messages: vector<vector<u8>>, batch_session_id: ID, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
         event::emit(CompletedSignEvent {

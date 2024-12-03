@@ -3,9 +3,11 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
+use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::mpc_instance::{
     authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
 };
+use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputVerificationResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::sign::BatchedSignSession;
 use anyhow::anyhow;
@@ -14,11 +16,14 @@ use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
+use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::MutexGuard;
 use rand_core::OsRng;
 use tracing::log::warn;
 use tracing::{error, info};
@@ -45,18 +50,19 @@ pub struct DWalletMPCManager {
     pub malicious_actors: HashSet<AuthorityName>,
     pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub weighted_parties: HashMap<PartyID, PartyID>,
+    pub outputs_manager: DWalletMPCOutputsManager,
 }
 
-/// The possible results of verifying an incoming output for an MPC session.
-/// We need to differentiate between a duplicate & a malicious output, as the output can be sent twice by honest parties.
-pub enum OutputVerificationResult {
-    /// When working on a batch, e.g. signing on a batch of messages, we write the output to the chain only once - when the entire batch is ready.
-    ValidWithNewOutput(Vec<u8>),
-    /// When the output is correct but not all the MPC flows in the batch have been completed.
-    ValidWithoutOutput,
-    Valid,
-    Duplicate,
-    Malicious,
+/// A channel that may be sent to the asynchronous [`DWalletMPCManager`].
+pub enum DWalletMPCChannelMessage {
+    /// An MPC message from another validator
+    Message(Vec<u8>, AuthorityName, ObjectID),
+    /// An output for a completed MPC message
+    Output(Vec<u8>, AuthorityName, SessionInfo),
+    /// A new session event
+    Event(Event, SessionInfo),
+    /// A signal that the delivery of messages has ended, now the instances that received a quorum of messages can advance
+    EndOfDelivery,
 }
 
 impl DWalletMPCManager {
@@ -65,10 +71,9 @@ impl DWalletMPCManager {
         epoch_store: Arc<AuthorityPerEpochStore>,
         epoch_id: EpochId,
         node_config: NodeConfig,
-    ) -> PeraResult<Self> {
+    ) -> PeraResult<DWalletMPCSender> {
 
         // let res = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut OsRng);
-
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
@@ -85,7 +90,9 @@ impl DWalletMPCManager {
             weighted_parties.clone(),
         )
         .map_err(|_| PeraError::InternalDWalletMPCError)?;
-        Ok(Self {
+        let (sender, mut receiver) =
+            tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
+        let mut manager = Self {
             mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
@@ -99,12 +106,79 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             weighted_parties,
             batched_sign_sessions: HashMap::new(),
-        })
+            outputs_manager: DWalletMPCOutputsManager::new(&epoch_store),
+        };
+        tokio::spawn(async move {
+            while let Some(message) = receiver.recv().await {
+                manager.handle_incoming_channel_message(message).await;
+            }
+        });
+        Ok(sender)
     }
 
-    pub fn get_decryption_share(
-        &self,
-    ) -> PeraResult<twopc_mpc::secp256k1::class_groups::DecryptionKeyShare> {
+    async fn handle_incoming_channel_message(&mut self, message: DWalletMPCChannelMessage) {
+        match message {
+            DWalletMPCChannelMessage::Message(msg, authority, session_id) => {
+                if let Err(err) = self.handle_message(&msg, authority, session_id) {
+                    error!("Failed to handle message with error: {:?}", err);
+                }
+            }
+            DWalletMPCChannelMessage::Output(output, authority, session_info) => {
+                let verification_result = self.outputs_manager.try_verify_output(
+                    &output,
+                    &session_info,
+                    authority.clone(),
+                );
+                match verification_result {
+                    Ok(verification_result) => match verification_result {
+                        OutputVerificationResult::ValidWithNewOutput(_, malicious_parties) => {
+                            self.malicious_actors.extend(malicious_parties);
+                        }
+                        OutputVerificationResult::ValidWithoutOutput(malicious_parties) => {
+                            self.malicious_actors.extend(malicious_parties);
+                        }
+                        OutputVerificationResult::Valid(malicious_parties) => {
+                            self.malicious_actors.extend(malicious_parties);
+                        }
+                        OutputVerificationResult::Malicious => {
+                            self.malicious_actors.insert(authority);
+                        }
+                        OutputVerificationResult::Duplicate => {}
+                    },
+                    Err(err) => {
+                        error!("Failed to verify output with error: {:?}", err);
+                    }
+                }
+                {
+                    self.malicious_actors.insert(authority);
+                }
+            }
+            DWalletMPCChannelMessage::Event(event, session_info) => {
+                if let Err(err) = self.handle_event(event, session_info) {
+                    error!("Failed to handle event with error: {:?}", err);
+                }
+            }
+            DWalletMPCChannelMessage::EndOfDelivery => {
+                if let Err(err) = self.handle_end_of_delivery().await {
+                    error!("Failed to handle end of delivery with error: {:?}", err);
+                }
+            }
+        }
+    }
+
+    fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> PeraResult {
+        self.outputs_manager.handle_new_event(&session_info);
+        if let Ok((party, auxiliary_input, session_info)) = MPCParty::from_event(
+            &event,
+            &self,
+            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?,
+        ) {
+            self.push_new_mpc_instance(auxiliary_input, party, session_info)?;
+        };
+        Ok(())
+    }
+
+    pub fn get_decryption_share(&self) -> PeraResult<DecryptionKeyShare> {
         let party_id =
             authority_name_to_party_id(&self.epoch_store()?.name, &self.epoch_store()?.clone())?;
         let _ = self
@@ -130,65 +204,6 @@ impl DWalletMPCManager {
         )
         .map_err(|e| twopc_error_to_pera_error(e.into()))?;
         Ok(share)
-    }
-
-    /// Tries to verify that the received output for the MPC session matches the one generated locally.
-    /// Returns true if the output is correct, false otherwise.
-    // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
-    pub fn try_verify_output(
-        &mut self,
-        output: &Vec<u8>,
-        session_info: &SessionInfo,
-    ) -> anyhow::Result<OutputVerificationResult> {
-        let Some(instance) = self.mpc_instances.get_mut(&session_info.session_id) else {
-            return Ok(OutputVerificationResult::Malicious);
-        };
-        let MPCSessionStatus::Finalizing(stored_output) = instance.status.clone() else {
-            return Ok(OutputVerificationResult::Duplicate);
-        };
-        if *stored_output == *output
-            && session_info.initiating_user_address.to_vec()
-                == instance.session_info.initiating_user_address.to_vec()
-            && session_info.dwallet_cap_id == instance.session_info.dwallet_cap_id
-        {
-            let mpc_round = &instance.session_info.mpc_round.clone();
-            self.finalize_mpc_instance(session_info.session_id.clone())?;
-            return if let MPCRound::Sign(_, batch_session_id, hashed_message) = mpc_round {
-                let batched_sign_session = self
-                    .batched_sign_sessions
-                    .get_mut(batch_session_id)
-                    .ok_or(anyhow!(
-                        "failed to find batch for session id {}",
-                        batch_session_id
-                    ))?;
-                batched_sign_session
-                    .hashed_msg_to_signature
-                    .insert(hashed_message.clone(), output.clone());
-                if batched_sign_session.hashed_msg_to_signature.values().len()
-                    == batched_sign_session.ordered_messages.len()
-                {
-                    let new_output: Vec<Vec<u8>> = batched_sign_session
-                        .ordered_messages
-                        .iter()
-                        .map(|msg| {
-                            Ok(batched_sign_session
-                                .hashed_msg_to_signature
-                                .get(msg)
-                                .ok_or(anyhow!("failed to find message in batch {:?}", msg))?
-                                .clone())
-                        })
-                        .collect::<anyhow::Result<Vec<Vec<u8>>>>()?;
-                    Ok(OutputVerificationResult::ValidWithNewOutput(
-                        bcs::to_bytes(&new_output).unwrap(),
-                    ))
-                } else {
-                    Ok(OutputVerificationResult::ValidWithoutOutput)
-                }
-            } else {
-                Ok(OutputVerificationResult::Valid)
-            };
-        }
-        Ok(OutputVerificationResult::Malicious)
     }
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
@@ -263,7 +278,7 @@ impl DWalletMPCManager {
         message: &[u8],
         authority_name: AuthorityName,
         session_id: ObjectID,
-    ) -> PeraResult<()> {
+    ) -> PeraResult {
         if self.malicious_actors.contains(&authority_name) {
             return Ok(());
         }
@@ -291,7 +306,7 @@ impl DWalletMPCManager {
     /// Convert the indices of the malicious parties to their addresses and store them
     /// in the malicious actors set
     /// New messages from these parties will be ignored
-    fn flag_parties_as_malicious(&mut self, malicious_parties: Vec<PartyID>) -> PeraResult {
+    pub fn flag_parties_as_malicious(&mut self, malicious_parties: Vec<PartyID>) -> PeraResult {
         let malicious_parties_names = malicious_parties
             .into_iter()
             .map(|party_id| {
@@ -358,32 +373,6 @@ impl DWalletMPCManager {
         );
         Ok(())
     }
-
-    pub fn finalize_mpc_instance(&mut self, session_id: ObjectID) -> PeraResult {
-        let instance = self.mpc_instances.get_mut(&session_id).ok_or_else(|| {
-            PeraError::InvalidCommittee(format!(
-                "Received a finalize event for session ID {:?} that does not exist",
-                session_id
-            ))
-        })?;
-        if let MPCSessionStatus::Finalizing(output) = &instance.status {
-            instance.status = MPCSessionStatus::Finished(output.clone());
-            let pending_instance = self.pending_instances_queue.pop_front();
-            if let Some(mut instance) = pending_instance {
-                instance.status = MPCSessionStatus::FirstExecution;
-                self.mpc_instances
-                    .insert(instance.session_info.session_id, instance);
-            } else {
-                self.active_instances_counter -= 1;
-            }
-            info!("Finalized MPCInstance for session_id {:?}", session_id);
-            return Ok(());
-        }
-        Err(PeraError::Unknown(format!(
-            "Received a finalize event for session ID {:?} that is not in the finalizing state; current state: {:?}",
-            session_id, instance.status
-        )))
-    }
 }
 
 /// Convert a `twopc_mpc::Error` to a `PeraError`.
@@ -397,3 +386,5 @@ pub fn twopc_error_to_pera_error(error: mpc::Error) -> PeraError {
         _ => PeraError::InternalDWalletMPCError,
     }
 }
+
+pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
