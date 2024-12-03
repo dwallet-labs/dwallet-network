@@ -113,7 +113,7 @@ title: Module `0x3::genesis`
 
 </dd>
 <dt>
-<code>class_groups_pubkey_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+<code>class_groups_public_key_and_proof: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
 
@@ -391,7 +391,7 @@ all the information we need in the system.
             proof_of_possession,
             network_public_key,
             worker_public_key,
-            class_groups_pubkey_and_proof,
+            class_groups_public_key_and_proof,
             network_address,
             p2p_address,
             primary_address,
@@ -403,7 +403,7 @@ all the information we need in the system.
             protocol_public_key,
             network_public_key,
             worker_public_key,
-            class_groups_pubkey_and_proof,
+            class_groups_public_key_and_proof,
             proof_of_possession,
             name,
             description,

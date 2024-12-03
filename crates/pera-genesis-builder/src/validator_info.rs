@@ -188,7 +188,7 @@ impl From<GenesisValidatorInfo> for GenesisValidatorMetadata {
             p2p_address: info.p2p_address,
             primary_address: info.narwhal_primary_address,
             worker_address: info.narwhal_worker_address,
-            class_groups_pubkey_and_proof: [1, 2, 3, 4, 5].to_vec(),
+            class_groups_public_key_and_proof: [1, 2, 3, 4, 5].to_vec(),
         }
     }
 }
@@ -211,7 +211,7 @@ pub struct GenesisValidatorMetadata {
 
     pub network_public_key: Vec<u8>, // NetworkPublicKey,
     pub worker_public_key: Vec<u8>,  // NetworkPublicKey,
-    pub class_groups_pubkey_and_proof: Vec<u8>,
+    pub class_groups_public_key_and_proof: Vec<u8>,
 
     pub network_address: Multiaddr,
     pub p2p_address: Multiaddr,
