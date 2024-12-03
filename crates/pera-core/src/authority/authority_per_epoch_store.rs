@@ -1005,6 +1005,8 @@ impl AuthorityPerEpochStore {
         self.epoch_start_configuration.epoch_start_state()
     }
 
+    /// Returns the current active validators' class groups public keys and proofs.
+    /// The data is being used as part of the network's DKG protocol.
     pub fn active_validators_class_groups_public_keys_and_proofs(
         &self,
     ) -> PeraResult<HashMap<AuthorityName, ClassGroupsPublicKeyAndProof>> {
