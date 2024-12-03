@@ -13,7 +13,7 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path>>(
     keypair: &ClassGroupsKeyPairAndProof,
     path: P,
 ) -> anyhow::Result<String> {
-    let serialized = serde_json::to_vec(&keypair).expect("Failed to serialize");
+    let serialized = serde_json::to_vec(&keypair)?;
     let contents = Base64::encode(serialized);
     std::fs::write(path, contents)?;
     Ok(Base64::encode(keypair.public_bytes()))
