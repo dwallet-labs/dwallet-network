@@ -250,7 +250,7 @@ fn make_key_files(
         write_authority_keypair_to_file(&keypair, file_name.clone())?;
         println!("Generated new key file: {:?}.", file_name);
     } else if let Some(seed) = class_groups_key_seed {
-        // let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut rng).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
+        // Todo (#369): let (decryption_key, proof, encryption_key) = class_groups::dkg::proof_helpers::generate_secret_share_sized_keypair_and_proof(&mut seed).map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
         let keypair = generate_class_groups_keypair_and_proof_from_seed(seed);
         write_class_groups_keypair_and_proof_to_file(&keypair, file_name.clone())?;
     } else {
@@ -314,12 +314,7 @@ impl PeraValidatorCommand {
                 let keypair: AuthorityKeyPair =
                     read_authority_keypair_from_file(protocol_key_file_name)?;
 
-                let private_key_seed = keypair
-                    .copy()
-                    .private()
-                    .as_bytes()
-                    .try_into()
-                    .expect("Should have been able to convert");
+                let private_key_seed = keypair.copy().private().as_bytes().try_into()?;
                 make_key_files(
                     class_groups_key_file_name.clone(),
                     false,

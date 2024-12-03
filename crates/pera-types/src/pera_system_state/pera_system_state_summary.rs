@@ -34,10 +34,6 @@ pub struct PeraSystemStateSummary {
     #[schemars(with = "BigInt<u64>")]
     #[serde_as(as = "Readable<BigInt<u64>, _>")]
     pub protocol_version: u64,
-    /// Class groups encryption key & proof of the validator, used for MPC sessions
-    #[schemars(with = "Base64")]
-    #[serde_as(as = "Base64")]
-    pub class_groups_public_key_and_proof: Vec<u8>,
     /// The current version of the system state data structure type.
     #[schemars(with = "BigInt<u64>")]
     #[serde_as(as = "Readable<BigInt<u64>, _>")]
@@ -331,7 +327,6 @@ impl Default for PeraSystemStateSummary {
         Self {
             epoch: 0,
             protocol_version: 1,
-            class_groups_public_key_and_proof: vec![],
             system_state_version: 1,
             storage_fund_total_object_storage_rebates: 0,
             storage_fund_non_refundable_balance: 0,

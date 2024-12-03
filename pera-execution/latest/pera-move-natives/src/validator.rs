@@ -60,8 +60,8 @@ pub fn validate_metadata_bcs(
 
     let cost = context.gas_used();
 
-    // Todo (#): add key validation
-    if let Result::Err(err_code) = validator_metadata.verify() {
+    // Todo (#369): Add key verification once the crypto lib is ready
+    if let Err(err_code) = validator_metadata.verify() {
         return Ok(NativeResult::err(cost, err_code));
     }
 
