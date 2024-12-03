@@ -245,10 +245,10 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(msim)', 'cfg(fail_points)'
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
-mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"] , rev = "5915cb64d26fa68a79cecfd2b57195c5f8aa42ee" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", rev = "5915cb64d26fa68a79cecfd2b57195c5f8aa42ee", subdir = "class-groups", features = ["default", "threshold"] }
-twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], rev = "5915cb64d26fa68a79cecfd2b57195c5f8aa42ee" }
-group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", rev = "5915cb64d26fa68a79cecfd2b57195c5f8aa42ee" }
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"] , branch = "new-pera-api" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "new-pera-api", subdir = "class-groups", features = ["default", "threshold"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "new-pera-api" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "new-pera-api" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"
