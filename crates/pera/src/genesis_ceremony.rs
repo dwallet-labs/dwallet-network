@@ -302,7 +302,7 @@ mod test {
                     .private()
                     .as_bytes()
                     .try_into()
-                    .expect("Should have been able to convert");
+                    .unwrap();
                 let class_groups_keypair_and_proof =
                     generate_class_groups_keypair_and_proof_from_seed(class_groups_seed);
                 let info = ValidatorInfo {
@@ -411,7 +411,7 @@ mod test {
         command.run()?;
 
         // Have all the validators verify and sign genesis
-        for (key, _worker_key, _network_key, _account_key, class_groups_key_file, _validator) in
+        for (key, _worker_key, _network_key, _account_key, _class_groups_key_file, _validator) in
             &validators
         {
             let command = Ceremony {

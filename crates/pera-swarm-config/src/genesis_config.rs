@@ -191,12 +191,14 @@ impl ValidatorGenesisConfigBuilder {
         let (worker_key_pair, network_key_pair): (NetworkKeyPair, NetworkKeyPair) =
             (get_key_pair_from_rng(rng).1, get_key_pair_from_rng(rng).1);
 
+        // It is safe to unwrap here because the protocol_key_pair is always set before
+        // also the validator can not be built without the class groups key.
         let seed = protocol_key_pair
             .copy()
             .private()
             .as_bytes()
             .try_into()
-            .expect("Invalid key length");
+            .unwrap();
         let class_groups_keypair_and_proof =
             generate_class_groups_keypair_and_proof_from_seed(seed);
 
