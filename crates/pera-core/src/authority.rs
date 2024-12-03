@@ -136,12 +136,15 @@ use crate::authority::authority_store_pruner::{
 };
 use crate::authority::epoch_start_configuration::EpochStartConfigTrait;
 use crate::authority::epoch_start_configuration::EpochStartConfiguration;
+use crate::authority_client::NetworkAuthorityClient;
 #[cfg(msim)]
 pub use crate::checkpoints::checkpoint_executor::{
     init_checkpoint_timeout_config, CheckpointTimeoutConfig,
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
+use crate::dwallet_mpc::bytes_party::MPCParty;
+use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
     CheckpointCache, ExecutionCacheCommit, ExecutionCacheReconfigAPI, ExecutionCacheWrite,
@@ -157,12 +160,11 @@ use crate::state_accumulator::{AccumulatorStore, StateAccumulator, WrappedObject
 use crate::subscription_handler::SubscriptionHandler;
 use crate::transaction_input_loader::TransactionInputLoader;
 use crate::transaction_manager::TransactionManager;
-
-use crate::authority_client::NetworkAuthorityClient;
 use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
+use pera_types::dwallet_mpc_error::DwalletMPCError;
 use pera_types::execution_config_utils::to_binary_config;
 
 #[cfg(test)]
@@ -1493,8 +1495,11 @@ impl AuthorityState {
         // Handle the MPC events here because there is access to the
         // event, as the transaction has been just executed.
         let _ = self
-            .handle_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
-            .await;
+            .filter_mpc_events(&inner_temporary_store, effects, epoch_store)
+            .await
+            .tap_err(|e| {
+                error!("MPC protocol error: {e}");
+            });
 
         // Allow testing what happens if we crash here.
         fail_point_async!("crash");
@@ -1529,10 +1534,8 @@ impl AuthorityState {
         Ok(())
     }
 
-    /// Handle the dWallet MPC events emitted from the transaction, if any.
-    /// The filtering to handle only MPC related events
-    /// happens within [`DwalletMPCManager::event_handler`] function.
-    async fn handle_dwallet_mpc_events(
+    /// Filters the MPC events emitted from the transaction, if any.
+    async fn filter_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,
@@ -1550,21 +1553,39 @@ impl AuthorityState {
             // If the transaction failed, we don't need to handle MPC events.
             return Ok(());
         }
-        let dwallet_mpc_manager = epoch_store.proof_mpc_manager.get();
-        match dwallet_mpc_manager {
-            Some(mpc_manager) => {
-                let mut mpc_manager = mpc_manager.lock().await;
-                Ok(mpc_manager.event_handler(&inner_temporary_store.events.data)?)
-            }
-            None => {
-                // Log if the MPC manager is not initialized.
-                // This function is being executed for all events,
-                // some events are being emitted before the MPC manager is initialized.
-                // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are emitted.
-                info!("MPC manager is not initialized");
-                Ok(())
+        let Some(mpc_manager) = epoch_store.dwallet_mpc_manager.get() else {
+            // This function is being executed for all events, some events are being emitted
+            // before the MPC manager is initialized.
+            // TODO (#250): Make sure that the MPC manager is initialized before any MPC events are
+            return Ok(());
+        };
+        // todo(zeev): remove all locks, use async.
+        let mut mpc_manager = mpc_manager.lock().await;
+        for event in &inner_temporary_store.events.data {
+            match MPCParty::from_event(
+                event,
+                mpc_manager.number_of_parties as u16,
+                authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
+            ) {
+                Ok((party, auxiliary_input, session_info)) => {
+                    mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info);
+                }
+                Err(err)
+                    // None MPC event, ignore.
+                    if matches!(
+                        err,
+                        DwalletMPCError::NonMPCEvent,
+                    ) =>
+                {
+                    // Ignore NonMPCEvent errors.
+                }
+                Err(err) => {
+                    // Log other errors and continue.
+                    error!(?err, "error processing MPC event");
+                }
             }
         }
+        Ok(())
     }
 
     fn update_metrics(
@@ -2316,7 +2337,7 @@ impl AuthorityState {
                         }
                         )
                     else {
-                        // Skip indexing for non-dynamic field objects.
+                        // Skip indexing for non dynamic field objects.
                         continue;
                     };
                     new_dynamic_fields.push(((ObjectID::from(owner), *id), df_info))

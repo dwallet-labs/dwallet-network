@@ -419,7 +419,7 @@ pub enum OperationType {
     AuthenticatorStateUpdate,
     RandomnessStateUpdate,
     EndOfEpochTransaction,
-    DwalletMPCOutput,
+    DWalletMPCOutput,
 }
 
 impl From<&PeraTransactionBlockKind> for OperationType {
@@ -444,7 +444,7 @@ impl From<&PeraTransactionBlockKind> for OperationType {
             PeraTransactionBlockKind::EndOfEpochTransaction(_) => {
                 OperationType::EndOfEpochTransaction
             }
-            PeraTransactionBlockKind::DwalletMPCOutput(_) => OperationType::DwalletMPCOutput,
+            PeraTransactionBlockKind::DWalletMPCOutput(_) => OperationType::DWalletMPCOutput,
         }
     }
 }

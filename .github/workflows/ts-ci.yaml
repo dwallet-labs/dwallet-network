@@ -11,12 +11,24 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
+env:
+  RUSTDOCFLAGS: -Dwarnings
+  RUST_BACKTRACE: 1
+  # Change to specific Rust release to pin or `stable` for the latest stable version.
+  rust_stable: 1.79
+  rust_nightly: nightly
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  GH_PRIVATE_REPO_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN }}
+
 jobs:
   code-quality:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+      - name: Configure git with personal access token
+        run: |
+          git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:

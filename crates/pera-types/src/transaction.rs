@@ -19,7 +19,7 @@ use crate::messages_consensus::{
     ConsensusCommitPrologue, ConsensusCommitPrologueV2, ConsensusCommitPrologueV3,
     ConsensusDeterminedVersionAssignments,
 };
-use crate::messages_dwallet_mpc::DwalletMPCOutput;
+use crate::messages_dwallet_mpc::DWalletMPCOutput;
 use crate::object::{MoveObject, Object, Owner};
 use crate::programmable_transaction_builder::ProgrammableTransactionBuilder;
 use crate::signature::{GenericSignature, VerifyParams};
@@ -293,12 +293,11 @@ pub enum TransactionKind {
 
     ConsensusCommitPrologueV3(ConsensusCommitPrologueV3),
 
-    /// A transaction containing the output of the MPC flow.
-    /// This transaction is used to share the MPC output with other validators, enabling them
-    /// to create a system transaction.
-    /// The system transaction allows the Move VM
-    /// to generate a Move object that encapsulates the MPC output.
-    DwalletMPCOutput(DwalletMPCOutput),
+    /// A transaction with the output of the dwallet MPC flow.
+    /// Used to send the output of the dwallet MPC flow
+    /// to the other validators, so they will be able to
+    /// create a system transaction that writes it to the chain
+    DWalletMPCOutput(DWalletMPCOutput),
     // .. more transaction types go here
 }
 
@@ -1184,7 +1183,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV3(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
-            | TransactionKind::DwalletMPCOutput(_)
+            | TransactionKind::DWalletMPCOutput(_)
             | TransactionKind::EndOfEpochTransaction(_) => true,
             TransactionKind::ProgrammableTransaction(_) => false,
         }
@@ -1279,7 +1278,7 @@ impl TransactionKind {
             | TransactionKind::ConsensusCommitPrologueV3(_)
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
-            | TransactionKind::DwalletMPCOutput(_)
+            | TransactionKind::DWalletMPCOutput(_)
             | TransactionKind::EndOfEpochTransaction(_) => vec![],
             TransactionKind::ProgrammableTransaction(pt) => pt.receiving_objects(),
         }
@@ -1339,7 +1338,7 @@ impl TransactionKind {
                 after_dedup
             }
             Self::ProgrammableTransaction(p) => return p.input_objects(),
-            Self::DwalletMPCOutput(_) => {
+            Self::DWalletMPCOutput(_) => {
                 vec![InputObjectKind::MovePackage(PERA_SYSTEM_PACKAGE_ID)]
             }
         };
@@ -1405,7 +1404,7 @@ impl TransactionKind {
                     ));
                 }
             }
-            TransactionKind::DwalletMPCOutput(_) => {}
+            TransactionKind::DWalletMPCOutput(_) => {}
         };
         Ok(())
     }
@@ -1444,7 +1443,7 @@ impl TransactionKind {
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
-            Self::DwalletMPCOutput(_) => "DwalletMPCOutput",
+            Self::DWalletMPCOutput(_) => "DWalletMPCOutput",
         }
     }
 }
@@ -1496,8 +1495,8 @@ impl Display for TransactionKind {
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind : End of Epoch Transaction")?;
             }
-            Self::DwalletMPCOutput(_) => {
-                writeln!(writer, "Transaction Kind : Signature MPC Output")?;
+            Self::DWalletMPCOutput(_) => {
+                writeln!(writer, "Transaction Kind : dwallet mpc Output")?;
             }
         }
         write!(f, "{}", writer)
@@ -2646,8 +2645,8 @@ impl VerifiedTransaction {
             .pipe(Self::new_from_verified)
     }
 
-    pub fn new_dwallet_mpc_output_system_transaction(data: DwalletMPCOutput) -> Self {
-        TransactionKind::DwalletMPCOutput(data).pipe(Self::new_system_transaction)
+    pub fn new_dwallet_mpc_output_system_transaction(data: DWalletMPCOutput) -> Self {
+        TransactionKind::DWalletMPCOutput(data).pipe(Self::new_system_transaction)
     }
 }
 

@@ -70,7 +70,8 @@ pub type PeraEpochId = BigInt<u64>;
 pub struct PeraTransactionBlockResponseQuery {
     /// If None, no filter will be applied
     pub filter: Option<TransactionFilter>,
-    /// Configure fields to include in the response, by default, only digest is included.
+    /// Configure which fields to include in the response,
+    /// by default, only digest is included.
     pub options: Option<PeraTransactionBlockResponseOptions>,
 }
 
@@ -408,8 +409,7 @@ pub enum PeraTransactionBlockKind {
     EndOfEpochTransaction(PeraEndOfEpochTransaction),
     ConsensusCommitPrologueV2(PeraConsensusCommitPrologueV2),
     ConsensusCommitPrologueV3(PeraConsensusCommitPrologueV3),
-    DwalletMPCOutput(DwalletMPCOutput),
-    // .. more transaction types go here
+    DWalletMPCOutput(PeraDWalletMPCOutput),
 }
 
 impl Display for PeraTransactionBlockKind {
@@ -464,8 +464,8 @@ impl Display for PeraTransactionBlockKind {
             Self::EndOfEpochTransaction(_) => {
                 writeln!(writer, "Transaction Kind: End of Epoch Transaction")?;
             }
-            Self::DwalletMPCOutput(_) => {
-                writeln!(writer, "Transaction Kind: Signature MPC Output")?;
+            Self::DWalletMPCOutput(_) => {
+                writeln!(writer, "Transaction Kind: dWallet MPC Output")?;
             }
         }
         write!(f, "{}", writer)
@@ -564,11 +564,13 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
-            TransactionKind::DwalletMPCOutput(output) => Self::DwalletMPCOutput(DwalletMPCOutput {
-                session_id: output.session_id,
-                sender_address: output.initiating_address,
-                value: output.value,
-            }),
+            TransactionKind::DWalletMPCOutput(output) => {
+                Self::DWalletMPCOutput(PeraDWalletMPCOutput {
+                    session_id: output.session_id,
+                    sender_address: output.initiating_address,
+                    value: output.value,
+                })
+            }
         })
     }
 
@@ -668,11 +670,13 @@ impl PeraTransactionBlockKind {
                         .collect(),
                 })
             }
-            TransactionKind::DwalletMPCOutput(output) => Self::DwalletMPCOutput(DwalletMPCOutput {
-                session_id: output.session_id,
-                sender_address: output.initiating_address,
-                value: output.value,
-            }),
+            TransactionKind::DWalletMPCOutput(output) => {
+                Self::DWalletMPCOutput(PeraDWalletMPCOutput {
+                    session_id: output.session_id,
+                    sender_address: output.initiating_address,
+                    value: output.value,
+                })
+            }
         })
     }
 
@@ -694,7 +698,7 @@ impl PeraTransactionBlockKind {
             Self::AuthenticatorStateUpdate(_) => "AuthenticatorStateUpdate",
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
-            Self::DwalletMPCOutput(_) => "DwalletMPCOutput",
+            Self::DWalletMPCOutput(_) => "DWalletMPCOutput",
         }
     }
 }
@@ -1692,7 +1696,7 @@ pub enum PeraEndOfEpochTransactionKind {
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
-pub struct DwalletMPCOutput {
+pub struct PeraDWalletMPCOutput {
     pub session_id: ObjectID,
     pub sender_address: PeraAddress,
     pub value: Vec<u8>,

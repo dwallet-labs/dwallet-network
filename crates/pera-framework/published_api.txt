@@ -1,3 +1,45 @@
+DWallet
+	public struct
+	0x3::dwallet
+DWalletCap
+	public struct
+	0x3::dwallet
+create_dwallet
+	public(package) fun
+	0x3::dwallet
+create_dwallet_cap
+	public(package) fun
+	0x3::dwallet
+Secp256K1
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+DKGFirstRoundOutput
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartDKGFirstRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CompletedFirstDKGRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartDKGSecondRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CompletedDKGSecondRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+launch_dkg_first_round
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_dkg_first_round_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+launch_dkg_second_round
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_dkg_second_round_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct
 	0x3::validator_cap
@@ -964,24 +1006,6 @@ allocate_tokens
 activate_validators
 	fun
 	0x3::genesis
-CreatedProofMPCSessionEvent
-	public struct
-	0x3::proof
-CompletedProofMPCSessionEvent
-	public struct
-	0x3::proof
-ProofSessionData
-	public struct
-	0x3::proof
-ProofSessionOutput
-	public struct
-	0x3::proof
-launch_proof_mpc_flow
-	public fun
-	0x3::proof
-create_proof_session_output
-	public fun
-	0x3::proof
 secp256k1_ecrecover
 	public fun
 	0x2::ecdsa_k1

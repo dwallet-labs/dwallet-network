@@ -1216,6 +1216,12 @@ importers:
         specifier: ^0.26.3
         version: 0.26.3(typescript@5.5.3)
 
+  sdk/dwallet-mpc-wasm:
+    devDependencies:
+      cross-env:
+        specifier: ^7.0.3
+        version: 7.0.3
+
   sdk/enoki:
     dependencies:
       '@mysten/zklogin':
@@ -1421,6 +1427,9 @@ importers:
 
   sdk/typescript:
     dependencies:
+      '@dwallet-network/dwallet-mpc-wasm':
+        specifier: workspace:*
+        version: link:../dwallet-mpc-wasm
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.9.0)
