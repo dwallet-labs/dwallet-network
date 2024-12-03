@@ -68,6 +68,7 @@ use crate::consensus_handler::{
 };
 use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc;
+use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
     DkgStatus, RandomnessManager, RandomnessReporter, VersionedProcessedMessage,
@@ -336,7 +337,6 @@ pub struct AuthorityPerEpochStore {
     randomness_reporter: OnceCell<RandomnessReporter>,
 
     /// State machine managing DWallet MPC flows.
-    /// todo(zeev): why is is a mutex? should use a channel.
     pub dwallet_mpc_manager:
         OnceCell<tokio::sync::Mutex<dwallet_mpc::mpc_manager::DWalletMPCManager>>,
 }
@@ -924,10 +924,7 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the [`DWalletMPCManager`] when a new epoch starts.
-    pub async fn set_dwallet_mpc_manager(
-        &self,
-        manager: dwallet_mpc::mpc_manager::DWalletMPCManager,
-    ) -> PeraResult<()> {
+    pub async fn set_dwallet_mpc_manager(&self, manager: DWalletMPCManager) -> PeraResult<()> {
         if self
             .dwallet_mpc_manager
             .set(tokio::sync::Mutex::new(manager))
@@ -2394,7 +2391,7 @@ impl AuthorityPerEpochStore {
     /// Important: This function can potentially be called in parallel and you can not rely on order of transactions to perform verification
     /// If this function return an error, transaction is skipped and is not passed to handle_consensus_transaction
     /// This function returns unit error and is responsible for emitting log messages for internal errors
-    fn verify_consensus_transaction(
+    async fn verify_consensus_transaction(
         &self,
         transaction: SequencedConsensusTransaction,
         skipped_consensus_txns: &IntCounter,
@@ -2423,7 +2420,7 @@ impl AuthorityPerEpochStore {
                 // as the actual output verification is performed earlier,
                 // before it is replaced by the system transaction,
                 // via the [`DwalletMPCManager::try_verify_output`] function.
-                kind: ConsensusTransactionKind::DWalletMPCOutput(_, _, _, _, _),
+                kind: ConsensusTransactionKind::DWalletMPCOutput(..),
                 ..
             }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -2436,11 +2433,13 @@ impl AuthorityPerEpochStore {
                 // This public key is later used
                 // to identify the authority that sent the MPC message.
                 if transaction.sender_authority() != *authority {
-                    // TODO (#263): Mark the validator who sent this message as malicious
                     warn!(
                         "DWalletMPCMessage authority {} does not match its author from consensus {}",
                         authority, transaction.certificate_author_index
                     );
+                    if let Ok(mut manager) = self.get_dwallet_mpc_manager().await {
+                        manager.malicious_actors.insert(authority.clone());
+                    }
                     return None;
                 }
             }
@@ -2545,6 +2544,16 @@ impl AuthorityPerEpochStore {
         Some(VerifiedSequencedConsensusTransaction(transaction))
     }
 
+    pub async fn get_dwallet_mpc_manager(
+        &self,
+    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCManager>> {
+        let dwallet_mpc_manager = self.dwallet_mpc_manager.get();
+        match dwallet_mpc_manager {
+            Some(dwallet_mpc_manager) => Ok(dwallet_mpc_manager.lock().await),
+            None => Err(PeraError::from("DWalletMPCManager is not initialized")),
+        }
+    }
+
     fn db_batch(&self) -> PeraResult<DBBatch> {
         Ok(self.tables()?.last_consensus_index.batch())
     }
@@ -2569,15 +2578,16 @@ impl AuthorityPerEpochStore {
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> PeraResult<Vec<VerifiedExecutableTransaction>> {
         // Split transactions into different types for processing.
-        let verified_transactions: Vec<_> = transactions
-            .into_iter()
-            .filter_map(|transaction| {
-                self.verify_consensus_transaction(
-                    transaction,
-                    &authority_metrics.skipped_consensus_txns,
-                )
-            })
-            .collect();
+        // TODO (#337): Replace with filter_map when async closure get supported.
+        let mut verified_transactions: Vec<VerifiedSequencedConsensusTransaction> = vec![];
+        for tx in transactions {
+            if let Some(verified_tx) = self
+                .verify_consensus_transaction(tx, &authority_metrics.skipped_consensus_txns)
+                .await
+            {
+                verified_transactions.push(verified_tx);
+            }
+        }
         let mut system_transactions = Vec::with_capacity(verified_transactions.len());
         let mut current_commit_sequenced_consensus_transactions =
             Vec::with_capacity(verified_transactions.len());
@@ -3200,14 +3210,10 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-
-        // TODO (#250): Make sure the dwallet_mpc_manager is always initialized at this point.
-        // todo(zeev): this is really bad, this lock kills the concensus.
-        if let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() {
-            let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
-            // TODO (#282): Process the end of delivery asynchronously
-            dwallet_mpc_manager.handle_end_of_delivery().await?;
-        };
+        self.get_dwallet_mpc_manager()
+            .await?
+            .handle_end_of_delivery()
+            .await?;
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
@@ -3396,6 +3402,10 @@ impl AuthorityPerEpochStore {
         let tracking_id = transaction.get_tracking_id();
 
         match &transaction {
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCOutput(..),
+                ..
+            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::UserTransaction(certificate),
                 ..
@@ -3596,24 +3606,14 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(_, _, _, _, _),
-                ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                // Pass an MPC message from consensus to the DWallet MPC manager.
-                let Some(dwallet_mpc_manager) = self.dwallet_mpc_manager.get() else {
-                    warn!(
-                        "Ignoring DWalletMPCMessage because dwallet_mpc_manager is not initialized"
-                    );
-                    // TODO (#250): Make sure the dwallet_mpc_manager is always initialized at this point.
-                    return Ok(ConsensusCertificateResult::Ignored);
-                };
-                // todo(zeev): why do we lock the mpc manager? also use channel.
-                let mut dwallet_mpc_manager = dwallet_mpc_manager.lock().await;
-                dwallet_mpc_manager.handle_message(message, *authority, *session_id)?;
+                self.get_dwallet_mpc_manager().await?.handle_message(
+                    message,
+                    *authority,
+                    *session_id,
+                )?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -3710,7 +3710,7 @@ impl AuthorityPerEpochStore {
         }
 
         // System transactions either contain a shared object
-        // or are dwallet MPC output transactions.
+        // or are dWallet MPC output transactions.
         let is_dwallet_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
             TransactionKind::DWalletMPCOutput(_)
