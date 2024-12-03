@@ -215,11 +215,123 @@ impl PeraSystemStateSummary {
     }
 }
 
+/// This is the JSON-RPC type for the PERA validator. It flattens all inner structures
+/// to top-level fields so that they are decoupled from the internal definitions.
+#[serde_as]
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct PeraValidatorSummary {
+    // Metadata
+    pub pera_address: PeraAddress,
+    #[schemars(with = "Base64")]
+    #[serde_as(as = "Base64")]
+    pub protocol_pubkey_bytes: Vec<u8>,
+    #[schemars(with = "Base64")]
+    #[serde_as(as = "Base64")]
+    pub network_pubkey_bytes: Vec<u8>,
+    #[schemars(with = "Base64")]
+    #[serde_as(as = "Base64")]
+    pub worker_pubkey_bytes: Vec<u8>,
+    #[schemars(with = "Base64")]
+    #[serde_as(as = "Base64")]
+    pub class_groups_public_key_and_proof: Vec<u8>,
+    #[schemars(with = "Base64")]
+    #[serde_as(as = "Base64")]
+    pub proof_of_possession_bytes: Vec<u8>,
+    pub name: String,
+    pub description: String,
+    pub image_url: String,
+    pub project_url: String,
+    pub net_address: String,
+    pub p2p_address: String,
+    pub primary_address: String,
+    pub worker_address: String,
+    #[schemars(with = "Option<Base64>")]
+    #[serde_as(as = "Option<Base64>")]
+    pub next_epoch_protocol_pubkey_bytes: Option<Vec<u8>>,
+    #[schemars(with = "Option<Base64>")]
+    #[serde_as(as = "Option<Base64>")]
+    pub next_epoch_proof_of_possession: Option<Vec<u8>>,
+    #[schemars(with = "Option<Base64>")]
+    #[serde_as(as = "Option<Base64>")]
+    pub next_epoch_network_pubkey_bytes: Option<Vec<u8>>,
+    #[schemars(with = "Option<Base64>")]
+    #[serde_as(as = "Option<Base64>")]
+    pub next_epoch_worker_pubkey_bytes: Option<Vec<u8>>,
+    pub next_epoch_net_address: Option<String>,
+    pub next_epoch_p2p_address: Option<String>,
+    pub next_epoch_primary_address: Option<String>,
+    pub next_epoch_worker_address: Option<String>,
+
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub voting_power: u64,
+    pub operation_cap_id: ObjectID,
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub gas_price: u64,
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub commission_rate: u64,
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub next_epoch_stake: u64,
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub next_epoch_gas_price: u64,
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub next_epoch_commission_rate: u64,
+
+    // Staking pool information
+    /// ID of the staking pool object.
+    pub staking_pool_id: ObjectID,
+    /// The epoch at which this pool became active.
+    #[schemars(with = "Option<BigInt<u64>>")]
+    #[serde_as(as = "Option<Readable<BigInt<u64>, _>>")]
+    pub staking_pool_activation_epoch: Option<u64>,
+    /// The epoch at which this staking pool ceased to be active. `None` = {pre-active, active},
+    #[schemars(with = "Option<BigInt<u64>>")]
+    #[serde_as(as = "Option<Readable<BigInt<u64>, _>>")]
+    pub staking_pool_deactivation_epoch: Option<u64>,
+    /// The total number of PERA tokens in this pool.
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub staking_pool_pera_balance: u64,
+    /// The epoch stake rewards will be added here at the end of each epoch.
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub rewards_pool: u64,
+    /// Total number of pool tokens issued by the pool.
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub pool_token_balance: u64,
+    /// Pending stake amount for this epoch.
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub pending_stake: u64,
+    /// Pending stake withdrawn during the current epoch, emptied at epoch boundaries.
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub pending_total_pera_withdraw: u64,
+    /// Pending pool token withdrawn during the current epoch, emptied at epoch boundaries.
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub pending_pool_token_withdraw: u64,
+    /// ID of the exchange rate table object.
+    pub exchange_rates_id: ObjectID,
+    /// Number of exchange rates in the table.
+    #[schemars(with = "BigInt<u64>")]
+    #[serde_as(as = "Readable<BigInt<u64>, _>")]
+    pub exchange_rates_size: u64,
+}
+
 impl Default for PeraSystemStateSummary {
     fn default() -> Self {
         Self {
             epoch: 0,
             protocol_version: 1,
+            class_groups_public_key_and_proof: vec![],
             system_state_version: 1,
             storage_fund_total_object_storage_rebates: 0,
             storage_fund_non_refundable_balance: 0,
