@@ -14,7 +14,7 @@ type AsyncProtocol = secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
 type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
 type EncryptionOfSecretKeyShareAndPublicKeyShare =
-<AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareAndPublicKeyShare;
+    <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareAndPublicKeyShare;
 type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
 <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
 
@@ -47,7 +47,8 @@ pub fn create_dkg_output(
     decentralized_first_round_output: Vec<u8>,
     session_id: String,
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
-    let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare = bcs::from_bytes(&decentralized_first_round_output)?;
+    let decentralized_first_round_output: EncryptionOfSecretKeyShareAndPublicKeyShare =
+        bcs::from_bytes(&decentralized_first_round_output)?;
     let public_parameters = class_groups_constants::protocol_public_parameters();
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
 
@@ -84,15 +85,16 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
     let hash = match hash_type {
         Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
             &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
-        ).map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
+        )
+        .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
         Hash::SHA256 => {
             bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
-        }.map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
+        }
+        .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?,
     };
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
     Ok(U256::from(m).into())
 }
-
 
 /// Executes the centralized phase of the Sign protocol, first part of the protocol.
 ///
@@ -110,7 +112,10 @@ pub fn create_sign_output(
 ) -> anyhow::Result<(Vec<u8>, Vec<u8>, Vec<u8>)> {
     let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGOutput = bcs::from_bytes(&centralized_party_dkg_output)?;
     let presign_first_round_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare = bcs::from_bytes(&presign_first_round_output)?;
-    let presign_second_round_output: (NoncePublicShareAndEncryptionOfMaskedNonceSharePart, NoncePublicShareAndEncryptionOfMaskedNonceSharePart) = bcs::from_bytes(&presign_second_round_output)?;
+    let presign_second_round_output: (
+        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
+        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
+    ) = bcs::from_bytes(&presign_second_round_output)?;
     let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
         (presign_first_round_output, presign_second_round_output).into();
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
