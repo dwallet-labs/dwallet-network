@@ -9,15 +9,14 @@ use fastcrypto::{secp256k1::Secp256k1KeyPair, traits::EncodeDecodeBase64};
 use pera_mpc_types::ClassGroupsKeyPairAndProof;
 use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, PeraKeyPair, ToFromBytes};
 
-/// Write Base64 encoded `flag || privkey` to file.
 pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path>>(
     keypair: &ClassGroupsKeyPairAndProof,
     path: P,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<String> {
     let serialized = serde_json::to_vec(&keypair).expect("Failed to serialize");
     let contents = Base64::encode(serialized);
     std::fs::write(path, contents)?;
-    Ok(())
+    Ok(Base64::encode(keypair.public_bytes()))
 }
 
 /// Write Base64 encoded `flag || privkey` to file.

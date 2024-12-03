@@ -60,6 +60,7 @@ pub fn validate_metadata_bcs(
 
     let cost = context.gas_used();
 
+    // Todo (#): add key validation
     if let Result::Err(err_code) = validator_metadata.verify() {
         return Ok(NativeResult::err(cost, err_code));
     }

@@ -19,9 +19,6 @@ fastcrypto = { workspace = true, features = ["copy_key"] }
 shared-crypto.workspace = true
 pera-types.workspace = true
 regex.workspace = true
-class_groups.workspace = true
-rand_chacha = "0.3.1"
-bcs.workspace = true
 pera-mpc-types.workspace = true
 
 [dev-dependencies]

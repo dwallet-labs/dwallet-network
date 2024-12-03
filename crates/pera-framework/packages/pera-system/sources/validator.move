@@ -841,7 +841,6 @@ module pera_system::validator {
 
     /// Aborts if validator metadata is valid
     public fun validate_metadata(metadata: &ValidatorMetadata) {
-        // todo (yael): add key validation
         validate_metadata_bcs(bcs::to_bytes(metadata));
     }
 
