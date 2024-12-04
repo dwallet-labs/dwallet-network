@@ -173,6 +173,16 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         cap
     }
 
+    /// Same as `create_dkg_session` but wrap the cap with `binder::Binder` object to make sure it's a virgin bound.
+    public fun create_virgin_bound_dkg_session(
+        commitment_to_centralized_party_secret_key_share: vector<u8>,
+        bind_to_authority: BindToAuthority,
+        ctx: &mut TxContext
+    ) {
+        let dwallet_cap = create_dkg_session(commitment_to_centralized_party_secret_key_share, ctx);
+        create_binder(dwallet_cap, bind_to_authority, true, object::id_from_address(@0x0), false, ctx);
+    }
+
     #[allow(unused_function)]
     /// Create the final DKG output, transfer it to the user.
     /// This function is called by blockchain itself.

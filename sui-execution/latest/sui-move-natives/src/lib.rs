@@ -33,7 +33,7 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
-use crate::authority_binder::AuthorityBinderCostParams;
+use crate::authority_binder::DWalletBinderCostParams;
 use crate::crypto::sui_state_proof::SuiStateProofCostParams;
 use crate::crypto::twopc_mpc::TwoPCMPCDKGCostParams;
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
@@ -164,7 +164,7 @@ pub struct NativesCostTable {
     pub eth_state_proof: EthDWalletCostParams,
 
     // Authority Binder
-    pub authority_binder: AuthorityBinderCostParams,
+    pub authority_binder: DWalletBinderCostParams,
 }
 
 impl NativesCostTable {
@@ -541,7 +541,7 @@ impl NativesCostTable {
                 sui_state_proof_verify_link_cap_base: protocol_config.sui_state_proof_verify_link_cap_base().into(),
                 sui_state_proof_verify_transaction_base: protocol_config.sui_state_proof_verify_transaction_base().into(),
             },
-            authority_binder: AuthorityBinderCostParams {
+            authority_binder: DWalletBinderCostParams {
                 create_authority_ack_transaction_cost_base: protocol_config
                     .create_authority_ack_transaction_cost_base()
                     .into(),
