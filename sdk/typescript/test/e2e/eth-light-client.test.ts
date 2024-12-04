@@ -8,7 +8,7 @@ import { ethers, hexlify, keccak256, Signature, SigningKey } from 'ethers';
 import { assert, beforeAll, describe, it } from 'vitest';
 
 import {
-	createAuthorityEIP712Acknowledgement,
+	createAuthorityAck,
 	createBindToAuthority,
 	setBindToAuthority,
 } from '../../src/authority-binder';
@@ -73,7 +73,7 @@ describe('Test Ethereum Light Client', () => {
 		const domainVersion = '1.0.0';
 		const virginBound = true;
 		const authorityName = 'Ethereum_Holesky';
-		const chainIdentifier = '17000';
+		const chainIdentifier = BigInt(17000);
 		const network = 'holesky';
 		const consensusRpc = 'http://unstable.holesky.beacon-api.nimbus.team';
 		const contractApprovedTxSlot = 2;
@@ -125,11 +125,11 @@ describe('Test Ethereum Light Client', () => {
 		const dWalletBinderId = virginEthDwallet?.dWalletBinderID!;
 		const virginEthDwalletCapId = virginEthDwallet?.dwalletCapID!;
 
-		let transactionHash = await createAuthorityEIP712Acknowledgement(
+		let transactionHash = await createAuthorityAck(
 			dWalletBinderId,
 			true,
 			chainIdentifier,
-			'Number', // Chain ID type
+			'Ethereum', // Chain type
 			domainName,
 			domainVersion,
 			authorityToolbox.keypair,

@@ -140,7 +140,7 @@ export const getEthereumStateById = async (
  * @param {string} value - The string to convert and serialize.
  * @returns The serialized Uint8Array.
  */
-export function stringToArrayU8Bcs(value: string) {
+export function stringToBcs(value: string) {
 	let arrayU8 = Uint8Array.from(Array.from(value).map((c) => c.charCodeAt(0)));
 	return bcs.vector(bcs.u8()).serialize(arrayU8, {
 		size: arrayU8.length,

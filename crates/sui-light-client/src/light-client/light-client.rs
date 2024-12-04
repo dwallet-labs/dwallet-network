@@ -1141,7 +1141,7 @@ pub async fn main() {
                         object_id: _,
                         version: _,
                         digest: _,
-                    } => object_type.to_string().contains("StateProofConfig"),
+                    } => object_type.to_string().contains("SuiStateProofConfig"),
                     _ => false,
                 })
                 .next()

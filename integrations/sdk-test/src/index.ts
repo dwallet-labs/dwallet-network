@@ -28,7 +28,7 @@ async function main() {
 		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
 
 		const dWalletCapPackageSUI =
-			'0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec';
+			'0x8b527e2c7b0b29f2f6fe25a5b4505a4e0473f2d54a1c9dfaff125eed1eb327fd';
 
 		const configObjectId = '0x3cae1bcb0ad02137a4f60509133d174c9abaa00fb42072c1bb5d9c3474aa871d';
 		const registryObjectId = '0xdc85edbdee2f2630d05464fa8740a19cdaf9c4e20aabb519ad9f174a3f2b44b9';

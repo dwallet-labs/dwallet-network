@@ -52,7 +52,7 @@ struct Args {
     graphql_port: Option<u16>,
 
     /// Port to start the Indexer RPC server on
-    #[clap(long, default_value = "9124")]
+    #[clap(long, default_value = "9125")]
     indexer_rpc_port: u16,
 
     /// Port for the Indexer Postgres DB

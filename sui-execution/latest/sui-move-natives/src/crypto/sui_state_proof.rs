@@ -78,7 +78,7 @@ fn verify_data(
 
 /***************************************************************************************************
  * native fun sui_state_proof_verify_committee
- * Implementation of the Move native function `sui_state_proofs::sui_state_proof_verify_committee(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
+ * Implementation of the Move native function `sui_state_proof::sui_state_proof_verify_committee(commitment_to_centralized_party_secret_key_share: vector<u8>, secret_key_share_encryption_and_proof: vector<u8>, centralized_party_public_key_share_decommitment_and_proofs: vector<u8>): (vector<u8>, vector<u8>, vector<u8>);`
  * gas cost: sui_state_proof_verify_committee_cost_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
 pub fn sui_state_proof_verify_committee(
@@ -162,6 +162,8 @@ pub fn sui_state_proof_verify_committee(
  * Implementation of the Move native function `sui_state_proof::sui_state_proof_verify_link_cap(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);`
  * gas cost: sui_state_proof_verify_link_cap_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
+const DWALLET_MODULE_NAME_IN_SUI: &'static str = "dwallet_test1";
+
 pub fn sui_state_proof_verify_link_cap(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -242,7 +244,7 @@ pub fn sui_state_proof_verify_link_cap(
     for event in tx_events {
         // Check if the event matches the desired type
         if event.type_.address.to_hex() == package_id_target.to_hex()
-            && event.type_.module.clone().into_string() == "dwallet_cap"
+            && event.type_.module.clone().into_string() == DWALLET_MODULE_NAME_IN_SUI
             && event.type_.name.clone().into_string() == "DWalletNetworkInitCapRequest"
         {
             let json_val = match SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents) {
@@ -375,7 +377,7 @@ pub fn sui_state_proof_verify_transaction(
 
     for event in tx_events {
         if event.type_.address.to_hex() == package_id_target.to_hex()
-            && event.type_.module.clone().into_string() == "dwallet_cap"
+            && event.type_.module.clone().into_string() == DWALLET_MODULE_NAME_IN_SUI
             && event.type_.name.clone().into_string() == "DWalletNetworkApproveRequest"
         {
             let json_val = match SuiJsonValue::from_bcs_bytes(Some(&type_layout), &event.contents) {

@@ -26,7 +26,7 @@ import {
 	getAuthorityByID,
 	getDWalletBinderByID,
 	getEthereumStateById,
-	stringToArrayU8Bcs,
+	stringToBcs,
 } from './utils.js';
 
 const packageId = '0x3';
@@ -84,15 +84,15 @@ export const createEthereumAuthority = async (
 
 	let updatesResponseJson = await getUpdates(rpc, syncPeriod);
 	let updatesJson = JSON.stringify(updatesResponseJson.map((update: any) => update['data']));
-	let updatesBcs = stringToArrayU8Bcs(updatesJson);
+	let updatesBcs = stringToBcs(updatesJson);
 
 	let finalityUpdateResponse = await getFinalityUpdate(rpc);
 	let finalityUpdateJson = JSON.stringify(finalityUpdateResponse['data']);
-	let finalityUpdateBcs = stringToArrayU8Bcs(finalityUpdateJson);
+	let finalityUpdateBcs = stringToBcs(finalityUpdateJson);
 
 	let optimisticUpdateResponse = await getOptimisticUpdate(rpc);
 	let optimisticUpdateJson = JSON.stringify(optimisticUpdateResponse['data']);
-	let optimisticUpdateBcs = stringToArrayU8Bcs(optimisticUpdateJson);
+	let optimisticUpdateBcs = stringToBcs(optimisticUpdateJson);
 
 	let stateBcs = bcs.vector(bcs.u8()).serialize(stateBytes, {
 		size: stateBytes.length,
@@ -102,14 +102,14 @@ export const createEthereumAuthority = async (
 
 	// Get Beacon block data for the latest finalized block.
 	let beaconBlockData = await getBeaconBlockData(rpc, finalityUpdateResponse);
-	let beaconBlockTypeBcs = stringToArrayU8Bcs(beaconBlockData.blockType);
-	let beaconBlockBcs = stringToArrayU8Bcs(beaconBlockData.blockJsonString);
-	let beaconBlockBodyBcs = stringToArrayU8Bcs(beaconBlockData.blockBodyJsonString);
-	let beaconBlockExecutionPayloadBcs = stringToArrayU8Bcs(
+	let beaconBlockTypeBcs = stringToBcs(beaconBlockData.blockType);
+	let beaconBlockBcs = stringToBcs(beaconBlockData.blockJsonString);
+	let beaconBlockBodyBcs = stringToBcs(beaconBlockData.blockBodyJsonString);
+	let beaconBlockExecutionPayloadBcs = stringToBcs(
 		beaconBlockData.blockExecutionPayloadJsonString,
 	);
 
-	let chainIdentifierBcs = stringToArrayU8Bcs(chainIdentifier);
+	let chainIdentifierBcs = stringToBcs(chainIdentifier);
 	// let authorityOwnerPublicUserShareObjRef = await getObjectRefById(
 	// 	client,
 	// 	authorityOwnerPublicUserShareObjId,
@@ -175,7 +175,7 @@ export const createEthereumSmartContractConfig = async (
 	keypair: Keypair,
 	client: DWalletClient,
 ) => {
-	let networkBcs = stringToArrayU8Bcs(network);
+	let networkBcs = stringToBcs(network);
 
 	const tx = new TransactionBlock();
 	tx.moveCall({
@@ -227,21 +227,21 @@ async function updateEthereumAuthorityState(
 
 	let updatesResponseJson = await getUpdates(consensusRpc, syncPeriod);
 	let updatesJson = JSON.stringify(updatesResponseJson.map((update: any) => update['data']));
-	let updatesBcs = stringToArrayU8Bcs(updatesJson);
+	let updatesBcs = stringToBcs(updatesJson);
 
 	let finalityUpdateResponseJson = await getFinalityUpdate(consensusRpc);
 	let finalityUpdateJson = JSON.stringify(finalityUpdateResponseJson['data']);
-	let finalityUpdateBcs = stringToArrayU8Bcs(finalityUpdateJson);
+	let finalityUpdateBcs = stringToBcs(finalityUpdateJson);
 
 	let optimisticUpdateResponse = await getOptimisticUpdate(consensusRpc);
 	let optimisticUpdateJson = JSON.stringify(optimisticUpdateResponse['data']);
-	let optimisticUpdateBcs = stringToArrayU8Bcs(optimisticUpdateJson);
+	let optimisticUpdateBcs = stringToBcs(optimisticUpdateJson);
 
 	let beaconBlockData = await getBeaconBlockData(consensusRpc, finalityUpdateResponseJson);
-	let beaconBlockTypeBcs = stringToArrayU8Bcs(beaconBlockData.blockType);
-	let beaconBlockBcs = stringToArrayU8Bcs(beaconBlockData.blockJsonString);
-	let beaconBlockBodyBcs = stringToArrayU8Bcs(beaconBlockData.blockBodyJsonString);
-	let beaconBlockExecutionPayloadBcs = stringToArrayU8Bcs(
+	let beaconBlockTypeBcs = stringToBcs(beaconBlockData.blockType);
+	let beaconBlockBcs = stringToBcs(beaconBlockData.blockJsonString);
+	let beaconBlockBodyBcs = stringToBcs(beaconBlockData.blockBodyJsonString);
+	let beaconBlockExecutionPayloadBcs = stringToBcs(
 		beaconBlockData.blockExecutionPayloadJsonString,
 	);
 
@@ -252,7 +252,6 @@ async function updateEthereumAuthorityState(
 		target: `${packageId}::${ethereumStateModuleName}::update_authority_state`,
 		arguments: [
 			tx.sharedObjectRef(authoritySharedObjectRef),
-			// todo(yuval): update object to only be `id` and not `id.id`
 			tx.object(currentEthereumStateObj.id),
 			tx.pure(updatesBcs),
 			tx.pure(finalityUpdateBcs),
@@ -375,8 +374,8 @@ export const approveEthereumMessage = async (
 
 	let dWalletBinderSharedObjectRef = await getSharedObjectRefById(dwalletBinderId, client);
 	let authoritySharedObjectRef = await getSharedObjectRefById(authorityId, client);
-	let proofBcs = stringToArrayU8Bcs(JSON.stringify(proof));
-	let messageBcs = stringToArrayU8Bcs(message);
+	let proofBcs = stringToBcs(JSON.stringify(proof));
+	let messageBcs = stringToBcs(message);
 
 	const tx = new TransactionBlock();
 	const [messageApprovals] = tx.moveCall({

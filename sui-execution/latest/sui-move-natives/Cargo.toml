@@ -23,6 +23,7 @@ move-binary-format.workspace = true
 move-core-types.workspace = true
 move-vm-types.workspace = true
 
+bytecode-interpreter-crypto = { path = "../../../external-crates/move/crates/bytecode-interpreter-crypto" }
 move-stdlib = { path = "../../../external-crates/move/crates/move-stdlib" }
 move-vm-runtime = { path = "../../../external-crates/move/crates/move-vm-runtime" }
 

@@ -15,7 +15,12 @@ import {
 	SuiObjectChangePublished,
 } from '../../../src/client';
 import { Keypair } from '../../../src/cryptography';
-import { FaucetRateLimitError, getFaucetHost, requestSuiFromFaucetV0 } from '../../../src/faucet';
+import {
+	FaucetRateLimitError,
+	getFaucetHost,
+	requestSuiFromFaucetV0,
+	requestSuiFromFaucetV1,
+} from '../../../src/faucet';
 import { Ed25519Keypair } from '../../../src/keypairs/ed25519';
 import { SUI_TYPE_ARG } from '../../../src/utils';
 

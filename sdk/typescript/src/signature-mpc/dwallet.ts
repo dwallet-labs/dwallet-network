@@ -11,14 +11,15 @@ import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import type { SuiObjectRef } from '../types/index.js';
+import { getSharedObjectRefById } from '../utils/sui-types.js';
 import type { DWallet } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import type { DWalletToTransfer, EncryptedUserShare } from './encrypt_user_share.js';
 import { fetchOwnedObjectByType } from './utils.js';
-import { getSharedObjectRefById } from "../utils/sui-types";
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
+const suiStateProofModuleName = 'sui_state_proof';
 
 export enum EncryptionKeyScheme {
 	Paillier = 0,
@@ -60,32 +61,78 @@ export function hashToNumber(hash: 'KECCAK256' | 'SHA256') {
 	}
 }
 
-export async function approveAndSign(
+/**
+ * Approves and signs an acknowledgment message with the authority.
+ *
+ * Creates a transaction block to approve an acknowledgment message with the authority
+ * using the provided parameters. It then signs and verifies the signature of the message.
+ */
+export async function approveAndSignAckWithAuthority(
 	authorityId: string,
 	signMessagesId: string,
-	messages: Uint8Array[],
+	message: Uint8Array,
 	dwalletID: string,
+	binderID: string,
+	dWalletCapID: string,
+	bindToAuthorityID: string,
+	bindToAuthorityNonce: number,
+	virginBound: boolean,
 	hash: 'KECCAK256' | 'SHA256',
 	keypair: Keypair,
 	client: DWalletClient,
 ) {
 	const tx = new TransactionBlock();
 	const authoritySharedObjRef = await getSharedObjectRefById(authorityId, client);
+	const messageBcs = bcs.vector(bcs.u8()).serialize(message);
+
 	const [messageApprovals] = tx.moveCall({
-		target: `${packageId}::sui_state_proof::approve_messages_with_authority`,
+		target: `${packageId}::${suiStateProofModuleName}::approve_ack_message_with_authority`,
 		arguments: [
 			tx.sharedObjectRef(authoritySharedObjRef),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
+			tx.pure(messageBcs),
+			tx.pure.id(binderID),
+			tx.pure.id(dWalletCapID),
+			tx.pure.id(bindToAuthorityID),
+			tx.pure.u64(bindToAuthorityNonce),
+			tx.pure.bool(virginBound),
 		],
 	});
 
-	// const [messageApprovals] = tx.moveCall({
-	// 	target: `${packageId}::${dWalletModuleName}::approve_messages`,
-	// 	arguments: [
-	// 		tx.object(dwalletCapId),
-	// 		tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
-	// 	],
-	// });
+	return await signAndVerifySignature(
+		tx,
+		signMessagesId,
+		messageApprovals,
+		client,
+		keypair,
+		dwalletID,
+		[message],
+		hash,
+	);
+}
+
+/**
+ * Signs and verifies a signature for a given transaction block.
+ *
+ * Accepts a transaction block, adds a move call to sign a message
+ * and then verifies the signature using the provided parameters.
+ * It ensures that the DWallet public keys are signed by the desired
+ * Sui address and that the returned signatures are valid.
+ *
+ * Note: The tx object should already have a move call to approve the messages,
+ * and the sign call is added to this programmable transaction, and uses the
+ * `MessageApproval`'s that return from the approve call.
+ */
+export async function signAndVerifySignature(
+	tx: TransactionBlock,
+	signMessagesId: string,
+	//@ts-ignore
+	messageApprovals,
+	client: DWalletClient,
+	keypair: Keypair,
+	dwalletID: string,
+	messages: Uint8Array[],
+	hash: 'KECCAK256' | 'SHA256',
+) {
 	tx.moveCall({
 		target: `${packageId}::${dWalletModuleName}::sign`,
 		typeArguments: [
@@ -130,6 +177,35 @@ export async function approveAndSign(
 		throw new Error('Returned signatures are not valid');
 	}
 	return signatures;
+}
+
+export async function approveAndSign(
+	dWalletCapID: string,
+	signMessagesId: string,
+	messages: Uint8Array[],
+	dwalletID: string,
+	hash: 'KECCAK256' | 'SHA256',
+	keypair: Keypair,
+	client: DWalletClient,
+) {
+	const tx = new TransactionBlock();
+	const [messageApprovals] = tx.moveCall({
+		target: `${packageId}::${dWalletModuleName}::approve_messages`,
+		arguments: [
+			tx.object(dWalletCapID),
+			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
+		],
+	});
+	return await signAndVerifySignature(
+		tx,
+		signMessagesId,
+		messageApprovals,
+		client,
+		keypair,
+		dwalletID,
+		messages,
+		hash,
+	);
 }
 
 export interface SignOutputEventData {

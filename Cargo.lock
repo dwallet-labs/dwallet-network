@@ -15250,6 +15250,7 @@ version = "0.1.0"
 dependencies = [
  "bcs",
  "better_any",
+ "bytecode-interpreter-crypto",
  "ethers",
  "fastcrypto 0.1.7",
  "fastcrypto-zkp 0.1.2",

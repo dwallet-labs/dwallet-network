@@ -81,8 +81,6 @@ module dwallet_system::ethereum_authority {
     /// Creates an `Authority<EthereumSmartContractConfig>`.
     /// Initializes the Ethereum state with the provided state bytes and updates.
     /// The state is then pointed to by the `Authority`.
-    /// 
-    // todo(yuval): make sure that it is ok to create only one authority for each network.
     public fun create_ethereum_authority(
         name: String,
         unique_identifier: vector<u8>,

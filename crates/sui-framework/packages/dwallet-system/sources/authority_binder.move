@@ -4,7 +4,6 @@
 module dwallet_system::authority_binder {
 	use std::hash::sha2_256;
 	use std::vector;
-	use std::string;
 	use std::string::String;
 	use dwallet::transfer;
 	use dwallet::object::{Self, ID, UID};
@@ -18,7 +17,6 @@ module dwallet_system::authority_binder {
 	
 	friend dwallet_system::ethereum_authority;
 	friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
-	// todo(yuval): change name to `sui_authority`
 	friend dwallet_system::sui_state_proof;
 	// <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -194,28 +192,14 @@ module dwallet_system::authority_binder {
 
 	/// Create a transaction hash for the authority acknowledgment.
 	/// This is used to acknowledge the authority that the `DWalletBinder` is bound to it.
-	public fun create_authority_ack_transaction_hash(
+	public fun create_authority_ack(
 		binder: &DWalletBinder,
 		virgin_bound: bool,
-		chain_identifier: vector<u8>,
+		chain_identifier: u64,
 		domain_name: vector<u8>,
 		domain_version: vector<u8>,
 		chain_type: vector<u8>,
 		): vector<u8> {
-			// todo(yuval): update to make sui compatible
-			// let current = object::id_to_bytes(&object::id_from_address(@dwallet_system));
-			let chain_type_string = string::utf8(chain_type);
-			if (chain_type_string == string::utf8(b"Sui")) {
-				let vec_info = vector::empty();
-				vector::append(&mut vec_info, object::id_bytes(binder));
-				vector::append(&mut vec_info, object::id_bytes(&binder.dwallet_cap));
-				vector::append(&mut vec_info, object::id_bytes(&binder.bind_to_authority));
-				vector::append(&mut vec_info,  std::bcs::to_bytes(&binder.bind_to_authority.nonce));
-				vector::append(&mut vec_info,  std::bcs::to_bytes(&binder.virgin_bound));
-				
-				return sha2_256(vec_info)
-			};
-
 			create_authority_ack_transaction(
 				object::id_bytes(binder),
 				object::id_bytes(&binder.dwallet_cap),
@@ -244,7 +228,7 @@ module dwallet_system::authority_binder {
 		dwallet::approve_messages(&binder.dwallet_cap, messages)
 	}
 
-	// todo(yuval): this function should go to the sui dwallet_cap module
+	// this should go to sui dwallet cap module in Sui Network
 	public fun bind_dwallet_to_authority(
 		dwallet_binder: &DWalletBinder,
 		binder_id: ID,
@@ -252,7 +236,7 @@ module dwallet_system::authority_binder {
 		bind_to_authority_id: ID,
 		nonce: u64,
 		virgin_bound: bool,
-		hash: vector<u8>,
+		message: vector<u8>,
 		signature: vector<u8>,
 		pk: vector<u8>,
 	) {
@@ -283,49 +267,15 @@ module dwallet_system::authority_binder {
 			std::bcs::to_bytes(&virgin_bound)
 		);
 
-		let constructed_hash = sha2_256(info_as_vec);
-		let constructed_hash_bcs = dwallet::bcs::to_bytes(&constructed_hash);
+		let constructed_message = sha2_256(info_as_vec);
+		let constructed_message_bcs = dwallet::bcs::to_bytes(&constructed_message);
+		let constructed_message_len: u64 = vector::length(&constructed_message_bcs);
 
-		// let deserialized_message = dwallet::bcs::peel_vec_u8(&mut dwallet::bcs::new(hash));
-		// let deserialized_signature = dwallet::bcs::peel_vec_u8(&mut dwallet::bcs::new(signature));
-		// let deserialized_pk = dwallet::bcs::peel_vec_u8(&mut dwallet::bcs::new(pk));
+		let message_len: u64 = vector::length(&message);
+		assert!(constructed_message_len == message_len, 15);
+		assert!(constructed_message_bcs == message, 16);
 
-		let constructed_hash_len: u64 = vector::length(&constructed_hash_bcs);
-		let hash_len: u64 = vector::length(&hash); // todo(yuval): change hash_* names to message_* or message_hash_*
-		assert!(constructed_hash_len == hash_len, 15);
-
-		// create a clone of the message because the comparison will pop the bytes, then it cannot be
-		let hash_clone = vector<u8>[];
-		vector::append(&mut hash_clone, hash);
-
-		// compare constructed hash with the hash
-		let i: u64 = 0;
-		while (i < constructed_hash_len) {
-			let constructed_byte = vector::pop_back(&mut constructed_hash_bcs);
-			let byte = vector::pop_back(&mut hash_clone);
-			assert!(byte == constructed_byte, 16);
-			i = i + 1;
-		};
-
-		// The last param 1 represents the hash function used is SHA256, the default hash function used when signing in CLI.
-		// let recovered = ecdsa_k1::secp256k1_verify(&deserialized_signature, &deserialized_pk, &hash, 1);
-		
-		// remove first byte from each vector - this is length of vector, not part of the signature
-		// vector::remove(&mut signature, 0);
-		// vector::remove(&mut pk, 0);
-		// vector::remove(&mut hash, 0);
-		
-		let recovered = ecdsa_k1::secp256k1_ecrecover(&signature, &hash, 1);
-		let recovered_len: u64 = vector::length(&recovered);
-
-		let j: u64 = 0;
-		while (j < recovered_len) {
-			let recovered_byte = vector::pop_back(&mut recovered);
-			let byte = vector::pop_back(&mut pk);
-			assert!(byte == recovered_byte, 17);
-			j = j + 1;
-		};
-
+		let recovered = ecdsa_k1::secp256k1_ecrecover(&signature, &message, 1);
 		assert!(recovered == pk, EInvalidSignature);
 	}
 
@@ -338,11 +288,11 @@ module dwallet_system::authority_binder {
 		bind_to_authority: vector<u8>,
 		bind_to_authority_nonce: u64,
 		virgin_bound: bool,
-		chain_id: vector<u8>,
+		chain_id: u64,
 		domain_name: vector<u8>,
 		domain_version: vector<u8>,
 		contract_address: vector<u8>,
-		// todo(yuval): update PR to have chain_type instead of chain_id_type 
+		// todo(yuval): update eth PR to have chain_type instead of chain_id_type
 		chain_type: vector<u8>,
 	): vector<u8>;
 }
