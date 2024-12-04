@@ -55,6 +55,9 @@ module pera_system::validator_set {
 
         /// Any extra fields that's not defined statically.
         extra_fields: Bag,
+
+        /// Locks the next validator set and doesn't allow for further changes in the [`pending_removals`] and [`pending_active_validators`] until the next epoch starts.
+        locked: bool
     }
 
     #[allow(unused_field)]
@@ -129,6 +132,8 @@ module pera_system::validator_set {
     const EValidatorAlreadyRemoved: u64 = 11;
     const ENotAPendingValidator: u64 = 12;
     const EValidatorSetEmpty: u64 = 13;
+    const EValidatorSetLocked: u64 = 14;
+    const ENotSystemAddress: u64 = 15;
 
     const EInvalidCap: u64 = 101;
 
@@ -162,6 +167,11 @@ module pera_system::validator_set {
 
 
     // ==== functions to add or remove validators ====
+    fun lock_next_epoch_committee(self: &mut ValidatorSet, ctx: &mut TxContext) {
+        let sender = ctx.sender();
+        assert!(sender == @0x0, ENotSystemAddress);
+        self.locked = true;
+    }
 
     /// Called by `pera_system` to add a new validator candidate.
     public(package) fun request_add_validator_candidate(
@@ -220,6 +230,7 @@ module pera_system::validator_set {
     /// Called by `pera_system` to add a new validator to `pending_active_validators`, which will be
     /// processed at the end of epoch.
     public(package) fun request_add_validator(self: &mut ValidatorSet, min_joining_stake_amount: u64, ctx: &TxContext) {
+        assert!(!self.locked, EValidatorSetLocked);
         let validator_address = ctx.sender();
         assert!(
             self.validator_candidates.contains(validator_address),
