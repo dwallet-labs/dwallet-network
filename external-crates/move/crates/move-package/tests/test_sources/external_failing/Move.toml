@@ -1,7 +1,0 @@
-[package]
-name = "Root"
-
-[dependencies.A]
-# This resolver returns a non-zero exit code, which should cause
-# resolution to fail.
-resolver = "../resolvers/failing.sh"
