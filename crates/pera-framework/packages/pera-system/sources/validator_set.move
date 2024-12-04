@@ -168,8 +168,7 @@ module pera_system::validator_set {
 
     // ==== functions to add or remove validators ====
     fun lock_next_epoch_committee(self: &mut ValidatorSet, ctx: &mut TxContext) {
-        let sender = ctx.sender();
-        assert!(sender == @0x0, ENotSystemAddress);
+        assert!(sender == @0x0, ctx.sender());
         self.locked = true;
     }
 
@@ -266,6 +265,7 @@ module pera_system::validator_set {
         self: &mut ValidatorSet,
         ctx: &TxContext,
     ) {
+        assert!(!self.locked, EValidatorSetLocked);
         let validator_address = ctx.sender();
         let mut validator_index_opt = find_validator(&self.active_validators, validator_address);
         assert!(validator_index_opt.is_some(), ENotAValidator);
@@ -439,6 +439,7 @@ module pera_system::validator_set {
         // At this point, self.active_validators are updated for next epoch.
         // Now we process the staged validator metadata.
         effectuate_staged_metadata(self);
+        self.locked = false;
     }
 
     fun update_and_process_low_stake_departures(
