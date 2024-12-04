@@ -329,7 +329,8 @@ impl TryFrom<MoveTokenDepositedEvent> for EmittedPeraToEthTokenBridgeV1 {
 
         let pera_address = PeraAddress::from_bytes(event.sender_address)
             .map_err(|e| BridgeError::Generic(format!("Failed to convert MoveTokenDepositedEvent to EmittedPeraToEthTokenBridgeV1. Failed to convert sender_address to PeraAddress: {:?}", e)))?;
-        let eth_address = EthAddress::from_str(&Hex::encode(&event.target_address))?;
+        let eth_address = EthAddress::from_str(&Hex::encode(&event.target_address))
+            .map_err(anyhow::Error::from)?;
 
         Ok(Self {
             nonce: event.seq_num,
@@ -391,7 +392,7 @@ macro_rules! declare_events {
                 $(
                     if &event.type_ == $variant.get().unwrap() {
                         let event_struct: $event_struct = bcs::from_bytes(&event.bcs).map_err(|e| BridgeError::InternalError(format!("Failed to deserialize event to {}: {:?}", stringify!($event_struct), e)))?;
-                        return Ok(Some(PeraBridgeEvent::$variant(event_struct.try_into()?)));
+                        return Ok(Some(PeraBridgeEvent::$variant(event_struct.try_into().map_err(|_| BridgeError::InternalError(format!("Failed to create pera bridge event")))?)));
                     }
                 )*
                 Ok(None)

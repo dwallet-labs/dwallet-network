@@ -65,9 +65,11 @@ exclude = [
     "external-crates/move/move-execution/v2/crates/move-stdlib-natives",
     "external-crates/move/move-execution/v2/crates/move-vm-runtime",
     "sdk/move-bytecode-template",
+    "sdk/dwallet-mpc-wasm",
 ]
 
 members = [
+    "crates/dwallet-mpc-centralized-party",
     "consensus/config",
     "consensus/core",
     "crates/anemo-benchmark",
@@ -196,6 +198,8 @@ members = [
     "pera-execution/v2/pera-adapter",
     "pera-execution/v2/pera-move-natives",
     "pera-execution/v2/pera-verifier",
+    "crates/dwallet-mpc-centralized-party",
+    "crates/class-groups-constants",
 ]
 
 [workspace.package]
@@ -241,6 +245,10 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(msim)', 'cfg(fail_points)'
 
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
+mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"] , branch = "new-pera-api" }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "new-pera-api", subdir = "class-groups", features = ["default", "threshold"] }
+twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "new-pera-api" }
+group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "new-pera-api" }
 anyhow = "1.0.71"
 arrow = "52"
 arrow-array = "52"

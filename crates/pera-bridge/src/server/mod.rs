@@ -136,12 +136,9 @@ impl axum::response::IntoResponse for BridgeError {
     }
 }
 
-impl<E> From<E> for BridgeError
-where
-    E: Into<anyhow::Error>,
-{
-    fn from(err: E) -> Self {
-        Self::Generic(err.into().to_string())
+impl From<anyhow::Error> for BridgeError {
+    fn from(err: anyhow::Error) -> Self {
+        Self::Generic(err.to_string())
     }
 }
 

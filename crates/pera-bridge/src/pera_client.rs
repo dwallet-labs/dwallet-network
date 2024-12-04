@@ -126,7 +126,11 @@ where
             package,
             module: module.clone(),
         };
-        let events = self.inner.query_events(filter.clone(), cursor).await?;
+        let events = self
+            .inner
+            .query_events(filter.clone(), cursor)
+            .await
+            .map_err(anyhow::Error::from)?;
 
         // Safeguard check that all events are emitted from requested package and module
         assert!(events
@@ -145,7 +149,11 @@ where
         tx_digest: &TransactionDigest,
         event_idx: u16,
     ) -> BridgeResult<BridgeAction> {
-        let events = self.inner.get_events_by_tx_digest(*tx_digest).await?;
+        let events = self
+            .inner
+            .get_events_by_tx_digest(*tx_digest)
+            .await
+            .map_err(anyhow::Error::from)?;
         let event = events
             .get(event_idx as usize)
             .ok_or(BridgeError::NoBridgeEventsInTxPosition)?;
@@ -237,7 +245,8 @@ where
                 http_rest_url,
                 blocklisted,
             } = member;
-            let pubkey = BridgeAuthorityPublicKey::from_bytes(&bridge_pubkey_bytes)?;
+            let pubkey = BridgeAuthorityPublicKey::from_bytes(&bridge_pubkey_bytes)
+                .map_err(anyhow::Error::from)?;
             let base_url = from_utf8(&http_rest_url).unwrap_or_else(|_e| {
                 warn!(
                     "Bridge authority address: {}, pubkey: {:?} has invalid http url: {:?}",
@@ -256,7 +265,11 @@ where
     }
 
     pub async fn get_chain_identifier(&self) -> BridgeResult<String> {
-        Ok(self.inner.get_chain_identifier().await?)
+        Ok(self
+            .inner
+            .get_chain_identifier()
+            .await
+            .map_err(anyhow::Error::from)?)
     }
 
     pub async fn get_reference_gas_price_until_success(&self) -> u64 {
@@ -481,7 +494,11 @@ impl PeraClientInner for PeraSdkClient {
             "get_token_transfer_action_status",
         )
         .await
-        .and_then(|status_byte| BridgeActionStatus::try_from(status_byte).map_err(Into::into))
+        .and_then(|status_byte| {
+            BridgeActionStatus::try_from(status_byte)
+                .map_err(anyhow::Error::from)
+                .map_err(Into::into)
+        })
     }
 
     async fn get_token_transfer_action_onchain_signatures(
@@ -590,7 +607,8 @@ where
     let resp = pera_client
         .read_api()
         .dev_inspect_transaction_block(PeraAddress::ZERO, kind, None, None, None)
-        .await?;
+        .await
+        .map_err(anyhow::Error::from)?;
     let DevInspectResults {
         results, effects, ..
     } = resp;
