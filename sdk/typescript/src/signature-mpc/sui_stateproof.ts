@@ -25,16 +25,14 @@ import { presignWithDWalletID } from './sign.js';
 
 const packageId = '0x3';
 const suiStateProofModuleName = 'sui_state_proof';
-const suiDWalletCapModuleName = 'dwallet_test1';
+const suiDWalletCapModuleName = 'dwallet';
 const suiChainType = 'Sui';
 
 const SHA256 = 'SHA256';
 const GAS_BUDGET = 100_000_000;
 
 const dWalletCapPackageAddressInSui =
-	// '0x96c235dfd098a3e0404cfe5bf9c05bbc268b75649d051d4808019f5eb81d3eec';
-	// '0xecdd1511f3debf876e98534d44c638c6e77f21b92d82f464c6902d4b4a82a1ae';
-	'0x1a6dd0f1ed4bc7299ad82a272e5bbb0c8280d721ce89a7698b0260cb57dca4e2';
+	'0x8fa033eeb4d0e97e5558b2307f932b11c6e6f9cc4240b5285a3370bf25924a6f';
 
 type TxDataResponse = {
 	ckp_epoch_id: number;

@@ -162,7 +162,7 @@ pub fn sui_state_proof_verify_committee(
  * Implementation of the Move native function `sui_state_proof::sui_state_proof_verify_link_cap(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);`
  * gas cost: sui_state_proof_verify_link_cap_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
-const DWALLET_MODULE_NAME_IN_SUI: &'static str = "dwallet_test1";
+const DWALLET_MODULE_NAME_IN_SUI: &'static str = "dwallet";
 
 pub fn sui_state_proof_verify_link_cap(
     context: &mut NativeContext,
