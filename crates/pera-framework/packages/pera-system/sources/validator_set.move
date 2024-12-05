@@ -91,6 +91,16 @@ module pera_system::validator_set {
         tallying_rule_global_score: u64,
     }
 
+    public struct ValidatorDataForSecretShare has copy, drop, store {
+        class_groups_public_key_and_proof_bytes: vector<u8>,
+        protocol_pubkey_bytes: vector<u8>,
+    }
+
+    /// V2 of ValidatorEpochInfoEvent containing more information about the validator.
+    public struct LockedValidatorsEvent has copy, drop {
+        next_committee_validators: vector<ValidatorDataForSecretShare>
+    }
+
     /// Event emitted every time a new validator joins the committee.
     /// The epoch value corresponds to the first epoch this change takes place.
     public struct ValidatorJoinEvent has copy, drop {
@@ -168,6 +178,13 @@ module pera_system::validator_set {
 
     // ==== functions to add or remove validators ====
     public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet) {
+        let validators_for_next_epoch = self.active_validators.map!(|validator| {
+            ValidatorDataForSecretShare {
+                class_groups_public_key_and_proof_bytes: validator.metadata.class_groups_public_key_and_proof_bytes,
+                protocol_pubkey_bytes: validator.metadata.protocol_pubkey_bytes,
+            }
+        });
+        event::emit(LockedValidatorsEvent { next_committee_validators: validators_for_next_epoch });
         self.locked = true;
     }
 
