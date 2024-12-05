@@ -24,13 +24,13 @@ export type { IntentScope } from './intent.js';
 export {
 	PRIVATE_KEY_SIZE,
 	LEGACY_PRIVATE_KEY_SIZE,
-	SUI_PRIVATE_KEY_PREFIX,
+	IKA_PRIVATE_KEY_PREFIX,
 	type ParsedKeypair,
 	type SignatureWithBytes,
 	Signer,
 	Keypair,
-	decodeSuiPrivateKey,
-	encodeSuiPrivateKey,
+	decodeIkaPrivateKey,
+	encodeIkaPrivateKey,
 } from './keypair.js';
 
 export { PublicKey } from './publickey.js';

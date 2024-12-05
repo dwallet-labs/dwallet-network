@@ -4,13 +4,13 @@
 import type {
 	MoveStruct,
 	MoveValue,
-	SuiMoveAbility,
-	SuiMoveNormalizedFunction,
-	SuiMoveNormalizedModule,
-	SuiMoveNormalizedStruct,
-	SuiMoveNormalizedType,
-} from '@mysten/sui/client';
-import { normalizeSuiAddress, parseStructTag } from '@mysten/sui/utils';
+	IkaMoveAbility,
+	IkaMoveNormalizedFunction,
+	IkaMoveNormalizedModule,
+	IkaMoveNormalizedStruct,
+	IkaMoveNormalizedType,
+} from '@ika-io/ika/client';
+import { normalizeIkaAddress, parseStructTag } from '@ika-io/ika/utils';
 
 import type {
 	Rpc_Move_Function_FieldsFragment,
@@ -57,7 +57,7 @@ export function mapOpenMoveType(type: { ref?: '&' | '&mut'; body: OpenMoveTypeSi
 	return body;
 }
 
-export function mapNormalizedType(type: OpenMoveTypeSignatureBody): SuiMoveNormalizedType {
+export function mapNormalizedType(type: OpenMoveTypeSignatureBody): IkaMoveNormalizedType {
 	switch (type) {
 		case 'address':
 			return 'Address';
@@ -105,7 +105,7 @@ export function mapNormalizedType(type: OpenMoveTypeSignatureBody): SuiMoveNorma
 
 export function mapNormalizedMoveFunction(
 	fn: Rpc_Move_Function_FieldsFragment,
-): SuiMoveNormalizedFunction {
+): IkaMoveNormalizedFunction {
 	return {
 		visibility: `${fn.visibility?.[0]}${fn.visibility?.slice(1).toLowerCase()}` as never,
 		isEntry: fn.isEntry!,
@@ -114,7 +114,7 @@ export function mapNormalizedMoveFunction(
 				abilities:
 					param.constraints?.map(
 						(constraint) =>
-							`${constraint[0]}${constraint.slice(1).toLowerCase()}` as SuiMoveAbility,
+							`${constraint[0]}${constraint.slice(1).toLowerCase()}` as IkaMoveAbility,
 					) ?? [],
 			})) ?? [],
 		return: fn.return?.map((param) => mapOpenMoveType(param.signature)) ?? [],
@@ -124,12 +124,12 @@ export function mapNormalizedMoveFunction(
 
 export function mapNormalizedMoveStruct(
 	struct: Rpc_Move_Struct_FieldsFragment,
-): SuiMoveNormalizedStruct {
+): IkaMoveNormalizedStruct {
 	return {
 		abilities: {
 			abilities:
 				struct.abilities?.map(
-					(ability) => `${ability[0]}${ability.slice(1).toLowerCase()}` as SuiMoveAbility,
+					(ability) => `${ability[0]}${ability.slice(1).toLowerCase()}` as IkaMoveAbility,
 				) ?? [],
 		},
 		fields:
@@ -143,7 +143,7 @@ export function mapNormalizedMoveStruct(
 				constraints: {
 					abilities: param.constraints?.map(
 						(constraint) =>
-							`${constraint[0]}${constraint.slice(1).toLowerCase()}` as SuiMoveAbility,
+							`${constraint[0]}${constraint.slice(1).toLowerCase()}` as IkaMoveAbility,
 					),
 				},
 			})) ?? [],
@@ -153,9 +153,9 @@ export function mapNormalizedMoveStruct(
 export function mapNormalizedMoveModule(
 	module: Rpc_Move_Module_FieldsFragment,
 	address: string,
-): SuiMoveNormalizedModule {
-	const exposedFunctions: Record<string, SuiMoveNormalizedFunction> = {};
-	const structs: Record<string, SuiMoveNormalizedStruct> = {};
+): IkaMoveNormalizedModule {
+	const exposedFunctions: Record<string, IkaMoveNormalizedFunction> = {};
+	const structs: Record<string, IkaMoveNormalizedStruct> = {};
 
 	module.functions?.nodes
 		.filter((func) => func.visibility === 'PUBLIC' || func.isEntry || func.visibility === 'FRIEND')
@@ -211,19 +211,19 @@ export type MoveTypeLayout =
 
 export function moveDataToRpcContent(data: MoveData, layout: MoveTypeLayout): MoveValue {
 	if ('Address' in data) {
-		return normalizeSuiAddress(
+		return normalizeIkaAddress(
 			data.Address.map((byte) => byte.toString(16).padStart(2, '0')).join(''),
 		);
 	}
 
 	if ('UID' in data) {
 		return {
-			id: normalizeSuiAddress(data.UID.map((byte) => byte.toString(16).padStart(2, '0')).join('')),
+			id: normalizeIkaAddress(data.UID.map((byte) => byte.toString(16).padStart(2, '0')).join('')),
 		};
 	}
 
 	if ('ID' in data) {
-		return normalizeSuiAddress(data.ID.map((byte) => byte.toString(16).padStart(2, '0')).join(''));
+		return normalizeIkaAddress(data.ID.map((byte) => byte.toString(16).padStart(2, '0')).join(''));
 	}
 
 	if ('Bool' in data) {
@@ -265,7 +265,7 @@ export function moveDataToRpcContent(data: MoveData, layout: MoveTypeLayout): Mo
 			result[name] = moveDataToRpcContent(item.value, itemLayout);
 		});
 
-		// https://github.com/MystenLabs/sui/blob/5849f6845a3ab9fdb4c17523994adad461478a4c/crates/sui-json-rpc-types/src/sui_move.rs#L481
+		// https://github.com/MystenLabs/sui/blob/5849f6845a3ab9fdb4c17523994adad461478a4c/crates/ika-json-rpc-types/src/ika_move.rs#L481
 		const tag = parseStructTag(layout.struct.type);
 		const structName = `${toShortTypeString(tag.address)}::${tag.module}::${tag.name}`;
 

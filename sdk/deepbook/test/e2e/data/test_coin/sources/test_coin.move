@@ -3,10 +3,10 @@
 
 module test_coin::test {
     use std::option;
-    use sui::coin;
-    use sui::transfer;
-    use sui::url;
-    use sui::tx_context::{Self, TxContext};
+    use ika::coin;
+    use ika::transfer;
+    use ika::url;
+    use ika::tx_context::{Self, TxContext};
 
     public struct TEST has drop {}
 
@@ -17,7 +17,7 @@ module test_coin::test {
             b"TEST",
             b"Test Coin",
             b"Test coin metadata",
-            option::some(url::new_unsafe_from_bytes(b"http://sui.io")),
+            option::some(url::new_unsafe_from_bytes(b"http://ika.io")),
             ctx
         );
 

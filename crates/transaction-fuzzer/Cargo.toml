@@ -19,13 +19,13 @@ tokio = { workspace = true, features = ["full"] }
 tracing.workspace = true
 
 once_cell.workspace = true
-sui-core.workspace = true
-sui-protocol-config.workspace = true
-sui-types = { workspace = true, features = ["fuzzing"] }
-sui-move-build.workspace = true
+ika-core.workspace = true
+ika-protocol-config.workspace = true
+ika-types = { workspace = true, features = ["fuzzing"] }
+ika-move-build.workspace = true
 
 
 [dev-dependencies]
-sui-core = { workspace = true, features = ["test-utils"] }
-sui-protocol-config.workspace = true
-sui-types = { workspace = true, features = ["test-utils"] }
+ika-core = { workspace = true, features = ["test-utils"] }
+ika-protocol-config.workspace = true
+ika-types = { workspace = true, features = ["test-utils"] }

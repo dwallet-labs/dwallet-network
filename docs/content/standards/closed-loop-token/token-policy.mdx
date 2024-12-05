@@ -9,7 +9,7 @@ title: Token Policy
 You create a new `TokenPolicy` using the `token::new_policy` function. The function takes the `TreasuryCap` as an argument and returns a `TokenPolicy` object and a managing capability.
 
 ```move
-// module: sui::token
+// module: ika::token
 public fun new_policy<T>(
     treasury_cap: &TreasuryCap<T>,
     ctx: &mut TxContext
@@ -23,7 +23,7 @@ You must use the `token::share_policy` function to share the `TokenPolicy` objec
 To allow methods without any conditions, use the `token::allow` function. The function takes a `TokenPolicy` and `TokenPolicyCap` as arguments. If allowed, the action can be confirmed in the `TokenPolicy` using the `token::confirm_request` function (see [`ActionRequest`](./action-request.mdx#confirming-with-tokenpolicy)).
 
 ```move
-// module sui::token
+// module ika::token
 public fun allow<T>(
     policy: &mut TokenPolicy<T>,
     policy_cap: &TokenPolicyCap<T>,
@@ -56,7 +56,7 @@ TokenPolicy
 To add a rule for an action, use the `token::add_rule_for_action` function. The function takes a `TokenPolicy` and `TokenPolicyCap` as arguments. The rule is specified by its type (for example, `0x0...::denylist::Denylist`).
 
 ```move
-// module: sui::token
+// module: ika::token
 public fun add_rule_for_action<T, Rule: drop>(
     policy: &mut TokenPolicy<T>,
     policy_cap: &TokenPolicyCap<T>,
@@ -72,7 +72,7 @@ Signature for the reverse operation `token::remove_rule_for_action` is symmetric
 Spent balance can be consumed from the `TokenPolicy` using the `token::flush` function. It requires a `TreasuryCap`.
 
 ```move
-// module sui::token
+// module ika::token
 public fun flush<T>(
     policy: &mut TokenPolicy<T>,
     treasury_cap: &mut TreasuryCap<T>,

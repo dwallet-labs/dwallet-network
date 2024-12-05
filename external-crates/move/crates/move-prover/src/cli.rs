@@ -447,7 +447,7 @@ impl Options {
                     .long("stable-test-output")
                     .action(clap::ArgAction::SetTrue)
                     .help("instruct the prover to produce output in diagnosis which is stable \
-                     and suitable for baseline tests. This redacts values in diagnosis which might\
+                     and ikatable for baseline tests. This redacts values in diagnosis which might\
                      be non-deterministic, and may do other things to keep output stable.")
             )
             .arg(

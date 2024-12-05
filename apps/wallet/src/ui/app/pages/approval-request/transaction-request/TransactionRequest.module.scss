@@ -11,7 +11,7 @@
 		height: 31px;
 		display: flex;
 		justify-content: center;
-		color: colors.$sui-blue-steel-darker;
+		color: colors.$ika-blue-steel-darker;
 		padding: 10px 0;
 		font-weight: 600;
 		font-size: 11px;
@@ -37,7 +37,7 @@
 
 		.tx-type-header-status {
 			font-weight: 600;
-			color: colors.$sui-blue-steel-dark;
+			color: colors.$ika-blue-steel-dark;
 		}
 	}
 
@@ -46,7 +46,7 @@
 		display: flex;
 		justify-content: space-between;
 		padding-top: 10px;
-		color: colors.$sui-blue-steel-dark;
+		color: colors.$ika-blue-steel-dark;
 
 		@include utils.typography('Primary/BodySmall-M');
 	}
@@ -89,7 +89,7 @@
 	line-height: 100%;
 
 	.label {
-		color: colors.$sui-blue-steel-dark;
+		color: colors.$ika-blue-steel-dark;
 		display: flex;
 		justify-content: flex-start;
 	}
@@ -120,7 +120,7 @@
 		padding: 8px 0;
 		padding-top: 0;
 		margin-bottom: -1px;
-		color: colors.$sui-blue-steel-darker;
+		color: colors.$ika-blue-steel-darker;
 		font-weight: 600;
 		font-size: 14px;
 		line-height: 100%;
@@ -144,7 +144,7 @@
 	font-weight: 500;
 	font-size: 13px;
 	line-height: 17px;
-	color: colors.$sui-blue-steel-dark;
+	color: colors.$ika-blue-steel-dark;
 	font-family: 'Red Hat Mono Variable', ui-monospace, monospace;
 	word-break: break-all;
 }
@@ -154,7 +154,7 @@
 	font-size: 13px;
 	line-height: 17px;
 	font-family: 'Red Hat Mono Variable', ui-monospace, monospace;
-	color: colors.$sui-dark-blue;
+	color: colors.$ika-dark-blue;
 	text-decoration: none;
 }
 
@@ -185,7 +185,7 @@
 	font-weight: 500;
 	text-decoration: none;
 	text-transform: lowercase;
-	color: colors.$sui-dark-blue;
+	color: colors.$ika-dark-blue;
 }
 
 .permissions-content {
@@ -210,11 +210,11 @@
 	}
 
 	.label {
-		color: colors.$sui-blue-steel-dark;
+		color: colors.$ika-blue-steel-dark;
 	}
 
 	.value {
-		color: colors.$sui-blue-steel-darker;
+		color: colors.$ika-blue-steel-darker;
 	}
 
 	.content-wrapper {

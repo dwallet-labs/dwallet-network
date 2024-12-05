@@ -6,10 +6,10 @@ This directory uses [fastcrypto](https://github.com/MystenLabs/fastcrypto) as it
 
 ## Quick Start
 The core protocols are written in Rust, but all benchmarking scripts are written in Python and run with [Fabric](http://www.fabfile.org/).
-To deploy and benchmark a testbed of four nodes on your local machine, clone the Sui repo and install the python dependencies:
+To deploy and benchmark a testbed of four nodes on your local machine, clone the Ika repo and install the python dependencies:
 ```
 $ git clone https://github.com/mystenlabs/sui.git
-$ cd sui/narwhal/benchmark
+$ cd ika/narwhal/benchmark
 $ pip install -r requirements.txt
 ```
 You also need to install [Clang](https://clang.llvm.org/) (required by RocksDB) and [tmux](https://linuxize.com/post/getting-started-with-tmux/#installing-tmux) (which runs all nodes and clients in the background). Finally, run a local benchmark using [Fabric](http://www.fabfile.org/):

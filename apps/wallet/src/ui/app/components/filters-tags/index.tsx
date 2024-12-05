@@ -8,7 +8,7 @@ import { NavLink } from 'react-router-dom';
 
 import st from './Filters.module.scss';
 
-const ELEMENT_ID = '#sui-apps-filters';
+const ELEMENT_ID = '#ika-apps-filters';
 
 // TODO: extend this interface to include params and functions for the filter tags
 export interface Props {

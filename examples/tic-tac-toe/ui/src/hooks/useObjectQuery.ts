@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSuiClientContext, useSuiClientQuery, UseSuiClientQueryOptions } from '@mysten/dapp-kit';
-import { GetObjectParams, SuiObjectResponse } from '@mysten/sui/client';
+import { useIkaClientContext, useIkaClientQuery, UseIkaClientQueryOptions } from '@mysten/dapp-kit';
+import { GetObjectParams, IkaObjectResponse } from '@ika-io/ika/client';
 import { useQueryClient, UseQueryResult } from '@tanstack/react-query';
 
-export type UseObjectQueryOptions = UseSuiClientQueryOptions<'getObject', SuiObjectResponse>;
-export type UseObjectQueryResponse = UseQueryResult<SuiObjectResponse, Error>;
+export type UseObjectQueryOptions = UseIkaClientQueryOptions<'getObject', IkaObjectResponse>;
+export type UseObjectQueryResponse = UseQueryResult<IkaObjectResponse, Error>;
 export type InvalidateUseObjectQuery = () => void;
 
 /**
@@ -17,9 +17,9 @@ export function useObjectQuery(
 	params: GetObjectParams,
 	options?: UseObjectQueryOptions,
 ): [UseObjectQueryResponse, InvalidateUseObjectQuery] {
-	const ctx = useSuiClientContext();
+	const ctx = useIkaClientContext();
 	const client = useQueryClient();
-	const response = useSuiClientQuery('getObject', params, options);
+	const response = useIkaClientQuery('getObject', params, options);
 
 	const invalidate = async () => {
 		await client.invalidateQueries({

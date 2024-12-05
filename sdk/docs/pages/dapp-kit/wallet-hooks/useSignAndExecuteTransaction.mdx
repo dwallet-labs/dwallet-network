@@ -25,7 +25,7 @@ function MyComponent() {
 								signAndExecuteTransaction(
 									{
 										transaction: new Transaction(),
-										chain: 'sui:devnet',
+										chain: 'ika:devnet',
 									},
 									{
 										onSuccess: (result) => {
@@ -59,14 +59,14 @@ you can pass a custom `execute` function.
 ```ts
 import {
 	ConnectButton,
-	useSuiClient,
+	useIkaClient,
 	useCurrentAccount,
 	useSignAndExecuteTransaction,
 } from '@mysten/dapp-kit';
 import { useState } from 'react';
 
 function MyComponent() {
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction({
 		execute: async ({ bytes, signature }) =>
 			await client.executeTransactionBlock({
@@ -95,7 +95,7 @@ function MyComponent() {
 								signAndExecuteTransaction(
 									{
 										transaction: new Transaction(),
-										chain: 'sui:devnet',
+										chain: 'ika:devnet',
 									},
 									{
 										onSuccess: (result) => {
@@ -124,5 +124,5 @@ function MyComponent() {
 - `execute`: (optional) A custom function to execute the transaction
 
 In addition to these options, you can also pass any options that the
-[SuiClient.signAndExecuteTransaction](/typedoc/classes/_mysten_sui.client.SuiClient.html#signAndExecuteTransactionBlock)
+[IkaClient.signAndExecuteTransaction](/typedoc/classes/_mysten_ika.client.IkaClient.html#signAndExecuteTransactionBlock)
 method accepts.

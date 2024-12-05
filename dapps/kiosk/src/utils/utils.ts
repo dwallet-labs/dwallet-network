@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { KioskListing, KioskOwnerCap } from '@mysten/kiosk';
-import { SuiObjectResponse } from '@mysten/sui/client';
-import { MIST_PER_SUI, normalizeSuiAddress } from '@mysten/sui/utils';
+import { IkaObjectResponse } from '@ika-io/ika/client';
+import { NIKA_PER_IKA, normalizeIkaAddress } from '@ika-io/ika/utils';
 
 // Parse the display of a list of objects into a simple {object_id: display} map
 // to use throughout the app.
 export const parseObjectDisplays = (
-	data: SuiObjectResponse[],
+	data: IkaObjectResponse[],
 ): Record<string, Record<string, string> | undefined> => {
 	return data.reduce<Record<string, Record<string, string> | undefined>>(
-		(acc, item: SuiObjectResponse) => {
+		(acc, item: IkaObjectResponse) => {
 			const display = item.data?.display?.data;
 			const id = item.data?.objectId!;
 			acc[id] = display || undefined;
@@ -33,12 +33,12 @@ export const processKioskListings = (data: KioskListing[]): Record<string, Kiosk
 	return results;
 };
 
-export const mistToSui = (mist: bigint | string | undefined) => {
-	if (!mist) return 0;
-	return Number(mist || 0) / Number(MIST_PER_SUI);
+export const nikaToIka = (nika: bigint | string | undefined) => {
+	if (!nika) return 0;
+	return Number(nika || 0) / Number(NIKA_PER_IKA);
 };
 
-export const formatSui = (amount: number) => {
+export const formatIka = (amount: number) => {
 	return new Intl.NumberFormat('en-US', {
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 5,
@@ -53,5 +53,5 @@ export const findActiveCap = (
 	caps: KioskOwnerCap[] = [],
 	kioskId: string,
 ): KioskOwnerCap | undefined => {
-	return caps.find((x) => normalizeSuiAddress(x.kioskId) === normalizeSuiAddress(kioskId));
+	return caps.find((x) => normalizeIkaAddress(x.kioskId) === normalizeIkaAddress(kioskId));
 };

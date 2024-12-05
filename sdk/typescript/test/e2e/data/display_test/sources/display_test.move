@@ -4,10 +4,10 @@
 module display_test::boars;
 
 use std::string::{utf8, String};
-use sui::display;
-use sui::package;
-use sui::tx_context::sender;
-use sui::url::{Self, Url};
+use ika::display;
+use ika::package;
+use ika::tx_context::sender;
+use ika::url::{Self, Url};
 
 /// For when a witness type passed is not an OTW.
 const ENotOneTimeWitness: u64 = 0;
@@ -32,7 +32,7 @@ public struct Metadata has store {
 }
 
 fun init(otw: BOARS, ctx: &mut TxContext) {
-    assert!(sui::types::is_one_time_witness(&otw), ENotOneTimeWitness);
+    assert!(ika::types::is_one_time_witness(&otw), ENotOneTimeWitness);
 
     let pub = package::claim(otw, ctx);
     let mut display = display::new<Boar>(&pub, ctx);

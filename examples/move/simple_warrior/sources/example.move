@@ -38,7 +38,7 @@ module simple_warrior::example {
     }
 
     // === Tests ===
-    #[test_only] use sui::test_scenario as ts;
+    #[test_only] use ika::test_scenario as ts;
 
     #[test]
     fun test_equip_empty() {

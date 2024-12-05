@@ -1,0 +1,22 @@
+[package]
+name = "ika-verifier-latest"
+version = "0.1.0"
+edition = "2021"
+authors = ["Mysten Labs <eng@mystenlabs.com>"]
+description = "Move framework for Ika platform"
+license = "Apache-2.0"
+publish = false
+
+[dependencies]
+move-binary-format.workspace = true
+move-bytecode-utils.workspace = true
+move-bytecode-verifier-meter.workspace = true
+move-core-types.workspace = true
+move-vm-config.workspace = true
+move-abstract-stack.workspace = true
+
+move-abstract-interpreter = { path = "../../../external-crates/move/crates/move-abstract-interpreter" }
+move-bytecode-verifier = { path = "../../../external-crates/move/crates/move-bytecode-verifier" }
+
+ika-types.workspace = true
+ika-protocol-config.workspace = true

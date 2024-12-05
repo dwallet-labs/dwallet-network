@@ -5,23 +5,23 @@ import { beforeAll, describe, expect, test } from 'vitest';
 
 import {
 	getFullnodeUrl,
-	SuiClient,
-	SuiObjectData,
-	SuiTransactionBlockResponse,
+	IkaClient,
+	IkaObjectData,
+	IkaTransactionBlockResponse,
 } from '../../typescript/src/client/index.js';
 import { Transaction } from '../../typescript/src/transactions/index.js';
 import { publishPackage, setup, TestToolbox } from '../../typescript/test/e2e/utils/setup';
-import { SuiClientGraphQLTransport } from '../src/transport';
+import { IkaClientGraphQLTransport } from '../src/transport';
 
 const DEFAULT_GRAPHQL_URL = import.meta.env.DEFAULT_GRAPHQL_URL ?? 'http:127.0.0.1:9125';
 
-describe('GraphQL SuiClient compatibility', () => {
+describe('GraphQL IkaClient compatibility', () => {
 	let toolbox: TestToolbox;
 	let transactionBlockDigest: string;
 	let packageId: string;
 	let parentObjectId: string;
-	const graphQLClient = new SuiClient({
-		transport: new SuiClientGraphQLTransport({
+	const graphQLClient = new IkaClient({
+		transport: new IkaClientGraphQLTransport({
 			url: DEFAULT_GRAPHQL_URL,
 			fallbackFullNodeUrl: getFullnodeUrl('localnet'),
 		}),
@@ -40,7 +40,7 @@ describe('GraphQL SuiClient compatibility', () => {
 				filter: { StructType: `${packageId}::dynamic_fields_test::Test` },
 			})
 			.then(function (objects) {
-				const data = objects.data[0].data as SuiObjectData;
+				const data = objects.data[0].data as IkaObjectData;
 				parentObjectId = data.objectId;
 			});
 
@@ -122,11 +122,11 @@ describe('GraphQL SuiClient compatibility', () => {
 
 	test('getCoinMetadata', async () => {
 		const rpcMetadata = await toolbox.client.getCoinMetadata({
-			coinType: '0x02::sui::SUI',
+			coinType: '0x02::ika::IKA',
 		});
 
 		const graphQLMetadata = await graphQLClient!.getCoinMetadata({
-			coinType: '0x02::sui::SUI',
+			coinType: '0x02::ika::IKA',
 		});
 
 		expect(graphQLMetadata).toEqual(rpcMetadata);
@@ -134,11 +134,11 @@ describe('GraphQL SuiClient compatibility', () => {
 
 	test('getTotalSupply', async () => {
 		const rpcSupply = await toolbox.client.getTotalSupply({
-			coinType: '0x02::sui::SUI',
+			coinType: '0x02::ika::IKA',
 		});
 
 		const graphQLgetTotalSupply = await graphQLClient!.getTotalSupply({
-			coinType: '0x02::sui::SUI',
+			coinType: '0x02::ika::IKA',
 		});
 
 		expect(graphQLgetTotalSupply).toEqual(rpcSupply);
@@ -284,7 +284,7 @@ describe('GraphQL SuiClient compatibility', () => {
 		const {
 			data: [{ coinObjectId: id, version }],
 		} = await toolbox.getGasObjectsOwnedByAddress();
-		const fullNodeClient = new SuiClient({
+		const fullNodeClient = new IkaClient({
 			url: getFullnodeUrl('localnet'),
 		});
 
@@ -399,7 +399,7 @@ describe('GraphQL SuiClient compatibility', () => {
 				showObjectChanges: true,
 				showRawInput: true,
 			},
-		})) as SuiTransactionBlockResponse & { rawEffects: unknown };
+		})) as IkaTransactionBlockResponse & { rawEffects: unknown };
 		const graphQLTransactionBlock = await graphQLClient!.getTransactionBlock({
 			digest: transactionBlockDigest,
 			options: {
@@ -477,18 +477,18 @@ describe('GraphQL SuiClient compatibility', () => {
 			owner: toolbox.address(),
 		});
 		const rpc = await toolbox.client.getStakesByIds({
-			stakedSuiIds: [stakes[0].stakes[0].stakedSuiId],
+			stakedIkaIds: [stakes[0].stakes[0].stakedIkaId],
 		});
 		const graphql = await graphQLClient!.getStakesByIds({
-			stakedSuiIds: [stakes[0].stakes[0].stakedSuiId],
+			stakedIkaIds: [stakes[0].stakes[0].stakedIkaId],
 		});
 
 		expect(graphql).toEqual(rpc);
 	});
 
-	test.skip('getLatestSuiSystemState', async () => {
-		const rpc = await toolbox.client.getLatestSuiSystemState();
-		const graphql = await graphQLClient!.getLatestSuiSystemState();
+	test.skip('getLatestIkaSystemState', async () => {
+		const rpc = await toolbox.client.getLatestIkaSystemState();
+		const graphql = await graphQLClient!.getLatestIkaSystemState();
 
 		expect(graphql).toEqual(rpc);
 	});
@@ -606,7 +606,7 @@ describe('GraphQL SuiClient compatibility', () => {
 					showObjectChanges: true,
 					showRawInput: true,
 				},
-			})) as SuiTransactionBlockResponse & { rawEffects: unknown };
+			})) as IkaTransactionBlockResponse & { rawEffects: unknown };
 
 		expect(graphql).toEqual(rpc);
 	});
@@ -737,10 +737,10 @@ describe('GraphQL SuiClient compatibility', () => {
 
 	test('resolveNameServiceAddress', async () => {
 		const rpc = await toolbox.client.resolveNameServiceAddress({
-			name: 'test.sui',
+			name: 'test.ika',
 		});
 		const graphql = await graphQLClient!.resolveNameServiceAddress({
-			name: 'test.sui',
+			name: 'test.ika',
 		});
 
 		expect(graphql).toEqual(rpc);

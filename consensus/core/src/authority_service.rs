@@ -8,7 +8,7 @@ use bytes::Bytes;
 use consensus_config::AuthorityIndex;
 use futures::{ready, stream, task, Stream, StreamExt};
 use parking_lot::RwLock;
-use sui_macros::fail_point_async;
+use ika_macros::fail_point_async;
 use tokio::{sync::broadcast, time::sleep};
 use tokio_util::sync::ReusableBoxFuture;
 use tracing::{debug, info, trace, warn};

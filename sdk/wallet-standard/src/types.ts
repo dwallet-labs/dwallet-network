@@ -9,7 +9,7 @@ export interface GasData {
 	price: string | number | null;
 	/** The owner of the gas coins used to fund the transactions, this is either the sender or the gas sponsor */
 	owner: string | null;
-	/** The list of SUI coins to fund the transaction */
+	/** The list of IKA coins to fund the transaction */
 	payment: { objectId: string; version: string; digest: string }[] | null;
 }
 

@@ -24,7 +24,7 @@ use std::{
     time::Duration,
 };
 use storage::{CertificateStore, PayloadStore};
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use tokio::task::spawn_blocking;
 use tokio::time::Instant;
 use tokio::{

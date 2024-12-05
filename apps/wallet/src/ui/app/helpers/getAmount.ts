@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { SuiEvent, SuiTransactionBlockKind, TransactionEffects } from '@mysten/sui/client';
+import type { IkaEvent, IkaTransactionBlockKind, TransactionEffects } from '@ika-io/ika/client';
 
 type FormattedBalance = {
 	amount?: number | null;
@@ -10,9 +10,9 @@ type FormattedBalance = {
 }[];
 
 export function getAmount(
-	_txnData: SuiTransactionBlockKind,
+	_txnData: IkaTransactionBlockKind,
 	_txnEffect: TransactionEffects,
-	_events: SuiEvent[],
+	_events: IkaEvent[],
 ): FormattedBalance | null {
 	// TODO: Support programmable transactions:
 	return null;

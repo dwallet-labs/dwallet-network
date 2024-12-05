@@ -1,0 +1,18 @@
+[package]
+name = "ika-test-transaction-builder"
+version = "0.1.0"
+authors = ["Mysten Labs <build@mystenlabs.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+bcs.workspace = true
+
+shared-crypto.workspace = true
+ika-genesis-builder.workspace = true
+ika-move-build.workspace = true
+ika-sdk.workspace = true
+ika-types.workspace = true
+
+move-core-types.workspace = true

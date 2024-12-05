@@ -8,7 +8,7 @@ This section shows how to construct and execute a trade on the DeepBook protocol
 
 ## Create a pool {#create-pool}
 
-When you create a pool in DeepBook, you need to specify the `BaseAsset`, `QuoteAsset`, `tick_size`, and `lot_size`. You also need to pay a transaction fee (in SUI) to create a pool.
+When you create a pool in DeepBook, you need to specify the `BaseAsset`, `QuoteAsset`, `tick_size`, and `lot_size`. You also need to pay a transaction fee (in IKA) to create a pool.
 
 **Function signature for `create_pool` in Move contract**
 
@@ -18,14 +18,14 @@ When you create a pool in DeepBook, you need to specify the `BaseAsset`, `QuoteA
 ///   0. `[registry]` Object ID refers to the pool registry
 ///   1. `[tick_size]` Minimal Price Change Accuracy of this pool
 ///   2. `[lot_size]` Minimal lot Change Accuracy of this pool
-///   3. `[coin]` Object ID of the sui coin, to pay fee for create pool (100 MIST sui charged)
+///   3. `[coin]` Object ID of the ika coin, to pay fee for create pool (100 NIKA ika charged)
 
 /// Returns the AccountCap
-public fun create_pool<BaseAsset, QuoteAsset, SUI>(
+public fun create_pool<BaseAsset, QuoteAsset, IKA>(
     registry: &mut Registry,
     tick_size: u64,
     lot_size: u64,
-    coin: Coin<SUI>,
+    coin: Coin<IKA>,
     ctx: &mut TxContext,
 )
 ```
@@ -51,10 +51,10 @@ public createPool(
 ): TransactionBlock {
     const coinType1 = convertToTokenType(token1, this.records);
     const coinType2 = convertToTokenType(token2, this.records);
-    // we have to split sui as a param into the code
+    // we have to split ika as a param into the code
     const [coin] = overrides.txb.splitCoins(overrides.txb.gas, [overrides.txb.pure(200000000)]);
     overrides.txb.moveCall({
-        typeArguments: [coinType1, coinType2, '0x2::sui::SUI'],
+        typeArguments: [coinType1, coinType2, '0x2::ika::IKA'],
         target: `${this.configs.swapPackageId}::clob::create_pool`,
         arguments: [
             overrides.txb.object(String(this.configs.registryId)),
@@ -76,15 +76,15 @@ For limit order, you need to create a custodian account the first time you inter
 
 ### Scaling precision {#scaling-precision}
 
-Tokens are created with different decimal precision. For example, SUI has nine decimals of precision, while the wormhole wrapped ethereum USDC has
+Tokens are created with different decimal precision. For example, IKA has nine decimals of precision, while the wormhole wrapped ethereum USDC has
 six decimals of precision. To accommodate proper pricing within DeepBook, every decimal is scaled with 10^9 precision. All the decimals in DeepBook
 meet the equation: `10^9 \* (priceInRealWorld/priceInDeepBook) = (10^baseAssetDecimal) / (10^quoteAssetDecimal)`.
 
-Let's walk through an example between SUI/USDC. For this example, assume Sui price is $1.10 and is the base asset
-of the SUI/USDC trading pair.
+Let's walk through an example between IKA/USDC. For this example, assume Ika price is $1.10 and is the base asset
+of the IKA/USDC trading pair.
 
-Thus, the calculation is `10^9 \* (1.10/ P_d) = 1000`, where `P_d` should be the price of sui in the DeepBook SUI/USDC trading pair. You can solve for `P_d = 1100000`,
-so if the user wants to sell SUI at the market price in DeepBook, they should enter a price with six decimal points of precision.
+Thus, the calculation is `10^9 \* (1.10/ P_d) = 1000`, where `P_d` should be the price of ika in the DeepBook IKA/USDC trading pair. You can solve for `P_d = 1100000`,
+so if the user wants to sell IKA at the market price in DeepBook, they should enter a price with six decimal points of precision.
 
 ### Limit order {#limit-order}
 
@@ -115,13 +115,13 @@ Before placing a limit order, traders need to host a custodian account with asse
 ```mermaid
 flowchart LR
  A((user_address\n0x1234\ncustodian_cap_address\n0xABCD))
- subgraph Sui_blockchain
+ subgraph Ika_blockchain
     direction TB
     B["account_balances: Table&lt;address, Account&lt;T>>"]
-    C("<table><tbody><tr><td>0xABCD</td><td>5 SUI</td></tr><tr><td>0xBCDE</td><td>12 SUI</td></tr><tr><td>...</td><td>...</td></tr></tbody></table>")
+    C("<table><tbody><tr><td>0xABCD</td><td>5 IKA</td></tr><tr><td>0xBCDE</td><td>12 IKA</td></tr><tr><td>...</td><td>...</td></tr></tbody></table>")
  end
 
- A ----> Sui_blockchain
+ A ----> Ika_blockchain
 ```
 
 **Function signature for `create_account` in Move contract**
@@ -354,7 +354,7 @@ public placeLimitOrder(
             overrides.txb.pure(isBid),
             overrides.txb.pure(Math.floor(expireTimestamp)),
             overrides.txb.pure(restriction),
-            overrides.txb.object(normalizeSuiObjectId(this.configs.clock)),
+            overrides.txb.object(normalizeIkaObjectId(this.configs.clock)),
             typeof accountCap == "string" ? overrides.txb.object(accountCap) : accountCap,
         ],
     });
@@ -446,7 +446,7 @@ public async placeMarketOrder(
             arguments: [
                 overrides.txb.object(String(poolInfo.clob)),
                 _amount,
-                overrides.txb.object(normalizeSuiObjectId(this.configs.clock)),
+                overrides.txb.object(normalizeIkaObjectId(this.configs.clock)),
                 _tokenOut,
             ],
         });
@@ -463,7 +463,7 @@ public async placeMarketOrder(
                 _amount,
                 _tokenIn,
                 _tokenOut,
-                overrides.txb.object(normalizeSuiObjectId(this.configs.clock)),
+                overrides.txb.object(normalizeIkaObjectId(this.configs.clock)),
             ],
         });
     }

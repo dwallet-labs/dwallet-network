@@ -3,10 +3,10 @@
 import {
 	DryRunTransactionBlockResponse,
 	GasCostSummary,
-	SuiGasData,
-	SuiTransactionBlockResponse,
+	IkaGasData,
+	IkaTransactionBlockResponse,
 	TransactionEffects,
-} from '@mysten/sui/client';
+} from '@ika-io/ika/client';
 
 type Optional<T> = {
 	[K in keyof T]?: T[K];
@@ -14,7 +14,7 @@ type Optional<T> = {
 
 export type GasSummaryType =
 	| (GasCostSummary &
-			Optional<SuiGasData> & {
+			Optional<IkaGasData> & {
 				totalGas?: string;
 				owner?: string;
 				isSponsored: boolean;
@@ -23,7 +23,7 @@ export type GasSummaryType =
 	| null;
 
 export function getGasSummary(
-	transaction: SuiTransactionBlockResponse | DryRunTransactionBlockResponse,
+	transaction: IkaTransactionBlockResponse | DryRunTransactionBlockResponse,
 ): GasSummaryType {
 	const { effects } = transaction;
 	if (!effects) return null;

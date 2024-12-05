@@ -1,5 +1,5 @@
 .footer {
-  background-color: var(--sui-dark-blue-bkg);
+  background-color: var(--ika-dark-blue-bkg);
   padding: 7.5rem 1rem;
 }
 
@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  max-width: var(--sui-max-width-desktop);
+  max-width: var(--ika-max-width-desktop);
   margin: 0 auto;
 }
 .footerLogo a {
@@ -30,15 +30,15 @@
   line-height: .9375rem;
   letter-spacing: -0.02em;
   text-align: left;
-  color: var(--sui-gray);
+  color: var(--ika-gray);
   text-transform: uppercase;
 }
 .footerCopy a {
-  color: var(--sui-blue-primary);
+  color: var(--ika-blue-primary);
 }
 @media screen and (max-width: 940px) {
   .footer {
-    background-color: var(--sui-dark-blue-bkg);
+    background-color: var(--ika-dark-blue-bkg);
     padding: 4.5rem 0;
   }
   .footerWrap {

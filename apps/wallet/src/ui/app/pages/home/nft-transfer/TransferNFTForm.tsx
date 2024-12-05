@@ -12,11 +12,11 @@ import { useActiveAccount } from '_src/ui/app/hooks/useActiveAccount';
 import { useQredoTransaction } from '_src/ui/app/hooks/useQredoTransaction';
 import { useSigner } from '_src/ui/app/hooks/useSigner';
 import { QredoActionIgnoredByUser } from '_src/ui/app/QredoSigner';
-import { useGetKioskContents, useSuiNSEnabled } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { useGetKioskContents, useIkaNSEnabled } from '@mysten/core';
+import { useIkaClient } from '@mysten/dapp-kit';
 import { ArrowRight16 } from '@mysten/icons';
-import { Transaction } from '@mysten/sui/transactions';
-import { isValidSuiNSName } from '@mysten/sui/utils';
+import { Transaction } from '@ika-io/ika/transactions';
+import { isValidIkaNSName } from '@ika-io/ika/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Field, Form, Formik } from 'formik';
 import { toast } from 'react-hot-toast';
@@ -33,9 +33,9 @@ export function TransferNFTForm({
 	objectType?: string | null;
 }) {
 	const activeAddress = useActiveAddress();
-	const rpc = useSuiClient();
-	const suiNSEnabled = useSuiNSEnabled();
-	const validationSchema = createValidationSchema(rpc, suiNSEnabled, activeAddress || '', objectId);
+	const rpc = useIkaClient();
+	const ikaNSEnabled = useIkaNSEnabled();
+	const validationSchema = createValidationSchema(rpc, ikaNSEnabled, activeAddress || '', objectId);
 	const activeAccount = useActiveAccount();
 	const signer = useSigner(activeAccount);
 	const queryClient = useQueryClient();
@@ -51,12 +51,12 @@ export function TransferNFTForm({
 				throw new Error('Missing data');
 			}
 
-			if (suiNSEnabled && isValidSuiNSName(to)) {
+			if (ikaNSEnabled && isValidIkaNSName(to)) {
 				const address = await rpc.resolveNameServiceAddress({
 					name: to,
 				});
 				if (!address) {
-					throw new Error('SuiNS name not found.');
+					throw new Error('IkaNS name not found.');
 				}
 				to = address;
 			}

@@ -22,7 +22,7 @@ const RefNav = (props) => {
               data-to-scrollspy-id={`${api
                 .replaceAll(/\s/g, "-")
                 .toLowerCase()}`}
-              className="hover:no-underline pt-4 block text-black dark:text-white hover:text-sui-blue dark:hover:text-sui-blue"
+              className="hover:no-underline pt-4 block text-black dark:text-white hover:text-ika-blue dark:hover:text-ika-blue"
             >
               {api}
             </Link>
@@ -31,7 +31,7 @@ const RefNav = (props) => {
               .map((method) => {
                 return (
                   <Link
-                    className="my-1 pl-4 block text-sui-gray-95 dark:text-sui-grey-35 hover:no-underline dark:hover:text-sui-blue"
+                    className="my-1 pl-4 block text-ika-gray-95 dark:text-ika-grey-35 hover:no-underline dark:hover:text-ika-blue"
                     key={`link-${method.name.toLowerCase()}`}
                     href={`#${method.name.toLowerCase()}`}
                     data-to-scrollspy-id={`${method.name.toLowerCase()}`}

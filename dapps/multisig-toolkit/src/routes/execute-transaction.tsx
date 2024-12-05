@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { parseSerializedSignature } from '@mysten/sui/cryptography';
+import { getFullnodeUrl, IkaClient } from '@ika-io/ika/client';
+import { parseSerializedSignature } from '@ika-io/ika/cryptography';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -23,10 +23,10 @@ export default function ExecuteTransaction() {
 	const [signature, setSignature] = useState('');
 
 	const rpcUrl = getFullnodeUrl(network);
-	const client = new SuiClient({
+	const client = new IkaClient({
 		url: rpcUrl,
 	});
-	//const client = useSuiClient();
+	//const client = useIkaClient();
 
 	const {
 		mutate,
@@ -118,11 +118,11 @@ export default function ExecuteTransaction() {
 				<TabsContent value="digest">
 					<Card key={digest}>
 						<CardHeader>
-							<CardTitle>Sui Transaction Digest</CardTitle>
+							<CardTitle>Ika Transaction Digest</CardTitle>
 							<CardDescription>
 								View TX Digest on{' '}
-								<a className="text-blue-500" href={`https://suiexplorer.com/txblock/${digest}`}>
-									Sui Explorer
+								<a className="text-blue-500" href={`https://ikaexplorer.com/txblock/${digest}`}>
+									Ika Explorer
 								</a>
 							</CardDescription>
 						</CardHeader>

@@ -32,6 +32,6 @@ mysten-metrics.workspace = true
 store = { path = "../../crates/typed-store", package = "typed-store" }
 telemetry-subscribers.workspace = true
 mysten-network.workspace = true
-sui-protocol-config.workspace = true
+ika-protocol-config.workspace = true
 
 anemo.workspace = true

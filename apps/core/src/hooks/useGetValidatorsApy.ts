@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSuiClient, useSuiClientQuery } from '@mysten/dapp-kit';
+import { useIkaClient, useIkaClientQuery } from '@mysten/dapp-kit';
 import { useQuery } from '@tanstack/react-query';
 
 import { roundFloat } from '../utils/roundFloat';
@@ -23,8 +23,8 @@ export interface ApyByValidator {
 const MINIMUM_THRESHOLD = 0.001;
 
 export function useGetValidatorsApy() {
-	const client = useSuiClient();
-	const { data: systemStateResponse, isFetched } = useSuiClientQuery('getLatestSuiSystemState');
+	const client = useIkaClient();
+	const { data: systemStateResponse, isFetched } = useIkaClientQuery('getLatestIkaSystemState');
 	return useQuery({
 		queryKey: ['get-rolling-average-apys'],
 		queryFn: () => client.getValidatorsApy(),

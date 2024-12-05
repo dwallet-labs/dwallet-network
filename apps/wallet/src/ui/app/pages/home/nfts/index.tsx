@@ -11,7 +11,7 @@ import { setToSessionStorage } from '_src/background/storage-utils';
 import { AssetFilterTypes, useGetNFTs } from '_src/ui/app/hooks/useGetNFTs';
 import PageTitle from '_src/ui/app/shared/PageTitle';
 import { useOnScreen } from '@mysten/core';
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { normalizeStructTag } from '@ika-io/ika/utils';
 import { useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 

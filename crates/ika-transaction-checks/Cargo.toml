@@ -1,0 +1,17 @@
+[package]
+name = "ika-transaction-checks"
+version = "0.1.0"
+authors = ["Mysten Labs <build@mystenlabs.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+once_cell.workspace = true
+ika-macros.workspace = true
+ika-config.workspace = true
+ika-protocol-config.workspace = true
+ika-types.workspace = true
+tracing.workspace = true
+ika-execution.workspace = true
+fastcrypto-zkp.workspace = true

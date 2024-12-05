@@ -18,7 +18,7 @@ use network::WorkerRpc;
 use prometheus::IntGauge;
 use rand::{rngs::ThreadRng, seq::SliceRandom};
 use store::{rocks::DBMap, Map};
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use tokio::{
     select,
     time::{sleep, sleep_until, Instant},

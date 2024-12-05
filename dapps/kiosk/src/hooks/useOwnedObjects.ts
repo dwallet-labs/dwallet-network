@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 /* eslint-disable @tanstack/query/exhaustive-deps */
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import { PaginatedObjectsResponse } from '@mysten/sui/client';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { PaginatedObjectsResponse } from '@ika-io/ika/client';
 import { useQuery } from '@tanstack/react-query';
 
 import { TANSTACK_OWNED_OBJECTS_KEY } from '../utils/constants';
@@ -18,7 +18,7 @@ export function useOwnedObjects({
 	cursor?: string;
 	limit?: number;
 }) {
-	const provider = useSuiClient();
+	const provider = useIkaClient();
 
 	return useQuery({
 		queryKey: [TANSTACK_OWNED_OBJECTS_KEY, address],

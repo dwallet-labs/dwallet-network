@@ -1,7 +1,7 @@
 {
   "name": "move",
   "displayName": "Move",
-  "description": "A Move language integrated development environment for Sui.",
+  "description": "A Move language integrated development environment for Ika.",
   "publisher": "mysten",
   "icon": "images/move.png",
   "license": "Apache-2.0",
@@ -22,7 +22,7 @@
   ],
   "keywords": [
     "move",
-    "Sui",
+    "Ika",
     "Mysten"
   ],
   "main": "./out/src/main.js",
@@ -79,16 +79,16 @@
           ],
           "scope": "machine-overridable",
           "default": null,
-          "markdownDescription": "Path to rust-analyzer executable (points to `~/.sui/bin/move-analyzer` by default)."
+          "markdownDescription": "Path to rust-analyzer executable (points to `~/.ika/bin/move-analyzer` by default)."
         },
-        "move.sui.path": {
+        "move.ika.path": {
           "type": [
             "null",
             "string"
           ],
           "scope": "machine-overridable",
           "default": null,
-          "markdownDescription": "Path to Sui executable (by default assumes that `sui` is on the systems path)."
+          "markdownDescription": "Path to Ika executable (by default assumes that `ika` is on the systems path)."
         },
         "move.trace.server": {
           "type": "string",

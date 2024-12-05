@@ -3,8 +3,8 @@
 
 /// A flash loan that works for any Coin type
 module flash_lender::example {
-    use sui::balance::{Self, Balance};
-    use sui::coin::{Self, Coin};
+    use ika::balance::{Self, Balance};
+    use ika::coin::{Self, Coin};
 
     /// A shared object offering flash loans to any buyer willing to pay `fee`.
     public struct FlashLender<phantom T> has key {
@@ -176,8 +176,8 @@ module flash_lender::example {
     }
 
     // === Tests ===
-    #[test_only] use sui::sui::SUI;
-    #[test_only] use sui::test_scenario as ts;
+    #[test_only] use ika::ika::IKA;
+    #[test_only] use ika::test_scenario as ts;
 
     #[test_only] const ADMIN: address = @0xAD;
     #[test_only] const ALICE: address = @0xA;
@@ -189,7 +189,7 @@ module flash_lender::example {
         // Admin creates a flash lender with 100 coins and a fee of 1 coin.
         {
             ts::next_tx(&mut ts, ADMIN);
-            let coin = coin::mint_for_testing<SUI>(100, ts::ctx(&mut ts));
+            let coin = coin::mint_for_testing<IKA>(100, ts::ctx(&mut ts));
             let bal = coin::into_balance(coin);
             let cap = new(bal, 1, ts::ctx(&mut ts));
             transfer::public_transfer(cap, ADMIN);
@@ -203,7 +203,7 @@ module flash_lender::example {
             let (loan, receipt) = loan(&mut lender, 10, ts::ctx(&mut ts));
 
             // Simulate Alice making enough profit to repay.
-            let mut profit = coin::mint_for_testing<SUI>(1, ts::ctx(&mut ts));
+            let mut profit = coin::mint_for_testing<IKA>(1, ts::ctx(&mut ts));
             coin::join(&mut profit, loan);
 
             repay(&mut lender, profit, receipt);
@@ -214,7 +214,7 @@ module flash_lender::example {
         {
             ts::next_tx(&mut ts, ADMIN);
             let cap = ts::take_from_sender(&ts);
-            let mut lender: FlashLender<SUI> = ts::take_shared(&ts);
+            let mut lender: FlashLender<IKA> = ts::take_shared(&ts);
 
             // Max loan increased because of the fee payment
             assert!(max_loan(&lender) == 101, 0);

@@ -3,7 +3,7 @@
 
 import {
 	ConnectButton,
-	SuiClientProvider,
+	IkaClientProvider,
 	useAccounts,
 	useAutoConnectWallet,
 	useConnectWallet,
@@ -17,8 +17,8 @@ import {
 	useWallets,
 	WalletProvider,
 } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { getFullnodeUrl } from '@ika-io/ika/client';
+import { Transaction } from '@ika-io/ika/transactions';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
@@ -242,7 +242,7 @@ export const UseSignTransactionExample = withProviders(() => {
 								signTransaction(
 									{
 										transaction: new Transaction(),
-										chain: 'sui:devnet',
+										chain: 'ika:devnet',
 									},
 									{
 										onSuccess: (result) => {
@@ -279,7 +279,7 @@ export const UseSignAndExecuteTransactionExample = withProviders(() => {
 								signAndExecuteTransaction(
 									{
 										transaction: new Transaction(),
-										chain: 'sui:devnet',
+										chain: 'ika:devnet',
 									},
 									{
 										onSuccess: (result) => {
@@ -322,11 +322,11 @@ function withProviders(
 
 		return (
 			<QueryClientProvider client={queryClient}>
-				<SuiClientProvider networks={networks}>
+				<IkaClientProvider networks={networks}>
 					<WalletProvider {...walletProviderProps}>
 						<Component />
 					</WalletProvider>
-				</SuiClientProvider>
+				</IkaClientProvider>
 			</QueryClientProvider>
 		);
 	};

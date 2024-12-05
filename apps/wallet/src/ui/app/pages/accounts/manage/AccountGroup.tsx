@@ -110,7 +110,7 @@ function AccountFooter({ accountID, showExport }: { accountID: string; showExpor
 					{totalAccounts === 1 ? (
 						<div className="text-center">
 							<DialogDescription>
-								Removing this account will require you to set up your Sui wallet again.
+								Removing this account will require you to set up your Ika wallet again.
 							</DialogDescription>
 						</div>
 					) : null}

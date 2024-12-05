@@ -14,28 +14,28 @@ describe('Object id/Address/Transaction digest validation', () => {
 	});
 
 	//Test that with invalid object id/address/digest, functions will throw an error before making a request to the rpc server
-	it('Test all functions with invalid Sui Address', async () => {
+	it('Test all functions with invalid Ika Address', async () => {
 		//empty id
 		expect(toolbox.client.getOwnedObjects({ owner: '' })).rejects.toThrowError(
-			/Invalid Sui address/,
+			/Invalid Ika address/,
 		);
 	});
 
 	it('Test all functions with invalid Object Id', async () => {
 		//empty id
-		expect(toolbox.client.getObject({ id: '' })).rejects.toThrowError(/Invalid Sui Object id/);
+		expect(toolbox.client.getObject({ id: '' })).rejects.toThrowError(/Invalid Ika Object id/);
 
 		//more than 20bytes
 		expect(
 			toolbox.client.getDynamicFields({
 				parentId: '0x0000000000000000000000004ce52ee7b659b610d59a1ced129291b3d0d4216322',
 			}),
-		).rejects.toThrowError(/Invalid Sui Object id/);
+		).rejects.toThrowError(/Invalid Ika Object id/);
 
 		//wrong batch request
 		let objectIds = ['0xBABE', '0xCAFE', '0xWRONG', '0xFACE'];
 		expect(toolbox.client.multiGetObjects({ ids: objectIds })).rejects.toThrowError(
-			/Invalid Sui Object id 0xWRONG/,
+			/Invalid Ika Object id 0xWRONG/,
 		);
 	});
 
@@ -55,7 +55,7 @@ describe('Object id/Address/Transaction digest validation', () => {
 	it('Validates tx.pure.address and tx.pure.id', async () => {
 		const tx = new Transaction();
 
-		expect(() => tx.pure.address('')).toThrowError(/Invalid Sui address/);
-		expect(() => tx.pure.id('')).toThrowError(/Invalid Sui address/);
+		expect(() => tx.pure.address('')).toThrowError(/Invalid Ika address/);
+		expect(() => tx.pure.id('')).toThrowError(/Invalid Ika address/);
 	});
 });

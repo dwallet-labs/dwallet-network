@@ -5,7 +5,7 @@ import type { WalletWithRequiredFeatures } from '@mysten/wallet-standard';
 
 import { useWallets } from '../../../hooks/wallet/useWallets.js';
 import { getWalletUniqueIdentifier } from '../../../utils/walletUtils.js';
-import { SuiIcon } from '../../icons/SuiIcon.js';
+import { IkaIcon } from '../../icons/IkaIcon.js';
 import * as styles from './WalletList.css.js';
 import { WalletListItem } from './WalletListItem.js';
 
@@ -31,8 +31,8 @@ export function WalletList({ selectedWalletName, onPlaceholderClick, onSelect }:
 				))
 			) : (
 				<WalletListItem
-					name="Sui Wallet"
-					icon={<SuiIcon />}
+					name="Ika Wallet"
+					icon={<IkaIcon />}
 					onClick={onPlaceholderClick}
 					isSelected
 				/>

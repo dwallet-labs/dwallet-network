@@ -3,14 +3,14 @@
 
 #[test_only]
 module ibe::tests {
-    use sui::bcs;
-    use sui::bls12381;
+    use ika::bcs;
+    use ika::bls12381;
     use ibe::example;
 
     #[test_only]
     use std::hash::sha2_256;
     #[test_only]
-    use sui::test_utils::assert_eq;
+    use ika::test_utils::assert_eq;
 
 
     // This test emulates drand based timelock encryption (using quicknet).

@@ -3,9 +3,9 @@
 
 import { CONSTANTS, QueryKey } from "@/constants";
 import { useTransactionExecution } from "@/hooks/useTransactionExecution";
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
-import { SuiObjectData } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import { useCurrentAccount, useIkaClient } from "@mysten/dapp-kit";
+import { IkaObjectData } from "@ika-io/ika/client";
+import { Transaction } from "@ika-io/ika/transactions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
@@ -18,7 +18,7 @@ export function useLockObjectMutation() {
   const executeTransaction = useTransactionExecution();
 
   return useMutation({
-    mutationFn: async ({ object }: { object: SuiObjectData }) => {
+    mutationFn: async ({ object }: { object: IkaObjectData }) => {
       if (!account?.address)
         throw new Error("You need to connect your wallet!");
       const txb = new Transaction();
@@ -44,18 +44,18 @@ export function useLockObjectMutation() {
 export function useUnlockMutation() {
   const account = useCurrentAccount();
   const executeTransaction = useTransactionExecution();
-  const client = useSuiClient();
+  const client = useIkaClient();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({
       lockedId,
       keyId,
-      suiObject,
+      ikaObject,
     }: {
       lockedId: string;
       keyId: string;
-      suiObject: SuiObjectData;
+      ikaObject: IkaObjectData;
     }) => {
       if (!account?.address)
         throw new Error("You need to connect your wallet!");
@@ -80,7 +80,7 @@ export function useUnlockMutation() {
 
       const item = txb.moveCall({
         target: `${CONSTANTS.escrowContract.packageId}::lock::unlock`,
-        typeArguments: [suiObject.type!],
+        typeArguments: [ikaObject.type!],
         arguments: [txb.object(lockedId), txb.object(keyId)],
       });
 

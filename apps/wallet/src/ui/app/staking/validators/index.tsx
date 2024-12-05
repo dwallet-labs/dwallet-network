@@ -30,7 +30,7 @@ export function Validators() {
 
 	const navigate = useNavigate();
 
-	const pageTitle = stakedValidators?.length ? 'Stake & Earn SUI' : 'Select a Validator';
+	const pageTitle = stakedValidators?.length ? 'Stake & Earn IKA' : 'Select a Validator';
 
 	return (
 		<Overlay showModal title={isPending ? 'Loading' : pageTitle} closeOverlay={() => navigate('/')}>

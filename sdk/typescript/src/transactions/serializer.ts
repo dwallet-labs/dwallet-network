@@ -4,9 +4,9 @@
 import type { BcsType } from '@mysten/bcs';
 
 import { bcs } from '../bcs/index.js';
-import type { SuiMoveNormalizedType } from '../client/index.js';
-import { MOVE_STDLIB_ADDRESS, SUI_FRAMEWORK_ADDRESS } from '../utils/index.js';
-import { normalizeSuiAddress } from '../utils/sui-types.js';
+import type { IkaMoveNormalizedType } from '../client/index.js';
+import { MOVE_STDLIB_ADDRESS, IKA_FRAMEWORK_ADDRESS } from '../utils/index.js';
+import { normalizeIkaAddress } from '../utils/ika-types.js';
 import type { OpenMoveTypeSignature, OpenMoveTypeSignatureBody } from './data/internal.js';
 
 const OBJECT_MODULE_NAME = 'object';
@@ -27,7 +27,7 @@ export function isTxContext(param: OpenMoveTypeSignature): boolean {
 
 	return (
 		!!struct &&
-		normalizeSuiAddress(struct.package) === normalizeSuiAddress('0x2') &&
+		normalizeIkaAddress(struct.package) === normalizeIkaAddress('0x2') &&
 		struct.module === 'tx_context' &&
 		struct.type === 'TxContext'
 	);
@@ -70,9 +70,9 @@ export function getPureBcsSchema(typeSignature: OpenMoveTypeSignatureBody): BcsT
 	}
 
 	if ('datatype' in typeSignature) {
-		const pkg = normalizeSuiAddress(typeSignature.datatype.package);
+		const pkg = normalizeIkaAddress(typeSignature.datatype.package);
 
-		if (pkg === normalizeSuiAddress(MOVE_STDLIB_ADDRESS)) {
+		if (pkg === normalizeIkaAddress(MOVE_STDLIB_ADDRESS)) {
 			if (
 				typeSignature.datatype.module === STD_ASCII_MODULE_NAME &&
 				typeSignature.datatype.type === STD_ASCII_STRUCT_NAME
@@ -97,7 +97,7 @@ export function getPureBcsSchema(typeSignature: OpenMoveTypeSignatureBody): BcsT
 		}
 
 		if (
-			pkg === normalizeSuiAddress(SUI_FRAMEWORK_ADDRESS) &&
+			pkg === normalizeIkaAddress(IKA_FRAMEWORK_ADDRESS) &&
 			typeSignature.datatype.module === OBJECT_MODULE_NAME &&
 			typeSignature.datatype.type === ID_STRUCT_NAME
 		) {
@@ -109,7 +109,7 @@ export function getPureBcsSchema(typeSignature: OpenMoveTypeSignatureBody): BcsT
 }
 
 export function normalizedTypeToMoveTypeSignature(
-	type: SuiMoveNormalizedType,
+	type: IkaMoveNormalizedType,
 ): OpenMoveTypeSignature {
 	if (typeof type === 'object' && 'Reference' in type) {
 		return {
@@ -131,7 +131,7 @@ export function normalizedTypeToMoveTypeSignature(
 }
 
 function normalizedTypeToMoveTypeSignatureBody(
-	type: SuiMoveNormalizedType,
+	type: IkaMoveNormalizedType,
 ): OpenMoveTypeSignatureBody {
 	if (typeof type === 'string') {
 		switch (type) {

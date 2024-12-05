@@ -35,7 +35,7 @@ export default {
 				35: '#FEFEFE',
 			},
 
-			sui: {
+			ika: {
 				DEFAULT: '#6fbcf0',
 				bright: '#2A38EB',
 				light: '#E1F3FF',

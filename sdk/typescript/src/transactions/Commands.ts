@@ -5,7 +5,7 @@ import { toBase64 } from '@mysten/bcs';
 import type { InferInput } from 'valibot';
 import { parse } from 'valibot';
 
-import { normalizeSuiObjectId } from '../utils/sui-types.js';
+import { normalizeIkaObjectId } from '../utils/ika-types.js';
 import { Argument } from './data/internal.js';
 import type { CallArg, Command } from './data/internal.js';
 import type { Transaction } from './Transaction.js';
@@ -16,7 +16,7 @@ export type TransactionArgument =
 export type TransactionInput = CallArg;
 
 // Keep in sync with constants in
-// crates/sui-framework/packages/sui-framework/sources/package.move
+// crates/ika-framework/packages/ika-framework/sources/package.move
 export enum UpgradePolicy {
 	COMPATIBLE = 0,
 	ADDITIVE = 128,
@@ -110,7 +110,7 @@ export const Commands = {
 				modules: modules.map((module) =>
 					typeof module === 'string' ? module : toBase64(new Uint8Array(module)),
 				),
-				dependencies: dependencies.map((dep) => normalizeSuiObjectId(dep)),
+				dependencies: dependencies.map((dep) => normalizeIkaObjectId(dep)),
 			},
 		};
 	},
@@ -131,7 +131,7 @@ export const Commands = {
 				modules: modules.map((module) =>
 					typeof module === 'string' ? module : toBase64(new Uint8Array(module)),
 				),
-				dependencies: dependencies.map((dep) => normalizeSuiObjectId(dep)),
+				dependencies: dependencies.map((dep) => normalizeIkaObjectId(dep)),
 				package: packageId,
 				ticket: parse(Argument, ticket),
 			},

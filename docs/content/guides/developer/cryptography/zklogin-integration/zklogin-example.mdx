@@ -3,18 +3,18 @@ title: zkLogin Example
 description: An example that breaks down the logic behind each step of zkLogin.
 ---
 
-The Sui community created an example to facilitate a comprehensive understanding of each step involved in Sui zkLogin for developers.
+The Ika community created an example to facilitate a comprehensive understanding of each step involved in Ika zkLogin for developers.
 
-- [Sui zkLogin Example](https://sui-zklogin.vercel.app/)
+- [Ika zkLogin Example](https://ika-zklogin.vercel.app/)
 
 ![ZKLogin Overview](images/overview.png "ZKLogin Overview")
-This example breaks down the complete process of Sui zkLogin into seven steps, as follows:
+This example breaks down the complete process of Ika zkLogin into seven steps, as follows:
 
 1. Generate ephemeral key pair
 1. Fetch JWT
 1. Decode JWT
 1. Generate salt
-1. Generate user Sui address
+1. Generate user Ika address
 1. Fetch ZK proof
 1. Assemble zkLogin signature
 
@@ -22,7 +22,7 @@ Each step includes corresponding code snippets, providing instructions on how to
 
 ## Operating environment
 
-The example runs in Sui Devnet. All data the user generates is stored locally on the client-side (browser). The acquisition of the zero-knowledge proof (ZK proof) is done through a call to the [Mysten Labs-maintained proving service](../zklogin-integration.mdx#call-the-mysten-labs-maintained-proving-service). Therefore, running the example does not require an additional deployed backend server (or a Docker container).
+The example runs in Ika Devnet. All data the user generates is stored locally on the client-side (browser). The acquisition of the zero-knowledge proof (ZK proof) is done through a call to the [Mysten Labs-maintained proving service](../zklogin-integration.mdx#call-the-mysten-labs-maintained-proving-service). Therefore, running the example does not require an additional deployed backend server (or a Docker container).
 
 ## Storage locations for key data
 
@@ -39,7 +39,7 @@ The user salt is stored long-term in the browser's `localStorage`. Consequently,
 
 :::caution
 
-Changing browsers or devices results in the inability to access previously generated Sui zkLogin addresses, even when using the same JWT.
+Changing browsers or devices results in the inability to access previously generated Ika zkLogin addresses, even when using the same JWT.
 
 :::
 
@@ -50,7 +50,7 @@ Changing browsers or devices results in the inability to access previously gener
 
 - **Request test tokens failure:**
   - This is because you have surpassed the faucet server request frequency limitations. 
-  - You can go to Sui [#devnet-faucet](https://discord.com/channels/916379725201563759/971488439931392130) or [#testnet-faucet](https://discord.com/channels/916379725201563759/1037811694564560966) Discord channels to claim test coins.
+  - You can go to Ika [#devnet-faucet](https://discord.com/channels/916379725201563759/971488439931392130) or [#testnet-faucet](https://discord.com/channels/916379725201563759/1037811694564560966) Discord channels to claim test coins.
 
 - Any suggestions are welcome on the project's GitHub repo through raised issues, and of course, pull requests are highly appreciated.
 

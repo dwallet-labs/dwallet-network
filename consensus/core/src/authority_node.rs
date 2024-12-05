@@ -6,7 +6,7 @@ use std::{sync::Arc, time::Instant};
 use consensus_config::{AuthorityIndex, Committee, NetworkKeyPair, Parameters, ProtocolKeyPair};
 use parking_lot::RwLock;
 use prometheus::Registry;
-use sui_protocol_config::{ConsensusNetwork, ProtocolConfig};
+use ika_protocol_config::{ConsensusNetwork, ProtocolConfig};
 use tracing::{info, warn};
 
 use crate::{
@@ -36,7 +36,7 @@ use crate::{
     CommitConsumer, CommitConsumerMonitor,
 };
 
-/// ConsensusAuthority is used by Sui to manage the lifetime of AuthorityNode.
+/// ConsensusAuthority is used by Ika to manage the lifetime of AuthorityNode.
 /// It hides the details of the implementation from the caller, MysticetiManager.
 #[allow(private_interfaces)]
 pub enum ConsensusAuthority {
@@ -419,7 +419,7 @@ mod tests {
     use mysten_metrics::monitored_mpsc::UnboundedReceiver;
     use prometheus::Registry;
     use rstest::rstest;
-    use sui_protocol_config::ProtocolConfig;
+    use ika_protocol_config::ProtocolConfig;
     use tempfile::TempDir;
     use tokio::time::{sleep, timeout};
     use typed_store::DBMetrics;

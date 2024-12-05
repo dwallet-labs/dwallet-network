@@ -1,10 +1,10 @@
 ---
 title: NFT Rental Example
-description: An example using the Kiosk Apps standard that provides the ability for users to rent NFTs according to the rules of a provided policy instead of outright owning them. This approach closely aligns with the ERC-4907 renting standard, making it a suitable choice for Solidity-based use cases intended for implementation on Sui.
+description: An example using the Kiosk Apps standard that provides the ability for users to rent NFTs according to the rules of a provided policy instead of outright owning them. This approach closely aligns with the ERC-4907 renting standard, making it a ikatable choice for Solidity-based use cases intended for implementation on Ika.
 keywords: [ERC-721, NFT]
 ---
 
-NFT renting is a mechanism that allows individuals without ownership or possession of a specific NFT to temporarily utilize or experience it. The implementation of this process leverages the [Kiosk Apps standard](../../../standards/kiosk-apps.mdx) to establish an infrastructure for rental transactions. This approach closely aligns with the [Ethereum ERC-4907](https://eips.ethereum.org/EIPS/eip-4907) renting standard, making it a suitable choice for Solidity-based use cases intended for implementation on Sui.
+NFT renting is a mechanism that allows individuals without ownership or possession of a specific NFT to temporarily utilize or experience it. The implementation of this process leverages the [Kiosk Apps standard](../../../standards/kiosk-apps.mdx) to establish an infrastructure for rental transactions. This approach closely aligns with the [Ethereum ERC-4907](https://eips.ethereum.org/EIPS/eip-4907) renting standard, making it a ikatable choice for Solidity-based use cases intended for implementation on Ika.
 
 The NFT Rental example satisfies the following project requirements:
 
@@ -65,7 +65,7 @@ This implementation is charging a rental fee based on days. You can re-purpose a
 
 ## Move modules
 
-The NFT Rental example uses a single module, `nft_rental.move`. You can find the source for this file hosted in the [sui repository](https://github.com/MystenLabs/sui/tree/main/examples/move/nft-rental/sources/nft_rental.move) in the `examples` directory. The source code includes extensive comments to help you follow the example's logic and structure. 
+The NFT Rental example uses a single module, `nft_rental.move`. You can find the source for this file hosted in the [ika repository](https://github.com/MystenLabs/sui/tree/main/examples/move/nft-rental/sources/nft_rental.move) in the `examples` directory. The source code includes extensive comments to help you follow the example's logic and structure. 
 
 ### nft_rental
 
@@ -134,7 +134,7 @@ The `RentalPolicy` struct is a shared object that every creator mints. The struc
 ```move
 public struct RentalPolicy<phantom T> has key, store {
   id: UID,
-  balance: Balance<SUI>,
+  balance: Balance<IKA>,
   /// Note: Move does not support float numbers.
   ///
   /// If you need to represent a float, you need to determine the desired
@@ -203,7 +203,7 @@ public fun setup_renting<T>(publisher: &Publisher, amount_bp: u64, ctx: &mut TxC
 
   let rental_policy = RentalPolicy<T> {
     id: object::new(ctx),
-    balance: balance::zero<SUI>(),
+    balance: balance::zero<IKA>(),
     amount_bp,
   };
 
@@ -234,12 +234,12 @@ public fun list<T: key + store>(
   // between users without the owner being updated.
   kiosk.set_owner(cap, ctx);
 
-  // Lists the item for zero SUI.
+  // Lists the item for zero IKA.
   kiosk.list<T>(cap, item_id, 0);
 
   // Constructs a zero coin.
-  let coin = coin::zero<SUI>(ctx);
-  // Purchases the item with 0 SUI.
+  let coin = coin::zero<IKA>(ctx);
+  // Purchases the item with 0 IKA.
   let (object, request) = kiosk.purchase<T>(item_id, coin);
 
   // Resolves the TransferRequest with the empty TransferPolicy which is protected and accessible only via this module.
@@ -302,7 +302,7 @@ public fun rent<T: key + store>(
   borrower_kiosk: &mut Kiosk,
   rental_policy: &mut RentalPolicy<T>,
   item_id: ID,
-  mut coin: Coin<SUI>,
+  mut coin: Coin<IKA>,
   clock: &Clock,
   ctx: &mut TxContext,
 ) {
@@ -643,13 +643,13 @@ rect rgba(191, 223, 255, 0.2)
 
 ## Deployment
 
-{@include: ../../../snippets/initialize-sui-client-cli.mdx}
+{@include: ../../../snippets/initialize-ika-client-cli.mdx}
 
 {@include: ../../../snippets/publish-to-devnet-with-coins.mdx}
 
 ## Related links
 
 - [NFT Rental example](https://github.com/MystenLabs/sui/tree/main/examples/move/nft-rental): The source code that this document references.
-- [Sui Kiosk](../../../standards/kiosk.mdx): Kiosk is a decentralized system for commerce applications on Sui.
-- [Kiosk Apps](../../../standards/kiosk-apps.mdx): The Kiosk Apps standard extends the functionality of Sui Kiosk.  
+- [Ika Kiosk](../../../standards/kiosk.mdx): Kiosk is a decentralized system for commerce applications on Ika.
+- [Kiosk Apps](../../../standards/kiosk-apps.mdx): The Kiosk Apps standard extends the functionality of Ika Kiosk.  
 - [Custom Transfer Rules](../../../concepts/transfers/custom-rules.mdx): Custom transfer rules are used in this example to define rental policies.

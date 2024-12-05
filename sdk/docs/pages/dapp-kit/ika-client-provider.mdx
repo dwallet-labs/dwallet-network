@@ -1,0 +1,205 @@
+# IkaClientProvider
+
+The `IkaClientProvider` manages the active `IkaClient` that hooks and components use in the dApp
+Kit.
+
+## Usage
+
+Place the `IkaClientProvider` at the root of your app and wrap all components that use the dApp Kit
+hooks.
+
+`IkaClientProvider` accepts a list of network configurations to create `IkaClient` instances for the
+currently active network.
+
+```tsx
+import { createNetworkConfig, IkaClientProvider, WalletProvider } from '@mysten/dapp-kit';
+import { getFullnodeUrl } from '@ika-io/ika/client';
+
+// Config options for the networks you want to connect to
+const { networkConfig } = createNetworkConfig({
+	localnet: { url: getFullnodeUrl('localnet') },
+	mainnet: { url: getFullnodeUrl('mainnet') },
+});
+
+function App() {
+	return (
+		<IkaClientProvider networks={networkConfig} defaultNetwork="localnet">
+			<YourApp />
+		</IkaClientProvider>
+	);
+}
+```
+
+## Props
+
+- `networks`: A map of networks you can use. The keys are the network names, and the values can be
+  either a configuration object (`IkaClientOptions`) or a `IkaClient` instance.
+- `defaultNetwork`: The name of the network to use by default when using the `IkaClientProvider` as
+  an uncontrolled component.
+- `network`: The name of the network to use when using the `IkaClientProvider` as a controlled
+  component.
+- `onNetworkChange`: A callback when the active network changes.
+- `createClient`: A callback when a new `IkaClient` is created (for example, when the active network
+  changes). It receives the network name and configuration object as arguments, returning a
+  `IkaClient` instance.
+
+## Controlled component
+
+The following example demonstrates a `IkaClientProvider` used as a controlled component.
+
+```tsx
+import { createNetworkConfig, IkaClientProvider } from '@mysten/dapp-kit';
+import { getFullnodeUrl } from '@ika-io/ika/client';
+import { useState } from 'react';
+
+// Config options for the networks you want to connect to
+const { networkConfig } = createNetworkConfig({
+	localnet: { url: getFullnodeUrl('localnet') },
+	mainnet: { url: getFullnodeUrl('mainnet') },
+});
+
+function App() {
+	const [activeNetwork, setActiveNetwork] = useState('localnet' as keyof typeof networks);
+
+	return (
+		<IkaClientProvider
+			networks={networkConfig}
+			network={activeNetwork}
+			onNetworkChange={(network) => {
+				setActiveNetwork(network);
+			}}
+		>
+			<YourApp />
+		</IkaClientProvider>
+	);
+}
+```
+
+## IkaClient customization
+
+The following example demonstrates how to create a custom `IkaClient`.
+
+```tsx
+import { IkaClientProvider } from '@mysten/dapp-kit';
+import { getFullnodeUrl, IkaClient, IkaHTTPTransport } from '@ika-io/ika/client';
+
+// Config options for the networks you want to connect to
+const networks = {
+	localnet: { url: getFullnodeUrl('localnet') },
+	mainnet: { url: getFullnodeUrl('mainnet') },
+} satisfies Record<string, IkaClientOptions>;
+
+function App() {
+	return (
+		<IkaClientProvider
+			networks={networks}
+			defaultNetwork="localnet"
+			createClient={(network, config) => {
+				return new IkaClient({
+					transport: new IkaHTTPTransport({
+						url: 'https://api.safecoin.org',
+						rpc: {
+							headers: {
+								Authorization: 'xyz',
+							},
+						},
+					}),
+				});
+			}}
+		>
+			<YourApp />
+		</IkaClientProvider>
+	);
+}
+```
+
+## Using the IkaClient from the provider
+
+To use the `IkaClient` from the provider, import the `useIkaClient` function from the
+`@mysten/dapp-kit` module.
+
+```tsx
+import { useIkaClient } from '@mysten/dapp-kit';
+
+function MyComponent() {
+	const client = useIkaClient();
+
+	// use the client
+}
+```
+
+## Creating a network selector
+
+The dApp Kit doesn't provide its own network switcher, but you can use the `useIkaClientContext`
+hook to get the list of networks and set the active one:
+
+```tsx
+function NetworkSelector() {
+	const ctx = useIkaClientContext();
+
+	return (
+		<div>
+			{Object.keys(ctx.networks).map((network) => (
+				<button key={network} onClick={() => ctx.selectNetwork(network)}>
+					{`select ${network}`}
+				</button>
+			))}
+		</div>
+	);
+}
+```
+
+## Using network specific configuration
+
+If your dApp runs on multiple networks, the IDs for packages and other configurations might change,
+depending on which network you're using. You can use `createNetworkConfig` to create per-network
+configurations that your components can access.
+
+The `createNetworkConfig` function returns the provided configuration, along with hooks you can use
+to get the variables defined in your configuration.
+
+- `useNetworkConfig` returns the full network configuration object
+- `useNetworkVariables` returns the full variables object from the network configuration
+- `useNetworkVariable` returns a specific variable from the network configuration
+
+```tsx
+import { createNetworkConfig, IkaClientProvider, WalletProvider } from '@mysten/dapp-kit';
+import { getFullnodeUrl } from '@ika-io/ika/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Config options for the networks you want to connect to
+const { networkConfig, useNetworkVariable } = createNetworkConfig({
+	localnet: {
+		url: getFullnodeUrl('localnet'),
+		variables: {
+			myMovePackageId: '0x123',
+		},
+	},
+	mainnet: {
+		url: getFullnodeUrl('mainnet'),
+		variables: {
+			myMovePackageId: '0x456',
+		},
+	},
+});
+
+const queryClient = new QueryClient();
+
+function App() {
+	return (
+		<QueryClientProvider client={queryClient}>
+			<IkaClientProvider networks={networkConfig} defaultNetwork="localnet">
+				<WalletProvider>
+					<YourApp />
+				</WalletProvider>
+			</IkaClientProvider>
+		</QueryClientProvider>
+	);
+}
+
+function YourApp() {
+	const id = useNetworkVariable('myMovePackageId');
+
+	return <div>Package ID: {id}</div>;
+}
+```

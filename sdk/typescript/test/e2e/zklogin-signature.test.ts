@@ -4,7 +4,7 @@
 import { fromBase64 } from '@mysten/bcs';
 import { describe, expect, it, test } from 'vitest';
 
-import { SuiGraphQLClient } from '../../src/graphql';
+import { IkaGraphQLClient } from '../../src/graphql';
 import {
 	parseSerializedZkLoginSignature,
 	ZkLoginPublicIdentifier,
@@ -69,13 +69,13 @@ describe('zkLogin signature', () => {
 		'verify personal message with zklogin',
 		async () => {
 			// this test assumes the localnet epoch is smaller than 3. it will fail if localnet has ran for too long and passed epoch 3.
-			// test case generated from `sui keytool zk-login-insecure-sign-personal-message --data "hello" --max-epoch 3`
+			// test case generated from `ika keytool zk-login-insecure-sign-personal-message --data "hello" --max-epoch 3`
 			let bytes = 'aGVsbG8='; // the base64 encoding of "hello"
 			let testSignature =
 				'BQNMODIxMjAxNjM1OTAxNDk1MDg0Mjg0MTUyNTc3NTE1NjQ4NzI2MjEzOTk0OTQ3ODkwNjkwMTc5ODI5NjEwMTkyNTI3MTY5MTU2NTE4ME0xNjE1NTM3MDU2ODcyNzI3OTgxODg5MzYwMzc1NDQwNzYxNzM3NzcxNTgwOTA2NTUwMTYyODczNjg4MjcyNTU3NTIzMjgzNDkyMzcyNgExAwJNMTE2MTk3MTE1NjYyNDg1NTk1NzUyNzE0MDEzMTI1NzE2OTg5NTkxMDA2MjM3NjM4NzY0NjM1OTEzNDY1NTY2OTM1NzI5NzQxOTE1MDlMNTIyOTU4MjE1NDQ1MzkxMDM4MzYwMzYzNjEzNTY0NDU5MTc1NTk3NDI1OTQyMDg4NjUxMzYwMTQ2Mjc0OTk5Mzg2NTA2MTkyODU2NAJNMTA5MDE5ODc3NzAyNTI5NzkzOTM2NDM4NDU1MjM1MzQ2NTQ4MjY3MTkyODUzMzA2NzQwNTk3Nzg0Nzg3NzYwODQ2Mjc4NjQyNzg0NzJMMjg0MjQxNTQ4Mjg0NjQyNzg5NzAwNjM2OTIyMDk0NDUyNjUzMzgwNzc3ODIxMzQyOTA5NTQ2NDc1ODc0MTE5NTkxMTU5NjE0MzY4MwIBMQEwA00xODg1NDIyNzM3ODk4ODA1MDA3NTM2NTExNjAxNzEzNTYxOTQ1MzA3NDcyOTcwNzE5OTgyOTA5OTA2OTUwMDk3NzgzNTcwNjY1OTU4OEw0ODU5NzY1MTQ5OTgxMDYyMTIxOTc0Njg3NTYxNzc4NDA2ODU0NzAxNjEyNzk4NTU2NTE3NzQ4OTU1NDA5NzgxMjkxNTA1MDYzNjQxATEod2lhWE56SWpvaWFIUjBjSE02THk5dllYVjBhQzV6ZFdrdWFXOGlMQwI+ZXlKcmFXUWlPaUp6ZFdrdGEyVjVMV2xrSWl3aWRIbHdJam9pU2xkVUlpd2lZV3huSWpvaVVsTXlOVFlpZlFNMjA0MzUzNjY2MDAwMzYzNzU3NDU5MjU5NjM0NTY4NjEzMDc5MjUyMDk0NzAyMTkzMzQwMTg1NjQxNTgxNDg1NDQwMzYxOTYyODQ2NDIDAAAAAAAAAGEA+XrHUDMkMaPswTIFsqIgx3yX6j7IvU1T/1yzw4kjKwjgLL0ZtPQZjc2djX7Q9pFoBdObkSZ6JZ4epiOf05q4BrnG7hYw7z5xEUSmSNsGu7IoT3J0z77lP/zuUDzBpJIA';
 			let parsed = parseSerializedZkLoginSignature(testSignature);
 			let pk = new ZkLoginPublicIdentifier(parsed.publicKey, {
-				client: new SuiGraphQLClient({
+				client: new IkaGraphQLClient({
 					url: 'http://127.0.0.1:9125',
 				}),
 			});
@@ -84,7 +84,7 @@ describe('zkLogin signature', () => {
 			let res = await pk.verifyPersonalMessage(fromBase64(bytes), parsed.signature);
 			expect(res).toBe(true);
 
-			// test case generated from `sui keytool zk-login-insecure-sign-personal-message --data "hello" --max-epoch 100`
+			// test case generated from `ika keytool zk-login-insecure-sign-personal-message --data "hello" --max-epoch 100`
 			// fails to verify bc max_epoch too large.
 			let testSignature2 =
 				'BQNNMTU3MTEzMjIxMjQyNzE4OTQyODkwNzkwMzcyMTAyNzkxNDU1MzAxMTc4NzgxMDIyOTYzNzQ2Njk5MTE0NzU5MDY3ODYyNDYyNzQ2MTBNMTY2MDg4MjI5MjU0NDI1OTQyMjkxMjY4MDIzMzUyNDE3NDU3NTcwMDc0NjUxMjQ0MTI1OTczMTE2MDM5NzYwMTk2ODk0MzE5ODY5MDYBMQMCTTEzNDQ1MjU4Mzc0Mjk4MTE1MjAzMjEwODM4NzU1Nzk0MDExMTg1NDU0OTgzODgxMTg5OTYwNTQzODc5NjMzMDE5OTQxODEyMDk2MjYzTDE3Njk4NDE1NzUzNDg4NDgzOTEzMjMxMTA3NDMyNDkzMTkyOTAxMTEwNjY0NzE2OTkxMzQwNzY0NjExMzg2OTk5NDg1NDAyODA3MzgCTTE0ODU5NDk0ODMxNjI4MzQyMDEzMTM0NDA4NzAxMTIwNDUxMDI4MDkyMTg4MDAxMTMwOTkxNjkxMjAyNzMyMzA2NzcxODI4NTYxNzU0TTIwMzM1NDE4NjE3NzgyMzU5MTQ2NTg0NzcwNzM0MDcyMzI3NzYwMjAyNDYwMDE2NDY0NjAwNjQzMDA2Nzg5NzAyODg0MzQ1NTkzNjg5AgExATADTTE4Nzk4Mjk5MDAzOTAyMDI3MDcxNTg1ODY5MjY3MzYyOTc5ODUwOTExNzA3Nzk2MzU0NDQyMTY2NzEzOTcyNjQ2NzE2OTQ1OTgyMjM4TTEyMDExNjg0MjA0MDI0NTMxNzY2ODUxMTU0OTAyMzI5Njk4MDIwODQ3NTQ1NDU5NDk2MjA2MDI2NDg5MTE5MzUzODI4NTI2NTE5MzAwATEod2lhWE56SWpvaWFIUjBjSE02THk5dllYVjBhQzV6ZFdrdWFXOGlMQwI+ZXlKcmFXUWlPaUp6ZFdrdGEyVjVMV2xrSWl3aWRIbHdJam9pU2xkVUlpd2lZV3huSWpvaVVsTXlOVFlpZlFNMjA0MzUzNjY2MDAwMzYzNzU3NDU5MjU5NjM0NTY4NjEzMDc5MjUyMDk0NzAyMTkzMzQwMTg1NjQxNTgxNDg1NDQwMzYxOTYyODQ2NDJkAAAAAAAAAGEA+XrHUDMkMaPswTIFsqIgx3yX6j7IvU1T/1yzw4kjKwjgLL0ZtPQZjc2djX7Q9pFoBdObkSZ6JZ4epiOf05q4BrnG7hYw7z5xEUSmSNsGu7IoT3J0z77lP/zuUDzBpJIA';
@@ -108,7 +108,7 @@ describe('zkLogin signature', () => {
 				'BQNNMTUzODUzNzAwODM3MTY5NDUxNzk5NTQ4Nzk3ODgwMjEyODE0MDYxODAzODUyMTA3OTY2NjAyNzYwNjMwMTU4MDE0NzE0MzUwNDU5MDVNMTA3NTk1NzUzNjA4MTczNjIzODQ4NzE1MDY1NTkxMzA0NjEwMTAyNzI4MDg5NDY4OTc2NjUwMDg5NjkzNDUzNDkwNzI1NzkyMjE4NzIBMQMCTDE3NTYyNjk4MTk0Nzg2NzkwNTYzMjk1MjAxNTE2ODQ4OTU4NjIxNTQ2Njc3OTY5MDc4NDYxNzU0OTUzNzE3NjE3MTc4MzU1NjIyODFMNzY5MzM5MjIyNDkwNzAwODEzODgzMTMyNDI0NjYxMjA1NjM1MzkyNTU3Njk3NjY4NjIyMzMyMzMwMzE0MzkyNTg2NTg5NDcxNTMzOAJNMTc3MzUxMTQwOTU4MzY3NzY0NDQ0NTc3MTM2MzAwOTQxNzY2Mzc5NTYwMzc3MzQ0MTQ4MDc4OTcyNDk0NTI5NzI5OTQ0OTA1OTc3NTRMOTMxMzYyMzYyMTUwMzM4OTk0MzU4MjQ1Njc5NDkwMjM5NzUyNjc4NjczNjQ1MTQ4MzY0MTAzNzMyMzkzOTg3MzAxNzE0Nzg2NzA0OQIBMQEwA00yMDg3MDcxNTY2MzU5MTYwOTY5MjAzNzk5MzkyNDkwNzMyMjcwMjUwNTM4NzE5MjEyMjI3OTc5MDg0NzgyMzIxOTI4MjQxODc0OTA3M00yMDUyMjg2NTI1NjMyMjY1NTQzOTY2NTI3ODM3OTI1ODQ5NDcyMDQ0MTYzMzcxNzE3MjM3MTYzOTA5Njk2MTM4ODE0MjM0OTUzNDg4NQExKHdpYVhOeklqb2lhSFIwY0hNNkx5OXZZWFYwYUM1emRXa3VhVzhpTEMCPmV5SnJhV1FpT2lKemRXa3RhMlY1TFdsa0lpd2lkSGx3SWpvaVNsZFVJaXdpWVd4bklqb2lVbE15TlRZaWZRTTIwNDM1MzY2NjAwMDM2Mzc1NzQ1OTI1OTYzNDU2ODYxMzA3OTI1MjA5NDcwMjE5MzM0MDE4NTY0MTU4MTQ4NTQ0MDM2MTk2Mjg0NjQyBQAAAAAAAABhAMY6yGE+HfJrftA5rtd/SH4DxhNNXMCfjZNP5XmIBxi46JE9TQeGoArtwbWF3dSI7Vm1DxkGaXh3TT2tGz0yfwi5xu4WMO8+cRFEpkjbBruyKE9ydM++5T/87lA8waSSAA==';
 			let parsed = parseSerializedZkLoginSignature(testSignature);
 			let pk = new ZkLoginPublicIdentifier(parsed.publicKey, {
-				client: new SuiGraphQLClient({
+				client: new IkaGraphQLClient({
 					url: 'http://127.0.0.1:9125',
 				}),
 			});

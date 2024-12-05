@@ -1,4 +1,4 @@
-import { getFullnodeUrl } from "@mysten/sui/client";
+import { getFullnodeUrl } from "@ika-io/ika/client";
 import { createNetworkConfig } from "@mysten/dapp-kit";
 
 const { networkConfig, useNetworkVariable, useNetworkVariables } =

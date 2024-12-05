@@ -3,8 +3,8 @@
 
 module coin_metadata::test;
 
-use sui::coin;
-use sui::url;
+use ika::coin;
+use ika::url;
 
 public struct TEST has drop {}
 
@@ -15,7 +15,7 @@ fun init(witness: TEST, ctx: &mut TxContext) {
         b"TEST",
         b"Test Coin",
         b"Test coin metadata",
-        option::some(url::new_unsafe_from_bytes(b"http://sui.io")),
+        option::some(url::new_unsafe_from_bytes(b"http://ika.io")),
         ctx,
     );
 

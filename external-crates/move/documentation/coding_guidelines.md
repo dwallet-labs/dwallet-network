@@ -154,7 +154,7 @@ Listed below are high-level suggestions based on experience:
 
 * Channels are for ownership transfer, decoupling of types, and coarse-grained messages.  They fit well for transferring ownership of data, distributing units of work, and communicating async results.  Furthermore, they help break circular dependencies (e.g. `struct Foo` contains an `Arc<Bar>` and `struct Bar` contains an `Arc<Foo>` that leads to complex initialization).
 
-* Concurrent types (e.g. such as [`CHashMap`](https://docs.rs/crate/chashmap) or structs that have interior mutability building on [`Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html), [`RwLock`](https://doc.rust-lang.org/std/sync/struct.RwLock.html), etc.) are better suited for caches and states.
+* Concurrent types (e.g. such as [`CHashMap`](https://docs.rs/crate/chashmap) or structs that have interior mutability building on [`Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html), [`RwLock`](https://doc.rust-lang.org/std/sync/struct.RwLock.html), etc.) are better ikated for caches and states.
 
 ### Error handling
 
@@ -221,7 +221,7 @@ We currently use [log](https://docs.rs/log/) for logging.
 
 * [error!](https://docs.rs/log/0.4.14/log/macro.error.html) - Error-level messages have the highest urgency in [log](https://docs.rs/log/).  An unexpected error has occurred (e.g. exceeded the maximum number of retries to complete an RPC or inability to store data to local storage).
 * [warn!](https://docs.rs/log/0.4.14/log/macro.warn.html) - Warn-level messages help notify admins about automatically handled issues (e.g. retrying a failed network connection or receiving the same message multiple times, etc.).
-* [info!](https://docs.rs/log/0.4.14/log/macro.info.html) - Info-level messages are well suited for "one-time" events (such as logging state on one-time startup and shutdown) or periodic events that are not frequently occurring - e.g. changing the validator set every day.
+* [info!](https://docs.rs/log/0.4.14/log/macro.info.html) - Info-level messages are well ikated for "one-time" events (such as logging state on one-time startup and shutdown) or periodic events that are not frequently occurring - e.g. changing the validator set every day.
 * [debug!](https://docs.rs/log/0.4.14/log/macro.debug.html) - Debug-level messages can occur frequently (i.e. potentially > 1 message per second) and are not typically expected to be enabled in production.
 * [trace!](https://docs.rs/log/0.4.14/log/macro.trace.html) - Trace-level logging is typically only used for function entry/exit.
 

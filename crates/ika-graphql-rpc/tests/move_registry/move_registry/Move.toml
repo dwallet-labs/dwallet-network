@@ -1,0 +1,10 @@
+[package]
+name = "move_registry"
+edition = "2024.beta"
+
+[dependencies]
+Ika = { local = "../../../../ika-framework/packages/ika-framework" }
+
+[addresses]
+move_registry = "0x0"
+

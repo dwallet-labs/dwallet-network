@@ -5,7 +5,7 @@ import { API_ENV_TO_INFO } from '_app/ApiProvider';
 import { Button, type ButtonProps } from '_app/shared/ButtonUI';
 import { useAppSelector } from '_hooks';
 import { API_ENV } from '_src/shared/api-env';
-import { FaucetRateLimitError, getFaucetHost } from '@mysten/sui/faucet';
+import { FaucetRateLimitError, getFaucetHost } from '@ika-io/ika/faucet';
 import { toast } from 'react-hot-toast';
 
 import FaucetMessageInfo from './FaucetMessageInfo';
@@ -25,7 +25,7 @@ export const FAUCET_HOSTS = {
 
 function FaucetRequestButton({ variant = 'primary', size = 'narrow' }: FaucetRequestButtonProps) {
 	const network = useAppSelector(({ app }) => app.apiEnv);
-	const networkName = API_ENV_TO_INFO[network].name.replace(/sui\s*/gi, '');
+	const networkName = API_ENV_TO_INFO[network].name.replace(/ika\s*/gi, '');
 	const [isRateLimited, rateLimit] = useFaucetRateLimiter();
 
 	const mutation = useFaucetMutation({
@@ -51,7 +51,7 @@ function FaucetRequestButton({ variant = 'primary', size = 'narrow' }: FaucetReq
 				});
 			}}
 			loading={mutation.isMutating}
-			text={`Request ${networkName} SUI Tokens`}
+			text={`Request ${networkName} IKA Tokens`}
 		/>
 	) : null;
 }

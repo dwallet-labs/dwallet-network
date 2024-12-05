@@ -2,8 +2,8 @@
 title: Review Rating
 ---
 
-The following documentation goes through an example implementation of a review rating platform for the food service industry on Sui.
-Unlike traditional review rating platforms that often do not disclose the algorithm used to rate reviews, this example uses an algorithm that is published on-chain for everyone to see and verify. The low gas cost of computation on Sui make it financially feasible to submit, score, and order all reviews on-chain.
+The following documentation goes through an example implementation of a review rating platform for the food service industry on Ika.
+Unlike traditional review rating platforms that often do not disclose the algorithm used to rate reviews, this example uses an algorithm that is published on-chain for everyone to see and verify. The low gas cost of computation on Ika make it financially feasible to submit, score, and order all reviews on-chain.
 
 ## Personas
 
@@ -28,7 +28,7 @@ sequenceDiagram
 
 Service owners are entities like restaurants that list their services on the platform. They want to attract more customers by receiving high-rated reviews for their services.
 
-Service owners allocate a specific amount of SUI as a reward pool. Assets from the pool are used to provide rewards for high-rated reviews. A proof of experience (PoE) NFT confirms a reviewer used the service, which the reviewer can burn later to provide a verified review. Service owners provide their customers with unique identifiers (perhaps using QR codes) to identify individual reviewers.
+Service owners allocate a specific amount of IKA as a reward pool. Assets from the pool are used to provide rewards for high-rated reviews. A proof of experience (PoE) NFT confirms a reviewer used the service, which the reviewer can burn later to provide a verified review. Service owners provide their customers with unique identifiers (perhaps using QR codes) to identify individual reviewers.
 
 ### Reviewers
 
@@ -100,7 +100,7 @@ A service may be registered to multiple dashboards at the same time. For example
 
 :::info
 
-See [Shared versus Owned Objects](../sui-101/shared-owned.mdx) for more information on the differences between object types.
+See [Shared versus Owned Objects](../ika-101/shared-owned.mdx) for more information on the differences between object types.
 
 :::
 
@@ -157,7 +157,7 @@ const MAX_REVIEWERS_TO_REWARD: u64 = 10;
 /// Represents a service
 public struct Service has key, store {
     id: UID,
-    reward_pool: Balance<SUI>,
+    reward_pool: Balance<IKA>,
     reward: u64,
     top_reviews: vector<ID>,
     reviews: ObjectTable<ID, Review>,
@@ -169,11 +169,11 @@ public struct Service has key, store {
 #### Reward distribution
 
 The same amount is rewarded to top reviewers, and the reward is distributed to 10 participants at most.
-The pool of `SUI` tokens to be distributed to reviewers is stored in the `reward_pool` field, and the amount of `SUI` tokens awarded to each participant is configured in `reward` field.
+The pool of `IKA` tokens to be distributed to reviewers is stored in the `reward_pool` field, and the amount of `IKA` tokens awarded to each participant is configured in `reward` field.
 
 #### Storage for reviews
 
-Because anyone can submit a review for a service, `Service` is defined as a shared object. All the reviews are stored in the `reviews` field, which has [ObjectTable](../../../concepts/sui-move-concepts/collections.mdx#object_table)`<ID, Review>` type. The `reviews` are stored as children of the shared object, but they are still accessible by their `ID`.
+Because anyone can submit a review for a service, `Service` is defined as a shared object. All the reviews are stored in the `reviews` field, which has [ObjectTable](../../../concepts/ika-move-concepts/collections.mdx#object_table)`<ID, Review>` type. The `reviews` are stored as children of the shared object, but they are still accessible by their `ID`.
 In other words, anyone can go to a transaction explorer and find a review object by its object ID, but they won't be able to use a review as an input to a transaction by its object ID.
 
 :::info
@@ -384,14 +384,14 @@ export interface Service {
 In the frontend, you might need to execute a transaction block in multiple places, hence it's better to extract the transaction execution logic and reuse it everywhere. Let's examine the execute transaction hook.
 
 ```ts title='src/app/hooks/useSignAndExecuteTransaction.ts'
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@ika-io/ika/transactions';
 import { useWalletKit } from '@mysten/wallet-kit';
 import { toast } from 'react-hot-toast';
 
-import { useSui } from './useSui';
+import { useIka } from './useIka';
 
 export const useSignAndExecuteTransaction = () => {
-	const { executeSignedTransaction } = useSui();
+	const { executeSignedTransaction } = useIka();
 	const { signTransaction } = useWalletKit();
 	const handleSignAndExecuteTransaction = async (
 		tx: Transaction,
@@ -442,7 +442,7 @@ export const useSignAndExecuteTransaction = () => {
 
 A `Transaction` is the input, sign it with the current connected wallet account, execute the transaction block, return the execution result, and finally display a basic toast message to indicate whether the transaction is successful or not.
 
-Use the `useWalletKit()` hook from the Wallet Kit to retrieve the Sui client instance configured in `WalletKitProvider`. The `signTransaction()` function is another hook that helps to sign the transaction block using the currently connected wallet. It displays the UI for users to review and sign their transactions with their selected wallet. To execute a transaction block, the `executeSignedTransaction()` on the Sui client instance of the Sui TypeScript SDK. Use `react-hot-toast` as another dependency to toast transaction status to users.
+Use the `useWalletKit()` hook from the Wallet Kit to retrieve the Ika client instance configured in `WalletKitProvider`. The `signTransaction()` function is another hook that helps to sign the transaction block using the currently connected wallet. It displays the UI for users to review and sign their transactions with their selected wallet. To execute a transaction block, the `executeSignedTransaction()` on the Ika client instance of the Ika TypeScript SDK. Use `react-hot-toast` as another dependency to toast transaction status to users.
 
 ### Components and custom hooks for state management
 

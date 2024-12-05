@@ -5,7 +5,7 @@ beta: testnet, devnet, mainnet
 
 {@include: ../../../snippets/migrate-to-graphql.mdx}
 
-For a comprehensive list of all available GraphQL features, consult the [reference](../../../references/sui-graphql).
+For a comprehensive list of all available GraphQL features, consult the [reference](../../../references/ika-graphql).
 
 ### Example 1: Get total transaction blocks
 
@@ -19,7 +19,7 @@ The goal is to get the total number of transaction blocks in the network.
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "sui_getTotalTransactionBlocks",
+  "method": "ika_getTotalTransactionBlocks",
   "params": []
 }
 ```
@@ -49,7 +49,7 @@ The goal is to get the transaction block by its digest.
 {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "sui_getTransactionBlock",
+  "method": "ika_getTransactionBlock",
   "params": [
     "Hay2tj3GcDYcE3AMHrej5WDsHGPVAYsegcubixLUvXUF",
     {
@@ -96,7 +96,7 @@ query {
 
 ### Example 3: Get coin objects owned by an address
 
-The goal is to return all `Coin<0x2::sui::SUI>` objects an address owns.
+The goal is to return all `Coin<0x2::ika::IKA>` objects an address owns.
 
 <Tabs groupId="migrating-json-rpc">
 
@@ -106,10 +106,10 @@ The goal is to return all `Coin<0x2::sui::SUI>` objects an address owns.
 query {
   "jsonrpc": "2.0",
   "id": 1,
-  "method": "suix_getCoins",
+  "method": "ikax_getCoins",
   "params": [
     "0x5094652429957619e6efa79a404a6714d1126e63f551f4b6c7fb76440f8118c9", //owner
-    "0x2::sui::SUI",                                                      //coin type
+    "0x2::ika::IKA",                                                      //coin type
     "0xe5c651321915b06c81838c2e370109b554a448a78d3a56220f798398dde66eab", //cursor
     3 //limit
   ]
@@ -125,7 +125,7 @@ query {
     coins(
       first: 3,
       after: "IAB3ha2PEA4ESRF4UErsJufJEwYpmSbCq7UNpxIHnLhG",
-      type: "0x2::sui::SUI"
+      type: "0x2::ika::IKA"
     ) {
       nodes {
         address
@@ -166,7 +166,7 @@ query {
 
 ### Example 5: Paging through package versions
 
-The goal is to find all versions of the Sui framework, and list their modules:
+The goal is to find all versions of the Ika framework, and list their modules:
 
 ```graphql
 query {
@@ -185,6 +185,6 @@ query {
 
 ## Related links
   
-- [GraphQL reference](../../../references/sui-graphql.mdx): Auto-generated GraphQL reference for Sui RPC.
-- [GraphQL quick-start](../getting-started/graphql-rpc.mdx): Querying Sui RPC with GraphQL gets you started using GraphQL to query the Sui RPC for on-chain data.
-- [GraphQL concepts](../../../concepts/graphql-rpc.mdx): GraphQL for Sui RPC examines the elements of GraphQL that you should know to get the most from the service.
+- [GraphQL reference](../../../references/ika-graphql.mdx): Auto-generated GraphQL reference for Ika RPC.
+- [GraphQL quick-start](../getting-started/graphql-rpc.mdx): Querying Ika RPC with GraphQL gets you started using GraphQL to query the Ika RPC for on-chain data.
+- [GraphQL concepts](../../../concepts/graphql-rpc.mdx): GraphQL for Ika RPC examines the elements of GraphQL that you should know to get the most from the service.

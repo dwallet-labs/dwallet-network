@@ -15,13 +15,13 @@ jobs:
         id: mn-split-cluster-check
         continue-on-error: true  # if failure, continue to bisect
         run: | 
-            SUI_PROTOCOL_CONFIG_CHAIN_OVERRIDE=mainnet \
+            IKA_PROTOCOL_CONFIG_CHAIN_OVERRIDE=mainnet \
             scripts/compatibility/split-cluster-check.sh origin/mainnet ${{ github.sha }}
       - name: Bisect
         if: steps.mn-split-cluster-check.outcome == 'failure' && github.event_name == 'push'
         run: |
             git bisect start ${{ github.event.pull_request.head.sha }} origin/mainnet
-            SUI_PROTOCOL_CONFIG_CHAIN_OVERRIDE=mainnet \
+            IKA_PROTOCOL_CONFIG_CHAIN_OVERRIDE=mainnet \
             git bisect run scripts/split-cluster-check.sh origin/mainnet ${{ github.sha }}
             git bisect reset
       - name: Mark Failures
@@ -39,13 +39,13 @@ jobs:
         id: tn-split-cluster-check
         continue-on-error: true  # if failure, continue to bisect
         run: | 
-            SUI_PROTOCOL_CONFIG_CHAIN_OVERRIDE=testnet \
+            IKA_PROTOCOL_CONFIG_CHAIN_OVERRIDE=testnet \
             scripts/compatibility/split-cluster-check.sh origin/testnet ${{ github.sha }}
       - name: Bisect
         if: steps.tn-split-cluster-check.outcome == 'failure' && github.event_name == 'push'
         run: |
             git bisect start ${{ github.event.pull_request.head.sha }} origin/testnet
-            SUI_PROTOCOL_CONFIG_CHAIN_OVERRIDE=testnet \
+            IKA_PROTOCOL_CONFIG_CHAIN_OVERRIDE=testnet \
             git bisect run scripts/split-cluster-check.sh origin/testnet ${{ github.sha }}
             git bisect reset
       - name: Mark Failures

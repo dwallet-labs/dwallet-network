@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 use anemo_tower::callback::{MakeCallbackHandler, ResponseHandler};
-use sui_macros::fail_point;
+use ika_macros::fail_point;
 
 #[derive(Clone, Default)]
 pub struct FailpointsMakeCallbackHandler {}

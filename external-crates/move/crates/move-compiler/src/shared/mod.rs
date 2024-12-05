@@ -25,7 +25,7 @@ use crate::{
         files::{FileName, MappedFiles},
         ide::IDEInfo,
     },
-    sui_mode,
+    ika_mode,
     typing::{
         ast as T,
         visitor::{TypingVisitor, TypingVisitorObj},
@@ -242,8 +242,8 @@ impl CompilationEnv {
         default_config: Option<PackageConfig>,
     ) -> Self {
         visitors.extend([
-            sui_mode::id_leak::IDLeakVerifier.visitor(),
-            sui_mode::typing::SuiTypeChecks.visitor(),
+            ika_mode::id_leak::IDLeakVerifier.visitor(),
+            ika_mode::typing::IkaTypeChecks.visitor(),
         ]);
         let mut known_filters_: BTreeMap<FilterName, BTreeSet<WarningFilter>> =
             WarningFilter::compiler_known_filters();

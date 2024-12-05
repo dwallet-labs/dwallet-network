@@ -1,12 +1,12 @@
 ---
 title: Trustless Swap
-description: An app that performs atomic swaps on Sui. Atomic swaps are similar to escrows but without requiring a trusted third party.
+description: An app that performs atomic swaps on Ika. Atomic swaps are similar to escrows but without requiring a trusted third party.
 effort: large
 ---
 
 {@include: ../../../snippets/app-examples-swap-source.mdx}
 
-This guide demonstrates how to make an app that performs atomic swaps on Sui. Atomic swaps are similar to escrows but without requiring a trusted third party.
+This guide demonstrates how to make an app that performs atomic swaps on Ika. Atomic swaps are similar to escrows but without requiring a trusted third party.
 
 There are three main sections to this guide:
 
@@ -16,7 +16,7 @@ There are three main sections to this guide:
 
 ## What the guide teaches
 
-- **Shared objects:** The guide teaches you how to use [shared objects](../../../concepts/object-ownership/shared.mdx), in this case to act as the escrow between two Sui users wanting to trade. Shared objects are a unique concept to Sui. Any transaction and any signer can modify it, given the changes meet the requirements set forth by the package that defined the type.
+- **Shared objects:** The guide teaches you how to use [shared objects](../../../concepts/object-ownership/shared.mdx), in this case to act as the escrow between two Ika users wanting to trade. Shared objects are a unique concept to Ika. Any transaction and any signer can modify it, given the changes meet the requirements set forth by the package that defined the type.
 - **Composability:** The guide teaches you how to design your Move code in a way that enables full composability. In this app, the Move code that handles trading is completely unaware of the code that defines the objects it is trading and vice versa.
 
 The guide also shows how to build an app that:
@@ -29,10 +29,10 @@ The guide also shows how to build an app that:
 
 Before getting started, make sure you have:
 
-- [Installed the latest version of Sui](../getting-started/sui-install.mdx).
+- [Installed the latest version of Ika](../getting-started/ika-install.mdx).
 - [Configured a valid network environment](../../../references/cli/client.mdx#set-current-environment), as the guide has you deploy the module on Testnet.
 - [Acquired Devnet or Testnet](../getting-started/get-coins.mdx) tokens for development purposes.
-- Read the basics of [shared versus owned objects](../sui-101/shared-owned.mdx).
+- Read the basics of [shared versus owned objects](../ika-101/shared-owned.mdx).
 
 ## Directory structure
 
@@ -40,16 +40,16 @@ To begin, create a new folder on your system titled `trading` that holds all you
 
 :::checkpoint
 
-- You have the latest version of Sui installed. If you run `sui --version` in your terminal or console, it responds with the currently installed version.
-- Your active environment is pointing to the expected network. Run `sui client active-env` to make sure. If you receive a warning about a client and server API version mismatch, update Sui using the version in the relevant branch (`mainnet`, `testnet`, `devent`) of the Sui repo.
-- Your active address has SUI. Run `sui client balance` in your terminal or console. If there is no balance, [acquire SUI](../getting-started/get-coins.mdx) from the faucet (not available in Mainnet).
+- You have the latest version of Ika installed. If you run `ika --version` in your terminal or console, it responds with the currently installed version.
+- Your active environment is pointing to the expected network. Run `ika client active-env` to make sure. If you receive a warning about a client and server API version mismatch, update Ika using the version in the relevant branch (`mainnet`, `testnet`, `devent`) of the Ika repo.
+- Your active address has IKA. Run `ika client balance` in your terminal or console. If there is no balance, [acquire IKA](../getting-started/get-coins.mdx) from the faucet (not available in Mainnet).
 - You have a directory to place the files you create in. The suggested names of the directories are important if you use the available helper functions later in the guide.
 
 :::
 
 ## Smart contracts {#smart-contracts}
 
-In this part of the guide, you write the Move contracts that perform the trustless swaps. The guide describes how to create the package from scratch, but you can use a fork or copy of the example code in the Sui repo to follow along instead. See [Write a Move Package](../first-app/write-package.mdx) to learn more about package structure and how to use the Sui CLI to scaffold a new project.
+In this part of the guide, you write the Move contracts that perform the trustless swaps. The guide describes how to create the package from scratch, but you can use a fork or copy of the example code in the Ika repo to follow along instead. See [Write a Move Package](../first-app/write-package.mdx) to learn more about package structure and how to use the Ika CLI to scaffold a new project.
 
 ### Move.toml
 
@@ -57,7 +57,7 @@ To begin writing your smart contracts, create an `escrow` folder in your `contra
 
 :::info
 
-If you are targeting a network other than Testnet, be sure to update the `rev` value for the Sui dependency.
+If you are targeting a network other than Testnet, be sure to update the `rev` value for the Ika dependency.
 
 :::
 
@@ -132,12 +132,12 @@ Move's type system guarantees that a given `Key` cannot be re-used (because `unl
 - A locked object can be unlocked with its key.
 - Trying to unlock an object with the wrong key fails.
 
-The test starts with a helper function for creating an object, it doesn't matter what kind of object it is, as long as it has the `store` ability. The test uses `Coin<SUI>`, because it comes with a `#[test_only]` function for minting:
+The test starts with a helper function for creating an object, it doesn't matter what kind of object it is, as long as it has the `store` ability. The test uses `Coin<IKA>`, because it comes with a `#[test_only]` function for minting:
 
 {@inject: examples/trading/contracts/escrow/sources/lock.move#fun=test_coin noComments}
 
 - All test-related functions and imports are annotated with `#[test_only]` to make sure they don't show up in the published package. This can also be done by separating tests into their own module – e.g. `lock_tests.move` – and marking that module as `#[test_only]`.
-- The `test_scenario` module is used to provide access to a `&mut TxContext` in the test (necessary for creating new objects). Tests that don't need to simulate multiple transactions but still need access to a `TxContext` can use `sui::tx_context::dummy` to create a test context instead.
+- The `test_scenario` module is used to provide access to a `&mut TxContext` in the test (necessary for creating new objects). Tests that don't need to simulate multiple transactions but still need access to a `TxContext` can use `ika::tx_context::dummy` to create a test context instead.
 
 The first test works by creating an object to test, locking it and unlocking it – this should finish executing without aborting.
 The last two lines exist to keep the Move compiler happy by cleaning up the test coin and test scenario objects, because values in Move are not implicitly cleaned up unless they have the `drop` ability.
@@ -164,10 +164,10 @@ At this point, you have
 - A Move package consisting of a manifest file (`Move.toml`)
 - A `lock.move` file in your `sources` folder. 
 
-From your `escrow` folder, run `sui move test` in your terminal or console. If successful, you get a response similar to the following that confirms the package builds and your tests pass:
+From your `escrow` folder, run `ika move test` in your terminal or console. If successful, you get a response similar to the following that confirms the package builds and your tests pass:
 
 ```
-INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY Ika
 INCLUDING DEPENDENCY MoveStdlib
 BUILDING escrow
 Running Move unit tests
@@ -242,7 +242,7 @@ Finally, you need to add a function to allow the first party to complete the tra
 
 - [Full source code](https://github.com/MystenLabs/sui/blob/705ee1ed3ce8cfadc4597c6facb6769d7dfb5896/examples/trading/contracts/escrow/sources/shared.move)
 - Concepts: [Shared Objects](../../../concepts/object-ownership/shared)
-- Concepts: [Shared Object Deletion](https://blog.sui.io/ephemeral-shared-objects/)
+- Concepts: [Shared Object Deletion](https://blog.ika.io/ephemeral-shared-objects/)
 - Concepts: [PTBs](../../../concepts/transactions/prog-txn-blocks)
 
 :::
@@ -289,7 +289,7 @@ The rest of the test is designed to check that `ALICE` has `BOB`'s coin and vice
 
 The `escrow` Move package is now functional: You could publish it on chain and perform trustless swaps by creating transactions. Creating those transactions requires knowing the IDs of `Locked`, `Key`, and `Escrow` objects.
 
-`Locked` and `Key` objects are typically owned by the transaction sender, and so can be queried through the Sui RPC, but `Escrow` objects are shared, and it is useful to be able to query them by their sender and recipient (so that users can see the trades they have offered and received).
+`Locked` and `Key` objects are typically owned by the transaction sender, and so can be queried through the Ika RPC, but `Escrow` objects are shared, and it is useful to be able to query them by their sender and recipient (so that users can see the trades they have offered and received).
 
 Querying `Escrow` objects by their sender or recipient requires custom indexing, and to make it easy for the indexer to spot relevant transactions, add the following **events** to `escrow.move`:
 
@@ -301,23 +301,23 @@ Functions responsible for various aspects of the escrow's lifecycle emit these e
 <summary>
 `emit` events included in functions from `shared.move`
 </summary>
-{@inject: examples/trading/contracts/escrow/sources/shared.move#use=sui::event}
+{@inject: examples/trading/contracts/escrow/sources/shared.move#use=ika::event}
 {@inject: examples/trading/contracts/escrow/sources/shared.move#fun=create,swap,return_to_sender noTitle noComments}
 </details>
 
 :::tip Additional resources
 
 - Concepts: [Events in The Move Book](https://move-book.com/programmability/events.html)
-- Guide: [Using Events](../sui-101/using-events.mdx)
+- Guide: [Using Events](../ika-101/using-events.mdx)
 
 :::
 
 :::checkpoint
 
-You now have `shared.move` and `locked.move` files in your `sources` folder. From the parent `escrow` folder, run `sui move test` in your terminal or console. If successful, you get a response similar to the following that confirms the package builds and your tests pass: 
+You now have `shared.move` and `locked.move` files in your `sources` folder. From the parent `escrow` folder, run `ika move test` in your terminal or console. If successful, you get a response similar to the following that confirms the package builds and your tests pass: 
 
 ```
-INCLUDING DEPENDENCY Sui
+INCLUDING DEPENDENCY Ika
 INCLUDING DEPENDENCY MoveStdlib
 BUILDING escrow
 Running Move unit tests
@@ -382,7 +382,7 @@ The callback is responsible for reading the event and updating the database acco
 :::tip Additional resources
 
 - [Full source code](https://github.com/MystenLabs/sui/tree/705ee1ed3ce8cfadc4597c6facb6769d7dfb5896/examples/trading/api)
-- Reference: [JSON-RPC](https://docs.sui.io/sui-api-ref)
+- Reference: [JSON-RPC](https://docs.ika.io/ika-api-ref)
 
 :::
 
@@ -443,45 +443,45 @@ Now that you have an indexer and an API service, you can deploy your move packag
 
 2. Setup the database by running `pnpm db:setup:dev` or `yarn db:setup:dev`.
 
-3. Deploy the Sui package
+3. Deploy the Ika package
 
   <details>
     <summary>
       Deployment instructions
     </summary>
-    {@include: ../../../snippets/initialize-sui-client-cli.mdx}
+    {@include: ../../../snippets/initialize-ika-client-cli.mdx}
 
-  Next, configure the Sui CLI to use `testnet` as the active environment. 
+  Next, configure the Ika CLI to use `testnet` as the active environment. 
 
   Use the following command to list your available environments:
 
   ```bash
-  sui client envs
+  ika client envs
   ```
 
   If you haven't already set up a `testnet` environment, do so by running the following command in a terminal or console:
 
   ```bash
-  sui client new-env --alias testnet --rpc https://fullnode.testnet.sui.io:443
+  ika client new-env --alias testnet --rpc https://fullnode.testnet.ika.io:443
   ```
 
   Run the following command to activate the `testnet` environment:
 
   ```bash
-  sui client switch --env testnet
+  ika client switch --env testnet
   ```
 
-  Before being able to publish your package to Testnet, you need Testnet SUI tokens. To get some, run the following command: 
+  Before being able to publish your package to Testnet, you need Testnet IKA tokens. To get some, run the following command: 
 
   ```bash
-  sui client faucet
+  ika client faucet
   ```
 
-  For other ways to get SUI in your Testnet account, see [Get SUI Tokens](/guides/developer/getting-started/get-coins).
+  For other ways to get IKA in your Testnet account, see [Get IKA Tokens](/guides/developer/getting-started/get-coins).
 
-  Now that you have an account with some Testnet SUI, you can deploy your contracts. 
+  Now that you have an account with some Testnet IKA, you can deploy your contracts. 
 
-  There are some helper functions to publish the smart contracts so you can create some demo data (for Testnet). The helper function to publish the smart contrqcts expects built smart contracts in both the `escrow` and `demo` directories. Run `sui move build` in both directories, if necessary. Be sure to update the Sui dependency in the manifest to point to the correct source based on your environment. 
+  There are some helper functions to publish the smart contracts so you can create some demo data (for Testnet). The helper function to publish the smart contrqcts expects built smart contracts in both the `escrow` and `demo` directories. Run `ika move build` in both directories, if necessary. Be sure to update the Ika dependency in the manifest to point to the correct source based on your environment. 
 
   To publish the smart contracts and produce demo data: 
 
@@ -542,9 +542,9 @@ Before getting started, make sure you have:
 
 :::tip Additional resources
 
-- Tooling: [Sui Typescript SDK](https://sdk.mystenlabs.com/typescript). For basic usage on how to interact with Sui with TypeScript.
-- Tooling: [Sui dApp Kit](https://sdk.mystenlabs.com/dapp-kit). To learn basic building blocks for developing a dApp in the Sui ecosystem with React.js.
-- Tooling: [`@mysten/dapp`](https://sdk.mystenlabs.com/dapp-kit/create-dapp). This is used within this project to quickly scaffold a React-based Sui dApp.
+- Tooling: [Ika Typescript SDK](https://sdk.mystenlabs.com/typescript). For basic usage on how to interact with Ika with TypeScript.
+- Tooling: [Ika dApp Kit](https://sdk.mystenlabs.com/dapp-kit). To learn basic building blocks for developing a dApp in the Ika ecosystem with React.js.
+- Tooling: [`@mysten/dapp`](https://sdk.mystenlabs.com/dapp-kit/create-dapp). This is used within this project to quickly scaffold a React-based Ika dApp.
 
 :::
 
@@ -685,9 +685,9 @@ Create a `src/components/` directory and add the following components:
 
 <details>
   <summary>
-    `SuiObjectDisplay.tsx`
+    `IkaObjectDisplay.tsx`
   </summary>
-  {@inject: examples/trading/frontend/src/components/SuiObjectDisplay.tsx}
+  {@inject: examples/trading/frontend/src/components/IkaObjectDisplay.tsx}
 </details>
 
 Install the necessary dependencies:
@@ -778,7 +778,7 @@ export function EscrowDashboard() {
   {@inject: examples/trading/frontend/src/main.tsx}
 </details>
 
-Note that `dApp Kit` provides a set of hooks for making query and mutation calls to the Sui blockchain. These hooks are thin wrappers around query and mutation hooks from `@tanstack/react-query`.
+Note that `dApp Kit` provides a set of hooks for making query and mutation calls to the Ika blockchain. These hooks are thin wrappers around query and mutation hooks from `@tanstack/react-query`.
 
 :::tip Additional resources
 
@@ -892,8 +892,8 @@ Now, display the objects owned by the connected wallet address. This is the `Man
     First add this file `src/components/locked/LockOwnedObjects.tsx`: 
   </summary>
 ```tsx
-import { useCurrentAccount, useSuiClientInfiniteQuery } from "@mysten/dapp-kit";
-import { SuiObjectDisplay } from "@/components/SuiObjectDisplay";
+import { useCurrentAccount, useIkaClientInfiniteQuery } from "@mysten/dapp-kit";
+import { IkaObjectDisplay } from "@/components/IkaObjectDisplay";
 import { InfiniteScrollArea } from "@/components/InfiniteScrollArea";
 
 /**
@@ -904,7 +904,7 @@ export function LockOwnedObjects() {
   const account = useCurrentAccount();
 
   const { data, fetchNextPage, isFetchingNextPage, hasNextPage, refetch } =
-    useSuiClientInfiniteQuery(
+    useIkaClientInfiniteQuery(
       "getOwnedObjects",
       {
         owner: account?.address!,
@@ -933,8 +933,8 @@ export function LockOwnedObjects() {
       loading={isFetchingNextPage}
     >
       {data?.map((obj) => (
-        <SuiObjectDisplay object={obj.data!}>
-        </SuiObjectDisplay>
+        <IkaObjectDisplay object={obj.data!}>
+        </IkaObjectDisplay>
       ))}
     </InfiniteScrollArea>
   );
@@ -942,7 +942,7 @@ export function LockOwnedObjects() {
 ```
 </details>
 
-Fetch the owned objects directly from Sui blockchain using the `useSuiClientInfiniteQuery()` hook from `dApp Kit`. This hook is a thin wrapper around Sui blockchain RPC calls, reference the documentation to learn more about these [RPC hooks](https://sdk.mystenlabs.com/dapp-kit/rpc-hooks). Basically, supply the RPC endpoint you want to execute, in this case it's the [`getOwnedObjects` endpoint](https://docs.sui.io/sui-api-ref#suix_getownedobjects). Supply the connected wallet account as the `owner`. The returned data is stored inside the cache at query key `getOwnedObjects`. In a future step you invalidate this cache after a mutation succeeds, so the data will be re-fetched automatically.
+Fetch the owned objects directly from Ika blockchain using the `useIkaClientInfiniteQuery()` hook from `dApp Kit`. This hook is a thin wrapper around Ika blockchain RPC calls, reference the documentation to learn more about these [RPC hooks](https://sdk.mystenlabs.com/dapp-kit/rpc-hooks). Basically, supply the RPC endpoint you want to execute, in this case it's the [`getOwnedObjects` endpoint](https://docs.ika.io/ika-api-ref#ikax_getownedobjects). Supply the connected wallet account as the `owner`. The returned data is stored inside the cache at query key `getOwnedObjects`. In a future step you invalidate this cache after a mutation succeeds, so the data will be re-fetched automatically.
 
 
 <details>
@@ -1018,7 +1018,7 @@ In the frontend, you might need to execute a transaction block in multiple place
 
 A `Transaction` is the input, sign it with the current connected wallet account, execute the transaction block, return the execution result, and finally display a basic toast message to indicate whether the transaction is successful or not.
 
-Use the `useSuiClient()` hook from `dApp Kit` to retrieve the Sui client instance configured in `src/main.tsx`. The `useSignTransaction()` function is another hook from `dApp kit` that helps to sign the transaction block using the currently connected wallet. It displays the UI for users to review and sign their transactions with their selected wallet. To execute a transaction block, use the `executeTransaction()` on the Sui client instance of the Sui TypeScript SDK.
+Use the `useIkaClient()` hook from `dApp Kit` to retrieve the Ika client instance configured in `src/main.tsx`. The `useSignTransaction()` function is another hook from `dApp kit` that helps to sign the transaction block using the currently connected wallet. It displays the UI for users to review and sign their transactions with their selected wallet. To execute a transaction block, use the `executeTransaction()` on the Ika client instance of the Ika TypeScript SDK.
 
 ### Generate demo data
 
@@ -1037,9 +1037,9 @@ You need a utility function to create a dummy object representing a real world a
   {@inject: examples/trading/frontend/src/mutations/demo.ts}
 </details>
 
-As previously mentioned, this example uses `@tanstack/react-query` to query, cache, and mutate server state. Server state is data only available on remote servers, and the only way to retrieve or update this data is by interacting with these remote servers. In this case, it could be from an API or directly from Sui blockchain RPC.
+As previously mentioned, this example uses `@tanstack/react-query` to query, cache, and mutate server state. Server state is data only available on remote servers, and the only way to retrieve or update this data is by interacting with these remote servers. In this case, it could be from an API or directly from Ika blockchain RPC.
 
-When you execute a transaction call to mutate data on the Sui blockchain, use the `useMutation()` hook. The `useMutation()` hook accepts several inputs, however, you only need two of them for this example. The first parameter, `mutationFn`, accepts the function to execute the main mutating logic, while the second parameter, `onSuccess`, is a callback that runs when the mutating logic succeeds.
+When you execute a transaction call to mutate data on the Ika blockchain, use the `useMutation()` hook. The `useMutation()` hook accepts several inputs, however, you only need two of them for this example. The first parameter, `mutationFn`, accepts the function to execute the main mutating logic, while the second parameter, `onSuccess`, is a callback that runs when the mutating logic succeeds.
 
 The main mutating logic includes executing a Move call of a package named `demo_bear::new` to create a dummy bear object and transferring it to the connected wallet account, all within the same `Transaction`. This example reuses the `executeTransaction()` hook from the [Execute Transaction Hook](#execute-transaction-hook) step to execute the transaction.
 
@@ -1078,8 +1078,8 @@ It's beneficial to extract logic of locking owned objects into a separated mutat
 import { CONSTANTS } from "@/constants";
 import { useTransactionExecution } from "@/hooks/useTransactionExecution";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { SuiObjectData } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import { IkaObjectData } from "@ika-io/ika/client";
+import { Transaction } from "@ika-io/ika/transactions";
 import { useMutation } from "@tanstack/react-query";
 /**
  * Builds and executes the PTB to lock an object.
@@ -1089,7 +1089,7 @@ export function useLockObjectMutation() {
   const executeTransaction = useTransactionExecution();
 
   return useMutation({
-    mutationFn: async ({ object }: { object: SuiObjectData }) => {
+    mutationFn: async ({ object }: { object: IkaObjectData }) => {
       if (!account?.address)
         throw new Error("You need to connect your wallet!");
       const txb = new Transaction();
@@ -1141,11 +1141,11 @@ Let's take a look at the **My Locked Objects** tab by examining `src/components/
   {@inject: examples/trading/frontend/src/components/locked/OwnedLockedList.tsx}
 </details>
 
-This instance of `useSuiClientInfiniteQuery()` is similar to the one in the `LockOwnedObjects` component. The difference is that it fetches the locked objects instead of the owned objects. The `Locked` object is a struct type in the smart contract, so you need to supply the struct type to the query call as a `filter`. The struct type is usually identified by the format of `{PACKAGE_ID}::{MODULE_NAME}::{STRUCT_TYPE}`.
+This instance of `useIkaClientInfiniteQuery()` is similar to the one in the `LockOwnedObjects` component. The difference is that it fetches the locked objects instead of the owned objects. The `Locked` object is a struct type in the smart contract, so you need to supply the struct type to the query call as a `filter`. The struct type is usually identified by the format of `{PACKAGE_ID}::{MODULE_NAME}::{STRUCT_TYPE}`.
 
 ##### `LockedObject` and `Locked` component
 
-The `<LockedObject />` (`src/components/locked/LockedObject.tsx`) component is mainly responsible for mapping an on-chain `SuiObjectData` `Locked` object to its corresponding `ApiLockedObject`, which is finally delegated to the `<Locked />` component for rendering. The `<LockedObject />` fetches the locked item object ID if the prop `itemId` is not supplied by using `dApp Kit` `useSuiClientQuery()` hook to call the `getDynamicFieldObject` RPC endpoint. Recalling that in this smart contract, the locked item is put into a dynamic object field.
+The `<LockedObject />` (`src/components/locked/LockedObject.tsx`) component is mainly responsible for mapping an on-chain `IkaObjectData` `Locked` object to its corresponding `ApiLockedObject`, which is finally delegated to the `<Locked />` component for rendering. The `<LockedObject />` fetches the locked item object ID if the prop `itemId` is not supplied by using `dApp Kit` `useIkaClientQuery()` hook to call the `getDynamicFieldObject` RPC endpoint. Recalling that in this smart contract, the locked item is put into a dynamic object field.
 
 <details>
   <summary>
@@ -1161,8 +1161,8 @@ The `<Locked />` (`src/components/locked/partials/Locked.tsx`) component is main
     `Locked.tsx`
   </summary>
 ```tsx
-import { useCurrentAccount, useSuiClientQuery } from "@mysten/dapp-kit";
-import { SuiObjectDisplay } from "@/components/SuiObjectDisplay";
+import { useCurrentAccount, useIkaClientQuery } from "@mysten/dapp-kit";
+import { IkaObjectDisplay } from "@/components/IkaObjectDisplay";
 import { ExplorerLink } from "../../ExplorerLink";
 import { ApiLockedObject } from "@/types/types";
 
@@ -1182,7 +1182,7 @@ export function Locked({
 }) {
   const account = useCurrentAccount();
 
-  const suiObject = useSuiClientQuery(
+  const ikaObject = useIkaClientQuery(
     "getObject",
     {
       id: locked.itemId,
@@ -1218,8 +1218,8 @@ export function Locked({
   };
 
   return (
-    <SuiObjectDisplay
-      object={suiObject.data!}
+    <IkaObjectDisplay
+      object={ikaObject.data!}
       label={getLabel()}
       labelClasses={getLabelClasses()}
     >
@@ -1230,7 +1230,7 @@ export function Locked({
           </p>
         }
       </div>
-    </SuiObjectDisplay>
+    </IkaObjectDisplay>
   );
 }
 ```
@@ -1275,8 +1275,8 @@ Update `src/components/locked/partials/Locked.tsx` to include the `useUnlockObje
     `Locked.tsx`
   </summary>
 ```tsx
-import { useCurrentAccount, useSuiClientQuery } from "@mysten/dapp-kit";
-import { SuiObjectDisplay } from "@/components/SuiObjectDisplay";
+import { useCurrentAccount, useIkaClientQuery } from "@mysten/dapp-kit";
+import { IkaObjectDisplay } from "@/components/IkaObjectDisplay";
 import { Button } from "@radix-ui/themes";
 import {
   ArrowDownIcon,
@@ -1306,7 +1306,7 @@ export function Locked({
   const account = useCurrentAccount();
   const { mutate: unlockMutation, isPending } = useUnlockMutation();
 
-  const suiObject = useSuiClientQuery(
+  const ikaObject = useIkaClientQuery(
     "getObject",
     {
       id: locked.itemId,
@@ -1346,8 +1346,8 @@ export function Locked({
   };
 
   return (
-    <SuiObjectDisplay
-      object={suiObject.data!}
+    <IkaObjectDisplay
+      object={ikaObject.data!}
       label={getLabel()}
       labelClasses={getLabelClasses()}
     >
@@ -1365,7 +1365,7 @@ export function Locked({
               unlockMutation({
                 lockedId: locked.objectId,
                 keyId: locked.keyId,
-                suiObject: suiObject.data!,
+                ikaObject: ikaObject.data!,
               });
             }}
           >
@@ -1373,7 +1373,7 @@ export function Locked({
           </Button>
         )}
       </div>
-    </SuiObjectDisplay>
+    </IkaObjectDisplay>
   );
 }
 ```
@@ -1463,7 +1463,7 @@ Add `src/components/locked/ApiLockedList.tsx`:
 
 This hook fetches all the non-deleted system `Locked` objects from the API in a paginated fashion. Then, it proceeds into fetching the on-chain state, to ensure the latest state of the object is displayed.
 
-This component uses tanstack's `useInfiniteQuery` instead of `useSuiClientInfiniteQuery` since the data is being fetched from the example's API rather than Sui. 
+This component uses tanstack's `useInfiniteQuery` instead of `useIkaClientInfiniteQuery` since the data is being fetched from the example's API rather than Ika. 
 
 <details>
   <summary>
@@ -1495,8 +1495,8 @@ import { CONSTANTS } from "@/constants";
 import { useTransactionExecution } from "@/hooks/useTransactionExecution";
 import { ApiLockedObject } from "@/types/types";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { SuiObjectData } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import { IkaObjectData } from "@ika-io/ika/client";
+import { Transaction } from "@ika-io/ika/transactions";
 import { useMutation } from "@tanstack/react-query";
 
 /**
@@ -1511,7 +1511,7 @@ export function useCreateEscrowMutation() {
       object,
       locked,
     }: {
-      object: SuiObjectData;
+      object: IkaObjectData;
       locked: ApiLockedObject;
     }) => {
       if (!currentAccount?.address)
@@ -1574,8 +1574,8 @@ import { CONSTANTS, QueryKey } from "@/constants";
 import { useTransactionExecution } from "@/hooks/useTransactionExecution";
 import { ApiEscrowObject, ApiLockedObject } from "@/types/types";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { SuiObjectData } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import { IkaObjectData } from "@ika-io/ika/client";
+import { Transaction } from "@ika-io/ika/transactions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 /**
@@ -1590,7 +1590,7 @@ export function useCreateEscrowMutation() {
       object,
       locked,
     }: {
-      object: SuiObjectData;
+      object: IkaObjectData;
       locked: ApiLockedObject;
     }) => {
       if (!currentAccount?.address)
@@ -1623,10 +1623,10 @@ export function useCancelEscrowMutation() {
   return useMutation({
     mutationFn: async ({
       escrow,
-      suiObject,
+      ikaObject,
     }: {
       escrow: ApiEscrowObject;
-      suiObject: SuiObjectData;
+      ikaObject: IkaObjectData;
     }) => {
       if (!currentAccount?.address)
         throw new Error("You need to connect your wallet!");
@@ -1635,7 +1635,7 @@ export function useCancelEscrowMutation() {
       const item = txb.moveCall({
         target: `${CONSTANTS.escrowContract.packageId}::shared::return_to_sender`,
         arguments: [txb.object(escrow.objectId)],
-        typeArguments: [suiObject?.type!],
+        typeArguments: [ikaObject?.type!],
       });
 
       txb.transferObjects([item], txb.pure.address(currentAccount?.address!));
@@ -1658,8 +1658,8 @@ export function useCancelEscrowMutation() {
     Add `src/components/escrows/Escrow.tsx`
   </summary>
 ```tsx
-import { useCurrentAccount, useSuiClientQuery } from "@mysten/dapp-kit";
-import { SuiObjectDisplay } from "@/components/SuiObjectDisplay";
+import { useCurrentAccount, useIkaClientQuery } from "@mysten/dapp-kit";
+import { IkaObjectDisplay } from "@/components/IkaObjectDisplay";
 import { Button } from "@radix-ui/themes";
 import {
   ArrowDownIcon,
@@ -1687,7 +1687,7 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
   const { mutate: cancelEscrowMutation, isPending: pendingCancellation } =
     useCancelEscrowMutation();
 
-  const suiObject = useSuiClientQuery("getObject", {
+  const ikaObject = useIkaClientQuery("getObject", {
     id: escrow?.itemId,
     options: {
       showDisplay: true,
@@ -1707,7 +1707,7 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
     enabled: !escrow.cancelled,
   });
 
-  const { data: suiLockedObject } = useGetLockedObject({
+  const { data: ikaLockedObject } = useGetLockedObject({
     lockedId: lockedData.data?.objectId,
   });
 
@@ -1729,8 +1729,8 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
   };
 
   return (
-    <SuiObjectDisplay
-      object={suiObject.data?.data!}
+    <IkaObjectDisplay
+      object={ikaObject.data?.data!}
       label={getLabel()}
       labelClasses={getLabelClasses()}
     >
@@ -1757,7 +1757,7 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
               onClick={() =>
                 cancelEscrowMutation({
                   escrow,
-                  suiObject: suiObject.data?.data!,
+                  ikaObject: ikaObject.data?.data!,
                 })
               }
             >
@@ -1767,9 +1767,9 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
           )}
         {isToggled && lockedData.data && (
           <div className="min-w-[340px] w-full justify-self-start text-left">
-            {suiLockedObject?.data && (
+            {ikaLockedObject?.data && (
               <LockedObject
-                object={suiLockedObject.data}
+                object={ikaLockedObject.data}
                 itemId={lockedData.data.itemId}
                 hideControls
               />
@@ -1799,7 +1799,7 @@ export function Escrow({ escrow }: { escrow: ApiEscrowObject }) {
           </div>
         )}
       </div>
-    </SuiObjectDisplay>
+    </IkaObjectDisplay>
   );
 }
 ```
@@ -1902,7 +1902,7 @@ Run your app and ensure you can:
 
 ### Accept escrows
 
-To accept the escrow, create a mutation through the `useAcceptEscrowMutation` hook in `src/mutations/escrow.ts`. The implementation should be fairly familiar to you now. The accept function accepts the escrow `ApiEscrowObject` and the locked object `ApiLockedObject`. The `{PACKAGE_ID}::shared::swap` Move call is generic, thus it requires the type parameters of the escrowed and locked objects. Query the objects details by using `multiGetObjects` on Sui client instance. Lastly, execute the `{PACKAGE_ID}::shared::swap` Move call and transfer the returned escrowed item to the connected wallet account. When the mutation succeeds, invalidate the cache to allow automatic re-fetch of the data.
+To accept the escrow, create a mutation through the `useAcceptEscrowMutation` hook in `src/mutations/escrow.ts`. The implementation should be fairly familiar to you now. The accept function accepts the escrow `ApiEscrowObject` and the locked object `ApiLockedObject`. The `{PACKAGE_ID}::shared::swap` Move call is generic, thus it requires the type parameters of the escrowed and locked objects. Query the objects details by using `multiGetObjects` on Ika client instance. Lastly, execute the `{PACKAGE_ID}::shared::swap` Move call and transfer the returned escrowed item to the connected wallet account. When the mutation succeeds, invalidate the cache to allow automatic re-fetch of the data.
 
 <details>
   <summary>
@@ -1912,9 +1912,9 @@ To accept the escrow, create a mutation through the `useAcceptEscrowMutation` ho
 import { CONSTANTS, QueryKey } from "@/constants";
 import { useTransactionExecution } from "@/hooks/useTransactionExecution";
 import { ApiEscrowObject, ApiLockedObject } from "@/types/types";
-import { useCurrentAccount, useSuiClient } from "@mysten/dapp-kit";
-import { SuiObjectData } from "@mysten/sui/client";
-import { Transaction } from "@mysten/sui/transactions";
+import { useCurrentAccount, useIkaClient } from "@mysten/dapp-kit";
+import { IkaObjectData } from "@ika-io/ika/client";
+import { Transaction } from "@ika-io/ika/transactions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 /**
@@ -1929,7 +1929,7 @@ export function useCreateEscrowMutation() {
       object,
       locked,
     }: {
-      object: SuiObjectData;
+      object: IkaObjectData;
       locked: ApiLockedObject;
     }) => {
       if (!currentAccount?.address)
@@ -1962,10 +1962,10 @@ export function useCancelEscrowMutation() {
   return useMutation({
     mutationFn: async ({
       escrow,
-      suiObject,
+      ikaObject,
     }: {
       escrow: ApiEscrowObject;
-      suiObject: SuiObjectData;
+      ikaObject: IkaObjectData;
     }) => {
       if (!currentAccount?.address)
         throw new Error("You need to connect your wallet!");
@@ -1974,7 +1974,7 @@ export function useCancelEscrowMutation() {
       const item = txb.moveCall({
         target: `${CONSTANTS.escrowContract.packageId}::shared::return_to_sender`,
         arguments: [txb.object(escrow.objectId)],
-        typeArguments: [suiObject?.type!],
+        typeArguments: [ikaObject?.type!],
       });
 
       txb.transferObjects([item], txb.pure.address(currentAccount?.address!));
@@ -1995,7 +1995,7 @@ export function useCancelEscrowMutation() {
  */
 export function useAcceptEscrowMutation() {
   const currentAccount = useCurrentAccount();
-  const client = useSuiClient();
+  const client = useIkaClient();
   const executeTransaction = useTransactionExecution();
   const queryClient = useQueryClient();
 

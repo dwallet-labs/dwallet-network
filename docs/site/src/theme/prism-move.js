@@ -308,7 +308,7 @@
     },
 
     /** Just some, non-object, most commonly used */
-    "sui-native-types": {
+    "ika-native-types": {
       pattern: /\b(Option|String|UID|ID|VecSet|VecMap)\b/,
       alias: "symbol",
     },

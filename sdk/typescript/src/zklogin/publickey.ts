@@ -6,7 +6,7 @@ import { fromBase64, toBase64 } from '@mysten/bcs';
 import { PublicKey } from '../cryptography/publickey.js';
 import type { PublicKeyInitData } from '../cryptography/publickey.js';
 import { SIGNATURE_SCHEME_TO_FLAG } from '../cryptography/signature-scheme.js';
-import { SuiGraphQLClient } from '../graphql/client.js';
+import { IkaGraphQLClient } from '../graphql/client.js';
 import { graphql } from '../graphql/schemas/2024.4/index.js';
 import { extractClaimValue } from './jwt-utils.js';
 import { parseZkLoginSignature } from './signature.js';
@@ -17,13 +17,13 @@ import { toPaddedBigEndianBytes } from './utils.js';
  */
 export class ZkLoginPublicIdentifier extends PublicKey {
 	#data: Uint8Array;
-	#client?: SuiGraphQLClient;
+	#client?: IkaGraphQLClient;
 
 	/**
 	 * Create a new ZkLoginPublicIdentifier object
 	 * @param value zkLogin public identifier as buffer or base-64 encoded string
 	 */
-	constructor(value: PublicKeyInitData, { client }: { client?: SuiGraphQLClient } = {}) {
+	constructor(value: PublicKeyInitData, { client }: { client?: IkaGraphQLClient } = {}) {
 		super();
 
 		this.#client = client;
@@ -52,7 +52,7 @@ export class ZkLoginPublicIdentifier extends PublicKey {
 	}
 
 	/**
-	 * Return the Sui address associated with this ZkLogin public identifier
+	 * Return the Ika address associated with this ZkLogin public identifier
 	 */
 	flag(): number {
 		return SIGNATURE_SCHEME_TO_FLAG['ZkLogin'];
@@ -70,7 +70,7 @@ export class ZkLoginPublicIdentifier extends PublicKey {
 	 */
 	verifyPersonalMessage(message: Uint8Array, signature: Uint8Array | string): Promise<boolean> {
 		const parsedSignature = parseSerializedZkLoginSignature(signature);
-		const address = new ZkLoginPublicIdentifier(parsedSignature.publicKey).toSuiAddress();
+		const address = new ZkLoginPublicIdentifier(parsedSignature.publicKey).toIkaAddress();
 
 		return graphqlVerifyZkLoginSignature({
 			address: address,
@@ -86,7 +86,7 @@ export class ZkLoginPublicIdentifier extends PublicKey {
 	 */
 	verifyTransaction(transaction: Uint8Array, signature: Uint8Array | string): Promise<boolean> {
 		const parsedSignature = parseSerializedZkLoginSignature(signature);
-		const address = new ZkLoginPublicIdentifier(parsedSignature.publicKey).toSuiAddress();
+		const address = new ZkLoginPublicIdentifier(parsedSignature.publicKey).toIkaAddress();
 		return graphqlVerifyZkLoginSignature({
 			address: address,
 			bytes: toBase64(transaction),
@@ -101,7 +101,7 @@ export class ZkLoginPublicIdentifier extends PublicKey {
 export function toZkLoginPublicIdentifier(
 	addressSeed: bigint,
 	iss: string,
-	options?: { client?: SuiGraphQLClient },
+	options?: { client?: IkaGraphQLClient },
 ): ZkLoginPublicIdentifier {
 	// Consists of iss_bytes_len || iss_bytes || padded_32_byte_address_seed.
 	const addressSeedBytesBigEndian = toPaddedBigEndianBytes(addressSeed, 32);
@@ -118,7 +118,7 @@ const VerifyZkLoginSignatureQuery = graphql(`
 		$bytes: Base64!
 		$signature: Base64!
 		$intentScope: ZkLoginIntentScope!
-		$author: SuiAddress!
+		$author: IkaAddress!
 	) {
 		verifyZkloginSignature(
 			bytes: $bytes
@@ -137,15 +137,15 @@ async function graphqlVerifyZkLoginSignature({
 	bytes,
 	signature,
 	intentScope,
-	client = new SuiGraphQLClient({
-		url: 'https://sui-mainnet.mystenlabs.com/graphql',
+	client = new IkaGraphQLClient({
+		url: 'https://ika-mainnet.mystenlabs.com/graphql',
 	}),
 }: {
 	address: string;
 	bytes: string;
 	signature: string;
 	intentScope: 'PERSONAL_MESSAGE' | 'TRANSACTION_DATA';
-	client?: SuiGraphQLClient;
+	client?: IkaGraphQLClient;
 }) {
 	const resp = await client.query({
 		query: VerifyZkLoginSignatureQuery,

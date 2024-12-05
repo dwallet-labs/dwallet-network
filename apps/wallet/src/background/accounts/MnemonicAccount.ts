@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { fromExportedKeypair } from '_src/shared/utils/from-exported-keypair';
-import { type Keypair } from '@mysten/sui/cryptography';
+import { type Keypair } from '@ika-io/ika/cryptography';
 
 import { MnemonicAccountSource } from '../account-sources/MnemonicAccountSource';
 import {
@@ -60,7 +60,7 @@ export class MnemonicAccount
 		return {
 			type: 'mnemonic-derived',
 			sourceID,
-			address: keyPair.getPublicKey().toSuiAddress(),
+			address: keyPair.getPublicKey().toIkaAddress(),
 			derivationPath,
 			publicKey: keyPair.getPublicKey().toBase64(),
 			lastUnlockedOn: null,

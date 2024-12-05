@@ -10,103 +10,103 @@ contract BridgeUtilsTest is BridgeBaseTest {
         setUpBridgeTest();
     }
 
-    function testConvertERC20ToSuiDecimalAmountTooLargeForUint64() public {
+    function testConvertERC20ToIkaDecimalAmountTooLargeForUint64() public {
         vm.expectRevert(bytes("BridgeUtils: Amount too large for uint64"));
-        BridgeUtils.convertERC20ToSuiDecimal(18, 8, type(uint256).max);
+        BridgeUtils.convertERC20ToIkaDecimal(18, 8, type(uint256).max);
     }
 
-    function testConvertERC20ToSuiDecimalInvalidSuiDecimal() public {
-        vm.expectRevert(bytes("BridgeUtils: Invalid Sui decimal"));
-        BridgeUtils.convertERC20ToSuiDecimal(10, 11, 100);
+    function testConvertERC20ToIkaDecimalInvalidIkaDecimal() public {
+        vm.expectRevert(bytes("BridgeUtils: Invalid Ika decimal"));
+        BridgeUtils.convertERC20ToIkaDecimal(10, 11, 100);
     }
 
-    function testconvertSuiToERC20DecimalInvalidSuiDecimal() public {
-        vm.expectRevert(bytes("BridgeUtils: Invalid Sui decimal"));
-        BridgeUtils.convertSuiToERC20Decimal(10, 11, 100);
+    function testconvertIkaToERC20DecimalInvalidIkaDecimal() public {
+        vm.expectRevert(bytes("BridgeUtils: Invalid Ika decimal"));
+        BridgeUtils.convertIkaToERC20Decimal(10, 11, 100);
     }
 
-    function testConvertERC20ToSuiDecimal() public {
+    function testConvertERC20ToIkaDecimal() public {
         // ETH
         assertEq(IERC20Metadata(wETH).decimals(), 18);
         uint256 ethAmount = 10 ether;
-        uint64 suiAmount = BridgeUtils.convertERC20ToSuiDecimal(
+        uint64 ikaAmount = BridgeUtils.convertERC20ToIkaDecimal(
             IERC20Metadata(config.tokenAddressOf(BridgeUtils.ETH)).decimals(),
-            config.tokenSuiDecimalOf(BridgeUtils.ETH),
+            config.tokenIkaDecimalOf(BridgeUtils.ETH),
             ethAmount
         );
-        assertEq(suiAmount, 10_000_000_00); // 10 * 10 ^ 8
+        assertEq(ikaAmount, 10_000_000_00); // 10 * 10 ^ 8
 
         // USDC
         assertEq(IERC20Metadata(USDC).decimals(), 6);
         ethAmount = 50_000_000; // 50 USDC
-        suiAmount = BridgeUtils.convertERC20ToSuiDecimal(
+        ikaAmount = BridgeUtils.convertERC20ToIkaDecimal(
             IERC20Metadata(config.tokenAddressOf(BridgeUtils.USDC)).decimals(),
-            config.tokenSuiDecimalOf(BridgeUtils.USDC),
+            config.tokenIkaDecimalOf(BridgeUtils.USDC),
             ethAmount
         );
-        assertEq(suiAmount, ethAmount);
+        assertEq(ikaAmount, ethAmount);
 
         // USDT
         assertEq(IERC20Metadata(USDT).decimals(), 6);
         ethAmount = 60_000_000; // 60 USDT
-        suiAmount = BridgeUtils.convertERC20ToSuiDecimal(
+        ikaAmount = BridgeUtils.convertERC20ToIkaDecimal(
             IERC20Metadata(config.tokenAddressOf(BridgeUtils.USDT)).decimals(),
-            config.tokenSuiDecimalOf(BridgeUtils.USDT),
+            config.tokenIkaDecimalOf(BridgeUtils.USDT),
             ethAmount
         );
-        assertEq(suiAmount, ethAmount);
+        assertEq(ikaAmount, ethAmount);
 
         // BTC
         assertEq(IERC20Metadata(wBTC).decimals(), 8);
         ethAmount = 2_00_000_000; // 2 BTC
-        suiAmount = BridgeUtils.convertERC20ToSuiDecimal(
+        ikaAmount = BridgeUtils.convertERC20ToIkaDecimal(
             IERC20Metadata(config.tokenAddressOf(BridgeUtils.BTC)).decimals(),
-            config.tokenSuiDecimalOf(BridgeUtils.BTC),
+            config.tokenIkaDecimalOf(BridgeUtils.BTC),
             ethAmount
         );
-        assertEq(suiAmount, ethAmount);
+        assertEq(ikaAmount, ethAmount);
     }
 
-    function testconvertSuiToERC20Decimal() public {
+    function testconvertIkaToERC20Decimal() public {
         // ETH
         assertEq(IERC20Metadata(wETH).decimals(), 18);
-        uint64 suiAmount = 11_000_000_00; // 11 eth
-        uint256 ethAmount = BridgeUtils.convertSuiToERC20Decimal(
+        uint64 ikaAmount = 11_000_000_00; // 11 eth
+        uint256 ethAmount = BridgeUtils.convertIkaToERC20Decimal(
             IERC20Metadata(config.tokenAddressOf(BridgeUtils.ETH)).decimals(),
-            config.tokenSuiDecimalOf(BridgeUtils.ETH),
-            suiAmount
+            config.tokenIkaDecimalOf(BridgeUtils.ETH),
+            ikaAmount
         );
         assertEq(ethAmount, 11 ether);
 
         // USDC
         assertEq(IERC20Metadata(USDC).decimals(), 6);
-        suiAmount = 50_000_000; // 50 USDC
-        ethAmount = BridgeUtils.convertSuiToERC20Decimal(
+        ikaAmount = 50_000_000; // 50 USDC
+        ethAmount = BridgeUtils.convertIkaToERC20Decimal(
             IERC20Metadata(config.tokenAddressOf(BridgeUtils.USDC)).decimals(),
-            config.tokenSuiDecimalOf(BridgeUtils.USDC),
-            suiAmount
+            config.tokenIkaDecimalOf(BridgeUtils.USDC),
+            ikaAmount
         );
-        assertEq(suiAmount, ethAmount);
+        assertEq(ikaAmount, ethAmount);
 
         // USDT
         assertEq(IERC20Metadata(USDT).decimals(), 6);
-        suiAmount = 50_000_000; // 50 USDT
-        ethAmount = BridgeUtils.convertSuiToERC20Decimal(
+        ikaAmount = 50_000_000; // 50 USDT
+        ethAmount = BridgeUtils.convertIkaToERC20Decimal(
             IERC20Metadata(config.tokenAddressOf(BridgeUtils.USDT)).decimals(),
-            config.tokenSuiDecimalOf(BridgeUtils.USDT),
-            suiAmount
+            config.tokenIkaDecimalOf(BridgeUtils.USDT),
+            ikaAmount
         );
-        assertEq(suiAmount, ethAmount);
+        assertEq(ikaAmount, ethAmount);
 
         // BTC
         assertEq(IERC20Metadata(wBTC).decimals(), 8);
-        suiAmount = 3_000_000_00; // 3 BTC
-        ethAmount = BridgeUtils.convertSuiToERC20Decimal(
+        ikaAmount = 3_000_000_00; // 3 BTC
+        ethAmount = BridgeUtils.convertIkaToERC20Decimal(
             IERC20Metadata(config.tokenAddressOf(BridgeUtils.BTC)).decimals(),
-            config.tokenSuiDecimalOf(BridgeUtils.BTC),
-            suiAmount
+            config.tokenIkaDecimalOf(BridgeUtils.BTC),
+            ikaAmount
         );
-        assertEq(suiAmount, ethAmount);
+        assertEq(ikaAmount, ethAmount);
     }
 
     function testEncodeMessage() public {
@@ -115,7 +115,7 @@ contract BridgeUtilsTest is BridgeBaseTest {
         );
 
         uint64 nonce = 0;
-        uint8 suiChainId = 1;
+        uint8 ikaChainId = 1;
 
         bytes memory payload = abi.encodePacked(
             hex"2080ab1ee086210a3a37355300ca24672e81062fcdb5ced6618dab203f6a3b291c0b14b18f79fe671db47393315ffdb377da4ea1b7af96010084d71700000000"
@@ -126,7 +126,7 @@ contract BridgeUtilsTest is BridgeBaseTest {
                 messageType: BridgeUtils.TOKEN_TRANSFER,
                 version: 1,
                 nonce: nonce,
-                chainID: suiChainId,
+                chainID: ikaChainId,
                 payload: payload
             })
         );

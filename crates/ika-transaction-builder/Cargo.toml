@@ -1,0 +1,21 @@
+[package]
+name = "ika-transaction-builder"
+version = "0.0.0"
+authors = ["Mysten Labs <build@mystenlabs.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+futures.workspace = true
+bcs.workspace = true
+
+move-binary-format.workspace = true
+ika-json-rpc-types.workspace = true
+ika-types.workspace = true
+ika-json.workspace = true
+ika-protocol-config.workspace = true
+
+move-core-types.workspace = true

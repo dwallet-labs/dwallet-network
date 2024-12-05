@@ -91,7 +91,7 @@ describe('SerialExecutor', { retry: 3 }, () => {
 		const txb2 = new Transaction();
 		txb2.transferObjects([newCoinId], toolbox.address());
 		const txb3 = new Transaction();
-		txb3.transferObjects([newCoinId], new Ed25519Keypair().toSuiAddress());
+		txb3.transferObjects([newCoinId], new Ed25519Keypair().toIkaAddress());
 
 		const { digest } = await toolbox.client.signAndExecuteTransaction({
 			signer: toolbox.keypair,

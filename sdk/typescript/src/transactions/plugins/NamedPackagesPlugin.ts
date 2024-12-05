@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { SuiGraphQLClient } from '../../graphql/client.js';
+import type { IkaGraphQLClient } from '../../graphql/client.js';
 import type { BuildTransactionOptions } from '../json-rpc-resolver.js';
 import type { TransactionDataBuilder } from '../TransactionData.js';
 import type { NamedPackagesPluginCache, NameResolutionRequest } from './utils.js';
@@ -9,12 +9,12 @@ import { findTransactionBlockNames, listToRequests, replaceNames } from './utils
 
 export type NamedPackagesPluginOptions = {
 	/**
-	 * The SuiGraphQLClient to use for resolving names.
+	 * The IkaGraphQLClient to use for resolving names.
 	 * The endpoint should be the GraphQL endpoint of the network you are targeting.
 	 * For non-mainnet networks, if the plugin doesn't work as expected, you need to validate that the
 	 * RPC provider has support for the `packageByName` and `typeByName` queries (using external resolver).
 	 */
-	suiGraphQLClient: SuiGraphQLClient;
+	ikaGraphQLClient: IkaGraphQLClient;
 	/**
 	 * The number of names to resolve in each batch request.
 	 * Needs to be calculated based on the GraphQL query limits.
@@ -47,13 +47,13 @@ export type NamedPackagesPluginOptions = {
  *
  * To install this plugin globally in your app, use:
  * ```
- * Transaction.registerGlobalSerializationPlugin("namedPackagesPlugin", namedPackagesPlugin({ suiGraphQLClient }));
+ * Transaction.registerGlobalSerializationPlugin("namedPackagesPlugin", namedPackagesPlugin({ ikaGraphQLClient }));
  * ```
  *
  * You can also define `overrides` to pre-populate name resolutions locally (removes the GraphQL request).
  */
 export const namedPackagesPlugin = ({
-	suiGraphQLClient,
+	ikaGraphQLClient,
 	pageSize = 10,
 	overrides = { packages: {}, types: {} },
 }: NamedPackagesPluginOptions) => {
@@ -77,7 +77,7 @@ export const namedPackagesPlugin = ({
 		);
 
 		// now we need to bulk resolve all the names + types, and replace them in the transaction data.
-		(await Promise.all(batches.map((batch) => query(suiGraphQLClient, batch)))).forEach((res) => {
+		(await Promise.all(batches.map((batch) => query(ikaGraphQLClient, batch)))).forEach((res) => {
 			Object.assign(cache.types, res.types);
 			Object.assign(cache.packages, res.packages);
 		});
@@ -87,7 +87,7 @@ export const namedPackagesPlugin = ({
 		await next();
 	};
 
-	async function query(client: SuiGraphQLClient, requests: NameResolutionRequest[]) {
+	async function query(client: IkaGraphQLClient, requests: NameResolutionRequest[]) {
 		const results: NamedPackagesPluginCache = { packages: {}, types: {} };
 		// avoid making a request if there are no names to resolve.
 		if (requests.length === 0) return results;

@@ -3,7 +3,7 @@
 
 import { Listbox, Transition } from '@headlessui/react';
 import { KioskOwnerCap } from '@mysten/kiosk';
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@ika-io/ika/utils';
 import classNames from 'clsx';
 import { Fragment } from 'react';
 

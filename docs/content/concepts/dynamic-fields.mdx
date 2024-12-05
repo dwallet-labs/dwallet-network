@@ -1,15 +1,15 @@
 ---
 title: Dynamic (Object) Fields
-description: Dynamic fields and dynamic object fields on Sui are added and removed dynamically, affect gas only when accessed, and store heterogeneous values.
+description: Dynamic fields and dynamic object fields on Ika are added and removed dynamically, affect gas only when accessed, and store heterogeneous values.
 ---
 
 There are various ways to use object fields to store primitive data and other objects (wrapping), but there are a few limitations to these:
 
 1. Object's have a finite set of fields keyed by identifiers that are fixed when you publish its module (limited to the fields in the `struct` declaration).
 1. An object can become very large if it wraps several other objects. Larger objects can lead to higher gas fees in transactions. In addition, there is an upper bound on object size.
-1. There are use cases where you need to store a collection of objects of heterogeneous types. Because the Move `vector` type must be instantiated with one single type `<T>`, it is not suitable for this.
+1. There are use cases where you need to store a collection of objects of heterogeneous types. Because the Move `vector` type must be instantiated with one single type `<T>`, it is not ikatable for this.
 
-Fortunately, Sui provides *dynamic fields* with arbitrary names (not just identifiers), added and removed on-the-fly (not fixed at publish), which only affect gas when they are accessed, and can store heterogeneous values. Use the libraries in this topic to interact with this kind of field.
+Fortunately, Ika provides *dynamic fields* with arbitrary names (not just identifiers), added and removed on-the-fly (not fixed at publish), which only affect gas when they are accessed, and can store heterogeneous values. Use the libraries in this topic to interact with this kind of field.
 
 ### Fields versus object fields
 
@@ -17,8 +17,8 @@ There are two flavors of dynamic field -- "fields" and "object fields" -- which 
 
 | Type | Description | Module |
 | --- | --- | --- |
-| Fields | Can store any value that has `store`, however an object stored in this kind of field is considered wrapped and is not accessible via its ID by external tools (explorers, wallets, and so on) accessing storage.| [`dynamic_field`](https://github.com/MystenLabs/sui/tree/main/crates/sui-framework/packages/sui-framework/sources/dynamic_field.move) |
-| Object field | Values must be objects (have the `key` ability, and `id: UID` as the first field), but are still accessible at their ID to external tools.| [`dynamic_object_field`](https://github.com/MystenLabs/sui/tree/main/crates/sui-framework/packages/sui-framework/sources/dynamic_object_field.move) |
+| Fields | Can store any value that has `store`, however an object stored in this kind of field is considered wrapped and is not accessible via its ID by external tools (explorers, wallets, and so on) accessing storage.| [`dynamic_field`](https://github.com/MystenLabs/sui/tree/main/crates/ika-framework/packages/ika-framework/sources/dynamic_field.move) |
+| Object field | Values must be objects (have the `key` ability, and `id: UID` as the first field), but are still accessible at their ID to external tools.| [`dynamic_object_field`](https://github.com/MystenLabs/sui/tree/main/crates/ika-framework/packages/ika-framework/sources/dynamic_object_field.move) |
 
 ### Field names
 
@@ -26,15 +26,15 @@ Unlike an object's regular fields where names must be Move identifiers, dynamic 
 
 ### Adding dynamic fields
 
-Use the `add` function from the relevant Sui framework module to add dynamic fields:
+Use the `add` function from the relevant Ika framework module to add dynamic fields:
 
 **Dynamic field**
 
-{@inject: crates/sui-framework/packages/sui-framework/sources/dynamic_field.move#fun=add noComments}
+{@inject: crates/ika-framework/packages/ika-framework/sources/dynamic_field.move#fun=add noComments}
 
 **Dynamic object field**
 
-{@inject: crates/sui-framework/packages/sui-framework/sources/dynamic_object_field.move#fun=add noComments}
+{@inject: crates/ika-framework/packages/ika-framework/sources/dynamic_object_field.move#fun=add noComments}
 
 These functions add a field with name `name` and value `value` to `object`. To see it in action, consider these code snippets:
 
@@ -57,13 +57,13 @@ It is an error to overwrite a field (attempt to add a field with the same `<Name
 
 You can reference dynamic fields by reference using the following APIs:
 
-{@inject: crates/sui-framework/packages/sui-framework/sources/dynamic_field.move#fun=borrow,borrow_mut noComments}
+{@inject: crates/ika-framework/packages/ika-framework/sources/dynamic_field.move#fun=borrow,borrow_mut noComments}
 
 Where `object` is the UID of the object the field is defined on and `name` is the field's name.
 
 :::info
 
-`sui::dynamic_object_field` has equivalent functions for object fields, but with the added constraint `Value: key + store`.
+`ika::dynamic_object_field` has equivalent functions for object fields, but with the added constraint `Value: key + store`.
 
 :::
 
@@ -89,13 +89,13 @@ You must access dynamic object field values through these APIs. A transaction th
 
 Similar to unwrapping an object held in a regular field, you can remove a dynamic field, exposing its value:
 
-{@inject: crates/sui-framework/packages/sui-framework/sources/dynamic_field.move#fun=remove noComments}
+{@inject: crates/ika-framework/packages/ika-framework/sources/dynamic_field.move#fun=remove noComments}
 
 This function takes a mutable reference to the ID of the `object` the field is defined on, and the field's `name`.  If a field with a `value: Value` is defined on `object` at `name`, it is removed and `value` returned, otherwise it aborts. Future attempts to access this field on `object` will fail.
 
 :::tip
 
-`sui::dynamic_object_field` has an equivalent function for object fields.
+`ika::dynamic_object_field` has an equivalent function for object fields.
 
 :::
 
@@ -109,4 +109,4 @@ Similar to borrowing a field, a transaction that attempts to remove a non-existe
 
 It is possible to delete an object that has (potentially non-`drop`) dynamic fields still defined on it. Because field values can be accessed only via the dynamic field's associated object and field name, deleting an object that has dynamic fields still defined on it renders them all inaccessible to future transactions. This is true regardless of whether the field's value has the `drop` ability. This might not be a concern when adding a small number of statically known additional fields to an object, but is particularly undesirable for on-chain collection types that could be holding unboundedly many key-value pairs as dynamic fields.
 
-Sui provides `Table` and `Bag` collections built using dynamic fields, but with additional support to count the number of entries they contain to protect against accidental deletion when non-empty. To learn more, see [Tables and Bags](./dynamic-fields/tables-bags.mdx).
+Ika provides `Table` and `Bag` collections built using dynamic fields, but with additional support to count the number of entries they contain to protect against accidental deletion when non-empty. To learn more, see [Tables and Bags](./dynamic-fields/tables-bags.mdx).

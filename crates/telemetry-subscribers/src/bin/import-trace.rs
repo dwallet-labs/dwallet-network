@@ -52,7 +52,7 @@ async fn main() {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        format!("sui-node-{}", timestamp)
+        format!("ika-node-{}", timestamp)
     });
 
     println!("importing trace with service name {:?}", service_name);

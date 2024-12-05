@@ -1,0 +1,11 @@
+[package]
+name = "GenerateMoveLockFile"
+version = "0.0.0"
+edition = "2024.beta"
+
+[dependencies]
+Examples = { local = "../object_basics" }
+Ika = { local = "../../../../../ika-framework/packages/ika-framework" }
+
+[addresses]
+depends = "0x0"

@@ -3,8 +3,8 @@
 
 import { CoinItem } from '_components/active-coins-card/CoinItem';
 import { ampli } from '_src/shared/analytics/ampli';
-import { type CoinBalance } from '@mysten/sui/client';
-import { MIST_PER_SUI } from '@mysten/sui/utils';
+import { type CoinBalance } from '@ika-io/ika/client';
+import { NIKA_PER_IKA } from '@ika-io/ika/utils';
 import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -21,7 +21,7 @@ export function TokenLink({ coinBalance, centerAction, subtitle }: Props) {
 			onClick={() =>
 				ampli.selectedCoin({
 					coinType: coinBalance.coinType,
-					totalBalance: Number(BigInt(coinBalance.totalBalance) / MIST_PER_SUI),
+					totalBalance: Number(BigInt(coinBalance.totalBalance) / NIKA_PER_IKA),
 					sourceFlow: 'TokenLink',
 				})
 			}

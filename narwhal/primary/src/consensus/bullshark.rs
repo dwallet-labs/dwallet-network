@@ -10,7 +10,7 @@ use fastcrypto::hash::Hash;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use storage::ConsensusStore;
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use tokio::time::Instant;
 use tracing::{debug, error_span};
 use types::{Certificate, CertificateAPI, CommittedSubDag, HeaderAPI, ReputationScores, Round};

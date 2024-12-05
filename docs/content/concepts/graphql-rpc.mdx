@@ -1,5 +1,5 @@
 ---
-title: GraphQL for Sui RPC (Beta)
+title: GraphQL for Ika RPC (Beta)
 beta: devnet, testnet, mainnet
 ---
 
@@ -19,14 +19,14 @@ For more details on GraphQL fundamentals, see the introductory documentation fro
 
 The service accepts the following optional headers:
 
-- `x-sui-rpc-version` to specify which RPC version to use (currently only one version is supported),
-- `x-sui-rpc-show-usage` returns the response with extra query complexity information.
+- `x-ika-rpc-version` to specify which RPC version to use (currently only one version is supported),
+- `x-ika-rpc-show-usage` returns the response with extra query complexity information.
 
-By default, each request returns the service's version in the response header: `x-sui-rpc-version`.
+By default, each request returns the service's version in the response header: `x-ika-rpc-version`.
 
 ```bash
-curl -i -X POST https://sui-mainnet.mystenlabs.com/graphql \
-     --header 'x-sui-rpc-show-usage: true'                 \
+curl -i -X POST https://ika-mainnet.mystenlabs.com/graphql \
+     --header 'x-ika-rpc-show-usage: true'                 \
      --header 'Content-Type: application/json'             \
      --data '{
           "query": "query { epoch { referenceGasPrice } }"
@@ -39,7 +39,7 @@ The response for the previous request looks similar to the following:
 HTTP/2 200
 content-type: application/json
 content-length: 159
-x-sui-rpc-version: 2024.1.0
+x-ika-rpc-version: 2024.1.0
 date: Tue, 30 Jan 2024 23:50:43 GMT
 via: 1.1 google
 alt-svc: h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
@@ -97,7 +97,7 @@ When using the online IDE, supply variables as a JSON object to the query in the
 When making a request to the GraphQL service (for example, using `curl`), pass the query and variables as two fields of a single JSON object:
 
 ```bash
- curl -X POST https://sui-testnet.mystenlabs.com/graphql \
+ curl -X POST https://ika-testnet.mystenlabs.com/graphql \
     --header 'Content-Type: application/json' \
     --data '{
      "query": "query ($epochID: Int) { epoch(id: $epochID) { referenceGasPrice } }",
@@ -203,7 +203,7 @@ Fields that return a paginated response accept at least the following optional p
 
 They also return a type that conforms to the [GraphQL Cursor Connections Specification](https://relay.dev/graphql/connections.htm), meaning its name ends in `Connection`, and it contains at least the following fields:
 
-- `pageInfo`, of type <a href="/references/sui-api/sui-graphql/reference/objects/page-info" data-noBrokenLinkCheck='true'>PageInfo</a>, which indicates whether there are more pages before or after the page returned.
+- `pageInfo`, of type <a href="/references/ika-api/ika-graphql/reference/objects/page-info" data-noBrokenLinkCheck='true'>PageInfo</a>, which indicates whether there are more pages before or after the page returned.
 - `nodes`, the content of the paginated response, as a list of the type being paginated (`TransactionBlock` in the previous example).
 - `edges`, similar to `nodes` but associating each node with its [cursor](#cursors).
 
@@ -253,7 +253,7 @@ To see these principles put into practice, consult the examples for [paginating 
 
 ## Limits
 
-The GraphQL service for Sui RPC is rate-limited on all available instances to keep network throughput optimized and to protect against excessive or abusive calls to the service.
+The GraphQL service for Ika RPC is rate-limited on all available instances to keep network throughput optimized and to protect against excessive or abusive calls to the service.
 
 ### Rate limits
 
@@ -284,6 +284,6 @@ In addition to rate limits, queries are also validated against a number of rules
 
 ## Related links
 
-- [GraphQL quick-start](../guides/developer/getting-started/graphql-rpc.mdx): Querying Sui RPC with GraphQL gets you started using GraphQL to query the Sui RPC for on-chain data.  
-- [GraphQL migration](../guides/developer/advanced/graphql-migration.mdx): Migrating to GraphQL guides you through migrating Sui RPC projects from JSON-RPC to GraphQL. 
-- [GraphQL reference](../references/sui-graphql.mdx): Auto-generated GraphQL reference for Sui RPC.
+- [GraphQL quick-start](../guides/developer/getting-started/graphql-rpc.mdx): Querying Ika RPC with GraphQL gets you started using GraphQL to query the Ika RPC for on-chain data.  
+- [GraphQL migration](../guides/developer/advanced/graphql-migration.mdx): Migrating to GraphQL guides you through migrating Ika RPC projects from JSON-RPC to GraphQL. 
+- [GraphQL reference](../references/ika-graphql.mdx): Auto-generated GraphQL reference for Ika RPC.

@@ -89,7 +89,7 @@ if [ ! -z "$CHECKMORE" ]; then
     $BASE/language/move-prover/move-abigen\
     $BASE/language/move-prover/move-docgen\
     $BASE/language/move-prover/interpreter\
-    $BASE/language/move-prover/interpreter-testsuite\
+    $BASE/language/move-prover/interpreter-testikate\
     $BASE/language/move-prover/lab\
     $BASE/language/move-prover/test-utils\
     $BASE/language/tools/move-package\

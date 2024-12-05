@@ -21,11 +21,11 @@ export default defineConfig({
 			// TODO: Figure out a better way to run tests that avoids these aliases:
 			'@mysten/wallet-standard': new URL('../wallet-standard/src', import.meta.url).pathname,
 			'@mysten/bcs': new URL('../bcs/src', import.meta.url).pathname,
-			'@mysten/sui/keypairs/ed25519': new URL('../typescript/src/keypairs/ed25519', import.meta.url)
+			'@ika-io/ika/keypairs/ed25519': new URL('../typescript/src/keypairs/ed25519', import.meta.url)
 				.pathname,
-			'@mysten/sui/client': new URL('../typescript/src/client', import.meta.url).pathname,
-			'@mysten/sui/utils': new URL('../typescript/src/utils', import.meta.url).pathname,
-			'@mysten/sui/transactions': new URL('../typescript/src/transactions', import.meta.url)
+			'@ika-io/ika/client': new URL('../typescript/src/client', import.meta.url).pathname,
+			'@ika-io/ika/utils': new URL('../typescript/src/utils', import.meta.url).pathname,
+			'@ika-io/ika/transactions': new URL('../typescript/src/transactions', import.meta.url)
 				.pathname,
 		},
 	},

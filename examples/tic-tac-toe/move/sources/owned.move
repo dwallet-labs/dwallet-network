@@ -18,8 +18,8 @@
 /// expensive, however the implementation is more straightforward and each move
 /// only requires one transaction.
 module tic_tac_toe::owned {
-    use sui::event;
-    use sui::transfer::Receiving;
+    use ika::event;
+    use ika::transfer::Receiving;
 
     // === Object Types ===
 

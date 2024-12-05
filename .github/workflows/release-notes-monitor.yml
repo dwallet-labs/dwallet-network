@@ -13,11 +13,11 @@ jobs:
       new_commit_hash: ${{ steps.get-pr-list.outputs.new_commit_hash }}
       existing_commit_tag: ${{ steps.get-pr-list.outputs.existing_commit_tag }}
       new_tag: ${{ steps.get-pr-list.outputs.new_tag }}
-      sui_version: ${{ steps.get-pr-list.outputs.sui_version }}
+      ika_version: ${{ steps.get-pr-list.outputs.ika_version }}
     runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout sui repo main branch
+    - name: Checkout ika repo main branch
       uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # Pin v4.1.1
       with:
         fetch-depth: 0
@@ -28,21 +28,21 @@ jobs:
       working-directory: ./
       run: |
         export new_commit_hash=$(git rev-parse HEAD)
-        export existing_commit_tag=$(git tag --points-at ${new_commit_hash} | grep -E 'sui_v(.*)_rel_notes' | head -n 1)
+        export existing_commit_tag=$(git tag --points-at ${new_commit_hash} | grep -E 'ika_v(.*)_rel_notes' | head -n 1)
 
-        export previous_tag=$(git tag | grep -E 'sui_v1(.*)_rel_notes' | sort -rV | head -1)
+        export previous_tag=$(git tag | grep -E 'ika_v1(.*)_rel_notes' | sort -rV | head -1)
         export previous_commit_hash=$(git rev-list -n 1 ${previous_tag})
         
-        export list_of_prs=$(git log --grep "\[x\]" --pretty=oneline --abbrev-commit ${previous_commit_hash}...${new_commit_hash} -- consensus crates dashboards doc docker external-crates kiosk nre sui-execution | grep -o '#[0-9]\+' | grep -o '[0-9]\+' | jq -R -s -c 'split("\n")[:-1]')
+        export list_of_prs=$(git log --grep "\[x\]" --pretty=oneline --abbrev-commit ${previous_commit_hash}...${new_commit_hash} -- consensus crates dashboards doc docker external-crates kiosk nre ika-execution | grep -o '#[0-9]\+' | grep -o '[0-9]\+' | jq -R -s -c 'split("\n")[:-1]')
 
         echo "matrix=${list_of_prs}" >> $GITHUB_OUTPUT
         echo "new_commit_hash=${new_commit_hash}" >> $GITHUB_OUTPUT
         echo "existing_commit_tag=${existing_commit_tag}" >> $GITHUB_OUTPUT
         
-        export sui_crate_version=$(cat Cargo.toml | grep "^version =" | tr -d '"' | awk '{ print $3 }')
-        export new_tag=$(echo "sui_v${sui_crate_version}_$(date +%s)_rel_notes")
+        export ika_crate_version=$(cat Cargo.toml | grep "^version =" | tr -d '"' | awk '{ print $3 }')
+        export new_tag=$(echo "ika_v${ika_crate_version}_$(date +%s)_rel_notes")
         echo "new_tag=${new_tag}" >> $GITHUB_OUTPUT
-        echo "sui_version=${sui_crate_version}" >> $GITHUB_OUTPUT
+        echo "ika_version=${ika_crate_version}" >> $GITHUB_OUTPUT
         
   process-prs:
     name: Processing PR
@@ -101,7 +101,7 @@ jobs:
       with:
         channel-id: '#ext-mysten-release-notes'
         slack-message: |
-          <@U03LRLPR1QX> and <@U04A8V9E203>, please review release notes for upcoming `v${{ needs.get-list-of-prs.outputs.sui_version }}` release.
+          <@U03LRLPR1QX> and <@U04A8V9E203>, please review release notes for upcoming `v${{ needs.get-list-of-prs.outputs.ika_version }}` release.
           *PR* <https://github.com/MystenLabs/sui/pull/${{ matrix.pr }}|${{ matrix.pr }}> by <@${{ env.slack_id }}>
           *Release Notes:*
           ${{ env.release_notes }}
@@ -112,6 +112,6 @@ jobs:
     if: ${{ success() && needs.get-list-of-prs.outputs.existing_commit_tag == '' }}
     uses: mystenlabs/sui/.github/workflows/tag.yml@main
     with:
-      sui_commit: ${{ needs.get-list-of-prs.outputs.new_commit_hash }}
+      ika_commit: ${{ needs.get-list-of-prs.outputs.new_commit_hash }}
       tag_name: ${{ needs.get-list-of-prs.outputs.new_tag }}
     secrets: inherit

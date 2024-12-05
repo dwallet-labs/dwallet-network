@@ -1,7 +1,7 @@
 # Copyright (c) Mysten Labs, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-query getNormalizedMoveFunction($packageId: SuiAddress!, $module: String!, $function: String!) {
+query getNormalizedMoveFunction($packageId: IkaAddress!, $module: String!, $function: String!) {
 	object(address: $packageId) {
 		address
 		asMovePackage {

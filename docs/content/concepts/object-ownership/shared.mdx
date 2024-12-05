@@ -1,24 +1,24 @@
 ---
 title: Shared Objects
-description: Anyone can access shared objects on the Sui network, so care must be taken to secure access, if needed.
+description: Anyone can access shared objects on the Ika network, so care must be taken to secure access, if needed.
 ---
 
-A shared object is an object that is shared using the `sui::transfer::share_object` function and is accessible to everyone. Unlike owned objects, anyone can access shared ones on the network. Extended functionality and accessibility of this kind of objects requires additional effort by securing access, if needed.
+A shared object is an object that is shared using the `ika::transfer::share_object` function and is accessible to everyone. Unlike owned objects, anyone can access shared ones on the network. Extended functionality and accessibility of this kind of objects requires additional effort by securing access, if needed.
 
 Shared objects require the `key` ability.
 
 ## Example
 
-The following example creates a shop to sell digital donuts. Everyone needs access to the shop to purchase donuts from it, so the example creates the shop as a shared object using `sui::transfer::share_object`.
+The following example creates a shop to sell digital donuts. Everyone needs access to the shop to purchase donuts from it, so the example creates the shop as a shared object using `ika::transfer::share_object`.
 
 ```move
 module examples::donuts {
-    use sui::transfer;
-    use sui::sui::SUI;
-    use sui::coin::{Self, Coin};
-    use sui::object::{Self, UID};
-    use sui::balance::{Self, Balance};
-    use sui::tx_context::{Self, TxContext};
+    use ika::transfer;
+    use ika::ika::IKA;
+    use ika::coin::{Self, Coin};
+    use ika::object::{Self, UID};
+    use ika::balance::{Self, Balance};
+    use ika::tx_context::{Self, TxContext};
 
     /// For when Coin balance is too low.
     const ENotEnough: u64 = 0;
@@ -33,7 +33,7 @@ module examples::donuts {
     struct DonutShop has key {
         id: UID,
         price: u64,
-        balance: Balance<SUI>
+        balance: Balance<IKA>
     }
 
     /// Init function is often ideal place for initializing
@@ -53,11 +53,11 @@ module examples::donuts {
 
     /// Entry function available to everyone who owns a Coin.
     public fun buy_donut(
-        shop: &mut DonutShop, payment: &mut Coin<SUI>, ctx: &mut TxContext
+        shop: &mut DonutShop, payment: &mut Coin<IKA>, ctx: &mut TxContext
     ) {
         assert!(coin::value(payment) >= shop.price, ENotEnough);
 
-        // Take amount = `shop.price` from Coin<SUI>
+        // Take amount = `shop.price` from Coin<IKA>
         let coin_balance = coin::balance_mut(payment);
         let paid = balance::split(coin_balance, shop.price);
 

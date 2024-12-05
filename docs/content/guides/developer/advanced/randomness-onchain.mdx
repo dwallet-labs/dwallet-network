@@ -12,7 +12,7 @@ entry fun roll_dice(r: &Random, ctx: &mut TxContext): Dice {
 }
 ```
 
-`Random` has a reserved address `0x8`. See <a href="/references/framework/sui-framework/random" data-noBrokenLinkCheck='true'>random.move</a> for the Move APIs for accessing randomness on Sui.
+`Random` has a reserved address `0x8`. See <a href="/references/framework/ika-framework/random" data-noBrokenLinkCheck='true'>random.move</a> for the Move APIs for accessing randomness on Ika.
 
 :::note
 
@@ -37,7 +37,7 @@ Consider the following vulnerable code:
 
 ```move
 // Insecure implementation, do not use!
-entry fun insecure_play(r: &Random, payment: Coin<SUI>, ...) {
+entry fun insecure_play(r: &Random, payment: Coin<IKA>, ...) {
   ...
   let mut generator = new_generator(r, ctx);
   let win = generator.generate_bool();
@@ -107,7 +107,7 @@ module games::dice {
 
   /// If you guess correctly the output, then you get a GuessedCorrectly object.
   /// Otherwise you get nothing.
-  public fun play_dice(guess: u8, fee: Coin<SUI>, r: &Random, ctx: &mut TxContext): Ticket {
+  public fun play_dice(guess: u8, fee: Coin<IKA>, r: &Random, ctx: &mut TxContext): Ticket {
     // Pay for the turn
     assert!(coin::value(&fee) == 1000000, EInvalidAmount);
     transfer::public_transfer(fee, CREATOR_ADDRESS);
@@ -148,7 +148,7 @@ The Move compiler enforces this behavior by rejecting `public` functions with `R
 ## Programmable transaction block (PTB) restrictions
 
 A similar attack to the one previously described involves PTBs _even_ when `play_dice` is defined as a private `entry` function.
-For example, consider the `entry play_dice(guess: u8, fee: Coin<SUI>, r: &Random, ctx: &mut TxContext): Ticket { … }` function defined earlier, the attacker can publish the function
+For example, consider the `entry play_dice(guess: u8, fee: Coin<IKA>, r: &Random, ctx: &mut TxContext): Ticket { … }` function defined earlier, the attacker can publish the function
 
 ```move
 public fun attack(t: Ticket): Ticket {
@@ -164,7 +164,7 @@ different randomness and reverted if the guess is incorrect.
 
 :::tip
 
-To protect against PTB-based composition attacks, Sui rejects PTBs that have commands that are not `TransferObjects` or `MergeCoins` following a `MoveCall` command that uses `Random` as an input.
+To protect against PTB-based composition attacks, Ika rejects PTBs that have commands that are not `TransferObjects` or `MergeCoins` following a `MoveCall` command that uses `Random` as an input.
 
 :::
 
@@ -193,9 +193,9 @@ txb.moveCall({
 
 ## Related Links
 
-- [Sui Framework Reference](../../../references/framework)
-  - <a href="/references/framework/sui-framework/random" data-noBrokenLinkCheck="true">
+- [Ika Framework Reference](../../../references/framework)
+  - <a href="/references/framework/ika-framework/random" data-noBrokenLinkCheck="true">
     	random.move
     </a>
 - [Raffle example](https://github.com/MystenLabs/sui/blob/main/examples/move/random/raffles)
-- [Sui Client CLI](../../../references/cli/client)
+- [Ika Client CLI](../../../references/cli/client)

@@ -1,19 +1,19 @@
 ---
-title: Sui Client PTB CLI
-description: The Sui Client PTB CLI enables a user to construct a PTB and execute it from the command line or a file.
+title: Ika Client PTB CLI
+description: The Ika Client PTB CLI enables a user to construct a PTB and execute it from the command line or a file.
 ---
 
 The `client ptb` command allows you to specify the transactions for execution in a programmable transaction block (PTB) directly from your CLI or through bash scripts.
 
 ## Commands
 
-The following list itemizes all the available args for the `sui client ptb` command. Use the `--help` for a long help version that includes some examples on how to use this command.
+The following list itemizes all the available args for the `ika client ptb` command. Use the `--help` for a long help version that includes some examples on how to use this command.
 
 ```
 Build, preview, and execute programmable transaction blocks. Depending on your shell, you might have to use quotes around arrays or other passed values. Use --help to see examples for how to use the core functionality of this
 command.
 
-Usage: sui client ptb [OPTIONS]
+Usage: ika client ptb [OPTIONS]
 
 Options:
       --assign <NAME> <VALUE>
@@ -33,8 +33,8 @@ Options:
       --gas-coin <ID>
           The object ID of the gas coin to use. If not specified, it will try to use the first gas coin that it finds that has at least the requested gas-budget balance.
 
-      --gas-budget <MIST>
-          An optional gas budget for this PTB (in MIST). If gas budget is not provided, the tool will first perform a dry run to estimate the gas cost, and then it will execute the transaction. Please note that this incurs a small
+      --gas-budget <NIKA>
+          An optional gas budget for this PTB (in NIKA). If gas budget is not provided, the tool will first perform a dry run to estimate the gas cost, and then it will execute the transaction. Please note that this incurs a small
           cost in performance due to the additional dry run call.
 
       --make-move-vec <TYPE> <[VALUES]>
@@ -44,7 +44,7 @@ Options:
            --make-move-vec <u64> []
            --make-move-vec <u64> [1, 2, 3, 4]
            --make-move-vec <std::option::Option<u64>> [none,none]
-           --make-move-vec <sui::coin::Coin<sui::sui::SUI>> [gas]
+           --make-move-vec <ika::coin::Coin<ika::ika::IKA>> [gas]
 
       --merge-coins <INTO_COIN> <[COIN OBJECTS]>
           Merge N coins into the provided coin.
@@ -82,7 +82,7 @@ Options:
           Publish the Move package. It takes as input the folder where the package exists.
 
           Examples:
-           --move-call sui::tx_context::sender
+           --move-call ika::tx_context::sender
            --assign sender
            --publish "."
            --assign upgrade_cap
@@ -130,7 +130,7 @@ All the following examples were tested using a `bash` shell environment and your
 Sometimes, CLI PTBs require that you specify the type of a value or variable. For instance, in the following example you must provide the `<u64>` type when calling the `0x1::option::is_none` function.
 
 ```shell
-sui client ptb \
+ika client ptb \
 --assign my_variable none \
 --move-call 0x1::option::is_none "<u64>" my_variable \
 --gas-budget 50000000
@@ -149,7 +149,7 @@ To pass in multiple types, delimit them with a comma:
 CLI PTBs support string literals as inputs, which will be encoded as pure values that can be used as inputs to `vector<u8>`, `std::ascii::String` and `std::string::String` parameters. The following example previews a transaction block that passes the string `"Hello, world"` to a function `m::f` in a package `$PKG` (its ID is held in an environment variable).
 
 ```bash
-sui client ptb --move-call "$PKG::m::f" '"Hello, world"' --gas-budget 10000000 --preview
+ika client ptb --move-call "$PKG::m::f" '"Hello, world"' --gas-budget 10000000 --preview
 ```
 
 :::warning
@@ -165,7 +165,7 @@ Double-quoted string literals tend to also be valid syntax for shells (like `bas
 Here are some examples for `transfer-objects` and `gas-coin`:
 
 ```bash
-sui client ptb --transfer-objects [ARRAY_OF_OBJECTS] @0x02a212de6a9dfa3a69e22387acfbafbb1a9e591bd9d636e7895dcfc8de05f331 --gas-coin @0x00002819ee07a66e53800495ccf5eeade8a02054a2e0827546c70e4b226f0495
+ika client ptb --transfer-objects [ARRAY_OF_OBJECTS] @0x02a212de6a9dfa3a69e22387acfbafbb1a9e591bd9d636e7895dcfc8de05f331 --gas-coin @0x00002819ee07a66e53800495ccf5eeade8a02054a2e0827546c70e4b226f0495
 ```
 
 ### Assign
@@ -178,7 +178,7 @@ Use the `--assign` argument to bind values to variables. There are two ways you 
 Let's look at the first case where you assign a value to a variable. You want to check if some variable's value is `none`. Call the `0x1::option::is_none` function from the Move standard library, and pass in the variable name:
 
 ```bash
-sui client ptb \
+ika client ptb \
 --assign my_variable none \
 --move-call 0x1::option::is_none "<u64>" my_variable \
 --gas-budget 50000000
@@ -186,14 +186,14 @@ sui client ptb \
 
 :::tip
 
-CLI PTB uses name resolution for common packages like `sui`, `std`, `deepbook`, so you can use them directly instead of their addresses: `0x2`, `0x1`, or `0xdee9`.
+CLI PTB uses name resolution for common packages like `ika`, `std`, `deepbook`, so you can use them directly instead of their addresses: `0x2`, `0x1`, or `0xdee9`.
 
 :::
 
-In the second case, if a previous command outputs some result, you can bound it to a variable for later access. Let's see an example where you want a new coin with 1000 MIST, which you can achieve by using the `split-coins` command. After you do that, you want to transfer the new coin to another address. Without the `--assign` argument, you couldn't instruct the CLI to transfer that new coin object as you would not have a way to refer to it.
+In the second case, if a previous command outputs some result, you can bound it to a variable for later access. Let's see an example where you want a new coin with 1000 NIKA, which you can achieve by using the `split-coins` command. After you do that, you want to transfer the new coin to another address. Without the `--assign` argument, you couldn't instruct the CLI to transfer that new coin object as you would not have a way to refer to it.
 
 ```bash
-sui client ptb \
+ika client ptb \
 --split-coins gas [1000] \
 --assign coin \
 --transfer-objects [coin] @recipient_address \
@@ -218,7 +218,7 @@ When a PTB is executed, the output contains all the relevant information (transa
 
 ### Move call
 
-When needing to execute a Move call, use the `--move-call` transaction to call a specific function from a package. The CLI PTB supports name resolution for common packages like `sui`, `std`, `deepbook`, so you can use both `0x1::option::is_none` as well as `std::option::is_none` for passing the function name.
+When needing to execute a Move call, use the `--move-call` transaction to call a specific function from a package. The CLI PTB supports name resolution for common packages like `ika`, `std`, `deepbook`, so you can use both `0x1::option::is_none` as well as `std::option::is_none` for passing the function name.
 
 ```bash
 --assign A none
@@ -233,11 +233,11 @@ To call a specific function from a specific package, you can use the following c
 
 ### Publish
 
-Publishing a package is one of the most important commands you need when working with Sui. While the CLI has a standalone `publish` command, PTBs also support publishing and upgrading packages. One main difference is that with `sui client ptb`, you must explicitly transfer the `UpgradeCap` object that is returned when creating a package, or destroy it with a call to [`make_immutable`](/concepts/sui-move-concepts/packages.mdx). Here is an example on how to publish a Move project on chain using the `sui client ptb` command. It makes a call to the `sui::tx_context::sender` to acquire the sender and assigns the result of that call to the `sender` variable, and then calls the publish command. The result of `publish` is bounded to `upgrade_cap` variable, and then this object is transferred to the sender.
+Publishing a package is one of the most important commands you need when working with Ika. While the CLI has a standalone `publish` command, PTBs also support publishing and upgrading packages. One main difference is that with `ika client ptb`, you must explicitly transfer the `UpgradeCap` object that is returned when creating a package, or destroy it with a call to [`make_immutable`](/concepts/ika-move-concepts/packages.mdx). Here is an example on how to publish a Move project on chain using the `ika client ptb` command. It makes a call to the `ika::tx_context::sender` to acquire the sender and assigns the result of that call to the `sender` variable, and then calls the publish command. The result of `publish` is bounded to `upgrade_cap` variable, and then this object is transferred to the sender.
 
 ```bash
-sui client ptb \
---move-call sui::tx_context::sender \
+ika client ptb \
+--move-call ika::tx_context::sender \
 --assign sender \
 --publish "." \
 --assign upgrade_cap \
@@ -247,19 +247,19 @@ sui client ptb \
 
 ### Split, destroy, and merge coins
 
-The following example showcases how to split a gas coin into multiple coins, make a move call to destroy one or more of the new coins, and finally merge the coins that were not destroyed back into the gas coin. It also showcases how to use framework name resolution (for example, `sui::coin` instead of `0x2::coin`) and how to refer to different values in an array using the `.` syntax.
+The following example showcases how to split a gas coin into multiple coins, make a move call to destroy one or more of the new coins, and finally merge the coins that were not destroyed back into the gas coin. It also showcases how to use framework name resolution (for example, `ika::coin` instead of `0x2::coin`) and how to refer to different values in an array using the `.` syntax.
 
 ```bash
 # Split off from gas
 --split-coins gas [0,1,2,3]
 --assign coins
---move-call sui::coin::destroy_zero<sui::sui::SUI> coins.0
+--move-call ika::coin::destroy_zero<ika::ika::IKA> coins.0
 # Can further split a split coin (and through variable bindings/result accesses)
 --split-coins coins.1 [0,0]
 --assign zcoins
 # Destroy both new coins
---move-call sui::coin::destroy_zero<sui::sui::SUI> zcoins.0
---move-call sui::coin::destroy_zero<sui::sui::SUI> zcoins.1
+--move-call ika::coin::destroy_zero<ika::ika::IKA> zcoins.0
+--move-call ika::coin::destroy_zero<ika::ika::IKA> zcoins.1
 # Can merge the split coins back
 --merge-coins gas [coins.1, coins.2, coins.3]
 --gas-budget 10000000
@@ -302,4 +302,4 @@ You cannot use the following words for variable names:
 
 ## JSON output
 
-Append the `--json` flag to commands to format responses in JSON instead of the more human-friendly default Sui CLI output. This can be useful for extremely large datasets, for example, as those results can have a troublesome display on smaller screens. In these cases, the `--json` flag is useful.
+Append the `--json` flag to commands to format responses in JSON instead of the more human-friendly default Ika CLI output. This can be useful for extremely large datasets, for example, as those results can have a troublesome display on smaller screens. In these cases, the `--json` flag is useful.

@@ -1,0 +1,10 @@
+[package]
+name = "type_params"
+version = "0.0.1"
+edition = "2024.beta"
+
+[dependencies]
+Ika = { local = "../../../../../ika-framework/packages/ika-framework" }
+
+[addresses]
+type_params = "0x0"

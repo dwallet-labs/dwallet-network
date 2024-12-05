@@ -7,7 +7,7 @@ Here is the high-level flow the wallet or frontend application must implement to
 1. The wallet creates an ephemeral key pair.
 1. The wallet prompts the user to complete an OAuth login flow with the nonce corresponding to the ephemeral public key.
 1. After receiving the JSON Web Token (JWT), the wallet obtains a zero-knowledge proof.
-1. The wallet obtains a unique user salt based on a JWT. Use the OAuth subject identifier and salt to compute the zkLogin Sui address.
+1. The wallet obtains a unique user salt based on a JWT. Use the OAuth subject identifier and salt to compute the zkLogin Ika address.
 1. The wallet signs transactions with the ephemeral private key.
 1. The wallet submits the transaction with the ephemeral signature and the zero-knowledge proof.
 
@@ -29,7 +29,7 @@ npm install @mysten/zklogin@experimental
 
 ## Get JWT
 
-1. Generate an ephemeral key pair. Follow the same process as you would generating a key pair in a traditional wallet. See [Sui SDK](https://sdk.mystenlabs.com/typescript/cryptography/keypairs) for details.
+1. Generate an ephemeral key pair. Follow the same process as you would generating a key pair in a traditional wallet. See [Ika SDK](https://sdk.mystenlabs.com/typescript/cryptography/keypairs) for details.
 
 1. Set the expiration time for the ephemeral key pair. The wallet decides whether the maximum epoch is the current epoch or later. The wallet also determines whether this is adjustable by the user.
 
@@ -38,9 +38,9 @@ npm install @mysten/zklogin@experimental
 ```typescript
 import { generateNonce, generateRandomness } from '@mysten/zklogin';
 
-const FULLNODE_URL = 'https://fullnode.devnet.sui.io'; // replace with the RPC URL you want to use
-const suiClient = new SuiClient({ url: FULLNODE_URL });
-const { epoch, epochDurationMs, epochStartTimestampMs } = await suiClient.getLatestSuiSystemState();
+const FULLNODE_URL = 'https://fullnode.devnet.ika.io'; // replace with the RPC URL you want to use
+const ikaClient = new IkaClient({ url: FULLNODE_URL });
+const { epoch, epochDurationMs, epochStartTimestampMs } = await ikaClient.getLatestIkaSystemState();
 
 const maxEpoch = Number(epoch) + 2; // this means the ephemeral key will be active for 2 epochs from now.
 const ephemeralKeyPair = new Ed25519Keypair();
@@ -92,7 +92,7 @@ export interface JwtPayload {
 
 ## User salt management
 
-zkLogin uses the user salt to compute the zkLogin Sui address (see [definition](#address-definition)). The salt must be a 16-byte value or a integer smaller than `2n**128n`. There are several options for the application to maintain the user salt:
+zkLogin uses the user salt to compute the zkLogin Ika address (see [definition](#address-definition)). The salt must be a 16-byte value or a integer smaller than `2n**128n`. There are several options for the application to maintain the user salt:
 
 1. Client side:
    - Option 1: Request user input for the salt during wallet access, transferring the responsibility to the user, who must then remember it.
@@ -109,9 +109,9 @@ curl -X POST https://salt.api.mystenlabs.com/get_salt -H 'Content-Type: applicat
 Response: {"salt":"129390038577185583942388216820280642146"}
 ```
 
-User salt is used to disconnect the OAuth identifier (sub) from the on-chain Sui address to avoid linking Web2 credentials with Web3 credentials. While losing or misusing the salt could enable this link, it wouldn't compromise fund control or zkLogin asset authority. See more discussion [here](#security-and-privacy).
+User salt is used to disconnect the OAuth identifier (sub) from the on-chain Ika address to avoid linking Web2 credentials with Web3 credentials. While losing or misusing the salt could enable this link, it wouldn't compromise fund control or zkLogin asset authority. See more discussion [here](#security-and-privacy).
 
-## Get the user's Sui address
+## Get the user's Ika address
 
 Once the OAuth flow completes, the JWT can be found in the redirect URL. Along with the user salt, the zkLogin address can be derived as follows:
 
@@ -226,16 +226,16 @@ const partialZkLoginSignature = proofResponse as PartialZkLoginSignature;
 
 1. Install [Git Large File Storage](https://git-lfs.com/) (an open-source Git extension for large file versioning) before downloading the zkey.
 
-1. Download the [Groth16 proving key zkey file](https://docs.circom.io/getting-started/proving-circuits/). There are zkeys available for all Sui networks. See [the Ceremony section](#ceremony) for more details on how the main proving key is generated.
+1. Download the [Groth16 proving key zkey file](https://docs.circom.io/getting-started/proving-circuits/). There are zkeys available for all Ika networks. See [the Ceremony section](#ceremony) for more details on how the main proving key is generated.
 
    - Main zkey (for Mainnet and Testnet)
      ```bash
-     wget -O - https://raw.githubusercontent.com/sui-foundation/zklogin-ceremony-contributions/main/download-main-zkey.sh | bash
+     wget -O - https://raw.githubusercontent.com/ika-foundation/zklogin-ceremony-contributions/main/download-main-zkey.sh | bash
      ```
    - Test zkey (for Devnet)
 
      ```bash
-     wget -O - https://raw.githubusercontent.com/sui-foundation/zklogin-ceremony-contributions/main/download-test-zkey.sh | bash
+     wget -O - https://raw.githubusercontent.com/ika-foundation/zklogin-ceremony-contributions/main/download-test-zkey.sh | bash
      ```
 
    - To verify the download contains the correct zkey file, you can run the following command to check the Blake2b hash: `b2sum ${file_name}.zkey`.
@@ -295,7 +295,7 @@ First, sign the transaction bytes with the ephemeral private key using the key p
 ```typescript
 const ephemeralKeyPair = new Ed25519Keypair();
 
-const client = new SuiClient({ url: '<YOUR_RPC_URL>' });
+const client = new IkaClient({ url: '<YOUR_RPC_URL>' });
 
 const txb = new Transaction();
 
@@ -359,7 +359,7 @@ Compared to traditional signatures, zkLogin signatures take a longer time to gen
 
 Carefully consider how many requests your application needs to make to the prover. Broadly speaking, the right metric to consider is the number of active user sessions and not the number of signatures. This is because you can cache the same ZK proof and reuse it across the session, as previously explained. For example, if you expect a million active user sessions per day, then you need a prover that can handle one or two requests per second (RPS), assuming evenly distributed traffic.
 
-The prover that Mysten Labs maintains is set to auto-scale to handle traffic surges. If you are not sure whether Mysten Labs can handle a specific number of requests or expect a sudden spike in the number of prover requests your application needs to make, please reach out to us on [Discord](https://discord.gg/sui). Our plan is to horizontally scale the prover to handle any RPS you require.
+The prover that Mysten Labs maintains is set to auto-scale to handle traffic surges. If you are not sure whether Mysten Labs can handle a specific number of requests or expect a sudden spike in the number of prover requests your application needs to make, please reach out to us on [Discord](https://discord.gg/ika). Our plan is to horizontally scale the prover to handle any RPS you require.
 
 ## Related links
 

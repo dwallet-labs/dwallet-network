@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@ika-io/ika/transactions';
 
 import { CONFIG } from '../config';
-import { getActiveAddress, getClient, signAndExecute } from '../sui-utils';
+import { getActiveAddress, getClient, signAndExecute } from '../ika-utils';
 
 /// A sample on how we could fetch our owned bears that we created.
 /// We're formatting them in an easy to use way for next steps of our demo.

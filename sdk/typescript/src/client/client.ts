@@ -6,15 +6,15 @@ import type { Signer } from '../cryptography/index.js';
 import type { Transaction } from '../transactions/index.js';
 import { isTransaction } from '../transactions/index.js';
 import {
-	isValidSuiAddress,
-	isValidSuiObjectId,
+	isValidIkaAddress,
+	isValidIkaObjectId,
 	isValidTransactionDigest,
-	normalizeSuiAddress,
-	normalizeSuiObjectId,
-} from '../utils/sui-types.js';
-import { normalizeSuiNSName } from '../utils/suins.js';
-import { SuiHTTPTransport } from './http-transport.js';
-import type { SuiTransport } from './http-transport.js';
+	normalizeIkaAddress,
+	normalizeIkaObjectId,
+} from '../utils/ika-types.js';
+import { normalizeIkaNSName } from '../utils/ikans.js';
+import { IkaHTTPTransport } from './http-transport.js';
+import type { IkaTransport } from './http-transport.js';
 import type {
 	AddressMetrics,
 	AllEpochsAddressMetrics,
@@ -74,17 +74,17 @@ import type {
 	ResolveNameServiceNamesParams,
 	SubscribeEventParams,
 	SubscribeTransactionParams,
-	SuiEvent,
-	SuiMoveFunctionArgType,
-	SuiMoveNormalizedFunction,
-	SuiMoveNormalizedModule,
-	SuiMoveNormalizedModules,
-	SuiMoveNormalizedStruct,
-	SuiObjectResponse,
-	SuiObjectResponseQuery,
-	SuiSystemStateSummary,
-	SuiTransactionBlockResponse,
-	SuiTransactionBlockResponseQuery,
+	IkaEvent,
+	IkaMoveFunctionArgType,
+	IkaMoveNormalizedFunction,
+	IkaMoveNormalizedModule,
+	IkaMoveNormalizedModules,
+	IkaMoveNormalizedStruct,
+	IkaObjectResponse,
+	IkaObjectResponseQuery,
+	IkaSystemStateSummary,
+	IkaTransactionBlockResponse,
+	IkaTransactionBlockResponseQuery,
 	TransactionEffects,
 	TryGetPastObjectParams,
 	Unsubscribe,
@@ -103,10 +103,10 @@ export interface OrderArguments {
 }
 
 /**
- * Configuration options for the SuiClient
+ * Configuration options for the IkaClient
  * You must provide either a `url` or a `transport`
  */
-export type SuiClientOptions = NetworkOrTransport;
+export type IkaClientOptions = NetworkOrTransport;
 
 type NetworkOrTransport =
 	| {
@@ -114,32 +114,32 @@ type NetworkOrTransport =
 			transport?: never;
 	  }
 	| {
-			transport: SuiTransport;
+			transport: IkaTransport;
 			url?: never;
 	  };
 
-const SUI_CLIENT_BRAND = Symbol.for('@mysten/SuiClient') as never;
+const IKA_CLIENT_BRAND = Symbol.for('@mysten/IkaClient') as never;
 
-export function isSuiClient(client: unknown): client is SuiClient {
+export function isIkaClient(client: unknown): client is IkaClient {
 	return (
-		typeof client === 'object' && client !== null && (client as any)[SUI_CLIENT_BRAND] === true
+		typeof client === 'object' && client !== null && (client as any)[IKA_CLIENT_BRAND] === true
 	);
 }
 
-export class SuiClient {
-	protected transport: SuiTransport;
+export class IkaClient {
+	protected transport: IkaTransport;
 
-	get [SUI_CLIENT_BRAND]() {
+	get [IKA_CLIENT_BRAND]() {
 		return true;
 	}
 
 	/**
-	 * Establish a connection to a Sui RPC endpoint
+	 * Establish a connection to a Ika RPC endpoint
 	 *
 	 * @param options configuration options for the API Client
 	 */
-	constructor(options: SuiClientOptions) {
-		this.transport = options.transport ?? new SuiHTTPTransport({ url: options.url });
+	constructor(options: IkaClientOptions) {
+		this.transport = options.transport ?? new IkaHTTPTransport({ url: options.url });
 	}
 
 	async getRpcApiVersion(): Promise<string | undefined> {
@@ -155,12 +155,12 @@ export class SuiClient {
 	 * Get all Coin<`coin_type`> objects owned by an address.
 	 */
 	async getCoins(input: GetCoinsParams): Promise<PaginatedCoins> {
-		if (!input.owner || !isValidSuiAddress(normalizeSuiAddress(input.owner))) {
-			throw new Error('Invalid Sui address');
+		if (!input.owner || !isValidIkaAddress(normalizeIkaAddress(input.owner))) {
+			throw new Error('Invalid Ika address');
 		}
 
 		return await this.transport.request({
-			method: 'suix_getCoins',
+			method: 'ikax_getCoins',
 			params: [input.owner, input.coinType, input.cursor, input.limit],
 		});
 	}
@@ -169,12 +169,12 @@ export class SuiClient {
 	 * Get all Coin objects owned by an address.
 	 */
 	async getAllCoins(input: GetAllCoinsParams): Promise<PaginatedCoins> {
-		if (!input.owner || !isValidSuiAddress(normalizeSuiAddress(input.owner))) {
-			throw new Error('Invalid Sui address');
+		if (!input.owner || !isValidIkaAddress(normalizeIkaAddress(input.owner))) {
+			throw new Error('Invalid Ika address');
 		}
 
 		return await this.transport.request({
-			method: 'suix_getAllCoins',
+			method: 'ikax_getAllCoins',
 			params: [input.owner, input.cursor, input.limit],
 		});
 	}
@@ -183,11 +183,11 @@ export class SuiClient {
 	 * Get the total coin balance for one coin type, owned by the address owner.
 	 */
 	async getBalance(input: GetBalanceParams): Promise<CoinBalance> {
-		if (!input.owner || !isValidSuiAddress(normalizeSuiAddress(input.owner))) {
-			throw new Error('Invalid Sui address');
+		if (!input.owner || !isValidIkaAddress(normalizeIkaAddress(input.owner))) {
+			throw new Error('Invalid Ika address');
 		}
 		return await this.transport.request({
-			method: 'suix_getBalance',
+			method: 'ikax_getBalance',
 			params: [input.owner, input.coinType],
 		});
 	}
@@ -196,10 +196,10 @@ export class SuiClient {
 	 * Get the total coin balance for all coin types, owned by the address owner.
 	 */
 	async getAllBalances(input: GetAllBalancesParams): Promise<CoinBalance[]> {
-		if (!input.owner || !isValidSuiAddress(normalizeSuiAddress(input.owner))) {
-			throw new Error('Invalid Sui address');
+		if (!input.owner || !isValidIkaAddress(normalizeIkaAddress(input.owner))) {
+			throw new Error('Invalid Ika address');
 		}
-		return await this.transport.request({ method: 'suix_getAllBalances', params: [input.owner] });
+		return await this.transport.request({ method: 'ikax_getAllBalances', params: [input.owner] });
 	}
 
 	/**
@@ -207,7 +207,7 @@ export class SuiClient {
 	 */
 	async getCoinMetadata(input: GetCoinMetadataParams): Promise<CoinMetadata | null> {
 		return await this.transport.request({
-			method: 'suix_getCoinMetadata',
+			method: 'ikax_getCoinMetadata',
 			params: [input.coinType],
 		});
 	}
@@ -217,7 +217,7 @@ export class SuiClient {
 	 */
 	async getTotalSupply(input: GetTotalSupplyParams): Promise<CoinSupply> {
 		return await this.transport.request({
-			method: 'suix_getTotalSupply',
+			method: 'ikax_getTotalSupply',
 			params: [input.coinType],
 		});
 	}
@@ -236,9 +236,9 @@ export class SuiClient {
 	 */
 	async getMoveFunctionArgTypes(
 		input: GetMoveFunctionArgTypesParams,
-	): Promise<SuiMoveFunctionArgType[]> {
+	): Promise<IkaMoveFunctionArgType[]> {
 		return await this.transport.request({
-			method: 'sui_getMoveFunctionArgTypes',
+			method: 'ika_getMoveFunctionArgTypes',
 			params: [input.package, input.module, input.function],
 		});
 	}
@@ -249,9 +249,9 @@ export class SuiClient {
 	 */
 	async getNormalizedMoveModulesByPackage(
 		input: GetNormalizedMoveModulesByPackageParams,
-	): Promise<SuiMoveNormalizedModules> {
+	): Promise<IkaMoveNormalizedModules> {
 		return await this.transport.request({
-			method: 'sui_getNormalizedMoveModulesByPackage',
+			method: 'ika_getNormalizedMoveModulesByPackage',
 			params: [input.package],
 		});
 	}
@@ -261,9 +261,9 @@ export class SuiClient {
 	 */
 	async getNormalizedMoveModule(
 		input: GetNormalizedMoveModuleParams,
-	): Promise<SuiMoveNormalizedModule> {
+	): Promise<IkaMoveNormalizedModule> {
 		return await this.transport.request({
-			method: 'sui_getNormalizedMoveModule',
+			method: 'ika_getNormalizedMoveModule',
 			params: [input.package, input.module],
 		});
 	}
@@ -273,9 +273,9 @@ export class SuiClient {
 	 */
 	async getNormalizedMoveFunction(
 		input: GetNormalizedMoveFunctionParams,
-	): Promise<SuiMoveNormalizedFunction> {
+	): Promise<IkaMoveNormalizedFunction> {
 		return await this.transport.request({
-			method: 'sui_getNormalizedMoveFunction',
+			method: 'ika_getNormalizedMoveFunction',
 			params: [input.package, input.module, input.function],
 		});
 	}
@@ -285,9 +285,9 @@ export class SuiClient {
 	 */
 	async getNormalizedMoveStruct(
 		input: GetNormalizedMoveStructParams,
-	): Promise<SuiMoveNormalizedStruct> {
+	): Promise<IkaMoveNormalizedStruct> {
 		return await this.transport.request({
-			method: 'sui_getNormalizedMoveStruct',
+			method: 'ika_getNormalizedMoveStruct',
 			params: [input.package, input.module, input.struct],
 		});
 	}
@@ -296,18 +296,18 @@ export class SuiClient {
 	 * Get all objects owned by an address
 	 */
 	async getOwnedObjects(input: GetOwnedObjectsParams): Promise<PaginatedObjectsResponse> {
-		if (!input.owner || !isValidSuiAddress(normalizeSuiAddress(input.owner))) {
-			throw new Error('Invalid Sui address');
+		if (!input.owner || !isValidIkaAddress(normalizeIkaAddress(input.owner))) {
+			throw new Error('Invalid Ika address');
 		}
 
 		return await this.transport.request({
-			method: 'suix_getOwnedObjects',
+			method: 'ikax_getOwnedObjects',
 			params: [
 				input.owner,
 				{
 					filter: input.filter,
 					options: input.options,
-				} as SuiObjectResponseQuery,
+				} as IkaObjectResponseQuery,
 				input.cursor,
 				input.limit,
 			],
@@ -317,19 +317,19 @@ export class SuiClient {
 	/**
 	 * Get details about an object
 	 */
-	async getObject(input: GetObjectParams): Promise<SuiObjectResponse> {
-		if (!input.id || !isValidSuiObjectId(normalizeSuiObjectId(input.id))) {
-			throw new Error('Invalid Sui Object id');
+	async getObject(input: GetObjectParams): Promise<IkaObjectResponse> {
+		if (!input.id || !isValidIkaObjectId(normalizeIkaObjectId(input.id))) {
+			throw new Error('Invalid Ika Object id');
 		}
 		return await this.transport.request({
-			method: 'sui_getObject',
+			method: 'ika_getObject',
 			params: [input.id, input.options],
 		});
 	}
 
 	async tryGetPastObject(input: TryGetPastObjectParams): Promise<ObjectRead> {
 		return await this.transport.request({
-			method: 'sui_tryGetPastObject',
+			method: 'ika_tryGetPastObject',
 			params: [input.id, input.version, input.options],
 		});
 	}
@@ -337,10 +337,10 @@ export class SuiClient {
 	/**
 	 * Batch get details about a list of objects. If any of the object ids are duplicates the call will fail
 	 */
-	async multiGetObjects(input: MultiGetObjectsParams): Promise<SuiObjectResponse[]> {
+	async multiGetObjects(input: MultiGetObjectsParams): Promise<IkaObjectResponse[]> {
 		input.ids.forEach((id) => {
-			if (!id || !isValidSuiObjectId(normalizeSuiObjectId(id))) {
-				throw new Error(`Invalid Sui Object id ${id}`);
+			if (!id || !isValidIkaObjectId(normalizeIkaObjectId(id))) {
+				throw new Error(`Invalid Ika Object id ${id}`);
 			}
 		});
 		const hasDuplicates = input.ids.length !== new Set(input.ids).size;
@@ -349,7 +349,7 @@ export class SuiClient {
 		}
 
 		return await this.transport.request({
-			method: 'sui_multiGetObjects',
+			method: 'ika_multiGetObjects',
 			params: [input.ids, input.options],
 		});
 	}
@@ -361,12 +361,12 @@ export class SuiClient {
 		input: QueryTransactionBlocksParams,
 	): Promise<PaginatedTransactionResponse> {
 		return await this.transport.request({
-			method: 'suix_queryTransactionBlocks',
+			method: 'ikax_queryTransactionBlocks',
 			params: [
 				{
 					filter: input.filter,
 					options: input.options,
-				} as SuiTransactionBlockResponseQuery,
+				} as IkaTransactionBlockResponseQuery,
 				input.cursor,
 				input.limit,
 				(input.order || 'descending') === 'descending',
@@ -376,19 +376,19 @@ export class SuiClient {
 
 	async getTransactionBlock(
 		input: GetTransactionBlockParams,
-	): Promise<SuiTransactionBlockResponse> {
+	): Promise<IkaTransactionBlockResponse> {
 		if (!isValidTransactionDigest(input.digest)) {
 			throw new Error('Invalid Transaction digest');
 		}
 		return await this.transport.request({
-			method: 'sui_getTransactionBlock',
+			method: 'ika_getTransactionBlock',
 			params: [input.digest, input.options],
 		});
 	}
 
 	async multiGetTransactionBlocks(
 		input: MultiGetTransactionBlocksParams,
-	): Promise<SuiTransactionBlockResponse[]> {
+	): Promise<IkaTransactionBlockResponse[]> {
 		input.digests.forEach((d) => {
 			if (!isValidTransactionDigest(d)) {
 				throw new Error(`Invalid Transaction digest ${d}`);
@@ -401,7 +401,7 @@ export class SuiClient {
 		}
 
 		return await this.transport.request({
-			method: 'sui_multiGetTransactionBlocks',
+			method: 'ika_multiGetTransactionBlocks',
 			params: [input.digests, input.options],
 		});
 	}
@@ -411,9 +411,9 @@ export class SuiClient {
 		signature,
 		options,
 		requestType,
-	}: ExecuteTransactionBlockParams): Promise<SuiTransactionBlockResponse> {
-		const result: SuiTransactionBlockResponse = await this.transport.request({
-			method: 'sui_executeTransactionBlock',
+	}: ExecuteTransactionBlockParams): Promise<IkaTransactionBlockResponse> {
+		const result: IkaTransactionBlockResponse = await this.transport.request({
+			method: 'ika_executeTransactionBlock',
 			params: [
 				typeof transactionBlock === 'string' ? transactionBlock : toBase64(transactionBlock),
 				Array.isArray(signature) ? signature : [signature],
@@ -444,13 +444,13 @@ export class SuiClient {
 	} & Omit<
 		ExecuteTransactionBlockParams,
 		'transactionBlock' | 'signature'
-	>): Promise<SuiTransactionBlockResponse> {
+	>): Promise<IkaTransactionBlockResponse> {
 		let transactionBytes;
 
 		if (transaction instanceof Uint8Array) {
 			transactionBytes = transaction;
 		} else {
-			transaction.setSenderIfNotSet(signer.toSuiAddress());
+			transaction.setSenderIfNotSet(signer.toIkaAddress());
 			transactionBytes = await transaction.build({ client: this });
 		}
 
@@ -469,7 +469,7 @@ export class SuiClient {
 
 	async getTotalTransactionBlocks(): Promise<bigint> {
 		const resp = await this.transport.request<string>({
-			method: 'sui_getTotalTransactionBlocks',
+			method: 'ika_getTotalTransactionBlocks',
 			params: [],
 		});
 		return BigInt(resp);
@@ -480,7 +480,7 @@ export class SuiClient {
 	 */
 	async getReferenceGasPrice(): Promise<bigint> {
 		const resp = await this.transport.request<string>({
-			method: 'suix_getReferenceGasPrice',
+			method: 'ikax_getReferenceGasPrice',
 			params: [],
 		});
 		return BigInt(resp);
@@ -490,32 +490,32 @@ export class SuiClient {
 	 * Return the delegated stakes for an address
 	 */
 	async getStakes(input: GetStakesParams): Promise<DelegatedStake[]> {
-		if (!input.owner || !isValidSuiAddress(normalizeSuiAddress(input.owner))) {
-			throw new Error('Invalid Sui address');
+		if (!input.owner || !isValidIkaAddress(normalizeIkaAddress(input.owner))) {
+			throw new Error('Invalid Ika address');
 		}
-		return await this.transport.request({ method: 'suix_getStakes', params: [input.owner] });
+		return await this.transport.request({ method: 'ikax_getStakes', params: [input.owner] });
 	}
 
 	/**
 	 * Return the delegated stakes queried by id.
 	 */
 	async getStakesByIds(input: GetStakesByIdsParams): Promise<DelegatedStake[]> {
-		input.stakedSuiIds.forEach((id) => {
-			if (!id || !isValidSuiObjectId(normalizeSuiObjectId(id))) {
-				throw new Error(`Invalid Sui Stake id ${id}`);
+		input.stakedIkaIds.forEach((id) => {
+			if (!id || !isValidIkaObjectId(normalizeIkaObjectId(id))) {
+				throw new Error(`Invalid Ika Stake id ${id}`);
 			}
 		});
 		return await this.transport.request({
-			method: 'suix_getStakesByIds',
-			params: [input.stakedSuiIds],
+			method: 'ikax_getStakesByIds',
+			params: [input.stakedIkaIds],
 		});
 	}
 
 	/**
 	 * Return the latest system state content.
 	 */
-	async getLatestSuiSystemState(): Promise<SuiSystemStateSummary> {
-		return await this.transport.request({ method: 'suix_getLatestSuiSystemState', params: [] });
+	async getLatestIkaSystemState(): Promise<IkaSystemStateSummary> {
+		return await this.transport.request({ method: 'ikax_getLatestIkaSystemState', params: [] });
 	}
 
 	/**
@@ -523,7 +523,7 @@ export class SuiClient {
 	 */
 	async queryEvents(input: QueryEventsParams): Promise<PaginatedEvents> {
 		return await this.transport.request({
-			method: 'suix_queryEvents',
+			method: 'ikax_queryEvents',
 			params: [
 				input.query,
 				input.cursor,
@@ -541,12 +541,12 @@ export class SuiClient {
 	async subscribeEvent(
 		input: SubscribeEventParams & {
 			/** function to run when we receive a notification of a new event matching the filter */
-			onMessage: (event: SuiEvent) => void;
+			onMessage: (event: IkaEvent) => void;
 		},
 	): Promise<Unsubscribe> {
 		return this.transport.subscribe({
-			method: 'suix_subscribeEvent',
-			unsubscribe: 'suix_unsubscribeEvent',
+			method: 'ikax_subscribeEvent',
+			unsubscribe: 'ikax_unsubscribeEvent',
 			params: [input.filter],
 			onMessage: input.onMessage,
 		});
@@ -562,8 +562,8 @@ export class SuiClient {
 		},
 	): Promise<Unsubscribe> {
 		return this.transport.subscribe({
-			method: 'suix_subscribeTransaction',
-			unsubscribe: 'suix_unsubscribeTransaction',
+			method: 'ikax_subscribeTransaction',
+			unsubscribe: 'ikax_unsubscribeTransaction',
 			params: [input.filter],
 			onMessage: input.onMessage,
 		});
@@ -595,7 +595,7 @@ export class SuiClient {
 		}
 
 		return await this.transport.request({
-			method: 'sui_devInspectTransactionBlock',
+			method: 'ika_devInspectTransactionBlock',
 			params: [input.sender, devInspectTxBytes, input.gasPrice?.toString(), input.epoch],
 		});
 	}
@@ -607,7 +607,7 @@ export class SuiClient {
 		input: DryRunTransactionBlockParams,
 	): Promise<DryRunTransactionBlockResponse> {
 		return await this.transport.request({
-			method: 'sui_dryRunTransactionBlock',
+			method: 'ika_dryRunTransactionBlock',
 			params: [
 				typeof input.transactionBlock === 'string'
 					? input.transactionBlock
@@ -620,11 +620,11 @@ export class SuiClient {
 	 * Return the list of dynamic field objects owned by an object
 	 */
 	async getDynamicFields(input: GetDynamicFieldsParams): Promise<DynamicFieldPage> {
-		if (!input.parentId || !isValidSuiObjectId(normalizeSuiObjectId(input.parentId))) {
-			throw new Error('Invalid Sui Object id');
+		if (!input.parentId || !isValidIkaObjectId(normalizeIkaObjectId(input.parentId))) {
+			throw new Error('Invalid Ika Object id');
 		}
 		return await this.transport.request({
-			method: 'suix_getDynamicFields',
+			method: 'ikax_getDynamicFields',
 			params: [input.parentId, input.cursor, input.limit],
 		});
 	}
@@ -632,9 +632,9 @@ export class SuiClient {
 	/**
 	 * Return the dynamic field object information for a specified object
 	 */
-	async getDynamicFieldObject(input: GetDynamicFieldObjectParams): Promise<SuiObjectResponse> {
+	async getDynamicFieldObject(input: GetDynamicFieldObjectParams): Promise<IkaObjectResponse> {
 		return await this.transport.request({
-			method: 'suix_getDynamicFieldObject',
+			method: 'ikax_getDynamicFieldObject',
 			params: [input.parentId, input.name],
 		});
 	}
@@ -644,7 +644,7 @@ export class SuiClient {
 	 */
 	async getLatestCheckpointSequenceNumber(): Promise<string> {
 		const resp = await this.transport.request({
-			method: 'sui_getLatestCheckpointSequenceNumber',
+			method: 'ika_getLatestCheckpointSequenceNumber',
 			params: [],
 		});
 		return String(resp);
@@ -654,7 +654,7 @@ export class SuiClient {
 	 * Returns information about a given checkpoint
 	 */
 	async getCheckpoint(input: GetCheckpointParams): Promise<Checkpoint> {
-		return await this.transport.request({ method: 'sui_getCheckpoint', params: [input.id] });
+		return await this.transport.request({ method: 'ika_getCheckpoint', params: [input.id] });
 	}
 
 	/**
@@ -664,7 +664,7 @@ export class SuiClient {
 		input: PaginationArguments<CheckpointPage['nextCursor']> & GetCheckpointsParams,
 	): Promise<CheckpointPage> {
 		return await this.transport.request({
-			method: 'sui_getCheckpoints',
+			method: 'ika_getCheckpoints',
 			params: [input.cursor, input?.limit, input.descendingOrder],
 		});
 	}
@@ -674,24 +674,24 @@ export class SuiClient {
 	 */
 	async getCommitteeInfo(input?: GetCommitteeInfoParams): Promise<CommitteeInfo> {
 		return await this.transport.request({
-			method: 'suix_getCommitteeInfo',
+			method: 'ikax_getCommitteeInfo',
 			params: [input?.epoch],
 		});
 	}
 
 	async getNetworkMetrics(): Promise<NetworkMetrics> {
-		return await this.transport.request({ method: 'suix_getNetworkMetrics', params: [] });
+		return await this.transport.request({ method: 'ikax_getNetworkMetrics', params: [] });
 	}
 
 	async getAddressMetrics(): Promise<AddressMetrics> {
-		return await this.transport.request({ method: 'suix_getLatestAddressMetrics', params: [] });
+		return await this.transport.request({ method: 'ikax_getLatestAddressMetrics', params: [] });
 	}
 
 	async getEpochMetrics(
 		input?: { descendingOrder?: boolean } & PaginationArguments<EpochMetricsPage['nextCursor']>,
 	): Promise<EpochMetricsPage> {
 		return await this.transport.request({
-			method: 'suix_getEpochMetrics',
+			method: 'ikax_getEpochMetrics',
 			params: [input?.cursor, input?.limit, input?.descendingOrder],
 		});
 	}
@@ -700,7 +700,7 @@ export class SuiClient {
 		descendingOrder?: boolean;
 	}): Promise<AllEpochsAddressMetrics> {
 		return await this.transport.request({
-			method: 'suix_getAllEpochAddressMetrics',
+			method: 'ikax_getAllEpochAddressMetrics',
 			params: [input?.descendingOrder],
 		});
 	}
@@ -714,7 +714,7 @@ export class SuiClient {
 		} & PaginationArguments<EpochPage['nextCursor']>,
 	): Promise<EpochPage> {
 		return await this.transport.request({
-			method: 'suix_getEpochs',
+			method: 'ikax_getEpochs',
 			params: [input?.cursor, input?.limit, input?.descendingOrder],
 		});
 	}
@@ -723,24 +723,24 @@ export class SuiClient {
 	 * Returns list of top move calls by usage
 	 */
 	async getMoveCallMetrics(): Promise<MoveCallMetrics> {
-		return await this.transport.request({ method: 'suix_getMoveCallMetrics', params: [] });
+		return await this.transport.request({ method: 'ikax_getMoveCallMetrics', params: [] });
 	}
 
 	/**
 	 * Return the committee information for the asked epoch
 	 */
 	async getCurrentEpoch(): Promise<EpochInfo> {
-		return await this.transport.request({ method: 'suix_getCurrentEpoch', params: [] });
+		return await this.transport.request({ method: 'ikax_getCurrentEpoch', params: [] });
 	}
 
 	/**
 	 * Return the Validators APYs
 	 */
 	async getValidatorsApy(): Promise<ValidatorsApy> {
-		return await this.transport.request({ method: 'suix_getValidatorsApy', params: [] });
+		return await this.transport.request({ method: 'ikax_getValidatorsApy', params: [] });
 	}
 
-	// TODO: Migrate this to `sui_getChainIdentifier` once it is widely available.
+	// TODO: Migrate this to `ika_getChainIdentifier` once it is widely available.
 	async getChainIdentifier(): Promise<string> {
 		const checkpoint = await this.getCheckpoint({ id: '0' });
 		const bytes = fromBase58(checkpoint.digest);
@@ -749,7 +749,7 @@ export class SuiClient {
 
 	async resolveNameServiceAddress(input: ResolveNameServiceAddressParams): Promise<string | null> {
 		return await this.transport.request({
-			method: 'suix_resolveNameServiceAddress',
+			method: 'ikax_resolveNameServiceAddress',
 			params: [input.name],
 		});
 	}
@@ -762,20 +762,20 @@ export class SuiClient {
 	}): Promise<ResolvedNameServiceNames> {
 		const { nextCursor, hasNextPage, data }: ResolvedNameServiceNames =
 			await this.transport.request({
-				method: 'suix_resolveNameServiceNames',
+				method: 'ikax_resolveNameServiceNames',
 				params: [input.address, input.cursor, input.limit],
 			});
 
 		return {
 			hasNextPage,
 			nextCursor,
-			data: data.map((name) => normalizeSuiNSName(name, format)),
+			data: data.map((name) => normalizeIkaNSName(name, format)),
 		};
 	}
 
 	async getProtocolConfig(input?: GetProtocolConfigParams): Promise<ProtocolConfig> {
 		return await this.transport.request({
-			method: 'sui_getProtocolConfig',
+			method: 'ika_getProtocolConfig',
 			params: [input?.version],
 		});
 	}
@@ -798,7 +798,7 @@ export class SuiClient {
 		timeout?: number;
 		/** The amount of time to wait between checks for the transaction block. Defaults to 2 seconds. */
 		pollInterval?: number;
-	} & Parameters<SuiClient['getTransactionBlock']>[0]): Promise<SuiTransactionBlockResponse> {
+	} & Parameters<IkaClient['getTransactionBlock']>[0]): Promise<IkaTransactionBlockResponse> {
 		const timeoutSignal = AbortSignal.timeout(timeout);
 		const timeoutPromise = new Promise((_, reject) => {
 			timeoutSignal.addEventListener('abort', () => reject(timeoutSignal.reason));

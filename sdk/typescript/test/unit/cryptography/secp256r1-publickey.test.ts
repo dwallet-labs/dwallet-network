@@ -8,14 +8,14 @@ import { Secp256r1PublicKey } from '../../../src/keypairs/secp256r1/publickey';
 import { INVALID_SECP256R1_PUBLIC_KEY, VALID_SECP256R1_PUBLIC_KEY } from './secp256r1-keypair.test';
 
 // Test case generated against CLI:
-// cargo build --bin sui
-// ../sui/target/debug/sui client new-address secp256r1
-// ../sui/target/debug/sui keytool list
+// cargo build --bin ika
+// ../ika/target/debug/ika client new-address secp256r1
+// ../ika/target/debug/ika keytool list
 const TEST_CASES = [
 	{
 		rawPublicKey: 'A8Ju2r5X3EZ3aYuZzH+Ofs6cd1j2WOwY7lhoJQenulBl',
-		suiPublicKey: 'AgPCbtq+V9xGd2mLmcx/jn7OnHdY9ljsGO5YaCUHp7pQZQ==',
-		suiAddress: '0xafd0f5a4f41c5770c201879518740b83743164ed2445016fbba9ae98e04af8a5',
+		ikaPublicKey: 'AgPCbtq+V9xGd2mLmcx/jn7OnHdY9ljsGO5YaCUHp7pQZQ==',
+		ikaAddress: '0xafd0f5a4f41c5770c201879518740b83743164ed2445016fbba9ae98e04af8a5',
 	},
 ];
 
@@ -57,15 +57,15 @@ describe('Secp256r1PublicKey', () => {
 		expect(new Secp256r1PublicKey(key.toRawBytes()).equals(key)).toBe(true);
 	});
 
-	TEST_CASES.forEach(({ rawPublicKey, suiPublicKey, suiAddress }) => {
-		it(`toSuiAddress from base64 public key ${suiAddress}`, () => {
+	TEST_CASES.forEach(({ rawPublicKey, ikaPublicKey, ikaAddress }) => {
+		it(`toIkaAddress from base64 public key ${ikaAddress}`, () => {
 			const key = new Secp256r1PublicKey(rawPublicKey);
-			expect(key.toSuiAddress()).toEqual(suiAddress);
+			expect(key.toIkaAddress()).toEqual(ikaAddress);
 		});
 
-		it(`toSuiPublicKey from base64 public key ${suiAddress}`, () => {
+		it(`toIkaPublicKey from base64 public key ${ikaAddress}`, () => {
 			const key = new Secp256r1PublicKey(rawPublicKey);
-			expect(key.toSuiPublicKey()).toEqual(suiPublicKey);
+			expect(key.toIkaPublicKey()).toEqual(ikaPublicKey);
 		});
 	});
 });

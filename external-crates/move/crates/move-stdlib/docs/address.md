@@ -19,7 +19,7 @@ platform-specific parameter.
 ## Function `length`
 
 Should be converted to a native function.
-Current implementation only works for Sui.
+Current implementation only works for Ika.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="address.md#0x1_address_length">length</a>(): <a href="u64.md#0x1_u64">u64</a>

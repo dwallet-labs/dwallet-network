@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { parseSerializedSignature, PublicKey, SignatureScheme } from '@mysten/sui/cryptography';
-import { parsePartialSignatures } from '@mysten/sui/multisig';
-import { toBase64 } from '@mysten/sui/utils';
-import { publicKeyFromRawBytes } from '@mysten/sui/verify';
+import { parseSerializedSignature, PublicKey, SignatureScheme } from '@ika-io/ika/cryptography';
+import { parsePartialSignatures } from '@ika-io/ika/multisig';
+import { toBase64 } from '@ika-io/ika/utils';
+import { publicKeyFromRawBytes } from '@ika-io/ika/verify';
 import { AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 
@@ -36,17 +36,17 @@ AIYbCXAhPmILpWq6xsEY/Nu310Kednlb60Qcd/nD+u2WCXE/FvSXNRUQW9OQKGqt2CeskPyv2SEhaKMZ
 */
 
 function Signature({ signature, index }: { signature: SignaturePubkeyPair; index: number }) {
-	const suiAddress = signature.publicKey.toSuiAddress();
+	const ikaAddress = signature.publicKey.toIkaAddress();
 
-	const pubkey_base64_sui_format = signature.publicKey.toSuiPublicKey();
+	const pubkey_base64_ika_format = signature.publicKey.toIkaPublicKey();
 
 	const pubkey = signature.publicKey.toBase64();
 	const scheme = signature.signatureScheme.toString();
 
 	const details = [
 		{ label: 'Signature Public Key', value: pubkey },
-		{ label: 'Sui Format Public Key ( flag | pk )', value: pubkey_base64_sui_format },
-		{ label: 'Sui Address', value: suiAddress },
+		{ label: 'Ika Format Public Key ( flag | pk )', value: pubkey_base64_ika_format },
+		{ label: 'Ika Address', value: ikaAddress },
 		{ label: 'Signature', value: toBase64(signature.signature) },
 	];
 

@@ -10,23 +10,23 @@ import { retry } from 'ts-retry-promise';
 import { expect } from 'vitest';
 import { WebSocket } from 'ws';
 
-import type { SuiObjectChangePublished } from '../../../src/client/index.js';
-import { getFullnodeUrl, SuiClient, SuiHTTPTransport } from '../../../src/client/index.js';
+import type { IkaObjectChangePublished } from '../../../src/client/index.js';
+import { getFullnodeUrl, IkaClient, IkaHTTPTransport } from '../../../src/client/index.js';
 import type { Keypair } from '../../../src/cryptography/index.js';
 import {
 	FaucetRateLimitError,
 	getFaucetHost,
-	requestSuiFromFaucetV1,
+	requestIkaFromFaucetV1,
 } from '../../../src/faucet/index.js';
 import { Ed25519Keypair } from '../../../src/keypairs/ed25519/index.js';
 import { Transaction, UpgradePolicy } from '../../../src/transactions/index.js';
-import { SUI_TYPE_ARG } from '../../../src/utils/index.js';
+import { IKA_TYPE_ARG } from '../../../src/utils/index.js';
 
 const DEFAULT_FAUCET_URL = import.meta.env.VITE_FAUCET_URL ?? getFaucetHost('localnet');
 const DEFAULT_FULLNODE_URL = import.meta.env.VITE_FULLNODE_URL ?? getFullnodeUrl('localnet');
 
-const SUI_BIN =
-	import.meta.env.VITE_SUI_BIN ?? path.resolve(__dirname, '../../../../../target/debug/sui');
+const IKA_BIN =
+	import.meta.env.VITE_IKA_BIN ?? path.resolve(__dirname, '../../../../../target/debug/ika');
 
 export const DEFAULT_RECIPIENT =
 	'0x0c567ffdf8162cb6d51af74be0199443b92e823d4ba6ced24de5c6c463797d46';
@@ -62,14 +62,14 @@ class TestPackageRegistry {
 
 export class TestToolbox {
 	keypair: Ed25519Keypair;
-	client: SuiClient;
+	client: IkaClient;
 	registry: TestPackageRegistry;
 	configPath: string;
 
 	constructor(keypair: Ed25519Keypair, url: string = DEFAULT_FULLNODE_URL, configPath: string) {
 		this.keypair = keypair;
-		this.client = new SuiClient({
-			transport: new SuiHTTPTransport({
+		this.client = new IkaClient({
+			transport: new IkaHTTPTransport({
 				url,
 				WebSocketConstructor: WebSocket as never,
 			}),
@@ -79,18 +79,18 @@ export class TestToolbox {
 	}
 
 	address() {
-		return this.keypair.getPublicKey().toSuiAddress();
+		return this.keypair.getPublicKey().toIkaAddress();
 	}
 
 	async getGasObjectsOwnedByAddress() {
 		return await this.client.getCoins({
 			owner: this.address(),
-			coinType: SUI_TYPE_ARG,
+			coinType: IKA_TYPE_ARG,
 		});
 	}
 
 	public async getActiveValidators() {
-		return (await this.client.getLatestSuiSystemState()).activeValidators;
+		return (await this.client.getLatestIkaSystemState()).activeValidators;
 	}
 
 	public async getPackage(path: string) {
@@ -108,9 +108,9 @@ export class TestToolbox {
 	}
 }
 
-export function getClient(url = DEFAULT_FULLNODE_URL): SuiClient {
-	return new SuiClient({
-		transport: new SuiHTTPTransport({
+export function getClient(url = DEFAULT_FULLNODE_URL): IkaClient {
+	return new IkaClient({
+		transport: new IkaHTTPTransport({
 			url,
 			WebSocketConstructor: WebSocket as never,
 		}),
@@ -119,7 +119,7 @@ export function getClient(url = DEFAULT_FULLNODE_URL): SuiClient {
 
 export async function setup(options: { graphQLURL?: string; rpcURL?: string } = {}) {
 	const keypair = Ed25519Keypair.generate();
-	const address = keypair.getPublicKey().toSuiAddress();
+	const address = keypair.getPublicKey().toIkaAddress();
 	const tmpDirPath = path.join(tmpdir(), 'config-');
 	const tmpDir = await mkdtemp(tmpDirPath);
 	const configPath = path.join(tmpDir, 'client.yaml');
@@ -133,7 +133,7 @@ export async function setupWithFundedAddress(
 	{ rpcURL }: { graphQLURL?: string; rpcURL?: string } = {},
 ) {
 	const client = getClient(rpcURL);
-	await retry(() => requestSuiFromFaucetV1({ host: DEFAULT_FAUCET_URL, recipient: address }), {
+	await retry(() => requestIkaFromFaucetV1({ host: DEFAULT_FAUCET_URL, recipient: address }), {
 		backoff: 'EXPONENTIAL',
 		// overall timeout in 60 seconds
 		timeout: 1000 * 60,
@@ -157,7 +157,7 @@ export async function setupWithFundedAddress(
 		},
 	);
 
-	execSync(`${SUI_BIN} client --yes --client.config ${configPath}`, { encoding: 'utf-8' });
+	execSync(`${IKA_BIN} client --yes --client.config ${configPath}`, { encoding: 'utf-8' });
 	return new TestToolbox(keypair, rpcURL, configPath);
 }
 
@@ -174,7 +174,7 @@ export async function publishPackage(packagePath: string, toolbox?: TestToolbox)
 
 	const { modules, dependencies } = JSON.parse(
 		execSync(
-			`${SUI_BIN} move --client.config ${toolbox.configPath} build --dump-bytecode-as-base64 --path ${packagePath} --install-dir ${tmpobj.name}`,
+			`${IKA_BIN} move --client.config ${toolbox.configPath} build --dump-bytecode-as-base64 --path ${packagePath} --install-dir ${tmpobj.name}`,
 			{ encoding: 'utf-8' },
 		),
 	);
@@ -202,7 +202,7 @@ export async function publishPackage(packagePath: string, toolbox?: TestToolbox)
 
 	const packageId = ((publishTxn.objectChanges?.filter(
 		(a) => a.type === 'published',
-	) as SuiObjectChangePublished[]) ?? [])[0]?.packageId.replace(/^(0x)(0+)/, '0x') as string;
+	) as IkaObjectChangePublished[]) ?? [])[0]?.packageId.replace(/^(0x)(0+)/, '0x') as string;
 
 	expect(packageId).toBeTypeOf('string');
 
@@ -229,7 +229,7 @@ export async function upgradePackage(
 
 	const { modules, dependencies, digest } = JSON.parse(
 		execSync(
-			`${SUI_BIN} move --client.config ${toolbox.configPath} build --dump-bytecode-as-base64 --path ${packagePath} --install-dir ${tmpobj.name}`,
+			`${IKA_BIN} move --client.config ${toolbox.configPath} build --dump-bytecode-as-base64 --path ${packagePath} --install-dir ${tmpobj.name}`,
 			{ encoding: 'utf-8' },
 		),
 	);
@@ -271,12 +271,12 @@ export function getRandomAddresses(n: number): string[] {
 		.fill(null)
 		.map(() => {
 			const keypair = Ed25519Keypair.generate();
-			return keypair.getPublicKey().toSuiAddress();
+			return keypair.getPublicKey().toIkaAddress();
 		});
 }
 
-export async function paySui(
-	client: SuiClient,
+export async function payIka(
+	client: IkaClient,
 	signer: Keypair,
 	numRecipients: number = 1,
 	recipients?: string[],
@@ -294,8 +294,8 @@ export async function paySui(
 		coinId ??
 		(
 			await client.getCoins({
-				owner: signer.getPublicKey().toSuiAddress(),
-				coinType: '0x2::sui::SUI',
+				owner: signer.getPublicKey().toIkaAddress(),
+				coinType: '0x2::ika::IKA',
 			})
 		).data[0].coinObjectId;
 
@@ -320,8 +320,8 @@ export async function paySui(
 	return txn;
 }
 
-export async function executePaySuiNTimes(
-	client: SuiClient,
+export async function executePayIkaNTimes(
+	client: IkaClient,
 	signer: Keypair,
 	nTimes: number,
 	numRecipientsPerTxn: number = 1,
@@ -331,7 +331,7 @@ export async function executePaySuiNTimes(
 	const txns = [];
 	for (let i = 0; i < nTimes; i++) {
 		// must await here to make sure the txns are executed in order
-		txns.push(await paySui(client, signer, numRecipientsPerTxn, recipients, amounts));
+		txns.push(await payIka(client, signer, numRecipientsPerTxn, recipients, amounts));
 	}
 	return txns;
 }

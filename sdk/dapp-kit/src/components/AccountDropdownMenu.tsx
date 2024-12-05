@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@ika-io/ika/utils';
 import type { WalletAccount } from '@mysten/wallet-standard';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import clsx from 'clsx';
 
-import { useResolveSuiNSName } from '../hooks/useResolveSuiNSNames.js';
+import { useResolveIkaNSName } from '../hooks/useResolveIkaNSNames.js';
 import { useAccounts } from '../hooks/wallet/useAccounts.js';
 import { useDisconnectWallet } from '../hooks/wallet/useDisconnectWallet.js';
 import { useSwitchAccount } from '../hooks/wallet/useSwitchAccount.js';
@@ -24,7 +24,7 @@ type AccountDropdownMenuProps = {
 export function AccountDropdownMenu({ currentAccount }: AccountDropdownMenuProps) {
 	const { mutate: disconnectWallet } = useDisconnectWallet();
 
-	const { data: domain } = useResolveSuiNSName(
+	const { data: domain } = useResolveIkaNSName(
 		currentAccount.label ? null : currentAccount.address,
 	);
 	const accounts = useAccounts();
@@ -73,7 +73,7 @@ export function AccountDropdownMenuItem({
 	active?: boolean;
 }) {
 	const { mutate: switchAccount } = useSwitchAccount();
-	const { data: domain } = useResolveSuiNSName(account.label ? null : account.address);
+	const { data: domain } = useResolveIkaNSName(account.label ? null : account.address);
 
 	return (
 		<DropdownMenu.Item

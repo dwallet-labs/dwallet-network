@@ -1,9 +1,9 @@
-import { useCurrentAccount, useSuiClientQuery } from "@mysten/dapp-kit";
+import { useCurrentAccount, useIkaClientQuery } from "@mysten/dapp-kit";
 import { Flex, Heading, Text } from "@radix-ui/themes";
 
 export function OwnedObjects() {
   const account = useCurrentAccount();
-  const { data, isPending, error } = useSuiClientQuery(
+  const { data, isPending, error } = useIkaClientQuery(
     "getOwnedObjects",
     {
       owner: account?.address as string,

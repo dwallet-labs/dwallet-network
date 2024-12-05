@@ -3,7 +3,7 @@
 
 import { useTransactionData } from '_src/ui/app/hooks';
 import { Tab as HeadlessTab, type TabProps } from '@headlessui/react';
-import { type Transaction } from '@mysten/sui/transactions';
+import { type Transaction } from '@ika-io/ika/transactions';
 
 import { SummaryCard } from '../SummaryCard';
 import { Command } from './Command';

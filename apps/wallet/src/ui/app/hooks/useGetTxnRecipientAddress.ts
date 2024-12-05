@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { getAmount } from '_helpers';
-import { type SuiTransactionBlockResponse } from '@mysten/sui/client';
+import { type IkaTransactionBlockResponse } from '@ika-io/ika/client';
 import { useMemo } from 'react';
 
 type Props = {
-	txn: SuiTransactionBlockResponse;
+	txn: IkaTransactionBlockResponse;
 	address: string;
 };
 

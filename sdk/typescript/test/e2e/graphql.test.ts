@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { describe, expect, it } from 'vitest';
 
-import { SuiGraphQLClient } from '../../src/graphql';
+import { IkaGraphQLClient } from '../../src/graphql';
 import { graphql } from '../../src/graphql/schemas/2024.4';
 
 const queries = {
@@ -30,7 +30,7 @@ const queries = {
 	`),
 };
 
-const client = new SuiGraphQLClient({
+const client = new IkaGraphQLClient({
 	url: 'http://127.0.0.1:9125',
 	queries,
 });

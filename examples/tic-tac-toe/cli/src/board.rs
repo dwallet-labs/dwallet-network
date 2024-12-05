@@ -3,15 +3,15 @@
 
 use serde::Deserialize;
 use std::fmt;
-use sui_types::base_types::{ObjectID, SuiAddress};
+use ika_types::base_types::{ObjectID, IkaAddress};
 
 #[derive(Deserialize)]
 pub(crate) struct Board {
     pub id: ObjectID,
     pub marks: Vec<u8>,
     pub turn: u8,
-    pub x: SuiAddress,
-    pub o: SuiAddress,
+    pub x: IkaAddress,
+    pub o: IkaAddress,
 }
 
 #[derive(Eq, PartialEq)]

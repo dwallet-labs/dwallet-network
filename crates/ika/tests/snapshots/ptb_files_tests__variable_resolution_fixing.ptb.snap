@@ -1,0 +1,18 @@
+---
+source: crates/ika/tests/ptb_files_tests.rs
+expression: "results.join(\"\\n\")"
+---
+ === PREVIEW === 
+╭───────────────────────────────────────────────────╮
+│ PTB Preview                                       │
+├───────────────┬───────────────────────────────────┤
+│ command       │ values                            │
+├───────────────┼───────────────────────────────────┤
+│ assign        │ s @0x1                            │
+│ move-call     │ ika::coin::value<ika::ika::IKA> s │
+│ make-move-vec │ <address> [s]                     │
+╰───────────────┴───────────────────────────────────╯
+ === BUILT PTB === 
+Input 0: ImmutableOrOwnedObject
+Command 0: MoveCall(0x0000000000000000000000000000000000000000000000000000000000000002::coin::value<0x2::ika::IKA>(Input(0)))
+Command 1: MakeMoveVec(Someaddress,[Input(0)])

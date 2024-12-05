@@ -15,13 +15,13 @@ import {
 	useGetTimeBeforeEpochNumber,
 	useGetValidatorsApy,
 } from '@mysten/core';
-import type { SuiEvent } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import type { IkaEvent } from '@ika-io/ika/client';
+import { IKA_TYPE_ARG } from '@ika-io/ika/utils';
 
 import { Card } from '../../shared/transaction-summary/Card';
 
 type StakeTxnCardProps = {
-	event: SuiEvent;
+	event: IkaEvent;
 };
 
 // For Staked Transaction use moveEvent Field to get the validator address, delegation amount, epoch
@@ -64,7 +64,7 @@ export function StakeTxnCard({ event }: StakeTxnCardProps) {
 						/>
 					</div>
 				)}
-				{stakedAmount && <TxnAmount amount={stakedAmount} coinType={SUI_TYPE_ARG} label="Stake" />}
+				{stakedAmount && <TxnAmount amount={stakedAmount} coinType={IKA_TYPE_ARG} label="Stake" />}
 				<div className="flex flex-col">
 					<div className="flex justify-between w-full py-3.5">
 						<div className="flex gap-1 items-baseline justify-center text-steel">

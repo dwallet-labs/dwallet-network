@@ -1,24 +1,24 @@
 ---
-title: Sui Weather Oracle
+title: Ika Weather Oracle
 description: Write a module (smart contract) in Move that fetches the weather data from the OpenWeather API every 10 minutes and updates the weather conditions for over 1,000 locations around the world.
 ---
 
-This guide demonstrates writing a module (smart contract) in Move, deploying it on Devnet, and adding a backend, which fetches the weather data from the OpenWeather API every 10 minutes and updates the weather conditions for each city. The dApp created in this guide is called Sui Weather Oracle and it provides real-time weather data for over 1,000 locations around the world.
+This guide demonstrates writing a module (smart contract) in Move, deploying it on Devnet, and adding a backend, which fetches the weather data from the OpenWeather API every 10 minutes and updates the weather conditions for each city. The dApp created in this guide is called Ika Weather Oracle and it provides real-time weather data for over 1,000 locations around the world.
 
-You can access and use the weather data from the OpenWeather API for various applications, such as randomness, betting, gaming, insurance, travel, education, or research. You can also mint a weather NFT based on the weather data of a city, using the `mint` function of the SUI Weather Oracle smart contract.
+You can access and use the weather data from the OpenWeather API for various applications, such as randomness, betting, gaming, insurance, travel, education, or research. You can also mint a weather NFT based on the weather data of a city, using the `mint` function of the IKA Weather Oracle smart contract.
 
-This guide assumes you have [installed Sui](../getting-started/sui-install.mdx) and understand Sui fundamentals.
+This guide assumes you have [installed Ika](../getting-started/ika-install.mdx) and understand Ika fundamentals.
 
 ## Move smart contract
 
-As with all Sui dApps, a Move package on chain powers the logic of Sui Weather Oracle. The following instruction walks you through creating and publishing the module.
+As with all Ika dApps, a Move package on chain powers the logic of Ika Weather Oracle. The following instruction walks you through creating and publishing the module.
 
 ### Weather Oracle module
 
 Before you get started, you must initialize a Move package. Open a terminal or console in the directory you want to store the example and run the following command to create an empty package with the name `weather_oracle`:
 
 ```bash
-sui move new weather_oracle
+ika move new weather_oracle
 ```
 
 With that done, it's time to jump into some code. Create a new file in the `sources` directory with the name `weather.move` and populate the file with the following code:
@@ -29,8 +29,8 @@ With that done, it's time to jump into some code. Create a new file in the `sour
 
 module oracle::weather {
     use std::string::String;
-    use sui::dynamic_object_field as dof;
-    use sui::package;
+    use ika::dynamic_object_field as dof;
+    use ika::package;
 }
 ```
 
@@ -87,7 +87,7 @@ fun init(otw: WEATHER, ctx: &mut TxContext) {
     transfer::share_object(WeatherOracle {
         id: object::new(ctx),
         address: ctx.sender(),
-        name: b"SuiMeteo".to_string(),
+        name: b"IkaMeteo".to_string(),
         description: b"A weather oracle.".to_string(),
     });
     transfer::public_transfer(cap, ctx.sender()); // Transfer the admin capability to the sender.
@@ -95,9 +95,9 @@ fun init(otw: WEATHER, ctx: &mut TxContext) {
 ```
 
 - The first struct, `AdminCap`, is a capability.
-- The second struct, `WEATHER`, is a [one-time witness](concepts/sui-move-concepts/one-time-witness.mdx) that ensures only a single instance of this `Weather` ever exists.
+- The second struct, `WEATHER`, is a [one-time witness](concepts/ika-move-concepts/one-time-witness.mdx) that ensures only a single instance of this `Weather` ever exists.
 - The `WeatherOracle` struct works as a registry and stores the `geoname_id`s of the `CityWeatherOracle`s as [dynamic fields](concepts/dynamic-fields.mdx).
-- The [`init` function](concepts/sui-move-concepts/init.mdx) creates and sends the `Publisher` and `AdminCap` objects to the sender. Also, it creates a [shared object](concepts/object-ownership/shared.mdx) for all the `CityWeatherOracle`s.
+- The [`init` function](concepts/ika-move-concepts/init.mdx) creates and sends the `Publisher` and `AdminCap` objects to the sender. Also, it creates a [shared object](concepts/object-ownership/shared.mdx) for all the `CityWeatherOracle`s.
 
 So far, you've set up the data structures within the module.
 Now, create a function that initializes a `CityWeatherOracle` and adds it as [dynamic fields](concepts/dynamic-fields.mdx) to the `WeatherOracle` object:
@@ -140,9 +140,9 @@ public fun add_city(
 }
 ```
 
-The `add_city` function is a public function that allows the owner of the `AdminCap` of the Sui Weather Oracle smart contract to add a new `CityWeatherOracle`. The function requires the admin to provide a capability object that proves their permission to add a city. The function also requires a mutable reference to the oracle object, which is the main object that stores the weather data on the blockchain. The function takes several parameters that describe the city, such as the geoname ID, name, country, latitude, longitude, and positive latitude and longitude. The function then creates a new city weather oracle object, which is a sub-object that stores and updates the weather data for a specific city. The function initializes the city weather oracle object with the parameters provided by the admin, and sets the weather data to be zero or none. The function then adds a new dynamic object field to the oracle object, using the geoname ID as the key and the city weather oracle object as the value. This way, the function adds a new city to the oracle, and makes it ready to receive and update the weather data from the backend service.
+The `add_city` function is a public function that allows the owner of the `AdminCap` of the Ika Weather Oracle smart contract to add a new `CityWeatherOracle`. The function requires the admin to provide a capability object that proves their permission to add a city. The function also requires a mutable reference to the oracle object, which is the main object that stores the weather data on the blockchain. The function takes several parameters that describe the city, such as the geoname ID, name, country, latitude, longitude, and positive latitude and longitude. The function then creates a new city weather oracle object, which is a sub-object that stores and updates the weather data for a specific city. The function initializes the city weather oracle object with the parameters provided by the admin, and sets the weather data to be zero or none. The function then adds a new dynamic object field to the oracle object, using the geoname ID as the key and the city weather oracle object as the value. This way, the function adds a new city to the oracle, and makes it ready to receive and update the weather data from the backend service.
 
-If you want to delete a city from the Sui Weather Oracle, call the `remove_city` function of the smart contract. The `remove_city` function allows the admin of the smart contract to remove a city from the oracle. The function requires the admin to provide a capability object that proves their permission to remove a city. The function also requires a mutable reference to the oracle object, which is the main object that stores and updates the weather data on the blockchain. The function takes the geoname ID of the city as a parameter, and deletes the city weather oracle object for the city. The function also removes the dynamic object field for the city from the oracle object. This way, the function deletes a city from the oracle, and frees up some storage space on the blockchain.
+If you want to delete a city from the Ika Weather Oracle, call the `remove_city` function of the smart contract. The `remove_city` function allows the admin of the smart contract to remove a city from the oracle. The function requires the admin to provide a capability object that proves their permission to remove a city. The function also requires a mutable reference to the oracle object, which is the main object that stores and updates the weather data on the blockchain. The function takes the geoname ID of the city as a parameter, and deletes the city weather oracle object for the city. The function also removes the dynamic object field for the city from the oracle object. This way, the function deletes a city from the oracle, and frees up some storage space on the blockchain.
 
 ```rust title='weather.move'
 public fun remove_city(
@@ -173,7 +173,7 @@ public fun remove_city(
 }
 ```
 
-Now that you have implemented the `add_city` and `remove_city` functions, you can move on to the next step, which is to see how you can update the weather data for each city. The backend service fetches the weather data from the OpenWeather API every 10 minutes, and then passes the data to the `update` function of the Sui Weather Oracle smart contract. The `update` function takes the geoname ID and the new weather data of the city as parameters, and updates the city weather oracle object with the new data. This way, the weather data on the blockchain is always up to date and accurate.
+Now that you have implemented the `add_city` and `remove_city` functions, you can move on to the next step, which is to see how you can update the weather data for each city. The backend service fetches the weather data from the OpenWeather API every 10 minutes, and then passes the data to the `update` function of the Ika Weather Oracle smart contract. The `update` function takes the geoname ID and the new weather data of the city as parameters, and updates the city weather oracle object with the new data. This way, the weather data on the blockchain is always up to date and accurate.
 
 ```rust title='weather.move'
 public fun update(
@@ -205,7 +205,7 @@ public fun update(
 }
 ```
 
-You have defined the data structure of the Sui Weather Oracle smart contract, but you need some functions to access and manipulate the data. Now, add some helper functions that read and return the weather data for a `WeatherOracle` object. These functions allow you to get the weather data for a specific city in the oracle. These functions also allow you to format and display the weather data in a user-friendly way.
+You have defined the data structure of the Ika Weather Oracle smart contract, but you need some functions to access and manipulate the data. Now, add some helper functions that read and return the weather data for a `WeatherOracle` object. These functions allow you to get the weather data for a specific city in the oracle. These functions also allow you to format and display the weather data in a user-friendly way.
 
 ```rust title='weather.move'
 // --------------- Read-only References ---------------
@@ -397,19 +397,19 @@ And with that, your `weather.move` code is complete.
 
 ## Deployment
 
-{@include: ../../../snippets/initialize-sui-client-cli.mdx}
+{@include: ../../../snippets/initialize-ika-client-cli.mdx}
 
 {@include: ../../../snippets/publish-to-devnet-with-coins.mdx}
 
 ## Backend
 
-You have successfully deployed the Sui Weather Oracle smart contract on the blockchain. Now, it's time to create an Express backend that can interact with it. The Express backend performs the following tasks:
+You have successfully deployed the Ika Weather Oracle smart contract on the blockchain. Now, it's time to create an Express backend that can interact with it. The Express backend performs the following tasks:
 
 - Initialize the smart contract with 1,000 cities using the `add_city` function of the smart contract. The backend passes the geoname ID, name, country, latitude, longitude, and positive latitude and longitude of each city as parameters to the function.
 - Fetch the weather data for each city from the OpenWeather API every 10 minutes, using the API key that you obtained from the website. The backend parses the JSON response and extracts the weather data for each city, such as the weather ID, temperature, pressure, humidity, visibility, wind speed, wind degree, wind gust, clouds, and timestamp.
 - Update the weather data for each city on the blockchain, using the `update` function of the smart contract. The backend passes the geoname ID and the new weather data of each city as parameters to the function.
 
-The Express backend uses the [Sui Typescript SDK](https://sdk.mystenlabs.com/typescript), a TypeScript library that enables you to interact with the Sui blockchain and smart contracts. With the Sui Typescript SDK, you can connect to the Sui network, sign and submit transactions, and query the state of the smart contract. You also use the OpenWeather API to fetch the weather data for each city and update the smart contract every 10 minutes. Additionally, you can mint weather NFTs, if you want to explore that feature of the smart contract.
+The Express backend uses the [Ika Typescript SDK](https://sdk.mystenlabs.com/typescript), a TypeScript library that enables you to interact with the Ika blockchain and smart contracts. With the Ika Typescript SDK, you can connect to the Ika network, sign and submit transactions, and query the state of the smart contract. You also use the OpenWeather API to fetch the weather data for each city and update the smart contract every 10 minutes. Additionally, you can mint weather NFTs, if you want to explore that feature of the smart contract.
 
 ### Initialize the project
 
@@ -418,9 +418,9 @@ First, initialize your backend project. To do this, you need to follow these ste
 - Create a new folder named `weather-oracle-backend` and navigate to it in your terminal.
 - Run `npm init -y` to create a package.json file with default values.
 - Run `npm install express --save` to install Express as a dependency and save it to your package.json file.
-- Run `npm install @mysten/bcs @mysten/sui axios csv-parse csv-parser dotenv pino retry-axios --save` to install the other dependencies and save them to your package.json file. These dependencies are:
+- Run `npm install @mysten/bcs @ika-io/ika axios csv-parse csv-parser dotenv pino retry-axios --save` to install the other dependencies and save them to your package.json file. These dependencies are:
   - **@mysten/bcs**: a library for blockchain services.
-  - **@mysten/sui**: a library for smart user interfaces.
+  - **@ika-io/ika**: a library for smart user interfaces.
   - **axios**: a library for making HTTP requests.
   - **csv-parse**: a library for parsing CSV data.
   - **csv-parser**: a library for transforming CSV data into JSON objects.
@@ -430,9 +430,9 @@ First, initialize your backend project. To do this, you need to follow these ste
 - Create a new file named `init.ts`
 
 ```typescript title='init.ts'
-import { SuiClient } from '@mysten/sui/client';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { Transaction } from '@mysten/sui/transactions';
+import { IkaClient } from '@ika-io/ika/client';
+import { Ed25519Keypair } from '@ika-io/ika/keypairs/ed25519';
+import { Transaction } from '@ika-io/ika/transactions';
 import * as dotenv from 'dotenv';
 
 import { City } from './city';
@@ -446,7 +446,7 @@ dotenv.config({ path: '../.env' });
 const phrase = process.env.ADMIN_PHRASE;
 const fullnode = process.env.FULLNODE!;
 const keypair = Ed25519Keypair.deriveKeypair(phrase!);
-const client = new SuiClient({
+const client = new IkaClient({
 	url: fullnode,
 });
 
@@ -521,11 +521,11 @@ addCityWeather();
 
 The code of init.ts does the following:
 
-- Imports the necessary modules and classes from the library, such as `Ed25519Keypair`, `SuiClient`, and `Transaction`.
+- Imports the necessary modules and classes from the library, such as `Ed25519Keypair`, `IkaClient`, and `Transaction`.
 - Imports the `dotenv` module to load environment variables from a .env file.
 - Imports some custom modules and functions from the local files, such as `City`, `get1000Geonameids`, `getCities`, `getWeatherOracleDynamicFields`, and `logger`.
 - Derives a key pair from a phrase stored in the `ADMIN_PHRASE` environment variable.
-- Creates a sui client object that connects to a Full node specified by the `FULLNODE` environment variable.
+- Creates a ika client object that connects to a Full node specified by the `FULLNODE` environment variable.
 - Reads some other environment variables, such as `PACKAGE_ID`, `ADMIN_CAP_ID`, `WEATHER_ORACLE_ID`, and `MODULE_NAME`, which are used to identify the weather oracle contract and its methods.
 - Defines a constant `NUMBER_OF_CITIES`, which is the number of cities to be added to the weather oracle in each batch.
 - Defines an async function `addCityWeather`, which does the following:
@@ -541,9 +541,9 @@ The code of init.ts does the following:
 You have now initialized the `WeatherOracle` shared object. The next step is to learn how to update them every 10 minutes with the latest weather data from the OpenWeatherMap API.
 
 ```typescript title='index.ts'
-import { SuiClient } from '@mysten/sui/client';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { Transaction } from '@mysten/sui/transactions';
+import { IkaClient } from '@ika-io/ika/client';
+import { Ed25519Keypair } from '@ika-io/ika/keypairs/ed25519';
+import { Transaction } from '@ika-io/ika/transactions';
 import * as dotenv from 'dotenv';
 
 import { City } from './city';
@@ -557,7 +557,7 @@ dotenv.config({ path: '../.env' });
 const phrase = process.env.ADMIN_PHRASE;
 const fullnode = process.env.FULLNODE!;
 const keypair = Ed25519Keypair.deriveKeypair(phrase!);
-const client = new SuiClient({
+const client = new IkaClient({
 	url: fullnode,
 });
 
@@ -674,4 +674,4 @@ The code in index.ts does the following:
   - Calls another async function called `getWeatherOracleDynamicFields`, which takes the package id, the module name, and the client as arguments, and returns an array of weather oracle dynamic field objects that contain information such as name and object id.
   - Calls the `performUpdates` function with the cities and weather oracle dynamic fields arrays as arguments.
 
-Congratulations, you completed the Sui Weather Oracle tutorial. You can carry the lessons learned here forward when building your next Sui project.
+Congratulations, you completed the Ika Weather Oracle tutorial. You can carry the lessons learned here forward when building your next Ika project.

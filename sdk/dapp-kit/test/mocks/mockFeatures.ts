@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { IdentifierRecord, SuiFeatures, SuiSignMessageFeature } from '@mysten/wallet-standard';
+import type { IdentifierRecord, IkaFeatures, IkaSignMessageFeature } from '@mysten/wallet-standard';
 
-export const signMessageFeature: SuiSignMessageFeature = {
-	'sui:signMessage': {
+export const signMessageFeature: IkaSignMessageFeature = {
+	'ika:signMessage': {
 		version: '1.0.0',
 		signMessage: vi.fn(),
 	},
@@ -17,29 +17,29 @@ export const superCoolFeature: IdentifierRecord<unknown> = {
 	},
 };
 
-export const suiFeatures: SuiFeatures = {
+export const ikaFeatures: IkaFeatures = {
 	...signMessageFeature,
-	'sui:signPersonalMessage': {
+	'ika:signPersonalMessage': {
 		version: '1.0.0',
 		signPersonalMessage: vi.fn(),
 	},
-	'sui:signTransactionBlock': {
+	'ika:signTransactionBlock': {
 		version: '1.0.0',
 		signTransactionBlock: vi.fn(),
 	},
-	'sui:signTransaction': {
+	'ika:signTransaction': {
 		version: '2.0.0',
 		signTransaction: vi.fn(),
 	},
-	'sui:signAndExecuteTransactionBlock': {
+	'ika:signAndExecuteTransactionBlock': {
 		version: '1.0.0',
 		signAndExecuteTransactionBlock: vi.fn(),
 	},
-	'sui:signAndExecuteTransaction': {
+	'ika:signAndExecuteTransaction': {
 		version: '2.0.0',
 		signAndExecuteTransaction: vi.fn(),
 	},
-	'sui:reportTransactionEffects': {
+	'ika:reportTransactionEffects': {
 		version: '1.0.0',
 		reportTransactionEffects: vi.fn(),
 	},

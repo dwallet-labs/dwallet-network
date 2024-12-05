@@ -64,7 +64,7 @@ function StakeForm({ validatorAddress, coinBalance, coinType, epoch }: StakeFrom
 		<Form className="flex flex-1 flex-col flex-nowrap items-center" autoComplete="off">
 			<div className="flex flex-col justify-between items-center mb-3 mt-3.5 w-full gap-1.5">
 				<Text variant="caption" color="gray-85" weight="semibold">
-					Enter the amount of SUI to stake
+					Enter the amount of IKA to stake
 				</Text>
 				<Text variant="bodySmall" color="steel" weight="medium">
 					Available - {maxToken} {symbol}

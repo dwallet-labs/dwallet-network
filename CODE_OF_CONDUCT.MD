@@ -1,8 +1,8 @@
-# Sui Code of Conduct
+# Ika Code of Conduct
 
-Sui as an open source project encourages free discussion rooted in respect.
+Ika as an open source project encourages free discussion rooted in respect.
 We endeavor to always be mindful of others' perspectives and ask all
-fellow contributors to do the same. We welcome you to the Sui platform
+fellow contributors to do the same. We welcome you to the Ika platform
 and ask you to help us grow it with relevant, on-point contributions.
 
 ## Our pledge
@@ -19,7 +19,7 @@ diverse, inclusive, and healthy community.
 
 ## More information
 
-See the central [Sui Code of Conduct](https://github.com/MystenLabs/sui/blob/main/docs/content/references/contribute/code-of-conduct.mdx) for
+See the central [Ika Code of Conduct](https://github.com/MystenLabs/sui/blob/main/docs/content/references/contribute/code-of-conduct.mdx) for
 full details.
 
 Our Code of Conduct is adapted from the

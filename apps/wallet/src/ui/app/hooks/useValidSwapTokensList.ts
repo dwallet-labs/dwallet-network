@@ -4,18 +4,18 @@ import { useActiveAddress } from '_app/hooks/useActiveAddress';
 import { useGetAllBalances } from '_app/hooks/useGetAllBalances';
 import { useRecognizedPackages } from '_app/hooks/useRecognizedPackages';
 import { useSupportedCoins } from '_app/hooks/useSupportedCoins';
-import { type CoinBalance } from '@mysten/sui/client';
+import { type CoinBalance } from '@ika-io/ika/client';
 import {
 	normalizeStructTag,
-	normalizeSuiObjectId,
+	normalizeIkaObjectId,
 	parseStructTag,
-	SUI_TYPE_ARG,
-} from '@mysten/sui/utils';
+	IKA_TYPE_ARG,
+} from '@ika-io/ika/utils';
 import { useMemo } from 'react';
 
 export function filterTokenBalances(tokens: CoinBalance[]) {
 	return tokens.filter(
-		(token) => Number(token.totalBalance) > 0 || token.coinType === SUI_TYPE_ARG,
+		(token) => Number(token.totalBalance) > 0 || token.coinType === IKA_TYPE_ARG,
 	);
 }
 
@@ -27,7 +27,7 @@ export function useValidSwapTokensList() {
 	);
 	const packages = useRecognizedPackages();
 	const normalizedPackages = useMemo(
-		() => packages.map((id) => normalizeSuiObjectId(id)),
+		() => packages.map((id) => normalizeIkaObjectId(id)),
 		[packages],
 	);
 
@@ -45,7 +45,7 @@ export function useValidSwapTokensList() {
 	const validSwaps = useMemo(
 		() =>
 			supported?.sort((a, b) => {
-				const suiType = normalizeStructTag(SUI_TYPE_ARG);
+				const ikaType = normalizeStructTag(IKA_TYPE_ARG);
 				const balanceA = BigInt(
 					coinBalances?.find(
 						(balance) => normalizeStructTag(balance.coinType) === normalizeStructTag(a),
@@ -56,7 +56,7 @@ export function useValidSwapTokensList() {
 						(balance) => normalizeStructTag(balance.coinType) === normalizeStructTag(b),
 					)?.totalBalance ?? 0,
 				);
-				return a === suiType ? -1 : b === suiType ? 1 : Number(balanceB - balanceA);
+				return a === ikaType ? -1 : b === ikaType ? 1 : Number(balanceB - balanceA);
 			}) ?? [],
 		[supported, coinBalances],
 	);

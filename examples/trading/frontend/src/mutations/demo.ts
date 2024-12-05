@@ -4,7 +4,7 @@
 import { CONSTANTS, QueryKey } from "@/constants";
 import { useTransactionExecution } from "@/hooks/useTransactionExecution";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { Transaction } from "@mysten/sui/transactions";
+import { Transaction } from "@ika-io/ika/transactions";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 /**

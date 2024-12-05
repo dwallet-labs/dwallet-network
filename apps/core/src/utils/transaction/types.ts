@@ -14,7 +14,7 @@ export type TransactionSummary = {
 	objectSummary: ObjectChangeSummary | null;
 } | null;
 
-export type SuiObjectChangeTypes =
+export type IkaObjectChangeTypes =
 	| 'published'
 	| 'transferred'
 	| 'mutated'

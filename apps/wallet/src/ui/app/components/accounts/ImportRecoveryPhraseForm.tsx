@@ -106,7 +106,7 @@ export function ImportRecoveryPhraseForm({
 					);
 				})}
 			</div>
-			<div className="flex flex-col gap-2.5 pt-3 bg-sui-lightest sticky -bottom-7.5 px-6 pb-7.5 -mx-6 -mb-7.5">
+			<div className="flex flex-col gap-2.5 pt-3 bg-ika-lightest sticky -bottom-7.5 px-6 pb-7.5 -mx-6 -mb-7.5">
 				{touchedFields.recoveryPhrase && errors.recoveryPhrase && (
 					<Alert>{errors.recoveryPhrase.message}</Alert>
 				)}

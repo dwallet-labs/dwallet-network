@@ -1,22 +1,22 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSuiClient, useSuiClientContext } from '@mysten/dapp-kit';
+import { useIkaClient, useIkaClientContext } from '@mysten/dapp-kit';
 import { KioskClient, Network } from '@mysten/kiosk';
 import { createContext, ReactNode, useContext, useMemo } from 'react';
 
 export const KioskClientContext = createContext<KioskClient | undefined>(undefined);
 
 export function KioskClientProvider({ children }: { children: ReactNode }) {
-	const suiClient = useSuiClient();
-	const { network } = useSuiClientContext();
+	const ikaClient = useIkaClient();
+	const { network } = useIkaClientContext();
 	const kioskClient = useMemo(
 		() =>
 			new KioskClient({
-				client: suiClient,
+				client: ikaClient,
 				network: network as Network,
 			}),
-		[suiClient, network],
+		[ikaClient, network],
 	);
 
 	return <KioskClientContext.Provider value={kioskClient}>{children}</KioskClientContext.Provider>;

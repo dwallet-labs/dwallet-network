@@ -72,7 +72,7 @@ fragment RPC_VALIDATOR_FIELDS on Validator {
 	}
 	pendingPoolTokenWithdraw
 	pendingStake
-	pendingTotalSuiWithdraw
+	pendingTotalIkaWithdraw
 	poolTokenBalance
 	projectUrl
 	rewardsPool
@@ -80,7 +80,7 @@ fragment RPC_VALIDATOR_FIELDS on Validator {
 		address
 	}
 	stakingPoolActivationEpoch
-	stakingPoolSuiBalance
+	stakingPoolIkaBalance
 	address {
 		address
 	}

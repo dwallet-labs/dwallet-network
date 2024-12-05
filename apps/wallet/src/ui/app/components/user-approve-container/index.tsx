@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { type PermissionType } from '_src/shared/messaging/messages/payloads/permissions';
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@ika-io/ika/transactions';
 import cn from 'clsx';
 import { useCallback, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';

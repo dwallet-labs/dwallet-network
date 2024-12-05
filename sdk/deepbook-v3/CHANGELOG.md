@@ -12,7 +12,7 @@
 
 - a43ae92: NS Token
 - Updated dependencies [d5a23d7]
-  - @mysten/sui@1.14.3
+  - @ika-io/ika@1.14.3
 
 ## 0.12.5
 
@@ -26,28 +26,28 @@
 
 - 6a571f1: Deep conversion
 - Updated dependencies [e7bc63e]
-  - @mysten/sui@1.14.2
+  - @ika-io/ika@1.14.2
 
 ## 0.12.3
 
 ### Patch Changes
 
 - Updated dependencies [69ef100]
-  - @mysten/sui@1.14.1
+  - @ika-io/ika@1.14.1
 
 ## 0.12.2
 
 ### Patch Changes
 
 - Updated dependencies [c24814b]
-  - @mysten/sui@1.14.0
+  - @ika-io/ika@1.14.0
 
 ## 0.12.1
 
 ### Patch Changes
 
 - Updated dependencies [477d2a4]
-  - @mysten/sui@1.13.0
+  - @ika-io/ika@1.13.0
 
 ## 0.12.0
 
@@ -91,7 +91,7 @@
 
 - Updated dependencies [5436a90]
 - Updated dependencies [5436a90]
-  - @mysten/sui@1.12.0
+  - @ika-io/ika@1.12.0
 
 ## 0.8.2
 
@@ -105,7 +105,7 @@
 
 - Updated dependencies [489f421]
 - Updated dependencies [489f421]
-  - @mysten/sui@1.11.0
+  - @ika-io/ika@1.11.0
 
 ## 0.8.0
 
@@ -128,7 +128,7 @@
 ### Patch Changes
 
 - Updated dependencies [830b8d8]
-  - @mysten/sui@1.10.0
+  - @ika-io/ika@1.10.0
 
 ## 0.6.0
 
@@ -142,7 +142,7 @@
 
 - Updated dependencies [2c96b06]
 - Updated dependencies [1fd22cc]
-  - @mysten/sui@1.9.0
+  - @ika-io/ika@1.9.0
 
 ## 0.5.0
 
@@ -155,7 +155,7 @@
 ### Patch Changes
 
 - Updated dependencies [569511a]
-  - @mysten/sui@1.8.0
+  - @ika-io/ika@1.8.0
 
 ## 0.4.2
 
@@ -190,7 +190,7 @@
 - Updated dependencies [4019dd7]
 - Updated dependencies [4019dd7]
 - Updated dependencies [00a974d]
-  - @mysten/sui@1.7.0
+  - @ika-io/ika@1.7.0
 
 ## 0.3.1
 
@@ -210,7 +210,7 @@
 ### Patch Changes
 
 - Updated dependencies [a3e32fe]
-  - @mysten/sui@1.6.0
+  - @ika-io/ika@1.6.0
 
 ## 0.2.0
 
@@ -228,11 +228,11 @@
 
 - Updated dependencies [0851b31]
 - Updated dependencies [f37b3c2]
-  - @mysten/sui@1.5.0
+  - @ika-io/ika@1.5.0
 
 ## 0.0.1
 
 ### Patch Changes
 
 - Updated dependencies [4419234]
-  - @mysten/sui@1.4.0
+  - @ika-io/ika@1.4.0

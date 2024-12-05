@@ -32,7 +32,7 @@ use std::{
 use store::rocks::DBMap;
 use store::rocks::MetricConf;
 use store::rocks::ReadWriteOptions;
-use sui_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
+use ika_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 use tracing::info;
 use types::{

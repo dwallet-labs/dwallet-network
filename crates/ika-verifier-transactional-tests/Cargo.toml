@@ -1,0 +1,18 @@
+[package]
+name = "ika-verifier-transactional-tests"
+version = "0.1.0"
+authors = ["Mysten Labs <eng@mystenlabs.com>"]
+description = "Transactional tests for Ika Verifier"
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[dev-dependencies]
+datatest-stable.workspace = true
+ika-transactional-test-runner.workspace = true
+
+[[test]]
+name = "tests"
+harness = false
+
+[dependencies]

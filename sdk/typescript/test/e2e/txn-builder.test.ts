@@ -4,10 +4,10 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { bcs } from '../../src/bcs';
-import { SuiClient, SuiObjectChangeCreated, SuiTransactionBlockResponse } from '../../src/client';
+import { IkaClient, IkaObjectChangeCreated, IkaTransactionBlockResponse } from '../../src/client';
 import type { Keypair } from '../../src/cryptography';
 import { Transaction } from '../../src/transactions';
-import { normalizeSuiObjectId, SUI_SYSTEM_STATE_OBJECT_ID } from '../../src/utils';
+import { normalizeIkaObjectId, IKA_SYSTEM_STATE_OBJECT_ID } from '../../src/utils';
 import {
 	DEFAULT_GAS_BUDGET,
 	DEFAULT_RECIPIENT,
@@ -17,12 +17,12 @@ import {
 	upgradePackage,
 } from './utils/setup';
 
-export const SUI_CLOCK_OBJECT_ID = normalizeSuiObjectId('0x6');
+export const IKA_CLOCK_OBJECT_ID = normalizeIkaObjectId('0x6');
 
 describe('Transaction Builders', () => {
 	let toolbox: TestToolbox;
 	let packageId: string;
-	let publishTxn: SuiTransactionBlockResponse;
+	let publishTxn: IkaTransactionBlockResponse;
 	let sharedObjectId: string;
 
 	beforeAll(async () => {
@@ -67,7 +67,7 @@ describe('Transaction Builders', () => {
 		const tx = new Transaction();
 		tx.moveCall({
 			target: '0x2::pay::split',
-			typeArguments: ['0x2::sui::SUI'],
+			typeArguments: ['0x2::ika::IKA'],
 			arguments: [tx.object(coin_0.coinObjectId), tx.pure.u64(DEFAULT_GAS_BUDGET * 2)],
 		});
 		await validateTransaction(toolbox.client, toolbox.keypair, tx);
@@ -79,13 +79,13 @@ describe('Transaction Builders', () => {
 			const coins = await toolbox.getGasObjectsOwnedByAddress();
 			const coin_2 = coins.data[2];
 
-			const [{ suiAddress: validatorAddress }] = await toolbox.getActiveValidators();
+			const [{ ikaAddress: validatorAddress }] = await toolbox.getActiveValidators();
 
 			const tx = new Transaction();
 			tx.moveCall({
-				target: '0x3::sui_system::request_add_stake',
+				target: '0x3::ika_system::request_add_stake',
 				arguments: [
-					tx.object(SUI_SYSTEM_STATE_OBJECT_ID),
+					tx.object(IKA_SYSTEM_STATE_OBJECT_ID),
 					tx.object(coin_2.coinObjectId),
 					tx.pure.address(validatorAddress),
 				],
@@ -151,7 +151,7 @@ describe('Transaction Builders', () => {
 		const tx = new Transaction();
 		tx.moveCall({
 			target: `${packageId}::serializer_tests::use_clock`,
-			arguments: [tx.object(SUI_CLOCK_OBJECT_ID)],
+			arguments: [tx.object(IKA_CLOCK_OBJECT_ID)],
 		});
 		await validateTransaction(toolbox.client, toolbox.keypair, tx);
 	});
@@ -171,7 +171,7 @@ describe('Transaction Builders', () => {
 						'Immutable' !== a.owner &&
 						'AddressOwner' in a.owner &&
 						a.owner.AddressOwner === toolbox.address(),
-				) as SuiObjectChangeCreated
+				) as IkaObjectChangeCreated
 			)?.objectId;
 
 			expect(capId).toBeTruthy();
@@ -214,10 +214,10 @@ describe('Transaction Builders', () => {
 
 		tx.moveCall({
 			target: `${packageId}::serializer_tests::none`,
-			typeArguments: ['0x2::coin::Coin<0x2::sui::SUI>'],
+			typeArguments: ['0x2::coin::Coin<0x2::ika::IKA>'],
 			arguments: [
 				tx.object.option({
-					type: '0x2::coin::Coin<0x2::sui::SUI>',
+					type: '0x2::coin::Coin<0x2::ika::IKA>',
 					value: null,
 				}),
 			],
@@ -225,10 +225,10 @@ describe('Transaction Builders', () => {
 		const coin = tx.splitCoins(tx.gas, [1]);
 		const coin2 = tx.moveCall({
 			target: `${packageId}::serializer_tests::some`,
-			typeArguments: ['0x2::coin::Coin<0x2::sui::SUI>'],
+			typeArguments: ['0x2::coin::Coin<0x2::ika::IKA>'],
 			arguments: [
 				tx.object.option({
-					type: '0x2::coin::Coin<0x2::sui::SUI>',
+					type: '0x2::coin::Coin<0x2::ika::IKA>',
 					value: coin,
 				}),
 			],
@@ -236,23 +236,23 @@ describe('Transaction Builders', () => {
 
 		const coin3 = tx.moveCall({
 			target: `${packageId}::serializer_tests::some`,
-			typeArguments: ['0x2::coin::Coin<0x2::sui::SUI>'],
+			typeArguments: ['0x2::coin::Coin<0x2::ika::IKA>'],
 			arguments: [
 				tx.object.option({
-					type: '0x2::coin::Coin<0x2::sui::SUI>',
+					type: '0x2::coin::Coin<0x2::ika::IKA>',
 					value: coin2,
 				}),
 			],
 		});
 
-		tx.transferObjects([coin3], toolbox.keypair.toSuiAddress());
+		tx.transferObjects([coin3], toolbox.keypair.toIkaAddress());
 
 		await validateTransaction(toolbox.client, toolbox.keypair, tx);
 	});
 });
 
-async function validateTransaction(client: SuiClient, signer: Keypair, tx: Transaction) {
-	tx.setSenderIfNotSet(signer.getPublicKey().toSuiAddress());
+async function validateTransaction(client: IkaClient, signer: Keypair, tx: Transaction) {
+	tx.setSenderIfNotSet(signer.getPublicKey().toIkaAddress());
 	const localDigest = await tx.getDigest({ client });
 	const result = await client.signAndExecuteTransaction({
 		signer,

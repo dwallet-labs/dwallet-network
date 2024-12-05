@@ -3,8 +3,8 @@
 
 import { ImageIcon } from '_app/shared/image-icon';
 import { useCoinMetadata } from '@mysten/core';
-import { Sui, Unstaked } from '@mysten/icons';
-import { normalizeStructTag, SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { Ika, Unstaked } from '@mysten/icons';
+import { normalizeStructTag, IKA_TYPE_ARG } from '@ika-io/ika/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { useCoinMetadataOverrides } from '../../hooks/useCoinMetadataOverride';
@@ -18,27 +18,27 @@ const imageStyle = cva(['rounded-full flex'], {
 			xl: 'md:w-31.5 md:h-31.5 w-16 h-16 ',
 		},
 		fill: {
-			sui: 'bg-sui',
-			suiPrimary2023: 'bg-sui-primaryBlue2023',
+			ika: 'bg-ika',
+			ikaPrimary2023: 'bg-ika-primaryBlue2023',
 		},
 	},
 	defaultVariants: {
 		size: 'md',
-		fill: 'suiPrimary2023',
+		fill: 'ikaPrimary2023',
 	},
 });
 
-function SuiCoin() {
+function IkaCoin() {
 	return (
-		<Sui className="flex items-center w-full h-full justify-center text-white p-1.5 text-body rounded-full" />
+		<Ika className="flex items-center w-full h-full justify-center text-white p-1.5 text-body rounded-full" />
 	);
 }
 
-type NonSuiCoinProps = {
+type NonIkaCoinProps = {
 	coinType: string;
 };
 
-function NonSuiCoin({ coinType }: NonSuiCoinProps) {
+function NonIkaCoin({ coinType }: NonIkaCoinProps) {
 	const { data: coinMeta } = useCoinMetadata(coinType);
 	const coinMetadataOverrides = useCoinMetadataOverrides();
 
@@ -63,13 +63,13 @@ export interface CoinIconProps extends VariantProps<typeof imageStyle> {
 }
 
 export function CoinIcon({ coinType, ...styleProps }: CoinIconProps) {
-	const isSui = coinType
-		? normalizeStructTag(coinType) === normalizeStructTag(SUI_TYPE_ARG)
+	const isIka = coinType
+		? normalizeStructTag(coinType) === normalizeStructTag(IKA_TYPE_ARG)
 		: false;
 
 	return (
 		<div className={imageStyle(styleProps)}>
-			{isSui ? <SuiCoin /> : <NonSuiCoin coinType={coinType} />}
+			{isIka ? <IkaCoin /> : <NonIkaCoin coinType={coinType} />}
 		</div>
 	);
 }

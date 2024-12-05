@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { PublicKey } from '@mysten/sui/cryptography';
+import type { PublicKey } from '@ika-io/ika/cryptography';
 
 import { poseidonHash } from './poseidon.js';
 
@@ -11,7 +11,7 @@ const MAX_AUD_VALUE_LENGTH = 145;
 const PACK_WIDTH = 248;
 
 export function getExtendedEphemeralPublicKey(publicKey: PublicKey) {
-	return publicKey.toSuiPublicKey();
+	return publicKey.toIkaPublicKey();
 }
 
 /**

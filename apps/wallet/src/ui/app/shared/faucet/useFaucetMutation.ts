@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { getFaucetRequestStatus, requestSuiFromFaucetV1 } from '@mysten/sui/faucet';
+import { getFaucetRequestStatus, requestIkaFromFaucetV1 } from '@ika-io/ika/faucet';
 import { useIsMutating, useMutation, type UseMutationOptions } from '@tanstack/react-query';
 
 import { useActiveAccount } from '../../hooks/useActiveAccount';
@@ -29,7 +29,7 @@ export function useFaucetMutation(options?: UseFaucetMutationOptions) {
 				throw new Error('Failed, faucet host not found.');
 			}
 
-			const { error, task: taskId } = await requestSuiFromFaucetV1({
+			const { error, task: taskId } = await requestIkaFromFaucetV1({
 				recipient: addressToTopUp,
 				host: options.host,
 			});

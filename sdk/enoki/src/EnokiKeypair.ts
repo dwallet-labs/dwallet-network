@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import type { SignatureWithBytes } from '@mysten/sui/cryptography';
-import { Keypair, PublicKey, SIGNATURE_SCHEME_TO_FLAG } from '@mysten/sui/cryptography';
-import type { Ed25519Keypair, Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
-import type { ZkLoginSignatureInputs } from '@mysten/sui/zklogin';
+import type { SignatureWithBytes } from '@ika-io/ika/cryptography';
+import { Keypair, PublicKey, SIGNATURE_SCHEME_TO_FLAG } from '@ika-io/ika/cryptography';
+import type { Ed25519Keypair, Ed25519PublicKey } from '@ika-io/ika/keypairs/ed25519';
+import type { ZkLoginSignatureInputs } from '@ika-io/ika/zklogin';
 import { getZkLoginSignature } from '@mysten/zklogin';
 
 export class EnokiPublicKey extends PublicKey {
@@ -21,7 +21,7 @@ export class EnokiPublicKey extends PublicKey {
 		return SIGNATURE_SCHEME_TO_FLAG['ZkLogin'];
 	}
 
-	toSuiAddress(): string {
+	toIkaAddress(): string {
 		return this.#address;
 	}
 

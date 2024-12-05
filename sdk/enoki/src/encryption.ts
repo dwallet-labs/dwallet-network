@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { fromBase64, toBase64 } from '@mysten/sui/utils';
+import { fromBase64, toBase64 } from '@ika-io/ika/utils';
 
 /**
  * An interface

@@ -8,8 +8,8 @@ set -e
 cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null
 
 # Check dependencies are available.
-SUI=${SUI:-sui}
-for i in jq $SUI; do
+IKA=${IKA:-ika}
+for i in jq $IKA; do
   if ! command -V ${i} &>/dev/null; then
     echo "${i} is not installed"
     exit 1
@@ -22,9 +22,9 @@ if [ -z "$1" ]; then
     exit 1
 fi
 ENV=$1; shift
-$SUI client switch --env $ENV
+$IKA client switch --env $ENV
 
-PUBLISH=$($SUI client publish ../move --json $@)
+PUBLISH=$($IKA client publish ../move --json $@)
 
 STATUS=$(
     echo $PUBLISH |

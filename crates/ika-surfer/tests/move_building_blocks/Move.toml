@@ -1,0 +1,10 @@
+[package]
+name = "MoveBuildingBlocks"
+version = "0.0.1"
+edition = "2024.beta"
+
+[dependencies]
+Ika = { local = "../../../ika-framework/packages/ika-framework" }
+
+[addresses]
+move_building_blocks = "0x0"

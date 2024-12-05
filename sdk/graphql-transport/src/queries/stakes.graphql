@@ -1,9 +1,9 @@
 # Copyright (c) Mysten Labs, Inc.
 # SPDX-License-Identifier: Apache-2.0
 
-query getStakes($owner: SuiAddress!, $limit: Int, $cursor: String) {
+query getStakes($owner: IkaAddress!, $limit: Int, $cursor: String) {
 	address(address: $owner) {
-		stakedSuis(first: $limit, after: $cursor) {
+		stakedIkas(first: $limit, after: $cursor) {
 			pageInfo {
 				hasNextPage
 				endCursor
@@ -15,7 +15,7 @@ query getStakes($owner: SuiAddress!, $limit: Int, $cursor: String) {
 	}
 }
 
-query getStakesByIds($ids: [SuiAddress!]!, $limit: Int, $cursor: String) {
+query getStakesByIds($ids: [IkaAddress!]!, $limit: Int, $cursor: String) {
 	objects(first: $limit, after: $cursor, filter: { objectIds: $ids }) {
 		pageInfo {
 			hasNextPage
@@ -23,7 +23,7 @@ query getStakesByIds($ids: [SuiAddress!]!, $limit: Int, $cursor: String) {
 		}
 		nodes {
 			asMoveObject {
-				asStakedSui {
+				asStakedIka {
 					...RPC_STAKE_FIELDS
 				}
 			}
@@ -31,7 +31,7 @@ query getStakesByIds($ids: [SuiAddress!]!, $limit: Int, $cursor: String) {
 	}
 }
 
-fragment RPC_STAKE_FIELDS on StakedSui {
+fragment RPC_STAKE_FIELDS on StakedIka {
 	principal
 	activatedEpoch {
 		epochId

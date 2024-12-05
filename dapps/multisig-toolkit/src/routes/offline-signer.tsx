@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useCurrentAccount, useSignTransaction, useSuiClientContext } from '@mysten/dapp-kit';
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { messageWithIntent } from '@mysten/sui/cryptography';
-import { Transaction } from '@mysten/sui/transactions';
-import { fromBase64, toHex } from '@mysten/sui/utils';
+import { useCurrentAccount, useSignTransaction, useIkaClientContext } from '@mysten/dapp-kit';
+import { getFullnodeUrl, IkaClient } from '@ika-io/ika/client';
+import { messageWithIntent } from '@ika-io/ika/cryptography';
+import { Transaction } from '@ika-io/ika/transactions';
+import { fromBase64, toHex } from '@ika-io/ika/utils';
 import { blake2b } from '@noble/hashes/blake2b';
 import { useMutation } from '@tanstack/react-query';
 import { AlertCircle, Terminal } from 'lucide-react';
@@ -24,7 +24,7 @@ export default function OfflineSigner() {
 
 	const [dryRunNetwork, setDryRunNetwork] = useState<Network>('mainnet');
 
-	const { selectNetwork } = useSuiClientContext();
+	const { selectNetwork } = useIkaClientContext();
 
 	const { mutateAsync: signTransaction } = useSignTransaction();
 	const [tab, setTab] = useState<'transaction' | 'signature'>('transaction');
@@ -61,7 +61,7 @@ export default function OfflineSigner() {
 	} = useMutation({
 		mutationKey: [dryRunNetwork, 'dry-run'],
 		mutationFn: async () => {
-			const dryRunClient = new SuiClient({
+			const dryRunClient = new IkaClient({
 				url: getFullnodeUrl(dryRunNetwork),
 			});
 			const transaction = Transaction.from(bytes);

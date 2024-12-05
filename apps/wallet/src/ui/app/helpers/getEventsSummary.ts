@@ -8,7 +8,7 @@ export {};
 //     getTransferObjectEvent,
 //     isEventType,
 //     type TransactionEvents,
-// } from '@mysten/sui';
+// } from '@ika-io/ika';
 
 // export type CoinsMetaProps = {
 //     amount: number;

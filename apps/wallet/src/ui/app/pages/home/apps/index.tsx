@@ -3,10 +3,10 @@
 
 import { Content } from '_app/shared/bottom-menu-layout';
 import FiltersPortal from '_components/filters-tags';
-import AppsPlayGround, { ConnectedAppsCard } from '_components/sui-apps';
+import AppsPlayGround, { ConnectedAppsCard } from '_components/ika-apps';
 import { getFromSessionStorage, setToSessionStorage } from '_src/background/storage-utils';
 import { FEATURES } from '_src/shared/experimentation/features';
-import type { DAppEntry } from '_src/ui/app/components/sui-apps/SuiApp';
+import type { DAppEntry } from '_src/ui/app/components/ika-apps/IkaApp';
 import { useUnlockedGuard } from '_src/ui/app/hooks/useUnlockedGuard';
 import { useFeature } from '@growthbook/growthbook-react';
 import { useEffect } from 'react';

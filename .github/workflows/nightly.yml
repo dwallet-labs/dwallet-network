@@ -53,7 +53,7 @@ jobs:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         if: env.WORKFLOW_CONCLUSION == 'failure' # notify only if failure
         with:
-          channel-id: 'build-failures-sui'
+          channel-id: 'build-failures-ika'
           slack-message: |
-            :sui::error-cross: Workflow *${{ github.workflow }}* has failed.
+            :ika::error-cross: Workflow *${{ github.workflow }}* has failed.
             Logs are here: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.run_id }}>

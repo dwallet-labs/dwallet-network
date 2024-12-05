@@ -14,7 +14,7 @@ import store from '_store';
 import { thunkExtras } from '_store/thunk-extras';
 import { GrowthBookProvider } from '@growthbook/growthbook-react';
 import { KioskClientProvider } from '@mysten/core/src/components/KioskClientProvider';
-import { SuiClientProvider } from '@mysten/dapp-kit';
+import { IkaClientProvider } from '@mysten/dapp-kit';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import cn from 'clsx';
 import { Fragment, StrictMode } from 'react';
@@ -27,7 +27,7 @@ import { walletApiProvider } from './app/ApiProvider';
 import { AccountsFormProvider } from './app/components/accounts/AccountsFormContext';
 import { UnlockAccountProvider } from './app/components/accounts/UnlockAccountContext';
 import { ZkLoginAccountWarningModal } from './app/components/accounts/ZkLoginAccountWaringModal';
-import { SuiLedgerClientProvider } from './app/components/ledger/SuiLedgerClientProvider';
+import { IkaLedgerClientProvider } from './app/components/ledger/IkaLedgerClientProvider';
 import { growthbook } from './app/experimentation/feature-gating';
 import { persister, queryClient } from './app/helpers/queryClient';
 import { useAppSelector } from './app/hooks';
@@ -66,7 +66,7 @@ function AppWrapper() {
 	return (
 		<GrowthBookProvider growthbook={growthbook}>
 			<HashRouter>
-				<SuiLedgerClientProvider>
+				<IkaLedgerClientProvider>
 					{/*
 					 * NOTE: We set a key here to force the entire react tree to be re-created when the network changes so that
 					 * the RPC client instance (api.instance.fullNode) is updated correctly. In the future, we should look into
@@ -82,7 +82,7 @@ function AppWrapper() {
 								},
 							}}
 						>
-							<SuiClientProvider
+							<IkaClientProvider
 								networks={{ [walletApiProvider.apiEnv]: walletApiProvider.instance.fullNode }}
 							>
 								<KioskClientProvider>
@@ -104,10 +104,10 @@ function AppWrapper() {
 										</UnlockAccountProvider>
 									</AccountsFormProvider>
 								</KioskClientProvider>
-							</SuiClientProvider>
+							</IkaClientProvider>
 						</PersistQueryClientProvider>
 					</Fragment>
-				</SuiLedgerClientProvider>
+				</IkaLedgerClientProvider>
 			</HashRouter>
 		</GrowthBookProvider>
 	);

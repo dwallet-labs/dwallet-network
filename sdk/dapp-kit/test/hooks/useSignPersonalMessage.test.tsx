@@ -9,7 +9,7 @@ import {
 	WalletNotConnectedError,
 } from '../../src/errors/walletErrors.js';
 import { useConnectWallet, useSignPersonalMessage } from '../../src/index.js';
-import { signMessageFeature, suiFeatures } from '../mocks/mockFeatures.js';
+import { signMessageFeature, ikaFeatures } from '../mocks/mockFeatures.js';
 import { createWalletProviderContextWrapper, registerMockWallet } from '../test-utils.js';
 
 describe('useSignPersonalMessage', () => {
@@ -49,7 +49,7 @@ describe('useSignPersonalMessage', () => {
 		act(() => unregister());
 	});
 
-	test('falls back to the `sui:signMessage` feature with a wallet that lacks support for `sui:signPersonalMessage`.', async () => {
+	test('falls back to the `ika:signMessage` feature with a wallet that lacks support for `ika:signPersonalMessage`.', async () => {
 		const { unregister, mockWallet } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
 			features: signMessageFeature,
@@ -67,7 +67,7 @@ describe('useSignPersonalMessage', () => {
 		result.current.connectWallet.mutate({ wallet: mockWallet });
 		await waitFor(() => expect(result.current.connectWallet.isSuccess).toBe(true));
 
-		const mockSignMessageFeature = mockWallet.features['sui:signMessage'];
+		const mockSignMessageFeature = mockWallet.features['ika:signMessage'];
 		const signMessageMock = mockSignMessageFeature!.signMessage as Mock;
 
 		signMessageMock.mockReturnValueOnce({ messageBytes: 'abc', signature: '123' });
@@ -88,7 +88,7 @@ describe('useSignPersonalMessage', () => {
 	test('signing a personal message from the currently connected account works successfully', async () => {
 		const { unregister, mockWallet } = registerMockWallet({
 			walletName: 'Mock Wallet 1',
-			features: suiFeatures,
+			features: ikaFeatures,
 		});
 
 		const wrapper = createWalletProviderContextWrapper();
@@ -104,7 +104,7 @@ describe('useSignPersonalMessage', () => {
 
 		await waitFor(() => expect(result.current.connectWallet.isSuccess).toBe(true));
 
-		const signPersonalMessageFeature = mockWallet.features['sui:signPersonalMessage'];
+		const signPersonalMessageFeature = mockWallet.features['ika:signPersonalMessage'];
 		const signPersonalMessageMock = signPersonalMessageFeature!.signPersonalMessage as Mock;
 
 		signPersonalMessageMock.mockReturnValueOnce({ bytes: 'abc', signature: '123' });

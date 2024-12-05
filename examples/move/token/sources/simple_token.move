@@ -4,10 +4,10 @@
 /// Create a simple Token with Denylist for every action; all four default
 /// actions are allowed as long as the user is not on the denylist.
 module examples::simple_token {
-    use sui::coin::{Self, TreasuryCap};
-    use sui::tx_context::{sender};
+    use ika::coin::{Self, TreasuryCap};
+    use ika::tx_context::{sender};
 
-    use sui::token::{Self, TokenPolicy, TokenPolicyCap};
+    use ika::token::{Self, TokenPolicy, TokenPolicyCap};
 
     // import rules and use them for this app
     use examples::denylist_rule::Denylist;
@@ -69,10 +69,10 @@ module examples::simple_token {
 /// We don't test the currency itself but rather use the same set of regulations
 /// on a test currency.
 module examples::simple_token_tests {
-    use sui::coin;
+    use ika::coin;
 
-    use sui::token::{Self, TokenPolicy, TokenPolicyCap};
-    use sui::token_test_utils::{Self as test, TEST};
+    use ika::token::{Self, TokenPolicy, TokenPolicyCap};
+    use ika::token_test_utils::{Self as test, TEST};
 
     use examples::simple_token::set_rules;
     use examples::denylist_rule as denylist;

@@ -7,14 +7,14 @@
 # Example: kubectl create secret generic db_url --from-literal=password=<actual db url> --namespace graphql
 #
 # RPC_URL is also expected to be an env var so the command properly populates
-command: ["/opt/sui/bin/sui-graphql-rpc", "start-server","--host","0.0.0.0","--port","8001","--db-url","$DB_URL","--node-rpc-url", "$RPC_URL","--config","/opt/sui/config/graphql.toml","--ide-title","Sui RPC2.0 GraphQL"]
+command: ["/opt/ika/bin/ika-graphql-rpc", "start-server","--host","0.0.0.0","--port","8001","--db-url","$DB_URL","--node-rpc-url", "$RPC_URL","--config","/opt/ika/config/graphql.toml","--ide-title","Ika RPC2.0 GraphQL"]
 
 
 env:
   RUST_BACKTRACE:
     value: "1"
   RPC_URL: 
-    value: "https://public-rpc.mainnet.sui.io" # you will want to point this to a local fullnode instance like http://<servicename>.<namespace>.svc.cluster.local:900
+    value: "https://public-rpc.mainnet.ika.io" # you will want to point this to a local fullnode instance like http://<servicename>.<namespace>.svc.cluster.local:900
   DB_URL:
     valueFrom:
       secretKeyRef:
@@ -34,7 +34,7 @@ volumes:
 # Additional volumeMounts on the output Deployment definition.
 volumeMounts:
  - name: graphql-toml-volume
-   mountPath: "/opt/sui/config/graphql.toml"
+   mountPath: "/opt/ika/config/graphql.toml"
    subPath: "graphql.toml"
    readOnly: true
 
@@ -53,10 +53,10 @@ serviceAccount:
 
 
 image:
-  repository: "mysten/sui-graphql-rpc"
+  repository: "ika-io/ika-graphql-rpc"
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "sui-graphql-rpc-v2024.4.0-release"
+  tag: "ika-graphql-rpc-v2024.4.0-release"
 
 
 imagePullSecrets: []

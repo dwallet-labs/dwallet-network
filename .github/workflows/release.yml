@@ -1,20 +1,20 @@
-name: Attach Sui binaries to a release
-run-name: Attach Sui binaries to a ${{ inputs.sui_tag }} release
+name: Attach Ika binaries to a release
+run-name: Attach Ika binaries to a ${{ inputs.ika_tag }} release
 
 on:
   release:
     types: created
   workflow_dispatch:
     inputs:
-      sui_tag:
-        description: 'Sui repo tag to build from'
+      ika_tag:
+        description: 'Ika repo tag to build from'
         type: string
         required: true
 
-concurrency: ${{ github.workflow }}-${{ inputs.sui_tag || github.ref }}
+concurrency: ${{ github.workflow }}-${{ inputs.ika_tag || github.ref }}
 
 env:
-  TAG_NAME: "${{ github.event.inputs.sui_tag || github.ref }}"
+  TAG_NAME: "${{ github.event.inputs.ika_tag || github.ref }}"
   BINARY_LIST_FILE: "./binary-build-list.json"
   CARGO_TERM_COLOR: always
   # Disable incremental compilation.
@@ -58,16 +58,16 @@ jobs:
       - name: Clean up and validate ${{ env.TAG_NAME }} tag name
         shell: bash
         run: |
-          export sui_tag=$(echo ${{ env.TAG_NAME }} | sed s/'refs\/tags\/'//)
-          [[ "${sui_tag}" == "main" ]] && echo "tag cannot be equals to 'main'" && exit 1
-          echo "sui_tag=${sui_tag}" >> $GITHUB_ENV
-          export sui_version=$(echo ${sui_tag} | sed -e 's/mainnet-v//' -e 's/testnet-v//')
-          echo "sui_version=${sui_version}" >> $GITHUB_ENV
+          export ika_tag=$(echo ${{ env.TAG_NAME }} | sed s/'refs\/tags\/'//)
+          [[ "${ika_tag}" == "main" ]] && echo "tag cannot be equals to 'main'" && exit 1
+          echo "ika_tag=${ika_tag}" >> $GITHUB_ENV
+          export ika_version=$(echo ${ika_tag} | sed -e 's/mainnet-v//' -e 's/testnet-v//')
+          echo "ika_version=${ika_version}" >> $GITHUB_ENV
 
-      - name: Check out ${{ env.sui_tag }}
+      - name: Check out ${{ env.ika_tag }}
         uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # pin@v3
         with:
-          ref: ${{ env.sui_tag }}          
+          ref: ${{ env.ika_tag }}          
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # pin v4.0.2
@@ -98,15 +98,15 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          echo "s3_archive_exist=$(curl -Is https://sui-releases.s3.us-east-1.amazonaws.com/releases/sui-${{ env.sui_tag }}-${{ env.os_type }}.tgz | head -n 1 | grep '200 OK')" >> $GITHUB_ENV
+          echo "s3_archive_exist=$(curl -Is https://ika-releases.s3.us-east-1.amazonaws.com/releases/ika-${{ env.ika_tag }}-${{ env.os_type }}.tgz | head -n 1 | grep '200 OK')" >> $GITHUB_ENV
 
       - name: Download archive, if it exists
         if: ${{ env.s3_archive_exist != '' }}
         shell: bash
         run: |
           mkdir -p ${{ env.TMP_BUILD_DIR }}
-          aws s3 cp s3://sui-releases/releases/sui-${{ env.sui_tag }}-${os_type}.tgz ./tmp/sui-${{ env.sui_tag }}-${os_type}.tgz
-          tar -xf ./tmp/sui-${{ env.sui_tag }}-${os_type}.tgz -C ${{ env.TMP_BUILD_DIR }}
+          aws s3 cp s3://ika-releases/releases/ika-${{ env.ika_tag }}-${os_type}.tgz ./tmp/ika-${{ env.ika_tag }}-${os_type}.tgz
+          tar -xf ./tmp/ika-${{ env.ika_tag }}-${os_type}.tgz -C ${{ env.TMP_BUILD_DIR }}
 
       - name: Setup caching
         if: ${{ env.s3_archive_exist == '' }}
@@ -161,7 +161,7 @@ jobs:
         if: ${{ env.s3_archive_exist == '' }}
         shell: bash
         run: |
-          [ -f ~/.cargo/env ] && source ~/.cargo/env ; cargo build --release && cargo build --release --features tracing --bin sui && cargo build --profile=dev --bin sui --features tracing
+          [ -f ~/.cargo/env ] && source ~/.cargo/env ; cargo build --release && cargo build --release --features tracing --bin ika && cargo build --profile=dev --bin ika --features tracing
 
       - name: Rename binaries for ${{ matrix.os }}
         if: ${{ env.s3_archive_exist == '' }}
@@ -175,63 +175,63 @@ jobs:
             mv ./target/release/${binary}${{ env.extention }} ${{ env.TMP_BUILD_DIR }}/${binary}${{ env.extention }}
           done
 
-          mv ./target/debug/sui${{ env.extention }} ${{ env.TMP_BUILD_DIR }}/sui-debug${{ env.extention }}
-          tar -cvzf ./tmp/sui-${{ env.sui_tag }}-${{ env.os_type }}.tgz -C ${{ env.TMP_BUILD_DIR }} .
-          [[ ${{ env.sui_tag }} == *"testnet"* ]] && aws s3 cp ./tmp/sui-${{ env.sui_tag }}-${{ env.os_type }}.tgz s3://sui-releases/releases/sui-${{ env.sui_tag }}-${{ env.os_type }}.tgz || true
+          mv ./target/debug/ika${{ env.extention }} ${{ env.TMP_BUILD_DIR }}/ika-debug${{ env.extention }}
+          tar -cvzf ./tmp/ika-${{ env.ika_tag }}-${{ env.os_type }}.tgz -C ${{ env.TMP_BUILD_DIR }} .
+          [[ ${{ env.ika_tag }} == *"testnet"* ]] && aws s3 cp ./tmp/ika-${{ env.ika_tag }}-${{ env.os_type }}.tgz s3://ika-releases/releases/ika-${{ env.ika_tag }}-${{ env.os_type }}.tgz || true
 
-      - name: Publish Windows sui binary to Chocolatey
-        if: ${{ matrix.os == 'windows-ghcloud' && contains(env.sui_tag, 'testnet') }}
+      - name: Publish Windows ika binary to Chocolatey
+        if: ${{ matrix.os == 'windows-ghcloud' && contains(env.ika_tag, 'testnet') }}
         shell: bash
         run: |
           choco install checksum
-          export sui_sha=$(checksum -t sha256 ${{ env.TMP_BUILD_DIR }}/sui.exe)
+          export ika_sha=$(checksum -t sha256 ${{ env.TMP_BUILD_DIR }}/ika.exe)
           cd chocolatey
 
           cat <<EOF >>VERIFICATION.txt
-          Sui Binary verification steps
-          1. Download https://github.com/MystenLabs/sui/releases/download/${{ env.sui_tag }}/sui-${{ env.sui_tag }}-windows-x86_64.tgz
-          2. Extract sui.exe
-          3. Verify binary: checksum.exe -t sha256 sui.exe: ${sui_sha}
+          Ika Binary verification steps
+          1. Download https://github.com/MystenLabs/sui/releases/download/${{ env.ika_tag }}/ika-${{ env.ika_tag }}-windows-x86_64.tgz
+          2. Extract ika.exe
+          3. Verify binary: checksum.exe -t sha256 ika.exe: ${ika_sha}
 
           File 'LICENSE.txt' is obtained from: https://github.com/MystenLabs/sui/blob/main/LICENSE
           EOF
 
-          choco pack --version ${{ env.sui_version }} configuration=release
+          choco pack --version ${{ env.ika_version }} configuration=release
           choco apikey --api-key ${{ secrets.CHOCO_API_KEY }} --source https://push.chocolatey.org/
-          choco push sui.${{ env.sui_version }}.nupkg --source https://push.chocolatey.org/
+          choco push ika.${{ env.ika_version }}.nupkg --source https://push.chocolatey.org/
 
       - name: Upload release artifacts for ${{ matrix.os }} platform
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # pin@4.4.3
         with:
-          name: sui-binaries-${{ matrix.os }}
+          name: ika-binaries-${{ matrix.os }}
           if-no-files-found: error
           path: |
-            ./tmp/sui-${{ env.sui_tag }}-${{ env.os_type }}.tgz
+            ./tmp/ika-${{ env.ika_tag }}-${{ env.os_type }}.tgz
 
-      - name: Attach artifacts to ${{ env.sui_tag }} release in GH
+      - name: Attach artifacts to ${{ env.ika_tag }} release in GH
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # pin@v1
         with:
-          tag_name: ${{ env.sui_tag }}
+          tag_name: ${{ env.ika_tag }}
           files: |
-            ./tmp/sui-${{ env.sui_tag }}-${{ env.os_type }}.tgz
+            ./tmp/ika-${{ env.ika_tag }}-${{ env.os_type }}.tgz
 
   update-homebrew-formula:
-    name: Run brew bump-formula-pr for sui on testnet releases
+    name: Run brew bump-formula-pr for ika on testnet releases
     needs: release-build
     runs-on: ubuntu-latest
-    # releasing sui cli on testnet releases because it lags `main` less than mainnet, but is more likely to be stable than devnet
-    if: ${{ contains( inputs.sui_tag, 'testnet') || contains( github.ref, 'testnet') }}
+    # releasing ika cli on testnet releases because it lags `main` less than mainnet, but is more likely to be stable than devnet
+    if: ${{ contains( inputs.ika_tag, 'testnet') || contains( github.ref, 'testnet') }}
     steps:
       - name: Clean up tag name ${{ env.TAG_NAME }}
         shell: bash
         run: |
-          echo "sui_tag=$(echo ${{ env.TAG_NAME }} | sed s/'refs\/tags\/'//)" >> $GITHUB_ENV
+          echo "ika_tag=$(echo ${{ env.TAG_NAME }} | sed s/'refs\/tags\/'//)" >> $GITHUB_ENV
           echo "versionless_tag=$(echo ${{ env.TAG_NAME }} | sed s/'refs\/tags\/'// | sed s/'testnet\-v'//)" >> $GITHUB_ENV
       - uses: mislav/bump-homebrew-formula-action@b3327118b2153c82da63fd9cbf58942146ee99f0 # pin@v3
         with:
-          formula-name: sui
+          formula-name: ika
           create-pullrequest: true
-          tag-name: "${{ env.sui_tag }}"
+          tag-name: "${{ env.ika_tag }}"
           commit-message: |
             {{formulaName}} ${{ env.versionless_tag }}
 
@@ -242,7 +242,7 @@ jobs:
           # https://github.com/settings/tokens/new?scopes=public_repo,workflow
           COMMITTER_TOKEN: ${{ secrets.HOMEBREW_GH_FORMULA_BUMP }}
 
-  # Tag all sui images with release tag, so that they can be easily found
+  # Tag all ika images with release tag, so that they can be easily found
   tag-docker-hub-images:
     runs-on: ubuntu-latest
     steps:
@@ -252,4 +252,4 @@ jobs:
           repository: MystenLabs/sui-operations
           token: ${{ secrets.DOCKER_BINARY_BUILDS_DISPATCH }}
           event-type: tag-docker-images
-          client-payload: '{"sui_commit": "${{ github.sha }}", "repo_name": "all", "tag": "${{ env.TAG_NAME }}"}'
+          client-payload: '{"ika_commit": "${{ github.sha }}", "repo_name": "all", "tag": "${{ env.TAG_NAME }}"}'

@@ -1,6 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { normalizeStructTag } from '@mysten/sui/utils';
+import { normalizeStructTag } from '@ika-io/ika/utils';
 import { useQuery } from '@tanstack/react-query';
 
 import { useAppsBackend } from '../../../../../core';

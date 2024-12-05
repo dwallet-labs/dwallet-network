@@ -7,12 +7,12 @@ on:
       - 'devnet'
       - 'testnet'
       - 'mainnet'
-      - 'releases/sui-*-release'
+      - 'releases/ika-*-release'
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
   workflow_dispatch:
     inputs:
-      sui_repo_ref:
+      ika_repo_ref:
         description: "Branch / commit to test"
         type: string
         required: false
@@ -71,7 +71,7 @@ jobs:
       # Tests written with #[sim_test] are often flaky if run as #[tokio::test] - this var
       # causes #[sim_test] to only run under the deterministic `simtest` job, and not the
       # non-deterministic `test` job.
-      SUI_SKIP_SIMTESTS: 1
+      IKA_SKIP_SIMTESTS: 1
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -97,7 +97,7 @@ jobs:
         run: echo "/usr/lib/postgresql/14/bin" >> $GITHUB_PATH
       - name: cargo test
         run: |
-          cargo nextest run --profile ci -E 'package(sui-bridge) | package(sui-bridge-indexer)'
+          cargo nextest run --profile ci -E 'package(ika-bridge) | package(ika-bridge-indexer)'
       # Ensure there are no uncommitted changes in the repo after running tests
       - run: scripts/changed-files.sh
         shell: bash

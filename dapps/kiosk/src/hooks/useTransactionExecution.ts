@@ -1,15 +1,15 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSignTransaction, useSuiClient } from '@mysten/dapp-kit';
-import { SuiTransactionBlockResponseOptions } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { useSignTransaction, useIkaClient } from '@mysten/dapp-kit';
+import { IkaTransactionBlockResponseOptions } from '@ika-io/ika/client';
+import { Transaction } from '@ika-io/ika/transactions';
 
 // A helper to execute transactions by:
 // 1. Signing them using the wallet
 // 2. Executing them using the rpc provider
 export function useTransactionExecution() {
-	const provider = useSuiClient();
+	const provider = useIkaClient();
 
 	// sign transaction from the wallet
 	const { mutateAsync: signTransaction } = useSignTransaction();
@@ -20,7 +20,7 @@ export function useTransactionExecution() {
 		options = { showEffects: true },
 	}: {
 		tx: Transaction;
-		options?: SuiTransactionBlockResponseOptions | undefined;
+		options?: IkaTransactionBlockResponseOptions | undefined;
 	}) => {
 		const signedTx = await signTransaction({ transaction: tx });
 

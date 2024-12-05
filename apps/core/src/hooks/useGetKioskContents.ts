@@ -1,16 +1,16 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSuiClientContext } from '@mysten/dapp-kit';
+import { useIkaClientContext } from '@mysten/dapp-kit';
 import { KIOSK_ITEM, KioskClient, KioskItem, KioskOwnerCap } from '@mysten/kiosk';
-import { SuiClient } from '@mysten/sui/client';
+import { IkaClient } from '@ika-io/ika/client';
 import { useQuery } from '@tanstack/react-query';
 
 import { getKioskIdFromOwnerCap, ORIGINBYTE_KIOSK_OWNER_TOKEN } from '../utils/kiosk';
 import { useKioskClient } from './useKioskClient';
 
 export enum KioskTypes {
-	SUI = 'sui',
+	IKA = 'ika',
 	ORIGINBYTE = 'originByte',
 }
 
@@ -22,7 +22,7 @@ export type Kiosk = {
 	ownerCap?: KioskOwnerCap;
 };
 
-async function getOriginByteKioskContents(address: string, client: SuiClient) {
+async function getOriginByteKioskContents(address: string, client: IkaClient) {
 	const data = await client.getOwnedObjects({
 		owner: address,
 		filter: {
@@ -75,7 +75,7 @@ async function getOriginByteKioskContents(address: string, client: SuiClient) {
 	return contents;
 }
 
-async function getSuiKioskContents(address: string, kioskClient: KioskClient) {
+async function getIkaKioskContents(address: string, kioskClient: KioskClient) {
 	const ownedKiosks = await kioskClient.getOwnedKiosks({ address });
 	const contents = await Promise.all(
 		ownedKiosks.kioskIds.map(async (id: string) => {
@@ -90,7 +90,7 @@ async function getSuiKioskContents(address: string, kioskClient: KioskClient) {
 				itemIds: kiosk.itemIds,
 				items: kiosk.items,
 				kioskId: id,
-				type: KioskTypes.SUI,
+				type: KioskTypes.IKA,
 				ownerCap: ownedKiosks.kioskOwnerCaps.find((k) => k.kioskId === id),
 			};
 		}),
@@ -99,15 +99,15 @@ async function getSuiKioskContents(address: string, kioskClient: KioskClient) {
 }
 
 export function useGetKioskContents(address?: string | null, disableOriginByteKiosk?: boolean) {
-	const { client: suiClient, network } = useSuiClientContext();
+	const { client: ikaClient, network } = useIkaClientContext();
 	const kioskClient = useKioskClient();
 	return useQuery({
 		// eslint-disable-next-line @tanstack/query/exhaustive-deps
 		queryKey: ['get-kiosk-contents', address, disableOriginByteKiosk, network, kioskClient.network],
 		queryFn: async () => {
-			const suiKiosks = await getSuiKioskContents(address!, kioskClient);
-			const obKiosks = await getOriginByteKioskContents(address!, suiClient);
-			return [...suiKiosks, ...obKiosks];
+			const ikaKiosks = await getIkaKioskContents(address!, kioskClient);
+			const obKiosks = await getOriginByteKioskContents(address!, ikaClient);
+			return [...ikaKiosks, ...obKiosks];
 		},
 		select(data) {
 			const kiosks = new Map<string, Kiosk>();

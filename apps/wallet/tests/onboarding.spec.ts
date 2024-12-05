@@ -16,7 +16,7 @@ test('import wallet', async ({ page, extensionUrl }) => {
 	importWallet(page, extensionUrl, mnemonic);
 	await page.getByRole('navigation').getByRole('link', { name: 'Home' }).click();
 	await expect(
-		page.getByText(keypair.getPublicKey().toSuiAddress().slice(0, 6)).first(),
+		page.getByText(keypair.getPublicKey().toIkaAddress().slice(0, 6)).first(),
 	).toBeVisible();
 });
 

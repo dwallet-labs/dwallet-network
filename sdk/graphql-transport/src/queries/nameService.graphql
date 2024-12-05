@@ -2,14 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 query resolveNameServiceAddress($domain: String!) {
-	resolveSuinsAddress(domain: $domain) {
+	resolveIkansAddress(domain: $domain) {
 		address
 	}
 }
 
-query resolveNameServiceNames($address: SuiAddress!, $limit: Int, $cursor: String) {
+query resolveNameServiceNames($address: IkaAddress!, $limit: Int, $cursor: String) {
 	address(address: $address) {
-		suinsRegistrations(first: $limit, after: $cursor) {
+		ikansRegistrations(first: $limit, after: $cursor) {
 			pageInfo {
 				hasNextPage
 				endCursor

@@ -23,7 +23,7 @@ export function Navigation() {
 				[st.hidden]: !isVisible,
 			})}
 		>
-			<div id="sui-apps-filters" className="flex whitespace-nowrap w-full justify-center"></div>
+			<div id="ika-apps-filters" className="flex whitespace-nowrap w-full justify-center"></div>
 			<div className={st.navMenu}>
 				<NavLink
 					data-testid="nav-tokens"

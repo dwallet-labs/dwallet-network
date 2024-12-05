@@ -31,7 +31,7 @@ export function ForgotPasswordPage() {
 		setRecoveryData([]);
 	}, []);
 	return (
-		<div className="rounded-20 bg-sui-lightest shadow-wallet-content flex flex-col flex-nowrap items-center px-6 py-10 h-full w-full overflow-auto gap-6">
+		<div className="rounded-20 bg-ika-lightest shadow-wallet-content flex flex-col flex-nowrap items-center px-6 py-10 h-full w-full overflow-auto gap-6">
 			<forgotPasswordContext.Provider value={{ value: recoveryData, add, clear }}>
 				<Outlet />
 			</forgotPasswordContext.Provider>

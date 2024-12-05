@@ -13,7 +13,7 @@ export function ImportPrivateKeyPage() {
 	const [, setAccountsFormValues] = useAccountsFormContext();
 
 	return (
-		<div className="rounded-20 bg-sui-lightest shadow-wallet-content flex flex-col items-center px-6 py-10 w-full h-full">
+		<div className="rounded-20 bg-ika-lightest shadow-wallet-content flex flex-col items-center px-6 py-10 w-full h-full">
 			<Text variant="caption" color="steel-dark" weight="semibold">
 				Wallet Setup
 			</Text>

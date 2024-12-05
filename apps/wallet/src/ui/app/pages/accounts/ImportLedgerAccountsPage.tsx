@@ -23,7 +23,7 @@ import {
 	type DerivedLedgerAccount,
 } from '../../components/ledger/useDeriveLedgerAccounts';
 import Overlay from '../../components/overlay';
-import { getSuiApplicationErrorMessage } from '../../helpers/errorMessages';
+import { getIkaApplicationErrorMessage } from '../../helpers/errorMessages';
 import { useAccounts } from '../../hooks/useAccounts';
 
 const numLedgerAccountsToDeriveByDefault = 10;
@@ -50,7 +50,7 @@ export function ImportLedgerAccountsPage() {
 
 	useEffect(() => {
 		if (ledgerError) {
-			toast.error(getSuiApplicationErrorMessage(ledgerError) || 'Something went wrong.');
+			toast.error(getIkaApplicationErrorMessage(ledgerError) || 'Something went wrong.');
 			navigate(-1);
 		}
 	}, [ledgerError, navigate]);

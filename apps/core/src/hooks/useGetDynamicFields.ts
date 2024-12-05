@@ -1,20 +1,20 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import { DynamicFieldPage } from '@mysten/sui/client';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { DynamicFieldPage } from '@ika-io/ika/client';
+import { normalizeIkaAddress } from '@ika-io/ika/utils';
 import { useInfiniteQuery } from '@tanstack/react-query';
 
 const MAX_PAGE_SIZE = 10;
 
 export function useGetDynamicFields(parentId: string, maxPageSize = MAX_PAGE_SIZE) {
-	const client = useSuiClient();
+	const client = useIkaClient();
 	return useInfiniteQuery<DynamicFieldPage>({
 		queryKey: ['dynamic-fields', { maxPageSize, parentId }],
 		queryFn: ({ pageParam = null }) =>
 			client.getDynamicFields({
-				parentId: normalizeSuiAddress(parentId),
+				parentId: normalizeIkaAddress(parentId),
 				cursor: pageParam as string | null,
 				limit: maxPageSize,
 			}),

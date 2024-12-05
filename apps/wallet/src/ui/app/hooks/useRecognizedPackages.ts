@@ -3,11 +3,11 @@
 
 import { API_ENV } from '_src/shared/api-env';
 import { useFeatureValue } from '@growthbook/growthbook-react';
-import { SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS } from '@mysten/sui/utils';
+import { IKA_FRAMEWORK_ADDRESS, IKA_SYSTEM_ADDRESS } from '@ika-io/ika/utils';
 
 import useAppSelector from './useAppSelector';
 
-const DEFAULT_RECOGNIZED_PACKAGES = [SUI_FRAMEWORK_ADDRESS, SUI_SYSTEM_ADDRESS];
+const DEFAULT_RECOGNIZED_PACKAGES = [IKA_FRAMEWORK_ADDRESS, IKA_SYSTEM_ADDRESS];
 
 export function useRecognizedPackages() {
 	const apiEnv = useAppSelector((app) => app.app.apiEnv);

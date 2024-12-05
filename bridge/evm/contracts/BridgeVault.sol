@@ -10,10 +10,10 @@ import "./interfaces/IWETH9.sol";
 
 /// @title BridgeVault
 /// @notice A contract that acts as a vault for transferring ERC20 tokens and ETH. It enables the owner
-/// (intended to be the SuiBridge contract) to transfer tokens to a target address. It also supports
+/// (intended to be the IkaBridge contract) to transfer tokens to a target address. It also supports
 /// unwrapping WETH (Wrapped Ether) and transferring the unwrapped ETH.
 /// @dev The contract is initialized with the deployer as the owner. The ownership is intended to be
-/// transferred to the SuiBridge contract after the bridge contract is deployed.
+/// transferred to the IkaBridge contract after the bridge contract is deployed.
 contract BridgeVault is Ownable, IBridgeVault, ReentrancyGuard {
     /* ========== STATE VARIABLES ========== */
 
@@ -30,7 +30,7 @@ contract BridgeVault is Ownable, IBridgeVault, ReentrancyGuard {
 
     /// @notice Transfers ERC20 tokens from the contract to a target address. Only the owner of
     /// the contract can call this function.
-    /// @dev This function is intended to only be called by the SuiBridge contract.
+    /// @dev This function is intended to only be called by the IkaBridge contract.
     /// @param tokenAddress The address of the ERC20 token.
     /// @param recipientAddress The address to transfer the tokens to.
     /// @param amount The amount of tokens to transfer.
@@ -46,7 +46,7 @@ contract BridgeVault is Ownable, IBridgeVault, ReentrancyGuard {
 
     /// @notice Unwraps stored wrapped ETH and transfers the newly withdrawn ETH to the provided target
     /// address. Only the owner of the contract can call this function.
-    /// @dev This function is intended to only be called by the SuiBridge contract.
+    /// @dev This function is intended to only be called by the IkaBridge contract.
     /// @param recipientAddress The address to transfer the ETH to.
     /// @param amount The amount of ETH to transfer.
     function transferETH(address payable recipientAddress, uint256 amount)

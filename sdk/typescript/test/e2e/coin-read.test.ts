@@ -19,10 +19,10 @@ describe('CoinRead API', () => {
 	});
 
 	it('Get coins with/without type', async () => {
-		const suiCoins = await toolbox.client.getCoins({
+		const ikaCoins = await toolbox.client.getCoins({
 			owner: toolbox.address(),
 		});
-		expect(suiCoins.data.length).toEqual(5);
+		expect(ikaCoins.data.length).toEqual(5);
 
 		const testCoins = await toolbox.client.getCoins({
 			owner: publishToolbox.address(),
@@ -43,21 +43,21 @@ describe('CoinRead API', () => {
 		expect(publisherAllCoins.hasNextPage).toEqual(false);
 
 		//test paging with limit
-		const someSuiCoins = await toolbox.client.getCoins({
+		const someIkaCoins = await toolbox.client.getCoins({
 			owner: toolbox.address(),
 			limit: 3,
 		});
-		expect(someSuiCoins.data.length).toEqual(3);
-		expect(someSuiCoins.nextCursor).toBeTruthy();
+		expect(someIkaCoins.data.length).toEqual(3);
+		expect(someIkaCoins.nextCursor).toBeTruthy();
 	});
 
 	it('Get balance with/without type', async () => {
-		const suiBalance = await toolbox.client.getBalance({
+		const ikaBalance = await toolbox.client.getBalance({
 			owner: toolbox.address(),
 		});
-		expect(suiBalance.coinType).toEqual('0x2::sui::SUI');
-		expect(suiBalance.coinObjectCount).toEqual(5);
-		expect(Number(suiBalance.totalBalance)).toBeGreaterThan(0);
+		expect(ikaBalance.coinType).toEqual('0x2::ika::IKA');
+		expect(ikaBalance.coinObjectCount).toEqual(5);
+		expect(Number(ikaBalance.totalBalance)).toBeGreaterThan(0);
 
 		const testBalance = await toolbox.client.getBalance({
 			owner: publishToolbox.address(),

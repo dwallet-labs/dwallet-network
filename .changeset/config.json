@@ -9,7 +9,7 @@
 	"updateInternalDependencies": "minor",
 	"privatePackages": false,
 	"ignore": [
-		"sui-wallet",
+		"ika-wallet",
 		"@mysten/core",
 		"sponsored-transactions",
 		"kiosk-demo",

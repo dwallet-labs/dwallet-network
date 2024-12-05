@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { useSuiClient } from '@mysten/dapp-kit';
-import { type DryRunTransactionBlockResponse } from '@mysten/sui/client';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { type DryRunTransactionBlockResponse } from '@ika-io/ika/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export type SwapRequest = {
@@ -57,13 +57,13 @@ async function* streamAsyncIterator<T>(stream: ReadableStream): AsyncGenerator<T
 }
 
 export function useSwapTransaction({ enabled, ...params }: SwapRequest & { enabled: boolean }) {
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const queryClient = useQueryClient();
 
 	return useQuery({
 		queryKey: getQueryKey(params),
 		queryFn: async ({ signal }) => {
-			const response = await fetch('https://apps-backend.sui.io/swap', {
+			const response = await fetch('https://apps-backend.ika.io/swap', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',

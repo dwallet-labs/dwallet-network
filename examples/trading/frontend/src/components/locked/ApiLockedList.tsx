@@ -6,7 +6,7 @@ import { CONSTANTS, QueryKey } from "@/constants";
 import { InfiniteScrollArea } from "@/components/InfiniteScrollArea";
 import { ApiLockedObject, LockedListingQuery } from "@/types/types";
 import { constructUrlSearchParams, getNextPageParam } from "@/utils/helpers";
-import { useSuiClient } from "@mysten/dapp-kit";
+import { useIkaClient } from "@mysten/dapp-kit";
 import { TextField } from "@radix-ui/themes";
 import { useState } from "react";
 import { LockedObject } from "./LockedObject";
@@ -29,7 +29,7 @@ export function LockedList({
   params: LockedListingQuery;
 }) {
   const [lockedId, setLockedId] = useState("");
-  const suiClient = useSuiClient();
+  const ikaClient = useIkaClient();
 
   const { data: searchData } = useGetLockedObject({
     lockedId,
@@ -59,7 +59,7 @@ export function LockedList({
          * Use the objectIds from the API to fetch the on-chain state. This is done to ensure that
          * the ownership of each object is up-to-date.
          */
-        const objects = await suiClient.multiGetObjects({
+        const objects = await ikaClient.multiGetObjects({
           ids: data.data.map((x: ApiLockedObject) => x.objectId),
           options: {
             showOwner: true,
@@ -68,7 +68,7 @@ export function LockedList({
         });
 
         return {
-          suiObjects: objects.map((x) => x.data),
+          ikaObjects: objects.map((x) => x.data),
           api: data,
         };
       },
@@ -80,7 +80,7 @@ export function LockedList({
   /**
    * Returns all `Locked` objects or the one that matches the search query if it exists.
    */
-  const suiObjects = () => {
+  const ikaObjects = () => {
     if (lockedId) {
       if (
         !searchData?.data?.type?.startsWith(CONSTANTS.escrowContract.lockedType)
@@ -88,7 +88,7 @@ export function LockedList({
         return [];
       return [searchData?.data!];
     }
-    return data?.flatMap((x) => x.suiObjects) || [];
+    return data?.flatMap((x) => x.ikaObjects) || [];
   };
 
   const apiData = () => {
@@ -116,7 +116,7 @@ export function LockedList({
         hasNextPage={hasNextPage}
         loading={isFetchingNextPage || isLoading}
       >
-        {suiObjects().map((object) => (
+        {ikaObjects().map((object) => (
           <LockedObject
             key={object?.objectId!}
             object={object!}

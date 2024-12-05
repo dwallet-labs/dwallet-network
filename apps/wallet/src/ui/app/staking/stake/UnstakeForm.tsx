@@ -5,17 +5,17 @@ import { Card } from '_app/shared/card';
 import { Text } from '_app/shared/text';
 import { CountDownTimer } from '_src/ui/app/shared/countdown-timer';
 import { useFormatCoin, useGetTimeBeforeEpochNumber } from '@mysten/core';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { IKA_TYPE_ARG } from '@ika-io/ika/utils';
 import { Form } from 'formik';
 import { useMemo } from 'react';
 
 import { useActiveAddress, useTransactionGasBudget } from '../../hooks';
-import { GAS_SYMBOL } from '../../redux/slices/sui-objects/Coin';
+import { GAS_SYMBOL } from '../../redux/slices/ika-objects/Coin';
 import { Heading } from '../../shared/heading';
 import { createUnstakeTransaction } from './utils/transaction';
 
 export type StakeFromProps = {
-	stakedSuiId: string;
+	stakedIkaId: string;
 	coinBalance: bigint;
 	coinType: string;
 	stakingReward?: string;
@@ -23,17 +23,17 @@ export type StakeFromProps = {
 };
 
 export function UnStakeForm({
-	stakedSuiId,
+	stakedIkaId,
 	coinBalance,
 	coinType,
 	stakingReward,
 	epoch,
 }: StakeFromProps) {
-	const [rewards, rewardSymbol] = useFormatCoin(stakingReward, SUI_TYPE_ARG);
-	const [totalSui] = useFormatCoin(BigInt(stakingReward || 0) + coinBalance, SUI_TYPE_ARG);
+	const [rewards, rewardSymbol] = useFormatCoin(stakingReward, IKA_TYPE_ARG);
+	const [totalIka] = useFormatCoin(BigInt(stakingReward || 0) + coinBalance, IKA_TYPE_ARG);
 	const [tokenBalance] = useFormatCoin(coinBalance, coinType);
 
-	const transaction = useMemo(() => createUnstakeTransaction(stakedSuiId), [stakedSuiId]);
+	const transaction = useMemo(() => createUnstakeTransaction(stakedIkaId), [stakedIkaId]);
 	const activeAddress = useActiveAddress();
 	const { data: gasBudget } = useTransactionGasBudget(activeAddress, transaction);
 
@@ -68,11 +68,11 @@ export function UnStakeForm({
 				footer={
 					<div className="flex gap-0.5 justify-between w-full">
 						<Text variant="pBodySmall" weight="medium" color="steel-darker">
-							Total unstaked SUI
+							Total unstaked IKA
 						</Text>
 						<div className="flex gap-0.5 ml-auto">
 							<Heading variant="heading4" weight="semibold" color="steel-darker" leading="none">
-								{totalSui}
+								{totalIka}
 							</Heading>
 							<Text variant="bodySmall" weight="medium" color="steel-dark">
 								{GAS_SYMBOL}

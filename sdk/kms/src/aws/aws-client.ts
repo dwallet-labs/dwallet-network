@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { Secp256k1PublicKey } from '@mysten/sui/keypairs/secp256k1';
-import { Secp256r1PublicKey } from '@mysten/sui/keypairs/secp256r1';
-import { fromBase64 } from '@mysten/sui/utils';
+import { Secp256k1PublicKey } from '@ika-io/ika/keypairs/secp256k1';
+import { Secp256r1PublicKey } from '@ika-io/ika/keypairs/secp256r1';
+import { fromBase64 } from '@ika-io/ika/utils';
 import { ASN1Construction, ASN1TagClass, DERElement } from 'asn1-ts';
 import { AwsClient } from 'aws4fetch';
 

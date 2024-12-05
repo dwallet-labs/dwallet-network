@@ -9,13 +9,13 @@ import type {
 	Wallet,
 	WalletWithRequiredFeatures,
 } from '@mysten/wallet-standard';
-import { SUI_CHAINS } from '@mysten/wallet-standard';
+import { IKA_CHAINS } from '@mysten/wallet-standard';
 import type { Mock } from 'vitest';
 
 export class MockWallet implements Wallet {
 	version = '1.0.0' as const;
 	icon = `data:image/png;base64,` as const;
-	chains = SUI_CHAINS;
+	chains = IKA_CHAINS;
 
 	mocks: {
 		connect: Mock;

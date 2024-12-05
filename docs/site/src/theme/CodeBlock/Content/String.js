@@ -52,7 +52,7 @@ export default function CodeBlockString({
   const showLineNumbers =
     showLineNumbersProp ?? containsLineNumbers(metastring);
 
-  // Sui added code.
+  // Ika added code.
   // Change component to render title as anchor.
   const sourceLink =
     title && !title.match(/^http/)

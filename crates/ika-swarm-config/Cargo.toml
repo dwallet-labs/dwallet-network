@@ -1,0 +1,42 @@
+[package]
+name = "ika-swarm-config"
+version = "0.0.0"
+authors = ["Mysten Labs <build@mystenlabs.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[lints]
+workspace = true
+
+[dependencies]
+anemo.workspace = true
+anyhow.workspace = true
+bcs.workspace = true
+fastcrypto.workspace = true
+rand.workspace = true
+serde.workspace = true
+serde_with.workspace = true
+serde_yaml.workspace = true
+tempfile.workspace = true
+tracing.workspace = true
+prometheus.workspace = true
+
+move-bytecode-utils.workspace = true
+narwhal-config.workspace = true
+shared-crypto.workspace = true
+ika-config.workspace = true
+ika-macros.workspace = true
+ika-protocol-config.workspace = true
+ika-types.workspace = true
+ika-genesis-builder.workspace = true
+ika-rest-api.workspace = true
+
+[target.'cfg(msim)'.dependencies]
+ika-simulator.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+tempfile.workspace = true
+
+ika-execution.workspace = true

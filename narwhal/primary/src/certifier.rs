@@ -14,8 +14,8 @@ use mysten_network::anemo_ext::NetworkExt;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::CertificateStore;
-use sui_macros::fail_point_async;
-use sui_protocol_config::ProtocolConfig;
+use ika_macros::fail_point_async;
+use ika_protocol_config::ProtocolConfig;
 use tokio::{
     sync::oneshot,
     task::{JoinHandle, JoinSet},

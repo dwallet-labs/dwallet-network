@@ -10,7 +10,7 @@
 	},
 	"dependencies": {
 		"@mysten/bcs": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@ika-io/ika": "workspace:*",
 		"p-limit": "^6.1.0"
 	},
 	"devDependencies": {

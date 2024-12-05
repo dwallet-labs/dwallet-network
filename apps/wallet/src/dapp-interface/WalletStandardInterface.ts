@@ -29,16 +29,16 @@ import {
 } from '_src/shared/messaging/messages/payloads/QredoConnect';
 import { type SignMessageRequest } from '_src/shared/messaging/messages/payloads/transactions/SignMessage';
 import { isWalletStatusChangePayload } from '_src/shared/messaging/messages/payloads/wallet-status-change';
-import { bcs } from '@mysten/sui/bcs';
-import { isTransaction } from '@mysten/sui/transactions';
-import { fromBase64, toBase64 } from '@mysten/sui/utils';
+import { bcs } from '@ika-io/ika/bcs';
+import { isTransaction } from '@ika-io/ika/transactions';
+import { fromBase64, toBase64 } from '@ika-io/ika/utils';
 import {
 	ReadonlyWalletAccount,
-	SUI_CHAINS,
-	SUI_DEVNET_CHAIN,
-	SUI_LOCALNET_CHAIN,
-	SUI_MAINNET_CHAIN,
-	SUI_TESTNET_CHAIN,
+	IKA_CHAINS,
+	IKA_DEVNET_CHAIN,
+	IKA_LOCALNET_CHAIN,
+	IKA_MAINNET_CHAIN,
+	IKA_TESTNET_CHAIN,
 	type StandardConnectFeature,
 	type StandardConnectMethod,
 	type StandardDisconnectFeature,
@@ -46,13 +46,13 @@ import {
 	type StandardEventsFeature,
 	type StandardEventsListeners,
 	type StandardEventsOnMethod,
-	type SuiFeatures,
-	type SuiSignAndExecuteTransactionBlockMethod,
-	type SuiSignAndExecuteTransactionMethod,
-	type SuiSignMessageMethod,
-	type SuiSignPersonalMessageMethod,
-	type SuiSignTransactionBlockMethod,
-	type SuiSignTransactionMethod,
+	type IkaFeatures,
+	type IkaSignAndExecuteTransactionBlockMethod,
+	type IkaSignAndExecuteTransactionMethod,
+	type IkaSignMessageMethod,
+	type IkaSignPersonalMessageMethod,
+	type IkaSignTransactionBlockMethod,
+	type IkaSignTransactionMethod,
 	type Wallet,
 } from '@mysten/wallet-standard';
 import mitt, { type Emitter } from 'mitt';
@@ -65,7 +65,7 @@ type WalletEventsMap = {
 };
 
 // NOTE: Because this runs in a content script, we can't fetch the manifest.
-const name = process.env.APP_NAME || 'Sui Wallet';
+const name = process.env.APP_NAME || 'Ika Wallet';
 
 export type QredoConnectInput = {
 	service: string;
@@ -89,13 +89,13 @@ type QredoConnectFeature = {
 };
 type ChainType = Wallet['chains'][number];
 const API_ENV_TO_CHAIN: Record<Exclude<API_ENV, API_ENV.customRPC>, ChainType> = {
-	[API_ENV.local]: SUI_LOCALNET_CHAIN,
-	[API_ENV.devNet]: SUI_DEVNET_CHAIN,
-	[API_ENV.testNet]: SUI_TESTNET_CHAIN,
-	[API_ENV.mainnet]: SUI_MAINNET_CHAIN,
+	[API_ENV.local]: IKA_LOCALNET_CHAIN,
+	[API_ENV.devNet]: IKA_DEVNET_CHAIN,
+	[API_ENV.testNet]: IKA_TESTNET_CHAIN,
+	[API_ENV.mainnet]: IKA_MAINNET_CHAIN,
 };
 
-export class SuiWallet implements Wallet {
+export class IkaWallet implements Wallet {
 	readonly #events: Emitter<WalletEventsMap>;
 	readonly #version = '1.0.0' as const;
 	readonly #name = name;
@@ -117,13 +117,13 @@ export class SuiWallet implements Wallet {
 
 	get chains() {
 		// TODO: Extract chain from wallet:
-		return SUI_CHAINS;
+		return IKA_CHAINS;
 	}
 
 	get features(): StandardConnectFeature &
 		StandardEventsFeature &
 		StandardDisconnectFeature &
-		SuiFeatures &
+		IkaFeatures &
 		QredoConnectFeature {
 		return {
 			'standard:connect': {
@@ -138,27 +138,27 @@ export class SuiWallet implements Wallet {
 				version: '1.0.0',
 				disconnect: this.#disconnect,
 			},
-			'sui:signTransactionBlock': {
+			'ika:signTransactionBlock': {
 				version: '1.0.0',
 				signTransactionBlock: this.#signTransactionBlock,
 			},
-			'sui:signTransaction': {
+			'ika:signTransaction': {
 				version: '2.0.0',
 				signTransaction: this.#signTransaction,
 			},
-			'sui:signAndExecuteTransactionBlock': {
+			'ika:signAndExecuteTransactionBlock': {
 				version: '1.0.0',
 				signAndExecuteTransactionBlock: this.#signAndExecuteTransactionBlock,
 			},
-			'sui:signAndExecuteTransaction': {
+			'ika:signAndExecuteTransaction': {
 				version: '2.0.0',
 				signAndExecuteTransaction: this.#signAndExecuteTransaction,
 			},
-			'sui:signMessage': {
+			'ika:signMessage': {
 				version: '1.0.0',
 				signMessage: this.#signMessage,
 			},
-			'sui:signPersonalMessage': {
+			'ika:signPersonalMessage': {
 				version: '1.0.0',
 				signPersonalMessage: this.#signPersonalMessage,
 			},
@@ -181,7 +181,7 @@ export class SuiWallet implements Wallet {
 					label: nickname || undefined,
 					publicKey: publicKey ? fromBase64(publicKey) : new Uint8Array(),
 					chains: this.#activeChain ? [this.#activeChain] : [],
-					features: ['sui:signAndExecuteTransaction'],
+					features: ['ika:signAndExecuteTransaction'],
 				}),
 		);
 	}
@@ -189,7 +189,7 @@ export class SuiWallet implements Wallet {
 	constructor() {
 		this.#events = mitt();
 		this.#accounts = [];
-		this.#messagesStream = new WindowMessageStream('sui_in-page', 'sui_content-script');
+		this.#messagesStream = new WindowMessageStream('ika_in-page', 'ika_content-script');
 		this.#messagesStream.messages.subscribe(({ payload }) => {
 			if (isWalletStatusChangePayload(payload)) {
 				const { network, accounts } = payload;
@@ -259,7 +259,7 @@ export class SuiWallet implements Wallet {
 		});
 	};
 
-	#signTransactionBlock: SuiSignTransactionBlockMethod = async ({
+	#signTransactionBlock: IkaSignTransactionBlockMethod = async ({
 		transactionBlock,
 		account,
 		...input
@@ -285,7 +285,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signTransaction: SuiSignTransactionMethod = async ({ transaction, account, ...input }) => {
+	#signTransaction: IkaSignTransactionMethod = async ({ transaction, account, ...input }) => {
 		return mapToPromise(
 			this.#send<SignTransactionRequest, SignTransactionResponse>({
 				type: 'sign-transaction-request',
@@ -304,7 +304,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signAndExecuteTransactionBlock: SuiSignAndExecuteTransactionBlockMethod = async (input) => {
+	#signAndExecuteTransactionBlock: IkaSignAndExecuteTransactionBlockMethod = async (input) => {
 		if (!isTransaction(input.transactionBlock)) {
 			throw new Error(
 				'Unexpected transaction format found. Ensure that you are using the `Transaction` class.',
@@ -327,7 +327,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signAndExecuteTransaction: SuiSignAndExecuteTransactionMethod = async (input) => {
+	#signAndExecuteTransaction: IkaSignAndExecuteTransactionMethod = async (input) => {
 		return mapToPromise(
 			this.#send<ExecuteTransactionRequest, ExecuteTransactionResponse>({
 				type: 'execute-transaction-request',
@@ -363,7 +363,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signMessage: SuiSignMessageMethod = async ({ message, account }) => {
+	#signMessage: IkaSignMessageMethod = async ({ message, account }) => {
 		return mapToPromise(
 			this.#send<SignMessageRequest, SignMessageRequest>({
 				type: 'sign-message-request',
@@ -381,7 +381,7 @@ export class SuiWallet implements Wallet {
 		);
 	};
 
-	#signPersonalMessage: SuiSignPersonalMessageMethod = async ({ message, account }) => {
+	#signPersonalMessage: IkaSignPersonalMessageMethod = async ({ message, account }) => {
 		return mapToPromise(
 			this.#send<SignMessageRequest, SignMessageRequest>({
 				type: 'sign-message-request',
@@ -431,7 +431,7 @@ export class SuiWallet implements Wallet {
 	}
 
 	#setActiveChain({ env }: NetworkEnvType) {
-		this.#activeChain = env === API_ENV.customRPC ? 'sui:unknown' : API_ENV_TO_CHAIN[env];
+		this.#activeChain = env === API_ENV.customRPC ? 'ika:unknown' : API_ENV_TO_CHAIN[env];
 	}
 
 	#qredoConnect = async (input: QredoConnectInput): Promise<void> => {

@@ -1,0 +1,10 @@
+[package]
+name = "demo"
+edition = "2024.beta"
+
+[dependencies]
+Ika = { local = "../../../../ika-framework/packages/ika-framework" }
+
+[addresses]
+demo = "0x0"
+

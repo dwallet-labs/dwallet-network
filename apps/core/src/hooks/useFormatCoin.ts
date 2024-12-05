@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useFeatureValue } from '@growthbook/growthbook-react';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { CoinMetadata } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { CoinMetadata } from '@ika-io/ika/client';
+import { IKA_TYPE_ARG } from '@ika-io/ika/utils';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import BigNumber from 'bignumber.js';
 import { useMemo } from 'react';
@@ -54,7 +54,7 @@ type CoinMetadataOverrides = {
 };
 
 export function useCoinMetadata(coinType?: string | null) {
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const tokenMetadataOverrides = useFeatureValue<CoinMetadataOverrides>(
 		'token-metadata-overrides',
 		{},
@@ -67,15 +67,15 @@ export function useCoinMetadata(coinType?: string | null) {
 				throw new Error('Fetching coin metadata should be disabled when coin type is disabled.');
 			}
 
-			// Optimize the known case of SUI to avoid a network call:
-			if (coinType === SUI_TYPE_ARG) {
+			// Optimize the known case of IKA to avoid a network call:
+			if (coinType === IKA_TYPE_ARG) {
 				const metadata: CoinMetadata = {
 					id: null,
 					decimals: 9,
 					description: '',
 					iconUrl: null,
-					name: 'Sui',
-					symbol: 'SUI',
+					name: 'Ika',
+					symbol: 'IKA',
 				};
 
 				return metadata;

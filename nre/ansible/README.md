@@ -1,6 +1,6 @@
-# Configure a Linux system as a Sui Node using Ansible
+# Configure a Linux system as a Ika Node using Ansible
 
-This is a self contained Ansible role for configuring a Linux system as a Sui Node.
+This is a self contained Ansible role for configuring a Linux system as a Ika Node.
 
 Tested with `ansible [core 2.13.4]` and:
 
@@ -13,7 +13,7 @@ Tested with `ansible [core 2.13.4]` and:
 
 2. Add the target host to the [Ansible Inventory](./inventory.yaml)
 
-3. Update the `sui_release` var in the [Ansible Inventory](./inventory.yaml)
+3. Update the `ika_release` var in the [Ansible Inventory](./inventory.yaml)
 
 4. Update [validator.yaml](../config/validator.yaml) and copy it to this directory.
 
@@ -25,7 +25,7 @@ Tested with `ansible [core 2.13.4]` and:
 
 - Configure everything:
 
-`ansible-playbook -i inventory.yaml sui-node.yaml -e host=$inventory_name`
+`ansible-playbook -i inventory.yaml ika-node.yaml -e host=$inventory_name`
 
 - Software update:
 

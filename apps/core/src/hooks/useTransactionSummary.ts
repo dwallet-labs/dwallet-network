@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
 	DryRunTransactionBlockResponse,
-	type SuiTransactionBlockResponse,
-} from '@mysten/sui/client';
+	type IkaTransactionBlockResponse,
+} from '@ika-io/ika/client';
 import { useMemo } from 'react';
 
 import { getBalanceChangeSummary } from '../utils/transaction/getBalanceChangeSummary';
@@ -11,7 +11,7 @@ import { getGasSummary } from '../utils/transaction/getGasSummary';
 import { getLabel } from '../utils/transaction/getLabel';
 import {
 	getObjectChangeSummary,
-	SuiObjectChangeWithDisplay,
+	IkaObjectChangeWithDisplay,
 } from '../utils/transaction/getObjectChangeSummary';
 import { getObjectDisplayLookup } from '../utils/transaction/getObjectDisplayLookup';
 import { useMultiGetObjects } from './useMultiGetObjects';
@@ -21,7 +21,7 @@ export function useTransactionSummary({
 	currentAddress,
 	recognizedPackagesList,
 }: {
-	transaction?: SuiTransactionBlockResponse | DryRunTransactionBlockResponse;
+	transaction?: IkaTransactionBlockResponse | DryRunTransactionBlockResponse;
 	currentAddress?: string;
 	recognizedPackagesList: string[];
 }) {
@@ -41,7 +41,7 @@ export function useTransactionSummary({
 				display: 'objectId' in change ? lookup?.get(change.objectId) : null,
 			})),
 		[lookup, objectChanges],
-	) as SuiObjectChangeWithDisplay[];
+	) as IkaObjectChangeWithDisplay[];
 
 	const summary = useMemo(() => {
 		if (!transaction) return null;

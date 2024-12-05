@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { getFullnodeUrl, IkaClient } from '@ika-io/ika/client';
+import { normalizeIkaAddress } from '@ika-io/ika/utils';
 
 import { ZkSendLink } from './claim.js';
 import { getContractIds } from './zk-bag.js';
@@ -14,7 +14,7 @@ export async function getSentTransactionsWithLinks({
 	limit = 10,
 	network = 'mainnet',
 	contract = getContractIds(network),
-	client = new SuiClient({ url: getFullnodeUrl(network) }),
+	client = new IkaClient({ url: getFullnodeUrl(network) }),
 	loadClaimedAssets = false,
 	...linkOptions
 }: {
@@ -29,9 +29,9 @@ export async function getSentTransactionsWithLinks({
 	host?: string;
 	path?: string;
 	claimApi?: string;
-	client?: SuiClient;
+	client?: IkaClient;
 }) {
-	const packageId = normalizeSuiAddress(contract.packageId);
+	const packageId = normalizeIkaAddress(contract.packageId);
 
 	const page = await client.queryTransactionBlocks({
 		filter: {
@@ -80,7 +80,7 @@ export async function getSentTransactionsWithLinks({
 							throw new Error('Expected Address input to be a Pure value');
 						}
 
-						const address = normalizeSuiAddress(input.value as string);
+						const address = normalizeIkaAddress(input.value as string);
 
 						const link = new ZkSendLink({
 							network,
@@ -125,7 +125,7 @@ export async function getSentTransactionsWithLinks({
 							throw new Error('Expected Address input to be a Pure value');
 						}
 
-						const address = normalizeSuiAddress(input.value as string);
+						const address = normalizeIkaAddress(input.value as string);
 
 						const link = new ZkSendLink({
 							network,

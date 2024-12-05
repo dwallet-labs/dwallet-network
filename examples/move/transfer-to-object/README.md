@@ -1,7 +1,7 @@
 # Transfer-to-Object: Cash Register Example
 
 This document explores various methods of implementing a cash register that can
-accept and process payments on Sui. We'll focus on highlighting the trade-offs
+accept and process payments on Ika. We'll focus on highlighting the trade-offs
 of each approach. Through these examples, you'll gain insights into the new
 transfer-to-object functionality and understand some of its applications and
 the types of issues it can address.
@@ -22,12 +22,12 @@ struct IdentifiedPayment has key, store {
     /// The unique id for the good/service being paid for
     payment_id: u64,
     /// The payment
-    coin: Coin<SUI>,
+    coin: Coin<IKA>,
 }
 ```
 
 Using this, customers can make a payment with a unique payment ID to an address
-using the function `fun make_payment(payment_id: u64, coin: Coin<SUI>, to: address)`.
+using the function `fun make_payment(payment_id: u64, coin: Coin<IKA>, to: address)`.
 This function creates an `IdentifiedPayment`, sends it to the `to`
 address, and emits an event with the payment's ID, the recipient, the amount
 paid, and the payer.
@@ -58,7 +58,7 @@ that you provided and match it against the amount owed.
 Later on (either asynchronously or in a batch at the end of the day), you can
 process the payments you've received by iterating over the set of
 `IdentifiedPayment` objects under your account, `unpack`ing them, and then
-using the unpacked SUI coin.
+using the unpacked IKA coin.
 
 Overall, this is a very simple representation for on-chain payments and
 relatively easy to set up. However, it has some issues:
@@ -97,7 +97,7 @@ the payment as a dynamic object field under it:
 public fun make_shared_payment(
     register_uid: &mut UID,
     payment_id: u64,
-    coin: Coin<SUI>,
+    coin: Coin<IKA>,
     ctx: &mut TxContext
 ) {
     let identified_payment = IdentifiedPayment {
@@ -136,7 +136,7 @@ With transfer-to-object, we can combine the benefits of the two previous impleme
 - An easy way of dynamically adding, removing, and enforcing permissions on who
   can withdraw payments.
 - Payments can still be made using the `identified_payment::make_payment`
-  function that uses `sui::transfer::transfer` under the hood, so payments can
+  function that uses `ika::transfer::transfer` under the hood, so payments can
   happen in parallel across all restaurant locations without needing to be
   sequenced against the shared `Register` object.
 
@@ -196,9 +196,9 @@ public fun handle_payment(
 One additional benefit of transfer-to-object is that, in addition to being able
 to specify custom transfer rules for `key`-only objects, you can also specify
 custom receiving rules for `key`-only objects in a very similar manner: if an
-object is `key`-only, then the `sui::transfer::receive` function can be called
+object is `key`-only, then the `ika::transfer::receive` function can be called
 in the module that defines the object, but not elsewhere. Elsewhere, the
-`sui::transfer::public_receive` function must be called and can only be used on
+`ika::transfer::public_receive` function must be called and can only be used on
 objects that also have the `store` ability.
 
 With this information, we can define a wrapper around `IdentifiedPayment`s

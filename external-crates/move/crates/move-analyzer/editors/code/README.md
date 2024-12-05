@@ -1,7 +1,7 @@
 # Move
 
 Provides language support for the Move programming language. For information about Move visit the
-language [documentation](https://docs.sui.io/concepts/sui-move-concepts).
+language [documentation](https://docs.ika.io/concepts/ika-move-concepts).
 
 # How to Install
 
@@ -21,12 +21,12 @@ definition, type on hover). Please see [Troubleshooting](#troubleshooting) for s
 the pre-built move-analyzer binary is not available for your platform or if you want to use move-analyzer
 binary stored in a different location.
 
-If you want to build and test Move code using the extension, you must install the `sui` binary on
-your machine - see [here](https://docs.sui.io/guides/developer/getting-started/sui-install) for
-instructions. The extension assumes that the `sui` binary is in your system path, but you can set
+If you want to build and test Move code using the extension, you must install the `ika` binary on
+your machine - see [here](https://docs.ika.io/guides/developer/getting-started/ika-install) for
+instructions. The extension assumes that the `ika` binary is in your system path, but you can set
 its custom location location using VSCode's settings (`⌘` + `,` on macOS, or use the menu item *Code >
-Preferences > Settings*). Search for the `move.sui.path` user setting, set it to the new location of
-the `sui` binary, and restart VSCode.
+Preferences > Settings*). Search for the `move.ika.path` user setting, set it to the new location of
+the `ika` binary, and restart VSCode.
 
 # Troubleshooting
 
@@ -39,21 +39,21 @@ that you have Rust development already [installed](https://www.rust-lang.org/too
 This can be done in two steps:
 
 1. Install the move-analyzer installation prerequisites for your platform. They are the same
-as prerequisites for Sui installation - for Linux, macOS and Windows these prerequisites and
+as prerequisites for Ika installation - for Linux, macOS and Windows these prerequisites and
 their installation instructions can be found
-[here](https://docs.sui.io/guides/developer/getting-started/sui-install#additional-prerequisites-by-operating-system)
-2. Invoke `cargo install --git https://github.com/MystenLabs/sui sui-move-lsp` to install the
+[here](https://docs.ika.io/guides/developer/getting-started/ika-install#additional-prerequisites-by-operating-system)
+2. Invoke `cargo install --git https://github.com/MystenLabs/sui ika-move-lsp` to install the
 `move-analyzer` language server in your Cargo binary directory, which is typically located
 in the `~/.cargo/bin` (macOS/Linux) or `C:\Users\USER\.cargo\bin` (Windows) directory.
-3. Copy the move-analyzer binary to `~/.sui/bin` (macOS/Linux) or `C:\Users\USER\.sui\bin`
+3. Copy the move-analyzer binary to `~/.ika/bin` (macOS/Linux) or `C:\Users\USER\.ika\bin`
 (Windows), which is its default location (create this directory if it does not exist).
 
 ## What if I want to use a move-analyzer binary in a different location?
 
 If you are on Windows, the following answer assumes that your Windows user name is `USER`.
 
-If your `move-analyzer` binary is in a different directory than the default one (`~/.sui/bin`
-on macOS or Linux, or `C:\Users\USER\.sui\bin` on Windows), you may have the extension look
+If your `move-analyzer` binary is in a different directory than the default one (`~/.ika/bin`
+on macOS or Linux, or `C:\Users\USER\.ika\bin` on Windows), you may have the extension look
 for the binary at this new location using VSCode's settings (`⌘` + `,` on macOS, or use the menu
 item *Code > Preferences > Settings*). Search for the `move.server.path` user setting,
 set it to the new location of the `move-analyzer` binary, and restart VSCode.
@@ -61,14 +61,14 @@ set it to the new location of the `move-analyzer` binary, and restart VSCode.
 ## What if advanced features (e.g., go to def) do not work, particularly after re-install or upgrade
 
 Assuming you did not specify a different location for the move-analyzer binary and that the
-move-analyzer binary already exists in the default location (`~/.sui/bin` on macOS or Linux, or
-`C:\Users\USER\.sui\bin` on Windows), delete the existing move-analyzer binary and reinstall the
+move-analyzer binary already exists in the default location (`~/.ika/bin` on macOS or Linux, or
+`C:\Users\USER\.ika\bin` on Windows), delete the existing move-analyzer binary and reinstall the
 extension.
 
 
 ## What if everything else fails?
 
-Check [Sui Developer Forum](https://forums.sui.io/c/technical-support) to see if the problem
+Check [Ika Developer Forum](https://forums.ika.io/c/technical-support) to see if the problem
 has already been reported and, if not, report it there.
 
 # Features

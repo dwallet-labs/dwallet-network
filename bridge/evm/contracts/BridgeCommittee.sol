@@ -6,7 +6,7 @@ import "./interfaces/IBridgeCommittee.sol";
 import "./utils/CommitteeUpgradeable.sol";
 
 /// @title BridgeCommittee
-/// @notice This contract manages the committee members of the SuiBridge. The committee members are
+/// @notice This contract manages the committee members of the IkaBridge. The committee members are
 /// responsible for signing messages used to update various bridge state including the committee itself.
 /// The contract also provides functions to manage a blocklist of committee members whose signatures are invalid
 /// once they are blocklisted.

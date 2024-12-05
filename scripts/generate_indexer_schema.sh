@@ -2,7 +2,7 @@
 # Copyright (c) Mysten Labs, Inc.
 # SPDX-License-Identifier: Apache-2.0
 #
-# Update sui-indexer's generated src/schema.rs based on the schema after
+# Update ika-indexer's generated src/schema.rs based on the schema after
 # running all its migrations on a clean database. Expects the first argument to
 # be a port to run the temporary database on (defaults to 5433).
 
@@ -67,12 +67,12 @@ done
 # Run all migrations on the new database
 diesel migration run                                                          \
   --database-url "postgres://postgres:postgrespw@localhost:$PORT"             \
-  --migration-dir "$REPO/crates/sui-indexer/migrations/pg"
+  --migration-dir "$REPO/crates/ika-indexer/migrations/pg"
 
 # Generate the schema.rs file, excluding partition tables and including the
 # copyright notice.
 diesel print-schema                                                           \
   --database-url "postgres://postgres:postgrespw@localhost:$PORT"             \
-  --patch-file "$REPO/crates/sui-indexer/src/schema.patch"                    \
+  --patch-file "$REPO/crates/ika-indexer/src/schema.patch"                    \
   --except-tables "^objects_version_|_partition_"                             \
-  > "$REPO/crates/sui-indexer/src/schema.rs"
+  > "$REPO/crates/ika-indexer/src/schema.rs"

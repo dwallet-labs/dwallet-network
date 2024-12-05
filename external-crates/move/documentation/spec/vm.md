@@ -31,7 +31,7 @@ a `Session` which is the only way to talk to the runtime.
 
 The objective of a `Session` is to create and manage the data cache for a set
 of invocations into the VM. It is also intended to return side effects in a
-format that is suitable to the adapter.
+format that is ikatable to the adapter.
 A `Session` forwards calls to the `Runtime` which is where the logic and
 implementation of the VM lives and starts.
 
@@ -49,7 +49,7 @@ This may require a network access
 2. the binary is deserialized and verified
 3. dependencies of the module are loaded (repeat 1.–4. for each dependency)
 4. the module is linked to its dependencies (transformed in a representation
-suitable for runtime) and cached by the loader.
+ikatable for runtime) and cached by the loader.
 
 So a reference to a loaded module does not perform any fetching from the
 network, or verification, or transformations into runtime structures

@@ -23,7 +23,7 @@
 .card, .cardCTA {
   background-color: rgba(247, 247, 248, .05);
   border: 1px solid;
-  border-color: var(--sui-line);
+  border-color: var(--ika-line);
   display: flex;
   flex-direction: column;
   padding: 1.875rem;
@@ -45,10 +45,10 @@
 .cardLink {
   display: flex;
   justify-content: flex-start;
-  border-top: solid 1px var(--sui-line);
-  border-bottom: solid 1px var(--sui-line);
+  border-top: solid 1px var(--ika-line);
+  border-bottom: solid 1px var(--ika-line);
   padding: .5rem 0;
-  color: var(--sui-gray);
+  color: var(--ika-gray);
   position: relative;
 }
 
@@ -67,7 +67,7 @@
   height: 18px;
 }
 .cardLink:after:hover svg path {
-  stroke: var(--sui-primary);
+  stroke: var(--ika-primary);
 }
 
 .cardLink:hover {
@@ -106,7 +106,7 @@
   line-height: 1.75rem;
   letter-spacing: -0.04em;
   text-align: left;
-  color: var(--sui-white);
+  color: var(--ika-white);
   border-radius: 36px;
   display: flex;
   flex-direction: column;
@@ -132,7 +132,7 @@
 .why {
   display: grid;
   width: 100%;
-  max-width: var(--sui-max-width-desktop);
+  max-width: var(--ika-max-width-desktop);
   grid-template-columns: 2fr 4fr;
   column-gap: .5rem;
   margin: 0 auto;
@@ -143,7 +143,7 @@
 .TwoColParagraph {
   display: flex;
   flex-direction: column;
-  max-width: var(--sui-max-width-desktop);
+  max-width: var(--ika-max-width-desktop);
   margin: 5rem auto;
   padding: 0 1rem;
 }
@@ -153,7 +153,7 @@
   flex-direction: row;
   justify-content: flex-start;
   padding: 2.5rem 0;
-  border-bottom: solid 1px var(--sui-line);
+  border-bottom: solid 1px var(--ika-line);
 }
 
 .TwoColItem:last-child {
@@ -162,7 +162,7 @@
 
 .TwoColItem span {
   flex: 4;
-  color: var(--sui-white);
+  color: var(--ika-white);
   font-family: var(--headerFont);
   font-size: 2rem;
   font-weight: 400;
@@ -174,7 +174,7 @@
 
 .TwoColItem p {
   flex: 8;
-  color: var(--sui-gray);
+  color: var(--ika-gray);
   font-family: Inter;
   font-size: 1.125rem;
   font-weight: 500;

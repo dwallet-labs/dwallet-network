@@ -56,7 +56,7 @@ export class Secp256k1PublicKey extends PublicKey {
 	}
 
 	/**
-	 * Return the Sui address associated with this Secp256k1 public key
+	 * Return the Ika address associated with this Secp256k1 public key
 	 */
 	flag(): number {
 		return SIGNATURE_SCHEME_TO_FLAG['Secp256k1'];

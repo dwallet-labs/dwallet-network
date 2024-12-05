@@ -27,27 +27,27 @@
 
 import {
   formatAddress,
-  isValidSuiAddress,
-  isValidSuiObjectId,
-  MIST_PER_SUI,
-} from '@mysten/sui/utils';
-import { bcs } from '@mysten/sui/bcs';
+  isValidIkaAddress,
+  isValidIkaObjectId,
+  NIKA_PER_IKA,
+} from '@ika-io/ika/utils';
+import { bcs } from '@ika-io/ika/bcs';
 import { program } from 'commander';
 import { KIOSK_LISTING, KioskClient, KioskTransaction, Network } from '@mysten/kiosk';
-import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { Transaction } from '@mysten/sui/transactions';
+import { IkaClient, getFullnodeUrl } from '@ika-io/ika/client';
+import { Ed25519Keypair } from '@ika-io/ika/keypairs/ed25519';
+import { Transaction } from '@ika-io/ika/transactions';
 
 /**
  * List of known types for shorthand search in the `search` command.
  */
 const KNOWN_TYPES = {
-  suifren:
-    '0x80d7de9c4a56194087e0ba0bf59492aa8e6a5ee881606226930827085ddf2332::suifrens::SuiFren<0x80d7de9c4a56194087e0ba0bf59492aa8e6a5ee881606226930827085ddf2332::capy::Capy>',
+  ikafren:
+    '0x80d7de9c4a56194087e0ba0bf59492aa8e6a5ee881606226930827085ddf2332::ikafrens::IkaFren<0x80d7de9c4a56194087e0ba0bf59492aa8e6a5ee881606226930827085ddf2332::capy::Capy>',
 };
 
 /** JsonRpcProvider for the Testnet */
-const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+const client = new IkaClient({ url: getFullnodeUrl('testnet') });
 
 const kioskClient = new KioskClient({
   client,
@@ -115,9 +115,9 @@ program
 
 program
   .command('list')
-  .description('list an item in the Kiosk for the specified amount of SUI')
+  .description('list an item in the Kiosk for the specified amount of IKA')
   .argument('<item ID>', 'The ID of the item to list')
-  .argument('<amount MIST>', 'The amount of SUI to list the item for')
+  .argument('<amount NIKA>', 'The amount of IKA to list the item for')
   .action(listItem);
 
 program
@@ -139,13 +139,13 @@ program
 program
   .command('search')
   .description('search open listings in Kiosks')
-  .argument('<type>', 'The type of the item to search for. \nAvailable aliases: "suifren", "test"')
+  .argument('<type>', 'The type of the item to search for. \nAvailable aliases: "ikafren", "test"')
   .action(searchType);
 
 program
   .command('policy')
   .description('search for a TransferPolicy for the specified type')
-  .argument('<type>', 'The type of the item to search for. \nAvailable aliases: "suifren", "test"')
+  .argument('<type>', 'The type of the item to search for. \nAvailable aliases: "ikafren", "test"')
   .action(searchPolicy);
 
 program
@@ -165,7 +165,7 @@ program.parse(process.argv);
  * Description: creates and shares a Kiosk
  */
 async function newKiosk() {
-  const sender = keypair.getPublicKey().toSuiAddress();
+  const sender = keypair.getPublicKey().toIkaAddress();
   const kioskCap = await findKioskCap().catch(() => null);
 
   if (kioskCap !== null) {
@@ -187,10 +187,10 @@ async function newKiosk() {
  * Description: view the inventory of the sender (or a specified address)
  */
 async function showInventory({ address, onlyDisplay, cursor, filter }) {
-  const owner = address || keypair.getPublicKey().toSuiAddress();
+  const owner = address || keypair.getPublicKey().toIkaAddress();
 
-  if (!isValidSuiAddress(owner)) {
-    throw new Error(`Invalid SUI address: "${owner}"`);
+  if (!isValidIkaAddress(owner)) {
+    throw new Error(`Invalid IKA address: "${owner}"`);
   }
 
   const options = {
@@ -239,16 +239,16 @@ async function showKioskContents({ id, address }) {
   let kioskId = null;
 
   if (id) {
-    if (!isValidSuiObjectId(id)) {
+    if (!isValidIkaObjectId(id)) {
       throw new Error(`Invalid Kiosk ID: "${id}"`);
     }
 
     kioskId = id;
   } else {
-    const sender = address || keypair.getPublicKey().toSuiAddress();
+    const sender = address || keypair.getPublicKey().toIkaAddress();
 
-    if (!isValidSuiAddress(sender)) {
-      throw new Error(`Invalid SUI address: "${sender}"`);
+    if (!isValidIkaAddress(sender)) {
+      throw new Error(`Invalid IKA address: "${sender}"`);
     }
 
     const kioskCap = await findKioskCap(sender).catch(() => null);
@@ -289,7 +289,7 @@ async function showKioskContents({ id, address }) {
       isLocked: item.isLocked,
       listed: !!item.listing,
       isPublic: (item.listing && !item.listing.isExclusive) || false,
-      'price (SUI)': item.listing ? formatAmount(item.listing.price) : 'N/A',
+      'price (IKA)': item.listing ? formatAmount(item.listing.price) : 'N/A',
     }))
     .sort((a, b) => a.listed - b.listed);
 
@@ -302,13 +302,13 @@ async function showKioskContents({ id, address }) {
  */
 async function placeItem(itemId) {
   const kioskCap = await findKioskCap().catch(() => null);
-  const owner = keypair.getPublicKey().toSuiAddress();
+  const owner = keypair.getPublicKey().toIkaAddress();
 
   if (kioskCap === null) {
     throw new Error('No Kiosk found for sender; use `new` to create one');
   }
 
-  if (!isValidSuiObjectId(itemId)) {
+  if (!isValidIkaObjectId(itemId)) {
     throw new Error('Invalid Item ID: "%s"', itemId);
   }
 
@@ -344,13 +344,13 @@ async function placeItem(itemId) {
  */
 async function lockItem(itemId) {
   const cap = await findKioskCap().catch(() => null);
-  const owner = keypair.getPublicKey().toSuiAddress();
+  const owner = keypair.getPublicKey().toIkaAddress();
 
   if (cap === null) {
     throw new Error('No Kiosk found for sender; use `new` to create one');
   }
 
-  if (!isValidSuiObjectId(itemId)) {
+  if (!isValidIkaObjectId(itemId)) {
     throw new Error('Invalid Item ID: "%s"', itemId);
   }
 
@@ -394,13 +394,13 @@ async function lockItem(itemId) {
  */
 async function takeItem(itemId, { address }) {
   const cap = await findKioskCap().catch(() => null);
-  const receiver = address || keypair.getPublicKey().toSuiAddress();
+  const receiver = address || keypair.getPublicKey().toIkaAddress();
 
-  if (!isValidSuiAddress(receiver)) {
+  if (!isValidIkaAddress(receiver)) {
     throw new Error('Invalid receiver address: "%s"', receiver);
   }
 
-  if (!isValidSuiObjectId(itemId)) {
+  if (!isValidIkaObjectId(itemId)) {
     throw new Error('Invalid Item ID: "%s"', itemId);
   }
 
@@ -429,7 +429,7 @@ async function takeItem(itemId, { address }) {
 
 /**
  * Command: `list`
- * Description: Lists an item in the Kiosk for the specified amount of SUI
+ * Description: Lists an item in the Kiosk for the specified amount of IKA
  */
 async function listItem(itemId, price) {
   const cap = await findKioskCap().catch(() => null);
@@ -438,7 +438,7 @@ async function listItem(itemId, price) {
     throw new Error('No Kiosk found for sender; use `new` to create one');
   }
 
-  if (!isValidSuiObjectId(itemId)) {
+  if (!isValidIkaObjectId(itemId)) {
     throw new Error('Invalid Item ID: "%s"', itemId);
   }
 
@@ -472,7 +472,7 @@ async function delistItem(itemId) {
     throw new Error('No Kiosk found for sender; use `new` to create one');
   }
 
-  if (!isValidSuiObjectId(itemId)) {
+  if (!isValidIkaObjectId(itemId)) {
     throw new Error('Invalid Item ID: "%s"', itemId);
   }
 
@@ -504,11 +504,11 @@ async function delistItem(itemId) {
 async function purchaseItem(itemId, opts) {
   const { kiosk: inputKioskId } = opts;
 
-  if (inputKioskId && !isValidSuiObjectId(inputKioskId)) {
+  if (inputKioskId && !isValidIkaObjectId(inputKioskId)) {
     throw new Error('Invalid Kiosk ID: "%s"', inputKioskId);
   }
 
-  if (!isValidSuiObjectId(itemId)) {
+  if (!isValidIkaObjectId(itemId)) {
     throw new Error('Invalid Item ID: "%s"', itemId);
   }
 
@@ -660,7 +660,7 @@ async function searchPolicy(type) {
  * Description: Withdraws funds from the Kiosk and send them to sender.
  */
 async function withdrawAll() {
-  const sender = keypair.getPublicKey().toSuiAddress();
+  const sender = keypair.getPublicKey().toIkaAddress();
   const cap = await findKioskCap(sender).catch(() => null);
   if (cap === null) {
     throw new Error('No Kiosk found for sender; use `new` to create one');
@@ -678,7 +678,7 @@ async function withdrawAll() {
  * Description: Shows the Publisher objects of the current user.
  */
 async function showPublisher() {
-  const sender = keypair.getPublicKey().toSuiAddress();
+  const sender = keypair.getPublicKey().toIkaAddress();
   const result = await client.getOwnedObjects({
     owner: sender,
     filter: { StructType: '0x2::package::Publisher' },
@@ -713,9 +713,9 @@ async function showPublisher() {
  * and sets it on the kioskClient instance.
  */
 async function findKioskCap(address) {
-  const sender = address || keypair.getPublicKey().toSuiAddress();
+  const sender = address || keypair.getPublicKey().toIkaAddress();
 
-  if (!isValidSuiAddress(sender)) {
+  if (!isValidIkaAddress(sender)) {
     throw new Error(`Invalid address "${sender}"`);
   }
 
@@ -763,7 +763,7 @@ async function sendTx(tx) {
       console.log('Storage rebate:            %s', gas.storageRebate);
       console.log('NonRefundable Storage Fee: %s', gas.nonRefundableStorageFee);
       console.log(
-        'Total Gas:                 %s SUI (%s MIST)',
+        'Total Gas:                 %s IKA (%s NIKA)',
         formatAmount(total),
         total.toString(),
       );
@@ -791,15 +791,15 @@ function formatType(type) {
 }
 
 /**
- * Formats the MIST into SUI.
+ * Formats the NIKA into IKA.
  */
 function formatAmount(amount) {
   if (!amount) {
     return null;
   }
 
-  if (amount <= MIST_PER_SUI) {
-    return Number(amount) / Number(MIST_PER_SUI);
+  if (amount <= NIKA_PER_IKA) {
+    return Number(amount) / Number(NIKA_PER_IKA);
   }
 
   let len = amount.toString().length;

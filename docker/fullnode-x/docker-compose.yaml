@@ -5,7 +5,7 @@ services:
   fullnode:
     build:
       context: ../..
-      dockerfile: ./docker/sui-node/Dockerfile
+      dockerfile: ./docker/ika-node/Dockerfile
       args:
         # update with git sha of whichever branch you're building on.
         GIT_REVISION: db24658bc9
@@ -16,12 +16,12 @@ services:
       - RUST_JSON_LOG="true"
       - RUST_LOG="info"
       # don't use debug, it generates volumes of data.
-    image: sui-node:latest
-    command: /opt/sui/entry.sh
+    image: ika-node:latest
+    command: /opt/ika/entry.sh
     restart: unless-stopped
     # populate your local ./fullnode/config/ directory with fullnode.yaml and genesis.blob for the network you want to use.
     volumes:
-      - ./fullnode:/opt/sui
+      - ./fullnode:/opt/ika
     ports:
       - 9000
       - 9184
@@ -32,16 +32,16 @@ services:
   indexer:
     build:
       context: ../..
-      dockerfile: ./docker/sui-indexer/Dockerfile
-    image: sui-indexer:latest
-    command: /opt/sui/indexer.sh
+      dockerfile: ./docker/ika-indexer/Dockerfile
+    image: ika-indexer:latest
+    command: /opt/ika/indexer.sh
     restart: unless-stopped
     volumes:
-      - ./indexer:/opt/sui
+      - ./indexer:/opt/ika
     environment:
       - RUST_LOG="info"
       - RUST_JSON_LOG="true"
-      - DATABASE_URL=postgres://postgres:admin@postgres:5432/sui_indexer_testnet
+      - DATABASE_URL=postgres://postgres:admin@postgres:5432/ika_indexer_testnet
       - RPC_CLIENT_URL=http://fullnode:9000
     ports:
       - target: 9000

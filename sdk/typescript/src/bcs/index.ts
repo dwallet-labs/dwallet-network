@@ -27,7 +27,7 @@ import {
 	SenderSignedTransaction,
 	SharedObjectRef,
 	StructTag,
-	SuiObjectRef,
+	IkaObjectRef,
 	TransactionData,
 	TransactionDataV1,
 	TransactionExpiration,
@@ -41,7 +41,7 @@ export type { TypeTag } from './types.js';
 export { TypeTagSerializer } from './type-tag-serializer.js';
 export { BcsType, type BcsTypeOptions } from '@mysten/bcs';
 
-const suiBcs = {
+const ikaBcs = {
 	...bcs,
 	U8: bcs.u8(),
 	U16: bcs.u16(),
@@ -74,7 +74,7 @@ const suiBcs = {
 	SenderSignedTransaction,
 	SharedObjectRef,
 	StructTag,
-	SuiObjectRef,
+	IkaObjectRef,
 	Command,
 	TransactionData,
 	TransactionDataV1,
@@ -84,4 +84,4 @@ const suiBcs = {
 	TransactionEffects,
 };
 
-export { suiBcs as bcs };
+export { ikaBcs as bcs };

@@ -54,7 +54,7 @@ export class ImportedAccount
 		};
 		return {
 			type: 'imported',
-			address: keyPair.getPublicKey().toSuiAddress(),
+			address: keyPair.getPublicKey().toIkaAddress(),
 			publicKey: keyPair.getPublicKey().toBase64(),
 			encrypted: await encrypt(inputs.password, dataToEncrypt),
 			lastUnlockedOn: null,

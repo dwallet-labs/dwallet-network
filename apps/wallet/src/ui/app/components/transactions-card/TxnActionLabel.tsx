@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Text } from '_app/shared/text';
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@ika-io/ika/utils';
 
 type TxnTypeProps = {
 	address: string;

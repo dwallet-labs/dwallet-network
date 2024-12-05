@@ -10,7 +10,7 @@ export const MOVE_CONF_NAME = 'move';
 export const LINT_OPT = 'lint';
 export const TYPE_HINTS_OPT = 'inlay-hints.type';
 export const PARAM_HINTS_OPT = 'inlay-hints.param';
-export const SUI_PATH_OPT = 'sui.path';
+export const IKA_PATH_OPT = 'ika.path';
 export const SERVER_PATH_OPT = 'server.path';
 
 /**
@@ -33,7 +33,7 @@ export class Configuration {
 
     constructor() {
         this.configuration = vscode.workspace.getConfiguration(MOVE_CONF_NAME);
-        this.defaultServerDir = vscode.Uri.joinPath(vscode.Uri.file(os.homedir()), '.sui', 'bin');
+        this.defaultServerDir = vscode.Uri.joinPath(vscode.Uri.file(os.homedir()), '.ika', 'bin');
         if (process.platform === 'win32') {
             this.serverName = 'move-analyzer.exe';
         } else {
@@ -56,18 +56,18 @@ export class Configuration {
         return path.resolve(serverPath);
     }
 
-    /** The path to the Sui binary. */
-    get suiPath(): string {
-        const suiBin = process.platform === 'win32' ? 'sui.exe' : 'sui';
-        const suiPath = this.configuration.get<string | null >(SUI_PATH_OPT) ?? suiBin;
+    /** The path to the Ika binary. */
+    get ikaPath(): string {
+        const ikaBin = process.platform === 'win32' ? 'ika.exe' : 'ika';
+        const ikaPath = this.configuration.get<string | null >(IKA_PATH_OPT) ?? ikaBin;
 
-        if (suiPath === suiBin) {
-            return suiPath;
+        if (ikaPath === ikaBin) {
+            return ikaPath;
         }
-        if (suiPath.startsWith('~/')) {
-            return os.homedir() + suiPath.slice('~'.length);
+        if (ikaPath.startsWith('~/')) {
+            return os.homedir() + ikaPath.slice('~'.length);
         }
-        return path.resolve(suiPath);
+        return path.resolve(ikaPath);
     }
 
     get lint(): string {

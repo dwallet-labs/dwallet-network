@@ -38,6 +38,6 @@ vfs.workspace = true
 datatest-stable.workspace = true
 
 [[test]]
-name = "ide_testsuite"
+name = "ide_testikate"
 harness = false
 

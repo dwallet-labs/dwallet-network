@@ -44,7 +44,7 @@ INTERESTING_DIRECTORIES = [
     "kiosk",
     "narwhal",
     "nre",
-    "sui-execution",
+    "ika-execution",
 ]
 
 # Start release notes with these sections, if they contain relevant
@@ -194,9 +194,9 @@ def extract_notes_for_commit(commit):
 def extract_protocol_version(commit):
     """Find the max protocol version at this commit.
 
-    Assumes that it is being called from the root of the sui repository."""
+    Assumes that it is being called from the root of the ika repository."""
     for line in git(
-        "show", f"{commit}:crates/sui-protocol-config/src/lib.rs"
+        "show", f"{commit}:crates/ika-protocol-config/src/lib.rs"
     ).splitlines():
         if "const MAX_PROTOCOL_VERSION" not in line:
             continue
@@ -295,7 +295,7 @@ def do_generate(from_, to):
         print(f"## {impacted}")
 
         if impacted == "Protocol":
-            print(f"#### Sui Protocol Version in this release: `{protocol_version}`")
+            print(f"#### Ika Protocol Version in this release: `{protocol_version}`")
         print()
 
         for pr, note in reversed(notes):

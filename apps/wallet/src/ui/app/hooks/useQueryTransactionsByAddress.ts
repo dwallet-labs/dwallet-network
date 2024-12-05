@@ -3,12 +3,12 @@
 
 import { FEATURES } from '_src/shared/experimentation/features';
 import { useFeatureValue } from '@growthbook/growthbook-react';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { type SuiTransactionBlockResponse } from '@mysten/sui/client';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { type IkaTransactionBlockResponse } from '@ika-io/ika/client';
 import { useQuery } from '@tanstack/react-query';
 
 export function useQueryTransactionsByAddress(address: string | null) {
-	const rpc = useSuiClient();
+	const rpc = useIkaClient();
 	const refetchInterval = useFeatureValue(FEATURES.WALLET_ACTIVITY_REFETCH_INTERVAL, 20_000);
 
 	return useQuery({
@@ -39,7 +39,7 @@ export function useQueryTransactionsByAddress(address: string | null) {
 			]);
 
 			const inserted = new Map();
-			const uniqueList: SuiTransactionBlockResponse[] = [];
+			const uniqueList: IkaTransactionBlockResponse[] = [];
 
 			[...txnIds.data, ...fromTxnIds.data]
 				.sort((a, b) => Number(b.timestampMs ?? 0) - Number(a.timestampMs ?? 0))

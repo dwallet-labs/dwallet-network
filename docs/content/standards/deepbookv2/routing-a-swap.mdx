@@ -22,7 +22,7 @@ To use the smart routing functionality, one should first find the best route. Th
 public async findBestRoute(tokenInObject: string, tokenOut: string, amountIn: number): Promise<smartRouteResult> {
     // const tokenTypeIn: string = convertToTokenType(tokenIn, this.records);
     // should get the tokenTypeIn from tokenInObject
-    const tokenInfo = await this.suiClient.getObject({
+    const tokenInfo = await this.ikaClient.getObject({
         id: tokenInObject,
         options: {
             showType: true,
@@ -133,7 +133,7 @@ public async placeMarketOrderWithSmartRouting(
                 arguments: [
                     overrides.txb.object(String(poolInfo.clob)),
                     _amount,
-                    overrides.txb.object(normalizeSuiObjectId(this.configs.clock)),
+                    overrides.txb.object(normalizeIkaObjectId(this.configs.clock)),
                     _tokenOut,
                 ],
             });
@@ -147,7 +147,7 @@ public async placeMarketOrderWithSmartRouting(
                     _amount,
                     _tokenIn,
                     _tokenOut,
-                    overrides.txb.object(normalizeSuiObjectId(this.configs.clock)),
+                    overrides.txb.object(normalizeIkaObjectId(this.configs.clock)),
                 ],
             });
         }
@@ -159,9 +159,9 @@ public async placeMarketOrderWithSmartRouting(
             i += 1;
         }
     }
-    const r = await this.suiClient.dryRunTransactionBlock({
+    const r = await this.ikaClient.dryRunTransactionBlock({
         transactionBlock: await overrides.txb.build({
-            client: this.suiClient,
+            client: this.ikaClient,
         }),
     });
     if (r.effects.status.status === 'success') {

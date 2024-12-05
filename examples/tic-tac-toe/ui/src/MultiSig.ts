@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { PublicKey } from '@mysten/sui/cryptography';
-import { MultiSigPublicKey } from '@mysten/sui/multisig';
+import { PublicKey } from '@ika-io/ika/cryptography';
+import { MultiSigPublicKey } from '@ika-io/ika/multisig';
 
 /**
  * Generate the public key corresponding to a 1-of-N multi-sig
@@ -14,7 +14,7 @@ export function multiSigPublicKey(keys: PublicKey[]): MultiSigPublicKey {
 	// keys get equal weight and the threshold is 1.
 	const deduplicated: { [key: string]: PublicKey } = {};
 	for (const key of keys) {
-		deduplicated[key.toSuiAddress()] = key;
+		deduplicated[key.toIkaAddress()] = key;
 	}
 
 	return MultiSigPublicKey.fromPublicKeys({

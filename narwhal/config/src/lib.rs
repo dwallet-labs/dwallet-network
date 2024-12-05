@@ -33,7 +33,7 @@ pub mod utils;
 pub type Epoch = u64;
 
 // Opaque bytes uniquely identifying the current chain. Analogue of the
-// type in `sui-types` crate.
+// type in `ika-types` crate.
 #[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct ChainIdentifier([u8; 32]);
 

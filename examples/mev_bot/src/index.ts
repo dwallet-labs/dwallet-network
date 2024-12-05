@@ -1,9 +1,9 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { bcs, BcsType } from '@mysten/sui/bcs';
-import { SuiClient } from '@mysten/sui/client';
-import { TransactionBlock } from '@mysten/sui/transactions';
+import { bcs, BcsType } from '@ika-io/ika/bcs';
+import { IkaClient } from '@ika-io/ika/client';
+import { TransactionBlock } from '@ika-io/ika/transactions';
 import pLimit from 'p-limit';
 
 const limit = pLimit(5);
@@ -91,8 +91,8 @@ const PoolCreated = bcs.struct('PoolCreated', {
 	// We don't need other fields for the mev bot
 });
 
-// Create a client connected to the Sui network
-const client = new SuiClient({ url: 'https://sui-mainnet.mystenlabs.com/json-rpc' });
+// Create a client connected to the Ika network
+const client = new IkaClient({ url: 'https://ika-mainnet.mystenlabs.com/json-rpc' });
 
 // Retrieve all DeepBook pools using the PoolCreated events
 let allPools = await retrieveAllPools();
@@ -111,7 +111,7 @@ let allExpiredOrders = (await Promise.all(allExpiredOrdersPromises)).flat();
 // Create a transaction to clean up all expired orders and get the estimated storage fee rebate using devInspectTransactionBlock
 let { rebate } = await createCleanUpTransaction(allExpiredOrders);
 
-console.log(`Total estimated storage fee rebate: ${rebate / 1e9} SUI`);
+console.log(`Total estimated storage fee rebate: ${rebate / 1e9} IKA`);
 
 // Implementer Todo : sign and execute the transaction
 

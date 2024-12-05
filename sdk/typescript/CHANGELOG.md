@@ -1,4 +1,4 @@
-# @mysten/sui.js
+# @ika-io/ika.js
 
 ## 1.14.3
 
@@ -221,9 +221,9 @@
 
 ### Major Changes
 
-- a92b03de42: The Typescript SDK has been renamed to `@mysten/sui` and includes many new features
+- a92b03de42: The Typescript SDK has been renamed to `@ika-io/ika` and includes many new features
   and breaking changes. See the
-  [full migration guide](https://sdk.mystenlabs.com/typescript/migrations/sui-1.0) for details on
+  [full migration guide](https://sdk.mystenlabs.com/typescript/migrations/ika-1.0) for details on
   how to upgrade.
 
 ### Patch Changes
@@ -258,8 +258,8 @@
 
 ### Minor Changes
 
-- 929db4976a: Add normalizeSuiNSName and isValidSuiNSName utils, and add a format option to
-  SuiClient.resolveNameServiceNames
+- 929db4976a: Add normalizeIkaNSName and isValidIkaNSName utils, and add a format option to
+  IkaClient.resolveNameServiceNames
 
 ## 0.51.2
 
@@ -300,7 +300,7 @@
 - c08e3569ef: Export all keypair utilities
 - 9a14e61db4: Allow signer in signAndExecuteTransactionBlock to be a Signer rather than a Keypair
 - 13e922d9b1: Fix multiple shared objects not respecting mutable correctly
-- 220a766d86: Fix WebSocket constructor not being properly assigned in SuiClient HTTP transport
+- 220a766d86: Fix WebSocket constructor not being properly assigned in IkaClient HTTP transport
 - Updated dependencies [bae8802fe3]
   - @mysten/bcs@0.11.0
 
@@ -335,7 +335,7 @@
 
 ### Minor Changes
 
-- cdcfa76c43: Add a new client method for retrieving epoch metrics (suix_getEpochMetrics)
+- cdcfa76c43: Add a new client method for retrieving epoch metrics (ikax_getEpochMetrics)
 
 ### Patch Changes
 
@@ -351,16 +351,16 @@
 
   If you are using the `subscribeEvent` or `subscribeTransaction` in environments that do not
   support the `WebSocket` api natively (This will be true for most versions of Node.js) you will
-  need to provide a WebSocket implementation when creating your SuiClient. You can either use a
+  need to provide a WebSocket implementation when creating your IkaClient. You can either use a
   global polyfill for the WebSocket class, or pass a compatible WebSocket implementation into
-  SuiHTTPTransport (eg, using the `ws` package)
+  IkaHTTPTransport (eg, using the `ws` package)
 
   ```typescript
-  import { getFullnodeUrl, SuiClient, SuiHTTPTransport } from '@mysten/sui.js/client';
+  import { getFullnodeUrl, IkaClient, IkaHTTPTransport } from '@ika-io/ika.js/client';
   import { WebSocket } from 'ws';
 
-  new SuiClient({
-  	transport: new SuiHTTPTransport({
+  new IkaClient({
+  	transport: new IkaHTTPTransport({
   		url: getFullnodeUrl('mainnet'),
   		// The typescript definitions may not match perfectly, casting to never avoids these minor incompatibilities
   		WebSocketConstructor: WebSocket as never,
@@ -437,7 +437,7 @@
 ### Patch Changes
 
 - faa13ded9: Ensure that TransactionBlocks can be copied via structuredClone to workaround bug in
-  sui wallet
+  ika wallet
 - c5684bb52: rename zk to zkLogin
 
 ## 0.43.0
@@ -475,7 +475,7 @@
 
 ### Minor Changes
 
-- fd8589806: Remove all previously deprecated exports from @mysten/sui.js
+- fd8589806: Remove all previously deprecated exports from @ika-io/ika.js
 
 ## 0.41.2
 
@@ -494,7 +494,7 @@
 
 ### Minor Changes
 
-- ba8e3b857: Rename TransactionBlock generated type in @mysten/sui.js/client to SuiTransactionBlock
+- ba8e3b857: Rename TransactionBlock generated type in @ika-io/ika.js/client to IkaTransactionBlock
   to avoid conflicting names in exports
 
 ### Patch Changes
@@ -505,7 +505,7 @@
 
 ### Minor Changes
 
-- a503cad34: Add exports to `@mysten/sui.js/client` for rpc method params
+- a503cad34: Add exports to `@ika-io/ika.js/client` for rpc method params
 
 ### Patch Changes
 
@@ -524,31 +524,31 @@
 ### Minor Changes
 
 - 67e581a5a: Added FromOrToAddress Transaction Filter
-- cce6ffbcc: Add toSuiPublicKey method for retrieving the Sui representation of a raw public key
+- cce6ffbcc: Add toIkaPublicKey method for retrieving the Ika representation of a raw public key
 - 0f06d593a: Added a MultiSigPublicKey class for verifying multisig signatures
 - 09f4ed3fc: update signMessage to correctly wrap PersonalMessages before signing
 - 6d41059c7: Deprecate imports from the root path which can be imported from a modular export
-- cc6441f46: The Sui TS SDK has been broken up into a set of modular exports, and all exports from
+- cc6441f46: The Ika TS SDK has been broken up into a set of modular exports, and all exports from
   the root of the package have been deprecated. The following export paths have been added:
 
-  - `@mysten/sui.js/client` - A client for interacting with Sui RPC nodes.
-  - `@mysten/sui.js/bcs` - A BCS builder with pre-defined types for Sui.
-  - `@mysten/sui.js/transaction` - Utilities for building and interacting with transactions.
-  - `@mysten/sui.js/keypairs/*` - Modular exports for specific KeyPair implementations.
-  - `@mysten/sui.js/verify` - Methods for verifying transactions and messages.
-  - `@mysten/sui.js/cryptography` - Shared types and classes for cryptography.
-  - `@mysten/sui.js/multisig` - Utilities for working with multisig signatures.
-  - `@mysten/sui.js/utils` - Utilities for formatting and parsing various Sui types.
-  - `@mysten/sui.js/faucet`- Methods for requesting sui from a faucet.
+  - `@ika-io/ika.js/client` - A client for interacting with Ika RPC nodes.
+  - `@ika-io/ika.js/bcs` - A BCS builder with pre-defined types for Ika.
+  - `@ika-io/ika.js/transaction` - Utilities for building and interacting with transactions.
+  - `@ika-io/ika.js/keypairs/*` - Modular exports for specific KeyPair implementations.
+  - `@ika-io/ika.js/verify` - Methods for verifying transactions and messages.
+  - `@ika-io/ika.js/cryptography` - Shared types and classes for cryptography.
+  - `@ika-io/ika.js/multisig` - Utilities for working with multisig signatures.
+  - `@ika-io/ika.js/utils` - Utilities for formatting and parsing various Ika types.
+  - `@ika-io/ika.js/faucet`- Methods for requesting ika from a faucet.
 
   As part of this refactor we are deprecating a number of existing APIs:
 
-  - `JsonRPCProvider` - This Provider pattern is being replaced by a new `SuiClient`
+  - `JsonRPCProvider` - This Provider pattern is being replaced by a new `IkaClient`
   - `SignerWithProver` and `RawSigner` - The Concept of Signers is being removed from the SDK.
     Signing in verifying has been moved to the KeyPair classes, and the
-    `signAndExecuteTransactionBlock` method has been moved to the new `SuiClient`.
+    `signAndExecuteTransactionBlock` method has been moved to the new `IkaClient`.
   - The `superstruct` type definitions for types used by JsonRPCProvider are being replaced with
-    generated types exported from `@mysten/sui.js/client`. The new type definitions are pure
+    generated types exported from `@ika-io/ika.js/client`. The new type definitions are pure
     typescript types and can't be used for runtime validation. By generating these as types, it will
     be easier to keep them in sync with the RPC definitions and avoid discrepancies between the type
     definitions in the SDK and the data returned by RPC methods.
@@ -560,7 +560,7 @@
   The current release should be mostly backwards compatible, and all existing exports will continue
   to be available in this release (with deprecation warnings). With the large number of deprecations
   there may be functionality that should be moved into the new modular version of the SDK. If you
-  find there are features that were deprecated without a suitable replacement, we have created a
+  find there are features that were deprecated without a ikatable replacement, we have created a
   [Github Discussion thread](https://github.com/MystenLabs/sui/discussions/13150) to track those
   use-cases.
 
@@ -573,16 +573,16 @@
 
   #### Migrating JsonRpcProvider
 
-  The new SuiClient should mostly work as a drop in replacement for the `JsonRpcProvider` provider.
-  Setting up a `SuiClient` is slightly different, but once constructed should work just like a
+  The new IkaClient should mostly work as a drop in replacement for the `JsonRpcProvider` provider.
+  Setting up a `IkaClient` is slightly different, but once constructed should work just like a
   provider.
 
   ```diff
-  - import { JsonRpcProvider, devnetConnection } from '@mysten/sui.js';
-  + import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
+  - import { JsonRpcProvider, devnetConnection } from '@ika-io/ika.js';
+  + import { IkaClient, getFullnodeUrl } from '@ika-io/ika.js/client';
 
   - const provider = new JsonRpcProvider(localnetConnection);
-  + const client = new SuiClient({ url: getFullnodeUrl('localnet')});
+  + const client = new IkaClient({ url: getFullnodeUrl('localnet')});
   ```
 
   #### Signing TransactionBlocks
@@ -597,15 +597,15 @@
   -    RawSigner,
   -    TransactionBlock,
   -    localnetConnection,
-  - } from '@mysten/sui.js';
-  + import { Ed25519Keypair } from '@mysten/sui.js/keypairs/ed25519';
-  + import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
-  + import { TransactionBlock } from '@mysten/sui.js/transactions';
+  - } from '@ika-io/ika.js';
+  + import { Ed25519Keypair } from '@ika-io/ika.js/keypairs/ed25519';
+  + import { IkaClient, getFullnodeUrl } from '@ika-io/ika.js/client';
+  + import { TransactionBlock } from '@ika-io/ika.js/transactions';
 
     const keypair = new Ed25519Keypair()
   - const provider = new JsonRpcProvider(localnetConnection);
   - const signer = new RawSigner(keyPair, provider);
-  + const client = new SuiClient({ url: getFullnodeUrl('localnet')});
+  + const client = new IkaClient({ url: getFullnodeUrl('localnet')});
 
   - const result = await signer.signAndExecuteTransactionBlock({
   + const result = await client.signAndExecuteTransactionBlock({
@@ -617,25 +617,25 @@
 
   #### Migrating faucet requests
 
-  The ability to request Sui from a faucet was not added to `SuiClient`, instead you will need to
-  use a method `@mysten/sui.js/faucet` to make these requests
+  The ability to request Ika from a faucet was not added to `IkaClient`, instead you will need to
+  use a method `@ika-io/ika.js/faucet` to make these requests
 
   ```diff
-  - import { JsonRpcProvider, devnetConnection } from '@mysten/sui.js';
+  - import { JsonRpcProvider, devnetConnection } from '@ika-io/ika.js';
   - const provider = new JsonRpcProvider(devnetConnection);
-  + import { requestSuiFromFaucetV0, getFaucetHost } from '@mysten/sui.js/faucet';
+  + import { requestIkaFromFaucetV0, getFaucetHost } from '@ika-io/ika.js/faucet';
 
-  - await provider.requestSuiFromFaucet(
-  -  '<YOUR SUI ADDRESS>'
+  - await provider.requestIkaFromFaucet(
+  -  '<YOUR IKA ADDRESS>'
   - );
-  + await requestSuiFromFaucetV0({
+  + await requestIkaFromFaucetV0({
   +   host: getFaucetHost('devnet'),
-  +   recipient: '<YOUR SUI ADDRESS>',
+  +   recipient: '<YOUR IKA ADDRESS>',
   +});
   ```
 
-- 001148443: Introduce new `@mysten/sui.js/faucet` export, which should be used for all faucet
-  interactions. This deprecates the previous `requestSuiFromFaucet` APIs that existed on the
+- 001148443: Introduce new `@ika-io/ika.js/faucet` export, which should be used for all faucet
+  interactions. This deprecates the previous `requestIkaFromFaucet` APIs that existed on the
   `JsonRpcProvider` and `Signer` classes.
 
 ### Patch Changes
@@ -664,7 +664,7 @@
 - 36f2edff3: Use splitGenericParamaters util from bcs
 - 75d1a190d: Fix bug that prevented deserializing transaction blocks with a set expiration
 - c3a4ec57c: Add explicit dependency on events package
-- 2f37537d5: Update `SuiEventFilter` structure for `TimeRange` query.
+- 2f37537d5: Update `IkaEventFilter` structure for `TimeRange` query.
 - 00484bcc3: add method to create Ed25519Keypair from a mnemonic seed
 - Updated dependencies [36f2edff3]
   - @mysten/bcs@0.7.3
@@ -693,7 +693,7 @@
 
 ### Patch Changes
 
-- 09d77325a9: Add new SuiNS Toolkit package.
+- 09d77325a9: Add new IkaNS Toolkit package.
 
 ## 0.35.0
 
@@ -797,16 +797,16 @@
 
 ### Minor Changes
 
-- 956ec28eb: Change `signMessage` to return message bytes. Add support for sui:signMessage in the
+- 956ec28eb: Change `signMessage` to return message bytes. Add support for ika:signMessage in the
   wallet standard
 - 4adfbff73: Use Blake2b instead of sha3_256 for address generation
 - 4c4573ebe: Removed DevInspectResultsType and now DevInspectResults has a property results of
   ExecutionResultType and a property error
-- acc2edb31: Update schema for `SuiSystemState` and `DelegatedStake`
+- acc2edb31: Update schema for `IkaSystemState` and `DelegatedStake`
 - 941b03af1: Change functions in transactions.ts of ts-sdk such that: `getTotalGasUsed` and
   `getTotalGasUsedUpperBound` of ts-sdk return a `bigint`,fields of `gasCostSummary` are defined as
-  `string`, `epochId` is defined as `string`. In `sui-json-rpc` the corresponding types are defined
-  as `BigInt`. Introduce `SuiEpochId` type to `sui-json-rpc` types that is a `BigInt`.
+  `string`, `epochId` is defined as `string`. In `ika-json-rpc` the corresponding types are defined
+  as `BigInt`. Introduce `IkaEpochId` type to `ika-json-rpc` types that is a `BigInt`.
 - a6690ac7d: Changed the default behavior of `publish` to publish an upgreadeable-by-sender package
   instead of immutable.
 - a211dc03a: Change object digest from Base64 encoded to Base58 encoded for rpc version >= 0.28.0
@@ -831,30 +831,30 @@
   `getTotalTransactionBlocks`, `getReferenceGasPrice` return a `bigint`,
   `getLatestCheckpointSequenceNumber` returns a `string`, `gasPrice` of `devInspectTransactionBlock`
   is defined as a `string`, checkpoint sequence number of `getCheckpoint` is defined as a `string`,
-  `cursor` of `getCheckpoints` is defined as a `string`. Introduce `SuiCheckpointSequenceNumber`
-  type in sui-json-rpc-types that is a `BigInt` to use instead of `CheckpointSequenceNumber` of
-  sui-types.
+  `cursor` of `getCheckpoints` is defined as a `string`. Introduce `IkaCheckpointSequenceNumber`
+  type in ika-json-rpc-types that is a `BigInt` to use instead of `CheckpointSequenceNumber` of
+  ika-types.
 - 6bd88570c: Rework all coin APIs to take objects as arguments instead of positional arguments.
 - f1e42f792: Consolidate get_object and get_raw_object into a single get_object endpoint which now
-  takes an additional config parameter with type `SuiObjectDataOptions` and has a new return type
-  `SuiObjectResponse`. By default, only object_id, version, and digest are fetched.
+  takes an additional config parameter with type `IkaObjectDataOptions` and has a new return type
+  `IkaObjectResponse`. By default, only object_id, version, and digest are fetched.
 - 272389c20: Support for new versioned TransactionData format
-- 3de8de361: Remove `getSuiSystemState` method. Use `getLatestSuiSystemState` method instead.
-- be3c4f51e: Add `display` field in `SuiObjectResponse` for frontend rendering. See more details in
-  https://forums.sui.io/t/nft-object-display-proposal/4872
+- 3de8de361: Remove `getIkaSystemState` method. Use `getLatestIkaSystemState` method instead.
+- be3c4f51e: Add `display` field in `IkaObjectResponse` for frontend rendering. See more details in
+  https://forums.ika.io/t/nft-object-display-proposal/4872
 - dbe73d5a4: Update `executeTransaction` and `signAndExecuteTransaction` to take in an additional
-  parameter `SuiTransactionBlockResponseOptions` which is used to specify which fields to include in
-  `SuiTransactionBlockResponse` (e.g., transaction, effects, events, etc). By default, only the
+  parameter `IkaTransactionBlockResponseOptions` which is used to specify which fields to include in
+  `IkaTransactionBlockResponse` (e.g., transaction, effects, events, etc). By default, only the
   transaction digest will be included.
-- c82e4b454: Introduce BigInt struct to sui-json-rpc-types to serialize and deserialize amounts
-  to/from string. Change ts-sdk to serialize amounts of PaySui and Pay as string.
-- 7a2eaf4a3: Changing the SuiObjectResponse struct to use data/error fields instead of
+- c82e4b454: Introduce BigInt struct to ika-json-rpc-types to serialize and deserialize amounts
+  to/from string. Change ts-sdk to serialize amounts of PayIka and Pay as string.
+- 7a2eaf4a3: Changing the IkaObjectResponse struct to use data/error fields instead of
   details/status
 - 2ef2bb59e: Deprecate getTransactionDigestsInRange. This method will be removed before April 2023,
   please use `getTransactions` instead
 - 9b29bef37: Pass blake2b hash to signer API
 - 8700809b5: Add a new `getCheckpoints` endpoint that returns a paginated list of checkpoints.
-- 5c3b00cde: Add object id to staking pool and pool id to staked sui.
+- 5c3b00cde: Add object id to staking pool and pool id to staked ika.
 - 01272ab7d: Remove deprecated `getCheckpointContents`, `getCheckpointContentsByDigest`,
   `getCheckpointSummary` and `getCheckpointSummaryByDigest` methods.
 - 9822357d6: Add getStakesByIds to get DelegatedStake queried by id
@@ -863,17 +863,17 @@
 - da72e73a9: Change the address of Move package for staking and validator related Move modules.
 - a0955c479: Switch from 20 to 32-byte address. Match Secp256k1.deriveKeypair with Ed25519.
 - 0c9047698: Remove all gas selection APIs from the json rpc provider.
-- d5ef1b6e5: Added dependencies to publish command, dependencies now also returned from the sui move
+- d5ef1b6e5: Added dependencies to publish command, dependencies now also returned from the ika move
   CLI with the `--dump-bytecode-as-base64` flag
 - 0a7b42a6d: This changes almost all occurences of "delegate", "delegation" (and various
   capitalizations/forms) to their equivalent "stake"-based name. Function names, function argument
   names, RPC endpoints, Move functions, and object fields have been updated with this new naming
   convention.
-- 3de8de361: Remove `getValidators` API. Use `getLatestSuiSystemState` instead.
+- 3de8de361: Remove `getValidators` API. Use `getLatestIkaSystemState` instead.
 - dd348cf03: Refactor `getTransactions` to `queryTransactions`
 - 57c17e02a: Removed `JsonRpcProviderWithCache`, use `JsonRpcProvider` instead.
 - 65f1372dd: Rename `provider.getTransactionWithEffects` to `provider.getTransaction`. The new
-  method takes in an additional parameter `SuiTransactionBlockResponseOptions` to configure which
+  method takes in an additional parameter `IkaTransactionBlockResponseOptions` to configure which
   fields to fetch(transaction, effects, events, etc). By default, only the transaction digest will
   be returned.
 - a09239308: [testing only] an intent scope can be passed in to verifyMessage
@@ -884,16 +884,16 @@
 - d3170ba41: All JSON-RPC APIs now accept objects instead of positional arugments.
 - a6ffb8088: Removed events from transaction effects, TransactionEvents will now be provided in the
   TransactionResponse, along side TransactionEffects.
-- 3304eb83b: Refactor Rust SuiTransactionBlockKind to be internally tagged for Json serialization
-  with tag="type" and SuiEvent to be adjacently tagged with tag="type" and content="content"
+- 3304eb83b: Refactor Rust IkaTransactionBlockKind to be internally tagged for Json serialization
+  with tag="type" and IkaEvent to be adjacently tagged with tag="type" and content="content"
 - 4189171ef: Adds support for validator candidate.
 - 77bdf907f: When parsing u64, u128, and u256 values with bcs, they are now string encoded.
 - a74df16ec: Minor change to the system transaction format
 - 0f7aa6507: Switching the response type of the getOwnedObjects api to a paginatedObjects response,
   and also moving filtering to FN
 - 9b60bf700: Change all snake_case fields in checkpoint.ts and faucet.ts to camelCase
-- 64fb649eb: Remove old `SuiExecuteTransactionResponse` interface, and `CertifiedTransaction`
-  interface in favor of the new unified `SuiTransactionBlockResponse` interfaces.
+- 64fb649eb: Remove old `IkaExecuteTransactionResponse` interface, and `CertifiedTransaction`
+  interface in favor of the new unified `IkaTransactionBlockResponse` interfaces.
 - a6b0c4e5f: Changed the getOwnerObjectsForAddress api to getOwnedObjects, and added options/
   pagination to the parameters
 
@@ -963,7 +963,7 @@
 
 ### Minor Changes
 
-- 473005d8f: Add protocol_version to CheckpointSummary and SuiSystemObject. Consolidate end-of-epoch
+- 473005d8f: Add protocol_version to CheckpointSummary and IkaSystemObject. Consolidate end-of-epoch
   information in CheckpointSummary.
 - 59641dc29: Support for deserializing new ConsensusCommitPrologue system transaction
 - 629804d26: Remove usage of `Base64DataBuffer`, and use `Uint8Array` instead.
@@ -972,7 +972,7 @@
 ### Patch Changes
 
 - fcba70206: Add basic formatting utilities
-- ebe6c3945: Support deserializing `paySui` and `payAllSui` transactions
+- ebe6c3945: Support deserializing `payIka` and `payAllIka` transactions
 - e630f6832: Added string option to getCheckpointContents call in SDK to support 0.22.0
 
 ## 0.26.1
@@ -985,7 +985,7 @@
 
 ### Minor Changes
 
-- a8746d4e9: update SuiExecuteTransactionResponse
+- a8746d4e9: update IkaExecuteTransactionResponse
 - e6a71882f: Rename getDelegatedStake to getDelegatedStakes
 - 21781ba52: Secp256k1 signs 64-bytes signature [r, s] instead of [r, s, v] with recovery id
 
@@ -1030,7 +1030,7 @@
 - e26f47cbf: added getDelegatedStake and getValidators and validator type
 - b745cde24: Add a call(endpoint, params) method to invoke any RPC endpoint
 - 35e0df780: EventID should use TransactionDigest instead of TxSequence
-- 5cd51dd38: Deprecate sui_executeTransaction in favor of sui_executeTransactionSerializedSig
+- 5cd51dd38: Deprecate ika_executeTransaction in favor of ika_executeTransactionSerializedSig
 - 8474242af: Add methods for getDynamicFields and getDynamicFieldObject
 - f74181212: Add method to deserialize a public key, using it's schema and base64 data
 
@@ -1059,11 +1059,11 @@
     public method and without the need of signer so a dapp can use it
   - fixes edge cases with pay txs
 - bb14ffdc5: Remove ImmediateReturn and WaitForTxCert from ExecuteTransactionRequestType
-- d2015f815: Rebuilt type-narrowing utilties (e.g. `isSuiObject`) on top of Superstruct, which
+- d2015f815: Rebuilt type-narrowing utilties (e.g. `isIkaObject`) on top of Superstruct, which
   should make them more reliable. The type-narrowing functions are no longer exported, instead a
   Superstruct schema is exported, in addition to an `is` and `assert` function, both of which can be
-  used to replace the previous narrowing functions. For example, `isSuiObject(data)` becomes
-  `is(data, SuiObject)`.
+  used to replace the previous narrowing functions. For example, `isIkaObject(data)` becomes
+  `is(data, IkaObject)`.
 - 7d0f25b61: Add devInspectTransaction, which is similar to dryRunTransaction, but lets you call any
   Move function(including non-entry function) with arbitrary values.
 
@@ -1076,7 +1076,7 @@
 
 ### Minor Changes
 
-- ea71d8216: Use intent signing if sui version > 0.18
+- ea71d8216: Use intent signing if ika version > 0.18
 
 ### Patch Changes
 
@@ -1123,7 +1123,7 @@
 - db22728c1: \* adds dryRunTransaction support
   - adds getGasCostEstimation to the signer-with-provider that estimates the gas cost for a
     transaction
-- 3b510d0fc: adds coin transfer method to framework that uses pay and paySui
+- 3b510d0fc: adds coin transfer method to framework that uses pay and payIka
 
 ## 0.16.0
 
@@ -1157,7 +1157,7 @@
 ### Minor Changes
 
 - 8b4bea5e2: Remove gateway related APIs
-- e45b188a8: Introduce PaySui and PayAllSui native transaction types to TS SDK.
+- e45b188a8: Introduce PayIka and PayAllIka native transaction types to TS SDK.
 
 ### Patch Changes
 
@@ -1166,7 +1166,7 @@
 - ef3571dc8: Fix gas selection bug for a vector of objects
 - cccfe9315: Add deserialization util method to LocalTxnDataSerializer
 - 2dc594ef7: Introduce getCoinDenominationInfo, which returns denomination info of a coin, now only
-  supporting SUI coin.
+  supporting IKA coin.
 - 4f0c611ff: Protocol change to add 'initial shared version' to shared object references.
 
 ## 0.13.0
@@ -1187,7 +1187,7 @@
   of breaking changes on applications. When there's a mismatch between the TypeScript definitions
   and RPC response, the SDK now log a console warning instead of throwing an error.
 - 03e6b552b: Add util function to get coin balances
-- 4575c0a02: Fix type definition of SuiMoveNormalizedType
+- 4575c0a02: Fix type definition of IkaMoveNormalizedType
 - ccf7f148d: Added generic signAndExecuteTransaction method to the SDK, which can be used with any
   supported type of transaction.
 

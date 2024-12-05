@@ -34,7 +34,7 @@ prometheus.workspace = true
 store = { path = "../../crates/typed-store", package = "typed-store" }
 mysten-network = { path = "../../crates/mysten-network"}
 mysten-metrics = { path = "../../crates/mysten-metrics" }
-sui-protocol-config = { path = "../../crates/sui-protocol-config" }
+ika-protocol-config = { path = "../../crates/ika-protocol-config" }
 
 anemo.workspace = true
 anemo-tower.workspace = true

@@ -1,7 +1,7 @@
 {
-	"index": "Sui dApp Kit Quick Start",
+	"index": "Ika dApp Kit Quick Start",
 	"create-dapp": "@mysten/create-dapp",
-	"sui-client-provider": "SuiClientProvider",
+	"ika-client-provider": "IkaClientProvider",
 	"rpc-hooks": "RPC Hooks",
 	"wallet-provider": "WalletProvider",
 	"wallet-components": "Wallet Components",

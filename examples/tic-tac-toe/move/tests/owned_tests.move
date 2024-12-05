@@ -3,8 +3,8 @@
 
 #[test_only]
 module tic_tac_toe::owned_tests {
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::transfer::Receiving;
+    use ika::test_scenario::{Self as ts, Scenario};
+    use ika::transfer::Receiving;
     use tic_tac_toe::owned as ttt;
 
     const ADMIN: address = @0xAD;

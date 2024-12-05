@@ -43,7 +43,7 @@ def parse_args():
     generate_lib = subparsers.add_parser(
         "generate-lib",
         help=(
-            "Generate `sui-execution/src/lib.rs` based on the current set of "
+            "Generate `ika-execution/src/lib.rs` based on the current set of "
             "execution crates (i.e. without adding a new one).  Prints out "
             "what the contents of `lib.rs` would be without actually writing "
             "out to the file, if --dry-run flag is supplied."
@@ -151,10 +151,10 @@ def do_cut(args):
         print("Cut failed", file=stderr)
         exit(result.returncode)
 
-    update_toml(args.feature, Path() / "sui-execution" / "Cargo.toml")
+    update_toml(args.feature, Path() / "ika-execution" / "Cargo.toml")
     generate_impls(args.feature, impl_module)
 
-    with open(Path() / "sui-execution" / "src" / "lib.rs", mode="w") as lib:
+    with open(Path() / "ika-execution" / "src" / "lib.rs", mode="w") as lib:
         generate_lib(lib)
 
 
@@ -162,7 +162,7 @@ def do_generate_lib(args):
     if args.dry_run:
         generate_lib(stdout)
     else:
-        lib_path = Path() / "sui-execution" / "src" / "lib.rs"
+        lib_path = Path() / "ika-execution" / "src" / "lib.rs"
         with open(lib_path, mode="w") as lib:
             generate_lib(lib)
 
@@ -353,11 +353,11 @@ def cut_command(f):
     """Arguments for creating the cut for 'feature'."""
     return [
         *["./target/debug/cut", "--feature", f],
-        *["-d", f"sui-execution/latest:sui-execution/{f}:-latest"],
+        *["-d", f"ika-execution/latest:ika-execution/{f}:-latest"],
         *["-d", f"external-crates/move:external-crates/move/move-execution/{f}"],
-        *["-p", "sui-adapter-latest"],
-        *["-p", "sui-move-natives-latest"],
-        *["-p", "sui-verifier-latest"],
+        *["-p", "ika-adapter-latest"],
+        *["-p", "ika-move-natives-latest"],
+        *["-p", "ika-verifier-latest"],
         *["-p", "move-abstract-interpreter"],
         *["-p", "move-bytecode-verifier"],
         *["-p", "move-stdlib-natives"],
@@ -368,13 +368,13 @@ def cut_command(f):
 
 def cut_directories(f):
     """Directories containing crates for `feature`."""
-    sui_base = Path() / "sui-execution"
+    ika_base = Path() / "ika-execution"
     external = Path() / "external-crates"
 
     crates = [
-        sui_base / f / "sui-adapter",
-        sui_base / f / "sui-move-natives",
-        sui_base / f / "sui-verifier",
+        ika_base / f / "ika-adapter",
+        ika_base / f / "ika-move-natives",
+        ika_base / f / "ika-verifier",
     ]
 
     if f == "latest":
@@ -403,7 +403,7 @@ def cut_directories(f):
 
 def impl(feature):
     """Path to the impl module for this feature"""
-    return Path() / "sui-execution" / "src" / (feature.replace("-", "_") + ".rs")
+    return Path() / "ika-execution" / "src" / (feature.replace("-", "_") + ".rs")
 
 
 def delete_cut_crates(feature):
@@ -415,7 +415,7 @@ def delete_cut_crates(feature):
 
 
 def update_toml(feature, toml_path):
-    """Add dependencies for 'feature' to sui-execution's manifest."""
+    """Add dependencies for 'feature' to ika-execution's manifest."""
 
     # Read all the lines
     with open(toml_path) as toml:
@@ -433,7 +433,7 @@ def generate_impls(feature, copy):
     """Create the implementations of the `Executor` and `Verifier`.
 
     Copies the implementation for the `latest` cut and updates its imports."""
-    orig = Path() / "sui-execution" / "src" / "latest.rs"
+    orig = Path() / "ika-execution" / "src" / "latest.rs"
     with open(orig, mode="r") as orig, open(copy, mode="w") as copy:
         for line in orig:
             line = re.sub(r"^use (.*)_latest::", rf"use \1_{feature.replace('-', '_')}::", line)
@@ -443,7 +443,7 @@ def generate_impls(feature, copy):
 def generate_lib(output_file: TextIO):
     """Expose all `Executor` and `Verifier` impls via lib.rs
 
-    Generates the contents of sui-execution/src/lib.rs to assign a numeric
+    Generates the contents of ika-execution/src/lib.rs to assign a numeric
     execution version for every module that implements an execution version.
 
     Version snapshots (whose names follow the pattern `/v[0-9]+/`) are assigned
@@ -458,7 +458,7 @@ def generate_lib(output_file: TextIO):
     The generated contents are written out to `output_file` (an IO device).
     """
 
-    template_path = Path() / "sui-execution" / "src" / "lib.template.rs"
+    template_path = Path() / "ika-execution" / "src" / "lib.template.rs"
     cuts = discover_cuts()
 
     with open(template_path, mode="r") as template_file:
@@ -518,7 +518,7 @@ def generate_lib(output_file: TextIO):
     except Exception as e:
         print(f"An error occurred: {e}")
 
-# Modules in `sui-execution` that don't count as "cuts" (they are
+# Modules in `ika-execution` that don't count as "cuts" (they are
 # other supporting modules)
 NOT_A_CUT = {
     "executor",
@@ -532,7 +532,7 @@ NOT_A_CUT = {
 def discover_cuts():
     """Find all modules corresponding to execution layer cuts.
 
-    Finds all modules within the `sui-execution` crate that count as
+    Finds all modules within the `ika-execution` crate that count as
     entry points for an execution layer cut.  Returns a list of
     3-tuples, where:
 
@@ -554,7 +554,7 @@ def discover_cuts():
     snapshots = []
     features = []
 
-    src = Path() / "sui-execution" / "src"
+    src = Path() / "ika-execution" / "src"
     for f in src.iterdir():
         if not f.is_file() or f.stem in NOT_A_CUT:
             continue

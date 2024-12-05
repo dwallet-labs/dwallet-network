@@ -7,5 +7,5 @@ export {
 	verifyPersonalMessageSignature,
 	verifyTransactionSignature,
 	publicKeyFromRawBytes,
-	publicKeyFromSuiBytes,
+	publicKeyFromIkaBytes,
 } from './verify.js';

@@ -1,0 +1,10 @@
+[package]
+name = "congestion_control"
+version = "0.0.1"
+edition = "2024.beta"
+
+[dependencies]
+Ika = { local = "../../../../../ika-framework/packages/ika-framework" }
+
+[addresses]
+congestion_control = "0x0"

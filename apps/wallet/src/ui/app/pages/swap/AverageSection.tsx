@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Text } from '_app/shared/text';
 import { DescriptionItem } from '_pages/approval-request/transaction-request/DescriptionList';
-import { MAX_FLOAT, SUI_USDC_AVERAGE_CONVERSION_RATE } from '_pages/swap/constants';
+import { MAX_FLOAT, IKA_USDC_AVERAGE_CONVERSION_RATE } from '_pages/swap/constants';
 import { useSwapData } from '_pages/swap/utils';
 import BigNumber from 'bignumber.js';
 
@@ -36,7 +36,7 @@ export function AverageSection({
 				<Text variant="bodySmall" weight="medium" color="steel-darker">
 					1 {isAsk ? baseCoinSymbol : quoteCoinSymbol} &#x2248;{' '}
 					{new BigNumber(isAsk ? averages.averageBaseToQuote : averages.averageQuoteToBase)
-						.shiftedBy(isAsk ? SUI_USDC_AVERAGE_CONVERSION_RATE : -SUI_USDC_AVERAGE_CONVERSION_RATE)
+						.shiftedBy(isAsk ? IKA_USDC_AVERAGE_CONVERSION_RATE : -IKA_USDC_AVERAGE_CONVERSION_RATE)
 						.decimalPlaces(MAX_FLOAT)
 						.toString()}{' '}
 					{isAsk ? quoteCoinSymbol : baseCoinSymbol}

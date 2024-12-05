@@ -3,18 +3,18 @@
 
 import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import type {
-	SuiTransport,
-	SuiTransportRequestOptions,
-	SuiTransportSubscribeOptions,
-} from '@mysten/sui/client';
-import { SuiHTTPTransport } from '@mysten/sui/client';
+	IkaTransport,
+	IkaTransportRequestOptions,
+	IkaTransportSubscribeOptions,
+} from '@ika-io/ika/client';
+import { IkaHTTPTransport } from '@ika-io/ika/client';
 import type { DocumentNode } from 'graphql';
 import { print } from 'graphql';
 
 import { TypedDocumentString } from './generated/queries.js';
 import { RPC_METHODS, UnsupportedMethodError, UnsupportedParamError } from './methods.js';
 
-export interface SuiClientGraphQLTransportOptions {
+export interface IkaClientGraphQLTransportOptions {
 	url: string;
 	fallbackFullNodeUrl?: string;
 	fallbackMethods?: (keyof typeof RPC_METHODS)[];
@@ -54,12 +54,12 @@ export type GraphQLResponseErrors = Array<{
 	path?: (string | number)[];
 }>;
 
-export class SuiClientGraphQLTransport implements SuiTransport {
-	#options: SuiClientGraphQLTransportOptions;
-	#fallbackTransport?: SuiTransport;
+export class IkaClientGraphQLTransport implements IkaTransport {
+	#options: IkaClientGraphQLTransportOptions;
+	#fallbackTransport?: IkaTransport;
 	#fallbackMethods: (keyof typeof RPC_METHODS)[];
 
-	constructor(options: SuiClientGraphQLTransportOptions) {
+	constructor(options: IkaClientGraphQLTransportOptions) {
 		this.#options = options;
 		this.#fallbackMethods = options.fallbackMethods || [
 			'executeTransactionBlock',
@@ -68,7 +68,7 @@ export class SuiClientGraphQLTransport implements SuiTransport {
 		];
 
 		if (options.fallbackFullNodeUrl) {
-			this.#fallbackTransport = new SuiHTTPTransport({
+			this.#fallbackTransport = new IkaHTTPTransport({
 				url: options.fallbackFullNodeUrl,
 			});
 		}
@@ -121,14 +121,14 @@ export class SuiClientGraphQLTransport implements SuiTransport {
 		});
 	}
 
-	async request<T = unknown>(input: SuiTransportRequestOptions): Promise<T> {
+	async request<T = unknown>(input: IkaTransportRequestOptions): Promise<T> {
 		let clientMethod: keyof typeof RPC_METHODS;
 
 		switch (input.method) {
 			case 'rpc.discover':
 				clientMethod = 'getRpcApiVersion';
 				break;
-			case 'suix_getLatestAddressMetrics':
+			case 'ikax_getLatestAddressMetrics':
 				clientMethod = 'getAddressMetrics';
 				break;
 			default:
@@ -153,7 +153,7 @@ export class SuiClientGraphQLTransport implements SuiTransport {
 	}
 
 	async subscribe<T = unknown>(
-		input: SuiTransportSubscribeOptions<T>,
+		input: IkaTransportSubscribeOptions<T>,
 	): Promise<() => Promise<boolean>> {
 		if (!this.#fallbackTransport) {
 			throw new UnsupportedMethodError(input.method);
@@ -162,7 +162,7 @@ export class SuiClientGraphQLTransport implements SuiTransport {
 		return this.#fallbackTransport.subscribe(input);
 	}
 
-	async #unsupportedMethod<T = unknown>(input: SuiTransportRequestOptions): Promise<T> {
+	async #unsupportedMethod<T = unknown>(input: IkaTransportRequestOptions): Promise<T> {
 		if (!this.#fallbackTransport) {
 			throw new UnsupportedMethodError(input.method);
 		}

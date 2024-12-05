@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { parseAmount } from '_src/ui/app/helpers';
-import { type CoinStruct } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { type CoinStruct } from '@ika-io/ika/client';
+import { Transaction } from '@ika-io/ika/transactions';
+import { IKA_TYPE_ARG } from '@ika-io/ika/utils';
 
 interface Options {
 	coinType: string;
 	to: string;
 	amount: string;
 	coinDecimals: number;
-	isPayAllSui: boolean;
+	isPayAllIka: boolean;
 	coins: CoinStruct[];
 }
 
@@ -21,11 +21,11 @@ export function createTokenTransferTransaction({
 	coins,
 	coinType,
 	coinDecimals,
-	isPayAllSui,
+	isPayAllIka,
 }: Options) {
 	const tx = new Transaction();
 
-	if (isPayAllSui && coinType === SUI_TYPE_ARG) {
+	if (isPayAllIka && coinType === IKA_TYPE_ARG) {
 		tx.transferObjects([tx.gas], to);
 		tx.setGasPayment(
 			coins
@@ -43,7 +43,7 @@ export function createTokenTransferTransaction({
 	const bigIntAmount = parseAmount(amount, coinDecimals);
 	const [primaryCoin, ...mergeCoins] = coins.filter((coin) => coin.coinType === coinType);
 
-	if (coinType === SUI_TYPE_ARG) {
+	if (coinType === IKA_TYPE_ARG) {
 		const coin = tx.splitCoins(tx.gas, [bigIntAmount]);
 		tx.transferObjects([coin], to);
 	} else {

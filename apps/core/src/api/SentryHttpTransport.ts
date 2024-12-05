@@ -1,12 +1,12 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { SuiHTTPTransport } from '@mysten/sui/client';
+import { IkaHTTPTransport } from '@ika-io/ika/client';
 import * as Sentry from '@sentry/react';
 
-const IGNORED_METHODS = ['suix_resolveNameServiceNames', 'suix_resolveNameServiceAddresses'];
+const IGNORED_METHODS = ['ikax_resolveNameServiceNames', 'ikax_resolveNameServiceAddresses'];
 
-export class SentryHttpTransport extends SuiHTTPTransport {
+export class SentryHttpTransport extends IkaHTTPTransport {
 	#url: string;
 	constructor(url: string) {
 		super({ url });

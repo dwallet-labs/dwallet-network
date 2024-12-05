@@ -10,17 +10,17 @@ then
 fi
 
 commit_sha=$1
-pub_key=https://sui-private.s3.us-west-2.amazonaws.com/sui_security_release.pem
-url=https://sui-releases.s3-accelerate.amazonaws.com/$commit_sha
+pub_key=https://ika-private.s3.us-west-2.amazonaws.com/ika_security_release.pem
+url=https://ika-releases.s3-accelerate.amazonaws.com/$commit_sha
 
-echo "[+] Downloading sui binaries for $commit_sha ..."
-curl $url/sui -o sui
-curl $url/sui-indexer -o sui-indexer
-curl $url/sui-node -o sui-node
-curl $url/sui-tool -o sui-tool
+echo "[+] Downloading ika binaries for $commit_sha ..."
+curl $url/ika -o ika
+curl $url/ika-indexer -o ika-indexer
+curl $url/ika-node -o ika-node
+curl $url/ika-tool -o ika-tool
 
-echo "[+] Verifying sui binaries for $commit_sha ..."
-cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/sui.sig sui
-cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/sui-indexer.sig sui-indexer
-cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/sui-node.sig sui-node
-cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/sui-tool.sig sui-tool
+echo "[+] Verifying ika binaries for $commit_sha ..."
+cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/ika.sig ika
+cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/ika-indexer.sig ika-indexer
+cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/ika-node.sig ika-node
+cosign verify-blob --insecure-ignore-tlog --key $pub_key --signature $url/ika-tool.sig ika-tool

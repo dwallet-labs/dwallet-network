@@ -3,12 +3,12 @@
 
 import type {
 	PaginationArguments,
-	SuiClient,
-	SuiObjectData,
-	SuiObjectDataFilter,
-	SuiObjectResponse,
-} from '@mysten/sui/client';
-import { isValidSuiAddress } from '@mysten/sui/utils';
+	IkaClient,
+	IkaObjectData,
+	IkaObjectDataFilter,
+	IkaObjectResponse,
+} from '@ika-io/ika/client';
+import { isValidIkaAddress } from '@ika-io/ika/utils';
 
 import type {
 	FetchKioskOptions,
@@ -29,7 +29,7 @@ import {
 } from '../utils.js';
 
 export async function fetchKiosk(
-	client: SuiClient,
+	client: IkaClient,
 	kioskId: string,
 	pagination: PaginationArguments<string>,
 	options: FetchKioskOptions,
@@ -87,14 +87,14 @@ export async function fetchKiosk(
  * Extra options allow pagination.
  */
 export async function getOwnedKiosks(
-	client: SuiClient,
+	client: IkaClient,
 	address: string,
 	options?: {
 		pagination?: PaginationArguments<string>;
 		personalKioskType: string;
 	},
 ): Promise<OwnedKiosks> {
-	if (!isValidSuiAddress(address))
+	if (!isValidIkaAddress(address))
 		return {
 			nextCursor: null,
 			hasNextPage: false,
@@ -102,7 +102,7 @@ export async function getOwnedKiosks(
 			kioskIds: [],
 		};
 
-	const filter: SuiObjectDataFilter = {
+	const filter: IkaObjectDataFilter = {
 		MatchAny: [
 			{
 				StructType: KIOSK_OWNER_CAP,
@@ -128,7 +128,7 @@ export async function getOwnedKiosks(
 	});
 
 	// get kioskIds from the OwnerCaps.
-	const kioskIdList = data?.map((x: SuiObjectResponse) => {
+	const kioskIdList = data?.map((x: IkaObjectResponse) => {
 		const fields = x.data?.content?.dataType === 'moveObject' ? x.data.content.fields : null;
 		// @ts-ignore-next-line TODO: should i remove ts ignore here?
 		return (fields?.cap ? fields?.cap?.fields?.for : fields?.for) as string;
@@ -137,7 +137,7 @@ export async function getOwnedKiosks(
 
 	// clean up data that might have an error in them.
 	// only return valid objects.
-	const filteredData = data.filter((x) => 'data' in x).map((x) => x.data) as SuiObjectData[];
+	const filteredData = data.filter((x) => 'data' in x).map((x) => x.data) as IkaObjectData[];
 
 	return {
 		nextCursor,
@@ -155,7 +155,7 @@ export async function getOwnedKiosks(
 
 // Get a kiosk extension data for a given kioskId and extensionType.
 export async function fetchKioskExtension(
-	client: SuiClient,
+	client: IkaClient,
 	kioskId: string,
 	extensionType: string,
 ): Promise<KioskExtension | null> {

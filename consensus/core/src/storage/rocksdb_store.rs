@@ -5,7 +5,7 @@ use std::{collections::VecDeque, ops::Bound::Included, time::Duration};
 
 use bytes::Bytes;
 use consensus_config::AuthorityIndex;
-use sui_macros::fail_point;
+use ika_macros::fail_point;
 use typed_store::{
     metrics::SamplingInterval,
     reopen,

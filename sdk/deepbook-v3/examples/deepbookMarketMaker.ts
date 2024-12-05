@@ -1,17 +1,17 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { decodeSuiPrivateKey } from '@mysten/sui/cryptography';
-import type { Keypair } from '@mysten/sui/cryptography';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import type { Transaction } from '@mysten/sui/transactions';
+import { getFullnodeUrl, IkaClient } from '@ika-io/ika/client';
+import { decodeIkaPrivateKey } from '@ika-io/ika/cryptography';
+import type { Keypair } from '@ika-io/ika/cryptography';
+import { Ed25519Keypair } from '@ika-io/ika/keypairs/ed25519';
+import type { Transaction } from '@ika-io/ika/transactions';
 
 import { DeepBookClient } from '../src/index.js'; // Adjust path according to new structure
 import type { BalanceManager } from '../src/types/index.js';
 
 export class DeepBookMarketMaker extends DeepBookClient {
 	keypair: Keypair;
-	suiClient: SuiClient;
+	ikaClient: IkaClient;
 
 	constructor(
 		keypair: string | Keypair,
@@ -27,12 +27,12 @@ export class DeepBookMarketMaker extends DeepBookClient {
 			resolvedKeypair = keypair;
 		}
 
-		const address = resolvedKeypair.toSuiAddress();
+		const address = resolvedKeypair.toIkaAddress();
 
 		super({
 			address: address,
 			env: env,
-			client: new SuiClient({
+			client: new IkaClient({
 				url: getFullnodeUrl(env),
 			}),
 			balanceManagers: balanceManagers,
@@ -40,20 +40,20 @@ export class DeepBookMarketMaker extends DeepBookClient {
 		});
 
 		this.keypair = resolvedKeypair;
-		this.suiClient = new SuiClient({
+		this.ikaClient = new IkaClient({
 			url: getFullnodeUrl(env),
 		});
 	}
 
 	static #getSignerFromPK = (privateKey: string) => {
-		const { schema, secretKey } = decodeSuiPrivateKey(privateKey);
+		const { schema, secretKey } = decodeIkaPrivateKey(privateKey);
 		if (schema === 'ED25519') return Ed25519Keypair.fromSecretKey(secretKey);
 
 		throw new Error(`Unsupported schema: ${schema}`);
 	};
 
 	signAndExecute = async (tx: Transaction) => {
-		return this.suiClient.signAndExecuteTransaction({
+		return this.ikaClient.signAndExecuteTransaction({
 			transaction: tx,
 			signer: this.keypair,
 			options: {
@@ -64,22 +64,22 @@ export class DeepBookMarketMaker extends DeepBookClient {
 	};
 
 	getActiveAddress() {
-		return this.keypair.getPublicKey().toSuiAddress();
+		return this.keypair.getPublicKey().toIkaAddress();
 	}
 
 	// Example of a flash loan transaction
-	// Borrow 1 DEEP from DEEP_SUI pool
-	// Swap 0.5 DBUSDC for SUI in SUI_DBUSDC pool, pay with deep borrowed
-	// Swap SUI back to DEEP
-	// Return 1 DEEP to DEEP_SUI pool
+	// Borrow 1 DEEP from DEEP_IKA pool
+	// Swap 0.5 DBUSDC for IKA in IKA_DBUSDC pool, pay with deep borrowed
+	// Swap IKA back to DEEP
+	// Return 1 DEEP to DEEP_IKA pool
 	flashLoanExample = async (tx: Transaction) => {
 		const borrowAmount = 1;
-		const [deepCoin, flashLoan] = tx.add(this.flashLoans.borrowBaseAsset('DEEP_SUI', borrowAmount));
+		const [deepCoin, flashLoan] = tx.add(this.flashLoans.borrowBaseAsset('DEEP_IKA', borrowAmount));
 
 		// Execute trade using borrowed DEEP
 		const [baseOut, quoteOut, deepOut] = tx.add(
 			this.deepBook.swapExactQuoteForBase({
-				poolKey: 'SUI_DBUSDC',
+				poolKey: 'IKA_DBUSDC',
 				amount: 0.5,
 				deepAmount: 1,
 				minOut: 0,
@@ -92,7 +92,7 @@ export class DeepBookMarketMaker extends DeepBookClient {
 		// Execute second trade to get back DEEP for repayment
 		const [baseOut2, quoteOut2, deepOut2] = tx.add(
 			this.deepBook.swapExactQuoteForBase({
-				poolKey: 'DEEP_SUI',
+				poolKey: 'DEEP_IKA',
 				amount: 10,
 				deepAmount: 0,
 				minOut: 0,
@@ -103,7 +103,7 @@ export class DeepBookMarketMaker extends DeepBookClient {
 
 		// Return borrowed DEEP
 		const loanRemain = tx.add(
-			this.flashLoans.returnBaseAsset('DEEP_SUI', borrowAmount, baseOut2, flashLoan),
+			this.flashLoans.returnBaseAsset('DEEP_IKA', borrowAmount, baseOut2, flashLoan),
 		);
 		tx.transferObjects([loanRemain], this.getActiveAddress());
 	};
@@ -111,7 +111,7 @@ export class DeepBookMarketMaker extends DeepBookClient {
 	placeLimitOrderExample = (tx: Transaction) => {
 		tx.add(
 			this.deepBook.placeLimitOrder({
-				poolKey: 'SUI_DBUSDC',
+				poolKey: 'IKA_DBUSDC',
 				balanceManagerKey: 'MANAGER_1',
 				clientOrderId: '123456789',
 				price: 1,

@@ -4,11 +4,11 @@
 import {
 	ConnectButton,
 	ConnectModal,
-	SuiClientProvider,
+	IkaClientProvider,
 	useCurrentAccount,
 	WalletProvider,
 } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui/client';
+import { getFullnodeUrl } from '@ika-io/ika/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
@@ -64,7 +64,7 @@ function withProviders(Component: React.FunctionComponent<object>) {
 
 		return (
 			<QueryClientProvider client={queryClient}>
-				<SuiClientProvider networks={networks}>
+				<IkaClientProvider networks={networks}>
 					<WalletProvider
 						stashedWallet={{
 							name: 'dApp Kit Docs',
@@ -72,7 +72,7 @@ function withProviders(Component: React.FunctionComponent<object>) {
 					>
 						<Component />
 					</WalletProvider>
-				</SuiClientProvider>
+				</IkaClientProvider>
 			</QueryClientProvider>
 		);
 	};

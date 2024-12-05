@@ -14,7 +14,7 @@ export function messageWithIntent(scope: IntentScope, message: Uint8Array) {
 			intent: {
 				scope: { [scope as 'PersonalMessage']: true },
 				version: { V0: true },
-				appId: { Sui: true },
+				appId: { Ika: true },
 			},
 			value: message,
 		})

@@ -54,7 +54,7 @@ jobs:
       # Tests written with #[sim_test] are often flaky if run as #[tokio::test] - this var
       # causes #[sim_test] to only run under the deterministic `simtest` job, and not the
       # non-deterministic `test` job.
-      SUI_SKIP_SIMTESTS: 1
+      IKA_SKIP_SIMTESTS: 1
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

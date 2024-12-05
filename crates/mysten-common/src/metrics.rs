@@ -9,16 +9,16 @@ use tracing::{debug, error, info};
 const METRICS_PUSH_TIMEOUT: Duration = Duration::from_secs(45);
 
 pub struct MetricsPushClient {
-    certificate: std::sync::Arc<sui_tls::SelfSignedCertificate>,
+    certificate: std::sync::Arc<ika_tls::SelfSignedCertificate>,
     client: reqwest::Client,
 }
 
 impl MetricsPushClient {
-    pub fn new(metrics_key: sui_types::crypto::NetworkKeyPair) -> Self {
+    pub fn new(metrics_key: ika_types::crypto::NetworkKeyPair) -> Self {
         use fastcrypto::traits::KeyPair;
-        let certificate = std::sync::Arc::new(sui_tls::SelfSignedCertificate::new(
+        let certificate = std::sync::Arc::new(ika_tls::SelfSignedCertificate::new(
             metrics_key.private(),
-            sui_tls::SUI_VALIDATOR_SERVER_NAME,
+            ika_tls::IKA_VALIDATOR_SERVER_NAME,
         ));
         let identity = certificate.reqwest_identity();
         let client = reqwest::Client::builder()
@@ -32,7 +32,7 @@ impl MetricsPushClient {
         }
     }
 
-    pub fn certificate(&self) -> &sui_tls::SelfSignedCertificate {
+    pub fn certificate(&self) -> &ika_tls::SelfSignedCertificate {
         &self.certificate
     }
 

@@ -3,35 +3,35 @@
 
 import type { IdentifierString } from '@wallet-standard/core';
 
-/** Sui Devnet */
-export const SUI_DEVNET_CHAIN = 'sui:devnet';
+/** Ika Devnet */
+export const IKA_DEVNET_CHAIN = 'ika:devnet';
 
-/** Sui Testnet */
-export const SUI_TESTNET_CHAIN = 'sui:testnet';
+/** Ika Testnet */
+export const IKA_TESTNET_CHAIN = 'ika:testnet';
 
-/** Sui Localnet */
-export const SUI_LOCALNET_CHAIN = 'sui:localnet';
+/** Ika Localnet */
+export const IKA_LOCALNET_CHAIN = 'ika:localnet';
 
-/** Sui Mainnet */
-export const SUI_MAINNET_CHAIN = 'sui:mainnet';
+/** Ika Mainnet */
+export const IKA_MAINNET_CHAIN = 'ika:mainnet';
 
-export const SUI_CHAINS = [
-	SUI_DEVNET_CHAIN,
-	SUI_TESTNET_CHAIN,
-	SUI_LOCALNET_CHAIN,
-	SUI_MAINNET_CHAIN,
+export const IKA_CHAINS = [
+	IKA_DEVNET_CHAIN,
+	IKA_TESTNET_CHAIN,
+	IKA_LOCALNET_CHAIN,
+	IKA_MAINNET_CHAIN,
 ] as const;
 
-export type SuiChain =
-	| typeof SUI_DEVNET_CHAIN
-	| typeof SUI_TESTNET_CHAIN
-	| typeof SUI_LOCALNET_CHAIN
-	| typeof SUI_MAINNET_CHAIN;
+export type IkaChain =
+	| typeof IKA_DEVNET_CHAIN
+	| typeof IKA_TESTNET_CHAIN
+	| typeof IKA_LOCALNET_CHAIN
+	| typeof IKA_MAINNET_CHAIN;
 
 /**
- * Utility that returns whether or not a chain identifier is a valid Sui chain.
+ * Utility that returns whether or not a chain identifier is a valid Ika chain.
  * @param chain a chain identifier in the form of `${string}:{$string}`
  */
-export function isSuiChain(chain: IdentifierString): chain is SuiChain {
-	return SUI_CHAINS.includes(chain as SuiChain);
+export function isIkaChain(chain: IdentifierString): chain is IkaChain {
+	return IKA_CHAINS.includes(chain as IkaChain);
 }

@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useFormatCoin } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
-import { Transaction } from '@mysten/sui/transactions';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { Transaction } from '@ika-io/ika/transactions';
+import { IKA_TYPE_ARG } from '@ika-io/ika/utils';
 import { useQuery } from '@tanstack/react-query';
 
 export function useTransactionData(sender?: string | null, transaction?: Transaction | null) {
-	const client = useSuiClient();
+	const client = useIkaClient();
 	return useQuery({
 		// eslint-disable-next-line @tanstack/query/exhaustive-deps
 		queryKey: ['transaction-data', transaction?.serialize()],
@@ -28,7 +28,7 @@ export function useTransactionData(sender?: string | null, transaction?: Transac
 export function useTransactionGasBudget(sender?: string | null, transaction?: Transaction | null) {
 	const { data, ...rest } = useTransactionData(sender, transaction);
 
-	const [formattedGas] = useFormatCoin(data?.gasData.budget, SUI_TYPE_ARG);
+	const [formattedGas] = useFormatCoin(data?.gasData.budget, IKA_TYPE_ARG);
 
 	return {
 		data: formattedGas,

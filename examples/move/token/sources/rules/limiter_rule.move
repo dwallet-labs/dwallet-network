@@ -5,8 +5,8 @@
 /// operation. Can be used to limit any action (eg transfer, toCoin, fromCoin).
 module examples::limiter_rule {
     use std::string::String;
-    use sui::vec_map::{Self, VecMap};
-    use sui::token::{
+    use ika::vec_map::{Self, VecMap};
+    use ika::token::{
         Self,
         TokenPolicy,
         TokenPolicyCap,
@@ -75,9 +75,9 @@ module examples::limiter_rule {
 module examples::limiter_rule_tests {
     use std::string::utf8;
     use std::option::{none, /* some */};
-    use sui::token;
-    use sui::vec_map;
-    use sui::token_test_utils::{Self as test, TEST};
+    use ika::token;
+    use ika::vec_map;
+    use ika::token_test_utils::{Self as test, TEST};
 
     use examples::limiter_rule::{Self as limiter, Limiter};
 
@@ -85,7 +85,7 @@ module examples::limiter_rule_tests {
     // Scenario: add a limiter rule for 100 tokens per operation, verify that
     // the request with 100 tokens is confirmed
     fun add_limiter_default() {
-        let ctx = &mut sui::tx_context::dummy();
+        let ctx = &mut ika::tx_context::dummy();
         let (mut policy, cap) = test::get_policy(ctx);
 
         token::add_rule_for_action<TEST, Limiter>(&mut policy, &cap, utf8(b"action"), ctx);
@@ -103,7 +103,7 @@ module examples::limiter_rule_tests {
     // the request with 100 tokens is confirmed; then remove the rule and verify
     // that the request with 100 tokens is not confirmed and repeat step (1)
     fun add_remove_limiter() {
-        let ctx = &mut sui::tx_context::dummy();
+        let ctx = &mut ika::tx_context::dummy();
         let (mut policy, cap) = test::get_policy(ctx);
 
         let mut config = vec_map::empty();
@@ -141,7 +141,7 @@ module examples::limiter_rule_tests {
     // Scenario: add a limiter rule for 100 tokens per operation, verify that
     // the request with 101 tokens aborts with `ELimitExceeded`
     fun add_limiter_limit_exceeded_fail() {
-        let ctx = &mut sui::tx_context::dummy();
+        let ctx = &mut ika::tx_context::dummy();
         let (mut policy, cap) = test::get_policy(ctx);
 
         let mut config = vec_map::empty();

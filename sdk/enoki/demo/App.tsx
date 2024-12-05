@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { getFullnodeUrl, SuiClient } from '@mysten/sui/client';
-import { Transaction } from '@mysten/sui/transactions';
+import { getFullnodeUrl, IkaClient } from '@ika-io/ika/client';
+import { Transaction } from '@ika-io/ika/transactions';
 import { useState } from 'react';
 
 import { useAuthCallback, useEnokiFlow, useZkLogin } from '../src/react.tsx';
@@ -48,7 +48,7 @@ export function App() {
 							const result = await flow.sponsorAndExecuteTransaction({
 								network: 'testnet',
 								// @ts-expect-error: Type references not quite doing their thing:
-								client: new SuiClient({ url: getFullnodeUrl('testnet') }),
+								client: new IkaClient({ url: getFullnodeUrl('testnet') }),
 								// @ts-expect-error: Type references not quite doing their thing:
 								transaction,
 							});

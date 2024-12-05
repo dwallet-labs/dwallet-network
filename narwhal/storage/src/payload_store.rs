@@ -8,7 +8,7 @@ use std::sync::Arc;
 use store::reopen;
 use store::rocks::{open_cf, MetricConf, ReadWriteOptions};
 use store::{rocks::DBMap, Map, TypedStoreError};
-use sui_macros::fail_point;
+use ika_macros::fail_point;
 use types::BatchDigest;
 
 /// Store of the batch digests for the primary node for the own created batches.

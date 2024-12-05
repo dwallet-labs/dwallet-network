@@ -4,11 +4,11 @@ import { Text } from '_app/shared/text';
 import { DescriptionItem } from '_pages/approval-request/transaction-request/DescriptionList';
 import { DEFAULT_WALLET_FEE_ADDRESS, WALLET_FEES_PERCENTAGE } from '_pages/swap/constants';
 import { getUSDCurrency } from '_pages/swap/utils';
-import { GAS_TYPE_ARG } from '_redux/slices/sui-objects/Coin';
+import { GAS_TYPE_ARG } from '_redux/slices/ika-objects/Coin';
 import { FEATURES } from '_shared/experimentation/features';
 import { useFeatureValue } from '@growthbook/growthbook-react';
 import { useBalanceInUSD, useFormatCoin } from '@mysten/core';
-import { type BalanceChange } from '@mysten/sui/client';
+import { type BalanceChange } from '@ika-io/ika/client';
 
 export function GasFeeSection({
 	activeCoinType,

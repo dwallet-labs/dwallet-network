@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useSuiClient } from '@mysten/dapp-kit';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { useIkaClient } from '@mysten/dapp-kit';
+import { normalizeIkaAddress } from '@ika-io/ika/utils';
 import { useQuery } from '@tanstack/react-query';
 
 const defaultOptions = {
@@ -15,8 +15,8 @@ const defaultOptions = {
 };
 
 export function useGetObject(objectId?: string | null) {
-	const client = useSuiClient();
-	const normalizedObjId = objectId && normalizeSuiAddress(objectId);
+	const client = useIkaClient();
+	const normalizedObjId = objectId && normalizeIkaAddress(objectId);
 	return useQuery({
 		queryKey: ['object', normalizedObjId],
 		queryFn: () =>

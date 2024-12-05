@@ -3,7 +3,7 @@
 
 use std::fmt::{Debug, Display};
 
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use types::Batch;
 
 /// Defines the validation procedure for receiving either a new single transaction (from a client)

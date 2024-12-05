@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #[test_only]
 module nft_rental::tests {
-    // sui imports
-    use sui::{
+    // ika imports
+    use ika::{
         test_scenario::{Self as ts, Scenario},
         transfer_policy::{Self, TransferPolicy, TransferPolicyCap},
         package::{Self, Publisher},
@@ -847,7 +847,7 @@ module nft_rental::tests {
         let mut renter_kiosk: Kiosk = ts.take_shared_by_id(renter_kiosk_id);
         let mut rental_policy: RentalPolicy<T> = ts.take_shared();
 
-        let coin = kiosk_test_utils::get_sui(coin_amount, ts.ctx());
+        let coin = kiosk_test_utils::get_ika(coin_amount, ts.ctx());
 
         rentables_ext::rent<T>(
             &mut renter_kiosk,

@@ -1,0 +1,16 @@
+warning[Lint W99003]: sub-optimal 'ika::coin::Coin' field type
+   ┌─ tests/ika_mode/linter/coin_field.move:13:12
+   │
+13 │         c: Coin<S1>,
+   │            ^^^^^^^^ Sub-optimal 'ika::coin::Coin' field type. Using 'ika::balance::Balance' instead will be more space efficient
+   │
+   = This warning can be suppressed with '#[allow(lint(coin_field))]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+
+warning[Lint W99003]: sub-optimal 'ika::coin::Coin' field type
+   ┌─ tests/ika_mode/linter/coin_field.move:27:12
+   │
+27 │         c: Balance<S1>,
+   │            ^^^^^^^^^^^ Sub-optimal 'ika::coin::Coin' field type. Using 'ika::balance::Balance' instead will be more space efficient
+   │
+   = This warning can be suppressed with '#[allow(lint(coin_field))]' applied to the 'module' or module member ('const', 'fun', or 'struct')
+

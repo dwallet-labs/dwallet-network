@@ -23,7 +23,7 @@ pub mod linters;
 pub mod naming;
 pub mod parser;
 pub mod shared;
-pub mod sui_mode;
+pub mod ika_mode;
 mod to_bytecode;
 pub mod typing;
 pub mod unit_test;

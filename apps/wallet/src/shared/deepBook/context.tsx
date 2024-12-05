@@ -6,7 +6,7 @@ import { DEFAULT_WALLET_FEE_ADDRESS, type Coins } from '_pages/swap/constants';
 import { FEATURES } from '_shared/experimentation/features';
 import { useFeatureValue } from '@growthbook/growthbook-react';
 import { useGetOwnedObjects } from '@mysten/core';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { useIkaClient } from '@mysten/dapp-kit';
 import { DeepBookClient } from '@mysten/deepbook';
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
@@ -35,7 +35,7 @@ export function useDeepBookContext() {
 }
 
 export function DeepBookContextProvider({ children }: DeepBookContextProviderProps) {
-	const suiClient = useSuiClient();
+	const ikaClient = useIkaClient();
 	const activeAccount = useActiveAccount();
 	const activeAccountAddress = activeAccount?.address;
 
@@ -54,8 +54,8 @@ export function DeepBookContextProvider({ children }: DeepBookContextProviderPro
 	const accountCapId = (objectFields as Record<string, string | number | object>)?.owner as string;
 
 	const deepBookClient = useMemo(() => {
-		return new DeepBookClient(suiClient, accountCapId);
-	}, [accountCapId, suiClient]);
+		return new DeepBookClient(ikaClient, accountCapId);
+	}, [accountCapId, ikaClient]);
 
 	const contextValue = useMemo(() => {
 		return {

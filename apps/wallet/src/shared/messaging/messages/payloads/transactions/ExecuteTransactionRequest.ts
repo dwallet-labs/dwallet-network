@@ -3,7 +3,7 @@
 
 import { isBasePayload } from '_payloads';
 import type { BasePayload, Payload } from '_payloads';
-import { type SuiSignTransactionBlockInput } from '@mysten/wallet-standard';
+import { type IkaSignTransactionBlockInput } from '@mysten/wallet-standard';
 
 import { type TransactionDataType } from './ApprovalRequest';
 
@@ -18,8 +18,8 @@ export function isExecuteTransactionRequest(
 	return isBasePayload(payload) && payload.type === 'execute-transaction-request';
 }
 
-export type SuiSignTransactionSerialized = Omit<
-	SuiSignTransactionBlockInput,
+export type IkaSignTransactionSerialized = Omit<
+	IkaSignTransactionBlockInput,
 	'transactionBlock' | 'account'
 > & {
 	transaction: string;
@@ -28,7 +28,7 @@ export type SuiSignTransactionSerialized = Omit<
 
 export interface SignTransactionRequest extends BasePayload {
 	type: 'sign-transaction-request';
-	transaction: SuiSignTransactionSerialized;
+	transaction: IkaSignTransactionSerialized;
 }
 
 export function isSignTransactionRequest(payload: Payload): payload is SignTransactionRequest {

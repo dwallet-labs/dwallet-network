@@ -1,0 +1,38 @@
+[package]
+name = "ika-light-client"
+version.workspace = true
+authors = ["Mysten Labs <build@mystenlabs.com>"]
+license = "Apache-2.0"
+publish = false
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "ika-light-client"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+bcs.workspace = true
+bytes.workspace = true
+clap.workspace = true
+move-core-types.workspace = true
+serde.workspace = true
+tokio = { workspace = true, features = ["full"] }
+serde_yaml.workspace = true
+serde_json.workspace = true
+ika-types.workspace = true
+ika-config.workspace = true
+ika-rest-api.workspace = true
+ika-sdk.workspace = true
+move-binary-format.workspace = true
+ika-json-rpc-types.workspace = true
+ika-package-resolver.workspace = true
+url.workspace = true
+reqwest.workspace = true
+object_store.workspace = true
+env_logger = "0.11.5"
+log = "0.4.22"

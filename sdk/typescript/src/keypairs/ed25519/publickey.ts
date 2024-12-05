@@ -55,7 +55,7 @@ export class Ed25519PublicKey extends PublicKey {
 	}
 
 	/**
-	 * Return the Sui address associated with this Ed25519 public key
+	 * Return the Ika address associated with this Ed25519 public key
 	 */
 	flag(): number {
 		return SIGNATURE_SCHEME_TO_FLAG['ED25519'];

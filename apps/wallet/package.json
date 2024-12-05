@@ -1,7 +1,7 @@
 {
-	"name": "sui-wallet",
+	"name": "ika-wallet",
 	"private": true,
-	"description": "A wallet for Sui",
+	"description": "A wallet for Ika",
 	"main": "./dist/ui.js",
 	"scripts": {
 		"build": "pnpm build:prod",
@@ -32,7 +32,7 @@
 		"url": "github.com:MystenLabs/sui.git"
 	},
 	"keywords": [
-		"sui",
+		"ika",
 		"wallet",
 		"coins",
 		"tokens",
@@ -121,8 +121,8 @@
 		"@mysten/deepbook": "workspace:*",
 		"@mysten/icons": "workspace:*",
 		"@mysten/kiosk": "workspace:*",
-		"@mysten/ledgerjs-hw-app-sui": "workspace:*",
-		"@mysten/sui": "workspace:*",
+		"@mysten/ledgerjs-hw-app-ika": "workspace:*",
+		"@ika-io/ika": "workspace:*",
 		"@mysten/wallet-standard": "workspace:*",
 		"@mysten/zklogin": "workspace:*",
 		"@noble/hashes": "^1.4.0",

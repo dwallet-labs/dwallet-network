@@ -4,22 +4,22 @@ For these examples, assume you have the following data and functions available:
 
 ```typescript
 // a constant for bullshark's type.
-const bullsharkType = `${packageId}::suifrens::SuiFren<${packageId}::bullshark::Bullshark>`;
+const bullsharkType = `${packageId}::ikafrens::IkaFren<${packageId}::bullshark::Bullshark>`;
 // a constant for capy's type.
-const capyType = `${packageId}::suifrens::SuiFren<${packageId}::capy::Capy>`;
+const capyType = `${packageId}::ikafrens::IkaFren<${packageId}::capy::Capy>`;
 
 // initialize a kioskClient.
 const kioskClient = new KioskClient({
-	client: new SuiClient({
+	client: new IkaClient({
 		url: getFullnodeUrl('mainnet'),
 	}),
 	network: Network.MAINNET,
 });
 ```
 
-## Minting a SuiFren
+## Minting a IkaFren
 
-This example demonstrates how to mint a SuiFren.
+This example demonstrates how to mint a IkaFren.
 
 ```typescript
 async function mintFren(address: string) {
@@ -36,7 +36,7 @@ async function mintFren(address: string) {
 
 	// Let's mint a capy here into the kiosk (either a new or an existing one).
 	tx.moveCall({
-		target: `${packageId}::suifrens::mint_app::mint`,
+		target: `${packageId}::ikafrens::mint_app::mint`,
 		arguments: [kioskTx.getKiosk(), kioskTx.getKioskCap()],
 		typeArguments: [capyType],
 	});
@@ -51,7 +51,7 @@ async function mintFren(address: string) {
 }
 ```
 
-## Mixing two Suifrens
+## Mixing two Ikafrens
 
 This example demonstrates how to use the Kiosk SDK to mix two `bullsharks`.
 

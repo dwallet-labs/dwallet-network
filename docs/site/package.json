@@ -1,11 +1,11 @@
 {
-  "name": "sui-docs",
+  "name": "ika-docs",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
-    "start": "docusaurus graphql-to-doc; rm '../content/references/sui-api/sui-graphql/reference/generated.md'; node src/utils/getopenrpcspecs.js; docusaurus start",
-    "build": "docusaurus graphql-to-doc; rm '../content/references/sui-api/sui-graphql/reference/generated.md'; node src/utils/getopenrpcspecs.js; docusaurus build",
+    "start": "docusaurus graphql-to-doc; rm '../content/references/ika-api/ika-graphql/reference/generated.md'; node src/utils/getopenrpcspecs.js; docusaurus start",
+    "build": "docusaurus graphql-to-doc; rm '../content/references/ika-api/ika-graphql/reference/generated.md'; node src/utils/getopenrpcspecs.js; docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",

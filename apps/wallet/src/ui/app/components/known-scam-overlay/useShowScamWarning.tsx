@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { ampli } from '_src/shared/analytics/ampli';
-import { type Transaction } from '@mysten/sui/transactions';
+import { type Transaction } from '@ika-io/ika/transactions';
 import { useEffect } from 'react';
 
 import { useAppSelector } from '../../hooks';

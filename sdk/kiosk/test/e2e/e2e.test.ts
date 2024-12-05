@@ -1,8 +1,8 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { Transaction } from '@mysten/sui/transactions';
-import { normalizeSuiAddress } from '@mysten/sui/utils';
+import { Transaction } from '@ika-io/ika/transactions';
+import { normalizeIkaAddress } from '@ika-io/ika/utils';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import {
@@ -28,7 +28,7 @@ import {
 	mintVillain,
 	publishExtensionsPackage,
 	publishHeroPackage,
-	setupSuiClient,
+	setupIkaClient,
 	TestToolbox,
 } from './setup';
 
@@ -47,7 +47,7 @@ describe('Testing Kiosk SDK transaction building & querying e2e', () => {
 	let villainType: string;
 
 	beforeAll(async () => {
-		toolbox = await setupSuiClient();
+		toolbox = await setupIkaClient();
 		extensionsPackageId = await publishExtensionsPackage(toolbox);
 		heroPackageId = await publishHeroPackage(toolbox);
 		heroType = `${heroPackageId}::hero::Hero`;
@@ -314,8 +314,8 @@ describe('Testing Kiosk SDK transaction building & querying e2e', () => {
 		});
 
 		expect(kiosk).toHaveProperty('kiosk');
-		expect(normalizeSuiAddress(kiosk.kiosk?.owner || '')).toBe(
-			normalizeSuiAddress(toolbox.address()),
+		expect(normalizeIkaAddress(kiosk.kiosk?.owner || '')).toBe(
+			normalizeIkaAddress(toolbox.address()),
 		);
 	});
 

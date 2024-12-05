@@ -67,7 +67,7 @@ async function faucetRequest({ host, path, body, headers, method }: FaucetReques
 	}
 }
 
-export async function requestSuiFromFaucetV0(input: {
+export async function requestIkaFromFaucetV0(input: {
 	host: string;
 	recipient: string;
 	headers?: HeadersInit;
@@ -85,7 +85,7 @@ export async function requestSuiFromFaucetV0(input: {
 	});
 }
 
-export async function requestSuiFromFaucetV1(input: {
+export async function requestIkaFromFaucetV1(input: {
 	host: string;
 	recipient: string;
 	headers?: HeadersInit;
@@ -119,9 +119,9 @@ export async function getFaucetRequestStatus(input: {
 export function getFaucetHost(network: 'testnet' | 'devnet' | 'localnet') {
 	switch (network) {
 		case 'testnet':
-			return 'https://faucet.testnet.sui.io';
+			return 'https://faucet.testnet.ika.io';
 		case 'devnet':
-			return 'https://faucet.devnet.sui.io';
+			return 'https://faucet.devnet.ika.io';
 		case 'localnet':
 			return 'http://127.0.0.1:9123';
 		default:

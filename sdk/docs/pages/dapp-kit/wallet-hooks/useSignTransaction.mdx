@@ -5,20 +5,20 @@ import { UseSignTransactionExample } from '../../../examples/wallet-hooks';
 Use the `useSignTransaction` hook to prompt the user to sign a transaction with their wallet.
 
 ```ts
-import { Transaction } from '@mysten/sui/transactions';
+import { Transaction } from '@ika-io/ika/transactions';
 import {
 	ConnectButton,
 	useCurrentAccount,
 	useSignTransaction,
-	useSuiClient,
+	useIkaClient,
 } from '@mysten/dapp-kit';
-import { toBase64 } from '@mysten/sui/utils';
+import { toBase64 } from '@ika-io/ika/utils';
 import { useState } from 'react';
 
 function MyComponent() {
 	const { mutateAsync: signTransaction } = useSignTransaction();
 	const [signature, setSignature] = useState('');
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const currentAccount = useCurrentAccount();
 
 	return (
@@ -31,7 +31,7 @@ function MyComponent() {
 							onClick={async () => {
 								const { bytes, signature, reportTransactionEffects } = await signTransaction({
 									transaction: new Transaction(),
-									chain: 'sui:devnet',
+									chain: 'ika:devnet',
 								});
 
 								const executeResult = await client.executeTransactionBlock({

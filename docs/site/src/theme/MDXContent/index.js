@@ -9,7 +9,7 @@ import { Card, Cards } from "@site/src/components/Cards";
 import EffortBox from "@site/src/components/EffortBox";
 import BetaTag from "@site/src/components/BetaTag";
 export default function MDXContent({ children }) {
-  const suiComponents = {
+  const ikaComponents = {
     ...MDXComponents,
     Card,
     Cards,
@@ -18,5 +18,5 @@ export default function MDXContent({ children }) {
     EffortBox,
     BetaTag,
   };
-  return <MDXProvider components={suiComponents}>{children}</MDXProvider>;
+  return <MDXProvider components={ikaComponents}>{children}</MDXProvider>;
 }

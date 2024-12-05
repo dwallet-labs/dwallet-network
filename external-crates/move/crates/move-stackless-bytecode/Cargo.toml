@@ -33,5 +33,5 @@ move-prover-test-utils.workspace = true
 anyhow.workspace = true
 
 [[test]]
-name = "testsuite"
+name = "testikate"
 harness = false

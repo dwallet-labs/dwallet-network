@@ -1,0 +1,11 @@
+[package]
+name = "Ika"
+version = "0.0.1"
+published-at = "0x2"
+edition = "2024.beta"
+
+[dependencies]
+MoveStdlib = { local = "../move-stdlib" }
+
+[addresses]
+ika = "0x2"

@@ -3,9 +3,9 @@
 
 import { Text } from '_app/shared/text';
 import Alert from '_src/ui/app/components/alert';
-import { useSuiClient } from '@mysten/dapp-kit';
+import { useIkaClient } from '@mysten/dapp-kit';
 import { QrCode, X12 } from '@mysten/icons';
-import { isValidSuiAddress } from '@mysten/sui/utils';
+import { isValidIkaAddress } from '@ika-io/ika/utils';
 import { useQuery } from '@tanstack/react-query';
 import { cx } from 'class-variance-authority';
 import { useField, useFormikContext } from 'formik';
@@ -13,7 +13,7 @@ import { useCallback, useMemo } from 'react';
 import type { ChangeEventHandler } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 
-import { useSuiAddressValidation } from './validation';
+import { useIkaAddressValidation } from './validation';
 
 export interface AddressInputProps {
 	disabled?: boolean;
@@ -33,12 +33,12 @@ export function AddressInput({
 }: AddressInputProps) {
 	const [field, meta] = useField(name);
 
-	const client = useSuiClient();
+	const client = useIkaClient();
 	const { data: warningData } = useQuery({
 		queryKey: ['address-input-warning', field.value],
 		queryFn: async () => {
 			// We assume this validation will happen elsewhere:
-			if (!isValidSuiAddress(field.value)) {
+			if (!isValidIkaAddress(field.value)) {
 				return null;
 			}
 
@@ -73,19 +73,19 @@ export function AddressInput({
 	});
 
 	const { isSubmitting, setFieldValue, isValidating } = useFormikContext();
-	const suiAddressValidation = useSuiAddressValidation();
+	const ikaAddressValidation = useIkaAddressValidation();
 
 	const disabled = forcedDisabled !== undefined ? forcedDisabled : isSubmitting;
 	const handleOnChange = useCallback<ChangeEventHandler<HTMLTextAreaElement>>(
 		(e) => {
 			const address = e.currentTarget.value;
-			setFieldValue(name, suiAddressValidation.cast(address));
+			setFieldValue(name, ikaAddressValidation.cast(address));
 		},
-		[setFieldValue, name, suiAddressValidation],
+		[setFieldValue, name, ikaAddressValidation],
 	);
 	const formattedValue = useMemo(
-		() => suiAddressValidation.cast(field?.value),
-		[field?.value, suiAddressValidation],
+		() => ikaAddressValidation.cast(field?.value),
+		[field?.value, ikaAddressValidation],
 	);
 
 	const clearAddress = useCallback(() => {

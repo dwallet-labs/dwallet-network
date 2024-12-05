@@ -4,7 +4,7 @@
 import ExplorerLink from '_src/ui/app/components/explorer-link';
 import { ExplorerLinkType } from '_src/ui/app/components/explorer-link/ExplorerLinkType';
 import { useActiveAddress } from '_src/ui/app/hooks';
-import { formatAddress, isValidSuiAddress } from '@mysten/sui/utils';
+import { formatAddress, isValidIkaAddress } from '@ika-io/ika/utils';
 
 import { Text } from '../text';
 import { SummaryCardFooter } from './Card';
@@ -17,7 +17,7 @@ export function OwnerFooter({ owner, ownerType }: { owner?: string; ownerType?: 
 	const display =
 		ownerType === 'Shared'
 			? 'Shared'
-			: isValidSuiAddress(owner)
+			: isValidIkaAddress(owner)
 				? isOwner
 					? 'You'
 					: formatAddress(owner)

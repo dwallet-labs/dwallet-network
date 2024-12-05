@@ -289,7 +289,7 @@ impl TransactionClient {
     }
 }
 
-/// `TransactionVerifier` implementation is supplied by Sui to validate transactions in a block,
+/// `TransactionVerifier` implementation is supplied by Ika to validate transactions in a block,
 /// before acceptance of the block.
 #[async_trait::async_trait]
 pub trait TransactionVerifier: Send + Sync + 'static {
@@ -338,7 +338,7 @@ mod tests {
 
     use consensus_config::AuthorityIndex;
     use futures::{stream::FuturesUnordered, StreamExt};
-    use sui_protocol_config::ProtocolConfig;
+    use ika_protocol_config::ProtocolConfig;
     use tokio::time::timeout;
 
     use crate::{

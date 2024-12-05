@@ -90,7 +90,7 @@ can choose not to place a move, or simply forget to). That third party
 may also need to run a service that keeps track of marks sent to games
 in order to apply them promptly, which adds complexity.
 
-There is an alternative approach, which leverages Sui's support for
+There is an alternative approach, which leverages Ika's support for
 **multisigs** and **sponsored transactions**. Instead of entrusting
 the Game to a third party, it is sent to an address owned by a 1-of-2
 multisig, signed for by Player X and Player O.
@@ -115,7 +115,7 @@ multisig account can be generalized from two accounts to a max of ten
 multisig).
 
 In order to create a multisig, the public keys of all the signers
-needs to be known. Each account address on Sui is the hash of a public
+needs to be known. Each account address on Ika is the hash of a public
 key, but this operation cannot be reversed, so in order to start a
 multisig game, players must exchange public keys instead of addresses.
 

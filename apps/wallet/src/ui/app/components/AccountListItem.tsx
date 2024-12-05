@@ -1,10 +1,10 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useResolveSuiNSName } from '_app/hooks/useAppResolveSuinsName';
+import { useResolveIkaNSName } from '_app/hooks/useAppResolveIkansName';
 import { type SerializedUIAccount } from '_src/background/accounts/Account';
 import { Check12, Copy12 } from '@mysten/icons';
-import { formatAddress } from '@mysten/sui/utils';
+import { formatAddress } from '@ika-io/ika/utils';
 
 import { useCopyToClipboard } from '../hooks/useCopyToClipboard';
 import { Text } from '../shared/text';
@@ -21,12 +21,12 @@ export function AccountListItem({ account, onAccountSelected }: AccountItemProps
 	const copy = useCopyToClipboard(address, {
 		copySuccessMessage: 'Address Copied',
 	});
-	const domainName = useResolveSuiNSName(address);
+	const domainName = useResolveIkaNSName(address);
 
 	return (
 		<li>
 			<button
-				className="appearance-none bg-transparent border-0 w-full flex p-2.5 items-center gap-2.5 rounded-md hover:bg-sui/10 cursor-pointer focus-visible:ring-1 group transition-colors text-left"
+				className="appearance-none bg-transparent border-0 w-full flex p-2.5 items-center gap-2.5 rounded-md hover:bg-ika/10 cursor-pointer focus-visible:ring-1 group transition-colors text-left"
 				onClick={() => {
 					onAccountSelected(account);
 				}}

@@ -71,7 +71,7 @@ impl TypeTag {
     ///
     /// - Addresses are hex-encoded lowercase values of length 32 (zero-padded).
     ///
-    /// Note: this function is guaranteed to be stable -- suitable for use inside Move native
+    /// Note: this function is guaranteed to be stable -- ikatable for use inside Move native
     /// functions or the VM. By contrast, this type's `Display` implementation is subject to change
     /// and should be used inside code that needs to return a stable output (e.g. that might be
     /// committed to effects on-chain).
@@ -186,7 +186,7 @@ impl StructTag {
     ///
     /// - Addresses are hex-encoded lowercase values of length 32 (zero-padded).
     ///
-    /// Note: this function is guaranteed to be stable -- suitable for use inside Move native
+    /// Note: this function is guaranteed to be stable -- ikatable for use inside Move native
     /// functions or the VM. By contrast, this type's `Display` implementation is subject to change
     /// and should be used inside code that needs to return a stable output (e.g. that might be
     /// committed to effects on-chain).

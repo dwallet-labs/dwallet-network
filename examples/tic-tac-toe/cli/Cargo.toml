@@ -12,7 +12,7 @@ fastcrypto = "0.1.8"
 move-core-types = { path = "../../../external-crates/move/crates/move-core-types" }
 serde = { version = "1.0.203", features = ["derive"] }
 shared-crypto = { path = "../../../crates/shared-crypto" }
-sui-keys = { path = "../../../crates/sui-keys" }
-sui-sdk = { path = "../../../crates/sui-sdk" }
-sui-types = { path = "../../../crates/sui-types" }
+ika-keys = { path = "../../../crates/ika-keys" }
+ika-sdk = { path = "../../../crates/ika-sdk" }
+ika-types = { path = "../../../crates/ika-types" }
 tokio = { version = "1.38.0", features = ["time"] }

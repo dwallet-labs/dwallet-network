@@ -18,7 +18,7 @@ struct Order has store, drop {
     // For each pool, order id is incremental and unique for each opening order.
     // Orders that are submitted earlier have lower order ids.
     // 64 bits are sufficient for order ids, whereas 32 bits are not.
-    // Assuming a maximum TPS of 100K/s of Sui chain, it would take (1<<63) / 100000 / 3600 / 24 / 365 = 2924712 years to reach the full capacity.
+    // Assuming a maximum TPS of 100K/s of Ika chain, it would take (1<<63) / 100000 / 3600 / 24 / 365 = 2924712 years to reach the full capacity.
     // The highest bit of the order id denotes the order type, 0 for bid, 1 for ask.
     order_id: u64,
     // Only used for limit orders.
@@ -38,7 +38,7 @@ Order matching occurs when a taker order is submitted to the CLOB without a cent
 
 ## Order tracking {#order-tracking}
 
-DeepBook supports efficient tracking of maker orders. Each unfilled maker order is associated with a unique u64 order id, and users can query the order status using the order id together with the Sui RPC call. Users can also subscribe to the event stream emitted by DeepBook related to changes in order status. DeepBook currently supports the following events, `OrderPlaced`, `OrderFilled` and `OrderCanceled`.
+DeepBook supports efficient tracking of maker orders. Each unfilled maker order is associated with a unique u64 order id, and users can query the order status using the order id together with the Ika RPC call. Users can also subscribe to the event stream emitted by DeepBook related to changes in order status. DeepBook currently supports the following events, `OrderPlaced`, `OrderFilled` and `OrderCanceled`.
 
 ```move
 /// Emitted when a maker order is injected into the order book.
@@ -71,10 +71,10 @@ struct OrderFilled<phantom BaseAsset, phantom QuoteAsset> has copy, store, drop 
 }
 ```
 
-The following example uses the [Sui TypeScript SDK](https://sdk.mystenlabs.com/typescript) to connect via websocket to listen to events.
+The following example uses the [Ika TypeScript SDK](https://sdk.mystenlabs.com/typescript) to connect via websocket to listen to events.
 
 ```javascript
-const local_client = new SuiClient({ url: 'https://fullnode.mainnet.sui.io:443/' });
+const local_client = new IkaClient({ url: 'https://fullnode.mainnet.ika.io:443/' });
 const deepbook_client = new DeepBookClient(local_client);
 
 const deepbook = '0x000000000000000000000000000000000000000000000000000000000000dee9';
@@ -98,7 +98,7 @@ const poolFilter = {
 	},
 };
 
-deepbook_client.suiClient.subscribeEvent({
+deepbook_client.ikaClient.subscribeEvent({
 	filter: moveEventsFilter,
 	onMessage(event) {
 		console.log(event);

@@ -12,14 +12,14 @@
 	},
 	"host_permissions": [
 		"http://127.0.0.1:5001/",
-		"https://fullnode.devnet.sui.io/",
-		"https://fullnode.staging.sui.io/"
+		"https://fullnode.devnet.ika.io/",
+		"https://fullnode.staging.ika.io/"
 	],
 	"icons": {
-		"16": "manifest/icons/sui-icon-16.png",
-		"32": "manifest/icons/sui-icon-32.png",
-		"48": "manifest/icons/sui-icon-48.png",
-		"128": "manifest/icons/sui-icon-128.png"
+		"16": "manifest/icons/ika-icon-16.png",
+		"32": "manifest/icons/ika-icon-32.png",
+		"48": "manifest/icons/ika-icon-48.png",
+		"128": "manifest/icons/ika-icon-128.png"
 	},
 	"content_scripts": [
 		{

@@ -39,7 +39,7 @@ const Method = (props) => {
           >
             <h2
               id={`${api.replaceAll(/\s/g, "-").toLowerCase()}`}
-              className="border-0 border-b border-solid border-sui-blue-dark dark:border-sui-blue scroll-mt-32 text-3xl text-sui-blue-dark dark:text-sui-blue font-bold mt-12 after:content-['_#'] after:hidden after:hover:inline after:opacity-20 cursor-pointer"
+              className="border-0 border-b border-solid border-ika-blue-dark dark:border-ika-blue scroll-mt-32 text-3xl text-ika-blue-dark dark:text-ika-blue font-bold mt-12 after:content-['_#'] after:hidden after:hover:inline after:opacity-20 cursor-pointer"
               onClick={handleClick}
               key={api.replaceAll(/\s/g, "-").toLowerCase()}
             >
@@ -58,7 +58,7 @@ const Method = (props) => {
                     <div
                       className={`snap-start scroll-mt-32 ${
                         method.deprecated
-                          ? "bg-sui-warning-light p-8 pt-4 rounded-lg mt-8 dark:bg-sui-warning-dark"
+                          ? "bg-ika-warning-light p-8 pt-4 rounded-lg mt-8 dark:bg-ika-warning-dark"
                           : "pt-8"
                       }`}
                       key={`div-${api
@@ -76,7 +76,7 @@ const Method = (props) => {
                       </h3>
 
                       {method.deprecated && (
-                        <div className="p-4 bg-sui-issue rounded-lg font-bold mt-4">
+                        <div className="p-4 bg-ika-issue rounded-lg font-bold mt-4">
                           Deprecated
                         </div>
                       )}
@@ -84,7 +84,7 @@ const Method = (props) => {
                         <p className="mb-8">
                           <Markdown>{desc}</Markdown>
                         </p>
-                        <p className="font-bold mt-4 mb-2 text-xl text-sui-grey-80 dark:text-sui-gray-70">
+                        <p className="font-bold mt-4 mb-2 text-xl text-ika-grey-80 dark:text-ika-gray-70">
                           Parameters
                         </p>
                         <Parameters
@@ -92,13 +92,13 @@ const Method = (props) => {
                           params={method.params}
                           schemas={schemas}
                         />
-                        <p className="font-bold mb-2 text-xl text-sui-gray-80 dark:text-sui-gray-70">
+                        <p className="font-bold mb-2 text-xl text-ika-gray-80 dark:text-ika-gray-70">
                           Result
                         </p>
                         <Result result={method.result} json={json} />
                         {method.examples && (
                           <>
-                            <p className="mt-4 font-bold text-xl text-sui-gray-80 dark:text-sui-gray-70">
+                            <p className="mt-4 font-bold text-xl text-ika-gray-80 dark:text-ika-gray-70">
                               Example
                             </p>
                             <Examples method={method.name} examples={method.examples} />

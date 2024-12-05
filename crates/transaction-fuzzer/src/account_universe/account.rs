@@ -7,8 +7,8 @@
 use std::sync::Arc;
 
 use proptest::prelude::*;
-use sui_types::{
-    base_types::{ObjectID, SuiAddress},
+use ika_types::{
+    base_types::{ObjectID, IkaAddress},
     crypto::{get_key_pair, AccountKeyPair},
     object::Object,
 };
@@ -21,7 +21,7 @@ pub const NUM_GAS_OBJECTS: usize = 1;
 
 #[derive(Debug)]
 pub struct Account {
-    pub address: SuiAddress,
+    pub address: IkaAddress,
     pub key: AccountKeyPair,
 }
 

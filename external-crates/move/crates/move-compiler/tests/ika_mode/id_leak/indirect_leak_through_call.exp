@@ -1,0 +1,9 @@
+error[Ika E01001]: invalid object construction
+   ┌─ tests/ika_mode/id_leak/indirect_leak_through_call.move:15:18
+   │
+15 │         transfer(Foo { id });
+   │                  ^^^^^^^^^^
+   │                  │     │
+   │                  │     The UID must come directly from ika::object::new. Or for tests, it can come from ika::test_scenario::new_object
+   │                  Invalid object creation without a newly created UID.
+

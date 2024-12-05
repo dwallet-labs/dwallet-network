@@ -9,7 +9,7 @@ import { type AccountType, type SerializedAccount } from './accounts/Account';
 import { captureException } from './sentry';
 import { getFromLocalStorage, setToLocalStorage } from './storage-utils';
 
-const dbName = 'SuiWallet DB';
+const dbName = 'IkaWallet DB';
 const dbLocalStorageBackupKey = 'indexed-db-backup';
 
 export const settingsKeys = {

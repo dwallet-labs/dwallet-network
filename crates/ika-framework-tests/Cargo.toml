@@ -1,0 +1,37 @@
+[package]
+name = "ika-framework-tests"
+version = "0.1.0"
+edition = "2021"
+authors = ["Mysten Labs <eng@mystenlabs.com>"]
+description = "Runs Move tests for ika-framework"
+license = "Apache-2.0"
+publish = false
+
+[lints]
+workspace = true
+
+[[test]]
+name = "move_tests"
+harness = false
+
+[dev-dependencies]
+datatest-stable.workspace = true
+prometheus.workspace = true
+
+ika-framework.workspace = true
+ika-move = { workspace = true, features = ["unit_test"] }
+ika-move-build.workspace = true
+ika-protocol-config.workspace = true
+ika-types.workspace = true
+
+move-bytecode-verifier = { path = "../../external-crates/move/crates/move-bytecode-verifier" }
+ika-adapter = { path = "../../ika-execution/latest/ika-adapter", package = "ika-adapter-latest" }
+ika-verifier = { path = "../../ika-execution/latest/ika-verifier", package = "ika-verifier-latest" }
+
+move-bytecode-verifier-meter.workspace = true
+move-cli.workspace = true
+move-package.workspace = true
+move-unit-test.workspace = true
+ika-config.workspace = true
+
+[dependencies]

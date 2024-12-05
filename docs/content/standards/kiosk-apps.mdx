@@ -1,9 +1,9 @@
 ---
 title: Kiosk Apps
-description: Kiosk apps are a way to extend the functionality of Sui Kiosk while keeping the core functionality intact. You can develop apps to add new features to a kiosk without having to modify the core code or move the assets elsewhere.
+description: Kiosk apps are a way to extend the functionality of Ika Kiosk while keeping the core functionality intact. You can develop apps to add new features to a kiosk without having to modify the core code or move the assets elsewhere.
 ---
 
-Kiosk apps are a way to extend the functionality of Sui Kiosk while keeping the core functionality intact. You can develop apps to add new features to a kiosk without having to modify the core code or move the assets elsewhere.
+Kiosk apps are a way to extend the functionality of Ika Kiosk while keeping the core functionality intact. You can develop apps to add new features to a kiosk without having to modify the core code or move the assets elsewhere.
 
 There are two types of apps:
 
@@ -16,7 +16,7 @@ Basic Kiosk apps do not require Kiosk Apps API to function. They usually serve t
 
 ### UID access via the uid_mut
 
-Kiosk has an `id: UID` field like all objects on Sui, which allows this object to be uniquely identified and carry custom dynamic fields and dynamic object fields. The Kiosk itself is built around dynamic fields and features like place and list are built around dynamic object fields.
+Kiosk has an `id: UID` field like all objects on Ika, which allows this object to be uniquely identified and carry custom dynamic fields and dynamic object fields. The Kiosk itself is built around dynamic fields and features like place and list are built around dynamic object fields.
 
 ### The uid_mut_as_owner function
 
@@ -38,8 +38,8 @@ You can attach custom dynamic fields to your kiosks that anyone can then read (b
 module examples::kiosk_name_ext;
 
 use std::string::String;
-use sui::dynamic_field as df;
-use sui::kiosk::{Self, Kiosk, KioskOwnerCap};
+use ika::dynamic_field as df;
+use ika::kiosk::{Self, Kiosk, KioskOwnerCap};
 
 /// The dynamic field key for the Kiosk Name Extension
 struct KioskName has copy, store, drop {}
@@ -66,7 +66,7 @@ Permissioned apps use the Kiosk Apps API to perform actions in the kiosk. They u
 
 Just having access to the `uid` is often not enough to build an app due to the security limitations. Only the owner of a kiosk has full access to the `uid`, which means that an app involving a third party would require involvement from the kiosk owner in every step of the process.
 
-In addition to limited and constrained access to storage, app permissions are also owner dependent. In the default setup, no party can place or lock items in a kiosk without its owner's consent. As a result, some cases such as collection bidding (offering X SUI for any item in a collection) requires the kiosk owner to approve the bid.
+In addition to limited and constrained access to storage, app permissions are also owner dependent. In the default setup, no party can place or lock items in a kiosk without its owner's consent. As a result, some cases such as collection bidding (offering X IKA for any item in a collection) requires the kiosk owner to approve the bid.
 
 ## kiosk_extension module
 
@@ -75,14 +75,14 @@ The `kiosk_extension` module addresses concerns over owner bottlenecks and provi
 ```move
 module example::my_extension;
 
-use sui::kiosk_extension;
+use ika::kiosk_extension;
 
 // ...
 ```
 
 ## App lifecycle
 
-These are the key points in the lifecycle of a Sui Kiosk app:
+These are the key points in the lifecycle of a Ika Kiosk app:
 
 - You can only install an app with an explicit call in the `kiosk_extension` module.
 - A kiosk owner can revoke permissions of an app at any time by calling the `disable` function.
@@ -100,7 +100,7 @@ The signature of the `kiosk_extension::add` function requires the app witness, m
 ```move
 module examples::letterbox_ext;
 
-use sui::kiosk_extension;
+use ika::kiosk_extension;
 
 // ... dependencies
 
@@ -133,7 +133,7 @@ Permissions are represented as a `u128` integer storing a bitmap. Each of the bi
 
 :::info
 
-Currently, Sui Kiosk has only two permissions: `place` (first bit) and `lock` and `place` (second bit). The remaining bits are reserved for future use.
+Currently, Ika Kiosk has only two permissions: `place` (first bit) and `lock` and `place` (second bit). The remaining bits are reserved for future use.
 
 :::
 

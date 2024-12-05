@@ -11,19 +11,19 @@ import fs from "fs";
 
 const FRAMEWORK_PATH = path.join(
   __dirname,
-  "../../../../../crates/sui-framework/docs/sui-framework",
+  "../../../../../crates/ika-framework/docs/ika-framework",
 );
 const STDLIB_PATH = path.join(
   __dirname,
-  "../../../../../crates/sui-framework/docs/move-stdlib",
+  "../../../../../crates/ika-framework/docs/move-stdlib",
 );
 const DEEPBOOK_PATH = path.join(
   __dirname,
-  "../../../../../crates/sui-framework/docs/deepbook",
+  "../../../../../crates/ika-framework/docs/deepbook",
 );
-const SUISYS_PATH = path.join(
+const IKASYS_PATH = path.join(
   __dirname,
-  "../../../../../crates/sui-framework/docs/sui-system",
+  "../../../../../crates/ika-framework/docs/ika-system",
 );
 const DOCS_PATH = path.join(
   __dirname,
@@ -33,7 +33,7 @@ const DOCS_PATH = path.join(
 
 const frameworkPlugin = (context, options) => {
   return {
-    name: "sui-framework-plugin",
+    name: "ika-framework-plugin",
 
     async loadContent() {
       // framework folder is added to gitignore, so should only exist locally.
@@ -65,12 +65,12 @@ const frameworkPlugin = (context, options) => {
       const frameworkFiles = recurseFiles(FRAMEWORK_PATH);
       const stdlibFiles = recurseFiles(STDLIB_PATH);
       const deepbookFiles = recurseFiles(DEEPBOOK_PATH);
-      const suisysFiles = recurseFiles(SUISYS_PATH);
+      const ikasysFiles = recurseFiles(IKASYS_PATH);
       const allFiles = [
         frameworkFiles,
         stdlibFiles,
         deepbookFiles,
-        suisysFiles,
+        ikasysFiles,
       ];
       allFiles.forEach((theseFiles) => {
         theseFiles.forEach((file) => {
@@ -119,7 +119,7 @@ const frameworkPlugin = (context, options) => {
                     link: {
                       type: "generated-index",
                       slug: path.join("/references/framework", part),
-                      description: `Documentation for the modules in the sui/crates/sui-framework/packages/${part} crate. Select a module from the list to see its details.`,
+                      description: `Documentation for the modules in the ika/crates/ika-framework/packages/${part} crate. Select a module from the list to see its details.`,
                     },
                   }),
                   "utf8",

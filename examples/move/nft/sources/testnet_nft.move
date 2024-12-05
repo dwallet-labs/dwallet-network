@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module examples::testnet_nft {
-    use sui::url::{Self, Url};
+    use ika::url::{Self, Url};
     use std::string;
-    use sui::event;
+    use ika::event;
 
     /// An example NFT that can be minted by anybody
     public struct TestnetNFT has key, store {

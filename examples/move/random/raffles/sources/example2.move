@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-/// Basic raffles game that depends on Sui randomness.
+/// Basic raffles game that depends on Ika randomness.
 ///
 /// Anyone can create a new raffle game with an end time and a price. After the end time, anyone can trigger
 /// a function to determine the winner, and the winner gets the entire balance of the game.
@@ -9,13 +9,13 @@
 /// Example 2: Small raffle, without tickets.
 
 module raffles::example2 {
-    use sui::balance::{Self, Balance};
-    use sui::clock::Clock;
-    use sui::coin::{Self, Coin};
-    use sui::random::{Random, new_generator};
-    use sui::sui::SUI;
-    use sui::table_vec::{Self, TableVec};
-    use sui::tx_context::sender;
+    use ika::balance::{Self, Balance};
+    use ika::clock::Clock;
+    use ika::coin::{Self, Coin};
+    use ika::random::{Random, new_generator};
+    use ika::ika::IKA;
+    use ika::table_vec::{Self, TableVec};
+    use ika::tx_context::sender;
 
     /// Error codes
     const EGameInProgress: u64 = 0;
@@ -28,18 +28,18 @@ module raffles::example2 {
     /// Game represents a set of parameters of a single game.
     public struct Game has key {
         id: UID,
-        cost_in_sui: u64,
+        cost_in_ika: u64,
         participants: u32,
         end_time: u64,
-        balance: Balance<SUI>,
+        balance: Balance<IKA>,
         participants_table: TableVec<address>,
     }
 
     /// Create a shared-object Game.
-    public fun create(end_time: u64, cost_in_sui: u64, ctx: &mut TxContext) {
+    public fun create(end_time: u64, cost_in_ika: u64, ctx: &mut TxContext) {
         let game = Game {
             id: object::new(ctx),
-            cost_in_sui,
+            cost_in_ika,
             participants: 0,
             end_time,
             balance: balance::zero(),
@@ -55,7 +55,7 @@ module raffles::example2 {
     /// Gas based attacks are not possible since the gas cost of this function is independent of the winner.
     entry fun close(game: Game, r: &Random, clock: &Clock, ctx: &mut TxContext) {
         assert!(game.end_time <= clock.timestamp_ms(), EGameInProgress);
-        let Game { id, cost_in_sui: _, participants, end_time: _, balance, participants_table } = game;
+        let Game { id, cost_in_ika: _, participants, end_time: _, balance, participants_table } = game;
         if (participants > 0) {
             let mut generator = r.new_generator(ctx);
             let winner = generator.generate_u32_in_range(0, participants - 1);
@@ -71,9 +71,9 @@ module raffles::example2 {
     }
 
     /// Anyone can play.
-    public fun play(game: &mut Game, coin: Coin<SUI>, clock: &Clock, ctx: &mut TxContext) {
+    public fun play(game: &mut Game, coin: Coin<IKA>, clock: &Clock, ctx: &mut TxContext) {
         assert!(game.end_time > clock.timestamp_ms(), EGameAlreadyCompleted);
-        assert!(coin.value() == game.cost_in_sui, EInvalidAmount);
+        assert!(coin.value() == game.cost_in_ika, EInvalidAmount);
         assert!(game.participants < MaxParticipants, EReachedMaxParticipants);
 
         coin::put(&mut game.balance, coin);
@@ -82,8 +82,8 @@ module raffles::example2 {
     }
 
     #[test_only]
-    public fun cost_in_sui(game: &Game): u64 {
-        game.cost_in_sui
+    public fun cost_in_ika(game: &Game): u64 {
+        game.cost_in_ika
     }
 
     #[test_only]

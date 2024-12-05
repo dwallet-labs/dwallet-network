@@ -30,8 +30,8 @@ import {
 } from '_src/shared/messaging/messages/payloads/QredoConnect';
 import { type SignedMessage, type SignedTransaction } from '_src/ui/app/WalletSigner';
 import type { AppDispatch } from '_store';
-import { type SuiTransactionBlockResponse } from '@mysten/sui/client';
-import { toBase64 } from '@mysten/sui/utils';
+import { type IkaTransactionBlockResponse } from '@ika-io/ika/client';
+import { toBase64 } from '@ika-io/ika/utils';
 import { type QueryKey } from '@tanstack/react-query';
 import { lastValueFrom, map, take } from 'rxjs';
 
@@ -95,7 +95,7 @@ export class BackgroundClient {
 	public sendTransactionRequestResponse(
 		txID: string,
 		approved: boolean,
-		txResult?: SuiTransactionBlockResponse | SignedMessage,
+		txResult?: IkaTransactionBlockResponse | SignedMessage,
 		txResultError?: string,
 		txSigned?: SignedTransaction,
 	) {
@@ -619,7 +619,7 @@ export class BackgroundClient {
 	}
 
 	private createPortStream() {
-		this._portStream = PortStream.connectToBackgroundService('sui_ui<->background');
+		this._portStream = PortStream.connectToBackgroundService('ika_ui<->background');
 		this._portStream.onDisconnect.subscribe(() => {
 			this.createPortStream();
 		});

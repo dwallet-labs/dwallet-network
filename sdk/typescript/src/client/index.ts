@@ -2,20 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export {
-	type SuiTransport,
-	type SuiTransportRequestOptions,
-	type SuiTransportSubscribeOptions,
+	type IkaTransport,
+	type IkaTransportRequestOptions,
+	type IkaTransportSubscribeOptions,
 	type HttpHeaders,
-	type SuiHTTPTransportOptions,
-	SuiHTTPTransport,
+	type IkaHTTPTransportOptions,
+	IkaHTTPTransport,
 } from './http-transport.js';
 export { getFullnodeUrl } from './network.js';
 export * from './types/index.js';
 export {
-	type SuiClientOptions,
+	type IkaClientOptions,
 	type PaginationArguments,
 	type OrderArguments,
-	isSuiClient,
-	SuiClient,
+	isIkaClient,
+	IkaClient,
 } from './client.js';
-export { SuiHTTPStatusError, SuiHTTPTransportError, JsonRpcError } from './errors.js';
+export { IkaHTTPStatusError, IkaHTTPTransportError, JsonRpcError } from './errors.js';

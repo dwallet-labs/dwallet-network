@@ -57,7 +57,7 @@ impl CommitConsumer {
 }
 
 pub struct CommitConsumerMonitor {
-    // highest commit that has been handled by Sui
+    // highest commit that has been handled by Ika
     highest_handled_commit: watch::Sender<u32>,
 
     // the highest commit found in local storage at startup

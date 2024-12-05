@@ -7,7 +7,7 @@ sidebar_label: Design
 
 ## Pools {#pools}
 
-At the center of DeepBook is a hyper-efficient per-current pair shared-object pool structure. This architecture maximally utilizes Sui's Mysticeti consensus engine to minimize contention and achieve high throughput.
+At the center of DeepBook is a hyper-efficient per-current pair shared-object pool structure. This architecture maximally utilizes Ika's Mysticeti consensus engine to minimize contention and achieve high throughput.
 
 For each base and quote asset trading pair, a globally shared pool is created to bookkeep open orders on the order book and handle placement, cancellation, and settlement of orders. Under this architecture, you can parallelize transactions involving different trading pairs to maximize throughput.
 
@@ -64,7 +64,7 @@ struct Order has store, drop {
     // For each pool, order id is incremental and unique for each opening order.
     // Orders that are submitted earlier have lower order ids.
     // 64 bits are sufficient for order ids, whereas 32 bits are not.
-    // Assuming a maximum TPS of 100K/s of Sui chain, it would take (1<<63) / 100000 / 3600 / 24 / 365 = 2924712 years to reach the full capacity.
+    // Assuming a maximum TPS of 100K/s of Ika chain, it would take (1<<63) / 100000 / 3600 / 24 / 365 = 2924712 years to reach the full capacity.
     // The highest bit of the order id denotes the order type, 0 for bid, 1 for ask.
     order_id: u64,
     // Only used for limit orders.
@@ -86,7 +86,7 @@ Order matching occurs when a taker order is submitted to the Central Limit Order
 
 ### Order tracking {#order-tracking}
 
-DeepBook supports efficient tracking of maker orders. Each unfilled maker order is associated with a unique u64 order id, and users can query the order status using the order id together with the Sui RPC call. Users can also subscribe to the event stream emitted by DeepBook related to changes in order status. DeepBook currently supports the following events, `OrderPlaced`, `OrderFilled`, and `OrderCanceled`.
+DeepBook supports efficient tracking of maker orders. Each unfilled maker order is associated with a unique u64 order id, and users can query the order status using the order id together with the Ika RPC call. Users can also subscribe to the event stream emitted by DeepBook related to changes in order status. DeepBook currently supports the following events, `OrderPlaced`, `OrderFilled`, and `OrderCanceled`.
 
 ```move
 /// Emitted when a maker order is injected into the order book.

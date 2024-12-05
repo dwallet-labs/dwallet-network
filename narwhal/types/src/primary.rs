@@ -33,7 +33,7 @@ use std::{
     collections::{HashMap, HashSet},
     time::{Duration, SystemTime},
 };
-use sui_protocol_config::ProtocolConfig;
+use ika_protocol_config::ProtocolConfig;
 use tracing::warn;
 
 /// The round number.

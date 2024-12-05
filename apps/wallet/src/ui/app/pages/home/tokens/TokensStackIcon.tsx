@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { type SVGProps } from 'react';
 
-export const SvgSuiTokensStack = (props: SVGProps<SVGSVGElement>) => (
+export const SvgIkaTokensStack = (props: SVGProps<SVGSVGElement>) => (
 	<svg
 		xmlns="http://www.w3.org/2000/svg"
 		width="1em"
@@ -19,7 +19,7 @@ export const SvgSuiTokensStack = (props: SVGProps<SVGSVGElement>) => (
 			fill="currentColor"
 			d="M31.981 39.033c7.335 2.394 14.653 2.406 21.991-.152 0 .944.026 1.965-.021 2.984-.01.223-.242.49-.442.643-.925.7-2.016 1.036-3.12 1.312-3.393.846-6.843.964-10.315.723-1.999-.145-3.976-.42-5.866-1.108a10.787 10.787 0 0 1-1.854-.948.893.893 0 0 1-.357-.636c-.039-.963-.016-1.922-.016-2.818Zm-12.599-22.51c3.546 1.543 7.28 1.878 11.065 1.867 3.784-.012 7.514-.395 11.115-2.033 0 .462.01.867 0 1.283-.017.563-.06 1.128-.078 1.693-.013.434-.289.668-.61.878-1.062.7-2.261 1.068-3.484 1.322a33.84 33.84 0 0 1-14.068.026c-.335-.07-.647-.268-.955-.434-.88-.48-1.759-.968-2.626-1.474-.144-.088-.336-.28-.34-.433-.037-.885-.02-1.782-.02-2.695Zm5.945 7.631c5.546.499 10.952.473 16.166-1.71v2.754c-.833.059-1.655.096-2.474.18-2.51.26-4.991.646-7.263 1.844a4.116 4.116 0 0 0-1.005.676c-.338.339-.696.41-1.138.378-.665-.051-1.334-.042-1.999-.096-.154-.011-.394-.144-.433-.264a13.605 13.605 0 0 0-1.854-3.762Zm4.435 12.282v3.902l-5.018-.434c.237-.318.408-.504.532-.722.484-.841.973-1.68 1.418-2.544.144-.276.276-.37.578-.344.805.07 1.614.103 2.49.142Zm-.107-2.162-2.093-.116.197-3.764c.519 0 1.111-.01 1.7.012.069 0 .186.177.187.273.013 1.169.009 2.338.009 3.595Z"
 		/>
-		<g clipPath="url(#sui_tokens_stack_svg__a)">
+		<g clipPath="url(#ika_tokens_stack_svg__a)">
 			<rect width={22} height={22} x={3} y={21} fill="currentColor" rx={11} />
 			<path fill="currentColor" d="M3 21h22v22H3z" />
 			<path
@@ -30,10 +30,10 @@ export const SvgSuiTokensStack = (props: SVGProps<SVGSVGElement>) => (
 			/>
 		</g>
 		<defs>
-			<clipPath id="sui_tokens_stack_svg__a">
+			<clipPath id="ika_tokens_stack_svg__a">
 				<rect width={22} height={22} x={3} y={21} fill="#fff" rx={11} />
 			</clipPath>
 		</defs>
 	</svg>
 );
-export default SvgSuiTokensStack;
+export default SvgIkaTokensStack;

@@ -21,7 +21,7 @@ import {
 	unknown,
 } from 'valibot';
 
-import { BCSBytes, JsonU64, ObjectID, ObjectRef, SuiAddress } from './internal.js';
+import { BCSBytes, JsonU64, ObjectID, ObjectRef, IkaAddress } from './internal.js';
 
 type Merge<T> = T extends object ? { [K in keyof T]: T[K] } : never;
 
@@ -37,7 +37,7 @@ function enumUnion<T extends Record<string, GenericSchema<any>>>(options: T) {
 	>;
 }
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L690-L702
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/ika-types/src/transaction.rs#L690-L702
 const Argument = enumUnion({
 	GasCoin: literal(true),
 	Input: pipe(number(), integer()),
@@ -45,15 +45,15 @@ const Argument = enumUnion({
 	NestedResult: tuple([pipe(number(), integer()), pipe(number(), integer())]),
 });
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L1387-L1392
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/ika-types/src/transaction.rs#L1387-L1392
 const GasData = object({
 	budget: nullable(JsonU64),
 	price: nullable(JsonU64),
-	owner: nullable(SuiAddress),
+	owner: nullable(IkaAddress),
 	payment: nullable(array(ObjectRef)),
 });
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L707-L718
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/ika-types/src/transaction.rs#L707-L718
 const ProgrammableMoveCall = object({
 	package: ObjectID,
 	module: string(),
@@ -69,7 +69,7 @@ const $Intent = object({
 	data: record(string(), unknown()),
 });
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L657-L685
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/ika-types/src/transaction.rs#L657-L685
 const Command = enumUnion({
 	MoveCall: ProgrammableMoveCall,
 	TransferObjects: object({
@@ -101,7 +101,7 @@ const Command = enumUnion({
 	$Intent,
 });
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L102-L114
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/ika-types/src/transaction.rs#L102-L114
 const ObjectArg = enumUnion({
 	ImmOrOwnedObject: ObjectRef,
 	SharedObject: object({
@@ -113,7 +113,7 @@ const ObjectArg = enumUnion({
 	Receiving: ObjectRef,
 });
 
-// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/sui-types/src/transaction.rs#L75-L80
+// https://github.com/MystenLabs/sui/blob/df41d5fa8127634ff4285671a01ead00e519f806/crates/ika-types/src/transaction.rs#L75-L80
 const CallArg = enumUnion({
 	Object: ObjectArg,
 	Pure: object({
@@ -137,7 +137,7 @@ const TransactionExpiration = enumUnion({
 
 export const SerializedTransactionDataV2 = object({
 	version: literal(2),
-	sender: nullish(SuiAddress),
+	sender: nullish(IkaAddress),
 	expiration: nullish(TransactionExpiration),
 	gasData: GasData,
 	inputs: array(CallArg),

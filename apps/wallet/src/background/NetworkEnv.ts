@@ -11,12 +11,12 @@ class NetworkEnv {
 	#events = mitt<{ changed: NetworkEnvType }>();
 
 	async getActiveNetwork(): Promise<NetworkEnvType> {
-		const { sui_Env, sui_Env_RPC } = await Browser.storage.local.get({
-			sui_Env: DEFAULT_API_ENV,
-			sui_Env_RPC: null,
+		const { ika_Env, ika_Env_RPC } = await Browser.storage.local.get({
+			ika_Env: DEFAULT_API_ENV,
+			ika_Env_RPC: null,
 		});
-		const adjCustomUrl = sui_Env === API_ENV.customRPC ? sui_Env_RPC : null;
-		return { env: sui_Env, customRpcUrl: adjCustomUrl };
+		const adjCustomUrl = ika_Env === API_ENV.customRPC ? ika_Env_RPC : null;
+		return { env: ika_Env, customRpcUrl: adjCustomUrl };
 	}
 
 	async setActiveNetwork(network: NetworkEnvType) {
@@ -25,8 +25,8 @@ class NetworkEnv {
 			throw new Error(`Invalid custom RPC url ${customRpcUrl}`);
 		}
 		await Browser.storage.local.set({
-			sui_Env: env,
-			sui_Env_RPC: customRpcUrl,
+			ika_Env: env,
+			ika_Env_RPC: customRpcUrl,
 		});
 		this.#events.emit('changed', network);
 	}

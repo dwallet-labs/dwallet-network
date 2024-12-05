@@ -3,16 +3,16 @@
 
 import {
 	getLedgerConnectionErrorMessage,
-	getSuiApplicationErrorMessage,
+	getIkaApplicationErrorMessage,
 } from '_src/ui/app/helpers/errorMessages';
 import { Link } from '_src/ui/app/shared/Link';
 import { Text } from '_src/ui/app/shared/text';
 import { Check12, X12 } from '@mysten/icons';
-import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
+import { Ed25519PublicKey } from '@ika-io/ika/keypairs/ed25519';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-import { useSuiLedgerClient } from '../../ledger/SuiLedgerClientProvider';
+import { useIkaLedgerClient } from '../../ledger/IkaLedgerClientProvider';
 import LoadingIndicator from '../../loading/LoadingIndicator';
 
 export type VerifyLedgerConnectionLinkProps = {
@@ -33,7 +33,7 @@ export function VerifyLedgerConnectionStatus({
 	accountAddress,
 	derivationPath,
 }: VerifyLedgerConnectionLinkProps) {
-	const { connectToLedger } = useSuiLedgerClient();
+	const { connectToLedger } = useIkaLedgerClient();
 	const [isPending, setLoading] = useState(false);
 	const [verificationStatus, setVerificationStatus] = useState(VerificationStatus.UNKNOWN);
 
@@ -57,20 +57,20 @@ export function VerifyLedgerConnectionStatus({
 						}, loadingStateDelay);
 
 						try {
-							const suiLedgerClient = await connectToLedger();
-							const publicKeyResult = await suiLedgerClient.getPublicKey(derivationPath, true);
+							const ikaLedgerClient = await connectToLedger();
+							const publicKeyResult = await ikaLedgerClient.getPublicKey(derivationPath, true);
 							const publicKey = new Ed25519PublicKey(publicKeyResult.publicKey);
-							const suiAddress = publicKey.toSuiAddress();
+							const ikaAddress = publicKey.toIkaAddress();
 
 							setVerificationStatus(
-								accountAddress === suiAddress
+								accountAddress === ikaAddress
 									? VerificationStatus.VERIFIED
 									: VerificationStatus.NOT_VERIFIED,
 							);
 						} catch (error) {
 							const errorMessage =
 								getLedgerConnectionErrorMessage(error) ||
-								getSuiApplicationErrorMessage(error) ||
+								getIkaApplicationErrorMessage(error) ||
 								'Something went wrong';
 							toast.error(errorMessage);
 

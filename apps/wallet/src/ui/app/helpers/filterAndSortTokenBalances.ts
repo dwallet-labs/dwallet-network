@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { USDC_TYPE_ARG } from '_pages/swap/utils';
-import { type CoinBalance } from '@mysten/sui/client';
-import { SUI_TYPE_ARG } from '@mysten/sui/utils';
+import { type CoinBalance } from '@ika-io/ika/client';
+import { IKA_TYPE_ARG } from '@ika-io/ika/utils';
 
 // Sort tokens by symbol and total balance
 // Move this to the API backend
@@ -12,10 +12,10 @@ export function filterAndSortTokenBalances(tokens: CoinBalance[]) {
 	return tokens
 		.filter((token) => Number(token.totalBalance) > 0)
 		.sort((a, b) => {
-			if (a.coinType === SUI_TYPE_ARG) {
+			if (a.coinType === IKA_TYPE_ARG) {
 				return -1;
 			}
-			if (b.coinType === SUI_TYPE_ARG) {
+			if (b.coinType === IKA_TYPE_ARG) {
 				return 1;
 			}
 			if (a.coinType === USDC_TYPE_ARG) {

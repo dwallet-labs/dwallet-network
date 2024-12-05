@@ -26,7 +26,7 @@ This module has denylist enabled from the start and the denylist is empty. The f
 
 ```bash
 # arguments: TreasuryCap, amount, recipient
-sui client call --json \
+ika client call --json \
     --package $PKG --module reg --function mint_and_transfer \
     --gas-budget 100000000 \
     --args $TREASURY_CAP "amount" "0x_recipient"
@@ -36,7 +36,7 @@ sui client call --json \
 
 ```bash
 # arguments: Policy, PolicyCap, addresses (vector)
-sui client call --json \
+ika client call --json \
     --package $PKG --module denylist_rule --function add_records \
     --gas-budget 100000000 \
     --args $POLICY $POLICY_CAP "[<0xaddress>]"
@@ -48,7 +48,7 @@ Here's an example of an address to add to the list: `0x2df4fa8165dd5667f2d0c63f1
 
 ```bash
 # arguments: Policy, PolicyCap, addresses (vector)
-sui client call --json \
+ika client call --json \
     --package $PKG --module denylist_rule --function remove_records \
     --gas-budget 100000000 \
     --args $POLICY $POLICY_CAP "[<0xaddress>]"
@@ -60,7 +60,7 @@ sui client call --json \
 
 ```bash
 # arguments: amount, recipient
-sui client call --json \
+ika client call --json \
     --package $PKG --module reg --function transfer \
     --gas-budget 100000000 \
     --args $POLICY "0x_token" "0x_recipient"
@@ -70,7 +70,7 @@ sui client call --json \
 
 ```bash
 # arguments: amount, recipient
-sui client call --json \
+ika client call --json \
     --package $PKG --module reg --function split_and_transfer \
     --gas-budget 100000000 \
     --args $POLICY "0x_token" "amount" "0x_recipient"
@@ -80,7 +80,7 @@ sui client call --json \
 
 ```bash
 # arguments: token, amount
-sui client call --json \
+ika client call --json \
     --package $PKG --module reg --function spend \
     --gas-budget 100000000 \
     --args "0x_token" "amount"

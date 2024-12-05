@@ -5,8 +5,8 @@ import type { InferInput } from 'valibot';
 import { bigint, object, parse, string } from 'valibot';
 
 import { bcs } from '../../bcs/index.js';
-import type { CoinStruct, SuiClient } from '../../client/index.js';
-import { normalizeStructTag } from '../../utils/sui-types.js';
+import type { CoinStruct, IkaClient } from '../../client/index.js';
+import { normalizeStructTag } from '../../utils/ika-types.js';
 import { Commands } from '../Commands.js';
 import type { Argument } from '../data/internal.js';
 import { Inputs } from '../Inputs.js';
@@ -16,10 +16,10 @@ import type { Transaction } from '../Transaction.js';
 import type { TransactionDataBuilder } from '../TransactionData.js';
 
 const COIN_WITH_BALANCE = 'CoinWithBalance';
-const SUI_TYPE = normalizeStructTag('0x2::sui::SUI');
+const IKA_TYPE = normalizeStructTag('0x2::ika::IKA');
 
 export function coinWithBalance({
-	type = SUI_TYPE,
+	type = IKA_TYPE,
 	balance,
 	useGasCoin = true,
 }: {
@@ -36,7 +36,7 @@ export function coinWithBalance({
 				name: COIN_WITH_BALANCE,
 				inputs: {},
 				data: {
-					type: coinType === SUI_TYPE && useGasCoin ? 'gas' : coinType,
+					type: coinType === IKA_TYPE && useGasCoin ? 'gas' : coinType,
 					balance: BigInt(balance),
 				} satisfies InferInput<typeof CoinWithBalanceData>,
 			}),
@@ -175,7 +175,7 @@ async function getCoinsOfType({
 }: {
 	coinType: string;
 	balance: bigint;
-	client: SuiClient;
+	client: IkaClient;
 	owner: string;
 	usedIds: Set<string>;
 }): Promise<CoinStruct[]> {

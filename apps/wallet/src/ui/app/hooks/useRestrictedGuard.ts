@@ -19,11 +19,11 @@ export function useRestrictedGuard() {
 		queryFn: async () => {
 			// NOTE: We use fetch directly here instead of the RPC layer because we don't want this instrumented,
 			// and we also need to work with the response object directly.
-			const res = await fetch('https://wallet-rpc.testnet.sui.io/', {
+			const res = await fetch('https://wallet-rpc.testnet.ika.io/', {
 				method: 'POST',
 				body: JSON.stringify({
 					id: 1,
-					method: 'sui_getLatestCheckpointSequenceNumber',
+					method: 'ika_getLatestCheckpointSequenceNumber',
 					jsonrpc: '2.0',
 					params: [],
 				}),

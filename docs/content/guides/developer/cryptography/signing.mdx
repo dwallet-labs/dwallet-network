@@ -1,8 +1,8 @@
 ---
-title: Sui On-Chain Signatures Verification in Move
+title: Ika On-Chain Signatures Verification in Move
 ---
 
-Move contracts in Sui support verifications for several signature schemes on-chain. Not all signatures supported in on-chain verification are supported as user signature verification. See [Sui Signatures](/concepts/cryptography/transaction-auth/signatures.mdx#user-signature) for valid signature schemes for transaction authorization.
+Move contracts in Ika support verifications for several signature schemes on-chain. Not all signatures supported in on-chain verification are supported as user signature verification. See [Ika Signatures](/concepts/cryptography/transaction-auth/signatures.mdx#user-signature) for valid signature schemes for transaction authorization.
 
 This topic covers:
 1. How to use [fastcrypto](https://github.com/MystenLabs/fastcrypto)'s CLI tool to create a signature of a given scheme. For testing and debugging only, DO NOT use in production.
@@ -47,7 +47,7 @@ Public key in hex: $PK
 2. Call the verify method in Move. All inputs are represented in bytes in hex format:
 
 ```move
-    use sui::ed25519;
+    use ika::ed25519;
 
     let msg = x"$MSG";
     let pk = x"$PK";
@@ -74,7 +74,7 @@ Public key in hex: $PK
 2. Call the verify method in Move.
 
 ```move
-    use sui::ecdsa_k1;
+    use ika::ecdsa_k1;
     
     let msg = x"$MSG";
     let pk = x"$PK";
@@ -101,7 +101,7 @@ Public key in hex: $PK
 
 2. Call the ecrecover method in Move and check equality.
 ```move
-    use sui::ecdsa_k1;
+    use ika::ecdsa_k1;
 
     let msg = x"$MSG";
     let pk = x"$PK";
@@ -129,7 +129,7 @@ Public key in hex: $PK
 2. Call the verify method in Move.
 
 ```move
-    use sui::ecdsa_r1;
+    use ika::ecdsa_r1;
 
     let msg = x"$MSG";
     let pk = x"$PK";
@@ -157,7 +157,7 @@ Public key in hex: $PK
 2. Call the ecrecover method in Move and check equality.
 
 ```move
-    use sui::ecdsa_r1;
+    use ika::ecdsa_r1;
 
     let msg = x"$MSG";
     let pk = x"$PK";
@@ -185,7 +185,7 @@ Public key in hex: $PK
 2. Call the verify method in Move.
 
 ```move
-    use sui::bls12381;
+    use ika::bls12381;
 
     let msg = x"$MSG";
     let pk = x"$PK";
@@ -212,7 +212,7 @@ Public key in hex: $PK
 2. Call the verify method in Move.
 
 ```move
-    use sui::bls12381;
+    use ika::bls12381;
 
     let msg = x"$MSG";
     let pk = x"$PK";

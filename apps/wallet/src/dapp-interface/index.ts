@@ -3,6 +3,6 @@
 
 import { registerWallet } from '@mysten/wallet-standard';
 
-import { SuiWallet } from './WalletStandardInterface';
+import { IkaWallet } from './WalletStandardInterface';
 
-registerWallet(new SuiWallet());
+registerWallet(new IkaWallet());

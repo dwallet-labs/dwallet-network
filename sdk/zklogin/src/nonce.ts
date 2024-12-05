@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { toHex } from '@mysten/bcs';
-import type { PublicKey } from '@mysten/sui/cryptography';
-import { toPaddedBigEndianBytes } from '@mysten/sui/zklogin';
+import type { PublicKey } from '@ika-io/ika/cryptography';
+import { toPaddedBigEndianBytes } from '@ika-io/ika/zklogin';
 import { randomBytes } from '@noble/hashes/utils';
 import { base64url } from 'jose';
 
@@ -25,7 +25,7 @@ export function generateRandomness() {
 }
 
 export function generateNonce(publicKey: PublicKey, maxEpoch: number, randomness: bigint | string) {
-	const publicKeyBytes = toBigIntBE(publicKey.toSuiBytes());
+	const publicKeyBytes = toBigIntBE(publicKey.toIkaBytes());
 	const eph_public_key_0 = publicKeyBytes / 2n ** 128n;
 	const eph_public_key_1 = publicKeyBytes % 2n ** 128n;
 	const bigNum = poseidonHash([eph_public_key_0, eph_public_key_1, maxEpoch, BigInt(randomness)]);

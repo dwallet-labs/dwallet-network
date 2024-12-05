@@ -1,11 +1,11 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { type SuiObjectResponse } from '@mysten/sui/client';
+import { type IkaObjectResponse } from '@ika-io/ika/client';
 
 import { useRecognizedPackages } from './useRecognizedPackages';
 
-export function useResolveVideo(object?: SuiObjectResponse | null) {
+export function useResolveVideo(object?: IkaObjectResponse | null) {
 	const recognizedPackages = useRecognizedPackages();
 
 	if (!object) return null;

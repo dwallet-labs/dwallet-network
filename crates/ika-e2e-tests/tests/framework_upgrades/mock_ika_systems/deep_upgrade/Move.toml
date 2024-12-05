@@ -1,0 +1,11 @@
+[package]
+name = "IkaSystemDeepUpgrade"
+version = "0.0.1"
+edition = "2024.beta"
+
+[dependencies]
+Ika = { local = "../../../../../ika-framework/packages/ika-framework" }
+MoveStdlib = { local = "../../../../../ika-framework/packages/move-stdlib" }
+
+[addresses]
+ika_system = "0x3"
