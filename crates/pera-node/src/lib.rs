@@ -212,7 +212,6 @@ mod simulator {
 use simulator::*;
 
 use pera_core::consensus_handler::ConsensusHandlerInitializer;
-use pera_core::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use pera_core::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsManager;
 use pera_core::safe_client::SafeClientMetricsBase;

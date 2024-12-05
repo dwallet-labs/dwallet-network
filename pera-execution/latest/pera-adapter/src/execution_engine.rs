@@ -1166,6 +1166,10 @@ mod checked {
                     ],
                 )
             }
+            MPCRound::NetworkDkg => {
+                todo!()
+                // todo (yael)
+            }
         };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();

@@ -10520,6 +10520,7 @@ dependencies = [
  "prometheus",
  "proof",
  "rand 0.8.5",
+ "rand_chacha 0.3.1",
  "rand_core 0.6.4",
  "rayon",
  "reqwest 0.12.9",

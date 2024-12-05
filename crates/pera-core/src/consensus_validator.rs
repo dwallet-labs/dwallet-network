@@ -93,7 +93,8 @@ impl PeraTxValidator {
                 | ConsensusTransactionKind::CapabilityNotificationV2(_)
                 | ConsensusTransactionKind::RandomnessStateUpdate(_, _)
                 | ConsensusTransactionKind::DWalletMPCMessage(_, _, _)
-                | ConsensusTransactionKind::DWalletMPCOutput(..) => {}
+                | ConsensusTransactionKind::DWalletMPCOutput(_, _, _) => {}
+                | ConsensusTransactionKind::PeraNetworkDkgMessage(_, _) => {}
             }
         }
 

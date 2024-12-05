@@ -6,3 +6,4 @@ pub mod mpc_outputs_manager;
 pub mod mpc_party;
 mod presign;
 pub mod sign;
+pub mod network_dkg;

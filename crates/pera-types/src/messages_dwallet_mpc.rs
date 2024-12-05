@@ -23,6 +23,7 @@ pub enum MPCRound {
     Sign(ObjectID, Vec<u8>),
     /// A batched sign session, contains the list of messages that are being signed.
     BatchedSign(Vec<Vec<u8>>),
+    NetworkDkg,
 }
 
 /// The content of the system transaction that stores the MPC session output on chain.
