@@ -2809,7 +2809,6 @@ Aborts if validator metadata is valid
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="validator.md#0x3_validator_validate_metadata">validate_metadata</a>(metadata: &<a href="validator.md#0x3_validator_ValidatorMetadata">ValidatorMetadata</a>) {
-    // todo (yael): add key validation
     <a href="validator.md#0x3_validator_validate_metadata_bcs">validate_metadata_bcs</a>(<a href="../move-stdlib/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(metadata));
 }
 </code></pre>

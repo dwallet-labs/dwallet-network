@@ -597,8 +597,8 @@ module pera_system::pera_system {
     #[allow(unused_function)]
     /// Lock the validator set
     fun lock_validator_set(wrapper: &mut PeraSystemState, ctx: &TxContext) {
-        assert!(sender == @0x0, ENotSystemAddress);
-        let mut self = load_system_state_mut(wrapper);
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        let self = load_system_state_mut(wrapper);
         self.lock_validator_set();
     }
 

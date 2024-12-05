@@ -11,6 +11,7 @@ title: Module `0x3::validator_set`
 -  [Struct `ValidatorLeaveEvent`](#0x3_validator_set_ValidatorLeaveEvent)
 -  [Constants](#@Constants_0)
 -  [Function `new`](#0x3_validator_set_new)
+-  [Function `lock_next_epoch_committee`](#0x3_validator_set_lock_next_epoch_committee)
 -  [Function `request_add_validator_candidate`](#0x3_validator_set_request_add_validator_candidate)
 -  [Function `request_remove_validator_candidate`](#0x3_validator_set_request_remove_validator_candidate)
 -  [Function `request_add_validator`](#0x3_validator_set_request_add_validator)
@@ -172,6 +173,12 @@ title: Module `0x3::validator_set`
 </dt>
 <dd>
  Any extra fields that's not defined statically.
+</dd>
+<dt>
+<code>locked: bool</code>
+</dt>
+<dd>
+ Locks the next validator set and doesn't allow for further changes in the [<code>pending_removals</code>] and [<code>pending_active_validators</code>] until the next epoch starts.
 </dd>
 </dl>
 
@@ -622,6 +629,15 @@ The epoch value corresponds to the first epoch this change takes place.
 
 
 
+<a name="0x3_validator_set_EValidatorSetLocked"></a>
+
+
+
+<pre><code><b>const</b> <a href="validator_set.md#0x3_validator_set_EValidatorSetLocked">EValidatorSetLocked</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 14;
+</code></pre>
+
+
+
 <a name="0x3_validator_set_new"></a>
 
 ## Function `new`
@@ -657,9 +673,34 @@ The epoch value corresponds to the first epoch this change takes place.
         validator_candidates: <a href="../pera-framework/table.md#0x2_table_new">table::new</a>(ctx),
         at_risk_validators: <a href="../pera-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>(),
         extra_fields: <a href="../pera-framework/bag.md#0x2_bag_new">bag::new</a>(ctx),
+        locked: <b>false</b>,
     };
     <a href="voting_power.md#0x3_voting_power_set_voting_power">voting_power::set_voting_power</a>(&<b>mut</b> validators.active_validators);
     validators
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_validator_set_lock_next_epoch_committee"></a>
+
+## Function `lock_next_epoch_committee`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator_set.md#0x3_validator_set_lock_next_epoch_committee">lock_next_epoch_committee</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_lock_next_epoch_committee">lock_next_epoch_committee</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a>) {
+    self.locked = <b>true</b>;
 }
 </code></pre>
 
@@ -779,6 +820,7 @@ processed at the end of epoch.
 
 
 <pre><code><b>public</b>(package) <b>fun</b> <a href="validator_set.md#0x3_validator_set_request_add_validator">request_add_validator</a>(self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a>, min_joining_stake_amount: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &TxContext) {
+    <b>assert</b>!(!self.locked, <a href="validator_set.md#0x3_validator_set_EValidatorSetLocked">EValidatorSetLocked</a>);
     <b>let</b> validator_address = ctx.sender();
     <b>assert</b>!(
         self.validator_candidates.contains(validator_address),
@@ -854,6 +896,7 @@ Only an active validator can request to be removed.
     self: &<b>mut</b> <a href="validator_set.md#0x3_validator_set_ValidatorSet">ValidatorSet</a>,
     ctx: &TxContext,
 ) {
+    <b>assert</b>!(!self.locked, <a href="validator_set.md#0x3_validator_set_EValidatorSetLocked">EValidatorSetLocked</a>);
     <b>let</b> validator_address = ctx.sender();
     <b>let</b> <b>mut</b> validator_index_opt = <a href="validator_set.md#0x3_validator_set_find_validator">find_validator</a>(&self.active_validators, validator_address);
     <b>assert</b>!(validator_index_opt.is_some(), <a href="validator_set.md#0x3_validator_set_ENotAValidator">ENotAValidator</a>);
@@ -1099,6 +1142,7 @@ It does the following things:
     // At this point, self.active_validators are updated for next epoch.
     // Now we process the staged <a href="validator.md#0x3_validator">validator</a> metadata.
     <a href="validator_set.md#0x3_validator_set_effectuate_staged_metadata">effectuate_staged_metadata</a>(self);
+    self.locked = <b>false</b>;
 }
 </code></pre>
 

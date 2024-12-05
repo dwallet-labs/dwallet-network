@@ -532,6 +532,9 @@ ValidatorLeaveEvent
 new
 	public(package) fun
 	0x3::validator_set
+lock_next_epoch_committee
+	public(package) fun
+	0x3::validator_set
 request_add_validator_candidate
 	public(package) fun
 	0x3::validator_set
@@ -758,6 +761,9 @@ create_system_parameters
 	public(package) fun
 	0x3::pera_system_state_inner
 v1_to_v2
+	public(package) fun
+	0x3::pera_system_state_inner
+lock_validator_set
 	public(package) fun
 	0x3::pera_system_state_inner
 request_add_validator_candidate
@@ -1037,6 +1043,9 @@ load_inner_maybe_upgrade
 	fun
 	0x3::pera_system
 validator_voting_powers
+	fun
+	0x3::pera_system
+lock_validator_set
 	fun
 	0x3::pera_system
 GenesisValidatorMetadata

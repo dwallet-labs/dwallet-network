@@ -133,7 +133,6 @@ module pera_system::validator_set {
     const ENotAPendingValidator: u64 = 12;
     const EValidatorSetEmpty: u64 = 13;
     const EValidatorSetLocked: u64 = 14;
-    const ENotSystemAddress: u64 = 15;
 
     const EInvalidCap: u64 = 101;
 
@@ -160,6 +159,7 @@ module pera_system::validator_set {
             validator_candidates: table::new(ctx),
             at_risk_validators: vec_map::empty(),
             extra_fields: bag::new(ctx),
+            locked: false,
         };
         voting_power::set_voting_power(&mut validators.active_validators);
         validators
