@@ -3,6 +3,7 @@ use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
 use crate::message_envelope::Message;
 use group::PartyID;
+use pera_mpc_types::dwallet_mpc::MPCOutput;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
@@ -12,18 +13,21 @@ pub enum MPCRound {
     DKGFirst,
     /// The second round of the DKG protocol.
     DKGSecond,
-    /// The first round of the presign protocol.
-    /// Contains the `ObjectId` of the dwallet object and the dkg decentralized output.
-    PresignFirst(ObjectID, Vec<u8>),
-    /// The second round of the presign protocol.
-    /// Contains the `ObjectId` of the dwallet object and the presign rounds outputs.
-    PresignSecond(ObjectID, Vec<u8>),
-    /// The first round of the sign protocol.
-    /// Contains the party id associated with the decryption share and the `ObjectId` of the dwallet to sign with.
+    /// The first round of the Presign protocol.
+    /// Contains the `ObjectId` of the dWallet object,
+    /// and the DKG decentralized output.
+    PresignFirst(ObjectID, MPCOutput),
+    /// The second round of the Presign protocol.
+    /// Contains the `ObjectId` of the dWallet object,
+    /// and the Presign first round output.
+    PresignSecond(ObjectID, MPCOutput),
+    /// The first round of the Sign protocol.
+    /// Contains the party ID associated with the decryption
+    /// share, and the `ObjectId` of the dWallet to sign with.
     Sign(PartyID, ObjectID),
 }
 
-/// The content of the system transaction that stores the MPC session output on chain.
+/// The content of the system transaction that stores the MPC session output on the chain.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DWalletMPCOutput {
     /// The session information of the MPC session.
@@ -41,6 +45,7 @@ impl Message for DWalletMPCOutput {
     }
 }
 
+// todo(zeev): rename to MPCSessionInfo.
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {

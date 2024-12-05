@@ -1,101 +1,124 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+// noinspection ES6PreferShortImport
+
 import { bcs } from '../bcs/index.js';
-import type { PeraClient } from '../client/index.js';
-import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
+import type { Config } from './globals.js';
 import { dWallet2PCMPCECDSAK1ModuleName, fetchObjectBySessionId, packageId } from './globals.js';
+
+const signMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`;
+const singOutputMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignOutput`;
 
 export enum Hash {
 	KECCAK256 = 0,
 	SHA256 = 1,
 }
 
-export async function signMockCall(
-	keypair: Keypair,
-	client: PeraClient,
-	hashedMessage: Uint8Array,
-	presignFirstRound: Uint8Array,
-	presignSecondRound: Uint8Array,
-	dkgOutput: Uint8Array,
-	centralizedSignedMessage: Uint8Array,
-	presignFirstRoundSessionId: string,
-) {
-	const tx = new Transaction();
-	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::mock_sign`,
-		arguments: [
-			tx.pure(bcs.vector(bcs.u8()).serialize(hashedMessage)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(presignFirstRound)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(presignSecondRound)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(dkgOutput)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
-			tx.pure.id(presignFirstRoundSessionId),
-		],
-	});
+export interface StartSignEvent {
+	// Hex string representing the session ID
+	session_id: string;
 
-	let res = await client.signAndExecuteTransaction({
-		signer: keypair,
-		transaction: tx,
-		options: {
-			showEvents: true,
-		},
-	});
+	// Hex string representing the presign session ID
+	presign_session_id: string;
 
-	const eventData = res.events?.at(0)?.parsedJson as { session_id: string };
-	return await fetchSignObjects(keypair, client, eventData.session_id);
+	// Address of the user who initiated the signing process
+	initiator: string;
+
+	// Hex string representing the dWallet ID
+	dwallet_id: string;
+
+	// Hex string representing the dWallet capability ID
+	dwallet_cap_id: string;
+
+	// Vector of unsigned 8-bit integers
+	dkg_output: number[];
+
+	// Vector of unsigned 8-bit integers
+	hashed_message: number[];
+
+	// Vector of unsigned 8-bit integers
+	presign_first_round_output: number[];
+
+	// Vector of unsigned 8-bit integers
+	presign_second_round_output: number[];
+
+	// Vector of unsigned 8-bit integers
+	centralized_signed_message: number[];
+}
+
+interface SignOutput {
+	id: { id: string };
+	session_id: string;
+	dwallet_id: string;
+	output: number[];
 }
 
 export async function signMessageTransactionCall(
-	keypair: Keypair,
-	client: PeraClient,
-	dwalletCapId: string,
+	c: Config,
+	dwalletCapID: string,
 	hashedMessage: Uint8Array,
-	dwalletId: string,
-	presignId: string,
+	dwalletID: string,
+	presignID: string,
 	centralizedSignedMessage: Uint8Array,
-	presignSessionId: string,
+	presignSessionID: string,
 ) {
 	const tx = new Transaction();
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`,
+		target: signMoveFunc,
 		arguments: [
-			tx.object(dwalletCapId),
+			tx.object(dwalletCapID),
 			tx.pure(bcs.vector(bcs.u8()).serialize(hashedMessage)),
-			tx.object(dwalletId),
-			tx.object(presignId),
+			tx.object(dwalletID),
+			tx.object(presignID),
 			tx.pure(bcs.vector(bcs.u8()).serialize(centralizedSignedMessage)),
-			tx.object(presignSessionId),
+			tx.object(presignSessionID),
 		],
 	});
 
-	let res = await client.signAndExecuteTransaction({
-		signer: keypair,
+	let res = await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
 		transaction: tx,
 		options: {
 			showEvents: true,
 		},
 	});
 
-	const eventData = res.events?.at(0)?.parsedJson as { session_id: string };
-	return await fetchSignObjects(keypair, client, eventData.session_id);
+	const startSignEvent = isStartSignEvent(res.events?.at(0)?.parsedJson)
+		? (res.events?.at(0)?.parsedJson as StartSignEvent)
+		: null;
+
+	if (!startSignEvent) {
+		throw new Error(`${signMoveFunc} failed: ${res.errors}`);
+	}
+	let obj = await fetchObjectBySessionId(startSignEvent.session_id, singOutputMoveType, c);
+
+	const signOutput =
+		obj?.dataType === 'moveObject' && isSignOutput(obj.fields) ? (obj.fields as SignOutput) : null;
+
+	if (!signOutput) {
+		throw new Error(`wrong object of type ${singOutputMoveType}, got: ${obj}`);
+	}
+
+	return signOutput;
 }
-export async function fetchSignObjects(keypair: Keypair, client: PeraClient, session_id: string) {
-	let signOutput = await fetchObjectBySessionId(
-		session_id,
-		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignOutput`,
-		keypair,
-		client,
+
+function isStartSignEvent(obj: any): obj is StartSignEvent {
+	return (
+		obj &&
+		'session_id' in obj &&
+		'presign_session_id' in obj &&
+		'initiator' in obj &&
+		'dwallet_id' in obj &&
+		'dwallet_cap_id' in obj &&
+		'dkg_output' in obj &&
+		'hashed_message' in obj &&
+		'presign_first_round_output' in obj &&
+		'presign_second_round_output' in obj &&
+		'centralized_signed_message' in obj
 	);
+}
 
-	let output =
-		signOutput?.dataType === 'moveObject'
-			? (signOutput.fields as {
-					id: { id: string };
-					output: number[];
-				})
-			: null;
-
-	return {
-		id: output?.id.id,
-		signOutput: output?.output,
-	};
+function isSignOutput(obj: any): obj is SignOutput {
+	return obj && obj.id && obj.session_id && obj.output && obj.dwallet_id;
 }

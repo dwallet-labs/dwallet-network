@@ -143,7 +143,7 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
@@ -1559,7 +1559,7 @@ impl AuthorityState {
             let res = MPCParty::from_event(
                 event,
                 &dwallet_mpc_manager,
-                authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
+                authority_name_to_party_id(&epoch_store.name, epoch_store)?,
             );
             if let Ok((party, auxiliary_input, session_info)) = res {
                 dwallet_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info)?;
