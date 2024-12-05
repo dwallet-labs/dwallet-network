@@ -601,22 +601,6 @@ impl KeyToolCommand {
                         peer_id: None,
                     })
                 }
-                SignatureScheme::ClassGroups => {
-                    let (pera_address, kp) =
-                        generate_new_class_groups_keypair_and_proof(derivation_path)?;
-                    let file_name = format!("class-groups-{pera_address}.key");
-                    let public_base64_key_and_proof =
-                        write_class_groups_keypair_and_proof_to_file(&kp, file_name)?;
-                    CommandOutput::Generate(Key {
-                        alias: None,
-                        pera_address,
-                        public_base64_key: public_base64_key_and_proof,
-                        key_scheme: key_scheme.to_string(),
-                        flag: SignatureScheme::ClassGroups.flag(),
-                        mnemonic: None,
-                        peer_id: None,
-                    })
-                }
                 _ => {
                     let derivation_path: Option<DerivationPath> = match derivation_path {
                         None => None,

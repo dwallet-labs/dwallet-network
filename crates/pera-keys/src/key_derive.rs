@@ -65,7 +65,6 @@ pub fn derive_key_pair_from_path(
             );
             Ok((kp.public().into(), PeraKeyPair::Secp256r1(kp)))
         }
-        SignatureScheme::ClassGroups
         | SignatureScheme::BLS12381
         | SignatureScheme::MultiSig
         | SignatureScheme::ZkLoginAuthenticator
@@ -164,7 +163,6 @@ pub fn validate_path(
                 .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
             }
         }
-        SignatureScheme::ClassGroups
         | SignatureScheme::BLS12381
         | SignatureScheme::MultiSig
         | SignatureScheme::ZkLoginAuthenticator
