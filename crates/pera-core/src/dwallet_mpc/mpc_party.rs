@@ -41,8 +41,8 @@ pub enum MPCParty {
     /// The party used in the sign protocol.
     SignBytesParty(HashMap<PartyID, twopc_mpc::secp256k1::class_groups::DecryptionKeyShare>),
 
-    NetworkDkgSecp256k1Party(<Secp256k1Party as mpc::AsynchronouslyAdvanceable>::PrivateInput),
-    NetworkDkgRistrettoParty(<RistrettoParty as mpc::AsynchronouslyAdvanceable>::PrivateInput),
+    NetworkDkgSecp256k1Party,
+    NetworkDkgRistrettoParty,
 }
 
 impl MPCParty {
@@ -113,7 +113,7 @@ impl MPCParty {
                     decryption_key_share.clone(),
                 )
             }
-            MPCParty::NetworkDkgSecp256k1Party(secret_key) => {
+            MPCParty::NetworkDkgSecp256k1Party => {
                 let public_input = bcs::from_bytes(&public_input)?;
                 advance::<DKGFirstParty>(
                     session_id,
@@ -121,10 +121,10 @@ impl MPCParty {
                     access_threshold,
                     messages,
                     public_input,
-                    (), // secret_key.clone(),
+                    (),
                 )
             }
-            MPCParty::NetworkDkgRistrettoParty(secret_key) => {
+            MPCParty::NetworkDkgRistrettoParty=> {
                 let public_input = bcs::from_bytes(&public_input)?;
                 advance::<DKGFirstParty>(
                     session_id,
@@ -132,7 +132,7 @@ impl MPCParty {
                     access_threshold,
                     messages,
                     public_input,
-                    (),//secret_key.clone(),
+                    (),
                 )
             }
         }

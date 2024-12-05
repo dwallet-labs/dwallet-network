@@ -112,10 +112,12 @@ use pera_types::pera_system_state::epoch_start_pera_system_state::{
 use pera_types::storage::GetSharedLocks;
 use prometheus::IntCounter;
 use std::str::FromStr;
+use group::PartyID;
 use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -667,7 +669,7 @@ impl AuthorityEpochTables {
         checkpoint_seq: CheckpointSequenceNumber,
         starting_index: u64,
     ) -> PeraResult<
-        impl Iterator<Item = ((CheckpointSequenceNumber, u64), CheckpointSignatureMessage)> + '_,
+        impl Iterator<Item=((CheckpointSequenceNumber, u64), CheckpointSignatureMessage)> + '_,
     > {
         let key = (checkpoint_seq, starting_index);
         debug!("Scanning pending checkpoint signatures from {:?}", key);
@@ -700,7 +702,7 @@ impl AuthorityEpochTables {
     pub fn write_transaction_locks(
         &self,
         transaction: VerifiedSignedTransaction,
-        locks_to_write: impl Iterator<Item = (ObjectRef, LockDetails)>,
+        locks_to_write: impl Iterator<Item=(ObjectRef, LockDetails)>,
     ) -> PeraResult {
         let mut batch = self.owned_object_locked_transactions.batch();
         batch.insert_batch(
@@ -719,7 +721,8 @@ impl AuthorityEpochTables {
 pub(crate) const MUTEX_TABLE_SIZE: usize = 1024;
 
 impl AuthorityPerEpochStore {
-    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
+    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch
+    ))]
     pub fn new(
         name: AuthorityName,
         committee: Arc<Committee>,
@@ -1024,6 +1027,33 @@ impl AuthorityPerEpochStore {
         })
     }
 
+    pub fn committee_validators_class_groups_public_keys_and_proofs(
+        &self,
+    ) -> PeraResult<HashMap<PartyID, ClassGroupsPublicKeyAndProof>> {
+        Ok(match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => {
+                let committee : Vec<_> = self.committee().voting_rights.iter().map(|(name, _)| {
+                    name.clone()
+                }).collect();
+
+                data.get_active_validators_class_groups_public_key_and_proof()
+                    .iter()
+                    .filter_map(|(authority_name, value)| {
+                        if !committee.contains(authority_name) {
+                            return None;
+                        }
+                        //todo (yael): check if ? is valid in case of option of do we need to check the length
+                        let party_id = authority_name_to_party_id(authority_name, self).ok()?;
+                        let public_key_and_proof  = bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(value).ok()?;
+                        Some(Ok((party_id, public_key_and_proof)))
+                    })
+                    .collect::<Result<HashMap<_, _>, PeraError>>()?
+            }
+        })
+    }
+
+
+
     pub fn get_chain_identifier(&self) -> ChainIdentifier {
         self.chain_identifier
     }
@@ -1290,7 +1320,7 @@ impl AuthorityPerEpochStore {
 
     pub fn transactions_executed_in_cur_epoch<'a>(
         &self,
-        digests: impl IntoIterator<Item = &'a TransactionDigest>,
+        digests: impl IntoIterator<Item=&'a TransactionDigest>,
     ) -> PeraResult<Vec<bool>> {
         let tables = self.tables()?;
         if self.executed_in_epoch_table_enabled() {
@@ -1437,7 +1467,7 @@ impl AuthorityPerEpochStore {
             Some(ready) => Either::Left(futures::future::ready(ready)),
             None => Either::Right(registration),
         }
-        .await;
+            .await;
 
         Ok(result)
     }
@@ -1681,8 +1711,8 @@ impl AuthorityPerEpochStore {
             None,
             &BTreeMap::new(),
         )
-        .await?
-        .assigned_versions;
+            .await?
+            .assigned_versions;
         self.set_assigned_shared_object_versions_with_db_batch(assigned_versions, &mut db_batch)
             .await?;
         db_batch.write()?;
@@ -1865,7 +1895,7 @@ impl AuthorityPerEpochStore {
             self,
             cache_reader,
         )
-        .await?;
+            .await?;
         let mut db_batch = self.tables()?.assigned_shared_object_versions.batch();
         self.set_assigned_shared_object_versions_with_db_batch(versions, &mut db_batch)
             .await?;
@@ -1952,7 +1982,7 @@ impl AuthorityPerEpochStore {
     /// This handles multiple certificates at once.
     pub fn is_any_tx_certs_consensus_message_processed<'a>(
         &self,
-        certificates: impl Iterator<Item = &'a CertifiedTransaction>,
+        certificates: impl Iterator<Item=&'a CertifiedTransaction>,
     ) -> PeraResult<bool> {
         let keys = certificates.map(|cert| {
             SequencedConsensusTransactionKey::External(ConsensusTransactionKey::Certificate(
@@ -1969,7 +1999,7 @@ impl AuthorityPerEpochStore {
     /// This handles multiple certificates at once.
     pub fn is_all_tx_certs_consensus_message_processed<'a>(
         &self,
-        certificates: impl Iterator<Item = &'a VerifiedCertificate>,
+        certificates: impl Iterator<Item=&'a VerifiedCertificate>,
     ) -> PeraResult<bool> {
         let keys = certificates.map(|cert| {
             SequencedConsensusTransactionKey::External(ConsensusTransactionKey::Certificate(
@@ -1994,7 +2024,7 @@ impl AuthorityPerEpochStore {
 
     pub fn check_consensus_messages_processed(
         &self,
-        keys: impl Iterator<Item = SequencedConsensusTransactionKey>,
+        keys: impl Iterator<Item=SequencedConsensusTransactionKey>,
     ) -> PeraResult<Vec<bool>> {
         Ok(self
             .tables()?
@@ -2103,7 +2133,7 @@ impl AuthorityPerEpochStore {
                         "Can not find user signature for checkpoint for transaction {:?}",
                         transaction.key()
                     )
-                    .as_str(),
+                        .as_str(),
                 ));
             };
             result.push(signatures);
@@ -2252,8 +2282,8 @@ impl AuthorityPerEpochStore {
         let votes = jwk_aggregator.votes_for_authority(authority);
         if votes
             >= self
-                .protocol_config()
-                .max_jwk_votes_per_validator_per_epoch()
+            .protocol_config()
+            .max_jwk_votes_per_validator_per_epoch()
         {
             warn!(
                 "validator {:?} has already voted {} times this epoch, ignoring vote",
@@ -2450,17 +2480,17 @@ impl AuthorityPerEpochStore {
         // Signatures are verified as part of the consensus payload verification in PeraTxValidator
         match &transaction.transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                // This verification is intentionally left empty and always returns true,
-                // as the actual output verification is performed earlier,
-                // before it is replaced by the system transaction,
-                // via the [`DwalletMPCManager::try_verify_output`] function.
-                kind: ConsensusTransactionKind::UserTransaction(_certificate),
-                ..
-            }) => {}
+                                                            // This verification is intentionally left empty and always returns true,
+                                                            // as the actual output verification is performed earlier,
+                                                            // before it is replaced by the system transaction,
+                                                            // via the [`DwalletMPCManager::try_verify_output`] function.
+                                                            kind: ConsensusTransactionKind::UserTransaction(_certificate),
+                                                            ..
+                                                        }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
+                                                            ..
+                                                        }) => {
                 // When sending an MPC output, the validator also includes its public key.
                 // Here, we verify that the public key used to sign this transaction matches
                 // the provided public key.
@@ -2474,9 +2504,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, _, _),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::DWalletMPCMessage(authority, _, _),
+                                                            ..
+                                                        }) => {
                 // When sending an MPC message, the validator also includes its public key.
                 // Here, we verify that the public key used to sign this transaction matches
                 // the provided public key.
@@ -2491,9 +2521,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                    kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, _),
-                    ..
-                }) => {
+                                                            kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, _),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != *authority {
                     warn!(
                         "DWalletMPCMessage authority {} does not match its author from consensus {}",
@@ -2507,9 +2537,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CheckpointSignature(data),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::CheckpointSignature(data),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != data.summary.auth_sig().authority {
                     warn!(
                         "CheckpointSignature authority {} does not match its author from consensus {}",
@@ -2520,9 +2550,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(authority),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::EndOfPublish(authority),
+                                                            ..
+                                                        }) => {
                 if &transaction.sender_authority() != authority {
                     warn!(
                         "EndOfPublish authority {} does not match its author from consensus {}",
@@ -2532,21 +2562,21 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind:
-                    ConsensusTransactionKind::CapabilityNotification(AuthorityCapabilitiesV1 {
-                        authority,
-                        ..
-                    }),
-                ..
-            })
+                                                            kind:
+                                                            ConsensusTransactionKind::CapabilityNotification(AuthorityCapabilitiesV1 {
+                                                                                                                 authority,
+                                                                                                                 ..
+                                                                                                             }),
+                                                            ..
+                                                        })
             | SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind:
-                    ConsensusTransactionKind::CapabilityNotificationV2(AuthorityCapabilitiesV2 {
-                        authority,
-                        ..
-                    }),
-                ..
-            }) => {
+                                                              kind:
+                                                              ConsensusTransactionKind::CapabilityNotificationV2(AuthorityCapabilitiesV2 {
+                                                                                                                     authority,
+                                                                                                                     ..
+                                                                                                                 }),
+                                                              ..
+                                                          }) => {
                 if transaction.sender_authority() != *authority {
                     warn!(
                         "CapabilityNotification authority {} does not match its author from consensus {}",
@@ -2556,9 +2586,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::NewJWKFetched(authority, id, jwk),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::NewJWKFetched(authority, id, jwk),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != *authority {
                     warn!(
                         "NewJWKFetched authority {} does not match its author from consensus {}",
@@ -2575,13 +2605,13 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::RandomnessStateUpdate(_round, _bytes),
-                ..
-            }) => {}
+                                                            kind: ConsensusTransactionKind::RandomnessStateUpdate(_round, _bytes),
+                                                            ..
+                                                        }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::RandomnessDkgMessage(authority, _bytes),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::RandomnessDkgMessage(authority, _bytes),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != *authority {
                     warn!(
                         "RandomnessDkgMessage authority {} does not match its author from consensus {}",
@@ -2591,9 +2621,9 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _bytes),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _bytes),
+                                                            ..
+                                                        }) => {
                 if transaction.sender_authority() != *authority {
                     warn!(
                         "RandomnessDkgConfirmation authority {} does not match its author from consensus {}",
@@ -3040,7 +3070,7 @@ impl AuthorityPerEpochStore {
             randomness_round,
             cancelled_txns,
         )
-        .await?;
+            .await?;
         output.set_assigned_shared_object_versions(assigned_versions, shared_input_next_versions);
         Ok(())
     }
@@ -3097,7 +3127,7 @@ impl AuthorityPerEpochStore {
             ),
             authority_metrics,
         )
-        .await
+            .await
     }
 
     #[cfg(any(test, feature = "test-utils"))]
@@ -3114,7 +3144,7 @@ impl AuthorityPerEpochStore {
             &BTreeMap::new(),
             &mut output,
         )
-        .await?;
+            .await?;
         let mut batch = self.db_batch()?;
         output.write_to_batch(self, &mut batch)?;
         batch.write()?;
@@ -3332,7 +3362,7 @@ impl AuthorityPerEpochStore {
             &cancelled_txns,
             output,
         )
-        .await?;
+            .await?;
 
         let (lock, final_round) = self.process_end_of_publish_transactions_and_reconfig(
             output,
@@ -3362,14 +3392,14 @@ impl AuthorityPerEpochStore {
 
         for transaction in transactions {
             let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
-                transaction,
-                ..
-            }) = transaction;
+                                                          transaction,
+                                                          ..
+                                                      }) = transaction;
 
             if let SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(authority),
-                ..
-            }) = transaction
+                                                                   kind: ConsensusTransactionKind::EndOfPublish(authority),
+                                                                   ..
+                                                               }) = transaction
             {
                 debug!(
                     "Received EndOfPublish for epoch {} from {:?}",
@@ -3381,8 +3411,8 @@ impl AuthorityPerEpochStore {
                 // And this function itself is always executed from consensus task
                 let collected_end_of_publish = if lock.is_none()
                     && self
-                        .get_reconfig_state_read_lock_guard()
-                        .should_accept_consensus_certs()
+                    .get_reconfig_state_read_lock_guard()
+                    .should_accept_consensus_certs()
                 {
                     output.insert_end_of_publish(*authority);
                     self.end_of_publish.try_lock()
@@ -3465,18 +3495,18 @@ impl AuthorityPerEpochStore {
     ) -> PeraResult<ConsensusCertificateResult> {
         let _scope = monitored_scope("HandleConsensusTransaction");
         let VerifiedSequencedConsensusTransaction(SequencedConsensusTransaction {
-            certificate_author_index: _,
-            certificate_author,
-            consensus_index,
-            transaction,
-        }) = transaction;
+                                                      certificate_author_index: _,
+                                                      certificate_author,
+                                                      consensus_index,
+                                                      transaction,
+                                                  }) = transaction;
         let tracking_id = transaction.get_tracking_id();
 
         match &transaction {
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::UserTransaction(certificate),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::UserTransaction(certificate),
+                                                            ..
+                                                        }) => {
                 if certificate.epoch() != self.epoch() {
                     // Epoch has changed after this certificate was sequenced, ignore it.
                     debug!(
@@ -3589,9 +3619,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::PeraTransaction(certificate))
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CheckpointSignature(info),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::CheckpointSignature(info),
+                                                            ..
+                                                        }) => {
                 // We usually call notify_checkpoint_signature in PeraTxValidator, but that step can
                 // be skipped when a batch is already part of a certificate, so we must also
                 // notify here.
@@ -3599,16 +3629,16 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::EndOfPublish(_),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::EndOfPublish(_),
+                                                            ..
+                                                        }) => {
                 // these are partitioned earlier
                 panic!("process_consensus_transaction called with end-of-publish transaction");
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CapabilityNotification(capabilities),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::CapabilityNotification(capabilities),
+                                                            ..
+                                                        }) => {
                 let authority = capabilities.authority;
                 if self
                     .get_reconfig_state_read_lock_guard()
@@ -3628,9 +3658,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::CapabilityNotificationV2(capabilities),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::CapabilityNotificationV2(capabilities),
+                                                            ..
+                                                        }) => {
                 let authority = capabilities.authority;
                 if self
                     .get_reconfig_state_read_lock_guard()
@@ -3650,9 +3680,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::NewJWKFetched(authority, jwk_id, jwk),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::NewJWKFetched(authority, jwk_id, jwk),
+                                                            ..
+                                                        }) => {
                 if self
                     .get_reconfig_state_read_lock_guard()
                     .should_accept_consensus_certs()
@@ -3673,9 +3703,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                    kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message),
-                    ..
-                }) => {
+                                                            kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message),
+                                                            ..
+                                                        }) => {
                 // self.get_dwallet_mpc_manager().await?.network_dkg.handle_message(
                 //     message,
                 //     *authority,
@@ -3684,9 +3714,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
+                                                            ..
+                                                        }) => {
                 self.dwallet_mpc_sender
                     .get()
                     .ok_or(PeraError::from(
@@ -3703,9 +3733,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
+                                                            ..
+                                                        }) => {
                 self.dwallet_mpc_sender
                     .get()
                     .unwrap()
@@ -3720,16 +3750,16 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::RandomnessStateUpdate(_, _),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::RandomnessStateUpdate(_, _),
+                                                            ..
+                                                        }) => {
                 // These are always generated as System transactions (handled below).
                 panic!("process_consensus_transaction called with external RandomnessStateUpdate");
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::RandomnessDkgMessage(authority, bytes),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::RandomnessDkgMessage(authority, bytes),
+                                                            ..
+                                                        }) => {
                 if self.get_reconfig_state_read_lock_guard().should_accept_tx() {
                     if let Some(randomness_manager) = randomness_manager.as_mut() {
                         debug!(
@@ -3760,9 +3790,9 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::RandomnessConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::RandomnessDkgConfirmation(authority, bytes),
-                ..
-            }) => {
+                                                            kind: ConsensusTransactionKind::RandomnessDkgConfirmation(authority, bytes),
+                                                            ..
+                                                        }) => {
                 if self.get_reconfig_state_read_lock_guard().should_accept_tx() {
                     if let Some(randomness_manager) = randomness_manager.as_mut() {
                         debug!(
@@ -3979,7 +4009,7 @@ impl AuthorityPerEpochStore {
 
     pub fn builder_included_transactions_in_checkpoint<'a>(
         &self,
-        digests: impl Iterator<Item = &'a TransactionDigest>,
+        digests: impl Iterator<Item=&'a TransactionDigest>,
     ) -> PeraResult<Vec<bool>> {
         Ok(self
             .tables()?
