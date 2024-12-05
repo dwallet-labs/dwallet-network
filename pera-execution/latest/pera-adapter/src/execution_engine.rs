@@ -5,7 +5,8 @@ pub use checked::*;
 
 #[pera_macros::with_checked_arithmetic]
 mod checked {
-    use crate::execution_mode::{self, ExecutionMode};
+    use pera_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
+use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
     use pera_types::balance::{
@@ -48,7 +49,6 @@ mod checked {
     use pera_types::digests::{
         get_mainnet_chain_identifier, get_testnet_chain_identifier, ChainIdentifier,
     };
-    use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
     use pera_types::effects::TransactionEffects;
     use pera_types::error::{ExecutionError, ExecutionErrorKind};
     use pera_types::execution::is_certificate_denied;

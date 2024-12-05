@@ -7105,7 +7105,6 @@ version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#00210748e52dfc49bbe015be38b478082d2fcf71"
 dependencies = [
  "commitment",
- "criterion",
  "crypto-bigint 0.5.5",
  "getrandom 0.2.15",
  "group 0.1.0",
@@ -7113,12 +7112,9 @@ dependencies = [
  "merlin",
  "mpc",
  "proof",
- "rand_core 0.6.4",
- "rstest 0.22.0",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
- "tiresias",
 ]
 
 [[package]]
@@ -9925,6 +9921,7 @@ dependencies = [
  "parking_lot 0.12.3",
  "pera-macros",
  "pera-move-natives-latest",
+ "pera-mpc-types",
  "pera-protocol-config",
  "pera-types",
  "pera-verifier-latest",
@@ -10428,7 +10425,6 @@ dependencies = [
  "itertools 0.10.5",
  "jsonrpsee",
  "lru 0.10.1",
- "maurer",
  "mockall",
  "moka",
  "more-asserts",
@@ -10465,6 +10461,7 @@ dependencies = [
  "pera-macros",
  "pera-move",
  "pera-move-build",
+ "pera-mpc-types",
  "pera-network",
  "pera-protocol-config",
  "pera-simulator",
@@ -10476,7 +10473,6 @@ dependencies = [
  "pprof",
  "pretty_assertions",
  "prometheus",
- "proof",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rayon",
@@ -10498,7 +10494,6 @@ dependencies = [
  "tempfile",
  "test-fuzz",
  "thiserror 1.0.69",
- "tiresias",
  "tokio",
  "tokio-retry",
  "tokio-stream",
@@ -11411,6 +11406,16 @@ dependencies = [
  "pera-types",
  "smallvec",
  "tracing",
+]
+
+[[package]]
+name = "pera-mpc-types"
+version = "1.32.2"
+dependencies = [
+ "bcs",
+ "move-core-types",
+ "thiserror 1.0.69",
+ "twopc_mpc",
 ]
 
 [[package]]
@@ -12436,6 +12441,7 @@ dependencies = [
  "passkey-types",
  "pera-enum-compat-util",
  "pera-macros",
+ "pera-mpc-types",
  "pera-protocol-config",
  "prometheus",
  "proptest",

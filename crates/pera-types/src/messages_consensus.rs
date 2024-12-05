@@ -7,7 +7,7 @@ use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
 };
-use crate::messages_dwallet_mpc::SessionInfo;
+use crate::messages_dwallet_mpc::{SessionInfo};
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -24,6 +24,7 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use pera_mpc_types::dwallet_mpc::{MPCMessage, MPCOutput};
 
 /// Only commit_timestamp_ms is passed to the move call currently.
 /// However we include epoch and round to make sure each ConsensusCommitPrologue has a unique tx digest.
@@ -95,13 +96,14 @@ pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
     /// The message sent between MPC parties in a dwallet MPC session.
-    /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
+    /// The [`AuthorityName`] is the sending authority, and the
     /// [`ObjectID`] is the session ID.
-    DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    DWalletMPCMessage(AuthorityName, MPCMessage, ObjectID),
     /// The output of a dwallet MPC session.
-    /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
-    /// address of the initiating user.
-    DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, ObjectID),
+    /// The first [`ObjectID`] is the session ID.
+    /// The [`PeraAddress`] is the address of the initiating user.
+    /// The second [`ObjectID`] is the dWallet Cap ID.
+    DWalletMPCOutput(MPCOutput, ObjectID, PeraAddress, ObjectID),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -286,8 +288,11 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
-    DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    DWalletMPCOutput(SessionInfo, Vec<u8>),
+    /// MPC Message — an MPC message for an existing session.
+    /// (authority_name, message, session_id).
+    DWalletMPCMessage(AuthorityName, MPCMessage, ObjectID),
+    /// MPC Output — final output of the MPC session.
+    DWalletMPCOutput(SessionInfo, MPCOutput),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -482,10 +487,11 @@ impl ConsensusTransaction {
         }
     }
 
-    /// Create a new consensus transaction with the message to be sent to the other MPC parties.
+    /// Create a new Consensus Transaction with the message to be sent
+    /// to the other MPC parties.
     pub fn new_dwallet_mpc_message(
         authority: AuthorityName,
-        message: Vec<u8>,
+        message: MPCMessage,
         session_id: ObjectID,
     ) -> Self {
         let mut hasher = DefaultHasher::new();
@@ -497,8 +503,9 @@ impl ConsensusTransaction {
         }
     }
 
-    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
-    pub fn new_dwallet_mpc_output(output: Vec<u8>, session_info: SessionInfo) -> Self {
+    /// Create a new consensus transaction with the output of the MPC
+    /// session to be sent to the parties.
+    pub fn new_dwallet_mpc_output(output: MPCOutput, session_info: SessionInfo) -> Self {
         let mut hasher = DefaultHasher::new();
         output.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();

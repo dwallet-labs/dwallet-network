@@ -1,20 +1,19 @@
+//! Rust representations of MPC Events.
+//!
+//! These structs allow Rust programs to interact with on-chain events emitted during the
+//! dWallet MPC process in the `pera_system::dwallet` Move module.
+//! They include utility functions for detecting and comparing the event types.
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
-use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
+use pera_mpc_types::dwallet_mpc::{
+    DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
+    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
+    START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
+};
 use pera_types::{base_types::PeraAddress, id::ID, PERA_SYSTEM_ADDRESS};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("StartDKGSecondRoundEvent");
-pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("StartDKGFirstRoundEvent");
-pub const START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("StartPresignFirstRoundEvent");
-pub const START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
-    ident_str!("StartPresignSecondRoundEvent");
-pub const START_SIGN_ROUND_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartSignEvent");
-
-/// Rust version of the Move [`pera_system::dwallet::StartDKGFirstRoundEvent`] type.
+/// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartDKGFirstRoundEvent {
     /// Unique identifier for the MPC session.
@@ -38,16 +37,16 @@ impl StartDKGFirstRoundEvent {
     }
 }
 
-/// Rust version of the Move [`pera_system::dwallet::StartDKGSecondRoundEvent`] type.
+/// Represents the Rust version of the Move struct `pera_system::dwallet::StartDKGSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartDKGSecondRoundEvent {
     /// Unique identifier for the MPC session.
     pub session_id: PeraAddress,
     /// The address of the user that initiated this session.
     pub initiator: PeraAddress,
-    /// The DKG first decentralized round output
+    /// The DKG first decentralized round output.
     pub first_round_output: Vec<u8>,
-    /// The DKG centralized round output
+    /// The DKG centralized round output.
     pub public_key_share_and_proof: Vec<u8>,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
@@ -57,7 +56,8 @@ pub struct StartDKGSecondRoundEvent {
 
 impl StartDKGSecondRoundEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartDKGSecondRoundEvent`] events from the chain and initiate the MPC session.
+    /// It is used to detect [`StartDKGSecondRoundEvent`] events from the chain
+    /// and initiate the MPC session.
     pub fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
@@ -68,14 +68,14 @@ impl StartDKGSecondRoundEvent {
     }
 }
 
-/// Rust version of the Move [`pera_system::dwallet::StartPresignFirstRoundEvent`] type.
+/// Represents the Rust version of the Move struct `pera_system::dwallet::StartPresignFirstRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartPresignFirstRoundEvent {
     /// Unique identifier for the MPC session.
     pub session_id: ID,
     /// The address of the user that initiated this session.
     pub initiator: PeraAddress,
-    /// The `DWallet` object's ID associated with the dkg output.
+    /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
@@ -85,7 +85,8 @@ pub struct StartPresignFirstRoundEvent {
 
 impl StartPresignFirstRoundEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartPresignFirstRoundEvent`] events from the chain and initiate the MPC session.
+    /// It is used to detect [`StartPresignFirstRoundEvent`] events
+    /// from the chain and initiate the MPC session.
     pub fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
@@ -96,28 +97,30 @@ impl StartPresignFirstRoundEvent {
     }
 }
 
-/// Rust version of the Move [`pera_system::dwallet::StartPresignFirstRoundEvent`] type.
+/// Represents the Rust version of the Move
+/// struct `pera_system::dwallet::StartPresignSecondRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartPresignSecondRoundEvent {
     /// Unique identifier for the MPC session.
     pub session_id: ID,
     /// The address of the user that initiated this session.
     pub initiator: PeraAddress,
-    /// The `DWallet` object's ID associated with the dkg output.
+    /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
-    /// Presign first round output
+    /// Presign first round output.
     pub first_round_output: Vec<u8>,
-    /// Unique identifier for the first Presign round session.
+    /// A unique identifier for the first Presign round session.
     pub first_round_session_id: ID,
 }
 
 impl StartPresignSecondRoundEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartPresignSecondRoundEvent`] events from the chain and initiate the MPC session.
+    /// It is used to detect [`StartPresignSecondRoundEvent`]
+    /// events from the chain and initiate the MPC session.
     pub fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
@@ -128,7 +131,8 @@ impl StartPresignSecondRoundEvent {
     }
 }
 
-/// Rust version of the Move [`pera_system::dwallet::StartSignEvent`] type.
+/// Represents the Rust version of the Move
+/// struct `pera_system::dwallet::StartSignRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartSignRoundEvent {
     /// Unique identifier for the MPC session.
@@ -137,17 +141,17 @@ pub struct StartSignRoundEvent {
     pub presign_session_id: ID,
     /// The address of the user that initiated this session.
     pub initiator: PeraAddress,
-    /// The `DWallet` object's ID associated with the dkg output.
+    /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ID,
     /// The `DWalletCap` object's ID associated with the `DWallet`.
     pub dwallet_cap_id: ID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
-    /// Hashed messages to sign
+    /// Hashed messages to sign.
     pub hashed_message: Vec<u8>,
-    /// Presign first round output, required for the MPC Sign session
+    /// Presign first round output, required for the MPC Sign session.
     pub presign_first_round_output: Vec<u8>,
-    /// Presign second round output, required for the MPC Sign session
+    /// Presign second round output, required for the MPC Sign session.
     pub presign_second_round_output: Vec<u8>,
     /// Centralized signed message
     pub centralized_signed_message: Vec<u8>,
@@ -155,7 +159,8 @@ pub struct StartSignRoundEvent {
 
 impl StartSignRoundEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartSignRoundEvent`] events from the chain and initiate the MPC session.
+    /// It is used to detect [`StartSignRoundEvent`]
+    /// events from the chain and initiate the MPC session.
     pub fn type_() -> StructTag {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
