@@ -78,7 +78,9 @@ pub enum KeyToolCommand {
     /// Hex private key format import and export are both deprecated in
     /// Pera Wallet and Pera CLI Keystore. Use `pera keytool import` if you
     /// wish to import a key to Pera Keystore.
-    Convert { value: String },
+    Convert {
+        value: String,
+    },
     /// Given a Base64 encoded transaction bytes, decode its components. If a signature is provided,
     /// verify the signature against the transaction and output the result.
     DecodeOrVerifyTx {
@@ -146,7 +148,9 @@ pub enum KeyToolCommand {
     /// [enum PeraKeyPair] (Base64 encoded of 33-byte `flag || privkey`) or `type AuthorityKeyPair`
     /// (Base64 encoded `privkey`). This prints out the account keypair as Base64 encoded `flag || privkey`,
     /// the network keypair, worker keypair, protocol keypair as Base64 encoded `privkey`.
-    LoadKeypair { file: PathBuf },
+    LoadKeypair {
+        file: PathBuf,
+    },
     /// To MultiSig Pera Address. Pass in a list of all public keys `flag || pk` in Base64.
     /// See `keytool list` for example public keys.
     MultiSigAddress {
@@ -190,7 +194,9 @@ pub enum KeyToolCommand {
     /// Read the content at the provided file path. The accepted format can be
     /// [enum PeraKeyPair] (Base64 encoded of 33-byte `flag || privkey`) or `type AuthorityKeyPair`
     /// (Base64 encoded `privkey`). It prints its Base64 encoded public key and the key scheme flag.
-    Show { file: PathBuf },
+    Show {
+        file: PathBuf,
+    },
     /// Create signature using the private key for for the given address (or its alias) in pera keystore.
     /// Any signature commits to a [struct IntentMessage] consisting of the Base64 encoded
     /// of the BCS serialized transaction bytes itself and its intent. If intent is absent,
@@ -222,7 +228,9 @@ pub enum KeyToolCommand {
     /// This takes [enum PeraKeyPair] of Base64 encoded of 33-byte `flag || privkey`). It
     /// outputs the keypair into a file at the current directory where the address is the filename,
     /// and prints out its Pera address, Base64 encoded public key, the key scheme, and the key scheme flag.
-    Unpack { keypair: String },
+    Unpack {
+        keypair: String,
+    },
 
     /// Given the max_epoch, generate an OAuth url, ask user to paste the redirect with id_token, call salt server, then call the prover server,
     /// create a test transaction, use the ephemeral key to sign and execute it by assembling to a serialized zkLogin signature.
@@ -1260,8 +1268,7 @@ impl KeyToolCommand {
                 }
             }
             KeyToolCommand::GenerateClassGroupsKeyPairAndProof { bls_key_path } => {
-                let (pera_address, kp) =
-                    generate_new_class_groups_keypair_and_proof(bls_key_path)?;
+                let (pera_address, kp) = generate_new_class_groups_keypair_and_proof(bls_key_path)?;
                 let file_name = format!("class-groups-{pera_address}.key");
                 let public_base64_key_and_proof =
                     write_class_groups_keypair_and_proof_to_file(&kp, file_name)?;
