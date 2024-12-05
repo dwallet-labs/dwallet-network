@@ -6,7 +6,7 @@ sidebar_position: 4
 
 ## What is a dWallet
 
-dWallets are Web3 building blocks designed for multi-chain interoperability, they are noncollusive, massively decentralized, programmable and transferable signing mechanism with an address on any other blockchain, that can sign transactions to those networks.
+dWallets are Web3 building blocks designed for multi-chain interoperability, they are noncollusive, massively decentralized, programmable and transferable signing mechanisms with an address on any other blockchain, that can sign transactions to those networks.
 
 ## Attributes
 
