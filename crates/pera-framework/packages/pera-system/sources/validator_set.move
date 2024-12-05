@@ -167,8 +167,7 @@ module pera_system::validator_set {
 
 
     // ==== functions to add or remove validators ====
-    fun lock_next_epoch_committee(self: &mut ValidatorSet, ctx: &mut TxContext) {
-        assert!(sender == @0x0, ctx.sender());
+    public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet) {
         self.locked = true;
     }
 

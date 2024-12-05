@@ -594,6 +594,14 @@ module pera_system::pera_system {
         pera_system_state_inner::active_validator_voting_powers(self)
     }
 
+    #[allow(unused_function)]
+    /// Lock the validator set
+    fun lock_validator_set(wrapper: &mut PeraSystemState, ctx: &TxContext) {
+        assert!(sender == @0x0, ENotSystemAddress);
+        let mut self = load_system_state_mut(wrapper);
+        self.lock_validator_set();
+    }
+
     #[test_only]
     public fun validator_voting_powers_for_testing(wrapper: &mut PeraSystemState): VecMap<address, u64> {
         validator_voting_powers(wrapper)
