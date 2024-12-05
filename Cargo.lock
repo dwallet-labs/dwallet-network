@@ -15250,6 +15250,7 @@ version = "0.1.0"
 dependencies = [
  "bcs",
  "better_any",
+ "bytecode-interpreter-crypto",
  "ethers",
  "fastcrypto 0.1.7",
  "fastcrypto-zkp 0.1.2",
@@ -15268,6 +15269,7 @@ dependencies = [
  "ssz_rs",
  "sui-json 0.0.0",
  "sui-protocol-config 0.1.0",
+ "sui-sdk 1.16.2",
  "sui-types 0.1.0",
  "tracing",
  "workspace-hack",

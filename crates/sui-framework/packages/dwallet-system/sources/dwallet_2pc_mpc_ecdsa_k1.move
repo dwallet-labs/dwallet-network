@@ -184,7 +184,7 @@ module dwallet_system::dwallet_2pc_mpc_ecdsa_k1 {
         ctx: &mut TxContext
     ) {
         let dwallet_cap = create_dkg_session(commitment_to_centralized_party_secret_key_share, ctx);
-        create_binder(dwallet_cap, bind_to_authority, true, ctx);
+        create_binder(dwallet_cap, bind_to_authority, true, object::id_from_address(@0x0), false, ctx);
     }
 
     #[allow(unused_function)]

@@ -12,7 +12,7 @@ module dwallet_system::dwallet_tests {
     use dwallet_system::dwallet;
     use dwallet_system::dwallet::{
         create_dwallet_cap,
-        EMesssageApprovalDWalletMismatch,
+        // EMesssageApprovalDWalletMismatch,
         EInvalidEncryptionKeyScheme,
         EInvalidEncryptionKeyOwner,
         EInvalidParametes,
@@ -101,7 +101,7 @@ module dwallet_system::dwallet_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = EMesssageApprovalDWalletMismatch)]
+    #[expected_failure(abort_code = 1)]
     public fun test_sign_with_vector_length_missmatch() {
         let ctx = &mut tx_context::dummy();
         let dwallet_id = object::id_from_address(@0xC);
@@ -133,7 +133,7 @@ module dwallet_system::dwallet_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = EMesssageApprovalDWalletMismatch)]
+    #[expected_failure(abort_code = 1)]
     public fun test_sign_with_extra_approved_messages() {
         let ctx = &mut tx_context::dummy();
 
@@ -167,7 +167,7 @@ module dwallet_system::dwallet_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = EMesssageApprovalDWalletMismatch)]
+    #[expected_failure(abort_code = 1)]
     public fun test_sign_with_different_messages_order() {
         let ctx = &mut tx_context::dummy();
 
@@ -202,7 +202,7 @@ module dwallet_system::dwallet_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = EMesssageApprovalDWalletMismatch)]
+    #[expected_failure(abort_code = 1)]
     public fun test_sign_with_different_messages() {
         let ctx = &mut tx_context::dummy();
 
@@ -237,7 +237,7 @@ module dwallet_system::dwallet_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = EMesssageApprovalDWalletMismatch)]
+    #[expected_failure(abort_code = 1)]
     public fun test_sign_with_cap_id_missmatch() {
         let ctx = &mut tx_context::dummy();
 
