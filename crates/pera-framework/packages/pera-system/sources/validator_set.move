@@ -5,7 +5,7 @@ module pera_system::validator_set {
 
     use pera::balance::Balance;
     use pera::pera::PERA;
-    use pera_system::validator::{Validator, staking_pool_id, pera_address};
+    use pera_system::validator::{Validator, staking_pool_id, pera_address, get_val_class_groups_public_key_and_proof_bytes, get_validator_protocol_pubkey_bytes};
     use pera_system::validator_cap::{Self, UnverifiedValidatorOperationCap, ValidatorOperationCap};
     use pera_system::staking_pool::{PoolTokenExchangeRate, StakedPera, pool_id};
     use pera::priority_queue as pq;
@@ -180,8 +180,8 @@ module pera_system::validator_set {
     public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet) {
         let validators_for_next_epoch = self.active_validators.map!(|validator| {
             ValidatorDataForSecretShare {
-                class_groups_public_key_and_proof_bytes: validator.metadata.class_groups_public_key_and_proof_bytes,
-                protocol_pubkey_bytes: validator.metadata.protocol_pubkey_bytes,
+                class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(validator),
+                protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(validator),
             }
         });
         event::emit(LockedValidatorsEvent { next_committee_validators: validators_for_next_epoch });
