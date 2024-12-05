@@ -27,6 +27,13 @@ use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use crate::dwallet_mpc::network_dkg::NetworkDkg;
+
+pub enum ManagerStatus {
+    Active,
+    WaitingForNetworkDKGCompletion,
+    Inactive,
+}
 
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
@@ -50,6 +57,7 @@ pub struct DWalletMPCManager {
     pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub weighted_parties: HashMap<PartyID, PartyID>,
     pub outputs_manager: DWalletMPCOutputsManager,
+    status: ManagerStatus,
 }
 
 /// A channel that may be sent to the asynchronous [`DWalletMPCManager`].
@@ -87,10 +95,17 @@ impl DWalletMPCManager {
             weighted_parties.clone(),
         )
         .map_err(|_| PeraError::InternalDWalletMPCError)?;
+
+        let (status, mpc_instances) = if epoch_id == 0 {
+            (ManagerStatus::WaitingForNetworkDKGCompletion, NetworkDkg::init(epoch_store.clone()))
+        } else {
+            (ManagerStatus::Active, HashMap::new())
+        };
+
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
         let mut manager = Self {
-            mpc_instances: HashMap::new(),
+            mpc_instances,
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
             consensus_adapter,
@@ -104,6 +119,7 @@ impl DWalletMPCManager {
             weighted_parties,
             batched_sign_sessions: HashMap::new(),
             outputs_manager: DWalletMPCOutputsManager::new(&epoch_store),
+            status,
         };
         tokio::spawn(async move {
             while let Some(message) = receiver.recv().await {
