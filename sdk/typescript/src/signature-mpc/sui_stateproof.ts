@@ -13,9 +13,8 @@ import { createAuthorityAck } from '../authority-binder/authority-binder.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient, EventId, SuiEventFilter } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { getDWalletBinderByID } from '../eth-light-client/utils.js';
 import type { Ed25519Keypair } from '../keypairs/ed25519/index.js';
-import { getSharedObjectRefById } from '../utils/sui-types.js';
+import { getDWalletBinderByID, getSharedObjectRefById } from '../utils/light-clients.js';
 import type { CreatedDwallet } from './dwallet_2pc_mpc_ecdsa_k1_module.js';
 import {
 	approveAndSignAckWithAuthority,
@@ -28,9 +27,6 @@ const packageId = '0x3';
 const suiStateProofModuleName = 'sui_state_proof';
 const suiDWalletCapModuleName = 'dwallet_test1';
 const suiChainType = 'Sui';
-
-const dWalletModuleName = 'dwallet';
-const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
 
 const SHA256 = 'SHA256';
 const GAS_BUDGET = 100_000_000;

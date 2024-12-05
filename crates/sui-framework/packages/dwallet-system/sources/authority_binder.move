@@ -2,19 +2,13 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 module dwallet_system::authority_binder {
-	use std::hash::sha2_256;
-	use std::vector;
 	use std::string::String;
 	use dwallet::transfer;
 	use dwallet::object::{Self, ID, UID};
 	use dwallet::tx_context::{ Self, TxContext };
 	use dwallet_system::dwallet;
 	use dwallet_system::dwallet::{MessageApproval};
-	use dwallet::ecdsa_k1;
 
-	// const EHashMismatch: u64 = 0;
-	const EInvalidSignature: u64 = 1;
-	
 	friend dwallet_system::ethereum_authority;
 	friend dwallet_system::dwallet_2pc_mpc_ecdsa_k1;
 	friend dwallet_system::sui_state_proof;
@@ -226,57 +220,6 @@ module dwallet_system::authority_binder {
 		assert!(binder_dwallet_cap_id == dwallet_cap_id, EInvalidDWalletCap);
 
 		dwallet::approve_messages(&binder.dwallet_cap, messages)
-	}
-
-	// this should go to sui dwallet cap module in Sui Network
-	public fun bind_dwallet_to_authority(
-		dwallet_binder: &DWalletBinder,
-		binder_id: ID,
-		dwallet_cap_id: ID,
-		bind_to_authority_id: ID,
-		nonce: u64,
-		virgin_bound: bool,
-		message: vector<u8>,
-		signature: vector<u8>,
-		pk: vector<u8>,
-	) {
-		let info_as_vec = vector::empty();
-		assert!(object::id(dwallet_binder) == binder_id, 10);
-		vector::append(
-			&mut info_as_vec,
-			object::id_to_bytes(&binder_id)
-		);
-		assert!(object::id(&dwallet_binder.dwallet_cap) == dwallet_cap_id, 11);
-		vector::append(
-			&mut info_as_vec,
-			object::id_to_bytes(&dwallet_cap_id)
-		);
-		assert!(object::id(&dwallet_binder.bind_to_authority) == bind_to_authority_id, 12);
-		vector::append(
-			&mut info_as_vec,
-			object::id_to_bytes(&bind_to_authority_id)
-		);
-		assert!(std::bcs::to_bytes(&nonce) == std::bcs::to_bytes(&dwallet_binder.bind_to_authority.nonce), 13);
-		vector::append(
-			&mut info_as_vec,
-			std::bcs::to_bytes(&nonce)
-		);
-		assert!(std::bcs::to_bytes(&virgin_bound) == std::bcs::to_bytes(&dwallet_binder.virgin_bound), 14);
-		vector::append(
-			&mut info_as_vec,
-			std::bcs::to_bytes(&virgin_bound)
-		);
-
-		let constructed_message = sha2_256(info_as_vec);
-		let constructed_message_bcs = dwallet::bcs::to_bytes(&constructed_message);
-		let constructed_message_len: u64 = vector::length(&constructed_message_bcs);
-
-		let message_len: u64 = vector::length(&message);
-		assert!(constructed_message_len == message_len, 15);
-		assert!(constructed_message_bcs == message, 16);
-
-		let recovered = ecdsa_k1::secp256k1_ecrecover(&signature, &message, 1);
-		assert!(recovered == pk, EInvalidSignature);
 	}
 
 	#[allow(unused_function)]

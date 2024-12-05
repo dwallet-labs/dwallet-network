@@ -7,9 +7,7 @@ import { bcs } from '../bcs/index.js';
 import { TransactionBlock } from '../builder/index.js';
 import type { DWalletClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { getDWalletBinderByID, stringToBcs } from '../eth-light-client/utils.js';
-import { getSharedObjectRefById } from '../utils/sui-types.js';
-import { toPaddedBigEndianBytes } from '../zklogin/utils.js';
+import { getSharedObjectRefById, stringToBcs } from '../utils/light-clients.js';
 
 const packageId = '0x3';
 const authorityBinderModuleName = 'authority_binder';
@@ -23,7 +21,6 @@ const authorityBinderModuleName = 'authority_binder';
  * @param {string} dwalletBinderId - The ID of the dWallet binder.
  * @param {boolean} virginBound - Indicates if this is a virgin binding.
  * @param {number} chainID - The chain ID of the Ethereum network.
- * @param {'Number' | 'HexString'} chainIDType - The type of the chain ID.
  * @param {string} chainType - The type of the chain, e.g., "Ethereum", "Sui".
  * @param {string} domainName - The domain name for the transaction.
  * @param {string} domainVersion - The domain version for the transaction.
