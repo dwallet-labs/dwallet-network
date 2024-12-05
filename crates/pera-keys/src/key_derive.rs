@@ -1,20 +1,21 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
+use std::path::PathBuf;
 use anyhow::anyhow;
 use bip32::{ChildNumber, DerivationPath, XPrv};
 
 use crate::keypair_file::read_authority_keypair_from_file;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
+use dwallet_mpc_types::{
+    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
+};
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::secp256r1::{Secp256r1KeyPair, Secp256r1PrivateKey};
 use fastcrypto::{
     ed25519::Ed25519PrivateKey,
     secp256k1::{Secp256k1KeyPair, Secp256k1PrivateKey},
     traits::{KeyPair, ToFromBytes},
-};
-use pera_mpc_types::{
-    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
 };
 use pera_types::{
     base_types::PeraAddress,
@@ -65,7 +66,7 @@ pub fn derive_key_pair_from_path(
             );
             Ok((kp.public().into(), PeraKeyPair::Secp256r1(kp)))
         }
-        | SignatureScheme::BLS12381
+        SignatureScheme::BLS12381
         | SignatureScheme::MultiSig
         | SignatureScheme::ZkLoginAuthenticator
         | SignatureScheme::PasskeyAuthenticator => Err(PeraError::UnsupportedFeatureError {
@@ -163,7 +164,7 @@ pub fn validate_path(
                 .map_err(|_| PeraError::SignatureKeyGenError("Cannot parse path".to_string()))?),
             }
         }
-        | SignatureScheme::BLS12381
+        SignatureScheme::BLS12381
         | SignatureScheme::MultiSig
         | SignatureScheme::ZkLoginAuthenticator
         | SignatureScheme::PasskeyAuthenticator => Err(PeraError::UnsupportedFeatureError {
@@ -186,9 +187,8 @@ pub fn generate_new_key(
 }
 
 pub fn generate_new_class_groups_keypair_and_proof(
-    path: Option<String>,
+    path: PathBuf,
 ) -> Result<(PeraAddress, ClassGroupsKeyPairAndProof), anyhow::Error> {
-    let path = path.ok_or_else(|| anyhow!("Path to keypair file not provided"))?;
     let bls12381 = read_authority_keypair_from_file(path)
         .map_err(|e| PeraError::SignatureKeyGenError(e.to_string()))?;
     let class_groups_seed = bls12381.copy().private().as_bytes().try_into()?;

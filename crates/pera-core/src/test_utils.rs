@@ -5,6 +5,7 @@ use crate::authority::{test_authority_builder::TestAuthorityBuilder, AuthoritySt
 use crate::authority_aggregator::{AuthorityAggregator, AuthorityAggregatorBuilder, TimeoutConfig};
 use crate::state_accumulator::StateAccumulator;
 use crate::test_authority_clients::LocalAuthorityClient;
+use dwallet_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
 use fastcrypto::hash::MultisetHash;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use futures::future::join_all;
@@ -17,7 +18,6 @@ use pera_framework::BuiltInFramework;
 use pera_genesis_builder::validator_info::ValidatorInfo;
 use pera_macros::nondeterministic;
 use pera_move_build::{BuildConfig, CompiledPackage, PeraPackageHooks};
-use pera_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
 use pera_protocol_config::ProtocolConfig;
 use pera_types::base_types::{random_object_ref, ObjectID};
 use pera_types::crypto::{

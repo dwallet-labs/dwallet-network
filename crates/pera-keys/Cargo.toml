@@ -19,7 +19,7 @@ fastcrypto = { workspace = true, features = ["copy_key"] }
 shared-crypto.workspace = true
 pera-types.workspace = true
 regex.workspace = true
-pera-mpc-types.workspace = true
+dwallet-mpc-types.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

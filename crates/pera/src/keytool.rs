@@ -52,7 +52,6 @@ use shared_crypto::intent::{Intent, IntentMessage, IntentScope, PersonalMessage}
 use std::fmt::{Debug, Display, Formatter};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::sync::Arc;
 use tabled::builder::Builder;
 use tabled::settings::Rotate;
@@ -112,7 +111,7 @@ pub enum KeyToolCommand {
     /// Use `pera client new-address` if you want to generate and save the key into pera.keystore.
     Generate {
         key_scheme: SignatureScheme,
-        derivation_path: Option<String>,
+        derivation_path: Option<DerivationPath>,
         word_length: Option<String>,
     },
 
@@ -291,6 +290,9 @@ pub enum KeyToolCommand {
         /// The max epoch used for the zklogin signature validity.
         #[clap(long)]
         max_epoch: EpochId,
+    },
+    GenerateClassGroupsKeyPairAndProof {
+        bls_key_path: PathBuf,
     },
 }
 
@@ -472,6 +474,7 @@ pub enum CommandOutput {
     ZkLoginSignAndExecuteTx(ZkLoginSignAndExecuteTx),
     ZkLoginInsecureSignPersonalMessage(ZkLoginInsecureSignPersonalMessage),
     ZkLoginSigVerify(ZkLoginSigVerifyResponse),
+    GenerateClassGroupsKeyPairAndProof(String),
 }
 
 impl KeyToolCommand {
@@ -602,10 +605,6 @@ impl KeyToolCommand {
                     })
                 }
                 _ => {
-                    let derivation_path: Option<DerivationPath> = match derivation_path {
-                        None => None,
-                        Some(p) => Some(DerivationPath::from_str(&p)?),
-                    };
                     let (pera_address, skp, _scheme, phrase) =
                         generate_new_key(key_scheme, derivation_path, word_length)?;
                     let file = format!("{pera_address}.key");
@@ -1259,6 +1258,14 @@ impl KeyToolCommand {
                     }
                     _ => CommandOutput::Error("Not a zkLogin signature".to_string()),
                 }
+            }
+            KeyToolCommand::GenerateClassGroupsKeyPairAndProof { bls_key_path } => {
+                let (pera_address, kp) =
+                    generate_new_class_groups_keypair_and_proof(bls_key_path)?;
+                let file_name = format!("class-groups-{pera_address}.key");
+                let public_base64_key_and_proof =
+                    write_class_groups_keypair_and_proof_to_file(&kp, file_name)?;
+                CommandOutput::GenerateClassGroupsKeyPairAndProof(public_base64_key_and_proof)
             }
         });
 

@@ -4057,6 +4057,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dwallet-mpc-types"
+version = "1.32.2"
+dependencies = [
+ "bcs",
+ "class_groups",
+ "crypto-bigint 0.5.5",
+ "serde",
+]
+
+[[package]]
 name = "dyn-clone"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9855,6 +9865,7 @@ dependencies = [
  "csv",
  "datatest-stable",
  "diesel",
+ "dwallet-mpc-types",
  "expect-test",
  "fastcrypto",
  "fastcrypto-zkp",
@@ -9891,7 +9902,6 @@ dependencies = [
  "pera-macros",
  "pera-move",
  "pera-move-build",
- "pera-mpc-types",
  "pera-package-management",
  "pera-protocol-config",
  "pera-replay",
@@ -10443,6 +10453,7 @@ dependencies = [
  "crypto-bigint 0.5.5",
  "dashmap",
  "diffy 0.3.0",
+ "dwallet-mpc-types",
  "either",
  "enum_dispatch",
  "expect-test",
@@ -10496,7 +10507,6 @@ dependencies = [
  "pera-macros",
  "pera-move",
  "pera-move-build",
- "pera-mpc-types",
  "pera-network",
  "pera-protocol-config",
  "pera-simulator",
@@ -10840,6 +10850,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "camino",
+ "dwallet-mpc-types",
  "fastcrypto",
  "insta",
  "move-binary-format",
@@ -10848,7 +10859,6 @@ dependencies = [
  "pera-execution",
  "pera-framework",
  "pera-framework-snapshot",
- "pera-mpc-types",
  "pera-protocol-config",
  "pera-simulator",
  "pera-types",
@@ -11220,8 +11230,8 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "bip32",
+ "dwallet-mpc-types",
  "fastcrypto",
- "pera-mpc-types",
  "pera-types",
  "rand 0.8.5",
  "regex",
@@ -11445,16 +11455,6 @@ dependencies = [
  "pera-types",
  "smallvec",
  "tracing",
-]
-
-[[package]]
-name = "pera-mpc-types"
-version = "1.32.2"
-dependencies = [
- "bcs",
- "class_groups",
- "crypto-bigint 0.5.5",
- "serde",
 ]
 
 [[package]]
@@ -12230,6 +12230,7 @@ dependencies = [
  "bcs",
  "class_groups",
  "class_groups_constants",
+ "dwallet-mpc-types",
  "fastcrypto",
  "group 0.1.0",
  "insta",
@@ -12240,7 +12241,6 @@ dependencies = [
  "pera-execution",
  "pera-genesis-builder",
  "pera-macros",
- "pera-mpc-types",
  "pera-protocol-config",
  "pera-simulator",
  "pera-types",

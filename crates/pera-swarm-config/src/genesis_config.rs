@@ -6,16 +6,16 @@ use std::net::{IpAddr, SocketAddr};
 
 use anyhow::Result;
 use class_groups::SecretKeyShareSizedNumber;
+use dwallet_mpc_types::{
+    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
+    ClassGroupsPublicKeyAndProof,
+};
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use group::PartyID;
 use pera_config::genesis::{GenesisCeremonyParameters, TokenAllocation};
 use pera_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
 use pera_config::{local_ip_utils, Config};
 use pera_genesis_builder::validator_info::{GenesisValidatorInfo, ValidatorInfo};
-use pera_mpc_types::{
-    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
-    ClassGroupsPublicKeyAndProof,
-};
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::{
     generate_proof_of_possession, get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair,

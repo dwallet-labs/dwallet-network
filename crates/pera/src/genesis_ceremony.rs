@@ -270,6 +270,7 @@ fn check_protocol_version(builder: &Builder, protocol_version: ProtocolVersion) 
 mod test {
     use super::*;
     use anyhow::Result;
+    use dwallet_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
     use fastcrypto::traits::ToFromBytes;
     use pera_config::local_ip_utils;
     use pera_genesis_builder::validator_info::ValidatorInfo;
@@ -278,7 +279,6 @@ mod test {
         write_keypair_to_file,
     };
     use pera_macros::nondeterministic;
-    use pera_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
     use pera_types::crypto::{
         get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair, PeraKeyPair,
     };

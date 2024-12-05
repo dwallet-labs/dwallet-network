@@ -28,6 +28,7 @@ use tap::tap::TapOptional;
 use crate::fire_drill::get_gas_obj_ref;
 use clap::*;
 use colored::Colorize;
+use dwallet_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
 use fastcrypto::traits::ToFromBytes;
 use fastcrypto::{
     encoding::{Base64, Encoding},
@@ -51,7 +52,6 @@ use pera_keys::{
     },
 };
 use pera_keys::{keypair_file::read_key, keystore::AccountKeystore};
-use pera_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
 use pera_sdk::wallet_context::WalletContext;
 use pera_sdk::PeraClient;
 use pera_types::crypto::{

@@ -1,5 +1,5 @@
 [package]
-name = "pera-mpc-types"
+name = "dwallet-mpc-types"
 edition = "2021"
 version.workspace = true
 

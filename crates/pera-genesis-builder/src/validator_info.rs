@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::bail;
+use dwallet_mpc_types::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::traits::ToFromBytes;
-use pera_mpc_types::ClassGroupsPublicKeyAndProofBytes;
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::{
     verify_proof_of_possession, AuthorityPublicKey, AuthorityPublicKeyBytes, AuthoritySignature,
