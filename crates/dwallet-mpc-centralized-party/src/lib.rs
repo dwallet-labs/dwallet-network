@@ -71,10 +71,11 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
         Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
             &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
         )
-        .context("KECCAK256 bits2field error")?,
+        .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
+
         Hash::SHA256 => {
             bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
-                .context("SHA256 bits2field error")?
+                .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
         }
     };
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
@@ -104,8 +105,7 @@ pub fn create_sign_output(
     let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
         (presign_first_round_output, presign_second_round_output).into();
 
-    let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id)
-        .context("Invalid session_id")?;
+    let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
     let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
 
     let (signed_messages, hashed_messages): (Vec<_>, Vec<_>) = messages
@@ -121,8 +121,8 @@ pub fn create_sign_output(
             let centralized_party_auxiliary_input = (
                 hashed_message,
                 centralized_party_dkg_output,
-                presign,
-                protocol_public_parameters,
+                presign.clone(),
+                protocol_public_parameters.clone(),
                 session_id,
             )
                 .into();

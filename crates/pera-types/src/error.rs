@@ -39,9 +39,9 @@ macro_rules! fp_ensure {
     };
 }
 use crate::digests::TransactionEventsDigest;
+use crate::dwallet_mpc_error::DwalletMPCError;
 use crate::execution_status::{CommandIndex, ExecutionFailureStatus};
 pub(crate) use fp_ensure;
-use crate::dwallet_mpc_error::DwalletMPCError;
 
 #[macro_export]
 macro_rules! exit_main {

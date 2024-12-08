@@ -1,5 +1,5 @@
-use group::PartyID;
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
+use group::PartyID;
 use pera_mpc_types::dwallet_mpc::MPCSessionStatus;
 // todo(zeev): remove unused errors.
 
@@ -76,7 +76,6 @@ pub enum DwalletMPCError {
     // // todo(zeev): fix the errors.
     // #[error("TwoPC MPC check error: {0}")]
     // TwoPCMPCCheckError(#[from] twopc_mpc::Error),
-
     #[error("failed to find a message in batch: {0:?}")]
     MissingMessageInBatch(Vec<u8>),
 }
