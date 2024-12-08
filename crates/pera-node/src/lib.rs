@@ -1303,7 +1303,7 @@ impl PeraNode {
                 Arc::clone(&epoch_store),
                 epoch_store.epoch(),
                 config.clone(),
-            )?)
+            ).await?)
             .await?;
 
         if let Some(dwallet_mpc_sender) = epoch_store.dwallet_mpc_sender.get() {

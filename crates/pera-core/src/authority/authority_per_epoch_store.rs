@@ -2521,22 +2521,6 @@ impl AuthorityPerEpochStore {
                 }
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, _),
-                                                            ..
-                                                        }) => {
-                if transaction.sender_authority() != *authority {
-                    warn!(
-                        "DWalletMPCMessage authority {} does not match its author from consensus {}",
-                        authority, transaction.certificate_author_index
-                    );
-                    // todo: return
-                    // if let Ok(mut manager) = self.get_dwallet_mpc_manager().await {
-                    //     manager.malicious_actors.insert(authority.clone());
-                    // }
-                    return None;
-                }
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                                                             kind: ConsensusTransactionKind::CheckpointSignature(data),
                                                             ..
                                                         }) => {
@@ -3700,17 +3684,6 @@ impl AuthorityPerEpochStore {
                         authority.concise()
                     );
                 }
-                Ok(ConsensusCertificateResult::ConsensusMessage)
-            }
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                                                            kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message),
-                                                            ..
-                                                        }) => {
-                // self.get_dwallet_mpc_manager().await?.network_dkg.handle_message(
-                //     message,
-                //     *authority,
-                // ).await?;
-                // todo (yael): handle message
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

@@ -147,14 +147,18 @@ impl DWalletMPCOutputsManager {
                 },
             );
         } else {
-            self.mpc_instances_outputs.insert(
-                session_info.session_id,
-                InstanceOutputsData {
-                    output_to_voting_authorities: HashMap::new(),
-                    authorities_that_sent_output: HashSet::new(),
-                },
-            );
+            self.insert_new_output_instance(&session_info.session_id);
         }
+    }
+
+    pub fn insert_new_output_instance(&mut self, session_id: &ObjectID) {
+        self.mpc_instances_outputs.insert(
+            session_id.clone(),
+            InstanceOutputsData {
+                output_to_voting_authorities: HashMap::new(),
+                authorities_that_sent_output: HashSet::new(),
+            },
+        );
     }
 }
 

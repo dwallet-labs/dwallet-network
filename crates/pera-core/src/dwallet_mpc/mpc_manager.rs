@@ -73,7 +73,7 @@ pub enum DWalletMPCChannelMessage {
 }
 
 impl DWalletMPCManager {
-    pub fn try_new(
+    pub async fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         epoch_id: EpochId,
@@ -105,6 +105,14 @@ impl DWalletMPCManager {
             (ManagerStatus::Active, HashMap::new())
         };
 
+        let mut outputs_manager = DWalletMPCOutputsManager::new(&epoch_store);
+
+        for (k, _) in  mpc_instances.iter(){
+            outputs_manager.insert_new_output_instance(k);
+            let mut a  = epoch_store.get_dwallet_mpc_outputs_manager().await?;
+            a.insert_new_output_instance(k);
+        };
+
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
         let mut manager = Self {
@@ -121,7 +129,7 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             weighted_parties,
             batched_sign_sessions: HashMap::new(),
-            outputs_manager: DWalletMPCOutputsManager::new(&epoch_store),
+            outputs_manager,
             status,
         };
         tokio::spawn(async move {

@@ -98,7 +98,6 @@ pub enum ConsensusTransactionKey {
     /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
     /// [`ObjectID`] is the session ID.
     DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    NetworkDkgMessage(AuthorityName, Vec<u8>),
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
@@ -157,9 +156,6 @@ impl Debug for ConsensusTransactionKey {
                     "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
                     value, session_id, sender_address, dwallet_cap_id
                 )
-            }
-            ConsensusTransactionKey::NetworkDkgMessage(name, _) => {
-                write!(f, "NetworkDkgMessage {:?}", name)
             }
         }
     }
@@ -304,7 +300,6 @@ pub enum ConsensusTransactionKind {
     RandomnessDkgConfirmation(AuthorityName, Vec<u8>),
 
     CapabilityNotificationV2(AuthorityCapabilitiesV2),
-    PeraNetworkDkgMessage(AuthorityName, Vec<u8>),
 }
 
 impl ConsensusTransactionKind {
@@ -503,20 +498,6 @@ impl ConsensusTransaction {
         }
     }
 
-    pub fn new_pera_network_dkg_message(
-        authority: AuthorityName,
-        message: Vec<u8>,
-    ) -> Self {
-        let mut hasher = DefaultHasher::new();
-        message.hash(&mut hasher);
-        let tracking_id = hasher.finish().to_le_bytes();
-        Self {
-            tracking_id,
-            kind: ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message),
-        }
-    }
-
-
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
     pub fn new_dwallet_mpc_output(
         authority: AuthorityName,
@@ -618,9 +599,6 @@ impl ConsensusTransaction {
                     session_info.dwallet_cap_id,
                     *authority,
                 )
-            }
-            ConsensusTransactionKind::PeraNetworkDkgMessage(authority, message) => {
-                ConsensusTransactionKey::NetworkDkgMessage(*authority, message.clone())
             }
         }
     }
