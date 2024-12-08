@@ -1298,12 +1298,15 @@ impl PeraNode {
             .await?;
 
         epoch_store
-            .set_dwallet_mpc_sender(DWalletMPCManager::try_new(
-                Arc::new(consensus_adapter.clone()),
-                Arc::clone(&epoch_store),
-                epoch_store.epoch(),
-                config.clone(),
-            ).await?)
+            .set_dwallet_mpc_sender(
+                DWalletMPCManager::try_new(
+                    Arc::new(consensus_adapter.clone()),
+                    Arc::clone(&epoch_store),
+                    epoch_store.epoch(),
+                    config.clone(),
+                )
+                .await?,
+            )
             .await?;
 
         if let Some(dwallet_mpc_sender) = epoch_store.dwallet_mpc_sender.get() {

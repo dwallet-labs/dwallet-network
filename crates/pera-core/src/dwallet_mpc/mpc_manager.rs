@@ -1,8 +1,8 @@
-use std::cmp::PartialEq;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
+use std::cmp::PartialEq;
 
 use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::mpc_instance::{
@@ -10,6 +10,7 @@ use crate::dwallet_mpc::mpc_instance::{
 };
 use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputVerificationResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::network_dkg::{NetworkDkg, FIRST_EPOCH_ID};
 use crate::dwallet_mpc::sign::BatchedSignSession;
 use anyhow::anyhow;
 use group::PartyID;
@@ -28,7 +29,6 @@ use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
-use crate::dwallet_mpc::network_dkg::{NetworkDkg, FIRST_EPOCH_ID};
 
 #[derive(Debug, PartialEq)]
 pub enum ManagerStatus {
@@ -109,11 +109,11 @@ impl DWalletMPCManager {
 
         let mut outputs_manager = DWalletMPCOutputsManager::new(&epoch_store);
 
-        for (k, _) in  mpc_instances.iter(){
+        for (k, _) in mpc_instances.iter() {
             outputs_manager.insert_new_output_instance(k);
-            let mut a  = epoch_store.get_dwallet_mpc_outputs_manager().await?;
+            let mut a = epoch_store.get_dwallet_mpc_outputs_manager().await?;
             a.insert_new_output_instance(k);
-        };
+        }
 
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
@@ -253,12 +253,12 @@ impl DWalletMPCManager {
                     } else {
                         0
                     };
-                if
-                    ((matches!(instance.status, MPCSessionStatus::Active(_))
+                if ((matches!(instance.status, MPCSessionStatus::Active(_))
                     && received_weight as StakeUnit >= threshold)
-                    || (instance.status == MPCSessionStatus::FirstExecution)) &&
-                        ((self.status == ManagerStatus::WaitingForNetworkDKGCompletion
-                        && matches!(instance.party, MPCParty::NetworkDkg(_))) || self.status == ManagerStatus::Active)
+                    || (instance.status == MPCSessionStatus::FirstExecution))
+                    && ((self.status == ManagerStatus::WaitingForNetworkDKGCompletion
+                        && matches!(instance.party, MPCParty::NetworkDkg(_)))
+                        || self.status == ManagerStatus::Active)
                 {
                     Some(instance)
                 } else {

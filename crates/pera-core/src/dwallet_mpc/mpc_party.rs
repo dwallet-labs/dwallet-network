@@ -6,13 +6,16 @@ use crate::dwallet_mpc::mpc_events::{
     StartBatchedSignEvent, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent,
     StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
+use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::{twopc_error_to_pera_error, DWalletMPCManager};
+use crate::dwallet_mpc::network_dkg::{KeyTypes, NetworkDkg};
 use crate::dwallet_mpc::presign::{
     PresignFirstParty, PresignFirstPartyPublicInputGenerator, PresignSecondParty,
     PresignSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use anyhow::Error;
+use class_groups::dkg::{RistrettoParty, Secp256k1Party};
 use commitment::CommitmentSizedNumber;
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
@@ -24,9 +27,6 @@ use pera_types::PERA_SYSTEM_ADDRESS;
 use rand_core::OsRng;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
-use class_groups::dkg::{RistrettoParty, Secp256k1Party};
-use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
-use crate::dwallet_mpc::network_dkg::{KeyTypes, NetworkDkg};
 
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -116,7 +116,13 @@ impl MPCParty {
             }
             MPCParty::NetworkDkg(key_type) => {
                 // let temp =
-                    NetworkDkg::advance(access_threshold, party_id, &public_input, key_type, messages)
+                NetworkDkg::advance(
+                    access_threshold,
+                    party_id,
+                    &public_input,
+                    key_type,
+                    messages,
+                )
                 // temp
             }
         }
