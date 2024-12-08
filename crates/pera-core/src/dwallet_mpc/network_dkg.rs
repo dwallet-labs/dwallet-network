@@ -1,39 +1,24 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::consensus_adapter::SubmitToConsensus;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
-use crate::dwallet_mpc::mpc_instance::{
-    authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
-};
-use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
+use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, MPCSessionStatus};
 use crate::dwallet_mpc::mpc_party::{advance, MPCParty};
-use class_groups::dkg::proof_helpers::{
-    generate_secret_share_sized_keypair_and_proof, KnowledgeOfDiscreteLogUCProof,
-};
-use class_groups::CompactIbqf;
 use commitment::CommitmentSizedNumber;
-use crypto_bigint::Uint;
 use dwallet_mpc_types::ClassGroupsPublicKeyAndProof;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use jsonrpsee::core::Serialize;
 use mpc::WeightedThresholdAccessStructure;
-use pera_types::base_types::{AuthorityName, EpochId, ObjectID};
+use pera_types::base_types::{EpochId, ObjectID};
 use pera_types::error::{PeraError, PeraResult};
-use pera_types::messages_consensus::{ConsensusTransaction, ConsensusTransactionKind};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
-use rand_core::SeedableRng;
 use serde::Deserialize;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 
 const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
 const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(0);
 const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(1);
 pub const FIRST_EPOCH_ID: EpochId = 0;
-
-// pub type DecryptionKey = Uint<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>;
-// pub type EncryptionKey = CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>;
-// pub type Proof = KnowledgeOfDiscreteLogUCProof;
 
 fn new_dkg_secp256k1_instance(
     epoch_store: Arc<AuthorityPerEpochStore>,
@@ -84,7 +69,7 @@ fn new_dkg_ristretto_instance(
         None,
     ))
 }
-
+// Todo (#382): Replace them with the actual implementation once the DKG protocol is ready.
 fn generate_secp256k1_dkg_party_public_input(
     secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
@@ -102,6 +87,7 @@ fn generate_secp256k1_dkg_party_public_input(
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
+// Todo (#382): Replace them with the actual implementation once the DKG protocol is ready.
 fn generate_ristretto_dkg_party_public_input(
     secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
@@ -125,9 +111,12 @@ pub enum KeyTypes {
     Ristretto,
 }
 
+/// This struct is responsible for the network DKG protocol.
+/// It manages the initialization and advancement of the network DKG supported key types.
 pub struct NetworkDkg;
 
 impl NetworkDkg {
+    /// Initializes the network DKG protocol for the supported key types.
     pub fn init(
         epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> PeraResult<HashMap<ObjectID, DWalletMPCInstance>> {
@@ -149,6 +138,7 @@ impl NetworkDkg {
         ]))
     }
 
+    /// Advances the network DKG protocol for the supported key types.
     pub(crate) fn advance(
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
         party_id: PartyID,
@@ -157,6 +147,7 @@ impl NetworkDkg {
         messages: Vec<HashMap<PartyID, Vec<u8>>>,
     ) -> PeraResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         Ok(match key_type {
+            // Todo (#382): Replace them with the actual implementation once the DKG protocol is ready.
             KeyTypes::Secp256k1 => advance::<DKGFirstParty>(
                 CommitmentSizedNumber::from_le_slice(SECP256K1_DKG_SESSION_ID.to_vec().as_slice()),
                 party_id,
@@ -165,6 +156,7 @@ impl NetworkDkg {
                 bcs::from_bytes(public_input)?,
                 (),
             ),
+            // Todo (#382): Replace them with the actual implementation once the DKG protocol is ready.
             KeyTypes::Ristretto => advance::<DKGFirstParty>(
                 CommitmentSizedNumber::from_le_slice(RISTRETTO_DKG_SESSION_ID.to_vec().as_slice()),
                 party_id,

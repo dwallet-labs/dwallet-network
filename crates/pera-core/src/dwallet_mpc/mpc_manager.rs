@@ -97,6 +97,7 @@ impl DWalletMPCManager {
         )
         .map_err(|_| PeraError::InternalDWalletMPCError)?;
 
+        // Start the network DKG if this is the first epoch
         let (status, mpc_instances) = if epoch_id == FIRST_EPOCH_ID {
             (
                 ManagerStatus::WaitingForNetworkDKGCompletion,
@@ -105,7 +106,6 @@ impl DWalletMPCManager {
         } else {
             (ManagerStatus::Active, HashMap::new())
         };
-
         let mut outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await?;
         for (network_dkg_session_id, _) in mpc_instances.iter() {
             outputs_manager.insert_new_output_instance(network_dkg_session_id);

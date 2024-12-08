@@ -1178,7 +1178,13 @@ mod checked {
                 )
             }
             // Todo (#380): Store DKG output in SystemState
-            MPCRound::NetworkDkg => todo!(),
+            MPCRound::NetworkDkg => (
+                "create_sign_output",
+                vec![
+                    CallArg::Pure(data.output.clone()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                ],
+            ),
         };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
