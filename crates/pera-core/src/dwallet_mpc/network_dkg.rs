@@ -76,14 +76,6 @@ fn generate_secp256k1_dkg_party_public_input(
         ClassGroupsPublicKeyAndProof,
     >,
 ) -> Vec<u8> {
-    // let public_input = Secp256k1Party::PublicInput::new(
-    //     &(),
-    //     (),
-    //     (),
-    //     (),
-    //     secret_key_share_sized_encryption_keys_and_proofs,
-    // ).unwrap();
-    // bcs::to_bytes(&public_input).unwrap()
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
@@ -94,14 +86,6 @@ fn generate_ristretto_dkg_party_public_input(
         ClassGroupsPublicKeyAndProof,
     >,
 ) -> Vec<u8> {
-    // let public_input = RistrettoParty::PublicInput::new(
-    //     &(),
-    //     (),
-    //     (),
-    //     Parameters {},
-    //     secret_key_share_sized_encryption_keys_and_proofs,
-    // ).unwrap();
-    // bcs::to_bytes(&public_input).unwrap()
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
