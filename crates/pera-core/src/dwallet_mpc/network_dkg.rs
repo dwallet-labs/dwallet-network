@@ -69,7 +69,8 @@ fn new_dkg_ristretto_instance(
         None,
     ))
 }
-// Todo (#382): Replace them with the actual implementation once the DKG protocol is ready.
+
+// Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
 fn generate_secp256k1_dkg_party_public_input(
     secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
@@ -79,7 +80,7 @@ fn generate_secp256k1_dkg_party_public_input(
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
-// Todo (#382): Replace them with the actual implementation once the DKG protocol is ready.
+// Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
 fn generate_ristretto_dkg_party_public_input(
     secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
@@ -131,7 +132,7 @@ impl NetworkDkg {
         messages: Vec<HashMap<PartyID, Vec<u8>>>,
     ) -> PeraResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         Ok(match key_type {
-            // Todo (#382): Replace them with the actual implementation once the DKG protocol is ready.
+            // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
             KeyTypes::Secp256k1 => advance::<DKGFirstParty>(
                 CommitmentSizedNumber::from_le_slice(SECP256K1_DKG_SESSION_ID.to_vec().as_slice()),
                 party_id,
@@ -140,7 +141,7 @@ impl NetworkDkg {
                 bcs::from_bytes(public_input)?,
                 (),
             ),
-            // Todo (#382): Replace them with the actual implementation once the DKG protocol is ready.
+            // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
             KeyTypes::Ristretto => advance::<DKGFirstParty>(
                 CommitmentSizedNumber::from_le_slice(RISTRETTO_DKG_SESSION_ID.to_vec().as_slice()),
                 party_id,
