@@ -143,7 +143,9 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::mpc_events::{StartBatchedSignEvent, StartDKGFirstRoundEvent};
+use crate::dwallet_mpc::mpc_events::{
+    LockedNextEpochCommitteeEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent,
+};
 use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsManager;
@@ -1560,6 +1562,11 @@ impl AuthorityState {
         // This function is being executed for all events, some events are being emitted before the MPC outputs manager is initialized.
         let mut dwallet_mpc_outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await?;
         for event in &inner_temporary_store.events.data {
+            if LockedNextEpochCommitteeEvent::type_() == event.type_ {
+                info!("received LockedNextEpochCommitteeEvent successfully");
+                dwallet_mpc_outputs_manager.completed_locking_next_committee = true;
+                continue;
+            }
             let Ok(Some(session_info)) = MPCParty::session_info_from_event(event, party_id) else {
                 continue;
             };

@@ -451,6 +451,7 @@ pub struct ValidatorSetV1 {
     pub validator_candidates: Table,
     pub at_risk_validators: VecMap<PeraAddress, u64>,
     pub extra_fields: Bag,
+    pub locked: bool,
 }
 
 /// Rust version of the Move pera_system::storage_fund::StorageFund type
@@ -626,6 +627,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV1 {
             system_state_version,
             validators:
                 ValidatorSetV1 {
+                    locked: _,
                     total_stake,
                     active_validators,
                     pending_active_validators:

@@ -13,6 +13,7 @@ title: Module `0x3::pera_system_state_inner`
 -  [Function `create`](#0x3_pera_system_state_inner_create)
 -  [Function `create_system_parameters`](#0x3_pera_system_state_inner_create_system_parameters)
 -  [Function `v1_to_v2`](#0x3_pera_system_state_inner_v1_to_v2)
+-  [Function `lock_next_epoch_committee`](#0x3_pera_system_state_inner_lock_next_epoch_committee)
 -  [Function `request_add_validator_candidate`](#0x3_pera_system_state_inner_request_add_validator_candidate)
 -  [Function `request_remove_validator_candidate`](#0x3_pera_system_state_inner_request_remove_validator_candidate)
 -  [Function `request_add_validator`](#0x3_pera_system_state_inner_request_add_validator)
@@ -897,6 +898,32 @@ This function will be called only once in genesis.
         epoch_start_timestamp_ms,
         extra_fields: state_extra_fields
     }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_pera_system_state_inner_lock_next_epoch_committee"></a>
+
+## Function `lock_next_epoch_committee`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_lock_next_epoch_committee">lock_next_epoch_committee</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_lock_next_epoch_committee">lock_next_epoch_committee</a>(
+    self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>,
+) {
+    self.validators.<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_lock_next_epoch_committee">lock_next_epoch_committee</a>(self.epoch);
 }
 </code></pre>
 

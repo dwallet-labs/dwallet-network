@@ -232,6 +232,12 @@ StakingRequestEvent
 UnstakingRequestEvent
 	public struct
 	0x3::validator
+get_validator_protocol_pubkey_bytes
+	public(package) fun
+	0x3::validator
+get_val_class_groups_public_key_and_proof_bytes
+	public(package) fun
+	0x3::validator
 new_metadata
 	public(package) fun
 	0x3::validator
@@ -523,6 +529,12 @@ ValidatorEpochInfoEvent
 ValidatorEpochInfoEventV2
 	public struct
 	0x3::validator_set
+ValidatorDataForDWalletSecretReShare
+	public struct
+	0x3::validator_set
+LockedNextEpochCommitteeEvent
+	public struct
+	0x3::validator_set
 ValidatorJoinEvent
 	public struct
 	0x3::validator_set
@@ -554,6 +566,9 @@ request_withdraw_stake
 	public(package) fun
 	0x3::validator_set
 request_set_commission_rate
+	public(package) fun
+	0x3::validator_set
+lock_next_epoch_committee
 	public(package) fun
 	0x3::validator_set
 advance_epoch
@@ -758,6 +773,9 @@ create_system_parameters
 	public(package) fun
 	0x3::pera_system_state_inner
 v1_to_v2
+	public(package) fun
+	0x3::pera_system_state_inner
+lock_next_epoch_committee
 	public(package) fun
 	0x3::pera_system_state_inner
 request_add_validator_candidate
@@ -1037,6 +1055,9 @@ load_inner_maybe_upgrade
 	fun
 	0x3::pera_system
 validator_voting_powers
+	fun
+	0x3::pera_system
+lock_next_epoch_committee
 	fun
 	0x3::pera_system
 GenesisValidatorMetadata

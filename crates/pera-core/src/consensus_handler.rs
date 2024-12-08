@@ -360,11 +360,45 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
+
+                    if let ConsensusTransactionKind::LockNextCommittee(authority, epoch_id) =
+                        &transaction.kind
+                    {
+                        if *epoch_id != self.epoch_store.epoch() {
+                            error!(
+                                "Received LockNextCommittee transaction for epoch {:?} while processing epoch {:?}",
+                                epoch_id,
+                                self.epoch_store.epoch()
+                            );
+                            continue;
+                        }
+                        let Ok(mut dwallet_outputs_manager) =
+                            self.epoch_store.get_dwallet_mpc_outputs_manager().await
+                        else {
+                            error!("Failed to get dwallet mpc outputs manager when processing LockNextCommittee transaction");
+                            continue;
+                        };
+                        if dwallet_outputs_manager.should_lock_committee(*authority) {
+                            let transaction =
+                                VerifiedTransaction::new_lock_next_committee_system_transaction(
+                                    *epoch_id,
+                                );
+                            let transaction = VerifiedExecutableTransaction::new_system(
+                                transaction,
+                                self.epoch(),
+                            );
+                            transactions.push((
+                                empty_bytes.as_slice(),
+                                SequencedConsensusTransactionKind::System(transaction),
+                                consensus_output.leader_author_index(),
+                            ));
+                        }
+                    }
                     // If we receive a `DwalletMPCOutput` transaction,
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
-                    if let ConsensusTransactionKind::DWalletMPCOutput(
+                    else if let ConsensusTransactionKind::DWalletMPCOutput(
                         authority,
                         session_info,
                         output,
@@ -383,13 +417,13 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 "Malicious output from unknown authority index {:?}",
                                 authority_index
                             );
-                            return;
+                            continue;
                         };
 
                         let Ok(mut dwallet_outputs_manager) =
                             self.epoch_store.get_dwallet_mpc_outputs_manager().await
                         else {
-                            return;
+                            continue;
                         };
 
                         let output_verification_result = dwallet_outputs_manager
@@ -400,7 +434,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             });
                         match output_verification_result {
                             OutputVerificationResult::ValidWithNewOutput(new_output, _) => {
-                                let transaction = self.create_system_tx(session_info, &new_output);
+                                let transaction = self
+                                    .create_dwallet_mpc_output_system_tx(session_info, &new_output);
                                 transactions.push((
                                     empty_bytes.as_slice(),
                                     SequencedConsensusTransactionKind::System(transaction),
@@ -408,7 +443,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 ));
                             }
                             OutputVerificationResult::Valid(_) => {
-                                let transaction = self.create_system_tx(session_info, output);
+                                let transaction =
+                                    self.create_dwallet_mpc_output_system_tx(session_info, output);
                                 transactions.push((
                                     empty_bytes.as_slice(),
                                     SequencedConsensusTransactionKind::System(transaction),
@@ -532,7 +568,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .await;
     }
 
-    fn create_system_tx(
+    fn create_dwallet_mpc_output_system_tx(
         &self,
         session_info: &SessionInfo,
         output: &Vec<u8>,
@@ -668,6 +704,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
         ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
         ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
+        ConsensusTransactionKind::LockNextCommittee(..) => "lock_next_committee",
     }
 }
 

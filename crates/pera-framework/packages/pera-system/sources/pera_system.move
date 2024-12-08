@@ -594,6 +594,16 @@ module pera_system::pera_system {
         pera_system_state_inner::active_validator_voting_powers(self)
     }
 
+    #[allow(unused_function)]
+    /// Lock the next epoch's validator set
+    /// The chain agrees on the next epoch committee in order to pass
+    /// the chain's DWallet MPC secret to it.
+    fun lock_next_epoch_committee(wrapper: &mut PeraSystemState, ctx: &TxContext) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        let self = load_system_state_mut(wrapper);
+        self.lock_next_epoch_committee();
+    }
+
     #[test_only]
     public fun validator_voting_powers_for_testing(wrapper: &mut PeraSystemState): VecMap<address, u64> {
         validator_voting_powers(wrapper)

@@ -9,6 +9,8 @@ title: Module `0x3::validator`
 -  [Struct `StakingRequestEvent`](#0x3_validator_StakingRequestEvent)
 -  [Struct `UnstakingRequestEvent`](#0x3_validator_UnstakingRequestEvent)
 -  [Constants](#@Constants_0)
+-  [Function `get_validator_protocol_pubkey_bytes`](#0x3_validator_get_validator_protocol_pubkey_bytes)
+-  [Function `get_val_class_groups_public_key_and_proof_bytes`](#0x3_validator_get_val_class_groups_public_key_and_proof_bytes)
 -  [Function `new_metadata`](#0x3_validator_new_metadata)
 -  [Function `new`](#0x3_validator_new)
 -  [Function `deactivate`](#0x3_validator_deactivate)
@@ -659,6 +661,54 @@ Max gas price a validator can set is 100K NPERA.
 </code></pre>
 
 
+
+<a name="0x3_validator_get_validator_protocol_pubkey_bytes"></a>
+
+## Function `get_validator_protocol_pubkey_bytes`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_get_validator_protocol_pubkey_bytes">get_validator_protocol_pubkey_bytes</a>(<a href="validator.md#0x3_validator">validator</a>: &<a href="validator.md#0x3_validator_Validator">validator::Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="validator.md#0x3_validator_get_validator_protocol_pubkey_bytes">get_validator_protocol_pubkey_bytes</a>(<a href="validator.md#0x3_validator">validator</a>: &<a href="validator.md#0x3_validator_Validator">Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <a href="validator.md#0x3_validator">validator</a>.metadata.protocol_pubkey_bytes
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_validator_get_val_class_groups_public_key_and_proof_bytes"></a>
+
+## Function `get_val_class_groups_public_key_and_proof_bytes`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_get_val_class_groups_public_key_and_proof_bytes">get_val_class_groups_public_key_and_proof_bytes</a>(val: &<a href="validator.md#0x3_validator_Validator">validator::Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="validator.md#0x3_validator_get_val_class_groups_public_key_and_proof_bytes">get_val_class_groups_public_key_and_proof_bytes</a>(val: &<a href="validator.md#0x3_validator_Validator">Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    val.metadata.class_groups_public_key_and_proof_bytes
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x3_validator_new_metadata"></a>
 
@@ -2809,7 +2859,6 @@ Aborts if validator metadata is valid
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="validator.md#0x3_validator_validate_metadata">validate_metadata</a>(metadata: &<a href="validator.md#0x3_validator_ValidatorMetadata">ValidatorMetadata</a>) {
-    // todo (yael): add key validation
     <a href="validator.md#0x3_validator_validate_metadata_bcs">validate_metadata_bcs</a>(<a href="../move-stdlib/bcs.md#0x1_bcs_to_bytes">bcs::to_bytes</a>(metadata));
 }
 </code></pre>

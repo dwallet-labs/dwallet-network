@@ -197,6 +197,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             system_state_version,
             validators:
                 ValidatorSetV1 {
+                    locked: _,
                     total_stake,
                     active_validators,
                     pending_active_validators:

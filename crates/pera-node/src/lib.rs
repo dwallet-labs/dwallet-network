@@ -883,7 +883,8 @@ impl PeraNode {
             .as_ref()
             .ok_or_else(|| PeraError::from("Node is not a validator"))?
             .consensus_adapter
-            .close_epoch(epoch_store);
+            .close_epoch(epoch_store)
+            .await;
         Ok(())
     }
 
