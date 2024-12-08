@@ -27,7 +27,7 @@ use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
-use crate::dwallet_mpc::network_dkg::NetworkDkg;
+use crate::dwallet_mpc::network_dkg::{NetworkDkg, FIRST_EPOCH_ID};
 
 pub enum ManagerStatus {
     Active,
@@ -96,8 +96,11 @@ impl DWalletMPCManager {
         )
         .map_err(|_| PeraError::InternalDWalletMPCError)?;
 
-        let (status, mpc_instances) = if epoch_id == 0 {
-            (ManagerStatus::WaitingForNetworkDKGCompletion, NetworkDkg::init(epoch_store.clone()))
+        let (status, mpc_instances) = if epoch_id == FIRST_EPOCH_ID {
+            (
+                ManagerStatus::WaitingForNetworkDKGCompletion,
+                NetworkDkg::init(epoch_store.clone())?,
+            )
         } else {
             (ManagerStatus::Active, HashMap::new())
         };

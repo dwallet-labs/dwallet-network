@@ -25,7 +25,7 @@ use crate::dwallet_mpc::mpc_manager::twopc_error_to_pera_error;
 const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
 const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(0);
 const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(1);
-const FIRST_EPOCH_ID: EpochId = 0;
+pub const FIRST_EPOCH_ID: EpochId = 0;
 
 // pub type DecryptionKey = Uint<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>;
 // pub type EncryptionKey = CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>;
@@ -114,7 +114,7 @@ pub enum KeyTypes {
 pub struct NetworkDkg;
 
 impl NetworkDkg {
-    pub async fn init(epoch_store: Arc<AuthorityPerEpochStore>) -> PeraResult<HashMap<ObjectID, DWalletMPCInstance>> {
+    pub fn init(epoch_store: Arc<AuthorityPerEpochStore>) -> PeraResult<HashMap<ObjectID, DWalletMPCInstance>> {
         if epoch_store.epoch() != FIRST_EPOCH_ID {
             return Err(PeraError::InternalDWalletMPCError);
         }
