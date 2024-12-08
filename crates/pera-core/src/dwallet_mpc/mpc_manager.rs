@@ -63,6 +63,7 @@ pub enum DWalletMPCChannelMessage {
     /// A signal that the delivery of messages has ended, now the instances that received a quorum of messages can advance
     EndOfDelivery,
     StartLockNextEpochCommittee,
+    StartSecretReShare
 }
 
 impl DWalletMPCManager {
@@ -168,6 +169,9 @@ impl DWalletMPCManager {
                         err
                     );
                 }
+            }
+            DWalletMPCChannelMessage::StartSecretReShare => {
+
             }
         }
     }
