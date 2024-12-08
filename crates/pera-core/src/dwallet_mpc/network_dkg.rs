@@ -16,8 +16,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
-const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(0);
-const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(1);
+const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_bytes("chain-secp256k1-dkg".to_bytes());
+const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_bytes("chain-ristretto-dkg".to_bytes());
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
 fn new_dkg_secp256k1_instance(
