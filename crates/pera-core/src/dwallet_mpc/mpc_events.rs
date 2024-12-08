@@ -1,4 +1,5 @@
 use move_core_types::{ident_str, identifier::IdentStr, language_storage::StructTag};
+use pera_storage::mutex_table::Lock;
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
 use pera_types::error::PeraError;
@@ -9,6 +10,8 @@ use serde::{Deserialize, Serialize};
 
 pub const START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartDKGSecondRoundEvent");
+pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
+    ident_str!("LockedNextEpochCommitteeEvent");
 pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartDKGFirstRoundEvent");
 pub const START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
@@ -29,19 +32,6 @@ pub struct StartDKGFirstRoundEvent {
     pub dwallet_cap_id: ID,
 }
 
-impl StartDKGFirstRoundEvent {
-    /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartDKGFirstRoundEvent`] events from the chain and initiate the MPC session.
-    pub fn type_() -> StructTag {
-        StructTag {
-            address: PERA_SYSTEM_ADDRESS,
-            name: START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
-            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
-            type_params: vec![],
-        }
-    }
-}
-
 /// Rust version of the Move [`pera_system::dwallet::StartDKGSecondRoundEvent`] type.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartDKGSecondRoundEvent {
@@ -57,6 +47,19 @@ pub struct StartDKGSecondRoundEvent {
     pub dwallet_cap_id: ID,
     /// Unique identifier for the first DKG round session.
     pub first_round_session_id: ID,
+}
+
+impl StartDKGFirstRoundEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`StartDKGFirstRoundEvent`] events from the chain and initiate the MPC session.
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
 }
 
 impl StartDKGSecondRoundEvent {
@@ -191,6 +194,31 @@ impl StartBatchedSignEvent {
             address: PERA_SYSTEM_ADDRESS,
             name: START_BATCHED_SIGN_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+/// Rust version of the Move [`pera_system::validator_set::LockedNextEpochCommitteeEvent`] type.
+pub struct LockedNextEpochCommitteeEvent {
+    next_committee_validators: Vec<ValidatorDataForDWalletSecretReShare>,
+    epoch: u64,
+}
+
+struct ValidatorDataForDWalletSecretReShare {
+    class_groups_public_key_and_proof_bytes: Vec<u8>,
+    protocol_pubkey_bytes: Vec<u8>,
+}
+
+impl LockedNextEpochCommitteeEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`LockedNextEpochCommitteeEvent`] events from the chain and trigger the
+    /// start of the chain's re-share flow.
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME.to_owned(),
+            module: ident_str!("validator_set").to_owned(),
             type_params: vec![],
         }
     }

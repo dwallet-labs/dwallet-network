@@ -18,6 +18,8 @@ pub struct DWalletMPCOutputsManager {
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
     /// The quorum threshold of the chain.
     pub quorum_threshold: StakeUnit,
+    pub completed_locking_next_committee: bool,
+    voted_to_lock_committee: HashSet<AuthorityName>,
 }
 
 /// The data needed to manage the outputs of an MPC instance.
@@ -41,7 +43,18 @@ impl DWalletMPCOutputsManager {
                 .clone()
                 .into_iter()
                 .collect(),
+            completed_locking_next_committee: false,
+            voted_to_lock_committee: HashSet::new(),
         }
+    }
+
+    pub fn should_lock_committee(&mut self, authority_name: AuthorityName) -> bool {
+        self.voted_to_lock_committee.insert(authority_name);
+        self.voted_to_lock_committee
+            .iter()
+            .map(|voter_name| self.weighted_parties.get(voter_name).unwrap_or(&0))
+            .sum::<StakeUnit>()
+            >= self.quorum_threshold
     }
 
     /// Stores the given MPC output, and checks if any of the received outputs already received a quorum of votes.
@@ -80,7 +93,7 @@ impl DWalletMPCOutputsManager {
                         .iter()
                         .map(|voter_name| self.weighted_parties.get(voter_name).unwrap_or(&0))
                         .sum::<StakeUnit>()
-                        > self.quorum_threshold
+                        >= self.quorum_threshold
                 })
         {
             let voted_for_other_outputs: Vec<AuthorityName> = session

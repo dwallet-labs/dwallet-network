@@ -85,6 +85,7 @@ impl Epoch {
             validator_candidates_id: Some(system_state.validator_candidates_id.into()),
             validator_candidates_size: Some(system_state.validator_candidates_size),
             checkpoint_viewed_at: self.checkpoint_viewed_at,
+            locked: false,
         };
         Ok(Some(validator_set))
     }
