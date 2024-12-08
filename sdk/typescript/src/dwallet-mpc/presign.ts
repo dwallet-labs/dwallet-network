@@ -1,24 +1,79 @@
 // Copyright (c) dWallet Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
+// noinspection ES6PreferShortImport
 
-import type { PeraClient } from '../client/index.js';
-import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
-import { dWallet2PCMPCECDSAK1ModuleName, packageId } from './globals.js';
+import type { Config } from './globals.js';
+import { dWallet2PCMPCECDSAK1ModuleName, fetchObjectFromEvent, packageId } from './globals.js';
 
-export async function presign(
-	keypair: Keypair,
-	client: PeraClient,
-	dwalletId: string,
-): Promise<PresignOutput | null> {
+const launchPresignFirstRoundMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_presign_first_round`;
+const completedPresignEventMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedPresignEvent`;
+export const presignMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::Presign`;
+
+interface StartPresignFirstRoundEvent {
+	session_id: string;
+	initiator: string;
+	dwallet_id: string;
+	dwallet_cap_id: string;
+	dkg_output: number[];
+}
+
+interface CompletedPresignEvent {
+	initiator: string;
+	dwallet_id: string;
+	presign_id: string;
+}
+
+export interface Presign {
+	id: { id: string };
+	session_id: string;
+	first_round_session_id: string;
+	dwallet_id: string;
+	dwallet_cap_id: string;
+	first_round_output: number[];
+	second_round_output: number[];
+}
+
+interface PresignOutput {
+	// todo(zeev): remove this?
+	secondRoundOutputID: string;
+	/**
+	 * The encrypted mask and masked key share from the first round.
+	 */
+	firstRoundOutput: number[];
+	/**
+	 * Nonce public share and encryption of the masked nonce
+	 * from the second round.
+	 */
+	secondRoundOutput: number[];
+	/**
+	 * Identifier for the first-round session of the presign process.
+	 */
+	firstRoundSessionID: string;
+}
+
+export async function presign(c: Config, dwalletID: string): Promise<PresignOutput> {
+	await launchPresignFirstRound(dwalletID, c);
+	let secondRoundOutput = await presignFromEvent(c, dwalletID);
+
+	return {
+		secondRoundOutputID: secondRoundOutput.id.id,
+		firstRoundOutput: secondRoundOutput.first_round_output,
+		secondRoundOutput: secondRoundOutput.second_round_output,
+		firstRoundSessionID: secondRoundOutput.first_round_session_id,
+	};
+}
+
+async function launchPresignFirstRound(dwalletID: string, c: Config) {
 	const tx = new Transaction();
+
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_presign_first_round`,
-		arguments: [tx.object(dwalletId)],
+		target: launchPresignFirstRoundMoveFunc,
+		arguments: [tx.object(dwalletID)],
 	});
 
-	await client.signAndExecuteTransaction({
-		signer: keypair,
+	const res = await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
 		transaction: tx,
 		options: {
 			showEffects: true,
@@ -26,58 +81,47 @@ export async function presign(
 		},
 	});
 
-	const timeout = 15 * 60 * 1000; // 15 minutes in milliseconds
-	const startTime = Date.now();
+	const event = isStartPresignFirstRoundEvent(res.events?.at(0)?.parsedJson)
+		? (res.events?.at(0)?.parsedJson as StartPresignFirstRoundEvent)
+		: null;
 
-	for (;;) {
-		if (Date.now() - startTime > timeout) {
-			throw new Error('Timeout: Unable to fetch object, reached timeout');
-		}
-
-		await new Promise((resolve) => setTimeout(resolve, 5000));
-		let newEvents = await client.queryEvents({
-			query: {
-				MoveEventType: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedPresignEvent`,
-			},
-		});
-
-		if (newEvents.data.length > 0) {
-			let event = newEvents.data[0].parsedJson as {
-				dwallet_id: string;
-				sender: string;
-				presign_id: string;
-			};
-			if (event.dwallet_id === dwalletId && event.sender === keypair.toPeraAddress()) {
-				let outputObject = await client.getObject({
-					id: event.presign_id,
-					options: { showContent: true },
-				});
-
-				let secondRoundOutputData =
-					outputObject?.data?.content?.dataType === 'moveObject'
-						? (outputObject.data?.content?.fields as {
-								id: { id: string };
-								first_round_session_id: string;
-								first_round_output: number[];
-								second_round_output: number[];
-								session_id: string;
-							})
-						: null;
-
-				return {
-					id: secondRoundOutputData!.id.id,
-					firstRoundOutput: secondRoundOutputData!.first_round_output,
-					secondRoundOutput: secondRoundOutputData!.second_round_output,
-					sessionId: secondRoundOutputData!.first_round_session_id,
-				};
-			}
-		}
+	if (!event) {
+		throw new Error(`${launchPresignFirstRoundMoveFunc} failed: ${res.errors}`);
 	}
 }
 
-export type PresignOutput = {
-	id: string;
-	firstRoundOutput: number[];
-	secondRoundOutput: number[];
-	sessionId: string;
-};
+function isStartPresignFirstRoundEvent(obj: any): obj is StartPresignFirstRoundEvent {
+	return (
+		obj && obj.session_id && obj.initiator && obj.dwallet_id && obj.dwallet_cap_id && obj.dkg_output
+	);
+}
+
+export function isPresign(obj: any): obj is Presign {
+	return (
+		obj &&
+		'id' in obj &&
+		'session_id' in obj &&
+		'first_round_session_id' in obj &&
+		'dwallet_id' in obj &&
+		'dwallet_cap_id' in obj &&
+		'first_round_output' in obj &&
+		'second_round_output' in obj
+	);
+}
+
+async function presignFromEvent(conf: Config, dwalletID: string): Promise<Presign> {
+	function isCompletedPresignEvent(event: any): event is CompletedPresignEvent {
+		return event && `initiator` in event && `dwallet_id` in event && `presign_id` in event;
+	}
+
+	return fetchObjectFromEvent<CompletedPresignEvent, Presign>({
+		conf,
+		eventType: completedPresignEventMoveType,
+		objectType: presignMoveType,
+		isEvent: isCompletedPresignEvent,
+		isObject: isPresign,
+		filterEvent: (event) =>
+			event.dwallet_id === dwalletID && event.initiator === conf.keypair.toPeraAddress(),
+		getObjectId: (event) => event.presign_id,
+	});
+}

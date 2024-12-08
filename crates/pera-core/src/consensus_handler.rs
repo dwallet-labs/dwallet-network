@@ -367,10 +367,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                     if let ConsensusTransactionKind::DWalletMPCOutput(session_info, output) =
                         &transaction.kind
                     {
-                        // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
-                        // to store its output on the blockchain, so it will be available for the initiating user.
                         info!(
-                            "Received proof mpc output from authority {:?} for session {:?}",
+                            "Received dwallet mpc output from authority {:?} for session {:?}",
                             authority_index, session_info.session_id
                         );
                         let Some(origin_authority) =
@@ -405,7 +403,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             });
                         match output_verification_result {
                             OutputVerificationResult::ValidWithNewOutput(new_output) => {
-                                let transaction = self.create_system_tx(session_info, &new_output);
+                                let transaction =
+                                    self.create_dwallet_system_tx(session_info, &new_output);
                                 transactions.push((
                                     empty_bytes.as_slice(),
                                     SequencedConsensusTransactionKind::System(transaction),
@@ -413,7 +412,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 ));
                             }
                             OutputVerificationResult::Valid => {
-                                let transaction = self.create_system_tx(session_info, output);
+                                let transaction =
+                                    self.create_dwallet_system_tx(session_info, output);
                                 transactions.push((
                                     empty_bytes.as_slice(),
                                     SequencedConsensusTransactionKind::System(transaction),
@@ -422,9 +422,12 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             }
                             OutputVerificationResult::ValidWithoutOutput
                             | OutputVerificationResult::Duplicate => {
-                                // Ignore this output, as the same output may be submitted twice by non-malicious parties, due to Sui's inner implementation of the leader selection
-                                // mechanism.
-                                // If the output is valid without output, then the batch is not yet ready, and we should write nothing to the chain.
+                                // Ignore this output,
+                                // as the same output may be submitted twice by non-malicious parties,
+                                // due to Sui's inner implementation of the leader selection mechanism.
+                                // If the output is valid without output,
+                                // then the batch is not yet ready,
+                                // and we should write nothing to the chain.
                             }
                             OutputVerificationResult::Malicious => {
                                 warn!(
@@ -545,18 +548,18 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
             .await;
     }
 
-    fn create_system_tx(
+    // todo(zeev): compare with updated bytes-party.
+    fn create_dwallet_system_tx(
         &self,
         session_info: &SessionInfo,
-        output: &Vec<u8>,
+        output: &[u8],
     ) -> VerifiedEnvelope<SenderSignedData, CertificateProof> {
         let transaction =
             VerifiedTransaction::new_dwallet_mpc_output_system_transaction(DWalletMPCOutput {
                 session_info: session_info.clone(),
-                output: output.clone(),
+                output: Vec::from(output),
             });
-        let transaction = VerifiedExecutableTransaction::new_system(transaction, self.epoch());
-        transaction
+        VerifiedExecutableTransaction::new_system(transaction, self.epoch())
     }
 }
 

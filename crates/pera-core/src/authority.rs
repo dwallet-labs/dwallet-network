@@ -52,7 +52,7 @@ use std::{
 };
 use tap::{TapFallible, TapOptional};
 use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::{mpsc, oneshot, MutexGuard, RwLock};
+use tokio::sync::{mpsc, oneshot, RwLock};
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info, instrument, warn, Instrument};
 
@@ -143,11 +143,8 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::mpc_events::{StartBatchedSignEvent, StartDKGFirstRoundEvent};
-use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
-use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_party::MPCParty;
-use crate::dwallet_mpc::sign::BatchedSignSession;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
     CheckpointCache, ExecutionCacheCommit, ExecutionCacheReconfigAPI, ExecutionCacheWrite,
@@ -1495,6 +1492,7 @@ impl AuthorityState {
         // and if so, send them to the MPC service.
         // Handle the MPC events here because there is access to the
         // event, as the transaction has been just executed.
+        // todo(zeev): add error printing.
         let _ = self
             .handle_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await;
@@ -1565,7 +1563,7 @@ impl AuthorityState {
             if let Ok((party, auxiliary_input, session_info)) = MPCParty::from_event(
                 event,
                 &dwallet_mpc_manager,
-                authority_name_to_party_id(&epoch_store.name, &epoch_store)?,
+                authority_name_to_party_id(&epoch_store.name, epoch_store)?,
             ) {
                 dwallet_mpc_manager.push_new_mpc_instance(auxiliary_input, party, session_info)?;
             };

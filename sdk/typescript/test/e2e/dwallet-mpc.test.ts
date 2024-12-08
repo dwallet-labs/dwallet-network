@@ -3,89 +3,189 @@
 
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
 import { bcs } from '@mysten/bcs';
-import { beforeAll, describe, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
+import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
-import { mockedDWallet, mockedPresign } from '../../src/dwallet-mpc/mock';
+import { Config } from '../../src/dwallet-mpc/globals';
 import { presign } from '../../src/dwallet-mpc/presign';
-import { Hash, signMessageTransactionCall, signMockCall } from '../../src/dwallet-mpc/sign';
+import { Hash, signMessageTransactionCall } from '../../src/dwallet-mpc/sign';
+import { Ed25519Keypair } from '../../src/keypairs/ed25519';
+import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
-describe('Test dwallet mpc', () => {
+describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
 
-	beforeAll(async () => {
+	beforeEach(async () => {
 		toolbox = await setup();
+		console.log('Address', toolbox.keypair.toPeraAddress());
 	});
 
-	it('should create DWallet', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		console.log(dwallet);
+	it('should create a dWallet (DKG)', async () => {
+		const pollRef = { value: true };
+		void printOwnedObjects(toolbox.keypair, toolbox.client, pollRef);
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 5 * 60 * 1000,
+		};
+		const dWallet = await createDWallet(conf);
+		expect(dWallet).toBeDefined();
+		pollRef.value = false;
+		console.log({ dWallet });
 	});
 
-	it('should create presign', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		console.log({ dwallet });
-		const presignOutput = await presign(toolbox.keypair, toolbox.client, dwallet!.dwalletID);
+	it('should run Presign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await mockCreateDwallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput = await presign(conf, dWallet.id);
+		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
 	});
 
-	it('should sign message', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		console.log({ dwallet });
-		const presignOutput = await presign(toolbox.keypair, toolbox.client, dwallet!.dwalletID);
+	it('should run DKG+Presign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await createDWallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput = await presign(conf, dWallet.id);
+		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
-		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
-		let bcsMessages = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
-		const [signed_messages, hashed_messages] = create_sign_centralized_output(
-			Uint8Array.from(dwallet?.centralizedDKGOutput!),
-			Uint8Array.from(presignOutput?.firstRoundOutput!),
-			Uint8Array.from(presignOutput?.secondRoundOutput!),
-			bcsMessages,
-			Hash.SHA256,
-			presignOutput?.sessionId.slice(2)!,
-		);
-
-		let response = await signMessageTransactionCall(
-			toolbox.keypair,
-			toolbox.client,
-			dwallet?.dwalletCapID!,
-			hashed_messages,
-			dwallet?.dwalletID!,
-			presignOutput?.id!,
-			signed_messages,
-			presignOutput?.sessionId!,
-		);
-
-		console.log({ response });
-	}, 10_000_000);
-
-	it('should sign a message successfully with mock ', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		let messages = [Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])];
-		let bcsMessages = bcs.vector(bcs.vector(bcs.u8())).serialize(messages).toBytes();
-		const [centralizely_signed_messages, hashed_messages] = create_sign_centralized_output(
-			Uint8Array.from(mockedDWallet.centralizedDKGOutput),
-			Uint8Array.from(mockedPresign.firstRoundOutput),
-			Uint8Array.from(mockedPresign.secondRoundOutput),
-			bcsMessages,
-			Hash.SHA256,
-			mockedPresign.firstRoundSessionID.slice(2)!,
-		);
-
-		let response = await signMockCall(
-			toolbox.keypair,
-			toolbox.client,
-			hashed_messages,
-			mockedPresign.firstRoundOutput,
-			mockedPresign.secondRoundOutput,
-			mockedDWallet.decentralizedDKGOutput,
-			centralizely_signed_messages,
-			mockedPresign.firstRoundSessionID,
-		);
-		console.log({ response });
 	});
+
+	it('should run Sign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await mockCreateDwallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput = await mockCreatePresign(conf, dWallet);
+		expect(presignOutput).toBeDefined();
+		console.log({ presignOutput });
+		const message = Uint8Array.from([1, 2, 3, 4, 5]);
+		const [centralizedSignMsg, _, hashedMsg] = create_sign_centralized_output(
+			Uint8Array.from(dWallet.centralizedDKGOutput),
+			Uint8Array.from(presignOutput.first_round_output),
+			Uint8Array.from(presignOutput.second_round_output),
+			message,
+			Hash.SHA256,
+			presignOutput.first_round_session_id.slice(2),
+		);
+		console.log('Signing message');
+		let signOutput = await signMessageTransactionCall(
+			conf,
+			dWallet.dwalletCapID,
+			hashedMsg,
+			dWallet.id,
+			presignOutput.id.id,
+			centralizedSignMsg,
+			presignOutput.first_round_session_id,
+		);
+		expect(signOutput).toBeDefined();
+		console.log({ signOutput });
+	});
+
+	it(
+		'Full flow: DKG, Presign, Sign',
+		async () => {
+			let conf: Config = {
+				keypair: toolbox.keypair,
+				client: toolbox.client,
+				timeout: 10 * 60 * 1000,
+			};
+			const dWallet = await createDWallet(conf);
+			expect(dWallet).toBeDefined();
+			const presignOutput = await presign(conf, dWallet.id);
+			expect(presignOutput).toBeDefined();
+
+			let serializedMsgs = bcs
+				.vector(bcs.vector(bcs.u8()))
+				.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
+				.toBytes();
+			const [centralizedSignMsg, _, hashedMsg] = create_sign_centralized_output(
+				Uint8Array.from(dWallet.centralizedDKGOutput),
+				Uint8Array.from(presignOutput.firstRoundOutput),
+				Uint8Array.from(presignOutput.secondRoundOutput),
+				serializedMsgs,
+				Hash.SHA256,
+				presignOutput.firstRoundSessionID.slice(2),
+			);
+
+			console.log('Signing messages');
+			let signOutput = await signMessageTransactionCall(
+				conf,
+				dWallet.dwalletCapID,
+				hashedMsg,
+				dWallet.id,
+				presignOutput.secondRoundOutputID,
+				centralizedSignMsg,
+				presignOutput.firstRoundSessionID,
+			);
+			expect(signOutput).toBeDefined();
+			console.log({ signOutput });
+		},
+		1000 * 60 * 20,
+	);
 });
+
+async function printOwnedObjects(
+	keypair: Ed25519Keypair,
+	client: PeraClient,
+	poll: { value: boolean },
+) {
+	type MoveObjectContent = {
+		dataType: 'moveObject';
+		fields: MoveStruct;
+		hasPublicTransfer: boolean;
+		type: string;
+	};
+
+	let cursor = null;
+
+	while (poll.value) {
+		await new Promise((r) => setTimeout(r, 3000));
+		const {
+			data: ownedObjects,
+			hasNextPage,
+			nextCursor,
+		} = await client.getOwnedObjects({
+			owner: keypair.toPeraAddress(),
+			cursor,
+		});
+		const objectIds = ownedObjects.map((o) => o.data?.objectId).filter(Boolean) as string[];
+
+		if (objectIds.length === 0) {
+			continue;
+		}
+
+		const objectsContent = await client.multiGetObjects({
+			ids: objectIds,
+			options: { showContent: true },
+		});
+
+		objectsContent.forEach((o) => {
+			if ((o.data?.content as MoveObjectContent)?.type !== '0x2::coin::Coin<0x2::pera::PERA>') {
+				console.log(o);
+			}
+		});
+		if (hasNextPage) {
+			cursor = nextCursor;
+		}
+	}
+
+	console.log('Stopped polling');
+}

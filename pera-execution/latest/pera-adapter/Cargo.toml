@@ -30,6 +30,7 @@ move-vm-runtime = { path = "../../../external-crates/move/crates/move-vm-runtime
 move-vm-profiler = { path = "../../../external-crates/move/crates/move-vm-profiler" }
 pera-move-natives = { path = "../pera-move-natives", package = "pera-move-natives-latest" }
 pera-verifier = { path = "../pera-verifier", package = "pera-verifier-latest" }
+pera-mpc-types.workspace = true
 
 pera-macros.workspace = true
 pera-protocol-config.workspace = true
