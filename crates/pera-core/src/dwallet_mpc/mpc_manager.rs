@@ -129,6 +129,7 @@ impl DWalletMPCManager {
                 manager.handle_incoming_channel_message(message).await;
             }
         });
+
         Ok(sender)
     }
 

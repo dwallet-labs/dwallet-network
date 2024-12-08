@@ -212,7 +212,7 @@ mod simulator {
 use simulator::*;
 
 use pera_core::consensus_handler::ConsensusHandlerInitializer;
-use pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use pera_core::dwallet_mpc::mpc_manager::{DWalletMPCChannelMessage, DWalletMPCManager};
 use pera_core::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsManager;
 use pera_core::safe_client::SafeClientMetricsBase;
 use pera_core::validator_tx_finalizer::ValidatorTxFinalizer;
@@ -1305,6 +1305,17 @@ impl PeraNode {
                 config.clone(),
             )?)
             .await?;
+
+        if let Some(dwallet_mpc_sender) = epoch_store.dwallet_mpc_sender.get() {
+            dwallet_mpc_sender
+                .send(DWalletMPCChannelMessage::EndOfDelivery)
+                .map_err(|err| {
+                    PeraError::from(format!(
+                        "Failed to send EndOfDelivery message to DWalletMPCManager: {}",
+                        err
+                    ))
+                })?;
+        }
 
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(
             None,

@@ -40,7 +40,7 @@ fn new_dkg_secp256k1_instance(
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
         FIRST_EPOCH_ID,
-        MPCParty::NetworkDkgSecp256k1Party,
+        MPCParty::NetworkDkg(KeyTypes::Secp256k1),
         MPCSessionStatus::FirstExecution,
         generate_secp256k1_dkg_party_public_input(epoch_store.committee_validators_class_groups_public_keys_and_proofs()?),
         SessionInfo {
@@ -63,7 +63,7 @@ fn new_dkg_ristretto_instance(
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
         FIRST_EPOCH_ID,
-        MPCParty::NetworkDkgRistrettoParty,
+        MPCParty::NetworkDkg(KeyTypes::Ristretto),
         MPCSessionStatus::FirstExecution,
         generate_ristretto_dkg_party_public_input(epoch_store.committee_validators_class_groups_public_keys_and_proofs()?),
         SessionInfo {
@@ -133,25 +133,25 @@ impl NetworkDkg {
         ))
     }
 
-    async fn advance(weighted_threshold_access_structure: &WeightedThresholdAccessStructure, epoch_store: Arc<AuthorityPerEpochStore>, instance: &mut DWalletMPCInstance, authority_name: AuthorityName, key_type: KeyTypes, messages: Vec<HashMap<PartyID, Vec<u8>>>) -> PeraResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>>  {
+    pub(crate) fn advance(weighted_threshold_access_structure: &WeightedThresholdAccessStructure, party_id: PartyID, public_input: &[u8], key_type: &KeyTypes, messages: Vec<HashMap<PartyID, Vec<u8>>>) -> PeraResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>>  {
         Ok(match key_type {
             KeyTypes::Secp256k1 => {
                 advance::<DKGFirstParty>(
                     CommitmentSizedNumber::from_le_slice(SECP256K1_DKG_SESSION_ID.to_vec().as_slice()),
-                    authority_name_to_party_id(&authority_name, &epoch_store)?,
+                    party_id,
                     &weighted_threshold_access_structure,
                     messages,
-                    bcs::from_bytes(&instance.public_input)?,
+                    bcs::from_bytes(public_input)?,
                     (),
                 )
             }
             KeyTypes::Ristretto => {
                 advance::<DKGFirstParty>(
                     CommitmentSizedNumber::from_le_slice(RISTRETTO_DKG_SESSION_ID.to_vec().as_slice()),
-                    authority_name_to_party_id(&authority_name, &epoch_store)?,
+                    party_id,
                     &weighted_threshold_access_structure,
                     messages,
-                    bcs::from_bytes(&instance.public_input)?,
+                    bcs::from_bytes(public_input)?,
                     (),
                 )
             }

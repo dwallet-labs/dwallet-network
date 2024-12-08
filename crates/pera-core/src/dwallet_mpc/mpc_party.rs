@@ -25,6 +25,8 @@ use rand_core::OsRng;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 use class_groups::dkg::{RistrettoParty, Secp256k1Party};
+use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
+use crate::dwallet_mpc::network_dkg::{KeyTypes, NetworkDkg};
 
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -41,8 +43,7 @@ pub enum MPCParty {
     /// The party used in the sign protocol.
     SignBytesParty(HashMap<PartyID, twopc_mpc::secp256k1::class_groups::DecryptionKeyShare>),
 
-    NetworkDkgSecp256k1Party,
-    NetworkDkgRistrettoParty,
+    NetworkDkg(KeyTypes),
 }
 
 impl MPCParty {
@@ -113,27 +114,10 @@ impl MPCParty {
                     decryption_key_share.clone(),
                 )
             }
-            MPCParty::NetworkDkgSecp256k1Party => {
-                let public_input = bcs::from_bytes(&public_input)?;
-                advance::<DKGFirstParty>(
-                    session_id,
-                    party_id,
-                    access_threshold,
-                    messages,
-                    public_input,
-                    (),
-                )
-            }
-            MPCParty::NetworkDkgRistrettoParty=> {
-                let public_input = bcs::from_bytes(&public_input)?;
-                advance::<DKGFirstParty>(
-                    session_id,
-                    party_id,
-                    access_threshold,
-                    messages,
-                    public_input,
-                    (),
-                )
+            MPCParty::NetworkDkg(key_type) => {
+                // let temp =
+                    NetworkDkg::advance(access_threshold, party_id, &public_input, key_type, messages)
+                // temp
             }
         }
     }
