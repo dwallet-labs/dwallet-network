@@ -68,6 +68,7 @@ use crate::consensus_handler::{
 };
 use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc;
+use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::{
     DWalletMPCChannelMessage, DWalletMPCManager, DWalletMPCSender,
 };
@@ -84,6 +85,7 @@ use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
 use dwallet_mpc_types::ClassGroupsPublicKeyAndProof;
+use group::PartyID;
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -719,7 +721,8 @@ impl AuthorityEpochTables {
 pub(crate) const MUTEX_TABLE_SIZE: usize = 1024;
 
 impl AuthorityPerEpochStore {
-    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
+    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch
+    ))]
     pub fn new(
         name: AuthorityName,
         committee: Arc<Committee>,
@@ -1022,6 +1025,35 @@ impl AuthorityPerEpochStore {
                 })
                 .collect::<Result<HashMap<_, _>, _>>()?,
         })
+    }
+
+    pub fn committee_validators_class_groups_public_keys_and_proofs(
+        &self,
+    ) -> PeraResult<HashMap<PartyID, ClassGroupsPublicKeyAndProof>> {
+        let public_keys_and_proofs = match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => {
+                let committee: Vec<_> = self
+                    .committee()
+                    .voting_rights
+                    .iter()
+                    .map(|(name, _)| name.clone())
+                    .collect();
+
+                data.get_active_validators_class_groups_public_key_and_proof()
+                    .iter()
+                    .filter_map(|(authority_name, value)| {
+                        if !committee.contains(authority_name) {
+                            return None;
+                        }
+                        let party_id = authority_name_to_party_id(authority_name, self).ok()?;
+                        let public_key_and_proof =
+                            bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(value).ok()?;
+                        Some(Ok((party_id, public_key_and_proof)))
+                    })
+                    .collect::<Result<HashMap<_, _>, PeraError>>()?
+            }
+        };
+        Ok(public_keys_and_proofs)
     }
 
     pub fn get_chain_identifier(&self) -> ChainIdentifier {

@@ -7,6 +7,7 @@ use crate::dwallet_mpc::mpc_events::{
     StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::{twopc_error_to_pera_error, DWalletMPCManager};
+use crate::dwallet_mpc::network_dkg::{KeyTypes, NetworkDkg};
 use crate::dwallet_mpc::presign::{
     PresignFirstParty, PresignFirstPartyPublicInputGenerator, PresignSecondParty,
     PresignSecondPartyPublicInputGenerator,
@@ -37,6 +38,8 @@ pub enum MPCParty {
     SecondPresignBytesParty,
     /// The party used in the sign protocol.
     SignBytesParty(HashMap<PartyID, twopc_mpc::secp256k1::class_groups::DecryptionKeyShare>),
+    /// The party used in the network DKG protocol.
+    NetworkDkg(KeyTypes),
 }
 
 impl MPCParty {
@@ -107,6 +110,13 @@ impl MPCParty {
                     decryption_key_share.clone(),
                 )
             }
+            MPCParty::NetworkDkg(key_type) => NetworkDkg::advance(
+                access_threshold,
+                party_id,
+                &public_input,
+                key_type,
+                messages,
+            ),
         }
     }
 

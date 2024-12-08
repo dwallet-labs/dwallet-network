@@ -9,6 +9,7 @@ use crate::dwallet_mpc::mpc_instance::{
 };
 use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputVerificationResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::network_dkg::{NetworkDkg, FIRST_EPOCH_ID};
 use crate::dwallet_mpc::sign::BatchedSignSession;
 use anyhow::anyhow;
 use group::PartyID;
@@ -27,6 +28,12 @@ use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+
+#[derive(Debug, PartialEq)]
+pub enum ManagerStatus {
+    Active,
+    WaitingForNetworkDKGCompletion,
+}
 
 /// The `MPCService` is responsible for managing MPC instances:
 /// - keeping track of all MPC instances,
@@ -50,6 +57,7 @@ pub struct DWalletMPCManager {
     pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     pub weighted_parties: HashMap<PartyID, PartyID>,
     pub outputs_manager: DWalletMPCOutputsManager,
+    status: ManagerStatus,
 }
 
 /// A channel that may be sent to the asynchronous [`DWalletMPCManager`].
@@ -66,7 +74,7 @@ pub enum DWalletMPCChannelMessage {
 }
 
 impl DWalletMPCManager {
-    pub fn try_new(
+    pub async fn try_new(
         consensus_adapter: Arc<dyn SubmitToConsensus>,
         epoch_store: Arc<AuthorityPerEpochStore>,
         epoch_id: EpochId,
@@ -88,10 +96,30 @@ impl DWalletMPCManager {
             weighted_parties.clone(),
         )
         .map_err(|_| PeraError::InternalDWalletMPCError)?;
+
+        // Start the network DKG if this is the first epoch
+        let (status, mpc_instances) = if epoch_id == FIRST_EPOCH_ID {
+            (
+                ManagerStatus::WaitingForNetworkDKGCompletion,
+                NetworkDkg::init(epoch_store.clone())?,
+            )
+        } else {
+            // Todo (#380): Load the network DKG outputs
+            (ManagerStatus::Active, HashMap::new())
+        };
+
+        // Todo (#383): Remove the `outputs_manager` from the `DWalletMPCManager`
+        let mut outputs_manager = DWalletMPCOutputsManager::new(&epoch_store);
+        let mut epoch_store_outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await?;
+        for (network_dkg_session_id, _) in mpc_instances.iter() {
+            outputs_manager.insert_new_output_instance(network_dkg_session_id);
+            epoch_store_outputs_manager.insert_new_output_instance(network_dkg_session_id);
+        }
+
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
         let mut manager = Self {
-            mpc_instances: HashMap::new(),
+            mpc_instances,
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
             consensus_adapter,
@@ -104,13 +132,16 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             weighted_parties,
             batched_sign_sessions: HashMap::new(),
-            outputs_manager: DWalletMPCOutputsManager::new(&epoch_store),
+            outputs_manager,
+            status,
         };
+
         tokio::spawn(async move {
             while let Some(message) = receiver.recv().await {
                 manager.handle_incoming_channel_message(message).await;
             }
         });
+
         Ok(sender)
     }
 
@@ -249,10 +280,17 @@ impl DWalletMPCManager {
                     } else {
                         0
                     };
-                if (matches!(instance.status, MPCSessionStatus::Active(_))
+
+                let is_ready = (matches!(instance.status, MPCSessionStatus::Active(_))
                     && received_weight as StakeUnit >= threshold)
-                    || (instance.status == MPCSessionStatus::FirstExecution)
-                {
+                    || (instance.status == MPCSessionStatus::FirstExecution);
+
+                let is_valid_status = (self.status
+                    == ManagerStatus::WaitingForNetworkDKGCompletion
+                    && matches!(instance.party(), MPCParty::NetworkDkg(_)))
+                    || self.status == ManagerStatus::Active;
+
+                if is_ready && is_valid_status {
                     Some(instance)
                 } else {
                     None
@@ -284,6 +322,17 @@ impl DWalletMPCManager {
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
                 .await?;
+        }
+
+        if self.status == ManagerStatus::WaitingForNetworkDKGCompletion {
+            if self
+                .mpc_instances
+                .iter()
+                .filter(|(_, instance)| matches!(instance.party(), MPCParty::NetworkDkg(_)))
+                .all(|(_, instance)| matches!(instance.status, MPCSessionStatus::Finished(_)))
+            {
+                self.status = ManagerStatus::Active;
+            }
         }
         Ok(())
     }
@@ -374,7 +423,7 @@ impl DWalletMPCManager {
             MPCSessionStatus::Pending,
             auxiliary_input,
             session_info,
-            self.get_decryption_share()?,
+            Some(self.get_decryption_share()?),
         );
         // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
         if self.active_instances_counter > self.max_active_mpc_instances
