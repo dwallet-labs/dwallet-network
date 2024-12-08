@@ -292,6 +292,17 @@ impl DWalletMPCManager {
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
                 .await?;
         }
+
+        if self.status == ManagerStatus::WaitingForNetworkDKGCompletion {
+            if self
+                .mpc_instances
+                .iter()
+                .filter(|(_, instance)| matches!(instance.party, MPCParty::NetworkDkg(_)))
+                .all(|(_, instance)| matches!(instance.status, MPCSessionStatus::Finished(_)))
+            {
+                self.status = ManagerStatus::Active;
+            }
+        }
         Ok(())
     }
 
