@@ -103,6 +103,7 @@ module pera_system::validator_set {
     /// V2 of ValidatorEpochInfoEvent containing more information about the validator.
     public struct LockedNextEpochCommitteeEvent has copy, drop {
         next_committee_validators: vector<ValidatorDataForDWalletSecretReShare>
+        epoch: u64
     }
 
     /// Event emitted every time a new validator joins the committee.
@@ -345,7 +346,7 @@ module pera_system::validator_set {
 
     // ==== epoch change functions ====
 
-    public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet) {
+    public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet, epoch: u64) {
         let mut next_epoch_vals = vector::empty();
         let mut active_val_index = 0;
         while (active_val_index < self.active_validators.length()) {
@@ -368,7 +369,7 @@ module pera_system::validator_set {
             });
             pending_val_index = pending_val_index + 1;
         };
-        event::emit(LockedNextEpochCommitteeEvent { next_committee_validators: next_epoch_vals });
+        event::emit(LockedNextEpochCommitteeEvent { next_committee_validators: next_epoch_vals, epoch });
         self.locked = true;
     }
 

@@ -344,7 +344,7 @@ module pera_system::pera_system_state_inner {
     public(package) fun lock_next_epoch_committee(
         self: &mut PeraSystemStateInnerV2,
     ) {
-        self.validators.lock_next_epoch_committee();
+        self.validators.lock_next_epoch_committee(self.epoch);
     }
 
 
