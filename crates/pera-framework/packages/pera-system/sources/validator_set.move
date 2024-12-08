@@ -5,7 +5,7 @@ module pera_system::validator_set {
 
     use pera::balance::Balance;
     use pera::pera::PERA;
-    use pera_system::validator::{Validator, staking_pool_id, pera_address};
+    use pera_system::validator::{Validator, staking_pool_id, pera_address, get_val_class_groups_public_key_and_proof_bytes, get_validator_protocol_pubkey_bytes};
     use pera_system::validator_cap::{Self, UnverifiedValidatorOperationCap, ValidatorOperationCap};
     use pera_system::staking_pool::{PoolTokenExchangeRate, StakedPera, pool_id};
     use pera::priority_queue as pq;
@@ -55,6 +55,10 @@ module pera_system::validator_set {
 
         /// Any extra fields that's not defined statically.
         extra_fields: Bag,
+
+        /// True if the next validator set is locked and doesn't allow for further
+        /// changes in the [`pending_removals`] and [`pending_active_validators`] until the next epoch starts, false otherwise.
+        locked: bool
     }
 
     #[allow(unused_field)]
@@ -86,6 +90,19 @@ module pera_system::validator_set {
         pool_token_exchange_rate: PoolTokenExchangeRate,
         tallying_rule_reporters: vector<address>,
         tallying_rule_global_score: u64,
+    }
+
+    /// The data we need to know about a validator in order to re-share the DWallet secret to it.
+    public struct ValidatorDataForDWalletSecretReShare has copy, drop, store {
+        /// The class groups encryption key of the validator, used to encrypt the validator secret share to it.
+        class_groups_public_key_and_proof_bytes: vector<u8>,
+        /// The Ika public key of the validator, used as an identifier for the validator.
+        protocol_pubkey_bytes: vector<u8>,
+    }
+
+    /// V2 of ValidatorEpochInfoEvent containing more information about the validator.
+    public struct LockedNextEpochCommitteeEvent has copy, drop {
+        next_committee_validators: vector<ValidatorDataForDWalletSecretReShare>
     }
 
     /// Event emitted every time a new validator joins the committee.
@@ -129,6 +146,7 @@ module pera_system::validator_set {
     const EValidatorAlreadyRemoved: u64 = 11;
     const ENotAPendingValidator: u64 = 12;
     const EValidatorSetEmpty: u64 = 13;
+    const EValidatorSetLocked: u64 = 14;
 
     const EInvalidCap: u64 = 101;
 
@@ -155,6 +173,7 @@ module pera_system::validator_set {
             validator_candidates: table::new(ctx),
             at_risk_validators: vec_map::empty(),
             extra_fields: bag::new(ctx),
+            locked: false,
         };
         voting_power::set_voting_power(&mut validators.active_validators);
         validators
@@ -162,6 +181,16 @@ module pera_system::validator_set {
 
 
     // ==== functions to add or remove validators ====
+    public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet) {
+        let validators_for_next_epoch = self.active_validators.map_ref!(|validator| {
+            ValidatorDataForDWalletSecretReShare {
+                class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(validator),
+                protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(validator),
+            }
+        });
+        event::emit(LockedNextEpochCommitteeEvent { next_committee_validators: validators_for_next_epoch });
+        self.locked = true;
+    }
 
     /// Called by `pera_system` to add a new validator candidate.
     public(package) fun request_add_validator_candidate(
@@ -220,6 +249,7 @@ module pera_system::validator_set {
     /// Called by `pera_system` to add a new validator to `pending_active_validators`, which will be
     /// processed at the end of epoch.
     public(package) fun request_add_validator(self: &mut ValidatorSet, min_joining_stake_amount: u64, ctx: &TxContext) {
+        assert!(!self.locked, EValidatorSetLocked);
         let validator_address = ctx.sender();
         assert!(
             self.validator_candidates.contains(validator_address),
@@ -255,6 +285,7 @@ module pera_system::validator_set {
         self: &mut ValidatorSet,
         ctx: &TxContext,
     ) {
+        assert!(!self.locked, EValidatorSetLocked);
         let validator_address = ctx.sender();
         let mut validator_index_opt = find_validator(&self.active_validators, validator_address);
         assert!(validator_index_opt.is_some(), ENotAValidator);
@@ -428,6 +459,7 @@ module pera_system::validator_set {
         // At this point, self.active_validators are updated for next epoch.
         // Now we process the staged validator metadata.
         effectuate_staged_metadata(self);
+        self.locked = false;
     }
 
     fun update_and_process_low_stake_departures(
