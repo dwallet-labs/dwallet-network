@@ -31,17 +31,12 @@ const FIRST_EPOCH_ID: EpochId = 0;
 // pub type EncryptionKey = CompactIbqf<{ class_groups::SECRET_KEY_SHARE_DISCRIMINANT_LIMBS }>;
 // pub type Proof = KnowledgeOfDiscreteLogUCProof;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum DkgState {
-    Init,
-    Advance,
-    Finalize(Vec<u8>, HashSet<PartyID>, HashSet<PartyID>),
-    Completed(Vec<u8>, HashSet<PartyID>, HashSet<PartyID>),
-}
-
-pub fn new_dkg_secp256k1_instance(
+fn new_dkg_secp256k1_instance(
     epoch_store: Arc<AuthorityPerEpochStore>,
 ) -> PeraResult<DWalletMPCInstance> {
+    if epoch_store.epoch() != FIRST_EPOCH_ID {
+        return Err(PeraError::InternalDWalletMPCError);
+    }
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
         FIRST_EPOCH_ID,
@@ -59,9 +54,12 @@ pub fn new_dkg_secp256k1_instance(
     ))
 }
 
-pub fn new_dkg_ristretto_instance(
+fn new_dkg_ristretto_instance(
     epoch_store: Arc<AuthorityPerEpochStore>,
 ) -> PeraResult<DWalletMPCInstance> {
+    if epoch_store.epoch() != FIRST_EPOCH_ID {
+        return Err(PeraError::InternalDWalletMPCError);
+    }
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
         FIRST_EPOCH_ID,
@@ -113,43 +111,9 @@ pub enum KeyTypes {
     Ristretto,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum NetworkDkgMessage {
-    Message(KeyTypes, Vec<u8>),
-    Output(Vec<u8>),
-}
-
-pub struct NetworkDkg {
-    status: DkgState,
-    epoch_id: EpochId,
-    epoch_store: Arc<AuthorityPerEpochStore>,
-    authority_private_key: [u8; 32],
-    consensus_adapter: Arc<dyn SubmitToConsensus>,
-    secret_key_share_sized_encryption_keys_and_proofs: HashMap<PartyID, ClassGroupsPublicKeyAndProof>,
-    mpc_instances: HashMap<ObjectID, DWalletMPCInstance>,
-    party_id: PartyID,
-}
+pub struct NetworkDkg;
 
 impl NetworkDkg {
-    pub(crate) fn new(
-        epoch_id: EpochId,
-        epoch_store: Arc<AuthorityPerEpochStore>,
-        authority_private_key: [u8; 32],
-        consensus_adapter: Arc<dyn SubmitToConsensus>,
-        party_id: PartyID,
-    ) -> Self {
-        Self {
-            status: DkgState::Init,
-            epoch_id,
-            epoch_store,
-            authority_private_key,
-            consensus_adapter,
-            secret_key_share_sized_encryption_keys_and_proofs: HashMap::new(),
-            mpc_instances: HashMap::new(),
-            party_id,
-        }
-    }
-
     pub async fn init(epoch_store: Arc<AuthorityPerEpochStore>) -> PeraResult<HashMap<ObjectID, DWalletMPCInstance>> {
         if epoch_store.epoch() != FIRST_EPOCH_ID {
             return Err(PeraError::InternalDWalletMPCError);
@@ -192,9 +156,5 @@ impl NetworkDkg {
                 )
             }
         }?)
-    }
-
-    pub fn status(&self) -> &DkgState {
-        &self.status
     }
 }
