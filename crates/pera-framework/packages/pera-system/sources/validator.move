@@ -162,6 +162,14 @@ module pera_system::validator {
         reward_amount: u64,
     }
 
+    public(package) fun get_validator_protocol_pubkey_bytes(validator: &Validator): vector<u8> {
+        validator.metadata.protocol_pubkey_bytes
+    }
+
+    public(package) fun get_val_class_groups_public_key_and_proof_bytes(val: &Validator): vector<u8> {
+        val.metadata.class_groups_public_key_and_proof_bytes
+    }
+
     public(package) fun new_metadata(
         pera_address: address,
         protocol_pubkey_bytes: vector<u8>,

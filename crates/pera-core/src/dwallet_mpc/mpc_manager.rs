@@ -70,6 +70,7 @@ pub enum DWalletMPCChannelMessage {
     Event(Event, SessionInfo),
     /// A signal that the delivery of messages has ended, now the instances that received a quorum of messages can advance
     EndOfDelivery,
+    StartLockNextEpochCommittee,
 }
 
 impl DWalletMPCManager {
@@ -188,7 +189,32 @@ impl DWalletMPCManager {
                     error!("Failed to handle end of delivery with error: {:?}", err);
                 }
             }
+            DWalletMPCChannelMessage::StartLockNextEpochCommittee => {
+                if let Err(err) = self.start_lock_next_epoch().await {
+                    error!(
+                        "Failed to start lock next epoch committee with error: {:?}",
+                        err
+                    );
+                }
+            }
         }
+    }
+
+    async fn start_lock_next_epoch(&mut self) -> PeraResult {
+        self.consensus_adapter
+            .submit_to_consensus(
+                &vec![self.new_lock_next_committee_message()?],
+                &self.epoch_store()?,
+            )
+            .await?;
+        Ok(())
+    }
+
+    fn new_lock_next_committee_message(&self) -> PeraResult<ConsensusTransaction> {
+        Ok(ConsensusTransaction::new_lock_next_committee_message(
+            self.epoch_store()?.name,
+            self.epoch_store()?.epoch(),
+        ))
     }
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> PeraResult {

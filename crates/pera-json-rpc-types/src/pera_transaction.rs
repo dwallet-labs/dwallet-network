@@ -410,6 +410,7 @@ pub enum PeraTransactionBlockKind {
     ConsensusCommitPrologueV3(PeraConsensusCommitPrologueV3),
     // .. more transaction types go here
     DWalletMPCOutput(PeraDWalletMPCOutput),
+    LockNextCommittee,
 }
 
 impl Display for PeraTransactionBlockKind {
@@ -467,6 +468,7 @@ impl Display for PeraTransactionBlockKind {
             Self::DWalletMPCOutput(_) => {
                 writeln!(writer, "Transaction Kind: dwallet mpc Output")?;
             }
+            _ => {}
         }
         write!(f, "{}", writer)
     }
@@ -571,6 +573,7 @@ impl PeraTransactionBlockKind {
                     value: output.output,
                 })
             }
+            TransactionKind::LockNextCommittee(..) => Self::LockNextCommittee,
         })
     }
 
@@ -677,6 +680,7 @@ impl PeraTransactionBlockKind {
                     value: output.output,
                 })
             }
+            TransactionKind::LockNextCommittee(..) => Self::LockNextCommittee,
         })
     }
 
@@ -699,6 +703,7 @@ impl PeraTransactionBlockKind {
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
             Self::DWalletMPCOutput(_) => "DWalletMPCOutput",
+            PeraTransactionBlockKind::LockNextCommittee => "LockNextCommittee",
         }
     }
 }
