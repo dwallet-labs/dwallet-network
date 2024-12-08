@@ -21,11 +21,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// An instance of this struct is being transferred to the user that initiated the DKG after
     /// the first round is completed.
     /// The user can then use this output to start the second round of the DKG.
-    public struct DKGFirstRoundOutput has key {
-        id: UID,
+    public struct DKGFirstRoundOutputEvent has copy, drop {
         session_id: ID,
         output: vector<u8>,
-        dwallet_cap_id: ID,
     }
 
     /// Event to start a `DKG` session, caught by the Validators.
@@ -97,17 +95,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         sender: address,
         session_id: ID,
         output: vector<u8>,
-        dwallet_cap_id: ID,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
-        let output = DKGFirstRoundOutput {
-            id: object::new(ctx),
+        event::emit(DKGFirstRoundOutputEvent {
             session_id,
             output,
-            dwallet_cap_id,
-        };
-        transfer::transfer(output, sender);
+        });
     }
 
     /// Launches the second DKG round, emitting an event with all required data.
