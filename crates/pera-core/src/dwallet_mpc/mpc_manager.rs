@@ -1,3 +1,4 @@
+use std::cmp::PartialEq;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
@@ -29,6 +30,7 @@ use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 use crate::dwallet_mpc::network_dkg::{NetworkDkg, FIRST_EPOCH_ID};
 
+#[derive(Debug, PartialEq)]
 pub enum ManagerStatus {
     Active,
     WaitingForNetworkDKGCompletion,
@@ -251,9 +253,12 @@ impl DWalletMPCManager {
                     } else {
                         0
                     };
-                if (matches!(instance.status, MPCSessionStatus::Active(_))
+                if
+                    ((matches!(instance.status, MPCSessionStatus::Active(_))
                     && received_weight as StakeUnit >= threshold)
-                    || (instance.status == MPCSessionStatus::FirstExecution)
+                    || (instance.status == MPCSessionStatus::FirstExecution)) &&
+                        ((self.status == ManagerStatus::WaitingForNetworkDKGCompletion
+                        && matches!(instance.party, MPCParty::NetworkDkg(_))) || self.status == ManagerStatus::Active)
                 {
                     Some(instance)
                 } else {
