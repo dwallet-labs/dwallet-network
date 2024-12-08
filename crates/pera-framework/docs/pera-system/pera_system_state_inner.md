@@ -923,7 +923,7 @@ This function will be called only once in genesis.
 <pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_lock_next_epoch_committee">lock_next_epoch_committee</a>(
     self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>,
 ) {
-    self.validators.lock_next_epoch_committee();
+    self.validators.<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_lock_next_epoch_committee">lock_next_epoch_committee</a>();
 }
 </code></pre>
 

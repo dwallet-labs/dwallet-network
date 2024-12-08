@@ -181,29 +181,6 @@ module pera_system::validator_set {
 
 
     // ==== functions to add or remove validators ====
-    public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet) {
-        let mut next_epoch_vals = vector::empty();
-        let mut active_val_index = 0;
-        while (active_val_index < self.active_validators.len()) {
-            if (!self.pending_removals.contains(&active_val_index)) {
-                let validator = &self.active_validators[active_val_index];
-                next_epoch_vals.push_back(ValidatorDataForDWalletSecretReShare {
-                    class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(validator),
-                    protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(validator),
-                });
-            };
-            active_val_index = active_val_index + 1;
-        };
-        // let validators_for_next_epoch = .map_ref!(|validator| {
-        //     ValidatorDataForDWalletSecretReShare {
-        //         class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(validator),
-        //         protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(validator),
-        //     }
-        // });
-        // va
-        event::emit(LockedNextEpochCommitteeEvent { next_committee_validators: validators_for_next_epoch });
-        self.locked = true;
-    }
 
     /// Called by `pera_system` to add a new validator candidate.
     public(package) fun request_add_validator_candidate(
@@ -367,6 +344,33 @@ module pera_system::validator_set {
 
 
     // ==== epoch change functions ====
+
+    public(package) fun lock_next_epoch_committee(self: &mut ValidatorSet) {
+        let mut next_epoch_vals = vector::empty();
+        let mut active_val_index = 0;
+        while (active_val_index < self.active_validators.length()) {
+            if (!self.pending_removals.contains(&active_val_index)) {
+                let validator = &self.active_validators[active_val_index];
+                next_epoch_vals.push_back(ValidatorDataForDWalletSecretReShare {
+                    class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(validator),
+                    protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(validator),
+                });
+            };
+            active_val_index = active_val_index + 1;
+        };
+
+        let mut pending_val_index = 0;
+        while (pending_val_index < self.pending_active_validators.length()) {
+            let validator = &self.pending_active_validators[pending_val_index];
+            next_epoch_vals.push_back(ValidatorDataForDWalletSecretReShare {
+                class_groups_public_key_and_proof_bytes: get_val_class_groups_public_key_and_proof_bytes(validator),
+                protocol_pubkey_bytes: get_validator_protocol_pubkey_bytes(validator),
+            });
+            pending_val_index = pending_val_index + 1;
+        };
+        event::emit(LockedNextEpochCommitteeEvent { next_committee_validators: next_epoch_vals });
+        self.locked = true;
+    }
 
     /// Update the validator set at the end of epoch.
     /// It does the following things:

@@ -1526,7 +1526,9 @@ Returns the voting power of the active validators, values are voting power in th
 
 ## Function `lock_next_epoch_committee`
 
-Lock the validator set
+Lock the next epoch's validator set
+The chain agrees on the next epoch committee in order to pass
+the chain's DWallet MPC secret to it.
 
 
 <pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_lock_next_epoch_committee">lock_next_epoch_committee</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)

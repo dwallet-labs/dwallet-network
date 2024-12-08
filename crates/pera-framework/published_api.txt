@@ -544,9 +544,6 @@ ValidatorLeaveEvent
 new
 	public(package) fun
 	0x3::validator_set
-lock_next_epoch_committee
-	public(package) fun
-	0x3::validator_set
 request_add_validator_candidate
 	public(package) fun
 	0x3::validator_set
@@ -569,6 +566,9 @@ request_withdraw_stake
 	public(package) fun
 	0x3::validator_set
 request_set_commission_rate
+	public(package) fun
+	0x3::validator_set
+lock_next_epoch_committee
 	public(package) fun
 	0x3::validator_set
 advance_epoch
