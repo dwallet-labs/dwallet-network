@@ -2,7 +2,6 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
-use std::cmp::PartialEq;
 
 use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::mpc_instance::{
@@ -34,7 +33,6 @@ use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 pub enum ManagerStatus {
     Active,
     WaitingForNetworkDKGCompletion,
-    Inactive,
 }
 
 /// The `MPCService` is responsible for managing MPC instances:
@@ -107,12 +105,9 @@ impl DWalletMPCManager {
             (ManagerStatus::Active, HashMap::new())
         };
 
-        let mut outputs_manager = DWalletMPCOutputsManager::new(&epoch_store);
-
-        for (k, _) in mpc_instances.iter() {
-            outputs_manager.insert_new_output_instance(k);
-            let mut a = epoch_store.get_dwallet_mpc_outputs_manager().await?;
-            a.insert_new_output_instance(k);
+        let mut outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await?;
+        for (network_dkg_session_id, _) in mpc_instances.iter() {
+            outputs_manager.insert_new_output_instance(network_dkg_session_id);
         }
 
         let (sender, mut receiver) =
@@ -131,9 +126,12 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             weighted_parties,
             batched_sign_sessions: HashMap::new(),
-            outputs_manager,
+            outputs_manager: outputs_manager.clone(),
             status,
         };
+        if let Err(err) = manager.handle_end_of_delivery().await {
+            error!("Failed to advance network DKG first round: {:?}", err);
+        }
         tokio::spawn(async move {
             while let Some(message) = receiver.recv().await {
                 manager.handle_incoming_channel_message(message).await;
@@ -253,13 +251,17 @@ impl DWalletMPCManager {
                     } else {
                         0
                     };
-                if ((matches!(instance.status, MPCSessionStatus::Active(_))
+
+                let is_ready = (matches!(instance.status, MPCSessionStatus::Active(_))
                     && received_weight as StakeUnit >= threshold)
-                    || (instance.status == MPCSessionStatus::FirstExecution))
-                    && ((self.status == ManagerStatus::WaitingForNetworkDKGCompletion
-                        && matches!(instance.party, MPCParty::NetworkDkg(_)))
-                        || self.status == ManagerStatus::Active)
-                {
+                    || (instance.status == MPCSessionStatus::FirstExecution);
+
+                let is_valid_status = (self.status
+                    == ManagerStatus::WaitingForNetworkDKGCompletion
+                    && matches!(instance.party(), MPCParty::NetworkDkg(_)))
+                    || self.status == ManagerStatus::Active;
+
+                if is_ready && is_valid_status {
                     Some(instance)
                 } else {
                     None
@@ -297,7 +299,7 @@ impl DWalletMPCManager {
             if self
                 .mpc_instances
                 .iter()
-                .filter(|(_, instance)| matches!(instance.party, MPCParty::NetworkDkg(_)))
+                .filter(|(_, instance)| matches!(instance.party(), MPCParty::NetworkDkg(_)))
                 .all(|(_, instance)| matches!(instance.status, MPCSessionStatus::Finished(_)))
             {
                 self.status = ManagerStatus::Active;

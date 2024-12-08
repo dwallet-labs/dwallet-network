@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 /// A struct to manage the DWallet MPC outputs.
 /// It stores all the outputs received for each instance, and decides whether an output is valid
 /// by checking if a validators with quorum of stake voted for it.
+#[derive(Clone)]
 pub struct DWalletMPCOutputsManager {
     /// The batched sign sessions that are currently being processed.
     pub batched_sign_sessions: HashMap<ObjectID, BatchedSignSession>,

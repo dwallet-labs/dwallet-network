@@ -1030,7 +1030,7 @@ impl AuthorityPerEpochStore {
     pub fn committee_validators_class_groups_public_keys_and_proofs(
         &self,
     ) -> PeraResult<HashMap<PartyID, ClassGroupsPublicKeyAndProof>> {
-        Ok(match self.epoch_start_state() {
+        let public_keys_and_proofs = match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => {
                 let committee: Vec<_> = self
                     .committee()
@@ -1045,7 +1045,6 @@ impl AuthorityPerEpochStore {
                         if !committee.contains(authority_name) {
                             return None;
                         }
-                        //todo (yael): check if ? is valid in case of option of do we need to check the length
                         let party_id = authority_name_to_party_id(authority_name, self).ok()?;
                         let public_key_and_proof =
                             bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(value).ok()?;
@@ -1053,7 +1052,8 @@ impl AuthorityPerEpochStore {
                     })
                     .collect::<Result<HashMap<_, _>, PeraError>>()?
             }
-        })
+        };
+        Ok(public_keys_and_proofs)
     }
 
     pub fn get_chain_identifier(&self) -> ChainIdentifier {

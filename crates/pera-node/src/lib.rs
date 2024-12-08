@@ -1309,17 +1309,6 @@ impl PeraNode {
             )
             .await?;
 
-        if let Some(dwallet_mpc_sender) = epoch_store.dwallet_mpc_sender.get() {
-            dwallet_mpc_sender
-                .send(DWalletMPCChannelMessage::EndOfDelivery)
-                .map_err(|err| {
-                    PeraError::from(format!(
-                        "Failed to send EndOfDelivery message to DWalletMPCManager: {}",
-                        err
-                    ))
-                })?;
-        }
-
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(
             None,
             state.metrics.clone(),

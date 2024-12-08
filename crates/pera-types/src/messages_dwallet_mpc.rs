@@ -23,6 +23,7 @@ pub enum MPCRound {
     Sign(ObjectID, Vec<u8>),
     /// A batched sign session, contains the list of messages that are being signed.
     BatchedSign(Vec<Vec<u8>>),
+    /// The round of the network DKG protocol.
     NetworkDkg,
 }
 

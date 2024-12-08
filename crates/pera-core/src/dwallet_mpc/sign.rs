@@ -57,6 +57,7 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
 }
 
 /// A struct to hold the batched sign session data.
+#[derive(Clone)]
 pub struct BatchedSignSession {
     /// A map that contains the ready signatures, indexed by their hashed message. When this map contains all the hashed messages, the batched sign session is ready to be written to the chain.
     pub hashed_msg_to_signature: HashMap<Vec<u8>, Vec<u8>>,

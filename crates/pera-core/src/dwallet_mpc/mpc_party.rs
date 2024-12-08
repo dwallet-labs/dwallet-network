@@ -6,7 +6,6 @@ use crate::dwallet_mpc::mpc_events::{
     StartBatchedSignEvent, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent,
     StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
-use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::{twopc_error_to_pera_error, DWalletMPCManager};
 use crate::dwallet_mpc::network_dkg::{KeyTypes, NetworkDkg};
 use crate::dwallet_mpc::presign::{
@@ -15,16 +14,13 @@ use crate::dwallet_mpc::presign::{
 };
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use anyhow::Error;
-use class_groups::dkg::{RistrettoParty, Secp256k1Party};
 use commitment::CommitmentSizedNumber;
 use group::PartyID;
-use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
-use pera_types::base_types::{ObjectID, PeraAddress};
+use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
+use pera_types::base_types::ObjectID;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
-use pera_types::PERA_SYSTEM_ADDRESS;
-use rand_core::OsRng;
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
 
@@ -42,7 +38,7 @@ pub enum MPCParty {
     SecondPresignBytesParty,
     /// The party used in the sign protocol.
     SignBytesParty(HashMap<PartyID, twopc_mpc::secp256k1::class_groups::DecryptionKeyShare>),
-
+    /// The party used in the network DKG protocol.
     NetworkDkg(KeyTypes),
 }
 
@@ -114,17 +110,13 @@ impl MPCParty {
                     decryption_key_share.clone(),
                 )
             }
-            MPCParty::NetworkDkg(key_type) => {
-                // let temp =
-                NetworkDkg::advance(
-                    access_threshold,
-                    party_id,
-                    &public_input,
-                    key_type,
-                    messages,
-                )
-                // temp
-            }
+            MPCParty::NetworkDkg(key_type) => NetworkDkg::advance(
+                access_threshold,
+                party_id,
+                &public_input,
+                key_type,
+                messages,
+            ),
         }
     }
 
