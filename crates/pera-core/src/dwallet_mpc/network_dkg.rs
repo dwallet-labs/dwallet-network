@@ -15,6 +15,7 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
+use pera_types::dwallet_mpc_error::DwalletMPCResult;
 
 const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
 
@@ -128,7 +129,7 @@ impl NetworkDkg {
         public_input: &[u8],
         key_type: &KeyTypes,
         messages: Vec<HashMap<PartyID, Vec<u8>>>,
-    ) -> PeraResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         Ok(match key_type {
             // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
             KeyTypes::Secp256k1 => advance::<DKGFirstParty>(

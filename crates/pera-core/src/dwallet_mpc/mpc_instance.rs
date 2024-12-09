@@ -73,7 +73,7 @@ impl DWalletMPCInstance {
     /// to send to the other MPC parties.
     /// Uses the existing party if it exists,
     /// otherwise creates a new one, as this is the first advance.
-    pub(crate) fn advance(
+    pub(super) fn advance(
         &mut self,
         weighted_threshold_access: &WeightedThresholdAccessStructure,
         party_id: PartyID,
@@ -103,18 +103,11 @@ impl DWalletMPCInstance {
             self.public_input.clone(),
         );
 
-        if let Err(DwalletMPCError::MaliciousParties(malicious_parties)) = advance_result {
-            self.restart();
-            return Err(DwalletMPCError::MaliciousParties(malicious_parties));
-        } else if advance_result.is_err() {
-            self.status = MPCSessionStatus::Failed;
-        }
-
-        match advance_result? {
-            AsynchronousRoundResult::Advance {
+        match advance_result {
+            Ok(AsynchronousRoundResult::Advance {
                 malicious_parties,
                 message,
-            } => {
+            }) => {
                 self.pending_messages.insert(round, HashMap::new());
                 Ok((
                     self.new_dwallet_mpc_message(message).map_err(|e| {
@@ -129,16 +122,24 @@ impl DWalletMPCInstance {
                     malicious_parties,
                 ))
             }
-            AsynchronousRoundResult::Finalize {
+            Ok(AsynchronousRoundResult::Finalize {
                 malicious_parties,
                 private_output: _,
                 public_output,
-            } => {
+            }) => {
                 self.status = MPCSessionStatus::Finished(public_output.clone().into());
                 Ok((
                     self.new_dwallet_mpc_output_message(public_output)?,
                     malicious_parties,
                 ))
+            }
+            Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
+                self.restart();
+                Err(DwalletMPCError::MaliciousParties(malicious_parties))
+            }
+            Err(e) => {
+                self.status = MPCSessionStatus::Failed;
+                Err(e)
             }
         }
     }
@@ -149,12 +150,9 @@ impl DWalletMPCInstance {
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns None only if the epoch switched in the middle and was not available.
-    fn new_dwallet_mpc_message(&self, message: Vec<u8>) -> Option<ConsensusTransaction> {
-        let Ok(epoch_store) = self.epoch_store() else {
-            return None;
-        };
-        Some(ConsensusTransaction::new_dwallet_mpc_message(
-            epoch_store.name,
+    fn new_dwallet_mpc_message(&self, message: Vec<u8>) -> DwalletMPCResult<ConsensusTransaction> {
+        Ok(ConsensusTransaction::new_dwallet_mpc_message(
+            self.epoch_store()?.name,
             message,
             self.session_info.session_id.clone(),
         ))

@@ -23,6 +23,7 @@ use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -52,7 +53,7 @@ impl MPCParty {
         party_id: PartyID,
         access_threshold: &WeightedThresholdAccessStructure,
         public_input: Vec<u8>,
-    ) -> PeraResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         let session_id = CommitmentSizedNumber::from_le_slice(session_id.to_vec().as_slice());
         match &self {
             MPCParty::FirstDKGBytesParty => {
@@ -366,7 +367,7 @@ pub(in crate::dwallet_mpc) fn advance<P: AsynchronouslyAdvanceable>(
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-) -> PeraResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
     let messages = deserialize_mpc_messages(messages)?;
 
     let res = P::advance(
@@ -407,9 +408,9 @@ pub(in crate::dwallet_mpc) fn advance<P: AsynchronouslyAdvanceable>(
 /// Deserializes the messages received from other parties for the next advancement.
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
-pub fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
+fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
-) -> PeraResult<Vec<HashMap<PartyID, M>>> {
+) -> DwalletMPCResult<Vec<HashMap<PartyID, M>>> {
     let mut results = Vec::new();
     let mut all_malicious_parties = Vec::new();
 
@@ -418,7 +419,7 @@ pub fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
             .iter()
             .map(|(k, v)| {
                 let value = bcs::from_bytes(&v)
-                    .map_err(|_| PeraError::DWalletMPCMaliciousParties(vec![*k]))?;
+                    .map_err(|_| DwalletMPCError::MaliciousParties(vec![*k]))?;
                 Ok((*k, value))
             })
             .collect();
@@ -426,7 +427,7 @@ pub fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
         let malicious_parties: Vec<PartyID> = parsing_results
             .iter()
             .filter_map(|result| {
-                if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = result {
+                if let Err(DwalletMPCError::MaliciousParties(malicious_parties)) = result {
                     Some(malicious_parties.clone())
                 } else {
                     None
@@ -448,7 +449,7 @@ pub fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
     }
 
     if !all_malicious_parties.is_empty() {
-        return Err(PeraError::DWalletMPCMaliciousParties(all_malicious_parties));
+        return Err(DwalletMPCError::MaliciousParties(all_malicious_parties));
     }
 
     Ok(results)
