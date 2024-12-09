@@ -9,8 +9,9 @@ use crate::dwallet_mpc::mpc_instance::{
 };
 use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputVerificationResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
-use crate::dwallet_mpc::network_dkg::{NetworkDkg, FIRST_EPOCH_ID};
+use crate::dwallet_mpc::network_dkg::NetworkDkg;
 use crate::dwallet_mpc::sign::BatchedSignSession;
+use crate::dwallet_mpc::FIRST_EPOCH_ID;
 use anyhow::anyhow;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -104,11 +105,16 @@ impl DWalletMPCManager {
                 NetworkDkg::init(epoch_store.clone())?,
             )
         } else {
+            // Todo (#380): Load the network DKG outputs
             (ManagerStatus::Active, HashMap::new())
         };
-        let mut outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await?;
+
+        // Todo (#383): Remove the `outputs_manager` from the `DWalletMPCManager`
+        let mut outputs_manager = DWalletMPCOutputsManager::new(&epoch_store);
+        let mut epoch_store_outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await?;
         for (network_dkg_session_id, _) in mpc_instances.iter() {
             outputs_manager.insert_new_output_instance(network_dkg_session_id);
+            epoch_store_outputs_manager.insert_new_output_instance(network_dkg_session_id);
         }
 
         let (sender, mut receiver) =
@@ -127,12 +133,10 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             weighted_parties,
             batched_sign_sessions: HashMap::new(),
-            outputs_manager: outputs_manager.clone(),
+            outputs_manager,
             status,
         };
-        if let Err(err) = manager.handle_end_of_delivery().await {
-            error!("Failed to advance network DKG first round: {:?}", err);
-        }
+
         tokio::spawn(async move {
             while let Some(message) = receiver.recv().await {
                 manager.handle_incoming_channel_message(message).await;

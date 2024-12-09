@@ -671,7 +671,9 @@ mod checked {
             TransactionKind::DWalletMPCOutput(_) => {
                 panic!("DWalletMPCOutput should not exist in v1");
             }
-            TransactionKind::LockNextCommittee(..) => Ok(Mode::empty_results()),
+            TransactionKind::LockNextCommittee(..) => {
+                panic!("LockNextCommittee should not exist in v1");
+            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)
