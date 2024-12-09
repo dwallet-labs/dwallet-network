@@ -94,7 +94,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     fun create_dkg_first_round_output(
         session_id: ID,
         output: vector<u8>,
-        ctx: &mut TxContext
+        ctx: &TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
         event::emit(DKGFirstRoundOutputEvent {

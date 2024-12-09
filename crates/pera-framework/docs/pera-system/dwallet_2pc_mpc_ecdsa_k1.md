@@ -6,7 +6,7 @@ title: Module `0x3::dwallet_2pc_mpc_ecdsa_k1`
 
 -  [Struct `MessageApproval`](#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval)
 -  [Struct `Secp256K1`](#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1)
--  [Resource `DKGFirstRoundOutput`](#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput)
+-  [Struct `DKGFirstRoundOutputEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent)
 -  [Struct `StartDKGFirstRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent)
 -  [Struct `CompletedSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedSignEvent)
 -  [Struct `StartDKGSecondRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGSecondRoundEvent)
@@ -105,9 +105,9 @@ Represents the Secp256K1 DWallet type.
 
 </details>
 
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput"></a>
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent"></a>
 
-## Resource `DKGFirstRoundOutput`
+## Struct `DKGFirstRoundOutputEvent`
 
 A struct to hold the output of the first round of the DKG.
 An instance of this struct is being transferred to the user that initiated the DKG after
@@ -115,7 +115,7 @@ the first round is completed.
 The user can then use this output to start the second round of the DKG.
 
 
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent">DKGFirstRoundOutputEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -126,12 +126,6 @@ The user can then use this output to start the second round of the DKG.
 
 <dl>
 <dt>
-<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
 <code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
@@ -139,12 +133,6 @@ The user can then use this output to start the second round of the DKG.
 </dd>
 <dt>
 <code>output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
 
@@ -806,7 +794,7 @@ This function is called by the blockchain itself.
 Validators call it as part of the blockchain logic.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(sender: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -816,20 +804,15 @@ Validators call it as part of the blockchain logic.
 
 
 <pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(
-    sender: <b>address</b>,
     session_id: ID,
     output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    dwallet_cap_id: ID,
-    ctx: &<b>mut</b> TxContext
+    ctx: &TxContext
 ) {
     <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>);
-    <b>let</b> output = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a> {
-        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent">DKGFirstRoundOutputEvent</a> {
         session_id,
         output,
-        dwallet_cap_id,
-    };
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(output, sender);
+    });
 }
 </code></pre>
 

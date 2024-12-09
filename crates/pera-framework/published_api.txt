@@ -22,7 +22,7 @@ MessageApproval
 Secp256K1
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-DKGFirstRoundOutput
+DKGFirstRoundOutputEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGFirstRoundEvent
