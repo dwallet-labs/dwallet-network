@@ -12,7 +12,6 @@ use dwallet_mpc_types::dwallet_mpc::{
 
 use pera_types::base_types::EpochId;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
-use pera_types::error::PeraError;
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 
@@ -137,8 +136,7 @@ impl DWalletMPCInstance {
             } => {
                 self.status = MPCSessionStatus::Finished(public_output.clone().into());
                 Ok((
-                    self.new_dwallet_mpc_output_message(public_output)
-                        .ok_or(PeraError::InternalDWalletMPCError)?,
+                    self.new_dwallet_mpc_output_message(public_output)?,
                     malicious_parties,
                 ))
             }
@@ -165,12 +163,9 @@ impl DWalletMPCInstance {
     /// Create a new consensus transaction with the flow result (output) to be sent to the other MPC parties.
     /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
     /// Only the aggregator party should send the output to the other parties.
-    fn new_dwallet_mpc_output_message(&self, output: Vec<u8>) -> Option<ConsensusTransaction> {
-        let Ok(epoch_store) = self.epoch_store() else {
-            return None;
-        };
-        Some(ConsensusTransaction::new_dwallet_mpc_output(
-            epoch_store.name,
+    fn new_dwallet_mpc_output_message(&self, output: Vec<u8>) -> DwalletMPCResult<ConsensusTransaction> {
+        Ok(ConsensusTransaction::new_dwallet_mpc_output(
+            self.epoch_store()?.name,
             output,
             self.session_info.clone(),
         ))
