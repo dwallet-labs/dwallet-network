@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { bcs } from '../bcs/index.js';
-import { TransactionBlock } from '../builder/index.js';
-import type { DWalletClient } from '../client/index.js';
-import type { Keypair } from '../cryptography/index.js';
+import { TransactionBlock } from '../builder';
+import type { DWalletClient } from '../client';
+import type { Keypair } from '../cryptography';
 
 const packageId = '0x3';
 const dWalletModuleName = 'dwallet';
@@ -43,6 +43,21 @@ export async function approveAndSign(
 	});
 	return await waitForSignOutput(client);
 }
+
+export async function approveAndSignAckWithAuthority(
+	_authorityId: string,
+	_signMessagesId: string,
+	_message: Uint8Array,
+	_dwalletID: string,
+	_binderID: string,
+	_dWalletCapID: string,
+	_bindToAuthorityID: string,
+	_bindToAuthorityNonce: number,
+	_virginBound: boolean,
+	_hash: 'KECCAK256' | 'SHA256',
+	_keypair: Keypair,
+	_client: DWalletClient,
+) {return null}
 
 const waitForSignOutput = async (client: DWalletClient) => {
 	return new Promise((resolve) => {

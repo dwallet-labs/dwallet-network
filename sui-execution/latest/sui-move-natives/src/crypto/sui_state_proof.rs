@@ -164,7 +164,6 @@ pub fn sui_state_proof_verify_committee(
  * Implementation of the Move native function `sui_state_proof::sui_state_proof_verify_link_cap(committee: vector<u8>, checkpoint_summary: vector<u8>, checkpoint_contents: vector<u8>, transaction: vector<u8>,  event_type_layout: vector<u8>,  package_id: vector<u8>): (vector<u8>, vector<u8>);`
  * gas cost: sui_state_proof_verify_link_cap_base   | base cost for function call and fixed operations.
  **************************************************************************************************/
-
 pub fn sui_state_proof_verify_link_cap(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
@@ -200,6 +199,7 @@ pub fn sui_state_proof_verify_link_cap(
         return Ok(NativeResult::err(cost, INVALID_COMMITTEE));
     };
 
+    // Untrusted input passed in by the userץ
     let Ok(summary) = bcs::from_bytes::<CertifiedCheckpointSummary>(&summary_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_CHECKPOINT_SUMMARY));
     };
@@ -210,7 +210,7 @@ pub fn sui_state_proof_verify_link_cap(
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
 
-    // Untrusted input passed in by the user
+    // Untrusted input passed in by the user.
     let Ok(transaction) = bcs::from_bytes::<CheckpointTransaction>(&transaction_bytes) else {
         return Ok(NativeResult::err(cost, INVALID_INPUT));
     };
@@ -284,6 +284,7 @@ pub fn sui_state_proof_verify_link_cap(
             dwallet_cap_ids.push(dwallet_cap_id);
         }
     }
+
     Ok(NativeResult::ok(
         cost,
         smallvec![

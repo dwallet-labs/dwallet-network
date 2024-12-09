@@ -1,8 +1,8 @@
 // Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import type { DWalletClient } from '../client/index.js';
-import type { Keypair } from '../cryptography/index.js';
+import type { DWalletClient } from '../client';
+import type { Keypair } from '../cryptography';
 
 export async function createDWallet(_keypair: Keypair, _client: DWalletClient) {
 	return null;
@@ -16,5 +16,16 @@ export async function createPartialUserSignedMessages(
 	_keypair: Keypair,
 	_client: DWalletClient,
 ) {
+	return null;
+}
+
+export async function createVirginBoundDWallet(
+	_encryptionKey: Uint8Array,
+	_encryptionKeyObjId: string,
+	_bindToAuthorityId: string,
+	_keypair: Keypair,
+	_client: DWalletClient,
+// ): Promise<CreatedDwallet | null> {
+){
 	return null;
 }
