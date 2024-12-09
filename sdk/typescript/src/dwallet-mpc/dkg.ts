@@ -6,7 +6,7 @@ import { bcs } from '../bcs/index.js';
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
-import { dWalletModuleName } from './globals.js';
+import {dWalletModuleName, getEventByTypeAndSessionId} from './globals.js';
 
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
@@ -28,13 +28,18 @@ export async function launchDKGFirstRound(keypair: Keypair, client: PeraClient) 
 			showEffects: true,
 		},
 	});
-	const capRef = result.effects?.created?.[0].reference!;
-	await new Promise((resolve) => setTimeout(resolve, 5000));
-	let firstRoundOutputObject = await fetchObjectByCapID(
-		capRef.objectId,
-		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutput`,
-		keypair,
+	const sessionID = (
+		result.events?.find(
+			(event) =>
+				event.type === `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartBatchedSignEvent`,
+		)?.parsedJson as {
+			session_id: string;
+		}
+	).session_id;
+	let completionEvent = await getEventByTypeAndSessionId(
 		client,
+		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`,
+		sessionID,
 	);
 
 	return firstRoundOutputObject?.dataType === 'moveObject'
