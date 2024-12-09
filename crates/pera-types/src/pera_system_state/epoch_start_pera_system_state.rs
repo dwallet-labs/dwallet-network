@@ -17,6 +17,8 @@ use narwhal_config::{Committee as NarwhalCommittee, CommitteeBuilder, WorkerCach
 use pera_protocol_config::ProtocolVersion;
 use serde::{Deserialize, Serialize};
 use tracing::{error, warn};
+use crate::collection_types::VecMap;
+use crate::dwallet_mpc::{EncryptedNetworkDecryptionKeyShares, KeyType};
 
 #[enum_dispatch]
 pub trait EpochStartSystemStateTrait {
@@ -59,7 +61,7 @@ impl EpochStartSystemState {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
-        encrypted_decryption_key_shares: Option<Vec<Vec<u8>>>,
+        encrypted_decryption_key_shares: Option<VecMap<KeyType, Vec<EncryptedNetworkDecryptionKeyShares>>>,
     ) -> Self {
         Self::V1(EpochStartSystemStateV1 {
             epoch,
@@ -103,11 +105,11 @@ pub struct EpochStartSystemStateV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
-    encrypted_decryption_key_shares: Option<Vec<Vec<u8>>>,
+    encrypted_decryption_key_shares: Option<VecMap<KeyType, Vec<EncryptedNetworkDecryptionKeyShares>>>,
 }
 
 impl EpochStartSystemStateV1 {
-    pub fn get_encrypted_decryption_key_shares(&self) -> Option<Vec<Vec<u8>>> {
+    pub fn get_encrypted_decryption_key_shares(&self) -> Option<VecMap<KeyType, Vec<EncryptedNetworkDecryptionKeyShares>>> {
         self.encrypted_decryption_key_shares.clone()
     }
 

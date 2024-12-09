@@ -17,6 +17,7 @@ use crate::pera_system_state::pera_system_state_inner_v1::{
 };
 use crate::storage::ObjectStore;
 use serde::{Deserialize, Serialize};
+use crate::dwallet_mpc::{EncryptedNetworkDecryptionKeyShares, KeyType};
 
 /// Rust version of the Move pera::pera_system::SystemParametersV2 type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
@@ -59,7 +60,7 @@ pub struct PeraSystemStateInnerV2 {
     pub epoch: u64,
     pub protocol_version: u64,
     pub system_state_version: u64,
-    pub encrypted_decryption_key_share: Vec<Vec<u8>>,
+    pub encrypted_decryption_key_share: VecMap<KeyType, Vec<EncryptedNetworkDecryptionKeyShares>>,
     pub validators: ValidatorSetV1,
     pub storage_fund: StorageFundV1,
     pub parameters: SystemParametersV2,
@@ -185,7 +186,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
                     }
                 })
                 .collect(),
-            if self.encrypted_decryption_key_share.is_empty() {
+            if self.encrypted_decryption_key_share.contents.is_empty() {
                 None
             } else {
                 Some(self.encrypted_decryption_key_share)

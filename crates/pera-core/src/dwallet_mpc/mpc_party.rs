@@ -7,7 +7,7 @@ use crate::dwallet_mpc::mpc_events::{
     StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::{twopc_error_to_pera_error, DWalletMPCManager};
-use crate::dwallet_mpc::network_dkg::{KeyTypes, NetworkDkg};
+use crate::dwallet_mpc::network_dkg::NetworkDkg;
 use crate::dwallet_mpc::presign::{
     PresignFirstParty, PresignFirstPartyPublicInputGenerator, PresignSecondParty,
     PresignSecondPartyPublicInputGenerator,
@@ -23,6 +23,7 @@ use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use pera_types::dwallet_mpc::KeyType;
 
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -39,7 +40,7 @@ pub enum MPCParty {
     /// The party used in the sign protocol.
     SignBytesParty(HashMap<PartyID, twopc_mpc::secp256k1::class_groups::DecryptionKeyShare>),
     /// The party used in the network DKG protocol.
-    NetworkDkg(KeyTypes),
+    NetworkDkg(KeyType),
 }
 
 impl MPCParty {
