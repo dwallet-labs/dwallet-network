@@ -6,7 +6,7 @@ import { bcs } from '../bcs/index.js';
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
-import {dWalletModuleName, getEventByTypeAndSessionId} from './globals.js';
+import { dWalletModuleName, getEventByTypeAndSessionId } from './globals.js';
 
 const packageId = '0x3';
 const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
@@ -28,27 +28,26 @@ export async function launchDKGFirstRound(keypair: Keypair, client: PeraClient) 
 			showEffects: true,
 		},
 	});
-	const sessionID = (
-		result.events?.find(
-			(event) =>
-				event.type === `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartBatchedSignEvent`,
-		)?.parsedJson as {
-			session_id: string;
-		}
-	).session_id;
+	let sessionData = result.events?.find(
+		(event) =>
+			event.type === `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartDKGFirstRoundEvent`,
+	)?.parsedJson as {
+		session_id: string;
+		dwallet_cap_id: string;
+	};
 	let completionEvent = await getEventByTypeAndSessionId(
 		client,
 		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`,
-		sessionID,
+		sessionData.session_id,
 	);
 
-	return firstRoundOutputObject?.dataType === 'moveObject'
-		? (firstRoundOutputObject.fields as {
-				output: number[];
-				dwallet_cap_id: string;
-				session_id: string;
-			})
-		: null;
+	return {
+		...(completionEvent as {
+			output: number[];
+			session_id: string;
+		}),
+		dwallet_cap_id: sessionData.dwallet_cap_id,
+	};
 }
 
 export async function launchDKGSecondRound(
