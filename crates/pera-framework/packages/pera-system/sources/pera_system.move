@@ -604,6 +604,15 @@ module pera_system::pera_system {
         self.lock_next_epoch_committee();
     }
 
+    #[allow(unused_function)]
+    /// Store the encrypted decryption key shares from the network DKG protocol public output.
+    /// The chain agrees on on the same public output.
+    fun store_encrypted_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, ctx: &TxContext) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        let self = load_system_state_mut(wrapper);
+        self.store_encrypted_decryption_key_shares(shares);
+    }
+
     #[test_only]
     public fun validator_voting_powers_for_testing(wrapper: &mut PeraSystemState): VecMap<address, u64> {
         validator_voting_powers(wrapper)

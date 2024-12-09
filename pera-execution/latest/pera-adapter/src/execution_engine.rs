@@ -1123,6 +1123,7 @@ mod checked {
         protocol_config: &ProtocolConfig,
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
+        let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
         let (move_function_name, args) = match data.session_info.mpc_round {
             MPCRound::DKGFirst => (
                 "create_dkg_first_round_output",
@@ -1178,19 +1179,22 @@ mod checked {
                 )
             }
             // Todo (#380): Store DKG output in SystemState
-            MPCRound::NetworkDkg => (
-                "create_sign_output",
-                vec![
-                    CallArg::Pure(data.output.clone()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
-                ],
-            ),
+            MPCRound::NetworkDkg => {
+                module_name = PERA_SYSTEM_MODULE_NAME;
+                (
+                    "store_encrypted_decryption_key_shares",
+                    vec![
+                        CallArg::PERA_SYSTEM_MUT,
+                        CallArg::Pure(bcs::to_bytes(&[[1, 2, 3], [4, 5, 6]]).unwrap())
+                    ],
+                )
+            },
         };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
             let res = builder.move_call(
                 PERA_SYSTEM_PACKAGE_ID.into(),
-                DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                module_name.to_owned(),
                 ident_str!(move_function_name).to_owned(),
                 vec![],
                 args,
