@@ -18,6 +18,7 @@ use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -29,7 +30,6 @@ use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
-use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 
 #[derive(Debug, PartialEq)]
 pub enum ManagerStatus {
@@ -37,28 +37,33 @@ pub enum ManagerStatus {
     WaitingForNetworkDKGCompletion,
 }
 
-/// The `MPCService` is responsible for managing MPC instances:
-/// - keeping track of all MPC instances,
-/// - executing all active instances, and
-/// - (de)activating instances.
+/// The [`DWalletMPCManager`] manages MPC instances:
+/// — Keeping track of all MPC instances,
+/// — Executing all active instances, and
+/// — (De)activating instances.
 pub struct DWalletMPCManager {
     party_id: PartyID,
-    pub batched_sign_sessions: HashMap<ObjectID, BatchedSignSession>,
+    batched_sign_sessions: HashMap<ObjectID, BatchedSignSession>,
+    /// Holds the active MPC instances, cleaned every epoch switch.
     mpc_instances: HashMap<ObjectID, DWalletMPCInstance>,
-    /// Used to keep track of the order in which pending instances are received so they are activated in order of arrival.
+    /// Used to keep track of the order in which pending instances are received,
+    /// so they are activated in order of arrival.
     pending_instances_queue: VecDeque<DWalletMPCInstance>,
     // TODO (#257): Make sure the counter is always in sync with the number of active instances.
+    /// Keep track of the active instances to avoid exceeding the limit.
+    /// We can't use the length of `mpc_instances` since it is never cleaned.
     active_instances_counter: usize,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
-    pub node_config: NodeConfig,
-    pub epoch_store: Weak<AuthorityPerEpochStore>,
-    pub max_active_mpc_instances: usize,
-    pub epoch_id: EpochId,
-    /// A set of all the authorities that behaved maliciously at least once during the epoch. Any message/output from these authorities will be ignored.
-    pub malicious_actors: HashSet<AuthorityName>,
-    pub weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    pub weighted_parties: HashMap<PartyID, PartyID>,
-    pub outputs_manager: DWalletMPCOutputsManager,
+    pub(crate) node_config: NodeConfig,
+    epoch_store: Weak<AuthorityPerEpochStore>,
+    max_active_mpc_sessions: usize,
+    epoch_id: EpochId,
+    /// A set of all the authorities that behaved maliciously at least once during the epoch.
+    /// Any message/output from these authorities will be ignored.
+    pub(crate) malicious_actors: HashSet<AuthorityName>,
+    weighted_threshold_access_structure: WeightedThresholdAccessStructure,
+    weighted_parties: HashMap<PartyID, PartyID>,
+    outputs_manager: DWalletMPCOutputsManager,
     status: ManagerStatus,
 }
 
@@ -81,7 +86,7 @@ impl DWalletMPCManager {
         epoch_store: Arc<AuthorityPerEpochStore>,
         epoch_id: EpochId,
         node_config: NodeConfig,
-    ) -> PeraResult<DWalletMPCSender> {
+    ) -> DwalletMPCResult<DWalletMPCSender> {
         let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
             .committee()
             .voting_rights
@@ -92,12 +97,12 @@ impl DWalletMPCManager {
                     *weight as PartyID,
                 ))
             })
-            .collect::<PeraResult<HashMap<PartyID, PartyID>>>()?;
+            .collect::<DwalletMPCResult<HashMap<PartyID, PartyID>>>()?;
         let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
             epoch_store.committee().quorum_threshold() as PartyID,
             weighted_parties.clone(),
         )
-        .map_err(|_| PeraError::InternalDWalletMPCError)?;
+        .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
         // Start the network DKG if this is the first epoch
         let (status, mpc_instances) = if epoch_id == FIRST_EPOCH_ID {
@@ -128,7 +133,7 @@ impl DWalletMPCManager {
             party_id: authority_name_to_party_id(&epoch_store.name.clone(), &epoch_store.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
             epoch_id,
-            max_active_mpc_instances: node_config.max_active_dwallet_mpc_instances,
+            max_active_mpc_sessions: node_config.max_active_dwallet_mpc_sessions,
             node_config,
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
@@ -428,7 +433,7 @@ impl DWalletMPCManager {
             Some(self.get_decryption_share()?),
         );
         // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
-        if self.active_instances_counter > self.max_active_mpc_instances
+        if self.active_instances_counter > self.max_active_mpc_sessions
             || !self.pending_instances_queue.is_empty()
         {
             self.pending_instances_queue.push_back(new_instance);
