@@ -29,6 +29,7 @@ use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 
 #[derive(Debug, PartialEq)]
 pub enum ManagerStatus {
@@ -226,30 +227,30 @@ impl DWalletMPCManager {
         if let Ok((party, auxiliary_input, session_info)) = MPCParty::from_event(
             &event,
             &self,
-            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?,
+            authority_name_to_party_id(&self.epoch_store()?.name, &self.epoch_store()?)?,
         ) {
             self.push_new_mpc_instance(auxiliary_input, party, session_info)?;
         };
         Ok(())
     }
 
-    pub fn get_decryption_share(&self) -> PeraResult<DecryptionKeyShare> {
+    pub fn get_decryption_share(&self) -> DwalletMPCResult<DecryptionKeyShare> {
         let party_id =
             authority_name_to_party_id(&self.epoch_store()?.name, &self.epoch_store()?.clone())?;
         let _ = self
             .node_config
             .dwallet_mpc_class_groups_decryption_shares
             .clone()
-            .ok_or(PeraError::InternalDWalletMPCError)?
+            .ok_or(DwalletMPCError::MissingDwalletMPCClassGroupsDecryptionShares)?
             .get(&party_id);
         let share = DecryptionKeyShare::new(
             party_id,
             self.node_config
                 .dwallet_mpc_class_groups_decryption_shares
                 .clone()
-                .ok_or(PeraError::InternalDWalletMPCError)?
+                .ok_or(DwalletMPCError::DwalletMPCClassGroupsDecryptionShareMissing(party_id))?
                 .get(&party_id)
-                .ok_or(PeraError::InternalDWalletMPCError)?
+                .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?
                 .clone(),
             &self
                 .node_config

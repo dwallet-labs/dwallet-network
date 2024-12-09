@@ -311,7 +311,7 @@ impl MPCParty {
         party_id: PartyID,
         deserialized_event: StartSignRoundEvent,
         dwallet_mpc_manager: &DWalletMPCManager,
-    ) -> Result<(MPCParty, Vec<u8>, SessionInfo), Error> {
+    ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
         let decryption_key_share = dwallet_mpc_manager.get_decryption_share()?;
         Ok((
             MPCParty::SignBytesParty(HashMap::from([(party_id, decryption_key_share)])),
@@ -325,7 +325,7 @@ impl MPCParty {
                     .node_config
                     .dwallet_mpc_decryption_shares_public_parameters
                     .clone()
-                    .ok_or_else(|| PeraError::InternalDWalletMPCError)?,
+                    .ok_or_else(|| DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?,
             )?,
             Self::sign_party_session_info(&deserialized_event, party_id),
         ))
