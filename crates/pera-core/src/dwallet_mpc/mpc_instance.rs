@@ -98,9 +98,9 @@ impl DWalletMPCInstance {
             self.public_input.clone(),
         );
 
-        if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = advance_result {
+        if let Err(DwalletMPCError::MaliciousParties(malicious_parties)) = advance_result {
             self.restart();
-            return Err(PeraError::DWalletMPCMaliciousParties(malicious_parties));
+            return Err(DwalletMPCError::MaliciousParties(malicious_parties));
         } else if advance_result.is_err() {
             self.status = MPCSessionStatus::Failed;
         }
@@ -112,8 +112,15 @@ impl DWalletMPCInstance {
             } => {
                 self.pending_messages.insert(round, HashMap::new());
                 Ok((
-                    self.new_dwallet_mpc_message(message)
-                        .ok_or(PeraError::InternalDWalletMPCError)?,
+                    self.new_dwallet_mpc_message(message).map_err(|e| {
+                        DwalletMPCError::MPCSessionError {
+                            session_id: self.session_info.session_id,
+                            error: format!(
+                                "failed to create a new MPC message on advance(): {:?}",
+                                e
+                            ),
+                        }
+                    })?,
                     malicious_parties,
                 ))
             }
