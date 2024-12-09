@@ -92,7 +92,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// This function is called by the blockchain itself.
     /// Validators call it as part of the blockchain logic.
     fun create_dkg_first_round_output(
-        sender: address,
         session_id: ID,
         output: vector<u8>,
         ctx: &mut TxContext
