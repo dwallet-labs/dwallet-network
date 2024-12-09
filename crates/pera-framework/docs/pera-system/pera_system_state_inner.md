@@ -14,6 +14,7 @@ title: Module `0x3::pera_system_state_inner`
 -  [Function `create_system_parameters`](#0x3_pera_system_state_inner_create_system_parameters)
 -  [Function `v1_to_v2`](#0x3_pera_system_state_inner_v1_to_v2)
 -  [Function `lock_next_epoch_committee`](#0x3_pera_system_state_inner_lock_next_epoch_committee)
+-  [Function `store_encrypted_decryption_key_shares`](#0x3_pera_system_state_inner_store_encrypted_decryption_key_shares)
 -  [Function `request_add_validator_candidate`](#0x3_pera_system_state_inner_request_add_validator_candidate)
 -  [Function `request_remove_validator_candidate`](#0x3_pera_system_state_inner_request_remove_validator_candidate)
 -  [Function `request_add_validator`](#0x3_pera_system_state_inner_request_add_validator)
@@ -414,6 +415,13 @@ Uses SystemParametersV2 as the parameters.
  The current version of the system state data structure type.
  This is always the same as PeraSystemState.version. Keeping a copy here so that
  we know what version it is by inspecting PeraSystemStateInner as well.
+</dd>
+<dt>
+<code>encrypted_decryption_key_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+</dt>
+<dd>
+ These are the encrypted decryption key shares for the current epoch, used for dWallet MPC session.
+ The shares are indexed by the validator index of the current epoch committee.
 </dd>
 <dt>
 <code>validators: <a href="validator_set.md#0x3_validator_set_ValidatorSet">validator_set::ValidatorSet</a></code>
@@ -874,6 +882,7 @@ This function will be called only once in genesis.
         epoch,
         protocol_version,
         system_state_version: 2,
+        encrypted_decryption_key_shares: <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>(),
         validators,
         <a href="storage_fund.md#0x3_storage_fund">storage_fund</a>,
         parameters: <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_SystemParametersV2">SystemParametersV2</a> {
@@ -924,6 +933,30 @@ This function will be called only once in genesis.
     self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>,
 ) {
     self.validators.<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_lock_next_epoch_committee">lock_next_epoch_committee</a>(self.epoch);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_pera_system_state_inner_store_encrypted_decryption_key_shares"></a>
+
+## Function `store_encrypted_decryption_key_shares`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_store_encrypted_decryption_key_shares">store_encrypted_decryption_key_shares</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_store_encrypted_decryption_key_shares">store_encrypted_decryption_key_shares</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;) {
+    self.encrypted_decryption_key_shares = shares;
 }
 </code></pre>
 

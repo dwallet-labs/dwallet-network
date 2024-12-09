@@ -778,6 +778,9 @@ v1_to_v2
 lock_next_epoch_committee
 	public(package) fun
 	0x3::pera_system_state_inner
+store_encrypted_decryption_key_shares
+	public(package) fun
+	0x3::pera_system_state_inner
 request_add_validator_candidate
 	public(package) fun
 	0x3::pera_system_state_inner
@@ -1058,6 +1061,9 @@ validator_voting_powers
 	fun
 	0x3::pera_system
 lock_next_epoch_committee
+	fun
+	0x3::pera_system
+store_encrypted_decryption_key_shares
 	fun
 	0x3::pera_system
 GenesisValidatorMetadata
