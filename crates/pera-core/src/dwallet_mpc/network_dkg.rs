@@ -2,13 +2,14 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, MPCSessionStatus};
 use crate::dwallet_mpc::mpc_party::{advance, MPCParty};
+use crate::dwallet_mpc::{FIRST_EPOCH_ID, RISTRETTO_DKG_SESSION_ID, SECP256K1_DKG_SESSION_ID};
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::ClassGroupsPublicKeyAndProof;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use jsonrpsee::core::Serialize;
 use mpc::WeightedThresholdAccessStructure;
-use pera_types::base_types::{EpochId, ObjectID};
+use pera_types::base_types::ObjectID;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::Deserialize;
@@ -16,9 +17,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
-const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_bytes("chain-secp256k1-dkg".to_bytes());
-const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_bytes("chain-ristretto-dkg".to_bytes());
-pub const FIRST_EPOCH_ID: EpochId = 0;
 
 fn new_dkg_secp256k1_instance(
     epoch_store: Arc<AuthorityPerEpochStore>,
