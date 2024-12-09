@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -73,6 +74,7 @@ impl ReconfigState {
     }
 }
 
+#[async_trait]
 pub trait ReconfigurationInitiator {
-    fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>);
+    async fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>);
 }

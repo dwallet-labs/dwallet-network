@@ -172,6 +172,9 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
                         protocol_pubkey: metadata.protocol_pubkey.clone(),
                         narwhal_network_pubkey: metadata.network_pubkey.clone(),
                         narwhal_worker_pubkey: metadata.worker_pubkey.clone(),
+                        class_groups_public_key_and_proof: metadata
+                            .class_groups_public_key_and_proof
+                            .clone(),
                         pera_net_address: metadata.net_address.clone(),
                         p2p_address: metadata.p2p_address.clone(),
                         narwhal_primary_address: metadata.primary_address.clone(),
@@ -194,6 +197,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             system_state_version,
             validators:
                 ValidatorSetV1 {
+                    locked: _,
                     total_stake,
                     active_validators,
                     pending_active_validators:

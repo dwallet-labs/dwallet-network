@@ -68,7 +68,11 @@ use crate::consensus_handler::{
 };
 use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc;
-use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
+use crate::dwallet_mpc::mpc_manager::{
+    DWalletMPCChannelMessage, DWalletMPCManager, DWalletMPCSender,
+};
+use crate::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsManager;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
     DkgStatus, RandomnessManager, RandomnessReporter, VersionedProcessedMessage,
@@ -80,6 +84,8 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
+use dwallet_mpc_types::ClassGroupsPublicKeyAndProof;
+use group::PartyID;
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -335,10 +341,11 @@ pub struct AuthorityPerEpochStore {
     /// State machine managing randomness DKG and generation.
     randomness_manager: OnceCell<tokio::sync::Mutex<RandomnessManager>>,
     randomness_reporter: OnceCell<RandomnessReporter>,
-
-    /// State machine managing DWallet MPC flows.
-    pub dwallet_mpc_manager:
-        OnceCell<tokio::sync::Mutex<dwallet_mpc::mpc_manager::DWalletMPCManager>>,
+    /// A tokio channel to send messages to the async [`DWalletMPCManager`]
+    pub dwallet_mpc_sender: OnceCell<DWalletMPCSender>,
+    /// State machine managing DWallet MPC outputs.
+    /// This state machine only being used to store outputs and declare ones with quorum of votes as valid.
+    pub dwallet_mpc_outputs_manager: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -714,7 +721,8 @@ impl AuthorityEpochTables {
 pub(crate) const MUTEX_TABLE_SIZE: usize = 1024;
 
 impl AuthorityPerEpochStore {
-    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch))]
+    #[instrument(name = "AuthorityPerEpochStore::new", level = "error", skip_all, fields(epoch = committee.epoch
+    ))]
     pub fn new(
         name: AuthorityName,
         committee: Arc<Committee>,
@@ -854,7 +862,8 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
-            dwallet_mpc_manager: OnceCell::new(),
+            dwallet_mpc_outputs_manager: OnceCell::new(),
+            dwallet_mpc_sender: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -923,14 +932,27 @@ impl AuthorityPerEpochStore {
         result
     }
 
-    /// A function to initiate the [`DWalletMPCManager`] when a new epoch starts.
-    pub async fn set_dwallet_mpc_manager(&self, manager: DWalletMPCManager) -> PeraResult<()> {
+    /// A function to initiate the [`DWalletMPCSender`] when a new epoch starts.
+    pub async fn set_dwallet_mpc_sender(&self, sender: DWalletMPCSender) -> PeraResult<()> {
+        if self.dwallet_mpc_sender.set(sender).is_err() {
+            error!("BUG: `set_dwallet_mpc_sender` called more than once; this should never happen");
+        }
+        Ok(())
+    }
+
+    /// A function to initiate the Dwallet MPC outputs manager when a new epoch starts.
+    pub async fn set_dwallet_mpc_outputs_manager(
+        &self,
+        manager: DWalletMPCOutputsManager,
+    ) -> PeraResult<()> {
         if self
-            .dwallet_mpc_manager
+            .dwallet_mpc_outputs_manager
             .set(tokio::sync::Mutex::new(manager))
             .is_err()
         {
-            error!("`set_dwallet_mpc_manager` called more than once; this should never happen");
+            error!(
+                "BUG: `set_dwallet_mpc_output_manager` called more than once; this should never happen"
+            );
         }
         Ok(())
     }
@@ -984,6 +1006,54 @@ impl AuthorityPerEpochStore {
 
     pub fn epoch_start_state(&self) -> &EpochStartSystemState {
         self.epoch_start_configuration.epoch_start_state()
+    }
+
+    /// Returns the current active validators' class groups public keys and proofs.
+    /// The data is being used as part of the network's DKG protocol.
+    pub fn active_validators_class_groups_public_keys_and_proofs(
+        &self,
+    ) -> PeraResult<HashMap<AuthorityName, ClassGroupsPublicKeyAndProof>> {
+        Ok(match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => data
+                .get_active_validators_class_groups_public_key_and_proof()
+                .iter()
+                .map(|(k, v)| {
+                    Ok::<(AuthorityName, ClassGroupsPublicKeyAndProof), PeraError>((
+                        *k,
+                        bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(v)?,
+                    ))
+                })
+                .collect::<Result<HashMap<_, _>, _>>()?,
+        })
+    }
+
+    pub fn committee_validators_class_groups_public_keys_and_proofs(
+        &self,
+    ) -> PeraResult<HashMap<PartyID, ClassGroupsPublicKeyAndProof>> {
+        let public_keys_and_proofs = match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => {
+                let committee: Vec<_> = self
+                    .committee()
+                    .voting_rights
+                    .iter()
+                    .map(|(name, _)| name.clone())
+                    .collect();
+
+                data.get_active_validators_class_groups_public_key_and_proof()
+                    .iter()
+                    .filter_map(|(authority_name, value)| {
+                        if !committee.contains(authority_name) {
+                            return None;
+                        }
+                        let party_id = authority_name_to_party_id(authority_name, self).ok()?;
+                        let public_key_and_proof =
+                            bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(value).ok()?;
+                        Some(Ok((party_id, public_key_and_proof)))
+                    })
+                    .collect::<Result<HashMap<_, _>, PeraError>>()?
+            }
+        };
+        Ok(public_keys_and_proofs)
     }
 
     pub fn get_chain_identifier(&self) -> ChainIdentifier {
@@ -2409,20 +2479,44 @@ impl AuthorityPerEpochStore {
             skipped_consensus_txns.inc();
             return None;
         }
-        // Signatures are verified as part of the consensus payload verification in PeraTxValidator.
+        // Signatures are verified as part of the consensus payload verification in PeraTxValidator
         match &transaction.transaction {
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::UserTransaction(_certificate),
-                ..
-            }) => {}
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 // This verification is intentionally left empty and always returns true,
                 // as the actual output verification is performed earlier,
                 // before it is replaced by the system transaction,
                 // via the [`DwalletMPCManager::try_verify_output`] function.
-                kind: ConsensusTransactionKind::DWalletMPCOutput(..),
+                kind: ConsensusTransactionKind::UserTransaction(_certificate),
                 ..
             }) => {}
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::LockNextCommittee(authority, _),
+                ..
+            }) => {
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "LockNextCommittee authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, _, _),
+                ..
+            }) => {
+                // When sending an MPC output, the validator also includes its public key.
+                // Here, we verify that the public key used to sign this transaction matches
+                // the provided public key.
+                // This public key is later used to identify the authority that sent the MPC message.
+                if transaction.sender_authority() != *authority {
+                    warn!(
+                        "DWalletMPCOutput authority {} does not match its author from consensus {}",
+                        authority, transaction.certificate_author_index
+                    );
+                    return None;
+                }
+            }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(authority, _, _),
                 ..
@@ -2437,9 +2531,6 @@ impl AuthorityPerEpochStore {
                         "DWalletMPCMessage authority {} does not match its author from consensus {}",
                         authority, transaction.certificate_author_index
                     );
-                    if let Ok(mut manager) = self.get_dwallet_mpc_manager().await {
-                        manager.malicious_actors.insert(authority.clone());
-                    }
                     return None;
                 }
             }
@@ -2544,13 +2635,15 @@ impl AuthorityPerEpochStore {
         Some(VerifiedSequencedConsensusTransaction(transaction))
     }
 
-    pub async fn get_dwallet_mpc_manager(
+    pub async fn get_dwallet_mpc_outputs_manager(
         &self,
-    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCManager>> {
-        let dwallet_mpc_manager = self.dwallet_mpc_manager.get();
-        match dwallet_mpc_manager {
-            Some(dwallet_mpc_manager) => Ok(dwallet_mpc_manager.lock().await),
-            None => Err(PeraError::from("DWalletMPCManager is not initialized")),
+    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCOutputsManager>> {
+        let dwallet_mpc_outputs_manager = self.dwallet_mpc_outputs_manager.get();
+        match dwallet_mpc_outputs_manager {
+            Some(dwallet_mpc_outputs_manager) => Ok(dwallet_mpc_outputs_manager.lock().await),
+            None => Err(PeraError::from(
+                "DWalletMPCOutputsManager is not initialized",
+            )),
         }
     }
 
@@ -3210,10 +3303,16 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-        self.get_dwallet_mpc_manager()
-            .await?
-            .handle_end_of_delivery()
-            .await?;
+        if let Some(dwallet_mpc_sender) = self.dwallet_mpc_sender.get() {
+            dwallet_mpc_sender
+                .send(DWalletMPCChannelMessage::EndOfDelivery)
+                .map_err(|err| {
+                    PeraError::from(format!(
+                        "Failed to send EndOfDelivery message to DWalletMPCManager: {}",
+                        err
+                    ))
+                })?;
+        }
 
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
@@ -3402,10 +3501,6 @@ impl AuthorityPerEpochStore {
         let tracking_id = transaction.get_tracking_id();
 
         match &transaction {
-            SequencedConsensusTransactionKind::External(ConsensusTransaction {
-                kind: ConsensusTransactionKind::DWalletMPCOutput(..),
-                ..
-            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::UserTransaction(certificate),
                 ..
@@ -3606,14 +3701,43 @@ impl AuthorityPerEpochStore {
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::LockNextCommittee(..),
+                ..
+            }) => Ok(ConsensusCertificateResult::ConsensusMessage),
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
+                kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
+                ..
+            }) => {
+                self.dwallet_mpc_sender
+                    .get()
+                    .ok_or(PeraError::from(
+                        "DWallet MPC sender not initialized when iterating over events",
+                    ))?
+                    .send(DWalletMPCChannelMessage::Output(
+                        output.clone(),
+                        *authority,
+                        session_info.clone(),
+                    ))
+                    .map_err(|err| {
+                        PeraError::from(format!("Failed to send DWalletMPCOutput: {:?}", err))
+                    })?;
+                Ok(ConsensusCertificateResult::ConsensusMessage)
+            }
+            SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                self.get_dwallet_mpc_manager().await?.handle_message(
-                    message,
-                    *authority,
-                    *session_id,
-                )?;
+                self.dwallet_mpc_sender
+                    .get()
+                    .unwrap()
+                    .send(DWalletMPCChannelMessage::Message(
+                        message.clone(),
+                        *authority,
+                        *session_id,
+                    ))
+                    .map_err(|err| {
+                        PeraError::from(format!("Failed to send DWalletMPCMessage: {:?}", err))
+                    })?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

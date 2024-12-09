@@ -9,6 +9,8 @@ title: Module `0x3::validator`
 -  [Struct `StakingRequestEvent`](#0x3_validator_StakingRequestEvent)
 -  [Struct `UnstakingRequestEvent`](#0x3_validator_UnstakingRequestEvent)
 -  [Constants](#@Constants_0)
+-  [Function `get_validator_protocol_pubkey_bytes`](#0x3_validator_get_validator_protocol_pubkey_bytes)
+-  [Function `get_val_class_groups_public_key_and_proof_bytes`](#0x3_validator_get_val_class_groups_public_key_and_proof_bytes)
 -  [Function `new_metadata`](#0x3_validator_new_metadata)
 -  [Function `new`](#0x3_validator_new)
 -  [Function `deactivate`](#0x3_validator_deactivate)
@@ -148,6 +150,12 @@ title: Module `0x3::validator`
 </dt>
 <dd>
  The public key bytes correstponding to the Narwhal Worker
+</dd>
+<dt>
+<code>class_groups_public_key_and_proof_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
+</dt>
+<dd>
+ The public key and proof bytes for the network dkg protocol
 </dd>
 <dt>
 <code>proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
@@ -654,13 +662,61 @@ Max gas price a validator can set is 100K NPERA.
 
 
 
+<a name="0x3_validator_get_validator_protocol_pubkey_bytes"></a>
+
+## Function `get_validator_protocol_pubkey_bytes`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_get_validator_protocol_pubkey_bytes">get_validator_protocol_pubkey_bytes</a>(<a href="validator.md#0x3_validator">validator</a>: &<a href="validator.md#0x3_validator_Validator">validator::Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="validator.md#0x3_validator_get_validator_protocol_pubkey_bytes">get_validator_protocol_pubkey_bytes</a>(<a href="validator.md#0x3_validator">validator</a>: &<a href="validator.md#0x3_validator_Validator">Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    <a href="validator.md#0x3_validator">validator</a>.metadata.protocol_pubkey_bytes
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_validator_get_val_class_groups_public_key_and_proof_bytes"></a>
+
+## Function `get_val_class_groups_public_key_and_proof_bytes`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_get_val_class_groups_public_key_and_proof_bytes">get_val_class_groups_public_key_and_proof_bytes</a>(val: &<a href="validator.md#0x3_validator_Validator">validator::Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="validator.md#0x3_validator_get_val_class_groups_public_key_and_proof_bytes">get_val_class_groups_public_key_and_proof_bytes</a>(val: &<a href="validator.md#0x3_validator_Validator">Validator</a>): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+    val.metadata.class_groups_public_key_and_proof_bytes
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x3_validator_new_metadata"></a>
 
 ## Function `new_metadata`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_new_metadata">new_metadata</a>(pera_address: <b>address</b>, protocol_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, name: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, description: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, image_url: <a href="../pera-framework/url.md#0x2_url_Url">url::Url</a>, project_url: <a href="../pera-framework/url.md#0x2_url_Url">url::Url</a>, net_address: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, p2p_address: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, primary_address: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, worker_address: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, extra_fields: <a href="../pera-framework/bag.md#0x2_bag_Bag">bag::Bag</a>): <a href="validator.md#0x3_validator_ValidatorMetadata">validator::ValidatorMetadata</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_new_metadata">new_metadata</a>(pera_address: <b>address</b>, protocol_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, class_groups_public_key_and_proof_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, name: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, description: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, image_url: <a href="../pera-framework/url.md#0x2_url_Url">url::Url</a>, project_url: <a href="../pera-framework/url.md#0x2_url_Url">url::Url</a>, net_address: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, p2p_address: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, primary_address: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, worker_address: <a href="../move-stdlib/string.md#0x1_string_String">string::String</a>, extra_fields: <a href="../pera-framework/bag.md#0x2_bag_Bag">bag::Bag</a>): <a href="validator.md#0x3_validator_ValidatorMetadata">validator::ValidatorMetadata</a>
 </code></pre>
 
 
@@ -674,6 +730,7 @@ Max gas price a validator can set is 100K NPERA.
     protocol_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     worker_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    class_groups_public_key_and_proof_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     name: String,
     description: String,
@@ -690,6 +747,7 @@ Max gas price a validator can set is 100K NPERA.
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         worker_pubkey_bytes,
+        class_groups_public_key_and_proof_bytes,
         proof_of_possession,
         name,
         description,
@@ -723,7 +781,7 @@ Max gas price a validator can set is 100K NPERA.
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_new">new</a>(pera_address: <b>address</b>, protocol_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, name: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, description: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, image_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, project_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, net_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, p2p_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, primary_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, gas_price: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, commission_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="validator.md#0x3_validator_Validator">validator::Validator</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="validator.md#0x3_validator_new">new</a>(pera_address: <b>address</b>, protocol_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, class_groups_public_key_and_proof_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, name: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, description: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, image_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, project_url: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, net_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, p2p_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, primary_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, worker_address: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, gas_price: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, commission_rate: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="validator.md#0x3_validator_Validator">validator::Validator</a>
 </code></pre>
 
 
@@ -737,6 +795,7 @@ Max gas price a validator can set is 100K NPERA.
     protocol_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     network_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     worker_pubkey_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    class_groups_public_key_and_proof_bytes: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     proof_of_possession: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     name: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     description: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
@@ -769,6 +828,7 @@ Max gas price a validator can set is 100K NPERA.
         protocol_pubkey_bytes,
         network_pubkey_bytes,
         worker_pubkey_bytes,
+        class_groups_public_key_and_proof_bytes,
         proof_of_possession,
         name.to_ascii_string().to_string(),
         description.to_ascii_string().to_string(),

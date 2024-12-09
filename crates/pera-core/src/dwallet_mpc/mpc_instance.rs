@@ -3,52 +3,41 @@ use std::sync::{Arc, Weak};
 
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use pera_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCOutput, MPCPublicInput, MPCRound, MPCSessionStatus,
-};
+use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
+
 use pera_types::base_types::EpochId;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::SessionInfo;
-use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 
-// todo(zeev): rename all instance to session.
-/// A dWallet MPC session instance
-/// It keeps track of the session, the channel to send messages to the instance,
+/// A DWallet MPC session instance
+/// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
 pub(super) struct DWalletMPCInstance {
-    /// The status of the MPC instance.
+    /// The status of the MPC instance
     pub(super) status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the instance
-    /// We need to accumulate a threshold of those before advancing the instance.
-    /// todo(zeev): doc the rounds.
-    pub(super) pending_messages: Vec<HashMap<PartyID, MPCMessage>>,
-    // todo(zeev): why both instance and manager have epoch store?
+    /// We need to accumulate threshold of those before advancing the instance
+    pub(super) pending_messages: Vec<HashMap<PartyID, Vec<u8>>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
-    /// The total number of parties in the chain.
-    /// We can calculate the threshold and party IDs (indexes) from it.
-    /// To calculate the party IDs, all we need to know is the number of parties,
-    /// as the IDs are just the indexes of those parties.
-    /// If there are three parties, the IDs are [0, 1, 2].
+    /// The total number of parties in the chain
+    /// We can calculate the threshold and parties IDs (indexes) from it
+    /// To calculate the parties IDs all we need to know is the number of parties, as the IDs are just the indexes of those parties. If there are 3 parties, the IDs are [0, 1, 2].
     pub(super) session_info: SessionInfo,
-    /// The MPC party being used to run the MPC cryptographic steps.
-    /// Party in here is not a Validator, but a cryptographic party.
-    party: MPCParty,
-    pub(super) public_input: MPCPublicInput,
-    // todo(zeev): this is not used, why is it here?
-    /// The decryption share of the party for mpc sign sessions.
-    decryption_share: DecryptionKeyShare,
+    /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
+    pub party: MPCParty,
+    pub(super) public_input: Vec<u8>,
+    /// The decryption share of the party for mpc sign sessions
+    decryption_share: Option<DecryptionKeyShare>,
 }
 
-/// Needed to be able to iterate over a vector of generic MPCInstances with Rayon.
-unsafe impl Send for DWalletMPCInstance {}
-
-// todo(zeev): rename to DwalletMPCSession.
 impl DWalletMPCInstance {
     pub(crate) fn new(
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -57,7 +46,7 @@ impl DWalletMPCInstance {
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
         session_info: SessionInfo,
-        decryption_share: DecryptionKeyShare,
+        decryption_share: Option<DecryptionKeyShare>,
     ) -> Self {
         Self {
             status,
@@ -71,7 +60,12 @@ impl DWalletMPCInstance {
         }
     }
 
-    // todo(zeev): docs.
+    fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
+        self.epoch_store
+            .upgrade()
+            .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
+    }
+
     /// Advances the MPC instance and optionally return a message the validator wants
     /// to send to the other MPC parties.
     /// Uses the existing party if it exists,
@@ -130,9 +124,9 @@ impl DWalletMPCInstance {
                 private_output: _,
                 public_output,
             }) => {
-                self.status = MPCSessionStatus::Finalizing(public_output.clone());
+                self.status = MPCSessionStatus::Finished(public_output.clone().into());
                 Ok((
-                    self.new_dwallet_mpc_output_message(public_output),
+                    self.new_dwallet_mpc_output_message(public_output)?,
                     malicious_parties,
                 ))
             }
@@ -147,29 +141,32 @@ impl DWalletMPCInstance {
         }
     }
 
-    // todo(zeev): WHAT? WHY? DOCS.
     fn restart(&mut self) {
         self.status = MPCSessionStatus::FirstExecution;
     }
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns None only if the epoch switched in the middle and was not available.
-    fn new_dwallet_mpc_message(
-        &self,
-        message: MPCMessage,
-    ) -> DwalletMPCResult<ConsensusTransaction> {
-        let epoch_store = self.epoch_store()?;
+    fn new_dwallet_mpc_message(&self, message: Vec<u8>) -> DwalletMPCResult<ConsensusTransaction> {
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
-            epoch_store.name,
+            self.epoch_store()?.name,
             message,
             self.session_info.session_id.clone(),
         ))
     }
 
-    /// Create a new consensus transaction with the flow result (output) to be sent
-    /// to the other MPC parties.
-    fn new_dwallet_mpc_output_message(&self, output: MPCOutput) -> ConsensusTransaction {
-        ConsensusTransaction::new_dwallet_mpc_output(output, self.session_info.clone())
+    /// Create a new consensus transaction with the flow result (output) to be sent to the other MPC parties.
+    /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
+    /// Only the aggregator party should send the output to the other parties.
+    fn new_dwallet_mpc_output_message(
+        &self,
+        output: Vec<u8>,
+    ) -> DwalletMPCResult<ConsensusTransaction> {
+        Ok(ConsensusTransaction::new_dwallet_mpc_output(
+            self.epoch_store()?.name,
+            output,
+            self.session_info.clone(),
+        ))
     }
 
     /// Stores a message in the pending messages map.
@@ -178,9 +175,9 @@ impl DWalletMPCInstance {
     /// we will advance the session if we have a threshold of messages.
     fn store_message(
         &mut self,
-        round: MPCRound,
+        round: usize,
         message: &DWalletMPCMessage,
-        epoch_store: &Arc<AuthorityPerEpochStore>,
+        epoch_store: Arc<AuthorityPerEpochStore>,
     ) -> DwalletMPCResult<()> {
         let party_id = authority_name_to_party_id(&message.authority, &epoch_store)?;
         if self.pending_messages[round].contains_key(&party_id) {
@@ -194,16 +191,17 @@ impl DWalletMPCInstance {
     /// or ignoring it if the session is not active.
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         if let MPCSessionStatus::Active(round) = self.status {
-            self.store_message(round, message, &self.epoch_store()?)
+            self.store_message(round, message, self.epoch_store()?)
         } else {
             // Do nothing.
             Ok(())
         }
     }
 
-    fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
-        self.epoch_store
-            .upgrade()
-            .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
+    pub(crate) fn party(&self) -> &MPCParty {
+        &self.party
     }
 }
+
+/// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
+unsafe impl Send for DWalletMPCInstance {}

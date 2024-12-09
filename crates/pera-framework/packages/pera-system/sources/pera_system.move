@@ -110,6 +110,7 @@ module pera_system::pera_system {
         pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
+        class_groups_public_key_and_proof_bytes: vector<u8>,
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -128,6 +129,7 @@ module pera_system::pera_system {
             pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
+            class_groups_public_key_and_proof_bytes,
             proof_of_possession,
             name,
             description,
@@ -590,6 +592,16 @@ module pera_system::pera_system {
     fun validator_voting_powers(wrapper: &mut PeraSystemState): VecMap<address, u64> {
         let self = load_system_state(wrapper);
         pera_system_state_inner::active_validator_voting_powers(self)
+    }
+
+    #[allow(unused_function)]
+    /// Lock the next epoch's validator set
+    /// The chain agrees on the next epoch committee in order to pass
+    /// the chain's DWallet MPC secret to it.
+    fun lock_next_epoch_committee(wrapper: &mut PeraSystemState, ctx: &TxContext) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        let self = load_system_state_mut(wrapper);
+        self.lock_next_epoch_committee();
     }
 
     #[test_only]

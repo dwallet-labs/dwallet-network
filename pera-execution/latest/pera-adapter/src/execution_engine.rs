@@ -729,6 +729,17 @@ mod checked {
 
                 Ok(Mode::empty_results())
             }
+            TransactionKind::LockNextCommittee(..) => {
+                setup_and_execute_lock_next_epoch_committee(
+                    temporary_store,
+                    tx_ctx,
+                    move_vm,
+                    gas_charger,
+                    protocol_config,
+                    metrics,
+                )?;
+                Ok(Mode::empty_results())
+            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)
@@ -1155,9 +1166,9 @@ mod checked {
                     CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                 ],
             ),
-            MPCRound::Sign(..) => {
+            MPCRound::Sign(..) | MPCRound::BatchedSign(..) => {
                 // todo(zeev): why we need this if the output is created by the user?
-                let MPCRound::Sign(_, batch_session_id, _) = data.session_info.mpc_round else {
+                let MPCRound::Sign(batch_session_id, _) = data.session_info.mpc_round else {
                     unreachable!("MPCRound is not Sign for a sign session")
                 };
                 (
@@ -1168,6 +1179,14 @@ mod checked {
                     ],
                 )
             }
+            // Todo (#380): Store DKG output in SystemState
+            MPCRound::NetworkDkg => (
+                "create_sign_output",
+                vec![
+                    CallArg::Pure(data.output.clone()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                ],
+            ),
         };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
@@ -1177,6 +1196,37 @@ mod checked {
                 ident_str!(move_function_name).to_owned(),
                 vec![],
                 args,
+            );
+            assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
+            builder.finish()
+        };
+        programmable_transactions::execution::execute::<execution_mode::System>(
+            protocol_config,
+            metrics,
+            move_vm,
+            temporary_store,
+            tx_ctx,
+            gas_charger,
+            pt,
+        )
+    }
+
+    fn setup_and_execute_lock_next_epoch_committee(
+        temporary_store: &mut TemporaryStore<'_>,
+        tx_ctx: &mut TxContext,
+        move_vm: &Arc<MoveVM>,
+        gas_charger: &mut GasCharger,
+        protocol_config: &ProtocolConfig,
+        metrics: Arc<LimitsMetrics>,
+    ) -> Result<(), ExecutionError> {
+        let pt = {
+            let mut builder = ProgrammableTransactionBuilder::new();
+            let res = builder.move_call(
+                PERA_SYSTEM_PACKAGE_ID.into(),
+                PERA_SYSTEM_MODULE_NAME.to_owned(),
+                ident_str!("lock_next_epoch_committee").to_owned(),
+                vec![],
+                vec![CallArg::PERA_SYSTEM_MUT],
             );
             assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
             builder.finish()

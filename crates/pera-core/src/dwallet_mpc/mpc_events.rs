@@ -200,3 +200,28 @@ impl StartBatchedSignEvent {
         }
     }
 }
+
+/// Rust version of the Move [`pera_system::validator_set::LockedNextEpochCommitteeEvent`] type.
+pub struct LockedNextEpochCommitteeEvent {
+    next_committee_validators: Vec<ValidatorDataForDWalletSecretReShare>,
+    epoch: u64,
+}
+
+struct ValidatorDataForDWalletSecretReShare {
+    class_groups_public_key_and_proof_bytes: Vec<u8>,
+    protocol_pubkey_bytes: Vec<u8>,
+}
+
+impl LockedNextEpochCommitteeEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`LockedNextEpochCommitteeEvent`] events from the chain and trigger the
+    /// start of the chain's re-share flow.
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME.to_owned(),
+            module: ident_str!("validator_set").to_owned(),
+            type_params: vec![],
+        }
+    }
+}

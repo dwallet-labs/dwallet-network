@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::bail;
+use dwallet_mpc_types::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::traits::ToFromBytes;
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::{
@@ -21,6 +22,7 @@ const MAX_VALIDATOR_METADATA_LENGTH: usize = 256;
 pub struct ValidatorInfo {
     pub name: String,
     pub account_address: PeraAddress,
+    pub class_groups_public_key_and_proof: ClassGroupsPublicKeyAndProofBytes,
     pub protocol_key: AuthorityPublicKeyBytes,
     pub worker_key: NetworkPublicKey,
     pub network_key: NetworkPublicKey,
@@ -163,6 +165,8 @@ impl GenesisValidatorInfo {
             bail!("proof of possession is incorrect: {e}");
         }
 
+        // Todo (#369): Verify also the class groups proof once the crypto lib is ready
+
         Ok(())
     }
 }
@@ -190,6 +194,7 @@ impl From<GenesisValidatorInfo> for GenesisValidatorMetadata {
             p2p_address: info.p2p_address,
             primary_address: info.narwhal_primary_address,
             worker_address: info.narwhal_worker_address,
+            class_groups_public_key_and_proof: info.class_groups_public_key_and_proof,
         }
     }
 }
@@ -212,6 +217,7 @@ pub struct GenesisValidatorMetadata {
 
     pub network_public_key: Vec<u8>, // NetworkPublicKey,
     pub worker_public_key: Vec<u8>,  // NetworkPublicKey,
+    pub class_groups_public_key_and_proof: Vec<u8>,
 
     pub network_address: Multiaddr,
     pub p2p_address: Multiaddr,

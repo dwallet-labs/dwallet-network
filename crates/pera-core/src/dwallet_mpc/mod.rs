@@ -1,17 +1,24 @@
+use pera_types::base_types::{EpochId, ObjectID};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use group::PartyID;
-use pera_mpc_types::dwallet_mpc::MPCMessage;
+use dwallet_mpc_types::dwallet_mpc::MPCMessage;
 use pera_types::base_types::AuthorityName;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use std::sync::Arc;
 
 mod dkg;
 pub(crate) mod mpc_events;
-mod mpc_instance;
+pub mod mpc_instance;
 pub mod mpc_manager;
+pub mod mpc_outputs_manager;
 pub(crate) mod mpc_party;
+pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
+
+const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(0);
+const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(1);
+pub const FIRST_EPOCH_ID: EpochId = 0;
 
 /// The message a Validator can send to the other parties while
 /// running a dWallet MPC session.
