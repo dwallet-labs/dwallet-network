@@ -65,6 +65,8 @@ mysten-metrics.workspace = true
 parking_lot.workspace = true
 pera-macros.workspace = true
 pera-enum-compat-util.workspace = true
+pera-mpc-types.workspace = true
+
 
 fastcrypto = { workspace = true, features = ["copy_key"] }
 fastcrypto-tbls.workspace = true
