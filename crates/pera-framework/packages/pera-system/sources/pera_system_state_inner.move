@@ -354,21 +354,16 @@ module pera_system::pera_system_state_inner {
         self.validators.lock_next_epoch_committee(self.epoch);
     }
 
-    // public(package) fun new_encrypted_decryption_key_shares_version(self: &PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_type: KeyType) {
-    //     let new_version = EncryptedNetwotkDecryptionKeyShares {
-    //         epoch_id: self.epoch,
-    //         key_type,
-    //         current_epoch_shares: shares,
-    //         previous_epoch_shares: vector::empty(),
-    //     };
-    //
-    //     if (self.encrypted_decryption_key_shares.contains(&key_type)) {
-    //         self.encrypted_decryption_key_shares.get_mut(&key_type).insert(new_version);
-    //         return;
-    //     };
-    //
-    //     self.encrypted_decryption_key_shares.insert(key_type, vector[new_version]);
-    // }
+    public(package) fun new_encrypted_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_type: KeyType) {
+        let new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty());
+
+        if (self.encrypted_decryption_key_shares.contains(&key_type)) {
+            self.encrypted_decryption_key_shares.get_mut(&key_type).push_back(new_version);
+            return
+        };
+
+        self.encrypted_decryption_key_shares.insert(key_type, vector[new_version]);
+    }
 
     public(package) fun store_encrypted_decryption_key_shares(
         self: &mut PeraSystemStateInnerV2,

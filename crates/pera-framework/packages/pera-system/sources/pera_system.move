@@ -606,12 +606,21 @@ module pera_system::pera_system {
     }
 
     #[allow(unused_function)]
-    /// Store the encrypted decryption key shares from the network DKG protocol public output.
+    /// Store the encrypted decryption key shares from the network DKG re-sharing.
     /// The chain agrees on on the same public output.
     fun store_encrypted_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: KeyType, ctx: &TxContext) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
         let self = load_system_state_mut(wrapper);
         self.store_encrypted_decryption_key_shares(shares, key_type);
+    }
+
+    #[allow(unused_function)]
+    /// Store the encrypted decryption key shares from the network DKG protocol public output.
+    /// The chain agrees on on the same public output.
+    fun new_encrypted_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: KeyType, ctx: &TxContext) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        let self = load_system_state_mut(wrapper);
+        self.new_encrypted_decryption_key_shares_version(shares, key_type);
     }
 
     #[test_only]
