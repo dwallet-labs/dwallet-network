@@ -13,33 +13,24 @@ use pera_types::messages_dwallet_mpc::SessionInfo;
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 
-/// The message a validator can send to the other parties while running a dwallet MPC session.
-#[derive(Clone)]
-pub struct DWalletMPCMessage {
-    /// The serialized message
-    pub(crate) message: Vec<u8>,
-    /// The authority that sent the message
-    pub(crate) authority: AuthorityName,
-}
-
 /// A DWallet MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-pub struct DWalletMPCInstance {
+pub(super) struct DWalletMPCInstance {
     /// The status of the MPC instance
-    pub(crate) status: MPCSessionStatus,
+    pub(super) status: MPCSessionStatus,
     /// The messages that are pending to be executed while advancing the instance
     /// We need to accumulate threshold of those before advancing the instance
-    pub(crate) pending_messages: Vec<HashMap<PartyID, Vec<u8>>>,
+    pub(super) pending_messages: Vec<HashMap<PartyID, Vec<u8>>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
     /// The total number of parties in the chain
     /// We can calculate the threshold and parties IDs (indexes) from it
     /// To calculate the parties IDs all we need to know is the number of parties, as the IDs are just the indexes of those parties. If there are 3 parties, the IDs are [0, 1, 2].
-    pub(crate) session_info: SessionInfo,
+    pub(super) session_info: SessionInfo,
     /// The MPC party that being used to run the MPC cryptographic steps. An option because it can be None before the instance has started.
     pub party: MPCParty,
-    pub(crate) public_input: Vec<u8>,
+    pub(super) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
     decryption_share: Option<DecryptionKeyShare>,
 }
