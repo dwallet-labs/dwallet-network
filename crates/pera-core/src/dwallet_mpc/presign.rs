@@ -1,8 +1,9 @@
 //! This module provides a wrapper around the Presign protocol from the 2PC-MPC library.
 //!
-//! It integrates both Presign parties (each representing a round in the Presign protocol)
+//! It integrates both Presign parties (each representing a round in the Presign protocol).
+use pera_mpc_types::dwallet_mpc::{MPCOutput, MPCPublicInput};
+use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
-use pera_types::error::PeraResult;
 
 pub(super) type PresignFirstParty =
     <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShareRoundParty;
@@ -13,7 +14,7 @@ pub(super) type PresignSecondParty = <AsyncProtocol as twopc_mpc::presign::Proto
 /// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
 /// when accessing `mpc::Party::PublicInput`.
 pub(super) trait PresignFirstPartyPublicInputGenerator: mpc::Party {
-    fn generate_public_input(dkg_output: Vec<u8>) -> PeraResult<Vec<u8>>;
+    fn generate_public_input(dkg_output: MPCOutput) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 /// A trait for generating the public input for the last round of the Presign protocol.
@@ -22,13 +23,13 @@ pub(super) trait PresignFirstPartyPublicInputGenerator: mpc::Party {
 /// when accessing `mpc::Party::PublicInput`.
 pub(super) trait PresignSecondPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
-        dkg_output: Vec<u8>,
-        first_round_output: Vec<u8>,
-    ) -> PeraResult<Vec<u8>>;
+        dkg_output: MPCOutput,
+        first_round_output: MPCOutput,
+    ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 impl PresignFirstPartyPublicInputGenerator for PresignFirstParty {
-    fn generate_public_input(dkg_output: Vec<u8>) -> PeraResult<Vec<u8>> {
+    fn generate_public_input(dkg_output: MPCOutput) -> DwalletMPCResult<MPCPublicInput> {
         let pub_input = Self::PublicInput {
             protocol_public_parameters: class_groups_constants::protocol_public_parameters(),
             dkg_output: bcs::from_bytes(&dkg_output)?,
@@ -41,7 +42,7 @@ impl PresignSecondPartyPublicInputGenerator for PresignSecondParty {
     fn generate_public_input(
         dkg_output: Vec<u8>,
         first_round_output: Vec<u8>,
-    ) -> PeraResult<Vec<u8>> {
+    ) -> DwalletMPCResult<MPCPublicInput> {
         let first_round_public_input =
             <PresignFirstParty as PresignFirstPartyPublicInputGenerator>::generate_public_input(
                 dkg_output,

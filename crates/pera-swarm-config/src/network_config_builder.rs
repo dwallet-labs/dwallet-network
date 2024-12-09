@@ -1,7 +1,6 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use group::PartyID;
 use pera_config::genesis::{TokenAllocation, TokenDistributionScheduleBuilder};
 use pera_config::node::AuthorityOverloadConfig;
 use pera_macros::nondeterministic;
@@ -311,7 +310,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 let (_, keys) = Committee::new_simple_test_committee_of_size(size.into());
 
                 // todo (#348): Use real shares
-                let (mut decryption_key_shares, decryption_key_share_public_parameters) =
+                let (decryption_key_shares, decryption_key_share_public_parameters) =
                     get_hardcoded_blockchain_secret_shares();
 
                 keys.into_iter()

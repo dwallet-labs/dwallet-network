@@ -1294,6 +1294,7 @@ impl PeraNode {
             }
         }
 
+        // Start the dWallet MPC manager on epoch start.
         epoch_store
             .set_dwallet_mpc_outputs_manager(DWalletMPCOutputsManager::new(&epoch_store))
             .await?;

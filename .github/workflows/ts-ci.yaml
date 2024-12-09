@@ -45,7 +45,7 @@ jobs:
           version: 'latest'
       - name: Install dependencies
         run: pnpm install
-        working-directory: ./sdk/typescript/
+        working-directory: ./sdk/typescript
       - name: Format Check
         run: npm run prettier:check
         working-directory: ./sdk/typescript
