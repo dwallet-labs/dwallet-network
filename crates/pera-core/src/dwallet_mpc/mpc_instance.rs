@@ -5,10 +5,7 @@ use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
-use dwallet_mpc_types::dwallet_mpc::{
-    MPCMessage, MPCOutput, MPCPublicInput, MPCRound, MPCSessionStatus,
-};
-
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 
 use pera_types::base_types::EpochId;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
@@ -161,7 +158,10 @@ impl DWalletMPCInstance {
     /// Create a new consensus transaction with the flow result (output) to be sent to the other MPC parties.
     /// Returns None if the epoch switched in the middle and was not available or if this party is not the aggregator.
     /// Only the aggregator party should send the output to the other parties.
-    fn new_dwallet_mpc_output_message(&self, output: Vec<u8>) -> DwalletMPCResult<ConsensusTransaction> {
+    fn new_dwallet_mpc_output_message(
+        &self,
+        output: Vec<u8>,
+    ) -> DwalletMPCResult<ConsensusTransaction> {
         Ok(ConsensusTransaction::new_dwallet_mpc_output(
             self.epoch_store()?.name,
             output,
@@ -169,8 +169,10 @@ impl DWalletMPCInstance {
         ))
     }
 
-    /// Stores a message in the pending messages map. The code stores every new message it receives for that instance,
-    /// and when we reach the end of delivery we will advance the instance if we have a threshold of messages.
+    /// Stores a message in the pending messages map.
+    /// The code stores every new message it receives for that session,
+    /// and when we reach the end of delivery,
+    /// we will advance the session if we have a threshold of messages.
     fn store_message(
         &mut self,
         round: usize,
@@ -189,7 +191,7 @@ impl DWalletMPCInstance {
     /// or ignoring it if the session is not active.
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         if let MPCSessionStatus::Active(round) = self.status {
-            self.store_message(round, message, &self.epoch_store()?)
+            self.store_message(round, message, self.epoch_store()?)
         } else {
             // Do nothing.
             Ok(())
