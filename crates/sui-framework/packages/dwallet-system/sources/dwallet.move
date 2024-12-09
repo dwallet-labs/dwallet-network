@@ -24,7 +24,7 @@ module dwallet_system::dwallet {
     friend dwallet_system::dwallet_ecdsa_k1_tests;
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
-    const EMesssageApprovalDWalletMismatch: u64 = 1;
+    // const EMesssageApprovalDWalletMismatch: u64 = 1;
     const EInvalidEncryptionKeyScheme: u64 = 2;
     const EInvalidEncryptionKeyOwner: u64 = 3;
     const EInvalidEncryptionKeySignature: u64 = 4;
@@ -338,15 +338,18 @@ module dwallet_system::dwallet {
         object::delete(id);
         let messages_len: u64 = vector::length(&messages);
         let approval_len: u64 = vector::length(&message_approvals);
-        assert!(messages_len == approval_len, EMesssageApprovalDWalletMismatch);
+        assert!(messages_len == approval_len, 1);
+        // assert!(messages_len == approval_len, EMesssageApprovalDWalletMismatch);
 
         let i: u64 = 0;
         while (i < messages_len) {
             let message_approval = vector::pop_back(&mut message_approvals);
             let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
-            assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
+            assert!(dwallet_cap_id == message_approval_dwallet_cap_id, 2);
+            // assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
             let message = vector::borrow(&messages, i);
-            assert!(message == &approved_message, EMesssageApprovalDWalletMismatch);
+            assert!(message == &approved_message, 3);
+            // assert!(message == &approved_message, EMesssageApprovalDWalletMismatch);
             i = i + 1;
         };
 
@@ -373,6 +376,96 @@ module dwallet_system::dwallet {
             sign_data_event,
         });
         transfer::freeze_object(sign_session);
+    }
+
+    public fun sign_test<S: store, E: store + copy + drop>(
+        partial_user_signed_messages: PartialUserSignedMessages<S, E>,
+        message_approvals: vector<MessageApproval>,
+        ctx: &mut TxContext
+    ): (vector<u8>, vector<u8>) {
+        let PartialUserSignedMessages {
+            id,
+            dwallet_id,
+            dwallet_cap_id,
+            messages,
+            sign_data,
+            sign_data_event,
+            dwallet_public_key,
+        } = partial_user_signed_messages;
+
+        object::delete(id);
+        let messages_len: u64 = vector::length(&messages);
+        let approval_len: u64 = vector::length(&message_approvals);
+        assert!(messages_len == approval_len, 1);
+        // assert!(messages_len == approval_len, EMesssageApprovalDWalletMismatch);
+        let msgs_copy = vector<vector<u8>>[];
+        let j: u64 = 0;
+        while (j < messages_len) {
+            let message = vector::borrow(&messages, j);
+            vector::push_back(&mut msgs_copy, *message);
+            j = j + 1;
+        };
+
+        let i: u64 = 0;
+        while (i < messages_len) {
+            let message_approval = vector::pop_back(&mut message_approvals);
+            let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
+            assert!(dwallet_cap_id == message_approval_dwallet_cap_id, 2);
+            // assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
+            let message = vector::borrow(&messages, i);
+            
+            if (message == &approved_message) {
+                i = i + 1;
+            } else {
+                let sender = tx_context::sender(ctx);
+
+                let sign_session = SignSession {
+                    id: object::new(ctx),
+                    dwallet_id,
+                    dwallet_cap_id,
+                    messages: msgs_copy,
+                    sender,
+                    sign_data,
+                    dwallet_public_key
+                };
+
+                transfer::freeze_object(sign_session);
+                return (*message, approved_message)
+            }
+            
+            // assert!(message == &approved_message, EMesssageApprovalDWalletMismatch);
+            // assert!(message == &approved_message, 3);
+        };
+
+        vector::destroy_empty(message_approvals);
+        let sender = tx_context::sender(ctx);
+
+        let sign_session = SignSession {
+            id: object::new(ctx),
+            dwallet_id,
+            dwallet_cap_id,
+            messages,
+            sender,
+            sign_data,
+            dwallet_public_key
+        };
+
+        // This part actaully starts the `Sign` proccess in the blockchain.
+        event::emit(CreatedSignSessionEvent {
+            session_id: object::id(&sign_session),
+            dwallet_id,
+            dwallet_cap_id,
+            messages,
+            sender,
+            sign_data_event,
+        });
+        transfer::freeze_object(sign_session);
+        let empty_vector1 = vector::empty<u8>();
+        let empty_vector2 = vector::empty<u8>();
+        (empty_vector1, empty_vector2)
+        // let message = vector::borrow(&messages, 0);
+
+        // (message, message)
     }
 
     /// The output that being written when an aggregator tries to publish an invalid signature.
