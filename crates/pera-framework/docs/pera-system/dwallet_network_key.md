@@ -4,7 +4,7 @@ title: Module `0x3::dwallet_network_key`
 
 
 
--  [Struct `EncryptedNetwotkDecryptionKeyShares`](#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShares)
+-  [Struct `EncryptedNetwotkDecryptionKeyShare`](#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShare)
 -  [Enum `KeyType`](#0x3_dwallet_network_key_KeyType)
 -  [Function `new_encrypted_network_decryption_key_shares`](#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares)
 -  [Function `update_new_shares`](#0x3_dwallet_network_key_update_new_shares)
@@ -14,13 +14,13 @@ title: Module `0x3::dwallet_network_key`
 
 
 
-<a name="0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShares"></a>
+<a name="0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShare"></a>
 
-## Struct `EncryptedNetwotkDecryptionKeyShares`
+## Struct `EncryptedNetwotkDecryptionKeyShare`
 
 
 
-<pre><code><b>struct</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShares">EncryptedNetwotkDecryptionKeyShares</a> <b>has</b> <b>copy</b>, store
+<pre><code><b>struct</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShare">EncryptedNetwotkDecryptionKeyShare</a> <b>has</b> <b>copy</b>, store
 </code></pre>
 
 
@@ -92,7 +92,7 @@ Variant <code>Ristretto</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShares">dwallet_network_key::EncryptedNetwotkDecryptionKeyShares</a>
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShare">dwallet_network_key::EncryptedNetwotkDecryptionKeyShare</a>
 </code></pre>
 
 
@@ -101,8 +101,8 @@ Variant <code>Ristretto</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShares">EncryptedNetwotkDecryptionKeyShares</a> {
-    <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShares">EncryptedNetwotkDecryptionKeyShares</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShare">EncryptedNetwotkDecryptionKeyShare</a> {
+    <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShare">EncryptedNetwotkDecryptionKeyShare</a> {
         epoch,
         current_epoch_shares,
         previous_epoch_shares,
@@ -120,7 +120,7 @@ Variant <code>Ristretto</code>
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_update_new_shares">update_new_shares</a>(self: &<b>mut</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShares">dwallet_network_key::EncryptedNetwotkDecryptionKeyShares</a>, new_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_update_new_shares">update_new_shares</a>(self: &<b>mut</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShare">dwallet_network_key::EncryptedNetwotkDecryptionKeyShare</a>, new_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>)
 </code></pre>
 
 
@@ -129,7 +129,7 @@ Variant <code>Ristretto</code>
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_update_new_shares">update_new_shares</a>(self: &<b>mut</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShares">EncryptedNetwotkDecryptionKeyShares</a>, new_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_update_new_shares">update_new_shares</a>(self: &<b>mut</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptedNetwotkDecryptionKeyShare">EncryptedNetwotkDecryptionKeyShare</a>, new_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>) {
     self.previous_epoch_shares = self.current_epoch_shares;
     self.current_epoch_shares = new_shares;
     self.epoch = epoch;
