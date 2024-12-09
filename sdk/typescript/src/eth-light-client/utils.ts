@@ -2,8 +2,18 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { ethers } from 'ethers';
 
-import { bcs } from '../bcs/index.js';
 import type { DWalletClient } from '../client/index.js';
+
+/// The `EthereumState` Move object fields.
+export type EthereumState = {
+	id: object;
+	data: number[];
+	time_slot: number;
+	authority_binder_id: string;
+	state_root: number[];
+	block_number: number;
+	network: number[];
+};
 
 /**
  * Calculates the key for a given message and dWallet ID.
@@ -53,34 +63,6 @@ export function calculateMessageStorageSlot(
 }
 
 /**
- * Retrieves the latest Ethereum state object by its ID.
- *
- * @param {DWalletClient} client - The dWallet client instance.
- * @param {string} latestStateObjectId - The ObjectID of the latest Ethereum state.
- * @returns An object containing the latest Ethereum state fields, or null if not found.
- */
-export const getLatestEthereumStateById = async (
-	client: DWalletClient,
-	latestStateObjectId: string,
-) => {
-	let latestEthereumStateResponse = await client.getObject({
-		id: latestStateObjectId,
-		options: { showContent: true },
-	});
-
-	return latestEthereumStateResponse.data?.content?.dataType === 'moveObject'
-		? (latestEthereumStateResponse.data?.content?.fields as unknown as {
-				id: string;
-				eth_state_id: string;
-				time_slot: bigint;
-				eth_smart_contract_address: number[];
-				eth_smart_contract_slot: number;
-				network: string;
-		  })
-		: null;
-};
-
-/**
  * Retrieves the Ethereum state object by its ID.
  *
  * @param {DWalletClient} client - The dWallet client instance.
@@ -97,31 +79,9 @@ export const getEthereumStateById = async (
 	});
 
 	return currentEthereumStateResponse.data?.content?.dataType === 'moveObject'
-		? (currentEthereumStateResponse.data?.content?.fields as unknown as {
-				id: string;
-				data: number[];
-				time_slot: number;
-				latest_ethereum_state_id: string;
-				state_root: number[];
-				block_number: number;
-		  })
+		? (currentEthereumStateResponse.data?.content?.fields as EthereumState)
 		: null;
 };
-
-/**
- * Converts a string to a Uint8Array and serializes it using BCS (Binary Canonical Serialization).
- *
- * @param {string} value - The string to convert and serialize.
- * @returns The serialized Uint8Array.
- */
-export function stringToArrayU8Bcs(value: string) {
-	let arrayU8 = Uint8Array.from(Array.from(value).map((c) => c.charCodeAt(0)));
-	return bcs.vector(bcs.u8()).serialize(arrayU8, {
-		size: arrayU8.length,
-		maxSize: arrayU8.length * 2,
-		allocateSize: arrayU8.length,
-	});
-}
 
 /**
  * Compares two Uint8Arrays for equality.
