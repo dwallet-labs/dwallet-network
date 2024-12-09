@@ -59,6 +59,7 @@ pub struct PeraSystemStateInnerV2 {
     pub epoch: u64,
     pub protocol_version: u64,
     pub system_state_version: u64,
+    pub encrypted_decryption_key_share: Vec<Vec<u8>>,
     pub validators: ValidatorSetV1,
     pub storage_fund: StorageFundV1,
     pub parameters: SystemParametersV2,
@@ -195,6 +196,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             epoch,
             protocol_version,
             system_state_version,
+            encrypted_decryption_key_share: _,
             validators:
                 ValidatorSetV1 {
                     locked: _,

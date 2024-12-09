@@ -1178,7 +1178,6 @@ mod checked {
                     ],
                 )
             }
-            // Todo (#380): Store DKG output in SystemState
             MPCRound::NetworkDkg => {
                 module_name = PERA_SYSTEM_MODULE_NAME;
                 (
