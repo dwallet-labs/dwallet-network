@@ -4,9 +4,11 @@
 use anyhow::Result;
 use anyhow::{bail, Context};
 use futures::{future, stream::StreamExt};
+use std::fs;
 use std::path::PathBuf;
 use sui_config::{
-    sui_config_dir, Config, PersistedConfig, SUI_CLIENT_CONFIG, SUI_KEYSTORE_FILENAME,
+    sui_config_dir, Config, PersistedConfig, SUI_CLIENT_CONFIG, SUI_CONFIG_DIR,
+    SUI_KEYSTORE_FILENAME,
 };
 
 use sui_json_rpc_types::Coin;
@@ -23,6 +25,13 @@ use sui_sdk::types::{base_types::SuiAddress, crypto::SignatureScheme::ED25519};
 
 use crate::{dwallet_client, DWALLET_COIN_TYPE};
 use sui_sdk::SuiClient;
+
+const DWALLET_DIR: &str = ".dwallet";
+pub const DWALLET_CONFIG_DIR: &str = "dwallet_config";
+pub const DWALLET_NETWORK_CONFIG: &str = "network.yaml";
+pub const DWALLET_FULLNODE_CONFIG: &str = "fullnode.yaml";
+pub const DWALLET_CLIENT_CONFIG: &str = "client.yaml";
+pub const DWALLET_KEYSTORE_FILENAME: &str = "dwallet.keystore";
 
 #[derive(serde::Deserialize, Debug)]
 struct FaucetResponse {
@@ -137,9 +146,25 @@ async fn coins_by_required_balance(
     coins.next().await
 }
 
+pub fn dwallet_config_dir() -> Result<PathBuf, anyhow::Error> {
+    match std::env::var_os("DWALLET_CONFIG_DIR") {
+        Some(config_env) => Ok(config_env.into()),
+        None => match dirs::home_dir() {
+            Some(v) => Ok(v.join(DWALLET_DIR).join(DWALLET_CONFIG_DIR)),
+            None => bail!("Cannot obtain home directory path"),
+        },
+    }
+    .and_then(|dir| {
+        if !dir.exists() {
+            fs::create_dir_all(dir.clone())?;
+        }
+        Ok(dir)
+    })
+}
+
 pub async fn retrieve_wallet(conf: &crate::Config) -> Result<WalletContext, anyhow::Error> {
-    let wallet_conf = sui_config_dir()?.join(SUI_CLIENT_CONFIG);
-    let keystore_path = sui_config_dir()?.join(SUI_KEYSTORE_FILENAME);
+    let wallet_conf = dwallet_config_dir()?.join(DWALLET_CLIENT_CONFIG);
+    let keystore_path = dwallet_config_dir()?.join(DWALLET_KEYSTORE_FILENAME);
 
     // Check if a wallet exists and if not, create a wallet and a sui client config.
     if !keystore_path.exists() {

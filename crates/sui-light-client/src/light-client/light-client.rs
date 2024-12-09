@@ -59,12 +59,10 @@ use url::Url;
 
 const DWALLET_MODULE_ADDR: &str =
     "0x0000000000000000000000000000000000000000000000000000000000000003";
-const SUI_DWALLET_MODULE_NAME: &str = "dwallet_cap";
+const SUI_DWALLET_MODULE_NAME: &str = "dwallet";
 const SUI_STATE_PROOF_MODULE_IN_DWALLET_NETWORK: &str = "sui_state_proof";
 const GAS_BUDGET: u64 = 1_000_000_000;
 const DWALLET_COIN_TYPE: &str = "0x2::dwlt::DWLT";
-
-// todo(yuval): rename in .move file: epoch_committee_id -> new_epoch_committee_id.
 
 /// A light client for the Sui blockchain
 #[derive(Parser, Debug)]
@@ -172,8 +170,8 @@ struct Config {
     /// Sui Light Client Registry (State) object ID in dWallet Network.
     dwallet_network_registry_object_id: String,
 
-    /// Sui Light Client Config object ID in dWallet Network.
-    dwallet_network_config_object_id: String,
+    /// Sui Authority object ID in dWallet Network.
+    dwallet_network_authority_object_id: String,
 }
 
 /// The list of checkpoints at the end of each epoch.
@@ -985,14 +983,14 @@ async fn init_light_client(
         .find(|object| matches!(object, ObjectChange::Created { object_type, .. } if object_type.to_string().contains("Registry")))
         .context("Registry object not found in transaction response")?;
 
-    let config_object_change = object_changes
-        .iter()
-        .find(|object| matches!(object, ObjectChange::Created { object_type, .. } if object_type.to_string().contains("StateProofConfig")))
-        .context("Config object not found in transaction response")?;
+    let authority_object_change = object_changes.iter().find(|object| {
+        matches!(object, ObjectChange::Created { object_type, .. } if object_type.to_string().contains("Authority"))
+    }).context("Authority object not found in transaction response")?;
 
     // Update YAML config.
-    config.dwallet_network_config_object_id = config_object_change.object_ref().0.to_string();
     config.dwallet_network_registry_object_id = registry_object_change.object_ref().0.to_string();
+    config.dwallet_network_authority_object_id = authority_object_change.object_ref().0.to_string();
+
     Ok(())
 }
 
