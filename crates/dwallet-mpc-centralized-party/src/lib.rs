@@ -1,3 +1,4 @@
+use std::fmt;
 use anyhow::Context;
 /// This crate contains the cryptographic logic for the centralized 2PC-MPC party
 use k256::ecdsa::hazmat::bits2field;
@@ -8,6 +9,8 @@ use mpc::two_party::Round;
 use rand_core::OsRng;
 use twopc_mpc::secp256k1;
 
+type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
+<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
 type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentralizedParty;
 type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
@@ -76,19 +79,17 @@ impl TryFrom<u8> for Hash {
 }
 
 /// Computes the message digest of a given message using the specified given hash function
-pub fn message_digest(message: &[u8], hash_type: &Hash) -> secp256k1::Scalar {
+pub fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1::Scalar> {
     let hash = match hash_type {
         Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
             &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
-        ),
+        ).map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
         Hash::SHA256 => {
-            bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
+            bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed()).map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
         }
-    }
-    .unwrap();
-    #[allow(clippy::useless_conversion)]
+    };
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
-    U256::from(m).into()
+    Ok(U256::from(m).into())
 }
 
 /// Executes the centralized phase of the Sign protocol, first part of the protocol
@@ -106,16 +107,19 @@ pub fn create_sign_output(
     session_id: String,
 ) -> anyhow::Result<(Vec<Vec<u8>>, Vec<Vec<u8>>)> {
     let presign_first_round_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare = bcs::from_bytes(&presign_first_round_output)?;
-    let presign_second_round_output: (<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart, <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart) = bcs::from_bytes(&presign_second_round_output)?;
+    let presign_second_round_output: (
+        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
+        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
+    ) = bcs::from_bytes(&presign_second_round_output)?;
     let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
         (presign_first_round_output, presign_second_round_output).into();
     let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
     let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
     let signed_and_hashed_messages: anyhow::Result<Vec<(Vec<u8>, Vec<u8>)>> = messages.into_iter().map(|message| {
         let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGOutput = bcs::from_bytes(&centralized_party_dkg_output)?;
-        let hashed_message = message_digest(&message, &hash.try_into()?);
+        let message_digest = message_digest(&message, &hash.try_into()?);
         let centralized_party_auxiliary_input = (
-            hashed_message,
+            message_digest,
             centralized_party_dkg_output.clone(),
             presign.clone(),
             protocol_public_parameters.clone(),
@@ -123,13 +127,24 @@ pub fn create_sign_output(
         )
             .into();
         let (sign_message, _) =
-            SignCentralizedParty::advance((), &centralized_party_auxiliary_input, &mut OsRng)?;
+            SignCentralizedParty::advance((), &centralized_party_auxiliary_input, &mut OsRng)
+                .context("advance() failed on the SignCentralizedParty")?;
         let signed_message = bcs::to_bytes(&sign_message)?;
         Ok((
             signed_message,
-            bcs::to_bytes(&hashed_message)?,
+            bcs::to_bytes(&message_digest)?,
         ))
     }).collect();
     let (signed_messages, hashed_messages) = signed_and_hashed_messages?.into_iter().unzip();
     Ok((signed_messages, hashed_messages))
+}
+
+impl fmt::Display for Hash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let hash_name = match self {
+            Hash::KECCAK256 => "KECCAK256",
+            Hash::SHA256 => "SHA256",
+        };
+        write!(f, "{}", hash_name)
+    }
 }
