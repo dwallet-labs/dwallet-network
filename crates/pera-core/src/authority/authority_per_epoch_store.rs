@@ -3831,11 +3831,11 @@ impl AuthorityPerEpochStore {
 
         // System transactions either contain a shared object
         // or are dWallet MPC output transactions.
-        let is_proof_mpc_output = matches!(
+        let is_dwallet_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
             TransactionKind::DWalletMPCOutput(_)
         );
-        assert!(system_transaction.contains_shared_object() || is_proof_mpc_output);
+        assert!(system_transaction.contains_shared_object() || is_dwallet_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())
     }
 
