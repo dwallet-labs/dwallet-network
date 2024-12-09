@@ -5,6 +5,11 @@ use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
+use dwallet_mpc_types::dwallet_mpc::{
+    MPCMessage, MPCOutput, MPCPublicInput, MPCRound, MPCSessionStatus,
+};
+
+
 use pera_types::base_types::EpochId;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::error::PeraError;
@@ -73,7 +78,7 @@ impl DWalletMPCInstance {
         &mut self,
         weighted_threshold_access: &WeightedThresholdAccessStructure,
         party_id: PartyID,
-    ) -> DWalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
+    ) -> DwalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
         let pending_messages = self.pending_messages.clone();
         let (status, round) = match self.status {
             MPCSessionStatus::Pending | MPCSessionStatus::FirstExecution => {
@@ -187,41 +192,20 @@ impl DWalletMPCInstance {
         Ok(())
     }
 
-    /// Handles a message by either forwarding it to the instance or ignoring it if the instance is finished.
+    /// Handles a message by either forwarding it to the session
+    /// or ignoring it if the session is not active.
     pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
-        match self.status {
-            MPCSessionStatus::Active(round) => {
-                self.store_message(round, &message, self.epoch_store()?)
-            }
-            // TODO (#263): Check for malicious messages also after the instance is finished
-            MPCSessionStatus::Finished(_) => {
-                // Do nothing
-                Ok(())
-            }
-            _ => Ok(()),
+        if let MPCSessionStatus::Active(round) = self.status {
+            self.store_message(round, message, &self.epoch_store()?)
+        } else {
+            // Do nothing.
+            Ok(())
         }
     }
 
     pub(crate) fn party(&self) -> &MPCParty {
         &self.party
     }
-}
-
-/// Possible statuses of an MPC session:
-/// - Pending: The instance has been inserted after we reached [`DWalletMPCManager::max_active_mpc_instances`], so it's waiting
-/// for some active instances to finish before it can be activated.
-/// - FirstExecution: The [`DWalletMPCInstance::party`] has not yet performed it's first advance. This status is needed
-/// so we will be able to filter those instances and advance them, despite they have not received [`threshold_number_of_parties`] messages.
-/// - Active: The session is currently running; new messages will be forwarded to the session.
-/// - Finished: The session removed from active instances; incoming messages will not be forwarded,
-/// but will not be marked as malicious.
-#[derive(Clone, PartialEq, Debug)]
-pub enum MPCSessionStatus {
-    Pending,
-    FirstExecution,
-    Active(usize),
-    Finished(Vec<u8>),
-    Failed,
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon

@@ -4059,6 +4059,7 @@ dependencies = [
  "bcs",
  "class_groups",
  "crypto-bigint 0.5.5",
+ "move-core-types",
  "serde",
 ]
 
@@ -9958,7 +9959,6 @@ dependencies = [
  "parking_lot 0.12.3",
  "pera-macros",
  "pera-move-natives-latest",
- "pera-mpc-types",
  "pera-protocol-config",
  "pera-types",
  "pera-verifier-latest",
@@ -10499,7 +10499,6 @@ dependencies = [
  "pera-macros",
  "pera-move",
  "pera-move-build",
- "pera-mpc-types",
  "pera-network",
  "pera-protocol-config",
  "pera-simulator",
@@ -12482,7 +12481,6 @@ dependencies = [
  "passkey-types",
  "pera-enum-compat-util",
  "pera-macros",
- "pera-mpc-types",
  "pera-protocol-config",
  "prometheus",
  "proptest",
