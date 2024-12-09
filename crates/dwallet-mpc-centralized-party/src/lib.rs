@@ -67,7 +67,10 @@ impl TryFrom<u8> for Hash {
         match value {
             0 => Ok(Hash::KECCAK256),
             1 => Ok(Hash::SHA256),
-            _ => Err(anyhow::Error::msg("Invalid value for Hash enum")),
+            _ => Err(anyhow::Error::msg(format!(
+                "invalid value for Hash enum: {}",
+                value
+            ))),
         }
     }
 }
