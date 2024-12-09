@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 import { ethers } from 'ethers';
 
-import { bcs } from '../bcs/index.js';
 import type { DWalletClient } from '../client/index.js';
 
 /// The `EthereumState` Move object fields.
@@ -63,56 +62,6 @@ export function calculateMessageStorageSlot(
 	return calculateMappingSlotForKey(key, dataSlot);
 }
 
-export const getAuthorityBinderByID = async (authorityBinderID: string, client: DWalletClient) => {
-	let authorityBinderResponse = await client.getObject({
-		id: authorityBinderID,
-		options: { showContent: true },
-	});
-
-	if (authorityBinderResponse.data?.content?.dataType === 'moveObject') {
-		const fields = authorityBinderResponse.data?.content?.fields as any;
-
-		return {
-			id: fields.id.id,
-			dwallet_cap: parseNestedStruct(fields.dwallet_cap),
-			bind_to_authority: parseNestedStruct(fields.bind_to_authority),
-			virgin_bound: fields.virgin_bound,
-		};
-	}
-	return null;
-};
-
-/**
- * Retrieves an Ethereum authority object by its ID.
- *
- * This function fetches the Ethereum authority object from the dWallet client using the provided authority ID.
- * It then parses the fields of the object and returns them in a structured format.
- *
- * @param {string} authorityID - The ObjectID of the Ethereum authority.
- * @param {DWalletClient} client - The dWallet client instance.
- * @returns An object containing the parsed fields of the Ethereum authority, or null if not found.
- */
-export const getAuthorityByID = async (authorityID: string, client: DWalletClient) => {
-	let authorityResponse = await client.getObject({
-		id: authorityID,
-		options: { showContent: true },
-	});
-
-	if (authorityResponse.data?.content?.dataType === 'moveObject') {
-		const fields = authorityResponse.data?.content?.fields as any;
-
-		return {
-			id: fields.id.id,
-			name: fields.name,
-			unique_identifier: fields.unique_identifier,
-			latest: parseNestedStruct(fields.latest),
-			config: parseNestedStruct(fields.config),
-			authority_owner_dwallet_cap: parseNestedStruct(fields.authority_owner_dwallet_cap),
-		};
-	}
-	return null;
-};
-
 /**
  * Retrieves the Ethereum state object by its ID.
  *
@@ -133,21 +82,6 @@ export const getEthereumStateById = async (
 		? (currentEthereumStateResponse.data?.content?.fields as EthereumState)
 		: null;
 };
-
-/**
- * Converts a string to a Uint8Array and serializes it using BCS (Binary Canonical Serialization).
- *
- * @param {string} value - The string to convert and serialize.
- * @returns The serialized Uint8Array.
- */
-export function stringToArrayU8Bcs(value: string) {
-	let arrayU8 = Uint8Array.from(Array.from(value).map((c) => c.charCodeAt(0)));
-	return bcs.vector(bcs.u8()).serialize(arrayU8, {
-		size: arrayU8.length,
-		maxSize: arrayU8.length * 2,
-		allocateSize: arrayU8.length,
-	});
-}
 
 /**
  * Compares two Uint8Arrays for equality.
@@ -195,19 +129,3 @@ export function keysToSnakeCase(obj: any): any {
 function camelToSnake(key: string): string {
 	return key.replace(/([A-Z])/g, (letter) => `_${letter.toLowerCase()}`);
 }
-
-// Helper function to parse nested structs
-const parseNestedStruct = (data: any): any => {
-	if (data?.fields) {
-		let parsedData: any = {};
-		for (const key in data.fields) {
-			if (typeof data.fields[key] === 'object' && data.fields[key] !== null) {
-				parsedData[key] = parseNestedStruct(data.fields[key]);
-			} else {
-				parsedData[key] = data.fields[key];
-			}
-		}
-		return parsedData;
-	}
-	return data;
-};
