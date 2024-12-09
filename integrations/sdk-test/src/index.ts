@@ -1,158 +1,187 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-import { DWalletClient } from '@dwallet-network/dwallet.js/client';
-import { requestSuiFromFaucetV0 as requestDwltFromFaucetV0 } from '@dwallet-network/dwallet.js/faucet';
-import { Ed25519Keypair } from '@dwallet-network/dwallet.js/keypairs/ed25519';
+import { SuiClient } from '@mysten/sui.js/client';
+import { createBindToAuthority } from '../../../sdk/typescript/src/authority-binder';
 import {
+	approveMessageInSui,
+	createActiveEncryptionKeysTable,
 	createDWallet,
-	createSignMessages,
+	createPartialUserSignedMessages,
+	createSuiDWalletCap,
+	createVirginBoundDWallet,
 	submitDWalletCreationProof,
 	submitTxStateProof,
-} from '@dwallet-network/dwallet.js/signature-mpc';
-import { SuiClient } from '@mysten/sui.js/client';
-import { requestSuiFromFaucetV0 } from '@mysten/sui.js/faucet';
-import { TransactionBlock as TransactionBlockSUI } from '@mysten/sui.js/transactions';
+} from '../../../sdk/typescript/src/signature-mpc';
+import { getOrCreateEncryptionKey } from '../../src/signature-mpc/encrypt_user_share';
+import { setup, TestToolbox } from './utils/setup';
 
 async function main() {
+	// Full Flow:
+	// 1. Create a dWallet for the Authority
+	// 2. Create the Authority using the Rust Sui Light Client interface (not implemented here).
+	// 		Use dWalletCapId as parameter.
+	// 3. Create BindToAuthority Object.
+	// 4. Create a Virgin Bound dWallet for the User.
+	// 5. Link the virgin dwallet with sui dwallet cap (actually create Sui dwallet cap).
+	// 6. Submit the dWallet Creation Proof to the dWallet network.
+	// 7. Approve a message with the Sui dwallet cap.
+	// 8. Presign the message with the dWallet, in dWallet Network.
+	// 9. Submit the Tx State Proof to the dWallet network.
+
 	try {
-		// const serviceUrl = 'http://sui-devnet-light-client.devnet.dwallet.cloud/gettxdata';
+
+		let toolbox: TestToolbox;
+		let authorityToolbox: TestToolbox;
+		let activeEncryptionKeysTableID: string;
+
+		const packageId = '0x3';
+		const suiStateModuleName = 'sui_state_proof';
+
 		const serviceUrl = 'http://localhost:6920/gettxdata';
+		const contractAddress = '0xEd34EE41cA84042b619E9AEBF6175bB4a0069a05'; // remix IDE address
+		const domainName = 'dWalletAuthenticator';
+		const domainVersion = '1.0.0';
+		const virginBound = true;
+		const chainIdentifier = BigInt(101); // Sui Testnet ID
 
-		const dWalletNodeUrl = 'http://127.0.0.1:9000';
+		let authorityId = '0xfaacfd76aab0de938473de461b90a79f8a2d30f4b0c5a40cbd3e604821292d47';
 
-		// const suiDevnetURL = 'https://fullnode.devnet.sui.io:443';
 		const suiTestnetURL = 'https://fullnode.testnet.sui.io:443';
+		const suiClient = new SuiClient({url: suiTestnetURL});
 
-		const configObjectId = '0xd3fc444d4d546eb6f1617294a1b4fc814a7f868558b1cb86954a1a7e13d7b92e'; // should take this from the light_client.yaml
+		// This is the updated packageId for the dWallet module in Sui.
+		// const dWalletCapPackageSUI = '0x8fa033eeb4d0e97e5558b2307f932b11c6e6f9cc4240b5285a3370bf25924a6f';
 
-		const sui_client = new SuiClient({ url: suiTestnetURL });
-		const dwallet_client = new DWalletClient({ url: dWalletNodeUrl });
-
-		const messageSign = 'dWallets are coming... to Sui';
-
-		const keyPair = Ed25519Keypair.deriveKeypairFromSeed(
-			'witch collapse practice feed shame open despair creek road again ice least',
+		toolbox = await setup();
+		authorityToolbox = await setup();
+		const encryptionKeysHolder = await createActiveEncryptionKeysTable(
+			toolbox.client,
+			toolbox.keypair,
 		);
-		console.log('SUI address', keyPair.toSuiAddress());
+		activeEncryptionKeysTableID = encryptionKeysHolder.objectId;
 
-		const dWalletCapPackageSUI =
-			'0xda072e51bf74040f2f99909595ef1db40fdc75071b92438bb9864f6c744c6736';
-
-		await requestDwltFromFaucetV0({
-			host: 'http://127.0.0.1:9123/gas',
-			recipient: keyPair.getPublicKey().toSuiAddress(),
-		});
-
+		// Request gas from faucet.
+		toolbox.keypair.toSuiAddress();
 		await requestSuiFromFaucetV0({
-			host: 'https://faucet.testnet.sui.io',
-			recipient: keyPair.getPublicKey().toSuiAddress(),
+			host: suiTestnetURL,
+			recipient: toolbox.keypair.toSuiAddress(),
 		});
 
-		// sleep for 5 seconds
-		await new Promise((resolve) => setTimeout(resolve, 5000));
+		let authorityEncryptionKeyObj = await getOrCreateEncryptionKey(
+			authorityToolbox.keypair,
+			authorityToolbox.client,
+			activeEncryptionKeysTableID,
+		);
 
-		console.log('creating dwallet');
-		const dkg = await createDWallet(keyPair, dwallet_client);
+		let authorityOwnerDWallet = await createDWallet(
+			authorityToolbox.keypair,
+			authorityToolbox.client,
+			authorityEncryptionKeyObj.encryptionKey,
+			authorityEncryptionKeyObj.objectID,
+		);
 
-		if (dkg == null) {
-			throw new Error('createDWallet returned null');
-		}
-		let { dwalletCapId } = dkg;
+		let encryptionKeyObj = await getOrCreateEncryptionKey(
+			toolbox.keypair,
+			toolbox.client,
+			activeEncryptionKeysTableID,
+		);
 
-		console.log('initialising dwallet cap with id: ', dwalletCapId);
-		let txb = new TransactionBlockSUI();
 
-		let dWalletCapArg = txb.pure(dwalletCapId);
+		// Note: Put a breakpoint here, and create the Authority using the Rust Sui Light Client interface.
+		// 		After creating the authority, update `authorityId` with the new authority ID.
 
-		let [cap] = txb.moveCall({
-			target: `${dWalletCapPackageSUI}::dwallet_cap::create_cap`,
-			arguments: [dWalletCapArg],
-		});
+		// create bind to authority
+		let configType = `${packageId}::${suiStateModuleName}::SuiStateProofConfig`;
+		let bindToAuthorityId = await createBindToAuthority(
+			authorityId,
+			contractAddress,
+			0,
+			configType,
+			toolbox.keypair,
+			toolbox.client,
+		);
 
-		let signMsgArg = txb.pure(messageSign);
-		txb.moveCall({
-			target: `${dWalletCapPackageSUI}::dwallet_cap::approve_message`,
-			arguments: [cap, signMsgArg],
-		});
+		await new Promise((r) => setTimeout(r, 2000));
 
-		txb.transferObjects([cap], keyPair.toSuiAddress());
+		// create virgin dwallet for user
+		const virginEthDwallet = await createVirginBoundDWallet(
+			encryptionKeyObj.encryptionKey,
+			encryptionKeyObj.objectID,
+			bindToAuthorityId,
+			toolbox.keypair,
+			toolbox.client,
+		);
 
-		txb.setGasBudget(10000000);
+		const dWalletBinderId = virginEthDwallet?.dWalletBinderID!;
 
-		let res = await sui_client.signAndExecuteTransactionBlock({
-			signer: keyPair,
-			transactionBlock: txb,
-			options: {
-				showEffects: true,
-			},
-		});
+		// link virgin dwallet with sui dwallet cap
+		let {createDWalletTxDigest, suiDWalletCapId} = await createSuiDWalletCap(
+			virginEthDwallet!,
+			activeEncryptionKeysTableID,
+			authorityOwnerDWallet?.dwalletID!,
+			authorityId,
+			chainIdentifier,
+			domainName,
+			domainVersion,
+			bindToAuthorityId,
+			virginBound,
+			suiClient,
+			toolbox.client,
+			toolbox.keypair,
+		);
 
-		const createCapTxId = res.digest;
-		const approveMsgTxId = res.digest;
+		await new Promise((r) => setTimeout(r, 6000));
 
-		let first = res.effects?.created?.[0];
-		let ref;
-		if (first) {
-			ref = first.reference.objectId;
-			console.log('cap created', ref);
-		} else {
-			console.log('No objects were created');
-		}
+		const message = 'dWallets are coming...';
+		const messageEncoded = new TextEncoder().encode(message);
 
-		// sleep for 10 seconds
-		await new Promise((resolve) => setTimeout(resolve, 10000));
+		let approveTxDigest = await approveMessageInSui(
+			suiDWalletCapId,
+			[messageEncoded],
+			suiClient,
+			toolbox.keypair,
+		);
 
-		console.log('address', keyPair.getPublicKey().toSuiAddress());
-
-		let resultFinal = await submitDWalletCreationProof(
-			dwallet_client,
-			sui_client,
-			configObjectId,
-			dwalletCapId,
-			createCapTxId,
+		// link dwallet to Sui dwallet cap in dwallet network
+		await submitDWalletCreationProof(
+			toolbox.client,
+			suiClient,
+			authorityId,
+			dWalletBinderId,
+			createDWalletTxDigest,
 			serviceUrl,
-			keyPair,
+			toolbox.keypair,
 		);
 
-		console.log('creation done', resultFinal);
-
-		const bytes: Uint8Array = new TextEncoder().encode(messageSign);
-
-		const signMessagesIdSHA256 = await createSignMessages(
-			dkg?.dwalletId!,
-			dkg?.dkgOutput,
-			[bytes],
+		// partial sign same message with dwallet
+		const signMessagesIdSHA256 = await createPartialUserSignedMessages(
+			virginEthDwallet?.dwalletID!,
+			virginEthDwallet?.decentralizedDKGOutput!,
+			new Uint8Array(virginEthDwallet?.secretKeyShare!),
+			[messageEncoded],
 			'SHA256',
-			keyPair,
-			dwallet_client,
+			toolbox.keypair,
+			toolbox.client,
 		);
-
 		console.log('created signMessages');
 
 		if (signMessagesIdSHA256 == null) {
 			throw new Error('createSignMessages returned null');
 		}
 
-		if (
-			typeof resultFinal.effects?.created == 'object' &&
-			'reference' in resultFinal.effects?.created?.[0]
-		) {
-			const capWrapperRef = resultFinal.effects?.created?.[0].reference;
-			let res = await submitTxStateProof(
-				dwallet_client,
-				sui_client,
-				configObjectId,
-				capWrapperRef,
-				signMessagesIdSHA256,
-				approveMsgTxId,
-				serviceUrl,
-				keyPair,
-			);
-
-			console.log('res', res);
-			console.log('tx done');
-		}
+		// submit tx state proof to dwallet network
+		await submitTxStateProof(
+			toolbox.client,
+			suiClient,
+			authorityId,
+			dWalletBinderId,
+			signMessagesIdSHA256,
+			approveTxDigest,
+			virginEthDwallet!,
+			serviceUrl,
+			toolbox.keypair,
+		);
 	} catch (error) {
 		console.error('Failed to retrieve transaction data:', error);
 	}
