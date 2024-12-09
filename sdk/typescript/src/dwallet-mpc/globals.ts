@@ -1,4 +1,4 @@
-import type {MoveValue, PeraClient} from '../client/index.js';
+import type { MoveValue, PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 
 export const dWalletPackageID = '0x3';
@@ -15,11 +15,7 @@ interface MoveObjectWithFields {
 	fields: { [key: string]: MoveValue };
 }
 
-export async function fetchObjectBySessionId(
-	sessionId: string,
-	type: string,
-	c: Config
-) {
+export async function fetchObjectBySessionId(sessionId: string, type: string, c: Config) {
 	let cursor = null;
 	const timeout = 15 * 60 * 1000; // 15 minutes in milliseconds
 	const startTime = Date.now();
@@ -59,6 +55,17 @@ export async function fetchObjectBySessionId(
 	}
 }
 
+interface FetchObjectFromEventParams<TEvent, TObject> {
+	conf: Config;
+	eventType: string;
+	objectType: string;
+	isEvent: (event: any) => event is TEvent;
+	isObject: (obj: any) => obj is TObject;
+	filterEvent: (event: TEvent) => boolean;
+	getObjectId: (event: TEvent) => string;
+}
+
+
 export const getEventByTypeAndSessionId = async (
 	client: PeraClient,
 	eventType: string,
@@ -93,3 +100,78 @@ export const getEventByTypeAndSessionId = async (
 		}
 	}
 };
+
+export async function fetchObjectFromEvent<TEvent, TObject>({
+	conf,
+	eventType,
+	objectType,
+	isEvent,
+	isObject,
+	filterEvent,
+	getObjectId,
+}: FetchObjectFromEventParams<TEvent, TObject>): Promise<TObject> {
+	let cursor = null;
+	const startTime = Date.now();
+
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for 5 seconds between queries
+		await new Promise((resolve) => setTimeout(resolve, 5000));
+
+		// Query events with the current cursor.
+		const {
+			data: events,
+			nextCursor,
+			hasNextPage,
+		} = await conf.client.queryEvents({
+			cursor,
+			query: {
+				MoveEventType: eventType,
+			},
+		});
+
+		for (const eventData of events) {
+			// Validate and parse the event.
+			const event = isEvent(eventData.parsedJson) ? (eventData.parsedJson as TEvent) : null;
+
+			if (!event) {
+				throw new Error(
+					`Invalid event of type ${eventType}, got: ${JSON.stringify(eventData.parsedJson)}`,
+				);
+			}
+
+			if (!filterEvent(event)) {
+				console.log({ event });
+				continue;
+			}
+
+			// Fetch the object based on the event
+			const res = await conf.client.getObject({
+				id: getObjectId(event),
+				options: { showContent: true },
+			});
+
+			const objectData =
+				res.data?.content?.dataType === 'moveObject' &&
+				res.data?.content.type === objectType &&
+				isObject(res.data.content.fields)
+					? (res.data.content.fields as TObject)
+					: null;
+
+			if (!objectData) {
+				throw new Error(
+					`invalid object of type ${objectType}, got: ${JSON.stringify(res.data?.content)}`,
+				);
+			}
+
+			return objectData;
+		}
+		cursor = hasNextPage ? nextCursor : null;
+	}
+
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch an event of type ${eventType} within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
+}

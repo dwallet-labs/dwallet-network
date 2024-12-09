@@ -63,6 +63,55 @@ export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 	};
 }
 
+async function launchDKGSecondRound(
+	c: Config,
+	firstRound: DKGFirstRoundOutput,
+	publicKeyShareAndProof: Uint8Array,
+) {
+	const tx = new Transaction();
+	tx.moveCall({
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_dkg_second_round`,
+		arguments: [
+			tx.object(firstRound.dwallet_cap_id),
+			tx.pure(bcs.vector(bcs.u8()).serialize(publicKeyShareAndProof)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(firstRound.output)),
+			tx.pure.id(firstRound.session_id),
+		],
+	});
+
+	await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+	return await dWalletFromEvent(c, firstRound);
+}
+
+async function dWalletFromEvent(conf: Config, firstRound: DKGFirstRoundOutput): Promise<DWallet> {
+	function isCompletedDKGSecondRoundEvent(event: any): event is CompletedDKGSecondRoundEvent {
+		return (
+			event &&
+			event.session_id &&
+			event.initiator &&
+			event.dwallet_cap_id &&
+			event.dwallet_id &&
+			Array.isArray(event.value)
+		);
+	}
+
+	return fetchObjectFromEvent<CompletedDKGSecondRoundEvent, DWallet>({
+		conf,
+		eventType: completedDKGSecondRoundEventMoveType,
+		objectType: dWalletMoveType,
+		isEvent: isCompletedDKGSecondRoundEvent,
+		isObject: isDWallet,
+		filterEvent: (event) => event.dwallet_cap_id === firstRound.dwallet_cap_id,
+		getObjectId: (event) => event.dwallet_id,
+	});
+}
+
 
 /**
  * Starts the first round of the DKG protocol to create a new dWallet.
