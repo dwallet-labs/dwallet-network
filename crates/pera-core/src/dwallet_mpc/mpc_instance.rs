@@ -6,6 +6,7 @@ use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 use pera_types::base_types::{AuthorityName, EpochId};
+use pera_types::dwallet_mpc_error::DwalletMPCError;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::SessionInfo;
@@ -63,20 +64,30 @@ impl DWalletMPCInstance {
             .ok_or(PeraError::EpochEnded(self.epoch_id))
     }
 
-    /// Advances the MPC instance and optionally return a message the validator wants to send to the other MPC parties.
-    /// Uses the existing party if it exists, otherwise creates a new one, as this is the first advance.
+    /// Advances the MPC instance and optionally return a message the validator wants
+    /// to send to the other MPC parties.
+    /// Uses the existing party if it exists,
+    /// otherwise creates a new one, as this is the first advance.
     pub(crate) fn advance(
         &mut self,
         weighted_threshold_access: &WeightedThresholdAccessStructure,
         party_id: PartyID,
-    ) -> PeraResult<(ConsensusTransaction, Vec<PartyID>)> {
+    ) -> DWalletMPCResult<(ConsensusTransaction, Vec<PartyID>)> {
         let pending_messages = self.pending_messages.clone();
         let (status, round) = match self.status {
             MPCSessionStatus::Pending | MPCSessionStatus::FirstExecution => {
                 (MPCSessionStatus::Active(0), 0)
             }
             MPCSessionStatus::Active(round) => (MPCSessionStatus::Active(round + 1), round + 1),
-            _ => return Err(PeraError::InternalDWalletMPCError),
+            _ => {
+                return Err(DwalletMPCError::MPCSessionError {
+                    session_id: self.session_info.session_id,
+                    error: format!(
+                        "failed to advance the MPC session, unexpected status: {}",
+                        self.status
+                    ),
+                })
+            }
         };
         self.status = status;
         let advance_result = self.party.advance(
