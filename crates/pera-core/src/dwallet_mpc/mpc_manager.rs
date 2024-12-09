@@ -11,6 +11,7 @@ use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputVe
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::network_dkg::NetworkDkg;
 use crate::dwallet_mpc::sign::BatchedSignSession;
+use crate::dwallet_mpc::FIRST_EPOCH_ID;
 use anyhow::anyhow;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -28,7 +29,6 @@ use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
-use crate::dwallet_mpc::FIRST_EPOCH_ID;
 
 #[derive(Debug, PartialEq)]
 pub enum ManagerStatus {
