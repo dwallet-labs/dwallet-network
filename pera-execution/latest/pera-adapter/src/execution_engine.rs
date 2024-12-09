@@ -1127,10 +1127,8 @@ mod checked {
             MPCRound::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![
-                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                 ],
             ),
             MPCRound::DKGSecond => (
