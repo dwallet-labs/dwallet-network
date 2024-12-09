@@ -76,12 +76,15 @@ describe('Test dWallet MPC', () => {
 		const presignOutput = await mockCreatePresign(conf, dWallet);
 		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
-		const message = Uint8Array.from([1, 2, 3, 4, 5]);
-		const [centralizedSignMsg, _, hashedMsg] = create_sign_centralized_output(
+		let serializedMsgs = bcs
+			.vector(bcs.vector(bcs.u8()))
+			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
+			.toBytes();
+		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
 			Uint8Array.from(dWallet.centralizedDKGOutput),
 			Uint8Array.from(presignOutput.first_round_output),
 			Uint8Array.from(presignOutput.second_round_output),
-			message,
+			serializedMsgs,
 			Hash.SHA256,
 			presignOutput.first_round_session_id.slice(2),
 		);
@@ -116,7 +119,7 @@ describe('Test dWallet MPC', () => {
 				.vector(bcs.vector(bcs.u8()))
 				.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
 				.toBytes();
-			const [centralizedSignMsg, _, hashedMsg] = create_sign_centralized_output(
+			const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
 				Uint8Array.from(dWallet.centralizedDKGOutput),
 				Uint8Array.from(presignOutput.firstRoundOutput),
 				Uint8Array.from(presignOutput.secondRoundOutput),

@@ -27,7 +27,7 @@ pub fn create_sign_centralized_output(
     presign_second_round_output: Vec<u8>,
     // todo(zeev): Vec<Vec<u8>> here.
     messages: Vec<u8>,
-    hash: u8,
+    hash_type: u8,
     session_id: String,
 ) -> Result<JsValue, JsError> {
     let messages: Vec<Vec<u8>> =
@@ -37,7 +37,7 @@ pub fn create_sign_centralized_output(
         presign_first_round_output,
         presign_second_round_output,
         messages,
-        hash,
+        hash_type,
         session_id,
     )
     .map_err(|e| JsError::new(&e.to_string()))?;
