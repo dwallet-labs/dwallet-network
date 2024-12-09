@@ -2667,7 +2667,7 @@ impl AuthorityPerEpochStore {
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> PeraResult<Vec<VerifiedExecutableTransaction>> {
         // Split transactions into different types for processing.
-        // TODO (#337): Replace with filter_map when async clusure get supported.
+        // TODO (#337): Replace with filter_map when async closure get supported.
         let mut verified_transactions: Vec<VerifiedSequencedConsensusTransaction> = vec![];
         for tx in transactions {
             if let Some(verified_tx) = self
@@ -3829,7 +3829,8 @@ impl AuthorityPerEpochStore {
             return ConsensusCertificateResult::IgnoredSystem;
         }
 
-        // System transactions either contain a shared object or are proof MPC output transactions.
+        // System transactions either contain a shared object
+        // or are dWallet MPC output transactions.
         let is_proof_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
             TransactionKind::DWalletMPCOutput(_)
