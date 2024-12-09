@@ -1349,6 +1349,7 @@ impl CheckpointBuilder {
                     TransactionKind::ConsensusCommitPrologue(_)
                     | TransactionKind::ConsensusCommitPrologueV2(_)
                     | TransactionKind::ConsensusCommitPrologueV3(_)
+                    | TransactionKind::DWalletMPCOutput(_)
                     | TransactionKind::AuthenticatorStateUpdate(_) => {
                         // ConsensusCommitPrologue and AuthenticatorStateUpdate are guaranteed to be
                         // processed before we reach here.

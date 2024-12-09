@@ -698,6 +698,9 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
+            TransactionKind::DWalletMPCOutput(_) => {
+                panic!("DWalletMPCOutput should not exist in v2");
+            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)

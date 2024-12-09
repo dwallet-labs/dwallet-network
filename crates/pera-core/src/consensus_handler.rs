@@ -8,28 +8,7 @@ use std::{
     sync::Arc,
 };
 
-use arc_swap::ArcSwap;
-use async_trait::async_trait;
-use consensus_core::CommitConsumerMonitor;
-use lru::LruCache;
-use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
-use narwhal_config::Committee;
-use narwhal_executor::{ExecutionIndices, ExecutionState};
-use narwhal_types::ConsensusOutput;
-use pera_macros::{fail_point_async, fail_point_if};
-use pera_protocol_config::ProtocolConfig;
-use pera_types::{
-    authenticator_state::ActiveJwk,
-    base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
-    digests::ConsensusCommitDigest,
-    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
-    messages_consensus::{ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind},
-    pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
-    transaction::{SenderSignedData, VerifiedTransaction},
-};
-use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, instrument, trace_span, warn};
-
+use crate::dwallet_mpc::mpc_manager::OutputVerificationResult;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -47,6 +26,28 @@ use crate::{
     scoring_decision::update_low_scoring_authorities,
     transaction_manager::TransactionManager,
 };
+use arc_swap::ArcSwap;
+use async_trait::async_trait;
+use consensus_core::CommitConsumerMonitor;
+use lru::LruCache;
+use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
+use narwhal_config::Committee;
+use narwhal_executor::{ExecutionIndices, ExecutionState};
+use narwhal_types::ConsensusOutput;
+use pera_macros::{fail_point_async, fail_point_if};
+use pera_protocol_config::ProtocolConfig;
+use pera_types::messages_dwallet_mpc::DWalletMPCOutput;
+use pera_types::{
+    authenticator_state::ActiveJwk,
+    base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
+    digests::ConsensusCommitDigest,
+    executable_transaction::{TrustedExecutableTransaction, VerifiedExecutableTransaction},
+    messages_consensus::{ConsensusTransaction, ConsensusTransactionKey, ConsensusTransactionKind},
+    pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
+    transaction::{SenderSignedData, VerifiedTransaction},
+};
+use serde::{Deserialize, Serialize};
+use tracing::{debug, error, info, instrument, trace_span, warn};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -355,8 +356,86 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
-                    if let ConsensusTransactionKind::RandomnessStateUpdate(randomness_round, _) =
+                    // If we receive a `DwalletMPCOutput` transaction,
+                    // verify that it's valid and create a system transaction
+                    // to store its output on the blockchain,
+                    // so it will be available for the initiating user.
+                    if let ConsensusTransactionKind::DWalletMPCOutput(session_info, output) =
                         &transaction.kind
+                    {
+                        // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
+                        // to store its output on the blockchain, so it will be available for the initiating user.
+                        info!(
+                            "Received proof mpc output from authority {:?} for session {:?}",
+                            authority_index, session_info.session_id
+                        );
+                        let Some(origin_authority) =
+                            self.committee.authority_pubkey_by_index(authority_index)
+                        else {
+                            error!(
+                                "Malicious output from unknown authority index {:?}",
+                                authority_index
+                            );
+                            return;
+                        };
+                        let Ok(mut dwallet_mpc_manager) =
+                            self.epoch_store.get_dwallet_mpc_manager().await
+                        else {
+                            return;
+                        };
+                        if dwallet_mpc_manager
+                            .malicious_actors
+                            .contains(&origin_authority)
+                        {
+                            warn!(
+                                "Received output from malicious authority {:?} for session {:?}",
+                                authority_index, session_info.session_id
+                            );
+                            return;
+                        }
+                        let output_verification_result = dwallet_mpc_manager
+                            .try_verify_output(output, &session_info)
+                            .unwrap_or_else(|e| {
+                                error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
+                                OutputVerificationResult::Malicious
+                            });
+                        match output_verification_result {
+                            OutputVerificationResult::Valid => {
+                                let transaction =
+                                    VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
+                                        DWalletMPCOutput {
+                                            session_info: session_info.clone(),
+                                            output: output.clone(),
+                                        },
+                                    );
+                                let transaction = VerifiedExecutableTransaction::new_system(
+                                    transaction,
+                                    self.epoch(),
+                                );
+                                transactions.push((
+                                    empty_bytes.as_slice(),
+                                    SequencedConsensusTransactionKind::System(transaction),
+                                    consensus_output.leader_author_index(),
+                                ));
+                            }
+                            OutputVerificationResult::Duplicate => {
+                                // Ignore this output, as the same output may be submitted twice by non-malicious parties, due to Sui's inner implementation of the leader selection
+                                // mechanism.
+                            }
+                            OutputVerificationResult::Malicious => {
+                                warn!(
+                                    "Received malicious output from authority index {:?}",
+                                    authority_index
+                                );
+                                dwallet_mpc_manager
+                                    .malicious_actors
+                                    .insert(origin_authority);
+                            }
+                        }
+                    } else if let ConsensusTransactionKind::RandomnessStateUpdate(
+                        randomness_round,
+                        _,
+                    ) = &transaction.kind
                     {
                         // These are deprecated and we should never see them. Log an error and eat the tx if one appears.
                         error!("BUG: saw deprecated RandomnessStateUpdate tx for commit round {round:?}, randomness round {randomness_round:?}")
@@ -582,6 +661,8 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessStateUpdate(_, _) => "randomness_state_update",
         ConsensusTransactionKind::RandomnessDkgMessage(_, _) => "randomness_dkg_message",
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
+        ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
+        ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
     }
 }
 

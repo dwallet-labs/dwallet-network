@@ -1,12 +1,13 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::base_types::{AuthorityName, ObjectRef, TransactionDigest};
+use crate::base_types::{AuthorityName, ObjectRef, PeraAddress, TransactionDigest};
 use crate::base_types::{ConciseableName, ObjectID, SequenceNumber};
 use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
     CheckpointSequenceNumber, CheckpointSignatureMessage, CheckpointTimestamp,
 };
+use crate::messages_dwallet_mpc::SessionInfo;
 use crate::supported_protocol_versions::{
     Chain, SupportedProtocolVersions, SupportedProtocolVersionsWithHashes,
 };
@@ -93,6 +94,14 @@ pub struct ConsensusTransaction {
 pub enum ConsensusTransactionKey {
     Certificate(TransactionDigest),
     CheckpointSignature(AuthorityName, CheckpointSequenceNumber),
+    /// The message sent between MPC parties in a dwallet MPC session.
+    /// The [`Vec<u8>`] is the message, the [`AuthorityName`] is the sending authority, and the
+    /// [`ObjectID`] is the session ID.
+    DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    /// The output of a dwallet MPC session.
+    /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
+    /// address of the initiating user.
+    DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, ObjectID),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -108,6 +117,9 @@ impl Debug for ConsensusTransactionKey {
             Self::Certificate(digest) => write!(f, "Certificate({:?})", digest),
             Self::CheckpointSignature(name, seq) => {
                 write!(f, "CheckpointSignature({:?}, {:?})", name.concise(), seq)
+            }
+            Self::DWalletMPCMessage(name, _, _) => {
+                write!(f, "DWalletMPCMessage({:?})", name.concise(),)
             }
             Self::EndOfPublish(name) => write!(f, "EndOfPublish({:?})", name.concise()),
             Self::CapabilityNotification(name, generation) => write!(
@@ -131,6 +143,18 @@ impl Debug for ConsensusTransactionKey {
             }
             Self::RandomnessDkgConfirmation(name) => {
                 write!(f, "RandomnessDkgConfirmation({:?})", name.concise())
+            }
+            ConsensusTransactionKey::DWalletMPCOutput(
+                value,
+                session_id,
+                sender_address,
+                dwallet_cap_id,
+            ) => {
+                write!(
+                    f,
+                    "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
+                    value, session_id, sender_address, dwallet_cap_id
+                )
             }
         }
     }
@@ -262,6 +286,8 @@ pub enum ConsensusTransactionKind {
     CapabilityNotification(AuthorityCapabilitiesV1),
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
+    DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
+    DWalletMPCOutput(SessionInfo, Vec<u8>),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -456,6 +482,32 @@ impl ConsensusTransaction {
         }
     }
 
+    /// Create a new consensus transaction with the message to be sent to the other MPC parties.
+    pub fn new_dwallet_mpc_message(
+        authority: AuthorityName,
+        message: Vec<u8>,
+        session_id: ObjectID,
+    ) -> Self {
+        let mut hasher = DefaultHasher::new();
+        session_id.into_bytes().hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
+        }
+    }
+
+    /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
+    pub fn new_dwallet_mpc_output(output: Vec<u8>, session_info: SessionInfo) -> Self {
+        let mut hasher = DefaultHasher::new();
+        output.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::DWalletMPCOutput(session_info, output),
+        }
+    }
+
     pub fn new_randomness_dkg_message(
         authority: AuthorityName,
         versioned_message: &VersionedDkgMessage,
@@ -526,6 +578,21 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::RandomnessDkgConfirmation(authority, _) => {
                 ConsensusTransactionKey::RandomnessDkgConfirmation(*authority)
+            }
+            ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id) => {
+                ConsensusTransactionKey::DWalletMPCMessage(
+                    *authority,
+                    message.clone(),
+                    session_id.clone(),
+                )
+            }
+            ConsensusTransactionKind::DWalletMPCOutput(session_info, output) => {
+                ConsensusTransactionKey::DWalletMPCOutput(
+                    output.clone(),
+                    session_info.session_id,
+                    session_info.initiating_user_address,
+                    session_info.dwallet_cap_id,
+                )
             }
         }
     }

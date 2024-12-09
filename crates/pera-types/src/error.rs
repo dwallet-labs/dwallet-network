@@ -11,8 +11,10 @@ use crate::{
     object::Owner,
 };
 
+use group::PartyID;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use std::hash::Hash;
 use std::{collections::BTreeMap, fmt::Debug};
 use strum_macros::{AsRefStr, IntoStaticStr};
 use thiserror::Error;
@@ -437,7 +439,7 @@ pub enum PeraError {
     #[error("Invalid DKG message size")]
     InvalidDkgMessageSize,
 
-    #[error("Unexpected message.")]
+    #[error("unexpected message")]
     UnexpectedMessage,
 
     // Move module publishing related errors
@@ -660,6 +662,21 @@ pub enum PeraError {
 
     #[error("The request did not contain a certificate")]
     NoCertificateProvidedError,
+
+    #[error("mpc session with ID `{session_id:?}` was not found.")]
+    MPCSessionNotFound { session_id: ObjectID },
+
+    #[error("The user that initiated this MPC session has provided an invalid input.")]
+    DWalletMPCInvalidUserInput,
+
+    #[error("An internal DWallet MPC error has occurred")]
+    InternalDWalletMPCError,
+
+    #[error("malicious parties have been detected")]
+    DWalletMPCMaliciousParties(Vec<PartyID>),
+
+    #[error("None MPC event found")]
+    NonMPCEvent,
 }
 
 #[repr(u64)]
@@ -779,6 +796,14 @@ impl From<UserInputError> for PeraError {
 impl From<PeraObjectResponseError> for PeraError {
     fn from(error: PeraObjectResponseError) -> Self {
         PeraError::PeraObjectResponseError { error }
+    }
+}
+
+impl From<bcs::Error> for PeraError {
+    fn from(err: bcs::Error) -> Self {
+        PeraError::ObjectDeserializationError {
+            error: err.to_string(),
+        }
     }
 }
 

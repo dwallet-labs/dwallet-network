@@ -5,7 +5,6 @@ pub use checked::*;
 
 #[pera_macros::with_checked_arithmetic]
 mod checked {
-
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
@@ -49,6 +48,7 @@ mod checked {
     use pera_types::digests::{
         get_mainnet_chain_identifier, get_testnet_chain_identifier, ChainIdentifier,
     };
+    use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
     use pera_types::effects::TransactionEffects;
     use pera_types::error::{ExecutionError, ExecutionErrorKind};
     use pera_types::execution::is_certificate_denied;
@@ -58,6 +58,7 @@ mod checked {
     use pera_types::gas::PeraGasStatus;
     use pera_types::id::UID;
     use pera_types::inner_temporary_store::InnerTemporaryStore;
+    use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound};
     #[cfg(msim)]
     use pera_types::pera_system_state::advance_epoch_result_injection::maybe_modify_result;
     use pera_types::pera_system_state::{
@@ -134,6 +135,7 @@ mod checked {
         let is_epoch_change = transaction_kind.is_end_of_epoch_tx();
 
         let deny_cert = is_certificate_denied(&transaction_digest, certificate_deny_set);
+
         let (gas_cost_summary, execution_result) = execute_transaction::<Mode>(
             &mut temporary_store,
             transaction_kind,
@@ -254,7 +256,7 @@ mod checked {
             0,
         );
         let mut gas_charger = GasCharger::new_unmetered(tx_context.digest());
-        programmable_transactions::execution::execute::<execution_mode::Genesis>(
+        let _ = programmable_transactions::execution::execute::<execution_mode::Genesis>(
             protocol_config,
             metrics,
             move_vm,
@@ -262,7 +264,7 @@ mod checked {
             tx_context,
             &mut gas_charger,
             pt,
-        )?;
+        );
         temporary_store.update_object_version_and_prev_tx();
         Ok(temporary_store.into_inner())
     }
@@ -297,6 +299,7 @@ mod checked {
 
         // We must charge object read here during transaction execution, because if this fails
         // we must still ensure an effect is committed and all objects versions incremented
+
         let result = gas_charger.charge_input_objects(temporary_store);
         let mut result = result.and_then(|()| {
             let mut execution_result = if deny_cert {
@@ -713,6 +716,19 @@ mod checked {
                 )?;
                 Ok(Mode::empty_results())
             }
+            TransactionKind::DWalletMPCOutput(data) => {
+                setup_and_execute_dwallet_mpc_output(
+                    data,
+                    temporary_store,
+                    tx_ctx,
+                    move_vm,
+                    gas_charger,
+                    protocol_config,
+                    metrics,
+                )?;
+
+                Ok(Mode::empty_results())
+            }
         }?;
         temporary_store.check_execution_results_consistency()?;
         Ok(result)
@@ -1080,6 +1096,95 @@ mod checked {
             )
             .expect("Unable to generate randomness_state_create transaction!");
         builder
+    }
+
+    /// Executes the transaction to store the final MPC output on-chain,
+    /// making it accessible to the initiating user.
+    /// Each validator executes this transaction locally,
+    /// and if validators represent more than two-thirds of the voting power
+    /// "vote" to include it by executing it, the transaction is added to the block.
+    fn setup_and_execute_dwallet_mpc_output(
+        data: DWalletMPCOutput,
+        temporary_store: &mut TemporaryStore<'_>,
+        tx_ctx: &mut TxContext,
+        move_vm: &Arc<MoveVM>,
+        gas_charger: &mut GasCharger,
+        protocol_config: &ProtocolConfig,
+        metrics: Arc<LimitsMetrics>,
+    ) -> Result<(), ExecutionError> {
+        let (move_function_name, args) = match data.session_info.mpc_round {
+            MPCRound::DKGFirst => (
+                "create_dkg_first_round_output",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                ],
+            ),
+            MPCRound::DKGSecond => (
+                "create_dkg_second_round_output",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                ],
+            ),
+            MPCRound::PresignFirst(dwallet_id, dkg_output) => (
+                "launch_presign_second_round",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&dkg_output).unwrap()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                ],
+            ),
+            MPCRound::PresignSecond(dwallet_id, first_round_output) => (
+                "create_second_presign_round_output",
+                vec![
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(data.session_info.mpc_session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&first_round_output).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                ],
+            ),
+            MPCRound::Sign(_, dwallet_id) => (
+                "create_sign_output",
+                vec![
+                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                    CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
+                ],
+            ),
+        };
+        let pt = {
+            let mut builder = ProgrammableTransactionBuilder::new();
+            let res = builder.move_call(
+                PERA_SYSTEM_PACKAGE_ID.into(),
+                DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                ident_str!(move_function_name).to_owned(),
+                vec![],
+                args,
+            );
+            assert_invariant!(res.is_ok(), "Unable to generate mpc transaction!");
+            builder.finish()
+        };
+        programmable_transactions::execution::execute::<execution_mode::System>(
+            protocol_config,
+            metrics,
+            move_vm,
+            temporary_store,
+            tx_ctx,
+            gas_charger,
+            pt,
+        )
     }
 
     fn setup_bridge_create(
