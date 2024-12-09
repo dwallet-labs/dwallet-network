@@ -26,6 +26,7 @@ export async function launchDKGFirstRound(keypair: Keypair, client: PeraClient) 
 		transaction: tx,
 		options: {
 			showEffects: true,
+			showEvents: true,
 		},
 	});
 	let sessionData = result.events?.find(
@@ -35,6 +36,7 @@ export async function launchDKGFirstRound(keypair: Keypair, client: PeraClient) 
 		session_id: string;
 		dwallet_cap_id: string;
 	};
+	console.log({ sessionData });
 	let completionEvent = await getEventByTypeAndSessionId(
 		client,
 		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`,
