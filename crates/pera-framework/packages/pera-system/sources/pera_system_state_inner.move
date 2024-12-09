@@ -18,6 +18,9 @@ module pera_system::pera_system_state_inner {
     use pera::table::Table;
     use pera::bag::Bag;
     use pera::bag;
+    use pera_system::dwallet_network_key::{KeyType, EncryptedNetwotkDecryptionKeyShares,
+        new_encrypted_network_decryption_key_shares
+    };
 
     // same as in validator_set
     const ACTIVE_VALIDATOR_ONLY: u8 = 1;
@@ -153,7 +156,7 @@ module pera_system::pera_system_state_inner {
         system_state_version: u64,
         /// These are the encrypted decryption key shares for the current epoch, used for dWallet MPC session.
         /// The shares are indexed by the validator index of the current epoch committee.
-        encrypted_decryption_key_shares: vector<vector<u8>>,
+        encrypted_decryption_key_shares: VecMap<KeyType, EncryptedNetwotkDecryptionKeyShares>,
         /// Contains all information about the validators.
         validators: ValidatorSet,
         /// The storage fund.
@@ -316,7 +319,7 @@ module pera_system::pera_system_state_inner {
             epoch,
             protocol_version,
             system_state_version: 2,
-            encrypted_decryption_key_shares: vector::empty(),
+            encrypted_decryption_key_shares: vec_map::empty(),
             validators,
             storage_fund,
             parameters: SystemParametersV2 {
@@ -351,9 +354,12 @@ module pera_system::pera_system_state_inner {
         self.validators.lock_next_epoch_committee(self.epoch);
     }
 
-    public(package) fun store_encrypted_decryption_key_shares(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>) {
-        self.encrypted_decryption_key_shares = shares;
+    public(package) fun store_encrypted_decryption_key_shares(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_type: KeyType) {
+        let shares = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty());
+        self.encrypted_decryption_key_shares.insert(key_type, shares);
     }
+
+
 
 
         /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
