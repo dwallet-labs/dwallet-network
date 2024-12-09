@@ -1,5 +1,6 @@
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 /// This module contains the secp256k1 constants for the class groups protocol.
-/// NOTE: This is a temporary solution until the class groups DKG is complete.
+/// NOTE: This is a temporary solution until the class groups encryption key DKG is complete.
 /// Todo (#312): Remove this module and use the class groups DKG to generate the constants.
 use group::secp256k1;
 
@@ -11,8 +12,6 @@ pub fn protocol_public_parameters() -> twopc_mpc::class_groups::ProtocolPublicPa
     secp256k1::GroupElement,
 > {
     // Safe to unwrap as we're using a hardcoded constant.
-    let protocol_public_parameters = base64::decode(&PROTOCOL_PUBLIC_PARAMETERS).unwrap();
-    let protocol_public_parameters = bcs::from_bytes(&protocol_public_parameters).unwrap();
-
-    protocol_public_parameters
+    let protocol_public_parameters = STANDARD.decode(&PROTOCOL_PUBLIC_PARAMETERS).unwrap();
+    bcs::from_bytes(&protocol_public_parameters).unwrap()
 }

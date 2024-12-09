@@ -8,6 +8,7 @@ mod checked {
     use crate::execution_mode::{self, ExecutionMode};
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
+    use pera_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
     use pera_types::balance::{
         BALANCE_CREATE_REWARDS_FUNCTION_NAME, BALANCE_DESTROY_REBATES_FUNCTION_NAME,
         BALANCE_MODULE_NAME,
@@ -48,7 +49,6 @@ mod checked {
     use pera_types::digests::{
         get_mainnet_chain_identifier, get_testnet_chain_identifier, ChainIdentifier,
     };
-    use pera_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
     use pera_types::effects::TransactionEffects;
     use pera_types::error::{ExecutionError, ExecutionErrorKind};
     use pera_types::execution::is_certificate_denied;
@@ -1103,6 +1103,7 @@ mod checked {
     /// Each validator executes this transaction locally,
     /// and if validators represent more than two-thirds of the voting power
     /// "vote" to include it by executing it, the transaction is added to the block.
+    /// todo(zeev): compare with bytes party, remove unwraps, replace error
     fn setup_and_execute_dwallet_mpc_output(
         data: DWalletMPCOutput,
         temporary_store: &mut TemporaryStore<'_>,
@@ -1155,13 +1156,14 @@ mod checked {
                 ],
             ),
             MPCRound::Sign(..) => {
+                // todo(zeev): why we need this if the output is created by the user?
                 let MPCRound::Sign(_, batch_session_id, _) = data.session_info.mpc_round else {
-                    unreachable!("MPCRound is not sign for a sign session")
+                    unreachable!("MPCRound is not Sign for a sign session")
                 };
                 (
                     "create_sign_output",
                     vec![
-                        CallArg::Pure(data.output.clone()),
+                        CallArg::Pure(data.output),
                         CallArg::Pure(bcs::to_bytes(&batch_session_id).unwrap()),
                     ],
                 )

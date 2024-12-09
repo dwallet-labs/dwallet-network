@@ -22,7 +22,6 @@ use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 pub use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, DecryptionSharePublicParameters};
-use twopc_mpc::sign;
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]
