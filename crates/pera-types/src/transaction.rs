@@ -297,7 +297,8 @@ pub enum TransactionKind {
     /// Used to send the output of the dwallet MPC flow to the other validators so they will be able to
     /// create a system transaction that writes it to the chain
     DWalletMPCOutput(DWalletMPCOutput),
-    LockNextCommittee(EpochId), // .. more transaction types go here
+    LockNextCommittee(EpochId), 
+    // .. more transaction types go here
 }
 
 /// EndOfEpochTransactionKind
