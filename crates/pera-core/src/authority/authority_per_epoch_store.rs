@@ -932,7 +932,7 @@ impl AuthorityPerEpochStore {
         result
     }
 
-    /// A function to initiate the Dwallet MPC sender when a new epoch starts.
+    /// A function to initiate the [`DWalletMPCSender`] when a new epoch starts.
     pub async fn set_dwallet_mpc_sender(&self, sender: DWalletMPCSender) -> PeraResult<()> {
         if self.dwallet_mpc_sender.set(sender).is_err() {
             error!("BUG: `set_dwallet_mpc_sender` called more than once; this should never happen");
@@ -2671,7 +2671,7 @@ impl AuthorityPerEpochStore {
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> PeraResult<Vec<VerifiedExecutableTransaction>> {
         // Split transactions into different types for processing.
-        // TODO (#337): Replace with filter_map when async clusure get supported.
+        // TODO (#337): Replace with filter_map when async closure get supported.
         let mut verified_transactions: Vec<VerifiedSequencedConsensusTransaction> = vec![];
         for tx in transactions {
             if let Some(verified_tx) = self
@@ -3833,12 +3833,13 @@ impl AuthorityPerEpochStore {
             return ConsensusCertificateResult::IgnoredSystem;
         }
 
-        // System transactions either contain a shared object or are proof MPC output transactions.
-        let is_proof_mpc_output = matches!(
+        // System transactions either contain a shared object
+        // or are dWallet MPC output transactions.
+        let is_dwallet_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
             TransactionKind::DWalletMPCOutput(_)
         );
-        assert!(system_transaction.contains_shared_object() || is_proof_mpc_output);
+        assert!(system_transaction.contains_shared_object() || is_dwallet_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())
     }
 
