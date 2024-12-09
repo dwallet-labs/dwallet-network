@@ -1,10 +1,10 @@
-// Copyright (c) dWallet Labs, Inc.
+// Copyright (c) dWallet Labs, Ltd.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
-import { dWallet2PCMPCECDSAK1ModuleName, packageId } from './globals.js';
+import { dWallet2PCMPCECDSAK1ModuleName, dWalletPackageID } from './globals.js';
 
 export async function presign(
 	keypair: Keypair,
@@ -13,7 +13,7 @@ export async function presign(
 ): Promise<PresignOutput | null> {
 	const tx = new Transaction();
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_presign_first_round`,
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::launch_presign_first_round`,
 		arguments: [tx.object(dwalletId)],
 	});
 
@@ -37,7 +37,7 @@ export async function presign(
 		await new Promise((resolve) => setTimeout(resolve, 5000));
 		let newEvents = await client.queryEvents({
 			query: {
-				MoveEventType: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedPresignEvent`,
+				MoveEventType: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedPresignEvent`,
 			},
 		});
 

@@ -1,15 +1,24 @@
-import type { PeraClient } from '../client/index.js';
+import type {MoveValue, PeraClient} from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
 
-export const packageId = '0x3';
+export const dWalletPackageID = '0x3';
 export const dWalletModuleName = 'dwallet';
 export const dWallet2PCMPCECDSAK1ModuleName = 'dwallet_2pc_mpc_ecdsa_k1';
+
+export interface Config {
+	keypair: Keypair;
+	client: PeraClient;
+	timeout: number;
+}
+
+interface MoveObjectWithFields {
+	fields: { [key: string]: MoveValue };
+}
 
 export async function fetchObjectBySessionId(
 	sessionId: string,
 	type: string,
-	keypair: Keypair,
-	client: PeraClient,
+	c: Config
 ) {
 	let cursor = null;
 	const timeout = 15 * 60 * 1000; // 15 minutes in milliseconds

@@ -7,7 +7,7 @@ import { Buffer } from 'buffer';
 import { bcs } from '../../../src/bcs/index.js';
 import type { CreatedDwallet, DWallet } from '../../../src/dwallet-mpc/dkg.js';
 import { dWalletMoveType, isDWallet } from '../../../src/dwallet-mpc/dkg.js';
-import { dWallet2PCMPCECDSAK1ModuleName, packageId } from '../../../src/dwallet-mpc/globals.js';
+import { dWallet2PCMPCECDSAK1ModuleName, dWalletPackageID } from '../../../src/dwallet-mpc/globals.js';
 import type { Config } from '../../../src/dwallet-mpc/globals.js';
 import { isPresign, presignMoveType } from '../../../src/dwallet-mpc/presign.js';
 import type { Presign } from '../../../src/dwallet-mpc/presign.js';
@@ -39,7 +39,7 @@ export async function mockCreateDwallet(c: Config): Promise<CreatedDwallet> {
 	// Initiate the transaction
 	const tx = new Transaction();
 	const [dwallet] = tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_dwallet`,
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_dwallet`,
 		arguments: [tx.pure(bcs.vector(bcs.u8()).serialize(mockedDWallet.decentralizedDKGOutput))],
 	});
 	tx.transferObjects([dwallet], c.keypair.toPeraAddress());
@@ -91,7 +91,7 @@ export async function mockCreatePresign(c: Config, dwallet: CreatedDwallet) {
 	console.log('Creating Presign Mock');
 	const tx = new Transaction();
 	const [presign] = tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_presign`,
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_presign`,
 		arguments: [
 			tx.pure.id(dwallet.id),
 			tx.pure.id(dwallet.dwalletCapID),

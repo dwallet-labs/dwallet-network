@@ -5,7 +5,7 @@ import { Transaction } from '../transactions/index.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
 	getEventByTypeAndSessionId,
-	packageId,
+	dWalletPackageID,
 } from './globals.js';
 
 export enum Hash {
@@ -25,7 +25,7 @@ export async function signMockCall(
 ) {
 	const tx = new Transaction();
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::mock_sign`,
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::mock_sign`,
 		arguments: [
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(presignFirstRound)),
@@ -48,13 +48,13 @@ export async function signMockCall(
 
 	const eventData = res.events?.find(
 		(event) =>
-			event.type === `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartBatchedSignEvent`,
+			event.type === `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartBatchedSignEvent`,
 	)?.parsedJson as {
 		session_id: string;
 	};
 	let completionEvent = await getEventByTypeAndSessionId(
 		client,
-		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`,
+		`${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`,
 		eventData.session_id,
 	);
 	return (completionEvent as { signed_messages: Uint8Array[] }).signed_messages;
@@ -73,7 +73,7 @@ export async function signMessageTransactionCall(
 	const tx = new Transaction();
 
 	const [messageApprovals] = tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`,
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`,
 		arguments: [
 			tx.object(dwalletCapId),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
@@ -81,7 +81,7 @@ export async function signMessageTransactionCall(
 	});
 
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`,
+		target: `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::sign`,
 		arguments: [
 			tx.pure.id(dwalletCapId),
 			messageApprovals,
@@ -102,13 +102,13 @@ export async function signMessageTransactionCall(
 	});
 	const eventData = res.events?.find(
 		(event) =>
-			event.type === `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartBatchedSignEvent`,
+			event.type === `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartBatchedSignEvent`,
 	)?.parsedJson as {
 		session_id: string;
 	};
 	let completionEvent = await getEventByTypeAndSessionId(
 		client,
-		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`,
+		`${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`,
 		eventData.session_id,
 	);
 	return (completionEvent as { signed_messages: Uint8Array[] }).signed_messages;
