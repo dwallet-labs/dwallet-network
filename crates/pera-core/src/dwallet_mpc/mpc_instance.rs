@@ -5,14 +5,15 @@ use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
-use pera_types::base_types::{AuthorityName, EpochId};
-use pera_types::dwallet_mpc_error::DwalletMPCError;
-use pera_types::error::{PeraError, PeraResult};
+use pera_types::base_types::EpochId;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use pera_types::error::PeraError;
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 
 /// A DWallet MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
@@ -58,10 +59,10 @@ impl DWalletMPCInstance {
         }
     }
 
-    fn epoch_store(&self) -> PeraResult<Arc<AuthorityPerEpochStore>> {
+    fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
         self.epoch_store
             .upgrade()
-            .ok_or(PeraError::EpochEnded(self.epoch_id))
+            .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
     /// Advances the MPC instance and optionally return a message the validator wants
@@ -177,17 +178,17 @@ impl DWalletMPCInstance {
         round: usize,
         message: &DWalletMPCMessage,
         epoch_store: Arc<AuthorityPerEpochStore>,
-    ) -> PeraResult<()> {
+    ) -> DwalletMPCResult<()> {
         let party_id = authority_name_to_party_id(&message.authority, &epoch_store)?;
         if self.pending_messages[round].contains_key(&party_id) {
-            return Err(PeraError::DWalletMPCMaliciousParties(vec![party_id]));
+            return Err(DwalletMPCError::MaliciousParties(vec![party_id]));
         }
         self.pending_messages[round].insert(party_id, message.message.clone());
         Ok(())
     }
 
     /// Handles a message by either forwarding it to the instance or ignoring it if the instance is finished.
-    pub(crate) fn handle_message(&mut self, message: DWalletMPCMessage) -> PeraResult<()> {
+    pub(crate) fn handle_message(&mut self, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         match self.status {
             MPCSessionStatus::Active(round) => {
                 self.store_message(round, &message, self.epoch_store()?)
@@ -225,23 +226,3 @@ pub enum MPCSessionStatus {
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon
 unsafe impl Send for DWalletMPCInstance {}
-
-/// Convert a given authority name (address) to it's corresponding party ID.
-/// The party ID is the index of the authority in the committee.
-pub fn authority_name_to_party_id(
-    authority_name: &AuthorityName,
-    epoch_store: &AuthorityPerEpochStore,
-) -> PeraResult<PartyID> {
-    Ok(epoch_store
-        .committee()
-        .authority_index(authority_name)
-        // This should never happen, as the validator only accepts messages from committee members
-        .ok_or_else(|| {
-            PeraError::InvalidCommittee(
-                "Received a dwallet MPC message from a validator that is not in the committee"
-                    .to_string(),
-            )
-        })? as PartyID
-        // Need to add 1 because the authority index is 0-based, and the twopc_mpc library uses 1-based party IDs
-        + 1)
-}
