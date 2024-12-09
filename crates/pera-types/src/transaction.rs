@@ -1226,7 +1226,7 @@ impl TransactionKind {
     /// It covers both Call and ChangeEpoch transaction kind, because both makes Move calls.
     pub fn shared_input_objects(&self) -> impl Iterator<Item = SharedInputObject> + '_ {
         match &self {
-            Self::ChangeEpoch(_) | Self::LockNextCommittee(..) | Self::DWalletMPCOutput(_)=> {
+            Self::ChangeEpoch(_) | Self::LockNextCommittee(..) | Self::DWalletMPCOutput(_) => {
                 Either::Left(Either::Left(iter::once(SharedInputObject::PERA_SYSTEM_OBJ)))
             }
 

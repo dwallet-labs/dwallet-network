@@ -1184,10 +1184,10 @@ mod checked {
                     "store_encrypted_decryption_key_shares",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
-                        CallArg::Pure(bcs::to_bytes(&[[1, 2, 3], [4, 5, 6]]).unwrap())
+                        CallArg::Pure(bcs::to_bytes(&data.output.clone()).unwrap()),
                     ],
                 )
-            },
+            }
         };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();

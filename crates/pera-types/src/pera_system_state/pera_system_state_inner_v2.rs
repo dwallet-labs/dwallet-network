@@ -185,7 +185,11 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
                     }
                 })
                 .collect(),
-            if self.encrypted_decryption_key_share.is_empty() {None} else {Some(self.encrypted_decryption_key_share)},
+            if self.encrypted_decryption_key_share.is_empty() {
+                None
+            } else {
+                Some(self.encrypted_decryption_key_share)
+            },
         )
     }
 
