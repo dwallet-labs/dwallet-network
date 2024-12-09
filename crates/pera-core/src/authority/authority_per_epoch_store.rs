@@ -118,6 +118,7 @@ use tap::TapOptional;
 use tokio::time::Instant;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use crate::dwallet_mpc::FIRST_EPOCH_ID;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -1025,6 +1026,32 @@ impl AuthorityPerEpochStore {
                 })
                 .collect::<Result<HashMap<_, _>, _>>()?,
         })
+    }
+
+    pub fn get_encrypted_decryption_key_shares(&self) -> PeraResult<Vec<Vec<u8>>> {
+        if self.epoch() == FIRST_EPOCH_ID {
+            return Err(PeraError::Unknown("First epoch does not have decryption key shares, need to run network DKG".to_string()));
+        }
+
+        let encrypted_decryption_key_shares = match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => data.get_encrypted_decryption_key_shares(),
+        };
+        Ok(encrypted_decryption_key_shares.ok_or(PeraError::Unknown("Decryption key shares not found".to_string()))?)
+    }
+
+    pub fn get_decryption_key_share(&self) -> PeraResult<Vec<u8>> {
+        if self.epoch() == FIRST_EPOCH_ID {
+            return Err(PeraError::Unknown("First epoch does not have decryption key shares, need to run network DKG".to_string()));
+        }
+
+        let encrypted_decryption_key_shares = match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => data.get_encrypted_decryption_key_shares(),
+        };
+        let encrypted_decryption_key_shares = encrypted_decryption_key_shares.ok_or(PeraError::Unknown("Decryption key shares not found".to_string()))?;
+        let party_id = authority_name_to_party_id(&self.name, self)? as usize;
+        let decryption_key_share = encrypted_decryption_key_shares.get(party_id).ok_or(PeraError::Unknown("Decryption key share not found".to_string()))?;
+        // Todo (#382): Decrypt the decryption key share
+        Ok(decryption_key_share.clone())
     }
 
     pub fn committee_validators_class_groups_public_keys_and_proofs(
