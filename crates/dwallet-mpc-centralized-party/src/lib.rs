@@ -1,4 +1,3 @@
-use std::fmt;
 use anyhow::Context;
 /// This crate contains the cryptographic logic for the centralized 2PC-MPC party
 use k256::ecdsa::hazmat::bits2field;
@@ -7,6 +6,7 @@ use k256::elliptic_curve::ops::Reduce;
 use k256::{elliptic_curve, U256};
 use mpc::two_party::Round;
 use rand_core::OsRng;
+use std::fmt;
 use twopc_mpc::secp256k1;
 
 type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
@@ -83,9 +83,11 @@ pub fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp25
     let hash = match hash_type {
         Hash::KECCAK256 => bits2field::<k256::Secp256k1>(
             &sha3::Keccak256::new_with_prefix(message).finalize_fixed(),
-        ).map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
+        )
+        .map_err(|e| anyhow::Error::msg(format!("KECCAK256 bits2field error: {:?}", e)))?,
         Hash::SHA256 => {
-            bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed()).map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
+            bits2field::<k256::Secp256k1>(&sha2::Sha256::new_with_prefix(message).finalize_fixed())
+                .map_err(|e| anyhow::Error::msg(format!("SHA256 bits2field error: {:?}", e)))?
         }
     };
     let m = <elliptic_curve::Scalar<k256::Secp256k1> as Reduce<U256>>::reduce_bytes(&hash.into());
@@ -117,7 +119,7 @@ pub fn create_sign_output(
     let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
     let signed_and_hashed_messages: anyhow::Result<Vec<(Vec<u8>, Vec<u8>)>> = messages.into_iter().map(|message| {
         let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGOutput = bcs::from_bytes(&centralized_party_dkg_output)?;
-        let message_digest = message_digest(&message, &hash.try_into()?);
+        let message_digest = message_digest(&message, &hash.try_into()?)?;
         let centralized_party_auxiliary_input = (
             message_digest,
             centralized_party_dkg_output.clone(),
