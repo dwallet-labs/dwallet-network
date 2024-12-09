@@ -468,7 +468,9 @@ impl Display for PeraTransactionBlockKind {
             Self::DWalletMPCOutput(_) => {
                 writeln!(writer, "Transaction Kind: dwallet mpc Output")?;
             }
-            _ => {}
+           PeraTransactionBlockKind::LockNextCommittee => {
+                writeln!(writer, "Transaction Kind: Lock Next Committee")?;
+            }
         }
         write!(f, "{}", writer)
     }
