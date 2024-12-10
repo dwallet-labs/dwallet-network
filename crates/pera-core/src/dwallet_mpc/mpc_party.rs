@@ -6,12 +6,13 @@ use crate::dwallet_mpc::mpc_events::{
     StartBatchedSignEvent, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent,
     StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
-use crate::dwallet_mpc::mpc_manager::{twopc_error_to_pera_error, DWalletMPCManager};
+use crate::dwallet_mpc::mpc_manager::{DWalletMPCManager};
 use crate::dwallet_mpc::network_dkg::{KeyTypes, NetworkDkg};
 use crate::dwallet_mpc::presign::{
     PresignFirstParty, PresignFirstPartyPublicInputGenerator, PresignSecondParty,
     PresignSecondPartyPublicInputGenerator,
 };
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use anyhow::Error;
 use commitment::CommitmentSizedNumber;
@@ -28,6 +29,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
 /// Enum representing the different parties used in the MPC manager.
+#[derive(Clone)]
 pub enum MPCParty {
     /// The party used in the first round of the DKG protocol.
     FirstDKGBytesParty,
@@ -44,15 +46,15 @@ pub enum MPCParty {
 }
 
 impl MPCParty {
-    /// Advances the party to the next round by processing incoming messages and auxiliary input.
+    /// Advances the party to the next round by processing incoming messages and public input.
     /// Returns the next [`MPCParty`] to use, or the final output if the protocol has completed.
     pub fn advance(
         &self,
-        messages: Vec<HashMap<PartyID, Vec<u8>>>,
+        messages: Vec<HashMap<PartyID, MPCMessage>>,
         session_id: ObjectID,
         party_id: PartyID,
         access_threshold: &WeightedThresholdAccessStructure,
-        public_input: Vec<u8>,
+        public_input: MPCPublicInput,
     ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         let session_id = CommitmentSizedNumber::from_le_slice(session_id.to_vec().as_slice());
         match &self {
