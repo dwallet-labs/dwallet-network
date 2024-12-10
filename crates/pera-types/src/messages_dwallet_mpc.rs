@@ -12,7 +12,7 @@ pub enum MPCRound {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
-    DKGSecond,
+    DKGSecond(u8),
     /// The first round of the presign protocol.
     /// Contains the `ObjectId` of the dwallet object and the dkg decentralized output.
     PresignFirst(ObjectID, Vec<u8>),

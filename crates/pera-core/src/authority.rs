@@ -1567,7 +1567,7 @@ impl AuthorityState {
                 dwallet_mpc_outputs_manager.completed_locking_next_committee = true;
                 continue;
             }
-            let Ok(Some(session_info)) = MPCParty::session_info_from_event(event, party_id) else {
+            let Ok(Some(session_info)) = MPCParty::session_info_from_event(event, party_id, dwallet_mpc_outputs_manager.network_key_version()) else {
                 continue;
             };
             dwallet_mpc_outputs_manager.handle_new_event(&session_info);

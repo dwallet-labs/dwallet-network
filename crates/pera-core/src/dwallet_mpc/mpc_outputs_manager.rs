@@ -52,6 +52,10 @@ impl DWalletMPCOutputsManager {
         }
     }
 
+    pub fn network_key_version(&self) -> u8 {
+        self.network_key_version
+    }
+
     pub fn should_lock_committee(&mut self, authority_name: AuthorityName) -> bool {
         self.voted_to_lock_committee.insert(authority_name);
         self.voted_to_lock_committee

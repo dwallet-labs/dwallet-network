@@ -126,6 +126,7 @@ impl MPCParty {
     pub fn session_info_from_event(
         event: &Event,
         party_id: PartyID,
+        dwallet_network_key_version: u8,
     ) -> anyhow::Result<Option<SessionInfo>> {
         match &event.type_ {
             t if t == &StartDKGFirstRoundEvent::type_() => {
@@ -137,6 +138,7 @@ impl MPCParty {
                     bcs::from_bytes(&event.contents)?;
                 Ok(Some(Self::dkg_second_party_session_info(
                     &deserialized_event,
+                    dwallet_network_key_version,
                 )))
             }
             t if t == &StartPresignFirstRoundEvent::type_() => {
@@ -188,7 +190,7 @@ impl MPCParty {
             t if t == &StartDKGSecondRoundEvent::type_() => {
                 let deserialized_event: StartDKGSecondRoundEvent =
                     bcs::from_bytes(&event.contents)?;
-                Self::dkg_second_party(deserialized_event)
+                Self::dkg_second_party(deserialized_event, dwallet_mpc_manager.outputs_manager.network_key_version())
             }
             t if t == &StartPresignFirstRoundEvent::type_() => {
                 let deserialized_event: StartPresignFirstRoundEvent =
@@ -211,6 +213,7 @@ impl MPCParty {
 
     fn dkg_second_party(
         deserialized_event: StartDKGSecondRoundEvent,
+        dwallet_network_key_version: u8,
     ) -> Result<(MPCParty, Vec<u8>, SessionInfo), Error> {
         Ok((
             MPCParty::SecondDKGBytesParty,
@@ -218,17 +221,17 @@ impl MPCParty {
                 deserialized_event.first_round_output.clone(),
                 deserialized_event.public_key_share_and_proof.clone(),
             ),
-            Self::dkg_second_party_session_info(&deserialized_event),
+            Self::dkg_second_party_session_info(&deserialized_event, dwallet_network_key_version),
         ))
     }
 
-    fn dkg_second_party_session_info(deserialized_event: &StartDKGSecondRoundEvent) -> SessionInfo {
+    fn dkg_second_party_session_info(deserialized_event: &StartDKGSecondRoundEvent, dwallet_network_key_version: u8) -> SessionInfo {
         SessionInfo {
             flow_session_id: deserialized_event.first_round_session_id.bytes,
             session_id: ObjectID::from(deserialized_event.session_id),
             initiating_user_address: deserialized_event.sender,
             dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-            mpc_round: MPCRound::DKGSecond,
+            mpc_round: MPCRound::DKGSecond(dwallet_network_key_version),
         }
     }
 
