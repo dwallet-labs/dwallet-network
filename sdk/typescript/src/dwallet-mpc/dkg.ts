@@ -203,4 +203,3 @@ async function dWalletFromEvent(conf: Config, firstRound: DKGFirstRoundOutput): 
 		getObjectId: (event) => event.dwallet_id,
 	});
 }
-
