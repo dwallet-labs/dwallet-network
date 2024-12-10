@@ -1,7 +1,7 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
-use pera_types::error::{PeraError, PeraResult};
+use pera_types::error::{PeraError};
 
 use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
@@ -214,7 +214,7 @@ impl DWalletMPCManager {
         }
     }
 
-    async fn start_lock_next_epoch(&mut self) -> PeraResult {
+    async fn start_lock_next_epoch(&mut self) -> DwalletMPCResult<()> {
         self.consensus_adapter
             .submit_to_consensus(
                 &vec![self.new_lock_next_committee_message()?],
@@ -224,14 +224,14 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn new_lock_next_committee_message(&self) -> PeraResult<ConsensusTransaction> {
+    fn new_lock_next_committee_message(&self) -> DwalletMPCResult<ConsensusTransaction> {
         Ok(ConsensusTransaction::new_lock_next_committee_message(
             self.epoch_store()?.name,
             self.epoch_store()?.epoch(),
         ))
     }
 
-    fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> PeraResult {
+    fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
         self.outputs_manager.handle_new_event(&session_info);
         if let Ok((party, auxiliary_input, session_info)) = MPCParty::from_event(
             &event,
@@ -268,79 +268,66 @@ impl DWalletMPCManager {
             .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
     }
 
-    /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
-    /// We parallelize the advances with Rayon to speed up the process.
+    /// Advance all the MPC instances that either received enough messages
+    /// or perform the first step of the flow.
+    /// We parallelize the advances with `Rayon` to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
         let threshold = self.epoch_store()?.committee().quorum_threshold();
+        let mut malicious_parties = vec![];
+        let mut messages = vec![];
+
         let mut ready_to_advance = self
             .mpc_instances
             .iter_mut()
-            .filter_map(|(_, instance)| {
-                let received_weight: PartyID =
-                    if let MPCSessionStatus::Active(round) = instance.status {
-                        instance.pending_messages[round]
-                            .keys()
-                            .map(|authority_index| {
-                                // should never be "or" as we receive messages only from known authorities
-                                self.weighted_parties.get(authority_index).unwrap_or(&0)
-                            })
-                            .sum()
-                    } else {
-                        0
-                    };
-
-                let is_ready = (matches!(instance.status, MPCSessionStatus::Active(_))
-                    && received_weight as StakeUnit >= threshold)
-                    || (instance.status == MPCSessionStatus::FirstExecution);
-
-                let is_valid_status = (self.status
-                    == ManagerStatus::WaitingForNetworkDKGCompletion
-                    && matches!(instance.party(), MPCParty::NetworkDkg(_)))
-                    || self.status == ManagerStatus::Active;
-
-                if is_ready && is_valid_status {
-                    Some(instance)
-                } else {
-                    None
+            .filter_map(|(_, instance)|
+                match instance.status {
+                MPCSessionStatus::Active(round) => {
+                    let received_weight: StakeUnit = instance.pending_messages[round]
+                        .keys()
+                        .map(|authority_index| {
+                            *self.weighted_parties.get(authority_index).unwrap_or(&0) as StakeUnit
+                        })
+                        .sum();
+                    if received_weight >= threshold {
+                        return Some(instance);
+                    }
+                    return None;
                 }
+                MPCSessionStatus::FirstExecution => Some(instance),
+                _ => None,
             })
             .collect::<Vec<&mut DWalletMPCInstance>>();
 
-        let results: Vec<PeraResult<(ConsensusTransaction, Vec<PartyID>)>> = ready_to_advance
+        ready_to_advance
             .par_iter_mut()
-            .map(|ref mut instance| {
+            .map(|instance| {
                 instance.advance(&self.weighted_threshold_access_structure, self.party_id)
             })
-            .collect();
-        let messages = results
+            .collect::<Vec<_>>()
+            // Convert back to an iterator for processing.
             .into_iter()
-            .filter_map(|result| {
-                if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) = result {
-                    self.flag_parties_as_malicious(malicious_parties).ok()?;
-                    return None;
-                } else if let Ok((message, malicious_parties)) = result {
-                    self.flag_parties_as_malicious(malicious_parties).ok()?;
-                    return Some(message);
+            .try_for_each(|result| match result {
+                Ok((message, malicious)) => {
+                    messages.push(message.clone());
+                    malicious_parties.extend(malicious);
+                    Ok(())
                 }
-                None
-            })
-            .collect::<Vec<ConsensusTransaction>>();
-        // Need to send the messages one by one so the consensus adapter won't think they are a [soft bundle](https://github.com/sui-foundation/sips/pull/19)
+                Err(DwalletMPCError::MaliciousParties(malicious)) => {
+                    malicious_parties.extend(malicious);
+                    Ok(())
+                }
+                // todo(zeev): if there is a fatal error, should we abort?
+                Err(e) => Err(e),
+            })?;
+
+        self.flag_parties_as_malicious(&malicious_parties)?;
+
+        // Need to send the messages' one by one, so the consensus adapter won't think they
+        // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for message in messages {
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
                 .await?;
-        }
-
-        if self.status == ManagerStatus::WaitingForNetworkDKGCompletion {
-            if self
-                .mpc_instances
-                .iter()
-                .filter(|(_, instance)| matches!(instance.party(), MPCParty::NetworkDkg(_)))
-                .all(|(_, instance)| matches!(instance.status, MPCSessionStatus::Finished(_)))
-            {
-                self.status = ManagerStatus::Active;
-            }
         }
         Ok(())
     }
