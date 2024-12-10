@@ -404,6 +404,9 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                         output,
                     ) = &transaction.kind
                     {
+                        // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system
+                        // transaction to store its output on the blockchain, so it will be available for the
+                        // initiating user.
                         info!(
                             "Received dwallet mpc output from authority {:?} for session {:?}",
                             authority_index, session_info.session_id
