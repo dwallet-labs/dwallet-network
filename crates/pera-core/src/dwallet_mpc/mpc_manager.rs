@@ -5,7 +5,7 @@ use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
-use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputVerificationResult};
+use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::network_dkg::NetworkDkg;
 use crate::dwallet_mpc::sign::BatchedSignSession;
@@ -171,19 +171,18 @@ impl DWalletMPCManager {
                 );
                 match verification_result {
                     Ok(verification_result) => match verification_result {
-                        OutputVerificationResult::ValidWithNewOutput(_, malicious_parties) => {
+                        OutputResult::ValidWithNewOutput(_, malicious_parties) => {
                             self.malicious_actors.extend(malicious_parties);
                         }
-                        OutputVerificationResult::ValidWithoutOutput(malicious_parties) => {
+                        OutputResult::ValidWithoutOutput(malicious_parties) => {
                             self.malicious_actors.extend(malicious_parties);
                         }
-                        OutputVerificationResult::Valid(malicious_parties) => {
+                        OutputResult::Valid(malicious_parties) => {
                             self.malicious_actors.extend(malicious_parties);
                         }
-                        OutputVerificationResult::Malicious => {
+                        OutputResult::Malicious => {
                             self.malicious_actors.insert(authority);
                         }
-                        OutputVerificationResult::Duplicate => {}
                     },
                     Err(err) => {
                         error!("Failed to verify output with error: {:?}", err);

@@ -35,16 +35,20 @@ pub struct InstanceOutputsData {
 /// We need to differentiate between a duplicate and a malicious output,
 /// as the output can be sent twice by honest parties.
 #[derive(PartialOrd, PartialEq)]
-pub enum OutputVerificationResult {
+pub enum OutputResult {
     /// When working on a batch, e.g., signing on a batch of messages,
     /// we write the output to the chain only once — when the entire batch is ready.
-    ValidWithNewOutput(Vec<u8>, Vec<AuthorityName>),
+    ValidWithNewOutput(Vec<u8>),
     /// When the output is correct but not all the MPC flows in
     /// the batch have been completed.
-    ValidWithoutOutput(Vec<AuthorityName>),
-    Valid(Vec<AuthorityName>),
-    Duplicate,
+    ValidWithoutOutput,
+    Valid,
     Malicious,
+}
+
+pub struct OutputVerificationResult {
+    result: OutputResult,
+    malicious_actors: Vec<AuthorityName>,
 }
 
 impl DWalletMPCOutputsManager {
@@ -84,13 +88,19 @@ impl DWalletMPCOutputsManager {
     ) -> anyhow::Result<OutputVerificationResult> {
         let Some(ref mut session) = self.mpc_instances_outputs.get_mut(&session_info.session_id)
         else {
-            return Ok(OutputVerificationResult::Malicious);
+            return Ok(OutputVerificationResult {
+                result: OutputResult::Malicious,
+                malicious_actors: vec![origin_authority],
+            });
         };
         if session
             .authorities_that_sent_output
             .contains(&origin_authority)
         {
-            return Ok(OutputVerificationResult::Malicious);
+            return Ok(OutputVerificationResult {
+                result: OutputResult::Malicious,
+                malicious_actors: vec![origin_authority],
+            });
         }
         session
             .authorities_that_sent_output
@@ -131,7 +141,7 @@ impl DWalletMPCOutputsManager {
                 batched_sign_session
                     .hashed_msg_to_signature
                     .insert(hashed_message.clone(), output.clone());
-                if batched_sign_session.hashed_msg_to_signature.values().len()
+                return if batched_sign_session.hashed_msg_to_signature.values().len()
                     == batched_sign_session.ordered_messages.len()
                 {
                     let new_output: Vec<Vec<u8>> = batched_sign_session
@@ -145,19 +155,19 @@ impl DWalletMPCOutputsManager {
                                 .clone())
                         })
                         .collect::<anyhow::Result<Vec<Vec<u8>>>>()?;
-                    return Ok(OutputVerificationResult::ValidWithNewOutput(
-                        bcs::to_bytes(&new_output)?,
-                        voted_for_other_outputs,
-                    ));
+                    Ok(OutputVerificationResult {
+                        result: OutputResult::ValidWithNewOutput(
+                            bcs::to_bytes(&new_output)?,
+                        ),
+                        malicious_actors: voted_for_other_outputs
+                    })
                 } else {
-                    return Ok(OutputVerificationResult::ValidWithoutOutput(
-                        voted_for_other_outputs,
-                    ));
+                    Ok(OutputVerificationResult { result: OutputResult::ValidWithoutOutput, malicious_actors: voted_for_other_outputs })
                 }
             }
-            return Ok(OutputVerificationResult::Valid(voted_for_other_outputs));
+            return Ok(OutputVerificationResult{result: OutputResult::Valid, malicious_actors: voted_for_other_outputs});
         }
-        Ok(OutputVerificationResult::ValidWithoutOutput(vec![]))
+        Ok(OutputVerificationResult{result: OutputResult::ValidWithoutOutput, malicious_actors: vec![]})
     }
 
     pub fn handle_new_event(&mut self, session_info: &SessionInfo) {

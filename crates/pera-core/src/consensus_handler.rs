@@ -34,7 +34,7 @@ use pera_types::{
     transaction::{SenderSignedData, VerifiedTransaction},
 };
 
-use crate::dwallet_mpc::mpc_outputs_manager::OutputVerificationResult;
+use crate::dwallet_mpc::mpc_outputs_manager::OutputResult;
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -431,10 +431,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .try_verify_output(output, &session_info, origin_authority)
                             .unwrap_or_else(|e| {
                                 error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
-                                OutputVerificationResult::Malicious
+                                OutputResult::Malicious
                             });
                         match output_verification_result {
-                            OutputVerificationResult::ValidWithNewOutput(new_output, _) => {
+                            OutputResult::ValidWithNewOutput(new_output, _) => {
                                 let transaction = self
                                     .create_dwallet_mpc_output_system_tx(session_info, &new_output);
                                 transactions.push((
@@ -443,7 +443,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     consensus_output.leader_author_index(),
                                 ));
                             }
-                            OutputVerificationResult::Valid(_) => {
+                            OutputResult::Valid(_) => {
                                 let transaction =
                                     self.create_dwallet_mpc_output_system_tx(session_info, output);
                                 transactions.push((
@@ -452,9 +452,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     consensus_output.leader_author_index(),
                                 ));
                             }
-                            OutputVerificationResult::ValidWithoutOutput(_)
-                            | OutputVerificationResult::Duplicate
-                            | OutputVerificationResult::Malicious => {
+                            OutputResult::ValidWithoutOutput(_)
+                            | OutputResult::Malicious => {
                                 // Ignore this output,
                                 // as the same output may be submitted twice by non-malicious parties,
                                 // due to Sui's inner implementation of the leader selection mechanism.
