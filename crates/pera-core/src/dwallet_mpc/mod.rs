@@ -34,7 +34,7 @@ pub struct DWalletMPCMessage {
 /// The [`PartyID`] is the index of the authority in the committee.
 pub fn authority_name_to_party_id(
     authority_name: &AuthorityName,
-    epoch_store: &Arc<AuthorityPerEpochStore>,
+    epoch_store: &AuthorityPerEpochStore,
 ) -> DwalletMPCResult<PartyID> {
     epoch_store
         .committee()

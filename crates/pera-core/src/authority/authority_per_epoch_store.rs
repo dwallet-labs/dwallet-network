@@ -68,7 +68,6 @@ use crate::consensus_handler::{
 };
 use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc;
-use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::{
     DWalletMPCChannelMessage, DWalletMPCManager, DWalletMPCSender,
 };
@@ -116,8 +115,10 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
+use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
+use crate::dwallet_mpc::authority_name_to_party_id;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -1029,7 +1030,7 @@ impl AuthorityPerEpochStore {
 
     pub fn committee_validators_class_groups_public_keys_and_proofs(
         &self,
-    ) -> PeraResult<HashMap<PartyID, ClassGroupsPublicKeyAndProof>> {
+    ) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsPublicKeyAndProof>> {
         let public_keys_and_proofs = match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => {
                 let committee: Vec<_> = self

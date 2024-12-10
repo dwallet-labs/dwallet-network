@@ -1,10 +1,10 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
-use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, MPCSessionStatus};
+use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance};
 use crate::dwallet_mpc::mpc_party::{advance, MPCParty};
 use crate::dwallet_mpc::{FIRST_EPOCH_ID, RISTRETTO_DKG_SESSION_ID, SECP256K1_DKG_SESSION_ID};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::{ClassGroupsPublicKeyAndProof, dwallet_mpc::MPCSessionStatus};
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use jsonrpsee::core::Serialize;

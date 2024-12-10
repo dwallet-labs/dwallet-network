@@ -4,9 +4,11 @@ use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
+use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use crate::dwallet_mpc::mpc_instance::{
-    authority_name_to_party_id, DWalletMPCInstance, DWalletMPCMessage, MPCSessionStatus,
+    DWalletMPCInstance,
 };
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputVerificationResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::network_dkg::NetworkDkg;
