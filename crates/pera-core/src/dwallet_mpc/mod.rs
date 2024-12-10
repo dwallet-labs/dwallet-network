@@ -15,6 +15,7 @@ pub(crate) mod mpc_party;
 pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
+mod batches_manager;
 
 const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(0);
 const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(1);

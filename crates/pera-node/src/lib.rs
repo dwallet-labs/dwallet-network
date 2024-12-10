@@ -213,7 +213,7 @@ use simulator::*;
 
 use pera_core::consensus_handler::ConsensusHandlerInitializer;
 use pera_core::dwallet_mpc::mpc_manager::{DWalletMPCChannelMessage, DWalletMPCManager};
-use pera_core::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsManager;
+use pera_core::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsVerifier;
 use pera_core::safe_client::SafeClientMetricsBase;
 use pera_core::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::execution_config_utils::to_binary_config;
@@ -1296,7 +1296,7 @@ impl PeraNode {
 
         // Start the dWallet MPC manager on epoch start.
         epoch_store
-            .set_dwallet_mpc_outputs_manager(DWalletMPCOutputsManager::new(&epoch_store))
+            .set_dwallet_mpc_outputs_manager(DWalletMPCOutputsVerifier::new(&epoch_store))
             .await?;
 
         epoch_store

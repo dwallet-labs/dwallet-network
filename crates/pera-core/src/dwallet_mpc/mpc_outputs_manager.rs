@@ -1,5 +1,5 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::sign::BatchedSignSession;
+use crate::dwallet_mpc::batches_manager::BatchedSignSession;
 use anyhow::anyhow;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet};
 /// A struct to manage the DWallet MPC outputs.
 /// It stores all the outputs received for each instance, and decides whether an output is valid
 /// by checking if a validators with quorum of stake voted for it.
-pub struct DWalletMPCOutputsManager {
+pub struct DWalletMPCOutputsVerifier {
     /// The batched sign sessions that are currently being processed.
     pub batched_sign_sessions: HashMap<ObjectID, BatchedSignSession>,
     /// The outputs received for each instance.
@@ -51,9 +51,9 @@ pub struct OutputVerificationResult {
     pub malicious_actors: Vec<AuthorityName>,
 }
 
-impl DWalletMPCOutputsManager {
+impl DWalletMPCOutputsVerifier {
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
-        DWalletMPCOutputsManager {
+        DWalletMPCOutputsVerifier {
             batched_sign_sessions: HashMap::new(),
             quorum_threshold: epoch_store.committee().quorum_threshold(),
             mpc_instances_outputs: HashMap::new(),

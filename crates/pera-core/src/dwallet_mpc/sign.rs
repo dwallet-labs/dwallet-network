@@ -4,26 +4,12 @@
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
 use dwallet_mpc_types::dwallet_mpc::{MPCOutput, MPCPublicInput};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
-use std::collections::HashMap;
 use twopc_mpc::dkg::Protocol;
 
 pub(super) type SignFirstParty =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedParty;
 pub(super) type SignPublicInput =
     <AsyncProtocol as twopc_mpc::sign::Protocol>::SignDecentralizedPartyPublicInput;
-
-/// A struct to hold the batched sign session data.
-pub struct BatchedSignSession {
-    /// A map that contains the ready signatures,
-    /// keyed by their hashed message.
-    /// When this map contains all the hashed messages,
-    /// the batched sign session is ready to be written to the chain.
-    /// HashedMsg -> Sign Output.
-    pub hashed_msg_to_signature: HashMap<Vec<u8>, Vec<u8>>,
-    /// A list of all the messages that need to be signed, in the order they were received.
-    /// The output list of signatures will be written to the chain in the same order.
-    pub ordered_messages: Vec<Vec<u8>>,
-}
 
 /// A trait for generating the public input for decentralized `Sign` round in the MPC protocol.
 ///

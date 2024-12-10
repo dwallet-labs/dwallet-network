@@ -72,7 +72,7 @@ use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::{
     DWalletMPCChannelMessage, DWalletMPCManager, DWalletMPCSender,
 };
-use crate::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsManager;
+use crate::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsVerifier;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
     DkgStatus, RandomnessManager, RandomnessReporter, VersionedProcessedMessage,
@@ -346,7 +346,8 @@ pub struct AuthorityPerEpochStore {
     pub dwallet_mpc_sender: OnceCell<DWalletMPCSender>,
     /// State machine managing DWallet MPC outputs.
     /// This state machine only being used to store outputs and declare ones with quorum of votes as valid.
-    pub dwallet_mpc_outputs_manager: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsManager>>,
+    pub dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
+
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -863,7 +864,7 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
-            dwallet_mpc_outputs_manager: OnceCell::new(),
+            dwallet_mpc_outputs_verifier: OnceCell::new(),
             dwallet_mpc_sender: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
@@ -944,10 +945,10 @@ impl AuthorityPerEpochStore {
     /// A function to initiate the Dwallet MPC outputs manager when a new epoch starts.
     pub async fn set_dwallet_mpc_outputs_manager(
         &self,
-        manager: DWalletMPCOutputsManager,
+        manager: DWalletMPCOutputsVerifier,
     ) -> PeraResult<()> {
         if self
-            .dwallet_mpc_outputs_manager
+            .dwallet_mpc_outputs_verifier
             .set(tokio::sync::Mutex::new(manager))
             .is_err()
         {
@@ -2638,8 +2639,8 @@ impl AuthorityPerEpochStore {
 
     pub async fn get_dwallet_mpc_outputs_manager(
         &self,
-    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCOutputsManager>> {
-        let dwallet_mpc_outputs_manager = self.dwallet_mpc_outputs_manager.get();
+    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCOutputsVerifier>> {
+        let dwallet_mpc_outputs_manager = self.dwallet_mpc_outputs_verifier.get();
         match dwallet_mpc_outputs_manager {
             Some(dwallet_mpc_outputs_manager) => Ok(dwallet_mpc_outputs_manager.lock().await),
             None => Err(PeraError::from(

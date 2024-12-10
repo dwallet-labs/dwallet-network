@@ -148,7 +148,7 @@ use crate::dwallet_mpc::mpc_events::{
     LockedNextEpochCommitteeEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
-use crate::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsManager;
+use crate::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{

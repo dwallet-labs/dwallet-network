@@ -5,10 +5,10 @@ use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
-use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputResult};
+use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsVerifier, OutputResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::network_dkg::NetworkDkg;
-use crate::dwallet_mpc::sign::BatchedSignSession;
+use crate::dwallet_mpc::batches_manager::BatchedSignSession;
 use crate::dwallet_mpc::FIRST_EPOCH_ID;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use anyhow::anyhow;
@@ -64,7 +64,7 @@ pub struct DWalletMPCManager {
     pub(crate) malicious_actors: HashSet<AuthorityName>,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     weighted_parties: HashMap<PartyID, PartyID>,
-    outputs_manager: DWalletMPCOutputsManager,
+    outputs_manager: DWalletMPCOutputsVerifier,
     status: ManagerStatus,
 }
 
@@ -117,7 +117,7 @@ impl DWalletMPCManager {
         };
 
         // Todo (#383): Remove the `outputs_manager` from the `DWalletMPCManager`
-        let mut outputs_manager = DWalletMPCOutputsManager::new(&epoch_store);
+        let mut outputs_manager = DWalletMPCOutputsVerifier::new(&epoch_store);
         let mut epoch_store_outputs_manager =
             epoch_store
                 .get_dwallet_mpc_outputs_manager()

@@ -662,10 +662,6 @@ pub enum PeraError {
 
     #[error("The request did not contain a certificate")]
     NoCertificateProvidedError,
-
-    // This is a string because the encapsulating error has too many derives.
-    #[error("dWallet MPC Error: {0}")]
-    DwalletMPCError(String),
 }
 
 #[repr(u64)]
