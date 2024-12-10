@@ -60,6 +60,12 @@ title: Module `0x3::dwallet`
 <dd>
 
 </dd>
+<dt>
+<code>version: u8</code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -100,7 +106,7 @@ title: Module `0x3::dwallet`
 A generic function to create a new [<code><a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a></code>] object of type T.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet">create_dwallet</a>&lt;T: drop&gt;(session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet.md#0x3_dwallet_create_dwallet">create_dwallet</a>&lt;T: drop&gt;(session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, version: u8, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;T&gt;
 </code></pre>
 
 
@@ -113,6 +119,7 @@ A generic function to create a new [<code><a href="dwallet.md#0x3_dwallet_DWalle
     session_id: ID,
     dwallet_cap_id: ID,
     output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    version: u8,
     ctx: &<b>mut</b> TxContext
 ): <a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt; {
     <a href="dwallet.md#0x3_dwallet_DWallet">DWallet</a>&lt;T&gt; {
@@ -120,6 +127,7 @@ A generic function to create a new [<code><a href="dwallet.md#0x3_dwallet_DWalle
         session_id,
         dwallet_cap_id,
         output,
+        version,
     }
 }
 </code></pre>

@@ -11,6 +11,7 @@ module pera_system::dwallet {
         dwallet_cap_id: ID,
         // The output of the second DKG round.
         output: vector<u8>,
+        version: u8,
     }
 
     /// `DWalletCap` holder controls a corresponding `Dwallet`.
@@ -23,6 +24,7 @@ module pera_system::dwallet {
         session_id: ID,
         dwallet_cap_id: ID,
         output: vector<u8>,
+        version: u8,
         ctx: &mut TxContext
     ): DWallet<T> {
         DWallet<T> {
@@ -30,6 +32,7 @@ module pera_system::dwallet {
             session_id,
             dwallet_cap_id,
             output,
+            version,
         }
     }
 

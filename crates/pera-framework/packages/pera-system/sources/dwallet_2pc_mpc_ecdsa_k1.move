@@ -159,10 +159,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id: ID,
         output: vector<u8>,
         dwallet_cap_id: ID,
+        version: u8,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == @0x0, ENotSystemAddress);
-        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, ctx);
+        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, version, ctx);
         let completed_proof_mpc_session_event = CompletedDKGSecondRoundEvent {
             session_id,
             sender: session_initiator,

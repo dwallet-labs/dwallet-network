@@ -5,7 +5,6 @@ module pera_system::dwallet_network_key {
     public fun is_key_type(val: u8): bool {
         return match (val) {
             Secp256k1 | Ristretto => true,
-            // 1 => true,
             _ => false,
         }
     }
