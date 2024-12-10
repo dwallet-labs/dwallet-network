@@ -240,31 +240,27 @@ impl DWalletMPCManager {
     }
 
     pub fn get_decryption_share(&self) -> DwalletMPCResult<DecryptionKeyShare> {
-        let party_id =
-            authority_name_to_party_id(&self.epoch_store()?.name, &self.epoch_store()?.clone())?;
-        let _ = self
+        let epoch_store = self.epoch_store()?;
+        let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
+        let shares = self
             .node_config
             .dwallet_mpc_class_groups_decryption_shares
-            .clone()
-            .ok_or(DwalletMPCError::MissingDwalletMPCClassGroupsDecryptionShares)?
-            .get(&party_id);
-        let share = DecryptionKeyShare::new(
-            party_id,
-            self.node_config
-                .dwallet_mpc_class_groups_decryption_shares
-                .clone()
-                .ok_or(DwalletMPCError::DwalletMPCClassGroupsDecryptionShareMissing(party_id))?
-                .get(&party_id)
-                .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?
-                .clone(),
-            &self
-                .node_config
-                .dwallet_mpc_decryption_shares_public_parameters
-                .clone()
-                .unwrap(),
-        )
-        .map_err(|e| twopc_error_to_pera_error(e.into()))?;
-        Ok(share)
+            .as_ref()
+            .ok_or(DwalletMPCError::MissingDwalletMPCClassGroupsDecryptionShares)?;
+
+        let share_value = shares
+            .get(&party_id)
+            .ok_or(DwalletMPCError::DwalletMPCClassGroupsDecryptionShareMissing(party_id))?
+            .clone();
+
+        let public_parameters = self
+            .node_config
+            .dwallet_mpc_decryption_shares_public_parameters
+            .as_ref()
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?;
+
+        DecryptionKeyShare::new(party_id, share_value, public_parameters)
+            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
     }
 
     /// Advance all the MPC instances that either received enough messages to, or perform the first step of the flow.
@@ -344,10 +340,10 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    fn epoch_store(&self) -> PeraResult<Arc<AuthorityPerEpochStore>> {
+    fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
         self.epoch_store
             .upgrade()
-            .ok_or(PeraError::EpochEnded(self.epoch_id))
+            .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
     /// Handles a message by forwarding it to the relevant MPC instance
