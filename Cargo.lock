@@ -11448,16 +11448,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pera-mpc-types"
-version = "1.32.2"
-dependencies = [
- "bcs",
- "move-core-types",
- "thiserror 1.0.69",
- "twopc_mpc",
-]
-
-[[package]]
 name = "pera-network"
 version = "0.0.0"
 dependencies = [
@@ -12444,6 +12434,7 @@ dependencies = [
  "criterion",
  "derivative",
  "derive_more 0.99.18",
+ "dwallet-mpc-types",
  "enum_dispatch",
  "expect-test",
  "eyre",

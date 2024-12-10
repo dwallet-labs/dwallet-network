@@ -1,6 +1,6 @@
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use group::PartyID;
-use pera_mpc_types::dwallet_mpc::MPCSessionStatus;
 // todo(zeev): remove unused errors.
 
 #[derive(thiserror::Error, Debug)]

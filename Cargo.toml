@@ -126,7 +126,6 @@ members = [
     "crates/pera-move",
     "crates/pera-move-build",
     "crates/pera-move-lsp",
-    "crates/pera-mpc-types",
     "crates/pera-network",
     "crates/pera-node",
     "crates/pera-open-rpc",
