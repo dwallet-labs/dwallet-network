@@ -170,26 +170,12 @@ impl DWalletMPCManager {
                     authority.clone(),
                 );
                 match verification_result {
-                    Ok(verification_result) => match verification_result {
-                        OutputResult::ValidWithNewOutput(_, malicious_parties) => {
-                            self.malicious_actors.extend(malicious_parties);
-                        }
-                        OutputResult::ValidWithoutOutput(malicious_parties) => {
-                            self.malicious_actors.extend(malicious_parties);
-                        }
-                        OutputResult::Valid(malicious_parties) => {
-                            self.malicious_actors.extend(malicious_parties);
-                        }
-                        OutputResult::Malicious => {
-                            self.malicious_actors.insert(authority);
-                        }
+                    Ok(verification_result) => {
+                        self.malicious_actors.extend(verification_result.malicious_actors);
                     },
                     Err(err) => {
                         error!("Failed to verify output with error: {:?}", err);
                     }
-                }
-                {
-                    self.malicious_actors.insert(authority);
                 }
             }
             DWalletMPCChannelMessage::Event(event, session_info) => {
