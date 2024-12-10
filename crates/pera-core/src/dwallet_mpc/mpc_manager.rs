@@ -120,7 +120,9 @@ impl DWalletMPCManager {
 
         // Todo (#383): Remove the `outputs_manager` from the `DWalletMPCManager`
         let mut outputs_manager = DWalletMPCOutputsManager::new(&epoch_store);
-        let mut epoch_store_outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await?;
+        let mut epoch_store_outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await.map_err(
+            |_| DwalletMPCError::MissingDwalletMPCOutputsManager,
+        )?;
         for (network_dkg_session_id, _) in mpc_instances.iter() {
             outputs_manager.insert_new_output_instance(network_dkg_session_id);
             epoch_store_outputs_manager.insert_new_output_instance(network_dkg_session_id);

@@ -51,6 +51,9 @@ pub enum DwalletMPCError {
     #[error("missing MPC class groups decryption shares in config")]
     MissingDwalletMPCClassGroupsDecryptionShares,
 
+    #[error("missing DWallet MPC outputs manager")]
+    MissingDwalletMPCOutputsManager,
+
     #[error("MPC class groups decryption share missing for the party ID: {0}")]
     DwalletMPCClassGroupsDecryptionShareMissing(PartyID),
 
