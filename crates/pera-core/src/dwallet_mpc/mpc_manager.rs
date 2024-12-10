@@ -425,7 +425,6 @@ impl DWalletMPCManager {
         party: MPCParty,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
-        // let session_id = session_info.session_id;
         if self.mpc_instances.contains_key(&session_info.session_id) {
             // This should never happen, as the session ID is a Move UniqueID.
             error!(
