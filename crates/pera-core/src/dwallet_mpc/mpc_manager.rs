@@ -43,7 +43,6 @@ pub enum ManagerStatus {
 /// — (De)activating instances.
 pub struct DWalletMPCManager {
     party_id: PartyID,
-    batched_sign_sessions: HashMap<ObjectID, BatchedSignSession>,
     /// Holds the active MPC instances, cleaned every epoch switch.
     mpc_instances: HashMap<ObjectID, DWalletMPCInstance>,
     /// Used to keep track of the order in which pending instances are received,
@@ -138,7 +137,6 @@ impl DWalletMPCManager {
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
             weighted_parties,
-            batched_sign_sessions: HashMap::new(),
             outputs_manager,
             status,
         };
@@ -354,7 +352,7 @@ impl DWalletMPCManager {
         message: &[u8],
         authority_name: AuthorityName,
         session_id: ObjectID,
-    ) -> PeraResult {
+    ) -> DwalletMPCResult {
         if self.malicious_actors.contains(&authority_name) {
             return Ok(());
         }
@@ -366,11 +364,11 @@ impl DWalletMPCManager {
             self.malicious_actors.insert(authority_name);
             return Ok(());
         };
-        let handle_message_response = instance.handle_message(DWalletMPCMessage {
+        let handle_message_response = instance.handle_message(&DWalletMPCMessage {
             message: message.to_vec(),
             authority: authority_name,
         });
-        if let Err(PeraError::DWalletMPCMaliciousParties(malicious_parties)) =
+        if let Err(DwalletMPCError::MaliciousParties(malicious_parties)) =
             handle_message_response
         {
             self.flag_parties_as_malicious(malicious_parties)?;
@@ -382,7 +380,7 @@ impl DWalletMPCManager {
     /// Convert the indices of the malicious parties to their addresses and store them
     /// in the malicious actors set
     /// New messages from these parties will be ignored
-    pub fn flag_parties_as_malicious(&mut self, malicious_parties: Vec<PartyID>) -> PeraResult {
+    pub fn flag_parties_as_malicious(&mut self, malicious_parties: Vec<PartyID>) -> DwalletMPCResult {
         let malicious_parties_names = malicious_parties
             .into_iter()
             .map(|party_id| {
