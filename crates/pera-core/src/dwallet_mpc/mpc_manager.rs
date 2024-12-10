@@ -279,21 +279,34 @@ impl DWalletMPCManager {
         let mut ready_to_advance = self
             .mpc_instances
             .iter_mut()
-            .filter_map(|(_, instance)| match instance.status {
-                MPCSessionStatus::Active(round) => {
-                    let received_weight: StakeUnit = instance.pending_messages[round]
-                        .keys()
-                        .map(|authority_index| {
-                            *self.weighted_parties.get(authority_index).unwrap_or(&0) as StakeUnit
-                        })
-                        .sum();
-                    if received_weight >= threshold {
-                        return Some(instance);
-                    }
-                    return None;
+            .filter_map(|(_, instance)| {
+                let received_weight: PartyID =
+                    if let MPCSessionStatus::Active(round) = instance.status {
+                        instance.pending_messages[round]
+                            .keys()
+                            .map(|authority_index| {
+                                // should never be "or" as we receive messages only from known authorities
+                                self.weighted_parties.get(authority_index).unwrap_or(&0)
+                            })
+                            .sum()
+                    } else {
+                        0
+                    };
+
+                let is_ready = (matches!(instance.status, MPCSessionStatus::Active(_))
+                    && received_weight as StakeUnit >= threshold)
+                    || (instance.status == MPCSessionStatus::FirstExecution);
+
+                let is_valid_status = (self.status
+                    == ManagerStatus::WaitingForNetworkDKGCompletion
+                    && matches!(instance.party(), MPCParty::NetworkDkg(_)))
+                    || self.status == ManagerStatus::Active;
+
+                if is_ready && is_valid_status {
+                    Some(instance)
+                } else {
+                    None
                 }
-                MPCSessionStatus::FirstExecution => Some(instance),
-                _ => None,
             })
             .collect::<Vec<&mut DWalletMPCInstance>>();
 

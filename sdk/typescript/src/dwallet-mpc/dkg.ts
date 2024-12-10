@@ -51,6 +51,7 @@ export interface CreatedDwallet {
 
 export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 	const dkgFirstRoundOutput: DKGFirstRoundOutput = await launchDKGFirstRound(conf);
+	console.log('DKG First Round Output:', dkgFirstRoundOutput);
 	let [publicKeyShareAndProof, centralizedOutput] = create_dkg_centralized_output(
 		Uint8Array.from(dkgFirstRoundOutput.output),
 		// Remove the 0x prefix.
