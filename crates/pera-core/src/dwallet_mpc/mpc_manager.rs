@@ -1,7 +1,7 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
-use pera_types::error::{PeraError};
+use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
