@@ -380,21 +380,22 @@ impl DWalletMPCManager {
     }
 
     /// Convert the indices of the malicious parties to their addresses and store them
-    /// in the malicious actors set
-    /// New messages from these parties will be ignored
-    pub fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) -> DwalletMPCResult<()> {
+    /// in the malicious actors set.
+    /// New messages from these parties will be ignored.
+    /// todo(zeev): clarify if it's restarted on epoch change.
+    fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) -> DwalletMPCResult<()> {
         let malicious_parties_names = malicious_parties
-            .into_iter()
+            .iter()
             .map(|party_id| {
-                Ok(*self
-                    .epoch_store()?
+                self.epoch_store()?
                     .committee()
-                    .authority_by_index(party_id as u32)
-                    .ok_or(PeraError::InvalidCommittee("".to_string()))?)
+                    .authority_by_index(*party_id as u32)
+                    .cloned()
+                    .ok_or(DwalletMPCError::AuthorityIndexNotFound(*party_id))
             })
-            .collect::<PeraResult<Vec<AuthorityName>>>()?;
+            .collect::<DwalletMPCResult<Vec<AuthorityName>>>()?;
         warn!(
-            "flagged the following parties as malicious: {:?}",
+            "[dWallet MPC] Flagged the following parties as malicious: {:?}",
             malicious_parties_names
         );
         self.malicious_actors.extend(malicious_parties_names);
