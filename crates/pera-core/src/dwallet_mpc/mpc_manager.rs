@@ -347,40 +347,42 @@ impl DWalletMPCManager {
 
     /// Handles a message by forwarding it to the relevant MPC instance
     /// If the instance does not exist, punish the sender
-    pub fn handle_message(
+    pub(crate) fn handle_message(
         &mut self,
         message: &[u8],
         authority_name: AuthorityName,
         session_id: ObjectID,
-    ) -> DwalletMPCResult {
+    ) -> DwalletMPCResult<()> {
         if self.malicious_actors.contains(&authority_name) {
             return Ok(());
         }
-        let Some(instance) = self.mpc_instances.get_mut(&session_id) else {
-            warn!(
-                "received a message for instance {:?} which does not exist",
-                session_id
-            );
-            self.malicious_actors.insert(authority_name);
-            return Ok(());
+        let instance = match self.mpc_instances.get_mut(&session_id) {
+            Some(instance) => instance,
+            None => {
+                warn!(
+                    "received a message for instance {:?} which does not exist",
+                    session_id
+                );
+                self.malicious_actors.insert(authority_name);
+                return Ok(());
+            }
         };
-        let handle_message_response = instance.handle_message(&DWalletMPCMessage {
+        match instance.handle_message(&DWalletMPCMessage {
             message: message.to_vec(),
             authority: authority_name,
-        });
-        if let Err(DwalletMPCError::MaliciousParties(malicious_parties)) =
-            handle_message_response
-        {
-            self.flag_parties_as_malicious(malicious_parties)?;
-            return Ok(());
-        };
-        handle_message_response
+        }) {
+            Err(DwalletMPCError::MaliciousParties(malicious_parties)) => {
+                self.flag_parties_as_malicious(&malicious_parties)?;
+                Ok(())
+            }
+            other => other,
+        }
     }
 
     /// Convert the indices of the malicious parties to their addresses and store them
     /// in the malicious actors set
     /// New messages from these parties will be ignored
-    pub fn flag_parties_as_malicious(&mut self, malicious_parties: Vec<PartyID>) -> DwalletMPCResult {
+    pub fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) -> DwalletMPCResult<()> {
         let malicious_parties_names = malicious_parties
             .into_iter()
             .map(|party_id| {
