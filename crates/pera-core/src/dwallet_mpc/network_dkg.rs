@@ -7,13 +7,12 @@ use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::{dwallet_mpc::MPCSessionStatus, ClassGroupsPublicKeyAndProof};
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use jsonrpsee::core::Serialize;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
+use pera_types::dwallet_mpc::KeyType;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -28,7 +27,7 @@ fn new_dkg_secp256k1_instance(
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
         FIRST_EPOCH_ID,
-        MPCParty::NetworkDkg(KeyTypes::Secp256k1),
+        MPCParty::NetworkDkg(KeyType::Secp256k1),
         MPCSessionStatus::FirstExecution,
         generate_secp256k1_dkg_party_public_input(
             epoch_store.committee_validators_class_groups_public_keys_and_proofs()?,
@@ -38,7 +37,7 @@ fn new_dkg_secp256k1_instance(
             session_id: SECP256K1_DKG_SESSION_ID,
             initiating_user_address: Default::default(),
             dwallet_cap_id: NONE_OBJ_ID,
-            mpc_round: MPCRound::NetworkDkg,
+            mpc_round: MPCRound::NetworkDkg(KeyType::Secp256k1),
         },
         None,
     ))
@@ -53,7 +52,7 @@ fn new_dkg_ristretto_instance(
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
         FIRST_EPOCH_ID,
-        MPCParty::NetworkDkg(KeyTypes::Ristretto),
+        MPCParty::NetworkDkg(KeyType::Ristretto),
         MPCSessionStatus::FirstExecution,
         generate_ristretto_dkg_party_public_input(
             epoch_store.committee_validators_class_groups_public_keys_and_proofs()?,
@@ -63,7 +62,7 @@ fn new_dkg_ristretto_instance(
             session_id: RISTRETTO_DKG_SESSION_ID,
             initiating_user_address: Default::default(),
             dwallet_cap_id: NONE_OBJ_ID,
-            mpc_round: MPCRound::NetworkDkg,
+            mpc_round: MPCRound::NetworkDkg(KeyType::Ristretto),
         },
         None,
     ))
@@ -88,13 +87,6 @@ fn generate_ristretto_dkg_party_public_input(
 ) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum KeyTypes {
-    Secp256k1,
-    Ristretto,
-}
-
 /// This struct is responsible for the network DKG protocol.
 /// It manages the initialization and advancement of the network DKG supported key types.
 pub struct NetworkDkg;
@@ -127,12 +119,12 @@ impl NetworkDkg {
         weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
         party_id: PartyID,
         public_input: &[u8],
-        key_type: &KeyTypes,
+        key_type: &KeyType,
         messages: Vec<HashMap<PartyID, Vec<u8>>>,
     ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         Ok(match key_type {
             // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
-            KeyTypes::Secp256k1 => advance::<DKGFirstParty>(
+            KeyType::Secp256k1 => advance::<DKGFirstParty>(
                 CommitmentSizedNumber::from_le_slice(SECP256K1_DKG_SESSION_ID.to_vec().as_slice()),
                 party_id,
                 &weighted_threshold_access_structure,
@@ -141,7 +133,7 @@ impl NetworkDkg {
                 (),
             ),
             // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
-            KeyTypes::Ristretto => advance::<DKGFirstParty>(
+            KeyType::Ristretto => advance::<DKGFirstParty>(
                 CommitmentSizedNumber::from_le_slice(RISTRETTO_DKG_SESSION_ID.to_vec().as_slice()),
                 party_id,
                 &weighted_threshold_access_structure,

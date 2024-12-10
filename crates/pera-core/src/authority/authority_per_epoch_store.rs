@@ -97,6 +97,8 @@ use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use pera_types::collection_types::VecMap;
+use pera_types::dwallet_mpc::{EncryptedNetworkDecryptionKeyShares, KeyType};
 use pera_types::effects::TransactionEffects;
 use pera_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
@@ -1029,23 +1031,9 @@ impl AuthorityPerEpochStore {
         })
     }
 
-    pub fn get_encrypted_decryption_key_shares(&self) -> PeraResult<Vec<Vec<u8>>> {
-        if self.epoch() == FIRST_EPOCH_ID {
-            return Err(PeraError::Unknown(
-                "First epoch does not have decryption key shares, need to run network DKG"
-                    .to_string(),
-            ));
-        }
-
-        let encrypted_decryption_key_shares = match self.epoch_start_state() {
-            EpochStartSystemState::V1(data) => data.get_encrypted_decryption_key_shares(),
-        };
-        Ok(encrypted_decryption_key_shares.ok_or(PeraError::Unknown(
-            "Decryption key shares not found".to_string(),
-        ))?)
-    }
-
-    pub fn get_decryption_key_share(&self) -> PeraResult<Vec<u8>> {
+    pub fn get_encrypted_decryption_key_shares(
+        &self,
+    ) -> PeraResult<HashMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>> {
         if self.epoch() == FIRST_EPOCH_ID {
             return Err(PeraError::Unknown(
                 "First epoch does not have decryption key shares, need to run network DKG"
@@ -1059,15 +1047,38 @@ impl AuthorityPerEpochStore {
         let encrypted_decryption_key_shares = encrypted_decryption_key_shares.ok_or(
             PeraError::Unknown("Decryption key shares not found".to_string()),
         )?;
-        let party_id = authority_name_to_party_id(&self.name, self)? as usize;
-        let decryption_key_share =
-            encrypted_decryption_key_shares
-                .get(party_id)
-                .ok_or(PeraError::Unknown(
-                    "Decryption key share not found".to_string(),
-                ))?;
-        // Todo (#382): Decrypt the decryption key share
-        Ok(decryption_key_share.clone())
+        let encrypted_decryption_key_shares = encrypted_decryption_key_shares
+            .contents
+            .into_iter()
+            .map(|entry| (entry.key, entry.value))
+            .collect();
+        Ok(encrypted_decryption_key_shares)
+    }
+
+    pub fn get_decryption_key_share(&self) -> PeraResult<Vec<u8>> {
+        // if self.epoch() == FIRST_EPOCH_ID {
+        //     return Err(PeraError::Unknown(
+        //         "First epoch does not have decryption key shares, need to run network DKG"
+        //             .to_string(),
+        //     ));
+        // }
+        //
+        // let encrypted_decryption_key_shares = match self.epoch_start_state() {
+        //     EpochStartSystemState::V1(data) => data.get_encrypted_decryption_key_shares(),
+        // };
+        // let encrypted_decryption_key_shares = encrypted_decryption_key_shares.ok_or(
+        //     PeraError::Unknown("Decryption key shares not found".to_string()),
+        // )?;
+        // let party_id = authority_name_to_party_id(&self.name, self)? as usize;
+        // let decryption_key_share =
+        //     encrypted_decryption_key_shares
+        //         .get(party_id)
+        //         .ok_or(PeraError::Unknown(
+        //             "Decryption key share not found".to_string(),
+        //         ))?;
+        // // Todo (#382): Decrypt the decryption key share
+        // Ok(decryption_key_share.clone())
+        Ok(Vec::new())
     }
 
     pub fn committee_validators_class_groups_public_keys_and_proofs(

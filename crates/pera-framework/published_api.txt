@@ -751,6 +751,18 @@ total_object_storage_rebates
 total_balance
 	public fun
 	0x3::storage_fund
+EncryptedNetworkDecryptionKeyShares
+	public struct
+	0x3::dwallet_network_key
+is_key_type
+	public fun
+	0x3::dwallet_network_key
+new_encrypted_network_decryption_key_shares
+	public fun
+	0x3::dwallet_network_key
+update_new_shares
+	public fun
+	0x3::dwallet_network_key
 SystemParameters
 	public struct
 	0x3::pera_system_state_inner
@@ -776,6 +788,9 @@ v1_to_v2
 	public(package) fun
 	0x3::pera_system_state_inner
 lock_next_epoch_committee
+	public(package) fun
+	0x3::pera_system_state_inner
+new_encrypted_decryption_key_shares_version
 	public(package) fun
 	0x3::pera_system_state_inner
 store_encrypted_decryption_key_shares
@@ -1064,6 +1079,9 @@ lock_next_epoch_committee
 	fun
 	0x3::pera_system
 store_encrypted_decryption_key_shares
+	fun
+	0x3::pera_system
+new_encrypted_decryption_key_shares_version
 	fun
 	0x3::pera_system
 GenesisValidatorMetadata
