@@ -34,6 +34,7 @@ pera-macros.workspace = true
 pera-protocol-config.workspace = true
 pera-types.workspace = true
 pera-genesis-builder.workspace = true
+dwallet-mpc-types.workspace = true
 
 [target.'cfg(msim)'.dependencies]
 pera-simulator.workspace = true

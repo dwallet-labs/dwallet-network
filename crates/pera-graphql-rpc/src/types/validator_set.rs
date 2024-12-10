@@ -54,6 +54,8 @@ pub(crate) struct ValidatorSet {
 
     #[graphql(skip)]
     pub checkpoint_viewed_at: u64,
+
+    pub locked: bool,
 }
 
 type CValidator = JsonCursor<ConsistentIndexCursor>;
