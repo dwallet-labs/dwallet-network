@@ -4,7 +4,7 @@
 //! dWallet MPC process in the `pera_system::dwallet` Move module.
 //! They include utility functions for detecting and comparing the event types.
 use move_core_types::language_storage::StructTag;
-use pera_mpc_types::dwallet_mpc::{
+use dwallet_mpc_types::dwallet_mpc::{
     DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, START_BATCHED_SIGN_EVENT_STRUCT_NAME,
     START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
     START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME,

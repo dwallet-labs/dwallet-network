@@ -2,7 +2,7 @@
 //!
 //! It integrates the Sign party (representing a round in the protocol).
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
-use pera_mpc_types::dwallet_mpc::{MPCOutput, MPCPublicInput};
+use dwallet_mpc_types::dwallet_mpc::{MPCOutput, MPCPublicInput};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use std::collections::HashMap;
 use twopc_mpc::dkg::Protocol;

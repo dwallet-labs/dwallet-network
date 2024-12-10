@@ -2,7 +2,7 @@
 //!
 //! It integrates both Presign parties (each representing a round in the Presign protocol).
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
-use pera_mpc_types::dwallet_mpc::{MPCOutput, MPCPublicInput};
+use dwallet_mpc_types::dwallet_mpc::{MPCOutput, MPCPublicInput};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 
 pub(super) type PresignFirstParty =
