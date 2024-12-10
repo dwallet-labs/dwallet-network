@@ -10,7 +10,7 @@ use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use jsonrpsee::core::Serialize;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;
-use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::Deserialize;
@@ -21,9 +21,9 @@ const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
 
 fn new_dkg_secp256k1_instance(
     epoch_store: Arc<AuthorityPerEpochStore>,
-) -> PeraResult<DWalletMPCInstance> {
+) -> DwalletMPCResult<DWalletMPCInstance> {
     if epoch_store.epoch() != FIRST_EPOCH_ID {
-        return Err(PeraError::InternalDWalletMPCError);
+        return Err(DwalletMPCError::DKGNotOnFirstEpoch);
     }
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
@@ -46,9 +46,9 @@ fn new_dkg_secp256k1_instance(
 
 fn new_dkg_ristretto_instance(
     epoch_store: Arc<AuthorityPerEpochStore>,
-) -> PeraResult<DWalletMPCInstance> {
+) -> DwalletMPCResult<DWalletMPCInstance> {
     if epoch_store.epoch() != FIRST_EPOCH_ID {
-        return Err(PeraError::InternalDWalletMPCError);
+        return Err(DwalletMPCError::DKGNotOnFirstEpoch);
     }
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
@@ -103,9 +103,9 @@ impl NetworkDkg {
     /// Initializes the network DKG protocol for the supported key types.
     pub fn init(
         epoch_store: Arc<AuthorityPerEpochStore>,
-    ) -> PeraResult<HashMap<ObjectID, DWalletMPCInstance>> {
+    ) -> DwalletMPCResult<HashMap<ObjectID, DWalletMPCInstance>> {
         if epoch_store.epoch() != FIRST_EPOCH_ID {
-            return Err(PeraError::InternalDWalletMPCError);
+            return Err(DwalletMPCError::DKGNotOnFirstEpoch);
         }
         let dkg_secp256k1_instance = new_dkg_secp256k1_instance(epoch_store.clone())?;
         let dkg_ristretto_instance = new_dkg_ristretto_instance(epoch_store.clone())?;

@@ -57,6 +57,9 @@ pub enum DwalletMPCError {
     #[error("missing MPC public parameters in config")]
     MissingDwalletMPCDecryptionSharesPublicParameters,
 
+    #[error("tried to start DKG on an epoch that is not the first one")]
+    DKGNotOnFirstEpoch,
+
     // Note:
     // this one actually takes mpc_error,
     // but because of poor error design in the underline lib we can't use it,
