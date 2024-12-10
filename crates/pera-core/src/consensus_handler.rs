@@ -34,7 +34,7 @@ use pera_types::{
     transaction::{SenderSignedData, VerifiedTransaction},
 };
 
-use crate::dwallet_mpc::mpc_outputs_manager::OutputResult;
+use crate::dwallet_mpc::mpc_outputs_manager::{OutputResult, OutputVerificationResult};
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -431,7 +431,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .try_verify_output(output, &session_info, origin_authority)
                             .unwrap_or_else(|e| {
                                 error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
-                                OutputResult::Malicious
+                                OutputVerificationResult {
+                                    result: OutputResult::Malicious,
+                                    malicious_actors: vec![origin_authority],
+                                }
                             });
                         match output_verification_result.result {
                             OutputResult::ValidWithNewOutput(new_output) => {
