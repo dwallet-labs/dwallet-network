@@ -85,6 +85,7 @@ the PeraSystemStateInner version, or vice versa.
 -  [Function `load_inner_maybe_upgrade`](#0x3_pera_system_load_inner_maybe_upgrade)
 -  [Function `validator_voting_powers`](#0x3_pera_system_validator_voting_powers)
 -  [Function `lock_next_epoch_committee`](#0x3_pera_system_lock_next_epoch_committee)
+-  [Function `store_encrypted_decryption_key_shares`](#0x3_pera_system_store_encrypted_decryption_key_shares)
 
 
 <pre><code><b>use</b> <a href="../move-stdlib/option.md#0x1_option">0x1::option</a>;
@@ -1544,6 +1545,34 @@ the chain's DWallet MPC secret to it.
     <b>assert</b>!(ctx.sender() == @0x0, <a href="pera_system.md#0x3_pera_system_ENotSystemAddress">ENotSystemAddress</a>);
     <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
     self.<a href="pera_system.md#0x3_pera_system_lock_next_epoch_committee">lock_next_epoch_committee</a>();
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_pera_system_store_encrypted_decryption_key_shares"></a>
+
+## Function `store_encrypted_decryption_key_shares`
+
+Store the encrypted decryption key shares from the network DKG protocol public output.
+The chain agrees on on the same public output.
+
+
+<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_store_encrypted_decryption_key_shares">store_encrypted_decryption_key_shares</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_store_encrypted_decryption_key_shares">store_encrypted_decryption_key_shares</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, ctx: &TxContext) {
+    <b>assert</b>!(ctx.sender() == @0x0, <a href="pera_system.md#0x3_pera_system_ENotSystemAddress">ENotSystemAddress</a>);
+    <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
+    self.<a href="pera_system.md#0x3_pera_system_store_encrypted_decryption_key_shares">store_encrypted_decryption_key_shares</a>(shares);
 }
 </code></pre>
 
