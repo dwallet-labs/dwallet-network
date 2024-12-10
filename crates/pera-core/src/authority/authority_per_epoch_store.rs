@@ -68,7 +68,7 @@ use crate::consensus_handler::{
 };
 use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc;
-use crate::dwallet_mpc::mpc_instance::authority_name_to_party_id;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::{
     DWalletMPCChannelMessage, DWalletMPCManager, DWalletMPCSender,
 };
@@ -96,6 +96,7 @@ use pera_execution::{self, Executor};
 use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
+use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use pera_types::effects::TransactionEffects;
 use pera_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
@@ -933,7 +934,7 @@ impl AuthorityPerEpochStore {
         result
     }
 
-    /// A function to initiate the Dwallet MPC sender when a new epoch starts.
+    /// A function to initiate the [`DWalletMPCSender`] when a new epoch starts.
     pub async fn set_dwallet_mpc_sender(&self, sender: DWalletMPCSender) -> PeraResult<()> {
         if self.dwallet_mpc_sender.set(sender).is_err() {
             error!("BUG: `set_dwallet_mpc_sender` called more than once; this should never happen");
@@ -1071,7 +1072,7 @@ impl AuthorityPerEpochStore {
 
     pub fn committee_validators_class_groups_public_keys_and_proofs(
         &self,
-    ) -> PeraResult<HashMap<PartyID, ClassGroupsPublicKeyAndProof>> {
+    ) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsPublicKeyAndProof>> {
         let public_keys_and_proofs = match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => {
                 let committee: Vec<_> = self
@@ -1092,7 +1093,7 @@ impl AuthorityPerEpochStore {
                             bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(value).ok()?;
                         Some(Ok((party_id, public_key_and_proof)))
                     })
-                    .collect::<Result<HashMap<_, _>, PeraError>>()?
+                    .collect::<DwalletMPCResult<HashMap<_, _>>>()?
             }
         };
         Ok(public_keys_and_proofs)
@@ -2713,7 +2714,7 @@ impl AuthorityPerEpochStore {
         authority_metrics: &Arc<AuthorityMetrics>,
     ) -> PeraResult<Vec<VerifiedExecutableTransaction>> {
         // Split transactions into different types for processing.
-        // TODO (#337): Replace with filter_map when async clusure get supported.
+        // TODO (#337): Replace with filter_map when async closure get supported.
         let mut verified_transactions: Vec<VerifiedSequencedConsensusTransaction> = vec![];
         for tx in transactions {
             if let Some(verified_tx) = self
@@ -3875,12 +3876,13 @@ impl AuthorityPerEpochStore {
             return ConsensusCertificateResult::IgnoredSystem;
         }
 
-        // System transactions either contain a shared object or are proof MPC output transactions.
-        let is_proof_mpc_output = matches!(
+        // System transactions either contain a shared object
+        // or are dWallet MPC output transactions.
+        let is_dwallet_mpc_output = matches!(
             system_transaction.transaction_data().execution_parts().0,
             TransactionKind::DWalletMPCOutput(_)
         );
-        assert!(system_transaction.contains_shared_object() || is_proof_mpc_output);
+        assert!(system_transaction.contains_shared_object() || is_dwallet_mpc_output);
         ConsensusCertificateResult::PeraTransaction(system_transaction.clone())
     }
 

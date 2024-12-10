@@ -2570,13 +2570,9 @@ dependencies = [
 name = "class_groups_constants"
 version = "1.32.2"
 dependencies = [
- "anyhow",
  "base64 0.22.1",
  "bcs",
- "class_groups",
  "group 0.1.0",
- "hex",
- "homomorphic_encryption",
  "serde",
  "twopc_mpc",
 ]
@@ -4063,6 +4059,7 @@ dependencies = [
  "bcs",
  "class_groups",
  "crypto-bigint 0.5.5",
+ "move-core-types",
  "serde",
 ]
 
@@ -7146,7 +7143,6 @@ version = "0.1.0"
 source = "git+https://github.com/dwallet-labs/cryptography-private?branch=new-pera-api#5915cb64d26fa68a79cecfd2b57195c5f8aa42ee"
 dependencies = [
  "commitment",
- "criterion",
  "crypto-bigint 0.5.5",
  "getrandom 0.2.15",
  "group 0.1.0",
@@ -7154,12 +7150,9 @@ dependencies = [
  "merlin",
  "mpc",
  "proof",
- "rand_core 0.6.4",
- "rstest 0.22.0",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
- "tiresias",
 ]
 
 [[package]]
@@ -9951,6 +9944,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs",
+ "dwallet-mpc-types",
  "leb128",
  "move-binary-format",
  "move-bytecode-utils",
@@ -10470,7 +10464,6 @@ dependencies = [
  "itertools 0.10.5",
  "jsonrpsee",
  "lru 0.10.1",
- "maurer",
  "mockall",
  "moka",
  "more-asserts",
@@ -10518,7 +10511,6 @@ dependencies = [
  "pprof",
  "pretty_assertions",
  "prometheus",
- "proof",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rayon",
@@ -10540,7 +10532,6 @@ dependencies = [
  "tempfile",
  "test-fuzz",
  "thiserror 1.0.69",
- "tiresias",
  "tokio",
  "tokio-retry",
  "tokio-stream",
@@ -10709,6 +10700,7 @@ name = "pera-execution"
 version = "0.1.0"
 dependencies = [
  "cargo_metadata 0.15.4",
+ "dwallet-mpc-types",
  "move-abstract-interpreter",
  "move-abstract-interpreter-v2",
  "move-binary-format",

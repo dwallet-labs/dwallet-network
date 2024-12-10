@@ -12,14 +12,18 @@ pub enum MPCRound {
     DKGFirst,
     /// The second round of the DKG protocol.
     DKGSecond,
-    /// The first round of the presign protocol.
-    /// Contains the `ObjectId` of the dwallet object and the dkg decentralized output.
+    /// The first round of the Presign protocol.
+    /// Contains the `ObjectId` of the dWallet object,
+    /// and the DKG decentralized output.
     PresignFirst(ObjectID, Vec<u8>),
-    /// The second round of the presign protocol.
-    /// Contains the `ObjectId` of the dwallet object and the presign first round output.
+    /// The second round of the Presign protocol.
+    /// Contains the `ObjectId` of the dWallet object,
+    /// and the Presign first round output.
     PresignSecond(ObjectID, Vec<u8>),
-    /// The first round of the sign protocol.
-    /// Contains the object ID of the batched sign session & the hashed message that is being signed.
+    /// The first and only round of the Sign protocol.
+    /// Contains the `PartyID` associated with the decryption share,
+    /// the `ObjectID` of the batched sign session,
+    /// and the hashed message being signed.
     Sign(ObjectID, Vec<u8>),
     /// A batched sign session, contains the list of messages that are being signed.
     BatchedSign(Vec<Vec<u8>>),
@@ -27,7 +31,7 @@ pub enum MPCRound {
     NetworkDkg,
 }
 
-/// The content of the system transaction that stores the MPC session output on chain.
+/// The content of the system transaction that stores the MPC session output on the chain.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DWalletMPCOutput {
     /// The session information of the MPC session.
@@ -45,10 +49,12 @@ impl Message for DWalletMPCOutput {
     }
 }
 
+// todo(zeev): rename to MPCSessionInfo.
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
-    /// The session id of the first round in the flow - e.g. in Presign we have two rounds, so the session id of the first.
+    /// The session ID of the first round in the flow — e.g.,
+    /// in Presign we have two rounds, so the session ID of the first.
     pub flow_session_id: ObjectID,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,

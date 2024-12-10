@@ -31,6 +31,22 @@ pub struct InstanceOutputsData {
     pub authorities_that_sent_output: HashSet<AuthorityName>,
 }
 
+/// The result of verifying an incoming output for an MPC session.
+/// We need to differentiate between a duplicate and a malicious output,
+/// as the output can be sent twice by honest parties.
+#[derive(PartialOrd, PartialEq)]
+pub enum OutputVerificationResult {
+    /// When working on a batch, e.g., signing on a batch of messages,
+    /// we write the output to the chain only once — when the entire batch is ready.
+    ValidWithNewOutput(Vec<u8>, Vec<AuthorityName>),
+    /// When the output is correct but not all the MPC flows in
+    /// the batch have been completed.
+    ValidWithoutOutput(Vec<AuthorityName>),
+    Valid(Vec<AuthorityName>),
+    Duplicate,
+    Malicious,
+}
+
 impl DWalletMPCOutputsManager {
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
         DWalletMPCOutputsManager {
@@ -173,18 +189,4 @@ impl DWalletMPCOutputsManager {
             },
         );
     }
-}
-
-/// The possible results of verifying an incoming output for an MPC session.
-/// We need to differentiate between a duplicate & a malicious output, as the output can be sent twice by honest parties.
-#[derive(PartialOrd, PartialEq)]
-pub enum OutputVerificationResult {
-    /// When working on a batch, e.g. signing on a batch of messages, we write the output to the chain only once - when the entire batch is ready.
-    /// The returned value contains the new output, and the list of the malicious parties that voted for other outputs.
-    ValidWithNewOutput(Vec<u8>, Vec<AuthorityName>),
-    /// When the output is correct but not all the MPC flows in the batch have been completed.
-    ValidWithoutOutput(Vec<AuthorityName>),
-    Valid(Vec<AuthorityName>),
-    Duplicate,
-    Malicious,
 }
