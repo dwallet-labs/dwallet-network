@@ -52,7 +52,7 @@ module pera_system::pera_system {
     use pera_system::staking_pool::PoolTokenExchangeRate;
     use pera::dynamic_field;
     use pera::vec_map::VecMap;
-    use pera_system::dwallet_network_key::KeyType;
+    use pera_system::dwallet_network_key::is_key_type;
 
     #[test_only] use pera::balance;
     #[test_only] use pera_system::validator_set::ValidatorSet;
@@ -65,6 +65,8 @@ module pera_system::pera_system {
 
     const ENotSystemAddress: u64 = 0;
     const EWrongInnerVersion: u64 = 1;
+    #[error]
+    const EInvalidKeyType: u8 = 2;
 
     // ==== functions that can only be called by genesis ====
 
@@ -608,8 +610,9 @@ module pera_system::pera_system {
     #[allow(unused_function)]
     /// Store the encrypted decryption key shares from the network DKG re-sharing.
     /// The chain agrees on on the same public output.
-    fun store_encrypted_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: KeyType, ctx: &TxContext) {
+    fun store_encrypted_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        assert!(is_key_type(key_type), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);
         self.store_encrypted_decryption_key_shares(shares, key_type);
     }
@@ -617,8 +620,9 @@ module pera_system::pera_system {
     #[allow(unused_function)]
     /// Store the encrypted decryption key shares from the network DKG protocol public output.
     /// The chain agrees on on the same public output.
-    fun new_encrypted_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: KeyType, ctx: &TxContext) {
+    fun new_encrypted_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        assert!(is_key_type(key_type), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);
         self.new_encrypted_decryption_key_shares_version(shares, key_type);
     }

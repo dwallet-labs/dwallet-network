@@ -1,7 +1,13 @@
 module pera_system::dwallet_network_key {
-    public enum KeyType has store, drop, copy {
-        Secp256k1,
-        Ristretto,
+    const Secp256k1: u8 = 0;
+    const Ristretto: u8 = 1;
+
+    public fun is_key_type(val: u8): bool {
+        return match (val) {
+            Secp256k1 | Ristretto => true,
+            // 1 => true,
+            _ => false,
+        }
     }
 
     public struct EncryptedNetworkDecryptionKeyShares has store, copy {

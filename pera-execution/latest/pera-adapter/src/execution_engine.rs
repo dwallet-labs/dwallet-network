@@ -1178,13 +1178,14 @@ mod checked {
                     ],
                 )
             }
-            MPCRound::NetworkDkg => {
+            MPCRound::NetworkDkg(key_type) => {
                 module_name = PERA_SYSTEM_MODULE_NAME;
                 (
-                    "store_encrypted_decryption_key_shares",
+                    "new_encrypted_decryption_key_shares_version",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
                         CallArg::Pure(bcs::to_bytes(&data.output.clone()).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&key_type).unwrap())
                     ],
                 )
             }

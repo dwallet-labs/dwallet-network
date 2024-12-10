@@ -18,8 +18,8 @@ module pera_system::pera_system_state_inner {
     use pera::table::Table;
     use pera::bag::Bag;
     use pera::bag;
-    use pera_system::dwallet_network_key::{KeyType, EncryptedNetworkDecryptionKeyShares,
-        new_encrypted_network_decryption_key_shares
+    use pera_system::dwallet_network_key::{EncryptedNetworkDecryptionKeyShares,
+        new_encrypted_network_decryption_key_shares, is_key_type,
     };
 
     // same as in validator_set
@@ -28,6 +28,9 @@ module pera_system::pera_system_state_inner {
     const ANY_VALIDATOR: u8 = 3;
 
     const SYSTEM_STATE_VERSION_V1: u64 = 1;
+
+    #[error]
+    const EInvalidKeyType: u8 = 2;
 
     /// A list of system config parameters.
     public struct SystemParameters has store {
@@ -156,7 +159,7 @@ module pera_system::pera_system_state_inner {
         system_state_version: u64,
         /// These are the encrypted decryption key shares for the current epoch, used for dWallet MPC session.
         /// The shares are indexed by the validator index of the current epoch committee.
-        encrypted_decryption_key_shares: VecMap<KeyType, vector<EncryptedNetworkDecryptionKeyShares>>,
+        encrypted_decryption_key_shares: VecMap<u8, vector<EncryptedNetworkDecryptionKeyShares>>,
         /// Contains all information about the validators.
         validators: ValidatorSet,
         /// The storage fund.
@@ -354,7 +357,8 @@ module pera_system::pera_system_state_inner {
         self.validators.lock_next_epoch_committee(self.epoch);
     }
 
-    public(package) fun new_encrypted_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_type: KeyType) {
+    public(package) fun new_encrypted_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_type: u8) {
+        assert!(is_key_type(key_type), EInvalidKeyType);
         let new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty());
 
         if (self.encrypted_decryption_key_shares.contains(&key_type)) {
@@ -368,8 +372,9 @@ module pera_system::pera_system_state_inner {
     public(package) fun store_encrypted_decryption_key_shares(
         self: &mut PeraSystemStateInnerV2,
         shares: vector<vector<u8>>,
-        key_type: KeyType,
+        key_type: u8,
     ) {
+        assert!(is_key_type(key_type), EInvalidKeyType);
         let version = self.encrypted_decryption_key_shares.get(&key_type).length();
         if (self.encrypted_decryption_key_shares.contains(&key_type)) {
             self.encrypted_decryption_key_shares.get_mut(&key_type).borrow_mut(

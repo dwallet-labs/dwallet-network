@@ -5,6 +5,7 @@ use crate::message_envelope::Message;
 use group::PartyID;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
+use crate::dwallet_mpc::KeyType;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MPCRound {
@@ -24,7 +25,7 @@ pub enum MPCRound {
     /// A batched sign session, contains the list of messages that are being signed.
     BatchedSign(Vec<Vec<u8>>),
     /// The round of the network DKG protocol.
-    NetworkDkg,
+    NetworkDkg(KeyType),
 }
 
 /// The content of the system transaction that stores the MPC session output on chain.

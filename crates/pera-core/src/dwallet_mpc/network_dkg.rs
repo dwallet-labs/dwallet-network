@@ -36,7 +36,7 @@ fn new_dkg_secp256k1_instance(
             session_id: SECP256K1_DKG_SESSION_ID,
             initiating_user_address: Default::default(),
             dwallet_cap_id: NONE_OBJ_ID,
-            mpc_round: MPCRound::NetworkDkg,
+            mpc_round: MPCRound::NetworkDkg(KeyType::Secp256k1),
         },
         None,
     ))
@@ -61,7 +61,7 @@ fn new_dkg_ristretto_instance(
             session_id: RISTRETTO_DKG_SESSION_ID,
             initiating_user_address: Default::default(),
             dwallet_cap_id: NONE_OBJ_ID,
-            mpc_round: MPCRound::NetworkDkg,
+            mpc_round: MPCRound::NetworkDkg(KeyType::Ristretto),
         },
         None,
     ))
