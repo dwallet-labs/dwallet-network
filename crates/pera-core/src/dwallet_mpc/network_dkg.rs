@@ -75,7 +75,7 @@ fn generate_secp256k1_dkg_party_public_input(
         PartyID,
         ClassGroupsPublicKeyAndProof,
     >,
-) -> Vec<u8> {
+) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
@@ -85,7 +85,7 @@ fn generate_ristretto_dkg_party_public_input(
         PartyID,
         ClassGroupsPublicKeyAndProof,
     >,
-) -> Vec<u8> {
+) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
