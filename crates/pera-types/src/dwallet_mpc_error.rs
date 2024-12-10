@@ -1,18 +1,9 @@
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
-use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use group::PartyID;
 // todo(zeev): remove unused errors.
 
 #[derive(thiserror::Error, Debug)]
 pub enum DwalletMPCError {
-    #[error(
-        "received a `Finalize` event for session ID `{session_id:?}` that is not in the finalizing state; current state: {status}"
-    )]
-    InvalidFinalizeState {
-        session_id: ObjectID,
-        status: MPCSessionStatus,
-    },
-
     #[error("received a `Finalize` event for session ID `{0}` that does not exist")]
     FinalizeEventSessionNotFound(ObjectID),
 

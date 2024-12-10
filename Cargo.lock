@@ -12434,7 +12434,6 @@ dependencies = [
  "criterion",
  "derivative",
  "derive_more 0.99.18",
- "dwallet-mpc-types",
  "enum_dispatch",
  "expect-test",
  "eyre",

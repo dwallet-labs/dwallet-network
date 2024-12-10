@@ -43,12 +43,6 @@ pub type MPCRound = usize;
 ///   The session is currently running, and new messages are forwarded to it
 ///   for processing.
 ///
-/// - `Finalizing`:
-///   The session has completed execution and is awaiting processing in the Move VM.
-///   Once an output is received, it will be verified against the local result.
-///   If they match, the status transitions to `Finished`.
-///   This prevents the same output from being written to the chain multiple times.
-///
 /// - `Finished`:
 ///   The session has been removed from the active instances.
 ///   Incoming messages are no longer forwarded to the session,
@@ -61,7 +55,6 @@ pub enum MPCSessionStatus {
     Pending,
     FirstExecution,
     Active(MPCRound),
-    Finalizing(MPCOutput),
     Finished(MPCOutput),
     Failed,
 }
@@ -72,7 +65,6 @@ impl fmt::Display for MPCSessionStatus {
             MPCSessionStatus::Pending => write!(f, "Pending"),
             MPCSessionStatus::FirstExecution => write!(f, "FirstExecution"),
             MPCSessionStatus::Active(round) => write!(f, "Active - round {}", round),
-            MPCSessionStatus::Finalizing(output) => write!(f, "Finalizing({:?})", output),
             MPCSessionStatus::Finished(output) => write!(f, "Finished({:?})", output),
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
