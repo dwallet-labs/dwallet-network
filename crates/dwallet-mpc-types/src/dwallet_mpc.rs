@@ -13,6 +13,8 @@ pub const START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartPresignSecondRoundEvent");
 pub const START_SIGN_ROUND_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartSignEvent");
 pub const START_BATCHED_SIGN_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartBatchedSignEvent");
+pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
+    ident_str!("LockedNextEpochCommitteeEvent");
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
