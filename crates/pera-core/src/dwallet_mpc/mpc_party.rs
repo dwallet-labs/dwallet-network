@@ -6,25 +6,25 @@ use crate::dwallet_mpc::mpc_events::{
     StartBatchedSignEvent, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent,
     StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
-use crate::dwallet_mpc::mpc_manager::{DWalletMPCManager};
+use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::network_dkg::{KeyTypes, NetworkDkg};
 use crate::dwallet_mpc::presign::{
     PresignFirstParty, PresignFirstPartyPublicInputGenerator, PresignSecondParty,
     PresignSecondPartyPublicInputGenerator,
 };
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput};
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use anyhow::Error;
 use commitment::CommitmentSizedNumber;
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput};
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::ObjectID;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
-use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -326,7 +326,9 @@ impl MPCParty {
                     .node_config
                     .dwallet_mpc_decryption_shares_public_parameters
                     .clone()
-                    .ok_or_else(|| DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?,
+                    .ok_or_else(|| {
+                        DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters
+                    })?,
             )?,
             Self::sign_party_session_info(&deserialized_event, party_id),
         ))
@@ -365,7 +367,7 @@ pub(in crate::dwallet_mpc) fn advance<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_threshold: &WeightedThresholdAccessStructure,
-    messages: Vec<HashMap<PartyID, Vec<u8>>>,
+    messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
@@ -380,7 +382,7 @@ pub(in crate::dwallet_mpc) fn advance<P: AsynchronouslyAdvanceable>(
         &public_input,
         &mut rand_core::OsRng,
     )
-    .map_err(|e| twopc_error_to_pera_error(e.into()))?;
+    .map_err(|e| DwalletMPCError::TwoPCMPCError(format!("{:?}", e)))?;
 
     Ok(match res {
         mpc::AsynchronousRoundResult::Advance {
@@ -410,48 +412,33 @@ pub(in crate::dwallet_mpc) fn advance<P: AsynchronouslyAdvanceable>(
 /// Any value that fails to deserialize is considered to be sent by a malicious party.
 /// Returns the deserialized messages or an error including the IDs of the malicious parties.
 fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
-    messages: Vec<HashMap<PartyID, Vec<u8>>>,
+    messages: Vec<HashMap<PartyID, MPCMessage>>,
 ) -> DwalletMPCResult<Vec<HashMap<PartyID, M>>> {
-    let mut results = Vec::new();
-    let mut all_malicious_parties = Vec::new();
+    let mut deserialized_results = Vec::new();
+    let mut malicious_parties = Vec::new();
 
-    for message_batch in messages {
-        let parsing_results: Vec<PeraResult<(PartyID, M)>> = message_batch
-            .iter()
-            .map(|(k, v)| {
-                let value = bcs::from_bytes(&v)
-                    .map_err(|_| DwalletMPCError::MaliciousParties(vec![*k]))?;
-                Ok((*k, value))
-            })
-            .collect();
+    for message_batch in &messages {
+        let mut valid_messages = HashMap::new();
 
-        let malicious_parties: Vec<PartyID> = parsing_results
-            .iter()
-            .filter_map(|result| {
-                if let Err(DwalletMPCError::MaliciousParties(malicious_parties)) = result {
-                    Some(malicious_parties.clone())
-                } else {
-                    None
+        for (party_id, message) in message_batch {
+            match bcs::from_bytes::<M>(&message) {
+                Ok(value) => {
+                    valid_messages.insert(*party_id, value);
                 }
-            })
-            .flatten()
-            .collect();
+                Err(_) => {
+                    malicious_parties.push(*party_id);
+                }
+            }
+        }
 
-        if !malicious_parties.is_empty() {
-            all_malicious_parties.extend(malicious_parties);
-        } else {
-            // Only collect the valid results if there are no malicious parties in this batch
-            let valid_results: HashMap<PartyID, M> = parsing_results
-                .into_iter()
-                .filter_map(|result| result.ok())
-                .collect();
-            results.push(valid_results);
+        if !valid_messages.is_empty() {
+            deserialized_results.push(valid_messages);
         }
     }
 
-    if !all_malicious_parties.is_empty() {
-        return Err(DwalletMPCError::MaliciousParties(all_malicious_parties));
+    if !malicious_parties.is_empty() {
+        Err(DwalletMPCError::MaliciousParties(malicious_parties))
+    } else {
+        Ok(deserialized_results)
     }
-
-    Ok(results)
 }
