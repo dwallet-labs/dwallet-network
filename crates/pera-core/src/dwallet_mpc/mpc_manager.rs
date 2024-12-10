@@ -31,6 +31,8 @@ use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
+pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
+
 #[derive(Debug, PartialEq)]
 pub enum ManagerStatus {
     Active,
@@ -402,66 +404,56 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    /// Spawns a new MPC instance if the number of active instances is below the limit
-    /// and the pending instances queue is empty. Otherwise, adds the instance to the pending queue
-    pub fn push_new_mpc_instance(
+    /// Spawns a new MPC instance if the number of active instances is below the limit.
+    /// Otherwise, add the instance to the pending queue.
+    pub(crate) fn push_new_mpc_instance(
         &mut self,
         auxiliary_input: Vec<u8>,
         party: MPCParty,
         session_info: SessionInfo,
-    ) -> PeraResult {
-        let session_id = session_info.session_id.clone();
-        if self.mpc_instances.contains_key(&session_id) {
-            // This should never happen, as the session ID is a move UniqueID
+    ) -> DwalletMPCResult<()> {
+        // let session_id = session_info.session_id;
+        if self.mpc_instances.contains_key(&session_info.session_id) {
+            // This should never happen, as the session ID is a Move UniqueID.
             error!(
-                "Received start flow event for session ID {:?} that already exists",
-                session_id
+                "received start flow event for session ID {:?} that already exists",
+                &session_info.session_id
             );
             return Ok(());
         }
-
-        info!("Received start flow event for session ID {:?}", session_id);
+        info!(
+            "Received start MPC flow event for session ID {:?}",
+            session_info.session_id
+        );
         let mut new_instance = DWalletMPCInstance::new(
             self.epoch_store.clone(),
             self.epoch_id,
             party,
             MPCSessionStatus::Pending,
             auxiliary_input,
-            session_info,
+            session_info.clone(),
             Some(self.get_decryption_share()?),
         );
-        // TODO (#311): Make validator don't mark other validators as malicious or take any active action while syncing
-        if self.active_instances_counter > self.max_active_mpc_sessions
-            || !self.pending_instances_queue.is_empty()
-        {
+        // TODO (#311): Make sure validator don't mark other validators
+        // TODO (#311): as malicious or take any active action while syncing
+        // todo(zeev): remvoed             || !self.pending_instances_queue.is_empty()
+        if self.active_instances_counter > self.max_active_mpc_sessions {
             self.pending_instances_queue.push_back(new_instance);
             info!(
                 "Added MPCInstance to pending queue for session_id {:?}",
-                session_id
+                &session_info.session_id
             );
             return Ok(());
         }
         new_instance.status = MPCSessionStatus::FirstExecution;
-        self.mpc_instances.insert(session_id.clone(), new_instance);
+        self.mpc_instances
+            .insert(session_info.session_id, new_instance);
         self.active_instances_counter += 1;
         info!(
             "Added MPCInstance to MPC manager for session_id {:?}",
-            session_id
+            session_info.session_id
         );
         Ok(())
     }
 }
 
-/// Convert a `twopc_mpc::Error` to a `PeraError`.
-/// Needed this function and not a `From` implementation because when including the `twopc_mpc` crate
-/// as a dependency in the `pera-types` crate there are many conflicting implementations.
-pub fn twopc_error_to_pera_error(error: mpc::Error) -> PeraError {
-    match error {
-        Error::UnresponsiveParties(parties)
-        | Error::InvalidMessage(parties)
-        | Error::MaliciousMessage(parties) => PeraError::DWalletMPCMaliciousParties(parties),
-        _ => PeraError::InternalDWalletMPCError,
-    }
-}
-
-pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
