@@ -11,7 +11,7 @@ use pera_config::node::{
     AuthorityKeyPairWithPath, AuthorityOverloadConfig, AuthorityStorePruningConfig,
     CheckpointExecutorConfig, DBCheckpointConfig, ExecutionCacheConfig, ExpensiveSafetyCheckConfig,
     Genesis, KeyPairWithPath, StateArchiveConfig, StateSnapshotConfig,
-    DEFAULT_GRPC_CONCURRENCY_LIMIT, DEFAULT_MAX_ACTIVE_DWALLET_MPC_INSTANCES,
+    DEFAULT_GRPC_CONCURRENCY_LIMIT, DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS,
 };
 use pera_config::node::{default_zklogin_oauth_providers, RunWithRange};
 use pera_config::p2p::{P2pConfig, SeedPeer, StateSyncConfig};
@@ -189,7 +189,7 @@ impl ValidatorConfigBuilder {
                 .dwallet_mpc_class_groups_decryption_shares,
             dwallet_mpc_decryption_shares_public_parameters: validator
                 .dwallet_mpc_class_groups_public_parameters,
-            max_active_dwallet_mpc_instances: DEFAULT_MAX_ACTIVE_DWALLET_MPC_INSTANCES,
+            max_active_dwallet_mpc_sessions: DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS,
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator.key_pair),
             network_key_pair: KeyPairWithPath::new(PeraKeyPair::Ed25519(
                 validator.network_key_pair,
@@ -465,7 +465,7 @@ impl FullnodeConfigBuilder {
         NodeConfig {
             dwallet_mpc_class_groups_decryption_shares: None,
             dwallet_mpc_decryption_shares_public_parameters: None,
-            max_active_dwallet_mpc_instances: DEFAULT_MAX_ACTIVE_DWALLET_MPC_INSTANCES,
+            max_active_dwallet_mpc_sessions: DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS,
             protocol_key_pair: AuthorityKeyPairWithPath::new(validator_config.key_pair),
             account_key_pair: KeyPairWithPath::new(validator_config.account_key_pair),
             worker_key_pair: KeyPairWithPath::new(PeraKeyPair::Ed25519(

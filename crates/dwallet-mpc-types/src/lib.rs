@@ -1,3 +1,5 @@
+pub mod dwallet_mpc;
+
 use crypto_bigint::Uint;
 use serde::{Deserialize, Serialize};
 

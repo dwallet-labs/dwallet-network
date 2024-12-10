@@ -1,3 +1,18 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+// noinspection ES6PreferShortImport
+
+import { Buffer } from 'buffer';
+
+import { bcs } from '../../../src/bcs/index.js';
+import type { CreatedDwallet, DWallet } from '../../../src/dwallet-mpc/dkg.js';
+import { dWalletMoveType, isDWallet } from '../../../src/dwallet-mpc/dkg.js';
+import { dWallet2PCMPCECDSAK1ModuleName, packageId } from '../../../src/dwallet-mpc/globals.js';
+import type { Config } from '../../../src/dwallet-mpc/globals.js';
+import { isPresign, presignMoveType } from '../../../src/dwallet-mpc/presign.js';
+import type { Presign } from '../../../src/dwallet-mpc/presign.js';
+import { Transaction } from '../../../src/transactions/index.js';
+
 const DKGCentralizedOutput =
 	'IEOqWWYa3+D5sKS6TGrvLgi2M1DnRYHMkH0KYNoMgxkhAnOsvrxxbiLcoaiOXXlB5tpGagpOICQD+C2oO21jqVrTIQKobfzUEJP6XFRtlIIRGQs9Y2tEcq9tSdMYpVXLudJ1aiEDlZdJuZ7RTlfjDprLAZMDJ434cKJnMHJvqhr2vRNjnRo=';
 const DKGDecentralizedOutput =
@@ -7,20 +22,113 @@ const PresignFirstRoundOutput =
 const PresignSecondRoundOutput =
 	'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';
 
-// We only use this file to mock the output of the DKG & Presign calls in the tests.
-// So it is okay to use eslint-disable-next-line no-restricted-globals
-
 export const mockedDWallet = {
-	// eslint-disable-next-line no-restricted-globals
 	centralizedDKGOutput: Uint8Array.from(Buffer.from(DKGCentralizedOutput, 'base64')),
-	// eslint-disable-next-line no-restricted-globals
 	decentralizedDKGOutput: Uint8Array.from(Buffer.from(DKGDecentralizedOutput, 'base64')),
 };
 
 export const mockedPresign = {
-	// eslint-disable-next-line no-restricted-globals
 	firstRoundOutput: Uint8Array.from(Buffer.from(PresignFirstRoundOutput, 'base64')),
-	// eslint-disable-next-line no-restricted-globals
 	secondRoundOutput: Uint8Array.from(Buffer.from(PresignSecondRoundOutput, 'base64')),
 	firstRoundSessionID: '0x5d696d70bc5428c62f0f943adc8d04e9dfc83751af8aa5a314f96b04fa9d2c9d',
 };
+
+export async function mockCreateDwallet(c: Config): Promise<CreatedDwallet> {
+	console.log('Creating dWallet Mock');
+
+	// Initiate the transaction
+	const tx = new Transaction();
+	const [dwallet] = tx.moveCall({
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_dwallet`,
+		arguments: [tx.pure(bcs.vector(bcs.u8()).serialize(mockedDWallet.decentralizedDKGOutput))],
+	});
+	tx.transferObjects([dwallet], c.keypair.toPeraAddress());
+
+	// Execute the transaction
+	const res = await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+
+	// Validate the created objects
+	const createdObjects = res.effects?.created;
+	if (!createdObjects || createdObjects.length !== 2) {
+		throw new Error(
+			`mockCreateDwallet error: Unexpected number of objects created. Expected 2, got ${
+				createdObjects?.length || 0
+			}`,
+		);
+	}
+	await new Promise((resolve) => setTimeout(resolve, 2000));
+	for (const obj of createdObjects) {
+		const objectData = await c.client.getObject({
+			id: obj.reference.objectId,
+			options: { showContent: true },
+		});
+		const dwalletData =
+			objectData.data?.content?.dataType === 'moveObject' &&
+			objectData.data?.content.type === dWalletMoveType &&
+			isDWallet(objectData.data.content.fields)
+				? (objectData.data.content.fields as DWallet)
+				: null;
+
+		if (dwalletData) {
+			return {
+				id: dwalletData.id.id,
+				centralizedDKGOutput: Array.from(Buffer.from(DKGCentralizedOutput, 'base64')),
+				decentralizedDKGOutput: dwalletData.output,
+				dwalletCapID: dwalletData.dwallet_cap_id,
+			};
+		}
+	}
+	throw new Error(`mockCreateDwallet error: failed to create object of type ${dWalletMoveType}`);
+}
+
+export async function mockCreatePresign(c: Config, dwallet: CreatedDwallet) {
+	console.log('Creating Presign Mock');
+	const tx = new Transaction();
+	const [presign] = tx.moveCall({
+		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_presign`,
+		arguments: [
+			tx.pure.id(dwallet.id),
+			tx.pure.id(dwallet.dwalletCapID),
+			tx.pure(bcs.vector(bcs.u8()).serialize(mockedPresign.firstRoundOutput)),
+			tx.pure(bcs.vector(bcs.u8()).serialize(mockedPresign.secondRoundOutput)),
+			tx.pure.id(mockedPresign.firstRoundSessionID),
+		],
+	});
+	tx.transferObjects([presign], c.keypair.toPeraAddress());
+	let res = await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
+		transaction: tx,
+		options: {
+			showEffects: true,
+		},
+	});
+	const presignID = res.effects?.created?.at(0)?.reference.objectId;
+	if (!presignID) {
+		throw new Error('create_mock_presign error: Failed to create presign');
+	}
+	await new Promise((resolve) => setTimeout(resolve, 2000));
+	const obj = await c.client.getObject({
+		id: presignID,
+		options: { showContent: true },
+	});
+	const preSignObj =
+		obj.data?.content?.dataType === 'moveObject' &&
+		obj.data?.content.type === presignMoveType &&
+		isPresign(obj.data.content.fields)
+			? (obj.data.content.fields as Presign)
+			: null;
+
+	if (!preSignObj) {
+		throw new Error(
+			`invalid object of type ${dWalletMoveType}, got: ${JSON.stringify(obj.data?.content)}`,
+		);
+	}
+
+	return preSignObj;
+}

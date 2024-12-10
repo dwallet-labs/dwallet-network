@@ -66,6 +66,7 @@ parking_lot.workspace = true
 pera-macros.workspace = true
 pera-enum-compat-util.workspace = true
 
+
 fastcrypto = { workspace = true, features = ["copy_key"] }
 fastcrypto-tbls.workspace = true
 fastcrypto-zkp.workspace = true

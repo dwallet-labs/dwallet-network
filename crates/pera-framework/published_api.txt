@@ -16,13 +16,16 @@ get_dwallet_cap_id
 get_dwallet_output
 	public(package) fun
 	0x3::dwallet
-MessageApproval
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 Secp256K1
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+MessageApproval
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 DKGFirstRoundOutput
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+Presign
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGFirstRoundEvent
@@ -43,19 +46,13 @@ StartPresignFirstRoundEvent
 StartPresignSecondRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-Presign
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 CompletedPresignEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartBatchedSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-SignOutput
+StartBatchedSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
@@ -67,19 +64,19 @@ create_dkg_first_round_output
 launch_dkg_second_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-approve_messages
-	public fun
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_dkg_second_round_output
-	public fun
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_presign_first_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_presign_second_round
-	public fun
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_second_presign_round_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+approve_messages
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 remove_message_approval
@@ -88,10 +85,13 @@ remove_message_approval
 sign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-mock_sign
+create_sign_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_mock_dwallet
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_sign_output
+create_mock_presign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
