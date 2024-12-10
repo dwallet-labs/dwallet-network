@@ -113,7 +113,7 @@ impl DWalletMPCManager {
             )
         } else {
             // Todo (#382): Store the real value of the decryption key shares
-            epoch_store.get_encrypted_decryption_key_shares()?;
+            let _ = epoch_store.get_encrypted_decryption_key_shares();
             (ManagerStatus::Active, HashMap::new())
         };
 
