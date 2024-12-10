@@ -61,7 +61,7 @@ impl EpochStartSystemState {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
-        encrypted_decryption_key_shares: Option<VecMap<KeyType, Vec<EncryptedNetworkDecryptionKeyShares>>>,
+        encrypted_decryption_key_shares: Option<VecMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>>,
     ) -> Self {
         Self::V1(EpochStartSystemStateV1 {
             epoch,
@@ -105,11 +105,11 @@ pub struct EpochStartSystemStateV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
-    encrypted_decryption_key_shares: Option<VecMap<KeyType, Vec<EncryptedNetworkDecryptionKeyShares>>>,
+    encrypted_decryption_key_shares: Option<VecMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>>,
 }
 
 impl EpochStartSystemStateV1 {
-    pub fn get_encrypted_decryption_key_shares(&self) -> Option<VecMap<KeyType, Vec<EncryptedNetworkDecryptionKeyShares>>> {
+    pub fn get_encrypted_decryption_key_shares(&self) -> Option<VecMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>> {
         self.encrypted_decryption_key_shares.clone()
     }
 

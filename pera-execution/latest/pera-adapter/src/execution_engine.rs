@@ -1184,8 +1184,8 @@ mod checked {
                     "new_encrypted_decryption_key_shares_version",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
-                        CallArg::Pure(bcs::to_bytes(&data.output.clone()).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&key_type).unwrap())
+                        CallArg::Pure(bcs::to_bytes(&vec![data.output.clone()]).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&(key_type as u8 + 1)).unwrap())
                     ],
                 )
             }

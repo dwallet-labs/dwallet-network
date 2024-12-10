@@ -60,7 +60,7 @@ pub struct PeraSystemStateInnerV2 {
     pub epoch: u64,
     pub protocol_version: u64,
     pub system_state_version: u64,
-    pub encrypted_decryption_key_share: VecMap<KeyType, Vec<EncryptedNetworkDecryptionKeyShares>>,
+    pub encrypted_decryption_key_share: VecMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>,
     pub validators: ValidatorSetV1,
     pub storage_fund: StorageFundV1,
     pub parameters: SystemParametersV2,

@@ -1030,7 +1030,7 @@ impl AuthorityPerEpochStore {
         })
     }
 
-    pub fn get_encrypted_decryption_key_shares(&self) -> PeraResult<VecMap<KeyType, Vec<EncryptedNetworkDecryptionKeyShares>>> {
+    pub fn get_encrypted_decryption_key_shares(&self) -> PeraResult<VecMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>> {
         if self.epoch() == FIRST_EPOCH_ID {
             return Err(PeraError::Unknown(
                 "First epoch does not have decryption key shares, need to run network DKG"
