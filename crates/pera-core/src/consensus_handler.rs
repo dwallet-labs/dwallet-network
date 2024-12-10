@@ -433,8 +433,8 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
                                 OutputResult::Malicious
                             });
-                        match output_verification_result {
-                            OutputResult::ValidWithNewOutput(new_output, _) => {
+                        match output_verification_result.result {
+                            OutputResult::ValidWithNewOutput(new_output) => {
                                 let transaction = self
                                     .create_dwallet_mpc_output_system_tx(session_info, &new_output);
                                 transactions.push((
@@ -443,7 +443,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     consensus_output.leader_author_index(),
                                 ));
                             }
-                            OutputResult::Valid(_) => {
+                            OutputResult::Valid => {
                                 let transaction =
                                     self.create_dwallet_mpc_output_system_tx(session_info, output);
                                 transactions.push((
@@ -452,7 +452,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                     consensus_output.leader_author_index(),
                                 ));
                             }
-                            OutputResult::ValidWithoutOutput(_)
+                            OutputResult::ValidWithoutOutput
                             | OutputResult::Malicious => {
                                 // Ignore this output,
                                 // as the same output may be submitted twice by non-malicious parties,

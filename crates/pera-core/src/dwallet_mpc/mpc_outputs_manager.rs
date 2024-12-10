@@ -47,8 +47,8 @@ pub enum OutputResult {
 }
 
 pub struct OutputVerificationResult {
-    result: OutputResult,
-    malicious_actors: Vec<AuthorityName>,
+    pub result: OutputResult,
+    pub malicious_actors: Vec<AuthorityName>,
 }
 
 impl DWalletMPCOutputsManager {
@@ -156,18 +156,25 @@ impl DWalletMPCOutputsManager {
                         })
                         .collect::<anyhow::Result<Vec<Vec<u8>>>>()?;
                     Ok(OutputVerificationResult {
-                        result: OutputResult::ValidWithNewOutput(
-                            bcs::to_bytes(&new_output)?,
-                        ),
-                        malicious_actors: voted_for_other_outputs
+                        result: OutputResult::ValidWithNewOutput(bcs::to_bytes(&new_output)?),
+                        malicious_actors: voted_for_other_outputs,
                     })
                 } else {
-                    Ok(OutputVerificationResult { result: OutputResult::ValidWithoutOutput, malicious_actors: voted_for_other_outputs })
-                }
+                    Ok(OutputVerificationResult {
+                        result: OutputResult::ValidWithoutOutput,
+                        malicious_actors: voted_for_other_outputs,
+                    })
+                };
             }
-            return Ok(OutputVerificationResult{result: OutputResult::Valid, malicious_actors: voted_for_other_outputs});
+            return Ok(OutputVerificationResult {
+                result: OutputResult::Valid,
+                malicious_actors: voted_for_other_outputs,
+            });
         }
-        Ok(OutputVerificationResult{result: OutputResult::ValidWithoutOutput, malicious_actors: vec![]})
+        Ok(OutputVerificationResult {
+            result: OutputResult::ValidWithoutOutput,
+            malicious_actors: vec![],
+        })
     }
 
     pub fn handle_new_event(&mut self, session_info: &SessionInfo) {
