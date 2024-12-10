@@ -1,15 +1,16 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
-use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance, MPCSessionStatus};
+use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
 use crate::dwallet_mpc::mpc_party::{advance, MPCParty};
 use crate::dwallet_mpc::{FIRST_EPOCH_ID, RISTRETTO_DKG_SESSION_ID, SECP256K1_DKG_SESSION_ID};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::{dwallet_mpc::MPCSessionStatus, ClassGroupsPublicKeyAndProof};
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use jsonrpsee::core::Serialize;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::Deserialize;
@@ -20,9 +21,9 @@ const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
 
 fn new_dkg_secp256k1_instance(
     epoch_store: Arc<AuthorityPerEpochStore>,
-) -> PeraResult<DWalletMPCInstance> {
+) -> DwalletMPCResult<DWalletMPCInstance> {
     if epoch_store.epoch() != FIRST_EPOCH_ID {
-        return Err(PeraError::InternalDWalletMPCError);
+        return Err(DwalletMPCError::DKGNotOnFirstEpoch);
     }
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
@@ -31,7 +32,7 @@ fn new_dkg_secp256k1_instance(
         MPCSessionStatus::FirstExecution,
         generate_secp256k1_dkg_party_public_input(
             epoch_store.committee_validators_class_groups_public_keys_and_proofs()?,
-        ),
+        )?,
         SessionInfo {
             flow_session_id: SECP256K1_DKG_SESSION_ID,
             session_id: SECP256K1_DKG_SESSION_ID,
@@ -45,9 +46,9 @@ fn new_dkg_secp256k1_instance(
 
 fn new_dkg_ristretto_instance(
     epoch_store: Arc<AuthorityPerEpochStore>,
-) -> PeraResult<DWalletMPCInstance> {
+) -> DwalletMPCResult<DWalletMPCInstance> {
     if epoch_store.epoch() != FIRST_EPOCH_ID {
-        return Err(PeraError::InternalDWalletMPCError);
+        return Err(DwalletMPCError::DKGNotOnFirstEpoch);
     }
     Ok(DWalletMPCInstance::new(
         Arc::downgrade(&epoch_store),
@@ -56,7 +57,7 @@ fn new_dkg_ristretto_instance(
         MPCSessionStatus::FirstExecution,
         generate_ristretto_dkg_party_public_input(
             epoch_store.committee_validators_class_groups_public_keys_and_proofs()?,
-        ),
+        )?,
         SessionInfo {
             flow_session_id: RISTRETTO_DKG_SESSION_ID,
             session_id: RISTRETTO_DKG_SESSION_ID,
@@ -74,7 +75,7 @@ fn generate_secp256k1_dkg_party_public_input(
         PartyID,
         ClassGroupsPublicKeyAndProof,
     >,
-) -> Vec<u8> {
+) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
@@ -84,7 +85,7 @@ fn generate_ristretto_dkg_party_public_input(
         PartyID,
         ClassGroupsPublicKeyAndProof,
     >,
-) -> Vec<u8> {
+) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
 }
 
@@ -102,9 +103,9 @@ impl NetworkDkg {
     /// Initializes the network DKG protocol for the supported key types.
     pub fn init(
         epoch_store: Arc<AuthorityPerEpochStore>,
-    ) -> PeraResult<HashMap<ObjectID, DWalletMPCInstance>> {
+    ) -> DwalletMPCResult<HashMap<ObjectID, DWalletMPCInstance>> {
         if epoch_store.epoch() != FIRST_EPOCH_ID {
-            return Err(PeraError::InternalDWalletMPCError);
+            return Err(DwalletMPCError::DKGNotOnFirstEpoch);
         }
         let dkg_secp256k1_instance = new_dkg_secp256k1_instance(epoch_store.clone())?;
         let dkg_ristretto_instance = new_dkg_ristretto_instance(epoch_store.clone())?;
@@ -128,7 +129,7 @@ impl NetworkDkg {
         public_input: &[u8],
         key_type: &KeyTypes,
         messages: Vec<HashMap<PartyID, Vec<u8>>>,
-    ) -> PeraResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
         Ok(match key_type {
             // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
             KeyTypes::Secp256k1 => advance::<DKGFirstParty>(

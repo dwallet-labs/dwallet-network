@@ -1,115 +1,135 @@
+// Copyright (c) dWallet Labs, Ltd.
+// SPDX-License-Identifier: BSD-3-Clause-Clear
+// noinspection ES6PreferShortImport
+
 import { bcs } from '../bcs/index.js';
-import type { PeraClient } from '../client/index.js';
-import type { Keypair } from '../cryptography/index.js';
 import { Transaction } from '../transactions/index.js';
-import {
-	dWallet2PCMPCECDSAK1ModuleName,
-	getEventByTypeAndSessionId,
-	packageId,
-} from './globals.js';
+import type { Config } from './globals.js';
+import { dWallet2PCMPCECDSAK1ModuleName, packageId } from './globals.js';
+
+const signMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`;
+// const singOutputMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignOutput`;
+const approveMessagesMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`;
+const completedSignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`;
 
 export enum Hash {
 	KECCAK256 = 0,
 	SHA256 = 1,
 }
 
-export async function signMockCall(
-	keypair: Keypair,
-	client: PeraClient,
-	hashedMessages: Uint8Array[],
-	presignFirstRound: Uint8Array,
-	presignSecondRound: Uint8Array,
-	dkgOutput: Uint8Array,
-	centralizedSignedMessages: Uint8Array[],
-	presignFirstRoundSessionId: string,
-) {
-	const tx = new Transaction();
-	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::mock_sign`,
-		arguments: [
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(presignFirstRound)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(presignSecondRound)),
-			tx.pure(bcs.vector(bcs.u8()).serialize(dkgOutput)),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
-			tx.pure.id(presignFirstRoundSessionId),
-		],
-	});
+export interface StartBatchedSignEvent {
+	// Hexadecimal string representing the session ID (ID).
+	session_id: string;
+	// 2D array representing the list of hashed messages.
+	hashed_messages: number[][];
+	// Address of the user who initiated the process.
+	initiating_user: string;
+}
 
-	let res = await client.signAndExecuteTransaction({
-		signer: keypair,
-		transaction: tx,
-		options: {
-			showEvents: true,
-		},
-	});
+export interface CompletedSignEvent {
+	session_id: string;
+	signed_messages: Array<Array<number>>;
+}
 
-	console.log({ res });
-
-	const eventData = res.events?.find(
-		(event) =>
-			event.type === `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartBatchedSignEvent`,
-	)?.parsedJson as {
-		session_id: string;
-	};
-	let completionEvent = await getEventByTypeAndSessionId(
-		client,
-		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`,
-		eventData.session_id,
-	);
-	return (completionEvent as { signed_messages: Uint8Array[] }).signed_messages;
+export function isCompletedSignEvent(obj: any): obj is CompletedSignEvent {
+	return obj && 'session_id' in obj && 'signed_messages' in obj;
 }
 
 export async function signMessageTransactionCall(
-	keypair: Keypair,
-	client: PeraClient,
-	dwalletCapId: string,
+	c: Config,
+	dwalletCapID: string,
 	hashedMessages: Uint8Array[],
-	dwalletId: string,
-	presignId: string,
+	dWalletID: string,
+	presignID: string,
 	centralizedSignedMessages: Uint8Array[],
-	presignSessionId: string,
+	presignSessionID: string,
 ) {
 	const tx = new Transaction();
 
 	const [messageApprovals] = tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`,
+		target: approveMessagesMoveFunc,
 		arguments: [
-			tx.object(dwalletCapId),
+			tx.object(dwalletCapID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
 		],
 	});
 
 	tx.moveCall({
-		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`,
+		target: signMoveFunc,
 		arguments: [
-			tx.pure.id(dwalletCapId),
+			tx.pure.id(dwalletCapID),
 			messageApprovals,
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
-			tx.object(presignId),
-			tx.object(dwalletId),
+			tx.object(presignID),
+			tx.object(dWalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
-			tx.object(presignSessionId),
+			tx.object(presignSessionID),
 		],
 	});
 
-	let res = await client.signAndExecuteTransaction({
-		signer: keypair,
+	let res = await c.client.signAndExecuteTransaction({
+		signer: c.keypair,
 		transaction: tx,
 		options: {
 			showEvents: true,
 		},
 	});
-	const eventData = res.events?.find(
-		(event) =>
-			event.type === `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::StartBatchedSignEvent`,
-	)?.parsedJson as {
-		session_id: string;
-	};
-	let completionEvent = await getEventByTypeAndSessionId(
-		client,
-		`${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`,
-		eventData.session_id,
+
+	const startBatchSignEvent = isStartBatchedSignEvent(res.events?.at(0)?.parsedJson)
+		? (res.events?.at(0)?.parsedJson as StartBatchedSignEvent)
+		: null;
+
+	if (!startBatchSignEvent) {
+		throw new Error(`${signMoveFunc} failed: ${res.errors}`);
+	}
+
+	return await fetchCompleteSignEvent(c, startBatchSignEvent.session_id);
+}
+
+export function isStartBatchedSignEvent(obj: any): obj is StartBatchedSignEvent {
+	return obj && 'session_id' in obj && 'hashed_messages' in obj && 'initiating_user' in obj;
+}
+
+// function isSignOutput(obj: any): obj is SignOutput {
+// 	return obj && obj.id && obj.session_id && obj.output && obj.dwallet_id;
+// }
+
+async function fetchCompleteSignEvent(c: Config, sessionID: string): Promise<CompletedSignEvent> {
+	const startTime = Date.now();
+	let cursor = null;
+
+	while (Date.now() - startTime <= c.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+		const { data, nextCursor, hasNextPage } = await c.client.queryEvents({
+			query: {
+				TimeRange: {
+					startTime: (Date.now() - c.timeout).toString(),
+					endTime: Date.now().toString(),
+				},
+			},
+			cursor,
+		});
+
+		const match = data.find(
+			(event) =>
+				event.type === completedSignMoveEvent &&
+				isCompletedSignEvent(event.parsedJson) &&
+				event.parsedJson.session_id === sessionID,
+		);
+		if (match) {
+			return match.parsedJson as CompletedSignEvent;
+		}
+		if (hasNextPage) {
+			cursor = nextCursor;
+		}
+	}
+
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch an event of type ${completedSignMoveEvent} within ${
+			c.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
 	);
-	return (completionEvent as { signed_messages: Uint8Array[] }).signed_messages;
 }

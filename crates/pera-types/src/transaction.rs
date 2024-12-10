@@ -1499,7 +1499,7 @@ impl Display for TransactionKind {
                 writeln!(writer, "Transaction Kind : End of Epoch Transaction")?;
             }
             Self::DWalletMPCOutput(_) => {
-                writeln!(writer, "Transaction Kind : dwallet mpc Output")?;
+                writeln!(writer, "Transaction Kind : dWallet mpc Output")?;
             }
             TransactionKind::LockNextCommittee(..) => {
                 writeln!(writer, "Transaction Kind : LockNextCommittee")?;
