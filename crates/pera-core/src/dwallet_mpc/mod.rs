@@ -32,7 +32,7 @@ pub struct DWalletMPCMessage {
 
 /// Convert a given authority name (address) to it's corresponding [`PartyID`].
 /// The [`PartyID`] is the index of the authority in the committee.
-pub fn authority_name_to_party_id(
+pub(crate) fn authority_name_to_party_id(
     authority_name: &AuthorityName,
     epoch_store: &AuthorityPerEpochStore,
 ) -> DwalletMPCResult<PartyID> {
