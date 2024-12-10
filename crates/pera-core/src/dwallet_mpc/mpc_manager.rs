@@ -239,6 +239,7 @@ impl DWalletMPCManager {
         Ok(())
     }
 
+    // todo(zeev): doc this.
     pub fn get_decryption_share(&self) -> DwalletMPCResult<DecryptionKeyShare> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
