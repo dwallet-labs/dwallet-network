@@ -6,9 +6,9 @@ pub use checked::*;
 #[pera_macros::with_checked_arithmetic]
 mod checked {
     use crate::execution_mode::{self, ExecutionMode};
+    use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
     use move_binary_format::CompiledModule;
     use move_vm_runtime::move_vm::MoveVM;
-    use dwallet_mpc_types::dwallet_mpc::DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
     use pera_types::balance::{
         BALANCE_CREATE_REWARDS_FUNCTION_NAME, BALANCE_DESTROY_REBATES_FUNCTION_NAME,
         BALANCE_MODULE_NAME,

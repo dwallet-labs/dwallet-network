@@ -4,17 +4,15 @@ use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
 use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
-use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
-use crate::dwallet_mpc::mpc_instance::{
-    DWalletMPCInstance,
-};
-use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
+use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
 use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputVerificationResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::network_dkg::NetworkDkg;
 use crate::dwallet_mpc::sign::BatchedSignSession;
 use crate::dwallet_mpc::FIRST_EPOCH_ID;
+use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use anyhow::anyhow;
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
@@ -120,9 +118,11 @@ impl DWalletMPCManager {
 
         // Todo (#383): Remove the `outputs_manager` from the `DWalletMPCManager`
         let mut outputs_manager = DWalletMPCOutputsManager::new(&epoch_store);
-        let mut epoch_store_outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await.map_err(
-            |_| DwalletMPCError::MissingDwalletMPCOutputsManager,
-        )?;
+        let mut epoch_store_outputs_manager =
+            epoch_store
+                .get_dwallet_mpc_outputs_manager()
+                .await
+                .map_err(|_| DwalletMPCError::MissingDwalletMPCOutputsManager)?;
         for (network_dkg_session_id, _) in mpc_instances.iter() {
             outputs_manager.insert_new_output_instance(network_dkg_session_id);
             epoch_store_outputs_manager.insert_new_output_instance(network_dkg_session_id);
@@ -279,8 +279,7 @@ impl DWalletMPCManager {
         let mut ready_to_advance = self
             .mpc_instances
             .iter_mut()
-            .filter_map(|(_, instance)|
-                match instance.status {
+            .filter_map(|(_, instance)| match instance.status {
                 MPCSessionStatus::Active(round) => {
                     let received_weight: StakeUnit = instance.pending_messages[round]
                         .keys()

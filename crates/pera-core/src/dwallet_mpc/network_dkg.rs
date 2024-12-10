@@ -1,10 +1,10 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
-use crate::dwallet_mpc::mpc_instance::{DWalletMPCInstance};
+use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
 use crate::dwallet_mpc::mpc_party::{advance, MPCParty};
 use crate::dwallet_mpc::{FIRST_EPOCH_ID, RISTRETTO_DKG_SESSION_ID, SECP256K1_DKG_SESSION_ID};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::{ClassGroupsPublicKeyAndProof, dwallet_mpc::MPCSessionStatus};
+use dwallet_mpc_types::{dwallet_mpc::MPCSessionStatus, ClassGroupsPublicKeyAndProof};
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use jsonrpsee::core::Serialize;
@@ -32,7 +32,7 @@ fn new_dkg_secp256k1_instance(
         MPCSessionStatus::FirstExecution,
         generate_secp256k1_dkg_party_public_input(
             epoch_store.committee_validators_class_groups_public_keys_and_proofs()?,
-        ),
+        )?,
         SessionInfo {
             flow_session_id: SECP256K1_DKG_SESSION_ID,
             session_id: SECP256K1_DKG_SESSION_ID,
@@ -57,7 +57,7 @@ fn new_dkg_ristretto_instance(
         MPCSessionStatus::FirstExecution,
         generate_ristretto_dkg_party_public_input(
             epoch_store.committee_validators_class_groups_public_keys_and_proofs()?,
-        ),
+        )?,
         SessionInfo {
             flow_session_id: RISTRETTO_DKG_SESSION_ID,
             session_id: RISTRETTO_DKG_SESSION_ID,

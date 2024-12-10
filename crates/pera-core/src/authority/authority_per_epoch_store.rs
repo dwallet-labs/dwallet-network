@@ -68,6 +68,7 @@ use crate::consensus_handler::{
 };
 use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_manager::{
     DWalletMPCChannelMessage, DWalletMPCManager, DWalletMPCSender,
 };
@@ -94,6 +95,7 @@ use pera_execution::{self, Executor};
 use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
+use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use pera_types::effects::TransactionEffects;
 use pera_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
@@ -115,10 +117,8 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
-use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
-use crate::dwallet_mpc::authority_name_to_party_id;
 
 /// The key where the latest consensus index is stored in the database.
 // TODO: Make a single table (e.g., called `variables`) storing all our lonely variables in one place.
@@ -1051,7 +1051,7 @@ impl AuthorityPerEpochStore {
                             bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(value).ok()?;
                         Some(Ok((party_id, public_key_and_proof)))
                     })
-                    .collect::<Result<HashMap<_, _>, PeraError>>()?
+                    .collect::<DwalletMPCResult<HashMap<_, _>>>()?
             }
         };
         Ok(public_keys_and_proofs)

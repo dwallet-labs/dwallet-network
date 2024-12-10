@@ -2,8 +2,8 @@
 //!
 //! It integrates both DKG parties (each representing a round in the DKG protocol).
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
-use mpc::Party;
 use dwallet_mpc_types::dwallet_mpc::MPCPublicInput;
+use mpc::Party;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use twopc_mpc::dkg::Protocol;
 

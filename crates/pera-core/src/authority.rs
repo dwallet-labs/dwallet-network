@@ -143,6 +143,7 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
+use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_events::{
     LockedNextEpochCommitteeEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent,
 };
@@ -169,7 +170,6 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::execution_config_utils::to_binary_config;
-use crate::dwallet_mpc::authority_name_to_party_id;
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
