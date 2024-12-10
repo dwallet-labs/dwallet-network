@@ -18,12 +18,12 @@ use commitment::CommitmentSizedNumber;
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::ObjectID;
+use pera_types::dwallet_mpc::KeyType;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
-use pera_types::dwallet_mpc::KeyType;
 
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -190,7 +190,10 @@ impl MPCParty {
             t if t == &StartDKGSecondRoundEvent::type_() => {
                 let deserialized_event: StartDKGSecondRoundEvent =
                     bcs::from_bytes(&event.contents)?;
-                Self::dkg_second_party(deserialized_event, dwallet_mpc_manager.outputs_manager.network_key_version())
+                Self::dkg_second_party(
+                    deserialized_event,
+                    dwallet_mpc_manager.outputs_manager.network_key_version(),
+                )
             }
             t if t == &StartPresignFirstRoundEvent::type_() => {
                 let deserialized_event: StartPresignFirstRoundEvent =
@@ -225,7 +228,10 @@ impl MPCParty {
         ))
     }
 
-    fn dkg_second_party_session_info(deserialized_event: &StartDKGSecondRoundEvent, dwallet_network_key_version: u8) -> SessionInfo {
+    fn dkg_second_party_session_info(
+        deserialized_event: &StartDKGSecondRoundEvent,
+        dwallet_network_key_version: u8,
+    ) -> SessionInfo {
         SessionInfo {
             flow_session_id: deserialized_event.first_round_session_id.bytes,
             session_id: ObjectID::from(deserialized_event.session_id),

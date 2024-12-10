@@ -96,6 +96,8 @@ use pera_execution::{self, Executor};
 use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
+use pera_types::collection_types::VecMap;
+use pera_types::dwallet_mpc::{EncryptedNetworkDecryptionKeyShares, KeyType};
 use pera_types::effects::TransactionEffects;
 use pera_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
@@ -117,8 +119,6 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
-use pera_types::collection_types::VecMap;
-use pera_types::dwallet_mpc::{EncryptedNetworkDecryptionKeyShares, KeyType};
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
 
@@ -1030,7 +1030,9 @@ impl AuthorityPerEpochStore {
         })
     }
 
-    pub fn get_encrypted_decryption_key_shares(&self) -> PeraResult<HashMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>> {
+    pub fn get_encrypted_decryption_key_shares(
+        &self,
+    ) -> PeraResult<HashMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>> {
         if self.epoch() == FIRST_EPOCH_ID {
             return Err(PeraError::Unknown(
                 "First epoch does not have decryption key shares, need to run network DKG"
@@ -1039,12 +1041,16 @@ impl AuthorityPerEpochStore {
         }
 
         let encrypted_decryption_key_shares = match self.epoch_start_state() {
-            EpochStartSystemState::V1(data) => data.get_encrypted_decryption_key_shares()
+            EpochStartSystemState::V1(data) => data.get_encrypted_decryption_key_shares(),
         };
-        let encrypted_decryption_key_shares = encrypted_decryption_key_shares.ok_or(PeraError::Unknown(
-            "Decryption key shares not found".to_string(),
-        ))?;
-        let encrypted_decryption_key_shares = encrypted_decryption_key_shares.contents.into_iter().map(|entry| (entry.key, entry.value)).collect();
+        let encrypted_decryption_key_shares = encrypted_decryption_key_shares.ok_or(
+            PeraError::Unknown("Decryption key shares not found".to_string()),
+        )?;
+        let encrypted_decryption_key_shares = encrypted_decryption_key_shares
+            .contents
+            .into_iter()
+            .map(|entry| (entry.key, entry.value))
+            .collect();
         Ok(encrypted_decryption_key_shares)
     }
 

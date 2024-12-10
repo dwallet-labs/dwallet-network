@@ -2,11 +2,11 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::sign::BatchedSignSession;
 use anyhow::anyhow;
 use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::collection_types::VecMap;
 use pera_types::committee::StakeUnit;
+use pera_types::dwallet_mpc::KeyType;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
-use pera_types::collection_types::VecMap;
-use pera_types::dwallet_mpc::KeyType;
 
 /// A struct to manage the DWallet MPC outputs.
 /// It stores all the outputs received for each instance, and decides whether an output is valid
@@ -48,7 +48,15 @@ impl DWalletMPCOutputsManager {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
-            network_key_version: if let Some(versions) = epoch_store.get_encrypted_decryption_key_shares().unwrap_or(HashMap::new()).get(&(KeyType::Secp256k1 as u8 +1)) {versions.len() as u8} else {0}
+            network_key_version: if let Some(versions) = epoch_store
+                .get_encrypted_decryption_key_shares()
+                .unwrap_or(HashMap::new())
+                .get(&(KeyType::Secp256k1 as u8 + 1))
+            {
+                versions.len() as u8
+            } else {
+                0
+            },
         }
     }
 

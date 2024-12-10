@@ -9,6 +9,7 @@ use crate::balance::Balance;
 use crate::base_types::PeraAddress;
 use crate::collection_types::{Bag, Table, TableVec, VecMap, VecSet};
 use crate::committee::{CommitteeWithNetworkMetadata, NetworkMetadata};
+use crate::dwallet_mpc::{EncryptedNetworkDecryptionKeyShares, KeyType};
 use crate::error::PeraError;
 use crate::pera_system_state::epoch_start_pera_system_state::EpochStartSystemState;
 use crate::pera_system_state::get_validators_from_table_vec;
@@ -17,7 +18,6 @@ use crate::pera_system_state::pera_system_state_inner_v1::{
 };
 use crate::storage::ObjectStore;
 use serde::{Deserialize, Serialize};
-use crate::dwallet_mpc::{EncryptedNetworkDecryptionKeyShares, KeyType};
 
 /// Rust version of the Move pera::pera_system::SystemParametersV2 type
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]

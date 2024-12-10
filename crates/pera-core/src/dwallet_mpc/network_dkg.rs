@@ -9,11 +9,11 @@ use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;
+use pera_types::dwallet_mpc::KeyType;
 use pera_types::error::{PeraError, PeraResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::HashMap;
 use std::sync::Arc;
-use pera_types::dwallet_mpc::KeyType;
 
 const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
 

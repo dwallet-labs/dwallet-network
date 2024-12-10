@@ -5,7 +5,9 @@ use enum_dispatch::enum_dispatch;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::base_types::{AuthorityName, EpochId, PeraAddress};
+use crate::collection_types::VecMap;
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
+use crate::dwallet_mpc::{EncryptedNetworkDecryptionKeyShares, KeyType};
 use crate::multiaddr::Multiaddr;
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
@@ -17,8 +19,6 @@ use narwhal_config::{Committee as NarwhalCommittee, CommitteeBuilder, WorkerCach
 use pera_protocol_config::ProtocolVersion;
 use serde::{Deserialize, Serialize};
 use tracing::{error, warn};
-use crate::collection_types::VecMap;
-use crate::dwallet_mpc::{EncryptedNetworkDecryptionKeyShares, KeyType};
 
 #[enum_dispatch]
 pub trait EpochStartSystemStateTrait {
@@ -61,7 +61,9 @@ impl EpochStartSystemState {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
-        encrypted_decryption_key_shares: Option<VecMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>>,
+        encrypted_decryption_key_shares: Option<
+            VecMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>,
+        >,
     ) -> Self {
         Self::V1(EpochStartSystemStateV1 {
             epoch,
@@ -109,7 +111,9 @@ pub struct EpochStartSystemStateV1 {
 }
 
 impl EpochStartSystemStateV1 {
-    pub fn get_encrypted_decryption_key_shares(&self) -> Option<VecMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>> {
+    pub fn get_encrypted_decryption_key_shares(
+        &self,
+    ) -> Option<VecMap<u8, Vec<EncryptedNetworkDecryptionKeyShares>>> {
         self.encrypted_decryption_key_shares.clone()
     }
 
