@@ -122,7 +122,7 @@ pub struct StartBatchedSignEvent {
     pub session_id: ID,
     /// An ordered list without duplicates of the messages we need to sign on.
     pub hashed_messages: Vec<Vec<u8>>,
-    initiating_user: PeraAddress,
+    pub initiating_user: PeraAddress,
 }
 
 impl StartPresignSecondRoundEvent {

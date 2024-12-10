@@ -156,16 +156,14 @@ impl MPCParty {
                 )))
             }
             t if t == &StartSignRoundEvent::type_() => {
-                let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)
-                    .map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
+                let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
                 Ok(Some(Self::sign_party_session_info(
                     &deserialized_event,
                     party_id,
                 )))
             }
             t if t == &StartBatchedSignEvent::type_() => {
-                let deserialized_event: StartBatchedSignEvent = bcs::from_bytes(&event.contents)
-                    .map_err(|_| PeraError::DWalletMPCInvalidUserInput)?;
+                let deserialized_event: StartBatchedSignEvent = bcs::from_bytes(&event.contents)?;
                 Ok(Some(Self::batched_sign_session_info(&deserialized_event)))
             }
             _ => Ok(None),
@@ -271,7 +269,7 @@ impl MPCParty {
         SessionInfo {
             flow_session_id: deserialized_event.session_id.bytes,
             session_id: deserialized_event.session_id.bytes,
-            initiating_user_address: deserialized_event.sender,
+            initiating_user_address: deserialized_event.initiator,
             dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
             mpc_round: MPCRound::PresignFirst(
                 deserialized_event.dwallet_id.bytes,
@@ -299,7 +297,7 @@ impl MPCParty {
         SessionInfo {
             flow_session_id: deserialized_event.first_round_session_id.bytes,
             session_id: deserialized_event.session_id.bytes,
-            initiating_user_address: deserialized_event.sender,
+            initiating_user_address: deserialized_event.initiator,
             dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
             mpc_round: MPCRound::PresignSecond(
                 deserialized_event.dwallet_id.bytes,
@@ -341,7 +339,7 @@ impl MPCParty {
         SessionInfo {
             flow_session_id: deserialized_event.presign_session_id.bytes,
             session_id: deserialized_event.session_id.bytes,
-            initiating_user_address: deserialized_event.sender,
+            initiating_user_address: deserialized_event.initiator,
             dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
             mpc_round: MPCRound::Sign(
                 deserialized_event.batched_session_id.bytes,
