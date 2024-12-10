@@ -9944,6 +9944,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bcs",
+ "dwallet-mpc-types",
  "leb128",
  "move-binary-format",
  "move-bytecode-utils",
@@ -10699,6 +10700,7 @@ name = "pera-execution"
 version = "0.1.0"
 dependencies = [
  "cargo_metadata 0.15.4",
+ "dwallet-mpc-types",
  "move-abstract-interpreter",
  "move-abstract-interpreter-v2",
  "move-binary-format",
