@@ -144,7 +144,7 @@ impl DWalletMPCManager {
             weighted_threshold_access_structure,
             weighted_parties,
             outputs_manager,
-            status,
+            status: ManagerStatus::Active,
         };
 
         tokio::spawn(async move {
@@ -334,7 +334,7 @@ impl DWalletMPCManager {
 
         self.flag_parties_as_malicious(&malicious_parties)?;
 
-        // Need to send the messages' one by one, so the consensus adapter won't think they
+        // Need to send the messages one by one, so the consensus adapter won't think they
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for message in messages {
             self.consensus_adapter
