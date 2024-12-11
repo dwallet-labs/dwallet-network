@@ -68,10 +68,9 @@ pub(crate) fn authority_name_to_party_id(
 
 /// Parses the session info from the event and returns it.
 /// Return `None` if the event is not a DWallet MPC event.
-pub fn session_info_from_event(
+pub(crate) fn session_info_from_event(
     event: &Event,
     party_id: PartyID,
-    dwallet_network_key_version: u8,
 ) -> anyhow::Result<Option<SessionInfo>> {
     match &event.type_ {
         t if t == &StartDKGFirstRoundEvent::type_() => {
@@ -80,7 +79,7 @@ pub fn session_info_from_event(
         }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            Ok(Some(dkg_second_party_session_info(&deserialized_event, dwallet_network_key_version)))
+            Ok(Some(dkg_second_party_session_info(&deserialized_event)))
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
             let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;
@@ -105,7 +104,6 @@ pub fn session_info_from_event(
 
 fn dkg_second_party(
     deserialized_event: StartDKGSecondRoundEvent,
-    dwallet_network_key_version: u8,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     Ok((
         MPCParty::SecondDKGBytesParty,
@@ -113,17 +111,17 @@ fn dkg_second_party(
             deserialized_event.first_round_output.clone(),
             deserialized_event.public_key_share_and_proof.clone(),
         )?,
-        dkg_second_party_session_info(&deserialized_event, dwallet_network_key_version),
+        dkg_second_party_session_info(&deserialized_event),
     ))
 }
 
-pub fn dkg_second_party_session_info(deserialized_event: &StartDKGSecondRoundEvent, dwallet_network_key_version: u8) -> SessionInfo {
+fn dkg_second_party_session_info(deserialized_event: &StartDKGSecondRoundEvent) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.first_round_session_id.bytes,
         session_id: ObjectID::from(deserialized_event.session_id),
         initiating_user_address: deserialized_event.initiator,
         dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-        mpc_round: MPCRound::DKGSecond(dwallet_network_key_version),
+        mpc_round: MPCRound::DKGSecond,
     }
 }
 
@@ -137,7 +135,7 @@ fn dkg_first_party(
     ))
 }
 
-pub fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
+fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
@@ -159,7 +157,7 @@ fn presign_first_party(
     ))
 }
 
-pub fn presign_first_party_session_info(
+fn presign_first_party_session_info(
     deserialized_event: StartPresignFirstRoundEvent,
 ) -> SessionInfo {
     SessionInfo {
@@ -187,7 +185,7 @@ fn presign_second_party(
     ))
 }
 
-pub fn presign_second_party_session_info(
+fn presign_second_party_session_info(
     deserialized_event: &StartPresignSecondRoundEvent,
 ) -> SessionInfo {
     SessionInfo {
@@ -228,7 +226,7 @@ fn sign_party(
     ))
 }
 
-pub(crate) fn sign_party_session_info(
+fn sign_party_session_info(
     deserialized_event: &StartSignRoundEvent,
     party_id: PartyID,
 ) -> SessionInfo {
@@ -244,7 +242,7 @@ pub(crate) fn sign_party_session_info(
     }
 }
 
-pub fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> SessionInfo {
+fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
@@ -256,7 +254,7 @@ pub fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> 
     }
 }
 
-pub(in crate::dwallet_mpc) fn advance<P: AsynchronouslyAdvanceable>(
+pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     session_id: CommitmentSizedNumber,
     party_id: PartyID,
     access_threshold: &WeightedThresholdAccessStructure,
@@ -341,11 +339,10 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
-pub fn from_event(
+pub(crate) fn from_event(
     event: &Event,
     dwallet_mpc_manager: &DWalletMPCManager,
     party_id: PartyID,
-    dwallet_network_key_version: u8
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     match &event.type_ {
         t if t == &StartDKGFirstRoundEvent::type_() => {
@@ -354,7 +351,7 @@ pub fn from_event(
         }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            dkg_second_party(deserialized_event, dwallet_network_key_version)
+            dkg_second_party(deserialized_event)
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
             let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;
