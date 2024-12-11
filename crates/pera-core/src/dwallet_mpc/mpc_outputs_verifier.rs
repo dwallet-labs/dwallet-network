@@ -1,17 +1,17 @@
+///! A module to manage the DWallet MPC outputs.
+/// The module is responsible for storing the outputs received for each instance, and deciding whether an output is valid
+/// by checking if a validators with quorum of stake voted for it.
+/// Any validator that voted for a different output is considered malicious.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::sign::BatchedSignSession;
-use anyhow::anyhow;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::collections::{HashMap, HashSet};
 
 /// A struct to manage the DWallet MPC outputs.
 /// It stores all the outputs received for each instance, and decides whether an output is valid
 /// by checking if a validators with quorum of stake voted for it.
-pub struct DWalletMPCOutputsManager {
-    /// The batched sign sessions that are currently being processed.
-    pub batched_sign_sessions: HashMap<ObjectID, BatchedSignSession>,
+pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each instance.
     pub mpc_instances_outputs: HashMap<ObjectID, InstanceOutputsData>,
     /// A mapping between an authority name to its stake.
@@ -25,8 +25,9 @@ pub struct DWalletMPCOutputsManager {
 /// The data needed to manage the outputs of an MPC instance.
 #[derive(Clone)]
 pub struct InstanceOutputsData {
-    /// needed to easily check if any of the outputs received a quorum of votes and should be written to the chain
-    pub output_to_voting_authorities: HashMap<(Vec<u8>, SessionInfo), HashSet<AuthorityName>>,
+    /// Maps session's output to the authorities that voted for it.
+    pub session_output_to_voting_authorities:
+        HashMap<(Vec<u8>, SessionInfo), HashSet<AuthorityName>>,
     /// Needed to make sure an authority does not send two outputs for the same session
     pub authorities_that_sent_output: HashSet<AuthorityName>,
 }
@@ -35,22 +36,21 @@ pub struct InstanceOutputsData {
 /// We need to differentiate between a duplicate and a malicious output,
 /// as the output can be sent twice by honest parties.
 #[derive(PartialOrd, PartialEq)]
-pub enum OutputVerificationResult {
-    /// When working on a batch, e.g., signing on a batch of messages,
-    /// we write the output to the chain only once — when the entire batch is ready.
-    ValidWithNewOutput(Vec<u8>, Vec<AuthorityName>),
-    /// When the output is correct but not all the MPC flows in
-    /// the batch have been completed.
-    ValidWithoutOutput(Vec<AuthorityName>),
-    Valid(Vec<AuthorityName>),
-    Duplicate,
+pub enum OutputResult {
+    Valid,
     Malicious,
+    /// We don't have enough votes to decide if the output is valid or not.
+    NotEnoughVotes,
 }
 
-impl DWalletMPCOutputsManager {
+pub struct OutputVerificationResult {
+    pub result: OutputResult,
+    pub malicious_actors: Vec<AuthorityName>,
+}
+
+impl DWalletMPCOutputsVerifier {
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
-        DWalletMPCOutputsManager {
-            batched_sign_sessions: HashMap::new(),
+        DWalletMPCOutputsVerifier {
             quorum_threshold: epoch_store.committee().quorum_threshold(),
             mpc_instances_outputs: HashMap::new(),
             weighted_parties: epoch_store
@@ -84,25 +84,31 @@ impl DWalletMPCOutputsManager {
     ) -> anyhow::Result<OutputVerificationResult> {
         let Some(ref mut session) = self.mpc_instances_outputs.get_mut(&session_info.session_id)
         else {
-            return Ok(OutputVerificationResult::Malicious);
+            return Ok(OutputVerificationResult {
+                result: OutputResult::Malicious,
+                malicious_actors: vec![origin_authority],
+            });
         };
         if session
             .authorities_that_sent_output
             .contains(&origin_authority)
         {
-            return Ok(OutputVerificationResult::Malicious);
+            return Ok(OutputVerificationResult {
+                result: OutputResult::Malicious,
+                malicious_actors: vec![origin_authority],
+            });
         }
         session
             .authorities_that_sent_output
             .insert(origin_authority.clone());
         session
-            .output_to_voting_authorities
+            .session_output_to_voting_authorities
             .entry((output.clone(), session_info.clone()))
             .or_default()
             .insert(origin_authority);
-        if let Some(agreed_output) =
+        if let Some((agreed_output, _)) =
             session
-                .output_to_voting_authorities
+                .session_output_to_voting_authorities
                 .iter()
                 .find(|(output, voters)| {
                     voters
@@ -113,78 +119,34 @@ impl DWalletMPCOutputsManager {
                 })
         {
             let voted_for_other_outputs: Vec<AuthorityName> = session
-                .output_to_voting_authorities
+                .session_output_to_voting_authorities
                 .iter()
-                .filter(|(output, _)| *output != agreed_output.0)
+                .filter(|(output, _)| *output != agreed_output)
                 .flat_map(|(_, voters)| voters)
                 .cloned()
                 .collect();
-            if let MPCRound::Sign(batch_session_id, hashed_message) = session_info.mpc_round.clone()
-            {
-                let batched_sign_session = self
-                    .batched_sign_sessions
-                    .get_mut(&batch_session_id)
-                    .ok_or(anyhow!(
-                        "failed to find batch for session id {}",
-                        batch_session_id
-                    ))?;
-                batched_sign_session
-                    .hashed_msg_to_signature
-                    .insert(hashed_message.clone(), output.clone());
-                if batched_sign_session.hashed_msg_to_signature.values().len()
-                    == batched_sign_session.ordered_messages.len()
-                {
-                    let new_output: Vec<Vec<u8>> = batched_sign_session
-                        .ordered_messages
-                        .iter()
-                        .map(|msg| {
-                            Ok(batched_sign_session
-                                .hashed_msg_to_signature
-                                .get(msg)
-                                .ok_or(anyhow!("failed to find message in batch {:?}", msg))?
-                                .clone())
-                        })
-                        .collect::<anyhow::Result<Vec<Vec<u8>>>>()?;
-                    return Ok(OutputVerificationResult::ValidWithNewOutput(
-                        bcs::to_bytes(&new_output)?,
-                        voted_for_other_outputs,
-                    ));
-                } else {
-                    return Ok(OutputVerificationResult::ValidWithoutOutput(
-                        voted_for_other_outputs,
-                    ));
-                }
-            }
-            return Ok(OutputVerificationResult::Valid(voted_for_other_outputs));
+            return Ok(OutputVerificationResult {
+                result: OutputResult::Valid,
+                malicious_actors: voted_for_other_outputs,
+            });
         }
-        Ok(OutputVerificationResult::ValidWithoutOutput(vec![]))
+        Ok(OutputVerificationResult {
+            result: OutputResult::NotEnoughVotes,
+            malicious_actors: vec![],
+        })
     }
 
+    /// Stores the session ID of the new MPC session, and initializes the output data for it.
+    /// Needed so we'll know when we receive a malicious output that related to a non-existing session.
     pub fn handle_new_event(&mut self, session_info: &SessionInfo) {
-        if let MPCRound::BatchedSign(hashed_messages) = &session_info.mpc_round {
-            let mut seen = HashSet::new();
-            let messages_without_duplicates = hashed_messages
-                .clone()
-                .into_iter()
-                .filter(|x| seen.insert(x.clone()))
-                .collect();
-            self.batched_sign_sessions.insert(
-                session_info.session_id,
-                BatchedSignSession {
-                    hashed_msg_to_signature: HashMap::new(),
-                    ordered_messages: messages_without_duplicates,
-                },
-            );
-        } else {
-            self.insert_new_output_instance(&session_info.session_id);
-        }
+        self.insert_new_output_instance(&session_info.session_id);
     }
 
     pub fn insert_new_output_instance(&mut self, session_id: &ObjectID) {
         self.mpc_instances_outputs.insert(
             session_id.clone(),
             InstanceOutputsData {
-                output_to_voting_authorities: HashMap::new(),
+                session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
             },
         );
