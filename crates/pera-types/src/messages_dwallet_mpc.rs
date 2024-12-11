@@ -1,6 +1,7 @@
 use crate::base_types::{ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
+use crate::dwallet_mpc::DWalletMPCNetworkKey;
 use crate::message_envelope::Message;
 use group::PartyID;
 use serde::{Deserialize, Serialize};
@@ -11,7 +12,7 @@ pub enum MPCRound {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
-    DKGSecond,
+    DKGSecond(u8),
     /// The first round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
     /// and the DKG decentralized output.
@@ -28,7 +29,7 @@ pub enum MPCRound {
     /// A batched sign session, contains the list of messages that are being signed.
     BatchedSign(Vec<Vec<u8>>),
     /// The round of the network DKG protocol.
-    NetworkDkg,
+    NetworkDkg(DWalletMPCNetworkKey),
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.

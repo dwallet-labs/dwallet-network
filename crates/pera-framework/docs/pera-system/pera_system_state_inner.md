@@ -14,7 +14,8 @@ title: Module `0x3::pera_system_state_inner`
 -  [Function `create_system_parameters`](#0x3_pera_system_state_inner_create_system_parameters)
 -  [Function `v1_to_v2`](#0x3_pera_system_state_inner_v1_to_v2)
 -  [Function `lock_next_epoch_committee`](#0x3_pera_system_state_inner_lock_next_epoch_committee)
--  [Function `store_encrypted_decryption_key_shares`](#0x3_pera_system_state_inner_store_encrypted_decryption_key_shares)
+-  [Function `new_encryption_of_decryption_key_shares_version`](#0x3_pera_system_state_inner_new_encryption_of_decryption_key_shares_version)
+-  [Function `store_encryption_of_decryption_key_shares`](#0x3_pera_system_state_inner_store_encryption_of_decryption_key_shares)
 -  [Function `request_add_validator_candidate`](#0x3_pera_system_state_inner_request_add_validator_candidate)
 -  [Function `request_remove_validator_candidate`](#0x3_pera_system_state_inner_request_remove_validator_candidate)
 -  [Function `request_add_validator`](#0x3_pera_system_state_inner_request_add_validator)
@@ -81,6 +82,7 @@ title: Module `0x3::pera_system_state_inner`
 <b>use</b> <a href="../pera-framework/tx_context.md#0x2_tx_context">0x2::tx_context</a>;
 <b>use</b> <a href="../pera-framework/vec_map.md#0x2_vec_map">0x2::vec_map</a>;
 <b>use</b> <a href="../pera-framework/vec_set.md#0x2_vec_set">0x2::vec_set</a>;
+<b>use</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key">0x3::dwallet_network_key</a>;
 <b>use</b> <a href="stake_subsidy.md#0x3_stake_subsidy">0x3::stake_subsidy</a>;
 <b>use</b> <a href="staking_pool.md#0x3_staking_pool">0x3::staking_pool</a>;
 <b>use</b> <a href="storage_fund.md#0x3_storage_fund">0x3::storage_fund</a>;
@@ -417,7 +419,7 @@ Uses SystemParametersV2 as the parameters.
  we know what version it is by inspecting PeraSystemStateInner as well.
 </dd>
 <dt>
-<code>encrypted_decryption_key_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;</code>
+<code>encryption_of_decryption_key_shares: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">dwallet_network_key::EncryptionOfNetworkDecryptionKeyShares</a>&gt;&gt;</code>
 </dt>
 <dd>
  These are the encrypted decryption key shares for the current epoch, used for dWallet MPC session.
@@ -690,6 +692,15 @@ the epoch advancement transaction.
 
 
 
+<a name="0x3_pera_system_state_inner_EInvalidKeyType"></a>
+
+
+
+<pre><code><b>const</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_EInvalidKeyType">EInvalidKeyType</a>: u8 = 2;
+</code></pre>
+
+
+
 <a name="0x3_pera_system_state_inner_ELimitExceeded"></a>
 
 
@@ -882,7 +893,7 @@ This function will be called only once in genesis.
         epoch,
         protocol_version,
         system_state_version: 2,
-        encrypted_decryption_key_shares: <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>(),
+        encryption_of_decryption_key_shares: <a href="../pera-framework/vec_map.md#0x2_vec_map_empty">vec_map::empty</a>(),
         validators,
         <a href="storage_fund.md#0x3_storage_fund">storage_fund</a>,
         parameters: <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_SystemParametersV2">SystemParametersV2</a> {
@@ -940,13 +951,13 @@ This function will be called only once in genesis.
 
 </details>
 
-<a name="0x3_pera_system_state_inner_store_encrypted_decryption_key_shares"></a>
+<a name="0x3_pera_system_state_inner_new_encryption_of_decryption_key_shares_version"></a>
 
-## Function `store_encrypted_decryption_key_shares`
+## Function `new_encryption_of_decryption_key_shares_version`
 
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_store_encrypted_decryption_key_shares">store_encrypted_decryption_key_shares</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_encryption_of_decryption_key_shares_version">new_encryption_of_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_type: u8)
 </code></pre>
 
 
@@ -955,8 +966,56 @@ This function will be called only once in genesis.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_store_encrypted_decryption_key_shares">store_encrypted_decryption_key_shares</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;) {
-    self.encrypted_decryption_key_shares = shares;
+<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_encryption_of_decryption_key_shares_version">new_encryption_of_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_type: u8) {
+    <b>assert</b>!(is_key_type(key_type), <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_EInvalidKeyType">EInvalidKeyType</a>);
+    <b>let</b> new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>());
+
+    <b>if</b> (self.encryption_of_decryption_key_shares.contains(&key_type)) {
+        self.encryption_of_decryption_key_shares.get_mut(&key_type).push_back(new_version);
+        <b>return</b>
+    };
+
+    self.encryption_of_decryption_key_shares.insert(key_type, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[new_version]);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_pera_system_state_inner_store_encryption_of_decryption_key_shares"></a>
+
+## Function `store_encryption_of_decryption_key_shares`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_store_encryption_of_decryption_key_shares">store_encryption_of_decryption_key_shares</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_type: u8)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_store_encryption_of_decryption_key_shares">store_encryption_of_decryption_key_shares</a>(
+    self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>,
+    shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    key_type: u8,
+) {
+    <b>assert</b>!(is_key_type(key_type), <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_EInvalidKeyType">EInvalidKeyType</a>);
+    <b>let</b> version = self.encryption_of_decryption_key_shares.get(&key_type).length();
+    <b>if</b> (self.encryption_of_decryption_key_shares.contains(&key_type)) {
+        self.encryption_of_decryption_key_shares.get_mut(&key_type).borrow_mut(
+            version
+        ).update_new_shares(shares, self.epoch);
+        <b>return</b>
+    };
+
+    self.encryption_of_decryption_key_shares.insert(
+        key_type,
+        <a href="../move-stdlib/vector.md#0x1_vector">vector</a>[new_encrypted_network_decryption_key_shares(self.epoch, shares, <a href="../move-stdlib/vector.md#0x1_vector_empty">vector::empty</a>())]
+    );
 }
 </code></pre>
 

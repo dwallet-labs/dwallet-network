@@ -40,6 +40,7 @@ export interface DWallet {
 	session_id: string;
 	dwallet_cap_id: string;
 	output: number[];
+	dwallet_mpc_network_key_version: number;
 }
 
 export interface CreatedDwallet {
@@ -47,6 +48,7 @@ export interface CreatedDwallet {
 	centralizedDKGOutput: number[];
 	decentralizedDKGOutput: number[];
 	dwalletCapID: string;
+	dwalletMPCNetworkKeyVersion: number;
 }
 
 export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
@@ -64,6 +66,7 @@ export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 		centralizedDKGOutput: centralizedOutput,
 		decentralizedDKGOutput: dwallet.output,
 		dwalletCapID: dwallet.dwallet_cap_id,
+		dwalletMPCNetworkKeyVersion: dwallet.dwallet_mpc_network_key_version,
 	};
 }
 

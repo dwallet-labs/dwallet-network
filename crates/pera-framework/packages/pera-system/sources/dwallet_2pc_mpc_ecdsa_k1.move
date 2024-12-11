@@ -371,10 +371,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id: ID,
         output: vector<u8>,
         dwallet_cap_id: ID,
+        dwallet_mpc_network_key_version: u8,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
-        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, ctx);
+        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, dwallet_mpc_network_key_version, ctx);
         event::emit(CompletedDKGSecondRoundEvent {
             session_id,
             initiator,
@@ -820,7 +821,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dwallet_cap_id = object::id(&dwallet_cap);
         transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, ctx)
+        dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, 1, ctx)
     }
 
     /// Generates a new mock `Presign` object with random IDs and data.
