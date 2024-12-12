@@ -1,9 +1,0 @@
-error[Pera E02002]: invalid 'entry' function signature
-  ┌─ tests/pera_mode/entry_points/random_val.move:4:36
-  │
-4 │     public entry fun no_random_val(_: pera::random::Random) {
-  │            -----                   ^  ------------------- pera::random::Random must be passed by immutable reference, e.g. '&pera::random::Random'
-  │            │                       │   
-  │            │                       Invalid 'entry' parameter type for parameter '_'
-  │            'no_random_val' was declared 'entry' here
-
