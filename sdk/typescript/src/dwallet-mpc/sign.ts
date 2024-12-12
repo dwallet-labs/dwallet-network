@@ -42,7 +42,6 @@ export async function signMessageTransactionCall(
 	dWalletID: string,
 	presignID: string,
 	centralizedSignedMessages: Uint8Array[],
-	presignSessionID: string,
 ) {
 	const tx = new Transaction();
 
@@ -62,7 +61,6 @@ export async function signMessageTransactionCall(
 			tx.object(presignID),
 			tx.object(dWalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
-			tx.object(presignSessionID),
 		],
 	});
 

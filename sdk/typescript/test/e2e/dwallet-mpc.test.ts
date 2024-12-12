@@ -96,7 +96,6 @@ describe('Test dWallet MPC', () => {
 			dWallet.id,
 			presignOutput.id.id,
 			centralizedSignMsg,
-			presignOutput.first_round_session_id,
 		);
 		expect(signOutput).toBeDefined();
 		console.log({ signOutput });
@@ -136,7 +135,6 @@ describe('Test dWallet MPC', () => {
 				dWallet.id,
 				presignOutput.secondRoundOutputID,
 				centralizedSignMsg,
-				presignOutput.firstRoundSessionID,
 			);
 			expect(signOutput).toBeDefined();
 			console.log({ signOutput });
