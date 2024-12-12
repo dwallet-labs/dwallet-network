@@ -920,6 +920,7 @@ module pera_system::validator {
                 protocol_pubkey_bytes,
                 network_pubkey_bytes,
                 worker_pubkey_bytes,
+                vector[0],
                 proof_of_possession,
                 name.to_ascii_string().to_string(),
                 description.to_ascii_string().to_string(),
