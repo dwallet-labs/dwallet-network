@@ -78,7 +78,7 @@ describe('Test dWallet MPC', () => {
 		console.log({ presignOutput });
 		let serializedMsgs = bcs
 			.vector(bcs.vector(bcs.u8()))
-			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
+			.serialize([Uint8Array.from([1, 2, 3, 4, 5])])
 			.toBytes();
 		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
 			Uint8Array.from(dWallet.centralizedDKGOutput),
@@ -117,7 +117,7 @@ describe('Test dWallet MPC', () => {
 
 			let serializedMsgs = bcs
 				.vector(bcs.vector(bcs.u8()))
-				.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
+				.serialize([Uint8Array.from([1, 2, 3, 4, 5])])
 				.toBytes();
 			const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
 				Uint8Array.from(dWallet.centralizedDKGOutput),
