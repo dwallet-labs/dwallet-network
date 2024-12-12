@@ -405,6 +405,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             session_id,
             output,
             dwallet_cap_id,
+            0,
             ctx
         );
     }
