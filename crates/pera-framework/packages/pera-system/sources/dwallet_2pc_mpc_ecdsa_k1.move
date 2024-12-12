@@ -435,19 +435,19 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         amount: u64,
         ctx: &mut TxContext
     ) {
-        let session_id = tx_context::fresh_object_address(ctx);
-        let mut index = 0;
-        while i < amount {
+        let mut i = 0;
+        let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        while (i < amount) {
+            let session_id = tx_context::fresh_object_address(ctx);
             i = i + 1;
-
-        }
-        event::emit(StartPresignFirstRoundEvent {
-            session_id: object::id_from_address(session_id),
-            initiator: tx_context::sender(ctx),
-            dwallet_id: object::id(dwallet),
-            dkg_output: get_dwallet_output<Secp256K1>(dwallet),
-            amount
-        });
+            event::emit(StartPresignFirstRoundEvent {
+                session_id: object::id_from_address(session_id),
+                initiator: tx_context::sender(ctx),
+                dwallet_id: object::id(dwallet),
+                dkg_output: get_dwallet_output<Secp256K1>(dwallet),
+                batch_session_id,
+            });
+        };
     }
 
     /// Launches the second round of the presign session.
