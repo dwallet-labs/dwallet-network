@@ -179,7 +179,7 @@ module pera_system::validator_tests {
             vector[42],
             VALID_NET_PUBKEY,
             VALID_WORKER_PUBKEY,
-            vector[42],
+            vector[0],
             PROOF_OF_POSSESSION,
             b"Validator1".to_string(),
             b"Validator1".to_string(),
