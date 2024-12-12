@@ -661,10 +661,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun sign(
         message_approvals: &mut vector<MessageApproval>,
         hashed_messages: vector<vector<u8>>,
-        presign: &Presign,
+        presign: Presign,
         dwallet: &DWallet<Secp256K1>,
         centralized_signed_messages: vector<vector<u8>>,
-        presign_session_id: ID,
         ctx: &mut TxContext
     ) {
         assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
@@ -697,7 +696,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
             event::emit(StartSignEvent {
                 session_id: id,
-                presign_session_id,
+                presign_session_id: presign.session_id,
                 initiator: tx_context::sender(ctx),
                 batched_session_id: batch_session_id,
                 dwallet_id: object::id(dwallet),
@@ -709,6 +708,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             });
             i = i + 1;
         };
+        transfer::transfer(presign, SYSTEM_ADDRESS);
     }
 
     /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
