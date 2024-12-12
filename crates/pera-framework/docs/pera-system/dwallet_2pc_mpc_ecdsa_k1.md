@@ -33,7 +33,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
     -  [Features](#@Features_1)
 -  [Struct `Secp256K1`](#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1)
 -  [Struct `MessageApproval`](#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval)
--  [Resource `DKGFirstRoundOutput`](#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput)
+-  [Struct `DKGFirstRoundOutputEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent)
 -  [Resource `Presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign)
 -  [Struct `StartDKGFirstRoundEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent)
 -  [Struct `CompletedSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedSignEvent)
@@ -44,7 +44,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Struct `CompletedPresignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedPresignEvent)
 -  [Struct `StartSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent)
 -  [Struct `StartBatchedSignEvent`](#0x3_dwallet_2pc_mpc_ecdsa_k1_StartBatchedSignEvent)
--  [Constants](#@Constants_13)
+-  [Constants](#@Constants_12)
 -  [Function `launch_dkg_first_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_first_round)
 -  [Function `create_dkg_first_round_output`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output)
 -  [Function `launch_dkg_second_round`](#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_dkg_second_round)
@@ -148,28 +148,17 @@ associated with this approval.
 
 </details>
 
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput"></a>
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent"></a>
 
-## Resource `DKGFirstRoundOutput`
+## Struct `DKGFirstRoundOutputEvent`
 
-Represents the output of the first DKG
-(Distributed Key Generation) round.
-
-This output is transferred to the user once the first round is complete
-and is later used to initiate the second DKG round.
-
-
-<a name="@Fields_3"></a>
-
-##### Fields
-
-- **<code>id</code>**: Unique identifier for this object.
-- **<code>session_id</code>**: The session ID associated with this DKG output.
-- **<code>output</code>**: The output produced from the first round of DKG.
-- **<code>dwallet_cap_id</code>**: The DWallet capability identifier associated with the DKG session.
+A struct to hold the output of the first round of the DKG.
+An instance of this struct is being transferred to the user that initiated the DKG after
+the first round is completed.
+The user can then use this output to start the second round of the DKG.
 
 
-<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a> <b>has</b> key
+<pre><code><b>struct</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent">DKGFirstRoundOutputEvent</a> <b>has</b> <b>copy</b>, drop
 </code></pre>
 
 
@@ -180,12 +169,6 @@ and is later used to initiate the second DKG round.
 
 <dl>
 <dt>
-<code>id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
 <code>session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
@@ -193,12 +176,6 @@ and is later used to initiate the second DKG round.
 </dd>
 <dt>
 <code>output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
 
@@ -219,7 +196,7 @@ This struct holds information on both rounds of the presign process,
 linking them to the corresponding DWallet session.
 
 
-<a name="@Fields_4"></a>
+<a name="@Fields_3"></a>
 
 ##### Fields
 
@@ -261,12 +238,6 @@ linking them to the corresponding DWallet session.
 
 </dd>
 <dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
 <code>first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
@@ -298,7 +269,7 @@ Event emitted to start the first DKG round.
 This event is caught by Validators, who use it to initiate the first round of the DKG.
 
 
-<a name="@Fields_5"></a>
+<a name="@Fields_4"></a>
 
 ##### Fields
 
@@ -349,7 +320,7 @@ Event emitted to signal the completion of a Sign process.
 This event contains signatures for all signed messages in the batch.
 
 
-<a name="@Fields_6"></a>
+<a name="@Fields_5"></a>
 
 ##### Fields
 
@@ -393,7 +364,7 @@ Event emitted to start the second round of the DKG process.
 This event is caught by Validators to start the second round of DKG.
 
 
-<a name="@Fields_7"></a>
+<a name="@Fields_6"></a>
 
 ##### Fields
 
@@ -468,7 +439,7 @@ Validators and users utilize this event to
 finalize and store the results of the DKG.
 
 
-<a name="@Fields_8"></a>
+<a name="@Fields_7"></a>
 
 ##### Fields
 
@@ -532,7 +503,7 @@ the combined and validated output from all participating parties.
 Event emitted to initiate the first round of a Presign session.
 
 
-<a name="@Fields_9"></a>
+<a name="@Fields_8"></a>
 
 ##### Fields
 
@@ -572,12 +543,6 @@ Event emitted to initiate the first round of a Presign session.
 
 </dd>
 <dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
 <code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -599,7 +564,7 @@ The second round is a crucial step in the multi-party computation (MPC) protocol
 to generate pre-signatures for ECDSA signing.
 
 
-<a name="@Fields_10"></a>
+<a name="@Fields_9"></a>
 
 ##### Fields
 
@@ -636,12 +601,6 @@ to generate pre-signatures for ECDSA signing.
 </dd>
 <dt>
 <code>dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
 </dt>
 <dd>
 
@@ -717,7 +676,7 @@ Event emitted to start the signing process.
 The event is caught by the validators to initiate the signing protocol.
 
 
-<a name="@Fields_11"></a>
+<a name="@Fields_10"></a>
 
 ##### Fields
 
@@ -775,12 +734,6 @@ The event is caught by the validators to initiate the signing protocol.
 
 </dd>
 <dt>
-<code>dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a></code>
-</dt>
-<dd>
-
-</dd>
-<dt>
 <code>dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -822,7 +775,7 @@ The event is caught by the validators to initiate the signing protocol.
 Event emitted to start a batched sign process.
 
 
-<a name="@Fields_12"></a>
+<a name="@Fields_11"></a>
 
 ##### Fields
 
@@ -864,7 +817,7 @@ Event emitted to start a batched sign process.
 
 </details>
 
-<a name="@Constants_13"></a>
+<a name="@Constants_12"></a>
 
 ## Constants
 
@@ -946,7 +899,7 @@ and emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa
 the beginning of the DKG process.
 
 
-<a name="@Effects_14"></a>
+<a name="@Effects_13"></a>
 
 ##### Effects
 
@@ -955,7 +908,7 @@ the beginning of the DKG process.
 - Emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartDKGFirstRoundEvent">StartDKGFirstRoundEvent</a></code>.
 
 
-<a name="@Emits_15"></a>
+<a name="@Emits_14"></a>
 
 ##### Emits
 
@@ -1005,7 +958,7 @@ This function is called by blockchain itself.
 Validtors call it, it's part of the blockchain logic.
 
 
-<a name="@Effects_16"></a>
+<a name="@Effects_15"></a>
 
 ##### Effects
 
@@ -1013,7 +966,7 @@ Validtors call it, it's part of the blockchain logic.
 - Emits necessary metadata and links it to the associated session.
 
 
-<a name="@Parameters_17"></a>
+<a name="@Parameters_16"></a>
 
 ##### Parameters
 
@@ -1024,14 +977,17 @@ Validtors call it, it's part of the blockchain logic.
 - <code>ctx</code>: The transaction context.
 
 
-<a name="@Panics_18"></a>
+<a name="@Panics_17"></a>
 
 ##### Panics
 
 - Panics with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code> if the sender is not the system address.
+Creates the output of the first round of the DKG MPC, transferring it to the initiating user.
+This function is called by the blockchain itself.
+Validators call it as part of the blockchain logic.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1041,20 +997,15 @@ Validtors call it, it's part of the blockchain logic.
 
 
 <pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_dkg_first_round_output">create_dkg_first_round_output</a>(
-    initiator: <b>address</b>,
     session_id: ID,
     output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    dwallet_cap_id: ID,
-    ctx: &<b>mut</b> TxContext
+    ctx: &TxContext
 ) {
     <b>assert</b>!(<a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx) == <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_SYSTEM_ADDRESS">SYSTEM_ADDRESS</a>, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a>);
-    <b>let</b> output = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutput">DKGFirstRoundOutput</a> {
-        id: <a href="../pera-framework/object.md#0x2_object_new">object::new</a>(ctx),
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_DKGFirstRoundOutputEvent">DKGFirstRoundOutputEvent</a> {
         session_id,
         output,
-        dwallet_cap_id,
-    };
-    <a href="../pera-framework/transfer.md#0x2_transfer_transfer">transfer::transfer</a>(output, initiator);
+    });
 }
 </code></pre>
 
@@ -1070,7 +1021,7 @@ Starts the second DKG round.
 Emits an event for validators to begin the second round of the DKG process.
 
 
-<a name="@Parameters_19"></a>
+<a name="@Parameters_18"></a>
 
 ##### Parameters
 
@@ -1123,7 +1074,7 @@ This function is called by blockchain itself.
 Validtors call it, it's part of the blockchain logic.
 
 
-<a name="@Parameters_20"></a>
+<a name="@Parameters_19"></a>
 
 ##### Parameters
 
@@ -1178,7 +1129,7 @@ This function emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc
 to begin processing the first round of the presign process.
 
 
-<a name="@Effects_21"></a>
+<a name="@Effects_20"></a>
 
 ##### Effects
 
@@ -1186,7 +1137,7 @@ to begin processing the first round of the presign process.
 - Emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartPresignFirstRoundEvent">StartPresignFirstRoundEvent</a></code> with relevant details.
 
 
-<a name="@Emits_22"></a>
+<a name="@Emits_21"></a>
 
 ##### Emits
 
@@ -1194,11 +1145,10 @@ to begin processing the first round of the presign process.
 - <code>session_id</code>: The unique ID of the presign session.
 - <code>initiator</code>: The address of the session initiator.
 - <code>dwallet_id</code>: The ID of the linked dWallet.
-- <code>dwallet_cap_id</code>: The capability ID of the linked dWallet.
 - <code>dkg_output</code>: The DKG process output linked to this dWallet.
 
 
-<a name="@Parameters_23"></a>
+<a name="@Parameters_22"></a>
 
 ##### Parameters
 
@@ -1224,7 +1174,6 @@ to begin processing the first round of the presign process.
         session_id: <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(session_id),
         initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
         dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-        dwallet_cap_id: get_dwallet_cap_id&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
         dkg_output: get_dwallet_output&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
     });
 }
@@ -1244,7 +1193,7 @@ This function emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc
 to begin the second round of the presign process.
 
 
-<a name="@Parameters_24"></a>
+<a name="@Parameters_23"></a>
 
 ##### Parameters
 
@@ -1257,14 +1206,14 @@ to begin the second round of the presign process.
 - <code>ctx</code>: The transaction context used to emit the event.
 
 
-<a name="@Panics_25"></a>
+<a name="@Panics_24"></a>
 
 ##### Panics
 
 - Panics with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code> if the sender of the transaction is not the system address.
 
 
-<a name="@Emits_26"></a>
+<a name="@Emits_25"></a>
 
 ##### Emits
 
@@ -1272,7 +1221,7 @@ to begin the second round of the presign process.
 DKG output, first round output, and first round session ID.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round">launch_presign_second_round</a>(initiator: <b>address</b>, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_launch_presign_second_round">launch_presign_second_round</a>(initiator: <b>address</b>, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1285,7 +1234,6 @@ DKG output, first round output, and first round session ID.
     initiator: <b>address</b>,
     dwallet_id: ID,
     dkg_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    dwallet_cap_id: ID,
     first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     first_round_session_id: ID,
     ctx: &<b>mut</b> TxContext
@@ -1298,7 +1246,6 @@ DKG output, first round output, and first round session ID.
         session_id,
         initiator,
         dwallet_id,
-        dwallet_cap_id,
         dkg_output,
         first_round_output,
         first_round_session_id,
@@ -1322,7 +1269,7 @@ It creates a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecds
 emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedPresignEvent">CompletedPresignEvent</a></code>, and transfers the result to the initiating user.
 
 
-<a name="@Parameters_27"></a>
+<a name="@Parameters_26"></a>
 
 ##### Parameters
 
@@ -1334,21 +1281,21 @@ emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_
 - <code>ctx</code>: The transaction context.
 
 
-<a name="@Emits_28"></a>
+<a name="@Emits_27"></a>
 
 ##### Emits
 
 - <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedPresignEvent">CompletedPresignEvent</a></code>: Includes the initiator, dWallet ID, and presign ID.
 
 
-<a name="@Panics_29"></a>
+<a name="@Panics_28"></a>
 
 ##### Panics
 
 - Panics with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code> if the sender of the transaction is not the system address.
 
 
-<a name="@Effects_30"></a>
+<a name="@Effects_29"></a>
 
 ##### Effects
 
@@ -1356,7 +1303,7 @@ emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_
 - Emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_CompletedPresignEvent">CompletedPresignEvent</a></code>.
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_second_presign_round_output">create_second_presign_round_output</a>(initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, second_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_second_presign_round_output">create_second_presign_round_output</a>(initiator: <b>address</b>, session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, second_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1371,7 +1318,6 @@ emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_
     first_round_session_id: ID,
     first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     second_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
-    dwallet_cap_id: ID,
     dwallet_id: ID,
     ctx: &<b>mut</b> TxContext
 ) {
@@ -1382,7 +1328,6 @@ emits a <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_
         session_id,
         first_round_session_id,
         dwallet_id,
-        dwallet_cap_id,
         first_round_output,
         second_round_output,
     };
@@ -1485,7 +1430,7 @@ metadata and ensuring the integrity of the signing process.
 It validates the linkage between the <code>DWallet</code>, <code>DWalletCap</code>, and <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a></code>.
 
 
-<a name="@Effects_31"></a>
+<a name="@Effects_30"></a>
 
 ##### Effects
 
@@ -1496,7 +1441,7 @@ It validates the linkage between the <code>DWallet</code>, <code>DWalletCap</cod
 and additional metadata.
 
 
-<a name="@Emits_32"></a>
+<a name="@Emits_31"></a>
 
 ##### Emits
 
@@ -1507,7 +1452,7 @@ and additional metadata.
 and DKG output.
 
 
-<a name="@Aborts_33"></a>
+<a name="@Aborts_32"></a>
 
 ##### Aborts
 
@@ -1523,7 +1468,7 @@ the expected DWalletCap ID for any of the message approvals.
 in the same order as the <code>hashed_messages</code>.
 
 
-<a name="@Parameters_34"></a>
+<a name="@Parameters_33"></a>
 
 ##### Parameters
 
@@ -1537,7 +1482,7 @@ in the same order as the <code>hashed_messages</code>.
 - <code>ctx</code>: The mutable transaction context.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_sign">sign</a>(dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval">dwallet_2pc_mpc_ecdsa_k1::MessageApproval</a>&gt;, hashed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, presign: &<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;, centralized_signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, presign_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_sign">sign</a>(message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval">dwallet_2pc_mpc_ecdsa_k1::MessageApproval</a>&gt;, hashed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, presign: &<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>, <a href="dwallet.md#0x3_dwallet">dwallet</a>: &<a href="dwallet.md#0x3_dwallet_DWallet">dwallet::DWallet</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">dwallet_2pc_mpc_ecdsa_k1::Secp256K1</a>&gt;, centralized_signed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, presign_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1547,7 +1492,6 @@ in the same order as the <code>hashed_messages</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_sign">sign</a>(
-    dwallet_cap_id: ID,
     message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval">MessageApproval</a>&gt;,
     hashed_messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
     presign: &<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">Presign</a>,
@@ -1590,7 +1534,6 @@ in the same order as the <code>hashed_messages</code>.
             initiator: <a href="../pera-framework/tx_context.md#0x2_tx_context_sender">tx_context::sender</a>(ctx),
             batched_session_id: batch_session_id,
             dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
-            dwallet_cap_id,
             presign_first_round_output: presign.first_round_output,
             presign_second_round_output: presign.second_round_output,
             centralized_signed_message: centralized_signed_messages[i],
@@ -1617,7 +1560,7 @@ blockchain logic executed by validators. The emitted event contains the
 completed sign output that should be consumed by the initiating user.
 
 
-<a name="@Parameters_35"></a>
+<a name="@Parameters_34"></a>
 
 ##### Parameters
 
@@ -1626,7 +1569,7 @@ completed sign output that should be consumed by the initiating user.
 - **<code>ctx</code>**: The transaction context used for event emission.
 
 
-<a name="@Requirements_36"></a>
+<a name="@Requirements_35"></a>
 
 ##### Requirements
 
@@ -1634,7 +1577,7 @@ completed sign output that should be consumed by the initiating user.
 the function will abort with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_ENotSystemAddress">ENotSystemAddress</a></code>.
 
 
-<a name="@Events_37"></a>
+<a name="@Events_36"></a>
 
 ##### Events
 
@@ -1642,7 +1585,7 @@ the function will abort with <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwal
 signaling the completion of the sign process for the batch session.
 
 
-<a name="@Errors_38"></a>
+<a name="@Errors_37"></a>
 
 ##### Errors
 
@@ -1689,7 +1632,7 @@ This function creates a dWallet object with random data,
 useful for testing or initialization in non-production environments.
 
 
-<a name="@Parameters_39"></a>
+<a name="@Parameters_38"></a>
 
 ##### Parameters
 
@@ -1698,7 +1641,7 @@ useful for testing or initialization in non-production environments.
 - <code>dkg_output</code>: The decentralized DKG output.
 
 
-<a name="@Effects_40"></a>
+<a name="@Effects_39"></a>
 
 ##### Effects
 
@@ -1706,7 +1649,7 @@ useful for testing or initialization in non-production environments.
 - Links the dWallet to the provided capability.
 
 
-<a name="@Returns_41"></a>
+<a name="@Returns_40"></a>
 
 ##### Returns
 
@@ -1746,7 +1689,7 @@ Generates a new mock <code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_
 This function is useful for testing or initializing Presign objects.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign">create_mock_presign</a>(dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, second_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign">create_mock_presign</a>(dwallet_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, second_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, first_round_session_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Presign">dwallet_2pc_mpc_ecdsa_k1::Presign</a>
 </code></pre>
 
 
@@ -1757,7 +1700,6 @@ This function is useful for testing or initializing Presign objects.
 
 <pre><code><b>public</b> <b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign">create_mock_presign</a>(
     dwallet_id: ID,
-    dwallet_cap_id: ID,
     first_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     second_round_output: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
     first_round_session_id: ID,
@@ -1771,7 +1713,6 @@ This function is useful for testing or initializing Presign objects.
         id,
         session_id,
         dwallet_id,
-        dwallet_cap_id,
         first_round_session_id,
         first_round_output,
         second_round_output,

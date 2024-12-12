@@ -59,10 +59,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let output: vector<u8> = std::vector::empty();
 
             dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
-                SENDER_ADDRESS,
                 session_id,
                 output,
-                dwallet_cap_id,
                 ctx,
             );
 
@@ -173,10 +171,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let output: vector<u8> = std::vector::empty();
 
             dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
-                sender,
                 session_id,
                 output,
-                dwallet_cap_id,
                 ctx,
             );
         };
@@ -273,7 +269,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 initiator,
                 dwallet_id,
                 dkg_output,
-                dwallet_cap_id,
                 first_round_output,
                 first_round_session_id,
                 ctx,

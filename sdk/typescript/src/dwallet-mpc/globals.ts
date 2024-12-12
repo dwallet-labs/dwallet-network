@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 // noinspection ES6PreferShortImport
 
-import { bcs } from '../bcs/index.js';
-import type { MoveValue, PeraClient } from '../client/index.js';
+import type { PeraClient } from '../client/index.js';
 import type { Keypair } from '../cryptography/index.js';
-import { Transaction } from '../transactions/index.js';
 
 export const packageId = '0x3';
 export const dWalletModuleName = 'dwallet';
@@ -16,52 +14,6 @@ export interface Config {
 	keypair: Keypair;
 	client: PeraClient;
 	timeout: number;
-}
-
-interface MoveObjectWithFields {
-	fields: { [key: string]: MoveValue };
-}
-
-export async function fetchObjectBySessionId(sessionId: string, type: string, c: Config) {
-	let cursor = null;
-	const startTime = Date.now();
-
-	while (Date.now() - startTime < c.timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		await new Promise((r) => setTimeout(r, 5000));
-		const {
-			data: ownedObjects,
-			hasNextPage,
-			nextCursor,
-		} = await c.client.getOwnedObjects({
-			owner: c.keypair.toPeraAddress(),
-			cursor,
-		});
-		const objectIds = ownedObjects.map((o) => o.data?.objectId).filter(Boolean) as string[];
-
-		if (objectIds.length === 0) {
-			continue;
-		}
-
-		const objectsContent = await c.client.multiGetObjects({
-			ids: objectIds,
-			options: { showContent: true },
-		});
-
-		const match = objectsContent
-			.map((o) => o.data?.content)
-			.find(
-				(o) =>
-					o?.dataType === 'moveObject' &&
-					o?.type === type &&
-					(o as MoveObjectWithFields)?.fields?.['session_id'] === sessionId,
-			);
-		if (match) return match;
-		if (hasNextPage) {
-			cursor = nextCursor;
-		}
-	}
-	throw new Error(`Timeout: Unable to fetch an object of type ${type} within ${c.timeout}ms`);
 }
 
 interface FetchObjectFromEventParams<TEvent, TObject> {
@@ -149,26 +101,41 @@ export async function fetchObjectFromEvent<TEvent, TObject>({
 	);
 }
 
-export const approveMessages = async (
-	client: PeraClient,
-	keypair: Keypair,
-	dwalletCapId: string,
-	messages: Uint8Array[],
+export const getEventByTypeAndSessionId = async (
+	conf: Config,
+	eventType: string,
+	session_id: string,
 ) => {
-	const tx = new Transaction();
-	const [messageApprovals] = tx.moveCall({
-		target: `${packageId}::${dWalletModuleName}::approve_messages`,
-		arguments: [
-			tx.object(dwalletCapId),
-			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(messages)),
-		],
-	});
-	tx.transferObjects([messageApprovals], keypair.toPeraAddress());
-	return await client.signAndExecuteTransaction({
-		signer: keypair,
-		transaction: tx,
-		options: {
-			showEffects: true,
-		},
-	});
+	const tenMinutesInMillis = 10 * 60 * 1000;
+	const startTime = Date.now();
+	while (Date.now() - startTime <= conf.timeout) {
+		// Wait for 5 seconds between queries
+		await new Promise((resolve) => setTimeout(resolve, 5000));
+		let newEvents = await conf.client.queryEvents({
+			query: {
+				TimeRange: {
+					startTime: (Date.now() - tenMinutesInMillis).toString(),
+					endTime: Date.now().toString(),
+				},
+			},
+		});
+		let matchingEvent = newEvents.data.find(
+			(event) =>
+				(
+					event.parsedJson as {
+						session_id: string;
+					}
+				).session_id === session_id && event.type === eventType,
+		);
+		if (matchingEvent) {
+			return matchingEvent.parsedJson;
+		}
+	}
+
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch an event of type ${eventType} within ${
+			conf.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
 };
