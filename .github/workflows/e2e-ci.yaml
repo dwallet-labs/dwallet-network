@@ -1,7 +1,6 @@
 name: E2E test CI
 
 on:
-  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -41,3 +40,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build --bin pera --target ${{ matrix.os }}
+      - name: Run the test validator
+        run: |
+          screen -dmS sui-test-validator-session ./target/debug/pera start --with-faucet --force-regenesis --epoch-duration-ms 1000000000000
+          sleep 5
+          SUI_PID=$(pgrep -f 'pera start' | head -n 1)
+          echo "Captured PID: $SUI_PID"
+          echo "SUI_PID=$SUI_PID" >> $GITHUB_ENV
+      - name: Terminate the test validator
+        run: |
+          kill $SUI_PID
