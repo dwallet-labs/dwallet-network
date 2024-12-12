@@ -696,7 +696,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
             event::emit(StartSignEvent {
                 session_id: id,
-                presign_session_id: presign.session_id,
+                presign_session_id: presign.first_round_session_id,
                 initiator: tx_context::sender(ctx),
                 batched_session_id: batch_session_id,
                 dwallet_id: object::id(dwallet),
