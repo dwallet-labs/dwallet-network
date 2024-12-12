@@ -158,6 +158,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         initiator: address,
         dwallet_id: ID,
         dkg_output: vector<u8>,
+        amount: u64,
     }
 
     /// Event emitted to initiate the second round of a `Presign` session.
@@ -430,6 +431,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - `ctx`: The mutable transaction context.
     public fun launch_presign_first_round(
         dwallet: &DWallet<Secp256K1>,
+        amount: u64,
         ctx: &mut TxContext
     ) {
         let session_id = tx_context::fresh_object_address(ctx);
@@ -438,6 +440,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             initiator: tx_context::sender(ctx),
             dwallet_id: object::id(dwallet),
             dkg_output: get_dwallet_output<Secp256K1>(dwallet),
+            amount
         });
     }
 
