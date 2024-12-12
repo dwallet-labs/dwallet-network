@@ -158,7 +158,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         initiator: address,
         dwallet_id: ID,
         dkg_output: vector<u8>,
-        amount: u64,
+        batch_session_id: ID,
     }
 
     /// Event emitted to initiate the second round of a `Presign` session.
@@ -436,6 +436,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         ctx: &mut TxContext
     ) {
         let session_id = tx_context::fresh_object_address(ctx);
+        let mut index = 0;
+        while i < amount {
+            i = i + 1;
+
+        }
         event::emit(StartPresignFirstRoundEvent {
             session_id: object::id_from_address(session_id),
             initiator: tx_context::sender(ctx),
