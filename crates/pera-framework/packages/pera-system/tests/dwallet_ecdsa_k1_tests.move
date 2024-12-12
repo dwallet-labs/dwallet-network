@@ -55,7 +55,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = scenario.ctx();
             let session_id = object::id_from_address(@0x10);
-            let dwallet_cap_id = object::id_from_address(@0x11);
             let output: vector<u8> = std::vector::empty();
 
             dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
@@ -65,23 +64,18 @@ module pera_system::dwallet_ecdsa_k1_tests {
             );
 
             test_utils::destroy(session_id);
-            test_utils::destroy(dwallet_cap_id);
         };
 
         let effects: TransactionEffects = scenario.end();
 
         let events_num = test_scenario::num_user_events(&effects);
-        assert!(events_num == 0, EWrongEventNumber);
+        assert!(events_num == 1, EWrongEventNumber);
 
         let created_objects = test_scenario::created(&effects);
-        assert!(std::vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+        assert!(std::vector::length(&created_objects) == 0, EWrongCreatedObjectsNum);
 
         let frozen_objects = test_scenario::frozen(&effects);
         assert!(std::vector::length(&frozen_objects) == 0, EWrongFrozenObjectsNum);
-
-        let transferred_objects: VecMap<ID, address> = test_scenario::transferred_to_account(&effects);
-        let (id, address) = transferred_objects.get_entry_by_idx(0);
-        assert!(*address == SENDER_ADDRESS, EObjectTransferredToWrongAddress);
     }
 
     #[test]
