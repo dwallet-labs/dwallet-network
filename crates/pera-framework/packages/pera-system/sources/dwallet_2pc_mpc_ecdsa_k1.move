@@ -70,7 +70,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - **`second_round_output`**: The output from the second round of the presign.
     public struct Presign has key, store {
         id: UID,
-        session_id: ID,
         dwallet_id: ID,
         first_round_session_id: ID,
         first_round_output: vector<u8>,
@@ -575,14 +574,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
 
         let mut i: u64 = 0;
-        let mut batch_presigns_ids = vector::<ID>::empty();
+        let mut batch_presigns_ids: vector<ID> = vector::empty();
         while (i < first_round_session_ids.length()) {
             let first_round_session_id = first_round_session_ids[i];
             let first_round_output = first_round_outputs[i];
             let second_round_output = second_round_outputs[i];
             let output = Presign {
                 id: object::new(ctx),
-                session_id,
                 first_round_session_id,
                 dwallet_id,
                 first_round_output,
