@@ -843,12 +843,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         ctx: &mut TxContext,
     ): Presign {
         let id = object::new(ctx);
-        let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
 
         // Create and return the Presign object.
         Presign {
             id,
-            session_id,
             dwallet_id,
             first_round_session_id,
             first_round_output,
