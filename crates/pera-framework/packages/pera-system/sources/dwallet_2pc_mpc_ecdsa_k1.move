@@ -185,10 +185,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     /// Event emitted when the presign second round is completed.
-    public struct CompletedPresignEvent has copy, drop {
+    public struct CompletedBatchedPresignEvent has copy, drop {
         initiator: address,
         dwallet_id: ID,
-        presign_id: ID,
+        session_id: ID,
+        presign_ids: vector<ID>,
     }
 
     /// Event emitted to start the signing process.
@@ -372,7 +373,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
-        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, dwallet_mpc_network_key_version, ctx);
+        let dwallet = dwallet::create_dwallet<Secp256K1>(
+            session_id,
+            dwallet_cap_id,
+            output,
+            dwallet_mpc_network_key_version,
+            ctx
+        );
         event::emit(CompletedDKGSecondRoundEvent {
             session_id,
             initiator,
@@ -558,30 +565,40 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     #[allow(unused_function)]
     fun create_second_presign_round_output(
         initiator: address,
-        session_id: ID,
-        first_round_session_id: ID,
-        first_round_output: vector<u8>,
-        second_round_output: vector<u8>,
+        batch_session_id: ID,
+        first_round_session_ids: vector<ID>,
+        first_round_outputs: vector<vector<u8>>,
+        second_round_outputs: vector<vector<u8>>,
         dwallet_id: ID,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
 
-        let output = Presign {
-            id: object::new(ctx),
-            session_id,
-            first_round_session_id,
-            dwallet_id,
-            first_round_output,
-            second_round_output,
+        let mut i: u64 = 0;
+        let mut batch_presigns_ids = vector::<ID>::empty();
+        while (i < first_round_session_ids.length()) {
+            let first_round_session_id = first_round_session_ids[i];
+            let first_round_output = first_round_outputs[i];
+            let second_round_output = second_round_outputs[i];
+            let output = Presign {
+                id: object::new(ctx),
+                session_id,
+                first_round_session_id,
+                dwallet_id,
+                first_round_output,
+                second_round_output,
+            };
+            transfer::transfer(output, initiator);
+            batch_presigns_ids.push_back(object::id(&output));
+            i = i + 1;
         };
 
-        event::emit(CompletedPresignEvent {
+        event::emit(CompletedBatchedPresignEvent {
             initiator,
             dwallet_id,
-            presign_id: object::id(&output),
+            session_id: batch_session_id,
+            presign_ids: batch_presigns_ids,
         });
-        transfer::transfer(output, initiator);
     }
 
     /// Create a set of message approvals.
