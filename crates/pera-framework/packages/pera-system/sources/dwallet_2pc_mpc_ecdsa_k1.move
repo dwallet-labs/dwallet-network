@@ -231,6 +231,17 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         initiating_user: address
     }
 
+    /// Event emitted to start a batched presign process.
+    ///
+    /// ### Fields
+    /// - **`session_id`**: The session identifier for the batched sign process.
+    /// - **`amount`**: The number of presign sessions to be started.
+    public struct StartBatchedPresignEvent has copy, drop {
+        session_id: ID,
+        amount: u64,
+        initiating_user: address
+    }
+
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     /// Error raised when the sender is not the system address.
     const ENotSystemAddress: u64 = 0;
@@ -435,6 +446,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         amount: u64,
         ctx: &mut TxContext
     ) {
+        event::emit(StartBatchedPresignEvent {
+            session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+            amount,
+            initiating_user: tx_context::sender(ctx)
+        });
         let mut i = 0;
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         while (i < amount) {
