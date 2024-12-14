@@ -453,13 +453,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         amount: u64,
         ctx: &mut TxContext
     ) {
+        let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         event::emit(StartBatchedPresignEvent {
-            session_id: object::id_from_address(tx_context::fresh_object_address(ctx)),
+            session_id: batch_session_id,
             amount,
             initiating_user: tx_context::sender(ctx)
         });
         let mut i = 0;
-        let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         while (i < amount) {
             let session_id = tx_context::fresh_object_address(ctx);
             i = i + 1;
