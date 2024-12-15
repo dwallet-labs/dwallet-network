@@ -17,6 +17,11 @@ const sidebars = {
     },
     {
       type: 'doc',
+      label: 'Whitepaper',
+      id: 'whitepaper',
+    },
+    {
+      type: 'doc',
       label: 'Alpha Testnet',
       id: 'alpha-testnet',
     },
@@ -26,8 +31,7 @@ const sidebars = {
       collapsed: true,
       items: [
         'core-concepts/multi-chain-vs-cross-chain',
-        'core-concepts/composable-modular-networks',
-        'core-concepts/noncollusive-and-decentralized',
+        'core-concepts/zero-trust-and-decentralization',
         'core-concepts/dwallets',
         {
           type: 'category',
@@ -51,7 +55,7 @@ const sidebars = {
             {
               type: 'doc',
               label: 'dWallet Environment Setup',
-              id: 'developers-guide/getting-started/dwallet-network-environment',
+              id: 'developers-guide/getting-started/ika-network-environment',
             },
             {
               type: 'doc',
