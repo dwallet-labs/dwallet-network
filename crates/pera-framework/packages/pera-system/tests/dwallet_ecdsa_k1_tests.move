@@ -7,7 +7,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
     use pera_system::dwallet;
     use pera_system::dwallet::DWalletCap;
     use pera_system::dwallet_2pc_mpc_ecdsa_k1;
-    use pera_system::dwallet_2pc_mpc_ecdsa_k1::{DKGFirstRoundOutput, Presign};
+    use pera_system::dwallet_2pc_mpc_ecdsa_k1::Presign;
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{
         ENotSystemAddress,
         EMesssageApprovalDWalletMismatch,
@@ -55,40 +55,27 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = scenario.ctx();
             let session_id = object::id_from_address(@0x10);
-            let dwallet_cap_id = object::id_from_address(@0x11);
             let output: vector<u8> = std::vector::empty();
 
             dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
-                SENDER_ADDRESS,
                 session_id,
                 output,
-                dwallet_cap_id,
                 ctx,
             );
 
             test_utils::destroy(session_id);
-            test_utils::destroy(dwallet_cap_id);
         };
 
         let effects: TransactionEffects = scenario.end();
 
         let events_num = test_scenario::num_user_events(&effects);
-        assert!(events_num == 0, EWrongEventNumber);
+        assert!(events_num == 1, EWrongEventNumber);
 
         let created_objects = test_scenario::created(&effects);
-        assert!(std::vector::length(&created_objects) == 1, EWrongCreatedObjectsNum);
+        assert!(std::vector::length(&created_objects) == 0, EWrongCreatedObjectsNum);
 
         let frozen_objects = test_scenario::frozen(&effects);
         assert!(std::vector::length(&frozen_objects) == 0, EWrongFrozenObjectsNum);
-
-        let sessions_transferred = test_scenario::ids_for_address<DKGFirstRoundOutput>(SENDER_ADDRESS);
-        assert!(std::vector::length(&sessions_transferred) == 1, EWrongTransferredObjectsNum);
-
-        let session_id = std::vector::borrow(&sessions_transferred, 0);
-        let transferred_objects: VecMap<ID, address> = test_scenario::transferred_to_account(&effects);
-        let (id, address) = transferred_objects.get_entry_by_idx(0);
-        assert!(*address == SENDER_ADDRESS, EObjectTransferredToWrongAddress);
-        assert!(id == session_id, EWrongTransferredObject);
     }
 
     #[test]
@@ -173,10 +160,8 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let output: vector<u8> = std::vector::empty();
 
             dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
-                sender,
                 session_id,
                 output,
-                dwallet_cap_id,
                 ctx,
             );
         };
@@ -273,7 +258,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 initiator,
                 dwallet_id,
                 dkg_output,
-                dwallet_cap_id,
                 first_round_output,
                 first_round_session_id,
                 ctx,
@@ -301,7 +285,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             let session_id = object::id_from_address(@0x01);
             let first_round_session_id = object::id_from_address(@0x02);
-            let dwallet_cap_id = object::id_from_address(@0x03);
             let dwallet_id = object::id_from_address(@0x04);
             let first_round_output: vector<u8> = std::vector::singleton(0xAA);
             let second_round_output: vector<u8> = std::vector::singleton(0xAB);
@@ -312,13 +295,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 first_round_session_id,
                 first_round_output,
                 second_round_output,
-                dwallet_cap_id,
                 dwallet_id,
                 ctx,
             );
 
             test_utils::destroy(session_id);
-            test_utils::destroy(dwallet_cap_id);
             test_utils::destroy(dwallet_id);
         };
 
@@ -366,7 +347,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let first_round_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
             presign = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
                 object::id(&dwallet),
-                dwallet_cap_id,
                 presign_first_round_output,
                 presign_second_round_output,
                 first_round_session_id,
@@ -398,7 +378,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let presign_session_id = object::id_from_address(@0x03);
 
             pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                dwallet_cap_id,
                 &mut message_approvals,
                 messages_to_approve,
                 &presign,
@@ -473,7 +452,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let first_round_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
             presign = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
                 object::id(&dwallet),
-                dwallet::get_dwallet_cap_id(&dwallet),
                 presign_first_round_output,
                 presign_second_round_output,
                 first_round_session_id,
@@ -509,7 +487,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             // Call the sign function — this should fail with EDwalletCapMismatch.
             pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                object::id(&invalid_dwallet_cap),
                 &mut message_approvals,
                 messages,
                 &presign,
@@ -560,7 +537,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             presign = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
                 object::id(&dwallet),
-                object::id(&dwallet_cap),
                 presign_first_round_output,
                 presign_second_round_output,
                 first_round_session_id,
@@ -590,7 +566,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             // Call the `sign` function with the **invalid dwallet** (this should fail).
             pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                object::id(&dwallet_cap),
                 &mut message_approvals,
                 messages,
                 &presign,
@@ -637,7 +612,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             presign = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
                 object::id(&dwallet),
-                object::id(&dwallet_cap),
                 presign_first_round_output,
                 presign_second_round_output,
                 first_round_session_id,
@@ -670,7 +644,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let presign_session_id = object::id_from_address(@0x03);
 
             pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                object::id(&dwallet_cap),
                 &mut message_approvals,
                 messages,
                 &presign,
@@ -716,7 +689,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             presign = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
                 object::id(&dwallet),
-                object::id(&dwallet_cap),
                 presign_first_round_output,
                 presign_second_round_output,
                 first_round_session_id,
@@ -759,7 +731,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let presign_session_id = object::id_from_address(@0x03);
 
             pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                object::id(&dwallet_cap),
                 &mut message_approvals,
                 messages,
                 &presign,
@@ -805,7 +776,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             presign = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
                 object::id(&dwallet),
-                object::id(&dwallet_cap),
                 presign_first_round_output,
                 presign_second_round_output,
                 first_round_session_id,
@@ -843,7 +813,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             // Call the `sign` function (should fail due to mismatch).
             pera_system::dwallet_2pc_mpc_ecdsa_k1::sign(
-                object::id(&dwallet_cap),
                 &mut message_approvals,
                 messages,
                 &presign,

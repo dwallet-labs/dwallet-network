@@ -143,13 +143,13 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::mpc_events::{
     LockedNextEpochCommitteeEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
-use crate::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsManager;
+use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
     CheckpointCache, ExecutionCacheCommit, ExecutionCacheReconfigAPI, ExecutionCacheWrite,
@@ -1558,17 +1558,25 @@ impl AuthorityState {
             return Ok(());
         }
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
-        // This function is being executed for all events, some events are being emitted before the MPC outputs manager is initialized.
-        let mut dwallet_mpc_outputs_manager = epoch_store.get_dwallet_mpc_outputs_manager().await?;
+        let mut dwallet_mpc_outputs_manager =
+            epoch_store.get_dwallet_mpc_outputs_verifier().await?;
         for event in &inner_temporary_store.events.data {
             if LockedNextEpochCommitteeEvent::type_() == event.type_ {
                 info!("received LockedNextEpochCommitteeEvent successfully");
                 dwallet_mpc_outputs_manager.completed_locking_next_committee = true;
                 continue;
             }
-            let Ok(Some(session_info)) = MPCParty::session_info_from_event(event, party_id) else {
+            let Ok(Some(session_info)) = session_info_from_event(
+                event,
+                party_id,
+                dwallet_mpc_outputs_manager.network_key_version(),
+            ) else {
                 continue;
             };
+            let mut dwallet_mpc_batches_manager =
+                epoch_store.get_dwallet_mpc_batches_manager().await?;
+            // This function is being executed for all events, some events are being emitted before the MPC outputs manager is initialized.
+            dwallet_mpc_batches_manager.handle_new_event(&session_info);
             dwallet_mpc_outputs_manager.handle_new_event(&session_info);
             let dwallet_mpc_sender = epoch_store.dwallet_mpc_sender.get().ok_or(
                 PeraError::from("DWallet MPC sender not initialized when iterating over events"),

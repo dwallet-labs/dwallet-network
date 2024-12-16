@@ -5,7 +5,9 @@ use enum_dispatch::enum_dispatch;
 use std::collections::{BTreeMap, HashMap};
 
 use crate::base_types::{AuthorityName, EpochId, PeraAddress};
+use crate::collection_types::VecMap;
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
+use crate::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
 use crate::multiaddr::Multiaddr;
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
@@ -59,7 +61,9 @@ impl EpochStartSystemState {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
-        encrypted_decryption_key_shares: Option<Vec<Vec<u8>>>,
+        encryption_of_decryption_key_shares: Option<
+            VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>,
+        >,
     ) -> Self {
         Self::V1(EpochStartSystemStateV1 {
             epoch,
@@ -69,7 +73,7 @@ impl EpochStartSystemState {
             epoch_start_timestamp_ms,
             epoch_duration_ms,
             active_validators,
-            encrypted_decryption_key_shares,
+            encryption_of_decryption_key_shares,
         })
     }
 
@@ -88,7 +92,7 @@ impl EpochStartSystemState {
                 epoch_start_timestamp_ms: state.epoch_start_timestamp_ms,
                 epoch_duration_ms: state.epoch_duration_ms,
                 active_validators: state.active_validators.clone(),
-                encrypted_decryption_key_shares: None,
+                encryption_of_decryption_key_shares: None,
             }),
         }
     }
@@ -103,12 +107,15 @@ pub struct EpochStartSystemStateV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
-    encrypted_decryption_key_shares: Option<Vec<Vec<u8>>>,
+    encryption_of_decryption_key_shares:
+        Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>>,
 }
 
 impl EpochStartSystemStateV1 {
-    pub fn get_encrypted_decryption_key_shares(&self) -> Option<Vec<Vec<u8>>> {
-        self.encrypted_decryption_key_shares.clone()
+    pub fn get_encryption_of_decryption_key_shares(
+        &self,
+    ) -> Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>> {
+        self.encryption_of_decryption_key_shares.clone()
     }
 
     pub fn get_active_validators_class_groups_public_key_and_proof(
@@ -138,7 +145,7 @@ impl EpochStartSystemStateV1 {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 1000,
             active_validators: vec![],
-            encrypted_decryption_key_shares: None,
+            encryption_of_decryption_key_shares: None,
         }
     }
 }

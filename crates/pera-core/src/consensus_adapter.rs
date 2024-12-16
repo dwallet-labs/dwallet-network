@@ -981,7 +981,7 @@ impl ReconfigurationInitiator for Arc<ConsensusAdapter> {
             error!("Error when sending StartLockNextEpochCommittee message to DWallet MPC sender: {:?}", err);
             return;
         }
-        let Ok(dwallet_mpc_outputs_manager) = epoch_store.get_dwallet_mpc_outputs_manager().await
+        let Ok(dwallet_mpc_outputs_manager) = epoch_store.get_dwallet_mpc_outputs_verifier().await
         else {
             error!("DWallet MPC outputs manager not found when trying to switch epoch");
             return;

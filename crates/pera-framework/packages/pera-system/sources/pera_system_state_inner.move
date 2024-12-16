@@ -18,6 +18,9 @@ module pera_system::pera_system_state_inner {
     use pera::table::Table;
     use pera::bag::Bag;
     use pera::bag;
+    use pera_system::dwallet_network_key::{EncryptionOfNetworkDecryptionKeyShares,
+        new_encrypted_network_decryption_key_shares, is_key_type,
+    };
 
     // same as in validator_set
     const ACTIVE_VALIDATOR_ONLY: u8 = 1;
@@ -25,6 +28,9 @@ module pera_system::pera_system_state_inner {
     const ANY_VALIDATOR: u8 = 3;
 
     const SYSTEM_STATE_VERSION_V1: u64 = 1;
+
+    #[error]
+    const EInvalidKeyType: u8 = 2;
 
     /// A list of system config parameters.
     public struct SystemParameters has store {
@@ -153,7 +159,7 @@ module pera_system::pera_system_state_inner {
         system_state_version: u64,
         /// These are the encrypted decryption-key shares for the current epoch, used for dWallet MPC session.
         /// The shares are indexed by the validator index of the current epoch committee.
-        encrypted_decryption_key_shares: vector<vector<u8>>,
+        encryption_of_decryption_key_shares: VecMap<u8, vector<EncryptionOfNetworkDecryptionKeyShares>>,
         /// Contains all information about the validators.
         validators: ValidatorSet,
         /// The storage fund.
@@ -316,7 +322,7 @@ module pera_system::pera_system_state_inner {
             epoch,
             protocol_version,
             system_state_version: 2,
-            encrypted_decryption_key_shares: vector::empty(),
+            encryption_of_decryption_key_shares: vec_map::empty(),
             validators,
             storage_fund,
             parameters: SystemParametersV2 {
@@ -351,12 +357,39 @@ module pera_system::pera_system_state_inner {
         self.validators.lock_next_epoch_committee(self.epoch);
     }
 
-    public(package) fun store_encrypted_decryption_key_shares(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>) {
-        self.encrypted_decryption_key_shares = shares;
+    public(package) fun new_encryption_of_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_type: u8) {
+        assert!(is_key_type(key_type), EInvalidKeyType);
+        let new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty());
+
+        if (self.encryption_of_decryption_key_shares.contains(&key_type)) {
+            self.encryption_of_decryption_key_shares.get_mut(&key_type).push_back(new_version);
+            return
+        };
+
+        self.encryption_of_decryption_key_shares.insert(key_type, vector[new_version]);
     }
 
+    public(package) fun store_encryption_of_decryption_key_shares(
+        self: &mut PeraSystemStateInnerV2,
+        shares: vector<vector<u8>>,
+        key_type: u8,
+    ) {
+        assert!(is_key_type(key_type), EInvalidKeyType);
+        let version = self.encryption_of_decryption_key_shares.get(&key_type).length();
+        if (self.encryption_of_decryption_key_shares.contains(&key_type)) {
+            self.encryption_of_decryption_key_shares.get_mut(&key_type).borrow_mut(
+                version
+            ).update_new_shares(shares, self.epoch);
+            return
+        };
 
-        /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
+        self.encryption_of_decryption_key_shares.insert(
+            key_type,
+            vector[new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty())]
+        );
+    }
+
+    /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
     /// stakes in their staking pool. Once they have at least `MIN_VALIDATOR_JOINING_STAKE` amount of stake they
     /// can call `request_add_validator` to officially become an active validator at the next epoch.
     /// Aborts if the caller is already a pending or active validator, or a validator candidate.
@@ -1169,5 +1202,6 @@ module pera_system::pera_system_state_inner {
 
         self.validators.request_add_validator_candidate(validator, ctx);
     }
+
 
 }

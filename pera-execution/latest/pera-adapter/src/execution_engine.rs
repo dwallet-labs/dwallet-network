@@ -1129,19 +1129,18 @@ mod checked {
             MPCRound::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![
-                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                 ],
             ),
-            MPCRound::DKGSecond => (
+            MPCRound::DKGSecond(dwallet_cap_id, dwallet_network_key_version) => (
                 "create_dkg_second_round_output",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                    CallArg::Pure(dwallet_cap_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_network_key_version).unwrap()),
                 ],
             ),
             MPCRound::PresignFirst(dwallet_id, dkg_output) => (
@@ -1150,7 +1149,6 @@ mod checked {
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&dkg_output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                 ],
@@ -1163,7 +1161,6 @@ mod checked {
                     CallArg::Pure(data.session_info.flow_session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&first_round_output).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                 ],
             ),
@@ -1180,13 +1177,14 @@ mod checked {
                     ],
                 )
             }
-            MPCRound::NetworkDkg => {
+            MPCRound::NetworkDkg(key_type) => {
                 module_name = PERA_SYSTEM_MODULE_NAME;
                 (
-                    "store_encrypted_decryption_key_shares",
+                    "new_encryption_of_decryption_key_shares_version",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
-                        CallArg::Pure(bcs::to_bytes(&data.output.clone()).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&vec![data.output.clone()]).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&(key_type as u8)).unwrap()),
                     ],
                 )
             }

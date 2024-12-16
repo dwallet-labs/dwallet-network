@@ -708,18 +708,6 @@ impl From<ExecutionError> for PeraError {
     }
 }
 
-impl From<DwalletMPCError> for PeraError {
-    fn from(error: DwalletMPCError) -> Self {
-        PeraError::DwalletMPCError(error.to_string())
-    }
-}
-
-impl From<&DwalletMPCError> for PeraError {
-    fn from(error: &DwalletMPCError) -> Self {
-        PeraError::DwalletMPCError(error.to_string())
-    }
-}
-
 impl From<Status> for PeraError {
     fn from(status: Status) -> Self {
         if status.message() == "Too many requests" {
@@ -735,6 +723,12 @@ impl From<Status> for PeraError {
                 status.code().description().to_owned(),
             )
         }
+    }
+}
+
+impl From<DwalletMPCError> for PeraError {
+    fn from(error: DwalletMPCError) -> Self {
+        PeraError::DwalletMPCError(error.to_string())
     }
 }
 
