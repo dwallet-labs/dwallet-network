@@ -251,6 +251,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     const EApprovalsAndMessagesLenMismatch: u64 = 3;
     const EMissingApprovalOrWorngApprovalOrder: u64 = 4;
     const ECentrailizedsignedMessagesAndMessagesLenMismatch: u64 = 5;
+    const EPresignsAndMessagesLenMismatch: u64 = 6;
     // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
@@ -703,21 +704,23 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun sign(
         message_approvals: &mut vector<MessageApproval>,
         hashed_messages: vector<vector<u8>>,
-        presign: Presign,
+        presigns: vector<Presign>,
         dwallet: &DWallet<Secp256K1>,
         centralized_signed_messages: vector<vector<u8>>,
         ctx: &mut TxContext
     ) {
-        assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
+        assert!(presigns.length() == hashed_messages.length(), EPresignsAndMessagesLenMismatch);
         let messages_len: u64 = vector::length(&hashed_messages);
         let approvals_len: u64 = vector::length(message_approvals);
         let centralized_signed_len: u64 = vector::length(&centralized_signed_messages);
         assert!(messages_len == approvals_len, EApprovalsAndMessagesLenMismatch);
         assert!(messages_len == centralized_signed_len, ECentrailizedsignedMessagesAndMessagesLenMismatch);
-
         let expected_dwallet_cap_id = get_dwallet_cap_id(dwallet);
-        let mut i: u64 = 0;
-        while (i < messages_len) {
+        let mut i = 0;
+        while (i < presigns.length()) {
+            let presign = vector::pop_back(&presigns);
+            assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
+            transfer::transfer(presign, SYSTEM_ADDRESS);
             let message_approval = vector::pop_back(message_approvals);
             let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
             assert!(expected_dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
