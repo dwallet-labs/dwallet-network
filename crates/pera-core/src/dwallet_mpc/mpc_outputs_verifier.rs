@@ -10,8 +10,8 @@ use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::collections::{HashMap, HashSet};
 
-/// A struct to manage the DWallet MPC outputs.
-/// It stores all the outputs received for each instance, and decides whether an output is valid
+/// A struct to verify the DWallet MPC outputs.
+/// It stores all the outputs received for each session, and decides whether an output is valid
 /// by checking if a validators with quorum of stake voted for it.
 pub struct DWalletMPCOutputsVerifier {
     /// The outputs received for each instance.
@@ -42,7 +42,7 @@ pub struct InstanceOutputsData {
 pub enum OutputResult {
     Valid,
     Malicious,
-    /// We don't have enough votes to decide if the output is valid or not.
+    /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
 }
 
