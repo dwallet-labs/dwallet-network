@@ -223,7 +223,7 @@ impl DWalletMPCManager {
         if let Ok((party, auxiliary_input, session_info)) = from_event(
             &event,
             &self,
-            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?
+            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?,
         ) {
             self.push_new_mpc_instance(auxiliary_input, party, session_info)?;
         };

@@ -356,7 +356,10 @@ pub(crate) fn from_event(
         }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            dkg_second_party(deserialized_event, dwallet_mpc_manager.network_key_version())
+            dkg_second_party(
+                deserialized_event,
+                dwallet_mpc_manager.network_key_version(),
+            )
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
             let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;
