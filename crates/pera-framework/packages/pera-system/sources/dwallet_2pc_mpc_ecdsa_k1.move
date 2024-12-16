@@ -72,8 +72,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         id: UID,
         dwallet_id: ID,
         first_round_session_id: ID,
-        first_round_output: vector<u8>,
-        second_round_output: vector<u8>,
+        presign: vector<u8>,
     }
 
     /// Event emitted to start the first DKG round.
@@ -181,6 +180,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dkg_output: vector<u8>,
         first_round_output: vector<u8>,
         first_round_session_id: ID,
+        batch_session_id: ID,
     }
 
     /// Event emitted when the presign second round is completed.
@@ -189,6 +189,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_id: ID,
         session_id: ID,
         presign_ids: vector<ID>,
+        first_round_session_ids: vector<ID>,
+        presigns: vector<vector<u8>>,
     }
 
     /// Event emitted to start the signing process.
@@ -214,8 +216,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_id: ID,
         dkg_output: vector<u8>,
         hashed_message: vector<u8>,
-        presign_first_round_output: vector<u8>,
-        presign_second_round_output: vector<u8>,
+        presign: vector<u8>,
         centralized_signed_message: vector<u8>,
     }
 
@@ -224,11 +225,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Fields
     /// - **`session_id`**: The session identifier for the batched sign process.
     /// - **`hashed_messages`**: A list of hashed messages to be signed.
-    /// - **`initiating_user`**: The address of the user who initiated the protocol.
+    /// - **`initiator`**: The address of the user who initiated the protocol.
     public struct StartBatchedSignEvent has copy, drop {
         session_id: ID,
         hashed_messages: vector<vector<u8>>,
-        initiating_user: address
+        initiator: address
     }
 
     /// Event emitted to start a batched presign process.
@@ -239,7 +240,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public struct StartBatchedPresignEvent has copy, drop {
         session_id: ID,
         amount: u64,
-        initiating_user: address
+        initiator: address
     }
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
@@ -456,7 +457,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         event::emit(StartBatchedPresignEvent {
             session_id: batch_session_id,
             amount,
-            initiating_user: tx_context::sender(ctx)
+            initiator: tx_context::sender(ctx)
         });
         let mut i = 0;
         while (i < amount) {
@@ -499,6 +500,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dkg_output: vector<u8>,
         first_round_output: vector<u8>,
         first_round_session_id: ID,
+        batch_session_id: ID,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
@@ -512,6 +514,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dkg_output,
             first_round_output,
             first_round_session_id,
+            batch_session_id,
         });
     }
 
@@ -566,8 +569,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         initiator: address,
         batch_session_id: ID,
         first_round_session_ids: vector<ID>,
-        first_round_outputs: vector<vector<u8>>,
-        second_round_outputs: vector<vector<u8>>,
+        presigns: vector<vector<u8>>,
         dwallet_id: ID,
         ctx: &mut TxContext
     ) {
@@ -577,17 +579,15 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let mut batch_presigns_ids: vector<ID> = vector::empty();
         while (i < first_round_session_ids.length()) {
             let first_round_session_id = first_round_session_ids[i];
-            let first_round_output = first_round_outputs[i];
-            let second_round_output = second_round_outputs[i];
+            let presign = presigns[i];
             let output = Presign {
                 id: object::new(ctx),
                 first_round_session_id,
                 dwallet_id,
-                first_round_output,
-                second_round_output,
+                presign,
             };
-            transfer::transfer(output, initiator);
             batch_presigns_ids.push_back(object::id(&output));
+            transfer::transfer(output, initiator);
             i = i + 1;
         };
 
@@ -596,6 +596,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             dwallet_id,
             session_id: batch_session_id,
             presign_ids: batch_presigns_ids,
+            presigns,
+            first_round_session_ids,
         });
     }
 
@@ -728,7 +730,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         event::emit(StartBatchedSignEvent {
             session_id: batch_session_id,
             hashed_messages,
-            initiating_user: tx_context::sender(ctx)
+            initiator: tx_context::sender(ctx)
         });
         let mut i = 0;
         let messages_length = vector::length(&hashed_messages);
@@ -740,8 +742,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 initiator: tx_context::sender(ctx),
                 batched_session_id: batch_session_id,
                 dwallet_id: object::id(dwallet),
-                presign_first_round_output: presign.first_round_output,
-                presign_second_round_output: presign.second_round_output,
+                presign: presign.presign,
                 centralized_signed_message: centralized_signed_messages[i],
                 dkg_output: get_dwallet_output<Secp256K1>(dwallet),
                 hashed_message: hashed_messages[i],
@@ -837,8 +838,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// This function is useful for testing or initializing Presign objects.
     public fun create_mock_presign(
         dwallet_id: ID,
-        first_round_output: vector<u8>,
-        second_round_output: vector<u8>,
+        presign: vector<u8>,
         first_round_session_id: ID,
         ctx: &mut TxContext,
     ): Presign {
@@ -848,9 +848,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         Presign {
             id,
             dwallet_id,
+            presign,
             first_round_session_id,
-            first_round_output,
-            second_round_output,
         }
     }
 }
