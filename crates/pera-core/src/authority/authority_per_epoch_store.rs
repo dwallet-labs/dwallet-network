@@ -2710,6 +2710,9 @@ impl AuthorityPerEpochStore {
         }
     }
 
+    /// Return the current epoch's [`DWalletMPCBatchesManager`].
+    /// This manager is responsible for storing all the valid outputs of a batched DWallet MPC session (i.e. sign),
+    /// and write them to the chain at once when all are ready.
     pub async fn get_dwallet_mpc_batches_manager(
         &self,
     ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCBatchesManager>> {
