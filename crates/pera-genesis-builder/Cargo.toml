@@ -31,10 +31,12 @@ pera-framework.workspace = true
 pera-framework-snapshot.workspace = true
 pera-protocol-config.workspace = true
 pera-types.workspace = true
+dwallet-mpc-types.workspace = true
 [target.'cfg(msim)'.dependencies]
 pera-simulator.workspace = true
 
 [dev-dependencies]
 insta.workspace = true
 tempfile.workspace = true
+dwallet-mpc-types.workspace = true
 pera-types = { workspace = true, features = ["test-utils"] }

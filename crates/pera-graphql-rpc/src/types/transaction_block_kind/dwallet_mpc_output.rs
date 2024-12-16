@@ -11,6 +11,9 @@ pub(crate) struct DWalletMPCOutputTransaction {
     pub checkpoint_viewed_at: u64,
 }
 
+#[derive(Clone, Eq, PartialEq)]
+pub(crate) struct LockNextCommitteeTransaction();
+
 #[Object]
 impl DWalletMPCOutputTransaction {
     /// The output value of the dwallet mpc session
@@ -32,5 +35,12 @@ impl DWalletMPCOutputTransaction {
                 .to_vec()
                 .as_slice(),
         )
+    }
+}
+
+#[Object]
+impl LockNextCommitteeTransaction {
+    async fn value(&self) -> String {
+        "LockNextCommitteeTransaction".to_string()
     }
 }

@@ -1,7 +1,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
-use crate::base_types::{AuthorityName, ObjectRef, PeraAddress, TransactionDigest};
+use crate::base_types::{AuthorityName, EpochId, ObjectRef, PeraAddress, TransactionDigest};
 use crate::base_types::{ConciseableName, ObjectID, SequenceNumber};
 use crate::digests::ConsensusCommitDigest;
 use crate::messages_checkpoint::{
@@ -101,7 +101,8 @@ pub enum ConsensusTransactionKey {
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
-    DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, ObjectID),
+    DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, AuthorityName),
+    LockNextCommittee(AuthorityName, EpochId),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
     // Key must include both id and jwk, because honest validators could be given multiple jwks for
@@ -148,12 +149,20 @@ impl Debug for ConsensusTransactionKey {
                 value,
                 session_id,
                 sender_address,
-                dwallet_cap_id,
+                authority,
             ) => {
                 write!(
                     f,
-                    "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
-                    value, session_id, sender_address, dwallet_cap_id
+                    "DWalletMPCOutput({:?}, {:?}, {:?})",
+                    value, session_id, sender_address
+                )
+            }
+            ConsensusTransactionKey::LockNextCommittee(authority, epoch_id) => {
+                write!(
+                    f,
+                    "LockNextCommittee({:?}) for epoch {:?}",
+                    authority.concise(),
+                    epoch_id
                 )
             }
         }
@@ -287,7 +296,8 @@ pub enum ConsensusTransactionKind {
 
     NewJWKFetched(AuthorityName, JwkId, JWK),
     DWalletMPCMessage(AuthorityName, Vec<u8>, ObjectID),
-    DWalletMPCOutput(SessionInfo, Vec<u8>),
+    DWalletMPCOutput(AuthorityName, SessionInfo, Vec<u8>),
+    LockNextCommittee(AuthorityName, EpochId),
     RandomnessStateUpdate(u64, Vec<u8>), // deprecated
     // DKG is used to generate keys for use in the random beacon protocol.
     // `RandomnessDkgMessage` is sent out at start-of-epoch to initiate the process.
@@ -497,14 +507,29 @@ impl ConsensusTransaction {
         }
     }
 
+    pub fn new_lock_next_committee_message(authority: AuthorityName, epoch: EpochId) -> Self {
+        let mut hasher = DefaultHasher::new();
+        authority.hash(&mut hasher);
+        epoch.hash(&mut hasher);
+        let tracking_id = hasher.finish().to_le_bytes();
+        Self {
+            tracking_id,
+            kind: ConsensusTransactionKind::LockNextCommittee(authority, epoch),
+        }
+    }
+
     /// Create a new consensus transaction with the output of the MPC session to be sent to the parties.
-    pub fn new_dwallet_mpc_output(output: Vec<u8>, session_info: SessionInfo) -> Self {
+    pub fn new_dwallet_mpc_output(
+        authority: AuthorityName,
+        output: Vec<u8>,
+        session_info: SessionInfo,
+    ) -> Self {
         let mut hasher = DefaultHasher::new();
         output.hash(&mut hasher);
         let tracking_id = hasher.finish().to_le_bytes();
         Self {
             tracking_id,
-            kind: ConsensusTransactionKind::DWalletMPCOutput(session_info, output),
+            kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
         }
     }
 
@@ -586,13 +611,16 @@ impl ConsensusTransaction {
                     session_id.clone(),
                 )
             }
-            ConsensusTransactionKind::DWalletMPCOutput(session_info, output) => {
+            ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
                     output.clone(),
                     session_info.session_id,
                     session_info.initiating_user_address,
-                    session_info.dwallet_cap_id,
+                    *authority,
                 )
+            }
+            ConsensusTransactionKind::LockNextCommittee(authority, epoch_id) => {
+                ConsensusTransactionKey::LockNextCommittee(*authority, *epoch_id)
             }
         }
     }

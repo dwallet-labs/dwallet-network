@@ -297,6 +297,7 @@ pub enum TransactionKind {
     /// Used to send the output of the dwallet MPC flow to the other validators so they will be able to
     /// create a system transaction that writes it to the chain
     DWalletMPCOutput(DWalletMPCOutput),
+    LockNextCommittee(EpochId),
     // .. more transaction types go here
 }
 
@@ -1183,6 +1184,7 @@ impl TransactionKind {
             | TransactionKind::AuthenticatorStateUpdate(_)
             | TransactionKind::RandomnessStateUpdate(_)
             | TransactionKind::DWalletMPCOutput(_)
+            | TransactionKind::LockNextCommittee(..)
             | TransactionKind::EndOfEpochTransaction(_) => true,
             TransactionKind::ProgrammableTransaction(_) => false,
         }
@@ -1224,7 +1226,7 @@ impl TransactionKind {
     /// It covers both Call and ChangeEpoch transaction kind, because both makes Move calls.
     pub fn shared_input_objects(&self) -> impl Iterator<Item = SharedInputObject> + '_ {
         match &self {
-            Self::ChangeEpoch(_) => {
+            Self::ChangeEpoch(_) | Self::LockNextCommittee(..) | Self::DWalletMPCOutput(_) => {
                 Either::Left(Either::Left(iter::once(SharedInputObject::PERA_SYSTEM_OBJ)))
             }
 
@@ -1271,6 +1273,7 @@ impl TransactionKind {
     pub fn receiving_objects(&self) -> Vec<ObjectRef> {
         match &self {
             TransactionKind::ChangeEpoch(_)
+            | TransactionKind::LockNextCommittee(..)
             | TransactionKind::Genesis(_)
             | TransactionKind::ConsensusCommitPrologue(_)
             | TransactionKind::ConsensusCommitPrologueV2(_)
@@ -1289,7 +1292,8 @@ impl TransactionKind {
     /// TODO: use an iterator over references here instead of a Vec to avoid allocations.
     pub fn input_objects(&self) -> UserInputResult<Vec<InputObjectKind>> {
         let input_objects = match &self {
-            Self::ChangeEpoch(_) => {
+            // Todo (#411): Check the inclusion of an unnecessary shared object of every MPC output TX not only the network DKG TX
+            Self::ChangeEpoch(_) | Self::LockNextCommittee(..) | Self::DWalletMPCOutput(_) => {
                 vec![InputObjectKind::SharedMoveObject {
                     id: PERA_SYSTEM_STATE_OBJECT_ID,
                     initial_shared_version: PERA_SYSTEM_STATE_OBJECT_SHARED_VERSION,
@@ -1403,7 +1407,7 @@ impl TransactionKind {
                     ));
                 }
             }
-            TransactionKind::DWalletMPCOutput(_) => {}
+            TransactionKind::DWalletMPCOutput(_) | TransactionKind::LockNextCommittee(..) => {}
         };
         Ok(())
     }
@@ -1443,6 +1447,7 @@ impl TransactionKind {
             Self::RandomnessStateUpdate(_) => "RandomnessStateUpdate",
             Self::EndOfEpochTransaction(_) => "EndOfEpochTransaction",
             Self::DWalletMPCOutput(_) => "DWalletMPCOutput",
+            Self::LockNextCommittee(..) => "LockNextCommittee",
         }
     }
 }
@@ -1495,7 +1500,10 @@ impl Display for TransactionKind {
                 writeln!(writer, "Transaction Kind : End of Epoch Transaction")?;
             }
             Self::DWalletMPCOutput(_) => {
-                writeln!(writer, "Transaction Kind : dwallet mpc Output")?;
+                writeln!(writer, "Transaction Kind : dWallet mpc Output")?;
+            }
+            TransactionKind::LockNextCommittee(..) => {
+                writeln!(writer, "Transaction Kind : LockNextCommittee")?;
             }
         }
         write!(f, "{}", writer)
@@ -2646,6 +2654,10 @@ impl VerifiedTransaction {
 
     pub fn new_dwallet_mpc_output_system_transaction(data: DWalletMPCOutput) -> Self {
         TransactionKind::DWalletMPCOutput(data).pipe(Self::new_system_transaction)
+    }
+
+    pub fn new_lock_next_committee_system_transaction(epoch_id: u64) -> Self {
+        TransactionKind::LockNextCommittee(epoch_id).pipe(Self::new_system_transaction)
     }
 }
 

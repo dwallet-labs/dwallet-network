@@ -19,10 +19,19 @@ get_dwallet_output
 Secp256K1
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-DKGFirstRoundOutput
+MessageApproval
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+DKGFirstRoundOutputEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+Presign
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGFirstRoundEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CompletedSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGSecondRoundEvent
@@ -37,16 +46,13 @@ StartPresignFirstRoundEvent
 StartPresignSecondRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-Presign
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
 CompletedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-SignOutput
+StartBatchedSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
@@ -59,24 +65,33 @@ launch_dkg_second_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_dkg_second_round_output
-	public fun
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_presign_first_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_presign_second_round
-	public fun
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_second_presign_round_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+approve_messages
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+remove_message_approval
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 sign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-mock_sign
+create_sign_output
+	fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+create_mock_dwallet
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_sign_output
+create_mock_presign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
@@ -216,6 +231,12 @@ StakingRequestEvent
 	0x3::validator
 UnstakingRequestEvent
 	public struct
+	0x3::validator
+get_validator_protocol_pubkey_bytes
+	public(package) fun
+	0x3::validator
+get_val_class_groups_public_key_and_proof_bytes
+	public(package) fun
 	0x3::validator
 new_metadata
 	public(package) fun
@@ -508,6 +529,12 @@ ValidatorEpochInfoEvent
 ValidatorEpochInfoEventV2
 	public struct
 	0x3::validator_set
+ValidatorDataForDWalletSecretReShare
+	public struct
+	0x3::validator_set
+LockedNextEpochCommitteeEvent
+	public struct
+	0x3::validator_set
 ValidatorJoinEvent
 	public struct
 	0x3::validator_set
@@ -539,6 +566,9 @@ request_withdraw_stake
 	public(package) fun
 	0x3::validator_set
 request_set_commission_rate
+	public(package) fun
+	0x3::validator_set
+lock_next_epoch_committee
 	public(package) fun
 	0x3::validator_set
 advance_epoch
@@ -721,6 +751,18 @@ total_object_storage_rebates
 total_balance
 	public fun
 	0x3::storage_fund
+EncryptionOfNetworkDecryptionKeyShares
+	public struct
+	0x3::dwallet_network_key
+is_key_type
+	public fun
+	0x3::dwallet_network_key
+new_encrypted_network_decryption_key_shares
+	public fun
+	0x3::dwallet_network_key
+update_new_shares
+	public fun
+	0x3::dwallet_network_key
 SystemParameters
 	public struct
 	0x3::pera_system_state_inner
@@ -743,6 +785,15 @@ create_system_parameters
 	public(package) fun
 	0x3::pera_system_state_inner
 v1_to_v2
+	public(package) fun
+	0x3::pera_system_state_inner
+lock_next_epoch_committee
+	public(package) fun
+	0x3::pera_system_state_inner
+new_encryption_of_decryption_key_shares_version
+	public(package) fun
+	0x3::pera_system_state_inner
+store_encryption_of_decryption_key_shares
 	public(package) fun
 	0x3::pera_system_state_inner
 request_add_validator_candidate
@@ -1022,6 +1073,15 @@ load_inner_maybe_upgrade
 	fun
 	0x3::pera_system
 validator_voting_powers
+	fun
+	0x3::pera_system
+lock_next_epoch_committee
+	fun
+	0x3::pera_system
+store_encryption_of_decryption_key_shares
+	fun
+	0x3::pera_system
+new_encryption_of_decryption_key_shares_version
 	fun
 	0x3::pera_system
 GenesisValidatorMetadata

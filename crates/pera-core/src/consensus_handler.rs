@@ -8,7 +8,13 @@ use std::{
     sync::Arc,
 };
 
-use crate::dwallet_mpc::mpc_manager::OutputVerificationResult;
+use arc_swap::ArcSwap;
+use async_trait::async_trait;
+use lru::LruCache;
+use serde::{Deserialize, Serialize};
+use tracing::{debug, error, info, instrument, trace_span, warn};
+
+use crate::dwallet_mpc::mpc_outputs_verifier::{OutputResult, OutputVerificationResult};
 use crate::{
     authority::{
         authority_per_epoch_store::{
@@ -26,17 +32,17 @@ use crate::{
     scoring_decision::update_low_scoring_authorities,
     transaction_manager::TransactionManager,
 };
-use arc_swap::ArcSwap;
-use async_trait::async_trait;
 use consensus_core::CommitConsumerMonitor;
-use lru::LruCache;
 use mysten_metrics::{monitored_mpsc::UnboundedReceiver, monitored_scope, spawn_monitored_task};
 use narwhal_config::Committee;
 use narwhal_executor::{ExecutionIndices, ExecutionState};
 use narwhal_types::ConsensusOutput;
 use pera_macros::{fail_point_async, fail_point_if};
 use pera_protocol_config::ProtocolConfig;
-use pera_types::messages_dwallet_mpc::DWalletMPCOutput;
+use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use pera_types::executable_transaction::CertificateProof;
+use pera_types::message_envelope::VerifiedEnvelope;
+use pera_types::messages_dwallet_mpc::{DWalletMPCOutput, MPCRound, SessionInfo};
 use pera_types::{
     authenticator_state::ActiveJwk,
     base_types::{AuthorityName, EpochId, ObjectID, SequenceNumber, TransactionDigest},
@@ -46,8 +52,6 @@ use pera_types::{
     pera_system_state::epoch_start_pera_system_state::EpochStartSystemStateTrait,
     transaction::{SenderSignedData, VerifiedTransaction},
 };
-use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, instrument, trace_span, warn};
 
 pub struct ConsensusHandlerInitializer {
     state: Arc<AuthorityState>,
@@ -356,17 +360,55 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             .stats
                             .inc_num_user_transactions(authority_index as usize);
                     }
+
+                    if let ConsensusTransactionKind::LockNextCommittee(authority, epoch_id) =
+                        &transaction.kind
+                    {
+                        if *epoch_id != self.epoch_store.epoch() {
+                            error!(
+                                "Received LockNextCommittee transaction for epoch {:?} while processing epoch {:?}",
+                                epoch_id,
+                                self.epoch_store.epoch()
+                            );
+                            continue;
+                        }
+                        let Ok(mut dwallet_outputs_manager) =
+                            self.epoch_store.get_dwallet_mpc_outputs_verifier().await
+                        else {
+                            error!("Failed to get dwallet mpc outputs manager when processing LockNextCommittee transaction");
+                            continue;
+                        };
+                        if dwallet_outputs_manager.should_lock_committee(*authority) {
+                            let transaction =
+                                VerifiedTransaction::new_lock_next_committee_system_transaction(
+                                    *epoch_id,
+                                );
+                            let transaction = VerifiedExecutableTransaction::new_system(
+                                transaction,
+                                self.epoch(),
+                            );
+                            transactions.push((
+                                empty_bytes.as_slice(),
+                                SequencedConsensusTransactionKind::System(transaction),
+                                consensus_output.leader_author_index(),
+                            ));
+                        }
+                    }
                     // If we receive a `DwalletMPCOutput` transaction,
                     // verify that it's valid and create a system transaction
                     // to store its output on the blockchain,
                     // so it will be available for the initiating user.
-                    if let ConsensusTransactionKind::DWalletMPCOutput(session_info, output) =
-                        &transaction.kind
+                    else if let ConsensusTransactionKind::DWalletMPCOutput(
+                        authority,
+                        session_info,
+                        output,
+                    ) = &transaction.kind
                     {
-                        // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system transaction
-                        // to store its output on the blockchain, so it will be available for the initiating user.
+                        // If we receive a DWalletMPCOutput transaction, verify that it's valid & create a system
+                        // transaction to store its output on the blockchain, so it will be available for the
+                        // initiating user.
                         info!(
-                            "Received proof mpc output from authority {:?} for session {:?}",
+                            "Received dwallet mpc output from authority {:?} for session {:?}",
                             authority_index, session_info.session_id
                         );
                         let Some(origin_authority) =
@@ -376,60 +418,84 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                 "Malicious output from unknown authority index {:?}",
                                 authority_index
                             );
-                            return;
+                            continue;
                         };
-                        let Ok(mut dwallet_mpc_manager) =
-                            self.epoch_store.get_dwallet_mpc_manager().await
+
+                        let Ok(mut dwallet_outputs_manager) =
+                            self.epoch_store.get_dwallet_mpc_outputs_verifier().await
                         else {
-                            return;
+                            continue;
                         };
-                        if dwallet_mpc_manager
-                            .malicious_actors
-                            .contains(&origin_authority)
-                        {
-                            warn!(
-                                "Received output from malicious authority {:?} for session {:?}",
-                                authority_index, session_info.session_id
-                            );
-                            return;
-                        }
-                        let output_verification_result = dwallet_mpc_manager
-                            .try_verify_output(output, &session_info)
+
+                        let output_verification_result = dwallet_outputs_manager
+                            .try_verify_output(output, &session_info, origin_authority)
                             .unwrap_or_else(|e| {
                                 error!("Error verifying DWalletMPCOutput output from session {:?} and party {:?}: {:?}",session_info.session_id, authority_index, e);
-                                OutputVerificationResult::Malicious
+                                OutputVerificationResult {
+                                    result: OutputResult::Malicious,
+                                    malicious_actors: vec![origin_authority],
+                                }
                             });
-                        match output_verification_result {
-                            OutputVerificationResult::Valid => {
-                                let transaction =
-                                    VerifiedTransaction::new_dwallet_mpc_output_system_transaction(
-                                        DWalletMPCOutput {
-                                            session_info: session_info.clone(),
-                                            output: output.clone(),
-                                        },
-                                    );
-                                let transaction = VerifiedExecutableTransaction::new_system(
-                                    transaction,
-                                    self.epoch(),
-                                );
-                                transactions.push((
-                                    empty_bytes.as_slice(),
-                                    SequencedConsensusTransactionKind::System(transaction),
-                                    consensus_output.leader_author_index(),
-                                ));
+                        match output_verification_result.result {
+                            OutputResult::Valid => {
+                                if let MPCRound::Sign(batch_session_id, hashed_message) =
+                                    session_info.mpc_round.clone()
+                                {
+                                    let Ok(mut batches_manager) =
+                                        self.epoch_store.get_dwallet_mpc_batches_manager().await
+                                    else {
+                                        error!("Failed to get dwallet mpc batches manager when processing DWalletMPCOutput transaction");
+                                        continue;
+                                    };
+                                    if let Err(err) = batches_manager.store_verified_output(
+                                        batch_session_id,
+                                        hashed_message,
+                                        output.clone(),
+                                    ) {
+                                        error!("Error storing message in batch: {:?}", err);
+                                        continue;
+                                    }
+                                    match batches_manager.is_batch_completed(batch_session_id) {
+                                        Ok(Some(batch_output)) => {
+                                            let transaction = self
+                                                .create_dwallet_mpc_output_system_tx(
+                                                    session_info,
+                                                    &batch_output,
+                                                );
+                                            transactions.push((
+                                                empty_bytes.as_slice(),
+                                                SequencedConsensusTransactionKind::System(
+                                                    transaction,
+                                                ),
+                                                consensus_output.leader_author_index(),
+                                            ));
+                                        }
+                                        Err(err) => {
+                                            error!(
+                                                "Error checking if batch is completed: {:?}",
+                                                err
+                                            );
+                                            continue;
+                                        }
+                                        _ => {
+                                            // We don't want to write this output to the chain, as we stored it in the batch
+                                            // but the batch is not yet complete.
+                                            continue;
+                                        }
+                                    }
+                                } else {
+                                    let transaction = self
+                                        .create_dwallet_mpc_output_system_tx(session_info, output);
+                                    transactions.push((
+                                        empty_bytes.as_slice(),
+                                        SequencedConsensusTransactionKind::System(transaction),
+                                        consensus_output.leader_author_index(),
+                                    ));
+                                }
                             }
-                            OutputVerificationResult::Duplicate => {
-                                // Ignore this output, as the same output may be submitted twice by non-malicious parties, due to Sui's inner implementation of the leader selection
-                                // mechanism.
-                            }
-                            OutputVerificationResult::Malicious => {
-                                warn!(
-                                    "Received malicious output from authority index {:?}",
-                                    authority_index
-                                );
-                                dwallet_mpc_manager
-                                    .malicious_actors
-                                    .insert(origin_authority);
+                            OutputResult::NotEnoughVotes | OutputResult::Malicious => {
+                                // Ignore this output,
+                                continue;
                             }
                         }
                     } else if let ConsensusTransactionKind::RandomnessStateUpdate(
@@ -539,6 +605,19 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
         self.transaction_scheduler
             .schedule(transactions_to_schedule)
             .await;
+    }
+
+    fn create_dwallet_mpc_output_system_tx(
+        &self,
+        session_info: &SessionInfo,
+        output: &[u8],
+    ) -> VerifiedEnvelope<SenderSignedData, CertificateProof> {
+        let transaction =
+            VerifiedTransaction::new_dwallet_mpc_output_system_transaction(DWalletMPCOutput {
+                session_info: session_info.clone(),
+                output: Vec::from(output),
+            });
+        VerifiedExecutableTransaction::new_system(transaction, self.epoch())
     }
 }
 
@@ -663,6 +742,7 @@ pub(crate) fn classify(transaction: &ConsensusTransaction) -> &'static str {
         ConsensusTransactionKind::RandomnessDkgConfirmation(_, _) => "randomness_dkg_confirmation",
         ConsensusTransactionKind::DWalletMPCMessage(..) => "dwallet_mpc_message",
         ConsensusTransactionKind::DWalletMPCOutput(..) => "dwallet_mpc_output",
+        ConsensusTransactionKind::LockNextCommittee(..) => "lock_next_committee",
     }
 }
 
@@ -955,6 +1035,8 @@ impl ConsensusCommitInfo {
 mod tests {
     use std::collections::BTreeSet;
 
+    use prometheus::Registry;
+
     use narwhal_config::AuthorityIdentifier;
     use narwhal_test_utils::latest_protocol_version;
     use narwhal_types::{Batch, Certificate, CommittedSubDag, HeaderV1Builder, ReputationScores};
@@ -972,9 +1054,7 @@ mod tests {
             CertifiedTransaction, SenderSignedData, TransactionData, TransactionDataAPI,
         },
     };
-    use prometheus::Registry;
 
-    use super::*;
     use crate::{
         authority::{
             authority_per_epoch_store::ConsensusStatsAPI,
@@ -984,6 +1064,8 @@ mod tests {
         consensus_adapter::consensus_tests::{test_certificates, test_gas_objects},
         post_consensus_tx_reorder::PostConsensusTxReorder,
     };
+
+    use super::*;
 
     #[tokio::test]
     pub async fn test_consensus_handler() {

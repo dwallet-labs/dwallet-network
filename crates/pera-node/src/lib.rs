@@ -212,7 +212,9 @@ mod simulator {
 use simulator::*;
 
 use pera_core::consensus_handler::ConsensusHandlerInitializer;
-use pera_core::dwallet_mpc::mpc_manager::DWalletMPCManager;
+use pera_core::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
+use pera_core::dwallet_mpc::mpc_manager::{DWalletMPCChannelMessage, DWalletMPCManager};
+use pera_core::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use pera_core::safe_client::SafeClientMetricsBase;
 use pera_core::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::execution_config_utils::to_binary_config;
@@ -881,7 +883,8 @@ impl PeraNode {
             .as_ref()
             .ok_or_else(|| PeraError::from("Node is not a validator"))?
             .consensus_adapter
-            .close_epoch(epoch_store);
+            .close_epoch(epoch_store)
+            .await;
         Ok(())
     }
 
@@ -1292,14 +1295,21 @@ impl PeraNode {
             }
         }
 
+        // Start the dWallet MPC manager on epoch start.
         epoch_store
-            .set_dwallet_mpc_manager(DWalletMPCManager::try_new(
+            .set_dwallet_mpc_outputs_manager(DWalletMPCOutputsVerifier::new(&epoch_store))?;
+
+        epoch_store.set_dwallet_mpc_batches_manager(DWalletMPCBatchesManager::new())?;
+
+        epoch_store.set_dwallet_mpc_sender(
+            DWalletMPCManager::try_new(
                 Arc::new(consensus_adapter.clone()),
                 Arc::clone(&epoch_store),
                 epoch_store.epoch(),
                 config.clone(),
-            )?)
-            .await?;
+            )
+            .await?,
+        )?;
 
         let throughput_calculator = Arc::new(ConsensusThroughputCalculator::new(
             None,

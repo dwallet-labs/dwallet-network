@@ -6,17 +6,19 @@ use self::{
     end_of_epoch::ChangeEpochTransaction, genesis::GenesisTransaction,
     randomness_state_update::RandomnessStateUpdateTransaction,
 };
-use crate::types::transaction_block_kind::dwallet_mpc_output::DWalletMPCOutputTransaction;
+use crate::types::transaction_block_kind::dwallet_mpc_output::{
+    DWalletMPCOutputTransaction, LockNextCommitteeTransaction,
+};
 use crate::types::transaction_block_kind::{
     authenticator_state_update::AuthenticatorStateUpdateTransaction,
     end_of_epoch::EndOfEpochTransaction, programmable::ProgrammableTransactionBlock,
 };
 use async_graphql::*;
-use pera_types::transaction::TransactionKind as NativeTransactionKind;
+use pera_types::transaction::{TransactionKind as NativeTransactionKind, TransactionKind};
 
 pub(crate) mod authenticator_state_update;
 pub(crate) mod consensus_commit_prologue;
-mod dwallet_mpc_output;
+pub mod dwallet_mpc_output;
 pub(crate) mod end_of_epoch;
 pub(crate) mod genesis;
 pub(crate) mod programmable;
@@ -33,6 +35,7 @@ pub(crate) enum TransactionBlockKind {
     Randomness(RandomnessStateUpdateTransaction),
     EndOfEpoch(EndOfEpochTransaction),
     DWalletMPCOutput(DWalletMPCOutputTransaction),
+    LockNextCommittee(LockNextCommitteeTransaction),
 }
 
 impl TransactionBlockKind {
@@ -80,6 +83,9 @@ impl TransactionBlockKind {
                 native: output,
                 checkpoint_viewed_at,
             }),
+            TransactionKind::LockNextCommittee(..) => {
+                T::LockNextCommittee(LockNextCommitteeTransaction())
+            }
         }
     }
 }
