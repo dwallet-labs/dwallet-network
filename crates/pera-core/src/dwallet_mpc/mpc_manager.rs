@@ -106,7 +106,8 @@ impl DWalletMPCManager {
         .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
         // Start the network DKG if this is the first epoch
-        let (status, mpc_instances) = if epoch_id == FIRST_EPOCH_ID {
+        // TODO(#383): Enable DKG logic when Scaly's code is ready
+        let (status, mpc_instances) = if false {
             (
                 ManagerStatus::WaitingForNetworkDKGCompletion,
                 NetworkDkg::init(epoch_store.clone())?,

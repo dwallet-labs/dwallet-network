@@ -1558,10 +1558,8 @@ impl AuthorityState {
             return Ok(());
         }
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
-        // This function is being executed for all events, some events are being emitted before the MPC outputs manager is initialized.
         let mut dwallet_mpc_outputs_manager =
             epoch_store.get_dwallet_mpc_outputs_verifier().await?;
-        let mut dwallet_mpc_batches_manager = epoch_store.get_dwallet_mpc_batches_manager().await?;
         for event in &inner_temporary_store.events.data {
             if LockedNextEpochCommitteeEvent::type_() == event.type_ {
                 info!("received LockedNextEpochCommitteeEvent successfully");
@@ -1575,6 +1573,9 @@ impl AuthorityState {
             ) else {
                 continue;
             };
+            let mut dwallet_mpc_batches_manager =
+                epoch_store.get_dwallet_mpc_batches_manager().await?;
+            // This function is being executed for all events, some events are being emitted before the MPC outputs manager is initialized.
             dwallet_mpc_batches_manager.handle_new_event(&session_info);
             dwallet_mpc_outputs_manager.handle_new_event(&session_info);
             let dwallet_mpc_sender = epoch_store.dwallet_mpc_sender.get().ok_or(

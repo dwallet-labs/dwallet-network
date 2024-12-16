@@ -80,8 +80,6 @@ pub struct StartPresignFirstRoundEvent {
     pub initiator: PeraAddress,
     /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ID,
-    /// The `DWalletCap` object's ID associated with the `DWallet`.
-    pub dwallet_cap_id: ID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
 }
@@ -110,8 +108,6 @@ pub struct StartPresignSecondRoundEvent {
     pub initiator: PeraAddress,
     /// The `DWallet` object's ID associated with the DKG output.
     pub dwallet_id: ID,
-    /// The `DWalletCap` object's ID associated with the `DWallet`.
-    pub dwallet_cap_id: ID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
     /// Presign first round output.
@@ -161,8 +157,6 @@ pub struct StartSignRoundEvent {
     pub(super) batched_session_id: ID,
     /// The `DWallet` object's ID associated with the DKG output.
     pub(super) dwallet_id: ID,
-    /// The `DWalletCap` object's ID associated with the `DWallet`.
-    pub(super) dwallet_cap_id: ID,
     /// The DKG decentralized final output to use for the presign session.
     pub(super) dkg_output: Vec<u8>,
     /// Hashed messages to Sign.

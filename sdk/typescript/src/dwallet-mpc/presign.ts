@@ -14,7 +14,6 @@ interface StartPresignFirstRoundEvent {
 	session_id: string;
 	initiator: string;
 	dwallet_id: string;
-	dwallet_cap_id: string;
 	dkg_output: number[];
 }
 
@@ -29,7 +28,6 @@ export interface Presign {
 	session_id: string;
 	first_round_session_id: string;
 	dwallet_id: string;
-	dwallet_cap_id: string;
 	first_round_output: number[];
 	second_round_output: number[];
 }
@@ -91,9 +89,7 @@ async function launchPresignFirstRound(dwalletID: string, c: Config) {
 }
 
 function isStartPresignFirstRoundEvent(obj: any): obj is StartPresignFirstRoundEvent {
-	return (
-		obj && obj.session_id && obj.initiator && obj.dwallet_id && obj.dwallet_cap_id && obj.dkg_output
-	);
+	return obj && obj.session_id && obj.initiator && obj.dwallet_id && obj.dkg_output;
 }
 
 export function isPresign(obj: any): obj is Presign {
@@ -103,7 +99,6 @@ export function isPresign(obj: any): obj is Presign {
 		'session_id' in obj &&
 		'first_round_session_id' in obj &&
 		'dwallet_id' in obj &&
-		'dwallet_cap_id' in obj &&
 		'first_round_output' in obj &&
 		'second_round_output' in obj
 	);
