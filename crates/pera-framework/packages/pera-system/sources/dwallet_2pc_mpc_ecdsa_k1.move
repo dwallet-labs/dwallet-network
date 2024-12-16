@@ -716,19 +716,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         assert!(messages_len == approvals_len, EApprovalsAndMessagesLenMismatch);
         assert!(messages_len == centralized_signed_len, ECentrailizedsignedMessagesAndMessagesLenMismatch);
         let expected_dwallet_cap_id = get_dwallet_cap_id(dwallet);
-        let mut i = 0;
-        while (i < presigns.length()) {
-            let presign = vector::pop_back(&presigns);
-            assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
-            transfer::transfer(presign, SYSTEM_ADDRESS);
-            let message_approval = vector::pop_back(message_approvals);
-            let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
-            assert!(expected_dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
-            let message = vector::borrow(&hashed_messages, i);
-            assert!(message == &approved_message, EMissingApprovalOrWorngApprovalOrder);
-            i = i + 1;
-        };
-
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         event::emit(StartBatchedSignEvent {
             session_id: batch_session_id,
@@ -736,8 +723,14 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             initiator: tx_context::sender(ctx)
         });
         let mut i = 0;
-        let messages_length = vector::length(&hashed_messages);
-        while (i < messages_length) {
+        while (i < presigns.length()) {
+            let presign = vector::pop_back(&presigns);
+            assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
+            let message_approval = vector::pop_back(message_approvals);
+            let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
+            assert!(expected_dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
+            let message = vector::borrow(&hashed_messages, i);
+            assert!(message == &approved_message, EMissingApprovalOrWorngApprovalOrder);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
             event::emit(StartSignEvent {
                 session_id: id,
@@ -750,9 +743,9 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 dkg_output: get_dwallet_output<Secp256K1>(dwallet),
                 hashed_message: hashed_messages[i],
             });
+            transfer::transfer(presign, SYSTEM_ADDRESS);
             i = i + 1;
         };
-        transfer::transfer(presign, SYSTEM_ADDRESS);
     }
 
     /// Emits a `CompletedSignEvent` with the MPC Sign protocol output.
