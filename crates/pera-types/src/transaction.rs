@@ -1292,6 +1292,7 @@ impl TransactionKind {
     /// TODO: use an iterator over references here instead of a Vec to avoid allocations.
     pub fn input_objects(&self) -> UserInputResult<Vec<InputObjectKind>> {
         let input_objects = match &self {
+            // Todo (#411): Check the inclusion of an unnecessary shared object of every MPC output TX not only the network DKG TX
             Self::ChangeEpoch(_) | Self::LockNextCommittee(..) | Self::DWalletMPCOutput(_) => {
                 vec![InputObjectKind::SharedMoveObject {
                     id: PERA_SYSTEM_STATE_OBJECT_ID,

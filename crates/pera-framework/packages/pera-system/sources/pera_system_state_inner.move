@@ -151,7 +151,7 @@ module pera_system::pera_system_state_inner {
         /// This is always the same as PeraSystemState.version. Keeping a copy here so that
         /// we know what version it is by inspecting PeraSystemStateInner as well.
         system_state_version: u64,
-        /// These are the encrypted decryption key shares for the current epoch, used for dWallet MPC session.
+        /// These are the encrypted decryption-key shares for the current epoch, used for dWallet MPC session.
         /// The shares are indexed by the validator index of the current epoch committee.
         encrypted_decryption_key_shares: vector<vector<u8>>,
         /// Contains all information about the validators.
