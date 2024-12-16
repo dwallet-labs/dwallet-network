@@ -64,7 +64,7 @@ pub struct DWalletMPCManager {
     pub(crate) malicious_actors: HashSet<AuthorityName>,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     weighted_parties: HashMap<PartyID, PartyID>,
-    pub outputs_manager: DWalletMPCOutputsVerifier,
+    outputs_manager: DWalletMPCOutputsVerifier,
     status: ManagerStatus,
 }
 
@@ -222,8 +222,7 @@ impl DWalletMPCManager {
         if let Ok((party, auxiliary_input, session_info)) = from_event(
             &event,
             &self,
-            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?,
-            self.outputs_manager.network_key_version(),
+            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?
         ) {
             self.push_new_mpc_instance(auxiliary_input, party, session_info)?;
         };
@@ -453,5 +452,9 @@ impl DWalletMPCManager {
             session_info.session_id
         );
         Ok(())
+    }
+
+    pub fn network_key_version(&self) -> u8 {
+        self.outputs_manager.network_key_version()
     }
 }

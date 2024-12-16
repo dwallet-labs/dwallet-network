@@ -351,7 +351,6 @@ pub(crate) fn from_event(
     event: &Event,
     dwallet_mpc_manager: &DWalletMPCManager,
     party_id: PartyID,
-    dwallet_network_key_version: u8,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     match &event.type_ {
         t if t == &StartDKGFirstRoundEvent::type_() => {
@@ -360,7 +359,7 @@ pub(crate) fn from_event(
         }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            dkg_second_party(deserialized_event, dwallet_network_key_version)
+            dkg_second_party(deserialized_event, dwallet_mpc_manager.network_key_version())
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
             let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;
