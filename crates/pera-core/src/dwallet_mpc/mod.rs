@@ -71,6 +71,7 @@ pub(crate) fn authority_name_to_party_id(
 pub(crate) fn session_info_from_event(
     event: &Event,
     party_id: PartyID,
+    dwallet_network_key_version: u8,
 ) -> anyhow::Result<Option<SessionInfo>> {
     match &event.type_ {
         t if t == &StartDKGFirstRoundEvent::type_() => {
@@ -79,7 +80,10 @@ pub(crate) fn session_info_from_event(
         }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            Ok(Some(dkg_second_party_session_info(&deserialized_event)))
+            Ok(Some(dkg_second_party_session_info(
+                &deserialized_event,
+                dwallet_network_key_version,
+            )))
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
             let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;
@@ -104,6 +108,7 @@ pub(crate) fn session_info_from_event(
 
 fn dkg_second_party(
     deserialized_event: StartDKGSecondRoundEvent,
+    dwallet_network_key_version: u8,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     Ok((
         MPCParty::SecondDKGBytesParty,
@@ -111,17 +116,22 @@ fn dkg_second_party(
             deserialized_event.first_round_output.clone(),
             deserialized_event.public_key_share_and_proof.clone(),
         )?,
-        dkg_second_party_session_info(&deserialized_event),
+        dkg_second_party_session_info(&deserialized_event, dwallet_network_key_version),
     ))
 }
 
-fn dkg_second_party_session_info(deserialized_event: &StartDKGSecondRoundEvent) -> SessionInfo {
+fn dkg_second_party_session_info(
+    deserialized_event: &StartDKGSecondRoundEvent,
+    dwallet_network_key_version: u8,
+) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.first_round_session_id.bytes,
         session_id: ObjectID::from(deserialized_event.session_id),
         initiating_user_address: deserialized_event.initiator,
-        dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
-        mpc_round: MPCRound::DKGSecond,
+        mpc_round: MPCRound::DKGSecond(
+            deserialized_event.dwallet_cap_id.bytes,
+            dwallet_network_key_version,
+        ),
     }
 }
 
@@ -140,7 +150,6 @@ fn dkg_first_party_session_info(deserialized_event: StartDKGFirstRoundEvent) -> 
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
         mpc_round: MPCRound::DKGFirst,
     }
 }
@@ -164,7 +173,6 @@ fn presign_first_party_session_info(
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
         mpc_round: MPCRound::PresignFirst(
             deserialized_event.dwallet_id.bytes,
             deserialized_event.dkg_output,
@@ -192,7 +200,6 @@ fn presign_second_party_session_info(
         flow_session_id: deserialized_event.first_round_session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
         mpc_round: MPCRound::PresignSecond(
             deserialized_event.dwallet_id.bytes,
             deserialized_event.first_round_output.clone(),
@@ -234,7 +241,6 @@ fn sign_party_session_info(
         flow_session_id: deserialized_event.presign_session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiator,
-        dwallet_cap_id: deserialized_event.dwallet_cap_id.bytes,
         mpc_round: MPCRound::Sign(
             deserialized_event.batched_session_id.bytes,
             deserialized_event.hashed_message.clone(),
@@ -249,7 +255,6 @@ fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> Sess
         initiating_user_address: deserialized_event.initiating_user,
         // Dummy ID is the dwallet cap is not relevant in the batched sign flow.
         // TODO (#365): Remove the DWallet cap from the session info
-        dwallet_cap_id: deserialized_event.session_id.bytes,
         mpc_round: MPCRound::BatchedSign(deserialized_event.hashed_messages.clone()),
     }
 }
@@ -351,7 +356,7 @@ pub(crate) fn from_event(
         }
         t if t == &StartDKGSecondRoundEvent::type_() => {
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
-            dkg_second_party(deserialized_event)
+            dkg_second_party(deserialized_event, dwallet_mpc_manager.network_key_version())
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
             let deserialized_event: StartPresignFirstRoundEvent = bcs::from_bytes(&event.contents)?;

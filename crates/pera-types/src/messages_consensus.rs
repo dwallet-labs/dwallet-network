@@ -101,7 +101,7 @@ pub enum ConsensusTransactionKey {
     /// The output of a dwallet MPC session.
     /// The [`Vec<u8>`] is the data, the [`ObjectID`] is the session ID and the [`PeraAddress`] is the
     /// address of the initiating user.
-    DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, ObjectID, AuthorityName),
+    DWalletMPCOutput(Vec<u8>, ObjectID, PeraAddress, AuthorityName),
     LockNextCommittee(AuthorityName, EpochId),
     EndOfPublish(AuthorityName),
     CapabilityNotification(AuthorityName, u64 /* generation */),
@@ -149,13 +149,12 @@ impl Debug for ConsensusTransactionKey {
                 value,
                 session_id,
                 sender_address,
-                dwallet_cap_id,
                 authority,
             ) => {
                 write!(
                     f,
-                    "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
-                    value, session_id, sender_address, dwallet_cap_id
+                    "DWalletMPCOutput({:?}, {:?}, {:?})",
+                    value, session_id, sender_address
                 )
             }
             ConsensusTransactionKey::LockNextCommittee(authority, epoch_id) => {
@@ -617,7 +616,6 @@ impl ConsensusTransaction {
                     output.clone(),
                     session_info.session_id,
                     session_info.initiating_user_address,
-                    session_info.dwallet_cap_id,
                     *authority,
                 )
             }

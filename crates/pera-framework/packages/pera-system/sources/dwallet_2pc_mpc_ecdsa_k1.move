@@ -45,22 +45,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         message: vector<u8>,
     }
 
-    /// Represents the output of the first DKG
-    /// (Distributed Key Generation) round.
-    ///
-    /// This output is transferred to the user once the first round is complete
-    /// and is later used to initiate the second DKG round.
-    ///
-    /// ### Fields
-    /// - **`id`**: Unique identifier for this object.
-    /// - **`session_id`**: The session ID associated with this DKG output.
-    /// - **`output`**: The output produced from the first round of DKG.
-    /// - **`dwallet_cap_id`**: The DWallet capability identifier associated with the DKG session.
-    public struct DKGFirstRoundOutput has key {
-        id: UID,
+    /// A struct to hold the output of the first round of the DKG.
+    /// An instance of this struct is being transferred to the user that initiated the DKG after
+    /// the first round is completed.
+    /// The user can then use this output to start the second round of the DKG.
+    public struct DKGFirstRoundOutputEvent has copy, drop {
         session_id: ID,
         output: vector<u8>,
-        dwallet_cap_id: ID,
     }
 
     /// Represents the result of the second and final
@@ -81,7 +72,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         id: UID,
         session_id: ID,
         dwallet_id: ID,
-        dwallet_cap_id: ID,
         first_round_session_id: ID,
         first_round_output: vector<u8>,
         second_round_output: vector<u8>,
@@ -167,7 +157,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id: ID,
         initiator: address,
         dwallet_id: ID,
-        dwallet_cap_id: ID,
         dkg_output: vector<u8>,
     }
 
@@ -189,7 +178,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id: ID,
         initiator: address,
         dwallet_id: ID,
-        dwallet_cap_id: ID,
         dkg_output: vector<u8>,
         first_round_output: vector<u8>,
         first_round_session_id: ID,
@@ -223,7 +211,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         initiator: address,
         batched_session_id: ID,
         dwallet_id: ID,
-        dwallet_cap_id: ID,
         dkg_output: vector<u8>,
         hashed_message: vector<u8>,
         presign_first_round_output: vector<u8>,
@@ -310,21 +297,19 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// ### Panics
     /// - Panics with `ENotSystemAddress` if the sender is not the system address.
     #[allow(unused_function)]
+    /// Creates the output of the first round of the DKG MPC, transferring it to the initiating user.
+    /// This function is called by the blockchain itself.
+    /// Validators call it as part of the blockchain logic.
     fun create_dkg_first_round_output(
-        initiator: address,
         session_id: ID,
         output: vector<u8>,
-        dwallet_cap_id: ID,
-        ctx: &mut TxContext
+        ctx: &TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
-        let output = DKGFirstRoundOutput {
-            id: object::new(ctx),
+        event::emit(DKGFirstRoundOutputEvent {
             session_id,
             output,
-            dwallet_cap_id,
-        };
-        transfer::transfer(output, initiator);
+        });
     }
 
     /// Starts the second DKG round.
@@ -371,10 +356,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         session_id: ID,
         output: vector<u8>,
         dwallet_cap_id: ID,
+        dwallet_mpc_network_key_version: u8,
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
-        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, ctx);
+        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, dwallet_mpc_network_key_version, ctx);
         event::emit(CompletedDKGSecondRoundEvent {
             session_id,
             initiator,
@@ -391,17 +377,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// This function is intended for testing purposes only and should not be used in production.
     /// See Move pattern: https://move-book.com/move-basics/testing.html#utilities-with-test_only
     public fun create_dkg_first_round_output_for_testing(
-        initiator: address,
         session_id: ID,
         output: vector<u8>,
-        dwallet_cap_id: ID,
         ctx: &mut TxContext
     ) {
         create_dkg_first_round_output(
-            initiator,
             session_id,
             output,
-            dwallet_cap_id,
             ctx
         );
     }
@@ -423,6 +405,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             session_id,
             output,
             dwallet_cap_id,
+            0,
             ctx
         );
     }
@@ -441,7 +424,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///   - `session_id`: The unique ID of the presign session.
     ///   - `initiator`: The address of the session initiator.
     ///   - `dwallet_id`: The ID of the linked dWallet.
-    ///   - `dwallet_cap_id`: The capability ID of the linked dWallet.
     ///   - `dkg_output`: The DKG process output linked to this dWallet.
     ///
     /// ### Parameters
@@ -456,7 +438,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             session_id: object::id_from_address(session_id),
             initiator: tx_context::sender(ctx),
             dwallet_id: object::id(dwallet),
-            dwallet_cap_id: get_dwallet_cap_id<Secp256K1>(dwallet),
             dkg_output: get_dwallet_output<Secp256K1>(dwallet),
         });
     }
@@ -486,7 +467,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         initiator: address,
         dwallet_id: ID,
         dkg_output: vector<u8>,
-        dwallet_cap_id: ID,
         first_round_output: vector<u8>,
         first_round_session_id: ID,
         ctx: &mut TxContext
@@ -499,7 +479,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             session_id,
             initiator,
             dwallet_id,
-            dwallet_cap_id,
             dkg_output,
             first_round_output,
             first_round_session_id,
@@ -514,7 +493,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         initiator: address,
         dwallet_id: ID,
         dkg_output: vector<u8>,
-        dwallet_cap_id: ID,
         first_round_output: vector<u8>,
         first_round_session_id: ID,
         ctx: &mut TxContext
@@ -523,7 +501,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             initiator,
             dwallet_id,
             dkg_output,
-            dwallet_cap_id,
             first_round_output,
             first_round_session_id,
             ctx
@@ -561,7 +538,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         first_round_session_id: ID,
         first_round_output: vector<u8>,
         second_round_output: vector<u8>,
-        dwallet_cap_id: ID,
         dwallet_id: ID,
         ctx: &mut TxContext
     ) {
@@ -572,7 +548,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             session_id,
             first_round_session_id,
             dwallet_id,
-            dwallet_cap_id,
             first_round_output,
             second_round_output,
         };
@@ -629,7 +604,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         first_round_session_id: ID,
         first_round_output: vector<u8>,
         second_round_output: vector<u8>,
-        dwallet_cap_id: ID,
         dwallet_id: ID,
         ctx: &mut TxContext
     ) {
@@ -639,7 +613,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_session_id,
             first_round_output,
             second_round_output,
-            dwallet_cap_id,
             dwallet_id,
             ctx
         );
@@ -687,7 +660,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// - `presign_session_id`: The session ID of the presign process.
     /// - `ctx`: The mutable transaction context.
     public fun sign(
-        dwallet_cap_id: ID,
         message_approvals: &mut vector<MessageApproval>,
         hashed_messages: vector<vector<u8>>,
         presign: &Presign,
@@ -730,7 +702,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 initiator: tx_context::sender(ctx),
                 batched_session_id: batch_session_id,
                 dwallet_id: object::id(dwallet),
-                dwallet_cap_id,
                 presign_first_round_output: presign.first_round_output,
                 presign_second_round_output: presign.second_round_output,
                 centralized_signed_message: centralized_signed_messages[i],
@@ -820,14 +791,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dwallet_cap_id = object::id(&dwallet_cap);
         transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, ctx)
+        dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, 1, ctx)
     }
 
     /// Generates a new mock `Presign` object with random IDs and data.
     /// This function is useful for testing or initializing Presign objects.
     public fun create_mock_presign(
         dwallet_id: ID,
-        dwallet_cap_id: ID,
         first_round_output: vector<u8>,
         second_round_output: vector<u8>,
         first_round_session_id: ID,
@@ -841,7 +811,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             id,
             session_id,
             dwallet_id,
-            dwallet_cap_id,
             first_round_session_id,
             first_round_output,
             second_round_output,

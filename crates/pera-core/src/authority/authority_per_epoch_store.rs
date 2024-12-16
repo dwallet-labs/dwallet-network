@@ -97,7 +97,9 @@ use pera_execution::{self, Executor};
 use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
-use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use pera_types::collection_types::VecMap;
+use pera_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::effects::TransactionEffects;
 use pera_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
@@ -1049,43 +1051,47 @@ impl AuthorityPerEpochStore {
         })
     }
 
-    pub fn get_encrypted_decryption_key_shares(&self) -> PeraResult<Vec<Vec<u8>>> {
+    pub fn get_encryption_of_decryption_key_shares(
+        &self,
+    ) -> DwalletMPCResult<HashMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>> {
+        // Todo (#396): Read the decryption key share from the network DKG output
         if self.epoch() == FIRST_EPOCH_ID {
-            return Err(PeraError::Unknown(
-                "First epoch does not have decryption key shares, need to run network DKG"
-                    .to_string(),
-            ));
+            return Err(DwalletMPCError::WrongEpoch(self.epoch()));
         }
 
-        let encrypted_decryption_key_shares = match self.epoch_start_state() {
-            EpochStartSystemState::V1(data) => data.get_encrypted_decryption_key_shares(),
+        let encryption_of_decryption_key_shares = match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => data.get_encryption_of_decryption_key_shares(),
         };
-        Ok(encrypted_decryption_key_shares.ok_or(PeraError::Unknown(
-            "Decryption key shares not found".to_string(),
-        ))?)
+        let encryption_of_decryption_key_shares = encryption_of_decryption_key_shares
+            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?;
+        let encryption_of_decryption_key_shares = encryption_of_decryption_key_shares
+            .contents
+            .into_iter()
+            .map(|entry| (entry.key, entry.value))
+            .collect();
+        Ok(encryption_of_decryption_key_shares)
     }
 
-    pub fn get_decryption_key_share(&self) -> PeraResult<Vec<u8>> {
+    pub fn get_decryption_key_share(
+        &self,
+        key_type: DWalletMPCNetworkKey,
+    ) -> DwalletMPCResult<Vec<u8>> {
+        // Todo (#396): Read the decryption key share from the network DKG output
         if self.epoch() == FIRST_EPOCH_ID {
-            return Err(PeraError::Unknown(
-                "First epoch does not have decryption key shares, need to run network DKG"
-                    .to_string(),
-            ));
+            return Err(return Err(DwalletMPCError::WrongEpoch(self.epoch())));
         }
 
-        let encrypted_decryption_key_shares = match self.epoch_start_state() {
-            EpochStartSystemState::V1(data) => data.get_encrypted_decryption_key_shares(),
-        };
-        let encrypted_decryption_key_shares = encrypted_decryption_key_shares.ok_or(
-            PeraError::Unknown("Decryption key shares not found".to_string()),
-        )?;
+        let encryption_of_decryption_key_shares = self.get_encryption_of_decryption_key_shares()?;
         let party_id = authority_name_to_party_id(&self.name, self)? as usize;
-        let decryption_key_share =
-            encrypted_decryption_key_shares
-                .get(party_id)
-                .ok_or(PeraError::Unknown(
-                    "Decryption key share not found".to_string(),
-                ))?;
+        let encryption_of_decryption_key_shares = encryption_of_decryption_key_shares
+            .get(&(key_type as u8))
+            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?;
+        let decryption_key_share = encryption_of_decryption_key_shares
+            .get(encryption_of_decryption_key_shares.len())
+            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?
+            .current_epoch_shares
+            .get(party_id)
+            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?;
         // Todo (#382): Decrypt the decryption key share
         Ok(decryption_key_share.clone())
     }

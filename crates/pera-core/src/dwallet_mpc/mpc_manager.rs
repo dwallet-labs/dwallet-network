@@ -106,14 +106,15 @@ impl DWalletMPCManager {
         .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
         // Start the network DKG if this is the first epoch
-        let (status, mpc_instances) = if epoch_id == FIRST_EPOCH_ID {
+        // TODO(#383): Enable DKG logic when Scaly's code is ready
+        let (status, mpc_instances) = if false {
             (
                 ManagerStatus::WaitingForNetworkDKGCompletion,
                 NetworkDkg::init(epoch_store.clone())?,
             )
         } else {
             // Todo (#382): Store the real value of the decryption key shares
-            let _ = epoch_store.get_encrypted_decryption_key_shares();
+            let _ = epoch_store.get_encryption_of_decryption_key_shares();
             (ManagerStatus::Active, HashMap::new())
         };
 
@@ -222,7 +223,7 @@ impl DWalletMPCManager {
         if let Ok((party, auxiliary_input, session_info)) = from_event(
             &event,
             &self,
-            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?,
+            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?
         ) {
             self.push_new_mpc_instance(auxiliary_input, party, session_info)?;
         };
@@ -452,5 +453,9 @@ impl DWalletMPCManager {
             session_info.session_id
         );
         Ok(())
+    }
+
+    pub fn network_key_version(&self) -> u8 {
+        self.outputs_manager.network_key_version()
     }
 }

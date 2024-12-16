@@ -4,7 +4,9 @@
 /// Any validator that voted for a different output is considered malicious.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::collection_types::VecMap;
 use pera_types::committee::StakeUnit;
+use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::collections::{HashMap, HashSet};
 
@@ -20,6 +22,7 @@ pub struct DWalletMPCOutputsVerifier {
     pub quorum_threshold: StakeUnit,
     pub completed_locking_next_committee: bool,
     voted_to_lock_committee: HashSet<AuthorityName>,
+    network_key_version: u8,
 }
 
 /// The data needed to manage the outputs of an MPC instance.
@@ -61,7 +64,21 @@ impl DWalletMPCOutputsVerifier {
                 .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
+            // Todo (#394): Remove hardcoded network key version
+            network_key_version: if let Some(versions) = epoch_store
+                .get_encryption_of_decryption_key_shares()
+                .unwrap_or(HashMap::new())
+                .get(&(DWalletMPCNetworkKey::Secp256k1 as u8))
+            {
+                versions.len() as u8
+            } else {
+                1
+            },
         }
+    }
+
+    pub fn network_key_version(&self) -> u8 {
+        self.network_key_version
     }
 
     pub fn should_lock_committee(&mut self, authority_name: AuthorityName) -> bool {

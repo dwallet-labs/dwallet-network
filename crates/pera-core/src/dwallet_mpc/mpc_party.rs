@@ -1,6 +1,6 @@
 use crate::dwallet_mpc;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
-use crate::dwallet_mpc::network_dkg::{KeyTypes, NetworkDkg};
+use crate::dwallet_mpc::network_dkg::NetworkDkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
 use commitment::CommitmentSizedNumber;
@@ -8,6 +8,7 @@ use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput};
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::ObjectID;
+use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use std::collections::HashMap;
 
@@ -27,7 +28,7 @@ pub enum MPCParty {
     /// The party used in the sign protocol.
     SignBytesParty(HashMap<PartyID, twopc_mpc::secp256k1::class_groups::DecryptionKeyShare>),
     /// The party used in the network DKG protocol.
-    NetworkDkg(KeyTypes),
+    NetworkDkg(DWalletMPCNetworkKey),
 }
 
 impl MPCParty {
