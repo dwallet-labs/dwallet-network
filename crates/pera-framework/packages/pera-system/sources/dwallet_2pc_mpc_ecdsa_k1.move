@@ -18,6 +18,7 @@
 /// - Emit events for validators to coordinate DKG rounds.
 /// - Transfer intermediate results and final outputs to the initiating user.
 /// - Ensure secure and decentralized key generation and management.
+#[allow(unused_field, unused_function, unused_const)]
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
     use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output};
@@ -704,7 +705,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun sign(
         message_approvals: &mut vector<MessageApproval>,
         hashed_messages: vector<vector<u8>>,
-        presigns: vector<Presign>,
+        presigns: &mut vector<Presign>,
         dwallet: &DWallet<Secp256K1>,
         centralized_signed_messages: vector<vector<u8>>,
         ctx: &mut TxContext
@@ -724,26 +725,26 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         });
         let mut i = 0;
         while (i < presigns.length()) {
-            let presign = vector::pop_back(&presigns);
-            assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
             let message_approval = vector::pop_back(message_approvals);
             let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
             assert!(expected_dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
             let message = vector::borrow(&hashed_messages, i);
             assert!(message == &approved_message, EMissingApprovalOrWorngApprovalOrder);
-            let id = object::id_from_address(tx_context::fresh_object_address(ctx));
-            event::emit(StartSignEvent {
-                session_id: id,
-                presign_session_id: presign.first_round_session_id,
-                initiator: tx_context::sender(ctx),
-                batched_session_id: batch_session_id,
-                dwallet_id: object::id(dwallet),
-                presign: presign.presign,
-                centralized_signed_message: centralized_signed_messages[i],
-                dkg_output: get_dwallet_output<Secp256K1>(dwallet),
-                hashed_message: hashed_messages[i],
-            });
-            transfer::transfer(presign, SYSTEM_ADDRESS);
+            // let presign = vector::pop_back(presigns);
+            // assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
+            // let id = object::id_from_address(tx_context::fresh_object_address(ctx));
+            // event::emit(StartSignEvent {
+            //     session_id: id,
+            //     presign_session_id: presign.first_round_session_id,
+            //     initiator: tx_context::sender(ctx),
+            //     batched_session_id: batch_session_id,
+            //     dwallet_id: object::id(dwallet),
+            //     presign: presign.presign,
+            //     centralized_signed_message: centralized_signed_messages[i],
+            //     dkg_output: get_dwallet_output<Secp256K1>(dwallet),
+            //     hashed_message: hashed_messages[i],
+            // });
+            // transfer::transfer(presign, tx_context::sender(ctx));
             i = i + 1;
         };
     }
