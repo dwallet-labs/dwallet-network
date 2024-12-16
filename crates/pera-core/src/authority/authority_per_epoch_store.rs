@@ -963,6 +963,8 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the Dwallet MPC outputs verifier when a new epoch starts.
+    /// This manager is responsible for storing all the valid outputs of a batched DWallet MPC session (i.e. sign),
+    /// and write them to the chain at once when all the batch outputs are ready.
     pub fn set_dwallet_mpc_outputs_manager(
         &self,
         manager: DWalletMPCOutputsVerifier,
@@ -2716,6 +2718,9 @@ impl AuthorityPerEpochStore {
         }
     }
 
+    /// Return the current epoch's [`DWalletMPCBatchesManager`].
+    /// This manager is responsible for storing all the valid outputs of a batched DWallet MPC session (i.e. sign),
+    /// and write them to the chain at once when all the batch outputs are ready.
     pub async fn get_dwallet_mpc_batches_manager(
         &self,
     ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCBatchesManager>> {

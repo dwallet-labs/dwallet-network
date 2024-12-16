@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -32,7 +31,7 @@ impl DWalletMPCBatchesManager {
         }
     }
 
-    /// Handle a new event by initializing a new batched sign session, if the event is a batched sign event.
+    /// Handle a new event by initializing a new batched sign session if the event is a batched sign event.
     pub fn handle_new_event(&mut self, session_info: &SessionInfo) {
         if let MPCRound::BatchedSign(hashed_messages) = &session_info.mpc_round {
             let mut seen = HashSet::new();
