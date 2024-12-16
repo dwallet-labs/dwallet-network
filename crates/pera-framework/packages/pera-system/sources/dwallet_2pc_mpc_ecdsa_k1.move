@@ -705,12 +705,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     public fun sign(
         message_approvals: &mut vector<MessageApproval>,
         hashed_messages: vector<vector<u8>>,
-        presigns: &mut vector<Presign>,
+        // presigns: &mut vector<Presign>,
         dwallet: &DWallet<Secp256K1>,
         centralized_signed_messages: vector<vector<u8>>,
         ctx: &mut TxContext
     ) {
-        assert!(presigns.length() == hashed_messages.length(), EPresignsAndMessagesLenMismatch);
+        // assert!(presigns.length() == hashed_messages.length(), EPresignsAndMessagesLenMismatch);
         let messages_len: u64 = vector::length(&hashed_messages);
         let approvals_len: u64 = vector::length(message_approvals);
         let centralized_signed_len: u64 = vector::length(&centralized_signed_messages);
@@ -724,7 +724,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             initiator: tx_context::sender(ctx)
         });
         let mut i = 0;
-        while (i < presigns.length()) {
+        while (i < message_approvals.length()) {
             let message_approval = vector::pop_back(message_approvals);
             let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
             assert!(expected_dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
