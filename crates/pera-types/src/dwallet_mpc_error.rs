@@ -75,6 +75,12 @@ pub enum DwalletMPCError {
     // TwoPCMPCCheckError(#[from] twopc_mpc::Error),
     #[error("failed to find a message in batch: {0:?}")]
     MissingMessageInBatch(Vec<u8>),
+
+    #[error("wrong epoch access {0}")]
+    WrongEpoch(u64),
+
+    #[error("missing encrypted decryption key shares in the config")]
+    MissingEncryptionOfDecryptionKeyShares,
 }
 
 /// A wrapper type for the result of a runtime operation.

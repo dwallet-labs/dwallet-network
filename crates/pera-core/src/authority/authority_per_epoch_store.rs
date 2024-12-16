@@ -69,10 +69,12 @@ use crate::consensus_handler::{
 use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc;
 use crate::dwallet_mpc::authority_name_to_party_id;
+use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
 use crate::dwallet_mpc::mpc_manager::{
     DWalletMPCChannelMessage, DWalletMPCManager, DWalletMPCSender,
 };
-use crate::dwallet_mpc::mpc_outputs_manager::DWalletMPCOutputsManager;
+use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
+use crate::dwallet_mpc::FIRST_EPOCH_ID;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
     DkgStatus, RandomnessManager, RandomnessReporter, VersionedProcessedMessage,
@@ -95,7 +97,9 @@ use pera_execution::{self, Executor};
 use pera_macros::fail_point;
 use pera_protocol_config::{Chain, ProtocolConfig, ProtocolVersion};
 use pera_storage::mutex_table::{MutexGuard, MutexTable};
-use pera_types::dwallet_mpc_error::DwalletMPCResult;
+use pera_types::collection_types::VecMap;
+use pera_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
+use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::effects::TransactionEffects;
 use pera_types::executable_transaction::{
     TrustedExecutableTransaction, VerifiedExecutableTransaction,
@@ -346,7 +350,8 @@ pub struct AuthorityPerEpochStore {
     pub dwallet_mpc_sender: OnceCell<DWalletMPCSender>,
     /// State machine managing DWallet MPC outputs.
     /// This state machine only being used to store outputs and declare ones with quorum of votes as valid.
-    pub dwallet_mpc_outputs_manager: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsManager>>,
+    pub dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
+    pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -863,8 +868,9 @@ impl AuthorityPerEpochStore {
             jwk_aggregator,
             randomness_manager: OnceCell::new(),
             randomness_reporter: OnceCell::new(),
-            dwallet_mpc_outputs_manager: OnceCell::new(),
+            dwallet_mpc_outputs_verifier: OnceCell::new(),
             dwallet_mpc_sender: OnceCell::new(),
+            dwallet_mpc_batches_manager: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -934,20 +940,37 @@ impl AuthorityPerEpochStore {
     }
 
     /// A function to initiate the [`DWalletMPCSender`] when a new epoch starts.
-    pub async fn set_dwallet_mpc_sender(&self, sender: DWalletMPCSender) -> PeraResult<()> {
+    pub fn set_dwallet_mpc_sender(&self, sender: DWalletMPCSender) -> PeraResult<()> {
         if self.dwallet_mpc_sender.set(sender).is_err() {
             error!("BUG: `set_dwallet_mpc_sender` called more than once; this should never happen");
         }
         Ok(())
     }
 
-    /// A function to initiate the Dwallet MPC outputs manager when a new epoch starts.
-    pub async fn set_dwallet_mpc_outputs_manager(
+    /// A function to initiate the [`DWalletMPCBatchesManager`] when a new epoch starts.
+    pub fn set_dwallet_mpc_batches_manager(
         &self,
-        manager: DWalletMPCOutputsManager,
+        batches_manager: DWalletMPCBatchesManager,
     ) -> PeraResult<()> {
         if self
-            .dwallet_mpc_outputs_manager
+            .dwallet_mpc_batches_manager
+            .set(tokio::sync::Mutex::new(batches_manager))
+            .is_err()
+        {
+            error!("BUG: `set_dwallet_mpc_batches_manager` called more than once; this should never happen");
+        }
+        Ok(())
+    }
+
+    /// A function to initiate the Dwallet MPC outputs verifier when a new epoch starts.
+    /// This manager is responsible for storing all the valid outputs of a batched DWallet MPC session (i.e. sign),
+    /// and write them to the chain at once when all the batch outputs are ready.
+    pub fn set_dwallet_mpc_outputs_manager(
+        &self,
+        manager: DWalletMPCOutputsVerifier,
+    ) -> PeraResult<()> {
+        if self
+            .dwallet_mpc_outputs_verifier
             .set(tokio::sync::Mutex::new(manager))
             .is_err()
         {
@@ -1026,6 +1049,29 @@ impl AuthorityPerEpochStore {
                 })
                 .collect::<Result<HashMap<_, _>, _>>()?,
         })
+    }
+
+    /// Returns the dWallet mpc network encryption of decryption key shares.
+    // Todo (#387): Add different encryption schemes & versions
+    pub fn get_encryption_of_decryption_key_shares(
+        &self,
+    ) -> DwalletMPCResult<HashMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>> {
+        // Todo (#396): Read the decryption key share from the network DKG output
+        if self.epoch() == FIRST_EPOCH_ID {
+            return Err(DwalletMPCError::WrongEpoch(self.epoch()));
+        }
+
+        let encryption_of_decryption_key_shares = match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => data.get_encryption_of_decryption_key_shares(),
+        };
+        let encryption_of_decryption_key_shares = encryption_of_decryption_key_shares
+            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?;
+        let encryption_of_decryption_key_shares = encryption_of_decryption_key_shares
+            .contents
+            .into_iter()
+            .map(|entry| (entry.key, entry.value))
+            .collect();
+        Ok(encryption_of_decryption_key_shares)
     }
 
     pub fn committee_validators_class_groups_public_keys_and_proofs(
@@ -2636,10 +2682,27 @@ impl AuthorityPerEpochStore {
         Some(VerifiedSequencedConsensusTransaction(transaction))
     }
 
-    pub async fn get_dwallet_mpc_outputs_manager(
+    /// Return the [`DWalletMPCOutputsVerifier`].
+    /// Need to use a Mutex because the instance is initialized from a different thread.
+    pub async fn get_dwallet_mpc_outputs_verifier(
         &self,
-    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCOutputsManager>> {
-        let dwallet_mpc_outputs_manager = self.dwallet_mpc_outputs_manager.get();
+    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCOutputsVerifier>> {
+        let dwallet_mpc_outputs_manager = self.dwallet_mpc_outputs_verifier.get();
+        match dwallet_mpc_outputs_manager {
+            Some(dwallet_mpc_outputs_manager) => Ok(dwallet_mpc_outputs_manager.lock().await),
+            None => Err(PeraError::from(
+                "DWalletMPCOutputsManager is not initialized",
+            )),
+        }
+    }
+
+    /// Return the current epoch's [`DWalletMPCBatchesManager`].
+    /// This manager is responsible for storing all the valid outputs of a batched DWallet MPC session (i.e. sign),
+    /// and write them to the chain at once when all the batch outputs are ready.
+    pub async fn get_dwallet_mpc_batches_manager(
+        &self,
+    ) -> PeraResult<tokio::sync::MutexGuard<DWalletMPCBatchesManager>> {
+        let dwallet_mpc_outputs_manager = self.dwallet_mpc_batches_manager.get();
         match dwallet_mpc_outputs_manager {
             Some(dwallet_mpc_outputs_manager) => Ok(dwallet_mpc_outputs_manager.lock().await),
             None => Err(PeraError::from(

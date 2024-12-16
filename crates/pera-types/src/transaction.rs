@@ -1226,7 +1226,7 @@ impl TransactionKind {
     /// It covers both Call and ChangeEpoch transaction kind, because both makes Move calls.
     pub fn shared_input_objects(&self) -> impl Iterator<Item = SharedInputObject> + '_ {
         match &self {
-            Self::ChangeEpoch(_) | Self::LockNextCommittee(..) => {
+            Self::ChangeEpoch(_) | Self::LockNextCommittee(..) | Self::DWalletMPCOutput(_) => {
                 Either::Left(Either::Left(iter::once(SharedInputObject::PERA_SYSTEM_OBJ)))
             }
 
@@ -1292,7 +1292,8 @@ impl TransactionKind {
     /// TODO: use an iterator over references here instead of a Vec to avoid allocations.
     pub fn input_objects(&self) -> UserInputResult<Vec<InputObjectKind>> {
         let input_objects = match &self {
-            Self::ChangeEpoch(_) | Self::LockNextCommittee(..) => {
+            // Todo (#411): Check the inclusion of an unnecessary shared object of every MPC output TX not only the network DKG TX
+            Self::ChangeEpoch(_) | Self::LockNextCommittee(..) | Self::DWalletMPCOutput(_) => {
                 vec![InputObjectKind::SharedMoveObject {
                     id: PERA_SYSTEM_STATE_OBJECT_ID,
                     initial_shared_version: PERA_SYSTEM_STATE_OBJECT_SHARED_VERSION,

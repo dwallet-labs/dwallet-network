@@ -12,15 +12,14 @@ import {
 	dWalletModuleName,
 	dWalletPackageID,
 	fetchObjectFromEvent,
+	getEventByTypeAndSessionId,
 } from './globals.js';
 
-const dkgFirstRoundOutputMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutput`;
 const dwalletSecp256K1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::Secp256K1`;
 export const dWalletMoveType = `${dWalletPackageID}::${dWalletModuleName}::DWallet<${dwalletSecp256K1MoveType}>`;
 const completedDKGSecondRoundEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedDKGSecondRoundEvent`;
 
 interface DKGFirstRoundOutput {
-	id: { id: string };
 	session_id: string;
 	dwallet_cap_id: string;
 	output: number[];
@@ -40,6 +39,7 @@ export interface DWallet {
 	session_id: string;
 	dwallet_cap_id: string;
 	output: number[];
+	dwallet_mpc_network_key_version: number;
 }
 
 export interface CreatedDwallet {
@@ -47,6 +47,7 @@ export interface CreatedDwallet {
 	centralizedDKGOutput: number[];
 	decentralizedDKGOutput: number[];
 	dwalletCapID: string;
+	dwalletMPCNetworkKeyVersion: number;
 }
 
 export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
@@ -64,11 +65,8 @@ export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
 		centralizedDKGOutput: centralizedOutput,
 		decentralizedDKGOutput: dwallet.output,
 		dwalletCapID: dwallet.dwallet_cap_id,
+		dwalletMPCNetworkKeyVersion: dwallet.dwallet_mpc_network_key_version,
 	};
-}
-
-function isDKGFirstRoundOutput(o: any): o is DKGFirstRoundOutput {
-	return 'id' in o && 'session_id' in o && 'output' in o && 'dwallet_cap_id' in o;
 }
 
 /**
@@ -86,13 +84,31 @@ async function launchDKGFirstRound(c: Config) {
 		transaction: tx,
 		options: {
 			showEffects: true,
+			showEvents: true,
 		},
 	});
-	const createdDwalletCapRef = result.effects?.created?.[0].reference;
-	if (!createdDwalletCapRef) {
-		throw new Error('CreateDwallet error: Failed to create dWallet capability');
-	}
-	return await dkgFirstRoundOutputObject(createdDwalletCapRef.objectId, c);
+	let sessionData = result.events?.find(
+		(event) =>
+			event.type ===
+			`${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartDKGFirstRoundEvent`,
+	)?.parsedJson as {
+		session_id: string;
+		dwallet_cap_id: string;
+	};
+	let completionEvent = await getEventByTypeAndSessionId(
+		c,
+		`${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutputEvent`,
+		sessionData.session_id,
+	);
+
+	let parsedCompletionEvent = completionEvent as {
+		output: number[];
+		session_id: string;
+	};
+	return {
+		...parsedCompletionEvent,
+		dwallet_cap_id: sessionData.dwallet_cap_id,
+	};
 }
 
 async function launchDKGSecondRound(
@@ -119,62 +135,6 @@ async function launchDKGSecondRound(
 		},
 	});
 	return await dWalletFromEvent(c, firstRound);
-}
-
-/**
- * Fetches the DKGFirstRoundOutput object from the client.
- * Since the object might not be available immediately,
- * this function polls the client until the object is found, or a timeout is reached.
- */
-async function dkgFirstRoundOutputObject(
-	dwalletCapID: string,
-	c: Config,
-	timeout: number = 10 * 60 * 1000,
-): Promise<DKGFirstRoundOutput> {
-	let cursor = null;
-	const startTime = Date.now();
-
-	while (Date.now() - startTime < timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		await new Promise((r) => setTimeout(r, 1000));
-		const {
-			data: ownedObjects,
-			hasNextPage,
-			nextCursor,
-		} = await c.client.getOwnedObjects({
-			owner: c.keypair.toPeraAddress(),
-			cursor,
-		});
-		const objectIds = ownedObjects.map((o) => o.data?.objectId).filter(Boolean) as string[];
-
-		if (objectIds.length === 0) {
-			await new Promise((r) => setTimeout(r, 500));
-			continue;
-		}
-
-		const objects = await c.client.multiGetObjects({
-			ids: objectIds,
-			options: { showContent: true },
-		});
-
-		for (const o of objects) {
-			const content = o.data?.content;
-			if (
-				content?.dataType === 'moveObject' &&
-				content.type === dkgFirstRoundOutputMoveType &&
-				isDKGFirstRoundOutput(content.fields) &&
-				content.fields.dwallet_cap_id === dwalletCapID
-			) {
-				return content.fields as DKGFirstRoundOutput;
-			}
-		}
-		if (hasNextPage) {
-			cursor = nextCursor;
-		}
-	}
-	throw new Error(
-		`timeout reached: Unable to find ${dkgFirstRoundOutputMoveType} within ${timeout / 1000} seconds.`,
-	);
 }
 
 export function isDWallet(obj: any): obj is DWallet {

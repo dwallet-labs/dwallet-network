@@ -1124,23 +1124,23 @@ mod checked {
         protocol_config: &ProtocolConfig,
         metrics: Arc<LimitsMetrics>,
     ) -> Result<(), ExecutionError> {
+        let mut module_name = DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME;
         let (move_function_name, args) = match data.session_info.mpc_round {
             MPCRound::DKGFirst => (
                 "create_dkg_first_round_output",
                 vec![
-                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                 ],
             ),
-            MPCRound::DKGSecond => (
+            MPCRound::DKGSecond(dwallet_cap_id, dwallet_network_key_version) => (
                 "create_dkg_second_round_output",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
+                    CallArg::Pure(dwallet_cap_id.to_vec()),
+                    CallArg::Pure(bcs::to_bytes(&dwallet_network_key_version).unwrap()),
                 ],
             ),
             MPCRound::PresignFirst(dwallet_id, dkg_output) => (
@@ -1149,7 +1149,6 @@ mod checked {
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&dkg_output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
                 ],
@@ -1162,7 +1161,6 @@ mod checked {
                     CallArg::Pure(data.session_info.flow_session_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&first_round_output).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
                     CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
                 ],
             ),
@@ -1179,20 +1177,23 @@ mod checked {
                     ],
                 )
             }
-            // Todo (#380): Store DKG output in SystemState
-            MPCRound::NetworkDkg => (
-                "create_sign_output",
-                vec![
-                    CallArg::Pure(data.output.clone()),
-                    CallArg::Pure(data.session_info.dwallet_cap_id.to_vec()),
-                ],
-            ),
+            MPCRound::NetworkDkg(key_type) => {
+                module_name = PERA_SYSTEM_MODULE_NAME;
+                (
+                    "new_encryption_of_decryption_key_shares_version",
+                    vec![
+                        CallArg::PERA_SYSTEM_MUT,
+                        CallArg::Pure(bcs::to_bytes(&vec![data.output.clone()]).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&(key_type as u8)).unwrap()),
+                    ],
+                )
+            }
         };
         let pt = {
             let mut builder = ProgrammableTransactionBuilder::new();
             let res = builder.move_call(
                 PERA_SYSTEM_PACKAGE_ID.into(),
-                DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+                module_name.to_owned(),
                 ident_str!(move_function_name).to_owned(),
                 vec![],
                 args,

@@ -3,14 +3,14 @@ use crate::consensus_adapter::SubmitToConsensus;
 use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
 use pera_types::error::{PeraError, PeraResult};
 
+use crate::dwallet_mpc::batches_manager::BatchedSignSession;
 use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
-use crate::dwallet_mpc::mpc_outputs_manager::{DWalletMPCOutputsManager, OutputVerificationResult};
+use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::network_dkg::NetworkDkg;
-use crate::dwallet_mpc::sign::BatchedSignSession;
-use crate::dwallet_mpc::FIRST_EPOCH_ID;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
+use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
 use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use group::PartyID;
@@ -64,11 +64,11 @@ pub struct DWalletMPCManager {
     pub(crate) malicious_actors: HashSet<AuthorityName>,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     weighted_parties: HashMap<PartyID, PartyID>,
-    outputs_manager: DWalletMPCOutputsManager,
+    outputs_manager: DWalletMPCOutputsVerifier,
     status: ManagerStatus,
 }
 
-/// A channel that may be sent to the asynchronous [`DWalletMPCManager`].
+/// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
 pub enum DWalletMPCChannelMessage {
     /// An MPC message from another validator
     Message(Vec<u8>, AuthorityName, ObjectID),
@@ -106,23 +106,24 @@ impl DWalletMPCManager {
         .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
         // Start the network DKG if this is the first epoch
-        let (status, mpc_instances) = if epoch_id == FIRST_EPOCH_ID {
+        // TODO(#383): Enable DKG logic when Scaly's code is ready
+        let (status, mpc_instances) = if false {
             (
                 ManagerStatus::WaitingForNetworkDKGCompletion,
                 NetworkDkg::init(epoch_store.clone())?,
             )
         } else {
-            // Todo (#380): Load the network DKG outputs
+            // Todo (#382): Store the real value of the decryption key shares
+            let _ = epoch_store.get_encryption_of_decryption_key_shares();
             (ManagerStatus::Active, HashMap::new())
         };
 
         // Todo (#383): Remove the `outputs_manager` from the `DWalletMPCManager`
-        let mut outputs_manager = DWalletMPCOutputsManager::new(&epoch_store);
-        let mut epoch_store_outputs_manager =
-            epoch_store
-                .get_dwallet_mpc_outputs_manager()
-                .await
-                .map_err(|_| DwalletMPCError::MissingDwalletMPCOutputsManager)?;
+        let mut outputs_manager = DWalletMPCOutputsVerifier::new(&epoch_store);
+        let mut epoch_store_outputs_manager = epoch_store
+            .get_dwallet_mpc_outputs_verifier()
+            .await
+            .map_err(|_| DwalletMPCError::MissingDwalletMPCOutputsManager)?;
         for (network_dkg_session_id, _) in mpc_instances.iter() {
             outputs_manager.insert_new_output_instance(network_dkg_session_id);
             epoch_store_outputs_manager.insert_new_output_instance(network_dkg_session_id);
@@ -170,27 +171,13 @@ impl DWalletMPCManager {
                     authority.clone(),
                 );
                 match verification_result {
-                    Ok(verification_result) => match verification_result {
-                        OutputVerificationResult::ValidWithNewOutput(_, malicious_parties) => {
-                            self.malicious_actors.extend(malicious_parties);
-                        }
-                        OutputVerificationResult::ValidWithoutOutput(malicious_parties) => {
-                            self.malicious_actors.extend(malicious_parties);
-                        }
-                        OutputVerificationResult::Valid(malicious_parties) => {
-                            self.malicious_actors.extend(malicious_parties);
-                        }
-                        OutputVerificationResult::Malicious => {
-                            self.malicious_actors.insert(authority);
-                        }
-                        OutputVerificationResult::Duplicate => {}
-                    },
+                    Ok(verification_result) => {
+                        self.malicious_actors
+                            .extend(verification_result.malicious_actors);
+                    }
                     Err(err) => {
                         error!("Failed to verify output with error: {:?}", err);
                     }
-                }
-                {
-                    self.malicious_actors.insert(authority);
                 }
             }
             DWalletMPCChannelMessage::Event(event, session_info) => {
@@ -233,10 +220,10 @@ impl DWalletMPCManager {
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
         self.outputs_manager.handle_new_event(&session_info);
-        if let Ok((party, auxiliary_input, session_info)) = MPCParty::from_event(
+        if let Ok((party, auxiliary_input, session_info)) = from_event(
             &event,
             &self,
-            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?,
+            authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?
         ) {
             self.push_new_mpc_instance(auxiliary_input, party, session_info)?;
         };
@@ -466,5 +453,9 @@ impl DWalletMPCManager {
             session_info.session_id
         );
         Ok(())
+    }
+
+    pub fn network_key_version(&self) -> u8 {
+        self.outputs_manager.network_key_version()
     }
 }

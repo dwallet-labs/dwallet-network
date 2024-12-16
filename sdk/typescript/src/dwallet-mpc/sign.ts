@@ -57,7 +57,6 @@ export async function signMessageTransactionCall(
 	tx.moveCall({
 		target: signMoveFunc,
 		arguments: [
-			tx.pure.id(dwalletCapID),
 			messageApprovals,
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
 			tx.object(presignID),
