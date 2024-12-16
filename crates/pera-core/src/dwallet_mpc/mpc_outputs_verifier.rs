@@ -39,7 +39,7 @@ pub struct InstanceOutputsData {
 pub enum OutputResult {
     Valid,
     Malicious,
-    /// We don't have enough votes to decide if the output is valid or not.
+    /// We need more votes to decide if the output is valid or not.
     NotEnoughVotes,
 }
 
