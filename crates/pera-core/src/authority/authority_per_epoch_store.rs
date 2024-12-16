@@ -1051,6 +1051,8 @@ impl AuthorityPerEpochStore {
         })
     }
 
+    /// Returns the dWallet mpc network encryption of decryption key shares.
+    // Todo (#387): Add different encryption schemes & versions
     pub fn get_encryption_of_decryption_key_shares(
         &self,
     ) -> DwalletMPCResult<HashMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>> {
@@ -1070,30 +1072,6 @@ impl AuthorityPerEpochStore {
             .map(|entry| (entry.key, entry.value))
             .collect();
         Ok(encryption_of_decryption_key_shares)
-    }
-
-    pub fn get_decryption_key_share(
-        &self,
-        key_type: DWalletMPCNetworkKey,
-    ) -> DwalletMPCResult<Vec<u8>> {
-        // Todo (#396): Read the decryption key share from the network DKG output
-        if self.epoch() == FIRST_EPOCH_ID {
-            return Err(return Err(DwalletMPCError::WrongEpoch(self.epoch())));
-        }
-
-        let encryption_of_decryption_key_shares = self.get_encryption_of_decryption_key_shares()?;
-        let party_id = authority_name_to_party_id(&self.name, self)? as usize;
-        let encryption_of_decryption_key_shares = encryption_of_decryption_key_shares
-            .get(&(key_type as u8))
-            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?;
-        let decryption_key_share = encryption_of_decryption_key_shares
-            .get(encryption_of_decryption_key_shares.len())
-            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?
-            .current_epoch_shares
-            .get(party_id)
-            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?;
-        // Todo (#382): Decrypt the decryption key share
-        Ok(decryption_key_share.clone())
     }
 
     pub fn committee_validators_class_groups_public_keys_and_proofs(
