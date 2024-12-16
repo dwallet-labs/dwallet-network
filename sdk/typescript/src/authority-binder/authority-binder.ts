@@ -4,12 +4,10 @@
 import { ethers } from 'ethers';
 
 import { bcs } from '../bcs/index.js';
-import { TransactionBlock } from '../builder/index.js';
-import type { DWalletClient } from '../client/index.js';
-import type { Keypair } from '../cryptography/index.js';
-import { stringToArrayU8Bcs } from '../eth-light-client/utils.js';
-import { getSharedObjectRefById } from '../utils/sui-types.js';
-import { toPaddedBigEndianBytes } from '../zklogin/utils.js';
+import { TransactionBlock } from '../builder';
+import type { DWalletClient } from '../client';
+import type { Keypair } from '../cryptography';
+import { stringToBcs, getSharedObjectRefById } from '../utils/light-clients';
 
 const packageId = '0x3';
 const authorityBinderModuleName = 'authority_binder';
@@ -17,13 +15,13 @@ const authorityBinderModuleName = 'authority_binder';
 /**
  * Creates an authority acknowledgment transaction hash.
  *
- * This function constructs a transaction block to call the `create_authority_ack_transaction_hash`
+ * This function constructs a transaction block to call the `create_authority_ack`
  * function in the authority binder module.
  *
  * @param {string} dwalletBinderId - The ID of the dWallet binder.
  * @param {boolean} virginBound - Indicates if this is a virgin binding.
  * @param {number} chainID - The chain ID of the Ethereum network.
- * @param {'Number' | 'HexString'} chainIDType - The type of the chain ID.
+ * @param {string} chainType - The type of the chain, e.g., "Ethereum", "Sui".
  * @param {string} domainName - The domain name for the transaction.
  * @param {string} domainVersion - The domain version for the transaction.
  * @param {Keypair} keypair - The keypair used to sign the transaction.
@@ -31,40 +29,32 @@ const authorityBinderModuleName = 'authority_binder';
  * @returns The transaction hash as a hexadecimal string.
  * @throws Will throw an error if the transaction fails to verify the Ethereum state.
  */
-export const createAuthorityEIP712Acknowledgement = async (
+export const createAuthorityAck = async (
 	dwalletBinderId: string,
 	virginBound: boolean,
-	chainID: string,
-	chainIDType: 'Number' | 'HexString',
+	chainID: bigint,
+	chainType: string,
 	domainName: string,
 	domainVersion: string,
 	keypair: Keypair,
 	client: DWalletClient,
 ) => {
-	let domainNameBcs = stringToArrayU8Bcs(domainName);
-	let domainVersionBcs = stringToArrayU8Bcs(domainVersion);
-
-	let chainIdTypeArg = chainIDType === 'Number' ? 0 : 1;
-	let chainIdBcs;
-	if (chainIdTypeArg === 0) {
-		let chainIdArg = toPaddedBigEndianBytes(BigInt(chainID), 32).slice(1);
-		chainIdBcs = bcs.vector(bcs.u8()).serialize(chainIdArg);
-	} else {
-		chainIdBcs = stringToArrayU8Bcs(chainID);
-	}
+	let domainNameBcs = stringToBcs(domainName);
+	let domainVersionBcs = stringToBcs(domainVersion);
+	let chainTypeBcs = stringToBcs(chainType);
 
 	let binderSharedObjRef = await getSharedObjectRefById(dwalletBinderId, client);
 
 	const tx = new TransactionBlock();
 	tx.moveCall({
-		target: `${packageId}::${authorityBinderModuleName}::create_authority_ack_transaction_hash`,
+		target: `${packageId}::${authorityBinderModuleName}::create_authority_ack`,
 		arguments: [
 			tx.sharedObjectRef(binderSharedObjRef),
 			tx.pure.bool(virginBound),
-			tx.pure(chainIdBcs),
-			tx.pure.u8(chainIdTypeArg),
+			tx.pure.u64(chainID),
 			tx.pure(domainNameBcs),
 			tx.pure(domainVersionBcs),
+			tx.pure(chainTypeBcs),
 		],
 		typeArguments: [],
 	});
@@ -81,8 +71,7 @@ export const createAuthorityEIP712Acknowledgement = async (
 	});
 
 	const array = new Uint8Array(res.results?.at(0)?.returnValues?.at(0)?.at(0)! as number[]);
-	// The First byte is array length, so we skip it.
-	return ethers.hexlify(array.slice(1));
+	return ethers.hexlify(array);
 };
 
 /**
@@ -162,7 +151,7 @@ export const setBindToAuthority = async (
 ) => {
 	let binderSharedObjectRef = await getSharedObjectRefById(binderID, client, true);
 	let authoritySharedObjectRef = await getSharedObjectRefById(authorityID, client);
-	let ownerBcs = stringToArrayU8Bcs(owner);
+	let ownerBcs = stringToBcs(owner);
 
 	const tx = new TransactionBlock();
 	tx.moveCall({
