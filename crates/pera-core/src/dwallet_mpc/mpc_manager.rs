@@ -9,7 +9,7 @@ use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
 use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::network_dkg::{
-    DwalletMPCNetworkKeysStatus, NetworkEncryptionOfDecryptionKeyShare,
+    DwalletMPCNetworkKeysStatus, DwalletMPCNetworkKeyVersions,
 };
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
@@ -235,7 +235,7 @@ impl DWalletMPCManager {
             .epoch_store()?
             .dwallet_mpc_network_keys
             .get()
-            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .status()?;
         let mut malicious_parties = vec![];
         let mut messages = vec![];
@@ -346,7 +346,7 @@ impl DWalletMPCManager {
                 self.epoch_store()?
                     .dwallet_mpc_network_keys
                     .get()
-                    .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?
+                    .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
                     .add_key_version(
                         self.epoch_store()?,
                         key_type,
@@ -480,7 +480,7 @@ impl DWalletMPCManager {
         self.epoch_store()?
             .dwallet_mpc_network_keys
             .get()
-            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .key_version(key_type)
     }
 }

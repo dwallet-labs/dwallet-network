@@ -3,7 +3,7 @@
 /// by checking if a validators with quorum of stake voted for it.
 /// Any validator that voted for a different output is considered malicious.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::network_dkg::NetworkEncryptionOfDecryptionKeyShare;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::collection_types::VecMap;
 use pera_types::committee::StakeUnit;

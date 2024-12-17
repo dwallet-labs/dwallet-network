@@ -23,26 +23,26 @@ pub enum DwalletMPCNetworkKeysStatus {
     NotInitialized,
 }
 
-/// Store the network encryption of decryption key shares.
-pub struct NetworkEncryptionOfDecryptionKeyShare {
+/// Hold the network keys of the dwallet mpc protocols.
+pub struct DwalletMPCNetworkKeyVersions {
     /// The validators' decryption key shares.
-    pub decryption_key_share: Arc<RwLock<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>>>,
-    /// The dWallet MPC network encryption of decryption key shares.
-    /// Map from key type to the encryption of the decryption key shares different versions.
-    pub encryption:
+    pub validator_decryption_key_share: Arc<RwLock<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>>>,
+    /// The dWallet MPC network decryption key shares (encrypted).
+    /// Map from key type to the encryption of the key version.
+    pub key_shares_versions:
         Arc<RwLock<HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>>>,
     /// The status of the network supported key types for the dWallet MPC sessions.
     pub status: Arc<RwLock<DwalletMPCNetworkKeysStatus>>,
 }
 
-impl NetworkEncryptionOfDecryptionKeyShare {
+impl DwalletMPCNetworkKeyVersions {
     /// Creates a new instance of the network encryption of decryption key shares.
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
         let decryption_key_share = epoch_store
             .load_validator_decryption_key_shares_from_system_state()
             .unwrap_or(HashMap::new());
         let encryption = epoch_store
-            .load_encryption_of_decryption_key_shares_from_system_state()
+            .load_decryption_key_shares_from_system_state()
             .unwrap_or(HashMap::new());
         let status = if encryption.is_empty() || decryption_key_share.is_empty() {
             DwalletMPCNetworkKeysStatus::NotInitialized
@@ -51,8 +51,8 @@ impl NetworkEncryptionOfDecryptionKeyShare {
         };
 
         Self {
-            decryption_key_share: Arc::new(RwLock::new(decryption_key_share)),
-            encryption: Arc::new(RwLock::new(encryption)),
+            validator_decryption_key_share: Arc::new(RwLock::new(decryption_key_share)),
+            key_shares_versions: Arc::new(RwLock::new(encryption)),
             status: Arc::new(RwLock::new(status)),
         }
     }
@@ -60,7 +60,7 @@ impl NetworkEncryptionOfDecryptionKeyShare {
     /// Returns the latest version of the given key type.
     pub fn key_version(&self, key_type: DWalletMPCNetworkKey) -> DwalletMPCResult<u8> {
         let decryption_key_share = self
-            .decryption_key_share
+            .validator_decryption_key_share
             .read()
             .map_err(|_| DwalletMPCError::LockError)?;
         Ok(decryption_key_share
@@ -77,7 +77,7 @@ impl NetworkEncryptionOfDecryptionKeyShare {
         new_shares: Vec<Vec<u8>>,
     ) -> DwalletMPCResult<()> {
         let mut encryption = self
-            .encryption
+            .key_shares_versions
             .write()
             .map_err(|_| DwalletMPCError::LockError)?;
         let key_shares = encryption
@@ -101,7 +101,7 @@ impl NetworkEncryptionOfDecryptionKeyShare {
         encryption_of_decryption_shares: Vec<u8>,
     ) -> DwalletMPCResult<()> {
         let mut decryption_key_share = self
-            .decryption_key_share
+            .validator_decryption_key_share
             .write()
             .map_err(|_| DwalletMPCError::LockError)?;
         // Todo (#382): Replace with the actual type once the DKG protocol is ready.
@@ -111,7 +111,7 @@ impl NetworkEncryptionOfDecryptionKeyShare {
             .push(self_decryption_key_share.clone());
 
         let mut encryption = self
-            .encryption
+            .key_shares_versions
             .write()
             .map_err(|_| DwalletMPCError::LockError)?;
         encryption.insert(
@@ -144,7 +144,7 @@ impl NetworkEncryptionOfDecryptionKeyShare {
         key_type: DWalletMPCNetworkKey,
     ) -> DwalletMPCResult<Vec<Vec<u8>>> {
         let decryption_key_share = self
-            .decryption_key_share
+            .validator_decryption_key_share
             .read()
             .map_err(|_| DwalletMPCError::LockError)?;
 

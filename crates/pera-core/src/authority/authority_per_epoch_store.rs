@@ -74,7 +74,7 @@ use crate::dwallet_mpc::mpc_manager::{
     DWalletMPCChannelMessage, DWalletMPCManager, DWalletMPCSender,
 };
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::dwallet_mpc::network_dkg::NetworkEncryptionOfDecryptionKeyShare;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::dwallet_mpc::FIRST_EPOCH_ID;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
@@ -353,7 +353,7 @@ pub struct AuthorityPerEpochStore {
     /// This state machine only being used to store outputs and declare ones with quorum of votes as valid.
     pub dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
-    pub dwallet_mpc_network_keys: OnceCell<NetworkEncryptionOfDecryptionKeyShare>,
+    pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -988,7 +988,7 @@ impl AuthorityPerEpochStore {
     pub fn set_dwallet_mpc_network_keys(&self) {
         if self
             .dwallet_mpc_network_keys
-            .set(NetworkEncryptionOfDecryptionKeyShare::new(self))
+            .set(DwalletMPCNetworkKeyVersions::new(self))
             .is_err()
         {
             error!("BUG: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
@@ -1070,22 +1070,22 @@ impl AuthorityPerEpochStore {
     /// The data is loaded from the epoch start system state. The returned value is a map where:
     /// - The key represents the key scheme.
     /// - The value is a vector of `EncryptionOfNetworkDecryptionKeyShares`, containing all encrypted decryption key shares versions.
-    pub(crate) fn load_encryption_of_decryption_key_shares_from_system_state(
+    pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>>
     {
-        let encryption_of_decryption_key_shares = match self.epoch_start_state() {
-            EpochStartSystemState::V1(data) => data.get_encryption_of_decryption_key_shares(),
+        let decryption_key_shares = match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
         };
-        let encryption_of_decryption_key_shares = encryption_of_decryption_key_shares
-            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?;
-        let encryption_of_decryption_key_shares = encryption_of_decryption_key_shares
+        let decryption_key_shares = decryption_key_shares
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
+        let decryption_key_shares = decryption_key_shares
             .contents
             .into_iter()
             .map(|entry| Ok((DWalletMPCNetworkKey::try_from(entry.key)?, entry.value)))
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
 
-        Ok(encryption_of_decryption_key_shares)
+        Ok(decryption_key_shares)
     }
 
     /// Reads the *running validator's* latest decryption key share for every key scheme, if it exists in the system state.
@@ -1096,12 +1096,12 @@ impl AuthorityPerEpochStore {
     pub(crate) fn load_validator_decryption_key_shares_from_system_state(
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>> {
-        let encryption_of_decryption_key_shares =
-            self.load_encryption_of_decryption_key_shares_from_system_state()?;
+        let decryption_key_shares =
+            self.load_decryption_key_shares_from_system_state()?;
         let party_id = authority_name_to_party_id(&self.name, self)? as usize;
         let mut decryption_key_share = HashMap::new();
 
-        for (key_type, encryption_shares) in encryption_of_decryption_key_shares {
+        for (key_type, encryption_shares) in decryption_key_shares {
             let shares_result = encryption_shares
                 .iter()
                 .map(|shares| {
@@ -1110,7 +1110,7 @@ impl AuthorityPerEpochStore {
                         .current_epoch_shares
                         .get(party_id)
                         .cloned()
-                        .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)
+                        .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)
                 })
                 .collect::<DwalletMPCResult<Vec<_>>>();
 

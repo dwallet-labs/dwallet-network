@@ -80,8 +80,8 @@ pub enum DwalletMPCError {
     #[error("wrong epoch access {0}")]
     WrongEpoch(u64),
 
-    #[error("missing encrypted decryption key shares in the config")]
-    MissingEncryptionOfDecryptionKeyShares,
+    #[error("missing dwallet mpc decryption key shares")]
+    MissingDwalletMPCDecryptionKeyShares,
 
     #[error("missing dwallet mpc network key version")]
     MissingKeyVersion,
