@@ -1,6 +1,8 @@
 # Use a dWallet on Bitcoin
 
-After [creating a dWallet](../your-first-dwallet.md#using-typescript-sdk) you can derive the dWallet's Bitcoin address, create transactions from that address, sign them with the dWallet Network, and broadcast the signed transactions to the Bitcoin network.
+After [creating a dWallet](../your-first-dwallet.md#using-typescript-sdk) you can derive the dWallet's Bitcoin address,
+create transactions from that address, sign them with the dWallet Network, and broadcast the signed transactions to the
+Bitcoin network.
 
 ## Setup
 
