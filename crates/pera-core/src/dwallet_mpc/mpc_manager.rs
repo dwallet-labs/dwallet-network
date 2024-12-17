@@ -261,7 +261,7 @@ impl DWalletMPCManager {
                     && received_weight as StakeUnit >= threshold)
                     || (instance.status == MPCSessionStatus::FirstExecution);
 
-                let is_valid_status = if cfg!(feature = "with-network-dkg") {
+                let is_manager_ready = if cfg!(feature = "with-network-dkg") {
                     (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
                         && matches!(instance.party(), MPCParty::NetworkDkg(_)))
                         || matches!(
@@ -272,7 +272,7 @@ impl DWalletMPCManager {
                     true
                 };
 
-                if is_ready && is_valid_status {
+                if is_ready && is_manager_ready {
                     Some(instance)
                 } else {
                     None
@@ -285,14 +285,18 @@ impl DWalletMPCManager {
             .map(|instance| {
                 (
                     instance.advance(&self.weighted_threshold_access_structure, self.party_id),
-                    instance.clone(),
+                    instance.session_info.session_id.clone(),
                 )
             })
             .collect::<Vec<_>>()
             // Convert back to an iterator for processing.
             .into_iter()
-            .try_for_each(|(result, instance)| match result {
+            .try_for_each(|(result, session_id)| match result {
                 Ok((message, malicious)) => {
+                    let instance = self
+                        .mpc_instances
+                        .get(&session_id)
+                        .ok_or(DwalletMPCError::InvalidMPCPartyType)?; // change
                     messages.push(message.clone());
                     malicious_parties.extend(malicious);
                     // Update the manager with the new network encryption of decryption key share
@@ -303,7 +307,7 @@ impl DWalletMPCManager {
                                 output,
                                 instance
                                     .private_output()
-                                    .ok_or(DwalletMPCError::MissingPrivateOutput)?,
+                                    .ok_or(DwalletMPCError::InstanceMissingPrivateOutput)?,
                             )?;
                         }
                     }
@@ -331,7 +335,7 @@ impl DWalletMPCManager {
 
     /// Update the encryption of decryption key share with the new shares.
     /// This function is called when the network DKG protocol is done.
-    pub fn new_encryption_of_decryption_key_share(
+    fn new_encryption_of_decryption_key_share(
         &self,
         session_info: &SessionInfo,
         public_output: Vec<u8>,
@@ -469,7 +473,10 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    pub fn network_key_version(&self, key_type: DWalletMPCNetworkKey) -> DwalletMPCResult<u8> {
+    pub fn network_key_version(
+        &self,
+        key_type: DWalletMPCNetworkKey,
+    ) -> DwalletMPCResult<u8> {
         self.epoch_store()?
             .dwallet_mpc_network_keys
             .get()

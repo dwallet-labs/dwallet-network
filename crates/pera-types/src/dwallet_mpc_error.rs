@@ -86,8 +86,8 @@ pub enum DwalletMPCError {
     #[error("missing dwallet mpc network key version")]
     MissingKeyVersion,
 
-    #[error("missing private output")]
-    MissingPrivateOutput,
+    #[error("MPC instance missing private output")]
+    InstanceMissingPrivateOutput,
 
     #[error("invalid dWallet MPC network key")]
     InvalidDWalletMPCNetworkKey,

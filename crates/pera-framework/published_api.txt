@@ -94,16 +94,16 @@ create_mock_dwallet
 create_mock_presign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-StartNetworkDkgEvent
+StartNetworkDKGEvent
 	public struct
 	0x3::dwallet_network_key
 EncryptionOfNetworkDecryptionKeyShares
 	public struct
 	0x3::dwallet_network_key
 is_key_type
-	public fun
+	public(package) fun
 	0x3::dwallet_network_key
-emit_start_network_decryption_key_share_generation
+start_network_dkg
 	public fun
 	0x3::dwallet_network_key
 new_encrypted_network_decryption_key_shares

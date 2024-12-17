@@ -4,11 +4,11 @@ title: Module `0x3::dwallet_network_key`
 
 
 
--  [Struct `StartNetworkDkgEvent`](#0x3_dwallet_network_key_StartNetworkDkgEvent)
+-  [Struct `StartNetworkDKGEvent`](#0x3_dwallet_network_key_StartNetworkDKGEvent)
 -  [Struct `EncryptionOfNetworkDecryptionKeyShares`](#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares)
 -  [Constants](#@Constants_0)
 -  [Function `is_key_type`](#0x3_dwallet_network_key_is_key_type)
--  [Function `emit_start_network_decryption_key_share_generation`](#0x3_dwallet_network_key_emit_start_network_decryption_key_share_generation)
+-  [Function `start_network_dkg`](#0x3_dwallet_network_key_start_network_dkg)
 -  [Function `new_encrypted_network_decryption_key_shares`](#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares)
 -  [Function `update_new_shares`](#0x3_dwallet_network_key_update_new_shares)
 
@@ -20,14 +20,14 @@ title: Module `0x3::dwallet_network_key`
 
 
 
-<a name="0x3_dwallet_network_key_StartNetworkDkgEvent"></a>
+<a name="0x3_dwallet_network_key_StartNetworkDKGEvent"></a>
 
-## Struct `StartNetworkDkgEvent`
+## Struct `StartNetworkDKGEvent`
 
 Event to start the network DKG
 
 
-<pre><code><b>struct</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDkgEvent">StartNetworkDkgEvent</a> <b>has</b> <b>copy</b>, drop, store
+<pre><code><b>struct</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDKGEvent">StartNetworkDKGEvent</a> <b>has</b> <b>copy</b>, drop, store
 </code></pre>
 
 
@@ -125,7 +125,7 @@ Represents the key types supported by the system
 Checks if the key type is supported by the system
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_is_key_type">is_key_type</a>(val: u8): bool
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_is_key_type">is_key_type</a>(val: u8): bool
 </code></pre>
 
 
@@ -134,7 +134,7 @@ Checks if the key type is supported by the system
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_is_key_type">is_key_type</a>(val: u8): bool {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_is_key_type">is_key_type</a>(val: u8): bool {
     <b>return</b> match (val) {
         <a href="dwallet_network_key.md#0x3_dwallet_network_key_Secp256k1">Secp256k1</a> | <a href="dwallet_network_key.md#0x3_dwallet_network_key_Ristretto">Ristretto</a> =&gt; <b>true</b>,
         _ =&gt; <b>false</b>,
@@ -146,14 +146,14 @@ Checks if the key type is supported by the system
 
 </details>
 
-<a name="0x3_dwallet_network_key_emit_start_network_decryption_key_share_generation"></a>
+<a name="0x3_dwallet_network_key_start_network_dkg"></a>
 
-## Function `emit_start_network_decryption_key_share_generation`
+## Function `start_network_dkg`
 
-Function to create a new StartNetworkDkgEvent
+Function to create a new StartNetworkDKGEvent
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_emit_start_network_decryption_key_share_generation">emit_start_network_decryption_key_share_generation</a>(key_type: u8, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_type: u8, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -162,9 +162,9 @@ Function to create a new StartNetworkDkgEvent
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_emit_start_network_decryption_key_share_generation">emit_start_network_decryption_key_share_generation</a>(key_type: u8, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_type: u8, ctx: &<b>mut</b> TxContext) {
     <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
-    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDkgEvent">StartNetworkDkgEvent</a> {
+    <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDKGEvent">StartNetworkDKGEvent</a> {
         session_id,
         key_type,
     });

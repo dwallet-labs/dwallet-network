@@ -4,7 +4,7 @@ use crate::dwallet_mpc::dkg::{
     DKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_events::{
-    StartBatchedSignEvent, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent, StartNetworkDkgEvent,
+    StartBatchedSignEvent, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent, StartNetworkDKGEvent,
     StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
@@ -105,8 +105,8 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: StartBatchedSignEvent = bcs::from_bytes(&event.contents)?;
             Ok(Some(batched_sign_session_info(&deserialized_event)))
         }
-        t if t == &StartNetworkDkgEvent::type_() => {
-            let deserialized_event: StartNetworkDkgEvent = bcs::from_bytes(&event.contents)?;
+        t if t == &StartNetworkDKGEvent::type_() => {
+            let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
             Ok(Some(network_dkg::network_dkg_session_info(
                 deserialized_event,
             )?))
@@ -388,8 +388,8 @@ pub(crate) fn from_event(
             let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
             sign_party(party_id, deserialized_event, dwallet_mpc_manager)
         }
-        t if t == &StartNetworkDkgEvent::type_() => {
-            let deserialized_event: StartNetworkDkgEvent = bcs::from_bytes(&event.contents)?;
+        t if t == &StartNetworkDKGEvent::type_() => {
+            let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
             network_dkg::network_dkg_party(deserialized_event)
         }
         _ => Err(DwalletMPCError::NonMPCEvent.into()),

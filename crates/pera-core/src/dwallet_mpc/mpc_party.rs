@@ -1,6 +1,6 @@
 use crate::dwallet_mpc;
 use crate::dwallet_mpc::dkg::{DKGFirstParty, DKGSecondParty};
-use crate::dwallet_mpc::network_dkg::NetworkDkg;
+use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
 use commitment::CommitmentSizedNumber;
@@ -99,7 +99,7 @@ impl MPCParty {
                     decryption_key_share.clone(),
                 )
             }
-            MPCParty::NetworkDkg(key_type) => NetworkDkg::advance(
+            MPCParty::NetworkDkg(key_type) => advance_network_dkg(
                 session_id,
                 access_threshold,
                 party_id,

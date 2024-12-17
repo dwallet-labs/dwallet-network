@@ -1,14 +1,13 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::advance;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
-use crate::dwallet_mpc::mpc_events::StartNetworkDkgEvent;
+use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::ClassGroupsPublicKeyAndProof;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::WeightedThresholdAccessStructure;
-use pera_types::collection_types::VecMap;
 use pera_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -40,7 +39,7 @@ impl NetworkEncryptionOfDecryptionKeyShare {
     /// Creates a new instance of the network encryption of decryption key shares.
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
         let decryption_key_share = epoch_store
-            .load_decryption_key_shares_from_system_state()
+            .load_validator_decryption_key_shares_from_system_state()
             .unwrap_or(HashMap::new());
         let encryption = epoch_store
             .load_encryption_of_decryption_key_shares_from_system_state()
@@ -139,6 +138,7 @@ impl NetworkEncryptionOfDecryptionKeyShare {
     }
 
     /// Returns the active decryption key share for the given key type.
+    // Todo (#382): Replace with the actual type once the DKG protocol is ready.
     pub fn get_decryption_key_share(
         &self,
         key_type: DWalletMPCNetworkKey,
@@ -161,45 +161,39 @@ impl NetworkEncryptionOfDecryptionKeyShare {
     }
 }
 
-/// This struct is responsible for the network DKG protocol.
-/// It manages the initialization and advancement of the network DKG supported key types.
-pub struct NetworkDkg;
-
-impl NetworkDkg {
-    /// Advances the network DKG protocol for the supported key types.
-    pub(crate) fn advance(
-        session_id: CommitmentSizedNumber,
-        weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
-        party_id: PartyID,
-        public_input: &[u8],
-        key_type: &DWalletMPCNetworkKey,
-        messages: Vec<HashMap<PartyID, Vec<u8>>>,
-    ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-        Ok(match key_type {
-            // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
-            DWalletMPCNetworkKey::Secp256k1 => advance::<DKGFirstParty>(
-                session_id,
-                party_id,
-                &weighted_threshold_access_structure,
-                messages,
-                bcs::from_bytes(public_input)?,
-                (),
-            ),
-            // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
-            DWalletMPCNetworkKey::Ristretto => advance::<DKGFirstParty>(
-                session_id,
-                party_id,
-                &weighted_threshold_access_structure,
-                messages,
-                bcs::from_bytes(public_input)?,
-                (),
-            ),
-        }?)
-    }
+/// Advances the network DKG protocol for the supported key types.
+pub(crate) fn advance_network_dkg(
+    session_id: CommitmentSizedNumber,
+    weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
+    party_id: PartyID,
+    public_input: &[u8],
+    key_type: &DWalletMPCNetworkKey,
+    messages: Vec<HashMap<PartyID, Vec<u8>>>,
+) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    Ok(match key_type {
+        // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
+        DWalletMPCNetworkKey::Secp256k1 => advance::<DKGFirstParty>(
+            session_id,
+            party_id,
+            &weighted_threshold_access_structure,
+            messages,
+            bcs::from_bytes(public_input)?,
+            (),
+        ),
+        // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
+        DWalletMPCNetworkKey::Ristretto => advance::<DKGFirstParty>(
+            session_id,
+            party_id,
+            &weighted_threshold_access_structure,
+            messages,
+            bcs::from_bytes(public_input)?,
+            (),
+        ),
+    }?)
 }
 
 pub fn network_dkg_party(
-    deserialized_event: StartNetworkDkgEvent,
+    deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     match DWalletMPCNetworkKey::try_from(deserialized_event.key_type)? {
         DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_party(deserialized_event)?),
@@ -208,7 +202,7 @@ pub fn network_dkg_party(
 }
 
 pub fn network_dkg_session_info(
-    deserialized_event: StartNetworkDkgEvent,
+    deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<SessionInfo> {
     match DWalletMPCNetworkKey::try_from(deserialized_event.key_type)? {
         DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_session_info(deserialized_event)),
@@ -218,7 +212,7 @@ pub fn network_dkg_session_info(
 }
 
 fn dkg_secp256k1_party(
-    deserialized_event: StartNetworkDkgEvent,
+    deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     Ok((
         MPCParty::NetworkDkg(DWalletMPCNetworkKey::Secp256k1),
@@ -227,7 +221,7 @@ fn dkg_secp256k1_party(
     ))
 }
 
-fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDkgEvent) -> SessionInfo {
+fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDKGEvent) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
@@ -237,7 +231,7 @@ fn dkg_secp256k1_session_info(deserialized_event: StartNetworkDkgEvent) -> Sessi
 }
 
 fn dkg_ristretto_party(
-    deserialized_event: StartNetworkDkgEvent,
+    deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     Ok((
         MPCParty::NetworkDkg(DWalletMPCNetworkKey::Ristretto),
@@ -246,7 +240,7 @@ fn dkg_ristretto_party(
     ))
 }
 
-fn dkg_ristretto_session_info(deserialized_event: StartNetworkDkgEvent) -> SessionInfo {
+fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,

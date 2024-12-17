@@ -19,7 +19,6 @@ use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 /// A DWallet MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
-#[derive(Clone)]
 pub(super) struct DWalletMPCInstance {
     /// The status of the MPC instance
     pub(super) status: MPCSessionStatus,

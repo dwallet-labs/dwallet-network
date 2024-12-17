@@ -223,17 +223,17 @@ impl LockedNextEpochCommitteeEvent {
     }
 }
 
-/// Rust version of the Move [`pera_system::dwallet_network_key::StartNetworkDkgEvent`] type.
+/// Rust version of the Move [`pera_system::dwallet_network_key::StartNetworkDKGEvent`] type.
 /// It is used to trigger the start of the network DKG process.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
-pub struct StartNetworkDkgEvent {
+pub struct StartNetworkDKGEvent {
     pub(crate) session_id: ID,
     pub(crate) key_type: u8,
 }
 
-impl StartNetworkDkgEvent {
+impl StartNetworkDKGEvent {
     /// This function allows comparing this event with the Move event.
-    /// It is used to detect [`StartNetworkDkgEvent`] events from the chain and initiate the MPC session.
+    /// It is used to detect [`StartNetworkDKGEvent`] events from the chain and initiate the MPC session.
     /// It is used to trigger the start of the network DKG process.
     pub fn type_() -> StructTag {
         StructTag {

@@ -6,7 +6,7 @@ module pera_system::dwallet_network_key {
     const Ristretto: u8 = 1;
 
     /// Checks if the key type is supported by the system
-    public fun is_key_type(val: u8): bool {
+    public(package) fun is_key_type(val: u8): bool {
         return match (val) {
             Secp256k1 | Ristretto => true,
             _ => false,
@@ -14,16 +14,16 @@ module pera_system::dwallet_network_key {
     }
 
     /// Event to start the network DKG
-    public struct StartNetworkDkgEvent has store, copy, drop {
+    public struct StartNetworkDKGEvent has store, copy, drop {
         session_id: ID,
         key_type: u8,
     }
 
-    /// Function to create a new StartNetworkDkgEvent
+    /// Function to create a new StartNetworkDKGEvent
     // Todo (#400): Add user restrictions, so that only someone we choose can run this function
-    public fun emit_start_network_decryption_key_share_generation(key_type: u8, ctx: &mut TxContext) {
+    public fun start_network_dkg(key_type: u8, ctx: &mut TxContext) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        event::emit(StartNetworkDkgEvent {
+        event::emit(StartNetworkDKGEvent {
             session_id,
             key_type,
         });
