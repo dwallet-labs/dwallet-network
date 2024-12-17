@@ -100,6 +100,7 @@ impl MPCParty {
                 )
             }
             MPCParty::NetworkDkg(key_type) => NetworkDkg::advance(
+                session_id,
                 access_threshold,
                 party_id,
                 &public_input,

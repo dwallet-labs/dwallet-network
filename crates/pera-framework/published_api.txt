@@ -94,6 +94,24 @@ create_mock_dwallet
 create_mock_presign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartNetworkDkgEvent
+	public struct
+	0x3::dwallet_network_key
+EncryptionOfNetworkDecryptionKeyShares
+	public struct
+	0x3::dwallet_network_key
+is_key_type
+	public fun
+	0x3::dwallet_network_key
+emit_start_network_decryption_key_share_generation
+	public fun
+	0x3::dwallet_network_key
+new_encrypted_network_decryption_key_shares
+	public fun
+	0x3::dwallet_network_key
+update_new_shares
+	public fun
+	0x3::dwallet_network_key
 UnverifiedValidatorOperationCap
 	public struct
 	0x3::validator_cap
@@ -751,18 +769,6 @@ total_object_storage_rebates
 total_balance
 	public fun
 	0x3::storage_fund
-EncryptionOfNetworkDecryptionKeyShares
-	public struct
-	0x3::dwallet_network_key
-is_key_type
-	public fun
-	0x3::dwallet_network_key
-new_encrypted_network_decryption_key_shares
-	public fun
-	0x3::dwallet_network_key
-update_new_shares
-	public fun
-	0x3::dwallet_network_key
 SystemParameters
 	public struct
 	0x3::pera_system_state_inner

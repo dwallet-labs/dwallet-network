@@ -1,4 +1,5 @@
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
+use crate::dwallet_mpc::DWalletMPCNetworkKey;
 use group::PartyID;
 // todo(zeev): remove unused errors.
 
@@ -81,6 +82,18 @@ pub enum DwalletMPCError {
 
     #[error("missing encrypted decryption key shares in the config")]
     MissingEncryptionOfDecryptionKeyShares,
+
+    #[error("missing dwallet mpc network key version")]
+    MissingKeyVersion,
+
+    #[error("missing private output")]
+    MissingPrivateOutput,
+
+    #[error("invalid dWallet MPC network key")]
+    InvalidDWalletMPCNetworkKey,
+
+    #[error("failed to lock the mutex")]
+    LockError,
 }
 
 /// A wrapper type for the result of a runtime operation.

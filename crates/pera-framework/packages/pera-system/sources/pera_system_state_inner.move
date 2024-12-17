@@ -357,6 +357,7 @@ module pera_system::pera_system_state_inner {
         self.validators.lock_next_epoch_committee(self.epoch);
     }
 
+    /// Update the system state with a new version dwallet mpc network key shares after the network DKG.
     public(package) fun new_encryption_of_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_type: u8) {
         assert!(is_key_type(key_type), EInvalidKeyType);
         let new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty());
@@ -369,6 +370,7 @@ module pera_system::pera_system_state_inner {
         self.encryption_of_decryption_key_shares.insert(key_type, vector[new_version]);
     }
 
+    /// Update the system state with new encryption of decryption key shares after re-configuring the network.
     public(package) fun store_encryption_of_decryption_key_shares(
         self: &mut PeraSystemStateInnerV2,
         shares: vector<vector<u8>>,

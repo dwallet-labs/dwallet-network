@@ -8,7 +8,9 @@ use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
 use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
 use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
 use crate::dwallet_mpc::mpc_party::MPCParty;
-use crate::dwallet_mpc::network_dkg::NetworkDkg;
+use crate::dwallet_mpc::network_dkg::{
+    DwalletMPCNetworkKeysStatus, NetworkEncryptionOfDecryptionKeyShare,
+};
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
@@ -18,9 +20,10 @@ use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
+use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
-use pera_types::messages_consensus::ConsensusTransaction;
+use pera_types::messages_consensus::{ConsensusTransaction, ConsensusTransactionKind};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -32,12 +35,6 @@ use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
-
-#[derive(Debug, PartialEq)]
-pub enum ManagerStatus {
-    Active,
-    WaitingForNetworkDKGCompletion,
-}
 
 /// The [`DWalletMPCManager`] manages MPC instances:
 /// — Keeping track of all MPC instances,
@@ -65,7 +62,6 @@ pub struct DWalletMPCManager {
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
     weighted_parties: HashMap<PartyID, PartyID>,
     outputs_manager: DWalletMPCOutputsVerifier,
-    status: ManagerStatus,
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
@@ -105,34 +101,10 @@ impl DWalletMPCManager {
         )
         .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
-        // Start the network DKG if this is the first epoch
-        // TODO(#383): Enable DKG logic when Scaly's code is ready
-        let (status, mpc_instances) = if false {
-            (
-                ManagerStatus::WaitingForNetworkDKGCompletion,
-                NetworkDkg::init(epoch_store.clone())?,
-            )
-        } else {
-            // Todo (#382): Store the real value of the decryption key shares
-            let _ = epoch_store.get_encryption_of_decryption_key_shares();
-            (ManagerStatus::Active, HashMap::new())
-        };
-
-        // Todo (#383): Remove the `outputs_manager` from the `DWalletMPCManager`
-        let mut outputs_manager = DWalletMPCOutputsVerifier::new(&epoch_store);
-        let mut epoch_store_outputs_manager = epoch_store
-            .get_dwallet_mpc_outputs_verifier()
-            .await
-            .map_err(|_| DwalletMPCError::MissingDwalletMPCOutputsManager)?;
-        for (network_dkg_session_id, _) in mpc_instances.iter() {
-            outputs_manager.insert_new_output_instance(network_dkg_session_id);
-            epoch_store_outputs_manager.insert_new_output_instance(network_dkg_session_id);
-        }
-
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
         let mut manager = Self {
-            mpc_instances,
+            mpc_instances: HashMap::new(),
             pending_instances_queue: VecDeque::new(),
             active_instances_counter: 0,
             consensus_adapter,
@@ -144,8 +116,7 @@ impl DWalletMPCManager {
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
             weighted_parties,
-            outputs_manager,
-            status: ManagerStatus::Active,
+            outputs_manager: DWalletMPCOutputsVerifier::new(&epoch_store),
         };
 
         tokio::spawn(async move {
@@ -260,6 +231,12 @@ impl DWalletMPCManager {
     /// We parallelize the advances with `Rayon` to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
         let threshold = self.epoch_store()?.committee().quorum_threshold();
+        let mpc_network_key_status = self
+            .epoch_store()?
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?
+            .status()?;
         let mut malicious_parties = vec![];
         let mut messages = vec![];
 
@@ -284,10 +261,13 @@ impl DWalletMPCManager {
                     && received_weight as StakeUnit >= threshold)
                     || (instance.status == MPCSessionStatus::FirstExecution);
 
-                let is_valid_status = (self.status
-                    == ManagerStatus::WaitingForNetworkDKGCompletion
+                let is_valid_status = (mpc_network_key_status
+                    == DwalletMPCNetworkKeysStatus::NotInitialized
                     && matches!(instance.party(), MPCParty::NetworkDkg(_)))
-                    || self.status == ManagerStatus::Active;
+                    || matches!(
+                        mpc_network_key_status,
+                        DwalletMPCNetworkKeysStatus::KeysUpdated(_)
+                    );
 
                 if is_ready && is_valid_status {
                     Some(instance)
@@ -300,15 +280,30 @@ impl DWalletMPCManager {
         ready_to_advance
             .par_iter_mut()
             .map(|instance| {
-                instance.advance(&self.weighted_threshold_access_structure, self.party_id)
+                (
+                    instance.advance(&self.weighted_threshold_access_structure, self.party_id),
+                    instance.clone(),
+                )
             })
             .collect::<Vec<_>>()
             // Convert back to an iterator for processing.
             .into_iter()
-            .try_for_each(|result| match result {
+            .try_for_each(|(result, instance)| match result {
                 Ok((message, malicious)) => {
                     messages.push(message.clone());
                     malicious_parties.extend(malicious);
+                    // Update the manager with the new network encryption of decryption key share
+                    if matches!(instance.party(), MPCParty::NetworkDkg(_)) {
+                        if let MPCSessionStatus::Finished(output) = instance.status.clone() {
+                            self.new_encryption_of_decryption_key_share(
+                                &instance.session_info,
+                                output,
+                                instance
+                                    .private_output()
+                                    .ok_or(DwalletMPCError::MissingPrivateOutput)?,
+                            )?;
+                        }
+                    }
                     Ok(())
                 }
                 Err(DwalletMPCError::MaliciousParties(malicious)) => {
@@ -328,15 +323,31 @@ impl DWalletMPCManager {
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
                 .await?;
         }
-        if self.status == ManagerStatus::WaitingForNetworkDKGCompletion {
-            if self
-                .mpc_instances
-                .iter()
-                .filter(|(_, instance)| matches!(instance.party(), MPCParty::NetworkDkg(_)))
-                .all(|(_, instance)| matches!(instance.status, MPCSessionStatus::Finished(_)))
-            {
-                self.status = ManagerStatus::Active;
+        Ok(())
+    }
+
+    /// Update the encryption of decryption key share with the new shares.
+    /// This function is called when the network DKG protocol is done.
+    pub fn new_encryption_of_decryption_key_share(
+        &self,
+        session_info: &SessionInfo,
+        public_output: Vec<u8>,
+        private_output: &Vec<u8>,
+    ) -> DwalletMPCResult<()> {
+        match session_info.mpc_round {
+            MPCRound::NetworkDkg(key_type) => {
+                self.epoch_store()?
+                    .dwallet_mpc_network_keys
+                    .get()
+                    .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?
+                    .add_key_version(
+                        self.epoch_store()?,
+                        key_type,
+                        private_output.clone(),
+                        public_output,
+                    )?;
             }
+            _ => {}
         }
         Ok(())
     }
@@ -455,7 +466,11 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    pub fn network_key_version(&self) -> u8 {
-        self.outputs_manager.network_key_version()
+    pub fn network_key_version(&self, key_type: DWalletMPCNetworkKey) -> DwalletMPCResult<u8> {
+        self.epoch_store()?
+            .dwallet_mpc_network_keys
+            .get()
+            .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?
+            .key_version(key_type)
     }
 }

@@ -360,7 +360,13 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         ctx: &mut TxContext
     ) {
         assert!(tx_context::sender(ctx) == SYSTEM_ADDRESS, ENotSystemAddress);
-        let dwallet = dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, output, dwallet_mpc_network_key_version, ctx);
+        let dwallet = dwallet::create_dwallet<Secp256K1>(
+            session_id,
+            dwallet_cap_id,
+            output,
+            dwallet_mpc_network_key_version,
+            ctx
+        );
         event::emit(CompletedDKGSecondRoundEvent {
             session_id,
             initiator,

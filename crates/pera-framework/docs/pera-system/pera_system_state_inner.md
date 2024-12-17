@@ -422,7 +422,7 @@ Uses SystemParametersV2 as the parameters.
 <code>encryption_of_decryption_key_shares: <a href="../pera-framework/vec_map.md#0x2_vec_map_VecMap">vec_map::VecMap</a>&lt;u8, <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">dwallet_network_key::EncryptionOfNetworkDecryptionKeyShares</a>&gt;&gt;</code>
 </dt>
 <dd>
- These are the encrypted decryption key shares for the current epoch, used for dWallet MPC session.
+ These are the encrypted decryption-key shares for the current epoch, used for dWallet MPC session.
  The shares are indexed by the validator index of the current epoch committee.
 </dd>
 <dt>
@@ -955,6 +955,7 @@ This function will be called only once in genesis.
 
 ## Function `new_encryption_of_decryption_key_shares_version`
 
+Update the system state with a new version dwallet mpc network key shares after the network DKG.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_new_encryption_of_decryption_key_shares_version">new_encryption_of_decryption_key_shares_version</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_type: u8)
@@ -987,6 +988,7 @@ This function will be called only once in genesis.
 
 ## Function `store_encryption_of_decryption_key_shares`
 
+Update the system state with new encryption of decryption key shares after re-configuring the network.
 
 
 <pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_store_encryption_of_decryption_key_shares">store_encryption_of_decryption_key_shares</a>(self: &<b>mut</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_type: u8)

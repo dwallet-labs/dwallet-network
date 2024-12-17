@@ -7,8 +7,9 @@
 use dwallet_mpc_types::dwallet_mpc::{
     DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME,
     START_BATCHED_SIGN_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME, START_NETWORK_DKG_EVENT_STRUCT_NAME,
+    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME,
+    START_SIGN_ROUND_EVENT_STRUCT_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
@@ -217,6 +218,28 @@ impl LockedNextEpochCommitteeEvent {
             address: PERA_SYSTEM_ADDRESS,
             name: LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME.to_owned(),
             module: ident_str!("validator_set").to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+/// Rust version of the Move [`pera_system::dwallet_network_key::StartNetworkDkgEvent`] type.
+/// It is used to trigger the start of the network DKG process.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct StartNetworkDkgEvent {
+    pub(crate) session_id: ID,
+    pub(crate) key_type: u8,
+}
+
+impl StartNetworkDkgEvent {
+    /// This function allows comparing this event with the Move event.
+    /// It is used to detect [`StartNetworkDkgEvent`] events from the chain and initiate the MPC session.
+    /// It is used to trigger the start of the network DKG process.
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: START_NETWORK_DKG_EVENT_STRUCT_NAME.to_owned(),
+            module: ident_str!("dwallet_network_key").to_owned(),
             type_params: vec![],
         }
     }

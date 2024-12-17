@@ -19,6 +19,7 @@ use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 /// A DWallet MPC session instance
 /// It keeps track of the status of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
+#[derive(Clone)]
 pub(super) struct DWalletMPCInstance {
     /// The status of the MPC instance
     pub(super) status: MPCSessionStatus,
@@ -36,6 +37,7 @@ pub(super) struct DWalletMPCInstance {
     pub(super) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
     decryption_share: Option<DecryptionKeyShare>,
+    private_output: Option<Vec<u8>>,
 }
 
 impl DWalletMPCInstance {
@@ -57,6 +59,7 @@ impl DWalletMPCInstance {
             public_input: auxiliary_input,
             session_info,
             decryption_share,
+            private_output: None,
         }
     }
 
@@ -121,9 +124,10 @@ impl DWalletMPCInstance {
             }
             Ok(AsynchronousRoundResult::Finalize {
                 malicious_parties,
-                private_output: _,
+                private_output,
                 public_output,
             }) => {
+                self.private_output = Some(private_output.clone());
                 self.status = MPCSessionStatus::Finished(public_output.clone().into());
                 Ok((
                     self.new_dwallet_mpc_output_message(public_output)?,
@@ -200,6 +204,10 @@ impl DWalletMPCInstance {
 
     pub(crate) fn party(&self) -> &MPCParty {
         &self.party
+    }
+
+    pub(crate) fn private_output(&self) -> Option<&Vec<u8>> {
+        self.private_output.as_ref()
     }
 }
 
