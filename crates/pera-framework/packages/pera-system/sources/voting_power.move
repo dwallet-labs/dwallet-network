@@ -22,15 +22,18 @@ module pera_system::voting_power {
     /// opaque quantities whose meaning changes from epoch to epoch as the total amount staked shifts.
     /// Fixing the total voting power allows clients to hardcode the quorum threshold and total_voting power rather
     /// than recomputing these.
-    const TOTAL_VOTING_POWER: u64 = 10_000;
+    // todo (#349): Return to previous value
+    const TOTAL_VOTING_POWER: u64 = 4;
 
     /// Quorum threshold for our fixed voting power--any message signed by this much voting power can be trusted
     /// up to BFT assumptions
-    const QUORUM_THRESHOLD: u64 = 6_667;
+    // todo (#349): Return to previous value
+    const QUORUM_THRESHOLD: u64 = 3;
 
     // Cap voting power of an individual validator at 10%.
+    // todo (#349): Return to previous value
     // TODO: determine what this should be
-    const MAX_VOTING_POWER: u64 = 1_000;
+    const MAX_VOTING_POWER: u64 = 1;
 
     const ETotalPowerMismatch: u64 = 1;
     const ERelativePowerMismatch: u64 = 2;

@@ -52,6 +52,7 @@ module pera_system::pera_system {
     use pera_system::staking_pool::PoolTokenExchangeRate;
     use pera::dynamic_field;
     use pera::vec_map::VecMap;
+    use pera_system::dwallet_network_key::is_key_type;
 
     #[test_only] use pera::balance;
     #[test_only] use pera_system::validator_set::ValidatorSet;
@@ -64,6 +65,8 @@ module pera_system::pera_system {
 
     const ENotSystemAddress: u64 = 0;
     const EWrongInnerVersion: u64 = 1;
+    #[error]
+    const EInvalidKeyType: u8 = 2;
 
     // ==== functions that can only be called by genesis ====
 
@@ -110,6 +113,7 @@ module pera_system::pera_system {
         pubkey_bytes: vector<u8>,
         network_pubkey_bytes: vector<u8>,
         worker_pubkey_bytes: vector<u8>,
+        class_groups_public_key_and_proof_bytes: vector<u8>,
         proof_of_possession: vector<u8>,
         name: vector<u8>,
         description: vector<u8>,
@@ -128,6 +132,7 @@ module pera_system::pera_system {
             pubkey_bytes,
             network_pubkey_bytes,
             worker_pubkey_bytes,
+            class_groups_public_key_and_proof_bytes,
             proof_of_possession,
             name,
             description,
@@ -590,6 +595,36 @@ module pera_system::pera_system {
     fun validator_voting_powers(wrapper: &mut PeraSystemState): VecMap<address, u64> {
         let self = load_system_state(wrapper);
         pera_system_state_inner::active_validator_voting_powers(self)
+    }
+
+    #[allow(unused_function)]
+    /// Lock the next epoch's validator set
+    /// The chain agrees on the next epoch committee in order to pass
+    /// the chain's DWallet MPC secret to it.
+    fun lock_next_epoch_committee(wrapper: &mut PeraSystemState, ctx: &TxContext) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        let self = load_system_state_mut(wrapper);
+        self.lock_next_epoch_committee();
+    }
+
+    #[allow(unused_function)]
+    /// Store the encrypted decryption key shares from the network DKG re-sharing.
+    /// The chain agrees on on the same public output.
+    fun store_encryption_of_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        assert!(is_key_type(key_type), EInvalidKeyType);
+        let self = load_system_state_mut(wrapper);
+        self.store_encryption_of_decryption_key_shares(shares, key_type);
+    }
+
+    #[allow(unused_function)]
+    /// Store the encrypted decryption key shares from the network DKG protocol public output.
+    /// The chain agrees on on the same public output.
+    fun new_encryption_of_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
+        assert!(ctx.sender() == @0x0, ENotSystemAddress);
+        assert!(is_key_type(key_type), EInvalidKeyType);
+        let self = load_system_state_mut(wrapper);
+        self.new_encryption_of_decryption_key_shares_version(shares, key_type);
     }
 
     #[test_only]

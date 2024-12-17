@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use arc_swap::{ArcSwap, ArcSwapOption};
+use async_trait::async_trait;
 use bytes::Bytes;
 use dashmap::try_result::TryResult;
 use dashmap::DashMap;
@@ -33,7 +34,6 @@ use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Instant;
-
 use tap::prelude::*;
 use tokio::sync::{Semaphore, SemaphorePermit};
 use tokio::task::JoinHandle;
@@ -42,6 +42,7 @@ use tokio::time::{self};
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_handler::{classify, SequencedConsensusTransactionKey};
 use crate::consensus_throughput_calculator::{ConsensusThroughputProfiler, Level};
+use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
 use crate::epoch::reconfiguration::{ReconfigState, ReconfigurationInitiator};
 use crate::metrics::LatencyObserver;
 use mysten_metrics::{spawn_monitored_task, GaugeGuard, GaugeGuardFutureExt};
@@ -53,7 +54,7 @@ use pera_types::fp_ensure;
 use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_consensus::ConsensusTransactionKind;
 use tokio::time::Duration;
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 #[cfg(test)]
 #[path = "unit_tests/consensus_tests.rs"]
@@ -964,11 +965,30 @@ pub fn get_position_in_list(
         .0
 }
 
+#[async_trait]
 impl ReconfigurationInitiator for Arc<ConsensusAdapter> {
     /// This method is called externally to begin reconfiguration
     /// It transition reconfig state to reject new certificates from user
     /// ConsensusAdapter will send EndOfPublish message once pending certificate queue is drained.
-    fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
+    async fn close_epoch(&self, epoch_store: &Arc<AuthorityPerEpochStore>) {
+        let Some(dwallet_mpc_sender) = epoch_store.dwallet_mpc_sender.get() else {
+            error!("DWallet MPC sender not found when trying to switch epoch");
+            return;
+        };
+        if let Err(err) =
+            dwallet_mpc_sender.send(DWalletMPCChannelMessage::StartLockNextEpochCommittee)
+        {
+            error!("Error when sending StartLockNextEpochCommittee message to DWallet MPC sender: {:?}", err);
+            return;
+        }
+        let Ok(dwallet_mpc_outputs_manager) = epoch_store.get_dwallet_mpc_outputs_verifier().await
+        else {
+            error!("DWallet MPC outputs manager not found when trying to switch epoch");
+            return;
+        };
+        if !dwallet_mpc_outputs_manager.completed_locking_next_committee {
+            return;
+        }
         let send_end_of_publish = {
             let reconfig_guard = epoch_store.get_reconfig_state_write_lock_guard();
             if !reconfig_guard.should_accept_user_certs() {
@@ -982,6 +1002,7 @@ impl ReconfigurationInitiator for Arc<ConsensusAdapter> {
             send_end_of_publish
             // reconfig_guard lock is dropped here.
         };
+
         if send_end_of_publish {
             info!(epoch=?epoch_store.epoch(), "Sending EndOfPublish message to consensus");
             if let Err(err) = self.submit(

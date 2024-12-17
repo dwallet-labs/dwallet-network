@@ -2292,7 +2292,8 @@ impl ProtocolConfig {
                     // Only enable random beacon on devnet
                     if chain != Chain::Mainnet && chain != Chain::Testnet {
                         cfg.feature_flags.random_beacon = true;
-                        cfg.random_beacon_reduction_lower_bound = Some(1600);
+                        // todo (#349): Return to previous value
+                        cfg.random_beacon_reduction_lower_bound = Some(1);
                         cfg.random_beacon_dkg_timeout_round = Some(3000);
                         cfg.random_beacon_min_round_interval_ms = Some(150);
                     }
@@ -2498,7 +2499,8 @@ impl ProtocolConfig {
                     // Enable random beacon on testnet.
                     if chain != Chain::Mainnet {
                         cfg.feature_flags.random_beacon = true;
-                        cfg.random_beacon_reduction_lower_bound = Some(1600);
+                        // todo (#349): Return to previous value
+                        cfg.random_beacon_reduction_lower_bound = Some(1);
                         cfg.random_beacon_dkg_timeout_round = Some(3000);
                         cfg.random_beacon_min_round_interval_ms = Some(200);
                     }
@@ -2658,7 +2660,8 @@ impl ProtocolConfig {
                 54 => {
                     // Enable random beacon on mainnet.
                     cfg.feature_flags.random_beacon = true;
-                    cfg.random_beacon_reduction_lower_bound = Some(1000);
+                    // todo (#349): Return to previous value
+                    cfg.random_beacon_reduction_lower_bound = Some(1);
                     cfg.random_beacon_dkg_timeout_round = Some(3000);
                     cfg.random_beacon_min_round_interval_ms = Some(500);
 
