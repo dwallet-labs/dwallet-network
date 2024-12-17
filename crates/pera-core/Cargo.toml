@@ -159,4 +159,4 @@ harness = false
 
 [features]
 test-utils = []
-without-network-dkg = []
+with-network-dkg = []

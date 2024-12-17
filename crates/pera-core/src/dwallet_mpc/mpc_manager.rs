@@ -261,15 +261,15 @@ impl DWalletMPCManager {
                     && received_weight as StakeUnit >= threshold)
                     || (instance.status == MPCSessionStatus::FirstExecution);
 
-                let is_valid_status = if cfg!(feature = "without-network-dkg") {
-                    true
-                } else {
+                let is_valid_status = if cfg!(feature = "with-network-dkg") {
                     (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
                         && matches!(instance.party(), MPCParty::NetworkDkg(_)))
                         || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::KeysUpdated(_)
                         )
+                } else {
+                    true
                 };
 
                 if is_ready && is_valid_status {

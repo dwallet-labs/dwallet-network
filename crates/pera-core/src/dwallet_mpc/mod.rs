@@ -81,10 +81,10 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
             Ok(Some(dkg_second_party_session_info(
                 &deserialized_event,
-                if cfg!(feature = "without-network-dkg") {
-                    0
-                } else {
+                if cfg!(feature = "with-network-dkg") {
                     dwallet_network_key_version.ok_or(DwalletMPCError::MissingKeyVersion)?
+                } else {
+                    0
                 },
             )))
         }
@@ -368,10 +368,10 @@ pub(crate) fn from_event(
             dkg_second_party(
                 deserialized_event,
                 // Todo (#394): Remove the hardcoded network key type
-                if cfg!(feature = "without-network-dkg") {
-                    0
-                } else {
+                if cfg!(feature = "with-network-dkg") {
                     dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKey::Secp256k1)?
+                } else {
+                    0
                 },
             )
         }
