@@ -363,7 +363,7 @@ pub(crate) fn from_event(
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
             dkg_second_party(
                 deserialized_event,
-                // todo
+                // Todo (#394): Remove the hardcoded network key type
                 dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKey::Secp256k1)?,
             )
         }
