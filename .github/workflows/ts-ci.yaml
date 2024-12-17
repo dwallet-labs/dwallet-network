@@ -12,11 +12,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RUSTDOCFLAGS: -Dwarnings
-  RUST_BACKTRACE: 1
-  # Change to specific Rust release to pin or `stable` for the latest stable version.
-  rust_stable: 1.79
-  rust_nightly: nightly
   CARGO_NET_GIT_FETCH_WITH_CLI: true
   GH_PRIVATE_REPO_TOKEN: ${{ secrets.GH_PRIVATE_REPO_TOKEN }}
 
@@ -26,32 +21,41 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
       - name: Configure git with personal access token
+        if: env.GH_PRIVATE_REPO_TOKEN
         run: |
           git config --global url."https://x-access-token:${{ env.GH_PRIVATE_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.1.1+sha512.14e915759c11f77eac07faba4d019c193ec8637229e62ec99eefb7cf3c3b75c64447882b7c485142451ee3a6b408059cdfb7b7fa0341b975f12d0f7629c71195
-          run_install: false
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 21.x
           cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.1
+          run_install: false
+
       - name: Install wasm pack
         uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: 'latest'
+
       - name: Install dependencies
         run: pnpm install
         working-directory: ./sdk/typescript
+
       - name: Format Check
-        run: npm run prettier:check
+        run: pnpm run prettier:check
         working-directory: ./sdk/typescript
+
       - name: Build
         run: pnpm run build
         working-directory: ./sdk/typescript
+
       - name: Lint
-        run: npm run eslint:check
+        run: pnpm run eslint:check
         working-directory: ./sdk/typescript
