@@ -20,7 +20,7 @@ module pera_system::dwallet_network_key {
     }
 
     /// Function to create a new StartNetworkDkgEvent
-    // Todo: Add user restrictions, so that only someone we choose can run this function
+    // Todo (#400): Add user restrictions, so that only someone we choose can run this function
     public fun emit_start_network_decryption_key_share_generation(key_type: u8, ctx: &mut TxContext) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         event::emit(StartNetworkDkgEvent {
