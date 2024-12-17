@@ -1077,8 +1077,8 @@ impl AuthorityPerEpochStore {
         let decryption_key_shares = match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
         };
-        let decryption_key_shares = decryption_key_shares
-            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
+        let decryption_key_shares =
+            decryption_key_shares.ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
         let decryption_key_shares = decryption_key_shares
             .contents
             .into_iter()
@@ -1096,8 +1096,7 @@ impl AuthorityPerEpochStore {
     pub(crate) fn load_validator_decryption_key_shares_from_system_state(
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>> {
-        let decryption_key_shares =
-            self.load_decryption_key_shares_from_system_state()?;
+        let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
         let party_id = authority_name_to_party_id(&self.name, self)? as usize;
         let mut decryption_key_share = HashMap::new();
 

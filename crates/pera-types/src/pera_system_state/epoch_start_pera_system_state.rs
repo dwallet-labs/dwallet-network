@@ -61,9 +61,7 @@ impl EpochStartSystemState {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
-        decryption_key_shares: Option<
-            VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>,
-        >,
+        decryption_key_shares: Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>>,
     ) -> Self {
         Self::V1(EpochStartSystemStateV1 {
             epoch,
@@ -107,8 +105,7 @@ pub struct EpochStartSystemStateV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
-    decryption_key_shares:
-        Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>>,
+    decryption_key_shares: Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>>,
 }
 
 impl EpochStartSystemStateV1 {
