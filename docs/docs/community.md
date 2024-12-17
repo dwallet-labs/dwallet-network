@@ -1,4 +1,4 @@
 # Community
 
-- Join our [Discord](https://discord.gg/dWallet)
-- Follow us on [Twitter](https://twitter.com/dWalletNetwork)
+- Join our [Discord](https://discord.gg/ikadotxyz)
+- Follow us on [X (Twitter)](https://x.com/ikadotxyz)

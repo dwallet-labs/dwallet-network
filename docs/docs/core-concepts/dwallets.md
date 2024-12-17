@@ -1,4 +1,4 @@
-# dWallets
+# dWallets — Programmable & Decentralized Signing Mechanism
 
 ## What is a dWallet
 
@@ -13,17 +13,17 @@ transactions to those networks.
 - **Massively Decentralized**: Utilizes the 2PC-MPC protocol to enable participation from hundreds or thousands of
   permissionless nodes in the signature process.
 - **Programmable**: Allows builders on other networks to define logic that governs transaction signatures, enforceable
-  by the dWallet Network.
+  by Ika.
   This enables enforcing logic across all of Web3 without [cross-chain risks](multi-chain-vs-cross-chain.md).
 - **Transferable**: Supports ownership transfer, enhancing access control and enabling features like a dWallet
   marketplace or future user claims.
 - **Universal Signing Mechanism**: Capable of signing transactions for virtually any blockchain by supporting common
-  algorithms like ECDSA, and in the future also EdDSA and Schnorr.
+  algorithms like ECDSA, and soon also EdDSA and Schnorr.
 
 ## Use Cases
 
-dWallets serve as foundational tools for developers seeking to enable secure, native multi-chain interoperability. For
-instance, a developer on Ethereum could generate a Bitcoin signature within their smart contract.
+dWallets serve as foundational tools for developers seeking to enable secure, native multi-chain interoperability.
+For instance, a developer on Sui could generate a Bitcoin or an Ethereum signature within their smart contract.
 This capability opens a plethora of use cases across the Web3 ecosystem, from decentralized custody and making DAOs
 multi-chain, to natively interoperable DeFi (including Bitcoin) with multi-chain lending and order books and many more.
 

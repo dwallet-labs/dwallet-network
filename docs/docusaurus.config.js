@@ -14,8 +14,8 @@ import {themes as prismThemes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'dWallet Docs',
-  tagline: 'The dWallet Network Documentation',
+  title: 'Ika Docs',
+  tagline: 'The Ika Network Documentation',
   favicon: 'img/logo.png',
 
   // Set the production url of your site here
@@ -81,7 +81,7 @@ const config = {
       navbar: {
         title: 'dWallet Docs',
         logo: {
-          alt: 'dWallet Logo',
+          alt: 'Ika Logo',
           src: 'img/logo.png',
         },
         items: [
@@ -100,11 +100,11 @@ const config = {
             items: [
               {
                 label: 'Discord',
-                href: 'https://discord.gg/dWallet',
+                href: 'https://discord.gg/ikadotxyz',
               },
               {
                 label: 'Twitter',
-                href: 'https://twitter.com/dWalletNetwork',
+                href: 'https://twitter.com/ikadotxyz',
               },
             ],
           },
@@ -113,7 +113,7 @@ const config = {
             items: [
               {
                 label: 'Blog',
-                href: 'https://dwallet.io/blog',
+                href: 'https://ika.xyz/blog',
               },
               {
                 label: 'GitHub',
