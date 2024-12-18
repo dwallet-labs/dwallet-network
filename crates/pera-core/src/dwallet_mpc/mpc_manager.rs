@@ -313,16 +313,14 @@ impl DWalletMPCManager {
                 .mpc_instances
                 .get(&session_id)
                 .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
-            if matches!(instance.party(), MPCParty::NetworkDkg(_)) {
-                if let MPCSessionStatus::Finished(output) = instance.status.clone() {
-                    self.update_dwallet_mpc_network_key(
-                        &instance.session_info,
-                        output,
-                        instance
-                            .private_output()
-                            .ok_or(DwalletMPCError::InstanceMissingPrivateOutput)?,
-                    )?;
-                }
+            if let MPCSessionStatus::Finished(public_output, private_output) =
+                instance.status.clone()
+            {
+                self.update_dwallet_mpc_network_key(
+                    &instance.session_info,
+                    public_output,
+                    private_output,
+                )?;
             }
 
             self.consensus_adapter
@@ -338,7 +336,7 @@ impl DWalletMPCManager {
         &self,
         session_info: &SessionInfo,
         public_output: Vec<u8>,
-        private_output: &Vec<u8>,
+        private_output: Vec<u8>,
     ) -> DwalletMPCResult<()> {
         match session_info.mpc_round {
             MPCRound::NetworkDkg(key_type) => {
