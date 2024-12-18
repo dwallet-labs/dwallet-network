@@ -291,24 +291,8 @@ impl DWalletMPCManager {
             .into_iter()
             .try_for_each(|(result, session_id)| match result {
                 Ok((message, malicious)) => {
-                    let instance = self
-                        .mpc_instances
-                        .get(&session_id)
-                        .ok_or(DwalletMPCError::InvalidMPCPartyType)?; // change
-                    messages.push(message.clone());
+                    messages.push((message.clone(), session_id));
                     malicious_parties.extend(malicious);
-                    // Update the manager with the new network encryption of decryption key share
-                    if matches!(instance.party(), MPCParty::NetworkDkg(_)) {
-                        if let MPCSessionStatus::Finished(output) = instance.status.clone() {
-                            self.new_encryption_of_decryption_key_share(
-                                &instance.session_info,
-                                output,
-                                instance
-                                    .private_output()
-                                    .ok_or(DwalletMPCError::InstanceMissingPrivateOutput)?,
-                            )?;
-                        }
-                    }
                     Ok(())
                 }
                 Err(DwalletMPCError::MaliciousParties(malicious)) => {
@@ -323,7 +307,24 @@ impl DWalletMPCManager {
 
         // Need to send the messages one by one, so the consensus adapter won't think they
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
-        for message in messages {
+        for (message, session_id) in messages {
+            // Update the manager with the new network encryption of decryption key share
+            let instance = self
+                .mpc_instances
+                .get(&session_id)
+                .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
+            if matches!(instance.party(), MPCParty::NetworkDkg(_)) {
+                if let MPCSessionStatus::Finished(output) = instance.status.clone() {
+                    self.update_dwallet_mpc_network_key(
+                        &instance.session_info,
+                        output,
+                        instance
+                            .private_output()
+                            .ok_or(DwalletMPCError::InstanceMissingPrivateOutput)?,
+                    )?;
+                }
+            }
+
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
                 .await?;
@@ -333,7 +334,7 @@ impl DWalletMPCManager {
 
     /// Update the encryption of decryption key share with the new shares.
     /// This function is called when the network DKG protocol is done.
-    fn new_encryption_of_decryption_key_share(
+    fn update_dwallet_mpc_network_key(
         &self,
         session_info: &SessionInfo,
         public_output: Vec<u8>,
