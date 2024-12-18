@@ -43,8 +43,6 @@ export async function signMessageTransactionCall(
 	presignIDs: string[],
 	centralizedSignedMessages: Uint8Array[],
 ) {
-	// log all the parameters
-	console.log({ dwalletCapID, hashedMessages, dWalletID, presignIDs });
 	const tx = new Transaction();
 
 	const [messageApprovals] = tx.moveCall({
