@@ -12,6 +12,7 @@ use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use std::collections::HashMap;
 use twopc_mpc::paillier::DecryptionKeyShare;
+use twopc_mpc::sign::Protocol;
 
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
 
@@ -27,7 +28,7 @@ pub enum MPCParty {
     /// The party used in the second round of the presign protocol.
     SecondPresignBytesParty,
     /// The party used in the sign protocol.
-    SignBytesParty(HashMap<PartyID, DecryptionKeyShare>),
+    SignBytesParty(HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>),
     /// The party used in the network DKG protocol.
     NetworkDkg(DWalletMPCNetworkKey),
 }

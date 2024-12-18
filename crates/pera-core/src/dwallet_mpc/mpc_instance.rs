@@ -3,7 +3,7 @@ use std::sync::{Arc, Weak};
 use class_groups::SecretKeyShareSizedNumber;
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-
+use twopc_mpc::sign::Protocol;
 use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 
 use pera_types::base_types::EpochId;
@@ -12,7 +12,7 @@ use pera_types::messages_consensus::ConsensusTransaction;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 
 /// A DWallet MPC session instance
@@ -34,7 +34,7 @@ pub(super) struct DWalletMPCInstance {
     pub party: MPCParty,
     pub(super) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
-    decryption_share: Option<SecretKeyShareSizedNumber>,
+    decryption_share: Option<<AsyncProtocol as Protocol>::DecryptionKeyShare>,
 
     // Todo (#413): Include the MPC session private output within the MPCSessionStatus::Finished(MPCOutput) output
     private_output: Option<Vec<u8>>,
@@ -48,7 +48,7 @@ impl DWalletMPCInstance {
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
         session_info: SessionInfo,
-        decryption_share: Option<SecretKeyShareSizedNumber>,
+        decryption_share: Option<<AsyncProtocol as Protocol>::DecryptionKeyShare>,
     ) -> Self {
         Self {
             status,
