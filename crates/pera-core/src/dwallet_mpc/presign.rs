@@ -2,7 +2,7 @@
 //!
 //! It integrates both Presign parties (each representing a round in the Presign protocol).
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
-use dwallet_mpc_types::dwallet_mpc::{MPCOutput, MPCPublicInput};
+use dwallet_mpc_types::dwallet_mpc::{MPCPublicInput, MPCPublicOutput};
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 
 pub(super) type PresignFirstParty =
@@ -14,7 +14,7 @@ pub(super) type PresignSecondParty = <AsyncProtocol as twopc_mpc::presign::Proto
 /// This trait is implemented to resolve compiler type ambiguities that arise in the 2PC-MPC library
 /// when accessing `mpc::Party::PublicInput`.
 pub(super) trait PresignFirstPartyPublicInputGenerator: mpc::Party {
-    fn generate_public_input(dkg_output: MPCOutput) -> DwalletMPCResult<MPCPublicInput>;
+    fn generate_public_input(dkg_output: MPCPublicOutput) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 /// A trait for generating the public input for the last round of the Presign protocol.
@@ -23,13 +23,13 @@ pub(super) trait PresignFirstPartyPublicInputGenerator: mpc::Party {
 /// when accessing `mpc::Party::PublicInput`.
 pub(super) trait PresignSecondPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
-        dkg_output: MPCOutput,
-        first_round_output: MPCOutput,
+        dkg_output: MPCPublicOutput,
+        first_round_output: MPCPublicOutput,
     ) -> DwalletMPCResult<MPCPublicInput>;
 }
 
 impl PresignFirstPartyPublicInputGenerator for PresignFirstParty {
-    fn generate_public_input(dkg_output: MPCOutput) -> DwalletMPCResult<MPCPublicInput> {
+    fn generate_public_input(dkg_output: MPCPublicOutput) -> DwalletMPCResult<MPCPublicInput> {
         let pub_input = Self::PublicInput {
             protocol_public_parameters: class_groups_constants::protocol_public_parameters(),
             dkg_output: bcs::from_bytes(&dkg_output)?,

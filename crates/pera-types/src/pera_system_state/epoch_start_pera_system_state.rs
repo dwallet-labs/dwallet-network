@@ -61,9 +61,7 @@ impl EpochStartSystemState {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
-        encryption_of_decryption_key_shares: Option<
-            VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>,
-        >,
+        decryption_key_shares: Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>>,
     ) -> Self {
         Self::V1(EpochStartSystemStateV1 {
             epoch,
@@ -73,7 +71,7 @@ impl EpochStartSystemState {
             epoch_start_timestamp_ms,
             epoch_duration_ms,
             active_validators,
-            encryption_of_decryption_key_shares,
+            decryption_key_shares,
         })
     }
 
@@ -92,7 +90,7 @@ impl EpochStartSystemState {
                 epoch_start_timestamp_ms: state.epoch_start_timestamp_ms,
                 epoch_duration_ms: state.epoch_duration_ms,
                 active_validators: state.active_validators.clone(),
-                encryption_of_decryption_key_shares: None,
+                decryption_key_shares: None,
             }),
         }
     }
@@ -107,15 +105,14 @@ pub struct EpochStartSystemStateV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
-    encryption_of_decryption_key_shares:
-        Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>>,
+    decryption_key_shares: Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>>,
 }
 
 impl EpochStartSystemStateV1 {
-    pub fn get_encryption_of_decryption_key_shares(
+    pub fn get_decryption_key_shares(
         &self,
     ) -> Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>> {
-        self.encryption_of_decryption_key_shares.clone()
+        self.decryption_key_shares.clone()
     }
 
     pub fn get_active_validators_class_groups_public_key_and_proof(
@@ -145,7 +142,7 @@ impl EpochStartSystemStateV1 {
             epoch_start_timestamp_ms: 0,
             epoch_duration_ms: 1000,
             active_validators: vec![],
-            encryption_of_decryption_key_shares: None,
+            decryption_key_shares: None,
         }
     }
 }

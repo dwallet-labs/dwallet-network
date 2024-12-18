@@ -610,21 +610,21 @@ module pera_system::pera_system {
     #[allow(unused_function)]
     /// Store the encrypted decryption key shares from the network DKG re-sharing.
     /// The chain agrees on on the same public output.
-    fun store_encryption_of_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
+    fun store_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
         assert!(is_key_type(key_type), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);
-        self.store_encryption_of_decryption_key_shares(shares, key_type);
+        self.store_decryption_key_shares(shares, key_type);
     }
 
     #[allow(unused_function)]
     /// Store the encrypted decryption key shares from the network DKG protocol public output.
     /// The chain agrees on on the same public output.
-    fun new_encryption_of_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
+    fun new_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
         assert!(is_key_type(key_type), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);
-        self.new_encryption_of_decryption_key_shares_version(shares, key_type);
+        self.new_decryption_key_shares_version(shares, key_type);
     }
 
     #[test_only]
