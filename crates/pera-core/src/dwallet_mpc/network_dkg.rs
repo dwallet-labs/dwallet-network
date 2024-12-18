@@ -4,7 +4,7 @@ use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::ClassGroupsEncryptionKeyAndProof;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::WeightedThresholdAccessStructure;
@@ -253,7 +253,7 @@ fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
 fn generate_secp256k1_dkg_party_public_input(
     secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
-        ClassGroupsPublicKeyAndProof,
+        ClassGroupsEncryptionKeyAndProof,
     >,
 ) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
@@ -263,7 +263,7 @@ fn generate_secp256k1_dkg_party_public_input(
 fn generate_ristretto_dkg_party_public_input(
     secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
-        ClassGroupsPublicKeyAndProof,
+        ClassGroupsEncryptionKeyAndProof,
     >,
 ) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()

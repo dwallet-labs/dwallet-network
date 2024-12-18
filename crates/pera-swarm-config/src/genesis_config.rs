@@ -8,12 +8,11 @@ use anyhow::Result;
 use class_groups::SecretKeyShareSizedNumber;
 use dwallet_mpc_types::{
     generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
-    ClassGroupsPublicKeyAndProof,
 };
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use group::PartyID;
 use pera_config::genesis::{GenesisCeremonyParameters, TokenAllocation};
-use pera_config::node::{DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
+use pera_config::node::{DecryptionSharePublicParameters, DEFAULT_COMMISSION_RATE, DEFAULT_VALIDATOR_GAS_PRICE};
 use pera_config::{local_ip_utils, Config};
 use pera_genesis_builder::validator_info::{GenesisValidatorInfo, ValidatorInfo};
 use pera_types::base_types::PeraAddress;
@@ -25,7 +24,7 @@ use pera_types::multiaddr::Multiaddr;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::info;
-pub use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, DecryptionSharePublicParameters};
+pub use twopc_mpc::secp256k1::class_groups::{AsyncProtocol};
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]

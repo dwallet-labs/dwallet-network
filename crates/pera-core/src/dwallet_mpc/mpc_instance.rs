@@ -1,9 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-
+use class_groups::SecretKeyShareSizedNumber;
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 
@@ -35,7 +34,7 @@ pub(super) struct DWalletMPCInstance {
     pub party: MPCParty,
     pub(super) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
-    decryption_share: Option<DecryptionKeyShare>,
+    decryption_share: Option<SecretKeyShareSizedNumber>,
 
     // Todo (#413): Include the MPC session private output within the MPCSessionStatus::Finished(MPCOutput) output
     private_output: Option<Vec<u8>>,
@@ -49,7 +48,7 @@ impl DWalletMPCInstance {
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
         session_info: SessionInfo,
-        decryption_share: Option<DecryptionKeyShare>,
+        decryption_share: Option<SecretKeyShareSizedNumber>,
     ) -> Self {
         Self {
             status,
