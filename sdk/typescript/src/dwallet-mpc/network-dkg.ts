@@ -6,8 +6,8 @@ import { dWalletPackageID } from './globals.js';
 export async function launchNetworkDKG(c: Config) {
 	const tx = new Transaction();
 	tx.moveCall({
-		target: `${dWalletPackageID}::dwallet_network_key::start_network_dkg`,
-		arguments: [tx.pure(bcs.u8().serialize(1))],
+		target: `${dWalletPackageID}::pera_system::request_start_network_dkg`,
+		arguments: [tx.pure(bcs.u8().serialize(1)), tx.object('0x5')],
 	});
 
 	await c.client.signAndExecuteTransaction({

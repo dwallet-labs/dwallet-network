@@ -52,7 +52,7 @@ module pera_system::pera_system {
     use pera_system::staking_pool::PoolTokenExchangeRate;
     use pera::dynamic_field;
     use pera::vec_map::VecMap;
-    use pera_system::dwallet_network_key::is_key_type;
+    use pera_system::dwallet_network_key::{is_key_type, start_network_dkg};
 
     #[test_only] use pera::balance;
     #[test_only] use pera_system::validator_set::ValidatorSet;
@@ -67,6 +67,7 @@ module pera_system::pera_system {
     const EWrongInnerVersion: u64 = 1;
     #[error]
     const EInvalidKeyType: u8 = 2;
+    const ENotDwalletAdminAddress: u64 = 3;
 
     // ==== functions that can only be called by genesis ====
 
@@ -80,6 +81,7 @@ module pera_system::pera_system {
         epoch_start_timestamp_ms: u64,
         parameters: SystemParameters,
         stake_subsidy: StakeSubsidy,
+        dwallet_admin_address: address,
         ctx: &mut TxContext,
     ) {
         let system_state = pera_system_state_inner::create(
@@ -89,6 +91,7 @@ module pera_system::pera_system {
             epoch_start_timestamp_ms,
             parameters,
             stake_subsidy,
+            dwallet_admin_address,
             ctx,
         );
         let version = pera_system_state_inner::genesis_system_state_version();
@@ -100,7 +103,20 @@ module pera_system::pera_system {
         transfer::share_object(self);
     }
 
+    public(package) fun dwallet_admin_address(
+        wrapper: &mut PeraSystemState,
+    ): address  {
+        let self = load_system_state_mut(wrapper);
+        self.dwallet_admin_address()
+    }
+
     // ==== entry functions ====
+
+    /// Function to create start the network DKG for the dwallet mpc network key of a given key type.
+    public entry fun request_start_network_dkg(key_type: u8, system_state: &mut PeraSystemState, ctx: &mut TxContext) {
+        assert!(ctx.sender() == system_state.dwallet_admin_address(), ENotDwalletAdminAddress);
+        start_network_dkg(key_type, ctx);
+    }
 
     /// Can be called by anyone who wishes to become a validator candidate and starts accuring delegated
     /// stakes in their staking pool. Once they have at least `MIN_VALIDATOR_JOINING_STAKE` amount of stake they

@@ -88,6 +88,7 @@ module pera_system::governance_test_utils {
             0,   // chain_start_timestamp_ms
             system_parameters,
             stake_subsidy,
+            address::from_u256(0),
             ctx,
         )
     }
