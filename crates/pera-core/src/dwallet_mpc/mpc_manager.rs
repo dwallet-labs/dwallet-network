@@ -264,7 +264,7 @@ impl DWalletMPCManager {
                         && matches!(instance.party(), MPCParty::NetworkDkg(_)))
                         || matches!(
                             mpc_network_key_status,
-                            DwalletMPCNetworkKeysStatus::KeysUpdated(_)
+                            DwalletMPCNetworkKeysStatus::Ready(_)
                         )
                 } else {
                     true
