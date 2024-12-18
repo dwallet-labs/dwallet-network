@@ -148,7 +148,7 @@ impl DWalletMPCManager {
             status: ManagerStatus::Active,
         };
 
-        tokio::spawn(`async move {
+        tokio::spawn(async move {
             while let Some(message) = receiver.recv().await {
                 manager.handle_incoming_channel_message(message).await;
             }
