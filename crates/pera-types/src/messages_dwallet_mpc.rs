@@ -14,11 +14,11 @@ pub enum MPCRound {
     DKGSecond(ObjectID, u8),
     /// The first round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
-    /// and the DKG decentralized output.
+    /// the DKG decentralized output, and the batch session ID.
     PresignFirst(ObjectID, Vec<u8>, ObjectID),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
-    /// and the Presign first round output.
+    /// , the Presign first round output, and the batch session ID.
     PresignSecond(ObjectID, Vec<u8>, ObjectID),
     /// The first and only round of the Sign protocol.
     /// Contains the `PartyID` associated with the decryption share,
