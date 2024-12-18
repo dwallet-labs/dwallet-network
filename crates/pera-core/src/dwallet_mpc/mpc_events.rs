@@ -6,9 +6,10 @@
 
 use dwallet_mpc_types::dwallet_mpc::{
     DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME, LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME,
-    START_BATCHED_SIGN_EVENT_STRUCT_NAME, START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME,
-    START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME, START_SIGN_ROUND_EVENT_STRUCT_NAME,
+    START_BATCHED_PRESIGN_EVENT_STRUCT_NAME, START_BATCHED_SIGN_EVENT_STRUCT_NAME,
+    START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME, START_DKG_SECOND_ROUND_EVENT_STRUCT_NAME,
+    START_PRESIGN_FIRST_ROUND_EVENT_STRUCT_NAME, START_PRESIGN_SECOND_ROUND_EVENT_STRUCT_NAME,
+    START_SIGN_ROUND_EVENT_STRUCT_NAME,
 };
 use move_core_types::ident_str;
 use move_core_types::language_storage::StructTag;
@@ -82,6 +83,7 @@ pub struct StartPresignFirstRoundEvent {
     pub dwallet_id: ID,
     /// The DKG decentralized final output to use for the presign session.
     pub dkg_output: Vec<u8>,
+    pub batch_session_id: ID,
 }
 
 impl StartPresignFirstRoundEvent {
@@ -114,6 +116,7 @@ pub struct StartPresignSecondRoundEvent {
     pub first_round_output: Vec<u8>,
     /// A unique identifier for the first Presign round session.
     pub first_round_session_id: ID,
+    pub batch_session_id: ID,
 }
 
 /// An event to start a batched sign session, i.e.,
@@ -123,7 +126,16 @@ pub struct StartBatchedSignEvent {
     pub session_id: ID,
     /// An ordered list without duplicates of the messages we need to sign on.
     pub hashed_messages: Vec<Vec<u8>>,
-    pub initiating_user: PeraAddress,
+    pub initiator: PeraAddress,
+}
+
+/// A representation of the Move event to start a batched presign session, i.e.,
+/// a presign session that creates multiple presigns at once.
+#[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
+pub struct StartBatchedPresignEvent {
+    pub session_id: ID,
+    pub batch_size: u64,
+    pub initiator: PeraAddress,
 }
 
 impl StartPresignSecondRoundEvent {
@@ -161,10 +173,8 @@ pub struct StartSignRoundEvent {
     pub(super) dkg_output: Vec<u8>,
     /// Hashed messages to Sign.
     pub(super) hashed_message: Vec<u8>,
-    /// Presign first round output, required for the MPC Sign session.
-    pub(super) presign_first_round_output: Vec<u8>,
-    /// Presign second round output, required for the MPC Sign session.
-    pub(super) presign_second_round_output: Vec<u8>,
+    /// The serialized presign object
+    pub(super) presign: Vec<u8>,
     /// Centralized signed message
     pub(super) centralized_signed_message: Vec<u8>,
 }
@@ -191,6 +201,17 @@ impl StartBatchedSignEvent {
         StructTag {
             address: PERA_SYSTEM_ADDRESS,
             name: START_BATCHED_SIGN_EVENT_STRUCT_NAME.to_owned(),
+            module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
+            type_params: vec![],
+        }
+    }
+}
+
+impl StartBatchedPresignEvent {
+    pub fn type_() -> StructTag {
+        StructTag {
+            address: PERA_SYSTEM_ADDRESS,
+            name: START_BATCHED_PRESIGN_EVENT_STRUCT_NAME.to_owned(),
             module: DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME.to_owned(),
             type_params: vec![],
         }

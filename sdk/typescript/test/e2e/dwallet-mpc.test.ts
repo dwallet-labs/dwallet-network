@@ -45,7 +45,7 @@ describe('Test dWallet MPC', () => {
 		const dWallet = await mockCreateDwallet(conf);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput = await presign(conf, dWallet.id);
+		const presignOutput = await presign(conf, dWallet.id, 1);
 		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
 	});
@@ -59,7 +59,7 @@ describe('Test dWallet MPC', () => {
 		const dWallet = await createDWallet(conf);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput = await presign(conf, dWallet.id);
+		const presignOutput = await presign(conf, dWallet.id, 1);
 		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
 	});
@@ -73,20 +73,32 @@ describe('Test dWallet MPC', () => {
 		const dWallet = await mockCreateDwallet(conf);
 		expect(dWallet).toBeDefined();
 		console.log({ dWallet });
-		const presignOutput = await mockCreatePresign(conf, dWallet);
-		expect(presignOutput).toBeDefined();
-		console.log({ presignOutput });
+		const presignOutput1 = await mockCreatePresign(conf, dWallet);
+		const presignOutput2 = await mockCreatePresign(conf, dWallet);
+		expect(presignOutput1).toBeDefined();
+		expect(presignOutput2).toBeDefined();
+		console.log({ presignOutput1, presignOutput2 });
 		let serializedMsgs = bcs
 			.vector(bcs.vector(bcs.u8()))
 			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
 			.toBytes();
+		let serializedPresigns = bcs
+			.vector(bcs.vector(bcs.u8()))
+			.serialize([presignOutput1.presign, presignOutput2.presign])
+			.toBytes();
+		let serializedPresignSessionIds = bcs
+			.vector(bcs.string())
+			.serialize([
+				presignOutput1.first_round_session_id.slice(2),
+				presignOutput2.first_round_session_id.slice(2),
+			])
+			.toBytes();
 		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
 			Uint8Array.from(dWallet.centralizedDKGOutput),
-			Uint8Array.from(presignOutput.first_round_output),
-			Uint8Array.from(presignOutput.second_round_output),
+			serializedPresigns,
 			serializedMsgs,
 			Hash.SHA256,
-			presignOutput.first_round_session_id.slice(2),
+			serializedPresignSessionIds,
 		);
 		console.log('Signing message');
 		let signOutput = await signMessageTransactionCall(
@@ -94,9 +106,8 @@ describe('Test dWallet MPC', () => {
 			dWallet.dwalletCapID,
 			hashedMsg,
 			dWallet.id,
-			presignOutput.id.id,
+			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
-			presignOutput.first_round_session_id,
 		);
 		expect(signOutput).toBeDefined();
 		console.log({ signOutput });
@@ -111,32 +122,41 @@ describe('Test dWallet MPC', () => {
 				timeout: 10 * 60 * 1000,
 			};
 			const dWallet = await createDWallet(conf);
+			console.log({ dWallet });
 			expect(dWallet).toBeDefined();
-			const presignOutput = await presign(conf, dWallet.id);
-			expect(presignOutput).toBeDefined();
-
+			const presignCompletionEvent = await presign(conf, dWallet.id, 2);
+			console.log({ presignCompletionEvent });
+			expect(presignCompletionEvent).toBeDefined();
 			let serializedMsgs = bcs
 				.vector(bcs.vector(bcs.u8()))
 				.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
 				.toBytes();
-			const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
+			let serializedPresigns = bcs
+				.vector(bcs.vector(bcs.u8()))
+				.serialize(presignCompletionEvent.presigns)
+				.toBytes();
+			let serializedPresignFirstRoundSessionIds = bcs
+				.vector(bcs.string())
+				.serialize(
+					presignCompletionEvent.first_round_session_ids.map((session_id) => session_id.slice(2)),
+				)
+				.toBytes();
+			const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
 				Uint8Array.from(dWallet.centralizedDKGOutput),
-				Uint8Array.from(presignOutput.firstRoundOutput),
-				Uint8Array.from(presignOutput.secondRoundOutput),
+				serializedPresigns,
 				serializedMsgs,
 				Hash.SHA256,
-				presignOutput.firstRoundSessionID.slice(2),
+				serializedPresignFirstRoundSessionIds,
 			);
 
 			console.log('Signing messages');
 			let signOutput = await signMessageTransactionCall(
 				conf,
 				dWallet.dwalletCapID,
-				hashedMsg,
+				hashedMsgs,
 				dWallet.id,
-				presignOutput.secondRoundOutputID,
-				centralizedSignMsg,
-				presignOutput.firstRoundSessionID,
+				presignCompletionEvent.presign_ids,
+				centralizedSignedMsg,
 			);
 			expect(signOutput).toBeDefined();
 			console.log({ signOutput });

@@ -23,6 +23,7 @@ mod checked {
         RANDOMNESS_STATE_UPDATE_FUNCTION_NAME,
     };
     use pera_types::{BRIDGE_ADDRESS, PERA_BRIDGE_OBJECT_ID, PERA_RANDOMNESS_STATE_OBJECT_ID};
+    use std::collections::HashMap;
     use std::{collections::HashSet, sync::Arc};
     use tracing::{info, instrument, trace, warn};
 
@@ -1143,7 +1144,7 @@ mod checked {
                     CallArg::Pure(bcs::to_bytes(&dwallet_network_key_version).unwrap()),
                 ],
             ),
-            MPCRound::PresignFirst(dwallet_id, dkg_output) => (
+            MPCRound::PresignFirst(dwallet_id, dkg_output, batch_session_id) => (
                 "launch_presign_second_round",
                 vec![
                     CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
@@ -1151,19 +1152,24 @@ mod checked {
                     CallArg::Pure(bcs::to_bytes(&dkg_output).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
                     CallArg::Pure(data.session_info.session_id.to_vec()),
+                    CallArg::Pure(batch_session_id.to_vec()),
                 ],
             ),
-            MPCRound::PresignSecond(dwallet_id, first_round_output) => (
-                "create_second_presign_round_output",
-                vec![
-                    CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
-                    CallArg::Pure(data.session_info.session_id.to_vec()),
-                    CallArg::Pure(data.session_info.flow_session_id.to_vec()),
-                    CallArg::Pure(bcs::to_bytes(&first_round_output).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&data.output).unwrap()),
-                    CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
-                ],
-            ),
+            MPCRound::PresignSecond(dwallet_id, first_round_output, batch_session_id) => {
+                let mut presigns: Vec<(ObjectID, Vec<u8>)> = bcs::from_bytes(&data.output).unwrap();
+                let keys: Vec<ObjectID> = presigns.clone().into_iter().map(|(k, _)| k).collect();
+                let values: Vec<Vec<u8>> = presigns.into_iter().map(|(_, v)| v).collect();
+                (
+                    "create_batched_presign_output",
+                    vec![
+                        CallArg::Pure(data.session_info.initiating_user_address.to_vec()),
+                        CallArg::Pure(batch_session_id.to_vec()),
+                        CallArg::Pure(bcs::to_bytes(&keys).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&values).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&dwallet_id).unwrap()),
+                    ],
+                )
+            }
             MPCRound::Sign(..) | MPCRound::BatchedSign(..) => {
                 // todo(zeev): why we need this if the output is created by the user?
                 let MPCRound::Sign(batch_session_id, _) = data.session_info.mpc_round else {
@@ -1186,6 +1192,12 @@ mod checked {
                         CallArg::Pure(bcs::to_bytes(&vec![data.output.clone()]).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&(key_type as u8)).unwrap()),
                     ],
+                )
+            }
+            _ => {
+                unreachable!(
+                    "MPCRound {:?} is not supported for creating an on chain output",
+                    data.session_info.mpc_round
                 )
             }
         };

@@ -5,12 +5,12 @@
 import { bcs } from '../bcs/index.js';
 import { Transaction } from '../transactions/index.js';
 import type { Config } from './globals.js';
-import { dWallet2PCMPCECDSAK1ModuleName, packageId } from './globals.js';
+import { dWallet2PCMPCECDSAK1ModuleName, fetchCompletedEvent, packageId } from './globals.js';
 
 const signMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`;
-// const singOutputMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::SignOutput`;
 const approveMessagesMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`;
 const completedSignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`;
+export const completedPresignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedBatchedPresignEvent`;
 
 export enum Hash {
 	KECCAK256 = 0,
@@ -40,10 +40,11 @@ export async function signMessageTransactionCall(
 	dwalletCapID: string,
 	hashedMessages: Uint8Array[],
 	dWalletID: string,
-	presignID: string,
+	presignIDs: string[],
 	centralizedSignedMessages: Uint8Array[],
-	presignSessionID: string,
 ) {
+	// log all the parameters
+	console.log({ dwalletCapID, hashedMessages, dWalletID, presignIDs });
 	const tx = new Transaction();
 
 	const [messageApprovals] = tx.moveCall({
@@ -59,10 +60,9 @@ export async function signMessageTransactionCall(
 		arguments: [
 			messageApprovals,
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(hashedMessages)),
-			tx.object(presignID),
+			tx.makeMoveVec({ elements: presignIDs.map((presignID) => tx.object(presignID)) }),
 			tx.object(dWalletID),
 			tx.pure(bcs.vector(bcs.vector(bcs.u8())).serialize(centralizedSignedMessages)),
-			tx.object(presignSessionID),
 		],
 	});
 
@@ -81,54 +81,14 @@ export async function signMessageTransactionCall(
 	if (!startBatchSignEvent) {
 		throw new Error(`${signMoveFunc} failed: ${res.errors}`);
 	}
-
-	return await fetchCompleteSignEvent(c, startBatchSignEvent.session_id);
+	return await fetchCompletedEvent<CompletedSignEvent>(
+		c,
+		startBatchSignEvent.session_id,
+		completedSignMoveEvent,
+		isCompletedSignEvent,
+	);
 }
 
 export function isStartBatchedSignEvent(obj: any): obj is StartBatchedSignEvent {
-	return obj && 'session_id' in obj && 'hashed_messages' in obj && 'initiating_user' in obj;
-}
-
-// function isSignOutput(obj: any): obj is SignOutput {
-// 	return obj && obj.id && obj.session_id && obj.output && obj.dwallet_id;
-// }
-
-async function fetchCompleteSignEvent(c: Config, sessionID: string): Promise<CompletedSignEvent> {
-	const startTime = Date.now();
-	let cursor = null;
-
-	while (Date.now() - startTime <= c.timeout) {
-		// Wait for a bit before polling again, objects might not be available immediately.
-		await new Promise((resolve) => setTimeout(resolve, 5_000));
-
-		const { data, nextCursor, hasNextPage } = await c.client.queryEvents({
-			query: {
-				TimeRange: {
-					startTime: (Date.now() - c.timeout).toString(),
-					endTime: Date.now().toString(),
-				},
-			},
-			cursor,
-		});
-
-		const match = data.find(
-			(event) =>
-				event.type === completedSignMoveEvent &&
-				isCompletedSignEvent(event.parsedJson) &&
-				event.parsedJson.session_id === sessionID,
-		);
-		if (match) {
-			return match.parsedJson as CompletedSignEvent;
-		}
-		if (hasNextPage) {
-			cursor = nextCursor;
-		}
-	}
-
-	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
-	throw new Error(
-		`timeout: unable to fetch an event of type ${completedSignMoveEvent} within ${
-			c.timeout / (60 * 1000)
-		} minutes (${seconds} seconds passed).`,
-	);
+	return obj && 'session_id' in obj && 'hashed_messages' in obj && 'initiator' in obj;
 }
