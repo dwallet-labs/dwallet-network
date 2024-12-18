@@ -18,7 +18,7 @@ use std::sync::{Arc, RwLock};
 #[derive(Clone, Debug, PartialEq)]
 pub enum DwalletMPCNetworkKeysStatus {
     /// The network supported key types have been updated or initialized.
-    Ready(HashSet<DWalletMPCNetworkKey>),
+    KeysUpdated(HashSet<DWalletMPCNetworkKey>),
     /// None of the network supported key types have not been initialized.
     NotInitialized,
 }
@@ -47,7 +47,7 @@ impl DwalletMPCNetworkKeyVersions {
         let status = if encryption.is_empty() || decryption_key_share.is_empty() {
             DwalletMPCNetworkKeysStatus::NotInitialized
         } else {
-            DwalletMPCNetworkKeysStatus::Ready(decryption_key_share.keys().copied().collect())
+            DwalletMPCNetworkKeysStatus::KeysUpdated(decryption_key_share.keys().copied().collect())
         };
 
         Self {
@@ -128,16 +128,16 @@ impl DwalletMPCNetworkKeyVersions {
             .status
             .write()
             .map_err(|_| DwalletMPCError::LockError)?;
-        if let DwalletMPCNetworkKeysStatus::Ready(keys) = &mut *status {
+        if let DwalletMPCNetworkKeysStatus::KeysUpdated(keys) = &mut *status {
             keys.insert(key_type);
-            *status = DwalletMPCNetworkKeysStatus::Ready(keys.clone());
+            *status = DwalletMPCNetworkKeysStatus::KeysUpdated(keys.clone());
         } else {
-            *status = DwalletMPCNetworkKeysStatus::Ready(HashSet::from([key_type]));
+            *status = DwalletMPCNetworkKeysStatus::KeysUpdated(HashSet::from([key_type]));
         }
         Ok(())
     }
 
-    /// Returns all versions of the decryption key shares for the specified key type.
+    /// Returns the active decryption key share for the given key type.
     // Todo (#382): Replace with the actual type once the DKG protocol is ready.
     pub fn get_decryption_key_share(
         &self,

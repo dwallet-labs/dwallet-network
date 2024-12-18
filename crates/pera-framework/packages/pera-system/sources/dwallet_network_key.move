@@ -19,9 +19,8 @@ module pera_system::dwallet_network_key {
         key_type: u8,
     }
 
-    /// Function to create a new StartNetworkDKGEvent
-    // Todo (#400): Add user restrictions, so that only someone we choose can run this function
-    public fun start_network_dkg(key_type: u8, ctx: &mut TxContext) {
+    /// Function to emit a new StartNetworkDKGEvent
+    public(package) fun start_network_dkg(key_type: u8, ctx: &mut TxContext) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
         event::emit(StartNetworkDKGEvent {
             session_id,
@@ -37,7 +36,7 @@ module pera_system::dwallet_network_key {
     }
 
     /// Function to create a new EncryptionOfNetworkDecryptionKeyShares
-    public fun new_encrypted_network_decryption_key_shares(epoch: u64, current_epoch_shares: vector<vector<u8>>, previous_epoch_shares: vector<vector<u8>>): EncryptionOfNetworkDecryptionKeyShares {
+    public(package) fun new_encrypted_network_decryption_key_shares(epoch: u64, current_epoch_shares: vector<vector<u8>>, previous_epoch_shares: vector<vector<u8>>): EncryptionOfNetworkDecryptionKeyShares {
         EncryptionOfNetworkDecryptionKeyShares {
             epoch,
             current_epoch_shares,

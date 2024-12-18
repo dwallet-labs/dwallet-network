@@ -13,6 +13,7 @@ title: Module `0x3::pera_system_state_inner`
 -  [Function `create`](#0x3_pera_system_state_inner_create)
 -  [Function `create_system_parameters`](#0x3_pera_system_state_inner_create_system_parameters)
 -  [Function `v1_to_v2`](#0x3_pera_system_state_inner_v1_to_v2)
+-  [Function `dwallet_admin_address`](#0x3_pera_system_state_inner_dwallet_admin_address)
 -  [Function `lock_next_epoch_committee`](#0x3_pera_system_state_inner_lock_next_epoch_committee)
 -  [Function `new_decryption_key_shares_version`](#0x3_pera_system_state_inner_new_decryption_key_shares_version)
 -  [Function `store_decryption_key_shares`](#0x3_pera_system_state_inner_store_decryption_key_shares)
@@ -376,6 +377,12 @@ The top-level object containing all information of the Pera system.
 <dd>
  Any extra fields that's not defined statically.
 </dd>
+<dt>
+<code>dwallet_admin_address: <b>address</b></code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -514,6 +521,12 @@ Uses SystemParametersV2 as the parameters.
 </dt>
 <dd>
  Any extra fields that's not defined statically.
+</dd>
+<dt>
+<code>dwallet_admin_address: <b>address</b></code>
+</dt>
+<dd>
+
 </dd>
 </dl>
 
@@ -754,7 +767,7 @@ Create a new PeraSystemState object and make it shared.
 This function will be called only once in genesis.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_create">create</a>(validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, initial_storage_fund: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, protocol_version: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, epoch_start_timestamp_ms: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, parameters: <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_SystemParameters">pera_system_state_inner::SystemParameters</a>, <a href="stake_subsidy.md#0x3_stake_subsidy">stake_subsidy</a>: <a href="stake_subsidy.md#0x3_stake_subsidy_StakeSubsidy">stake_subsidy::StakeSubsidy</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInner">pera_system_state_inner::PeraSystemStateInner</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_create">create</a>(validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, initial_storage_fund: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, protocol_version: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, epoch_start_timestamp_ms: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, parameters: <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_SystemParameters">pera_system_state_inner::SystemParameters</a>, <a href="stake_subsidy.md#0x3_stake_subsidy">stake_subsidy</a>: <a href="stake_subsidy.md#0x3_stake_subsidy_StakeSubsidy">stake_subsidy::StakeSubsidy</a>, dwallet_admin_address: <b>address</b>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>): <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInner">pera_system_state_inner::PeraSystemStateInner</a>
 </code></pre>
 
 
@@ -770,6 +783,7 @@ This function will be called only once in genesis.
     epoch_start_timestamp_ms: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     parameters: <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_SystemParameters">SystemParameters</a>,
     <a href="stake_subsidy.md#0x3_stake_subsidy">stake_subsidy</a>: StakeSubsidy,
+    dwallet_admin_address: <b>address</b>,
     ctx: &<b>mut</b> TxContext,
 ): <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInner">PeraSystemStateInner</a> {
     <b>let</b> validators = <a href="validator_set.md#0x3_validator_set_new">validator_set::new</a>(validators, ctx);
@@ -792,6 +806,7 @@ This function will be called only once in genesis.
         safe_mode_non_refundable_storage_fee: 0,
         epoch_start_timestamp_ms,
         extra_fields: <a href="../pera-framework/bag.md#0x2_bag_new">bag::new</a>(ctx),
+        dwallet_admin_address,
     };
     system_state
 }
@@ -878,6 +893,7 @@ This function will be called only once in genesis.
         safe_mode_non_refundable_storage_fee,
         epoch_start_timestamp_ms,
         extra_fields: state_extra_fields,
+        dwallet_admin_address,
     } = self;
     <b>let</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_SystemParameters">SystemParameters</a> {
         epoch_duration_ms,
@@ -916,8 +932,33 @@ This function will be called only once in genesis.
         safe_mode_storage_rebates,
         safe_mode_non_refundable_storage_fee,
         epoch_start_timestamp_ms,
-        extra_fields: state_extra_fields
+        extra_fields: state_extra_fields,
+        dwallet_admin_address,
     }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_pera_system_state_inner_dwallet_admin_address"></a>
+
+## Function `dwallet_admin_address`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_dwallet_admin_address">dwallet_admin_address</a>(self: &<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">pera_system_state_inner::PeraSystemStateInnerV2</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_dwallet_admin_address">dwallet_admin_address</a>(self: &<a href="pera_system_state_inner.md#0x3_pera_system_state_inner_PeraSystemStateInnerV2">PeraSystemStateInnerV2</a>): <b>address</b> {
+    self.dwallet_admin_address
 }
 </code></pre>
 
