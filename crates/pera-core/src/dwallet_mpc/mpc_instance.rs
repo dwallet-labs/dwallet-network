@@ -36,6 +36,8 @@ pub(super) struct DWalletMPCInstance {
     pub(super) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
     decryption_share: Option<DecryptionKeyShare>,
+
+    // Todo (#413): Include the MPC session private output within the MPCSessionStatus::Finished(MPCOutput) output
     private_output: Option<Vec<u8>>,
 }
 
@@ -205,6 +207,7 @@ impl DWalletMPCInstance {
         &self.party
     }
 
+    // Todo (#413): Include the MPC session private output within the MPCSessionStatus::Finished(MPCOutput) output
     pub(crate) fn private_output(&self) -> Option<&Vec<u8>> {
         self.private_output.as_ref()
     }
