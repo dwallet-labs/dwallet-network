@@ -39,7 +39,6 @@ fn new_dkg_secp256k1_instance(
             initiating_user_address: Default::default(),
             mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKey::Secp256k1),
         },
-        None,
     ))
 }
 
@@ -63,7 +62,6 @@ fn new_dkg_ristretto_instance(
             initiating_user_address: Default::default(),
             mpc_round: MPCRound::NetworkDkg(DWalletMPCNetworkKey::Ristretto),
         },
-        None,
     ))
 }
 
