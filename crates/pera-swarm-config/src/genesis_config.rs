@@ -6,9 +6,7 @@ use std::net::{IpAddr, SocketAddr};
 
 use anyhow::Result;
 use class_groups::SecretKeyShareSizedNumber;
-use dwallet_mpc_types::{
-    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
-};
+use dwallet_mpc_types::class_groups_key::generate_class_groups_keypair_and_proof_from_seed;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use group::PartyID;
 use pera_config::genesis::{GenesisCeremonyParameters, TokenAllocation};
@@ -24,7 +22,8 @@ use pera_types::multiaddr::Multiaddr;
 use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::info;
-pub use twopc_mpc::secp256k1::class_groups::{AsyncProtocol};
+pub use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+use dwallet_mpc_types::class_groups_key::ClassGroupsKeyPairAndProof;
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]
@@ -120,6 +119,7 @@ pub struct ValidatorGenesisConfigBuilder {
     p2p_listen_ip_address: Option<IpAddr>,
     dwallet_mpc_class_groups_public_parameters: Option<DecryptionSharePublicParameters>,
     dwallet_mpc_decryption_shares: Option<HashMap<PartyID, SecretKeyShareSizedNumber>>,
+    class_groups_key_pair_and_proof: Option<ClassGroupsKeyPairAndProof>,
 }
 
 impl ValidatorGenesisConfigBuilder {
@@ -151,6 +151,11 @@ impl ValidatorGenesisConfigBuilder {
 
     pub fn with_account_key_pair(mut self, key_pair: AccountKeyPair) -> Self {
         self.account_key_pair = Some(key_pair);
+        self
+    }
+
+    pub fn with_class_groups_key_pair_and_proof(mut self, key_pair: ClassGroupsKeyPairAndProof) -> Self {
+        self.class_groups_key_pair_and_proof = Some(key_pair);
         self
     }
 
@@ -197,8 +202,7 @@ impl ValidatorGenesisConfigBuilder {
             .as_bytes()
             .try_into()
             .unwrap();
-        let class_groups_keypair_and_proof =
-            generate_class_groups_keypair_and_proof_from_seed(seed);
+        let class_groups_keypair_and_proof = self.class_groups_key_pair_and_proof.unwrap_or_else(|| generate_class_groups_keypair_and_proof_from_seed(seed));
 
         let (
             network_address,

@@ -87,7 +87,7 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
-use dwallet_mpc_types::ClassGroupsEncryptionKeyAndProof;
+use dwallet_mpc_types::class_groups_key::ClassGroupsEncryptionKeyAndProof;
 use group::PartyID;
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;

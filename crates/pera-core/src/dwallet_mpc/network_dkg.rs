@@ -4,7 +4,7 @@ use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::ClassGroupsEncryptionKeyAndProof;
+use dwallet_mpc_types::class_groups_key::ClassGroupsEncryptionKeyAndProof;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::WeightedThresholdAccessStructure;

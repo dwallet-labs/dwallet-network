@@ -24,7 +24,7 @@ use num_bigint::BigUint;
 use pera_keys::key_derive::{generate_new_class_groups_keypair_and_proof, generate_new_key};
 use pera_keys::keypair_file::{
     read_authority_keypair_from_file, read_keypair_from_file, write_authority_keypair_to_file,
-    write_class_groups_keypair_and_proof_to_file, write_keypair_to_file,
+    write_keypair_to_file,
 };
 use pera_keys::keystore::{AccountKeystore, Keystore};
 use pera_types::base_types::PeraAddress;
@@ -57,6 +57,8 @@ use tabled::builder::Builder;
 use tabled::settings::Rotate;
 use tabled::settings::{object::Rows, Modify, Width};
 use tracing::info;
+use dwallet_mpc_types::class_groups_key::write_class_groups_keypair_and_proof_to_file;
+
 #[cfg(test)]
 #[path = "unit_tests/keytool_tests.rs"]
 mod keytool_tests;

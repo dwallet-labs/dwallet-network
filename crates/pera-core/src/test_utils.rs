@@ -5,7 +5,7 @@ use crate::authority::{test_authority_builder::TestAuthorityBuilder, AuthoritySt
 use crate::authority_aggregator::{AuthorityAggregator, AuthorityAggregatorBuilder, TimeoutConfig};
 use crate::state_accumulator::StateAccumulator;
 use crate::test_authority_clients::LocalAuthorityClient;
-use dwallet_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
+use dwallet_mpc_types::class_groups_key::generate_class_groups_keypair_and_proof_from_seed;
 use fastcrypto::hash::MultisetHash;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use futures::future::join_all;
