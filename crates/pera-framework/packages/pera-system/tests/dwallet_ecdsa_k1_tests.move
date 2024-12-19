@@ -320,6 +320,57 @@ module pera_system::dwallet_ecdsa_k1_tests {
     }
 
     #[test]
+    public fun test_future_sign() {
+        let sender = SENDER_ADDRESS;
+        let mut scenario = test_scenario::begin(sender);
+        let dwallet;
+        let dwallet_cap_id;
+        let dwallet_cap;
+
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let dkg_output: vector<u8> = std::vector::singleton(0xAA);
+            dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
+            dwallet_cap_id = dwallet::get_dwallet_cap_id(&dwallet);
+        };
+
+        test_scenario::next_tx(&mut scenario, sender);
+        dwallet_cap = test_scenario::take_from_address<DWalletCap>(&scenario, sender);
+
+        test_scenario::next_tx(&mut scenario, sender);
+        {
+            let ctx = test_scenario::ctx(&mut scenario);
+            let mut messages_to_approve: vector<vector<u8>> = vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)];
+            let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
+                &dwallet_cap,
+                &mut messages_to_approve
+            );
+            let partial_signature_mock = pera_system::dwallet_2pc_mpc_ecdsa_k1::partial_signatures_for_testing(
+                vector[vector[1], vector[2]],
+                vector[object::id_from_address(@0x01), object::id_from_address(@0x02)],
+                vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)],
+                vector[vector[1], vector[2]],
+                object::id(&dwallet),
+                dwallet_cap_id,
+                ctx
+            );
+            pera_system::dwallet_2pc_mpc_ecdsa_k1::future_sign(
+                partial_signature_mock,
+                &mut message_approvals,
+                ctx
+            );
+            test_utils::destroy(dwallet_cap);
+            test_utils::destroy(dwallet);
+        };
+
+        let effects: TransactionEffects = test_scenario::end(scenario);
+
+        let events_num = test_scenario::num_user_events(&effects);
+        assert!(events_num == 3, EWrongEventNumber);
+    }
+
+    #[test]
     public fun test_sign() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);

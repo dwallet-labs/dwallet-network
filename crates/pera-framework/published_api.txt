@@ -58,6 +58,12 @@ StartBatchedSignEvent
 StartBatchedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+PartiallySignedMessages
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CreatedPartiallySignedMessagesEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -96,6 +102,15 @@ create_mock_dwallet
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 create_mock_presign
 	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+publish_partially_signed_messages
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+future_sign
+	public fun
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+verify_partially_signed_signatures_native
+	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
 	public struct
