@@ -51,8 +51,17 @@ pub enum DwalletMPCError {
     #[error("missing MPC class groups decryption shares in config")]
     MissingDwalletMPCClassGroupsDecryptionShares,
 
-    #[error("missing DWallet MPC outputs manager")]
-    MissingDwalletMPCOutputsManager,
+    #[error("missing DWallet MPC outputs verifier")]
+    MissingDwalletMPCOutputsVerifier,
+
+    #[error("missing DWallet MPC batches manager")]
+    MissingDWalletMPCBatchesManager,
+
+    #[error("missing dWallet MPC Sender")]
+    MissingDWalletMPCSender,
+
+    #[error("dwallet MPC Sender failed: {0}")]
+    DWalletMPCSenderSendFailed(String),
 
     #[error("MPC class groups decryption share missing for the party ID: {0}")]
     DwalletMPCClassGroupsDecryptionShareMissing(PartyID),

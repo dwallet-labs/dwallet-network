@@ -45,6 +45,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         message: vector<u8>,
     }
 
+// todo(zeev): fix doc.
     /// A struct to hold the output of the first round of the DKG.
     /// An instance of this struct is being transferred to the user that initiated the DKG after
     /// the first round is completed.
@@ -791,6 +792,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dwallet_cap_id = object::id(&dwallet_cap);
         transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        // todo(zeev): what is this `1`?
         dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, 1, ctx)
     }
 

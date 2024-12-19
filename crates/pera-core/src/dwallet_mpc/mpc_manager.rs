@@ -1,32 +1,28 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::consensus_adapter::SubmitToConsensus;
-use pera_types::base_types::{AuthorityName, ObjectID, PeraAddress};
-use pera_types::error::{PeraError, PeraResult};
+use pera_types::base_types::{AuthorityName, ObjectID};
+use pera_types::error::PeraResult;
 
-use crate::dwallet_mpc::batches_manager::BatchedSignSession;
-use crate::dwallet_mpc::mpc_events::StartBatchedSignEvent;
+use crate::dwallet_mpc::from_event;
 use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
-use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
+use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::network_dkg::NetworkDkg;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
-use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
-use anyhow::anyhow;
-use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCOutput, MPCSessionStatus};
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{Error, WeightedThresholdAccessStructure};
+use mpc::{Weight, WeightedThresholdAccessStructure};
 use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_consensus::ConsensusTransaction;
-use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
+use pera_types::messages_dwallet_mpc::SessionInfo;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tokio::sync::MutexGuard;
+use tokio::sync::mpsc::UnboundedSender;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
@@ -55,29 +51,30 @@ pub struct DWalletMPCManager {
     /// We can't use the length of `mpc_instances` since it is never cleaned.
     active_instances_counter: usize,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
-    pub(crate) node_config: NodeConfig,
+    pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
     max_active_mpc_sessions: usize,
     epoch_id: EpochId,
     /// A set of all the authorities that behaved maliciously at least once during the epoch.
     /// Any message/output from these authorities will be ignored.
-    pub(crate) malicious_actors: HashSet<AuthorityName>,
+    malicious_actors: HashSet<AuthorityName>,
     weighted_threshold_access_structure: WeightedThresholdAccessStructure,
-    weighted_parties: HashMap<PartyID, PartyID>,
-    outputs_manager: DWalletMPCOutputsVerifier,
+    outputs_verifier: DWalletMPCOutputsVerifier,
     status: ManagerStatus,
 }
 
-/// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
+/// The messages that the [`DWalletMPCManager`] can receive and process asynchronously.
 pub enum DWalletMPCChannelMessage {
-    /// An MPC message from another validator
-    Message(Vec<u8>, AuthorityName, ObjectID),
-    /// An output for a completed MPC message
-    Output(Vec<u8>, AuthorityName, SessionInfo),
-    /// A new session event
+    /// An MPC message from another validator.
+    Message(MPCMessage, AuthorityName, ObjectID),
+    /// An output for a completed MPC message.
+    Output(MPCOutput, AuthorityName, SessionInfo),
+    /// A new session event.
     Event(Event, SessionInfo),
-    /// A signal that the delivery of messages has ended, now the instances that received a quorum of messages can advance
+    /// Signal delivery of messages has ended,
+    /// now the instances that received a quorum of messages can advance.
     EndOfDelivery,
+    // todo(zeev): doc this.
     StartLockNextEpochCommittee,
 }
 
@@ -88,26 +85,27 @@ impl DWalletMPCManager {
         epoch_id: EpochId,
         node_config: NodeConfig,
     ) -> DwalletMPCResult<DWalletMPCSender> {
-        let weighted_parties: HashMap<PartyID, PartyID> = epoch_store
+        let weighted_parties: HashMap<PartyID, Weight> = epoch_store
             .committee()
             .voting_rights
             .iter()
             .map(|(name, weight)| {
                 Ok((
                     authority_name_to_party_id(&name, &epoch_store)?,
-                    *weight as PartyID,
+                    *weight as Weight,
                 ))
             })
-            .collect::<DwalletMPCResult<HashMap<PartyID, PartyID>>>()?;
+            .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
         let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
             epoch_store.committee().quorum_threshold() as PartyID,
-            weighted_parties.clone(),
+            weighted_parties,
         )
-        .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
+            .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
-        // Start the network DKG if this is the first epoch
-        // TODO(#383): Enable DKG logic when Scaly's code is ready
-        let (status, mpc_instances) = if false {
+        // Start the network DKG if this is the first epoch.
+        // TODO(#383): Enable DKG logic when Scaly's code is ready.
+        let mpc_code_is_ready = false;
+        let (_status, mpc_instances) = if mpc_code_is_ready {
             (
                 ManagerStatus::WaitingForNetworkDKGCompletion,
                 NetworkDkg::init(epoch_store.clone())?,
@@ -118,14 +116,13 @@ impl DWalletMPCManager {
             (ManagerStatus::Active, HashMap::new())
         };
 
-        // Todo (#383): Remove the `outputs_manager` from the `DWalletMPCManager`
-        let mut outputs_manager = DWalletMPCOutputsVerifier::new(&epoch_store);
+        let mut outputs_verifier = DWalletMPCOutputsVerifier::new(&epoch_store);
         let mut epoch_store_outputs_manager = epoch_store
             .get_dwallet_mpc_outputs_verifier()
             .await
-            .map_err(|_| DwalletMPCError::MissingDwalletMPCOutputsManager)?;
+            .map_err(|_| DwalletMPCError::MissingDwalletMPCOutputsVerifier)?;
         for (network_dkg_session_id, _) in mpc_instances.iter() {
-            outputs_manager.insert_new_output_instance(network_dkg_session_id);
+            outputs_verifier.insert_new_output_instance(network_dkg_session_id);
             epoch_store_outputs_manager.insert_new_output_instance(network_dkg_session_id);
         }
 
@@ -143,8 +140,7 @@ impl DWalletMPCManager {
             node_config,
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
-            weighted_parties,
-            outputs_manager,
+            outputs_verifier: outputs_verifier,
             status: ManagerStatus::Active,
         };
 
@@ -161,11 +157,11 @@ impl DWalletMPCManager {
         match message {
             DWalletMPCChannelMessage::Message(msg, authority, session_id) => {
                 if let Err(err) = self.handle_message(&msg, authority, session_id) {
-                    error!("Failed to handle message with error: {:?}", err);
+                    error!("failed to handle an MPC message with error: {:?}", err);
                 }
             }
             DWalletMPCChannelMessage::Output(output, authority, session_info) => {
-                let verification_result = self.outputs_manager.try_verify_output(
+                let verification_result = self.outputs_verifier.try_verify_output(
                     &output,
                     &session_info,
                     authority.clone(),
@@ -187,7 +183,7 @@ impl DWalletMPCManager {
             }
             DWalletMPCChannelMessage::EndOfDelivery => {
                 if let Err(err) = self.handle_end_of_delivery().await {
-                    error!("Failed to handle end of delivery with error: {:?}", err);
+                    error!("failed to handle the end of delivery with error: {:?}", err);
                 }
             }
             DWalletMPCChannelMessage::StartLockNextEpochCommittee => {
@@ -219,7 +215,7 @@ impl DWalletMPCManager {
     }
 
     fn handle_event(&mut self, event: Event, session_info: SessionInfo) -> DwalletMPCResult<()> {
-        self.outputs_manager.handle_new_event(&session_info);
+        self.outputs_verifier.handle_new_event(&session_info);
         if let Ok((party, auxiliary_input, session_info)) = from_event(
             &event,
             &self,
@@ -260,8 +256,7 @@ impl DWalletMPCManager {
     /// We parallelize the advances with `Rayon` to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
         let threshold = self.epoch_store()?.committee().quorum_threshold();
-        let mut malicious_parties = vec![];
-        let mut messages = vec![];
+
 
         let mut ready_to_advance = self
             .mpc_instances
@@ -272,8 +267,9 @@ impl DWalletMPCManager {
                         instance.pending_messages[round]
                             .keys()
                             .map(|authority_index| {
-                                // should never be "or" as we receive messages only from known authorities
-                                self.weighted_parties.get(authority_index).unwrap_or(&0)
+                                // should never be "or"
+                                // as we receive messages only from known authorities.
+                                self.weighted_threshold_access_structure.party_to_weight.get(authority_index).unwrap_or(&0)
                             })
                             .sum()
                     } else {
@@ -297,6 +293,8 @@ impl DWalletMPCManager {
             })
             .collect::<Vec<&mut DWalletMPCInstance>>();
 
+        let mut malicious_parties = vec![];
+        let mut messages = vec![];
         ready_to_advance
             .par_iter_mut()
             .map(|instance| {
@@ -321,13 +319,14 @@ impl DWalletMPCManager {
 
         self.flag_parties_as_malicious(&malicious_parties)?;
 
-        // Need to send the messages one by one, so the consensus adapter won't think they
+        // Need to send the messages' one by one, so the consensus adapter won't think they
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for message in messages {
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
                 .await?;
         }
+        // todo(zeev): move to func.
         if self.status == ManagerStatus::WaitingForNetworkDKGCompletion {
             if self
                 .mpc_instances
@@ -348,7 +347,7 @@ impl DWalletMPCManager {
     }
 
     /// Handles a message by forwarding it to the relevant MPC instance
-    /// If the instance does not exist, punish the sender
+    /// If the instance does not exist, punish the sender.
     pub(crate) fn handle_message(
         &mut self,
         message: &[u8],
@@ -435,7 +434,7 @@ impl DWalletMPCManager {
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
-        // todo(zeev): remvoed             || !self.pending_instances_queue.is_empty()
+        // todo(zeev): removed             || !self.pending_instances_queue.is_empty()
         if self.active_instances_counter > self.max_active_mpc_sessions {
             self.pending_instances_queue.push_back(new_instance);
             info!(
@@ -456,6 +455,6 @@ impl DWalletMPCManager {
     }
 
     pub fn network_key_version(&self) -> u8 {
-        self.outputs_manager.network_key_version()
+        self.outputs_verifier.network_key_version()
     }
 }

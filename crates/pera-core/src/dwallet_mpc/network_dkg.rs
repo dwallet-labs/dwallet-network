@@ -6,9 +6,8 @@ use crate::dwallet_mpc::{
     advance, FIRST_EPOCH_ID, RISTRETTO_DKG_SESSION_ID, SECP256K1_DKG_SESSION_ID,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::{dwallet_mpc::MPCSessionStatus, ClassGroupsPublicKeyAndProof};
+use dwallet_mpc_types::{dwallet_mpc::MPCSessionStatus};
 use group::PartyID;
-use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
@@ -16,6 +15,7 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::HashMap;
 use std::sync::Arc;
+use dwallet_mpc_types::class_groups::ClassGroupsPublicKeyAndProof;
 
 const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
 
@@ -69,7 +69,7 @@ fn new_dkg_ristretto_instance(
 
 // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
 fn generate_secp256k1_dkg_party_public_input(
-    secret_key_share_sized_encryption_keys_and_proofs: HashMap<
+    _secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
         ClassGroupsPublicKeyAndProof,
     >,
@@ -79,7 +79,7 @@ fn generate_secp256k1_dkg_party_public_input(
 
 // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
 fn generate_ristretto_dkg_party_public_input(
-    secret_key_share_sized_encryption_keys_and_proofs: HashMap<
+    _secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
         ClassGroupsPublicKeyAndProof,
     >,

@@ -6,7 +6,7 @@ use crate::dwallet_mpc::sign::SignFirstParty;
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput};
 use group::PartyID;
-use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
+use mpc::{WeightedThresholdAccessStructure};
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;

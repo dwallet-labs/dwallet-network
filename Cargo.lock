@@ -2573,7 +2573,6 @@ dependencies = [
  "base64 0.22.1",
  "bcs",
  "group 0.1.0",
- "serde",
  "twopc_mpc",
 ]
 
@@ -4042,9 +4041,7 @@ dependencies = [
  "bcs",
  "class_groups_constants",
  "commitment",
- "hex",
  "k256 0.13.3",
- "log",
  "mpc",
  "rand_core 0.6.4",
  "sha2 0.10.8",
@@ -4056,6 +4053,7 @@ dependencies = [
 name = "dwallet-mpc-types"
 version = "1.32.2"
 dependencies = [
+ "anyhow",
  "bcs",
  "class_groups",
  "crypto-bigint 0.5.5",

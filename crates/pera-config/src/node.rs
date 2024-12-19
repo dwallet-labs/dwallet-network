@@ -52,7 +52,8 @@ pub const DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS: usize = 3000;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct NodeConfig {
-    // todo (#348): Update the system to ensure that each validator saves only their own decryption share
+    // todo (#348): Update the system to ensure that each
+    // todo (#348): validator saves only their own decryption share
     #[serde(default)]
     pub dwallet_mpc_decryption_shares_public_parameters: Option<DecryptionSharePublicParameters>,
     #[serde(default)]

@@ -597,6 +597,7 @@ module pera_system::pera_system {
         pera_system_state_inner::active_validator_voting_powers(self)
     }
 
+    // todo(zeev): fmt.
     #[allow(unused_function)]
     /// Lock the next epoch's validator set
     /// The chain agrees on the next epoch committee in order to pass

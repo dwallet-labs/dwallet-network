@@ -1,3 +1,6 @@
+// todo(zeev): module level doc.
+
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCOutput};
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -10,10 +13,11 @@ pub struct BatchedSignSession {
     /// When this map contains all the hashed messages,
     /// the batched sign session is ready to be written to the chain.
     /// HashedMsg -> Sign Output.
-    pub hashed_msg_to_signature: HashMap<Vec<u8>, Vec<u8>>,
-    /// A list of all the messages that need to be signed, in the order they were received.
+    pub hashed_msg_to_signature: HashMap<Vec<u8>, MPCOutput>,
+    /// A list of all the messages that need to be signed,
+    /// in the order they were received.
     /// The output list of signatures will be written to the chain in the same order.
-    pub ordered_messages: Vec<Vec<u8>>,
+    pub ordered_messages: Vec<MPCMessage>,
 }
 
 /// A struct to manage the batched sign sessions.
@@ -31,15 +35,17 @@ impl DWalletMPCBatchesManager {
         }
     }
 
-    /// Handle a new event by initializing a new batched sign session if the event is a batched sign event.
+    /// Handle a new event by initializing a new batched `sign`
+    /// session if the event is a batched `sign` event.
     pub fn handle_new_event(&mut self, session_info: &SessionInfo) {
         if let MPCRound::BatchedSign(hashed_messages) = &session_info.mpc_round {
             let mut seen = HashSet::new();
             let messages_without_duplicates = hashed_messages
-                .clone()
-                .into_iter()
+                .iter()
                 .filter(|x| seen.insert(x.clone()))
-                .collect();
+                .cloned() // Convert &Vec<u8> to Vec<u8>
+                .collect::<Vec<Vec<u8>>>();
+
             self.batched_sign_sessions.insert(
                 session_info.session_id,
                 BatchedSignSession {
@@ -53,15 +59,15 @@ impl DWalletMPCBatchesManager {
     /// Store a verified output in its corresponding batch.
     pub fn store_verified_output(
         &mut self,
-        session_id: ObjectID,
+        session_id: &ObjectID,
         key: Vec<u8>,
-        message: Vec<u8>,
+        message: MPCMessage,
     ) -> DwalletMPCResult<()> {
-        let batched_sign_session = self
-            .batched_sign_sessions
-            .get_mut(&session_id)
-            .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
-        batched_sign_session
+        self.batched_sign_sessions
+            .get_mut(session_id)
+            .ok_or(DwalletMPCError::MPCSessionNotFound {
+                session_id: session_id.clone(),
+            })?
             .hashed_msg_to_signature
             .insert(key, message);
         Ok(())
@@ -70,28 +76,28 @@ impl DWalletMPCBatchesManager {
     /// Check if a batched sign session is completed.
     /// If it is, return the output of the entire batch.
     /// Otherwise, return None.
-    pub fn is_batch_completed(&self, session_id: ObjectID) -> DwalletMPCResult<Option<Vec<u8>>> {
-        let batched_sign_session = self
-            .batched_sign_sessions
-            .get(&session_id)
-            .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
-        return if batched_sign_session.hashed_msg_to_signature.values().len()
-            == batched_sign_session.ordered_messages.len()
+    pub fn is_batch_completed(&self, session_id: &ObjectID) -> DwalletMPCResult<Option<Vec<u8>>> {
+        let batched_sign_session = self.batched_sign_sessions.get(session_id).ok_or(
+            DwalletMPCError::MPCSessionNotFound {
+                session_id: session_id.clone(),
+            },
+        )?;
+        if batched_sign_session.hashed_msg_to_signature.values().len()
+            != batched_sign_session.ordered_messages.len()
         {
-            let new_output: Vec<Vec<u8>> = batched_sign_session
-                .ordered_messages
-                .iter()
-                .map(|msg| {
-                    Ok(batched_sign_session
-                        .hashed_msg_to_signature
-                        .get(msg)
-                        .ok_or(DwalletMPCError::MissingMessageInBatch(msg.clone()))?
-                        .clone())
-                })
-                .collect::<DwalletMPCResult<Vec<Vec<u8>>>>()?;
-            Ok(Some(bcs::to_bytes(&new_output)?))
-        } else {
-            Ok(None)
-        };
+            return Ok(None);
+        }
+        let new_output: Vec<Vec<u8>> = batched_sign_session
+            .ordered_messages
+            .iter()
+            .map(|msg| {
+                Ok(batched_sign_session
+                    .hashed_msg_to_signature
+                    .get(msg)
+                    .ok_or(DwalletMPCError::MissingMessageInBatch(msg.clone()))?
+                    .clone())
+            })
+            .collect::<DwalletMPCResult<Vec<Vec<u8>>>>()?;
+        Ok(Some(bcs::to_bytes(&new_output)?))
     }
 }

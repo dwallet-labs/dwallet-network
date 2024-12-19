@@ -7,7 +7,7 @@ use std::collections::{BTreeMap, HashMap};
 use crate::base_types::{AuthorityName, EpochId, PeraAddress};
 use crate::collection_types::VecMap;
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
-use crate::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
+use crate::dwallet_mpc::{EncryptionOfNetworkDecryptionKeyShares};
 use crate::multiaddr::Multiaddr;
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;

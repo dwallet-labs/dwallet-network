@@ -39,7 +39,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Duration;
@@ -143,12 +143,8 @@ pub use crate::checkpoints::checkpoint_executor::{
 };
 use crate::checkpoints::CheckpointStore;
 use crate::consensus_adapter::ConsensusAdapter;
-use crate::dwallet_mpc::mpc_events::{
-    LockedNextEpochCommitteeEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent,
-};
-use crate::dwallet_mpc::mpc_manager::DWalletMPCChannelMessage;
-use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::mpc_events::LockedNextEpochCommitteeEvent;
+use crate::dwallet_mpc::mpc_manager::{DWalletMPCChannelMessage};
 use crate::dwallet_mpc::{authority_name_to_party_id, session_info_from_event};
 use crate::epoch::committee_store::CommitteeStore;
 use crate::execution_cache::{
@@ -169,6 +165,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 #[cfg(msim)]
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
+use pera_types::dwallet_mpc_error::DwalletMPCError;
 use pera_types::execution_config_utils::to_binary_config;
 
 #[cfg(test)]
@@ -1495,13 +1492,13 @@ impl AuthorityState {
 
         // Check if there are any MPC events emitted from this transaction
         // and if so, send them to the MPC service.
-        // Handle the MPC events here because there is access to the
+        // Filter the MPC events here because there is access to the
         // event, as the transaction has been just executed.
         if let Err(err) = self
-            .handle_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
+            .filter_dwallet_mpc_events(&inner_temporary_store, effects, epoch_store)
             .await
         {
-            error!("Failed to handle MPC events with error: {:?}", err);
+            error!("failed to handle MPC events with error: {:?}", err);
         }
 
         // Allow testing what happens if we crash here.
@@ -1537,9 +1534,10 @@ impl AuthorityState {
         Ok(())
     }
 
-    /// Handle the MPC signature events emitted from the transaction, if any.
-    /// The filtering to handle only dwallet-mpc related events happens within [`DWalletMPCManager::handle_mpc_events`] function.
-    async fn handle_dwallet_mpc_events(
+    /// Filters the MPC signature events emitted from the transaction, if any.
+    /// Filtering to handle only DWallet-MPC related events happen within
+    /// [`DWalletMPCManager::handle_event`] function.
+    async fn filter_dwallet_mpc_events(
         &self,
         inner_temporary_store: &InnerTemporaryStore,
         effects: &TransactionEffects,
@@ -1548,47 +1546,51 @@ impl AuthorityState {
         if !self.is_validator(epoch_store) {
             return Ok(());
         }
-        let status = match &effects {
-            TransactionEffects::V1(effects) => effects.status(),
-            TransactionEffects::V2(effects) => effects.status(),
-        };
+
+        let status = effects.status();
         if !status.is_ok() {
             // TODO (#303): Decide what to do about a failed transaction with MPC events.
             // If the transaction failed, we don't need to handle MPC events.
             return Ok(());
         }
-        let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
-        let mut dwallet_mpc_outputs_manager =
+
+        let party_id = authority_name_to_party_id(&epoch_store.name, epoch_store)?;
+        let mut dwallet_mpc_outputs_verifier =
             epoch_store.get_dwallet_mpc_outputs_verifier().await?;
+
         for event in &inner_temporary_store.events.data {
             if LockedNextEpochCommitteeEvent::type_() == event.type_ {
-                info!("received LockedNextEpochCommitteeEvent successfully");
-                dwallet_mpc_outputs_manager.completed_locking_next_committee = true;
+                info!("Received LockedNextEpochCommitteeEvent successfully");
+                dwallet_mpc_outputs_verifier.completed_locking_next_committee = true;
                 continue;
             }
-            let Ok(Some(session_info)) = session_info_from_event(
+
+            // Attempt to extract session info; skip invalid events.
+            let session_info = match session_info_from_event(
                 event,
                 party_id,
-                dwallet_mpc_outputs_manager.network_key_version(),
-            ) else {
-                continue;
+                dwallet_mpc_outputs_verifier.network_key_version(),
+            ) {
+                Ok(Some(info)) => info,
+                _ => continue,
             };
+
+            // todo(zeev): call batches manager only if it's a batch in the first place.
             let mut dwallet_mpc_batches_manager =
                 epoch_store.get_dwallet_mpc_batches_manager().await?;
-            // This function is being executed for all events, some events are being emitted before the MPC outputs manager is initialized.
             dwallet_mpc_batches_manager.handle_new_event(&session_info);
-            dwallet_mpc_outputs_manager.handle_new_event(&session_info);
-            let dwallet_mpc_sender = epoch_store.dwallet_mpc_sender.get().ok_or(
-                PeraError::from("DWallet MPC sender not initialized when iterating over events"),
-            )?;
+            dwallet_mpc_outputs_verifier.handle_new_event(&session_info);
+
+            let dwallet_mpc_sender = epoch_store
+                .dwallet_mpc_sender
+                .get()
+                .ok_or_else(|| DwalletMPCError::MissingDWalletMPCSender)?;
+
             dwallet_mpc_sender
                 .send(DWalletMPCChannelMessage::Event(event.clone(), session_info))
-                .map_err(|err| {
-                    PeraError::from(format!(
-                        "Failed to send MPC event to DWallet MPC service: {err}"
-                    ))
-                })?;
+                .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
         }
+
         Ok(())
     }
 
@@ -2338,10 +2340,9 @@ impl AuthorityState {
                         .unwrap_or_else(|e| {
                             error!("try_create_dynamic_field_info should not fail, {}, new_object={:?}", e, new_object);
                             None
-                        }
-                        )
+                        })
                     else {
-                        // Skip indexing for non dynamic field objects.
+                        // Skip indexing for non-dynamic field objects.
                         continue;
                     };
                     new_dynamic_fields.push(((ObjectID::from(owner), *id), df_info))

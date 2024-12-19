@@ -149,7 +149,7 @@ impl Debug for ConsensusTransactionKey {
                 value,
                 session_id,
                 sender_address,
-                authority,
+                _authority,
             ) => {
                 write!(
                     f,

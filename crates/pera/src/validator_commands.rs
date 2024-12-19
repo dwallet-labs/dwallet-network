@@ -28,7 +28,6 @@ use tap::tap::TapOptional;
 use crate::fire_drill::get_gas_obj_ref;
 use clap::*;
 use colored::Colorize;
-use dwallet_mpc_types::generate_class_groups_keypair_and_proof_from_seed;
 use fastcrypto::traits::ToFromBytes;
 use fastcrypto::{
     encoding::{Base64, Encoding},
@@ -60,6 +59,7 @@ use pera_types::crypto::{
 use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, PeraKeyPair, SignatureScheme};
 use pera_types::transaction::{CallArg, ObjectArg, Transaction, TransactionData};
 use serde::Serialize;
+use dwallet_mpc_types::class_groups::generate_class_groups_keypair_and_proof_from_seed;
 use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 
 #[path = "unit_tests/validator_tests.rs"]
@@ -335,7 +335,7 @@ impl PeraValidatorCommand {
                     info: pera_genesis_builder::validator_info::ValidatorInfo {
                         name,
                         class_groups_public_key_and_proof: class_groups_keypair_and_proof
-                            .public_bytes(),
+                            .public_bytes()?,
                         protocol_key: keypair.public().into(),
                         worker_key: worker_keypair.public().clone(),
                         account_address: PeraAddress::from(&account_keypair.public()),
