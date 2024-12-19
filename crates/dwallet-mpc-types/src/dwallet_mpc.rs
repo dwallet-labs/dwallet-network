@@ -81,7 +81,7 @@ pub struct EncryptionOfNetworkDecryptionKeyShares {
     previous_epoch_shares: Vec<Vec<u8>>,
 }
 
-// todo(zeev): doc.
+/// The available signing key types of the DWallet MPC signing network.
 #[repr(u8)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash)]
 pub enum DWalletMPCNetworkKey {
