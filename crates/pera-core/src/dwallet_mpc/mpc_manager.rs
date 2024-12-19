@@ -332,6 +332,11 @@ impl DWalletMPCManager {
                 .await?;
         }
         // todo(zeev): move to func.
+        self.check_for_network_dkg_completion();
+        Ok(())
+    }
+
+    fn check_for_network_dkg_completion(&mut self) {
         if self.status == ManagerStatus::WaitingForNetworkDKGCompletion {
             if self
                 .mpc_instances
@@ -342,7 +347,6 @@ impl DWalletMPCManager {
                 self.status = ManagerStatus::Active;
             }
         }
-        Ok(())
     }
 
     fn epoch_store(&self) -> DwalletMPCResult<Arc<AuthorityPerEpochStore>> {
