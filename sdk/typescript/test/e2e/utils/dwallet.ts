@@ -94,7 +94,6 @@ export async function mockCreatePresign(c: Config, dwallet: CreatedDwallet) {
 		target: `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::create_mock_presign`,
 		arguments: [
 			tx.pure.id(dwallet.id),
-			tx.pure.id(dwallet.dwalletCapID),
 			tx.pure(bcs.vector(bcs.u8()).serialize(mockedPresign.firstRoundOutput)),
 			tx.pure(bcs.vector(bcs.u8()).serialize(mockedPresign.secondRoundOutput)),
 			tx.pure.id(mockedPresign.firstRoundSessionID),

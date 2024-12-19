@@ -316,14 +316,16 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 keys.into_iter()
                     .map(|authority_key| {
                         let mut builder = ValidatorGenesisConfigBuilder::new()
-                            .with_protocol_key_pair(authority_key)
-                            .with_dwallet_mpc_class_groups_public_parameters(
-                                decryption_key_share_public_parameters.clone(),
-                            )
-                            // todo (#348): Update the system to ensure that each validator saves only their own decryption share
-                            .with_dwallet_mpc_class_groups_decryption_shares(
-                                decryption_key_shares.clone(),
-                            );
+                            .with_class_groups_key_pair_and_proof(&authority_key)
+                            .with_protocol_key_pair(authority_key);
+                        // .with_class_groups_key_pair_and_proof(); // read fom file
+                        // .with_dwallet_mpc_class_groups_public_parameters(
+                        //     decryption_key_share_public_parameters.clone(),
+                        // )
+                        // todo (#348): Update the system to ensure that each validator saves only their own decryption share
+                        // .with_dwallet_mpc_class_groups_decryption_shares(
+                        //     decryption_key_shares.clone(),
+                        // );
                         if let Some(rgp) = self.reference_gas_price {
                             builder = builder.with_gas_price(rgp);
                         }
@@ -341,6 +343,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     .zip(protocol_keys)
                     .map(|(account_key, protocol_key)| {
                         let mut builder = ValidatorGenesisConfigBuilder::new()
+                            .with_class_groups_key_pair_and_proof(&protocol_key)
                             .with_protocol_key_pair(protocol_key)
                             .with_account_key_pair(account_key);
                         if let Some(rgp) = self.reference_gas_price {
