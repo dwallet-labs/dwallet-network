@@ -233,6 +233,9 @@ strip = 'none'
 # (recursive) stack frames by up to 10x, avoiding stack overflows.
 opt-level = 2
 
+[profile.dev]
+opt-level = 2
+
 [profile.simulator]
 inherits = "test"
 debug = true
