@@ -69,7 +69,8 @@ impl DwalletMPCNetworkKeyVersions {
             .len() as u8)
     }
 
-    /// Update the key version with the new shares. Used after the re-sharing is done.
+    /// Update the key version with the new shares.
+    /// Used after the re-sharing is done.
     pub fn update_key_version(
         &self,
         key_type: DWalletMPCNetworkKey,
