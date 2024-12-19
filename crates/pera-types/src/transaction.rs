@@ -297,7 +297,9 @@ pub enum TransactionKind {
     /// Used to send the output of the dwallet MPC flow to the other validators,
     /// so they will be able to create a system transaction that writes it to the chain
     DWalletMPCOutput(DWalletMPCOutput),
-    // todo(zeev): doc.
+    /// A transaction that locks the next committee.
+    /// When processing this TX from the consensus output, it's being replaced with a system TX call to
+    /// the `lock_next_epoch_committee` move function.
     LockNextCommittee(EpochId),
     // .. more transaction types go here
 }
