@@ -1,8 +1,7 @@
+//! MPC output transaction code to support the GraphQL API.
 use crate::types::base64::Base64;
 use async_graphql::Object;
 use pera_types::messages_dwallet_mpc::DWalletMPCOutput as NativeDWalletMPCOutput;
-
-// todo(zeev): doc.
 
 /// System transaction to store the output of dwallet mpc on-chain.
 #[derive(Clone, Eq, PartialEq)]
