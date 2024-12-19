@@ -92,7 +92,8 @@ impl DwalletMPCNetworkKeyVersions {
         Ok(())
     }
 
-    /// Add a new key version with the given shares. Used after the network DKG is done.
+    /// Add a new key version with the given shares.
+    /// Used after the network DKG is done.
     pub fn add_key_version(
         &self,
         epoch_store: Arc<AuthorityPerEpochStore>,
