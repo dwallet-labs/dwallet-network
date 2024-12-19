@@ -147,7 +147,9 @@ impl DWalletMPCInstance {
         }
     }
 
-    // todo(zeev): WHAT? WHY? DOCS.
+    /// A function to restart an MPC instance.
+    /// Being called when an instance advancement have been failed due to malicious parties.
+    /// Those parties will be flagged as malicious and ignored, the instance will be restarted.
     fn restart(&mut self) {
         self.status = MPCSessionStatus::FirstExecution;
     }
