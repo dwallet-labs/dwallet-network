@@ -13,7 +13,7 @@ module pera_system::dwallet_network_key {
         }
     }
 
-    /// Event to start the network DKG
+    /// Event to start the network DKG.
     public struct StartNetworkDKGEvent has store, copy, drop {
         session_id: ID,
         key_type: u8,
