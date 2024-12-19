@@ -36,7 +36,7 @@ pub struct DwalletMPCNetworkKeyVersions {
 }
 
 impl DwalletMPCNetworkKeyVersions {
-    /// Creates a new instance of the network encryption of decryption key shares.
+    /// Creates a new instance of the network encryption key shares.
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
         let decryption_key_share = epoch_store
             .load_validator_decryption_key_shares_from_system_state()
