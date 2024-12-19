@@ -173,7 +173,7 @@ pub struct StartSignRoundEvent {
     pub(super) dkg_output: Vec<u8>,
     /// Hashed messages to Sign.
     pub(super) hashed_message: Vec<u8>,
-   /// The serialized final presign output, constructed from the outputs of both the first and second presign MPC rounds.
+    /// The serialized final presign output, constructed from the outputs of both the first and second presign MPC rounds.
     pub(super) presign: Vec<u8>,
     /// Centralized signed message
     pub(super) centralized_signed_message: Vec<u8>,
