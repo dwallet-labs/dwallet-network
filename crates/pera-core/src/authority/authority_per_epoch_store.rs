@@ -1065,11 +1065,13 @@ impl AuthorityPerEpochStore {
         })
     }
 
-    /// Reads the encryption of decryption key shares for the current epoch, if exists in the system state.
+    /// Retrieves the decryption key shares for the current epoch if they exist in the system state.
     ///
-    /// The data is loaded from the epoch start system state. The returned value is a map where:
-    /// - The key represents the key scheme.
-    /// - The value is a vector of `EncryptionOfNetworkDecryptionKeyShares`, containing all encrypted decryption key shares versions.
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
+    /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
+    /// - The value is a vector of [`EncryptionOfNetworkDecryptionKeyShares`],
+    ///   which contains all versions of the encrypted decryption key shares.
     pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>>
