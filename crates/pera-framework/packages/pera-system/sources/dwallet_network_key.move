@@ -45,7 +45,7 @@ module pera_system::dwallet_network_key {
         }
     }
 
-    /// Function to update the shares of the network encryption of decryption key
+    /// Function to update the shares of the network encryption of decryption key.
     public fun update_new_shares(self: &mut EncryptionOfNetworkDecryptionKeyShares, new_shares: vector<vector<u8>>, epoch: u64) {
         self.previous_epoch_shares = self.current_epoch_shares;
         self.current_epoch_shares = new_shares;
