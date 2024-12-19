@@ -23,7 +23,7 @@ pub enum DwalletMPCNetworkKeysStatus {
     NotInitialized,
 }
 
-/// Hold the network keys of the dwallet mpc protocols.
+/// Holds the network keys of the dWallet MPC protocols.
 pub struct DwalletMPCNetworkKeyVersions {
     /// The validators' decryption key shares.
     pub validator_decryption_key_share: Arc<RwLock<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>>>,
