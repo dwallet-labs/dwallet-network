@@ -1,11 +1,20 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::advance;
-use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use class_groups::dkg::{
+    RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
+};
+use class_groups::{
+    CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES,
+};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::class_groups_key::{read_class_groups_from_file, read_class_groups_from_file_real, ClassGroupsEncryptionKeyAndProof};
-use group::{secp256k1, PartyID};
+use dwallet_mpc_types::class_groups_key::{
+    read_class_groups_from_file, read_class_groups_from_file_real,
+    read_class_groups_private_key_from_file_real, ClassGroupsEncryptionKeyAndProof,
+};
+use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
@@ -13,8 +22,6 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
-use class_groups::{CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES};
-use class_groups::dkg::{Secp256k1Party, Secp256k1PublicInput};
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -174,22 +181,22 @@ pub(crate) fn advance_network_dkg(
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
     Ok(match key_type {
         // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
-        DWalletMPCNetworkKey::Secp256k1 => advance::<DKGFirstParty>(
+        DWalletMPCNetworkKey::Secp256k1 => advance::<Secp256k1Party>(
             session_id,
             party_id,
             &weighted_threshold_access_structure,
             messages,
             bcs::from_bytes(public_input)?,
-            (),
+            read_class_groups_private_key_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key").unwrap(),
         ),
         // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
-        DWalletMPCNetworkKey::Ristretto => advance::<DKGFirstParty>(
+        DWalletMPCNetworkKey::Ristretto => advance::<RistrettoParty>(
             session_id,
             party_id,
             &weighted_threshold_access_structure,
             messages,
             bcs::from_bytes(public_input)?,
-            (),
+            read_class_groups_private_key_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key").unwrap(),
         ),
     }?)
 }
@@ -258,11 +265,12 @@ fn generate_secp256k1_dkg_party_public_input(
         ClassGroupsEncryptionKeyAndProof,
     >,
 ) -> DwalletMPCResult<Vec<u8>> {
-    let public_params = Secp256k1PublicInput::new(
-    secp256k1::scalar::PublicParameters::default(),
-    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
-    mock_class_groups_encryption_keys_and_proofs(),
-    )?;
+    let public_params = Secp256k1PublicInput::new::<secp256k1::GroupElement>(
+        secp256k1::scalar::PublicParameters::default(),
+        DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+        mock_class_groups_encryption_keys_and_proofs(),
+    )
+    .map_err(|e| DwalletMPCError::DKGNotOnFirstEpoch)?; // change to the actual error
     bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
@@ -273,18 +281,27 @@ fn generate_ristretto_dkg_party_public_input(
         ClassGroupsEncryptionKeyAndProof,
     >,
 ) -> DwalletMPCResult<Vec<u8>> {
-    <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
+    let public_params = RistrettoPublicInput::new::<ristretto::GroupElement>(
+        ristretto::scalar::PublicParameters::default(),
+        DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+        mock_class_groups_encryption_keys_and_proofs(),
+    )
+    .unwrap();
+    bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
-fn mock_class_groups_encryption_keys_and_proofs() -> HashMap<PartyID, [(
-    CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
-    KnowledgeOfDiscreteLogUCProof,
-); MAX_PRIMES]> {
+fn mock_class_groups_encryption_keys_and_proofs() -> HashMap<
+    PartyID,
+    [(
+        CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
+        KnowledgeOfDiscreteLogUCProof,
+    ); MAX_PRIMES],
+> {
     let mut encryption_keys_and_proofs = HashMap::new();
     (1..=3).for_each(|i| {
         encryption_keys_and_proofs.insert(
             i as PartyID,
-            read_class_groups_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key")?,
+            read_class_groups_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key").unwrap(),
         );
     });
     encryption_keys_and_proofs
