@@ -23,7 +23,7 @@ pub enum DwalletMPCNetworkKeysStatus {
     NotInitialized,
 }
 
-/// Hold the network keys of the dwallet mpc protocols.
+/// Holds the network keys of the dWallet MPC protocols.
 pub struct DwalletMPCNetworkKeyVersions {
     /// The validators' decryption key shares.
     pub validator_decryption_key_share: Arc<RwLock<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>>>,
@@ -36,7 +36,7 @@ pub struct DwalletMPCNetworkKeyVersions {
 }
 
 impl DwalletMPCNetworkKeyVersions {
-    /// Creates a new instance of the network encryption of decryption key shares.
+    /// Creates a new instance of the network encryption key shares.
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
         let decryption_key_share = epoch_store
             .load_validator_decryption_key_shares_from_system_state()
@@ -69,7 +69,8 @@ impl DwalletMPCNetworkKeyVersions {
             .len() as u8)
     }
 
-    /// Update the key version with the new shares. Used after the re-sharing is done.
+    /// Update the key version with the new shares.
+    /// Used after the re-sharing is done.
     pub fn update_key_version(
         &self,
         key_type: DWalletMPCNetworkKey,
@@ -92,7 +93,8 @@ impl DwalletMPCNetworkKeyVersions {
         Ok(())
     }
 
-    /// Add a new key version with the given shares. Used after the network DKG is done.
+    /// Add a new key version with the given shares.
+    /// Used after the network DKG is done.
     pub fn add_key_version(
         &self,
         epoch_store: Arc<AuthorityPerEpochStore>,
