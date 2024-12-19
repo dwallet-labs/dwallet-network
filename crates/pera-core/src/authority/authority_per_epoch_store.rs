@@ -991,7 +991,7 @@ impl AuthorityPerEpochStore {
             .set(DwalletMPCNetworkKeyVersions::new(self))
             .is_err()
         {
-            error!("BUG: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
         }
     }
 
