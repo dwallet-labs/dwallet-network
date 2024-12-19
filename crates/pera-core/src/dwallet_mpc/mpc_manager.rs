@@ -308,7 +308,7 @@ impl DWalletMPCManager {
         // Need to send the messages one by one, so the consensus adapter won't think they
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for (message, session_id) in messages {
-            // Update the manager with the new network encryption of decryption key share
+            // Update the manager with the new network decryption key share (if relevant).
             let instance = self
                 .mpc_instances
                 .get(&session_id)
