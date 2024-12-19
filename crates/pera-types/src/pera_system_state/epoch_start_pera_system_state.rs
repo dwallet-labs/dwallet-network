@@ -7,7 +7,6 @@ use std::collections::{BTreeMap, HashMap};
 use crate::base_types::{AuthorityName, EpochId, PeraAddress};
 use crate::collection_types::VecMap;
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
-use crate::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
 use crate::multiaddr::Multiaddr;
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
@@ -15,6 +14,7 @@ use consensus_config::{
     Authority, AuthorityPublicKey, Committee as ConsensusCommittee, NetworkPublicKey,
     ProtocolPublicKey,
 };
+use dwallet_mpc_types::dwallet_mpc::EncryptionOfNetworkDecryptionKeyShares;
 use narwhal_config::{Committee as NarwhalCommittee, CommitteeBuilder, WorkerCache, WorkerIndex};
 use pera_protocol_config::ProtocolVersion;
 use serde::{Deserialize, Serialize};

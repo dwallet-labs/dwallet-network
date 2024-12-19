@@ -1,0 +1,15 @@
+[package]
+name = "dwallet-classgroups-types"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+class_groups.workspace = true
+crypto-bigint = "0.5.5"
+serde.workspace = true
+anyhow.workspace = true
+bcs.workspace = true
+
+
+[lints]
+workspace = true
