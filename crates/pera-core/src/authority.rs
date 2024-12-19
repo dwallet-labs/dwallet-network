@@ -1573,10 +1573,12 @@ impl AuthorityState {
             ) else {
                 continue;
             };
-            let mut dwallet_mpc_batches_manager =
-                epoch_store.get_dwallet_mpc_batches_manager().await?;
+            if session_info.mpc_round.is_part_of_batch() {
+                let mut dwallet_mpc_batches_manager =
+                    epoch_store.get_dwallet_mpc_batches_manager().await?;
+                dwallet_mpc_batches_manager.handle_new_event(&session_info);
+            }
             // This function is being executed for all events, some events are being emitted before the MPC outputs manager is initialized.
-            dwallet_mpc_batches_manager.handle_new_event(&session_info);
             dwallet_mpc_outputs_manager.handle_new_event(&session_info);
             let dwallet_mpc_sender = epoch_store.dwallet_mpc_sender.get().ok_or(
                 PeraError::from("DWallet MPC sender not initialized when iterating over events"),

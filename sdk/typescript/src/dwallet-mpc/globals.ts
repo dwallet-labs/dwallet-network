@@ -139,3 +139,45 @@ export const getEventByTypeAndSessionId = async (
 		} minutes (${seconds} seconds passed).`,
 	);
 };
+
+export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
+	c: Config,
+	sessionID: string,
+	eventType: string,
+	isEventFn: (parsedJson: unknown) => parsedJson is TEvent,
+): Promise<TEvent> {
+	const startTime = Date.now();
+	let cursor = null;
+
+	while (Date.now() - startTime <= c.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+		const { data, nextCursor, hasNextPage } = await c.client.queryEvents({
+			query: {
+				TimeRange: {
+					startTime: (Date.now() - c.timeout).toString(),
+					endTime: Date.now().toString(),
+				},
+			},
+			cursor,
+		});
+
+		const match = data.find(
+			(event) =>
+				event.type === eventType &&
+				isEventFn(event.parsedJson) &&
+				event.parsedJson.session_id === sessionID,
+		);
+
+		if (match) return match.parsedJson as TEvent;
+		if (hasNextPage) cursor = nextCursor;
+	}
+
+	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
+	throw new Error(
+		`timeout: unable to fetch an event of type ${eventType} within ${
+			c.timeout / (60 * 1000)
+		} minutes (${seconds} seconds passed).`,
+	);
+}
