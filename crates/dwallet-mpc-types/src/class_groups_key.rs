@@ -103,7 +103,6 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + 
     let serialized = bcs::to_bytes(keypair)?;
     let contents = Base64::encode(serialized);
     std::fs::write(path.clone(), contents)?;
-    read_class_groups_from_file(path)?;
     Ok(Base64::encode(keypair.public_bytes()))
 }
 
