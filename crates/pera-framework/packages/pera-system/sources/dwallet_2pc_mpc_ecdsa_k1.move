@@ -18,10 +18,13 @@
 /// - Emit events for validators to coordinate DKG rounds.
 /// - Transfer intermediate results and final outputs to the initiating user.
 /// - Ensure secure and decentralized key generation and management.
+#[allow(unused_function, unused_use, unused_field, unused_const, unused_mut_parameter, unused_variable)]
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
     use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output};
     use pera::event;
+    #[test_only]
+    use pera::object;
 
     /// Represents the `Secp256K1` dWallet type.
     ///
@@ -73,6 +76,37 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         dwallet_id: ID,
         first_round_session_id: ID,
         presign: vector<u8>,
+    }
+
+    /// Messages that has been signed by a user, a.k.a the centralized party, but not yet by the blockchain.
+    /// Used for scenarios where the user need to first agree to sign some transaction, and the blockchain signs this transaction only later,
+    /// when some other conditions are met.
+    ///
+    /// Can be used to implement an order-book based exchange, for example.
+    /// User A first agrees to buy BTC with ETH at price X, and signs a transaction with this information.
+    /// When a matching user B, that agrees to sell BTC for ETH at price X, signs a transaction with this information,
+    /// the blockchain can sign both transactions, and the exchange is completed.
+    public struct PartiallySignedMessages has key {
+        id: UID,
+        /// The presigns bytes for each message.
+        /// The matching presign objects are being "burned" before this object is created.
+        presigns: vector<vector<u8>>,
+        /// The presigns session IDs.
+        presign_session_ids: vector<ID>,
+        /// The hashed messages that are being signed.
+        messages: vector<vector<u8>>,
+        /// The user centralized signatures for each message.
+        signatures: vector<vector<u8>>,
+        dwallet_id: ID,
+        /// The DKG output of the DWallet.
+        dwallet_output: vector<u8>,
+        dwallet_cap_id: ID,
+    }
+
+    /// Event emitted when a [`PartiallySignedMessages`] object is created.
+    public struct CreatedPartiallySignedMessagesEvent has copy, drop {
+        /// The object's ID.
+        partial_signatures_object_id: ID,
     }
 
     /// Event emitted to start the first DKG round.
@@ -261,6 +295,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     const EMissingApprovalOrWorngApprovalOrder: u64 = 4;
     const ECentrailizedsignedMessagesAndMessagesLenMismatch: u64 = 5;
     const EPresignsAndMessagesLenMismatch: u64 = 6;
+    const EInvalidSignatures: u64 = 7;
+    const EApprovalsAndSignaturesLenMismatch: u64 = 8;
     // >>>>>>>>>>>>>>>>>>>>>>>> Error codes >>>>>>>>>>>>>>>>>>>>>>>>
 
     // <<<<<<<<<<<<<<<<<<<<<<<< Constants <<<<<<<<<<<<<<<<<<<<<<<<
@@ -415,6 +451,28 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             output,
             ctx
         );
+    }
+
+    #[test_only]
+    public fun partial_signatures_for_testing(
+        presigns: vector<vector<u8>>,
+        presign_session_ids: vector<ID>,
+        messages: vector<vector<u8>>,
+        signatures: vector<vector<u8>>,
+        dwallet_id: ID,
+        dwallet_cap_id: ID,
+        ctx: &mut TxContext
+    ) : PartiallySignedMessages {
+        PartiallySignedMessages {
+            id: object::new(ctx),
+            presigns,
+            presign_session_ids,
+            messages,
+            signatures,
+            dwallet_id,
+            dwallet_output: vector::empty(),
+            dwallet_cap_id,
+        }
     }
 
     #[allow(unused_function)]
@@ -741,11 +799,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         while (i < message_approvals_len) {
             let presign = vector::pop_back(&mut presigns);
             assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
-            let message_approval = vector::pop_back(message_approvals);
-            let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
-            assert!(expected_dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
             let message = vector::pop_back(&mut hashed_messages);
-            assert!(message == &approved_message, EMissingApprovalOrWorngApprovalOrder);
+            pop_and_verify_message_approval(expected_dwallet_cap_id, message, message_approvals);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
             let centralized_signed_message = vector::pop_back(&mut centralized_signed_messages);
             event::emit(StartSignEvent {
@@ -865,4 +920,126 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
             first_round_session_id,
         }
     }
+
+    /// A function to publish messages signed by the user on chain with on-chain verification,
+    /// without launching the chain's sign flow immediately.
+    ///
+    /// See the docs of [`PartiallySignedMessages`] for more details on when this may be used.
+    public fun publish_partially_signed_messages(
+        signatures: vector<vector<u8>>,
+        messages: vector<vector<u8>>,
+        mut presigns: vector<Presign>,
+        dwallet: &DWallet<Secp256K1>,
+        ctx: &mut TxContext
+    ) {
+        let messages_len = vector::length(&messages);
+        let signatures_len = vector::length(&signatures);
+        let presigns_len = vector::length(&presigns);
+        assert!(messages_len == signatures_len, EApprovalsAndSignaturesLenMismatch);
+        assert!(messages_len == presigns_len, EPresignsAndMessagesLenMismatch);
+        let mut presigns_bytes: vector<vector<u8>> = vector::empty();
+        let mut presign_session_ids: vector<ID> = vector::empty();
+        let mut i = 0;
+        while (i < messages_len) {
+            let presign = vector::pop_back(&mut presigns);
+            assert!(presign.dwallet_id == object::id(dwallet), EDwalletMismatch);
+            presigns_bytes.push_back(presign.presign);
+            presign_session_ids.push_back(presign.first_round_session_id);
+            transfer::transfer(presign, SYSTEM_ADDRESS);
+            i = i + 1;
+        };
+        presigns_bytes.reverse();
+        presign_session_ids.reverse();
+        presigns.destroy_empty();
+        assert!(
+            verify_partially_signed_signatures_native(
+                signatures,
+                messages,
+                presigns_bytes,
+                get_dwallet_output(dwallet)
+            ),
+            EInvalidSignatures
+        );
+        let partial_signatures = PartiallySignedMessages {
+            id: object::new(ctx),
+            presigns: presigns_bytes,
+            presign_session_ids,
+            messages,
+            signatures,
+            dwallet_output: get_dwallet_output(dwallet),
+            dwallet_id: object::id(dwallet),
+            dwallet_cap_id: get_dwallet_cap_id(dwallet),
+        };
+        event::emit(CreatedPartiallySignedMessagesEvent {
+            partial_signatures_object_id: object::id(&partial_signatures),
+        });
+        transfer::transfer(partial_signatures, tx_context::sender(ctx));
+    }
+
+    /// A function to launch a sign flow with a previously published [`PartiallySignedMessages`].
+    ///
+    /// See the docs of [`PartiallySignedMessages`] for more details on when this may be used.
+    public fun future_sign(
+        partial_signature: PartiallySignedMessages,
+        message_approvals: &mut vector<MessageApproval>,
+        ctx: &mut TxContext
+    ) {
+        let PartiallySignedMessages {
+            id,
+            mut presigns,
+            mut presign_session_ids,
+            mut messages,
+            mut signatures,
+            dwallet_id,
+            dwallet_cap_id,
+            dwallet_output,
+        } = partial_signature;
+        object::delete(id);
+        let message_approvals_len = vector::length(message_approvals);
+        let messages_len = vector::length(&messages);
+        assert!(message_approvals_len == messages_len, EApprovalsAndMessagesLenMismatch);
+        let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
+        event::emit(StartBatchedSignEvent {
+            session_id: batch_session_id,
+            hashed_messages: messages,
+            initiator: tx_context::sender(ctx)
+        });
+        let mut i = 0;
+        while (i < message_approvals_len) {
+            let message = vector::pop_back(&mut messages);
+            pop_and_verify_message_approval(dwallet_cap_id, message, message_approvals);
+            let id = object::id_from_address(tx_context::fresh_object_address(ctx));
+            let centralized_signed_message = vector::pop_back(&mut signatures);
+            let presign = vector::pop_back(&mut presigns);
+            let presign_session_id = vector::pop_back(&mut presign_session_ids);
+            event::emit(StartSignEvent {
+                session_id: id,
+                presign_session_id,
+                initiator: tx_context::sender(ctx),
+                batched_session_id: batch_session_id,
+                dwallet_id,
+                presign,
+                centralized_signed_message,
+                dkg_output: dwallet_output,
+                hashed_message: message,
+            });
+            i = i + 1;
+        };
+    }
+
+    #[allow(unused_function)]
+    fun pop_and_verify_message_approval(dwallet_cap_id: ID, message: vector<u8>, message_approvals: &mut vector<MessageApproval>) {
+        let message_approval = vector::pop_back(message_approvals);
+        let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
+        assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
+        assert!(&message == &approved_message, EMissingApprovalOrWorngApprovalOrder);
+    }
+
+    /// Verifies that the user's centralized party signatures are valid.
+    native fun verify_partially_signed_signatures_native(
+        partial_signatures: vector<vector<u8>>,
+        messages: vector<vector<u8>>,
+        presigns: vector<vector<u8>>,
+        dkg_output: vector<u8>
+    ): bool;
 }

@@ -35,11 +35,11 @@ use self::{
     types::TypesIsOneTimeWitnessCostParams,
     validator::ValidatorValidateMetadataBcsCostParams,
 };
-use crate::crypto::group_ops;
 use crate::crypto::group_ops::GroupOpsCostParams;
 use crate::crypto::poseidon::PoseidonBN254CostParams;
 use crate::crypto::zklogin;
 use crate::crypto::zklogin::{CheckZkloginIdCostParams, CheckZkloginIssuerCostParams};
+use crate::crypto::{group_ops, twopc_mpc};
 use better_any::{Tid, TidAble};
 use crypto::vdf::{self, VDFCostParams};
 use move_binary_format::errors::{PartialVMError, PartialVMResult};
@@ -1051,11 +1051,18 @@ pub fn all_natives(silent: bool, protocol_config: &ProtocolConfig) -> NativeFunc
                     func,
                 )
             });
-    let pera_system_natives: &[(&str, &str, NativeFunction)] = &[(
-        "validator",
-        "validate_metadata_bcs",
-        make_native!(validator::validate_metadata_bcs),
-    )];
+    let pera_system_natives: &[(&str, &str, NativeFunction)] = &[
+        (
+            "validator",
+            "validate_metadata_bcs",
+            make_native!(validator::validate_metadata_bcs),
+        ),
+        (
+            "dwallet_2pc_mpc_ecdsa_k1",
+            "verify_partially_signed_signatures_native",
+            make_native!(twopc_mpc::verify_partially_signed_signatures_native),
+        ),
+    ];
     pera_system_natives
         .iter()
         .cloned()

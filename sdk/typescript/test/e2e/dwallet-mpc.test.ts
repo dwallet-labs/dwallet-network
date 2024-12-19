@@ -9,7 +9,12 @@ import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { Config } from '../../src/dwallet-mpc/globals';
 import { presign } from '../../src/dwallet-mpc/presign';
-import { Hash, signMessageTransactionCall } from '../../src/dwallet-mpc/sign';
+import {
+	futureSignTransactionCall,
+	Hash,
+	partiallySignMessageTransactionCall,
+	signMessageTransactionCall,
+} from '../../src/dwallet-mpc/sign';
 import { Ed25519Keypair } from '../../src/keypairs/ed25519';
 import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
@@ -86,14 +91,6 @@ describe('Test dWallet MPC', () => {
 			.vector(bcs.vector(bcs.u8()))
 			.serialize([presignOutput1.presign, presignOutput2.presign])
 			.toBytes();
-		// let serializedPresignSessionIds = bcs
-		// 	.vector(bcs.string())
-		// 	.serialize([
-		// 		presignOutput1.first_round_session_id.slice(2),
-		// 		presignOutput2.first_round_session_id.slice(2),
-		// 	])
-		// 	.toBytes();
-		// TODO: undo this intentional error
 		let serializedPresignSessionIds = bcs
 			.vector(bcs.string())
 			.serialize([
@@ -171,6 +168,62 @@ describe('Test dWallet MPC', () => {
 		},
 		1000 * 60 * 20,
 	);
+
+	it('should future sign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await mockCreateDwallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput1 = await mockCreatePresign(conf, dWallet);
+		const presignOutput2 = await mockCreatePresign(conf, dWallet);
+		expect(presignOutput1).toBeDefined();
+		expect(presignOutput2).toBeDefined();
+		console.log({ presignOutput1, presignOutput2 });
+		let serializedMsgs = bcs
+			.vector(bcs.vector(bcs.u8()))
+			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
+			.toBytes();
+		let serializedPresigns = bcs
+			.vector(bcs.vector(bcs.u8()))
+			.serialize([presignOutput1.presign, presignOutput2.presign])
+			.toBytes();
+		let serializedPresignSessionIds = bcs
+			.vector(bcs.string())
+			.serialize([
+				presignOutput1.first_round_session_id.slice(2),
+				presignOutput2.first_round_session_id.slice(2),
+			])
+			.toBytes();
+		const [centralizedSignMsg, hashedMsgs] = create_sign_centralized_output(
+			Uint8Array.from(dWallet.centralizedDKGOutput),
+			serializedPresigns,
+			serializedMsgs,
+			Hash.SHA256,
+			serializedPresignSessionIds,
+		);
+		let partiallySignedMessagesObjID = await partiallySignMessageTransactionCall(
+			conf,
+			hashedMsgs,
+			dWallet.id,
+			[presignOutput1.id.id, presignOutput2.id.id],
+			centralizedSignMsg,
+		);
+		console.log({ partiallySignedMessages: partiallySignedMessagesObjID });
+		expect(partiallySignedMessagesObjID).toBeDefined();
+		// sleep for 5 seconds for a checkpoint to be created, so the new object can be used
+		await new Promise((r) => setTimeout(r, 5000));
+		let completedSignEvent = await futureSignTransactionCall(
+			conf,
+			hashedMsgs,
+			dWallet.dwalletCapID,
+			partiallySignedMessagesObjID,
+		);
+		console.log({ completedSignEvent: completedSignEvent.signed_messages });
+	});
 });
 
 async function printOwnedObjects(
