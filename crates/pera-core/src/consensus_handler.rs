@@ -449,7 +449,10 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         hashed_message.clone(),
                                         output.clone(),
                                     ) {
-                                        error!("session: {:?} error storing message in batch: {:?}", batch_session_id, err);
+                                        error!(
+                                            "session: {:?} error storing message in batch: {:?}",
+                                            batch_session_id, err
+                                        );
                                         continue;
                                     }
                                     match batches_manager.is_batch_completed(batch_session_id) {

@@ -158,7 +158,10 @@ impl DWalletMPCInstance {
 
     /// Create a new consensus transaction with the message to be sent to the other MPC parties.
     /// Returns None only if the epoch switched in the middle and was not available.
-    fn new_dwallet_mpc_message(&self, message: MPCMessage) -> DwalletMPCResult<ConsensusTransaction> {
+    fn new_dwallet_mpc_message(
+        &self,
+        message: MPCMessage,
+    ) -> DwalletMPCResult<ConsensusTransaction> {
         Ok(ConsensusTransaction::new_dwallet_mpc_message(
             self.epoch_store()?.name,
             message,
@@ -187,11 +190,7 @@ impl DWalletMPCInstance {
     /// The code stores every new message it receives for that session,
     /// and when we reach the end of delivery,
     /// we will advance the session if we have a threshold of messages.
-    fn store_message(
-        &mut self,
-        round: usize,
-        message: &DWalletMPCMessage,
-    ) -> DwalletMPCResult<()> {
+    fn store_message(&mut self, round: usize, message: &DWalletMPCMessage) -> DwalletMPCResult<()> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&message.authority, &epoch_store)?;
         if self.pending_messages[round].contains_key(&party_id) {

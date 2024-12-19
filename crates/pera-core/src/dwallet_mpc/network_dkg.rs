@@ -6,7 +6,9 @@ use crate::dwallet_mpc::{
     advance, FIRST_EPOCH_ID, RISTRETTO_DKG_SESSION_ID, SECP256K1_DKG_SESSION_ID,
 };
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::{dwallet_mpc::MPCSessionStatus};
+use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
+use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use group::PartyID;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;
@@ -14,8 +16,6 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::HashMap;
 use std::sync::Arc;
-use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
 
 const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
 

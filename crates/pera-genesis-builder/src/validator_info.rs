@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 use anyhow::bail;
+use dwallet_classgroups_types::ClassGroupsPublicKeyAndProofBytes;
 use fastcrypto::traits::ToFromBytes;
 use pera_types::base_types::PeraAddress;
 use pera_types::crypto::{
@@ -11,7 +12,6 @@ use pera_types::crypto::{
 use pera_types::multiaddr::Multiaddr;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use dwallet_classgroups_types::ClassGroupsPublicKeyAndProofBytes;
 
 const MAX_VALIDATOR_METADATA_LENGTH: usize = 256;
 

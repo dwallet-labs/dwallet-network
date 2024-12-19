@@ -28,6 +28,7 @@ use tap::tap::TapOptional;
 use crate::fire_drill::get_gas_obj_ref;
 use clap::*;
 use colored::Colorize;
+use dwallet_classgroups_types::generate_class_groups_keypair_and_proof_from_seed;
 use fastcrypto::traits::ToFromBytes;
 use fastcrypto::{
     encoding::{Base64, Encoding},
@@ -59,7 +60,6 @@ use pera_types::crypto::{
 use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, PeraKeyPair, SignatureScheme};
 use pera_types::transaction::{CallArg, ObjectArg, Transaction, TransactionData};
 use serde::Serialize;
-use dwallet_classgroups_types::generate_class_groups_keypair_and_proof_from_seed;
 use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 
 #[path = "unit_tests/validator_tests.rs"]

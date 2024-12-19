@@ -100,7 +100,7 @@ impl DWalletMPCManager {
             epoch_store.committee().quorum_threshold() as PartyID,
             weighted_parties,
         )
-            .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
+        .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
         // Start the network DKG if this is the first epoch.
         // TODO(#383): Enable DKG logic when Scaly's code is ready.
@@ -140,7 +140,7 @@ impl DWalletMPCManager {
             node_config,
             malicious_actors: HashSet::new(),
             weighted_threshold_access_structure,
-            outputs_verifier: outputs_verifier,
+            outputs_verifier,
             status: ManagerStatus::Active,
         };
 
@@ -257,7 +257,6 @@ impl DWalletMPCManager {
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
         let threshold = self.epoch_store()?.committee().quorum_threshold();
 
-
         let mut ready_to_advance = self
             .mpc_instances
             .iter_mut()
@@ -269,7 +268,10 @@ impl DWalletMPCManager {
                             .map(|authority_index| {
                                 // should never be "or"
                                 // as we receive messages only from known authorities.
-                                self.weighted_threshold_access_structure.party_to_weight.get(authority_index).unwrap_or(&0)
+                                self.weighted_threshold_access_structure
+                                    .party_to_weight
+                                    .get(authority_index)
+                                    .unwrap_or(&0)
                             })
                             .sum()
                     } else {

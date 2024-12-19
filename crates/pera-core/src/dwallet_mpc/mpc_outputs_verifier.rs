@@ -5,11 +5,11 @@
 //! by checking if a validators with quorum of stake voted for it.
 //! Any validator that voted for a different output is considered malicious.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use std::collections::{HashMap, HashSet};
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
 
 /// A struct to verify the DWallet MPC outputs.
 /// It stores all the outputs received for each session,

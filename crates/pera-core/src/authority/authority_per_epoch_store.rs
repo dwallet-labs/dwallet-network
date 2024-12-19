@@ -69,9 +69,7 @@ use crate::consensus_handler::{
 use crate::consensus_manager::ConsensusManager;
 use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
-use crate::dwallet_mpc::mpc_manager::{
-    DWalletMPCChannelMessage, DWalletMPCSender,
-};
+use crate::dwallet_mpc::mpc_manager::{DWalletMPCChannelMessage, DWalletMPCSender};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::FIRST_EPOCH_ID;
 use crate::epoch::epoch_metrics::EpochMetrics;
@@ -85,6 +83,8 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
+use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::dwallet_mpc::EncryptionOfNetworkDecryptionKeyShares;
 use group::PartyID;
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
@@ -117,8 +117,6 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
-use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::EncryptionOfNetworkDecryptionKeyShares;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
 
@@ -3758,9 +3756,7 @@ impl AuthorityPerEpochStore {
                         *authority,
                         session_info.clone(),
                     ))
-                    .map_err(|err| {
-                        DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string())
-                    })?;
+                    .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -3775,9 +3771,7 @@ impl AuthorityPerEpochStore {
                         *authority,
                         *session_id,
                     ))
-                    .map_err(|err| {
-                        DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string())
-                    })?;
+                    .map_err(|err| DwalletMPCError::DWalletMPCSenderSendFailed(err.to_string()))?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {

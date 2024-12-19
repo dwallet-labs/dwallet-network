@@ -5,6 +5,7 @@ use crate::authority::{test_authority_builder::TestAuthorityBuilder, AuthoritySt
 use crate::authority_aggregator::{AuthorityAggregator, AuthorityAggregatorBuilder, TimeoutConfig};
 use crate::state_accumulator::StateAccumulator;
 use crate::test_authority_clients::LocalAuthorityClient;
+use dwallet_classgroups_types::generate_class_groups_keypair_and_proof_from_seed;
 use fastcrypto::hash::MultisetHash;
 use fastcrypto::traits::{KeyPair, ToFromBytes};
 use futures::future::join_all;
@@ -48,7 +49,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
 use tracing::{info, warn};
-use dwallet_classgroups_types::generate_class_groups_keypair_and_proof_from_seed;
 
 const WAIT_FOR_TX_TIMEOUT: Duration = Duration::from_secs(15);
 
@@ -245,7 +245,9 @@ async fn init_genesis(
             worker_key: worker_name,
             account_address: PeraAddress::from(&account_key_pair.public()),
             network_key: network_key_pair.public().clone(),
-            class_groups_public_key_and_proof: class_groups_key_pair_and_proof.public_bytes().unwrap(),
+            class_groups_public_key_and_proof: class_groups_key_pair_and_proof
+                .public_bytes()
+                .unwrap(),
             gas_price: 1,
             commission_rate: 0,
             network_address: local_ip_utils::new_local_tcp_address_for_testing(),
