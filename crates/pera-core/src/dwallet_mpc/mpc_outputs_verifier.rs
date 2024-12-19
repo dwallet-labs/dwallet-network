@@ -88,8 +88,9 @@ impl DWalletMPCOutputsVerifier {
         self.network_key_version
     }
 
-    // todo(zeev): doc
-    pub fn should_lock_committee(&mut self, authority_name: AuthorityName) -> bool {
+    /// Returns true if the `lock_next_epoch_committee` system TX should get called, a.k.a. a quorum of validators voted for it,
+    /// and false otherwise.
+    pub(crate) fn should_lock_committee(&mut self, authority_name: AuthorityName) -> bool {
         self.voted_to_lock_committee.insert(authority_name);
         self.voted_to_lock_committee
             .iter()
