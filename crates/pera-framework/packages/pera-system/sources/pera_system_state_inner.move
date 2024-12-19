@@ -14,7 +14,6 @@ module pera_system::pera_system_state_inner {
     use pera_system::staking_pool::PoolTokenExchangeRate;
     use pera::vec_map::{Self, VecMap};
     use pera::vec_set::{Self, VecSet};
-    use pera::event;
     use pera::table::Table;
     use pera::bag::Bag;
     use pera::bag;

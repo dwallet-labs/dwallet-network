@@ -15,7 +15,7 @@ use crate::dwallet_mpc::presign::{
 };
 use crate::dwallet_mpc::sign::{SignFirstParty, SignPartyPublicInputGenerator};
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::MPCMessage;
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput};
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::AuthorityName;
@@ -37,6 +37,7 @@ pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
 
+// todo(zeev): remove?
 const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(0);
 const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(1);
 pub const FIRST_EPOCH_ID: EpochId = 0;
@@ -235,7 +236,7 @@ fn sign_party(
 
 fn sign_party_session_info(
     deserialized_event: &StartSignRoundEvent,
-    party_id: PartyID,
+    _party_id: PartyID,
 ) -> SessionInfo {
     SessionInfo {
         flow_session_id: deserialized_event.presign_session_id.bytes,
@@ -253,8 +254,6 @@ fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> Sess
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
         initiating_user_address: deserialized_event.initiating_user,
-        // Dummy ID is the dwallet cap is not relevant in the batched sign flow.
-        // TODO (#365): Remove the DWallet cap from the session info
         mpc_round: MPCRound::BatchedSign(deserialized_event.hashed_messages.clone()),
     }
 }
@@ -340,7 +339,7 @@ fn deserialize_mpc_messages<M: DeserializeOwned + Clone>(
 }
 
 /// Parses an [`Event`] to extract the corresponding [`MPCParty`],
-/// auxiliary input, and session information.
+/// public input, and session information.
 ///
 /// Returns an error if the event type does not correspond to any known MPC rounds
 /// or if deserialization fails.
@@ -348,7 +347,7 @@ pub(crate) fn from_event(
     event: &Event,
     dwallet_mpc_manager: &DWalletMPCManager,
     party_id: PartyID,
-) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
+) -> DwalletMPCResult<(MPCParty, MPCPublicInput, SessionInfo)> {
     match &event.type_ {
         t if t == &StartDKGFirstRoundEvent::type_() => {
             let deserialized_event: StartDKGFirstRoundEvent = bcs::from_bytes(&event.contents)?;

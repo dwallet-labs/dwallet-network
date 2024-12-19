@@ -402,6 +402,7 @@ impl DWalletMPCMessageDigest {
     Deserialize,
     JsonSchema,
 )]
+// todo(zeev): doc.
 pub struct DWalletMPCOutputDigest(pub Digest);
 
 impl DWalletMPCOutputDigest {

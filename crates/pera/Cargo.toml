@@ -77,6 +77,7 @@ pera-transaction-builder.workspace = true
 move-binary-format.workspace = true
 test-cluster.workspace = true
 dwallet-mpc-types.workspace = true
+dwallet-classgroups-types.workspace = true
 
 fastcrypto.workspace = true
 fastcrypto-zkp.workspace = true
