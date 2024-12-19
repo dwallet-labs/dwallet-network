@@ -984,14 +984,14 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    /// A function to initiate the network keys for the DWallet MPC when a new epoch starts.
+    /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
     pub fn set_dwallet_mpc_network_keys(&self) {
         if self
             .dwallet_mpc_network_keys
             .set(DwalletMPCNetworkKeyVersions::new(self))
             .is_err()
         {
-            error!("BUG: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
         }
     }
 
@@ -1065,11 +1065,13 @@ impl AuthorityPerEpochStore {
         })
     }
 
-    /// Reads the encryption of decryption key shares for the current epoch, if exists in the system state.
+    /// Retrieves the decryption key shares for the current epoch if they exist in the system state.
     ///
-    /// The data is loaded from the epoch start system state. The returned value is a map where:
-    /// - The key represents the key scheme.
-    /// - The value is a vector of `EncryptionOfNetworkDecryptionKeyShares`, containing all encrypted decryption key shares versions.
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
+    /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
+    /// - The value is a vector of [`EncryptionOfNetworkDecryptionKeyShares`],
+    ///   which contains all versions of the encrypted decryption key shares.
     pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>>
@@ -1088,11 +1090,13 @@ impl AuthorityPerEpochStore {
         Ok(decryption_key_shares)
     }
 
-    /// Reads the *running validator's* latest decryption key share for every key scheme, if it exists in the system state.
+    /// Retrieves the *running validator's* latest decryption key shares for each key scheme
+    /// if they exist in the system state.
     ///
-    /// The data is loaded from the epoch start system state. The returned value is a map where:
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
     /// - The key represents the key scheme.
-    /// - The value is a vector of vectors (`Vec<Vec<u8>>`), containing the decryption key shares of the validator.
+    /// - The value is a `Vec<Vec<u8>>`, containing the decryption key shares for the validator.
     pub(crate) fn load_validator_decryption_key_shares_from_system_state(
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>> {
