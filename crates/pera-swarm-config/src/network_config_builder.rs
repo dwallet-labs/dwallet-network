@@ -316,6 +316,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                 keys.into_iter()
                     .map(|authority_key| {
                         let mut builder = ValidatorGenesisConfigBuilder::new()
+                            .with_class_groups_key_pair_and_proof(&authority_key)
                             .with_protocol_key_pair(authority_key)
                             .with_dwallet_mpc_class_groups_public_parameters(
                                 decryption_key_share_public_parameters.clone(),
@@ -341,6 +342,7 @@ impl<R: rand::RngCore + rand::CryptoRng> ConfigBuilder<R> {
                     .zip(protocol_keys)
                     .map(|(account_key, protocol_key)| {
                         let mut builder = ValidatorGenesisConfigBuilder::new()
+                            .with_class_groups_key_pair_and_proof(&protocol_key)
                             .with_protocol_key_pair(protocol_key)
                             .with_account_key_pair(account_key);
                         if let Some(rgp) = self.reference_gas_price {
