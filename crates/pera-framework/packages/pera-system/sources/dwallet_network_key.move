@@ -36,7 +36,7 @@ module pera_system::dwallet_network_key {
         previous_epoch_shares: vector<vector<u8>>,
     }
 
-    /// Function to create a new EncryptionOfNetworkDecryptionKeyShares
+    /// Function to create a new EncryptionOfNetworkDecryptionKeyShares.
     public fun new_encrypted_network_decryption_key_shares(epoch: u64, current_epoch_shares: vector<vector<u8>>, previous_epoch_shares: vector<vector<u8>>): EncryptionOfNetworkDecryptionKeyShares {
         EncryptionOfNetworkDecryptionKeyShares {
             epoch,
