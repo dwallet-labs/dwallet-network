@@ -19,7 +19,7 @@ module pera_system::dwallet_network_key {
         key_type: u8,
     }
 
-    /// Function to create a new StartNetworkDKGEvent
+    /// Function to create a new StartNetworkDKGEvent.
     // Todo (#400): Add user restrictions, so that only someone we choose can run this function
     public fun start_network_dkg(key_type: u8, ctx: &mut TxContext) {
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
