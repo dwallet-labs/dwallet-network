@@ -9,9 +9,11 @@ use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
 use crate::dwallet_mpc::mpc_outputs_verifier::{DWalletMPCOutputsVerifier, OutputResult};
 use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNetworkKeysStatus};
+use crate::dwallet_mpc::sign::SignFirstParty;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
+use class_groups::DecryptionKeyShare;
 use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
@@ -26,14 +28,12 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
-use class_groups::DecryptionKeyShare;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKey;
 use twopc_mpc::sign::Protocol;
-use crate::dwallet_mpc::sign::SignFirstParty;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
@@ -203,7 +203,9 @@ impl DWalletMPCManager {
     }
 
     // todo(zeev): doc this.
-    pub fn get_decryption_share(&self) -> DwalletMPCResult<<AsyncProtocol as Protocol>::DecryptionKeyShare> {
+    pub fn get_decryption_share(
+        &self,
+    ) -> DwalletMPCResult<<AsyncProtocol as Protocol>::DecryptionKeyShare> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
         let shares = self

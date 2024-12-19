@@ -36,7 +36,9 @@ use pera_types::multiaddr::Multiaddr;
 use tracing::info;
 use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
 use twopc_mpc::secp256k1;
-use twopc_mpc::secp256k1::class_groups::{FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS};
+use twopc_mpc::secp256k1::class_groups::{
+    FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+};
 
 // Default max number of concurrent requests served
 pub const DEFAULT_GRPC_CONCURRENCY_LIMIT: usize = 20000000000;

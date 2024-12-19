@@ -5,6 +5,7 @@ use crate::zklogin_commands_util::{perform_zk_login_test_tx, read_cli_line};
 use anyhow::anyhow;
 use bip32::DerivationPath;
 use clap::*;
+use dwallet_mpc_types::class_groups_key::write_class_groups_keypair_and_proof_to_file;
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::encoding::{Base64, Encoding, Hex};
 use fastcrypto::hash::HashFunction;
@@ -57,7 +58,6 @@ use tabled::builder::Builder;
 use tabled::settings::Rotate;
 use tabled::settings::{object::Rows, Modify, Width};
 use tracing::info;
-use dwallet_mpc_types::class_groups_key::write_class_groups_keypair_and_proof_to_file;
 
 #[cfg(test)]
 #[path = "unit_tests/keytool_tests.rs"]
