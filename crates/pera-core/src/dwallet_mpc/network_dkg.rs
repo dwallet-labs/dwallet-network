@@ -4,8 +4,8 @@ use crate::dwallet_mpc::dkg::DKGFirstParty;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::class_groups_key::ClassGroupsEncryptionKeyAndProof;
-use group::PartyID;
+use dwallet_mpc_types::class_groups_key::{read_class_groups_from_file, read_class_groups_from_file_real, ClassGroupsEncryptionKeyAndProof};
+use group::{secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
@@ -13,6 +13,8 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
+use class_groups::{CompactIbqf, KnowledgeOfDiscreteLogUCProof, CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS, DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER, MAX_PRIMES};
+use class_groups::dkg::{Secp256k1Party, Secp256k1PublicInput};
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -256,7 +258,12 @@ fn generate_secp256k1_dkg_party_public_input(
         ClassGroupsEncryptionKeyAndProof,
     >,
 ) -> DwalletMPCResult<Vec<u8>> {
-    <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
+    let public_params = Secp256k1PublicInput::new(
+    secp256k1::scalar::PublicParameters::default(),
+    DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER,
+    mock_class_groups_encryption_keys_and_proofs(),
+    )?;
+    bcs::to_bytes(&public_params).map_err(|e| DwalletMPCError::BcsError(e))
 }
 
 // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
@@ -267,4 +274,18 @@ fn generate_ristretto_dkg_party_public_input(
     >,
 ) -> DwalletMPCResult<Vec<u8>> {
     <DKGFirstParty as crate::dwallet_mpc::dkg::DKGFirstPartyPublicInputGenerator>::generate_public_input()
+}
+
+fn mock_class_groups_encryption_keys_and_proofs() -> HashMap<PartyID, [(
+    CompactIbqf<{ CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS }>,
+    KnowledgeOfDiscreteLogUCProof,
+); MAX_PRIMES]> {
+    let mut encryption_keys_and_proofs = HashMap::new();
+    (1..=3).for_each(|i| {
+        encryption_keys_and_proofs.insert(
+            i as PartyID,
+            read_class_groups_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key")?,
+        );
+    });
+    encryption_keys_and_proofs
 }

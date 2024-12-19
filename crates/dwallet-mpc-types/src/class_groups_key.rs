@@ -29,6 +29,15 @@ pub struct ClassGroupsKeyPairAndProof {
     encryption_key_and_proof: ClassGroupsEncryptionKeyAndProof,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClassGroupsKeyPairAndProofReal {
+    decryption_key: ClassGroupsDecryptionKey,
+    pub encryption_key_and_proof: [(
+        CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+        KnowledgeOfDiscreteLogUCProof,
+    ); MAX_PRIMES],
+}
+
 impl ClassGroupsKeyPairAndProof {
     pub fn new(
         decryption_key: ClassGroupsDecryptionKey,
@@ -116,4 +125,16 @@ pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     let decoded = Base64::decode(contents.as_str()).map_err(|e| anyhow::anyhow!(e))?;
     let keypair: ClassGroupsKeyPairAndProof = bcs::from_bytes(&decoded)?;
     Ok(keypair)
+}
+
+pub fn read_class_groups_from_file_real<P: AsRef<std::path::Path>>(
+    path: P,
+) -> anyhow::Result<[(
+    CompactIbqf<CRT_NON_FUNDAMENTAL_DISCRIMINANT_LIMBS>,
+    KnowledgeOfDiscreteLogUCProof,
+); MAX_PRIMES]> {
+    let contents = std::fs::read_to_string(path)?;
+    let decoded = Base64::decode(contents.as_str()).map_err(|e| anyhow::anyhow!(e))?;
+    let keypair: ClassGroupsKeyPairAndProofReal = bcs::from_bytes(&decoded)?;
+    Ok(keypair.encryption_key_and_proof)
 }
