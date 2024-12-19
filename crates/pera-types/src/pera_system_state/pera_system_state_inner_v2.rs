@@ -74,6 +74,7 @@ pub struct PeraSystemStateInnerV2 {
     pub safe_mode_non_refundable_storage_fee: u64,
     pub epoch_start_timestamp_ms: u64,
     pub extra_fields: Bag,
+    pub dwallet_admin_address: PeraAddress,
     // TODO: Use getters instead of all pub.
 }
 
@@ -272,6 +273,7 @@ impl PeraSystemStateTrait for PeraSystemStateInnerV2 {
             safe_mode_non_refundable_storage_fee,
             epoch_start_timestamp_ms,
             extra_fields: _,
+            dwallet_admin_address: _,
         } = self;
         PeraSystemStateSummary {
             epoch,

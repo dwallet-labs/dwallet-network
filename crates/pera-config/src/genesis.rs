@@ -28,6 +28,7 @@ use pera_types::{
 };
 use pera_types::{PERA_BRIDGE_OBJECT_ID, PERA_RANDOMNESS_STATE_OBJECT_ID};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::str::FromStr;
 use std::{fs, path::Path};
 use tracing::trace;
 
@@ -402,6 +403,10 @@ pub struct GenesisCeremonyParameters {
     /// period. Expressed in basis points.
     #[serde(default = "GenesisCeremonyParameters::default_stake_subsidy_decrease_rate")]
     pub stake_subsidy_decrease_rate: u16,
+
+    /// The address of the dwallet admin account.
+    #[serde(default = "GenesisCeremonyParameters::default_dwallet_admin_address")]
+    pub dwallet_admin_address: PeraAddress,
     // Most other parameters (e.g. initial gas schedule) should be derived from protocol_version.
 }
 
@@ -417,6 +422,7 @@ impl GenesisCeremonyParameters {
                 Self::default_initial_stake_subsidy_distribution_amount(),
             stake_subsidy_period_length: Self::default_stake_subsidy_period_length(),
             stake_subsidy_decrease_rate: Self::default_stake_subsidy_decrease_rate(),
+            dwallet_admin_address: Self::default_dwallet_admin_address(),
         }
     }
 
@@ -449,6 +455,12 @@ impl GenesisCeremonyParameters {
     fn default_stake_subsidy_decrease_rate() -> u16 {
         // 10% in basis points
         1000
+    }
+
+    fn default_dwallet_admin_address() -> PeraAddress {
+        // This address is configured in the 'parameters' file, which is loaded at genesis if it exists.
+        PeraAddress::from_str("0xd87602cc701d65a293896ed155a4c1af3228bcad044015eed4d96495d5068413")
+            .unwrap_or_default()
     }
 
     pub fn to_genesis_chain_parameters(&self) -> GenesisChainParameters {
