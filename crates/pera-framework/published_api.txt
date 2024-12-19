@@ -28,6 +28,12 @@ DKGFirstRoundOutputEvent
 Presign
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
+PartiallySignedMessages
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+CreatedPartiallySignedMessagesEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartDKGFirstRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
@@ -56,12 +62,6 @@ StartBatchedSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartBatchedPresignEvent
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-PartiallySignedMessages
-	public struct
-	0x3::dwallet_2pc_mpc_ecdsa_k1
-CreatedPartiallySignedMessagesEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
