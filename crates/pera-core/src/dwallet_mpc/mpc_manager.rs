@@ -17,7 +17,7 @@ use pera_config::NodeConfig;
 use pera_types::committee::{EpochId, StakeUnit};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
-use pera_types::messages_consensus::ConsensusTransaction;
+use pera_types::messages_consensus::{ConsensusTransaction, ConsensusTransactionKey};
 use pera_types::messages_dwallet_mpc::SessionInfo;
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -74,7 +74,10 @@ pub enum DWalletMPCChannelMessage {
     /// Signal delivery of messages has ended,
     /// now the instances that received a quorum of messages can advance.
     EndOfDelivery,
-    // todo(zeev): doc this.
+    /// Start locking the next epoch committee by sending a [`ConsensusTransactionKind::LockNextCommittee`] message
+    /// to the other validators.
+    /// This starts when the current epoch time has ended, and it's time to start the
+    /// reconfiguration process for the next epoch.
     StartLockNextEpochCommittee,
 }
 
