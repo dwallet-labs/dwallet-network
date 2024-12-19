@@ -984,7 +984,7 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
-    /// A function to initiate the network keys for the DWallet MPC when a new epoch starts.
+    /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
     pub fn set_dwallet_mpc_network_keys(&self) {
         if self
             .dwallet_mpc_network_keys
