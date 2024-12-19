@@ -109,7 +109,7 @@ publish_partially_signed_messages
 future_sign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-verify_and_pop_message_approval
+pop_and_verify_message_approval
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 verify_partially_signed_signatures_native

@@ -799,8 +799,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         while (i < message_approvals_len) {
             let presign = vector::pop_back(&mut presigns);
             assert!(object::id(dwallet) == presign.dwallet_id, EDwalletMismatch);
-            // let message = verify_and_pop_message_approval(expected_dwallet_cap_id, hashed_messages, message_approvals);
             let message = vector::pop_back(&mut hashed_messages);
+            pop_and_verify_message_approval(expected_dwallet_cap_id, message, message_approvals);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
             let centralized_signed_message = vector::pop_back(&mut centralized_signed_messages);
             event::emit(StartSignEvent {
@@ -1007,7 +1007,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let mut i = 0;
         while (i < message_approvals_len) {
             let message = vector::pop_back(&mut messages);
-            // let message = verify_and_pop_message_approval(dwallet_cap_id, messages, message_approvals);
+            pop_and_verify_message_approval(dwallet_cap_id, message, message_approvals);
             let id = object::id_from_address(tx_context::fresh_object_address(ctx));
             let centralized_signed_message = vector::pop_back(&mut signatures);
             let presign = vector::pop_back(&mut presigns);
@@ -1028,13 +1028,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     #[allow(unused_function)]
-    fun verify_and_pop_message_approval(dwallet_cap_id: ID, mut messages: vector<vector<u8>>, message_approvals: &mut vector<MessageApproval>): vector<u8> {
+    fun pop_and_verify_message_approval(dwallet_cap_id: ID, message: vector<u8>, message_approvals: &mut vector<MessageApproval>) {
         let message_approval = vector::pop_back(message_approvals);
         let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
         assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
-        let message = vector::pop_back(&mut messages);
         assert!(&message == &approved_message, EMissingApprovalOrWorngApprovalOrder);
-        message
     }
 
     /// Verifies that the user's centralized party signatures are valid.

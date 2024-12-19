@@ -63,7 +63,7 @@ protocols to ensure trustless and decentralized wallet creation and key manageme
 -  [Function `create_mock_presign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_create_mock_presign)
 -  [Function `publish_partially_signed_messages`](#0x3_dwallet_2pc_mpc_ecdsa_k1_publish_partially_signed_messages)
 -  [Function `future_sign`](#0x3_dwallet_2pc_mpc_ecdsa_k1_future_sign)
--  [Function `verify_and_pop_message_approval`](#0x3_dwallet_2pc_mpc_ecdsa_k1_verify_and_pop_message_approval)
+-  [Function `pop_and_verify_message_approval`](#0x3_dwallet_2pc_mpc_ecdsa_k1_pop_and_verify_message_approval)
 -  [Function `verify_partially_signed_signatures_native`](#0x3_dwallet_2pc_mpc_ecdsa_k1_verify_partially_signed_signatures_native)
 
 
@@ -1755,8 +1755,8 @@ in the same order as the <code>hashed_messages</code>.
     <b>while</b> (i &lt; message_approvals_len) {
         <b>let</b> presign = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> presigns);
         <b>assert</b>!(<a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>) == presign.dwallet_id, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EDwalletMismatch">EDwalletMismatch</a>);
-        // <b>let</b> message = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_verify_and_pop_message_approval">verify_and_pop_message_approval</a>(expected_dwallet_cap_id, hashed_messages, message_approvals);
         <b>let</b> message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> hashed_messages);
+        <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(expected_dwallet_cap_id, message, message_approvals);
         <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
         <b>let</b> centralized_signed_message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> centralized_signed_messages);
         <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_StartSignEvent">StartSignEvent</a> {
@@ -2073,7 +2073,7 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
     <b>let</b> <b>mut</b> i = 0;
     <b>while</b> (i &lt; message_approvals_len) {
         <b>let</b> message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> messages);
-        // <b>let</b> message = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_verify_and_pop_message_approval">verify_and_pop_message_approval</a>(dwallet_cap_id, messages, message_approvals);
+        <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(dwallet_cap_id, message, message_approvals);
         <b>let</b> id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
         <b>let</b> centralized_signed_message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> signatures);
         <b>let</b> presign = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> presigns);
@@ -2098,13 +2098,13 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
 
 </details>
 
-<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_verify_and_pop_message_approval"></a>
+<a name="0x3_dwallet_2pc_mpc_ecdsa_k1_pop_and_verify_message_approval"></a>
 
-## Function `verify_and_pop_message_approval`
+## Function `pop_and_verify_message_approval`
 
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_verify_and_pop_message_approval">verify_and_pop_message_approval</a>(dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval">dwallet_2pc_mpc_ecdsa_k1::MessageApproval</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(dwallet_cap_id: <a href="../pera-framework/object.md#0x2_object_ID">object::ID</a>, message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval">dwallet_2pc_mpc_ecdsa_k1::MessageApproval</a>&gt;)
 </code></pre>
 
 
@@ -2113,13 +2113,11 @@ See the docs of [<code><a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_verify_and_pop_message_approval">verify_and_pop_message_approval</a>(dwallet_cap_id: ID, <b>mut</b> messages: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval">MessageApproval</a>&gt;): <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt; {
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(dwallet_cap_id: ID, message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval">MessageApproval</a>&gt;) {
     <b>let</b> message_approval = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(message_approvals);
     <b>let</b> (message_approval_dwallet_cap_id, approved_message) = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_remove_message_approval">remove_message_approval</a>(message_approval);
     <b>assert</b>!(dwallet_cap_id == message_approval_dwallet_cap_id, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EMesssageApprovalDWalletMismatch">EMesssageApprovalDWalletMismatch</a>);
-    <b>let</b> message = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(&<b>mut</b> messages);
     <b>assert</b>!(&message == &approved_message, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EMissingApprovalOrWorngApprovalOrder">EMissingApprovalOrWorngApprovalOrder</a>);
-    message
 }
 </code></pre>
 
