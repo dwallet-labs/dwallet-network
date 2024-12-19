@@ -1,7 +1,7 @@
 module pera_system::dwallet_network_key {
     use pera::event;
 
-    /// Represents the key types supported by the system
+    /// Represents the key schemes supported by the system.
     const Secp256k1: u8 = 0;
     const Ristretto: u8 = 1;
 
