@@ -247,7 +247,7 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(msim)', 'cfg(fail_points)'
 # Dependencies that should be kept in sync through the whole workspace
 [workspace.dependencies]
 mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "mpc", features = ["parallel"], branch = "pera-network-dkg" }
-class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-network-dkg", subdir = "class-groups", features = ["default", "threshold"] }
+class_groups = { git = "https://github.com/dwallet-labs/cryptography-private", branch = "pera-network-dkg", subdir = "class-groups", features = ["default", "threshold", "parallel"] }
 twopc_mpc = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "2pc-mpc", features = ["secp256k1", "bulletproofs", "paillier", "class_groups", "benchmarking"], branch = "pera-network-dkg" }
 group = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "group", branch = "pera-network-dkg" }
 anyhow = "1.0.71"
@@ -638,7 +638,7 @@ pera-metric-checker = { path = "crates/pera-metric-checker" }
 pera-move = { path = "crates/pera-move" }
 pera-move-build = { path = "crates/pera-move-build" }
 pera-move-lsp = { path = "crates/pera-move-lsp" }
-dwallet-mpc-types = { path = "crates/dwallet-mpc-types" }
+dwallet-mpc-types = { path = "crates/dwallet-mpc-types", features = ["mock-class-groups"]}
 pera-network = { path = "crates/pera-network" }
 pera-node = { path = "crates/pera-node" }
 pera-open-rpc = { path = "crates/pera-open-rpc" }

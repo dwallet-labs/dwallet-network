@@ -17,3 +17,6 @@ serde_json.workspace = true
 
 [lints]
 workspace = true
+
+[features]
+mock-class-groups = []
