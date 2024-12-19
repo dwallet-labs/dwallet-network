@@ -202,7 +202,8 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    // todo(zeev): doc this.
+    /// Get the decryption share for the current party.
+    // This will be changed in #382
     pub fn get_decryption_share(
         &self,
     ) -> DwalletMPCResult<<AsyncProtocol as Protocol>::DecryptionKeyShare> {

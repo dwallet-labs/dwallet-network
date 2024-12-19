@@ -70,8 +70,6 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
 
     #[cfg(not(feature = "mock-class-groups"))]
     {
-        let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
-
         let setup_parameters_per_crt_prime =
             construct_setup_parameters_per_crt_prime(DEFAULT_COMPUTATIONAL_SECURITY_PARAMETER)
                 .unwrap();
@@ -81,6 +79,7 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
             )
             .unwrap();
 
+        let mut rng = rand_chacha::ChaCha20Rng::from_seed(seed);
         let decryption_key =
             generate_keypairs_per_crt_prime(setup_parameters_per_crt_prime.clone(), &mut rng)
                 .unwrap();
