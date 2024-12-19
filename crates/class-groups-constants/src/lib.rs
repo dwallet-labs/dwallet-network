@@ -8,7 +8,8 @@ const PROTOCOL_PUBLIC_PARAMETERS: &str = "OlRoZSBmaW5pdGUgZmllbGQgb2YgaW50ZWdlcn
 
 pub fn protocol_public_parameters() -> twopc_mpc::class_groups::ProtocolPublicParameters<
     { secp256k1::SCALAR_LIMBS },
-    { twopc_mpc::secp256k1::class_groups::DISCRIMINANT_LIMBS },
+    { twopc_mpc::secp256k1::class_groups::FUNDAMENTAL_DISCRIMINANT_LIMBS },
+    { twopc_mpc::secp256k1::class_groups::NON_FUNDAMENTAL_DISCRIMINANT_LIMBS },
     secp256k1::GroupElement,
 > {
     // Safe to unwrap as we're using a hardcoded constant.

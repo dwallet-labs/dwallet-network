@@ -34,7 +34,11 @@ use std::time::Duration;
 use pera_types::crypto::{get_key_pair_from_rng, AccountKeyPair, AuthorityKeyPair};
 use pera_types::multiaddr::Multiaddr;
 use tracing::info;
-use twopc_mpc::secp256k1::class_groups::DecryptionSharePublicParameters;
+use twopc_mpc::paillier::PLAINTEXT_SPACE_SCALAR_LIMBS;
+use twopc_mpc::secp256k1;
+use twopc_mpc::secp256k1::class_groups::{
+    FUNDAMENTAL_DISCRIMINANT_LIMBS, NON_FUNDAMENTAL_DISCRIMINANT_LIMBS,
+};
 
 // Default max number of concurrent requests served
 pub const DEFAULT_GRPC_CONCURRENCY_LIMIT: usize = 20000000000;
@@ -48,6 +52,7 @@ pub const DEFAULT_COMMISSION_RATE: u64 = 200;
 /// Default max number of active dWallet MPC sessions allowed to run simultaneously.
 pub const DEFAULT_MAX_ACTIVE_DWALLET_MPC_SESSIONS: usize = 3000;
 
+pub type DecryptionSharePublicParameters = twopc_mpc::sign::ClassGroupsPublicParams;
 #[serde_as]
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
