@@ -1,5 +1,7 @@
-// todo(zeev): module level doc.
-
+//! A module with logic to manage the batched sign sessions.
+//! It has a struct, [`DWalletMPCBatchesManager`], that stores all the batched sign sessions that are currently being processed,
+//! and decides whether a batch is completed by checking if it received all the expected batch outputs.
+//! When a batch is completed, it returns the output of the entire batch, which can be written to the chain through a system transaction.
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCOutput};
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
