@@ -1,4 +1,3 @@
-use std::fs::File;
 use anyhow::Context;
 use class_groups::{
     construct_knowledge_of_discrete_log_public_parameters_per_crt_prime,
@@ -11,6 +10,7 @@ use crypto_bigint::rand_core::{OsRng, SeedableRng};
 use crypto_bigint::Uint;
 use fastcrypto::encoding::{Base64, Encoding};
 use serde::{Deserialize, Serialize};
+use std::fs::File;
 
 pub type ClassGroupsPublicKeyAndProofBytes = Vec<u8>;
 pub type ClassGroupsDecryptionKey = [Uint<CRT_FUNDAMENTAL_DISCRIMINANT_LIMBS>; MAX_PRIMES];

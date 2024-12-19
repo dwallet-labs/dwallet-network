@@ -162,8 +162,8 @@ impl ValidatorGenesisConfigBuilder {
         // It is safe to unwrap here because the protocol_key_pair is always set before
         // also the validator can not be built without the class groups key.
         let seed = key_pair.copy().private().as_bytes().try_into().unwrap();
-        let authority_name: PeraAddress = key_pair.public().into();
-        let file_path = format!("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key");//, authority_name);
+        let authority_address: PeraAddress = key_pair.public().into();
+        let file_path = format!("class-groups-{}.key", authority_address);
         let class_groups_keypair_and_proof = read_class_groups_from_file(file_path)
             .unwrap_or_else(|_| generate_class_groups_keypair_and_proof_from_seed(seed));
         self.class_groups_key_pair_and_proof = Some(class_groups_keypair_and_proof);
