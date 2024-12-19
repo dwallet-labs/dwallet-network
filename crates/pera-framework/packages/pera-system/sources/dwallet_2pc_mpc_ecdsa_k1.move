@@ -45,11 +45,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         message: vector<u8>,
     }
 
-// todo(zeev): fix doc.
-    /// A struct to hold the output of the first round of the DKG.
-    /// An instance of this struct is being transferred to the user that initiated the DKG after
-    /// the first round is completed.
-    /// The user can then use this output to start the second round of the DKG.
+    /// An event being emitted when the DKG first round is completed by the blockchain.
+    /// The user should catch this event to get the output of the first round,
+    /// use it to generate the needed input for the second round, and then call the
+    /// [`launch_dkg_second_round`] function to start the second round.
     public struct DKGFirstRoundOutputEvent has copy, drop {
         session_id: ID,
         output: vector<u8>,
