@@ -47,6 +47,7 @@ impl ClassGroupsKeyPairAndProof {
     }
 }
 
+/// Generate a class groups keypair and proof from a seed.
 pub fn generate_class_groups_keypair_and_proof_from_seed(
     seed: [u8; 32],
 ) -> ClassGroupsKeyPairAndProof {
@@ -87,7 +88,6 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
         let encryption_key_and_proof = generate_knowledge_of_decryption_key_proofs_per_crt_prime(
             language_public_parameters_per_crt_prime.clone(),
             decryption_key,
-            &mut OsRng,
         )
         .unwrap();
 
@@ -95,6 +95,7 @@ pub fn generate_class_groups_keypair_and_proof_from_seed(
     }
 }
 
+/// Writes a class group key pair and proof, encoded in Base64, to a file and returns the public key.
 pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + Clone>(
     keypair: &ClassGroupsKeyPairAndProof,
     path: P,
@@ -105,6 +106,7 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path> + 
     Ok(Base64::encode(keypair.public_bytes()))
 }
 
+/// Reads a class group key pair and proof (encoded in Base64) from a file.
 pub fn read_class_groups_from_file<P: AsRef<std::path::Path>>(
     path: P,
 ) -> anyhow::Result<ClassGroupsKeyPairAndProof> {
