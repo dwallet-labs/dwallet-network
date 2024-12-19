@@ -10,12 +10,12 @@ use dwallet_mpc_types::{dwallet_mpc::MPCSessionStatus};
 use group::PartyID;
 use mpc::WeightedThresholdAccessStructure;
 use pera_types::base_types::ObjectID;
-use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::HashMap;
 use std::sync::Arc;
-use dwallet_mpc_types::class_groups::ClassGroupsPublicKeyAndProof;
+use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
+use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
 
 const NONE_OBJ_ID: ObjectID = ObjectID::from_single_byte(0);
 

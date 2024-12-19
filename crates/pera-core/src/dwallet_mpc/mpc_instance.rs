@@ -40,6 +40,7 @@ pub(super) struct DWalletMPCInstance {
     party: MPCParty,
     pub(super) public_input: MPCPublicInput,
     /// The decryption share of the party for mpc sign sessions
+    /// todo(zeev): why is it here? it's never used.
     decryption_share: Option<DecryptionKeyShare>,
 }
 
@@ -191,7 +192,8 @@ impl DWalletMPCInstance {
         round: usize,
         message: &DWalletMPCMessage,
     ) -> DwalletMPCResult<()> {
-        let party_id = authority_name_to_party_id(&message.authority, &self.epoch_store()?)?;
+        let epoch_store = self.epoch_store()?;
+        let party_id = authority_name_to_party_id(&message.authority, &epoch_store)?;
         if self.pending_messages[round].contains_key(&party_id) {
             return Err(DwalletMPCError::MaliciousParties(vec![party_id]));
         }

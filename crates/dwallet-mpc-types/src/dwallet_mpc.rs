@@ -81,7 +81,6 @@ pub struct EncryptionOfNetworkDecryptionKeyShares {
     previous_epoch_shares: Vec<Vec<u8>>,
 }
 
-
 // todo(zeev): doc.
 #[repr(u8)]
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash)]

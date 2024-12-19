@@ -59,7 +59,7 @@ use pera_types::crypto::{
 use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, PeraKeyPair, SignatureScheme};
 use pera_types::transaction::{CallArg, ObjectArg, Transaction, TransactionData};
 use serde::Serialize;
-use dwallet_mpc_types::class_groups::generate_class_groups_keypair_and_proof_from_seed;
+use dwallet_classgroups_types::generate_class_groups_keypair_and_proof_from_seed;
 use shared_crypto::intent::{Intent, IntentMessage, IntentScope};
 
 #[path = "unit_tests/validator_tests.rs"]

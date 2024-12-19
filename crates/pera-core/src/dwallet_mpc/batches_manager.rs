@@ -42,8 +42,8 @@ impl DWalletMPCBatchesManager {
             let mut seen = HashSet::new();
             let messages_without_duplicates = hashed_messages
                 .iter()
+                .cloned()
                 .filter(|x| seen.insert(x.clone()))
-                .cloned() // Convert &Vec<u8> to Vec<u8>
                 .collect::<Vec<Vec<u8>>>();
 
             self.batched_sign_sessions.insert(

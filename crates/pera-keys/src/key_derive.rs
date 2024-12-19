@@ -7,9 +7,6 @@ use std::path::PathBuf;
 
 use crate::keypair_file::read_authority_keypair_from_file;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
-use dwallet_mpc_types::class_groups::{
-    generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof,
-};
 use fastcrypto::ed25519::Ed25519KeyPair;
 use fastcrypto::secp256r1::{Secp256r1KeyPair, Secp256r1PrivateKey};
 use fastcrypto::{
@@ -23,6 +20,7 @@ use pera_types::{
     error::PeraError,
 };
 use slip10_ed25519::derive_ed25519_private_key;
+use dwallet_classgroups_types::{generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof};
 
 pub const DERIVATION_PATH_COIN_TYPE: u32 = 784;
 pub const DERVIATION_PATH_PURPOSE_ED25519: u32 = 44;

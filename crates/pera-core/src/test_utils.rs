@@ -48,7 +48,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
 use tracing::{info, warn};
-use dwallet_mpc_types::class_groups::generate_class_groups_keypair_and_proof_from_seed;
+use dwallet_classgroups_types::generate_class_groups_keypair_and_proof_from_seed;
 
 const WAIT_FOR_TX_TIMEOUT: Duration = Duration::from_secs(15);
 

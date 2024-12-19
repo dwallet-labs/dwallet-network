@@ -4,10 +4,10 @@
 use std::path::PathBuf;
 
 use anyhow::anyhow;
-use dwallet_mpc_types::class_groups::ClassGroupsKeyPairAndProof;
 use fastcrypto::encoding::{Base64, Encoding, Hex};
 use fastcrypto::{secp256k1::Secp256k1KeyPair, traits::EncodeDecodeBase64};
 use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, PeraKeyPair, ToFromBytes};
+use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 
 pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path>>(
     keypair: &ClassGroupsKeyPairAndProof,

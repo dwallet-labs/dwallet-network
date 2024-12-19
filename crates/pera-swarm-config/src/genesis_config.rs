@@ -22,7 +22,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use tracing::info;
 pub use twopc_mpc::secp256k1::class_groups::{AsyncProtocol, DecryptionSharePublicParameters};
-use dwallet_mpc_types::class_groups::{generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof};
+use dwallet_classgroups_types::{generate_class_groups_keypair_and_proof_from_seed, ClassGroupsKeyPairAndProof};
 
 // All information needed to build a NodeConfig for a state sync fullnode.
 #[derive(Serialize, Deserialize, Debug)]
