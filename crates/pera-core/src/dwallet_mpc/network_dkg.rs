@@ -300,7 +300,7 @@ fn mock_class_groups_encryption_keys_and_proofs() -> HashMap<
     ); MAX_PRIMES],
 > {
     let mut encryption_keys_and_proofs = HashMap::new();
-    (1..=3).for_each(|i| {
+    (1..=4).for_each(|i| {
         encryption_keys_and_proofs.insert(
             i as PartyID,
             read_class_groups_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key").unwrap(),
