@@ -4,7 +4,7 @@
 // Copyright 2020 Parity Technologies
 
 //! Estimation for heapsize calculation. Usable to replace call to allocator method (for some
-//! allocators or simply because we just need a deterministic cunsumption measurement).
+//! allocators or simply because we just need a deterministic consumption measurement).
 
 use crate::malloc_size::{
     MallocShallowSizeOf, MallocSizeOf, MallocSizeOfOps, MallocUnconditionalShallowSizeOf,
