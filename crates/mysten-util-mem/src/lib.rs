@@ -27,7 +27,7 @@ pub mod sizeof;
 
 /// This is a copy of patched crate `malloc_size_of` as a module.
 /// We need to have it as an inner module to be able to define our own traits implementation,
-/// if at some point the trait become standard enough we could use the right way of doing it
+/// if at some point the trait becomes standard enough we could use the right way of doing it
 /// by implementing it in our type traits crates. At this time moving this trait to the primitive
 /// types level would impact too much of the dependencies to be easily manageable.
 #[macro_use]
