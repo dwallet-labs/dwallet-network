@@ -583,7 +583,7 @@ impl<T: MallocSizeOf> MallocSizeOf for parking_lot::RwLock<T> {
 
 /// Implement notion of 0 allocation size for some type(s).
 ///
-/// if used for generics, by default it will require that generaic arguments
+/// if used for generics, by default it will require that generic arguments
 /// should implement `MallocSizeOf`. This can be avoided with passing "any: "
 /// in front of type list.
 ///
