@@ -173,7 +173,6 @@ impl ConsensusManagerTrait for MysticetiManager {
             boot_counter,
         )
         .await;
-
         let client = authority.transaction_client();
 
         // Now increment the boot counter
