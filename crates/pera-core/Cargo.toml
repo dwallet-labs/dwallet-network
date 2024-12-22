@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true, features = ["backtrace"] }
+dwallet-mpc.workspace = true
 arc-swap.workspace = true
 async-trait.workspace = true
 axum.workspace = true
