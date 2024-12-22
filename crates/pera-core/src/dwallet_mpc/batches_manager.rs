@@ -91,7 +91,8 @@ impl DWalletMPCBatchesManager {
                 self.store_verified_sign_output(batch_session_id, hashed_message.clone(), output)?;
             }
             MPCRound::PresignSecond(_, ref first_round_output, batch_session_id) => {
-                let presign = parse_presign_from_first_and_second_outputs(first_round_output, &output)?;
+                let presign =
+                    parse_presign_from_first_and_second_outputs(first_round_output, &output)?;
                 self.store_verified_presign_output(
                     batch_session_id,
                     session_info.flow_session_id,
@@ -127,7 +128,9 @@ impl DWalletMPCBatchesManager {
         let batched_sign_session = self
             .batched_sign_sessions
             .get_mut(&batch_session_id)
-            .ok_or(DwalletMPCError::MPCSessionNotFound { session_id: batch_session_id })?;
+            .ok_or(DwalletMPCError::MPCSessionNotFound {
+                session_id: batch_session_id,
+            })?;
         batched_sign_session
             .hashed_msg_to_signature
             .insert(hashed_message, signed_message);
