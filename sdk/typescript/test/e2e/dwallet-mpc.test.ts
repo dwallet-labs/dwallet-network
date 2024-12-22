@@ -86,14 +86,6 @@ describe('Test dWallet MPC', () => {
 			.vector(bcs.vector(bcs.u8()))
 			.serialize([presignOutput1.presign, presignOutput2.presign])
 			.toBytes();
-		// let serializedPresignSessionIds = bcs
-		// 	.vector(bcs.string())
-		// 	.serialize([
-		// 		presignOutput1.first_round_session_id.slice(2),
-		// 		presignOutput2.first_round_session_id.slice(2),
-		// 	])
-		// 	.toBytes();
-		// TODO: undo this intentional error
 		let serializedPresignSessionIds = bcs
 			.vector(bcs.string())
 			.serialize([
