@@ -144,7 +144,7 @@ export async function fetchCompletedEvent<TEvent extends { session_id: string }>
 	c: Config,
 	sessionID: string,
 	eventType: string,
-	isEventFn: (parsedJson: unknown) => parsedJson is TEvent,
+	isEventFn: (parsedJson: any) => parsedJson is TEvent,
 ): Promise<TEvent> {
 	const startTime = Date.now();
 	let cursor = null;

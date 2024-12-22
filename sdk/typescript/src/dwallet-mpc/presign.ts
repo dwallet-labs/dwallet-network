@@ -12,13 +12,6 @@ import { completedPresignMoveEvent } from './sign.js';
 const launchPresignFirstRoundMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_batched_presign`;
 export const presignMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::Presign`;
 
-interface StartPresignFirstRoundEvent {
-	session_id: string;
-	initiator: string;
-	dwallet_id: string;
-	dkg_output: number[];
-}
-
 interface StartBatchedPresignEvent {
 	session_id: string;
 	batch_size: number;
@@ -33,16 +26,16 @@ export interface Presign {
 	presign: number[];
 }
 
-export interface CompletedPresignEvent {
-	session_id: string;
+interface CompletedBatchedPresignEvent {
 	initiator: string;
 	dwallet_id: string;
+	session_id: string;
 	presign_ids: string[];
 	first_round_session_ids: string[];
 	presigns: number[][];
 }
 
-export function isCompletedPresignEvent(obj: any): obj is CompletedPresignEvent {
+export function isCompletedBatchedPresignEvent(obj: any): obj is CompletedBatchedPresignEvent {
 	return (
 		obj &&
 		'session_id' in obj &&
@@ -58,13 +51,13 @@ export async function presign(
 	c: Config,
 	dwalletID: string,
 	batch_size: number,
-): Promise<CompletedPresignEvent> {
+): Promise<CompletedBatchedPresignEvent> {
 	let sessionID = await launchPresignFirstRound(dwalletID, batch_size, c);
-	return await fetchCompletedEvent<CompletedPresignEvent>(
+	return await fetchCompletedEvent<CompletedBatchedPresignEvent>(
 		c,
 		sessionID,
 		completedPresignMoveEvent,
-		isCompletedPresignEvent,
+		isCompletedBatchedPresignEvent,
 	);
 }
 
@@ -99,8 +92,8 @@ async function launchPresignFirstRound(
 	return event.session_id;
 }
 
-function isStartBatchPresignFirstRoundEvent(obj: any): obj is StartPresignFirstRoundEvent {
-	return obj && obj.session_id && obj.initiator && obj.batch_size;
+function isStartBatchPresignFirstRoundEvent(obj: any): obj is StartBatchedPresignEvent {
+	return obj && `session_id` in obj && `initiator` in obj && `batch_size` in obj;
 }
 
 export function isPresign(obj: any): obj is Presign {
