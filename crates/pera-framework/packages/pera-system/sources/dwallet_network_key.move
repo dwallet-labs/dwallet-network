@@ -1,5 +1,4 @@
-// todo(zeev): doc.
-
+/// This module manages the storage of the network dWallet MPC keys and associated data.
 module pera_system::dwallet_network_key {
     // Represents the key types supported by the system.
     const Secp256k1: u8 = 0;
