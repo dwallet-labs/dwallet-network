@@ -10,11 +10,11 @@ module pera_system::dwallet_ecdsa_k1_tests {
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign, approve_messages};
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{
         ENotSystemAddress,
-        EMesssageApprovalDWalletMismatch,
+        EMessageApprovalDWalletMismatch,
         EApprovalsAndMessagesLenMismatch,
         EDwalletMismatch,
-        EMissingApprovalOrWorngApprovalOrder,
-        ECentrailizedsignedMessagesAndMessagesLenMismatch
+        EMissingApprovalOrWrongApprovalOrder,
+        ECentralizedSignedMessagesAndMessagesLenMismatch
     };
 
     const SENDER_ADDRESS: address = @0xA;
@@ -156,7 +156,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
         {
             let ctx = test_scenario::ctx(&mut scenario);
             let session_id = object::id_from_address(@0x10);
-            let dwallet_cap_id = object::id_from_address(@0x11);
             let output: vector<u8> = std::vector::empty();
 
             dwallet_2pc_mpc_ecdsa_k1::create_dkg_first_round_output_for_testing(
@@ -375,7 +374,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
         let dwallet;
-        let dwallet_cap_id;
         let dwallet_cap;
 
         test_scenario::next_tx(&mut scenario, sender);
@@ -383,7 +381,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let ctx = test_scenario::ctx(&mut scenario);
             let dkg_output: vector<u8> = std::vector::singleton(0xAA);
             dwallet = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_dwallet(dkg_output, ctx);
-            dwallet_cap_id = dwallet::get_dwallet_cap_id(&dwallet);
         };
 
         let presign;
@@ -400,6 +397,12 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 object::id(&dwallet),
                 presign_bytes,
                 first_round_session_id,
+                ctx,
+            );
+            presign2 = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
+                object::id(&dwallet),
+                presign_bytes,
+                first_round_session_id2,
                 ctx,
             );
             presign2 = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
@@ -479,7 +482,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
 
     #[test]
-    #[expected_failure(abort_code = EMesssageApprovalDWalletMismatch)]
+    #[expected_failure(abort_code = EMessageApprovalDWalletMismatch)]
     public fun test_sign_fails_due_to_invalid_dwallet_cap() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
@@ -618,7 +621,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             test_utils::destroy(invalid_dwallet);
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
-            
+
         };
 
         test_scenario::end(scenario);
@@ -690,14 +693,14 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
-            
+
         };
 
         test_scenario::end(scenario);
     }
 
     #[test]
-    #[expected_failure(abort_code = EMissingApprovalOrWorngApprovalOrder)]
+    #[expected_failure(abort_code = EMissingApprovalOrWrongApprovalOrder)]
     public fun test_sign_fails_due_to_wrong_approval_order() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
@@ -779,14 +782,14 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
-            
+
         };
 
         test_scenario::end(scenario);
     }
 
     #[test]
-    #[expected_failure(abort_code = ECentrailizedsignedMessagesAndMessagesLenMismatch)]
+    #[expected_failure(abort_code = ECentralizedSignedMessagesAndMessagesLenMismatch)]
     public fun test_sign_fails_due_to_centralized_signed_messages_len_mismatch() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
@@ -856,7 +859,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
-            
+
         };
 
         test_scenario::end(scenario);

@@ -101,44 +101,47 @@ export async function fetchObjectFromEvent<TEvent, TObject>({
 	);
 }
 
-export const getEventByTypeAndSessionId = async (
-	conf: Config,
+export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
+	c: Config,
+	sessionID: string,
 	eventType: string,
-	session_id: string,
-) => {
-	const tenMinutesInMillis = 10 * 60 * 1000;
+	isEventFn: (parsedJson: any) => parsedJson is TEvent,
+): Promise<TEvent> {
 	const startTime = Date.now();
-	while (Date.now() - startTime <= conf.timeout) {
-		// Wait for 5 seconds between queries
-		await new Promise((resolve) => setTimeout(resolve, 5000));
-		let newEvents = await conf.client.queryEvents({
+	let cursor = null;
+
+	while (Date.now() - startTime <= c.timeout) {
+		// Wait for a bit before polling again, objects might not be available immediately.
+		await new Promise((resolve) => setTimeout(resolve, 5_000));
+
+		const { data, nextCursor, hasNextPage } = await c.client.queryEvents({
 			query: {
 				TimeRange: {
-					startTime: (Date.now() - tenMinutesInMillis).toString(),
+					startTime: (Date.now() - c.timeout).toString(),
 					endTime: Date.now().toString(),
 				},
 			},
+			cursor,
 		});
-		let matchingEvent = newEvents.data.find(
+
+		const match = data.find(
 			(event) =>
-				(
-					event.parsedJson as {
-						session_id: string;
-					}
-				).session_id === session_id && event.type === eventType,
+				event.type === eventType &&
+				isEventFn(event.parsedJson) &&
+				event.parsedJson.session_id === sessionID,
 		);
-		if (matchingEvent) {
-			return matchingEvent.parsedJson;
-		}
+
+		if (match) return match.parsedJson as TEvent;
+		if (hasNextPage) cursor = nextCursor;
 	}
 
 	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
 	throw new Error(
 		`timeout: unable to fetch an event of type ${eventType} within ${
-			conf.timeout / (60 * 1000)
+			c.timeout / (60 * 1000)
 		} minutes (${seconds} seconds passed).`,
 	);
-};
+}
 
 export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
 	c: Config,

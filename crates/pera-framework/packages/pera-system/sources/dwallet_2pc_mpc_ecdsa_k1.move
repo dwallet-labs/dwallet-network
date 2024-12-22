@@ -289,7 +289,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     // <<<<<<<<<<<<<<<<<<<<<<<< Error codes <<<<<<<<<<<<<<<<<<<<<<<<
     /// Error raised when the sender is not the system address.
     const ENotSystemAddress: u64 = 0;
-    const EMesssageApprovalDWalletMismatch: u64 = 1;
+    const EMessageApprovalDWalletMismatch: u64 = 1;
     const EDwalletMismatch: u64 = 2;
     const EApprovalsAndMessagesLenMismatch: u64 = 3;
     const EMissingApprovalOrWorngApprovalOrder: u64 = 4;
@@ -340,7 +340,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// to the session initiator and ensures it is securely linked
     /// to the `DWalletCap` of the session.
     /// This function is called by blockchain itself.
-    /// Validtors call it, it's part of the blockchain logic.
+    /// Validators call it, it's part of the blockchain logic.
     ///
     /// ### Effects
     /// - Transfers the output of the first round to the initiator.
@@ -401,12 +401,12 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     /// Completes the second DKG round and creates the final [`DWallet`].
     /// This function finalizes the DKG process and emits an event with all relevant data.
     /// This function is called by blockchain itself.
-    /// Validtors call it, it's part of the blockchain logic.
+    /// Validators call it, it's part of the blockchain logic.
     ///
     /// ### Parameters
     /// - `initiator`: The address of the user who initiated the DKG session.
     /// - `session_id`: The ID of the current DKG session.
-    /// - `output`: The decentrelaized output of the second DKG round.
+    /// - `output`: The decentralized output of the second DKG round.
     /// - `dwallet_cap_id`: The ID of the associated dWallet capability.
     /// - `ctx`: The transaction context.
     #[allow(unused_function)]
@@ -499,24 +499,22 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
 
     /// Starts a batched presign session.
     ///
-    /// This function emits a `StartPresignFirstRoundEvent` for each presign in the batch,
-    /// which signals validators to begin processing the first round of the presign process.
+    /// This function emits a `StartBatchedPresignEvent` for the entire batch and a
+    /// `StartPresignFirstRoundEvent` for each presign in the batch. These events signal
+    /// validators to begin processing the first round of the presign process for each session.
+    /// - A unique `batch_session_id` is generated for the batch.
+    /// - A loop creates and emits a `StartPresignFirstRoundEvent` for each session in the batch.
+    /// - Each session is linked to the parent batch via `batch_session_id`.
     ///
     /// ### Effects
-    /// - Links the presign session to the specified dWallet.
-    /// - Emits a `StartPresignFirstRoundEvent` with relevant details.
-    ///
-    /// ### Emits
-    /// - `StartPresignFirstRoundEvent`:
-    ///   - `session_id`: The unique ID of the presign session.
-    ///   - `initiator`: The address of the session initiator.
-    ///   - `dwallet_id`: The ID of the linked dWallet.
-    ///   - `dkg_output`: The DKG process output linked to this dWallet.
+    /// - Associates the batched presign session with the specified dWallet.
+    /// - Emits a `StartBatchedPresignEvent` containing the batch session details.
+    /// - Emits a `StartPresignFirstRoundEvent` for each presign in the batch, with relevant details.
     ///
     /// ### Parameters
-    /// - `dwallet`: A reference to the target dWallet.
+    /// - `dwallet`: A reference to the target dWallet. This is used to retrieve the dWallet's ID and output.
     /// - `batch_size`: The number of presign sessions to be created in this batch.
-    /// - `ctx`: The mutable transaction context.
+    /// - `ctx`: The mutable transaction context, used to generate unique object IDs and retrieve the initiator.
     public fun launch_batched_presign(
         dwallet: &DWallet<Secp256K1>,
         batch_size: u64,
@@ -756,11 +754,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     ///   in the `Presign` object.
     /// - **`EApprovalsAndMessagesLenMismatch`**: If the length of the `hashed_messages`
     ///   does not match the length of the `message_approvals`.
-    /// - **`ECentrailizedsignedMessagesAndMessagesLenMismatch`**: If the length of
+    /// - **`ECentralizedSignedMessagesAndMessagesLenMismatch`**: If the length of
     ///   `hashed_messages` does not match the length of `centralized_signed_messages`.
-    /// - **`EMesssageApprovalDWalletMismatch`**: If the DWalletCap ID does not match
+    /// - **`EMessageApprovalDWalletMismatch`**: If the DWalletCap ID does not match
     ///   the expected DWalletCap ID for any of the message approvals.
-    /// - **`EMissingApprovalOrWorngApprovalOrder`**: If the approved messages are not
+    /// - **`EMissingApprovalOrWrongApprovalOrder`**: If the approved messages are not
     ///   in the same order as the `hashed_messages`.
     ///
     /// ### Parameters

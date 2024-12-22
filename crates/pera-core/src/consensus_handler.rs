@@ -449,7 +449,7 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         .store_verified_output(session_info.clone(), output.clone())
                                     {
                                         error!(
-                                            "Error storing verified output for session {:?}: {:?}",
+                                            "error storing verified output for session {:?}: {:?}",
                                             session_info.session_id, err
                                         );
                                     }

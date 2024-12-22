@@ -49,6 +49,7 @@ export async function signMessageTransactionCall(
 	presignIDs: string[],
 	centralizedSignedMessages: Uint8Array[],
 ): Promise<CompletedSignEvent> {
+) {
 	const tx = new Transaction();
 
 	const [messageApprovals] = tx.moveCall({
