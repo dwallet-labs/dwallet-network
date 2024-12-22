@@ -12,7 +12,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
         ENotSystemAddress,
         EMessageApprovalDWalletMismatch,
         EApprovalsAndMessagesLenMismatch,
-        EDwalletMismatch, EMissingApprovalOrWrongApprovalOrder, ECentralizedSignedMessagesAndMessagesLenMismatch
+        EDwalletMismatch,
+        EMissingApprovalOrWrongApprovalOrder,
+        ECentralizedSignedMessagesAndMessagesLenMismatch
     };
 
     const SENDER_ADDRESS: address = @0xA;
@@ -444,6 +446,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         let effects: TransactionEffects = test_scenario::end(scenario);
 
         let events_num = test_scenario::num_user_events(&effects);
+        assert!(events_num == 3, EWrongEventNumber);
     }
 
     #[test]

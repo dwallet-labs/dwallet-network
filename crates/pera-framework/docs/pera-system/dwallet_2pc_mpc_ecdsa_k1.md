@@ -1760,7 +1760,7 @@ in the same order as the <code>hashed_messages</code>.
             batched_session_id: batch_session_id,
             dwallet_id: <a href="../pera-framework/object.md#0x2_object_id">object::id</a>(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
             presign: presign.presign,
-            centralized_signed_message: centralized_signed_message,
+            centralized_signed_message,
             dkg_output: get_dwallet_output&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_Secp256K1">Secp256K1</a>&gt;(<a href="dwallet.md#0x3_dwallet">dwallet</a>),
             hashed_message: message,
         });

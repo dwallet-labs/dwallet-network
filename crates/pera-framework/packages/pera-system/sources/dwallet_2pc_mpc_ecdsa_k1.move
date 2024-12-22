@@ -805,7 +805,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
                 batched_session_id: batch_session_id,
                 dwallet_id: object::id(dwallet),
                 presign: presign.presign,
-                centralized_signed_message: centralized_signed_message,
+                centralized_signed_message,
                 dkg_output: get_dwallet_output<Secp256K1>(dwallet),
                 hashed_message: message,
             });
@@ -1023,7 +1023,11 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     /// Pops the last message approval from the vector and verifies it against tje given message & dwallet_cap_id.
-    fun pop_and_verify_message_approval(dwallet_cap_id: ID, message: vector<u8>, message_approvals: &mut vector<MessageApproval>) {
+    fun pop_and_verify_message_approval(
+        dwallet_cap_id: ID,
+        message: vector<u8>,
+        message_approvals: &mut vector<MessageApproval>
+    ) {
         let message_approval = vector::pop_back(message_approvals);
         let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
         assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
