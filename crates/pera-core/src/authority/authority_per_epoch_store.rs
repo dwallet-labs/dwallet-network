@@ -352,7 +352,7 @@ pub struct AuthorityPerEpochStore {
     /// This state machine only being used to store outputs and declare ones with quorum of votes as valid.
     pub dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
-    pub dwallet_mpc_epoch_messages: Mutex<Vec<DWalletMPCChannelMessage>>
+    pub dwallet_mpc_epoch_messages: tokio::sync::Mutex<Vec<DWalletMPCChannelMessage>>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -577,7 +577,7 @@ pub struct AuthorityEpochTables {
     /// Holds the timestamp of the most recently generated round of randomness.
     pub(crate) randomness_last_round_timestamp: DBMap<u64, TimestampMs>,
 
-    pub dwallet_mpc_active_instances_counter: DBMap<u64, u64>
+    pub dwallet_mpc_active_instances_counter: DBMap<u64, u64>,
 }
 
 fn signed_transactions_table_default_config() -> DBOptions {
@@ -880,15 +880,21 @@ impl AuthorityPerEpochStore {
         s
     }
 
-    pub async fn send_message_to_dwallet_mpc(&self, message: DWalletMPCChannelMessage) -> PeraResult {
-        let sender = self.dwallet_mpc_sender
-            .get()
-            .ok_or(PeraError::from(
-                "DWallet MPC sender not initialized when sending message to it",
-            ))?;
-        let mut dwallet_mpc_epoch_messages = self.dwallet_mpc_epoch_messages.lock();
+    pub async fn send_message_to_dwallet_mpc(
+        &self,
+        message: DWalletMPCChannelMessage,
+    ) -> PeraResult {
+        let sender = self.dwallet_mpc_sender.get().ok_or(PeraError::from(
+            "DWallet MPC sender not initialized when sending message to it",
+        ))?;
+        let mut dwallet_mpc_epoch_messages = self.dwallet_mpc_epoch_messages.lock().await;
         dwallet_mpc_epoch_messages.push(message.clone());
-        sender.send(message).await?;
+        sender.send(message).map_err(|err| {
+            PeraError::from(format!(
+                "failed to send message to DWalletMPC sender, {:?}",
+                err
+            ))
+        })?;
         Ok(())
     }
 
@@ -3384,7 +3390,8 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-        self.send_message_to_dwallet_mpc(DWalletMPCChannelMessage::EndOfDelivery)?;
+        self.send_message_to_dwallet_mpc(DWalletMPCChannelMessage::EndOfDelivery)
+            .await?;
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
         for (key, txns) in deferred_txns.into_iter() {
@@ -3780,10 +3787,11 @@ impl AuthorityPerEpochStore {
                 ..
             }) => {
                 self.send_message_to_dwallet_mpc(DWalletMPCChannelMessage::Output(
-                        output.clone(),
-                        *authority,
-                        session_info.clone(),
-                    ))?;
+                    output.clone(),
+                    *authority,
+                    session_info.clone(),
+                ))
+                .await?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -3794,7 +3802,8 @@ impl AuthorityPerEpochStore {
                     message.clone(),
                     *authority,
                     *session_id,
-                ))?;
+                ))
+                .await?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
@@ -4353,7 +4362,10 @@ impl ConsensusCommitOutput {
         batch: &mut DBBatch,
     ) -> PeraResult {
         let tables = epoch_store.tables()?;
-        batch.insert_batch(&tables.dwallet_mpc_active_instances_counter, [(SINGLETON_KEY, self.dwallet_mpc_active_instances_counter)])?;
+        batch.insert_batch(
+            &tables.dwallet_mpc_active_instances_counter,
+            [(SINGLETON_KEY, self.dwallet_mpc_active_instances_counter)],
+        )?;
         batch.insert_batch(
             &tables.consensus_message_processed,
             self.consensus_messages_processed
