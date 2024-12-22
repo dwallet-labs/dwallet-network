@@ -48,28 +48,32 @@ impl DWalletMPCBatchesManager {
 
     /// Handle a new event by initializing a new batched session if the event is a start batch event.
     pub(crate) fn handle_new_event(&mut self, session_info: &SessionInfo) {
-        if let MPCRound::BatchedSign(hashed_messages) = &session_info.mpc_round {
-            let mut seen = HashSet::new();
-            let messages_without_duplicates = hashed_messages
-                .clone()
-                .into_iter()
-                .filter(|x| seen.insert(x.clone()))
-                .collect();
-            self.batched_sign_sessions.insert(
-                session_info.session_id,
-                BatchedSignSession {
-                    hashed_msg_to_signature: HashMap::new(),
-                    ordered_messages: messages_without_duplicates,
-                },
-            );
-        } else if let MPCRound::BatchedPresign(batch_size) = &session_info.mpc_round {
-            self.batched_presign_sessions.insert(
-                session_info.session_id,
-                BatchedPresignSession {
-                    batch_size: *batch_size,
-                    verified_presigns: vec![],
-                },
-            );
+        match &session_info.mpc_round {
+            MPCRound::BatchedSign(hashed_messages) => {
+                let mut seen = HashSet::new();
+                let messages_without_duplicates = hashed_messages
+                    .clone()
+                    .into_iter()
+                    .filter(|x| seen.insert(x.clone()))
+                    .collect();
+                self.batched_sign_sessions.insert(
+                    session_info.session_id,
+                    BatchedSignSession {
+                        hashed_msg_to_signature: HashMap::new(),
+                        ordered_messages: messages_without_duplicates,
+                    },
+                );
+            }
+            MPCRound::BatchedPresign(batch_size) => {
+                self.batched_presign_sessions.insert(
+                    session_info.session_id,
+                    BatchedPresignSession {
+                        batch_size: *batch_size,
+                        verified_presigns: vec![],
+                    },
+                );
+            }
+            _ => {}
         }
     }
 
