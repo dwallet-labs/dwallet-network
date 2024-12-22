@@ -101,45 +101,6 @@ export async function fetchObjectFromEvent<TEvent, TObject>({
 	);
 }
 
-export const getEventByTypeAndSessionId = async (
-	conf: Config,
-	eventType: string,
-	session_id: string,
-) => {
-	const tenMinutesInMillis = 10 * 60 * 1000;
-	const startTime = Date.now();
-	while (Date.now() - startTime <= conf.timeout) {
-		// Wait for 5 seconds between queries
-		await new Promise((resolve) => setTimeout(resolve, 5000));
-		let newEvents = await conf.client.queryEvents({
-			query: {
-				TimeRange: {
-					startTime: (Date.now() - tenMinutesInMillis).toString(),
-					endTime: Date.now().toString(),
-				},
-			},
-		});
-		let matchingEvent = newEvents.data.find(
-			(event) =>
-				(
-					event.parsedJson as {
-						session_id: string;
-					}
-				).session_id === session_id && event.type === eventType,
-		);
-		if (matchingEvent) {
-			return matchingEvent.parsedJson;
-		}
-	}
-
-	const seconds = ((Date.now() - startTime) / 1000).toFixed(2);
-	throw new Error(
-		`timeout: unable to fetch an event of type ${eventType} within ${
-			conf.timeout / (60 * 1000)
-		} minutes (${seconds} seconds passed).`,
-	);
-};
-
 export async function fetchCompletedEvent<TEvent extends { session_id: string }>(
 	c: Config,
 	sessionID: string,

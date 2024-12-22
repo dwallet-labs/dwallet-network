@@ -6,16 +6,15 @@ import { create_dkg_centralized_output } from '@dwallet-network/dwallet-mpc-wasm
 
 import { bcs } from '../bcs/index.js';
 import { Transaction } from '../transactions/index.js';
-import {Config, fetchCompletedEvent} from './globals.js';
+import type { Config } from './globals.js';
 import {
 	dWallet2PCMPCECDSAK1ModuleName,
 	dWalletModuleName,
 	dWalletPackageID,
+	fetchCompletedEvent,
 	fetchObjectFromEvent,
-	getEventByTypeAndSessionId,
 } from './globals.js';
-import {completedPresignMoveEvent, dkgFirstRoundOutputEvent} from "./sign";
-import {isCompletedBatchedPresignEvent} from "./presign";
+import { dkgFirstRoundOutputEvent } from './sign.js';
 
 const dwalletSecp256K1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::Secp256K1`;
 export const dWalletMoveType = `${dWalletPackageID}::${dWalletModuleName}::DWallet<${dwalletSecp256K1MoveType}>`;
@@ -104,7 +103,7 @@ async function launchDKGFirstRound(c: Config) {
 	let sessionData = result.events?.find(
 		(event) =>
 			event.type ===
-			`${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartDKGFirstRoundEvent` &&
+				`${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartDKGFirstRoundEvent` &&
 			isStartDKGFirstRoundEvent(event.parsedJson),
 	)?.parsedJson as StartDKGFirstRoundEvent;
 	let completionEvent = await fetchCompletedEvent<DKGFirstRoundOutputEvent>(
