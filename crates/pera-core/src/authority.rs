@@ -170,6 +170,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
+use pera_types::dwallet_mpc_error::DwalletMPCError;
 use pera_types::execution_config_utils::to_binary_config;
 
 #[cfg(test)]
@@ -1567,18 +1568,14 @@ impl AuthorityState {
                 dwallet_mpc_outputs_manager.completed_locking_next_committee = true;
                 continue;
             }
-            let Ok(Some(session_info)) = session_info_from_event(
-                event,
-                party_id,
-                epoch_store
-                    .dwallet_mpc_network_keys
-                    .get()
-                    .ok_or(PeraError::DwalletMPCError(
-                        "Missing dWallet MPC network keys".to_string(),
-                    ))?
-                    .key_version(DWalletMPCNetworkKey::Secp256k1)
-                    .ok(),
-            ) else {
+            let key_version = epoch_store
+                .dwallet_mpc_network_keys
+                .get()
+                .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+                .key_version(DWalletMPCNetworkKey::Secp256k1)?;
+            let Ok(Some(session_info)) =
+                session_info_from_event(event, party_id, Some(key_version))
+            else {
                 continue;
             };
             let mut dwallet_mpc_batches_manager =
