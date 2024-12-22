@@ -83,17 +83,19 @@ impl DWalletMPCBatchesManager {
         session_info: SessionInfo,
         output: Vec<u8>,
     ) -> DwalletMPCResult<()> {
-        if let MPCRound::Sign(batch_session_id, hashed_message) = session_info.mpc_round.clone() {
-            self.store_verified_sign_output(batch_session_id, hashed_message, output.clone())?;
-        } else if let MPCRound::PresignSecond(_, first_round_output, batch_session_id) =
-            session_info.mpc_round.clone()
-        {
-            let presign = parse_presign_from_first_and_second_outputs(&first_round_output, &output);
-            self.store_verified_presign_output(
-                batch_session_id,
-                session_info.flow_session_id,
-                bcs::to_bytes(&presign).unwrap(),
-            )?;
+        match session_info.mpc_round {
+            MPCRound::Sign(batch_session_id, ref hashed_message) => {
+                self.store_verified_sign_output(batch_session_id, hashed_message.clone(), output)?;
+            }
+            MPCRound::PresignSecond(_, ref first_round_output, batch_session_id) => {
+                let presign = parse_presign_from_first_and_second_outputs(first_round_output, &output);
+                self.store_verified_presign_output(
+                    batch_session_id,
+                    session_info.flow_session_id,
+                    bcs::to_bytes(&presign)?,
+                )?;
+            }
+            _ => {}
         }
         Ok(())
     }
