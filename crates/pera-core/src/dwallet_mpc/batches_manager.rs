@@ -138,7 +138,7 @@ impl DWalletMPCBatchesManager {
         &mut self,
         batch_session_id: ObjectID,
         first_round_session_id: ObjectID,
-        message: Vec<u8>,
+        output: Vec<u8>,
     ) -> DwalletMPCResult<()> {
         let batched_presign_session = self
             .batched_presign_sessions
@@ -148,7 +148,7 @@ impl DWalletMPCBatchesManager {
             })?;
         batched_presign_session
             .verified_presigns
-            .push((first_round_session_id, message));
+            .push((first_round_session_id, output));
         Ok(())
     }
 
