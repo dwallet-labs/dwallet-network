@@ -94,7 +94,7 @@ impl DWalletMPCManager {
             Ok(tables) => tables,
             Err(_) => {
                 error!("could not construct RandomnessManager: AuthorityPerEpochStore tables already gone");
-                return Err(PeraError::EpochEnded(epoch_id));
+                return Err(DwalletMPCError::EpochEnded(epoch_id));
             }
         };
 
@@ -273,9 +273,7 @@ impl DWalletMPCManager {
     /// Advance all the MPC instances that either received enough messages
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
-    pub async fn handle_end_of_delivery(&mut self, consensus_commit_output: &mut ConsensusCommitOutput) -> PeraResult {
-        consensus_commit_output.set_dwallet_mpc_active_instances_counter(self.active_instances_counter as u64);
-        self.active_instances_counter += 1;
+    pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
         let threshold = self.epoch_store()?.committee().quorum_threshold();
         let mut malicious_parties = vec![];
         let mut messages = vec![];
