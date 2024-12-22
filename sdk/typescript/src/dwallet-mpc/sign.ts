@@ -12,7 +12,6 @@ const partiallySignMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::
 const futureSignMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::future_sign`;
 const approveMessagesMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`;
 const completedSignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`;
-export const completedPresignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedBatchedPresignEvent`;
 
 export enum Hash {
 	KECCAK256 = 0,
@@ -109,7 +108,7 @@ export async function partiallySignMessageTransactionCall(
 	dWalletID: string,
 	presignIDs: string[],
 	centralizedSignedMessages: Uint8Array[],
-): Promise<string> {
+) {
 	const tx = new Transaction();
 
 	tx.moveCall({
@@ -130,15 +129,17 @@ export async function partiallySignMessageTransactionCall(
 		},
 	});
 
-	const startBatchSignEvent = isCreatedPartiallySignedMessagesEvent(res.events?.at(0)?.parsedJson)
+	const createdPartiallySignedMessagesEvent = isCreatedPartiallySignedMessagesEvent(
+		res.events?.at(0)?.parsedJson,
+	)
 		? (res.events?.at(0)?.parsedJson as CreatedPartiallySignedMessagesEvent)
 		: null;
 
-	if (!startBatchSignEvent) {
-		throw new Error(`${signMoveFunc} failed: ${res.errors}`);
+	if (!createdPartiallySignedMessagesEvent) {
+		throw new Error(`${partiallySignMoveFunc} failed: ${res.errors}`);
 	}
 
-	return startBatchSignEvent.partial_signatures_object_id;
+	return createdPartiallySignedMessagesEvent;
 }
 
 export async function futureSignTransactionCall(

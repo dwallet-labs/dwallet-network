@@ -22,8 +22,6 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
     use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output};
     use pera::event;
-    #[test_only]
-    use pera::object;
 
     /// Represents the `Secp256K1` dWallet type.
     ///

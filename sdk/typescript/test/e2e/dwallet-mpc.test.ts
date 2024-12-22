@@ -169,7 +169,7 @@ describe('Test dWallet MPC', () => {
 		1000 * 60 * 20,
 	);
 
-	it('should future sign', async () => {
+	it('should run future sign', async () => {
 		let conf: Config = {
 			keypair: toolbox.keypair,
 			client: toolbox.client,
@@ -205,24 +205,25 @@ describe('Test dWallet MPC', () => {
 			Hash.SHA256,
 			serializedPresignSessionIds,
 		);
-		let partiallySignedMessagesObjID = await partiallySignMessageTransactionCall(
+		let partiallySignedMessages = await partiallySignMessageTransactionCall(
 			conf,
 			hashedMsgs,
 			dWallet.id,
 			[presignOutput1.id.id, presignOutput2.id.id],
 			centralizedSignMsg,
 		);
-		console.log({ partiallySignedMessages: partiallySignedMessagesObjID });
-		expect(partiallySignedMessagesObjID).toBeDefined();
-		// sleep for 5 seconds for a checkpoint to be created, so the new object can be used
+		expect(partiallySignedMessages).toBeDefined();
+		console.log({ partiallySignedMessages });
+		// Sleep for 5 seconds for a checkpoint to be created, so the new object can be used.
 		await new Promise((r) => setTimeout(r, 5000));
 		let completedSignEvent = await futureSignTransactionCall(
 			conf,
 			hashedMsgs,
 			dWallet.dwalletCapID,
-			partiallySignedMessagesObjID,
+			partiallySignedMessages.partial_signatures_object_id,
 		);
-		console.log({ completedSignEvent: completedSignEvent.signed_messages });
+		expect(completedSignEvent).toBeDefined();
+		console.log({ completedSignEvent });
 	});
 });
 

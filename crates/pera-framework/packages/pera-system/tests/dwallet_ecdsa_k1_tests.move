@@ -7,7 +7,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
     use pera_system::dwallet;
     use pera_system::dwallet::DWalletCap;
     use pera_system::dwallet_2pc_mpc_ecdsa_k1;
-    use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign, approve_messages};
+    use pera_system::dwallet_2pc_mpc_ecdsa_k1::{Presign};
     use pera_system::dwallet_2pc_mpc_ecdsa_k1::{
         ENotSystemAddress,
         EMessageApprovalDWalletMismatch,

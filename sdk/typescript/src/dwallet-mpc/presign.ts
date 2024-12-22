@@ -7,10 +7,10 @@ import { bcs } from '@mysten/bcs';
 import { Transaction } from '../transactions/index.js';
 import type { Config } from './globals.js';
 import { dWallet2PCMPCECDSAK1ModuleName, fetchCompletedEvent, packageId } from './globals.js';
-import { completedPresignMoveEvent } from './sign.js';
 
 const launchPresignFirstRoundMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::launch_batched_presign`;
 export const presignMoveType = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::Presign`;
+const completedPresignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedBatchedPresignEvent`;
 
 interface StartBatchedPresignEvent {
 	session_id: string;
