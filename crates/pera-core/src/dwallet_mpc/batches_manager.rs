@@ -120,17 +120,17 @@ impl DWalletMPCBatchesManager {
 
     fn store_verified_sign_output(
         &mut self,
-        session_id: ObjectID,
-        key: Vec<u8>,
-        message: Vec<u8>,
+        batch_session_id: ObjectID,
+        hashed_message: Vec<u8>,
+        signed_message: Vec<u8>,
     ) -> DwalletMPCResult<()> {
         let batched_sign_session = self
             .batched_sign_sessions
-            .get_mut(&session_id)
-            .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
+            .get_mut(&batch_session_id)
+            .ok_or(DwalletMPCError::MPCSessionNotFound { session_id: batch_session_id })?;
         batched_sign_session
             .hashed_msg_to_signature
-            .insert(key, message);
+            .insert(hashed_message, signed_message);
         Ok(())
     }
 
