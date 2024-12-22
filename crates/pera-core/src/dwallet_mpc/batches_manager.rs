@@ -22,7 +22,8 @@ pub struct BatchedSignSession {
     ordered_messages: Vec<Vec<u8>>,
 }
 
-/// A struct to hold the batches presign sessions data, equivalent to the [`BatchedSignSession`] struct, but for presigns.
+/// A struct to hold the batches presign sessions data, 
+/// equivalent to the [`BatchedSignSession`] struct, but for presigns.
 pub struct BatchedPresignSession {
     /// The amount of presigns that will get created in this batch
     batch_size: u64,
