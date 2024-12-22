@@ -3,7 +3,6 @@ use std::sync::{Arc, Weak};
 
 use group::PartyID;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
-use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput, MPCSessionStatus};
 
@@ -39,7 +38,6 @@ pub(super) struct DWalletMPCInstance {
     /// Party in here is not a Validator, but a cryptographic party.
     party: MPCParty,
     pub(super) public_input: MPCPublicInput,
-    /// The decryption share of the party for mpc sign sessions
 }
 
 /// Needed to be able to iterate over a vector of generic MPCInstances with Rayon.

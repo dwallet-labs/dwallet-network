@@ -435,27 +435,22 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                             });
                         match output_verification_result.result {
                             OutputResult::Valid => {
-                                if let MPCRound::Sign(batch_session_id, hashed_message) =
-                                    &session_info.mpc_round
-                                {
+                                if session_info.mpc_round.is_part_of_batch() {
                                     let Ok(mut batches_manager) =
                                         self.epoch_store.get_dwallet_mpc_batches_manager().await
                                     else {
                                         error!("failed to get dWallet MPC batches manager when processing DWalletMPCOutput transaction");
                                         continue;
                                     };
-                                    if let Err(err) = batches_manager.store_verified_output(
-                                        batch_session_id,
-                                        hashed_message.clone(),
-                                        output.clone(),
-                                    ) {
+                                    if let Err(err) = batches_manager
+                                        .store_verified_output(session_info.clone(), output.clone())
+                                    {
                                         error!(
-                                            "session: {:?} error storing message in batch: {:?}",
-                                            batch_session_id, err
+                                            "error storing verified output for session {:?}: {:?}",
+                                            session_info.session_id, err
                                         );
-                                        continue;
                                     }
-                                    match batches_manager.is_batch_completed(batch_session_id) {
+                                    match batches_manager.is_batch_completed(session_info) {
                                         Ok(Some(batch_output)) => {
                                             let transaction = self
                                                 .create_dwallet_mpc_output_system_tx(
@@ -472,15 +467,15 @@ impl<C: CheckpointServiceNotify + Send + Sync> ConsensusHandler<C> {
                                         }
                                         Err(err) => {
                                             error!(
-                                                "session {:?} error checking if batch is completed: {:?}",
-                                                batch_session_id, err
+                                                "session: `{:?}` error checking if batch is completed: {:?}",
+                                                session_info.session_id, err
                                             );
                                             continue;
                                         }
                                         _ => {
                                             debug!(
-                                                "session {:?} received a batch output",
-                                                batch_session_id
+                                                "session: '{:?}' received a batch output",
+                                                session_info.session_id
                                             );
                                             // We don't want to write this output to the chain,
                                             // as we stored it in the batch,

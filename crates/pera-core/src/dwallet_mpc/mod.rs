@@ -4,8 +4,9 @@ use crate::dwallet_mpc::dkg::{
     DKGSecondPartyPublicInputGenerator,
 };
 use crate::dwallet_mpc::mpc_events::{
-    StartBatchedSignEvent, StartDKGFirstRoundEvent, StartDKGSecondRoundEvent,
-    StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
+    StartBatchedPresignEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent,
+    StartDKGSecondRoundEvent, StartPresignFirstRoundEvent, StartPresignSecondRoundEvent,
+    StartSignRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_party::MPCParty;
@@ -103,6 +104,10 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: StartBatchedSignEvent = bcs::from_bytes(&event.contents)?;
             Ok(Some(batched_sign_session_info(&deserialized_event)))
         }
+        t if t == &StartBatchedPresignEvent::type_() => {
+            let deserialized_event: StartBatchedPresignEvent = bcs::from_bytes(&event.contents)?;
+            Ok(Some(batched_presign_session_info(&deserialized_event)))
+        }
         _ => Ok(None),
     }
 }
@@ -177,6 +182,7 @@ fn presign_first_party_session_info(
         mpc_round: MPCRound::PresignFirst(
             deserialized_event.dwallet_id.bytes,
             deserialized_event.dkg_output,
+            deserialized_event.batch_session_id.bytes,
         ),
     }
 }
@@ -204,6 +210,7 @@ fn presign_second_party_session_info(
         mpc_round: MPCRound::PresignSecond(
             deserialized_event.dwallet_id.bytes,
             deserialized_event.first_round_output.clone(),
+            deserialized_event.batch_session_id.bytes,
         ),
     }
 }
@@ -219,8 +226,7 @@ fn sign_party(
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             deserialized_event.dkg_output.clone(),
             deserialized_event.hashed_message.clone(),
-            deserialized_event.presign_first_round_output.clone(),
-            deserialized_event.presign_second_round_output.clone(),
+            deserialized_event.presign.clone(),
             deserialized_event.centralized_signed_message.clone(),
             dwallet_mpc_manager
                 .node_config
@@ -253,8 +259,17 @@ fn batched_sign_session_info(deserialized_event: &StartBatchedSignEvent) -> Sess
     SessionInfo {
         flow_session_id: deserialized_event.session_id.bytes,
         session_id: deserialized_event.session_id.bytes,
-        initiating_user_address: deserialized_event.initiating_user,
+        initiating_user_address: deserialized_event.initiator,
         mpc_round: MPCRound::BatchedSign(deserialized_event.hashed_messages.clone()),
+    }
+}
+
+fn batched_presign_session_info(deserialized_event: &StartBatchedPresignEvent) -> SessionInfo {
+    SessionInfo {
+        flow_session_id: deserialized_event.session_id.bytes,
+        session_id: deserialized_event.session_id.bytes,
+        initiating_user_address: deserialized_event.initiator,
+        mpc_round: MPCRound::BatchedPresign(deserialized_event.batch_size),
     }
 }
 

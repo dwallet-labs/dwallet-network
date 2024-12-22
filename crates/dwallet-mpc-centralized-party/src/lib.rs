@@ -15,7 +15,7 @@ type DKGCentralizedParty = <AsyncProtocol as twopc_mpc::dkg::Protocol>::DKGCentr
 type SignCentralizedParty = <AsyncProtocol as twopc_mpc::sign::Protocol>::SignCentralizedParty;
 type EncryptionOfSecretKeyShareAndPublicKeyShare =
     <AsyncProtocol as twopc_mpc::dkg::Protocol>::EncryptionOfSecretKeyShareAndPublicKeyShare;
-type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
+pub type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
 <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
 
 /// Supported hash functions for message digest.
@@ -120,49 +120,36 @@ fn message_digest(message: &[u8], hash_type: &Hash) -> anyhow::Result<secp256k1:
 /// The `hash` must fit the [`Hash`] enum.
 pub fn create_sign_output(
     centralized_party_dkg_output: Vec<u8>,
-    presign_first_round_output: Vec<u8>,
-    presign_second_round_output: Vec<u8>,
+    presigns: Vec<Vec<u8>>,
     messages: Vec<Vec<u8>>,
     hash: u8,
-    session_id: String,
+    session_ids: Vec<String>,
 ) -> anyhow::Result<(Vec<HashedMessages>, Vec<SignedMessages>)> {
-    let presign_first_round_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare =
-        bcs::from_bytes(&presign_first_round_output)?;
-    let presign_second_round_output: (
-        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
-        NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
-    ) = bcs::from_bytes(&presign_second_round_output)?;
-    let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
-        (presign_first_round_output, presign_second_round_output).into();
-
-    let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_id);
     let protocol_public_parameters = class_groups_constants::protocol_public_parameters();
-
+    let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGOutput =
+        bcs::from_bytes(&centralized_party_dkg_output)?;
     let (signed_messages, hashed_messages): (Vec<_>, Vec<_>) = messages
         .into_iter()
-        .map(|message| {
-            let centralized_party_dkg_output: <AsyncProtocol as twopc_mpc::dkg::Protocol>::CentralizedPartyDKGOutput =
-                bcs::from_bytes(&centralized_party_dkg_output)?;
-
+        .enumerate()
+        .map(|(index, message)| {
+            let session_id = commitment::CommitmentSizedNumber::from_le_hex(&session_ids[index]);
+            let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
+                bcs::from_bytes(&presigns[index])?;
             let hashed_message =
                 message_digest(&message, &hash.try_into()?).context("Message digest failed")?;
-
             // Prepare auxiliary input.
             let centralized_party_auxiliary_input = (
                 hashed_message,
-                centralized_party_dkg_output,
-                presign.clone(),
+                centralized_party_dkg_output.clone(),
+                presign,
                 protocol_public_parameters.clone(),
                 session_id,
             )
                 .into();
 
-            let (sign_message, _) = SignCentralizedParty::advance(
-                (),
-                &centralized_party_auxiliary_input,
-                &mut OsRng,
-            )
-                .context("advance() failed on the SignCentralizedParty")?;
+            let (sign_message, _) =
+                SignCentralizedParty::advance((), &centralized_party_auxiliary_input, &mut OsRng)
+                    .context("advance() failed on the SignCentralizedParty")?;
 
             let signed_message = bcs::to_bytes(&sign_message)?;
             let hashed_message_bytes = bcs::to_bytes(&hashed_message)?;

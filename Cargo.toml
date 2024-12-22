@@ -198,7 +198,6 @@ members = [
     "pera-execution/v2/pera-adapter",
     "pera-execution/v2/pera-move-natives",
     "pera-execution/v2/pera-verifier",
-    "crates/dwallet-mpc-centralized-party",
     "crates/class-groups-constants",
     "crates/dwallet-mpc-types",
     "crates/dwallet-classgroups-types",
@@ -603,6 +602,7 @@ prometheus-closure-metric = { path = "crates/prometheus-closure-metric" }
 shared-crypto = { path = "crates/shared-crypto" }
 simulacrum = { path = "crates/simulacrum" }
 pera = { path = "crates/pera" }
+dwallet-mpc = { path = "crates/dwallet-mpc-centralized-party" }
 pera-adapter-transactional-tests = { path = "crates/pera-adapter-transactional-tests" }
 pera-analytics-indexer = { path = "crates/pera-analytics-indexer" }
 pera-analytics-indexer-derive = { path = "crates/pera-analytics-indexer-derive" }
