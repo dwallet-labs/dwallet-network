@@ -578,6 +578,7 @@ pub struct AuthorityEpochTables {
     pub(crate) randomness_last_round_timestamp: DBMap<u64, TimestampMs>,
 
     pub dwallet_mpc_active_instances_counter: DBMap<u64, u64>,
+    pub dwallet_mpc_messages: DBMap<u64, Vec<DWalletMPCChannelMessage>>,
 }
 
 fn signed_transactions_table_default_config() -> DBOptions {
@@ -2958,8 +2959,9 @@ impl AuthorityPerEpochStore {
             &mut output,
             &transactions_to_schedule,
         )?;
-        output.record_consensus_commit_stats(consensus_stats.clone());
 
+        output.record_consensus_commit_stats(consensus_stats.clone());
+        output.set_dwallet_mpc_messages(self.dwallet_mpc_epoch_messages.lock().await.clone());
         // Create pending checkpoints if we are still accepting tx.
         let should_accept_tx = if let Some(lock) = &lock {
             lock.should_accept_tx()
@@ -4251,6 +4253,7 @@ pub(crate) struct ConsensusCommitOutput {
     pending_jwks: BTreeSet<(AuthorityName, JwkId, JWK)>,
     active_jwks: BTreeSet<(u64, (JwkId, JWK))>,
 
+    dwallet_mpc_messages: Vec<DWalletMPCChannelMessage>,
     // dwallet mpc state
     dwallet_mpc_active_instances_counter: u64,
 }
@@ -4322,6 +4325,10 @@ impl ConsensusCommitOutput {
         self.dwallet_mpc_active_instances_counter = new_value;
     }
 
+    pub fn set_dwallet_mpc_messages(&mut self, new_value: Vec<DWalletMPCChannelMessage>) {
+        self.dwallet_mpc_messages = new_value;
+    }
+
     pub fn reserve_next_randomness_round(
         &mut self,
         next_randomness_round: RandomnessRound,
@@ -4366,6 +4373,8 @@ impl ConsensusCommitOutput {
             &tables.dwallet_mpc_active_instances_counter,
             [(SINGLETON_KEY, self.dwallet_mpc_active_instances_counter)],
         )?;
+        batch.insert_batch(&tables.dwallet_mpc_messages, self.dwallet_mpc_messages)?;
+
         batch.insert_batch(
             &tables.consensus_message_processed,
             self.consensus_messages_processed
