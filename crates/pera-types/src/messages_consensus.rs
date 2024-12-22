@@ -613,7 +613,6 @@ impl ConsensusTransaction {
             }
             ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output) => {
                 ConsensusTransactionKey::DWalletMPCOutput(
-                    *authority,
                     output.clone(),
                     session_info.session_id,
                     session_info.initiating_user_address,
