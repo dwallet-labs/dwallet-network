@@ -11,7 +11,6 @@ use crate::{
     object::Owner,
 };
 
-use group::PartyID;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::hash::Hash;
@@ -40,6 +39,7 @@ macro_rules! fp_ensure {
     };
 }
 use crate::digests::TransactionEventsDigest;
+use crate::dwallet_mpc_error::DwalletMPCError;
 use crate::execution_status::{CommandIndex, ExecutionFailureStatus};
 pub(crate) use fp_ensure;
 
@@ -663,20 +663,9 @@ pub enum PeraError {
     #[error("The request did not contain a certificate")]
     NoCertificateProvidedError,
 
-    #[error("mpc session with ID `{session_id:?}` was not found.")]
-    MPCSessionNotFound { session_id: ObjectID },
-
-    #[error("The user that initiated this MPC session has provided an invalid input.")]
-    DWalletMPCInvalidUserInput,
-
-    #[error("An internal DWallet MPC error has occurred")]
-    InternalDWalletMPCError,
-
-    #[error("malicious parties have been detected")]
-    DWalletMPCMaliciousParties(Vec<PartyID>),
-
-    #[error("None MPC event found")]
-    NonMPCEvent,
+    // This is a string because the encapsulating error has too many derives.
+    #[error("dWallet MPC Error: {0}")]
+    DwalletMPCError(String),
 }
 
 #[repr(u64)]
@@ -734,6 +723,12 @@ impl From<Status> for PeraError {
                 status.code().description().to_owned(),
             )
         }
+    }
+}
+
+impl From<DwalletMPCError> for PeraError {
+    fn from(error: DwalletMPCError) -> Self {
+        PeraError::DwalletMPCError(error.to_string())
     }
 }
 

@@ -1,8 +1,8 @@
 use crate::base_types::{ObjectID, PeraAddress};
 use crate::crypto::default_hash;
 use crate::digests::DWalletMPCOutputDigest;
+use crate::dwallet_mpc::DWalletMPCNetworkKey;
 use crate::message_envelope::Message;
-use group::PartyID;
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::IntentScope;
 
@@ -11,19 +11,35 @@ pub enum MPCRound {
     /// The first round of the DKG protocol.
     DKGFirst,
     /// The second round of the DKG protocol.
-    DKGSecond,
-    /// The first round of the presign protocol.
-    /// Contains the `ObjectId` of the dwallet object and the dkg decentralized output.
-    PresignFirst(ObjectID, Vec<u8>),
-    /// The second round of the presign protocol.
-    /// Contains the `ObjectId` of the dwallet object and the presign first round output.
-    PresignSecond(ObjectID, Vec<u8>),
-    /// The first round of the sign protocol.
-    /// Contains the party id associated with the decryption share.
-    Sign(PartyID),
+    DKGSecond(ObjectID, u8),
+    /// The first round of the Presign protocol.
+    /// Contains the `ObjectId` of the dWallet object,
+    /// the DKG decentralized output, and the batch session ID.
+    PresignFirst(ObjectID, Vec<u8>, ObjectID),
+    /// The second round of the Presign protocol.
+    /// Contains the `ObjectId` of the dWallet object,
+    /// , the Presign first round output, and the batch session ID.
+    PresignSecond(ObjectID, Vec<u8>, ObjectID),
+    /// The first and only round of the Sign protocol.
+    /// Contains the `PartyID` associated with the decryption share,
+    /// the `ObjectID` of the batched sign session,
+    /// and the hashed message being signed.
+    Sign(ObjectID, Vec<u8>),
+    /// A batched sign session, contains the list of messages that are being signed.
+    BatchedSign(Vec<Vec<u8>>),
+    BatchedPresign(u64),
+    /// The round of the network DKG protocol.
+    NetworkDkg(DWalletMPCNetworkKey),
 }
 
-/// The content of the system transaction that stores the MPC session output on chain.
+impl MPCRound {
+    /// Returns `true` if the round output is part of a batch, `false` otherwise.
+    pub fn is_part_of_batch(&self) -> bool {
+        matches!(self, MPCRound::Sign(..) | MPCRound::PresignSecond(..))
+    }
+}
+
+/// The content of the system transaction that stores the MPC session output on the chain.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DWalletMPCOutput {
     /// The session information of the MPC session.
@@ -41,16 +57,17 @@ impl Message for DWalletMPCOutput {
     }
 }
 
+// todo(zeev): rename to MPCSessionInfo.
 /// Holds information about the current MPC session.
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct SessionInfo {
-    pub mpc_session_id: ObjectID,
+    /// The session ID of the first round in the flow — e.g.,
+    /// in Presign we have two rounds, so the session ID of the first.
+    pub flow_session_id: ObjectID,
     /// Unique identifier for the MPC session.
     pub session_id: ObjectID,
     /// The address of the user that initiated this session.
     pub initiating_user_address: PeraAddress,
-    /// The `DWalletCap` object's ID associated with the `DWallet`.
-    pub dwallet_cap_id: ObjectID,
     /// The current MPC round in the protocol.
     /// Contains extra parameters if needed.
     pub mpc_round: MPCRound,

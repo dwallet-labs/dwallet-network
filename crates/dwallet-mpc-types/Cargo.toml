@@ -1,0 +1,14 @@
+[package]
+name = "dwallet-mpc-types"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+class_groups.workspace = true
+crypto-bigint = "0.5.5"
+bcs.workspace = true
+serde.workspace = true
+move-core-types.workspace = true
+
+[lints]
+workspace = true

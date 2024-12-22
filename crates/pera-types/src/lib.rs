@@ -41,6 +41,7 @@ pub mod deny_list_v1;
 pub mod deny_list_v2;
 pub mod digests;
 pub mod display;
+pub mod dwallet_mpc;
 pub mod dynamic_field;
 pub mod effects;
 pub mod epoch_data;
@@ -89,7 +90,7 @@ pub mod versioned;
 pub mod zk_login_authenticator;
 pub mod zk_login_util;
 
-pub mod dwallet_mpc;
+pub mod dwallet_mpc_error;
 #[cfg(any(test, feature = "test-utils"))]
 #[path = "./unit_tests/utils.rs"]
 pub mod utils;

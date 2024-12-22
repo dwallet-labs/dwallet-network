@@ -2,60 +2,274 @@
 // SPDX-License-Identifier: BSD-3-Clause-Clear
 
 import { create_sign_centralized_output } from '@dwallet-network/dwallet-mpc-wasm';
-import { beforeAll, describe, it } from 'vitest';
+import { bcs } from '@mysten/bcs';
+import { beforeEach, describe, expect, it } from 'vitest';
 
+import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
-import { mockedDWallet, mockedPresign } from '../../src/dwallet-mpc/mock';
+import { Config } from '../../src/dwallet-mpc/globals';
 import { presign } from '../../src/dwallet-mpc/presign';
-import { Hash, signMessageTransactionCall } from '../../src/dwallet-mpc/sign';
+import {
+	futureSignTransactionCall,
+	Hash,
+	partiallySignMessageTransactionCall,
+	signMessageTransactionCall,
+} from '../../src/dwallet-mpc/sign';
+import { Ed25519Keypair } from '../../src/keypairs/ed25519';
+import { mockCreateDwallet, mockCreatePresign } from './utils/dwallet';
 import { setup, TestToolbox } from './utils/setup';
 
-function encodeBase64(bytes: Uint8Array): string {
-	return btoa(String.fromCharCode(...bytes));
-}
-
-describe('Test dwallet mpc', () => {
+describe('Test dWallet MPC', () => {
 	let toolbox: TestToolbox;
 
-	beforeAll(async () => {
+	beforeEach(async () => {
 		toolbox = await setup();
+		console.log('Address', toolbox.keypair.toPeraAddress());
 	});
 
-	it('should create DWallet', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		console.log(dwallet);
+	it('should create a dWallet (DKG)', async () => {
+		const pollRef = { value: true };
+		void printOwnedObjects(toolbox.keypair, toolbox.client, pollRef);
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 5 * 60 * 1000,
+		};
+		const dWallet = await createDWallet(conf);
+		expect(dWallet).toBeDefined();
+		pollRef.value = false;
+		console.log({ dWallet });
 	});
 
-	it('should create presign', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		const dwallet = await createDWallet(toolbox.keypair, toolbox.client);
-		console.log({ dwallet });
-		const presignOutput = await presign(toolbox.keypair, toolbox.client, dwallet!.dwalletID);
+	it('should run Presign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await mockCreateDwallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput = await presign(conf, dWallet.id, 1);
+		expect(presignOutput).toBeDefined();
 		console.log({ presignOutput });
 	});
 
-	it('should sign a message successfully ', async () => {
-		console.log(toolbox.keypair.toPeraAddress());
-		const [sign_msg, _, fullPresigns, hash_msg] = create_sign_centralized_output(
-			Uint8Array.from(mockedDWallet.centralizedDKGOutput),
-			Uint8Array.from(mockedPresign.firstRoundOutput),
-			Uint8Array.from(mockedPresign.secondRoundOutput),
-			Uint8Array.from([1, 2, 3, 4, 5]),
+	it('should run DKG+Presign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await createDWallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput = await presign(conf, dWallet.id, 1);
+		expect(presignOutput).toBeDefined();
+		console.log({ presignOutput });
+	});
+
+	it('should run Sign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await mockCreateDwallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput1 = await mockCreatePresign(conf, dWallet);
+		const presignOutput2 = await mockCreatePresign(conf, dWallet);
+		expect(presignOutput1).toBeDefined();
+		expect(presignOutput2).toBeDefined();
+		console.log({ presignOutput1, presignOutput2 });
+		let serializedMsgs = bcs
+			.vector(bcs.vector(bcs.u8()))
+			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
+			.toBytes();
+		let serializedPresigns = bcs
+			.vector(bcs.vector(bcs.u8()))
+			.serialize([presignOutput1.presign, presignOutput2.presign])
+			.toBytes();
+		let serializedPresignSessionIds = bcs
+			.vector(bcs.string())
+			.serialize([
+				presignOutput1.first_round_session_id.slice(2),
+				presignOutput2.first_round_session_id.slice(2),
+			])
+			.toBytes();
+		const [centralizedSignMsg, hashedMsg] = create_sign_centralized_output(
+			Uint8Array.from(dWallet.centralizedDKGOutput),
+			serializedPresigns,
+			serializedMsgs,
 			Hash.SHA256,
-			mockedPresign.firstRoundSessionID.slice(2)!,
+			serializedPresignSessionIds,
 		);
-
-		let res = await signMessageTransactionCall(
-			toolbox.keypair,
-			toolbox.client,
-			hash_msg,
-			fullPresigns,
-			mockedDWallet.decentralizedDKGOutput,
-			sign_msg,
-			mockedPresign.firstRoundSessionID,
+		console.log('Signing message');
+		let signOutput = await signMessageTransactionCall(
+			conf,
+			dWallet.dwalletCapID,
+			hashedMsg,
+			dWallet.id,
+			[presignOutput1.id.id, presignOutput2.id.id],
+			centralizedSignMsg,
 		);
+		expect(signOutput).toBeDefined();
+		console.log({ signOutput });
+	});
 
-		console.log(res);
+	it(
+		'Full flow: DKG, Presign, Sign',
+		async () => {
+			let conf: Config = {
+				keypair: toolbox.keypair,
+				client: toolbox.client,
+				timeout: 10 * 60 * 1000,
+			};
+			const dWallet = await createDWallet(conf);
+			console.log({ dWallet });
+			expect(dWallet).toBeDefined();
+			const presignCompletionEvent = await presign(conf, dWallet.id, 2);
+			console.log({ presignCompletionEvent });
+			expect(presignCompletionEvent).toBeDefined();
+			let serializedMsgs = bcs
+				.vector(bcs.vector(bcs.u8()))
+				.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
+				.toBytes();
+			let serializedPresigns = bcs
+				.vector(bcs.vector(bcs.u8()))
+				.serialize(presignCompletionEvent.presigns)
+				.toBytes();
+			let serializedPresignFirstRoundSessionIds = bcs
+				.vector(bcs.string())
+				.serialize(
+					presignCompletionEvent.first_round_session_ids.map((session_id) => session_id.slice(2)),
+				)
+				.toBytes();
+			const [centralizedSignedMsg, hashedMsgs] = create_sign_centralized_output(
+				Uint8Array.from(dWallet.centralizedDKGOutput),
+				serializedPresigns,
+				serializedMsgs,
+				Hash.SHA256,
+				serializedPresignFirstRoundSessionIds,
+			);
+
+			console.log('Signing messages');
+			let signOutput = await signMessageTransactionCall(
+				conf,
+				dWallet.dwalletCapID,
+				hashedMsgs,
+				dWallet.id,
+				presignCompletionEvent.presign_ids,
+				centralizedSignedMsg,
+			);
+			expect(signOutput).toBeDefined();
+			console.log({ signOutput });
+		},
+		1000 * 60 * 20,
+	);
+
+	it('should future sign', async () => {
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 10 * 60 * 1000,
+		};
+		const dWallet = await mockCreateDwallet(conf);
+		expect(dWallet).toBeDefined();
+		console.log({ dWallet });
+		const presignOutput1 = await mockCreatePresign(conf, dWallet);
+		const presignOutput2 = await mockCreatePresign(conf, dWallet);
+		expect(presignOutput1).toBeDefined();
+		expect(presignOutput2).toBeDefined();
+		console.log({ presignOutput1, presignOutput2 });
+		let serializedMsgs = bcs
+			.vector(bcs.vector(bcs.u8()))
+			.serialize([Uint8Array.from([1, 2, 3, 4, 5]), Uint8Array.from([6, 7, 8, 9, 10])])
+			.toBytes();
+		let serializedPresigns = bcs
+			.vector(bcs.vector(bcs.u8()))
+			.serialize([presignOutput1.presign, presignOutput2.presign])
+			.toBytes();
+		let serializedPresignSessionIds = bcs
+			.vector(bcs.string())
+			.serialize([
+				presignOutput1.first_round_session_id.slice(2),
+				presignOutput2.first_round_session_id.slice(2),
+			])
+			.toBytes();
+		const [centralizedSignMsg, hashedMsgs] = create_sign_centralized_output(
+			Uint8Array.from(dWallet.centralizedDKGOutput),
+			serializedPresigns,
+			serializedMsgs,
+			Hash.SHA256,
+			serializedPresignSessionIds,
+		);
+		let partiallySignedMessagesObjID = await partiallySignMessageTransactionCall(
+			conf,
+			hashedMsgs,
+			dWallet.id,
+			[presignOutput1.id.id, presignOutput2.id.id],
+			centralizedSignMsg,
+		);
+		console.log({ partiallySignedMessages: partiallySignedMessagesObjID });
+		expect(partiallySignedMessagesObjID).toBeDefined();
+		// sleep for 5 seconds for a checkpoint to be created, so the new object can be used
+		await new Promise((r) => setTimeout(r, 5000));
+		let completedSignEvent = await futureSignTransactionCall(
+			conf,
+			hashedMsgs,
+			dWallet.dwalletCapID,
+			partiallySignedMessagesObjID,
+		);
+		console.log({ completedSignEvent: completedSignEvent.signed_messages });
 	});
 });
+
+async function printOwnedObjects(
+	keypair: Ed25519Keypair,
+	client: PeraClient,
+	poll: { value: boolean },
+) {
+	type MoveObjectContent = {
+		dataType: 'moveObject';
+		fields: MoveStruct;
+		hasPublicTransfer: boolean;
+		type: string;
+	};
+
+	let cursor = null;
+
+	while (poll.value) {
+		await new Promise((r) => setTimeout(r, 3000));
+		const {
+			data: ownedObjects,
+			hasNextPage,
+			nextCursor,
+		} = await client.getOwnedObjects({
+			owner: keypair.toPeraAddress(),
+			cursor,
+		});
+		const objectIds = ownedObjects.map((o) => o.data?.objectId).filter(Boolean) as string[];
+
+		if (objectIds.length === 0) {
+			continue;
+		}
+
+		const objectsContent = await client.multiGetObjects({
+			ids: objectIds,
+			options: { showContent: true },
+		});
+
+		objectsContent.forEach((o) => {
+			if ((o.data?.content as MoveObjectContent)?.type !== '0x2::coin::Coin<0x2::pera::PERA>') {
+				console.log(o);
+			}
+		});
+		if (hasNextPage) {
+			cursor = nextCursor;
+		}
+	}
+
+	console.log('Stopped polling');
+}

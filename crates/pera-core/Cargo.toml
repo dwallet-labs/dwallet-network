@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true, features = ["backtrace"] }
+dwallet-mpc.workspace = true
 arc-swap.workspace = true
 async-trait.workspace = true
 axum.workspace = true
@@ -99,18 +100,16 @@ pera-storage.workspace = true
 pera-types.workspace = true
 zeroize.workspace = true
 nonempty.workspace = true
-proof = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "proof", branch = "new-pera-api" }
-maurer = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "maurer" , branch = "new-pera-api", features = ["benchmarking"]}
 group.workspace = true
-tiresias = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "tiresias", branch = "new-pera-api" }
 mpc.workspace = true
 twopc_mpc.workspace = true
 homomorphic_encryption = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "homomorphic-encryption", branch = "new-pera-api" }
 class_groups.workspace = true
 commitment = { git = "https://github.com/dwallet-labs/cryptography-private", subdir = "commitment", branch = "new-pera-api" }
-class_groups_constants = {path = "../class-groups-constants"}
+class_groups_constants = { path = "../class-groups-constants" }
 rand_core = "0.6.4"
 crypto-bigint = { version = "0.5.5", features = ["rand_core", "serde"], default-features = false }
+dwallet-mpc-types.workspace = true
 
 [dev-dependencies]
 clap.workspace = true
