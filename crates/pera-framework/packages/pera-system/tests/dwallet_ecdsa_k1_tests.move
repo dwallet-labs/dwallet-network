@@ -405,12 +405,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
                 first_round_session_id2,
                 ctx,
             );
-            presign2 = pera_system::dwallet_2pc_mpc_ecdsa_k1::create_mock_presign(
-                object::id(&dwallet),
-                presign_bytes,
-                first_round_session_id2,
-                ctx,
-            );
         };
 
         // Third transaction: Approve messages and call the `sign` function.
