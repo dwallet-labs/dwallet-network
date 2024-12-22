@@ -27,11 +27,15 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use fastcrypto::hash::HashFunction;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::MutexGuard;
 use tracing::log::warn;
 use tracing::{error, info};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
+use pera_types::crypto::DefaultHash;
+use pera_types::digests::Digest;
+use shared_crypto::intent::HashingIntentScope;
 use typed_store::Map;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
@@ -69,6 +73,15 @@ pub struct DWalletMPCManager {
     weighted_parties: HashMap<PartyID, PartyID>,
     outputs_manager: DWalletMPCOutputsVerifier,
     status: ManagerStatus,
+}
+
+impl Into<(Digest, DWalletMPCChannelMessage)> for DWalletMPCChannelMessage {
+    fn into(self) -> (Digest, DWalletMPCChannelMessage) {
+        let mut hasher = DefaultHash::default();
+        hasher.update(bcs::to_bytes(&self).unwrap());
+        let hash = hasher.finalize();
+        (hash, self)
+    }
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
