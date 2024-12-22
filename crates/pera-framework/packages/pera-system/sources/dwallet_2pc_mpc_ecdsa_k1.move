@@ -1029,7 +1029,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     fun pop_and_verify_message_approval(dwallet_cap_id: ID, message: vector<u8>, message_approvals: &mut vector<MessageApproval>) {
         let message_approval = vector::pop_back(message_approvals);
         let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
-        assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMesssageApprovalDWalletMismatch);
+        assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
         assert!(&message == &approved_message, EMissingApprovalOrWorngApprovalOrder);
     }
 

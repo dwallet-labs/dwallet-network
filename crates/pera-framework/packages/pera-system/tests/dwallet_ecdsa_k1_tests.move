@@ -12,9 +12,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         ENotSystemAddress,
         EMessageApprovalDWalletMismatch,
         EApprovalsAndMessagesLenMismatch,
-        EDwalletMismatch,
-        EMissingApprovalOrWrongApprovalOrder,
-        ECentralizedSignedMessagesAndMessagesLenMismatch
+        EDwalletMismatch, EMissingApprovalOrWorngApprovalOrder, ECentrailizedsignedMessagesAndMessagesLenMismatch
     };
 
     const SENDER_ADDRESS: address = @0xA;
@@ -215,7 +213,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
             let ctx = test_scenario::ctx(&mut scenario);
 
             // Emit the event for the first round of presign
-            dwallet_2pc_mpc_ecdsa_k1::launch_batched_presign(&dwallet, 1,  ctx);
+            dwallet_2pc_mpc_ecdsa_k1::launch_batched_presign(&dwallet, 1, ctx);
 
             // Clean up created objects
             test_utils::destroy(dwallet);
@@ -340,7 +338,9 @@ module pera_system::dwallet_ecdsa_k1_tests {
         test_scenario::next_tx(&mut scenario, sender);
         {
             let ctx = test_scenario::ctx(&mut scenario);
-            let mut messages_to_approve: vector<vector<u8>> = vector[std::vector::singleton(0xAA), std::vector::singleton(0xBB)];
+            let mut messages_to_approve: vector<vector<u8>> = vector[std::vector::singleton(
+                0xAA
+            ), std::vector::singleton(0xBB)];
             let mut message_approvals = pera_system::dwallet_2pc_mpc_ecdsa_k1::approve_messages(
                 &dwallet_cap,
                 &mut messages_to_approve
@@ -615,7 +615,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
             test_utils::destroy(invalid_dwallet);
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
-
         };
 
         test_scenario::end(scenario);
@@ -687,14 +686,13 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
-
         };
 
         test_scenario::end(scenario);
     }
 
     #[test]
-    #[expected_failure(abort_code = EMissingApprovalOrWrongApprovalOrder)]
+    #[expected_failure(abort_code = EMissingApprovalOrWorngApprovalOrder)]
     public fun test_sign_fails_due_to_wrong_approval_order() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
@@ -776,14 +774,13 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
-
         };
 
         test_scenario::end(scenario);
     }
 
     #[test]
-    #[expected_failure(abort_code = ECentralizedSignedMessagesAndMessagesLenMismatch)]
+    #[expected_failure(abort_code = ECentrailizedsignedMessagesAndMessagesLenMismatch)]
     public fun test_sign_fails_due_to_centralized_signed_messages_len_mismatch() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
@@ -853,7 +850,6 @@ module pera_system::dwallet_ecdsa_k1_tests {
 
             test_utils::destroy(dwallet);
             test_utils::destroy(dwallet_cap);
-
         };
 
         test_scenario::end(scenario);
