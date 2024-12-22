@@ -4,9 +4,11 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 
-/// A struct to hold the batches sign sessions data.
-/// It stores the batch data and stores every verified output when it's ready.
-/// When the entire batch is completed, it returns the batch output, which is being written to the chain at once through
+/// Structs to hold the batches sign session data.
+///
+/// Stores the batch data and every verified output when it's ready.
+/// When the entire batch is completed, it returns the batch output,
+/// which is being written to the chain at once through
 /// a system transaction.
 pub struct BatchedSignSession {
     /// A map that contains the ready signatures,
@@ -20,12 +22,13 @@ pub struct BatchedSignSession {
     ordered_messages: Vec<Vec<u8>>,
 }
 
-/// A struct to hold the batches presign sessions data, equivalent to the [`BatchedSignSession`] struct, but for presigns.
+/// A struct to hold the batches presign sessions data,
+/// equivalent to the [`BatchedSignSession`] struct, but for presigns.
 pub struct BatchedPresignSession {
-    /// The amount of presigns that will get created in this batch
+    /// The amount of presigns that will get created in this batch.
     batch_size: u64,
-    /// A map between the first presign session id to the verified, serialized presign object.
-    /// The first round's session id is needed for the centralized sign flow.
+    /// A map between the first presign session ID to the verified, serialized presign object.
+    /// The first round's session ID is needed for the centralized sign flow.
     verified_presigns: Vec<(ObjectID, Vec<u8>)>,
 }
 
@@ -83,17 +86,19 @@ impl DWalletMPCBatchesManager {
         session_info: SessionInfo,
         output: Vec<u8>,
     ) -> DwalletMPCResult<()> {
-        if let MPCRound::Sign(batch_session_id, hashed_message) = session_info.mpc_round.clone() {
-            self.store_verified_sign_output(batch_session_id, hashed_message, output.clone())?;
-        } else if let MPCRound::PresignSecond(_, first_round_output, batch_session_id) =
-            session_info.mpc_round.clone()
-        {
-            let presign = parse_presign_from_first_and_second_outputs(&first_round_output, &output)?;
-            self.store_verified_presign_output(
-                batch_session_id,
-                session_info.flow_session_id,
-                bcs::to_bytes(&presign).unwrap(),
-            )?;
+        match session_info.mpc_round {
+            MPCRound::Sign(batch_session_id, ref hashed_message) => {
+                self.store_verified_sign_output(batch_session_id, hashed_message.clone(), output)?;
+            }
+            MPCRound::PresignSecond(_, ref first_round_output, batch_session_id) => {
+                let presign = parse_presign_from_first_and_second_outputs(first_round_output, &output)?;
+                self.store_verified_presign_output(
+                    batch_session_id,
+                    session_info.flow_session_id,
+                    bcs::to_bytes(&presign)?,
+                )?;
+            }
+            _ => {}
         }
         Ok(())
     }
@@ -180,7 +185,7 @@ impl DWalletMPCBatchesManager {
             .batched_presign_sessions
             .get(&session_id)
             .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
-        return if batched_presign_session.verified_presigns.len() as u64
+        if batched_presign_session.verified_presigns.len() as u64
             == batched_presign_session.batch_size
         {
             Ok(Some(bcs::to_bytes(
@@ -188,7 +193,7 @@ impl DWalletMPCBatchesManager {
             )?))
         } else {
             Ok(None)
-        };
+        }
     }
 }
 
