@@ -8,7 +8,7 @@ use crate::dwallet_mpc::mpc_events::{
     StartPresignFirstRoundEvent, StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
-use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use crate::dwallet_mpc::presign::{
     PresignFirstParty, PresignFirstPartyPublicInputGenerator, PresignSecondParty,
     PresignSecondPartyPublicInputGenerator,
@@ -26,6 +26,7 @@ use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use serde::de::DeserializeOwned;
 use std::collections::HashMap;
+use twopc_mpc::sign::Protocol;
 
 pub mod batches_manager;
 mod dkg;
@@ -223,7 +224,7 @@ fn sign_party(
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     let decryption_key_share = dwallet_mpc_manager.get_decryption_share()?;
     Ok((
-        MPCParty::SignBytesParty(HashMap::from([(party_id, decryption_key_share)])),
+        MPCParty::SignBytesParty(decryption_key_share),
         <SignFirstParty as SignPartyPublicInputGenerator>::generate_public_input(
             deserialized_event.dkg_output.clone(),
             deserialized_event.hashed_message.clone(),
@@ -275,7 +276,7 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
     messages: Vec<HashMap<PartyID, MPCMessage>>,
     public_input: P::PublicInput,
     private_input: P::PrivateInput,
-) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, P::PrivateOutput, Vec<u8>>> {
     let messages = deserialize_mpc_messages(messages)?;
 
     let res = P::advance(
@@ -299,14 +300,14 @@ pub(crate) fn advance<P: AsynchronouslyAdvanceable>(
         },
         mpc::AsynchronousRoundResult::Finalize {
             malicious_parties,
-            private_output: _,
+            private_output,
             public_output,
         } => {
             let public_output: P::PublicOutputValue = public_output.into();
             let public_output = bcs::to_bytes(&public_output)?;
             mpc::AsynchronousRoundResult::Finalize {
                 malicious_parties,
-                private_output: Vec::new(),
+                private_output,
                 public_output,
             }
         }

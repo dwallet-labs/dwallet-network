@@ -1,5 +1,7 @@
 use move_core_types::{ident_str, identifier::IdentStr};
 use std::fmt;
+use twopc_mpc::secp256k1::class_groups::AsyncProtocol;
+use twopc_mpc::sign::Protocol;
 
 // todo(zeev): move all types here.
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
@@ -24,7 +26,7 @@ pub type MPCMessage = Vec<u8>;
 pub type MPCPublicOutput = Vec<u8>;
 
 /// Alias for an MPC private output.
-pub type MPCPrivateOutput = Vec<u8>;
+pub type MPCPrivateOutput = Option<Vec<u8>>;
 
 /// Alias for MPC public input.
 pub type MPCPublicInput = Vec<u8>;

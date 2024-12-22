@@ -206,7 +206,14 @@ impl DWalletMPCManager {
     // This will be changed in #382
     pub fn get_decryption_share(
         &self,
-    ) -> DwalletMPCResult<<AsyncProtocol as Protocol>::DecryptionKeyShare> {
+    ) -> DwalletMPCResult<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>> {
+        if let Some(self_decryption_share) = self.epoch_store()?
+            .dwallet_mpc_network_keys.get() {
+            match self_decryption_share.get_decryption_key_share(DWalletMPCNetworkKey::Secp256k1) {
+                Ok(self_decryption_share) => return Ok(self_decryption_share.get(self_decryption_share.len()).ok_or(DwalletMPCError::TwoPCMPCError("Decryption share not found".to_string()))?.clone()),
+                Err(e) => {}
+            }
+        }
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
         let shares = self
@@ -226,8 +233,8 @@ impl DWalletMPCManager {
             .as_ref()
             .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionSharesPublicParameters)?;
 
-        DecryptionKeyShare::new(party_id, share_value, public_parameters)
-            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
+        Ok(HashMap::from([(party_id, DecryptionKeyShare::new(party_id, share_value, public_parameters)
+            .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))?)]))
     }
 
     /// Advance all the MPC instances that either received enough messages
@@ -325,7 +332,7 @@ impl DWalletMPCManager {
                 self.update_dwallet_mpc_network_key(
                     &instance.session_info,
                     public_output,
-                    private_output,
+                    private_output.ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?,
                 )?;
             }
 
@@ -353,7 +360,7 @@ impl DWalletMPCManager {
                     .add_key_version(
                         self.epoch_store()?,
                         key_type,
-                        private_output.clone(),
+                        bcs::from_bytes::<HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>>(&private_output)?,
                         public_output,
                     )?;
             }

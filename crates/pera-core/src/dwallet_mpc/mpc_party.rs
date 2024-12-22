@@ -43,9 +43,9 @@ impl MPCParty {
         party_id: PartyID,
         access_threshold: &WeightedThresholdAccessStructure,
         public_input: MPCPublicInput,
-    ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
+    ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Option<Vec<u8>>, Vec<u8>>> {
         let session_id = CommitmentSizedNumber::from_le_slice(session_id.to_vec().as_slice());
-        match &self {
+        let res = match &self {
             MPCParty::FirstDKGBytesParty => {
                 let public_input = bcs::from_bytes(&public_input)?;
                 dwallet_mpc::advance::<DKGFirstParty>(
@@ -101,14 +101,40 @@ impl MPCParty {
                     decryption_key_share.clone(),
                 )
             }
-            MPCParty::NetworkDkg(key_type) => advance_network_dkg(
-                session_id,
-                access_threshold,
-                party_id,
-                &public_input,
-                key_type,
-                messages,
-            ),
+            MPCParty::NetworkDkg(key_type) => {
+                return advance_network_dkg(
+                    session_id,
+                    access_threshold,
+                    party_id,
+                    &public_input,
+                    key_type,
+                    messages,
+                );
+            }
+        }?;
+
+        match res {
+            mpc::AsynchronousRoundResult::Finalize {
+                malicious_parties,
+                private_output,
+                public_output,
+            } =>
+                {
+                    Ok(mpc::AsynchronousRoundResult::Finalize {
+                        malicious_parties,
+                        private_output: None,
+                        public_output,
+                    })
+                }
+            mpc::AsynchronousRoundResult::Advance {
+                malicious_parties,
+                message
+            } => {
+                Ok(mpc::AsynchronousRoundResult::Advance {
+                    malicious_parties,
+                    message,
+                })
+            }
         }
     }
 }

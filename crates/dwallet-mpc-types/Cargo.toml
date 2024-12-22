@@ -12,6 +12,7 @@ serde.workspace = true
 move-core-types.workspace = true
 rand_chacha = "0.3.1"
 fastcrypto = { workspace = true, features = ["copy_key"] }
+twopc_mpc.workspace = true
 anyhow.workspace = true
 serde_json.workspace = true
 

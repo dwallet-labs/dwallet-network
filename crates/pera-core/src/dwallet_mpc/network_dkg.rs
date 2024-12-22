@@ -1,7 +1,7 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::advance;
+use crate::dwallet_mpc::{advance, deserialize_mpc_messages};
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
-use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use class_groups::dkg::{
     RistrettoParty, RistrettoPublicInput, Secp256k1Party, Secp256k1PublicInput,
 };
@@ -16,12 +16,14 @@ use dwallet_mpc_types::class_groups_key::{
 };
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::WeightedThresholdAccessStructure;
+use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
+use twopc_mpc::sign::Protocol;
+use dwallet_mpc_types::dwallet_mpc::MPCMessage;
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -35,7 +37,7 @@ pub enum DwalletMPCNetworkKeysStatus {
 /// Holds the network keys of the dWallet MPC protocols.
 pub struct DwalletMPCNetworkKeyVersions {
     /// The validators' decryption key shares.
-    pub validator_decryption_key_share: Arc<RwLock<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>>>,
+    pub validator_decryption_key_share: Arc<RwLock<HashMap<DWalletMPCNetworkKey, Vec<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>>>>,
     /// The dWallet MPC network decryption key shares (encrypted).
     /// Map from key type to the encryption of the key version.
     pub key_shares_versions:
@@ -47,9 +49,10 @@ pub struct DwalletMPCNetworkKeyVersions {
 impl DwalletMPCNetworkKeyVersions {
     /// Creates a new instance of the network encryption key shares.
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
-        let decryption_key_share = epoch_store
-            .load_validator_decryption_key_shares_from_system_state()
-            .unwrap_or(HashMap::new());
+        let decryption_key_share = HashMap::new();
+        // epoch_store
+        //     .load_validator_decryption_key_shares_from_system_state()
+        //     .unwrap_or(HashMap::new());
         let encryption = epoch_store
             .load_decryption_key_shares_from_system_state()
             .unwrap_or(HashMap::new());
@@ -108,7 +111,7 @@ impl DwalletMPCNetworkKeyVersions {
         &self,
         epoch_store: Arc<AuthorityPerEpochStore>,
         key_type: DWalletMPCNetworkKey,
-        self_decryption_key_share: Vec<u8>,
+        self_decryption_key_share: HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>,
         encryption_of_decryption_shares: Vec<u8>,
     ) -> DwalletMPCResult<()> {
         let mut decryption_key_share = self
@@ -116,6 +119,20 @@ impl DwalletMPCNetworkKeyVersions {
             .write()
             .map_err(|_| DwalletMPCError::LockError)?;
         // Todo (#382): Replace with the actual type once the DKG protocol is ready.
+
+        let pp = bcs::from_bytes(&generate_secp256k1_dkg_party_public_input(HashMap::new())?)?;
+        let self_decryption_key_share = self_decryption_key_share
+            .into_iter()
+            .map(|(party_id, secret_key_share)| {
+                Ok(
+                    (
+                        party_id,
+                        <AsyncProtocol as Protocol>::DecryptionKeyShare::new(party_id, secret_key_share, &pp).unwrap()
+                    )
+                )
+            })
+            .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
+
         decryption_key_share
             .entry(key_type.clone())
             .or_insert_with(Vec::new)
@@ -153,7 +170,7 @@ impl DwalletMPCNetworkKeyVersions {
     pub fn get_decryption_key_share(
         &self,
         key_type: DWalletMPCNetworkKey,
-    ) -> DwalletMPCResult<Vec<Vec<u8>>> {
+    ) -> DwalletMPCResult<Vec<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>> {
         let decryption_key_share = self
             .validator_decryption_key_share
             .read()
@@ -161,7 +178,7 @@ impl DwalletMPCNetworkKeyVersions {
 
         Ok(decryption_key_share
             .get(&key_type)
-            .ok_or(DwalletMPCError::InvalidMPCPartyType)?
+            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
             .clone())
     }
 
@@ -180,8 +197,8 @@ pub(crate) fn advance_network_dkg(
     public_input: &[u8],
     key_type: &DWalletMPCNetworkKey,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
-) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-    Ok(match key_type {
+) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Option<Vec<u8>>, Vec<u8>>> {
+    let output = match key_type {
         // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
         DWalletMPCNetworkKey::Secp256k1 => advance::<Secp256k1Party>(
             session_id,
@@ -200,7 +217,31 @@ pub(crate) fn advance_network_dkg(
             bcs::from_bytes(public_input)?,
             read_class_groups_private_key_from_file_real("class-groups-0x65152c88f31ae37ceda117b57ee755fc0a5b035a2ecfde61d6c982ffea818d09.key").unwrap(),
         ),
-    }?)
+    }?;
+
+    match output {
+        AsynchronousRoundResult::Finalize {
+            malicious_parties,
+            private_output,
+            public_output,
+        } =>
+            {
+                Ok(AsynchronousRoundResult::Finalize {
+                    malicious_parties,
+                    private_output: Some(bcs::to_bytes(&private_output)?),
+                    public_output,
+                })
+            }
+        AsynchronousRoundResult::Advance {
+            malicious_parties,
+            message
+        } => {
+            Ok(AsynchronousRoundResult::Advance {
+                malicious_parties,
+                message,
+            })
+        }
+    }
 }
 
 pub fn network_dkg_party(
@@ -218,7 +259,6 @@ pub fn network_dkg_session_info(
     match DWalletMPCNetworkKey::try_from(deserialized_event.key_type)? {
         DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_session_info(deserialized_event)),
         DWalletMPCNetworkKey::Ristretto => Ok(dkg_ristretto_session_info(deserialized_event)),
-        _ => Err(DwalletMPCError::InvalidMPCPartyType),
     }
 }
 

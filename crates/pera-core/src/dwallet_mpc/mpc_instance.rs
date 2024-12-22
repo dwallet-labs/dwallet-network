@@ -34,7 +34,7 @@ pub(super) struct DWalletMPCInstance {
     pub party: MPCParty,
     pub(super) public_input: Vec<u8>,
     /// The decryption share of the party for mpc sign sessions
-    decryption_share: Option<<AsyncProtocol as Protocol>::DecryptionKeyShare>,
+    decryption_share: Option<HashMap<PartyID, <AsyncProtocol as Protocol>::DecryptionKeyShare>>,
 }
 
 impl DWalletMPCInstance {
@@ -45,7 +45,7 @@ impl DWalletMPCInstance {
         status: MPCSessionStatus,
         auxiliary_input: Vec<u8>,
         session_info: SessionInfo,
-        decryption_share: Option<<AsyncProtocol as Protocol>::DecryptionKeyShare>,
+        decryption_share: Option<HashMap<PartyID ,<AsyncProtocol as Protocol>::DecryptionKeyShare>>,
     ) -> Self {
         Self {
             status,
