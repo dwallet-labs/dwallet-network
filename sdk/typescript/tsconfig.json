@@ -1,19 +1,16 @@
 {
-  "extends": "../build-scripts/tsconfig.shared.json",
-  "include": [
-    "src",
-    "types"
-  ],
-  "compilerOptions": {
-    "module": "CommonJS",
-    "outDir": "dist/cjs",
-    "rootDir": "src",
-    "isolatedModules": true,
-    "sourceMap": true
-  },
-  "references": [
-    {
-      "path": "../bcs"
-    }
-  ]
+	"extends": "../build-scripts/tsconfig.shared.json",
+	"include": ["src", "types"],
+	"compilerOptions": {
+		"module": "CommonJS",
+		"outDir": "dist/cjs",
+		"rootDir": "src",
+		"isolatedModules": true,
+		"sourceMap": true
+	},
+	"references": [
+		{
+			"path": "../bcs"
+		}
+	]
 }
