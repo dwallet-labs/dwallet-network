@@ -18,7 +18,7 @@ pub enum MPCRound {
     PresignFirst(ObjectID, Vec<u8>, ObjectID),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
-    /// , the Presign first round output, and the batch session ID.
+    /// the Presign first round output, and the batch session ID.
     PresignSecond(ObjectID, Vec<u8>, ObjectID),
     /// The first and only round of the Sign protocol.
     /// Contains the `PartyID` associated with the decryption share,
