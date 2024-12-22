@@ -88,7 +88,7 @@ impl DWalletMPCBatchesManager {
         } else if let MPCRound::PresignSecond(_, first_round_output, batch_session_id) =
             session_info.mpc_round.clone()
         {
-            let presign = parse_presign_from_first_and_second_outputs(&first_round_output, &output);
+            let presign = parse_presign_from_first_and_second_outputs(&first_round_output, &output)?;
             self.store_verified_presign_output(
                 batch_session_id,
                 session_info.flow_session_id,
@@ -198,12 +198,12 @@ type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
 fn parse_presign_from_first_and_second_outputs(
     first_output: &[u8],
     second_output: &[u8],
-) -> <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign {
+) -> DwalletMPCResult<<AsyncProtocol as twopc_mpc::presign::Protocol>::Presign> {
     let first_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare =
-        bcs::from_bytes(&first_output).unwrap();
+        bcs::from_bytes(&first_output)?;
     let second_output: (
         NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
         NoncePublicShareAndEncryptionOfMaskedNonceSharePart,
-    ) = bcs::from_bytes(&second_output).unwrap();
-    (first_output, second_output).into()
+    ) = bcs::from_bytes(&second_output)?;
+    Ok((first_output, second_output).into())
 }
