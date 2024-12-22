@@ -4,14 +4,13 @@ use crate::dwallet_mpc::network_dkg::advance_network_dkg;
 use crate::dwallet_mpc::presign::{PresignFirstParty, PresignSecondParty};
 use crate::dwallet_mpc::sign::SignFirstParty;
 use commitment::CommitmentSizedNumber;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicInput};
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPrivateOutput, MPCPublicInput};
 use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::dwallet_mpc_error::DwalletMPCResult;
 use std::collections::HashMap;
-use twopc_mpc::paillier::DecryptionKeyShare;
 use twopc_mpc::sign::Protocol;
 
 pub(super) type AsyncProtocol = twopc_mpc::secp256k1::class_groups::AsyncProtocol;
@@ -43,7 +42,7 @@ impl MPCParty {
         party_id: PartyID,
         access_threshold: &WeightedThresholdAccessStructure,
         public_input: MPCPublicInput,
-    ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Option<Vec<u8>>, Vec<u8>>> {
+    ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, MPCPrivateOutput, Vec<u8>>> {
         let session_id = CommitmentSizedNumber::from_le_slice(session_id.to_vec().as_slice());
         let res = match &self {
             MPCParty::FirstDKGBytesParty => {
@@ -122,7 +121,7 @@ impl MPCParty {
                 {
                     Ok(mpc::AsynchronousRoundResult::Finalize {
                         malicious_parties,
-                        private_output: None,
+                        private_output: MPCPrivateOutput::None,
                         public_output,
                     })
                 }

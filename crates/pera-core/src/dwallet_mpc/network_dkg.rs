@@ -1,5 +1,5 @@
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use crate::dwallet_mpc::{advance, deserialize_mpc_messages};
+use crate::dwallet_mpc::advance;
 use crate::dwallet_mpc::mpc_events::StartNetworkDKGEvent;
 use crate::dwallet_mpc::mpc_party::{AsyncProtocol, MPCParty};
 use class_groups::dkg::{
@@ -11,7 +11,7 @@ use class_groups::{
 };
 use commitment::CommitmentSizedNumber;
 use dwallet_mpc_types::class_groups_key::{
-    read_class_groups_from_file, read_class_groups_from_file_real,
+    read_class_groups_from_file_real,
     read_class_groups_private_key_from_file_real, ClassGroupsEncryptionKeyAndProof,
 };
 use group::{ristretto, secp256k1, PartyID};
@@ -23,7 +23,7 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use twopc_mpc::sign::Protocol;
-use dwallet_mpc_types::dwallet_mpc::MPCMessage;
+use dwallet_mpc_types::dwallet_mpc::MPCPrivateOutput;
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -197,7 +197,7 @@ pub(crate) fn advance_network_dkg(
     public_input: &[u8],
     key_type: &DWalletMPCNetworkKey,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
-) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Option<Vec<u8>>, Vec<u8>>> {
+) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, MPCPrivateOutput, Vec<u8>>> {
     let output = match key_type {
         // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
         DWalletMPCNetworkKey::Secp256k1 => advance::<Secp256k1Party>(
@@ -228,7 +228,7 @@ pub(crate) fn advance_network_dkg(
             {
                 Ok(AsynchronousRoundResult::Finalize {
                     malicious_parties,
-                    private_output: Some(bcs::to_bytes(&private_output)?),
+                    private_output: MPCPrivateOutput::DecryptionKeyShare(private_output),
                     public_output,
                 })
             }

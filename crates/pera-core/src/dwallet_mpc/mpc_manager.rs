@@ -14,7 +14,7 @@ use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
 use class_groups::DecryptionKeyShare;
-use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
+use dwallet_mpc_types::dwallet_mpc::{MPCPrivateOutput, MPCSessionStatus};
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
@@ -329,12 +329,14 @@ impl DWalletMPCManager {
             if let MPCSessionStatus::Finished(public_output, private_output) =
                 instance.status.clone()
             {
-                self.update_dwallet_mpc_network_key(
-                    &instance.session_info,
-                    public_output,
-                    private_output.ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?,
-                )?;
-            }
+                if let MPCPrivateOutput::DecryptionKeyShare(private_output) = private_output {
+                    self.update_dwallet_mpc_network_key(
+                        &instance.session_info,
+                        public_output,
+                        private_output,
+                    )?;
+                }
+        }
 
             self.consensus_adapter
                 .submit_to_consensus(&vec![message], &self.epoch_store()?)
@@ -349,7 +351,7 @@ impl DWalletMPCManager {
         &self,
         session_info: &SessionInfo,
         public_output: Vec<u8>,
-        private_output: Vec<u8>,
+        private_output: HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>,
     ) -> DwalletMPCResult<()> {
         match session_info.mpc_round {
             MPCRound::NetworkDkg(key_type) => {
@@ -360,7 +362,7 @@ impl DWalletMPCManager {
                     .add_key_version(
                         self.epoch_store()?,
                         key_type,
-                        bcs::from_bytes::<HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>>(&private_output)?,
+                        private_output,
                         public_output,
                     )?;
             }
