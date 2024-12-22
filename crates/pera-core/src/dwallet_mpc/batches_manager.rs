@@ -185,7 +185,7 @@ impl DWalletMPCBatchesManager {
             .batched_presign_sessions
             .get(&session_id)
             .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
-        return if batched_presign_session.verified_presigns.len() as u64
+        if batched_presign_session.verified_presigns.len() as u64
             == batched_presign_session.batch_size
         {
             Ok(Some(bcs::to_bytes(
@@ -193,7 +193,7 @@ impl DWalletMPCBatchesManager {
             )?))
         } else {
             Ok(None)
-        };
+        }
     }
 }
 
