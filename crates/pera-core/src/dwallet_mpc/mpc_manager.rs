@@ -210,7 +210,7 @@ impl DWalletMPCManager {
         if let Some(self_decryption_share) = self.epoch_store()?
             .dwallet_mpc_network_keys.get() {
             match self_decryption_share.get_decryption_key_share(DWalletMPCNetworkKey::Secp256k1) {
-                Ok(self_decryption_share) => return Ok(self_decryption_share.get(self_decryption_share.len()).ok_or(DwalletMPCError::TwoPCMPCError("Decryption share not found".to_string()))?.clone()),
+                Ok(self_decryption_share) => return Ok(self_decryption_share.get(self_decryption_share.len() -1).ok_or(DwalletMPCError::TwoPCMPCError("Decryption share not found".to_string()))?.clone()),
                 Err(e) => {}
             }
         }
