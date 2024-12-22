@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, Weak};
 
 use group::PartyID;
-use im::HashSet;
 use mpc::{AsynchronousRoundResult, WeightedThresholdAccessStructure};
 use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
@@ -58,8 +57,6 @@ impl DWalletMPCInstance {
             public_input: auxiliary_input,
             session_info,
             decryption_share,
-            outputs: HashMap::new(),
-            authorities_that_sent_output: HashSet::new(),
         }
     }
 
@@ -187,47 +184,6 @@ impl DWalletMPCInstance {
             return Err(DwalletMPCError::MaliciousParties(vec![party_id]));
         }
         self.pending_messages[round].insert(party_id, message.message.clone());
-        Ok(())
-    }
-
-    pub fn output_score(&self, output: &Vec<u8>) -> PeraResult<u64> {
-        let mut score = 0;
-        let indexed_voting_rights: HashMap<AuthorityName, StakeUnit> = self
-            .epoch_store()?
-            .committee()
-            .voting_rights
-            .clone()
-            .into_iter()
-            .collect();
-        for authority in self.outputs.get(output).unwrap_or(&HashSet::new()) {
-            score += indexed_voting_rights.get(authority).unwrap();
-        }
-        Ok(score)
-    }
-
-    pub fn store_output(
-        &mut self,
-        output: Vec<u8>,
-        origin_authority: AuthorityName,
-    ) -> PeraResult<()> {
-        if self
-            .authorities_that_sent_output
-            .contains(&origin_authority)
-        {
-            return Err(PeraError::DWalletMPCMaliciousParties(vec![
-                authority_name_to_party_id(&origin_authority, &*self.epoch_store()?)?,
-            ]));
-        }
-        if self.outputs.contains_key(&output) {
-            self.outputs
-                .get_mut(&output)
-                .unwrap()
-                .insert(origin_authority);
-        } else {
-            let mut authorities = HashSet::new();
-            authorities.insert(origin_authority);
-            self.outputs.insert(output, authorities);
-        }
         Ok(())
     }
 
