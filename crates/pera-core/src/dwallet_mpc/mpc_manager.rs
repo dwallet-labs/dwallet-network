@@ -25,6 +25,7 @@ use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use rayon::prelude::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Weak};
+use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
 use tokio::sync::MutexGuard;
 use tracing::log::warn;
@@ -71,6 +72,7 @@ pub struct DWalletMPCManager {
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
+#[derive(Serialize, Deserialize)]
 pub enum DWalletMPCChannelMessage {
     /// An MPC message from another validator
     Message(Vec<u8>, AuthorityName, ObjectID),
