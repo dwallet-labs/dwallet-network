@@ -18,7 +18,6 @@
 /// - Emit events for validators to coordinate DKG rounds.
 /// - Transfer intermediate results and final outputs to the initiating user.
 /// - Ensure secure and decentralized key generation and management.
-#[allow(unused_function, unused_use, unused_field, unused_const, unused_mut_parameter, unused_variable)]
 module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     use pera_system::dwallet;
     use pera_system::dwallet::{DWallet, create_dwallet_cap, DWalletCap, get_dwallet_cap_id, get_dwallet_output};
@@ -292,7 +291,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     const EMessageApprovalDWalletMismatch: u64 = 1;
     const EDwalletMismatch: u64 = 2;
     const EApprovalsAndMessagesLenMismatch: u64 = 3;
-    const EMissingApprovalOrWorngApprovalOrder: u64 = 4;
+    const EMissingApprovalOrWrongApprovalOrder: u64 = 4;
     const ECentrailizedsignedMessagesAndMessagesLenMismatch: u64 = 5;
     const EPresignsAndMessagesLenMismatch: u64 = 6;
     const EInvalidSignatures: u64 = 7;
@@ -1030,7 +1029,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let message_approval = vector::pop_back(message_approvals);
         let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);
         assert!(dwallet_cap_id == message_approval_dwallet_cap_id, EMessageApprovalDWalletMismatch);
-        assert!(&message == &approved_message, EMissingApprovalOrWorngApprovalOrder);
+        assert!(&message == &approved_message, EMissingApprovalOrWrongApprovalOrder);
     }
 
     /// Verifies that the user's centralized party signatures are valid.

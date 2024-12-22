@@ -12,7 +12,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         ENotSystemAddress,
         EMessageApprovalDWalletMismatch,
         EApprovalsAndMessagesLenMismatch,
-        EDwalletMismatch, EMissingApprovalOrWorngApprovalOrder, ECentrailizedsignedMessagesAndMessagesLenMismatch
+        EDwalletMismatch, EMissingApprovalOrWrongApprovalOrder, ECentrailizedsignedMessagesAndMessagesLenMismatch
     };
 
     const SENDER_ADDRESS: address = @0xA;
@@ -692,7 +692,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = EMissingApprovalOrWorngApprovalOrder)]
+    #[expected_failure(abort_code = EMissingApprovalOrWrongApprovalOrder)]
     public fun test_sign_fails_due_to_wrong_approval_order() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
