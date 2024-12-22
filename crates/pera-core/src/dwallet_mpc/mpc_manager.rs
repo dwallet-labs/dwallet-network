@@ -72,7 +72,7 @@ pub struct DWalletMPCManager {
 }
 
 /// The messages that the [`DWalletMPCManager`] can receive & process asynchronously.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum DWalletMPCChannelMessage {
     /// An MPC message from another validator
     Message(Vec<u8>, AuthorityName, ObjectID),

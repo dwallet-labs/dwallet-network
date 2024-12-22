@@ -1580,11 +1580,7 @@ impl AuthorityState {
             }
             // This function is being executed for all events, some events are being emitted before the MPC outputs manager is initialized.
             dwallet_mpc_outputs_manager.handle_new_event(&session_info);
-            let dwallet_mpc_sender = epoch_store.dwallet_mpc_sender.get().ok_or(
-                PeraError::from("DWallet MPC sender not initialized when iterating over events"),
-            )?;
-            dwallet_mpc_sender
-                .send(DWalletMPCChannelMessage::Event(event.clone(), session_info))
+            (*epoch_store.get_).send_message_to_dwallet_mpc(DWalletMPCChannelMessage::Event(event.clone(), session_info))
                 .map_err(|err| {
                     PeraError::from(format!(
                         "Failed to send MPC event to DWallet MPC service: {err}"

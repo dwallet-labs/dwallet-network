@@ -352,6 +352,7 @@ pub struct AuthorityPerEpochStore {
     /// This state machine only being used to store outputs and declare ones with quorum of votes as valid.
     pub dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
+    pub dwallet_mpc_epoch_messages: Mutex<Vec<DWalletMPCChannelMessage>>
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -873,9 +874,22 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_outputs_verifier: OnceCell::new(),
             dwallet_mpc_sender: OnceCell::new(),
             dwallet_mpc_batches_manager: OnceCell::new(),
+            dwallet_mpc_epoch_messages: tokio::sync::Mutex::new(Vec::new()),
         });
         s.update_buffer_stake_metric();
         s
+    }
+
+    pub async fn send_message_to_dwallet_mpc(&self, message: DWalletMPCChannelMessage) -> PeraResult {
+        let sender = self.dwallet_mpc_sender
+            .get()
+            .ok_or(PeraError::from(
+                "DWallet MPC sender not initialized when sending message to it",
+            ))?;
+        let mut dwallet_mpc_epoch_messages = self.dwallet_mpc_epoch_messages.lock();
+        dwallet_mpc_epoch_messages.push(message.clone());
+        sender.send(message).await?;
+        Ok(())
     }
 
     pub fn tables(&self) -> PeraResult<Arc<AuthorityEpochTables>> {
@@ -3370,17 +3384,7 @@ impl AuthorityPerEpochStore {
                 }
             }
         }
-        if let Some(dwallet_mpc_sender) = self.dwallet_mpc_sender.get() {
-            dwallet_mpc_sender
-                .send(DWalletMPCChannelMessage::EndOfDelivery)
-                .map_err(|err| {
-                    PeraError::from(format!(
-                        "Failed to send EndOfDelivery message to DWalletMPCManager: {}",
-                        err
-                    ))
-                })?;
-        }
-
+        self.send_message_to_dwallet_mpc(DWalletMPCChannelMessage::EndOfDelivery)?;
         let commit_has_deferred_txns = !deferred_txns.is_empty();
         let mut total_deferred_txns = 0;
         for (key, txns) in deferred_txns.into_iter() {
@@ -3775,36 +3779,22 @@ impl AuthorityPerEpochStore {
                 kind: ConsensusTransactionKind::DWalletMPCOutput(authority, session_info, output),
                 ..
             }) => {
-                self.dwallet_mpc_sender
-                    .get()
-                    .ok_or(PeraError::from(
-                        "DWallet MPC sender not initialized when iterating over events",
-                    ))?
-                    .send(DWalletMPCChannelMessage::Output(
+                self.send_message_to_dwallet_mpc(DWalletMPCChannelMessage::Output(
                         output.clone(),
                         *authority,
                         session_info.clone(),
-                    ))
-                    .map_err(|err| {
-                        PeraError::from(format!("Failed to send DWalletMPCOutput: {:?}", err))
-                    })?;
+                    ))?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
                 kind: ConsensusTransactionKind::DWalletMPCMessage(authority, message, session_id),
                 ..
             }) => {
-                self.dwallet_mpc_sender
-                    .get()
-                    .unwrap()
-                    .send(DWalletMPCChannelMessage::Message(
-                        message.clone(),
-                        *authority,
-                        *session_id,
-                    ))
-                    .map_err(|err| {
-                        PeraError::from(format!("Failed to send DWalletMPCMessage: {:?}", err))
-                    })?;
+                self.send_message_to_dwallet_mpc(DWalletMPCChannelMessage::Message(
+                    message.clone(),
+                    *authority,
+                    *session_id,
+                ))?;
                 Ok(ConsensusCertificateResult::ConsensusMessage)
             }
             SequencedConsensusTransactionKind::External(ConsensusTransaction {
