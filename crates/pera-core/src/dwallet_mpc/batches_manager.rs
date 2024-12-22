@@ -25,7 +25,7 @@ pub struct BatchedSignSession {
 /// A struct to hold the batches presign sessions data, 
 /// equivalent to the [`BatchedSignSession`] struct, but for presigns.
 pub struct BatchedPresignSession {
-    /// The amount of presigns that will get created in this batch
+    /// The amount of presigns that will get created in this batch.
     batch_size: u64,
     /// A map between the first presign session id to the verified, serialized presign object.
     /// The first round's session id is needed for the centralized sign flow.
