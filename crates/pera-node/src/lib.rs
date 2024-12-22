@@ -9,7 +9,6 @@ use anemo_tower::trace::TraceLayer;
 use anyhow::anyhow;
 use anyhow::Result;
 use arc_swap::ArcSwap;
-use fastcrypto::traits::{Signer, VerifyingKey};
 use fastcrypto_zkp::bn254::zk_login::JwkId;
 use fastcrypto_zkp::bn254::zk_login::OIDCProvider;
 use futures::TryFutureExt;
