@@ -13,18 +13,14 @@ import {
 	dWalletPackageID,
 	fetchCompletedEvent,
 	fetchObjectFromEvent,
+	packageId,
 } from './globals.js';
-import { dkgFirstRoundOutputEvent } from './sign.js';
 
 const dwalletSecp256K1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::Secp256K1`;
 export const dWalletMoveType = `${dWalletPackageID}::${dWalletModuleName}::DWallet<${dwalletSecp256K1MoveType}>`;
 const completedDKGSecondRoundEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedDKGSecondRoundEvent`;
-
-interface DKGFirstRoundOutput {
-	session_id: string;
-	dwallet_cap_id: string;
-	output: number[];
-}
+const startDKGFirstRoundEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartDKGFirstRoundEvent`;
+const dkgFirstRoundOutputEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutputEvent`;
 
 interface CompletedDKGSecondRoundEvent {
 	session_id: string;
@@ -53,12 +49,17 @@ export interface CreatedDwallet {
 
 interface StartDKGFirstRoundEvent {
 	session_id: string;
+	initiator: string;
 	dwallet_cap_id: string;
 }
 
 interface DKGFirstRoundOutputEvent {
 	output: number[];
 	session_id: string;
+}
+
+interface DKGFirstRoundOutput extends DKGFirstRoundOutputEvent {
+	dwallet_cap_id: string;
 }
 
 export async function createDWallet(conf: Config): Promise<CreatedDwallet> {
@@ -100,9 +101,7 @@ async function launchDKGFirstRound(c: Config) {
 	});
 	let sessionData = result.events?.find(
 		(event) =>
-			event.type ===
-				`${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::StartDKGFirstRoundEvent` &&
-			isStartDKGFirstRoundEvent(event.parsedJson),
+			event.type === startDKGFirstRoundEventMoveType && isStartDKGFirstRoundEvent(event.parsedJson),
 	)?.parsedJson as StartDKGFirstRoundEvent;
 	let completionEvent = await fetchCompletedEvent<DKGFirstRoundOutputEvent>(
 		c,
@@ -170,7 +169,7 @@ async function dWalletFromEvent(conf: Config, firstRound: DKGFirstRoundOutput): 
 }
 
 function isStartDKGFirstRoundEvent(obj: any): obj is StartDKGFirstRoundEvent {
-	return 'session_id' in obj && 'dwallet_cap_id' in obj;
+	return obj && 'session_id' in obj && 'initiator' in obj && 'dwallet_cap_id' in obj;
 }
 
 function isDKGFirstRoundOutputEvent(obj: any): obj is DKGFirstRoundOutputEvent {

@@ -11,7 +11,6 @@ const signMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::sign`;
 const approveMessagesMoveFunc = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::approve_messages`;
 const completedSignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedSignEvent`;
 export const completedPresignMoveEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedBatchedPresignEvent`;
-export const dkgFirstRoundOutputEvent = `${packageId}::${dWallet2PCMPCECDSAK1ModuleName}::DKGFirstRoundOutputEvent`;
 
 export enum Hash {
 	KECCAK256 = 0,
