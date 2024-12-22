@@ -33,8 +33,10 @@ impl ClassGroupsKeyPairAndProof {
     }
 }
 
-/// Generates a class groups key pair, & proof that the generated public key is a class groups key.
-/// The keypair is generated from a given seed, by initiating a seed based random number generator with it.
+/// Generates a class groups key pair, and proof that
+/// the generated public key is a class groups key.
+/// The keypair is generated from a given seed
+/// by initiating a seed-based random number generator with it.
 pub fn generate_class_groups_keypair_and_proof_from_seed(
     _seed: [u8; 32],
 ) -> ClassGroupsKeyPairAndProof {
