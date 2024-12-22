@@ -27,8 +27,8 @@ pub struct BatchedSignSession {
 pub struct BatchedPresignSession {
     /// The amount of presigns that will get created in this batch.
     batch_size: u64,
-    /// A map between the first presign session id to the verified, serialized presign object.
-    /// The first round's session id is needed for the centralized sign flow.
+    /// A map between the first presign session ID to the verified, serialized presign object.
+    /// The first round's session ID is needed for the centralized sign flow.
     verified_presigns: Vec<(ObjectID, Vec<u8>)>,
 }
 
