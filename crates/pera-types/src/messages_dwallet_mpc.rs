@@ -35,7 +35,7 @@ pub enum MPCRound {
 impl MPCRound {
     /// Returns `true` if the round output is part of a batch, `false` otherwise.
     pub fn is_part_of_batch(&self) -> bool {
-        matches!(self, MPCRound::Sign(..) | MPCRound::PresignSecond(..))
+        matches!(self, MPCRound::Sign(..) | MPCRound::PresignSecond(..) | MPCRound::BatchedSign(..) | MPCRound::BatchedPresign(..))
     }
 }
 
