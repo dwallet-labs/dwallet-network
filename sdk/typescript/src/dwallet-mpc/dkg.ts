@@ -20,8 +20,6 @@ const dwalletSecp256K1MoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1Mod
 export const dWalletMoveType = `${dWalletPackageID}::${dWalletModuleName}::DWallet<${dwalletSecp256K1MoveType}>`;
 const completedDKGSecondRoundEventMoveType = `${dWalletPackageID}::${dWallet2PCMPCECDSAK1ModuleName}::CompletedDKGSecondRoundEvent`;
 
-// todo(zeev): clean this file.
-
 interface DKGFirstRoundOutput {
 	session_id: string;
 	dwallet_cap_id: string;
