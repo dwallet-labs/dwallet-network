@@ -4,9 +4,11 @@ use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
 use std::collections::{HashMap, HashSet};
 
-/// A struct to hold the batches sign sessions data.
-/// It stores the batch data and stores every verified output when it's ready.
-/// When the entire batch is completed, it returns the batch output, which is being written to the chain at once through
+/// Structs to hold the batches sign session data.
+/// 
+/// Stores the batch data and every verified output when it's ready.
+/// When the entire batch is completed, it returns the batch output,
+/// which is being written to the chain at once through
 /// a system transaction.
 pub struct BatchedSignSession {
     /// A map that contains the ready signatures,
