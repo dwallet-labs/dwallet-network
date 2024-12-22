@@ -292,7 +292,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     const EDwalletMismatch: u64 = 2;
     const EApprovalsAndMessagesLenMismatch: u64 = 3;
     const EMissingApprovalOrWrongApprovalOrder: u64 = 4;
-    const ECentrailizedsignedMessagesAndMessagesLenMismatch: u64 = 5;
+    const ECentralizedSignedMessagesAndMessagesLenMismatch: u64 = 5;
     const EPresignsAndMessagesLenMismatch: u64 = 6;
     const EInvalidSignatures: u64 = 7;
     const EApprovalsAndSignaturesLenMismatch: u64 = 8;
@@ -782,7 +782,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let approvals_len: u64 = vector::length(message_approvals);
         let centralized_signed_len: u64 = vector::length(&centralized_signed_messages);
         assert!(messages_len == approvals_len, EApprovalsAndMessagesLenMismatch);
-        assert!(messages_len == centralized_signed_len, ECentrailizedsignedMessagesAndMessagesLenMismatch);
+        assert!(messages_len == centralized_signed_len, ECentralizedSignedMessagesAndMessagesLenMismatch);
         assert!(messages_len == presigns_len, EPresignsAndMessagesLenMismatch);
         let expected_dwallet_cap_id = get_dwallet_cap_id(dwallet);
         let batch_session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
@@ -1024,7 +1024,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         };
     }
 
-    #[allow(unused_function)]
+    /// Pops the last message approval from the vector and verifies it against tje given message & dwallet_cap_id.
     fun pop_and_verify_message_approval(dwallet_cap_id: ID, message: vector<u8>, message_approvals: &mut vector<MessageApproval>) {
         let message_approval = vector::pop_back(message_approvals);
         let (message_approval_dwallet_cap_id, approved_message) = remove_message_approval(message_approval);

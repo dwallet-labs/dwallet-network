@@ -12,7 +12,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
         ENotSystemAddress,
         EMessageApprovalDWalletMismatch,
         EApprovalsAndMessagesLenMismatch,
-        EDwalletMismatch, EMissingApprovalOrWrongApprovalOrder, ECentrailizedsignedMessagesAndMessagesLenMismatch
+        EDwalletMismatch, EMissingApprovalOrWrongApprovalOrder, ECentralizedSignedMessagesAndMessagesLenMismatch
     };
 
     const SENDER_ADDRESS: address = @0xA;
@@ -780,7 +780,7 @@ module pera_system::dwallet_ecdsa_k1_tests {
     }
 
     #[test]
-    #[expected_failure(abort_code = ECentrailizedsignedMessagesAndMessagesLenMismatch)]
+    #[expected_failure(abort_code = ECentralizedSignedMessagesAndMessagesLenMismatch)]
     public fun test_sign_fails_due_to_centralized_signed_messages_len_mismatch() {
         let sender = SENDER_ADDRESS;
         let mut scenario = test_scenario::begin(sender);
