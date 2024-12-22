@@ -41,6 +41,9 @@ pub struct DWalletMPCBatchesManager {
     batched_presign_sessions: HashMap<ObjectID, BatchedPresignSession>,
 }
 
+type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
+<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
+
 impl DWalletMPCBatchesManager {
     pub fn new() -> Self {
         DWalletMPCBatchesManager {
@@ -199,9 +202,6 @@ impl DWalletMPCBatchesManager {
         }
     }
 }
-
-type NoncePublicShareAndEncryptionOfMaskedNonceSharePart =
-<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart;
 
 fn parse_presign_from_first_and_second_outputs(
     first_output: &[u8],
