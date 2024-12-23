@@ -1573,7 +1573,8 @@ impl AuthorityState {
                 .dwallet_mpc_network_keys
                 .get()
                 .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-                .key_version(DWalletMPCNetworkKey::Secp256k1).unwrap_or_default();
+                .key_version(DWalletMPCNetworkKey::Secp256k1)
+                .unwrap_or_default();
             let Ok(Some(session_info)) =
                 session_info_from_event(event, party_id, Some(key_version))
             else {

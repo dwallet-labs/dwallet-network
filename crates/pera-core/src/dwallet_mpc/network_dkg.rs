@@ -2,7 +2,6 @@
 /// The network DKG protocol is responsible for generating the network decryption key shares.
 /// The module provides the management of the network decryption key shares and the network DKG protocol.
 /// It provides inner mutability for the EpochStore to update the network decryption key shares synchronously.
-
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::advance;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
@@ -39,7 +38,8 @@ pub struct DwalletMPCNetworkKeyVersionsInner {
     pub validator_decryption_key_share: HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>,
     /// The dWallet MPC network decryption key shares (encrypted).
     /// Map from key type to the encryption of the key version.
-    pub key_shares_versions: HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>,
+    pub key_shares_versions:
+        HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>,
     /// The status of the network supported key types for the dWallet MPC sessions.
     pub status: DwalletMPCNetworkKeysStatus,
 }
@@ -117,16 +117,14 @@ impl DwalletMPCNetworkKeyVersions {
             .or_insert_with(Vec::new)
             .push(self_decryption_key_share.clone());
 
-        inner
-            .key_shares_versions
-            .insert(
-                key_type.clone(),
-                vec![EncryptionOfNetworkDecryptionKeyShares {
-                    epoch: epoch_store.epoch(),
-                    current_epoch_shares: vec![encryption_of_decryption_shares],
-                    previous_epoch_shares: vec![],
-                }],
-            );
+        inner.key_shares_versions.insert(
+            key_type.clone(),
+            vec![EncryptionOfNetworkDecryptionKeyShares {
+                epoch: epoch_store.epoch(),
+                current_epoch_shares: vec![encryption_of_decryption_shares],
+                previous_epoch_shares: vec![],
+            }],
+        );
 
         if let DwalletMPCNetworkKeysStatus::Ready(keys) = &mut inner.status {
             keys.insert(key_type);
