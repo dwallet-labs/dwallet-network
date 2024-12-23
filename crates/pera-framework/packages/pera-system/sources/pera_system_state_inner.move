@@ -19,7 +19,7 @@ module pera_system::pera_system_state_inner {
     use pera::bag::Bag;
     use pera::bag;
     use pera_system::dwallet_network_key::{EncryptionOfNetworkDecryptionKeyShares,
-        new_encrypted_network_decryption_key_shares, is_key_type,
+        new_encrypted_network_decryption_key_shares, is_valid_key_scheme,
     };
 
     // same as in validator_set
@@ -145,6 +145,7 @@ module pera_system::pera_system_state_inner {
         epoch_start_timestamp_ms: u64,
         /// Any extra fields that's not defined statically.
         extra_fields: Bag,
+        dwallet_admin_address: address,
     }
 
     /// Uses SystemParametersV2 as the parameters.
@@ -159,7 +160,7 @@ module pera_system::pera_system_state_inner {
         system_state_version: u64,
         /// These are the encrypted decryption-key shares for the current epoch, used for dWallet MPC session.
         /// The shares are indexed by the validator index of the current epoch committee.
-        encryption_of_decryption_key_shares: VecMap<u8, vector<EncryptionOfNetworkDecryptionKeyShares>>,
+        decryption_key_shares: VecMap<u8, vector<EncryptionOfNetworkDecryptionKeyShares>>,
         /// Contains all information about the validators.
         validators: ValidatorSet,
         /// The storage fund.
@@ -196,6 +197,7 @@ module pera_system::pera_system_state_inner {
         epoch_start_timestamp_ms: u64,
         /// Any extra fields that's not defined statically.
         extra_fields: Bag,
+        dwallet_admin_address: address,
     }
 
     /// Event containing system-level epoch information, emitted during
@@ -239,6 +241,7 @@ module pera_system::pera_system_state_inner {
         epoch_start_timestamp_ms: u64,
         parameters: SystemParameters,
         stake_subsidy: StakeSubsidy,
+        dwallet_admin_address: address,
         ctx: &mut TxContext,
     ): PeraSystemStateInner {
         let validators = validator_set::new(validators, ctx);
@@ -261,6 +264,7 @@ module pera_system::pera_system_state_inner {
             safe_mode_non_refundable_storage_fee: 0,
             epoch_start_timestamp_ms,
             extra_fields: bag::new(ctx),
+            dwallet_admin_address,
         };
         system_state
     }
@@ -307,6 +311,7 @@ module pera_system::pera_system_state_inner {
             safe_mode_non_refundable_storage_fee,
             epoch_start_timestamp_ms,
             extra_fields: state_extra_fields,
+            dwallet_admin_address,
         } = self;
         let SystemParameters {
             epoch_duration_ms,
@@ -322,7 +327,7 @@ module pera_system::pera_system_state_inner {
             epoch,
             protocol_version,
             system_state_version: 2,
-            encryption_of_decryption_key_shares: vec_map::empty(),
+            decryption_key_shares: vec_map::empty(),
             validators,
             storage_fund,
             parameters: SystemParametersV2 {
@@ -345,11 +350,16 @@ module pera_system::pera_system_state_inner {
             safe_mode_storage_rebates,
             safe_mode_non_refundable_storage_fee,
             epoch_start_timestamp_ms,
-            extra_fields: state_extra_fields
+            extra_fields: state_extra_fields,
+            dwallet_admin_address,
         }
     }
 
     // ==== public(package) functions ====
+
+    public(package) fun dwallet_admin_address(self: &PeraSystemStateInnerV2): address {
+        self.dwallet_admin_address
+    }
 
     public(package) fun lock_next_epoch_committee(
         self: &mut PeraSystemStateInnerV2,
@@ -357,34 +367,36 @@ module pera_system::pera_system_state_inner {
         self.validators.lock_next_epoch_committee(self.epoch);
     }
 
-    public(package) fun new_encryption_of_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_type: u8) {
-        assert!(is_key_type(key_type), EInvalidKeyType);
+    /// Update the system state with a new version dwallet mpc network key shares after the network DKG.
+    public(package) fun new_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_scheme: u8) {
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
         let new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty());
 
-        if (self.encryption_of_decryption_key_shares.contains(&key_type)) {
-            self.encryption_of_decryption_key_shares.get_mut(&key_type).push_back(new_version);
+        if (self.decryption_key_shares.contains(&key_scheme)) {
+            self.decryption_key_shares.get_mut(&key_scheme).push_back(new_version);
             return
         };
 
-        self.encryption_of_decryption_key_shares.insert(key_type, vector[new_version]);
+        self.decryption_key_shares.insert(key_scheme, vector[new_version]);
     }
 
-    public(package) fun store_encryption_of_decryption_key_shares(
+    /// Update the system state with new encryption of decryption key shares after re-configuring the network.
+    public(package) fun store_decryption_key_shares(
         self: &mut PeraSystemStateInnerV2,
         shares: vector<vector<u8>>,
-        key_type: u8,
+        key_scheme: u8,
     ) {
-        assert!(is_key_type(key_type), EInvalidKeyType);
-        let version = self.encryption_of_decryption_key_shares.get(&key_type).length();
-        if (self.encryption_of_decryption_key_shares.contains(&key_type)) {
-            self.encryption_of_decryption_key_shares.get_mut(&key_type).borrow_mut(
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
+        let version = self.decryption_key_shares.get(&key_scheme).length();
+        if (self.decryption_key_shares.contains(&key_scheme)) {
+            self.decryption_key_shares.get_mut(&key_scheme).borrow_mut(
                 version
             ).update_new_shares(shares, self.epoch);
             return
         };
 
-        self.encryption_of_decryption_key_shares.insert(
-            key_type,
+        self.decryption_key_shares.insert(
+            key_scheme,
             vector[new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty())]
         );
     }

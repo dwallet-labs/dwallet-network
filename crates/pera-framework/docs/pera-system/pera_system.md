@@ -43,6 +43,8 @@ the PeraSystemStateInner version, or vice versa.
 -  [Resource `PeraSystemState`](#0x3_pera_system_PeraSystemState)
 -  [Constants](#@Constants_0)
 -  [Function `create`](#0x3_pera_system_create)
+-  [Function `dwallet_admin_address`](#0x3_pera_system_dwallet_admin_address)
+-  [Function `request_start_network_dkg`](#0x3_pera_system_request_start_network_dkg)
 -  [Function `request_add_validator_candidate`](#0x3_pera_system_request_add_validator_candidate)
 -  [Function `request_remove_validator_candidate`](#0x3_pera_system_request_remove_validator_candidate)
 -  [Function `request_add_validator`](#0x3_pera_system_request_add_validator)
@@ -85,8 +87,8 @@ the PeraSystemStateInner version, or vice versa.
 -  [Function `load_inner_maybe_upgrade`](#0x3_pera_system_load_inner_maybe_upgrade)
 -  [Function `validator_voting_powers`](#0x3_pera_system_validator_voting_powers)
 -  [Function `lock_next_epoch_committee`](#0x3_pera_system_lock_next_epoch_committee)
--  [Function `store_encryption_of_decryption_key_shares`](#0x3_pera_system_store_encryption_of_decryption_key_shares)
--  [Function `new_encryption_of_decryption_key_shares_version`](#0x3_pera_system_new_encryption_of_decryption_key_shares_version)
+-  [Function `store_decryption_key_shares`](#0x3_pera_system_store_decryption_key_shares)
+-  [Function `new_decryption_key_shares_version`](#0x3_pera_system_new_decryption_key_shares_version)
 
 
 <pre><code><b>use</b> <a href="../move-stdlib/option.md#0x1_option">0x1::option</a>;
@@ -174,6 +176,15 @@ the PeraSystemStateInner version, or vice versa.
 
 
 
+<a name="0x3_pera_system_ENotDwalletAdminAddress"></a>
+
+
+
+<pre><code><b>const</b> <a href="pera_system.md#0x3_pera_system_ENotDwalletAdminAddress">ENotDwalletAdminAddress</a>: <a href="../move-stdlib/u64.md#0x1_u64">u64</a> = 3;
+</code></pre>
+
+
+
 <a name="0x3_pera_system_create"></a>
 
 ## Function `create`
@@ -182,7 +193,7 @@ Create a new PeraSystemState object and make it shared.
 This function will be called only once in genesis.
 
 
-<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system.md#0x3_pera_system_create">create</a>(id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a>, validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, <a href="storage_fund.md#0x3_storage_fund">storage_fund</a>: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, protocol_version: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, epoch_start_timestamp_ms: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, parameters: <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_SystemParameters">pera_system_state_inner::SystemParameters</a>, <a href="stake_subsidy.md#0x3_stake_subsidy">stake_subsidy</a>: <a href="stake_subsidy.md#0x3_stake_subsidy_StakeSubsidy">stake_subsidy::StakeSubsidy</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system.md#0x3_pera_system_create">create</a>(id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a>, validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="validator.md#0x3_validator_Validator">validator::Validator</a>&gt;, <a href="storage_fund.md#0x3_storage_fund">storage_fund</a>: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, protocol_version: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, epoch_start_timestamp_ms: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, parameters: <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_SystemParameters">pera_system_state_inner::SystemParameters</a>, <a href="stake_subsidy.md#0x3_stake_subsidy">stake_subsidy</a>: <a href="stake_subsidy.md#0x3_stake_subsidy_StakeSubsidy">stake_subsidy::StakeSubsidy</a>, dwallet_admin_address: <b>address</b>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -199,6 +210,7 @@ This function will be called only once in genesis.
     epoch_start_timestamp_ms: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
     parameters: SystemParameters,
     <a href="stake_subsidy.md#0x3_stake_subsidy">stake_subsidy</a>: StakeSubsidy,
+    dwallet_admin_address: <b>address</b>,
     ctx: &<b>mut</b> TxContext,
 ) {
     <b>let</b> system_state = <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_create">pera_system_state_inner::create</a>(
@@ -208,6 +220,7 @@ This function will be called only once in genesis.
         epoch_start_timestamp_ms,
         parameters,
         <a href="stake_subsidy.md#0x3_stake_subsidy">stake_subsidy</a>,
+        dwallet_admin_address,
         ctx,
     );
     <b>let</b> version = <a href="pera_system_state_inner.md#0x3_pera_system_state_inner_genesis_system_state_version">pera_system_state_inner::genesis_system_state_version</a>();
@@ -217,6 +230,59 @@ This function will be called only once in genesis.
     };
     <a href="../pera-framework/dynamic_field.md#0x2_dynamic_field_add">dynamic_field::add</a>(&<b>mut</b> self.id, version, system_state);
     <a href="../pera-framework/transfer.md#0x2_transfer_share_object">transfer::share_object</a>(self);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_pera_system_dwallet_admin_address"></a>
+
+## Function `dwallet_admin_address`
+
+
+
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="pera_system.md#0x3_pera_system_dwallet_admin_address">dwallet_admin_address</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>): <b>address</b>
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b>(package) <b>fun</b> <a href="pera_system.md#0x3_pera_system_dwallet_admin_address">dwallet_admin_address</a>(
+    wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>,
+): <b>address</b>  {
+    <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
+    self.<a href="pera_system.md#0x3_pera_system_dwallet_admin_address">dwallet_admin_address</a>()
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x3_pera_system_request_start_network_dkg"></a>
+
+## Function `request_start_network_dkg`
+
+Function to create start the network DKG for the dwallet mpc network key of a given key type.
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="pera_system.md#0x3_pera_system_request_start_network_dkg">request_start_network_dkg</a>(key_type: u8, system_state: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> entry <b>fun</b> <a href="pera_system.md#0x3_pera_system_request_start_network_dkg">request_start_network_dkg</a>(key_type: u8, system_state: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, ctx: &<b>mut</b> TxContext) {
+    <b>assert</b>!(ctx.sender() == system_state.<a href="pera_system.md#0x3_pera_system_dwallet_admin_address">dwallet_admin_address</a>(), <a href="pera_system.md#0x3_pera_system_ENotDwalletAdminAddress">ENotDwalletAdminAddress</a>);
+    start_network_dkg(key_type, ctx);
 }
 </code></pre>
 
@@ -1563,15 +1629,15 @@ the chain's DWallet MPC secret to it.
 
 </details>
 
-<a name="0x3_pera_system_store_encryption_of_decryption_key_shares"></a>
+<a name="0x3_pera_system_store_decryption_key_shares"></a>
 
-## Function `store_encryption_of_decryption_key_shares`
+## Function `store_decryption_key_shares`
 
 Store the encrypted decryption key shares from the network DKG re-sharing.
 The chain agrees on on the same public output.
 
 
-<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_store_encryption_of_decryption_key_shares">store_encryption_of_decryption_key_shares</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_type: u8, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_store_decryption_key_shares">store_decryption_key_shares</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1580,11 +1646,11 @@ The chain agrees on on the same public output.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_store_encryption_of_decryption_key_shares">store_encryption_of_decryption_key_shares</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_type: u8, ctx: &TxContext) {
+<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_store_decryption_key_shares">store_decryption_key_shares</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8, ctx: &TxContext) {
     <b>assert</b>!(ctx.sender() == @0x0, <a href="pera_system.md#0x3_pera_system_ENotSystemAddress">ENotSystemAddress</a>);
-    <b>assert</b>!(is_key_type(key_type), <a href="pera_system.md#0x3_pera_system_EInvalidKeyType">EInvalidKeyType</a>);
+    <b>assert</b>!(is_valid_key_scheme(key_scheme), <a href="pera_system.md#0x3_pera_system_EInvalidKeyType">EInvalidKeyType</a>);
     <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
-    self.<a href="pera_system.md#0x3_pera_system_store_encryption_of_decryption_key_shares">store_encryption_of_decryption_key_shares</a>(shares, key_type);
+    self.<a href="pera_system.md#0x3_pera_system_store_decryption_key_shares">store_decryption_key_shares</a>(shares, key_scheme);
 }
 </code></pre>
 
@@ -1592,15 +1658,15 @@ The chain agrees on on the same public output.
 
 </details>
 
-<a name="0x3_pera_system_new_encryption_of_decryption_key_shares_version"></a>
+<a name="0x3_pera_system_new_decryption_key_shares_version"></a>
 
-## Function `new_encryption_of_decryption_key_shares_version`
+## Function `new_decryption_key_shares_version`
 
 Store the encrypted decryption key shares from the network DKG protocol public output.
 The chain agrees on on the same public output.
 
 
-<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_new_encryption_of_decryption_key_shares_version">new_encryption_of_decryption_key_shares_version</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_type: u8, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">pera_system::PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8, ctx: &<a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -1609,11 +1675,11 @@ The chain agrees on on the same public output.
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_new_encryption_of_decryption_key_shares_version">new_encryption_of_decryption_key_shares_version</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_type: u8, ctx: &TxContext) {
+<pre><code><b>fun</b> <a href="pera_system.md#0x3_pera_system_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(wrapper: &<b>mut</b> <a href="pera_system.md#0x3_pera_system_PeraSystemState">PeraSystemState</a>, shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, key_scheme: u8, ctx: &TxContext) {
     <b>assert</b>!(ctx.sender() == @0x0, <a href="pera_system.md#0x3_pera_system_ENotSystemAddress">ENotSystemAddress</a>);
-    <b>assert</b>!(is_key_type(key_type), <a href="pera_system.md#0x3_pera_system_EInvalidKeyType">EInvalidKeyType</a>);
+    <b>assert</b>!(is_valid_key_scheme(key_scheme), <a href="pera_system.md#0x3_pera_system_EInvalidKeyType">EInvalidKeyType</a>);
     <b>let</b> self = <a href="pera_system.md#0x3_pera_system_load_system_state_mut">load_system_state_mut</a>(wrapper);
-    self.<a href="pera_system.md#0x3_pera_system_new_encryption_of_decryption_key_shares_version">new_encryption_of_decryption_key_shares_version</a>(shares, key_type);
+    self.<a href="pera_system.md#0x3_pera_system_new_decryption_key_shares_version">new_decryption_key_shares_version</a>(shares, key_scheme);
 }
 </code></pre>
 

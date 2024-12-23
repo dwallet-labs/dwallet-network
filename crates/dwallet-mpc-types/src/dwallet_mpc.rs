@@ -17,12 +17,16 @@ pub const START_BATCHED_PRESIGN_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartBatchedPresignEvent");
 pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("LockedNextEpochCommitteeEvent");
+pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartNetworkDKGEvent");
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
 
-/// Alias for an MPC output.
-pub type MPCOutput = Vec<u8>;
+/// Alias for an MPC public output.
+pub type MPCPublicOutput = Vec<u8>;
+
+/// Alias for an MPC private output.
+pub type MPCPrivateOutput = Vec<u8>;
 
 /// Alias for MPC public input.
 pub type MPCPublicInput = Vec<u8>;
@@ -59,7 +63,7 @@ pub enum MPCSessionStatus {
     Pending,
     FirstExecution,
     Active(MPCRound),
-    Finished(MPCOutput),
+    Finished(MPCPublicOutput, MPCPrivateOutput),
     Failed,
 }
 
@@ -69,7 +73,9 @@ impl fmt::Display for MPCSessionStatus {
             MPCSessionStatus::Pending => write!(f, "Pending"),
             MPCSessionStatus::FirstExecution => write!(f, "FirstExecution"),
             MPCSessionStatus::Active(round) => write!(f, "Active - round {}", round),
-            MPCSessionStatus::Finished(output) => write!(f, "Finished({:?})", output),
+            MPCSessionStatus::Finished(public_output, private_output) => {
+                write!(f, "Finished({:?} {:?})", public_output, private_output)
+            }
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
     }

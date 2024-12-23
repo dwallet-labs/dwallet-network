@@ -121,10 +121,10 @@ impl DWalletMPCInstance {
             }
             Ok(AsynchronousRoundResult::Finalize {
                 malicious_parties,
-                private_output: _,
+                private_output,
                 public_output,
             }) => {
-                self.status = MPCSessionStatus::Finished(public_output.clone().into());
+                self.status = MPCSessionStatus::Finished(public_output.clone(), private_output);
                 Ok((
                     self.new_dwallet_mpc_output_message(public_output)?,
                     malicious_parties,
