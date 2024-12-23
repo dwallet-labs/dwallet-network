@@ -19,7 +19,7 @@ pub(super) trait SignPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
         dkg_output: MPCPublicOutput,
         hashed_message: Vec<u8>,
-        presign: MPCOutput,
+        presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> DwalletMPCResult<MPCPublicInput>;
@@ -29,7 +29,7 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
     fn generate_public_input(
         dkg_output: MPCPublicOutput,
         hashed_message: Vec<u8>,
-        presign: MPCOutput,
+        presign: MPCPublicOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> DwalletMPCResult<MPCPublicInput> {
