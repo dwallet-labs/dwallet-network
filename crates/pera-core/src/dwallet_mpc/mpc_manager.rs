@@ -12,7 +12,7 @@ use crate::dwallet_mpc::network_dkg::{DwalletMPCNetworkKeyVersions, DwalletMPCNe
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use crate::dwallet_mpc::{from_event, FIRST_EPOCH_ID};
 use anyhow::anyhow;
-use dwallet_mpc_types::dwallet_mpc::MPCSessionStatus;
+use dwallet_mpc_types::dwallet_mpc::{MPCPrivateOutput, MPCPublicOutput, MPCSessionStatus};
 use group::PartyID;
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
 use mpc::{Error, WeightedThresholdAccessStructure};
@@ -335,23 +335,22 @@ impl DWalletMPCManager {
     fn update_dwallet_mpc_network_key(
         &self,
         session_info: &SessionInfo,
-        public_output: Vec<u8>,
-        private_output: Vec<u8>,
+        public_output: MPCPublicOutput,
+        private_output: MPCPrivateOutput,
     ) -> DwalletMPCResult<()> {
-        match session_info.mpc_round {
-            MPCRound::NetworkDkg(key_type) => {
-                self.epoch_store()?
-                    .dwallet_mpc_network_keys
-                    .get()
-                    .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
-                    .add_key_version(
-                        self.epoch_store()?,
-                        key_type,
-                        private_output.clone(),
-                        public_output,
-                    )?;
-            }
-            _ => {}
+        if let MPCRound::NetworkDkg(key_type) = session_info.mpc_round {
+            let epoch_store = self.epoch_store()?;
+            let network_keys = epoch_store
+                .dwallet_mpc_network_keys
+                .get()
+                .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
+
+            network_keys.add_key_version(
+                epoch_store.clone(),
+                key_type,
+                private_output.clone(),
+                public_output,
+            )?;
         }
         Ok(())
     }
