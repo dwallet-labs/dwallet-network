@@ -14,12 +14,12 @@ pub enum MPCRound {
     DKGSecond(ObjectID, u8),
     /// The first round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
-    /// and the DKG decentralized output.
-    PresignFirst(ObjectID, Vec<u8>),
+    /// the DKG decentralized output, and the batch session ID.
+    PresignFirst(ObjectID, Vec<u8>, ObjectID),
     /// The second round of the Presign protocol.
     /// Contains the `ObjectId` of the dWallet object,
-    /// and the Presign first round output.
-    PresignSecond(ObjectID, Vec<u8>),
+    /// the Presign first round output, and the batch session ID.
+    PresignSecond(ObjectID, Vec<u8>, ObjectID),
     /// The first and only round of the Sign protocol.
     /// Contains the `PartyID` associated with the decryption share,
     /// the `ObjectID` of the batched sign session,
@@ -27,8 +27,16 @@ pub enum MPCRound {
     Sign(ObjectID, Vec<u8>),
     /// A batched sign session, contains the list of messages that are being signed.
     BatchedSign(Vec<Vec<u8>>),
+    BatchedPresign(u64),
     /// The round of the network DKG protocol.
     NetworkDkg(DWalletMPCNetworkKey),
+}
+
+impl MPCRound {
+    /// Returns `true` if the round output is part of a batch, `false` otherwise.
+    pub fn is_part_of_batch(&self) -> bool {
+        matches!(self, MPCRound::Sign(..) | MPCRound::PresignSecond(..))
+    }
 }
 
 /// The content of the system transaction that stores the MPC session output on the chain.

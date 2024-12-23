@@ -46,13 +46,16 @@ StartPresignFirstRoundEvent
 StartPresignSecondRoundEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-CompletedPresignEvent
+CompletedBatchedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartSignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 StartBatchedSignEvent
+	public struct
+	0x3::dwallet_2pc_mpc_ecdsa_k1
+StartBatchedPresignEvent
 	public struct
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_dkg_first_round
@@ -67,13 +70,13 @@ launch_dkg_second_round
 create_dkg_second_round_output
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-launch_presign_first_round
+launch_batched_presign
 	public fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 launch_presign_second_round
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-create_second_presign_round_output
+create_batched_presign_output
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 approve_messages
@@ -100,7 +103,7 @@ StartNetworkDKGEvent
 EncryptionOfNetworkDecryptionKeyShares
 	public struct
 	0x3::dwallet_network_key
-is_key_type
+is_valid_key_scheme
 	public(package) fun
 	0x3::dwallet_network_key
 start_network_dkg

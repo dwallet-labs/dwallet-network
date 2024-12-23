@@ -170,6 +170,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use pera_types::committee::CommitteeTrait;
 use pera_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
+use pera_types::dwallet_mpc_error::DwalletMPCError;
 use pera_types::execution_config_utils::to_binary_config;
 
 #[cfg(test)]
@@ -1567,24 +1568,24 @@ impl AuthorityState {
                 dwallet_mpc_outputs_manager.completed_locking_next_committee = true;
                 continue;
             }
-            let Ok(Some(session_info)) = session_info_from_event(
-                event,
-                party_id,
-                epoch_store
-                    .dwallet_mpc_network_keys
-                    .get()
-                    .ok_or(PeraError::DwalletMPCError(
-                        "Missing dWallet MPC network keys".to_string(),
-                    ))?
-                    .key_version(DWalletMPCNetworkKey::Secp256k1)
-                    .ok(),
-            ) else {
+            /// Todo (#427): Receive the key version from the MPC event and check its validity.
+            let key_version = epoch_store
+                .dwallet_mpc_network_keys
+                .get()
+                .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+                .key_version(DWalletMPCNetworkKey::Secp256k1).unwrap_or_default();
+            let Ok(Some(session_info)) =
+                session_info_from_event(event, party_id, Some(key_version))
+            else {
                 continue;
             };
-            let mut dwallet_mpc_batches_manager =
-                epoch_store.get_dwallet_mpc_batches_manager().await?;
-            // This function is being executed for all events, some events are being emitted before the MPC outputs manager is initialized.
-            dwallet_mpc_batches_manager.handle_new_event(&session_info);
+            if session_info.mpc_round.is_part_of_batch() {
+                let mut dwallet_mpc_batches_manager =
+                    epoch_store.get_dwallet_mpc_batches_manager().await?;
+                dwallet_mpc_batches_manager.handle_new_event(&session_info);
+            }
+            // This function is being executed for all events, some events are
+            // being emitted before the MPC outputs manager is initialized.
             dwallet_mpc_outputs_manager.handle_new_event(&session_info);
             let dwallet_mpc_sender = epoch_store.dwallet_mpc_sender.get().ok_or(
                 PeraError::from("DWallet MPC sender not initialized when iterating over events"),
