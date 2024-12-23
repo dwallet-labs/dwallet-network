@@ -1059,8 +1059,8 @@ pub fn all_natives(silent: bool, protocol_config: &ProtocolConfig) -> NativeFunc
         ),
         (
             "dwallet_2pc_mpc_ecdsa_k1",
-            "verify_partially_signed_signatures_native",
-            make_native!(twopc_mpc::verify_partially_signed_signatures_native),
+            "verify_partially_signed_signatures",
+            make_native!(twopc_mpc::verify_partially_signed_signatures),
         ),
     ];
     pera_system_natives

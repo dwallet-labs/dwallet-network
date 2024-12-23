@@ -9,7 +9,7 @@ use smallvec::smallvec;
 use std::collections::VecDeque;
 
 /// Verifies that the user's centralized party signatures are valid.
-pub fn verify_partially_signed_signatures_native(
+pub fn verify_partially_signed_signatures(
     context: &mut NativeContext,
     ty_args: Vec<Type>,
     mut args: VecDeque<Value>,

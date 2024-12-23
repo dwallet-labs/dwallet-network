@@ -947,7 +947,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         presign_session_ids.reverse();
         presigns.destroy_empty();
         assert!(
-            verify_partially_signed_signatures_native(
+            verify_partially_signed_signatures(
                 signatures,
                 messages,
                 presigns_bytes,
@@ -1035,7 +1035,7 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
     }
 
     /// Verifies that the user's centralized party signatures are valid.
-    native fun verify_partially_signed_signatures_native(
+    native fun verify_partially_signed_signatures(
         partial_signatures: vector<vector<u8>>,
         messages: vector<vector<u8>>,
         presigns: vector<vector<u8>>,

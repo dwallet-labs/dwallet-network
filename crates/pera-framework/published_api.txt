@@ -112,7 +112,7 @@ future_sign
 pop_and_verify_message_approval
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
-verify_partially_signed_signatures_native
+verify_partially_signed_signatures
 	fun
 	0x3::dwallet_2pc_mpc_ecdsa_k1
 UnverifiedValidatorOperationCap
