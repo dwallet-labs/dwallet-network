@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { MoveStruct, PeraClient } from '../../src/client';
 import { createDWallet } from '../../src/dwallet-mpc/dkg';
 import { Config } from '../../src/dwallet-mpc/globals';
+import { launchNetworkDKG } from '../../src/dwallet-mpc/network-dkg';
 import { presign } from '../../src/dwallet-mpc/presign';
 import {
 	futureSignTransactionCall,
@@ -224,6 +225,18 @@ describe('Test dWallet MPC', () => {
 		);
 		expect(completedSignEvent).toBeDefined();
 		console.log({ completedSignEvent });
+	});
+
+	it('should run network dkg', async () => {
+		const pollRef = { value: true };
+		void printOwnedObjects(toolbox.keypair, toolbox.client, pollRef);
+		let conf: Config = {
+			keypair: toolbox.keypair,
+			client: toolbox.client,
+			timeout: 5 * 60 * 1000,
+		};
+		await launchNetworkDKG(conf);
+		pollRef.value = false;
 	});
 });
 

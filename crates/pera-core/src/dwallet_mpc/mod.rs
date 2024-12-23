@@ -5,8 +5,8 @@ use crate::dwallet_mpc::dkg::{
 };
 use crate::dwallet_mpc::mpc_events::{
     StartBatchedPresignEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent,
-    StartDKGSecondRoundEvent, StartPresignFirstRoundEvent, StartPresignSecondRoundEvent,
-    StartSignRoundEvent,
+    StartDKGSecondRoundEvent, StartNetworkDKGEvent, StartPresignFirstRoundEvent,
+    StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_party::MPCParty;
@@ -21,6 +21,7 @@ use group::PartyID;
 use mpc::{AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
 use pera_types::base_types::AuthorityName;
 use pera_types::base_types::{EpochId, ObjectID};
+use pera_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::event::Event;
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -38,8 +39,6 @@ pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
 
-const SECP256K1_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(0);
-const RISTRETTO_DKG_SESSION_ID: ObjectID = ObjectID::from_single_byte(1);
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
 /// The message a Validator can send to the other parties while
@@ -72,7 +71,7 @@ pub(crate) fn authority_name_to_party_id(
 pub(crate) fn session_info_from_event(
     event: &Event,
     party_id: PartyID,
-    dwallet_network_key_version: u8,
+    dwallet_network_key_version: Option<u8>,
 ) -> anyhow::Result<Option<SessionInfo>> {
     match &event.type_ {
         t if t == &StartDKGFirstRoundEvent::type_() => {
@@ -83,7 +82,11 @@ pub(crate) fn session_info_from_event(
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
             Ok(Some(dkg_second_party_session_info(
                 &deserialized_event,
-                dwallet_network_key_version,
+                if cfg!(feature = "with-network-dkg") {
+                    dwallet_network_key_version.ok_or(DwalletMPCError::MissingKeyVersion)?
+                } else {
+                    0
+                },
             )))
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
@@ -106,6 +109,12 @@ pub(crate) fn session_info_from_event(
         t if t == &StartBatchedPresignEvent::type_() => {
             let deserialized_event: StartBatchedPresignEvent = bcs::from_bytes(&event.contents)?;
             Ok(Some(batched_presign_session_info(&deserialized_event)))
+        }
+        t if t == &StartNetworkDKGEvent::type_() => {
+            let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
+            Ok(Some(network_dkg::network_dkg_session_info(
+                deserialized_event,
+            )?))
         }
         _ => Ok(None),
     }
@@ -371,7 +380,12 @@ pub(crate) fn from_event(
             let deserialized_event: StartDKGSecondRoundEvent = bcs::from_bytes(&event.contents)?;
             dkg_second_party(
                 deserialized_event,
-                dwallet_mpc_manager.network_key_version(),
+                // Todo (#394): Remove the hardcoded network key type
+                if cfg!(feature = "with-network-dkg") {
+                    dwallet_mpc_manager.network_key_version(DWalletMPCNetworkKey::Secp256k1)?
+                } else {
+                    0
+                },
             )
         }
         t if t == &StartPresignFirstRoundEvent::type_() => {
@@ -386,6 +400,10 @@ pub(crate) fn from_event(
         t if t == &StartSignRoundEvent::type_() => {
             let deserialized_event: StartSignRoundEvent = bcs::from_bytes(&event.contents)?;
             sign_party(party_id, deserialized_event, dwallet_mpc_manager)
+        }
+        t if t == &StartNetworkDKGEvent::type_() => {
+            let deserialized_event: StartNetworkDKGEvent = bcs::from_bytes(&event.contents)?;
+            network_dkg::network_dkg_party(deserialized_event)
         }
         _ => Err(DwalletMPCError::NonMPCEvent.into()),
     }
