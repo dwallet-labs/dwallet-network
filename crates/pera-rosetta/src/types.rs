@@ -444,8 +444,8 @@ impl From<&PeraTransactionBlockKind> for OperationType {
             PeraTransactionBlockKind::EndOfEpochTransaction(_) => {
                 OperationType::EndOfEpochTransaction
             }
-            PeraTransactionBlockKind::LockNextCommittee
-            | PeraTransactionBlockKind::DWalletMPCOutput(_) => OperationType::DWalletMPCOutput,
+            PeraTransactionBlockKind::DWalletMPCOutput(_) => OperationType::DWalletMPCOutput,
+            PeraTransactionBlockKind::LockNextCommittee => todo!(),
         }
     }
 }
