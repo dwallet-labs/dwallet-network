@@ -1568,6 +1568,7 @@ impl AuthorityState {
                 dwallet_mpc_outputs_manager.completed_locking_next_committee = true;
                 continue;
             }
+            /// Todo (#427): Receive the key version from the MPC event and check its validity.
             let key_version = epoch_store
                 .dwallet_mpc_network_keys
                 .get()
