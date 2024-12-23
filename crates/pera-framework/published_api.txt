@@ -107,10 +107,10 @@ is_valid_key_scheme
 	public(package) fun
 	0x3::dwallet_network_key
 start_network_dkg
-	public fun
+	public(package) fun
 	0x3::dwallet_network_key
 new_encrypted_network_decryption_key_shares
-	public fun
+	public(package) fun
 	0x3::dwallet_network_key
 update_new_shares
 	public fun
@@ -796,6 +796,9 @@ create_system_parameters
 v1_to_v2
 	public(package) fun
 	0x3::pera_system_state_inner
+dwallet_admin_address
+	public(package) fun
+	0x3::pera_system_state_inner
 lock_next_epoch_committee
 	public(package) fun
 	0x3::pera_system_state_inner
@@ -960,6 +963,12 @@ PeraSystemState
 	0x3::pera_system
 create
 	public(package) fun
+	0x3::pera_system
+dwallet_admin_address
+	public(package) fun
+	0x3::pera_system
+request_start_network_dkg
+	public entry fun
 	0x3::pera_system
 request_add_validator_candidate
 	public entry fun

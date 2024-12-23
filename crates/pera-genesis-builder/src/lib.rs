@@ -778,6 +778,7 @@ fn build_unsigned_genesis_data(
         token_distribution_schedule,
         system_packages,
         metrics.clone(),
+        parameters.dwallet_admin_address,
     );
 
     let protocol_config = get_genesis_protocol_config(parameters.protocol_version);
@@ -967,6 +968,7 @@ fn create_genesis_objects(
     token_distribution_schedule: &TokenDistributionSchedule,
     system_packages: Vec<SystemPackage>,
     metrics: Arc<LimitsMetrics>,
+    dwallet_admin_address: PeraAddress,
 ) -> Vec<Object> {
     let mut store = InMemoryStorage::new(Vec::new());
     // We don't know the chain ID here since we haven't yet created the genesis checkpoint.
@@ -1008,6 +1010,7 @@ fn create_genesis_objects(
         parameters,
         token_distribution_schedule,
         metrics,
+        dwallet_admin_address,
     )
     .unwrap();
 
@@ -1091,6 +1094,7 @@ pub fn generate_genesis_system_object(
     genesis_chain_parameters: &GenesisChainParameters,
     token_distribution_schedule: &TokenDistributionSchedule,
     metrics: Arc<LimitsMetrics>,
+    dwallet_admin_address: PeraAddress,
 ) -> anyhow::Result<()> {
     let protocol_config = ProtocolConfig::get_for_version(
         ProtocolVersion::new(genesis_chain_parameters.protocol_version),
@@ -1182,6 +1186,7 @@ pub fn generate_genesis_system_object(
             CallArg::Pure(bcs::to_bytes(&genesis_chain_parameters).unwrap()),
             CallArg::Pure(bcs::to_bytes(&genesis_validators).unwrap()),
             CallArg::Pure(bcs::to_bytes(&token_distribution_schedule).unwrap()),
+            CallArg::Pure(bcs::to_bytes(&dwallet_admin_address).unwrap()),
         ]
         .into_iter()
         .map(|a| builder.input(a))

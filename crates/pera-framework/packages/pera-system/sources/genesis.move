@@ -83,6 +83,7 @@ module pera_system::genesis {
         genesis_chain_parameters: GenesisChainParameters,
         genesis_validators: vector<GenesisValidatorMetadata>,
         token_distribution_schedule: TokenDistributionSchedule,
+        dwallet_admin_address: address,
         ctx: &mut TxContext,
     ) {
         // Ensure this is only called at genesis
@@ -192,6 +193,7 @@ module pera_system::genesis {
             genesis_chain_parameters.chain_start_timestamp_ms,
             system_parameters,
             stake_subsidy,
+            dwallet_admin_address,
             ctx,
         );
     }

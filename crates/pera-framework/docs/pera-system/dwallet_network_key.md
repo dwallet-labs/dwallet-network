@@ -150,10 +150,10 @@ Checks if the key scheme is supported by the system
 
 ## Function `start_network_dkg`
 
-Function to create a new StartNetworkDKGEvent.
+Function to emit a new StartNetworkDKGEvent.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -162,7 +162,7 @@ Function to create a new StartNetworkDKGEvent.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, ctx: &<b>mut</b> TxContext) {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_start_network_dkg">start_network_dkg</a>(key_scheme: u8, ctx: &<b>mut</b> TxContext) {
     <b>let</b> session_id = <a href="../pera-framework/object.md#0x2_object_id_from_address">object::id_from_address</a>(<a href="../pera-framework/tx_context.md#0x2_tx_context_fresh_object_address">tx_context::fresh_object_address</a>(ctx));
     <a href="../pera-framework/event.md#0x2_event_emit">event::emit</a>(<a href="dwallet_network_key.md#0x3_dwallet_network_key_StartNetworkDKGEvent">StartNetworkDKGEvent</a> {
         session_id,
@@ -182,7 +182,7 @@ Function to create a new StartNetworkDKGEvent.
 Function to create a new EncryptionOfNetworkDecryptionKeyShares.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">dwallet_network_key::EncryptionOfNetworkDecryptionKeyShares</a>
+<pre><code><b>public</b>(<b>friend</b>) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">dwallet_network_key::EncryptionOfNetworkDecryptionKeyShares</a>
 </code></pre>
 
 
@@ -191,7 +191,11 @@ Function to create a new EncryptionOfNetworkDecryptionKeyShares.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>, current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;): <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">EncryptionOfNetworkDecryptionKeyShares</a> {
+<pre><code><b>public</b>(package) <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_new_encrypted_network_decryption_key_shares">new_encrypted_network_decryption_key_shares</a>(
+    epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>,
+    current_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    previous_epoch_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;
+): <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">EncryptionOfNetworkDecryptionKeyShares</a> {
     <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">EncryptionOfNetworkDecryptionKeyShares</a> {
         epoch,
         current_epoch_shares,
@@ -220,7 +224,11 @@ Function to update the shares of the network encryption of decryption key.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_update_new_shares">update_new_shares</a>(self: &<b>mut</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">EncryptionOfNetworkDecryptionKeyShares</a>, new_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;, epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>) {
+<pre><code><b>public</b> <b>fun</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_update_new_shares">update_new_shares</a>(
+    self: &<b>mut</b> <a href="dwallet_network_key.md#0x3_dwallet_network_key_EncryptionOfNetworkDecryptionKeyShares">EncryptionOfNetworkDecryptionKeyShares</a>,
+    new_shares: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;&gt;,
+    epoch: <a href="../move-stdlib/u64.md#0x1_u64">u64</a>
+) {
     self.previous_epoch_shares = self.current_epoch_shares;
     self.current_epoch_shares = new_shares;
     self.epoch = epoch;

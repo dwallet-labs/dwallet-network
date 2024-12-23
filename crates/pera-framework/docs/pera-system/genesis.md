@@ -346,7 +346,7 @@ It will create a singleton PeraSystemState object, which contains
 all the information we need in the system.
 
 
-<pre><code><b>fun</b> <a href="genesis.md#0x3_genesis_create">create</a>(pera_system_state_id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a>, pera_supply: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, genesis_chain_parameters: <a href="genesis.md#0x3_genesis_GenesisChainParameters">genesis::GenesisChainParameters</a>, genesis_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="genesis.md#0x3_genesis_GenesisValidatorMetadata">genesis::GenesisValidatorMetadata</a>&gt;, token_distribution_schedule: <a href="genesis.md#0x3_genesis_TokenDistributionSchedule">genesis::TokenDistributionSchedule</a>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
+<pre><code><b>fun</b> <a href="genesis.md#0x3_genesis_create">create</a>(pera_system_state_id: <a href="../pera-framework/object.md#0x2_object_UID">object::UID</a>, pera_supply: <a href="../pera-framework/balance.md#0x2_balance_Balance">balance::Balance</a>&lt;<a href="../pera-framework/pera.md#0x2_pera_PERA">pera::PERA</a>&gt;, genesis_chain_parameters: <a href="genesis.md#0x3_genesis_GenesisChainParameters">genesis::GenesisChainParameters</a>, genesis_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="genesis.md#0x3_genesis_GenesisValidatorMetadata">genesis::GenesisValidatorMetadata</a>&gt;, token_distribution_schedule: <a href="genesis.md#0x3_genesis_TokenDistributionSchedule">genesis::TokenDistributionSchedule</a>, dwallet_admin_address: <b>address</b>, ctx: &<b>mut</b> <a href="../pera-framework/tx_context.md#0x2_tx_context_TxContext">tx_context::TxContext</a>)
 </code></pre>
 
 
@@ -361,6 +361,7 @@ all the information we need in the system.
     genesis_chain_parameters: <a href="genesis.md#0x3_genesis_GenesisChainParameters">GenesisChainParameters</a>,
     genesis_validators: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="genesis.md#0x3_genesis_GenesisValidatorMetadata">GenesisValidatorMetadata</a>&gt;,
     token_distribution_schedule: <a href="genesis.md#0x3_genesis_TokenDistributionSchedule">TokenDistributionSchedule</a>,
+    dwallet_admin_address: <b>address</b>,
     ctx: &<b>mut</b> TxContext,
 ) {
     // Ensure this is only called at <a href="genesis.md#0x3_genesis">genesis</a>
@@ -470,6 +471,7 @@ all the information we need in the system.
         genesis_chain_parameters.chain_start_timestamp_ms,
         system_parameters,
         <a href="stake_subsidy.md#0x3_stake_subsidy">stake_subsidy</a>,
+        dwallet_admin_address,
         ctx,
     );
 }

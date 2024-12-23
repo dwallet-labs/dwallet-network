@@ -145,6 +145,7 @@ module pera_system::pera_system_state_inner {
         epoch_start_timestamp_ms: u64,
         /// Any extra fields that's not defined statically.
         extra_fields: Bag,
+        dwallet_admin_address: address,
     }
 
     /// Uses SystemParametersV2 as the parameters.
@@ -196,6 +197,7 @@ module pera_system::pera_system_state_inner {
         epoch_start_timestamp_ms: u64,
         /// Any extra fields that's not defined statically.
         extra_fields: Bag,
+        dwallet_admin_address: address,
     }
 
     /// Event containing system-level epoch information, emitted during
@@ -239,6 +241,7 @@ module pera_system::pera_system_state_inner {
         epoch_start_timestamp_ms: u64,
         parameters: SystemParameters,
         stake_subsidy: StakeSubsidy,
+        dwallet_admin_address: address,
         ctx: &mut TxContext,
     ): PeraSystemStateInner {
         let validators = validator_set::new(validators, ctx);
@@ -261,6 +264,7 @@ module pera_system::pera_system_state_inner {
             safe_mode_non_refundable_storage_fee: 0,
             epoch_start_timestamp_ms,
             extra_fields: bag::new(ctx),
+            dwallet_admin_address,
         };
         system_state
     }
@@ -307,6 +311,7 @@ module pera_system::pera_system_state_inner {
             safe_mode_non_refundable_storage_fee,
             epoch_start_timestamp_ms,
             extra_fields: state_extra_fields,
+            dwallet_admin_address,
         } = self;
         let SystemParameters {
             epoch_duration_ms,
@@ -345,11 +350,16 @@ module pera_system::pera_system_state_inner {
             safe_mode_storage_rebates,
             safe_mode_non_refundable_storage_fee,
             epoch_start_timestamp_ms,
-            extra_fields: state_extra_fields
+            extra_fields: state_extra_fields,
+            dwallet_admin_address,
         }
     }
 
     // ==== public(package) functions ====
+
+    public(package) fun dwallet_admin_address(self: &PeraSystemStateInnerV2): address {
+        self.dwallet_admin_address
+    }
 
     public(package) fun lock_next_epoch_committee(
         self: &mut PeraSystemStateInnerV2,
