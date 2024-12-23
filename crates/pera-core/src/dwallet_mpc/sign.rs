@@ -19,8 +19,7 @@ pub(super) trait SignPartyPublicInputGenerator: mpc::Party {
     fn generate_public_input(
         dkg_output: MPCPublicOutput,
         hashed_message: Vec<u8>,
-        presign_first_round_output: MPCPublicOutput,
-        presign_second_round_output: MPCPublicOutput,
+        presign: MPCOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> DwalletMPCResult<MPCPublicInput>;
@@ -30,15 +29,12 @@ impl SignPartyPublicInputGenerator for SignFirstParty {
     fn generate_public_input(
         dkg_output: MPCPublicOutput,
         hashed_message: Vec<u8>,
-        presign_first_round_output: MPCPublicOutput,
-        presign_second_round_output: MPCPublicOutput,
+        presign: MPCOutput,
         centralized_signed_message: Vec<u8>,
         decryption_key_share_public_parameters: <AsyncProtocol as twopc_mpc::sign::Protocol>::DecryptionKeySharePublicParameters,
     ) -> DwalletMPCResult<MPCPublicInput> {
-        let presign_first_round_output: <AsyncProtocol as twopc_mpc::presign::Protocol>::EncryptionOfMaskAndMaskedNonceShare = bcs::from_bytes(&presign_first_round_output)?;
-        let presign_second_round_output: (<AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart, <AsyncProtocol as twopc_mpc::presign::Protocol>::NoncePublicShareAndEncryptionOfMaskedNonceSharePart) = bcs::from_bytes(&presign_second_round_output)?;
         let presign: <AsyncProtocol as twopc_mpc::presign::Protocol>::Presign =
-            (presign_first_round_output, presign_second_round_output).into();
+            bcs::from_bytes(&presign)?;
 
         let auxiliary = SignPublicInput::from((
             class_groups_constants::protocol_public_parameters(),
