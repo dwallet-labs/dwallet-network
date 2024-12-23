@@ -30,6 +30,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use twopc_mpc::sign::Protocol;
 use dwallet_mpc_types::dwallet_mpc::MPCPrivateOutput;
+use pera_types::crypto::Signable;
 
 /// The status of the network supported key types for the dWallet MPC sessions.
 #[derive(Clone, Debug, PartialEq)]
@@ -125,10 +126,9 @@ impl DwalletMPCNetworkKeyVersions {
     ) -> DwalletMPCResult<()> {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
 
-        inner
-            .validator_decryption_key_share
-            .write()
-            .map_err(|_| DwalletMPCError::LockError)?;
+        // inner.write()
+        //     .map_err(|_| DwalletMPCError::LockError)?
+        //     .validator_decryption_key_share;
         // Todo (#382): Replace with the actual type once the DKG protocol is ready.
 
         let pp = bcs::from_bytes(&generate_secp256k1_dkg_party_public_input(HashMap::new())?)?;
@@ -144,10 +144,10 @@ impl DwalletMPCNetworkKeyVersions {
             })
             .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
 
-        decryption_key_share
-            .entry(key_type.clone())
-            .or_insert_with(Vec::new)
-            .push(self_decryption_key_share.clone());
+        // decryption_key_share
+        //     .entry(key_type.clone())
+        //     .or_insert_with(Vec::new)
+        //     .push(self_decryption_key_share.clone());
 
         inner.key_shares_versions.insert(
             key_type.clone(),
