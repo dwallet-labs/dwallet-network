@@ -19,7 +19,7 @@ module pera_system::pera_system_state_inner {
     use pera::bag::Bag;
     use pera::bag;
     use pera_system::dwallet_network_key::{EncryptionOfNetworkDecryptionKeyShares,
-        new_encrypted_network_decryption_key_shares, is_key_type,
+        new_encrypted_network_decryption_key_shares, is_valid_key_scheme,
     };
 
     // same as in validator_set
@@ -368,35 +368,35 @@ module pera_system::pera_system_state_inner {
     }
 
     /// Update the system state with a new version dwallet mpc network key shares after the network DKG.
-    public(package) fun new_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_type: u8) {
-        assert!(is_key_type(key_type), EInvalidKeyType);
+    public(package) fun new_decryption_key_shares_version(self: &mut PeraSystemStateInnerV2, shares: vector<vector<u8>>, key_scheme: u8) {
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
         let new_version = new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty());
 
-        if (self.decryption_key_shares.contains(&key_type)) {
-            self.decryption_key_shares.get_mut(&key_type).push_back(new_version);
+        if (self.decryption_key_shares.contains(&key_scheme)) {
+            self.decryption_key_shares.get_mut(&key_scheme).push_back(new_version);
             return
         };
 
-        self.decryption_key_shares.insert(key_type, vector[new_version]);
+        self.decryption_key_shares.insert(key_scheme, vector[new_version]);
     }
 
     /// Update the system state with new encryption of decryption key shares after re-configuring the network.
     public(package) fun store_decryption_key_shares(
         self: &mut PeraSystemStateInnerV2,
         shares: vector<vector<u8>>,
-        key_type: u8,
+        key_scheme: u8,
     ) {
-        assert!(is_key_type(key_type), EInvalidKeyType);
-        let version = self.decryption_key_shares.get(&key_type).length();
-        if (self.decryption_key_shares.contains(&key_type)) {
-            self.decryption_key_shares.get_mut(&key_type).borrow_mut(
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
+        let version = self.decryption_key_shares.get(&key_scheme).length();
+        if (self.decryption_key_shares.contains(&key_scheme)) {
+            self.decryption_key_shares.get_mut(&key_scheme).borrow_mut(
                 version
             ).update_new_shares(shares, self.epoch);
             return
         };
 
         self.decryption_key_shares.insert(
-            key_type,
+            key_scheme,
             vector[new_encrypted_network_decryption_key_shares(self.epoch, shares, vector::empty())]
         );
     }

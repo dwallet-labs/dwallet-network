@@ -1076,17 +1076,14 @@ impl AuthorityPerEpochStore {
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>>
     {
-        let decryption_key_shares = match self.epoch_start_state() {
+        let decryption_key_shares = (match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
-        };
-        let decryption_key_shares =
-            decryption_key_shares.ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
-        let decryption_key_shares = decryption_key_shares
-            .contents
-            .into_iter()
-            .map(|entry| Ok((DWalletMPCNetworkKey::try_from(entry.key)?, entry.value)))
-            .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
-
+        })
+        .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+        .contents
+        .into_iter()
+        .map(|entry| Ok((DWalletMPCNetworkKey::try_from(entry.key)?, entry.value)))
+        .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
         Ok(decryption_key_shares)
     }
 
@@ -1102,25 +1099,23 @@ impl AuthorityPerEpochStore {
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>> {
         let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
         let party_id = authority_name_to_party_id(&self.name, self)? as usize;
-        let mut decryption_key_share = HashMap::new();
-
-        for (key_type, encryption_shares) in decryption_key_shares {
-            let shares_result = encryption_shares
-                .iter()
-                .map(|shares| {
-                    // Todo (#382): Decrypt the decryption key share
-                    shares
-                        .current_epoch_shares
-                        .get(party_id)
-                        .cloned()
-                        .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)
-                })
-                .collect::<DwalletMPCResult<Vec<_>>>();
-
-            decryption_key_share.insert(key_type, shares_result?);
-        }
-
-        Ok(decryption_key_share)
+        decryption_key_shares
+            .into_iter()
+            .map(|(key_type, encryption_shares)| {
+                let shares = encryption_shares
+                    .iter()
+                    .map(|share| {
+                        // TODO (#382): Decrypt the decryption key share
+                        share
+                            .current_epoch_shares
+                            .get(party_id)
+                            .cloned()
+                            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)
+                    })
+                    .collect::<DwalletMPCResult<_>>()?;
+                Ok((key_type, shares))
+            })
+            .collect()
     }
 
     pub fn get_chain_identifier(&self) -> ChainIdentifier {
