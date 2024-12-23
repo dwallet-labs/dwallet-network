@@ -259,17 +259,16 @@ impl DWalletMPCManager {
                     && received_weight as StakeUnit >= threshold)
                     || (instance.status == MPCSessionStatus::FirstExecution);
 
-                let is_manager_ready = if cfg!(feature = "with-network-dkg") {
-                    (mpc_network_key_status == DwalletMPCNetworkKeysStatus::NotInitialized
+                let mut is_manager_ready = true;
+                if cfg!(feature = "with-network-dkg") {
+                    is_manager_ready = (mpc_network_key_status
+                        == DwalletMPCNetworkKeysStatus::NotInitialized
                         && matches!(instance.party(), MPCParty::NetworkDkg(_)))
                         || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::Ready(_)
                         )
-                } else {
-                    true
-                };
-
+                }
                 if is_ready && is_manager_ready {
                     Some(instance)
                 } else {
@@ -305,7 +304,7 @@ impl DWalletMPCManager {
 
         self.flag_parties_as_malicious(&malicious_parties)?;
 
-        // Need to send the messages one by one, so the consensus adapter won't think they
+        // Need to send the messages' one by one, so the consensus adapter won't think they
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for (message, session_id) in messages {
             // Update the manager with the new network decryption key share (if relevant).
