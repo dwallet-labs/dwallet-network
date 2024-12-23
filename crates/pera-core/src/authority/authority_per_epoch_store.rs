@@ -1076,17 +1076,14 @@ impl AuthorityPerEpochStore {
         &self,
     ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>>
     {
-        let decryption_key_shares = match self.epoch_start_state() {
+        let decryption_key_shares = (match self.epoch_start_state() {
             EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
-        };
-        let decryption_key_shares =
-            decryption_key_shares.ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?;
-        let decryption_key_shares = decryption_key_shares
-            .contents
-            .into_iter()
-            .map(|entry| Ok((DWalletMPCNetworkKey::try_from(entry.key)?, entry.value)))
-            .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
-
+        })
+        .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
+        .contents
+        .into_iter()
+        .map(|entry| Ok((DWalletMPCNetworkKey::try_from(entry.key)?, entry.value)))
+        .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
         Ok(decryption_key_shares)
     }
 

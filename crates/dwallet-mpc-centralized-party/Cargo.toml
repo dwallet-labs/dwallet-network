@@ -13,8 +13,6 @@ k256 = { git = 'https://github.com/ycscaly/elliptic-curves.git', branch = "13.3-
 anyhow.workspace = true
 bcs.workspace = true
 rand_core = "0.6.4"
-hex = "0.4.3"
-log = "0.4.22"
 sha2 = "0.10.8"
 sha3 = "0.10.8"
 
