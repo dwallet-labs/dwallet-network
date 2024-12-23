@@ -44,10 +44,10 @@ pub fn verify_partially_signed_signatures(
 
 /// TODO (#415): Replace with actual verification function
 fn mock_verify_partial_signature(
-    partial_signatures: &Vec<Vec<u8>>,
-    messages: &Vec<Vec<u8>>,
-    presigns: &Vec<Vec<u8>>,
-    dkg_output: &[u8],
+    _partial_signatures: &Vec<Vec<u8>>,
+    _messages: &Vec<Vec<u8>>,
+    _presigns: &Vec<Vec<u8>>,
+    _dkg_output: &[u8],
 ) -> DwalletMPCResult<()> {
     Ok(())
 }
