@@ -228,7 +228,7 @@ impl LockedNextEpochCommitteeEvent {
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
 pub struct StartNetworkDKGEvent {
     pub(crate) session_id: ID,
-    pub(crate) key_type: u8,
+    pub(crate) key_scheme: u8,
 }
 
 impl StartNetworkDKGEvent {

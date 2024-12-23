@@ -100,7 +100,7 @@ StartNetworkDKGEvent
 EncryptionOfNetworkDecryptionKeyShares
 	public struct
 	0x3::dwallet_network_key
-is_key_type
+is_valid_key_scheme
 	public(package) fun
 	0x3::dwallet_network_key
 start_network_dkg

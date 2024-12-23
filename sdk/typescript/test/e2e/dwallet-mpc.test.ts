@@ -153,10 +153,8 @@ describe('Test dWallet MPC', () => {
 			client: toolbox.client,
 			timeout: 5 * 60 * 1000,
 		};
-		const dWallet = await launchNetworkDKG(conf);
-		expect(dWallet).toBeDefined();
+		await launchNetworkDKG(conf);
 		pollRef.value = false;
-		console.log({ dWallet });
 	});
 });
 

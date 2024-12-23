@@ -52,7 +52,7 @@ module pera_system::pera_system {
     use pera_system::staking_pool::PoolTokenExchangeRate;
     use pera::dynamic_field;
     use pera::vec_map::VecMap;
-    use pera_system::dwallet_network_key::is_key_type;
+    use pera_system::dwallet_network_key::is_valid_key_scheme;
 
     #[test_only] use pera::balance;
     #[test_only] use pera_system::validator_set::ValidatorSet;
@@ -610,21 +610,21 @@ module pera_system::pera_system {
     #[allow(unused_function)]
     /// Store the encrypted decryption key shares from the network DKG re-sharing.
     /// The chain agrees on on the same public output.
-    fun store_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
+    fun store_decryption_key_shares(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_scheme: u8, ctx: &TxContext) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
-        assert!(is_key_type(key_type), EInvalidKeyType);
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);
-        self.store_decryption_key_shares(shares, key_type);
+        self.store_decryption_key_shares(shares, key_scheme);
     }
 
     #[allow(unused_function)]
     /// Store the encrypted decryption key shares from the network DKG protocol public output.
     /// The chain agrees on on the same public output.
-    fun new_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_type: u8, ctx: &TxContext) {
+    fun new_decryption_key_shares_version(wrapper: &mut PeraSystemState, shares: vector<vector<u8>>, key_scheme: u8, ctx: &TxContext) {
         assert!(ctx.sender() == @0x0, ENotSystemAddress);
-        assert!(is_key_type(key_type), EInvalidKeyType);
+        assert!(is_valid_key_scheme(key_scheme), EInvalidKeyType);
         let self = load_system_state_mut(wrapper);
-        self.new_decryption_key_shares_version(shares, key_type);
+        self.new_decryption_key_shares_version(shares, key_scheme);
     }
 
     #[test_only]

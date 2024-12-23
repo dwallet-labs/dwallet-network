@@ -162,10 +162,10 @@ pub(crate) fn advance_network_dkg(
     weighted_threshold_access_structure: &WeightedThresholdAccessStructure,
     party_id: PartyID,
     public_input: &[u8],
-    key_type: &DWalletMPCNetworkKey,
+    key_scheme: &DWalletMPCNetworkKey,
     messages: Vec<HashMap<PartyID, Vec<u8>>>,
 ) -> DwalletMPCResult<mpc::AsynchronousRoundResult<Vec<u8>, Vec<u8>, Vec<u8>>> {
-    Ok(match key_type {
+    Ok(match key_scheme {
         // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
         DWalletMPCNetworkKey::Secp256k1 => advance::<DKGFirstParty>(
             session_id,
@@ -190,7 +190,7 @@ pub(crate) fn advance_network_dkg(
 pub(super) fn network_dkg_party(
     deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
-    match DWalletMPCNetworkKey::try_from(deserialized_event.key_type)? {
+    match DWalletMPCNetworkKey::try_from(deserialized_event.key_scheme)? {
         DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_party(deserialized_event)?),
         DWalletMPCNetworkKey::Ristretto => Ok(dkg_ristretto_party(deserialized_event)?),
     }
@@ -199,7 +199,7 @@ pub(super) fn network_dkg_party(
 pub(super) fn network_dkg_session_info(
     deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<SessionInfo> {
-    match DWalletMPCNetworkKey::try_from(deserialized_event.key_type)? {
+    match DWalletMPCNetworkKey::try_from(deserialized_event.key_scheme)? {
         DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_session_info(deserialized_event)),
         DWalletMPCNetworkKey::Ristretto => Ok(dkg_ristretto_session_info(deserialized_event)),
         _ => Err(DwalletMPCError::InvalidMPCPartyType),
