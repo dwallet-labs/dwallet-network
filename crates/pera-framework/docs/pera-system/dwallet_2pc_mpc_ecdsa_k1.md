@@ -2108,7 +2108,11 @@ Pops the last message approval from the vector and verifies it against tje given
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(dwallet_cap_id: ID, message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;, message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval">MessageApproval</a>&gt;) {
+<pre><code><b>fun</b> <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_pop_and_verify_message_approval">pop_and_verify_message_approval</a>(
+    dwallet_cap_id: ID,
+    message: <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;u8&gt;,
+    message_approvals: &<b>mut</b> <a href="../move-stdlib/vector.md#0x1_vector">vector</a>&lt;<a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_MessageApproval">MessageApproval</a>&gt;
+) {
     <b>let</b> message_approval = <a href="../move-stdlib/vector.md#0x1_vector_pop_back">vector::pop_back</a>(message_approvals);
     <b>let</b> (message_approval_dwallet_cap_id, approved_message) = <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_remove_message_approval">remove_message_approval</a>(message_approval);
     <b>assert</b>!(dwallet_cap_id == message_approval_dwallet_cap_id, <a href="dwallet_2pc_mpc_ecdsa_k1.md#0x3_dwallet_2pc_mpc_ecdsa_k1_EMessageApprovalDWalletMismatch">EMessageApprovalDWalletMismatch</a>);
