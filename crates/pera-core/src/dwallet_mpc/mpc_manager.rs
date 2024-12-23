@@ -283,7 +283,7 @@ impl DWalletMPCManager {
             .map(|instance| {
                 (
                     instance.advance(&self.weighted_threshold_access_structure, self.party_id),
-                    instance.session_info.session_id.clone(),
+                    instance.session_info.session_id,
                 )
             })
             .collect::<Vec<_>>()
@@ -291,7 +291,7 @@ impl DWalletMPCManager {
             .into_iter()
             .try_for_each(|(result, session_id)| match result {
                 Ok((message, malicious)) => {
-                    messages.push((message.clone(), session_id));
+                    messages.push((message, session_id));
                     malicious_parties.extend(malicious);
                     Ok(())
                 }
@@ -470,7 +470,7 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    pub fn network_key_version(&self, key_type: DWalletMPCNetworkKey) -> DwalletMPCResult<u8> {
+    pub(super) fn network_key_version(&self, key_type: DWalletMPCNetworkKey) -> DwalletMPCResult<u8> {
         self.epoch_store()?
             .dwallet_mpc_network_keys
             .get()

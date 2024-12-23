@@ -59,11 +59,10 @@ impl DwalletMPCNetworkKeyVersions {
 
     /// Returns the latest version of the given key type.
     pub fn key_version(&self, key_type: DWalletMPCNetworkKey) -> DwalletMPCResult<u8> {
-        let decryption_key_share = self
+        Ok(self
             .validator_decryption_key_share
             .read()
-            .map_err(|_| DwalletMPCError::LockError)?;
-        Ok(decryption_key_share
+            .map_err(|_| DwalletMPCError::LockError)?
             .get(&key_type)
             .ok_or(DwalletMPCError::InvalidMPCPartyType)?
             .len() as u8)
@@ -102,29 +101,25 @@ impl DwalletMPCNetworkKeyVersions {
         self_decryption_key_share: Vec<u8>,
         encryption_of_decryption_shares: Vec<u8>,
     ) -> DwalletMPCResult<()> {
-        let mut decryption_key_share = self
-            .validator_decryption_key_share
+        self.validator_decryption_key_share
             .write()
-            .map_err(|_| DwalletMPCError::LockError)?;
-        // Todo (#382): Replace with the actual type once the DKG protocol is ready.
-        decryption_key_share
-            .entry(key_type.clone())
+            .map_err(|_| DwalletMPCError::LockError)?
+            .entry(key_type)
             .or_insert_with(Vec::new)
             .push(self_decryption_key_share.clone());
 
-        let mut encryption = self
-            .key_shares_versions
+        self.key_shares_versions
             .write()
-            .map_err(|_| DwalletMPCError::LockError)?;
-        encryption.insert(
-            key_type.clone(),
-            vec![EncryptionOfNetworkDecryptionKeyShares {
-                epoch: epoch_store.epoch(),
-                // Todo (#382): Replace with the actual type once the DKG protocol is ready.
-                current_epoch_shares: vec![encryption_of_decryption_shares],
-                previous_epoch_shares: vec![],
-            }],
-        );
+            .map_err(|_| DwalletMPCError::LockError)?
+            .insert(
+                key_type,
+                vec![EncryptionOfNetworkDecryptionKeyShares {
+                    epoch: epoch_store.epoch(),
+                    // Todo (#382): Replace with the actual type once the DKG protocol is ready.
+                    current_epoch_shares: vec![encryption_of_decryption_shares],
+                    previous_epoch_shares: vec![],
+                }],
+            );
 
         let mut status = self
             .status
@@ -145,12 +140,10 @@ impl DwalletMPCNetworkKeyVersions {
         &self,
         key_type: DWalletMPCNetworkKey,
     ) -> DwalletMPCResult<Vec<Vec<u8>>> {
-        let decryption_key_share = self
+        Ok(self
             .validator_decryption_key_share
             .read()
-            .map_err(|_| DwalletMPCError::LockError)?;
-
-        Ok(decryption_key_share
+            .map_err(|_| DwalletMPCError::LockError)?
             .get(&key_type)
             .ok_or(DwalletMPCError::InvalidMPCPartyType)?
             .clone())
@@ -194,7 +187,7 @@ pub(crate) fn advance_network_dkg(
     }?)
 }
 
-pub fn network_dkg_party(
+pub(super) fn network_dkg_party(
     deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<(MPCParty, Vec<u8>, SessionInfo)> {
     match DWalletMPCNetworkKey::try_from(deserialized_event.key_type)? {
@@ -203,7 +196,7 @@ pub fn network_dkg_party(
     }
 }
 
-pub fn network_dkg_session_info(
+pub(super) fn network_dkg_session_info(
     deserialized_event: StartNetworkDKGEvent,
 ) -> DwalletMPCResult<SessionInfo> {
     match DWalletMPCNetworkKey::try_from(deserialized_event.key_type)? {
@@ -253,7 +246,7 @@ fn dkg_ristretto_session_info(deserialized_event: StartNetworkDKGEvent) -> Sessi
 
 // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
 fn generate_secp256k1_dkg_party_public_input(
-    secret_key_share_sized_encryption_keys_and_proofs: HashMap<
+    _secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
         ClassGroupsPublicKeyAndProof,
     >,
