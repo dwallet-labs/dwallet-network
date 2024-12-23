@@ -5,9 +5,8 @@ use crate::dwallet_mpc::dkg::{
 };
 use crate::dwallet_mpc::mpc_events::{
     StartBatchedPresignEvent, StartBatchedSignEvent, StartDKGFirstRoundEvent,
-    StartDKGSecondRoundEvent, StartPresignFirstRoundEvent, StartPresignSecondRoundEvent,
-    StartSignRoundEvent,
-    StartNetworkDKGEvent,
+    StartDKGSecondRoundEvent, StartNetworkDKGEvent, StartPresignFirstRoundEvent,
+    StartPresignSecondRoundEvent, StartSignRoundEvent,
 };
 use crate::dwallet_mpc::mpc_manager::DWalletMPCManager;
 use crate::dwallet_mpc::mpc_party::MPCParty;

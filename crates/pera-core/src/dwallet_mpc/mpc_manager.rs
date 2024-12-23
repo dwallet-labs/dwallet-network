@@ -469,7 +469,10 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    pub(super) fn network_key_version(&self, key_type: DWalletMPCNetworkKey) -> DwalletMPCResult<u8> {
+    pub(super) fn network_key_version(
+        &self,
+        key_type: DWalletMPCNetworkKey,
+    ) -> DwalletMPCResult<u8> {
         self.epoch_store()?
             .dwallet_mpc_network_keys
             .get()
