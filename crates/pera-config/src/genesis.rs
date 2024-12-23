@@ -458,7 +458,8 @@ impl GenesisCeremonyParameters {
     }
 
     fn default_dwallet_admin_address() -> PeraAddress {
-        // This address is configured in the 'parameters' file, which is loaded at genesis if it exists.
+        // This address is configured in the 'parameters' file,
+        // which is loaded at the genesis if it exists.
         PeraAddress::from_str("0xd87602cc701d65a293896ed155a4c1af3228bcad044015eed4d96495d5068413")
             .unwrap_or_default()
     }
