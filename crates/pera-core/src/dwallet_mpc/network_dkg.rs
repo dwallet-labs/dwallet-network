@@ -1,7 +1,9 @@
-/// This module contains the network DKG protocol for the dWallet MPC sessions.
-/// The network DKG protocol is responsible for generating the network decryption key shares.
-/// The module provides the management of the network decryption key shares and the network DKG protocol.
-/// It provides inner mutability for the EpochStore to update the network decryption key shares synchronously.
+//! This module contains the network DKG protocol for the dWallet MPC sessions.
+//! The network DKG protocol handles generating the network Decryption-Key shares.
+//! The module provides the management of the network Decryption-Key shares and
+//! the network DKG protocol.
+//! It provides inner mutability for the [`EpochStore`]
+//! to update the network decryption key shares synchronously.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::advance;
 use crate::dwallet_mpc::dkg::DKGFirstParty;
@@ -202,7 +204,6 @@ pub(super) fn network_dkg_session_info(
     match DWalletMPCNetworkKey::try_from(deserialized_event.key_scheme)? {
         DWalletMPCNetworkKey::Secp256k1 => Ok(dkg_secp256k1_session_info(deserialized_event)),
         DWalletMPCNetworkKey::Ristretto => Ok(dkg_ristretto_session_info(deserialized_event)),
-        _ => Err(DwalletMPCError::InvalidMPCPartyType),
     }
 }
 
@@ -256,7 +257,7 @@ fn generate_secp256k1_dkg_party_public_input(
 
 // Todo (#382): Replace with the actual implementation once the DKG protocol is ready.
 fn generate_ristretto_dkg_party_public_input(
-    secret_key_share_sized_encryption_keys_and_proofs: HashMap<
+    _secret_key_share_sized_encryption_keys_and_proofs: HashMap<
         PartyID,
         ClassGroupsPublicKeyAndProof,
     >,
