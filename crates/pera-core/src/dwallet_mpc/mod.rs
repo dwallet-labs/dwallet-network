@@ -30,7 +30,7 @@ use std::collections::HashMap;
 pub mod batches_manager;
 mod dkg;
 pub(crate) mod mpc_events;
-pub mod mpc_instance;
+pub mod mpc_session;
 pub mod mpc_manager;
 pub mod mpc_outputs_verifier;
 pub(crate) mod mpc_party;

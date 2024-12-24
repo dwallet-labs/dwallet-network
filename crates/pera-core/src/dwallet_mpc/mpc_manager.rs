@@ -4,9 +4,9 @@ use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::error::PeraResult;
 
 use crate::dwallet_mpc::from_event;
-use crate::dwallet_mpc::mpc_instance::DWalletMPCInstance;
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
 use crate::dwallet_mpc::mpc_party::MPCParty;
+use crate::dwallet_mpc::mpc_session::DWalletMPCSession;
 use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeysStatus;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 use dwallet_mpc_types::dwallet_mpc::{
@@ -31,21 +31,21 @@ use twopc_mpc::secp256k1::class_groups::DecryptionKeyShare;
 
 pub type DWalletMPCSender = UnboundedSender<DWalletMPCChannelMessage>;
 
-/// The [`DWalletMPCManager`] manages MPC instances:
-/// — Keeping track of all MPC instances,
-/// — Executing all active instances, and
-/// — (De)activating instances.
+/// The [`DWalletMPCManager`] manages MPC sessions:
+/// — Keeping track of all MPC sessions,
+/// — Executing all active sessions, and
+/// — (De)activating sessions.
 pub struct DWalletMPCManager {
     party_id: PartyID,
-    /// Holds the active MPC instances, cleaned every epoch switch.
-    mpc_instances: HashMap<ObjectID, DWalletMPCInstance>,
-    /// Used to keep track of the order in which pending instances are received,
+    /// Holds the active MPC sessions, cleaned every epoch switch.
+    mpc_sessions: HashMap<ObjectID, DWalletMPCSession>,
+    /// Used to keep track of the order in which pending sessions are received,
     /// so they are activated in order of arrival.
-    pending_instances_queue: VecDeque<DWalletMPCInstance>,
-    // TODO (#257): Make sure the counter is always in sync with the number of active instances.
-    /// Keep track of the active instances to avoid exceeding the limit.
-    /// We can't use the length of `mpc_instances` since it is never cleaned.
-    active_instances_counter: usize,
+    pending_sessions_queue: VecDeque<DWalletMPCSession>,
+    // TODO (#257): Make sure the counter is always in sync with the number of active sessions.
+    /// Keep track of the active sessions to avoid exceeding the limit.
+    /// We can't use the length of `mpc_sessions` since it is never cleaned.
+    active_sessions_counter: usize,
     consensus_adapter: Arc<dyn SubmitToConsensus>,
     pub(super) node_config: NodeConfig,
     epoch_store: Weak<AuthorityPerEpochStore>,
@@ -67,7 +67,7 @@ pub enum DWalletMPCChannelMessage {
     /// A new session event.
     Event(Event, SessionInfo),
     /// Signal delivery of messages has ended,
-    /// now the instances that received a quorum of messages can advance.
+    /// now the sessions that received a quorum of messages can advance.
     EndOfDelivery,
     /// Start locking the next epoch committee by sending a [`ConsensusTransactionKind::LockNextCommittee`] message
     /// to the other validators.
@@ -103,9 +103,9 @@ impl DWalletMPCManager {
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
         let mut manager = Self {
-            mpc_instances: HashMap::new(),
-            pending_instances_queue: VecDeque::new(),
-            active_instances_counter: 0,
+            mpc_sessions: HashMap::new(),
+            pending_sessions_queue: VecDeque::new(),
+            active_sessions_counter: 0,
             consensus_adapter,
             party_id: authority_name_to_party_id(&epoch_store.name.clone(), &epoch_store.clone())?,
             epoch_store: Arc::downgrade(&epoch_store),
@@ -194,7 +194,7 @@ impl DWalletMPCManager {
             &self,
             authority_name_to_party_id(&self.epoch_store()?.name, &*self.epoch_store()?)?,
         ) {
-            self.push_new_mpc_instance(auxiliary_input, party, session_info)?;
+            self.push_new_mpc_session(auxiliary_input, party, session_info)?;
         };
         Ok(())
     }
@@ -224,7 +224,7 @@ impl DWalletMPCManager {
             .map_err(|e| DwalletMPCError::TwoPCMPCError(e.to_string()))
     }
 
-    /// Advance all the MPC instances that either received enough messages
+    /// Advance all the MPC sessions that either received enough messages
     /// or perform the first step of the flow.
     /// We parallelize the advances with `Rayon` to speed up the process.
     pub async fn handle_end_of_delivery(&mut self) -> PeraResult {
@@ -237,12 +237,12 @@ impl DWalletMPCManager {
             .status()?;
 
         let mut ready_to_advance = self
-            .mpc_instances
+            .mpc_sessions
             .iter_mut()
-            .filter_map(|(_, instance)| {
+            .filter_map(|(_, session)| {
                 let received_weight: PartyID =
-                    if let MPCSessionStatus::Active(round) = instance.status {
-                        instance.pending_messages[round]
+                    if let MPCSessionStatus::Active(round) = session.status {
+                        session.pending_messages[round]
                             .keys()
                             .map(|authority_index| {
                                 // Should never be "or"
@@ -257,36 +257,36 @@ impl DWalletMPCManager {
                         0
                     };
 
-                let is_ready = (matches!(instance.status, MPCSessionStatus::Active(_))
+                let is_ready = (matches!(session.status, MPCSessionStatus::Active(_))
                     && received_weight as StakeUnit >= threshold)
-                    || (instance.status == MPCSessionStatus::FirstExecution);
+                    || (session.status == MPCSessionStatus::FirstExecution);
 
                 let mut is_manager_ready = true;
                 if cfg!(feature = "with-network-dkg") {
                     is_manager_ready = (mpc_network_key_status
                         == DwalletMPCNetworkKeysStatus::NotInitialized
-                        && matches!(instance.party(), MPCParty::NetworkDkg(_)))
+                        && matches!(session.party(), MPCParty::NetworkDkg(_)))
                         || matches!(
                             mpc_network_key_status,
                             DwalletMPCNetworkKeysStatus::Ready(_)
                         )
                 }
                 if is_ready && is_manager_ready {
-                    Some(instance)
+                    Some(session)
                 } else {
                     None
                 }
             })
-            .collect::<Vec<&mut DWalletMPCInstance>>();
+            .collect::<Vec<&mut DWalletMPCSession>>();
 
         let mut malicious_parties = vec![];
         let mut messages = vec![];
         ready_to_advance
             .par_iter_mut()
-            .map(|instance| {
+            .map(|session| {
                 (
-                    instance.advance(&self.weighted_threshold_access_structure, self.party_id),
-                    instance.session_info.session_id,
+                    session.advance(&self.weighted_threshold_access_structure, self.party_id),
+                    session.session_info.session_id,
                 )
             })
             .collect::<Vec<_>>()
@@ -312,15 +312,15 @@ impl DWalletMPCManager {
         // are a [soft bundle](https://github.com/sui-foundation/sips/pull/19).
         for (message, session_id) in messages {
             // Update the manager with the new network decryption key share (if relevant).
-            let instance = self
-                .mpc_instances
+            let session = self
+                .mpc_sessions
                 .get(&session_id)
                 .ok_or(DwalletMPCError::MPCSessionNotFound { session_id })?;
             if let MPCSessionStatus::Finished(public_output, private_output) =
-                instance.status.clone()
+                session.status.clone()
             {
                 self.update_dwallet_mpc_network_key(
-                    &instance.session_info,
+                    &session.session_info,
                     public_output,
                     private_output,
                 )?;
@@ -364,8 +364,8 @@ impl DWalletMPCManager {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
-    /// Handles a message by forwarding it to the relevant MPC instance
-    /// If the instance does not exist, punish the sender.
+    /// Handles a message by forwarding it to the relevant MPC session.
+    /// If the session does not exist, punish the sender.
     pub(crate) fn handle_message(
         &mut self,
         message: &[u8],
@@ -375,18 +375,18 @@ impl DWalletMPCManager {
         if self.malicious_actors.contains(&authority_name) {
             return Ok(());
         }
-        let instance = match self.mpc_instances.get_mut(&session_id) {
-            Some(instance) => instance,
+        let session = match self.mpc_sessions.get_mut(&session_id) {
+            Some(session) => session,
             None => {
                 warn!(
-                    "received a message for instance {:?} which does not exist",
+                    "received a message for an MPC session ID: `{:?}` which does not exist",
                     session_id
                 );
                 self.malicious_actors.insert(authority_name);
                 return Ok(());
             }
         };
-        match instance.handle_message(&DWalletMPCMessage {
+        match session.handle_message(&DWalletMPCMessage {
             message: message.to_vec(),
             authority: authority_name,
         }) {
@@ -421,15 +421,15 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    /// Spawns a new MPC instance if the number of active instances is below the limit.
-    /// Otherwise, add the instance to the pending queue.
-    pub(crate) fn push_new_mpc_instance(
+    /// Spawns a new MPC session if the number of active sessions is below the limit.
+    /// Otherwise, add the session to the pending queue.
+    pub(crate) fn push_new_mpc_session(
         &mut self,
         auxiliary_input: Vec<u8>,
         party: MPCParty,
         session_info: SessionInfo,
     ) -> DwalletMPCResult<()> {
-        if self.mpc_instances.contains_key(&session_info.session_id) {
+        if self.mpc_sessions.contains_key(&session_info.session_id) {
             // This should never happen, as the session ID is a Move UniqueID.
             error!(
                 "received start flow event for session ID {:?} that already exists",
@@ -441,7 +441,7 @@ impl DWalletMPCManager {
             "Received start MPC flow event for session ID {:?}",
             session_info.session_id
         );
-        let mut new_instance = DWalletMPCInstance::new(
+        let mut new_session = DWalletMPCSession::new(
             self.epoch_store.clone(),
             self.epoch_id,
             party,
@@ -451,20 +451,20 @@ impl DWalletMPCManager {
         );
         // TODO (#311): Make sure validator don't mark other validators
         // TODO (#311): as malicious or take any active action while syncing
-        if self.active_instances_counter > self.max_active_mpc_sessions {
-            self.pending_instances_queue.push_back(new_instance);
+        if self.active_sessions_counter > self.max_active_mpc_sessions {
+            self.pending_sessions_queue.push_back(new_session);
             info!(
-                "Added MPCInstance to pending queue for session_id {:?}",
+                "Added MPCSession to pending queue for session_id {:?}",
                 &session_info.session_id
             );
             return Ok(());
         }
-        new_instance.status = MPCSessionStatus::FirstExecution;
-        self.mpc_instances
-            .insert(session_info.session_id, new_instance);
-        self.active_instances_counter += 1;
+        new_session.status = MPCSessionStatus::FirstExecution;
+        self.mpc_sessions
+            .insert(session_info.session_id, new_session);
+        self.active_sessions_counter += 1;
         info!(
-            "Added MPCInstance to MPC manager for session_id {:?}",
+            "Added MPCSession to MPC manager for session_id {:?}",
             session_info.session_id
         );
         Ok(())

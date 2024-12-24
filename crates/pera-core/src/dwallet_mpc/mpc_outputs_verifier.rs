@@ -13,10 +13,9 @@ use std::collections::{HashMap, HashSet};
 /// It stores all the outputs received for each session,
 /// and decides whether an output is valid
 /// by checking if a validators with quorum of stake voted for it.
-/// todo(zeev): rename instance to session.
 pub struct DWalletMPCOutputsVerifier {
-    /// The outputs received for each instance.
-    pub mpc_instances_outputs: HashMap<ObjectID, InstanceOutputsData>,
+    /// The outputs received for each MPC session.
+    pub mpc_sessions_outputs: HashMap<ObjectID, SessionOutputsData>,
     /// A mapping between an authority name to its stake.
     /// todo(zeev): can we use the data from the manager?
     pub weighted_parties: HashMap<AuthorityName, StakeUnit>,
@@ -26,9 +25,9 @@ pub struct DWalletMPCOutputsVerifier {
     voted_to_lock_committee: HashSet<AuthorityName>,
 }
 
-/// The data needed to manage the outputs of an MPC instance.
+/// The data needed to manage the outputs of an MPC session.
 #[derive(Clone)]
-pub struct InstanceOutputsData {
+pub struct SessionOutputsData {
     // todo(zeev): cleanup.
     /// Maps session's output to the authorities that voted for it.
     pub session_output_to_voting_authorities:
@@ -57,7 +56,7 @@ impl DWalletMPCOutputsVerifier {
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
         DWalletMPCOutputsVerifier {
             quorum_threshold: epoch_store.committee().quorum_threshold(),
-            mpc_instances_outputs: HashMap::new(),
+            mpc_sessions_outputs: HashMap::new(),
             weighted_parties: epoch_store
                 .committee()
                 .voting_rights
@@ -92,7 +91,7 @@ impl DWalletMPCOutputsVerifier {
         session_info: &SessionInfo,
         origin_authority: AuthorityName,
     ) -> anyhow::Result<OutputVerificationResult> {
-        let Some(ref mut session) = self.mpc_instances_outputs.get_mut(&session_info.session_id)
+        let Some(ref mut session) = self.mpc_sessions_outputs.get_mut(&session_info.session_id)
         else {
             return Ok(OutputVerificationResult {
                 result: OutputResult::Malicious,
@@ -155,13 +154,9 @@ impl DWalletMPCOutputsVerifier {
     /// Needed, so we'll know when we receive a malicious output
     /// that related to a non-existing session.
     pub fn handle_new_event(&mut self, session_info: &SessionInfo) {
-        self.insert_new_output_instance(&session_info.session_id);
-    }
-
-    pub fn insert_new_output_instance(&mut self, session_id: &ObjectID) {
-        self.mpc_instances_outputs.insert(
-            session_id.clone(),
-            InstanceOutputsData {
+        self.mpc_sessions_outputs.insert(
+            session_info.session_id,
+            SessionOutputsData {
                 session_output_to_voting_authorities: HashMap::new(),
                 authorities_that_sent_output: HashSet::new(),
             },

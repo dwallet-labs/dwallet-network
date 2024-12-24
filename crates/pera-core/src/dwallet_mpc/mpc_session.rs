@@ -15,15 +15,14 @@ use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
 use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 
-// todo(zeev): rename to session.
-/// A dWallet MPC session instance
-/// It keeps track of the session, the channel to send messages to the instance,
-/// and the messages that are pending to be sent to the instance.
-pub(super) struct DWalletMPCInstance {
-    /// The status of the MPC instance.
+/// A dWallet MPC session.
+/// It keeps track of the session, the channel to send messages to the session,
+/// and the messages that are pending to be sent to the session.
+pub(super) struct DWalletMPCSession {
+    /// The status of the MPC session.
     pub(super) status: MPCSessionStatus,
-    /// The messages that are pending to be executed while advancing the instance
-    /// We need to accumulate a threshold of those before advancing the instance.
+    /// The messages that are pending to be executed while advancing the session
+    /// We need to accumulate a threshold of those before advancing the session.
     pub(super) pending_messages: Vec<HashMap<PartyID, Vec<u8>>>,
     epoch_store: Weak<AuthorityPerEpochStore>,
     epoch_id: EpochId,
@@ -39,11 +38,11 @@ pub(super) struct DWalletMPCInstance {
     pub(super) public_input: MPCPublicInput,
 }
 
-/// Needed to be able to iterate over a vector of generic MPCInstances with Rayon.
-unsafe impl Send for DWalletMPCInstance {}
+/// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
+unsafe impl Send for DWalletMPCSession {}
 
 // todo(zeev): rename to DwalletMPCSession.
-impl DWalletMPCInstance {
+impl DWalletMPCSession {
     pub(crate) fn new(
         epoch_store: Weak<AuthorityPerEpochStore>,
         epoch: EpochId,
@@ -69,7 +68,7 @@ impl DWalletMPCInstance {
             .ok_or(DwalletMPCError::EpochEnded(self.epoch_id))
     }
 
-    /// Advances the MPC instance and optionally return a message the validator wants
+    /// Advances the MPC session and optionally return a message the validator wants
     /// to send to the other MPC parties.
     /// Uses the existing party if it exists,
     /// otherwise creates a new one, as this is the first advance.
@@ -144,10 +143,10 @@ impl DWalletMPCInstance {
         }
     }
 
-    /// A function to restart an MPC instance.
-    /// Being called when instance advancement has failed due to malicious parties.
+    /// A function to restart an MPC session.
+    /// Being called when session advancement has failed due to malicious parties.
     /// Those parties will be flagged as malicious and ignored,
-    /// the instance will be restarted.
+    /// the session will be restarted.
     fn restart(&mut self) {
         self.status = MPCSessionStatus::FirstExecution;
     }
