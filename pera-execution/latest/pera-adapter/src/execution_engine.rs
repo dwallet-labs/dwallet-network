@@ -1169,19 +1169,13 @@ mod checked {
                     ],
                 )
             }
-            MPCRound::Sign(..) | MPCRound::BatchedSign(..) => {
-                // todo(zeev): why we need this if the output is created by the user?
-                let MPCRound::Sign(batch_session_id, _) = data.session_info.mpc_round else {
-                    unreachable!("MPCRound is not Sign for a sign session")
-                };
-                (
-                    "create_sign_output",
-                    vec![
-                        CallArg::Pure(data.output),
-                        CallArg::Pure(bcs::to_bytes(&batch_session_id).unwrap()),
-                    ],
-                )
-            }
+            MPCRound::Sign(session_id, _) => (
+                "create_sign_output",
+                vec![
+                    CallArg::Pure(data.output),
+                    CallArg::Pure(bcs::to_bytes(&session_id).unwrap()),
+                ],
+            ),
             MPCRound::NetworkDkg(key_type) => {
                 module_name = PERA_SYSTEM_MODULE_NAME;
                 (

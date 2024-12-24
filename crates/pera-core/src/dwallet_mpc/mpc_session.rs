@@ -41,7 +41,6 @@ pub(super) struct DWalletMPCSession {
 /// Needed to be able to iterate over a vector of generic DWalletMPCSession with Rayon.
 unsafe impl Send for DWalletMPCSession {}
 
-// todo(zeev): rename to DwalletMPCSession.
 impl DWalletMPCSession {
     pub(crate) fn new(
         epoch_store: Weak<AuthorityPerEpochStore>,
@@ -166,10 +165,7 @@ impl DWalletMPCSession {
 
     /// Create a new consensus transaction with the flow result (output) to be
     /// sent to the other MPC parties.
-    /// Returns `None` if the epoch switched in the middle and was not available
-    /// or if this party is not the aggregator.
-    /// Only the aggregator party should send the output to the other parties.
-    /// todo(zeev): I thought everyone is sending?
+    /// Errors if the epoch was switched in the middle and was not available.
     fn new_dwallet_mpc_output_message(
         &self,
         output: Vec<u8>,

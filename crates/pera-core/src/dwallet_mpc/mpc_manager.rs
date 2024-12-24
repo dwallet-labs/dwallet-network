@@ -94,11 +94,11 @@ impl DWalletMPCManager {
                 ))
             })
             .collect::<DwalletMPCResult<HashMap<PartyID, Weight>>>()?;
-        let weighted_threshold_access_structure = WeightedThresholdAccessStructure::new(
-            epoch_store.committee().quorum_threshold() as PartyID,
-            weighted_parties,
-        )
-        .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
+
+        let quorum_threshold = epoch_store.committee().quorum_threshold();
+        let weighted_threshold_access_structure =
+            WeightedThresholdAccessStructure::new(quorum_threshold as PartyID, weighted_parties)
+                .map_err(|e| DwalletMPCError::MPCManagerError(format!("{}", e)))?;
 
         let (sender, mut receiver) =
             tokio::sync::mpsc::unbounded_channel::<DWalletMPCChannelMessage>();
@@ -199,7 +199,16 @@ impl DWalletMPCManager {
         Ok(())
     }
 
-    // todo(zeev): doc this.
+    /// Retrieves the decryption share for the current authority.
+    ///
+    /// This function accesses the current epoch's store and determines the party ID for the
+    /// authority using its name.
+    /// It then retrieves the corresponding decryption share from
+    /// the node configuration.
+    /// The decryption share is combined with the public parameters
+    /// to build a [`DecryptionKeyShare`].
+    /// If any required data is missing or invalid, an
+    /// appropriate error is returned.
     pub fn get_decryption_share(&self) -> DwalletMPCResult<DecryptionKeyShare> {
         let epoch_store = self.epoch_store()?;
         let party_id = authority_name_to_party_id(&epoch_store.name, &epoch_store)?;
@@ -302,7 +311,6 @@ impl DWalletMPCManager {
                     malicious_parties.extend(malicious);
                     Ok(())
                 }
-                // todo(zeev): if there is a fatal error, should we abort?
                 Err(e) => Err(e),
             })?;
 
@@ -401,7 +409,7 @@ impl DWalletMPCManager {
     /// Convert the indices of the malicious parties to their addresses and store them
     /// in the malicious actors set.
     /// New messages from these parties will be ignored.
-    /// todo(zeev): clarify if it's restarted on epoch change.
+    /// Restarted for each epoch.
     fn flag_parties_as_malicious(&mut self, malicious_parties: &[PartyID]) -> DwalletMPCResult<()> {
         let malicious_parties_names = malicious_parties
             .iter()

@@ -19,12 +19,10 @@ pub fn create_dkg_centralized_output(
         .map_err(|e| JsError::new(&e.to_string()))
 }
 
-// todo(zeev): why sign output was moved?
 #[wasm_bindgen]
 pub fn create_sign_centralized_output(
     centralized_party_dkg_output: Vec<u8>,
     presigns: Vec<u8>,
-    // todo(zeev): Vec<Vec<u8>> here.
     messages: Vec<u8>,
     hash_type: u8,
     session_ids: Vec<u8>,

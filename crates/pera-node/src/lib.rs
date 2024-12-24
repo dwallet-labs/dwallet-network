@@ -1296,9 +1296,10 @@ impl PeraNode {
         }
 
         // Start the dWallet MPC manager on epoch start.
+        // todo(zeev): Itay, we should doc this and explain the diff from Manager.
         epoch_store.set_dwallet_mpc_network_keys();
         epoch_store
-            .set_dwallet_mpc_outputs_manager(DWalletMPCOutputsVerifier::new(&epoch_store))?;
+            .set_dwallet_mpc_outputs_verifier(DWalletMPCOutputsVerifier::new(&epoch_store))?;
 
         epoch_store.set_dwallet_mpc_batches_manager(DWalletMPCBatchesManager::new())?;
 
