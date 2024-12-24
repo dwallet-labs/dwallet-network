@@ -2,6 +2,7 @@
 title: Module `0x3::dwallet_network_key`
 ---
 
+This module manages the storage of the network dWallet MPC keys and associated data.
 
 
 -  [Struct `StartNetworkDKGEvent`](#0x3_dwallet_network_key_StartNetworkDKGEvent)
