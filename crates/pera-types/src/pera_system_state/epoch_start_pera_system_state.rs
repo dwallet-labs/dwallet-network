@@ -7,7 +7,6 @@ use std::collections::{BTreeMap, HashMap};
 use crate::base_types::{AuthorityName, EpochId, PeraAddress};
 use crate::collection_types::VecMap;
 use crate::committee::{Committee, CommitteeWithNetworkMetadata, NetworkMetadata, StakeUnit};
-use crate::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
 use crate::multiaddr::Multiaddr;
 use anemo::types::{PeerAffinity, PeerInfo};
 use anemo::PeerId;
@@ -15,6 +14,7 @@ use consensus_config::{
     Authority, AuthorityPublicKey, Committee as ConsensusCommittee, NetworkPublicKey,
     ProtocolPublicKey,
 };
+use dwallet_mpc_types::dwallet_mpc::NetworkDecryptionKeyShares;
 use narwhal_config::{Committee as NarwhalCommittee, CommitteeBuilder, WorkerCache, WorkerIndex};
 use pera_protocol_config::ProtocolVersion;
 use serde::{Deserialize, Serialize};
@@ -61,7 +61,7 @@ impl EpochStartSystemState {
         epoch_start_timestamp_ms: u64,
         epoch_duration_ms: u64,
         active_validators: Vec<EpochStartValidatorInfoV1>,
-        decryption_key_shares: Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>>,
+        decryption_key_shares: Option<VecMap<u8, Vec<NetworkDecryptionKeyShares>>>,
     ) -> Self {
         Self::V1(EpochStartSystemStateV1 {
             epoch,
@@ -105,13 +105,11 @@ pub struct EpochStartSystemStateV1 {
     epoch_start_timestamp_ms: u64,
     epoch_duration_ms: u64,
     active_validators: Vec<EpochStartValidatorInfoV1>,
-    decryption_key_shares: Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>>,
+    decryption_key_shares: Option<VecMap<u8, Vec<NetworkDecryptionKeyShares>>>,
 }
 
 impl EpochStartSystemStateV1 {
-    pub fn get_decryption_key_shares(
-        &self,
-    ) -> Option<VecMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>> {
+    pub fn get_decryption_key_shares(&self) -> Option<VecMap<u8, Vec<NetworkDecryptionKeyShares>>> {
         self.decryption_key_shares.clone()
     }
 

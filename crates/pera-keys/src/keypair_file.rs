@@ -4,7 +4,7 @@
 use std::path::PathBuf;
 
 use anyhow::anyhow;
-use dwallet_mpc_types::ClassGroupsKeyPairAndProof;
+use dwallet_classgroups_types::ClassGroupsKeyPairAndProof;
 use fastcrypto::encoding::{Base64, Encoding, Hex};
 use fastcrypto::{secp256k1::Secp256k1KeyPair, traits::EncodeDecodeBase64};
 use pera_types::crypto::{AuthorityKeyPair, NetworkKeyPair, PeraKeyPair, ToFromBytes};
@@ -16,7 +16,7 @@ pub fn write_class_groups_keypair_and_proof_to_file<P: AsRef<std::path::Path>>(
     let serialized = serde_json::to_vec(&keypair)?;
     let contents = Base64::encode(serialized);
     std::fs::write(path, contents)?;
-    Ok(Base64::encode(keypair.public_bytes()))
+    Ok(Base64::encode(keypair.public_bytes()?))
 }
 
 /// Write Base64 encoded `flag || privkey` to file.

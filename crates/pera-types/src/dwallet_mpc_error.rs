@@ -1,5 +1,5 @@
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
-use crate::dwallet_mpc::DWalletMPCNetworkKey;
+use dwallet_mpc_types::dwallet_mpc::DwalletNetworkMPCError;
 use group::PartyID;
 // todo(zeev): remove unused errors.
 
@@ -52,8 +52,17 @@ pub enum DwalletMPCError {
     #[error("missing MPC class groups decryption shares in config")]
     MissingDwalletMPCClassGroupsDecryptionShares,
 
-    #[error("missing DWallet MPC outputs manager")]
-    MissingDwalletMPCOutputsManager,
+    #[error("missing DWallet MPC outputs verifier")]
+    MissingDwalletMPCOutputsVerifier,
+
+    #[error("missing DWallet MPC batches manager")]
+    MissingDWalletMPCBatchesManager,
+
+    #[error("missing dWallet MPC Sender")]
+    MissingDWalletMPCSender,
+
+    #[error("dwallet MPC Sender failed: {0}")]
+    DWalletMPCSenderSendFailed(String),
 
     #[error("MPC class groups decryption share missing for the party ID: {0}")]
     DwalletMPCClassGroupsDecryptionShareMissing(PartyID),
@@ -94,6 +103,9 @@ pub enum DwalletMPCError {
 
     #[error("failed to lock the mutex")]
     LockError,
+
+    #[error(transparent)]
+    DwalletNetworkMPCError(#[from] DwalletNetworkMPCError),
 }
 
 /// A wrapper type for the result of a runtime operation.

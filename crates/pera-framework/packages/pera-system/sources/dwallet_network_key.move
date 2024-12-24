@@ -1,3 +1,4 @@
+/// This module manages the storage of the network dWallet MPC keys and associated data.
 module pera_system::dwallet_network_key {
     use pera::event;
 
@@ -29,19 +30,19 @@ module pera_system::dwallet_network_key {
     }
 
     /// Struct to store the network encryption of decryption key shares
-    public struct EncryptionOfNetworkDecryptionKeyShares has store, copy {
+    public struct NetworkDecryptionKeyShares has store, copy {
         epoch: u64,
         current_epoch_shares: vector<vector<u8>>,
         previous_epoch_shares: vector<vector<u8>>,
     }
 
-    /// Function to create a new EncryptionOfNetworkDecryptionKeyShares.
+    /// Function to create a new NetworkDecryptionKeyShares.
     public(package) fun new_encrypted_network_decryption_key_shares(
         epoch: u64,
         current_epoch_shares: vector<vector<u8>>,
         previous_epoch_shares: vector<vector<u8>>
-    ): EncryptionOfNetworkDecryptionKeyShares {
-        EncryptionOfNetworkDecryptionKeyShares {
+    ): NetworkDecryptionKeyShares {
+        NetworkDecryptionKeyShares {
             epoch,
             current_epoch_shares,
             previous_epoch_shares,
@@ -50,7 +51,7 @@ module pera_system::dwallet_network_key {
 
     /// Function to update the shares of the network encryption of decryption key.
     public fun update_new_shares(
-        self: &mut EncryptionOfNetworkDecryptionKeyShares,
+        self: &mut NetworkDecryptionKeyShares,
         new_shares: vector<vector<u8>>,
         epoch: u64
     ) {

@@ -152,7 +152,6 @@ impl StartPresignSecondRoundEvent {
     }
 }
 
-// todo(zeev): check this.
 /// Represents the Rust version of the Move
 /// struct `pera_system::dwallet::StartSignRoundEvent`.
 #[derive(Debug, Serialize, Deserialize, Clone, JsonSchema, Eq, PartialEq)]
@@ -221,13 +220,13 @@ impl StartBatchedPresignEvent {
 
 /// Rust version of the Move [`pera_system::validator_set::LockedNextEpochCommitteeEvent`] type.
 pub struct LockedNextEpochCommitteeEvent {
-    next_committee_validators: Vec<ValidatorDataForDWalletSecretReShare>,
-    epoch: u64,
+    _next_committee_validators: Vec<ValidatorDataForDWalletSecretReShare>,
+    _epoch: u64,
 }
 
 struct ValidatorDataForDWalletSecretReShare {
-    class_groups_public_key_and_proof_bytes: Vec<u8>,
-    protocol_pubkey_bytes: Vec<u8>,
+    _class_groups_public_key_and_proof_bytes: Vec<u8>,
+    _protocol_pubkey_bytes: Vec<u8>,
 }
 
 impl LockedNextEpochCommitteeEvent {

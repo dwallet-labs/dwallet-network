@@ -45,10 +45,10 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         message: vector<u8>,
     }
 
-    /// A struct to hold the output of the first round of the DKG.
-    /// An instance of this struct is being transferred to the user that initiated the DKG after
-    /// the first round is completed.
-    /// The user can then use this output to start the second round of the DKG.
+    /// An event being emitted when the DKG first round is completed by the blockchain.
+    /// The user should catch this event to get the output of the first round,
+    /// use it to generate the needed input for the second round, and then call the
+    /// [`launch_dkg_second_round`] function to start the second round.
     public struct DKGFirstRoundOutputEvent has copy, drop {
         session_id: ID,
         output: vector<u8>,
@@ -894,7 +894,8 @@ module pera_system::dwallet_2pc_mpc_ecdsa_k1 {
         let dwallet_cap_id = object::id(&dwallet_cap);
         transfer::public_transfer(dwallet_cap, tx_context::sender(ctx));
         let session_id = object::id_from_address(tx_context::fresh_object_address(ctx));
-        dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, 1, ctx)
+        let dwallet_mpc_network_key_version: u8 = 1;
+        dwallet::create_dwallet<Secp256K1>(session_id, dwallet_cap_id, dkg_output, dwallet_mpc_network_key_version, ctx)
     }
 
     /// Generates a new mock `Presign` object with random IDs and data.

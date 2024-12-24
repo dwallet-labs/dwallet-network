@@ -225,7 +225,6 @@ dependencies = [
  "base64",
  "bcs",
  "group 0.1.0",
- "serde",
  "twopc_mpc",
 ]
 
