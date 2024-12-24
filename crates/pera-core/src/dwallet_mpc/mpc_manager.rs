@@ -245,7 +245,7 @@ impl DWalletMPCManager {
                         instance.pending_messages[round]
                             .keys()
                             .map(|authority_index| {
-                                // should never be "or"
+                                // Should never be "or"
                                 // as we receive messages only from known authorities.
                                 self.weighted_threshold_access_structure
                                     .party_to_weight

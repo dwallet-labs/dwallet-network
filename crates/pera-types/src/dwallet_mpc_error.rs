@@ -105,7 +105,7 @@ pub enum DwalletMPCError {
     LockError,
 
     #[error(transparent)]
-    DwalletNetworkMPCError(#[from] DwalletNetworkMPCError), // Automatically derive From for CustomError
+    DwalletNetworkMPCError(#[from] DwalletNetworkMPCError),
 }
 
 /// A wrapper type for the result of a runtime operation.
