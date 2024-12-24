@@ -19,7 +19,7 @@ use dwallet_mpc_types::class_groups_key::{
 };
 use group::{ristretto, secp256k1, PartyID};
 use homomorphic_encryption::AdditivelyHomomorphicDecryptionKeyShare;
-use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, WeightedThresholdAccessStructure};
+use mpc::{AsynchronousRoundResult, AsynchronouslyAdvanceable, Party, WeightedThresholdAccessStructure};
 use pera_types::dwallet_mpc::{DWalletMPCNetworkKeyScheme, DwalletMPCNetworkKey};
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -123,10 +123,11 @@ impl DwalletMPCNetworkKeyVersions {
         key_type: DWalletMPCNetworkKeyScheme,
         self_decryption_key_share: HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>,
         dkg_public_output: Vec<u8>,
+        access_structure: &WeightedThresholdAccessStructure
     ) -> DwalletMPCResult<()> {
         let mut inner = self.inner.write().map_err(|_| DwalletMPCError::LockError)?;
 
-        let new_key_version = Self::new_dwallet_mpc_network_key(dkg_public_output, key_type, epoch_store.epoch())?;
+        let new_key_version = Self::new_dwallet_mpc_network_key(dkg_public_output, key_type, epoch_store.epoch(), access_structure)?;
         let pp = bcs::from_bytes(&new_key_version.protocol_public_parameters)?;
         let self_decryption_key_share = self_decryption_key_share
             .into_iter()
@@ -158,13 +159,13 @@ impl DwalletMPCNetworkKeyVersions {
     fn new_dwallet_mpc_network_key(dkg_output: Vec<u8>, key_scheme: DWalletMPCNetworkKeyScheme, epoch: u64, access_structure: &WeightedThresholdAccessStructure) -> DwalletMPCResult<DwalletMPCNetworkKey> {
         match key_scheme {
             DWalletMPCNetworkKeyScheme::Secp256k1 => {
-                let dkg_output: Secp256k1Party::PublicOutput = bcs::from_bytes(&dkg_output)?;
+                let dkg_output: <Secp256k1Party as Party>::PublicOutput = bcs::from_bytes(&dkg_output)?;
                 Ok(DwalletMPCNetworkKey {
                     epoch,
                     current_epoch_shares: vec![bcs::to_bytes(&dkg_output.encryptions_of_shares_per_crt_prime)?],
                     previous_epoch_shares: vec![],
-                    protocol_public_parameters: bcs::to_bytes(&dkg_output.default_encryption_scheme_public_parameters())?,
-                    decryption_public_parameters: bcs::to_bytes(&dkg_output.default_decryption_key_share_public_parameters(access_structure))?,
+                    protocol_public_parameters: bcs::to_bytes(&dkg_output.default_encryption_scheme_public_parameters().map_err(|| DwalletMPCError::ClassGroupsError)?)?,
+                    decryption_public_parameters: bcs::to_bytes(&dkg_output.default_decryption_key_share_public_parameters(access_structure).map_err(||DwalletMPCError::ClassGroupsError)?)?,
                 })
             }
             DWalletMPCNetworkKeyScheme::Ristretto => {

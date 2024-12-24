@@ -333,6 +333,7 @@ impl DWalletMPCManager {
                         &instance.session_info,
                         public_output,
                         private_output,
+                        &self.weighted_threshold_access_structure,
                     )?;
                 }
         }
@@ -351,6 +352,7 @@ impl DWalletMPCManager {
         session_info: &SessionInfo,
         public_output: MPCPublicOutput,
         private_output: HashMap<PartyID, class_groups::SecretKeyShareSizedNumber>,
+        access_structure: &WeightedThresholdAccessStructure,
     ) -> DwalletMPCResult<()> {
         if let MPCRound::NetworkDkg(key_type) = session_info.mpc_round {
             let epoch_store = self.epoch_store()?;
@@ -364,6 +366,7 @@ impl DWalletMPCManager {
                 key_type,
                 private_output,
                 public_output,
+                &self.weighted_threshold_access_structure
             )?;
         }
         Ok(())

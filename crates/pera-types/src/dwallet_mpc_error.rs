@@ -94,6 +94,9 @@ pub enum DwalletMPCError {
 
     #[error("failed to lock the mutex")]
     LockError,
+
+    #[error("class groups error occurred in the dWallet MPC")]
+    ClassGroupsError,
 }
 
 /// A wrapper type for the result of a runtime operation.

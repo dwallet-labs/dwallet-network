@@ -39,7 +39,6 @@ pub(crate) mod mpc_party;
 pub mod network_dkg;
 mod presign;
 pub(crate) mod sign;
-pub mod dwallet_network_mpc_keys;
 
 pub const FIRST_EPOCH_ID: EpochId = 0;
 
