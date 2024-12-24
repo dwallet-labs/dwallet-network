@@ -16,7 +16,6 @@ use crate::dwallet_mpc::mpc_party::MPCParty;
 use crate::dwallet_mpc::{authority_name_to_party_id, DWalletMPCMessage};
 
 // todo(zeev): rename to session.
-
 /// A dWallet MPC session instance
 /// It keeps track of the session, the channel to send messages to the instance,
 /// and the messages that are pending to be sent to the instance.
@@ -125,10 +124,10 @@ impl DWalletMPCInstance {
             }
             Ok(AsynchronousRoundResult::Finalize {
                 malicious_parties,
-                private_output: _,
+                private_output,
                 public_output,
             }) => {
-                self.status = MPCSessionStatus::Finished(public_output.clone().into());
+                self.status = MPCSessionStatus::Finished(public_output.clone(), private_output);
                 Ok((
                     self.new_dwallet_mpc_output_message(public_output)?,
                     malicious_parties,
@@ -146,8 +145,9 @@ impl DWalletMPCInstance {
     }
 
     /// A function to restart an MPC instance.
-    /// Being called when an instance advancement have been failed due to malicious parties.
-    /// Those parties will be flagged as malicious and ignored, the instance will be restarted.
+    /// Being called when instance advancement has failed due to malicious parties.
+    /// Those parties will be flagged as malicious and ignored,
+    /// the instance will be restarted.
     fn restart(&mut self) {
         self.status = MPCSessionStatus::FirstExecution;
     }

@@ -4,7 +4,6 @@
 //! by checking if a validators with quorum of stake voted for it.
 //! Any validator that voted for a different output is considered malicious.
 use crate::authority::authority_per_epoch_store::AuthorityPerEpochStore;
-use dwallet_mpc_types::dwallet_mpc::DWalletMPCNetworkKey;
 use pera_types::base_types::{AuthorityName, ObjectID};
 use pera_types::committee::StakeUnit;
 use pera_types::messages_dwallet_mpc::SessionInfo;
@@ -25,7 +24,6 @@ pub struct DWalletMPCOutputsVerifier {
     pub quorum_threshold: StakeUnit,
     pub completed_locking_next_committee: bool,
     voted_to_lock_committee: HashSet<AuthorityName>,
-    network_key_version: u8,
 }
 
 /// The data needed to manage the outputs of an MPC instance.
@@ -57,35 +55,18 @@ pub struct OutputVerificationResult {
 
 impl DWalletMPCOutputsVerifier {
     pub fn new(epoch_store: &AuthorityPerEpochStore) -> Self {
-        let quorum_threshold = epoch_store.committee().quorum_threshold();
-        let weighted_parties = epoch_store
-            .committee()
-            .voting_rights
-            .clone()
-            .into_iter()
-            .collect();
-
-        let network_key_version = epoch_store
-            .get_encryption_of_decryption_key_shares()
-            // Default to an empty HashMap if the key is not found.
-            .unwrap_or_default()
-            .get(&(DWalletMPCNetworkKey::Secp256k1 as u8))
-            .map(|versions| versions.len() as u8)
-            .unwrap_or(1);
-
         DWalletMPCOutputsVerifier {
-            quorum_threshold,
+            quorum_threshold: epoch_store.committee().quorum_threshold(),
             mpc_instances_outputs: HashMap::new(),
-            weighted_parties,
+            weighted_parties: epoch_store
+                .committee()
+                .voting_rights
+                .clone()
+                .into_iter()
+                .collect(),
             completed_locking_next_committee: false,
             voted_to_lock_committee: HashSet::new(),
-            // Todo (#394): Remove hardcoded network key version.
-            network_key_version,
         }
-    }
-
-    pub fn network_key_version(&self) -> u8 {
-        self.network_key_version
     }
 
     /// Returns true if the `lock_next_epoch_committee` system TX should get called, a.k.a. a quorum of validators voted for it,

@@ -5,7 +5,7 @@
 //! When a batch is completed, it returns the output of the entire batch,
 //! which can be written to the chain through a system transaction.
 use crate::dwallet_mpc::mpc_party::AsyncProtocol;
-use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCOutput};
+use dwallet_mpc_types::dwallet_mpc::{MPCMessage, MPCPublicOutput};
 use pera_types::base_types::ObjectID;
 use pera_types::dwallet_mpc_error::{DwalletMPCError, DwalletMPCResult};
 use pera_types::messages_dwallet_mpc::{MPCRound, SessionInfo};
@@ -23,7 +23,7 @@ pub struct BatchedSignSession {
     /// When this map contains all the hashed messages,
     /// the batched sign session is ready to be written to the chain.
     /// HashedMsg -> Sign Output.
-    hashed_msg_to_signature: HashMap<Vec<u8>, MPCOutput>,
+    hashed_msg_to_signature: HashMap<Vec<u8>, MPCPublicOutput>,
     /// A list of all the messages that need to be signed,
     /// in the order they were received.
     /// The output list of signatures will be written to the chain in the same order.

@@ -1,6 +1,7 @@
 use move_core_types::{ident_str, identifier::IdentStr};
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use thiserror::Error;
 
 pub const DWALLET_2PC_MPC_ECDSA_K1_MODULE_NAME: &IdentStr = ident_str!("dwallet_2pc_mpc_ecdsa_k1");
 pub const START_DKG_FIRST_ROUND_EVENT_STRUCT_NAME: &IdentStr =
@@ -17,12 +18,16 @@ pub const START_BATCHED_PRESIGN_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("StartBatchedPresignEvent");
 pub const LOCKED_NEXT_COMMITTEE_EVENT_STRUCT_NAME: &IdentStr =
     ident_str!("LockedNextEpochCommitteeEvent");
+pub const START_NETWORK_DKG_EVENT_STRUCT_NAME: &IdentStr = ident_str!("StartNetworkDKGEvent");
 
 /// Alias for an MPC message.
 pub type MPCMessage = Vec<u8>;
 
-/// Alias for an MPC output.
-pub type MPCOutput = Vec<u8>;
+/// Alias for an MPC public output.
+pub type MPCPublicOutput = Vec<u8>;
+
+/// Alias for an MPC private output.
+pub type MPCPrivateOutput = Vec<u8>;
 
 /// Alias for MPC public input.
 pub type MPCPublicInput = Vec<u8>;
@@ -59,7 +64,7 @@ pub enum MPCSessionStatus {
     Pending,
     FirstExecution,
     Active(MPCRound),
-    Finished(MPCOutput),
+    Finished(MPCPublicOutput, MPCPrivateOutput),
     Failed,
 }
 
@@ -69,7 +74,9 @@ impl fmt::Display for MPCSessionStatus {
             MPCSessionStatus::Pending => write!(f, "Pending"),
             MPCSessionStatus::FirstExecution => write!(f, "FirstExecution"),
             MPCSessionStatus::Active(round) => write!(f, "Active - round {}", round),
-            MPCSessionStatus::Finished(output) => write!(f, "Finished({:?})", output),
+            MPCSessionStatus::Finished(public_output, private_output) => {
+                write!(f, "Finished({:?} {:?})", public_output, private_output)
+            }
             MPCSessionStatus::Failed => write!(f, "Failed"),
         }
     }
@@ -78,15 +85,34 @@ impl fmt::Display for MPCSessionStatus {
 /// Rust representation of the move struct `EncryptionOfNetworkDecryptionKeyShares`
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EncryptionOfNetworkDecryptionKeyShares {
-    epoch: u64,
+    pub epoch: u64,
     pub current_epoch_shares: Vec<Vec<u8>>,
-    previous_epoch_shares: Vec<Vec<u8>>,
+    pub previous_epoch_shares: Vec<Vec<u8>>,
 }
 
-/// The available signing key types of the DWallet MPC signing network.
 #[repr(u8)]
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq, Hash, Copy)]
 pub enum DWalletMPCNetworkKey {
     Secp256k1 = 1,
     Ristretto = 2,
+}
+
+// We can't import pera-types here since we import this module in there.
+// Therefor we use `thiserror` `#from` to convert this error.
+#[derive(Debug, Error)]
+pub enum DwalletNetworkMPCError {
+    #[error("invalid DWalletMPCNetworkKey value: {0}")]
+    InvalidDWalletMPCNetworkKey(u8),
+}
+
+impl TryFrom<u8> for DWalletMPCNetworkKey {
+    type Error = DwalletNetworkMPCError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(DWalletMPCNetworkKey::Secp256k1),
+            2 => Ok(DWalletMPCNetworkKey::Ristretto),
+            v => Err(DwalletNetworkMPCError::InvalidDWalletMPCNetworkKey(v)),
+        }
+    }
 }

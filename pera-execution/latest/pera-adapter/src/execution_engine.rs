@@ -23,7 +23,6 @@ mod checked {
         RANDOMNESS_STATE_UPDATE_FUNCTION_NAME,
     };
     use pera_types::{BRIDGE_ADDRESS, PERA_BRIDGE_OBJECT_ID, PERA_RANDOMNESS_STATE_OBJECT_ID};
-    use std::collections::HashMap;
     use std::{collections::HashSet, sync::Arc};
     use tracing::{info, instrument, trace, warn};
 
@@ -1155,8 +1154,8 @@ mod checked {
                     CallArg::Pure(batch_session_id.to_vec()),
                 ],
             ),
-            MPCRound::PresignSecond(dwallet_id, first_round_output, batch_session_id) => {
-                let mut presigns: Vec<(ObjectID, Vec<u8>)> = bcs::from_bytes(&data.output).unwrap();
+            MPCRound::PresignSecond(dwallet_id, _first_round_output, batch_session_id) => {
+                let presigns: Vec<(ObjectID, Vec<u8>)> = bcs::from_bytes(&data.output).unwrap();
                 let keys: Vec<ObjectID> = presigns.clone().into_iter().map(|(k, _)| k).collect();
                 let values: Vec<Vec<u8>> = presigns.into_iter().map(|(_, v)| v).collect();
                 (
@@ -1186,7 +1185,7 @@ mod checked {
             MPCRound::NetworkDkg(key_type) => {
                 module_name = PERA_SYSTEM_MODULE_NAME;
                 (
-                    "new_encryption_of_decryption_key_shares_version",
+                    "new_decryption_key_shares_version",
                     vec![
                         CallArg::PERA_SYSTEM_MUT,
                         CallArg::Pure(bcs::to_bytes(&vec![data.output.clone()]).unwrap()),

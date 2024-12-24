@@ -149,12 +149,12 @@ impl Debug for ConsensusTransactionKey {
                 value,
                 session_id,
                 sender_address,
-                _authority,
+                authority,
             ) => {
                 write!(
                     f,
-                    "DWalletMPCOutput({:?}, {:?}, {:?})",
-                    value, session_id, sender_address
+                    "DWalletMPCOutput({:?}, {:?}, {:?}, {:?})",
+                    value, session_id, sender_address, authority
                 )
             }
             ConsensusTransactionKey::LockNextCommittee(authority, epoch_id) => {

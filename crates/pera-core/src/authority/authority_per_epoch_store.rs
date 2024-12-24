@@ -71,7 +71,7 @@ use crate::dwallet_mpc::authority_name_to_party_id;
 use crate::dwallet_mpc::batches_manager::DWalletMPCBatchesManager;
 use crate::dwallet_mpc::mpc_manager::{DWalletMPCChannelMessage, DWalletMPCSender};
 use crate::dwallet_mpc::mpc_outputs_verifier::DWalletMPCOutputsVerifier;
-use crate::dwallet_mpc::FIRST_EPOCH_ID;
+use crate::dwallet_mpc::network_dkg::DwalletMPCNetworkKeyVersions;
 use crate::epoch::epoch_metrics::EpochMetrics;
 use crate::epoch::randomness::{
     DkgStatus, RandomnessManager, RandomnessReporter, VersionedProcessedMessage,
@@ -83,9 +83,7 @@ use crate::module_cache_metrics::ResolverMetrics;
 use crate::post_consensus_tx_reorder::PostConsensusTxReorder;
 use crate::signature_verifier::*;
 use crate::stake_aggregator::{GenericMultiStakeAggregator, StakeAggregator};
-use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
-use dwallet_mpc_types::dwallet_mpc::EncryptionOfNetworkDecryptionKeyShares;
-use group::PartyID;
+use dwallet_mpc_types::dwallet_mpc::{DWalletMPCNetworkKey, EncryptionOfNetworkDecryptionKeyShares};
 use move_bytecode_utils::module_cache::SyncModuleCache;
 use mysten_common::sync::notify_once::NotifyOnce;
 use mysten_common::sync::notify_read::NotifyRead;
@@ -117,6 +115,7 @@ use prometheus::IntCounter;
 use std::str::FromStr;
 use tap::TapOptional;
 use tokio::time::Instant;
+use dwallet_classgroups_types::ClassGroupsPublicKeyAndProof;
 use typed_store::DBMapUtils;
 use typed_store::{retry_transaction_forever, Map};
 
@@ -349,6 +348,7 @@ pub struct AuthorityPerEpochStore {
     /// where the quorum of votes is valid.
     pub dwallet_mpc_outputs_verifier: OnceCell<tokio::sync::Mutex<DWalletMPCOutputsVerifier>>,
     pub dwallet_mpc_batches_manager: OnceCell<tokio::sync::Mutex<DWalletMPCBatchesManager>>,
+    pub dwallet_mpc_network_keys: OnceCell<DwalletMPCNetworkKeyVersions>,
 }
 
 /// AuthorityEpochTables contains tables that contain data that is only valid within an epoch.
@@ -867,6 +867,7 @@ impl AuthorityPerEpochStore {
             dwallet_mpc_outputs_verifier: OnceCell::new(),
             dwallet_mpc_sender: OnceCell::new(),
             dwallet_mpc_batches_manager: OnceCell::new(),
+            dwallet_mpc_network_keys: OnceCell::new(),
         });
         s.update_buffer_stake_metric();
         s
@@ -977,6 +978,17 @@ impl AuthorityPerEpochStore {
         Ok(())
     }
 
+    /// A function to initiate the network keys `state` for the dWallet MPC when a new epoch starts.
+    pub fn set_dwallet_mpc_network_keys(&self) {
+        if self
+            .dwallet_mpc_network_keys
+            .set(DwalletMPCNetworkKeyVersions::new(self))
+            .is_err()
+        {
+            error!("AuthorityPerEpochStore: `set_dwallet_mpc_network_keys` called more than once; this should never happen");
+        }
+    }
+
     pub fn coin_deny_list_state_exists(&self) -> bool {
         self.epoch_start_configuration
             .coin_deny_list_obj_initial_shared_version()
@@ -1042,55 +1054,57 @@ impl AuthorityPerEpochStore {
         }
     }
 
-    // todo(zeev): change to network decryption key share (also in the error).
-    /// Returns the dWallet mpc network encryption of decryption key shares.
-    // Todo (#387): Add different encryption schemes & versions.
-    pub fn get_encryption_of_decryption_key_shares(
+    /// Retrieves the decryption key shares for the current epoch if they exist in the system state.
+    ///
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
+    /// - The key represents the key scheme (e.g., Secp256k1, Ristretto, etc.).
+    /// - The value is a vector of [`EncryptionOfNetworkDecryptionKeyShares`],
+    ///   which contains all versions of the encrypted decryption key shares.
+    pub(crate) fn load_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<u8, Vec<EncryptionOfNetworkDecryptionKeyShares>>> {
-        // Todo (#396): Read the decryption key share from the network DKG output.
-        if self.epoch() == FIRST_EPOCH_ID {
-            return Err(DwalletMPCError::WrongEpoch(self.epoch()));
-        }
-
-        Ok((match self.epoch_start_state() {
-            EpochStartSystemState::V1(data) => data.get_encryption_of_decryption_key_shares(),
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<EncryptionOfNetworkDecryptionKeyShares>>>
+    {
+        let decryption_key_shares = (match self.epoch_start_state() {
+            EpochStartSystemState::V1(data) => data.get_decryption_key_shares(),
         })
-        .ok_or(DwalletMPCError::MissingEncryptionOfDecryptionKeyShares)?
+        .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)?
         .contents
         .into_iter()
-        .map(|entry| (entry.key, entry.value))
-        .collect())
+        .map(|entry| Ok((DWalletMPCNetworkKey::try_from(entry.key)?, entry.value)))
+        .collect::<DwalletMPCResult<HashMap<_, _>>>()?;
+        Ok(decryption_key_shares)
     }
 
-    // todo(zeev): docs.
-    pub fn committee_validators_class_groups_public_keys_and_proofs(
+    /// Retrieves the *running validator's* latest decryption key shares for each key scheme
+    /// if they exist in the system state.
+    ///
+    /// The data is sourced from the epoch's initial system state.
+    /// The returned value is a map where:
+    /// - The key represents the key scheme.
+    /// - The value is a `Vec<Vec<u8>>`, containing the decryption key shares for the validator.
+    pub(crate) fn load_validator_decryption_key_shares_from_system_state(
         &self,
-    ) -> DwalletMPCResult<HashMap<PartyID, ClassGroupsPublicKeyAndProof>> {
-        let public_keys_and_proofs = match self.epoch_start_state() {
-            EpochStartSystemState::V1(data) => {
-                let committee: Vec<_> = self
-                    .committee()
-                    .voting_rights
+    ) -> DwalletMPCResult<HashMap<DWalletMPCNetworkKey, Vec<Vec<u8>>>> {
+        let decryption_key_shares = self.load_decryption_key_shares_from_system_state()?;
+        let party_id = authority_name_to_party_id(&self.name, self)? as usize;
+        decryption_key_shares
+            .into_iter()
+            .map(|(key_type, encryption_shares)| {
+                let shares = encryption_shares
                     .iter()
-                    .map(|(name, _)| name.clone())
-                    .collect();
-
-                data.get_active_validators_class_groups_public_key_and_proof()
-                    .iter()
-                    .filter_map(|(authority_name, value)| {
-                        if !committee.contains(authority_name) {
-                            return None;
-                        }
-                        let party_id = authority_name_to_party_id(authority_name, self).ok()?;
-                        let public_key_and_proof =
-                            bcs::from_bytes::<ClassGroupsPublicKeyAndProof>(value).ok()?;
-                        Some(Ok((party_id, public_key_and_proof)))
+                    .map(|share| {
+                        // TODO (#382): Decrypt the decryption key share
+                        share
+                            .current_epoch_shares
+                            .get(party_id)
+                            .cloned()
+                            .ok_or(DwalletMPCError::MissingDwalletMPCDecryptionKeyShares)
                     })
-                    .collect::<DwalletMPCResult<HashMap<_, _>>>()?
-            }
-        };
-        Ok(public_keys_and_proofs)
+                    .collect::<DwalletMPCResult<_>>()?;
+                Ok((key_type, shares))
+            })
+            .collect()
     }
 
     pub fn get_chain_identifier(&self) -> ChainIdentifier {
