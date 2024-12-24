@@ -1,7 +1,6 @@
 use crate::base_types::{AuthorityName, EpochId, ObjectID};
 use dwallet_mpc_types::dwallet_mpc::DwalletNetworkMPCError;
 use group::PartyID;
-// todo(zeev): remove unused errors.
 
 #[derive(thiserror::Error, Debug)]
 pub enum DwalletMPCError {
@@ -25,7 +24,7 @@ pub enum DwalletMPCError {
 
     #[error("message de/serialization error occurred in the dWallet MPC process: {0}")]
     BcsError(#[from] bcs::Error),
-    
+
     #[error("received an invalid/unknown MPC party type")]
     InvalidMPCPartyType,
 
@@ -55,7 +54,7 @@ pub enum DwalletMPCError {
 
     #[error("missing MPC public parameters in config")]
     MissingDwalletMPCDecryptionSharesPublicParameters,
-    
+
     // Note:
     // this one actually takes mpc_error,
     // but because of poor error design in the underline lib we can't use it,
